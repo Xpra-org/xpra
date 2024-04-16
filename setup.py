@@ -1224,25 +1224,32 @@ def build_xpra_conf(install_dir: str):
         dirname = os.path.join("fs", "etc", "xpra", *subdirs)
         # get conf dir for install, without stripping the build root
         target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
-        print(f"convert_templates({subdirs}) {dirname=}, {target_dir=}")
+        print(f"{dirname!r}:")
+        # print(f"convert_templates({subdirs}) {dirname=}, {target_dir=}")
         if not os.path.exists(target_dir):
             try:
                 os.makedirs(target_dir)
             except Exception as e:
                 print(f"cannot create target dir {target_dir!r}: {e}")
-        for f in sorted(os.listdir(dirname)):
+        template_files = os.listdir(dirname)
+        if not template_files:
+            print(f"Warning: no files found in {dirname!r}")
+        for f in sorted(template_files):
             if f.endswith("osx.conf.in") and not OSX:
                 continue
             filename = os.path.join(dirname, f)
             if os.path.isdir(filename):
                 convert_templates(list(subdirs)+[f])
                 continue
-            if not f.endswith(".in"):
+            if not (f.endswith(".in") or f.endswith(".conf") or f.endswith(".txt") or f.endswith(".keys")):
+                print(f"Warning: skipped {f!r}")
                 continue
             with open(filename, "r", encoding="latin1") as f_in:
-                template  = f_in.read()
-            target_file = os.path.join(target_dir, f[:-len(".in")])
-            print(f"generating {target_file} from {f}")
+                template = f_in.read()
+            target_file = os.path.join(target_dir, f)
+            if target_file.endswith(".in"):
+                target_file = target_file[:-len(".in")]
+            print(f"  {f!r:<50} -> {target_file!r}")
             with open(target_file, "w", encoding="latin1") as f_out:
                 config_data = template % SUBS
                 f_out.write(config_data)
@@ -1951,7 +1958,8 @@ else:
                 install_dir = install_dir.split("egg")[1] or sys.prefix
             else:
                 install_data.run(self)
-            print(f"install_data_override.run() install_dir={install_dir}")
+            print("install_data_override.run()")
+            print(f"  install_dir={install_dir!r}")
             root_prefix = None
             for x in sys.argv:
                 if x.startswith("--prefix="):
@@ -1964,23 +1972,23 @@ else:
             for x in sys.argv:
                 if x.startswith("--root="):
                     root_prefix = x[len("--root="):]
-            print(f"install_data_override.run() root_prefix={root_prefix}")
+            print(f"  root_prefix={root_prefix!r}")
             build_xpra_conf(root_prefix)
 
-            def copytodir(src, dst_dir, dst_name=None, chmod=0o644, subs=None):
+            def copytodir(src, dst_dir, dst_name="", chmod=0o644, subs=None):
                 # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
                 # convert absolute paths:
                 if dst_dir.startswith("/"):
-                    dst_dir = root_prefix+dst_dir
+                    dst_dir = os.path.join(root_prefix, dst_dir)
                 else:
-                    dst_dir = install_dir.rstrip("/")+"/"+dst_dir
+                    dst_dir = os.path.join(install_dir, dst_dir)
                 # make sure the target directory exists:
                 self.mkpath(dst_dir)
                 # generate the target filename:
                 filename = os.path.basename(src)
                 dst_file = os.path.join(dst_dir, dst_name or filename)
                 # copy it
-                print(f"  {src:<30} -> {dst_dir} (%s)" % oct(chmod))
+                print(f"  {src!r:<50} -> {dst_dir!r} (%s)" % oct(chmod))
                 data = load_binary_file(src)
                 if subs:
                     for k,v in subs.items():
@@ -1988,11 +1996,11 @@ else:
                 with open(dst_file, "wb") as f:
                     f.write(data)
                 if chmod:
-                    print(f"chmod({dst_file}, %s)" % oct(chmod))
+                    # print(f"  chmod({dst_file!r}, %s)" % oct(chmod))
                     os.chmod(dst_file, chmod)
 
             def dirtodir(src_dir, dst_dir):
-                print(f"dirtodir({src_dir}, {dst_dir})")
+                print(f"{src_dir!r}:")
                 for f in os.listdir(src_dir):
                     copytodir(os.path.join(src_dir, f), dst_dir)
 
