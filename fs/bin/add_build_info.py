@@ -8,6 +8,7 @@
 # pylint: disable=bare-except
 
 import datetime
+import shutil
 from subprocess import Popen, PIPE, STDOUT
 import socket
 import platform
@@ -162,9 +163,8 @@ def get_first_line_output(cmd, valid_exit_code=0) -> str:
 def get_nvcc_version() -> str:
     if sys.platform == "darwin":
         return ""
-    for p in ("/usr/local/cuda/bin", "/opt/cuda/bin", ""):
-        nvcc = os.path.join(p, "nvcc")
-        if p == "" or os.path.exists(nvcc):
+    for nvcc in ("/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc", shutil.which("nvcc")):
+        if nvcc and os.path.exists(nvcc):
             cmd = f"{nvcc} --version"
             lines = get_output_lines(cmd)
             if lines:
