@@ -448,6 +448,15 @@ class WindowVideoSource(WindowSource):
         self.common_video_encodings = preforder(set(self.video_encodings) & set(self.core_encodings))
         log("update_encoding_selection: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
+        if encoding in ("stream", "auto", "grayscale") and False:
+            if encoding == "auto" and self.content_type in ("desktop", "video"):
+                vh = self.video_helper
+                if vh:
+                    accel = list(vh.get_gpu_encodings()) + ["vp8"]
+                    if accel:
+                        encoding = "stream"
+                        log.info(f"found gpu accelerated encodings: {csv(accel)}")
+                        log.info(f"switching to {encoding!r} encoding for {self.content_type!r}")
         super().update_encoding_selection(encoding, exclude, init)
         self.supports_scrolling = "scroll" in self.common_encodings
 
