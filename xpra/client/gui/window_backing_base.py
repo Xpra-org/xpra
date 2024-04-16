@@ -18,7 +18,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
-from xpra.codecs.video import getVideoHelper
+from xpra.codecs.video import getVideoHelper, VdictEntry
 from xpra.common import Gravity
 from xpra.log import Logger
 
@@ -56,38 +56,29 @@ def load_PIL_font():
 
 # ie:
 # CSC_OPTIONS = { "YUV420P" : {"RGBX" : [swscale.spec], "BGRX" : ...} }
-CSC_OPTIONS = None
+CSC_OPTIONS: dict[str, VdictEntry] = {}
+VIDEO_DECODERS: dict[str, Callable] = {}
+_loaded_video = False
 
 
-def load_csc_options():
-    global CSC_OPTIONS
-    if CSC_OPTIONS is None:
-        CSC_OPTIONS = {}
-        vh = getVideoHelper()
-        for csc_in in vh.get_csc_inputs():
-            CSC_OPTIONS[csc_in] = vh.get_csc_specs(csc_in)
-    return CSC_OPTIONS
-
-
-# get the list of video encodings (and the module for each one):
-VIDEO_DECODERS = None
-
-
-def load_video_decoders():
-    global VIDEO_DECODERS
-    if VIDEO_DECODERS is None:
-        VIDEO_DECODERS = {}
-        vh = getVideoHelper()
-        for encoding in vh.get_decodings():
-            specs = vh.get_decoder_specs(encoding)
-            for colorspace, decoders in specs.items():
-                log("%-5s decoders for %7s: %s", encoding, colorspace, csv([d.get_type() for _, d in decoders]))
-                assert decoders
-                # use the first one:
-                _, decoder_module = decoders[0]
-                VIDEO_DECODERS[encoding] = decoder_module
-        log("video decoders: %s", {e: d.get_type() for e, d in VIDEO_DECODERS.items()})
-    return VIDEO_DECODERS
+def load_video() -> None:
+    global _loaded_video
+    if _loaded_video:
+        return
+    _loaded_video = True
+    vh = getVideoHelper()
+    for csc_in in vh.get_csc_inputs():
+        CSC_OPTIONS[csc_in] = vh.get_csc_specs(csc_in)
+    log("csc options: %s", CSC_OPTIONS)
+    for encoding in vh.get_decodings():
+        specs = vh.get_decoder_specs(encoding)
+        for colorspace, decoders in specs.items():
+            assert decoders
+            # ouch, we should use scoring here!
+            # use the first one:
+            _, decoder_module = decoders[0]
+            VIDEO_DECODERS[encoding] = decoder_module
+    log("video decoders: %s", VIDEO_DECODERS)
 
 
 def fire_paint_callbacks(callbacks: Iterable[Callable], success: int | bool = True, message=""):
@@ -120,8 +111,7 @@ class WindowBackingBase:
     RGB_MODES: tuple[str, ...] = ()
 
     def __init__(self, wid: int, window_alpha: bool):
-        load_csc_options()
-        load_video_decoders()
+        load_video()
         self.wid: int = wid
         self.size: tuple[int, int] = (0, 0)
         self.render_size: tuple[int, int] = (0, 0)
@@ -456,9 +446,9 @@ class WindowBackingBase:
         if not self._alpha_enabled:
             target_rgb_modes = tuple(x for x in target_rgb_modes if x.find("A") < 0)
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
-        full_csc_modes["webp"] = tuple(x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA"))
-        full_csc_modes["jpeg"] = tuple(x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA", "YUV420P"))
-        full_csc_modes["jpega"] = tuple(x for x in rgb_modes if x in ("BGRA", "RGBA"))
+        full_csc_modes["webp"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA")]
+        full_csc_modes["jpeg"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA", "YUV420P")]
+        full_csc_modes["jpega"] = [x for x in rgb_modes if x in ("BGRA", "RGBA")]
         videolog("_get_full_csc_modes(%s) with target_rgb_modes=%s", rgb_modes, target_rgb_modes)
         for e in sorted(full_csc_modes.keys()):
             modes = full_csc_modes.get(e)
@@ -592,6 +582,7 @@ class WindowBackingBase:
         else:
             def free_buffer(*_args):
                 buffer_wrapper.free()
+            callbacks = list(callbacks)
             callbacks.append(free_buffer)
         # replace with the actual rgb format we get from the decoder / rgb_reformat:
         options["rgb_format"] = rgb_format
