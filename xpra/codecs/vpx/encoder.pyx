@@ -170,12 +170,11 @@ cdef extern from "vpx/vpx_encoder.h":
     vpx_codec_err_t vpx_codec_enc_config_set(vpx_codec_ctx_t *ctx, const vpx_codec_enc_cfg_t *cfg)
 
 PACKET_KIND = {
-               VPX_CODEC_CX_FRAME_PKT   : "CX_FRAME_PKT",
-               VPX_CODEC_STATS_PKT      : "STATS_PKT",
-               VPX_CODEC_PSNR_PKT       : "PSNR_PKT",
-               VPX_CODEC_CUSTOM_PKT     : "CUSTOM_PKT",
-               }
-
+    VPX_CODEC_CX_FRAME_PKT   : "CX_FRAME_PKT",
+    VPX_CODEC_STATS_PKT      : "STATS_PKT",
+    VPX_CODEC_PSNR_PKT       : "PSNR_PKT",
+    VPX_CODEC_CUSTOM_PKT     : "CUSTOM_PKT",
+}
 
 COLORSPACES = {
     "vp8": ("YUV420P", ),
@@ -188,17 +187,20 @@ CODECS = tuple(COLORSPACES.keys())
 DEF VP9_RANGE = 4
 
 
-def init_module():
+def init_module() -> None:
     log("vpx.encoder.init_module() info=%s", get_info())
     assert len(CODECS)>0, "no supported encodings!"
     log("supported codecs: %s", CODECS)
     log("supported colorspaces: %s", COLORSPACES)
 
-def cleanup_module():
+
+def cleanup_module() -> None:
     log("vpx.encoder.cleanup_module()")
 
-def get_abi_version():
+
+def get_abi_version() -> int:
     return VPX_ENCODER_ABI_VERSION
+
 
 def get_version() -> Tuple[int,...]:
     b = vpx_codec_version_str()
@@ -212,15 +214,19 @@ def get_version() -> Tuple[int,...]:
         pass
     return tuple(vparts)
 
+
 def get_type():
     return "vpx"
+
 
 def get_encodings():
     return CODECS
 
+
 def get_input_colorspaces(encoding):
     assert encoding in get_encodings(), "invalid encoding: %s" % encoding
     return COLORSPACES[encoding]
+
 
 def get_output_colorspaces(encoding, input_colorspace):
     assert encoding in get_encodings(), "invalid encoding: %s" % encoding
@@ -233,6 +239,8 @@ def get_output_colorspaces(encoding, input_colorspace):
 
 
 generation = AtomicInteger()
+
+
 def get_info() -> Dict[str,Any]:
     global CODECS, MAX_SIZE
     b = vpx_codec_build_config()
@@ -259,16 +267,16 @@ cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
 
 
 #educated guess:
-MAX_SIZE = {
+MAX_SIZE: Dict[str, Tuple[int, int]] = {
     "vp8"   : (8192, 4096),
     "vp9"   : (8192, 4096),
-    }
+}
 #no idea why, but this is the default on win32:
 if WIN32:
     MAX_SIZE["vp9"] = (4096, 4096)
 
 
-def get_specs(encoding, colorspace):
+def get_specs(encoding, colorspace) -> Tuple[VideoSpec, ...]:
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
     #setup cost is reasonable (usually about 5ms)
@@ -301,6 +309,7 @@ cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
     if colorspace=="YUV444P10":
         return VPX_IMG_FMT_I44416
     raise ValueError(f"invalid colorspace {colorspace!r}")
+
 
 def get_error_string(int err):
     estr = vpx_codec_err_to_string(<vpx_codec_err_t> err)[:]
@@ -508,28 +517,28 @@ cdef class Encoder:
         }
         return info
 
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return self.encoding
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.context==NULL
 
-    def get_type(self):
-        return  "vpx"
+    def get_type(self) -> str:
+        return "vpx"
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
     def __dealloc__(self):
         self.clean()
 
-    def clean(self):
+    def clean(self) -> None:
         if self.context!=NULL:
             vpx_codec_destroy(self.context)
             free(self.context)
@@ -595,7 +604,7 @@ cdef class Encoder:
                 "frame"     : int(self.frames),
                 #"quality"  : min(99+self.lossless, self.quality),
                 #"speed"    : self.speed,
-                }
+            }
         finally:
             for i in range(3):
                 if py_buf[i].buf:
@@ -681,7 +690,7 @@ cdef class Encoder:
         v = img
         return img
 
-    def set_encoding_speed(self, int pct):
+    def set_encoding_speed(self, int pct) -> None:
         if self.speed==pct:
             return
         self.speed = pct
@@ -701,7 +710,7 @@ cdef class Encoder:
         value = minv + MIN(vrange, MAX(0, value))
         self.codec_control("cpu speed", VP8E_SET_CPUUSED, value)
 
-    def set_encoding_quality(self, int pct):
+    def set_encoding_quality(self, int pct) -> None:
         if self.quality==pct:
             return
         self.quality = pct
@@ -718,7 +727,7 @@ cdef class Encoder:
         assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     global CODECS, SAVE_TO_FILE
     from xpra.codecs.checks import testencoder, get_encoder_max_size
     from xpra.codecs.vpx import encoder

@@ -151,7 +151,7 @@ Vdict = dict[str, VdictEntry]
 # manual deep-ish copy: make new dictionaries and lists,
 # but keep the same codec specs:
 def deepish_clone_dict(indict: Vdict) -> Vdict:
-    outd = {}
+    outd: Vdict = {}
     for enc, d in indict.items():
         for ifmt, l in d.items():
             for v in l:
@@ -256,8 +256,7 @@ class VideoHelper:
         for encoding, decoder_specs in self._video_decoder_specs.items():
             for out_csc, decoders in decoder_specs.items():
                 for decoder in decoders:
-                    decoder_name = decoder[0]
-                    dinfo.setdefault(f"{encoding}_to_{out_csc}", []).append(decoder_name)
+                    dinfo.setdefault(f"{encoding}_to_{out_csc}", []).append(decoder.codec_type)
         venc = einfo.setdefault("video-encoder", {})
         for x in ALL_VIDEO_ENCODER_OPTIONS:
             venc[x] = modstatus(get_encoder_module_name(x), get_video_encoders(), self.video_encoders)
@@ -408,21 +407,12 @@ class VideoHelper:
             colorspaces = decoder_module.get_input_colorspaces(encoding)
             log(" %s input colorspaces for %s: %s", decoder_type, encoding, csv(colorspaces))
             for colorspace in colorspaces:
-                output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
-                log(" %s output colorspace for %5s/%7s: %s", decoder_type, encoding, colorspace, output_colorspace)
-                try:
-                    assert decoder_module.Decoder
-                    self.add_decoder(encoding, colorspace, decoder_name, decoder_module)
-                except Exception as e:
-                    log.warn("failed to add decoder %s: %s", decoder_module, e)
-                    del e
+                specs = decoder_module.get_specs(encoding, colorspace)
+                for spec in specs:
+                    self.add_decoder_spec(encoding, colorspace, spec)
 
-    def add_decoder(self, encoding: str, colorspace: str, decoder_name: str, decoder_module):
-        self._video_decoder_specs.setdefault(
-            encoding, {}
-        ).setdefault(
-            colorspace, []
-        ).append((decoder_name, decoder_module))
+    def add_decoder_spec(self, encoding: str, colorspace: str, decoder_spec: VideoSpec):
+        self._video_decoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(decoder_spec)
 
     def get_server_full_csc_modes(self, *client_supported_csc_modes) -> dict[str, list[str]]:
         """ given a list of CSC modes the client can handle,
@@ -435,15 +425,14 @@ class VideoHelper:
         for encoding, encoding_specs in self._video_decoder_specs.items():
             assert encoding_specs is not None
             for colorspace, decoder_specs in sorted(encoding_specs.items()):
-                for decoder_name, decoder_module in decoder_specs:
-                    # figure out the actual output colorspace:
-                    output_colorspace = decoder_module.get_output_colorspace(encoding, colorspace)
-                    log("found decoder %12s for %5s with %7s mode, outputs '%s'",
-                        decoder_name, encoding, colorspace, output_colorspace)
-                    if output_colorspace in client_supported_csc_modes:
-                        encoding_colorspaces = full_csc_modes.setdefault(encoding, [])
-                        if colorspace not in encoding_colorspaces:
-                            encoding_colorspaces.append(colorspace)
+                for decoder_spec in decoder_specs:
+                    for output_colorspace in decoder_spec.output_colorspaces:
+                        log("found decoder %12s for %5s with %7s mode, outputs '%s'",
+                            decoder_spec.codec_type, encoding, colorspace, output_colorspace)
+                        if output_colorspace in client_supported_csc_modes:
+                            encoding_colorspaces = full_csc_modes.setdefault(encoding, [])
+                            if colorspace not in encoding_colorspaces:
+                                encoding_colorspaces.append(colorspace)
         log("get_server_full_csc_modes(%s)=%s", client_supported_csc_modes, full_csc_modes)
         return full_csc_modes
 

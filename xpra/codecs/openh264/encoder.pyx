@@ -7,7 +7,7 @@
 
 import os
 from time import monotonic
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
@@ -226,48 +226,56 @@ FRAME_TYPES = {
     videoFrameTypeP         : "P",
     videoFrameTypeSkip      : "skip",
     videoFrameTypeIPMixed   : "mixed",
-    }
+}
 
-COLORSPACES = {
+COLORSPACES: Dict[str, str] = {
     "YUV420P"   : "YUV420P",
-    }
+}
 
-def init_module():
+def init_module() -> None:
     log("openh264.init_module()")
 
-def cleanup_module():
+
+def cleanup_module() -> None:
     log("openh264.cleanup_module()")
 
-def get_version():
+
+def get_version() -> Tuple[int, int, int]:
     cdef OpenH264Version version
     WelsGetCodecVersionEx(&version)
     return (version.uMajor, version.uMinor, version.uRevision)
 
-def get_type():
+
+def get_type() -> str:
     return "openh264"
 
-def get_info():
+
+def get_info() -> Dict[str, Any]:
     return {
         "version"   : get_version(),
-        }
+    }
 
-def get_encodings():
+
+def get_encodings() -> Tuple[str, ...]:
     return ("h264", )
 
-def get_input_colorspaces(encoding):
+
+def get_input_colorspaces(encoding) -> Tuple[str, ...]:
     assert encoding in get_encodings()
     return tuple(COLORSPACES.keys())
 
-def get_output_colorspaces(encoding, input_colorspace):
+
+def get_output_colorspaces(encoding, input_colorspace) -> Tuple[str, ...]:
     assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
     return (COLORSPACES[input_colorspace],)
+
 
 #actual limits (which we cannot reach because we hit OOM):
 #MAX_WIDTH, MAX_HEIGHT = (16384, 16384)
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
-def get_specs(encoding, colorspace):
+def get_specs(encoding, colorspace) -> Tuple[VideoSpec, ...]:
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
@@ -355,8 +363,7 @@ cdef class Encoder:
         trace_level = WELS_LOG_WARNING
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
 
-
-    def clean(self):
+    def clean(self) -> None:
         log("openh264 close context %#x", <uintptr_t> self.context)
         cdef ISVCEncoder *context = self.context
         if context!=NULL:
@@ -370,7 +377,6 @@ cdef class Encoder:
         if f:
             self.file = None
             f.close()
-
 
     def get_info(self) -> Dict[str,Any]:
         info = get_info()
@@ -386,25 +392,25 @@ cdef class Encoder:
             return "openh264_encoder(uninitialized)"
         return f"openh264_encoder({self.width}x{self.height})"
 
-    def is_closed(self):
-        return not self.ready
+    def is_closed(self) -> bool:
+        return not bool(self.ready)
 
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return "h264"
 
     def __dealloc__(self):
         self.clean()
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_type(self):
+    def get_type(self) -> str:
         return  "openh264"
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
 
@@ -476,7 +482,7 @@ cdef class Encoder:
         return bdata, {}
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     log("openh264 selftest: %s", get_info())
     global SAVE_TO_FILE
     from xpra.codecs.checks import testencoder, get_encoder_max_sizes

@@ -38,7 +38,7 @@ def main(files):
                 if ics not in ("BGRX", "YUV420P", "YUV444P",):
                     print(f"    skipping {ics}")
                     continue
-                dcs = avcodec.get_output_colorspace(encoding, ics)
+                dcs = avcodec.get_output_colorspaces(encoding, ics)
                 print(f"    dec_avcodec output colorspace for {encoding} + {ics} : {dcs}")
                 if any(x in dcs for x in ("BGRX", "BGR", "YUV420P", "YUV444P", "GBRP")):
                     encoders.append((encoding, ics, enc))

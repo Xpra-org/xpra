@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -12,7 +12,7 @@ from typing import Any, Tuple, List, Dict
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
 
-from xpra.codecs.constants import get_subsampling_divs
+from xpra.codecs.constants import VideoSpec, get_subsampling_divs
 from xpra.codecs.image import ImageWrapper
 from xpra.util.env import envint, envbool
 
@@ -31,7 +31,7 @@ from xpra.codecs.vpx.vpx cimport (
     VPX_CS_RESERVED, VPX_CS_SRGB,
     vpx_image_t, vpx_color_space_t, vpx_color_range_t,
     VPX_CR_STUDIO_RANGE, VPX_CR_FULL_RANGE,
-    )
+)
 from xpra.buffers.membuf cimport padbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 
@@ -46,12 +46,12 @@ VPX_COLOR_SPACES : Dict[int,str] = {
     VPX_CS_BT_2020  : "BT2020",
     VPX_CS_RESERVED : "reserved",
     VPX_CS_SRGB     : "SRGB",
-    }
+}
 
 VPX_COLOR_RANGES : Dict[int,str] = {
     VPX_CR_STUDIO_RANGE : "studio",
     VPX_CR_FULL_RANGE   : " full",
-    }
+}
 
 
 cdef unsigned int cpus = os.cpu_count()
@@ -92,7 +92,7 @@ cdef extern from "vpx/vpx_decoder.h":
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES : Dict[str,Tuple[str,...]] = {
+COLORSPACES : Dict[str, Tuple[str,...]] = {
     "vp8"   : ("YUV420P", ),
     "vp9"   : ("YUV420P", "YUV444P"),
 }
@@ -104,11 +104,14 @@ def init_module() -> None:
     log("supported codecs: %s", CODECS)
     log("supported colorspaces: %s", COLORSPACES)
 
+
 def cleanup_module() -> None:
     log("vpx.decoder.cleanup_module()")
 
+
 def get_abi_version() -> int:
     return VPX_DECODER_ABI_VERSION
+
 
 def get_version() -> Tuple[int,...]:
     b = vpx_codec_version_str()
@@ -122,35 +125,56 @@ def get_version() -> Tuple[int,...]:
         pass
     return tuple(vparts)
 
+
 def get_type() -> str:
     return "vpx"
+
 
 def get_encodings() -> Tuple[str, ...]:
     return CODECS
 
+
 def get_min_size(encoding:str) -> Tuple[int, int]:
     return 16, 16
+
 
 def get_input_colorspaces(encoding:str) -> Tuple[str,...]:
     assert encoding in CODECS
     return COLORSPACES.get(encoding)
 
-def get_output_colorspace(encoding:str, csc:str) -> str:
+
+def get_output_colorspaces(encoding:str, csc:str) -> Tuple[str, ...]:
     #same as input
     assert encoding in CODECS
     colorspaces = COLORSPACES.get(encoding)
     assert csc in colorspaces, "invalid colorspace '%s' for encoding '%s' (must be one of %s)" % (csc, encoding, colorspaces)
-    return csc
+    return (csc, )
+
+
+def get_specs(encoding: str, colorspace: str) -> tuple[VideoSpec]:
+    assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
+    assert colorspace in get_input_colorspaces(encoding), "invalid output colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
+    return (
+        VideoSpec(
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_output_colorspaces(encoding, colorspace),
+            has_lossless_mode=encoding == "vp9" and colorspace == "YUV444P",
+            codec_class=Decoder, codec_type=get_type(),
+            quality=50, speed=50,
+            size_efficiency=60,
+            setup_cost=20,
+            max_w=8192,
+            max_h=4096),
+        )
 
 
 def get_info() -> Dict[str,Any]:
     global CODECS
     info = {
-            "version"       : get_version(),
-            "encodings"     : CODECS,
-            "abi_version"   : get_abi_version(),
-            "build_config"  : vpx_codec_build_config(),
-            }
+        "version"       : get_version(),
+        "encodings"     : CODECS,
+        "abi_version"   : get_abi_version(),
+        "build_config"  : vpx_codec_build_config(),
+    }
     for k,v in COLORSPACES.items():
         info["%s.colorspaces" % k] = v
     return info
@@ -220,14 +244,14 @@ cdef class Decoder:
 
     def get_info(self) -> Dict[str,Any]:
         return {
-                "type"      : self.get_type(),
-                "width"     : self.get_width(),
-                "height"    : self.get_height(),
-                "encoding"  : self.encoding,
-                "frames"    : int(self.frames),
-                "colorspace": self.get_colorspace(),
-                "max_threads" : self.max_threads,
-                }
+            "type"      : self.get_type(),
+            "width"     : self.get_width(),
+            "height"    : self.get_height(),
+            "encoding"  : self.encoding,
+            "frames"    : int(self.frames),
+            "colorspace": self.get_colorspace(),
+            "max_threads" : self.max_threads,
+        }
 
     def get_colorspace(self) -> str:
         return self.dst_format

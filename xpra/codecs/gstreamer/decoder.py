@@ -17,10 +17,11 @@ from xpra.codecs.gstreamer.common import (
     init_module, cleanup_module,
     get_default_decoder_options,
 )
-from xpra.os_util import WIN32, gi_import
-from xpra.common import roundup
-from xpra.util.objects import typedict
+from xpra.codecs.constants import VideoSpec
 from xpra.codecs.image import ImageWrapper
+from xpra.common import roundup
+from xpra.os_util import WIN32, gi_import
+from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("decoder", "gstreamer")
@@ -100,14 +101,30 @@ def get_input_colorspaces(encoding: str) -> tuple[str, ...]:
     return ("YUV420P",)
 
 
-def get_output_colorspace(encoding: str, input_colorspace: str) -> str:
-    encoder = CODECS.get(encoding)
-    if not encoder:
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> tuple[str, ...]:
+    decoder = CODECS.get(encoding)
+    if not decoder:
         raise ValueError(f"unsupported encoding {encoding}")
     assert input_colorspace in get_input_colorspaces(encoding)
-    if encoder.startswith("nv"):
-        return "NV12"
-    return "YUV420P"
+    if decoder.startswith("nv"):
+        return ("NV12", )
+    return ("YUV420P", )
+
+
+def get_specs(encoding: str, colorspace: str) -> tuple[VideoSpec]:
+    assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
+    assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
+    return (
+        VideoSpec(
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_output_colorspaces(encoding, colorspace),
+            has_lossless_mode=encoding == "vp9" and colorspace == "YUV444P",
+            codec_class=Decoder, codec_type=get_type(),
+            quality=50, speed=50,
+            size_efficiency=60,
+            setup_cost=20,
+            max_w=8192,
+            max_h=4096),
+    )
 
 
 class Decoder(VideoPipeline):

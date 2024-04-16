@@ -98,11 +98,11 @@ def make_spec(element: str, encoding: str, cs_in: str, css_out: tuple[str, ...],
 SPECS: dict[str, dict[str, list[VideoSpec]]] = {}
 
 
-def get_specs(encoding: str, colorspace: str) -> VideoSpec | None:
+def get_specs(encoding: str, colorspace: str) -> VideoSpec:
     colorspaces = SPECS.get(encoding)
     assert colorspaces, f"invalid encoding: {encoding} (must be one of %s)" % csv(SPECS.keys())
     assert colorspace in colorspaces, f"invalid colorspace: {colorspace} (must be one of %s)" % csv(colorspaces.keys())
-    return colorspaces.get(colorspace)
+    return colorspaces[colorspace]
 
 
 def init_all_specs(*exclude) -> None:
@@ -143,6 +143,8 @@ def init_all_specs(*exclude) -> None:
             pass
     log(f"init_all_specs try vaapi? {vaapi}")
     if vaapi:
+        add("vah264lpenc", "h264", "NV12", ("YUV420P",), 20, 100)
+        add("vah264enc", "h264", "NV12", ("YUV420P",), 20, 100)
         add("vaapih264enc", "h264", "NV12", ("YUV420P",), 20, 100)
         add("vaapih265enc", "hevc", "NV12", ("YUV420P",), 20, 100)
     if NVD3D11:
@@ -156,6 +158,7 @@ def init_all_specs(*exclude) -> None:
         add("amfh265enc", "hevc", "NV12", ("YUV420P",), 20, 100)
     add("x264enc", "h264", "YUV420P", ("YUV420P",), 100, 0)
     add("x264enc", "h264", "YUV444P", ("YUV444P",), 100, 0)
+    add("openh264enc", "h264", "YUV420P", ("YUV420P",), 100, 0)
     add("vp8enc", "vp8", "YUV420P", ("YUV420P",), 100, 0)
     add("vp9enc", "vp9", "YUV444P", ("YUV444P",), 100, 0)
     if not OSX:

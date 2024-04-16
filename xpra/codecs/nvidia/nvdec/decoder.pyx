@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,12 +10,13 @@ from libc.stdio cimport printf
 from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf  # pylint: disable=syntax-error
 
 from weakref import WeakValueDictionary
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 from threading import Event
 
 from xpra.util.str_fn import csv
 from xpra.util.objects import AtomicInteger
 from xpra.codecs.image import ImageWrapper
+from xpra.codecs.constants import VideoSpec
 from xpra.codecs.nvidia.cuda.errors import cudacheck, get_error_name
 from xpra.codecs.nvidia.cuda.context import get_default_device_context
 from xpra.log import Logger
@@ -437,8 +438,26 @@ def get_input_colorspaces(encoding):
     #return ("YUV420P", "YUV422P", "YUV444P")
     return ("YUV420P", )
 
-def get_output_colorspace(encoding, csc):
-    return "NV12"
+def get_output_colorspaces(encoding, csc) -> Tuple[str, ...]:
+    return ("NV12", )
+
+
+def get_specs(encoding: str, colorspace: str) -> Tuple[VideoSpec, ...]:
+    assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
+    assert colorspace in get_input_colorspaces(encoding), "invalid output colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
+    return (
+        VideoSpec(
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_output_colorspaces(encoding, colorspace),
+            has_lossless_mode = encoding == "vp9" and colorspace=="YUV444P",
+            codec_class=Decoder, codec_type=get_type(),
+            quality=50, speed=100,
+            size_efficiency=80,
+            setup_cost=50,
+            cpu_cost=0,
+            gpu_cost=100,
+            max_w=8192,
+            max_h=4096),
+    )
 
 
 cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf) except 0:

@@ -1,13 +1,14 @@
 # This file is part of Xpra.
-# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
 
 from time import monotonic
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
+from xpra.codecs.constants import VideoSpec
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
@@ -57,44 +58,70 @@ cdef extern from "wels/codec_api.h":
                                 unsigned char** ppDst, SBufferInfo* pDstInfo) nogil
 
 
-COLORSPACES = {
+COLORSPACES : Dict[str, str] = {
     "YUV420P"   : "YUV420P",
-    }
+}
 
-def init_module():
+def init_module() -> None:
     log("openh264.init_module()")
 
-def cleanup_module():
+def cleanup_module() -> None:
     log("openh264.cleanup_module()")
 
-def get_version():
+def get_version() -> Tuple[int, int, int]:
     cdef OpenH264Version version
     WelsGetCodecVersionEx(&version)
     return (version.uMajor, version.uMinor, version.uRevision)
 
-def get_type():
+
+def get_type() -> str:
     return "openh264"
 
-def get_info():
+
+def get_info() -> Dict[str, Any]:
     return {
         "version"   : get_version(),
         "formats"   : tuple(COLORSPACES.keys()),
         }
 
-def get_encodings():
+
+def get_encodings() -> Tuple[str, ...]:
     return ("h264", )
 
-def get_min_size(encoding):
+
+def get_min_size(encoding) -> Tuple[int, int]:
     return 32, 32
 
-def get_input_colorspaces(encoding):
+
+def get_input_colorspaces(encoding: str) -> Tuple[str, ...]:
     assert encoding in get_encodings()
     return tuple(COLORSPACES.keys())
 
-def get_output_colorspace(encoding, input_colorspace):
+
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Tuple[str, ...]:
     assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
-    return input_colorspace
+    return (input_colorspace, )
+
+
+MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
+
+
+def get_specs(encoding, colorspace) -> tuple[VideoSpec, ...]:
+    assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
+    assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
+    #we can handle high quality and any speed
+    #setup cost is moderate (about 10ms)
+    return (
+        VideoSpec(
+            encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_output_colorspaces(encoding, colorspace),
+            has_lossless_mode=False,
+            codec_class=Decoder, codec_type=get_type(),
+            quality=40, speed=20,
+            size_efficiency=40,
+            setup_cost=30, width_mask=0xFFFE, height_mask=0xFFFE,
+            max_w=MAX_WIDTH, max_h=MAX_HEIGHT),
+        )
 
 
 cdef class Decoder:

@@ -18,7 +18,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
-from xpra.codecs.video import getVideoHelper, VdictEntry
+from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
 from xpra.common import Gravity
 from xpra.log import Logger
 
@@ -57,7 +57,7 @@ def load_PIL_font():
 # ie:
 # CSC_OPTIONS = { "YUV420P" : {"RGBX" : [swscale.spec], "BGRX" : ...} }
 CSC_OPTIONS: dict[str, VdictEntry] = {}
-VIDEO_DECODERS: dict[str, Callable] = {}
+VIDEO_DECODERS: dict[str, VdictEntry] = {}
 _loaded_video = False
 
 
@@ -71,13 +71,7 @@ def load_video() -> None:
         CSC_OPTIONS[csc_in] = vh.get_csc_specs(csc_in)
     log("csc options: %s", CSC_OPTIONS)
     for encoding in vh.get_decodings():
-        specs = vh.get_decoder_specs(encoding)
-        for colorspace, decoders in specs.items():
-            assert decoders
-            # ouch, we should use scoring here!
-            # use the first one:
-            _, decoder_module = decoders[0]
-            VIDEO_DECODERS[encoding] = decoder_module
+        VIDEO_DECODERS[encoding] = vh.get_decoder_specs(encoding)
     log("video decoders: %s", VIDEO_DECODERS)
 
 
@@ -753,15 +747,12 @@ class WindowBackingBase:
             return "target height %i is out of range: maximum is %i", dst_height, spec.max_h
         return None
 
-    def paint_with_video_decoder(self, decoder_module, coding: str, img_data, x: int, y: int, width: int, height: int,
+    def paint_with_video_decoder(self, coding: str, img_data, x: int, y: int, width: int, height: int,
                                  options, callbacks: Iterable[Callable]):
-        if not decoder_module:
-            raise RuntimeError(f"decoder module not found for {coding}")
         dl = self._decoder_lock
         if dl is None:
             fire_paint_callbacks(callbacks, False, "no lock - retry")
             return
-        dectype = decoder_module.get_type()
         with dl:
             if self._backing is None:
                 message = f"window {self.wid} is already gone!"
@@ -770,10 +761,6 @@ class WindowBackingBase:
                 return
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             input_colorspace = options.strget("csc", "YUV420P")
-            decoder_colorspaces = decoder_module.get_input_colorspaces(coding)
-            if input_colorspace not in decoder_colorspaces:
-                raise RuntimeError(f"decoder {dectype} does not support {input_colorspace} for {coding}")
-
             vd = self._video_decoder
             if vd:
                 frame = options.intget("frame", -1)
@@ -792,16 +779,24 @@ class WindowBackingBase:
                     # this should only happen on encoder restart, which means this should be the first frame:
                     videolog.warn("Warning: colorspace unexpectedly changed from %s to %s",
                                   vd.get_colorspace(), input_colorspace)
-                    videolog.warn(f" decoding {coding} frame {frame} using {dectype}")
+                    videolog.warn(f" decoding {coding} frame {frame} using {vd.get_type()}")
                     self.do_clean_video_decoder()
             if self._video_decoder is None:
+                # find the best decoder type and instantiate it:
+                decoder_options: VdictEntry = VIDEO_DECODERS.get(coding, {})
+                if not decoder_options:
+                    raise RuntimeError(f"no video decoders for {coding!r}")
+                decoders_for_cs: list[CodecSpec] = decoder_options.get(input_colorspace, {})
+                if not decoders_for_cs:
+                    raise RuntimeError(f"no video decoders for {coding!r} and {input_colorspace!r}")
+                decoder_spec = decoders_for_cs[0]
                 videolog("paint_with_video_decoder: new %s%s",
-                         decoder_module.Decoder, (coding, enc_width, enc_height, input_colorspace))
+                         decoder_spec.codec_type, (coding, enc_width, enc_height, input_colorspace))
                 try:
-                    vd = decoder_module.Decoder()
+                    vd = decoder_spec.codec_class()
                     vd.init_context(coding, enc_width, enc_height, input_colorspace)
                 except Exception as e:
-                    log(f"failed to initialize decoder {dectype}: {e}")
+                    log(f"failed to initialize decoder {decoder_spec.codec_type}: {e}")
                     raise
                 self._video_decoder = vd
                 videolog("paint_with_video_decoder: info=%s", vd.get_info())
@@ -925,8 +920,7 @@ class WindowBackingBase:
                     rowstride = width * len(rgb_format)
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in VIDEO_DECODERS:
-                self.paint_with_video_decoder(VIDEO_DECODERS.get(coding),
-                                              coding,
+                self.paint_with_video_decoder(coding,
                                               img_data, x, y, width, height, options, callbacks)
             elif self.jpeg_decoder and coding == "jpeg":
                 self.paint_jpeg(img_data, x, y, width, height, options, callbacks)
