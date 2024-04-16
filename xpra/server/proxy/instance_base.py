@@ -627,6 +627,7 @@ class ProxyInstance:
         rgb_format = client_options.strget("rgb_format")
         enclog("proxy draw: encoding=%s, client_options=%s", encoding, client_options)
 
+        # noinspection PyShadowingNames
         def send_updated(packet: PacketType,
                          encoding: str,
                          compressed_data: Compressed | bytes,

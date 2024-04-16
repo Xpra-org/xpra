@@ -316,7 +316,7 @@ class ClientConnection(StubSourceMixin):
             have_more = packet is not None and bool(self.ordinary_packets or self.packet_queue)
         return packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more
 
-    def send(self, *parts : PacketElement, **kwargs):
+    def send(self, *parts: PacketElement, **kwargs):
         """ This method queues non-damage packets (higher priority) """
         synchronous = bool(kwargs.get("synchronous", True))
         will_have_more = bool(kwargs.get("will_have_more", not synchronous))

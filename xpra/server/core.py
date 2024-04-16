@@ -7,7 +7,6 @@
 
 import os
 import sys
-import enum
 import errno
 import socket
 import signal
@@ -17,6 +16,7 @@ from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Lock
+from types import FrameType
 from typing import Any
 from collections.abc import Callable
 
@@ -366,7 +366,7 @@ class ServerCore:
         raise NotImplementedError()
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
-        def os_signal(signum: enum.IntEnum, _frame=None):
+        def os_signal(signum: signal.Signals | int, _frame: FrameType | None=None):
             callback(signum)
 
         signal.signal(signal.SIGINT, os_signal)

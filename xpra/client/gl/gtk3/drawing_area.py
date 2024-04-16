@@ -23,6 +23,8 @@ class GLDrawingArea(GLWindowBackingBase):
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
         self.on_realize_cb: list[tuple[Callable, tuple[Any, ...]]] = []
+        self.window_context = None
+        self.context: GLContext | None = None
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):
@@ -33,7 +35,6 @@ class GLDrawingArea(GLWindowBackingBase):
 
     def init_gl_config(self) -> None:
         self.context = GLContext(self._alpha_enabled)  # pylint: disable=not-callable
-        self.window_context = None
 
     def is_double_buffered(self) -> bool:
         return self.context.is_double_buffered()

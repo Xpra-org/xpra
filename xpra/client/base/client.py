@@ -3,7 +3,7 @@
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-import enum
+
 import os
 import sys
 import uuid
@@ -263,7 +263,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def install_signal_handlers(self) -> None:
 
-        def os_signal(signum: enum.IntEnum, _frame: FrameType | None=None):
+        def os_signal(signum: int | signal.Signals, _frame: FrameType | None=None) -> None:
             if self.exit_code is None:
                 try:
                     stderr_print()

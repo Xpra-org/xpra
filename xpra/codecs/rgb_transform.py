@@ -82,6 +82,7 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
         if first_time(warning_key):
             log.warn(f"Warning: cannot convert {pixel_format!r} to one of: "+csv(rgb_formats))
         return False
+    assert Image
     input_format, target_format = target_rgb[0]
     start = monotonic()
     w = image.get_width()

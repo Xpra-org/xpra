@@ -409,6 +409,7 @@ GetKeyboardLayout.argtypes = [DWORD]
 GetKeyboardLayout.restype = HKL
 GetKeyboardLayoutList = user32.GetKeyboardLayoutList
 GetKeyboardLayoutList.restype = int
+# noinspection PyTypeChecker
 GetKeyboardLayoutList.argtypes = [c_int, POINTER(HANDLE * 32)]
 GetKeyboardLayoutName = user32.GetKeyboardLayoutNameA
 GetKeyboardLayoutName.restype = BOOL

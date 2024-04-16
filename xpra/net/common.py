@@ -51,7 +51,6 @@ PacketElement: TypeAlias = Union[
 
 try:
     from typing import Unpack
-
     PacketType: TypeAlias = tuple[str, Unpack[tuple[PacketElement, ...]]]
 except ImportError:  # pragma: no cover
     PacketType: TypeAlias = tuple[PacketElement, ...]

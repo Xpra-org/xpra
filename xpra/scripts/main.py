@@ -1731,7 +1731,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
                 # see if this is a redirection:
                 netlog = Logger("network")
                 line1 = peek_connection(conn)[1]
-                netlog(f"handle_new_connection({conn}) line1={line1!r}")
+                netlog.debug(f"handle_new_connection({conn}) line1={line1!r}")
                 if line1:
                     uri = bytestostr(line1)
                     for socktype in SOCKET_TYPES:
