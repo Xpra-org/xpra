@@ -598,7 +598,7 @@ def convert_doc_dir(src, dst, fmt="html", force=False):
             convert_doc(fsrc, fdst, fmt, force)
         elif fsrc.endswith(".png"):
             fdst = os.path.join(dst, x)
-            print(f"  {fsrc:<30} -> {fdst} (%s)" % oct(0o644))
+            print(f"  {fsrc:<50} -> {fdst} (%s)" % oct(0o644))
             os.makedirs(name=dst, mode=0o755, exist_ok=True)
             data = load_binary_file(fsrc)
             with open(fdst, "wb") as f:
@@ -1256,7 +1256,7 @@ def build_xpra_conf(install_dir: str):
                 else:
                     config_data = template
                 f_out.write(config_data)
-    convert_templates()
+    convert_templates(("conf.d", ))
 
 
 #*******************************************************************************
@@ -2024,6 +2024,7 @@ else:
 
                 def addconf(name, dst_name=None):
                     etc_xpra_files[name] = dst_name
+                addconf("xpra.conf")
                 if uinput_ENABLED:
                     addconf("xorg-uinput.conf")
                 if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
