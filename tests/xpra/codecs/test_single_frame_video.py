@@ -20,7 +20,7 @@ def main(files):
     avcodec = load_codec("dec_avcodec2")
     assert avcodec, "dec_avcodec is required"
     encoders = []
-    ENCODERS = os.environ.get("XPRA_ENCODERS", "enc_vpx,enc_x264,nvenc,enc_ffmpeg").split(",")
+    ENCODERS = os.environ.get("XPRA_ENCODERS", "enc_vpx,enc_x264,nvenc").split(",")
     for encoder in ENCODERS:
         enc = load_codec(encoder)
         if not enc:
