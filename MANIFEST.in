@@ -5,7 +5,6 @@ include xpra/buffers/xxh3.h
 include xpra/net/lz4/lz4_compat.h
 include xpra/x11/gtk3/gdk_x11_macros.c
 include xpra/x11/gtk3/gdk_x11_macros.h
-include xpra/codecs/evdi/evdi_compat.h
 include xpra/codecs/v4l2/video.h
 include xpra/platform/win32/setappid.cpp
 include xpra/platform/win32/setappid.h
