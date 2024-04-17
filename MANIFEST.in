@@ -22,6 +22,7 @@ recursive-include packaging/MSWindows *
 recursive-include packaging/rpm *
 global-include *.py *.txt *.pyx *.pxd
 global-exclude *~ \#* *.orig *.bak *.rej *.pxi
+prune venv
 prune build
 prune dist
 prune cache
