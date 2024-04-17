@@ -264,9 +264,9 @@ class VideoHelper:
         for x in ALL_CSC_MODULE_OPTIONS:
             cscm[x] = modstatus(get_csc_module_name(x), get_csc_modules(), self.csc_modules)
         d["gpu"] = {
-            "encodings": self.get_gpu_encodings(),
-            "csc": self.get_gpu_csc(),
-            "decodings": self.get_gpu_decodings(),
+            "encodings": tuple(self.get_gpu_encodings().keys()),
+            "csc": tuple(self.get_gpu_csc().keys()),
+            "decodings": tuple(self.get_gpu_decodings().keys()),
         }
         return d
 
@@ -284,7 +284,7 @@ class VideoHelper:
             self._initialized = True
         log("VideoHelper.init() done")
 
-    def get_gpu_options(self, codec_specs: Vdict) -> dict[str, list[str]]:
+    def get_gpu_options(self, codec_specs: Vdict) -> dict[str, list[CodecSpec]]:
         log(f"get_gpu_options({codec_specs})")
         gpu_fmts: dict[str, list[str]] = {}
         for in_fmt, vdict in codec_specs.items():
@@ -292,16 +292,16 @@ class VideoHelper:
                 log(f"get_gpu_options {out_fmt}: {codecs}")
                 for codec in codecs:
                     if codec.gpu_cost > codec.cpu_cost:
-                        gpu_fmts.setdefault(in_fmt, []).append(codec.codec_type)
+                        gpu_fmts.setdefault(in_fmt, []).append(codec)
         return gpu_fmts
 
-    def get_gpu_encodings(self) -> dict[str, list[str]]:
+    def get_gpu_encodings(self) -> dict[str, list[CodecSpec]]:
         return self.get_gpu_options(self._video_encoder_specs)
 
-    def get_gpu_csc(self) -> dict[str, list[str]]:
+    def get_gpu_csc(self) -> dict[str, list[CodecSpec]]:
         return self.get_gpu_options(self._csc_encoder_specs)
 
-    def get_gpu_decodings(self) -> dict[str, list[str]]:
+    def get_gpu_decodings(self) -> dict[str, list[CodecSpec]]:
         return self.get_gpu_options(self._video_decoder_specs)
 
     def get_encodings(self) -> tuple[str, ...]:

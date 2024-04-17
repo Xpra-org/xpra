@@ -192,6 +192,7 @@ class CaptureAndEncode(Capture):
         encoder = choose_encoder(elements)
         if not encoder:
             raise RuntimeError(f"no encoders found for {encoding!r}")
+        self.encoder = encoder
         options = typedict({
             "speed": 100,
             "quality": 100,

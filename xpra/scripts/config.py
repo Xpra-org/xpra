@@ -1182,7 +1182,7 @@ def get_defaults() -> dict[str, Any]:
         "remote-xpra"       : get_remote_run_xpra_scripts(),
         "encodings"         : ["all"],
         "proxy-video-encoders" : ["none"],
-        "video-encoders"    : ["all", "-gstreamer"],
+        "video-encoders"    : ["all"],
         "csc-modules"       : ["all"],
         "video-decoders"    : ["all"],
         "speaker-codec"     : [],

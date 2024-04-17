@@ -106,7 +106,8 @@ VIDEO_SKIP_EDGE = envbool("XPRA_VIDEO_SKIP_EDGE", False)
 SCROLL_MIN_PERCENT = max(1, min(100, envint("XPRA_SCROLL_MIN_PERCENT", 30)))
 MIN_SCROLL_IMAGE_SIZE = envint("XPRA_MIN_SCROLL_IMAGE_SIZE", 128)
 
-STREAM_MODE = os.environ.get("XPRA_STREAM_MODE", "")
+STREAM_MODE = os.environ.get("XPRA_STREAM_MODE", "auto")
+STREAM_CONTENT_TYPES = os.environ.get("XPRA_STREAM_CONTENT_TYPES", "desktop,video").split(",")
 GSTREAMER_X11_TIMEOUT = envint("XPRA_GSTREAMER_X11_TIMEOUT", 500)
 
 SAVE_VIDEO_PATH = os.environ.get("XPRA_SAVE_VIDEO_PATH", "")
@@ -207,6 +208,7 @@ class WindowVideoSource(WindowSource):
         self.encode_from_queue_due = 0
         self.scroll_data = None
         self.last_scroll_time = 0
+        self.stream_mode = STREAM_MODE
         self.gstreamer_pipeline = None
 
         self._csc_encoder = None
@@ -295,6 +297,7 @@ class WindowVideoSource(WindowSource):
             info["video_subregion"] = sri
         info["scaling"] = self.actual_scaling
         info["video-max-size"] = self.video_max_size
+        info["stream-mode"] = self.stream_mode
 
         def addcinfo(prefix, x):
             if not x:
@@ -446,19 +449,31 @@ class WindowVideoSource(WindowSource):
                     log(*msg_args)
                 log(" csc modes=%", self.full_csc_modes)
         self.common_video_encodings = preforder(set(self.video_encodings) & set(self.core_encodings))
-        log("update_encoding_selection: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
-            self.common_video_encodings, self._csc_encoder, self._video_encoder)
+        videolog("update_encoding_selection: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
+                 self.common_video_encodings, self._csc_encoder, self._video_encoder)
         if encoding in ("stream", "auto", "grayscale"):
             vh = self.video_helper
-            if encoding == "auto" and self.content_type in ("desktop", "video") and vh:
+            if encoding == "auto" and self.content_type in STREAM_CONTENT_TYPES and vh:
                 accel = vh.get_gpu_encodings()
                 common_accel = preforder(set(self.common_video_encodings) & set(accel.keys()))
-                log(f"gpu {accel=} - {common_accel=}")
+                videolog(f"gpu {accel=} - {common_accel=}")
                 if common_accel:
                     encoding = "stream"
+                    accel_types: set[str] = set()
+                    for gpu_encoding in common_accel:
+                        for accel_option in accel.get(gpu_encoding, ()):
+                            # 'gstreamer-vah264lpenc' -> 'gstreamer'
+                            accel_types.add(accel_option.codec_type.split("-", 1)[0])
+                    videolog(f"gpu encoder types: {accel_types}")
+                    self.stream_mode = STREAM_MODE
+                    # switch to GStreamer mode if all the GPU accelerated options require it:
+                    if self.stream_mode == "auto" and len(accel_types) == 1 and tuple(accel_types)[0] == "gstreamer":
+                        self.stream_mode = "gstreamer"
                     if first_time(f"gpu-stream-{self.wid}"):
-                        log.info(f"found gpu accelerated encodings: {csv(common_accel)}")
-                        log.info(f"switching to {encoding!r} encoding for {self.content_type!r} content type")
+                        videolog.info(f"found GPU accelerated encoders for: {csv(common_accel)}")
+                        videolog.info(f"switching to {encoding!r} encoding for {self.content_type!r} window {self.wid}")
+                        if self.stream_mode == "gstreamer":
+                            videolog.info("using 'gstreamer' stream mode")
         super().update_encoding_selection(encoding, exclude, init)
         self.supports_scrolling = "scroll" in self.common_encodings
 
@@ -631,7 +646,7 @@ class WindowVideoSource(WindowSource):
         return super().do_get_auto_encoding(ww, wh, options, current_encoding or self.encoding, encoding_options)
 
     def do_damage(self, ww: int, wh: int, x: int, y: int, w: int, h: int, options) -> None:
-        if ww >= 64 and wh >= 64 and self.encoding == "stream" and STREAM_MODE == "gstreamer" and self.common_video_encodings:  # noqa: E501
+        if ww >= 64 and wh >= 64 and self.encoding == "stream" and self.stream_mode == "gstreamer":
             # in this mode, we start a pipeline once
             # and let it submit packets, bypassing all the usual logic:
             if self.gstreamer_pipeline or self.start_gstreamer_pipeline():
@@ -697,13 +712,16 @@ class WindowVideoSource(WindowSource):
         gstlog(f"new_gstreamer_frame: {coding}")
         if not self.window.is_managed():
             return
-
-        # ensures that more damage events will be emitted:
-        def continue_damage():
-            self.ui_thread_check()
-            self.window.acknowledge_changes()
+        gp = self.gstreamer_pipeline
+        if gp and (LOG_ENCODERS or compresslog.is_debug_enabled()):
+            client_info["encoder"] = gp.encoder
         self.direct_queue_draw(coding, data, client_info)
-        self.idle_add(continue_damage)
+        self.idle_add(self.gstreamer_continue_damage)
+
+    def gstreamer_continue_damage(self) -> None:
+        # ensures that more damage events will be emitted
+        self.ui_thread_check()
+        self.window.acknowledge_changes()
 
     def update_window_dimensions(self, ww, wh):
         super().update_window_dimensions(ww, wh)
