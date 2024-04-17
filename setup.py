@@ -1981,10 +1981,8 @@ else:
             def copytodir(src, dst_dir, dst_name="", chmod=0o644, subs=None):
                 # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
                 # convert absolute paths:
-                if dst_dir.startswith("/"):
-                    dst_dir = root_prefix.rstrip("/")+"/"+dst_dir
-                else:
-                    dst_dir = install_dir.rstrip("/")+"/"+dst_dir
+                dst_prefix = root_prefix if dst_dir.startswith("/") else install_dir
+                dst_dir = dst_prefix.rstrip("/")+"/"+dst_dir.lstrip("/")
                 # make sure the target directory exists:
                 self.mkpath(dst_dir)
                 # generate the target filename:
