@@ -1,8 +1,6 @@
 include COPYING README.md
 include xpra/buffers/memalign.h
 include xpra/buffers/memalign.c
-include xpra/buffers/xxhash.h
-include xpra/buffers/xxhash.c
 include xpra/buffers/xxh3.h
 include xpra/net/lz4/lz4_compat.h
 include xpra/x11/gtk3/gdk_x11_macros.c
