@@ -423,7 +423,7 @@ class WindowVideoSource(WindowSource):
         if encoder_name != "nvjpeg" and encoding in EDGE_ENCODING_ORDER:
             self.video_fallback_encodings.setdefault(encoding, []).insert(0, encode_fn)
 
-    def update_encoding_selection(self, encoding=None, exclude=None, init=False) -> None:
+    def update_encoding_selection(self, encoding="", exclude=None, init=False) -> None:
         # override so we don't use encodings that don't have valid csc modes:
         log("wvs.update_encoding_selection(%s, %s, %s) full_csc_modes=%s", encoding, exclude, init, self.full_csc_modes)
         if exclude is None:
@@ -449,14 +449,16 @@ class WindowVideoSource(WindowSource):
         log("update_encoding_selection: common_video_encodings=%s, csc_encoder=%s, video_encoder=%s",
             self.common_video_encodings, self._csc_encoder, self._video_encoder)
         if encoding in ("stream", "auto", "grayscale"):
-            if encoding == "auto" and self.content_type in ("desktop", "video"):
-                vh = self.video_helper
-                if vh:
-                    accel = vh.get_gpu_encodings()
-                    if accel:
-                        encoding = "stream"
-                        log.info(f"found gpu accelerated encodings: {csv(accel)}")
-                        log.info(f"switching to {encoding!r} encoding for {self.content_type!r}")
+            vh = self.video_helper
+            if encoding == "auto" and self.content_type in ("desktop", "video") and vh:
+                accel = vh.get_gpu_encodings()
+                common_accel = preforder(set(self.common_video_encodings) & set(accel.keys()))
+                log(f"gpu {accel=} - {common_accel=}")
+                if common_accel:
+                    encoding = "stream"
+                    if first_time(f"gpu-stream-{self.wid}"):
+                        log.info(f"found gpu accelerated encodings: {csv(common_accel)}")
+                        log.info(f"switching to {encoding!r} encoding for {self.content_type!r} content type")
         super().update_encoding_selection(encoding, exclude, init)
         self.supports_scrolling = "scroll" in self.common_encodings
 

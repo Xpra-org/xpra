@@ -868,7 +868,7 @@ class WindowSource(WindowIconSource):
         self.statistics.reset()
         self.update_encoding_selection(encoding)
 
-    def update_encoding_selection(self, encoding=None, exclude=(), init:bool=False) -> None:
+    def update_encoding_selection(self, encoding="", exclude=(), init:bool=False) -> None:
         # now we have the real list of encodings we can use:
         # "rgb32" and "rgb24" encodings are both aliased to "rgb"
         if self._mmap_size > 0 and self.encoding!="grayscale":
@@ -891,7 +891,7 @@ class WindowSource(WindowIconSource):
             log.info(f"cannot select {encoding}, using {self.encoding} instead")
         log("ws.update_encoding_selection(%s, %s, %s) encoding=%s, common encodings=%s",
             encoding, exclude, init, self.encoding, self.common_encodings)
-        assert self.encoding is not None
+        assert self.encoding
         # auto-refresh:
         if self.client_refresh_encodings:
             # client supplied list, honour it:
