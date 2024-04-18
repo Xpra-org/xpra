@@ -1337,7 +1337,6 @@ def clean():
         "xpra/util/rectangle.c",
         "xpra/server/window/motion.c",
         "xpra/server/pam.c",
-        "fs/etc/xpra/xpra.conf",
         # special case for the generated xpra conf files in build (see # 891):
         "build/etc/xpra/xpra.conf",
     ] + glob("build/etc/xpra/conf.d/*.conf")
@@ -1934,8 +1933,8 @@ else:
         add_data_files(f"share/{icons_dir}", glob("fs/share/icons/*.png"))
         add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
 
-    # here, we override build and install,
-    # so we can generate our `/etc/xpra/xpra.conf`:
+    # here, we override build and install so we can
+    # generate /etc/xpra/conf.d/*.conf
     class build_override(build):
         def run(self):
             build.run(self)
@@ -2012,25 +2011,28 @@ else:
                     lib_cups = "libexec/cups"
                 copytodir("fs/lib/cups/backend/xpraforwarder", f"{lib_cups}/backend", chmod=0o700)
 
+            etc_xpra_files = {}
+
+            def addconf(name, dst_name=None):
+                etc_xpra_files[name] = dst_name
+
+            addconf("xpra.conf")
+            if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
+                addconf("cuda.conf")
+            if nvenc_ENABLED:
+                addconf("nvenc.keys")
+            if nvfbc_ENABLED:
+                addconf("nvfbc.keys")
+
             if x11_ENABLED:
                 # install xpra_Xdummy if we need it:
                 xvfb_command = detect_xorg_setup()
                 if any(x.find("xpra_Xdummy")>=0 for x in (xvfb_command or [])) or Xdummy_wrapper_ENABLED is True:
                     copytodir("fs/bin/xpra_Xdummy", "bin", chmod=0o755)
                 # install xorg*.conf, cuda.conf and nvenc.keys:
-                etc_xpra_files = {}
 
-                def addconf(name, dst_name=None):
-                    etc_xpra_files[name] = dst_name
-                addconf("xpra.conf")
                 if uinput_ENABLED:
                     addconf("xorg-uinput.conf")
-                if nvenc_ENABLED or nvdec_ENABLED or nvfbc_ENABLED:
-                    addconf("cuda.conf")
-                if nvenc_ENABLED:
-                    addconf("nvenc.keys")
-                if nvfbc_ENABLED:
-                    addconf("nvfbc.keys")
                 addconf("xorg.conf")
                 for src, dst_name in etc_xpra_files.items():
                     copytodir(f"fs/etc/xpra/{src}", "/etc/xpra", dst_name=dst_name)
