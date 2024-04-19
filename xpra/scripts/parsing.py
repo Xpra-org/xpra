@@ -910,7 +910,7 @@ def do_parse_cmdline(cmdline, defaults):
         # Display:
         defaults.dpi = 96
         defaults.pixel_depth = 24
-        defaults.sync_xvfb = False
+        defaults.sync_xvfb = 0
         options, args = parse_command_line(cmdline[1:], defaults)
 
     # process "help" arguments early:
@@ -959,7 +959,10 @@ def do_parse_cmdline(cmdline, defaults):
 
     fixup_options(options)
 
-    options.sync_xvfb = str_to_bool(options.sync_xvfb, False)
+    try:
+        options.sync_xvfb = int(options.sync_xvfb)
+    except ValueError:
+        options.sync_xvfb = 0
     options.dpi = parse_number(int, "dpi", options.dpi, 96)
 
     if options.min_size:

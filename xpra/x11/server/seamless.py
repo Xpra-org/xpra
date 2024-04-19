@@ -82,7 +82,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
     def __init__(self, clobber):
         self.clobber = clobber
-        self.root_overlay = None
+        self.root_overlay = 0
         self.repaint_root_overlay_timer = 0
         self.configure_damage_timers: dict[int, int] = {}
         self._tray = None
@@ -161,10 +161,11 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         try:
             with xsync:
                 self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
+                log("init_root_overlay() root_overlay=%#x", self.root_overlay)
                 if self.root_overlay:
-                    xid = self.root_overlay.get_xid()
-                    prop_set(xid, "WM_TITLE", "latin1", "RootOverlay")
+                    prop_set(self.root_overlay, "WM_TITLE", "latin1", "RootOverlay")
                     X11Window.AllowInputPassthrough(self.root_overlay)
+                    log("init_root_overlay() done AllowInputPassthrough(%#x)", self.root_overlay)
         except Exception as e:
             log("XCompositeGetOverlayWindow(%#x)", xid, exc_info=True)
             log.error("Error setting up xvfb synchronization:")
@@ -174,7 +175,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def release_root_overlay(self) -> None:
         ro = self.root_overlay
         if ro:
-            self.root_overlay = None
+            self.root_overlay = 0
             with xswallow:
                 X11Window.XCompositeReleaseOverlayWindow(ro)
 
@@ -579,7 +580,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, xid: int) -> None:
-        if self.root_overlay and self.root_overlay.get_xid() == xid:
+        if self.root_overlay and self.root_overlay == xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
         gdk_window = get_pywindow(xid)
