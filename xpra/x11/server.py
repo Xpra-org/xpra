@@ -588,7 +588,7 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.damage(wid, window, 0, 0, nw, nh)
 
     def _add_new_or_window(self, xid:int) -> None:
-        if self.root_overlay and self.root_overlay)==xid:
+        if self.root_overlay and self.root_overlay==xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
         gdk_window = get_pywindow(xid)
