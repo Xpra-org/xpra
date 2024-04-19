@@ -1779,7 +1779,11 @@ When unspecified, all the available codecs are allowed and the first one is used
 
     fixup_options(options)
 
-    options.sync_xvfb = parse_bool("sync-xvfb", options.sync_xvfb)
+    if options.sync_xvfb is not None:
+        try:
+            options.sync_xvfb = int(options.sync_xvfb)
+        except ValueError:
+            options.sync_xvfb = 0
     options.dpi = parse_number(int, "dpi", options.dpi, 96)
 
     def parse_window_size(v, attribute="max-size"):
