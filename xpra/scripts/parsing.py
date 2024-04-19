@@ -959,10 +959,11 @@ def do_parse_cmdline(cmdline, defaults):
 
     fixup_options(options)
 
-    try:
-        options.sync_xvfb = int(options.sync_xvfb)
-    except ValueError:
-        options.sync_xvfb = 0
+    if options.sync_xvfb is not None:
+        try:
+            options.sync_xvfb = int(options.sync_xvfb)
+        except ValueError:
+            options.sync_xvfb = 0
     options.dpi = parse_number(int, "dpi", options.dpi, 96)
 
     if options.min_size:
