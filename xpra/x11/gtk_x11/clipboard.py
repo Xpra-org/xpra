@@ -127,7 +127,7 @@ class X11Clipboard(ClipboardTimeoutHelper, gobject.GObject):
         if w:
             self.window = None
             remove_event_receiver(w, self)
-            w.destroy()
+            w.hide()
 
     def cleanup(self):
         if self.x11_filter:
