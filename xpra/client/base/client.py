@@ -174,8 +174,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if pp.poll() is not None:
             self.progress_process = None
             return
-        noerr(pp.stdin.write, f"{pct}:{text}\n".encode("latin1"))
-        noerr(pp.stdin.flush)
+        stdin = pp.stdin
+        if stdin:
+            noerr(stdin.write, f"{pct}:{text}\n".encode("latin1"))
+            noerr(stdin.flush)
         if pct == 100:
             # it should exit on its own, but just in case:
             # kill it if it's still running after 2 seconds
