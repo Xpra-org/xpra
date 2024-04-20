@@ -171,7 +171,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         pp = self.progress_process
         if not pp:
             return
-        if pp.poll():
+        if pp.poll() is not None:
             self.progress_process = None
             return
         noerr(pp.stdin.write, f"{pct}:{text}\n".encode("latin1"))
