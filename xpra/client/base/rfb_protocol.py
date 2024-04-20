@@ -33,7 +33,7 @@ class RFBClientProtocol(RFBProtocol):
         self.send_lock = RLock()
         super().__init__(scheduler, conn, process_packet_cb)
 
-    def source_has_more(self):
+    def source_has_more(self) -> None:
         log("source_has_more()")
         if not self.send_lock.acquire(False):
             return
@@ -57,13 +57,13 @@ class RFBClientProtocol(RFBProtocol):
         finally:
             self.send_lock.release()
 
-    def check_wid(self, wid):
+    def check_wid(self, wid) -> bool:
         if wid != WID:
             log("ignoring pointer movement outside the VNC window")
             return False
         return True
 
-    def send_pointer_position(self, packet):
+    def send_pointer_position(self, packet) -> None:
         log("send_pointer_position(%s)", packet)
         # ['pointer-position', 1, (3348, 582), ['mod2'], []]
         if not self.check_wid(packet[1]):
@@ -77,7 +77,7 @@ class RFBClientProtocol(RFBProtocol):
                 button_mask |= 2 ** i
         self.do_send_pointer_event(button_mask, x, y)
 
-    def send_button_action(self, packet):
+    def send_button_action(self, packet) -> None:
         log("send_button_action(%s)", packet)
         if not self.check_wid(packet[1]):
             return
@@ -96,12 +96,12 @@ class RFBClientProtocol(RFBProtocol):
                     button_mask |= 2 ** i
         self.do_send_pointer_event(button_mask, x, y)
 
-    def do_send_pointer_event(self, button_mask, x, y):
+    def do_send_pointer_event(self, button_mask, x, y) -> None:
         # adjust for window position:
         wx, wy = self.position
         self.send_struct(b"!BBHH", RFBClientMessage.PointerEvent, button_mask, x - wx, y - wy)
 
-    def send_key_action(self, packet):
+    def send_key_action(self, packet) -> None:
         log("send_key_action(%s)", packet)
         if not self.check_wid(packet[1]):
             return
@@ -117,7 +117,7 @@ class RFBClientProtocol(RFBProtocol):
         pressed = packet[3]
         self.send_struct(b"!BBHI", RFBClientMessage.KeyEvent, pressed, 0, keysym)
 
-    def track_window(self, packet):
+    def track_window(self, packet) -> None:
         log("track_window(%s)", packet)
         if not self.check_wid(packet[1]):
             return
@@ -143,12 +143,12 @@ class RFBClientProtocol(RFBProtocol):
         #     'encoding.scrolling': True},
         #     0, {}, False, 1, (4582, 1055), ['mod2']))
 
-    def handshake_complete(self):
+    def handshake_complete(self) -> None:
         log.info("RFB connected to %s", self._conn.target)
         self._packet_parser = self._parse_security_handshake
         self.send_protocol_handshake()
 
-    def _parse_security_handshake(self, packet):
+    def _parse_security_handshake(self, packet) -> int:
         log("parse_security_handshake(%s)", hexstr(packet))
         n = struct.unpack(b"B", packet[:1])[0]
         if n == 0:
@@ -176,7 +176,7 @@ class RFBClientProtocol(RFBProtocol):
         self.send_struct(b"B", auth_type)
         return 1 + n
 
-    def _parse_vnc_security_challenge(self, packet):
+    def _parse_vnc_security_challenge(self, packet) -> int:
         if len(packet) < 16:
             return 0
         challenge = packet[:16]
@@ -189,13 +189,13 @@ class RFBClientProtocol(RFBProtocol):
         self._process_packet_cb(self, ["challenge", challenge, auth_caps, "des", "none"])
         return 16
 
-    def send_challenge_reply(self, challenge_response):
+    def send_challenge_reply(self, challenge_response) -> None:
         log("send_challenge_reply(%s)", challenge_response)
         self._packet_parser = self._parse_security_result
         import binascii  # pylint: disable=import-outside-toplevel
         self.send(binascii.unhexlify(challenge_response))
 
-    def _parse_security_result(self, packet):
+    def _parse_security_result(self, packet) -> int:
         if len(packet) < 4:
             return 0
         r = struct.unpack(b"I", packet[:4])[0]
@@ -208,7 +208,7 @@ class RFBClientProtocol(RFBProtocol):
         self.send_struct(b"B", bool(share))
         return 4
 
-    def _parse_client_init(self, packet):
+    def _parse_client_init(self, packet) -> int:
         log("_parse_client_init(%s)", packet)
         ci_size = struct.calcsize(CLIENT_INIT)
         if len(packet) < ci_size:
@@ -257,20 +257,20 @@ class RFBClientProtocol(RFBProtocol):
 
         # self.send_refresh_request(0, 0, 0, w, h)
 
-        def request_refresh():
+        def request_refresh() -> bool:
             self.send_refresh_request(0, 0, 0, w, h)
             return True
 
         self.timeout_add(1000, request_refresh)
         return ci_size + name_size
 
-    def send_set_encodings(self):
+    def send_set_encodings(self) -> None:
         self.send_struct("!BBHi", RFBClientMessage.SetEncodings, 0, 1, RFBEncoding.RAW)
 
-    def send_refresh_request(self, incremental, x, y, w, h):
+    def send_refresh_request(self, incremental, x, y, w, h) -> None:
         self.send_struct("!BBHHHH", RFBClientMessage.FramebufferUpdateRequest, incremental, x, y, w, h)
 
-    def _parse_rfb_packet(self, packet):
+    def _parse_rfb_packet(self, packet) -> int:
         log("parse_rfb_packet(%s)", repr_ellipsized(packet))
         if len(packet) <= 4:
             return 0
@@ -283,7 +283,7 @@ class RFBClientProtocol(RFBProtocol):
             self._packet_parser = self._parse_rectangle
         return 4
 
-    def _parse_rectangle(self, packet):
+    def _parse_rectangle(self, packet) -> int:
         header_size = struct.calcsize(b"!HHHHi")
         if len(packet) <= header_size:
             return 0
@@ -302,6 +302,6 @@ class RFBClientProtocol(RFBProtocol):
             self._packet_parser = self._parse_rfb_packet
         return header_size + w * h * 4
 
-    def send_struct(self, fmt, *args):
+    def send_struct(self, fmt, *args) -> None:
         packet = struct.pack(fmt, *args)
         self.send(packet)

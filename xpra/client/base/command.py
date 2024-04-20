@@ -27,7 +27,7 @@ log = Logger("gobject", "client")
 GLib = gi_import("GLib")
 
 
-def errwrite(msg):
+def errwrite(msg) -> None:
     stderr_print(msg)
 
 
@@ -158,7 +158,7 @@ class ScreenshotXpraClient(CommandConnectClient):
         super().__init__(opts)
         self.hello_extra["request"] = "screenshot"
 
-    def timeout(self, *_args):
+    def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the screenshot")
 
     def _process_screenshot(self, packet: PacketType) -> None:
@@ -200,7 +200,7 @@ class InfoXpraClient(CommandConnectClient):
             self.quit(ExitCode.NO_DATA)
             return
 
-        def print_fn(s):
+        def print_fn(s) -> None:
             sys.stdout.write(f"{s}\n")
 
         def prettify(k, v) -> str:
@@ -275,7 +275,7 @@ class ConnectTestXpraClient(CommandConnectClient):
         }
         self.hello_extra.update(kwargs)
 
-    def timeout(self, *_args):
+    def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: no server response")
 
     def _process_connection_lost(self, _packet: PacketType) -> None:
@@ -307,7 +307,7 @@ class MonitorXpraClient(SendCommandConnectClient):
             self.hello_extra.setdefault("wants", []).append(x)
         self.hello_extra["request"] = "event"
 
-    def timeout(self, *args):
+    def timeout(self, *args) -> None:
         pass
         # self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the info")
 
@@ -424,7 +424,7 @@ class ShellXpraClient(SendCommandConnectClient):
         self.stdin_buffer = ""
         self.hello_extra["shell"] = "True"
 
-    def timeout(self, *args):
+    def timeout(self, *args) -> None:
         """
         The shell client never times out,
         but the superclass calls this method automatically,
@@ -567,7 +567,7 @@ class PrintClient(SendCommandConnectClient):
     """ Allows us to send a file to the server for printing.
     """
 
-    def set_command_args(self, command):
+    def set_command_args(self, command) -> None:
         log("set_command_args(%s)", command)
         self.filename = command[0]
         # print command arguments:

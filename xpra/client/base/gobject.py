@@ -32,7 +32,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         GObject.GObject.__init__(self)
         XpraClientBase.__init__(self)
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         XpraClientBase.init(self, opts)
         self.glib_init()
 

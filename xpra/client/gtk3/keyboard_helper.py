@@ -30,7 +30,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         if self._keymap:
             self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
 
-    def next_layout(self, update_platform_layout):
+    def next_layout(self, update_platform_layout) -> None:
         log(f"next_layout(update_platform_layout={update_platform_layout})")
         if self.layout_option not in self.layouts_option:
             log("no layout change; use --keyboard-layout/--keyboard-layouts to specify the layouts order")
@@ -48,7 +48,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             log("updating the platform layout to %s", self.layout_option)
             self.set_platform_layout(self.layout_option)
 
-    def keymap_changed(self, *args):
+    def keymap_changed(self, *args) -> None:
         log("keymap_changed%s", args)
         if self._keymap_change_handler_id:
             self._keymap.disconnect(self._keymap_change_handler_id)
@@ -77,7 +77,7 @@ class GTKKeyboardHelper(KeyboardHelper):
 
         GLib.timeout_add(500, do_keys_changed)
 
-    def update(self):
+    def update(self) -> bool:
         old_hash = self.hash
         super().update()
         if is_X11():
@@ -89,7 +89,7 @@ class GTKKeyboardHelper(KeyboardHelper):
     def get_full_keymap(self) -> tuple[tuple[int, str, int, int, int], ...]:
         return get_gtk_keymap()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         super().cleanup()
         if self._keymap_change_handler_id:
             try:

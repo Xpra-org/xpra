@@ -18,7 +18,7 @@ def get_remote_lib_versions(c: typedict,
                                 "sound.gst", "audio.gst",
                                 "python",
                             )
-                            ):
+                            ) -> dict:
     versions = {}
     for x in libs:
         v = c.get("%s.version" % x, None)

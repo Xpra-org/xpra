@@ -17,7 +17,7 @@ from xpra.util.str_fn import std, csv, bytestostr
 from xpra.util.env import envint
 from xpra.os_util import get_machine_id, POSIX
 from xpra.util.system import platform_name, SIGNAMES
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.thread import start_thread
 from xpra.client.base.command import InfoTimerClient
 from xpra.platform.dotxpra import DotXpra
@@ -44,7 +44,7 @@ SIGNAL_KEYS = {
 }
 
 
-def get_title():
+def get_title() -> str:
     return f"Xpra top {full_version_str()}"
 
 
@@ -75,7 +75,7 @@ def curses_clean(stdscr):
     curses.endwin()
 
 
-def curses_err(stdscr, e):
+def curses_err(stdscr, e) -> None:
     if CURSES_LOG:
         with open(CURSES_LOG, "ab") as f:
             f.write(b"%s\n" % e)
@@ -89,7 +89,7 @@ def curses_err(stdscr, e):
             pass
 
 
-def box(stdscr, x: int, y: int, w: int, h: int, ul, ur, ll, lr):
+def box(stdscr, x: int, y: int, w: int, h: int, ul, ur, ll, lr) -> None:
     stdscr.hline(y, x, curses.ACS_HLINE, w - 1)  # @UndefinedVariable
     stdscr.hline(y + h - 1, x, curses.ACS_HLINE, w - 1)  # @UndefinedVariable
     stdscr.vline(y, x, curses.ACS_VLINE, h)  # @UndefinedVariable
@@ -172,13 +172,13 @@ class TopClient:
         self.last_getch = 0
         self.psprocess = {}
 
-    def run(self):
+    def run(self) -> ExitValue:
         self.setup()
         for signum in (signal.SIGINT, signal.SIGTERM):
             signal.signal(signum, self.signal_handler)
         self.update_loop()
         self.cleanup()
-        return self.exit_code
+        return self.exit_code or 0
 
     def signal_handler(self, signum, *_args):
         self.exit_code = 128 + signum
@@ -260,7 +260,7 @@ class TopClient:
         except Exception:
             return None
 
-    def update_screen(self):
+    def update_screen(self) -> bool:
         self.stdscr.erase()
         try:
             self.do_update_screen()
@@ -268,7 +268,7 @@ class TopClient:
             self.stdscr.refresh()
         return True
 
-    def do_update_screen(self):
+    def do_update_screen(self) -> None:
         # c = self.stdscr.getch()
         # if c==curses.KEY_RESIZE:
         height, width = self.stdscr.getmaxyx()
@@ -326,7 +326,7 @@ class TopClient:
         except Exception as e:
             curses_err(self.stdscr, e)
 
-    def get_display_info(self, display, state_paths):
+    def get_display_info(self, display, state_paths) -> list[str]:
         info = [display]
         valid_path = None
         for state, path in state_paths:
@@ -377,7 +377,7 @@ class TopClient:
                         pass
         return info
 
-    def box(self, x: int, y: int, w: int, h: int, open_top=False, open_bottom=False):
+    def box(self, x: int, y: int, w: int, h: int, open_top=False, open_bottom=False) -> None:
         if open_top:
             ul = curses.ACS_LTEE
             ur = curses.ACS_RTEE
@@ -406,17 +406,17 @@ class TopSessionClient(InfoTimerClient):
         self.psprocess = {}
         start_thread(self.input_thread, "input-thread", daemon=True)
 
-    def client_type(self):
+    def client_type(self) -> str:
         return "top"
 
-    def server_connection_established(self, caps):
+    def server_connection_established(self, caps) -> bool:
         self.log(f"server_connection_established({caps!r})")
         self.log("traceback: " + str(traceback.extract_stack()))
         self.setup()
         self.update_screen()
         return super().server_connection_established(caps)
 
-    def setup(self):
+    def setup(self) -> None:
         if self.stdscr is None:
             self.stdscr = curses_init()
         try:
@@ -425,20 +425,20 @@ class TopSessionClient(InfoTimerClient):
         except Exception as e:
             self.log(f"failed to configure curses: {e}")
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         super().cleanup()
         curses_clean(self.stdscr)
         self.stdscr = None
         self.close_log()
 
-    def close_log(self):
+    def close_log(self) -> None:
         log_file = self.log_file
         if log_file:
             self.log("closing log")
             self.log_file = None
             log_file.close()
 
-    def log(self, message):
+    def log(self, message) -> None:
         lf = self.log_file
         if lf:
             now = datetime.now()
@@ -448,7 +448,7 @@ class TopSessionClient(InfoTimerClient):
             noerr(lf.write, (now.strftime("%Y/%m/%d %H:%M:%S.%f") + " " + message + "\n").encode())
             noerr(lf.flush)
 
-    def err(self, e):
+    def err(self, e) -> None:
         lf = self.log_file
         if lf:
             noerr(lf.write, b"%s\n" % e)
@@ -456,22 +456,22 @@ class TopSessionClient(InfoTimerClient):
         else:
             curses_err(self.stdscr, e)
 
-    def dictwarn(self, msg: str, *args):
+    def dictwarn(self, msg: str, *args) -> None:
         try:
             self.log(msg % (args,))
         except Exception as e:
             self.log(f"error logging message: {e}")
 
-    def td(self, d):
+    def td(self, d) -> typedict:
         d = typedict(d)
         # override warning method so that we don't corrupt the curses output
         d.warn = self.dictwarn
         return d
 
-    def update_screen(self):
+    def update_screen(self) -> None:
         self.modified = True
 
-    def input_thread(self):
+    def input_thread(self) -> None:
         self.log(f"input thread: signal handlers={signal.getsignal(signal.SIGINT)}")
         while self.exit_code is None:
             if not self.stdscr:
@@ -506,7 +506,7 @@ class TopSessionClient(InfoTimerClient):
             if v in PAUSE_KEYS:
                 self.paused = not self.paused
 
-    def do_update_screen(self):
+    def do_update_screen(self) -> None:
         self.log("do_update_screen()")
         # c = self.stdscr.getch()
         # if c==curses.KEY_RESIZE:
@@ -783,7 +783,7 @@ class TopSessionClient(InfoTimerClient):
         ]
         return tuple((s, c) for s, c in str_color if s)
 
-    def _audio_info(self, ci, mode="speaker"):
+    def _audio_info(self, ci, mode="speaker") -> str:
         minfo = self.dictget(ci, "audio", mode) or self.dictget(ci, "sound", mode)
         if not minfo:
             return f"{mode} off"
@@ -795,7 +795,7 @@ class TopSessionClient(InfoTimerClient):
             audio_info += f" {std_unit(bitrate)}bps"
         return audio_info
 
-    def _avsync_info(self, ci):
+    def _avsync_info(self, ci) -> str:
         avsf = self.slidictget("features", "av-sync")
         if not avsf or not avsf.boolget("", False):
             return "av-sync: not supported by server"
@@ -807,7 +807,7 @@ class TopSessionClient(InfoTimerClient):
             return "av-sync: disabled by client"
         return "av-sync: enabled - video delay: %ims" % (avsi.intget("total", 0))
 
-    def get_gl_info(self, gli):
+    def get_gl_info(self, gli) -> str:
         if not gli:
             return None
         gli = self.td(gli)
@@ -833,7 +833,7 @@ class TopSessionClient(InfoTimerClient):
             gl_info += " - " + strget("display_mode", ", ")
         return gl_info
 
-    def box(self, x, y, w, h):
+    def box(self, x, y, w, h) -> None:
         box(self.stdscr, x, y, w, h,
             ul=curses.ACS_ULCORNER, ur=curses.ACS_URCORNER,  # @UndefinedVariable
             ll=curses.ACS_LLCORNER, lr=curses.ACS_LRCORNER)  # @UndefinedVariable
