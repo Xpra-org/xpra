@@ -809,7 +809,7 @@ class TopSessionClient(InfoTimerClient):
 
     def get_gl_info(self, gli) -> str:
         if not gli:
-            return None
+            return ""
         gli = self.td(gli)
 
         def strget(key, sep="."):
