@@ -238,7 +238,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     wininfo.append(f"pid={pid}")
         title = self.get_wintitle(xid)
         if title:
-            wininfo.insert(0, title)
+            wininfo.insert(0, repr(title))
             return wininfo
         while xid:
             title = self.get_wintitle(xid)
