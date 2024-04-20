@@ -24,7 +24,7 @@ def get_name():
         buf = ctypes.create_string_buffer(max_len + 1)
         if not GetUserNameA(ctypes.byref(buf), ctypes.byref(size)):
             raise ctypes.WinError(ctypes.get_last_error())
-        return buf.value
+        return buf.value[:size.value].decode()
     except:
         return os.environ.get("USERNAME", "")
 
