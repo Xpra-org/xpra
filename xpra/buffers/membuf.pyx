@@ -38,7 +38,7 @@ cdef extern from "xxhash.h":
     XXH64_hash_t XXH3_64bits(const void* data, size_t len) nogil
 
 
-cdef void free_buf(const void *p, size_t l, void *arg):
+cdef void free_buf(const void *p, size_t l, void *arg) noexcept nogil:
     free(<void *>p)
 
 cdef MemBuf getbuf(size_t l):
@@ -56,7 +56,7 @@ cdef MemBuf makebuf(void *p, size_t l):
     return MemBuf_init(p, l, &free_buf, NULL)
 
 
-cdef void *memalign(size_t size) nogil:
+cdef void *memalign(size_t size) noexcept nogil:
     return xmemalign(size)
 
 

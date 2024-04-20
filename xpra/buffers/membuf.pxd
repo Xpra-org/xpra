@@ -14,7 +14,7 @@ cdef MemBuf makebuf(void *p, size_t l)
 ctypedef void dealloc_callback(const void *p, size_t l, void *arg)
 
 
-cdef void *memalign(size_t size) nogil
+cdef void *memalign(size_t size) noexcept nogil
 
 
 cdef object memory_as_pybuffer(void* ptr, Py_ssize_t buf_len, int readonly)
