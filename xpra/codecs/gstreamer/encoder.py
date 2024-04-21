@@ -98,7 +98,7 @@ def make_spec(element: str, encoding: str, cs_in: str, css_out: tuple[str, ...],
 SPECS: dict[str, dict[str, list[VideoSpec]]] = {}
 
 
-def get_specs(encoding: str, colorspace: str) -> VideoSpec:
+def get_specs(encoding: str, colorspace: str) -> list[VideoSpec]:
     colorspaces = SPECS.get(encoding)
     assert colorspaces, f"invalid encoding: {encoding} (must be one of %s)" % csv(SPECS.keys())
     assert colorspace in colorspaces, f"invalid colorspace: {colorspace} (must be one of %s)" % csv(colorspaces.keys())

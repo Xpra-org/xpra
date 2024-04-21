@@ -514,15 +514,15 @@ class TopSessionClient(InfoTimerClient):
         title = get_title()
         sli = self.server_last_info
 
-        def _addstr(pad, y, x, s, *args):
-            if len(s) + x >= width - pad:
-                s = s[:max(0, width - x - 2 - pad)] + ".."
-            self.stdscr.addstr(y, x, s, *args)
+        def _addstr(pad: int, py: int, px: int, s: str, *args) -> None:
+            if len(s) + px >= width - pad:
+                s = s[:max(0, width - px - 2 - pad)] + ".."
+            self.stdscr.addstr(py, px, s, *args)
 
-        def addstr_main(y, x, s, *args):
-            _addstr(0, y, x, s, *args)
+        def addstr_main(py: int, px: int, s: str, *args) -> None:
+            _addstr(0, py, px, s, *args)
 
-        def addstr_box(y, x, s, *args):
+        def addstr_box(y: int, x: int, s: str, *args) -> None:
             _addstr(2, y, x, s, *args)
 
         try:
@@ -812,7 +812,7 @@ class TopSessionClient(InfoTimerClient):
             return ""
         gli = self.td(gli)
 
-        def strget(key, sep="."):
+        def strget(key: str, sep=".") -> str:
             # fugly warning:
             # depending on where we get the gl info from,
             # the value might be a list of strings,

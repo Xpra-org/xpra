@@ -413,6 +413,11 @@ class InfoTimerClient(MonitorXpraClient):
         raise NotImplementedError()
 
 
+def print_prompt() -> None:
+    sys.stdout.write("> ")
+    sys.stdout.flush()
+
+
 class ShellXpraClient(SendCommandConnectClient):
     """
         Provides an interactive shell with the socket it connects to
@@ -454,7 +459,7 @@ class ShellXpraClient(SendCommandConnectClient):
         self.stdin_io_watch = GLib.io_add_watch(sys.stdin,
                                                 GLib.PRIORITY_DEFAULT, GLib.IO_IN,
                                                 self.stdin_ready)
-        self.print_prompt()
+        print_prompt()
 
     def stdin_ready(self, *_args) -> bool:
         data = sys.stdin.read()
@@ -472,7 +477,7 @@ class ShellXpraClient(SendCommandConnectClient):
                     sent += 1
         self.stdin_buffer = ""
         if not sent:
-            self.print_prompt()
+            print_prompt()
         return True
 
     def init_packet_handlers(self) -> None:
@@ -500,11 +505,7 @@ class ShellXpraClient(SendCommandConnectClient):
         stream.flush()
         if fd == 2:
             stream.write("\n")
-            self.print_prompt()
-
-    def print_prompt(self) -> None:
-        sys.stdout.write("> ")
-        sys.stdout.flush()
+            print_prompt()
 
 
 class VersionXpraClient(HelloRequestClient):
@@ -576,11 +577,6 @@ class PrintClient(SendCommandConnectClient):
 
         # TODO: load as needed...
 
-        def sizeerr(size):
-            self.warn_and_quit(ExitCode.FILE_TOO_BIG,
-                               "the file is too large: %sB (the file size limit is %sB)" % (
-                                   std_unit(size), std_unit(self.file_size_limit)))
-
         if self.filename == "-":
             # replace with filename proposed
             self.filename = command[2]
@@ -589,18 +585,22 @@ class PrintClient(SendCommandConnectClient):
                 self.file_data = stdin_binary.read()
             log("read %i bytes from stdin", len(self.file_data))
         else:
-            size = os.path.getsize(self.filename)
-            if size > self.file_size_limit:
-                sizeerr(size)
+            if not self.check_file_size(os.path.getsize(self.filename)):
                 return
             from xpra.util.io import load_binary_file
             self.file_data = load_binary_file(self.filename)
             log("read %i bytes from %s", len(self.file_data), self.filename)
-        size = len(self.file_data)
-        if size > self.file_size_limit:
-            sizeerr(size)
+        if not self.check_file_size(len(self.file_data)):
             return
         assert self.file_data, "no data found for '%s'" % self.filename
+
+    def check_file_size(self, size: int) -> bool:
+        if size <= self.file_size_limit:
+            return True
+        self.warn_and_quit(ExitCode.FILE_TOO_BIG,
+                           "the file is too large: %sB (the file size limit is %sB)" % (
+                               std_unit(size), std_unit(self.file_size_limit)))
+        return False
 
     def client_type(self) -> str:
         return "Python/GObject/Print"

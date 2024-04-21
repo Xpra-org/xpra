@@ -17,6 +17,13 @@ log = Logger("network", "protocol", "rfb")
 WID = 1
 
 
+def check_wid(wid) -> bool:
+    if wid != WID:
+        log("ignoring pointer movement outside the VNC window")
+        return False
+    return True
+
+
 class RFBClientProtocol(RFBProtocol):
 
     def __init__(self, scheduler, conn, process_packet_cb, next_packet):
@@ -57,16 +64,10 @@ class RFBClientProtocol(RFBProtocol):
         finally:
             self.send_lock.release()
 
-    def check_wid(self, wid) -> bool:
-        if wid != WID:
-            log("ignoring pointer movement outside the VNC window")
-            return False
-        return True
-
     def send_pointer_position(self, packet) -> None:
         log("send_pointer_position(%s)", packet)
         # ['pointer-position', 1, (3348, 582), ['mod2'], []]
-        if not self.check_wid(packet[1]):
+        if not check_wid(packet[1]):
             return
         x, y = packet[2]
         # modifiers = packet[3]
@@ -79,7 +80,7 @@ class RFBClientProtocol(RFBProtocol):
 
     def send_button_action(self, packet) -> None:
         log("send_button_action(%s)", packet)
-        if not self.check_wid(packet[1]):
+        if not check_wid(packet[1]):
             return
         # ["button-action", wid, button, pressed, (x, y), modifiers, buttons]
         # ['button-action', 1, 1, False, (2768, 257), ['mod2'], [1]]
@@ -103,7 +104,7 @@ class RFBClientProtocol(RFBProtocol):
 
     def send_key_action(self, packet) -> None:
         log("send_key_action(%s)", packet)
-        if not self.check_wid(packet[1]):
+        if not check_wid(packet[1]):
             return
         # ["key-action", "wid", "keyname", "pressed", "modifiers", "keyval", "string", "keycode", "group"]
         keyname = packet[2]
@@ -119,7 +120,7 @@ class RFBClientProtocol(RFBProtocol):
 
     def track_window(self, packet) -> None:
         log("track_window(%s)", packet)
-        if not self.check_wid(packet[1]):
+        if not check_wid(packet[1]):
             return
         self.position = packet[2], packet[3]
         log("window offset: %s", self.position)

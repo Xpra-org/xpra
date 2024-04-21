@@ -39,12 +39,12 @@ class XpraClient(GTKXpraClient):
     def get_notifier_classes(self):
         ncs = super().get_notifier_classes()
 
-        def nwarn(notifier_name: str, e: Exception):
+        def nwarn(notifier_name: str, err: Exception):
             from xpra.log import Logger
             log = Logger("gtk", "client", "notify")
             log("get_notifier_classes()", exc_info=True)
             log.warn(f"Warning: failed to load the {notifier_name} notifier")
-            log.warn(f" {e}")
+            log.warn(f" {err}")
 
         if not OSX:
             # pylint: disable=import-outside-toplevel
@@ -60,6 +60,7 @@ class XpraClient(GTKXpraClient):
             nwarn("GTK", e)
         return ncs
 
+    # noinspection PyMethodMayBeStatic
     def get_screen_resolution(self) -> int:
         screen = Gdk.Screen.get_default()
         if not screen:
@@ -79,6 +80,7 @@ class XpraClient(GTKXpraClient):
             return ydpi
         return round(self.get_screen_resolution())
 
+    # noinspection PyMethodMayBeStatic
     def get_tray_menu_helper_class(self):
         # pylint: disable=import-outside-toplevel
         from xpra.client.gtk3.tray_menu import GTKTrayMenu

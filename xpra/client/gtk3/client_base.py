@@ -1225,16 +1225,16 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if warning:
                 warnings.append(warning)
 
-        def err(msg: str, e):
+        def err(msg: str, err):
             opengllog("OpenGL initialization error", exc_info=True)
             self.GLClientWindowClass = None
             self.client_supports_opengl = False
             opengllog.error("%s", msg)
-            for x in str(e).split("\n"):
+            for x in str(err).split("\n"):
                 opengllog.error(" %s", x)
-            self.opengl_props["info"] = str(e)
+            self.opengl_props["info"] = str(err)
             self.opengl_props["enabled"] = False
-            self.opengl_setup_failure(body=str(e))
+            self.opengl_setup_failure(body=str(err))
 
         if warnings:
             if enable_option in ("", "auto"):
@@ -1275,11 +1275,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 renderer = parts[0].strip()
             driver_info = renderer or self.opengl_props.get("vendor") or "unknown card"
 
-            def glwarn(msg):
+            def glwarn(warning: str) -> None:
                 if self.opengl_enabled and not self.opengl_force:
                     self.opengl_enabled = False
                     opengllog.warn("Warning: OpenGL is disabled:")
-                opengllog.warn(" %s", msg)
+                opengllog.warn(" %s", warning)
 
             from xpra.client.gl.check import MIN_SIZE
             if min(self.gl_max_viewport_dims) < MIN_SIZE:
@@ -1541,13 +1541,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             N = 1
             delay = max(0, round(1000 * (self.last_clipboard_notification + N - monotonic())))
 
-            def reset_tray_icon():
-                self.clipboard_notification_timer = 0
-                tray = self.tray
-                if not tray:
-                    return
-                tray.set_icon(None)  # None means back to default icon
-                tray.set_tooltip(self.get_tray_title())
-                tray.set_blinking(False)
+            self.clipboard_notification_timer = self.timeout_add(delay, self.reset_tray_icon)
 
-            self.clipboard_notification_timer = self.timeout_add(delay, reset_tray_icon)
+    def reset_tray_icon(self):
+        self.clipboard_notification_timer = 0
+        tray = self.tray
+        if not tray:
+            return
+        tray.set_icon(None)  # None means back to default icon
+        tray.set_tooltip(self.get_tray_title())
+        tray.set_blinking(False)
