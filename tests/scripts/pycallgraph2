@@ -1,0 +1,753 @@
+#!/usr/bin/env python
+
+import os.path
+import sys
+
+from pycallgraph2 import PyCallGraph, Config
+from pycallgraph2.output import GraphvizOutput
+
+trace_sets: dict[str, list[str]] = {
+    # network bits:
+    "net": [
+        'xpra.net.*',
+        'Crypto*',
+        'xpra.*server*.process_packet',
+        'xpra.*server*.next_packet',
+        'socket.*',
+    ],
+    "x11": [
+        'xpra.x11.*'
+    ],
+    "damage": [
+        # 'xpra.server.source.*',
+        # 'xpra.server.*._damage',
+        'xpra.server.window.region*',
+        'xpra.server.window.compress.*',
+        'xpra.server.window.video.*',
+        'xpra.server.source_stats.*',
+        'xpra.server.window.window_stats.*',
+    ],
+    "codecs": [
+        'xpra.codecs.*.<module>',
+        'xpra.codecs.x264.*', 'xpra.codecs.vpx.*',
+        'xpra.codecs.xor.*',
+        "PIL.*",
+    ],
+    "mouse": [
+        'xpra.*server*._process_pointer_position',
+        'xpra.*server*._process_button_action',
+        'xpra.*server*._process_mouse_common',
+    ],
+    "keyboard": [
+        'xpra.gtk.keys.*',
+        'xpra.keyboard.*',
+        'xpra.x11.xkbhelper.*', 'xpra.x11.gtk_x11.keys.*',
+        'xpra.x11.server_keyboard_config.*',
+        'xpra.server.source.ServerSource.make_keymask_match',
+        'xpra.server.*._keys_changed',  # in both XpraServer and Source
+        'xpra.server.*._process_key*',  # process_key_action, process_key_repeat
+        'xpra.server.*._key_repeat*',  # _key_repeat, _key_repeat_timeout
+        'xpra.server.*.clear_keys_pressed',
+        'xpra.server.*._handle_key',
+        'xpra.server.*.get_keycode',  # in both ServerBase and Source
+        'xpra.client.*.get*_keymap*',
+        'xpra.client.*.*_key_action',  # send, handle, process, parse
+        'xpra.client.*.*key_press_event',
+        'xpra.client.*.update_hash',
+        'xpra.client.*.hashadd',
+        'xpra.*.*Keyboard*',  # Keyboard and KeyboardConfig classes, KeyboardHelper
+        'xpra.*.*KeyboardHelper.update',
+        'xpra.*.*KeyEvent',
+        'xpra.*._key_repeat',
+        'xpra.*.clear_repeat',
+        'xpra.*.key_handled*',
+        'xpra.*.is_modifier',
+        'xpra.server.*.press',
+        'xpra.server.*.unpress',
+    ],
+    "cursor": [
+        'xpra.*.do_xpra_cursor_event',
+        'xpra.*._process_cursor',
+        'xpra.*.set_windows_cursor',
+    ],
+    "bell": [
+        'xpra.x11.gtk_x11.window.WindowModel.do_xpra_xkb_event',
+        'xpra.x11.gtk_x11.wm.Wm.bell_event',
+        'xpra.x11.gtk_x11.wm.Wm.do_bell_event',
+        'xpra.server.XpraServer._bell_signaled',
+        'xpra.server.source.ServerSource.bell',
+    ],
+    "misc": [
+        'xpra.dotxpra.*', 'xpra.x11.bindings.wait_for_server.*',
+        'xpra.scripts.*', 'subprocess.*',
+        'multiprocessing.*',
+        'xpra.gtk.gobject_compat.*',
+        'xpra.x11.gtk_x11.tray.*',
+        'xpra.codecs.version_info.*',
+        'xpra.version_util.*',
+        'xpra.gtk.gtk_util.add_gtk_version_info',
+        'xpra.build_info.*'
+    ],
+    "xsettings": [
+        'xpra.platform.posix.xroot_props.*',
+        'xpra.platform.posix.xsettings.*',
+        'xpra.x11.xsettings_prop.*',
+    ],
+    "clipboard": [
+        'xpra.clipboard.*',
+        'xpra.client.*.*clipboard_helper',
+        'xpra.gtk.gdk_atoms.*',
+        'xpra.gtk.nested_main.*',
+        'xpra.x11.gtk_x11.selection.*',
+        'xpra.*.ClientExtras.setup_clipboard_helper',
+    ],
+    "sound": [
+        'xpra.sound.*',
+        'xpra.*server*.*sound*',
+        'xpra.*.start*sound*',  # start_receiving_sound, start_sound_sink
+        'gst.*', 'pygst.*',
+        'xpra.*.sound*changed',
+        'xpra.*.sink_ready',
+    ],
+    "gl": [
+        'xpra.client.gl.gl_client_window.*',
+        'xpra.client.gl.gl_colorspace_conversions.*',
+        'xpra.client.gl.gl_window_backing.*',
+    ],
+    "logging": [
+        'logging.*',
+        'xpra.log.*',
+        'xpra.colorstreamhandler.*',
+    ],
+    "std": [
+        'pycallgraph.*',
+        'traceback.*', 'linecache.*',
+        '_weakrefset.*', 'weakref.*',
+        'DLFCN.*',
+        'fnmatch.*',  # pycallgraph itself!
+        'pyopencl.*',  # too big
+        'pycuda.*',  # too big
+        'OpenGL.*',  # far too big!
+        'numpy.*',  # also too big!
+        # Pillow pollution (I think - most of it):
+        'PIL.*',
+        'Image*',
+        '_ImageCrop',
+        '_imaging_not_installed',
+        'PSFile*',
+        'IcnsFile*',
+        'ModeDescriptor',
+        'PngStream',
+        'PngInfo',
+        'Mismatch',
+        'ChunkStream',
+        'Legendre',
+        'Chebyshev',
+        'Laguerre',
+        'Hermite*',
+        'Parser',
+        'Match',
+        'IcoFile',
+        'Polynomial',
+        'FixTk',
+        'DecompressionBombWarning',
+        'BitStream',
+        'register_extension',
+        'register_mime',
+        'register_save',
+        'register_open',
+        'build_prototype_image',
+        'Ole*',
+        '_Ole*',
+        # most of these are not ours:
+        'pprint.*',
+        'functools.*',
+        'pytools.*',
+        'decorator.*',
+        'tempfile.*',
+        'shutil.*',
+        'difflib.*',  # from numpy?
+        '*ImageFile*',  # no need for data on individual PIL formats
+        'ImagePalette',
+        'unittest.*',  # why does this even get imported?
+        'numbers.*',
+        'contextlib.*',
+        'collections.*',
+        'inspect.*',
+        'pkg_resources.*',
+        'sysconfig*',
+        'pkgutil.*',
+        'zipfile.*',
+        'cffi*',
+        'gi.*',  # GTK3!
+        'urlparse.*',
+        'abc.*',
+        'string.*',
+        'StringIO.<module>',
+        'StringIO.StringIO',
+        'shlex.*',
+        'pickle.*',
+        're.*', 'sre_parse.*', 'sre_compile.*',
+        'atexit.*', 'warnings.*',
+        'getpass.*',
+        'posixpath.*', 'genericpath.*', 'stat.*',
+        'threading.*',
+        'encodings.*',
+        'optparse.*', 'gettext.*', 'locale.*', 'codecs.*',
+    ],
+    "libs": [
+        'gobject.*', 'gtk.*', 'uuid.*', 'pygtk.*', 'gio.*', 'cairo.*',
+        'os.getenv', 'os.environ.*', 'os._Environ.*', 'UserDict.*', 'platform.*', 'string.split',
+        'dbus.*',
+        'yaml.*',
+        'libxml2.*', "xml.*", 'StartElement', 'EndElement',  # used by gst..
+        'ctypes.*', 'hmac.*',
+    ],
+    "one_offs": [
+        '__main__',
+        '__bootstrap__',
+        '<module>',
+        'xpra.<module>',
+        'xpra.*.<module>',
+        'Queue.<module>', 'Queue,_init', 'Queue.Full', 'Queue.Queue', 'Queue.Empty', 'Queue.LifoQueue',
+        'Queue.PriorityQueue',
+        'xpra.*.*init_aliases',
+        'xpra.*server*.*ServerBase',
+        'xpra.*server*.__init__',
+        'xpra.*server*.init',
+        'xpra.*server*.init_auth',
+        'xpra.*server*.init_encodings',
+        'xpra.*server*.init_sockets',
+        'xpra.*server*.init_when_ready',
+        'xpra.*server*.x11_init',
+        'xpra.*server*.init_x11_atoms',
+        'xpra.*server*.init_clipboard',
+        'xpra.*server*.init_keyboard',
+        'xpra.*server*.init_notification_forwarder',
+        'xpra.*server*.init_packet_handlers',
+        'xpra.*server*.add_encodings',
+        'xpra.*server*.watch_keymap_changes',
+        'xpra.*server*.reenable_keymap_changes',
+        'xpra.*server*.load_existing_windows',
+        'xpra.*server*.get_root_window_size',
+        'xpra.*server*.get_max_screen_size',
+        'xpra.*server*.get_default_cursor',
+        'xpra.*server*.add_listen_socket',
+        'xpra.*server*.get_server_mode',
+        'xpra.*server*.do_check',
+        'xpra.*server*.clipboard*_check',
+        'xpra.*server*.print_ready',
+        'xpra.*server*.start_ready_callbacks',
+        'xpra.*server*.init_uuid',
+        'xpra.*server*.get_uuid',
+        'xpra.*server*.save_uuid',
+        'xpra.*server*.run',
+        'xpra.*server*.do_run',
+        'xpra.*server*._process_desktop_size',
+        'xpra.*server*._process_shutdown_server',
+        'xpra.server.window*source.Window*Source',
+        'xpra.server.window*source.envint',
+        'xpra.os_util.is_unity',
+        'xpra.os_util.rel',
+        'xpra.os_util.platform_name',
+        'xpra.os_util.get_hex_uuid',
+        'xpra.os_util.load_binary_file',
+        'xpra.os_util.set_*_name',
+        'xpra.platform.*set_application_name',
+        'xpra.*.get*_info',
+        'xpra.server.DesktopManager.__init__',
+        'xpra.codecs.codec_constants.*',
+        'xpra.codecs.loader.*',
+        'xpra.codecs.video_helper.<lambda>',  # sorting
+        'xpra.codecs.video_helper.try_import_modules',
+        'xpra.codecs.video_helper.get_*_name',
+        'xpra.codecs.video_helper.has_codec_module',
+        'xpra.codecs.video_helper.VideoHelper.*init*',
+        'xpra.codecs.video_helper.VideoHelper',
+        'xpra.codecs.video_helper.VideoHelper.set_modules',
+        'xpra.codecs.video_helper.VideoHelper.add_*',
+        'xpra.codecs.video_helper.VideoPipelineHelper',
+        'xpra.codecs.video_helper.VideoPipelineHelper.may_init',
+        'xpra.codecs.video_helper.VideoPipelineHelper.init_*',
+        'xpra.server.codec_constants.codec_spec.__init__',
+        'xpra.daemon_thread.*',
+        'threading.Thread.daemon', 'threading._MainThread.daemon',
+        'threading._MainThread.name',
+        'threading._newname',
+        'threading.Thread.setDaemon', 'threading.Thread.set_daemon', 'threading.Thread._set_daemon',
+        'threading.Thread.__init__',
+        'threading.Condition.*', 'threading.Event.*',
+        'xpra.gtk.quit.*',  # gtk_main_quit_forever, gtk_main_quit_really, gtk_main_quit_on_fatal_exceptions_enable
+        'xpra.x11.gtk_x11.wm.Wm.__init__',
+        'xpra.x11.gtk_x11.wm.Wm.__setup_ewmh_window',
+        'xpra.x11.gtk_x11.wm.Wm.enableCursors',
+        'xpra.gtk.*.n_arg_signal',
+        'xpra.x11.gtk_x11.error._ErrorManager.__init__',
+        # dotxpra finding sockets:
+        'glob.*',
+        # client bits:
+        'xpra.client.client_base.b',  # unavoidable
+        # class init:
+        'xpra.client.*.*XpraClient',
+        'xpra.client.*.*ClientBase',
+        'xpra.client.*.*WidgetBase',
+        'xpra.client.*.*Window*Base',  # *WindowBase, *WindowBackingBase
+        'xpra.client.*.*ClientWindow',  # Custom*, Border*, ..
+        'xpra.client.*.*Backing',  # PixmapBacking, etc
+        'xpra.client.*.*CommandConnectClient',
+        'xpra.client.*.ClientSource',
+        # instance init:
+        'xpra.client.*.__init__',  # remove from here?
+        'xpra.client.*.defaults_init',
+        'xpra.client.*.init',
+        'xpra.client.*.init_ui',
+        'xpra.client.*.glib_init',
+        'xpra.client.*.gobject_init',
+        'xpra.client.*.install_signal_handlers',
+        'xpra.client.*.setup_connection',
+        'xpra.client.*.get_scheduler',
+        'xpra.client.*.up',
+        'xpra.client.*.client_type',
+        'xpra.client.*.*get*encodings',
+        'xpra.client.*.make_keyboard_helper',
+        'xpra.client.*.make_notifier',
+        'xpra.client.*.make_instance',
+        'xpra.client.*.get*_classes',
+        'xpra.client.*.parse_border',
+        'xpra.client.*.register*toggled',
+        'xpra.client.*.*toggled',
+        'xpra.client.*.*_notify',
+        'xpra.client.*.process_ui_capabilities',
+        'xpra.client.*._startup_complete',
+        'xpra.client.*.run',
+        'xpra.client.*.gtk*_main',
+        'xpra.client.*.verify_connected',
+        'xpra.gtk.*.gtk*main',
+        'xpra.platform.platform_import',
+        'xpra.platform.*.get*_classes',
+        'xpra.*.ui_thread_watcher.*get_UI_watcher',  # UI_thread_watcher, get_UI_watcher
+        'xpra.*.ui_thread_watcher.*.UI_thread_watcher',
+        'xpra.*.ui_thread_watcher.*.UI_thread_watcher.__init__',
+        'xpra.*.ui_thread_watcher.*.add*callback',
+        'xpra.*.ui_thread_watcher.*.start',
+        'xpra.*.ui_thread_watcher.*.stop',
+        'xpra.util.updict',
+        'xpra.platform.*.add_client_options', 'xpra.platform.*.add_*_option',
+        'socket._socketobject.meth',
+        'xpra.*.*hello*',
+        'xpra.util.typedict.*',
+        'xpra.*.GetClipboard',
+        'xpra.*.get*_uuid',
+        'xpra.*.uupdate',
+        'xpra.*.get_machine_id',
+        'xpra.*.init_packet_handlers',
+        'xpra.*.get_screen_sizes',
+        'xpra.*.get_root_size',
+        'xpra.*.parse_shortcuts',
+        'xpra.*.ready',
+        'xpra.*.do_ready',
+        'xpra.*.setup_pa_audio_tagging',
+        'xpra.*.setup_xprop_xsettings',
+        'xpra.net.protocol.Protocol.__init__',
+        'xpra.*.make_uuid',
+        'xpra.cursor_names.*',
+        'xpra.platform.*.ClientExtras',
+        'xpra.platform.*.ClientExtras.__init__',
+        'xpra.platform.*.ClientExtras.setup*',
+        'xpra.platform.init',
+        'xpra.platform.*.init',
+        'xpra.platform.*.do_init',
+        'xpra.platform.*set_prgname',
+        'xpra.platform.*get_username',
+        'xpra.platform.*get_name',
+        'xpra.platform.*._get_pwd',
+        'xpra.platform.*clean',
+        'xpra.platform.*clean',
+        'xpra.platform.paths*.get*dir',
+        # screen logging:
+        'xpra.util.*log_screen_sizes',
+        'xpra.util.prettify_plug_name',
+        # GL init:
+        'xpra.client.*.init_opengl',
+        'xpra.*.gl_check*',
+        # keyboard stuff that we only do once:
+        'xpra.*._do_keys_changed',
+        'xpra.*.query_xkbmap',
+        'xpra.*.grok_modifier_map',
+        'xpra.*.get_keyboard_repeat',
+        'xpra.*.set_keyboard_repeat',
+        'xpra.*.get_x11_keymap',
+        'xpra.*.get_gtk_keymap',
+        'xpra.*.get_keymap_modifiers',
+        'xpra.*.get_keymap_spec*',
+        'xpra.*.get_layout_spec*',
+        'xpra.*.exec_get_keyboard_data',
+        'xpra.*.set_modifier_mappings',
+        'xpra.*.update_modmap',
+        'xpra.keyboard.layouts.*',
+        'xpra.platform.*.update_modmap',
+        # some network stuff only happens once:
+        'xpra.*.set_max_packet_size',
+        # exit stuff:
+        'xpra.*._process_connection_lost',
+        'xpra.*.warn_and_quit',
+        'xpra.*.quit',
+        'xpra.*.do_quit',
+        'xpra.*.clean_quit',
+        'xpra.*.quit_timer',
+        'xpra.*.cleanup',
+        'xpra.*.clean_mmap',
+        'xpra.*.close_about',
+    ],
+    "dialogs": [
+        # tray:
+        'xpra.*.setup*_tray*',
+        'xpra.*.make*_tray*',
+        'xpra.*.add*_tray*',
+        'xpra.*.get_tray*',
+        'xpra.*.supports*_tray*',
+        'xpra.*.*tray_geometry',
+        'xpra.*statusicon*',
+        'xpra.*is_ubuntu*',
+        '*appindicator*',
+        'xpra.*.client_tray*',
+        'xpra.*.hide_tray',
+        'xpra.client.tray_base.*',
+
+        'xpra.*.get_icon*',
+        'xpra.*.get_image*',
+        'xpra.*.get_pixbuf*',
+        'xpra.*.scaled_image*',
+        'xpra.*.get_data_dir',
+        'xpra.*.get_icons_dir',
+        'xpra.*.setup_xprops',
+        'xpra.*.setup_x11_bell',
+        'xpra.*.supports_clipboard',
+        # notifications:
+        'xpra.client.notifications.*',
+        'xpra.*.setup_dbusnotify',
+        'xpra.*.can_notify',
+        'xpra.*.gtk_notifier.*',
+        '*pynotify.*',
+        # tray menu:
+        'xpra.*.*tray_menu*',
+        'xpra.*.supports_server',
+        'xpra.*.setup_menu',
+        'xpra.*.make_*submenu',
+        'xpra.*.checkitem',
+        'xpra.*.kbitem',
+        'xpra.*.*menuitem',  # menuitem, make_*, handshake_*, enable*, activate*, close*, show*, may_enable*, set_*
+        'xpra.*.set_*menu',
+        'xpra.*.menu_deactivated',
+        'xpra.*.CheckMenuItem',
+        'xpra.*.keysort',
+        'xpra.*.ClientExtras.popup_menu_workaround',
+        'xpra.*.ClientExtras.setup*',
+        'xpra.*.ClientExtras.*toggled',
+        'xpra.*.ClientExtras.set_keyboard_sync_tooltip',
+        'xpra.*.ClientExtras.*state',
+        'xpra.*.ClientExtras.set_selected_layout',
+        'xpra.*.ClientExtras.set_menu_title',
+        'xpra.*.ClientExtras.get_image',
+        'xpra.*.ClientExtras.get_pixbuf',
+        'xpra.*.ClientExtras.get_icon_filename',
+        'xpra.*.ClientExtras.set_window_icon',
+        'xpra.*.set_tooltip_text',
+        'webbrowser.*',
+        # network related, but only happens rarely (user action or initial connection):
+        'xpra.*.send_*_enabled',  # bell, cursors, deflate
+        'xpra.*._process_set_deflate',
+        # session info:
+        'xpra.*.session_info',
+        'xpra.*.session_info.*',
+        'xpra.platform.graph.*',
+        'xpra.*.TableBuilder*',
+    ],
+    "connection": [
+        'xpra.*server*.send_hello',
+        'xpra.*server*.make_hello',
+        'xpra.*server*._get_desktop_size_capability',
+        'xpra.*server*.*hello*',
+        'xpra.*server*.parse_hello',
+        'xpra.*server*.batch_value',
+        'xpra.*server*.parse_batch_int',
+        'xpra.net.protocol.Protocol.__str__',
+        'xpra.net.protocol.Protocol.start',
+        # handle connection:
+        'socket._socketobject.accept',
+        'socket._socketobject.__init__',
+        'xpra.net.bytestreams.SocketConnection.__init__',
+        'xpra.net.bytestreams.SocketConnection.__str__',
+        'xpra.*server*._new_connection',
+        'xpra.*server*.verify_connection_accepted',
+        'xpra.*server*._process_hello',
+        'xpra.*server*.sanity_checks',
+        'xpra.*server*.get_max_screen_size',
+        'xpra.*server*.configure_best_screen_size',
+        'xpra.*server*.set_screen_size',
+        'xpra.*server*.send_updated_screen_size',
+        'xpra.*server*.set_workarea',
+        'xpra.*server*.calculate_workarea',
+        'xpra.*server*._screen_size_changed',
+        'xpra.*server*._process_set_deflate',
+        'xpra.*server*.parse_encoding_caps',
+        'xpra.*server*.set_keymap',
+        'xpra.server.source.ServerSource.set_deflate',
+        'xpra.server.source.ServerSource.parse_hello',
+        'xpra.server.source.ServerSource.init_mmap',
+        'xpra.server.source.ServerSource.keys_changed',
+        'xpra.server.source.ServerSource.set_keymap',
+        'xpra.server.source.ServerSource.updated_desktop_size',
+        'xpra.server.source.ServerSource.set_screen_sizes',
+        'xpra.server.source.ServerSource.set_encoding',
+        'xpra.server.source.ServerSource.assign_keymap_options',
+        'xpra.server.*.send_windows_and_cursors',
+        'xpra.net.protocol.Protocol.set_compression_level',
+        'xpra.net.protocol.Protocol.enable_rencode',
+        'xpra.net.protocol.Protocol.do_start',
+        # disconnection:
+        'xpra.*server*.send_disconnect',
+        'xpra.*server*._process_connection_lost',
+        'xpra.*server*.cleanup_source',
+        'xpra.*server*.disconnect_client',
+        'xpra.*server*.no_more_clients',
+        'xpra.net.protocol.Protocol.flush_then_close',
+        'xpra.net.protocol.Protocol.send_now',
+        'xpra.net.protocol.Protocol.close',
+        'xpra.net.protocol.Protocol.clean',
+        'xpra.net.protocol.Protocol.terminate_io_threads',
+        'xpra.net.bytestreams.SocketConnection.close',
+        'socket._socketobject.close',
+    ],
+}
+
+ALL = []
+for trace_set in trace_sets.values():
+    ALL += trace_set
+trace_sets["ALL"] = ALL
+
+COMMON_THREAD_NAMES = ["write", "read", "parse", "format"]
+SERVER_THREAD_NAMES = [
+    "encode",
+    # only used in proxy
+    "server message queue",
+    # not handled yet: "Worker_Thread"
+]
+CLIENT_THREAD_NAMES = ["draw", "UI thread polling"]
+THREAD_NAMES = COMMON_THREAD_NAMES + SERVER_THREAD_NAMES + CLIENT_THREAD_NAMES
+
+
+def usage(msg=None):
+    if msg:
+        print(msg)
+    cmd = os.path.basename(sys.argv[0])
+    print(
+        "%s usage: -I include-expressions -i include-set -E exclude-expressions -e exclude-set -d DELAY -r RUNTIME -t thread-name -- XPRA ARGS" %
+        sys.argv[0])
+    print("The default thread is the main thread, other options are:")
+    print(" - for both client and server: %s" % ", ".join(COMMON_THREAD_NAMES))
+    print(" - server-only threads: %s" % ", ".join(SERVER_THREAD_NAMES))
+    print(" - client-only threads: %s" % ", ".join(CLIENT_THREAD_NAMES))
+    print("The include and exclude sets are defined as a coma seperated list of package groups.")
+    print("The package groups available are: %s" % ", ".join(trace_sets.keys()))
+    print("The 'ALL' set is a superset containing all the other groups")
+    print("Use '*' as a wildcard group")
+    print("Use the delay to start profiling after a certain amount of time and to avoid")
+    print("profiling the initial setup code. This can only apply to the main thread.")
+    print("Use the runtime to automatically terminate the process after the given amount of time,")
+    print("the time starts counting after the start delay.")
+    print("")
+    print("Examples:")
+    print("#profile server:")
+    print("%s -i '*' -e ALL -- start :10 --systemd-run=no --start-child=xterm" % cmd)
+    print("#profile client:")
+    print("%s -i '*' -e ALL -- attach  :10 --opengl=no --csc-module=libyuv" % cmd)
+    print("#profile the client's draw thread:")
+    print("%s -t draw -i '*' -e ALL -- attach  :10" % cmd)
+    print(
+        "#profile the client's write thread without logging for 10 seconds, xpra runs without mmap and with x264 as primary encoding:")
+    print("%s -t write -i '*' -e logging -r 10 -- attach  :10  --no-mmap --encoding=x264" % cmd)
+    print("#profile server encode thread, excluding standard libraries")
+    print("%s -t encode -i '*' -e std -e libs -- start :10" % cmd)
+    sys.exit(1)
+
+
+pos = 0
+for x in sys.argv:
+    if x == "--":
+        break
+    if x == "-h" or x == "--help":
+        usage()
+    pos += 1
+if pos == 0 or pos == len(sys.argv):
+    usage(f"invalid number of arguments, '--' at position {pos} and {len(sys.argv)} arguments")
+
+cg_args = sys.argv[1:pos]
+sys.argv = sys.argv[:1] + sys.argv[pos + 1:]
+if len(cg_args) % 2 != 0:
+    usage(f"invalid number of arguments: {len(cg_args)} arguments for 'pycallgraph'")
+
+pairs = []
+for i in range(len(cg_args) // 2):
+    pairs.append((cg_args[i * 2], cg_args[i * 2 + 1]))
+
+
+def get_groups(v):
+    r = []
+    for x in v.split(","):
+        if x == "*":
+            return ["*"]
+        if x not in trace_sets:
+            usage("invalid package group '%s', options are: %s" % (x, trace_sets.keys()))
+            return
+        r += trace_sets[x]
+    return r
+
+
+exclude = []
+include = []
+trace_thread = None
+delay = 0
+runtime = 0
+for a, v in pairs:
+    if a not in ("-i", "-I", "-e", "-E", "-d", "-r", "-t"):
+        usage("invalid argument: %s" % a)
+    if a == "-i":
+        include += get_groups(v)
+    elif a == "-I":
+        include += v.split(",")
+    elif a == "-e":
+        exclude += get_groups(v)
+    elif a == "-E":
+        exclude += v.split(",")
+    elif a == "-d":
+        delay = int(v)
+    elif a == "-r":
+        runtime = int(v)
+    elif a == "-t":
+        if trace_thread:
+            usage("only one thread can be traced at a time")
+        if v not in THREAD_NAMES:
+            usage("invalid thread name: %s, options are: %s" % (v, THREAD_NAMES))
+        trace_thread = v
+    else:
+        usage("impossible!")
+
+print("")
+print("include=%s" % str(include))
+print("exclude=%s" % str(exclude))
+print("trace_thread=%s" % trace_thread)
+print("delay=%s" % delay)
+print("runtime=%s" % runtime)
+print("")
+if delay > 0 and trace_thread:
+    usage("delay (-d DELAY) cannot be used with the thread parameter (-t THREAD)")
+
+# adjust cache size:
+import fnmatch
+
+
+# fnmatch._MAXCACHE = max(fnmatch._MAXCACHE, len(exclude), len(include)) + 10
+# fnmatch._purge()
+
+class ExtendedGlobbingFilter(object):
+    def __init__(self, include, exclude, default_return):
+        self.include = include
+        self.exclude = exclude
+        self.default_return = default_return
+
+    def __call__(self, full_name=None):
+        m = fnmatch.fnmatch
+        if any(True for pattern in self.exclude if m(full_name, pattern)):
+            return False
+        if any(True for pattern in self.include if m(full_name, pattern)):
+            return True
+        return self.default_return
+
+
+graphviz = GraphvizOutput()
+graphviz.output_file = "./pycallgraph-xpra.png"
+config = Config(groups=True)
+default_return = not bool(include)
+config.trace_filter = ExtendedGlobbingFilter(include, exclude, default_return)
+config.include_stdlib = bool(trace_thread)
+# config.threaded = bool(trace_thread)
+pcg = PyCallGraph(output=graphviz, config=config)
+
+if trace_thread:
+    from xpra.util import thread
+
+    saved_make_thread = thread.make_thread
+    trace_count = 0
+
+    def make_trace_daemon_thread(target, name, daemon=False, args=()):
+        def trace_target(*args):
+            global trace_count
+            tracing = name == trace_thread and trace_count == 0
+            if tracing:
+                trace_count += 1
+                print("started tracing  %s : %s" % (name.rjust(16), target))
+                pcg.start(reset=False)
+            else:
+                print("not tracing      %s : %s" % (name.rjust(16), target))
+            target(*args)
+            print("ended            %s : %s" % (name.rjust(16), target))
+            if tracing:
+                trace_count -= 0
+                if trace_count <= 0:
+                    pcg.stop()
+
+        return saved_make_thread(trace_target, name, daemon, args)
+
+    thread.make_thread = make_trace_daemon_thread
+else:
+    def do_start_trace():
+        print("starting trace")
+        pcg.start()
+
+    # trace main thread
+    if delay == 0:
+        do_start_trace()
+    else:
+        from gi.repository import GLib
+        GLib.timeout_add(delay * 1000, do_start_trace)
+
+if runtime > 0:
+    def force_exit(*args):
+        print("force_exit(%s) runtime %s expired, using SIGINT to force exit" % (args, runtime))
+        import signal
+        os.kill(os.getpid(), signal.SIGINT)
+
+    from gi.repository import GLib
+    GLib.timeout_add((runtime + delay) * 1000, force_exit)
+
+
+# ensure we don't call os._exit() when trying to force quit:
+def no_force_quit(*args):
+    print("no_force_quit%s called" % str(args))
+
+
+from xpra import os_util
+os_util.force_quit = no_force_quit
+from xpra.common import noop
+
+print("calling xpra with: %s" % str(sys.argv))
+import xpra.scripts.main
+
+try:
+    xpra.scripts.main.clean_std_pipes = noop
+    x = xpra.scripts.main.main(__file__, sys.argv)
+    print("xpra main returned %s" % x)
+except Exception as e:
+    print(f"xpra main raised an exception: {e}")
+    import traceback
+    traceback.print_stack()
+    x = 1
+
+if not trace_thread:
+    pcg.stop()
+
+graphviz.start()
+graphviz.done()
+
+sys.exit(x)
