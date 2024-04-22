@@ -163,16 +163,21 @@ def main(script_file: str, cmdline) -> ExitValue:
         return 1
     finally:
         platform_clean()
+        clean_std_pipes()
 
-        def closestd(std):
-            if std:
-                try:
-                    std.close()
-                except OSError:  # pragma: no cover
-                    pass
 
-        closestd(sys.stdout)
-        closestd(sys.stderr)
+def clean_std_pipes() -> None:
+    if not envbool("XPRA_CLEAN_STD_PIPES", True):
+        return
+
+    def closestd(std) -> None:
+        if std:
+            try:
+                std.close()
+            except OSError:  # pragma: no cover
+                pass
+    closestd(sys.stdout)
+    closestd(sys.stderr)
 
 
 def configure_logging(options, mode) -> None:
