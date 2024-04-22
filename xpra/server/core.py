@@ -26,7 +26,7 @@ from xpra.util.version import (
     get_platform_info, get_host_info, parse_version,
 )
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
-from xpra.exit_codes import ExitValue
+from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
@@ -333,9 +333,9 @@ class ServerCore:
         self.cleanup()
         self.quit_worker()
 
-    def force_quit(self) -> None:
+    def force_quit(self, exit_code: ExitValue = ExitCode.FAILURE) -> None:
         log("force_quit()")
-        force_quit()
+        force_quit(int(exit_code))
 
     def quit_worker(self) -> None:
         quit_worker(self.quit)

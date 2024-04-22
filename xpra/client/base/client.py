@@ -39,7 +39,7 @@ from xpra.util.version import get_version_info, vparts, XPRA_VERSION
 from xpra.net.net_util import get_info as get_net_info
 from xpra.log import Logger, get_info as get_log_info
 from xpra.platform.info import get_name, get_username, get_sys_info
-from xpra.os_util import get_machine_id, get_user_uuid, force_quit, gi_import, BITS
+from xpra.os_util import get_machine_id, get_user_uuid, gi_import, BITS
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, get_frame_info, get_env_info, get_sysconfig_info
 from xpra.util.io import filedata_nocrlf, stderr_print, use_gui_prompt
 from xpra.util.pysystem import dump_all_frames, detect_leaks
@@ -249,10 +249,15 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 notifylog.info(" %s", x)
         self.show_progress(100, f"notification: {summary}")
 
+    def force_quit(self, exit_code: ExitValue = ExitCode.FAILURE) -> None:
+        import os_util
+        log(f"force_quit() calling {os_util.force_quit}")
+        os_util.force_quit(int(exit_code))
+
     def handle_deadly_signal(self, signum, _frame: FrameType = None) -> None:
         stderr_print("\ngot deadly signal %s, exiting" % SIGNAMES.get(signum, signum))
         self.cleanup()
-        force_quit(128 + int(signum))
+        self.force_quit(128 + int(signum))
 
     def handle_app_signal(self, signum: int, _frame: FrameType = None) -> None:
         # from now on, force quit if we get another signal:
@@ -291,7 +296,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.disconnect_and_quit(exit_code, reason)
         self.quit(exit_code)
         self.exit()
-        force_quit(int(exit_code))
+        self.force_quit(int(exit_code))
 
     def signal_cleanup(self) -> None:
         # placeholder for stuff that can be cleaned up from the signal handler
