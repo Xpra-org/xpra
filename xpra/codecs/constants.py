@@ -7,12 +7,13 @@ import os
 from typing import Any
 from weakref import WeakSet
 from dataclasses import dataclass, field, asdict
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 
-FAST_DECODE_MIN_SPEED : int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
+
+FAST_DECODE_MIN_SPEED: int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
 
 # note: this is just for defining the order of encodings,
@@ -63,7 +64,7 @@ CSC_ALIAS: dict[str, str] = {"NV12": "YUV420P"}
 
 def get_plane_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
     return {
-        "NV12" : ("Y", "UV"),
+        "NV12": ("Y", "UV"),
     }.get(pixel_format, list(pixel_format))[index]
 
 
@@ -91,12 +92,12 @@ def get_subsampling_divs(pixel_format:str) -> tuple[tuple[int, int], ...]:
     return PIXEL_SUBSAMPLING[pixel_format]
 
 
-def preforder(encodings) -> tuple[str, ...]:
+def preforder(encodings: Iterable[str]) -> tuple[str, ...]:
     encs: set[str] = set(encodings)
     return tuple(x for x in PREFERRED_ENCODING_ORDER if x in encs)
 
 
-def get_profile(options:typedict, encoding: str = "h264", csc_mode: str = "YUV420P",
+def get_profile(options: typedict, encoding: str = "h264", csc_mode: str = "YUV420P",
                 default_profile: str = "constrained-baseline") -> str:
     for x in (
         options.strget(f"{encoding}.{csc_mode}.profile"),
@@ -110,13 +111,13 @@ def get_profile(options:typedict, encoding: str = "h264", csc_mode: str = "YUV42
     return ""
 
 
-def get_x264_quality(pct:int, profile: str = "") -> int:
+def get_x264_quality(pct: int, profile: str = "") -> int:
     if pct >= 100 and profile == "high444":
         return 0
     return 50 - (min(100, max(0, pct)) * 49 // 100)
 
 
-def get_x264_preset(speed: int=50, fast_decode: bool=False) -> int:
+def get_x264_preset(speed: int = 50, fast_decode: bool = False) -> int:
     if fast_decode:
         speed = max(FAST_DECODE_MIN_SPEED, speed)
     if speed > 99:
