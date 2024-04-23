@@ -33,17 +33,20 @@ def get_screen_info(display, screen) -> dict[str, Any]:
                 info["root"] = w.get_geometry()
         except Exception:
             pass
-    info["name"] = screen.make_display_name()
-    for x in ("width", "height", "width_mm", "height_mm", "resolution", "primary_monitor"):
-        fn = getattr(screen, "get_" + x)
-        try:
-            info[x] = int(fn())
-        except Exception:
-            pass
+    with IgnoreWarningsContext():
+        info["name"] = screen.make_display_name()
+    with IgnoreWarningsContext():
+        for x in ("width", "height", "width_mm", "height_mm", "resolution", "primary_monitor"):
+            fn = getattr(screen, "get_" + x)
+            try:
+                info[x] = int(fn())
+            except Exception:
+                pass
     info["monitors"] = display.get_n_monitors()
     m_info = info.setdefault("monitor", {})
-    for i in range(screen.get_n_monitors()):
-        m_info[i] = get_screen_monitor_info(screen, i)
+    with IgnoreWarningsContext():
+        for i in range(screen.get_n_monitors()):
+            m_info[i] = get_screen_monitor_info(screen, i)
     fo = screen.get_font_options()
     # win32 and osx return nothing here...
     if fo:
@@ -170,7 +173,8 @@ def get_visual_info(v) -> dict[str, Any]:
         except AttributeError:
             pass
         else:
-            val = fn()
+            with IgnoreWarningsContext():
+                val = fn()
             if val is not None:
                 vinfo[x] = vdict.get(val, val)
     return vinfo
@@ -249,16 +253,17 @@ def get_display_info(xscale=1, yscale=1) -> dict[str, Any]:
         return round((xscale * v + yscale * v) / 2)
 
     root_size = get_root_size()
-    info: dict[str, Any] = {
-        "root-size": xy(root_size),
-        "screens": display.get_n_screens(),
-        "name": display.get_name(),
-        "pointer": xy(display.get_pointer()[-3:-1]),
-        "devices": len(display.list_devices()),
-        "default_cursor_size": avg(display.get_default_cursor_size()),
-        "maximal_cursor_size": xy(display.get_maximal_cursor_size()),
-        "pointer_is_grabbed": display.pointer_is_grabbed(),
-    }
+    with IgnoreWarningsContext():
+        info: dict[str, Any] = {
+            "root-size": xy(root_size),
+            "screens": display.get_n_screens(),
+            "name": display.get_name(),
+            "pointer": xy(display.get_pointer()[-3:-1]),
+            "devices": len(display.list_devices()),
+            "default_cursor_size": avg(display.get_default_cursor_size()),
+            "maximal_cursor_size": xy(display.get_maximal_cursor_size()),
+            "pointer_is_grabbed": display.pointer_is_grabbed(),
+        }
     if not WIN32:
         rw = get_default_root_window()
         if rw:
@@ -268,20 +273,22 @@ def get_display_info(xscale=1, yscale=1) -> dict[str, Any]:
         f = "supports_" + x
         if hasattr(display, f):
             fn = getattr(display, f)
-            sinfo[x] = fn()
+            with IgnoreWarningsContext():
+                sinfo[x] = fn()
     info["screens"] = get_screens_info()
     info["monitors"] = get_monitors_info(xscale, yscale)
-    dm = display.get_device_manager()
-    for dt, name in {
-        Gdk.DeviceType.MASTER: "master",
-        Gdk.DeviceType.SLAVE: "slave",
-        Gdk.DeviceType.FLOATING: "floating",
-    }.items():
-        dinfo = info.setdefault("device", {})
-        dtinfo = dinfo.setdefault(name, {})
-        devices = dm.list_devices(dt)
-        for i, d in enumerate(devices):
-            dtinfo[i] = d.get_name()
+    with IgnoreWarningsContext():
+        dm = display.get_device_manager()
+        for dt, name in {
+            Gdk.DeviceType.MASTER: "master",
+            Gdk.DeviceType.SLAVE: "slave",
+            Gdk.DeviceType.FLOATING: "floating",
+        }.items():
+            dinfo = info.setdefault("device", {})
+            dtinfo = dinfo.setdefault(name, {})
+            devices = dm.list_devices(dt)
+            for i, d in enumerate(devices):
+                dtinfo[i] = d.get_name()
     return info
 
 
@@ -289,7 +296,8 @@ def get_screens_info() -> dict[int, dict]:
     display = Gdk.Display.get_default()
     info: dict[int, dict] = {}
     assert display.get_n_screens() == 1, "GTK3: The number of screens is always 1"
-    screen = display.get_screen(0)
+    with IgnoreWarningsContext():
+        screen = display.get_screen(0)
     info[0] = get_screen_info(display, screen)
     return info
 
