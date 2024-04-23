@@ -292,7 +292,7 @@ class Encoder(VideoPipeline):
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None
-        return self.process_buffer(wrap_buffer(data))
+        return self.process_buffer(wrap_buffer(data), typedict(options or {}))
 
 
 GObject.type_register(Encoder)

@@ -19,8 +19,9 @@ from xpra.log import Logger
 Gst = import_gst()
 log = Logger("encoder", "gstreamer")
 
-FRAME_QUEUE_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_TIMEOUT", 1)
-FRAME_QUEUE_INITIAL_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_INITIAL_TIMEOUT", 3)
+FRAME_JUNK_TIMEOUT = envint("XPRA_FRAME_JUNK_TIMEOUT", 100)
+FRAME_QUEUE_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_TIMEOUT", 1000)
+FRAME_QUEUE_INITIAL_TIMEOUT = envint("XPRA_GSTREAMER_FRAME_QUEUE_INITIAL_TIMEOUT", 3000)
 
 
 def get_default_encoder_options() -> dict[str, dict[str, Any]]:
@@ -359,24 +360,32 @@ class VideoPipeline(Pipeline):
         log("new-preroll")
         return GST_FLOW_OK
 
-    def process_buffer(self, buf):
+    def process_buffer(self, buf, options: typedict):
         r = self.src.emit("push-buffer", buf)
         if r != GST_FLOW_OK:
             log.error("Error: unable to push image buffer")
             return None
-        timeout = FRAME_QUEUE_INITIAL_TIMEOUT if self.frames == 0 else FRAME_QUEUE_TIMEOUT
+
+        junk = options.boolget("junk")
+        if junk:
+            timeout = FRAME_JUNK_TIMEOUT
+        elif self.frames == 0:
+            timeout = FRAME_QUEUE_INITIAL_TIMEOUT
+        else:
+            timeout = FRAME_QUEUE_TIMEOUT
         try:
-            return self.frame_queue.get(timeout=timeout)
+            return self.frame_queue.get(timeout=timeout/1000)
         except Empty:
-            log.error(f"Error: frame queue timeout after {timeout}s")
+            log_fn = log.debug if junk else log.error
+            log_fn(f"Error: frame queue timeout after {timeout}s")
             try:
-                btype = type(buf).__qualname__
-                log.error(f" on {btype!r} of size {buf.get_size()}")
-                log.error(f" of {repr(self)}")
+                btype = type(buf).__qualname__.lower()
+                log_fn(f" on {btype!r} of size {buf.get_size()}")
+                log_fn(f" of {repr(self)}")
             except AttributeError:
                 pass
             for k, v in self.get_info().items():
-                log.error(f" {k:<16}: {v}")
+                log_fn(f" {k:<16}: {v}")
             return None
 
     def get_info(self) -> dict[str, Any]:

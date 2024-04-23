@@ -14,7 +14,7 @@ from typing import Any, Dict, Tuple
 from threading import Event
 
 from xpra.util.str_fn import csv
-from xpra.util.objects import AtomicInteger
+from xpra.util.objects import AtomicInteger, typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import VideoSpec
 from xpra.codecs.nvidia.cuda.errors import cudacheck, get_error_name
@@ -665,14 +665,14 @@ cdef class Decoder:
         self.colorspace = ""
         self.encoding = ""
 
-    def decompress_image(self, data, options=None):
+    def decompress_image(self, data, options: typedict):
         log(f"nvdec.decompress_image({len(data)} bytes, {options})")
         cdef CUresult r
         cdef CUVIDSOURCEDATAPACKET packet
         cdef CUVIDPICPARAMS pic
         try:
             self.image = None
-            stream = (options or {}).get("stream", None)
+            stream = options.get("stream", None)
             if stream:
                 self.stream = <CUstream> (<uintptr_t> stream.handle)
             with buffer_context(data) as bc:
@@ -797,7 +797,7 @@ def decompress(encoding, img_data, width, height, rgb_format, options=None):
         raise RuntimeError("no cuda device found")
     with dev as cuda_context:
         log("cuda_context=%s for device=%s", cuda_context, dev.get_info())
-        options = options or {}
+        options = typedict(options or {})
         stream = options.get("stream")
         if not stream:
             stream = Stream()
@@ -827,7 +827,7 @@ def decompress_with_device(encoding, img_data, width, height, options=None):
     cdef Decoder decoder = Decoder()
     try:
         decoder.init_context(encoding, width, height, "YUV420P")
-        return decoder.decompress_image(img_data, options)
+        return decoder.decompress_image(img_data, typedict(options or {}))
     finally:
         decoder.clean()
 

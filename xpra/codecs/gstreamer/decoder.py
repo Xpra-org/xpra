@@ -196,6 +196,8 @@ class Decoder(VideoPipeline):
         ]
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
+        #decoder = self.pipeline.get_by_name("decoder")
+        #self.element_connect(decoder, "message", self.on_message)
 
     def get_colorspace(self) -> str:
         return self.colorspace
@@ -234,7 +236,7 @@ class Decoder(VideoPipeline):
             self.frame_queue.put(image)
         return GST_FLOW_OK
 
-    def decompress_image(self, data: bytes, options=None):
+    def decompress_image(self, data: bytes, options: typedict):
         log(f"decompress_image(.., {options}) state={self.state} data size={len(data)}")
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
@@ -247,7 +249,7 @@ class Decoder(VideoPipeline):
         # buf.timestamp = timestamp
         # buf.offset = offset
         # buf.offset_end = offset_end
-        return self.process_buffer(buf)
+        return self.process_buffer(buf, options)
 
 
 GObject.type_register(Decoder)

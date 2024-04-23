@@ -9,6 +9,7 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 
 from xpra.codecs.constants import VideoSpec
+from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
@@ -195,7 +196,7 @@ cdef class Decoder:
         return info
 
 
-    def decompress_image(self, data, options=None):
+    def decompress_image(self, data, options: typedict):
         cdef SBufferInfo buf_info
         cdef long r = 0
         cdef unsigned char* src

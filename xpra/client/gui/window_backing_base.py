@@ -765,7 +765,7 @@ class WindowBackingBase:
         return None
 
     def paint_with_video_decoder(self, coding: str, img_data, x: int, y: int, width: int, height: int,
-                                 options, callbacks: Iterable[Callable]):
+                                 options: typedict, callbacks: Iterable[Callable]):
         dl = self._decoder_lock
         if dl is None:
             fire_paint_callbacks(callbacks, False, "no lock - retry")

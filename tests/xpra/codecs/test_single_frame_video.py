@@ -93,14 +93,13 @@ def main(files):
             #now decode it back into an RGB picture:
             decoder = avcodec.Decoder()
             decoder.init_context(encoding, w, h, colorspace)
-            decoded = decoder.decompress_image(bdata, client_options)
+            decoded = decoder.decompress_image(bdata, typedict(client_options))
             dformat = decoded.get_pixel_format()
             output = decoded
             if dformat != "BGRX":
                 from xpra.codecs.libyuv.converter import Converter
                 csc = Converter()
-                csc.init_context(w, h, dformat,
-                                 w, h, "BGRX", typedict())
+                csc.init_context(w, h, dformat, w, h, "BGRX", typedict())
                 output = csc.convert_image(decoded)
                 print(f"    converted {dformat} to BGRX")
             obytes = memoryview_to_bytes(output.get_pixels())
