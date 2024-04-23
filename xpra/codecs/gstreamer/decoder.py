@@ -121,7 +121,7 @@ def get_specs(encoding: str, colorspace: str) -> tuple[VideoSpec]:
             codec_class=Decoder, codec_type=get_type(),
             quality=50, speed=50,
             size_efficiency=60,
-            setup_cost=20,
+            setup_cost=50,
             max_w=8192,
             max_h=4096),
     )

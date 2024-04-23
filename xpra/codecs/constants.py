@@ -52,10 +52,10 @@ HELP_ORDER: tuple[str, ...] = (
 
 
 # value: how much smaller the output is
-LOSSY_PIXEL_FORMATS : dict[str, float | int] = {
-    "NV12"    : 2,
-    "YUV420P" : 2,
-    "YUV422P" : 1.5,
+LOSSY_PIXEL_FORMATS: dict[str, float | int] = {
+    "NV12": 2,
+    "YUV420P": 2,
+    "YUV422P": 1.5,
 }
 
 CSC_ALIAS: dict[str, str] = {"NV12": "YUV420P"}
@@ -148,7 +148,7 @@ class CodecStateException(Exception):
 class CodecSpec:
 
     codec_class     : Callable
-    codec_type     : str
+    codec_type      : str
     quality         : int = 50
     speed           : int = 50
     size_efficiency : int = 50
@@ -195,7 +195,7 @@ class CodecSpec:
     def get_instance_count(self) -> int:
         return len(self.instances)
 
-    def to_dict(self) -> dict[str,Any]:
+    def to_dict(self) -> dict[str, Any]:
         v = asdict(self)
         for k in self.skipped_fields:
             v.pop(k, None)

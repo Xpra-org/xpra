@@ -97,6 +97,23 @@ def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int 
     return img.tobytes("raw", rgb_format)
 
 
+def choose_decoder(decoders_for_cs: list[CodecSpec]) -> CodecSpec:
+    assert decoders_for_cs
+    if len(decoders_for_cs) == 1:
+        return decoders_for_cs[0]
+    # for now, just rank by setup-cost, so gstreamer decoders come last:
+    scores: dict[int, list[int]] = {}
+    for index, decoder_spec in enumerate(decoders_for_cs):
+        score = decoder_spec.setup_cost
+        scores.setdefault(score, []).append(index)
+    best_score = sorted(scores)[0]
+    options_for_score = scores[best_score]
+    # if multiple decoders have the same score, just use the first one:
+    chosen = decoders_for_cs[options_for_score[0]]
+    videolog(f"choose_decoder({decoders_for_cs})={chosen}")
+    return chosen
+
+
 class WindowBackingBase:
     """
     Generic superclass for all Backing code,
@@ -789,7 +806,7 @@ class WindowBackingBase:
                 decoders_for_cs: list[CodecSpec] = decoder_options.get(input_colorspace, {})
                 if not decoders_for_cs:
                     raise RuntimeError(f"no video decoders for {coding!r} and {input_colorspace!r}")
-                decoder_spec = decoders_for_cs[0]
+                decoder_spec = choose_decoder(decoders_for_cs)
                 videolog("paint_with_video_decoder: new %s%s",
                          decoder_spec.codec_type, (coding, enc_width, enc_height, input_colorspace))
                 try:
