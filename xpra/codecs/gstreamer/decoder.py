@@ -129,22 +129,28 @@ def get_specs(encoding: str, colorspace: str) -> tuple[VideoSpec]:
 
 class Decoder(VideoPipeline):
     __gsignals__: dict[str, tuple] = VideoPipeline.__generic_signals__.copy()
+    decoder_element = "unset"
     """
     Dispatch video decoding to a gstreamer pipeline
     """
+
+    def __repr__(self):
+        if self.colorspace is None:
+            return f"gstreamer-{self.decoder_element}(uninitialized)"
+        return f"gstreamer-{self.decoder_element}({self.colorspace} - {self.width}x{self.height})"
 
     def create_pipeline(self, options: typedict):
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
-        decoder = CODECS.get(self.encoding)
-        if not decoder:
+        self.decoder_element = CODECS.get(self.encoding)
+        if not self.decoder_element:
             raise RuntimeError(f"invalid encoding {self.encoding}")
         stream_attrs: dict[str, Any] = {
             "width": self.width,
             "height": self.height,
         }
-        eopts = get_default_decoder_options().get(decoder, {})
+        eopts = get_default_decoder_options().get(self.decoder_element, {})
         if not eopts:
             eopts = {
                 "profile": "main",
@@ -154,7 +160,7 @@ class Decoder(VideoPipeline):
         for k, v in eopts.items():
             stream_attrs[k] = options.strget(k, v)
         stream_caps = get_caps_str(f"video/x-{self.encoding}", stream_attrs)
-        if decoder.startswith("nv"):
+        if self.decoder_element.startswith("nv"):
             gst_format = "NV12"
             self.output_format = "NV12"
         else:
@@ -176,7 +182,7 @@ class Decoder(VideoPipeline):
                 "format": GST_FORMAT_BYTES,
                 "caps": stream_caps,
             }),
-            f"{decoder} name=decoder",
+            f"{self.decoder_element} name=decoder",
             get_element_str("appsink", {
                 "name": "sink",
                 "emit-signals": 1,

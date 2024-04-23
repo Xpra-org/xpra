@@ -372,6 +372,7 @@ class VideoPipeline(Pipeline):
             try:
                 btype = type(buf).__qualname__
                 log.error(f" on {btype!r} of size {buf.get_size()}")
+                log.error(f" of {repr(self)}")
             except AttributeError:
                 pass
             for k, v in self.get_info().items():
