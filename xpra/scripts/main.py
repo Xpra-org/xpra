@@ -3834,7 +3834,7 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
                 if wmname and wmname.lower().find("xpra") >= 0:
                     # check if the xpra server process still exists:
                     pid = wminfo.get("xpra-server-pid")
-                    if not pid or (os.path.exists("/proc") and not os.path.exists("/proc/%s" % pid)):
+                    if not pid or (os.path.exists("/proc") and not os.path.exists(f"/proc/{pid}")):
                         state = "DEAD"
                 elif wmname:
                     state = "LIVE"

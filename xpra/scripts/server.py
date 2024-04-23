@@ -650,7 +650,7 @@ def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
                 pass
         if not dbus_address:
             dbus_address = wminfo.get("dbus-address", "")
-    if dbus_pid and os.path.exists("/proc") and not os.path.exists("/proc/%s" % dbus_pid):
+    if dbus_pid and os.path.exists("/proc") and not os.path.exists(f"/proc/{dbus_pid}"):
         dbuslog(f"dbus pid {dbus_pid} is no longer valid")
         dbus_pid = 0
     if dbus_pid:
