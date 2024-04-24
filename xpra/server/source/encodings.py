@@ -47,6 +47,7 @@ class EncodingsMixin(StubSourceMixin):
         self.encoding = ""  # the default encoding for all windows
         self.encodings: tuple[str, ...] = ()  # all the encodings supported by the client
         self.core_encodings: tuple[str, ...] = ()
+        self.full_csc_modes = dict()
         self.window_icon_encodings: tuple[str, ...] = ()
         self.rgb_formats: tuple[str, ...] = ("RGB",)
         self.encoding_options = typedict()
@@ -272,6 +273,7 @@ class EncodingsMixin(StubSourceMixin):
         # encodings:
         self.encodings = c.strtupleget("encodings")
         self.core_encodings = c.strtupleget("encodings.core", self.encodings)
+        self.full_csc_modes = c.dictget("full_csc_modes") or {}
         log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
         # we can't assume that the window mixin is loaded,
         # or that the ui_client flag exists:

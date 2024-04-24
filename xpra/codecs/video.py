@@ -284,15 +284,17 @@ class VideoHelper:
             self._initialized = True
         log("VideoHelper.init() done")
 
-    def get_gpu_options(self, codec_specs: Vdict) -> dict[str, list[CodecSpec]]:
-        log(f"get_gpu_options({codec_specs})")
-        gpu_fmts: dict[str, list[str]] = {}
+    def get_gpu_options(self, codec_specs: Vdict, out_fmts=("*", )) -> dict[str, list[CodecSpec]]:
+        gpu_fmts: dict[str, list[CodecSpec]] = {}
         for in_fmt, vdict in codec_specs.items():
             for out_fmt, codecs in vdict.items():
-                log(f"get_gpu_options {out_fmt}: {codecs}")
+                if "*" not in out_fmts and out_fmt not in out_fmts:
+                    continue
                 for codec in codecs:
                     if codec.gpu_cost > codec.cpu_cost:
+                        log(f"get_gpu_options {out_fmt}: {codec}")
                         gpu_fmts.setdefault(in_fmt, []).append(codec)
+        log(f"get_gpu_options({codec_specs})={gpu_fmts}")
         return gpu_fmts
 
     def get_gpu_encodings(self) -> dict[str, list[CodecSpec]]:

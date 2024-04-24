@@ -9,22 +9,22 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
-from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.gstreamer.common import (
     import_gst, GST_FLOW_OK, get_element_str,
-    get_default_appsink_attributes, get_all_plugin_names,
+    get_default_appsink_attributes,
     get_caps_str,
 )
 from xpra.gtk.gobject import n_arg_signal
 from xpra.gstreamer.pipeline import Pipeline
-from xpra.codecs.constants import get_profile, CSC_ALIAS
+from xpra.codecs.constants import get_profile, CSC_ALIAS, VideoSpec
 from xpra.codecs.gstreamer.common import (
     get_version, get_type, get_info,
     init_module, cleanup_module,
     get_video_encoder_caps, get_video_encoder_options,
     get_gst_encoding, get_encoder_info, get_gst_rgb_format,
 )
+from xpra.codecs.video import getVideoHelper
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
@@ -47,8 +47,7 @@ class Capture(Pipeline):
     __gsignals__ = Pipeline.__generic_signals__.copy()
     __gsignals__["new-image"] = n_arg_signal(3)
 
-    def __init__(self, element: str = "ximagesrc", pixel_format: str = "BGRX",
-                 width: int = 0, height: int = 0):
+    def __init__(self, element: str = "ximagesrc", pixel_format: str = "BGRX", width: int = 0, height: int = 0):
         super().__init__()
         self.capture_element = element.split(" ")[0]
         self.pixel_format: str = pixel_format
@@ -139,35 +138,39 @@ class Capture(Pipeline):
 GObject.type_register(Capture)
 
 
-ENCODER_ELEMENTS: dict[str, tuple[str, ...]] = {
-    "jpeg": ("jpegenc", ),
-    "h264": ("vah264enc", "vah264lpenc", "openh264enc", "x264enc"),     # "vaapih264enc" no workee?
-    "h265": ("vah265enc", ),
-    "vp8": ("vp8enc", ),
-    "vp9": ("vp9enc", ),
-    "av1": ("av1enc", ),
-}
-
-
-def choose_encoder(plugins: Iterable[str]) -> str:
-    # for now, just use the first one available:
-    for plugin in plugins:
-        if plugin in get_all_plugin_names():
-            return plugin
-    return ""
-
-
-def choose_video_encoder(encodings: Iterable[str]) -> str:
-    log(f"choose_video_encoder({encodings})")
-    for encoding in encodings:
-        plugins = ENCODER_ELEMENTS.get(encoding, ())
-        element = choose_encoder(plugins)
-        if not element:
-            log(f"skipped {encoding!r} due to missing: {csv(plugins)}")
-            continue
-        log(f"selected {encoding!r}")
-        return encoding
-    return ""
+def choose_video_encoder(preferred_encoding: str, full_csc_modes: typedict) -> VideoSpec | None:
+    log(f"choose_video_encoder({preferred_encoding}, {full_csc_modes})")
+    vh = getVideoHelper()
+    scores: dict[int, list[VideoSpec]] = {}
+    for encoding in full_csc_modes.keys():
+        csc_modes = full_csc_modes.strtupleget(encoding)
+        encoder_specs = vh.get_encoder_specs(encoding)
+        # ignore the input colorspace for now,
+        # and assume we can `videoconvert` to this format
+        # TODO: take csc into account for scoring
+        for codec_list in encoder_specs.values():
+            for codec in codec_list:
+                if not codec.codec_type.startswith("gstreamer"):
+                    continue
+                if "*" not in csc_modes:
+                    # verify that the client can decode this csc mode:
+                    matches = tuple(x for x in codec.output_colorspaces if x in csc_modes)
+                    if not matches:
+                        log(f"skipped {codec}: {codec.output_colorspaces} not in {csc_modes}")
+                        continue
+                # prefer encoding matching what the user requested and GPU accelerated:
+                gpu = bool(codec.gpu_cost > codec.cpu_cost)
+                score = int(codec.encoding == preferred_encoding or gpu) * 100 + codec.quality + codec.score_boost
+                log(f"score({codec.codec_type})={score} ({gpu=}, quality={codec.quality}, boost={codec.score_boost})")
+                # (lowest score wins)
+                scores.setdefault(-score, []).append(codec)
+    log(f"choose_video_encoder: scores={scores}")
+    if not scores:
+        return None
+    best_score = sorted(scores)[0]
+    best = scores[best_score][0]
+    log(f"choose_video_encoder({preferred_encoding}, {csc_modes})={best}")
+    return best
 
 
 def choose_csc(modes: Iterable[str], quality=100) -> str:
@@ -177,44 +180,52 @@ def choose_csc(modes: Iterable[str], quality=100) -> str:
     return modes[0]
 
 
+def capture_and_encode(capture_element: str, encoding: str, full_csc_modes: typedict, w: int, h: int):
+    encoder_spec = choose_video_encoder(encoding, full_csc_modes)
+    if not encoder_spec:
+        log(f"unable to find a GStreamer video encoder with csc modes={full_csc_modes}")
+        return None
+    assert encoder_spec.codec_type.startswith("gstreamer-")
+    encoder = encoder_spec.codec_type[len("gstreamer-"):]
+    encoding = encoder_spec.encoding
+    csc_mode = encoder_spec.input_colorspace
+    return CaptureAndEncode(capture_element, encoding, encoder, csc_mode, w, h)
+
+
 class CaptureAndEncode(Capture):
     """
     Uses a GStreamer pipeline to capture the screen
     and encode it to a video stream
     """
 
-    def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
-        # we are overloading "pixel_format" as "encoding":
-        encoding = self.pixel_format
-        elements = ENCODER_ELEMENTS.get(encoding)
-        if not elements:
-            raise ValueError(f"no encoders defined for {encoding!r}")
-        encoder = choose_encoder(elements)
-        if not encoder:
-            raise RuntimeError(f"no encoders found for {encoding!r}")
+    def __init__(self, element: str = "ximagesrc", encoding="vp8", encoder="vp8enc",
+                 pixel_format: str = "YUV420P", width: int = 0, height: int = 0):
+        self.encoding = encoding
         self.encoder = encoder
+        super().__init__(element, pixel_format, width, height)
+
+    def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
         options = typedict({
             "speed": 100,
             "quality": 100,
         })
-        einfo = get_encoder_info(encoder)
-        log(f"{encoder}: {einfo=}")
-        self.csc_mode = choose_csc(einfo.get("format", ()), options.intget("quality", 100))
-        self.profile = get_profile(options, encoding, csc_mode=self.csc_mode,
-                                   default_profile="high" if encoder == "x264enc" else "")
-        eopts = get_video_encoder_options(encoder, self.profile, options)
-        vcaps = get_video_encoder_caps(encoder)
+        einfo = get_encoder_info(self.encoder)
+        log(f"{self.encoder}: {einfo=}")
+        self.profile = get_profile(options, self.encoding, csc_mode=self.pixel_format,
+                                   default_profile="high" if self.encoder == "x264enc" else "")
+        eopts = get_video_encoder_options(self.encoder, self.profile, options)
+        vcaps = get_video_encoder_caps(self.encoder)
         self.extra_client_info: dict[str, Any] = vcaps.copy()
         if self.profile:
             vcaps["profile"] = self.profile
             self.extra_client_info["profile"] = self.profile
-        gst_encoding = get_gst_encoding(encoding)  # ie: "hevc" -> "video/x-h265"
+        gst_encoding = get_gst_encoding(self.encoding)  # ie: "hevc" -> "video/x-h265"
         elements = [
             f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
             "queue leaky=2 max-size-buffers=1",
             "videoconvert",
-            "video/x-raw,format=%s" % get_gst_rgb_format(self.csc_mode),
-            get_element_str(encoder, eopts),
+            "video/x-raw,format=%s" % get_gst_rgb_format(self.pixel_format),
+            get_element_str(self.encoder, eopts),
             get_caps_str(gst_encoding, vcaps),
             get_element_str("appsink", get_default_appsink_attributes()),
         ]
@@ -240,16 +251,15 @@ class CaptureAndEncode(Capture):
             self.frames += 1
             client_info = self.extra_client_info
             client_info["frame"] = self.frames
-            client_info["csc"] = CSC_ALIAS.get(self.csc_mode, self.csc_mode)
+            client_info["csc"] = CSC_ALIAS.get(self.pixel_format, self.pixel_format)
             self.extra_client_info = {}
-            self.emit("new-image", self.pixel_format, data, client_info)
+            self.emit("new-image", self.encoding, data, client_info)
             if SAVE_TO_FILE:
                 if not self.file:
-                    encoding = self.pixel_format
                     gen = generation.increase()
-                    filename = "gstreamer-" + str(gen) + f".{encoding}"
+                    filename = "gstreamer-" + str(gen) + f".{self.encoding}"
                     self.file = open(filename, "wb")
-                    log.info(f"saving gstreamer {encoding} stream to {filename!r}")
+                    log.info(f"saving gstreamer {self.encoding} stream to {filename!r}")
                 self.file.write(data)
         return GST_FLOW_OK
 

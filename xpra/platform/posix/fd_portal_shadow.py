@@ -15,7 +15,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.common import NotificationID, ConnectionMessage
 from xpra.dbus.helper import dbus_to_native
-from xpra.codecs.gstreamer.capture import Capture, CaptureAndEncode, choose_video_encoder
+from xpra.codecs.gstreamer.capture import Capture, capture_and_encode
 from xpra.gstreamer.common import get_element_str
 from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -243,7 +243,7 @@ class PortalShadow(GTKShadowServerBase):
             log.warn(" keyboard and pointer events cannot be forwarded")
 
     def create_capture_pipeline(self, fd: int, node_id: int, w: int, h: int) -> Capture:
-        el = get_element_str("pipewiresrc", {
+        capture_element = get_element_str("pipewiresrc", {
             "fd": fd,
             "path": str(node_id),
             "do-timestamp": True,
@@ -252,21 +252,13 @@ class PortalShadow(GTKShadowServerBase):
         if VIDEO_MODE:
             encoding = getattr(c, "encoding", "")
             encs = getattr(c, "core_encodings", ())
-            options = [encoding] + VIDEO_MODE_ENCODINGS
-            common_video = set(options) & set(encs)
-            log(f"core_encodings({c})={encs}, common video encodings={common_video}")
-            encoding = choose_video_encoder(common_video)
-            if encoding:
-                log(f"will try the following encoding: {encoding}")
-                try:
-                    return CaptureAndEncode(el, encoding, width=w, height=h)
-                except (RuntimeError, ValueError) as e:
-                    log("CaptureAndEncode%s", (el, encoding, w, h), exc_info=True)
-                    log.info(f"cannot use {encoding}: {e}")
-            else:
-                log.warn("no video encoders available")
-            log.warn("Warning: falling back to RGB capture")
-        return Capture(el, pixel_format="BGRX", width=w, height=h)
+            full_csc_modes = getattr(c, "full_csc_modes", {})
+            log(f"create_capture_pipeline() core_encodings={encs}, full_csc_modes={full_csc_modes}")
+            pipeline = capture_and_encode(capture_element, encoding, full_csc_modes, w, h)
+            if pipeline:
+                return pipeline
+            log.warn("Warning: falling back to slow RGB capture")
+        return Capture(capture_element, pixel_format="BGRX", width=w, height=h)
 
     def start_pipewire_capture(self, node_id: int, props: typedict) -> None:
         log(f"start_pipewire_capture({node_id}, {props})")

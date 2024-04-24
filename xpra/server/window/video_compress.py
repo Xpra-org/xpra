@@ -431,7 +431,7 @@ class WindowVideoSource(WindowSource):
         log("wvs.update_encoding_selection(%s, %s, %s) full_csc_modes=%s", encoding, exclude, init, self.full_csc_modes)
         if exclude is None:
             exclude = []
-        log(f"video_encodings={self.video_encodings}, core_encodings={self.core_encodings}")
+        videolog(f"encoding={encoding}, video_encodings={self.video_encodings}, core_encodings={self.core_encodings}")
         for x in self.video_encodings:
             if x not in self.core_encodings:
                 log("video encoding %s not in core encodings", x)
@@ -453,7 +453,7 @@ class WindowVideoSource(WindowSource):
                  self.common_video_encodings, self._csc_encoder, self._video_encoder)
         if encoding in ("stream", "auto", "grayscale"):
             vh = self.video_helper
-            if encoding == "auto" and self.content_type in STREAM_CONTENT_TYPES and vh:
+            if encoding in ("auto", "stream") and self.content_type in STREAM_CONTENT_TYPES and vh:
                 accel = vh.get_gpu_encodings()
                 common_accel = preforder(set(self.common_video_encodings) & set(accel.keys()))
                 videolog(f"gpu {accel=} - {common_accel=}")
@@ -675,7 +675,7 @@ class WindowVideoSource(WindowSource):
 
     def start_gstreamer_pipeline(self) -> bool:
         from xpra.gstreamer.common import plugin_str
-        from xpra.codecs.gstreamer.capture import CaptureAndEncode, choose_video_encoder
+        from xpra.codecs.gstreamer.capture import capture_and_encode
         attrs = {
             "show-pointer": False,
             "do-timestamp": True,
@@ -687,15 +687,11 @@ class WindowVideoSource(WindowSource):
             xid = 0
         if xid:
             attrs["xid"] = xid
-        element = plugin_str("ximagesrc", attrs)
-        # for now this doesn't do anything as we require `encoding="stream"`
-        # options = [self.encoding] + list(self.common_encodings)
-        options = self.common_encodings
-        encoding = choose_video_encoder(options)
-        if not encoding:
-            return False
+        capture_element = plugin_str("ximagesrc", attrs)
         w, h = self.window_dimensions
-        self.gstreamer_pipeline = CaptureAndEncode(element, encoding, w, h)
+        self.gstreamer_pipeline = capture_and_encode(capture_element, self.encoding, self.full_csc_modes, w, h)
+        if not self.gstreamer_pipeline:
+            return False
         self.gstreamer_pipeline.connect("new-image", self.new_gstreamer_frame)
         self.gstreamer_pipeline.start()
         gstlog("start_gstreamer_pipeline() %s started", self.gstreamer_pipeline)
