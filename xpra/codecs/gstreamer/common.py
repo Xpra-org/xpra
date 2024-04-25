@@ -377,7 +377,7 @@ class VideoPipeline(Pipeline):
             return self.frame_queue.get(timeout=timeout/1000)
         except Empty:
             log_fn = log.debug if junk else log.error
-            log_fn(f"Error: frame queue timeout after {timeout}s")
+            log_fn(f"Error: frame queue timeout after {timeout}ms")
             try:
                 btype = type(buf).__qualname__.lower()
                 log_fn(f" on {btype!r} of size {buf.get_size()}")
