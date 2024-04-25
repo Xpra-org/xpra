@@ -13,7 +13,7 @@ from weakref import WeakValueDictionary
 from typing import Dict, Any
 from threading import Event
 
-from xpra.util import csv, AtomicInteger
+from xpra.util import csv, AtomicInteger, typedict
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.nvidia.cuda_errors import cudacheck, get_error_name
 from xpra.codecs.nvidia.cuda_context import get_default_device_context
@@ -777,7 +777,7 @@ def decompress(encoding, img_data, width, height, rgb_format, options=None):
         raise RuntimeError("no cuda device found")
     with dev as cuda_context:
         log("cuda_context=%s for device=%s", cuda_context, dev.get_info())
-        options = options or {}
+        options = typedict(options or {})
         stream = options.get("stream")
         if not stream:
             stream = Stream()
@@ -807,7 +807,7 @@ def decompress_with_device(encoding, img_data, width, height, options=None):
     cdef Decoder decoder = Decoder()
     try:
         decoder.init_context(encoding, width, height, "YUV420P")
-        return decoder.decompress_image(img_data, options)
+        return decoder.decompress_image(img_data, typedict(options or {}))
     finally:
         decoder.clean()
 

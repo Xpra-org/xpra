@@ -93,7 +93,7 @@ def main(files):
             #now decode it back into an RGB picture:
             decoder = avcodec.Decoder()
             decoder.init_context(encoding, w, h, colorspace)
-            decoded = decoder.decompress_image(bdata, client_options)
+            decoded = decoder.decompress_image(bdata, typedict(client_options))
             dformat = decoded.get_pixel_format()
             output = decoded
             if dformat!="BGRX":

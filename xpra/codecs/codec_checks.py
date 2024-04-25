@@ -340,7 +340,7 @@ def testdecoding(decoder_module, encoding:str, full:bool):
                     for i, data in enumerate(frames):
                         try:
                             log(f"frame {i+1} is {len(data or ()):5} bytes")
-                            image = decoder.decompress_image(data)
+                            image = decoder.decompress_image(data, typedict())
                             if image is None:
                                 raise RuntimeError(f"failed to decode test data for encoding {encoding!r} with colorspace {cs!r}")
                             if image.get_width()!=w:
@@ -354,8 +354,9 @@ def testdecoding(decoder_module, encoding:str, full:bool):
                 if full:
                     log(f"{decoder_module.get_type()}: testing {encoding} / {cs} with junk data")
                     #test failures:
+                    options = typedict({"junk": True})
                     try:
-                        image = decoder.decompress_image(b"junk")
+                        image = decoder.decompress_image(b"junk", options)
                     except ValueError:
                         image = None
                     if image is not None:

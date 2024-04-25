@@ -201,7 +201,7 @@ class Decoder(VideoPipeline):
         #buf.timestamp = timestamp
         #buf.offset = offset
         #buf.offset_end = offset_end
-        return self.process_buffer(buf)
+        return self.process_buffer(buf, options)
 
 GObject.type_register(Decoder)
 
