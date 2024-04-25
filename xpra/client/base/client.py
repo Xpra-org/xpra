@@ -176,7 +176,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return
         stdin = pp.stdin
         if stdin:
-            noerr(stdin.write, f"{pct}:{text}\n".encode("latin1"))
+            try:
+                noerr(stdin.write, f"{pct}:{text}\n".encode("utf8"))
+            except UnicodeEncodeError as e:
+                log.warn(f"Warning: failed to send {text!r} to progress process: {e}")
+                noerr(stdin.write, f"{pct}:\n".encode("utf8"))
             noerr(stdin.flush)
         if pct == 100:
             # it should exit on its own, but just in case:
