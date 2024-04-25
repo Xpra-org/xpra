@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.0] 2024-02-21
+## [6.0] 2024-04-25
 * Platforms, build and packaging:
     * [build packages for multiple python targets](https://github.com/Xpra-org/xpra/issues/3945)
     * [require and take advantage of Python 3.10+](https://github.com/Xpra-org/xpra/issues/3930)

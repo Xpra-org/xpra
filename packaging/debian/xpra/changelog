@@ -36,7 +36,7 @@ xpra (6.0-1) UNRELEASED; urgency=low
     authentication handlers
     record some SBOM data
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 21 Feb 2023 20:52:59 +0200
+ -- Antoine Martin <antoine@xpra.org>  Thu, 25 Apr 2023 14:54:03 +0200
 
 xpra (5.0-1) UNRELEASED; urgency=low
   * Major improvements:
