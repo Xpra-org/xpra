@@ -1395,7 +1395,7 @@ def _do_run_server(script_file:str, cmdline,
     if not proxying:
         if POSIX and not OSX:
             no_gtk()
-            if starting or starting_desktop:
+            if starting or starting_desktop or starting_monitor:
                 r = verify_display(xvfb, display_name, shadowing)
                 if r:
                     return r
