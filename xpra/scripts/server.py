@@ -752,7 +752,7 @@ def _do_run_server(script_file:str, cmdline,
     upgrading = mode.startswith("upgrade")
     shadowing = mode.startswith("shadow")
     proxying  = mode == "proxy"
-    use_display = parse_bool_or("use-display", opts.use_display)
+    use_display = parse_bool("use-display", opts.use_display)
     if shadowing or expanding:
         use_display = True
 
