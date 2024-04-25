@@ -1032,7 +1032,7 @@ def getTaskbar():
             TaskbarLib = False
     if not TaskbarLib:
         return None
-    taskbar = cc.CreateObject("{56FDF344-FD6D-11d0-958A-006097C9A090}", interface=TaskbarLib.ITaskbarlist3)
+    taskbar = cc.CreateObject("{56FDF344-FD6D-11d0-958A-006097C9A090}", interface=TaskbarLib.ITaskbarList3)
     taskbar.HrInit()
     return taskbar
 
