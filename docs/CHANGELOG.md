@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.1] 2024-04-25
+* TODO
+
 ## [6.0] 2024-04-25
 * Platforms, build and packaging:
     * [build packages for multiple python targets](https://github.com/Xpra-org/xpra/issues/3945)
