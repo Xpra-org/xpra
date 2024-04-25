@@ -752,7 +752,9 @@ def _do_run_server(script_file:str, cmdline,
     upgrading = mode.startswith("upgrade")
     shadowing = mode.startswith("shadow")
     proxying  = mode == "proxy"
-    use_display = parse_bool("use-display", opts.use_display) or shadowing
+    use_display = parse_bool_or("use-display", opts.use_display)
+    if shadowing or expanding:
+        use_display = True
 
     if not proxying and not shadowing and POSIX and not OSX:
         os.environ["GDK_BACKEND"] = "x11"
