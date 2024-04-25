@@ -10,7 +10,7 @@
 %endif
 
 Name:           %{python3}-pytools
-Version:        2023.1.1
+Version:        2024.1.2
 Release:        1%{?dist}
 Summary:        A collection of tools for python
 Group:          Development/Languages
@@ -43,7 +43,7 @@ Small tool functions such as ::
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "80637873d206f6bcedf7cdb46ad93e868acb4ea2256db052dfcca872bdd0321f" ]; then
+if [ "${sha256}" != "081871e451505c4b986ebafa68aeeabfdc7beb3faa1baa50f726aebe21e1d057" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -72,6 +72,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-1
+- new upstream release
+
 * Tue Oct 17 2023 Antoine Martin <antoine@xpra.org> - 2023.1.1-1
 - new upstream release
 
