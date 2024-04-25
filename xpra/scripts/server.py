@@ -1458,7 +1458,7 @@ def _do_run_server(script_file: str, cmdline,
     if not proxying:
         if POSIX and not OSX:
             no_gtk()
-            if starting or starting_desktop:
+            if starting or starting_desktop or starting_monitor:
                 if not verify_display(xvfb, display_name, shadowing):
                     return ExitCode.NO_DISPLAY
         # on win32, this ensures that we get the correct screen size to shadow:
