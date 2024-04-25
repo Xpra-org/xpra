@@ -20,7 +20,7 @@ Release:        2%{?dist}
 %if 0%{python3_minor} < 7
 Version:        0.33.6
 %else
-Version:        0.41.3
+Version:        0.43.0
 %endif
 Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
@@ -48,7 +48,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 %if 0%{python3_minor} < 7
 if [ "${sha256}" != "10c9da68765315ed98850f8e048347c3eb06dd81822dc2ab1d4fde9dc9702646" ]; then
 %else
-if [ "${sha256}" != "4d4987ce51a49370ea65c0bfd2234e8ce80a12780820d9dc462597a6e60d0841" ]; then
+if [ "${sha256}" != "465ef92c69fa5c5da2d1cf8ac40559a8c940886afcef87dcf14b9470862f1d85" ]; then
 %endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
@@ -89,6 +89,9 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 
 
 %changelog
+* Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> - 0.43.0-1
+- new upstream release
+
 * Sun Nov 19 2023 Antoine Martin <antoine@xpra.org> - 0.41.3-2
 - get rid of unusable egg directory
 
