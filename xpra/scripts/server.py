@@ -745,7 +745,6 @@ def _do_run_server(script_file:str, cmdline,
         if k.startswith("DBUS_"):
             del os.environ[k]
 
-    use_display = parse_bool("use-display", opts.use_display)
     starting  = mode == "seamless"
     starting_desktop = mode=="desktop"
     starting_monitor = mode=="monitor"
@@ -753,6 +752,7 @@ def _do_run_server(script_file:str, cmdline,
     upgrading = mode.startswith("upgrade")
     shadowing = mode.startswith("shadow")
     proxying  = mode == "proxy"
+    use_display = parse_bool("use-display", opts.use_display) or shadowing
 
     if not proxying and not shadowing and POSIX and not OSX:
         os.environ["GDK_BACKEND"] = "x11"
@@ -1178,7 +1178,7 @@ def _do_run_server(script_file:str, cmdline,
             log(f"using XAUTHORITY file {xauthority!r}")
         os.environ["XAUTHORITY"] = xauthority
         #resolve use-display='auto':
-        if use_display is None or upgrading:
+        if (use_display is None or upgrading) and not proxying:
             #figure out if we have to start the vfb or not:
             if not display_name:
                 if upgrading:
