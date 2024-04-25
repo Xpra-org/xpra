@@ -945,6 +945,9 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
             add_to_keywords(kw, 'extra_compile_args', cflag)
 
+    if OSX:
+        add_to_keywords(kw, 'extra_compile_args', "-Wno-nullability-completeness")
+
     def add_tokens(s, add_to="extra_link_args"):
         if not s:
             return
