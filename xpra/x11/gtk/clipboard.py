@@ -105,11 +105,11 @@ def strings_to_xatoms(data: Iterable[str]) -> bytes:
 
 class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     __gsignals__ = {
-        "xpra-client-message-event": one_arg_signal,
-        "xpra-selection-request": one_arg_signal,
-        "xpra-selection-clear": one_arg_signal,
-        "xpra-property-notify-event": one_arg_signal,
-        "xpra-xfixes-selection-notify-event": one_arg_signal,
+        "x11-client-message-event": one_arg_signal,
+        "x11-selection-request": one_arg_signal,
+        "x11-selection-clear": one_arg_signal,
+        "x11-property-notify-event": one_arg_signal,
+        "x11-xfixes-selection-notify-event": one_arg_signal,
         #
         "send-clipboard-token": one_arg_signal,
         "send-clipboard-request": n_arg_signal(2),
@@ -211,7 +211,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             log("failed to claim selection '%s'", self._selection, exc_info=True)
             raise
 
-    def do_xpra_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event) -> None:
         if event.message_type == "_GTK_LOAD_ICONTHEMES":
             # ignore this crap
             return
@@ -487,7 +487,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         return targets
 
     def do_selection_clear_event(self, event) -> None:
-        log("do_xpra_selection_clear(%s) was owned=%s", event, self.owned)
+        log("do_x11_selection_clear(%s) was owned=%s", event, self.owned)
         if not self._enabled:
             return
         self.owned = False
@@ -634,11 +634,11 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     # handle signals from the X11 bindings,
     # and dispatch them to the proxy handling the selection specified:
     __gsignals__ = {
-        "xpra-client-message-event": one_arg_signal,
-        "xpra-selection-request": one_arg_signal,
-        "xpra-selection-clear": one_arg_signal,
-        "xpra-property-notify-event": one_arg_signal,
-        "xpra-xfixes-selection-notify-event": one_arg_signal,
+        "x11-client-message-event": one_arg_signal,
+        "x11-selection-request": one_arg_signal,
+        "x11-selection-clear": one_arg_signal,
+        "x11-property-notify-event": one_arg_signal,
+        "x11-xfixes-selection-notify-event": one_arg_signal,
     }
 
     def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
@@ -693,25 +693,25 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
     # X11 event handlers:
     # we dispatch them to the proxy handling the selection specified
     ############################################################################
-    def do_xpra_selection_request(self, event) -> None:
-        log("do_xpra_selection_request(%s)", event)
+    def do_x11_selection_request(self, event) -> None:
+        log("do_x11_selection_request(%s)", event)
         proxy = self._get_proxy(event.selection)
         if proxy:
             proxy.do_selection_request_event(event)
 
-    def do_xpra_selection_clear(self, event) -> None:
-        log("do_xpra_selection_clear(%s)", event)
+    def do_x11_selection_clear(self, event) -> None:
+        log("do_x11_selection_clear(%s)", event)
         proxy = self._get_proxy(event.selection)
         if proxy:
             proxy.do_selection_clear_event(event)
 
-    def do_xpra_xfixes_selection_notify_event(self, event) -> None:
-        log("do_xpra_xfixes_selection_notify_event(%s)", event)
+    def do_x11_xfixes_selection_notify_event(self, event) -> None:
+        log("do_x11_xfixes_selection_notify_event(%s)", event)
         proxy = self._get_proxy(event.selection)
         if proxy:
             proxy.do_selection_notify_event(event)
 
-    def do_xpra_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event) -> None:
         message_type = event.message_type
         if message_type == "_GTK_LOAD_ICONTHEMES":
             log("ignored clipboard client message: %s", message_type)
@@ -719,7 +719,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         log.info(f"Unexpected X11 message received by clipboard window {event.window:x}")
         log.info(f" {event}")
 
-    def do_xpra_property_notify_event(self, event) -> None:
+    def do_x11_property_notify_event(self, event) -> None:
         if event.atom in (
                 "_NET_WM_NAME", "WM_NAME", "_NET_WM_ICON_NAME", "WM_ICON_NAME",
                 "WM_PROTOCOLS", "WM_NORMAL_HINTS", "WM_CLIENT_MACHINE", "WM_LOCALE_NAME",
@@ -728,7 +728,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
             # these properties are populated by GTK when we create the window,
             # no need to log them:
             return
-        log("do_xpra_property_notify_event(%s)", event)
+        log("do_x11_property_notify_event(%s)", event)
         # ie: atom=PRIMARY-TARGETS
         # ie: atom=PRIMARY-VALUE
         parts = event.atom.split("-", 1)

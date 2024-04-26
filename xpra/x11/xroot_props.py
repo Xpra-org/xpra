@@ -18,7 +18,7 @@ Gdk = gi_import("Gdk")
 class XRootPropWatcher(GObject.GObject):
     __gsignals__ = {
         "root-prop-changed": (SIGNAL_RUN_LAST, GObject.TYPE_NONE, (GObject.TYPE_STRING, )),
-        "xpra-property-notify-event": one_arg_signal,
+        "x11-property-notify-event": one_arg_signal,
     }
 
     def __init__(self, props, root_window):
@@ -38,8 +38,8 @@ class XRootPropWatcher(GObject.GObject):
     def __repr__(self):  # pylint: disable=arguments-differ
         return "XRootPropWatcher"
 
-    def do_xpra_property_notify_event(self, event):
-        log("XRootPropWatcher.do_xpra_property_notify_event(%s)", event)
+    def do_x11_property_notify_event(self, event):
+        log("XRootPropWatcher.do_x11_property_notify_event(%s)", event)
         if event.atom in self._props:
             self.do_notify(str(event.atom))
 

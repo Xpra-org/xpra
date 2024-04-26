@@ -308,8 +308,8 @@ def wn(w) -> str:
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     __gsignals__ = {
         "state-updated": no_arg_signal,
-        "xpra-focus-out-event": one_arg_signal,
-        "xpra-focus-in-event": one_arg_signal,
+        "x11-focus-out-event": one_arg_signal,
+        "x11-focus-in-event": one_arg_signal,
     }
 
     # maximum size of the actual window:
@@ -581,11 +581,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
         def focus_in(_window, event):
             focuslog("focus-in-event for wid=%s", self.wid)
-            self.do_xpra_focus_in_event(event)
+            self.do_x11_focus_in_event(event)
 
         def focus_out(_window, event):
             focuslog("focus-out-event for wid=%s", self.wid)
-            self.do_xpra_focus_out_event(event)
+            self.do_x11_focus_out_event(event)
 
         self.connect("focus-in-event", focus_in)
         self.connect("focus-out-event", focus_out)
@@ -674,8 +674,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             focuslog(f"will recheck focus in {FOCUS_RECHECK_DELAY}ms")
             self.recheck_focus_timer = self.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
 
-    def do_xpra_focus_out_event(self, event) -> None:
-        focuslog("do_xpra_focus_out_event(%s)", event)
+    def do_x11_focus_out_event(self, event) -> None:
+        focuslog("do_x11_focus_out_event(%s)", event)
         if NotifyInferior is not None:
             detail = getattr(event, "detail", None)
             if detail == NotifyInferior:
@@ -684,8 +684,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._focus_latest = False
         self.schedule_recheck_focus()
 
-    def do_xpra_focus_in_event(self, event) -> None:
-        focuslog("do_xpra_focus_in_event(%s) been_mapped=%s", event, self._been_mapped)
+    def do_x11_focus_in_event(self, event) -> None:
+        focuslog("do_x11_focus_in_event(%s) been_mapped=%s", event, self._been_mapped)
         if self._been_mapped:
             self._focus_latest = True
             self.schedule_recheck_focus()

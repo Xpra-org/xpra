@@ -75,8 +75,8 @@ def rindex(alist: list | tuple, avalue: Any) -> int:
 
 class SeamlessServer(GObject.GObject, X11ServerBase):
     __gsignals__ = {
-        "xpra-child-map-event": one_arg_signal,
-        "xpra-cursor-event": one_arg_signal,
+        "x11-child-map-event": one_arg_signal,
+        "x11-cursor-event": one_arg_signal,
         "server-event": one_arg_signal,
     }
 
@@ -483,8 +483,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.last_raised = None
         self._add_new_window(window)
 
-    def do_xpra_child_map_event(self, event) -> None:
-        windowlog("do_xpra_child_map_event(%s)", event)
+    def do_x11_child_map_event(self, event) -> None:
+        windowlog("do_x11_child_map_event(%s)", event)
         if event.override_redirect:
             self._add_new_or_window(event.window)
 

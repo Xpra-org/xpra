@@ -247,15 +247,15 @@ class CoreX11WindowModel(WindowModelStub):
         "client-contents-changed": one_arg_signal,
         "motion": one_arg_signal,
         # x11 events we catch (and often re-emit as something else):
-        "xpra-property-notify-event": one_arg_signal,
-        "xpra-xkb-event": one_arg_signal,
-        "xpra-shape-event": one_arg_signal,
-        "xpra-configure-event": one_arg_signal,
-        "xpra-unmap-event": one_arg_signal,
-        "xpra-client-message-event": one_arg_signal,
-        "xpra-focus-in-event": one_arg_signal,
-        "xpra-focus-out-event": one_arg_signal,
-        "xpra-motion-event": one_arg_signal,
+        "x11-property-notify-event": one_arg_signal,
+        "x11-xkb-event": one_arg_signal,
+        "x11-shape-event": one_arg_signal,
+        "x11-configure-event": one_arg_signal,
+        "x11-unmap-event": one_arg_signal,
+        "x11-client-message-event": one_arg_signal,
+        "x11-focus-in-event": one_arg_signal,
+        "x11-focus-out-event": one_arg_signal,
+        "x11-motion-event": one_arg_signal,
         "x11-property-changed": one_arg_signal,
     }
 
@@ -594,7 +594,7 @@ class CoreX11WindowModel(WindowModelStub):
     def root_prop_set(self, key: str, ptype, value) -> None:
         prop_set(X11Window.get_root_xid(), key, ptype, value)
 
-    def do_xpra_property_notify_event(self, event) -> None:
+    def do_x11_property_notify_event(self, event) -> None:
         # X11: PropertyNotify
         assert event.window == self.xid
         self._handle_property_change(str(event.atom))
@@ -714,12 +714,12 @@ class CoreX11WindowModel(WindowModelStub):
     # X11 Events
     #########################################
 
-    def do_xpra_unmap_event(self, event) -> None:
-        log("do_xpra_unmap_event(%s) xid=%s, ", event, self.xid)
+    def do_x11_unmap_event(self, event) -> None:
+        log("do_x11_unmap_event(%s) xid=%s, ", event, self.xid)
         self.unmanage()
 
-    def do_xpra_destroy_event(self, event) -> None:
-        log("do_xpra_destroy_event(%s) xid=%s, ", event, self.xid)
+    def do_x11_destroy_event(self, event) -> None:
+        log("do_x11_destroy_event(%s) xid=%s, ", event, self.xid)
         if event.delivered_to == self.xid:
             # This is somewhat redundant with the unmap signal, because if you
             # destroy a mapped window, then a UnmapNotify is always generated.
@@ -760,16 +760,16 @@ class CoreX11WindowModel(WindowModelStub):
         # not handled:
         return False
 
-    def do_xpra_configure_event(self, event) -> None:
+    def do_x11_configure_event(self, event) -> None:
         if not self._managed:
             return
         # shouldn't the border width always be 0?
         geom = (event.x, event.y, event.width, event.height)
-        geomlog("CoreX11WindowModel.do_xpra_configure_event(%s) xid=%#x, new geometry=%s",
+        geomlog("CoreX11WindowModel.do_x11_configure_event(%s) xid=%#x, new geometry=%s",
                 event, self.xid, geom)
         self._updateprop("geometry", geom)
 
-    def do_xpra_shape_event(self, event) -> None:
+    def do_x11_shape_event(self, event) -> None:
         shapelog("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))  # @UndefinedVariable
         cur_shape = self.get_property("shape")
         if cur_shape and cur_shape.get("serial", 0) >= event.serial:
@@ -792,26 +792,26 @@ class CoreX11WindowModel(WindowModelStub):
             shapelog("xshape updated with serial %#x", event.serial)
             self._internal_set_property("shape", v)
 
-    def do_xpra_xkb_event(self, event) -> None:
+    def do_x11_xkb_event(self, event) -> None:
         # X11: XKBNotify
-        log("WindowModel.do_xpra_xkb_event(%r)", event)
+        log("WindowModel.do_x11_xkb_event(%r)", event)
         if event.subtype != "bell":
-            log("WindowModel.do_xpra_xkb_event(%r)", event, exc_info=True)
+            log("WindowModel.do_x11_xkb_event(%r)", event, exc_info=True)
             log.error("Error: unknown xkb event type: %s", event.type)
             return
         event.window_model = self
         self.emit("bell", event)
 
-    def do_xpra_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event) -> None:
         # X11: ClientMessage
-        log("do_xpra_client_message_event(%s)", event)
+        log("do_x11_client_message_event(%s)", event)
         if not event.data or len(event.data) != 5:
             log.warn("invalid event data: %s", event.data)
             return
         if not self.process_client_message_event(event):
-            log.warn("do_xpra_client_message_event(%s) not handled", event)
+            log.warn("do_x11_client_message_event(%s) not handled", event)
 
-    def do_xpra_focus_in_event(self, event) -> None:
+    def do_x11_focus_in_event(self, event) -> None:
         # X11: FocusIn
         grablog("focus_in_event(%s) mode=%s, detail=%s",
                 event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
@@ -820,7 +820,7 @@ class CoreX11WindowModel(WindowModelStub):
         else:
             self.may_emit_grab(event)
 
-    def do_xpra_focus_out_event(self, event) -> None:
+    def do_x11_focus_out_event(self, event) -> None:
         # X11: FocusOut
         grablog("focus_out_event(%s) mode=%s, detail=%s",
                 event, GRAB_CONSTANTS.get(event.mode), DETAIL_CONSTANTS.get(event.detail, event.detail))
@@ -834,7 +834,7 @@ class CoreX11WindowModel(WindowModelStub):
             grablog("emitting ungrab on %s", self)
             self.emit("ungrab", event)
 
-    def do_xpra_motion_event(self, event) -> None:
+    def do_x11_motion_event(self, event) -> None:
         self.emit("motion", event)
 
     ################################

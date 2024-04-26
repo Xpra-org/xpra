@@ -172,12 +172,12 @@ class Wm(GObject.GObject):
         "quit": no_arg_signal,
 
         # Mostly intended for internal use:
-        "child-map-request-event": one_arg_signal,
-        "child-configure-request-event": one_arg_signal,
-        "xpra-focus-in-event": one_arg_signal,
-        "xpra-focus-out-event": one_arg_signal,
-        "xpra-client-message-event": one_arg_signal,
-        "xpra-xkb-event": one_arg_signal,
+        "x11-child-map-request-event": one_arg_signal,
+        "x11-child-configure-request-event": one_arg_signal,
+        "x11-focus-in-event": one_arg_signal,
+        "x11-focus-out-event": one_arg_signal,
+        "x11-client-message-event": one_arg_signal,
+        "x11-xkb-event": one_arg_signal,
     }
 
     def __init__(self, replace_other_wm: bool, wm_name: str, display=None):
@@ -232,11 +232,11 @@ class Wm(GObject.GObject):
         # the existing clients.
         rxid = root.get_xid()
         add_event_receiver(rxid, self)
-        add_fallback_receiver("xpra-client-message-event", self)
+        add_fallback_receiver("x11-client-message-event", self)
         # when reparenting, the events may get sent
         # to a window that is already destroyed,
         # and we don't want to miss those events, so:
-        add_fallback_receiver("child-map-request-event", self)
+        add_fallback_receiver("x11-child-map-request-event", self)
         X11Window.substructureRedirect(rxid)
 
         children = X11Window.get_children(rxid)
@@ -368,7 +368,7 @@ class Wm(GObject.GObject):
             for prop in ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING"):
                 raw_prop_set(xid, prop, "WINDOW", dformat, window_xids)
 
-    def do_xpra_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event) -> None:
         # FIXME
         # Need to listen for:
         #   _NET_ACTIVE_WINDOW
@@ -376,7 +376,7 @@ class Wm(GObject.GObject):
         #   _NET_WM_PING responses
         # and maybe:
         #   _NET_WM_STATE
-        log("do_xpra_client_message_event(%s)", event)
+        log("do_x11_client_message_event(%s)", event)
         if event.message_type == "_NET_SHOWING_DESKTOP":
             show = bool(event.data[0])
             self.emit("show-desktop", show)
@@ -404,8 +404,8 @@ class Wm(GObject.GObject):
         self.cleanup()
 
     def cleanup(self) -> None:
-        remove_fallback_receiver("xpra-client-message-event", self)
-        remove_fallback_receiver("child-map-request-event", self)
+        remove_fallback_receiver("x11-client-message-event", self)
+        remove_fallback_receiver("x11-child-map-request-event", self)
         for win in tuple(self._windows.values()):
             win.unmanage(True)
         xid = self._ewmh_window.get_xid()
@@ -414,11 +414,11 @@ class Wm(GObject.GObject):
             prop_del(xid, "_NET_WM_NAME")
         destroy_world_window()
 
-    def do_child_map_request_event(self, event) -> None:
+    def do_x11_child_map_request_event(self, event) -> None:
         log("Found a potential client")
         self._manage_client(event.window)
 
-    def do_child_configure_request_event(self, event) -> None:
+    def do_x11_child_configure_request_event(self, event) -> None:
         # The point of this method is to handle configure requests on
         # withdrawn windows.  We simply allow them to move/resize any way they
         # want.  This is harmless because the window isn't visible anyway (and
@@ -434,11 +434,11 @@ class Wm(GObject.GObject):
             # the window has been reparented already,
             # but we're getting the configure request event on the root window
             # forward it to the model
-            log("do_child_configure_request_event(%s) value_mask=%s, forwarding to %s",
+            log("do_x11_child_configure_request_event(%s) value_mask=%s, forwarding to %s",
                 event, configure_bits(event.value_mask), model)
-            model.do_child_configure_request_event(event)
+            model.do_x11_child_configure_request_event(event)
             return
-        log("do_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window",
+        log("do_x11_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window",
             event, configure_bits(event.value_mask))
         with xswallow:
             x, y, w, h = X11Window.getGeometry(xid)[:4]
@@ -456,18 +456,18 @@ class Wm(GObject.GObject):
             X11Window.configure(xid, x, y, w, h, event.value_mask)
             X11Window.sendConfigureNotify(xid)
 
-    def do_xpra_focus_in_event(self, event) -> None:
+    def do_x11_focus_in_event(self, event) -> None:
         # The purpose of this function is to detect when the focus mode has
         # gone to PointerRoot or None, so that it can be given back to
         # something real.  This is easy to detect -- a FocusIn event with
         # detail PointerRoot or None is generated on the root window.
-        focuslog("wm.do_xpra_focus_in_event(%s)", event)
+        focuslog("wm.do_x11_focus_in_event(%s)", event)
         if event.detail in (NotifyPointerRoot, NotifyDetailNone) and self._world_window:
             self._world_window.reset_x_focus()
 
     # noinspection PyMethodMayBeStatic
-    def do_xpra_focus_out_event(self, event) -> None:
-        focuslog("wm.do_xpra_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
+    def do_x11_focus_out_event(self, event) -> None:
+        focuslog("wm.do_x11_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
 
     def set_desktop_list(self, desktops) -> None:
         log("set_desktop_list(%s)", desktops)

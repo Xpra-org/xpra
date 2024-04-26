@@ -118,12 +118,12 @@ class XpraMonitorServer(DesktopServerBase):
         # screen = gdk.Screen.get_default()
         # screen.connect("monitors-changed", self.monitors_changed)
 
-    def do_xpra_configure_event(self, event) -> None:
+    def do_x11_configure_event(self, event) -> None:
         # the root window changed,
         # check to see if a monitor has been modified
         # do this via a timer to avoid running multiple times
         # as we get multiple events for the same change
-        log("do_xpra_configure_event(%s)", event)
+        log("do_x11_configure_event(%s)", event)
         if not self.reconfigure_timer:
             self.reconfigure_timer = self.timeout_add(50, self.reconfigure)
 

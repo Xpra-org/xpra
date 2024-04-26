@@ -123,7 +123,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
             # invariant:
             self._listening_to = listening
 
-    def do_xpra_damage_event(self, event) -> None:
+    def do_x11_damage_event(self, event) -> None:
         event.x += self._border_width
         event.y += self._border_width
         self.emit("contents-changed", event)

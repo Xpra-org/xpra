@@ -30,10 +30,10 @@ class WindowDamageHandler:
     MAX_RECEIVERS = 3
 
     __common_gsignals__ = {
-        "xpra-damage-event": one_arg_signal,
-        "xpra-unmap-event": one_arg_signal,
-        "xpra-configure-event": one_arg_signal,
-        "xpra-reparent-event": one_arg_signal,
+        "x11-damage-event": one_arg_signal,
+        "x11-unmap-event": one_arg_signal,
+        "x11-configure-event": one_arg_signal,
+        "x11-reparent-event": one_arg_signal,
     }
 
     # This may raise XError.
@@ -194,15 +194,15 @@ class WindowDamageHandler:
                 log.warn("Warning: cannot capture image of geometry %", (x, y, width, height), exc_info=True)
             return None
 
-    def do_xpra_damage_event(self, _event) -> None:
+    def do_x11_damage_event(self, _event) -> None:
         raise NotImplementedError()
 
-    def do_xpra_reparent_event(self, _event) -> None:
+    def do_x11_reparent_event(self, _event) -> None:
         self.invalidate_pixmap()
 
     def xpra_unmap_event(self, _event) -> None:
         self.invalidate_pixmap()
 
-    def do_xpra_configure_event(self, event) -> None:
+    def do_x11_configure_event(self, event) -> None:
         self._border_width = event.border_width
         self.invalidate_pixmap()

@@ -39,8 +39,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         "resized": no_arg_signal,
         "client-contents-changed": one_arg_signal,
         "motion": one_arg_signal,
-        "xpra-motion-event": one_arg_signal,
-        "xpra-property-notify-event": one_arg_signal,
+        "x11-motion-event": one_arg_signal,
+        "x11-property-notify-event": one_arg_signal,
     }
 
     __gproperties__ = {
@@ -107,8 +107,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         # listen for property changes on the root window:
         add_event_receiver(self.xid, self)
 
-    def do_xpra_property_notify_event(self, event) -> None:
-        eventlog(f"do_xpra_property_notify_event: {event.atom}")
+    def do_x11_property_notify_event(self, event) -> None:
+        eventlog(f"do_x11_property_notify_event: {event.atom}")
         # update the wm-name (and therefore the window's "title")
         # whenever this property changes:
         if str(event.atom) == "_NET_SUPPORTING_WM_CHECK":
@@ -192,10 +192,10 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             return False
         return GObject.GObject.get_property(self, prop)
 
-    def do_xpra_damage_event(self, event) -> None:
+    def do_x11_damage_event(self, event) -> None:
         self.emit("client-contents-changed", event)
 
-    def do_xpra_motion_event(self, event) -> None:
+    def do_x11_motion_event(self, event) -> None:
         self.emit("motion", event)
 
     def resize(self, w: int, h: int):

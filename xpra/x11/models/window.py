@@ -227,9 +227,9 @@ class WindowModel(BaseWindowModel):
     }
     __gsignals__ = dict(BaseWindowModel.__common_signals__)
     __gsignals__ |= {
-        "child-map-request-event": one_arg_signal,
-        "child-configure-request-event": one_arg_signal,
-        "xpra-destroy-event": one_arg_signal,
+        "x11-child-map-request-event": one_arg_signal,
+        "x11-child-configure-request-event": one_arg_signal,
+        "x11-destroy-event": one_arg_signal,
     }
 
     _property_names = BaseWindowModel._property_names + [
@@ -484,13 +484,13 @@ class WindowModel(BaseWindowModel):
     # X11 Events
     #########################################
 
-    def do_xpra_property_notify_event(self, event) -> None:
+    def do_x11_property_notify_event(self, event) -> None:
         if event.delivered_to == self.corral_xid:
             return
-        super().do_xpra_property_notify_event(event)
+        super().do_x11_property_notify_event(event)
 
     # noinspection PyMethodMayBeStatic
-    def do_child_map_request_event(self, event) -> None:
+    def do_x11_child_map_request_event(self, event) -> None:
         # If we get a MapRequest then it might mean that someone tried to map
         # this window multiple times in quick succession, before we actually
         # mapped it (so that several MapRequests ended up queued up; FSF Emacs
@@ -498,10 +498,10 @@ class WindowModel(BaseWindowModel):
         # the client is naughty and tried to map their window which is
         # currently not displayed.  In either case, we should just ignore the
         # request.
-        log("do_child_map_request_event(%s)", event)
+        log("do_x11_child_map_request_event(%s)", event)
 
-    def do_xpra_unmap_event(self, event) -> None:
-        log(f"do_xpra_unmap_event({event}) corral_xid={self.corral_xid:x}")
+    def do_x11_unmap_event(self, event) -> None:
+        log(f"do_x11_unmap_event({event}) corral_xid={self.corral_xid:x}")
         if not self.corral_xid or event.delivered_to == self.corral_xid:
             return
         if event.window != self.xid:
@@ -514,16 +514,16 @@ class WindowModel(BaseWindowModel):
         # Also, if we receive a *synthetic* UnmapNotify event, that always
         # means that the client has withdrawn the window (even if it was not
         # mapped in the first place) -- ICCCM section 4.1.4.
-        log("do_xpra_unmap_event(%s) client window unmapped, last_unmap_serial=%#x", event, self.last_unmap_serial)
+        log("do_x11_unmap_event(%s) client window unmapped, last_unmap_serial=%#x", event, self.last_unmap_serial)
         if event.send_event or self.serial_after_last_unmap(event.serial):
             self.unmanage()
 
-    def do_xpra_destroy_event(self, event) -> None:
-        log(f"do_xpra_destroy_event({event}) corral_xid={self.corral_xid:x}")
+    def do_x11_destroy_event(self, event) -> None:
+        log(f"do_x11_destroy_event({event}) corral_xid={self.corral_xid:x}")
         if not self.corral_xid or event.delivered_to == self.corral_xid:
             return
         assert event.window == self.xid
-        super().do_xpra_destroy_event(event)
+        super().do_x11_destroy_event(event)
 
     #########################################
     # Hooks for WM
@@ -592,8 +592,8 @@ class WindowModel(BaseWindowModel):
                 X11Window.sendConfigureNotify(self.xid)
             self._updateprop("geometry", (x, y, w, h))
 
-    def do_xpra_configure_event(self, event) -> None:
-        geomlog("WindowModel.do_xpra_configure_event(%s) corral=%#x, client=%#x, managed=%s",
+    def do_x11_configure_event(self, event) -> None:
+        geomlog("WindowModel.do_x11_configure_event(%s) corral=%#x, client=%#x, managed=%s",
                 event, self.corral_xid, self.xid, self._managed)
         if not self._managed or not self.corral_xid or not self.xid:
             return
@@ -609,16 +609,16 @@ class WindowModel(BaseWindowModel):
             # workaround applications whose windows disappear from underneath us:
             with xsync:
                 if not X11Window.is_mapped(self.corral_xid):
-                    geomlog(f"WindowModel.do_xpra_configure_event: corral window {self.corral_xid:x} is not visible")
+                    geomlog(f"WindowModel.do_x11_configure_event: corral window {self.corral_xid:x} is not visible")
                     return
                 if not X11Window.is_mapped(self.xid):
-                    geomlog(f"WindowModel.do_xpra_configure_event: client window {self.xid:x} is not visible")
+                    geomlog(f"WindowModel.do_x11_configure_event: client window {self.xid:x} is not visible")
                     return
                 # event.border_width unused
                 self.configure_geometry(event.x, event.y, event.width, event.height)
                 self.update_children()
         except XError as e:
-            geomlog("do_xpra_configure_event(%s)", event, exc_info=True)
+            geomlog("do_x11_configure_event(%s)", event, exc_info=True)
             geomlog.warn("Warning: failed to resize corral window %#x", self.corral_xid)
             geomlog.warn(" %s", e)
 
@@ -677,9 +677,9 @@ class WindowModel(BaseWindowModel):
             y = cy
         self._updateprop("geometry", (x, y, w, h))
 
-    def do_child_configure_request_event(self, event) -> None:
+    def do_x11_child_configure_request_event(self, event) -> None:
         hints = self.get_property("size-hints")
-        geomlog("do_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s",
+        geomlog("do_x11_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s",
                 event, self.xid, self.corral_xid, configure_bits(event.value_mask), hints)
         if event.value_mask & CWStackMode:
             geomlog(" restack above=%s, detail=%s", event.above, event.detail)
@@ -723,7 +723,7 @@ class WindowModel(BaseWindowModel):
                 X11Window.sendConfigureNotify(self.xid)
             return
 
-        geomlog("do_child_configure_request_event updated requested geometry from %s to %s",
+        geomlog("do_x11_child_configure_request_event updated requested geometry from %s to %s",
                 (ox, oy, ow, oh), (x, y, w, h))
         mask = 0
         if ox != x:

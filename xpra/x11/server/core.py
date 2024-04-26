@@ -797,7 +797,7 @@ class X11ServerCore(GTKServerBase):
         with xsync:
             X11Keyboard.xtest_fake_key(keycode, press)
 
-    def do_xpra_cursor_event(self, event) -> None:
+    def do_x11_cursor_event(self, event) -> None:
         if not self.cursors:
             return
         if self.last_cursor_serial == event.cursor_serial:
@@ -819,9 +819,9 @@ class X11ServerCore(GTKServerBase):
                 if hasattr(ss, "update_mouse"):
                     ss.update_mouse(wid, event.x_root, event.y_root, event.x, event.y)
 
-    def do_xpra_xkb_event(self, event) -> None:
+    def do_x11_xkb_event(self, event) -> None:
         # X11: XKBNotify
-        log("server do_xpra_xkb_event(%r)" % event)
+        log("server do_x11_xkb_event(%r)" % event)
         if event.subtype != "bell":
             log.error(f"Error: unknown event subtype: {event.subtype!r}")
             log.error(f" {event=}")

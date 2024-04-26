@@ -40,7 +40,7 @@ class AlreadyOwned(Exception):
 class ManagerSelection(GObject.GObject):
     __gsignals__ = {
         "selection-lost": no_arg_signal,
-        "xpra-destroy-event": one_arg_signal,
+        "x11-destroy-event": one_arg_signal,
     }
 
     def __str__(self):  # pylint: disable=arguments-differ
@@ -165,7 +165,7 @@ class ManagerSelection(GObject.GObject):
             self.xid = 0
             self.emit("selection-lost")
 
-    def do_xpra_destroy_event(self, event) -> None:
+    def do_x11_destroy_event(self, event) -> None:
         xid = event.window
         if xid:
             remove_event_receiver(xid, self)

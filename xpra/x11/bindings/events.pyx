@@ -216,24 +216,24 @@ cdef int get_XShape_event_base(Display *xdisplay):
 
 cdef init_x11_events(Display *display):
     add_x_event_signals({
-        MapRequest          : (None, "child-map-request-event"),
-        ConfigureRequest    : (None, "child-configure-request-event"),
-        SelectionRequest    : ("xpra-selection-request", None),
-        SelectionClear      : ("xpra-selection-clear", None),
-        FocusIn             : ("xpra-focus-in-event", None),
-        FocusOut            : ("xpra-focus-out-event", None),
-        ClientMessage       : ("xpra-client-message-event", None),
-        CreateNotify        : ("xpra-create-event", None),
-        MapNotify           : ("xpra-map-event", "xpra-child-map-event"),
-        UnmapNotify         : ("xpra-unmap-event", "xpra-child-unmap-event"),
-        DestroyNotify       : ("xpra-destroy-event", None),
-        ConfigureNotify     : ("xpra-configure-event", None),
-        ReparentNotify      : ("xpra-reparent-event", None),
-        PropertyNotify      : ("xpra-property-notify-event", None),
-        KeyPress            : ("xpra-key-press-event", None),
-        EnterNotify         : ("xpra-enter-event", None),
-        LeaveNotify         : ("xpra-leave-event", None),
-        MotionNotify        : ("xpra-motion-event", None)       #currently unused, just defined for debugging purposes
+        MapRequest          : (None, "x11-child-map-request-event"),
+        ConfigureRequest    : (None, "x11-child-configure-request-event"),
+        SelectionRequest    : ("x11-selection-request", None),
+        SelectionClear      : ("x11-selection-clear", None),
+        FocusIn             : ("x11-focus-in-event", None),
+        FocusOut            : ("x11-focus-out-event", None),
+        ClientMessage       : ("x11-client-message-event", None),
+        CreateNotify        : ("x11-create-event", None),
+        MapNotify           : ("x11-map-event", "x11-child-map-event"),
+        UnmapNotify         : ("x11-unmap-event", "x11-child-unmap-event"),
+        DestroyNotify       : ("x11-destroy-event", None),
+        ConfigureNotify     : ("x11-configure-event", None),
+        ReparentNotify      : ("x11-reparent-event", None),
+        PropertyNotify      : ("x11-property-notify-event", None),
+        KeyPress            : ("x11-key-press-event", None),
+        EnterNotify         : ("x11-enter-event", None),
+        LeaveNotify         : ("x11-leave-event", None),
+        MotionNotify        : ("x11-motion-event", None)       #currently unused, just defined for debugging purposes
     })
     add_x_event_type_names({
         KeyPress            : "KeyPress",
@@ -275,30 +275,30 @@ cdef init_x11_events(Display *display):
     if event_base>=0:
         global ShapeNotify
         ShapeNotify = event_base
-        add_x_event_signal(ShapeNotify, ("xpra-shape-event", None))
+        add_x_event_signal(ShapeNotify, ("x11-shape-event", None))
         add_x_event_type_name(ShapeNotify, "ShapeNotify")
         log("added ShapeNotify=%s", ShapeNotify)
     event_base = get_XKB_event_base(display)
     if event_base>=0:
         global XKBNotify
         XKBNotify = event_base
-        add_x_event_signal(XKBNotify, ("xpra-xkb-event", None))
+        add_x_event_signal(XKBNotify, ("x11-xkb-event", None))
         add_x_event_type_name(XKBNotify, "XKBNotify")
     event_base = get_XFixes_event_base(display)
     if event_base>=0:
         global CursorNotify
         CursorNotify = XFixesCursorNotify+event_base
-        add_x_event_signal(CursorNotify, ("xpra-cursor-event", None))
+        add_x_event_signal(CursorNotify, ("x11-cursor-event", None))
         add_x_event_type_name(CursorNotify, "CursorNotify")
         global XFSelectionNotify
         XFSelectionNotify = XFixesSelectionNotify+event_base
-        add_x_event_signal(XFSelectionNotify, ("xpra-xfixes-selection-notify-event", None))
+        add_x_event_signal(XFSelectionNotify, ("x11-xfixes-selection-notify-event", None))
         add_x_event_type_name(XFSelectionNotify, "XFSelectionNotify")
     event_base = get_XDamage_event_base(display)
     if event_base>0:
         global DamageNotify
         DamageNotify = XDamageNotify+event_base
-        add_x_event_signal(DamageNotify, ("xpra-damage-event", None))
+        add_x_event_signal(DamageNotify, ("x11-damage-event", None))
         add_x_event_type_name(DamageNotify, "DamageNotify")
     set_debug_events()
 

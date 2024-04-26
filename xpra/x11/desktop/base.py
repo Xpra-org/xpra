@@ -83,10 +83,10 @@ class DesktopServerBase(DesktopServerBaseClass):
         used with the "start-desktop" subcommand.
     """
     __common_gsignals__: dict[str, tuple] = {
-        "xpra-xkb-event": one_arg_signal,
-        "xpra-cursor-event": one_arg_signal,
-        "xpra-motion-event": one_arg_signal,
-        "xpra-configure-event": one_arg_signal,
+        "x11-xkb-event": one_arg_signal,
+        "x11-cursor-event": one_arg_signal,
+        "x11-motion-event": one_arg_signal,
+        "x11-configure-event": one_arg_signal,
     }
 
     def __init__(self):
@@ -109,8 +109,8 @@ class DesktopServerBase(DesktopServerBaseClass):
         screen = display.get_screen(0)
         root = screen.get_root_window()
         add_event_receiver(root.get_xid(), self)
-        add_catchall_receiver("xpra-motion-event", self)
-        add_catchall_receiver("xpra-xkb-event", self)
+        add_catchall_receiver("x11-motion-event", self)
+        add_catchall_receiver("x11-xkb-event", self)
         with xlog:
             X11Keyboard.selectBellNotification(True)
         if MODIFY_GSETTINGS:
@@ -133,7 +133,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         })
 
     def do_cleanup(self) -> None:
-        remove_catchall_receiver("xpra-motion-event", self)
+        remove_catchall_receiver("x11-motion-event", self)
         X11ServerBase.do_cleanup(self)
         if MODIFY_GSETTINGS:
             self.restore_gsettings()

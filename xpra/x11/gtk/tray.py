@@ -109,8 +109,8 @@ class SystemTray(GObject.GObject):
     """
     __slots__ = ("xid", "tray_window", "window_trays", "tray_windows")
     __gsignals__ = {
-        "xpra-unmap-event": one_arg_signal,
-        "xpra-client-message-event": one_arg_signal,
+        "x11-unmap-event": one_arg_signal,
+        "x11-client-message-event": one_arg_signal,
     }
 
     def __init__(self):
@@ -197,7 +197,7 @@ class SystemTray(GObject.GObject):
         display = self.tray_window.get_display()
         return GdkX11.X11Window.foreign_new_for_display(display, xid)
 
-    def do_xpra_client_message_event(self, event) -> None:
+    def do_x11_client_message_event(self, event) -> None:
         if event.message_type == "_NET_SYSTEM_TRAY_OPCODE" and event.window == self.xid and event.format == 32:
             opcode = event.data[1]
             if opcode == SYSTEM_TRAY_REQUEST_DOCK:
@@ -221,9 +221,9 @@ class SystemTray(GObject.GObject):
             assert event.format == 8
             log.info("tray message data - not handled yet!")
         elif event.message_type in IGNORED_MESSAGE_TYPES:
-            log("do_xpra_client_message_event(%s) in ignored message type list", event)
+            log("do_x11_client_message_event(%s) in ignored message type list", event)
         else:
-            log.info("do_xpra_client_message_event(%s)", event)
+            log.info("do_x11_client_message_event(%s)", event)
 
     def undock(self, window) -> None:
         log("undock(%s)", window)
@@ -293,10 +293,10 @@ class SystemTray(GObject.GObject):
         log(f"dock_tray({xid:x}) done, sending xembed notification")
         X11Window.send_xembed_message(xid, XEMBED.EMBEDDED_NOTIFY, 0, xtray, XEMBED_VERSION)
 
-    def do_xpra_unmap_event(self, event) -> None:
+    def do_x11_unmap_event(self, event) -> None:
         gdk_window = self.window_trays.pop(event.window, None)
         tray_window = self.tray_windows.pop(gdk_window, None)
-        log(f"SystemTray.do_xpra_unmap_event({event}) gdk window={gdk_window}, container window={tray_window}")
+        log(f"SystemTray.do_x11_unmap_event({event}) gdk window={gdk_window}, container window={tray_window}")
         if tray_window:
             tray_window.destroy()
 

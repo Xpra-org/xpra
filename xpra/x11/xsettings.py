@@ -91,8 +91,8 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
     __gsignals__ = {
         "xsettings-changed": no_arg_signal,
 
-        "xpra-property-notify-event": one_arg_signal,
-        "xpra-client-message-event": one_arg_signal,
+        "x11-property-notify-event": one_arg_signal,
+        "x11-client-message-event": one_arg_signal,
     }
 
     def __init__(self, screen_number=0):
@@ -111,13 +111,13 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
         if owner is not None:
             add_event_receiver(owner.get_xid(), self)
 
-    def do_xpra_client_message_event(self, evt):
+    def do_x11_client_message_event(self, evt):
         if evt.window is self.xid and evt.message_type == "MANAGER" and evt.data[1] == get_xatom(self._selection):
             log("XSettings manager changed")
             self._add_watch()
             self.emit("xsettings-changed")
 
-    def do_xpra_property_notify_event(self, event):
+    def do_x11_property_notify_event(self, event):
         if str(event.atom) == XSETTINGS:
             log("XSettings property value changed")
             self.emit("xsettings-changed")
