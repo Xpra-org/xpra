@@ -14,7 +14,6 @@ from collections.abc import Iterable
 from xpra.util.str_fn import csv, print_nested_dict, strtobytes, hexstr
 from xpra.util.env import envint, envbool
 from xpra.util.version import parse_version
-from xpra.os_util import OSX
 from xpra.net.digest import get_salt
 from xpra.log import Logger
 
@@ -77,8 +76,6 @@ def crypto_backend_init():
     if cryptography:
         return cryptography
     try:
-        if getattr(sys, 'frozen', False) or OSX:
-            patch_crypto_be_discovery()
         import cryptography as pc
         cryptography = pc
         MODES = tuple(x for x in os.environ.get(
@@ -104,33 +101,6 @@ def crypto_backend_init():
     cryptography = None
     CIPHERS = MODES = KEY_HASHES = KEY_STRETCHING = ()
     return None
-
-
-def patch_crypto_be_discovery() -> None:
-    """
-    Monkey patches cryptography's backend detection.
-    Objective: support pyinstaller / cx_freeze / pyexe / py2app freezing.
-    """
-    from cryptography.hazmat import backends
-    available: list = []
-    try:
-        from cryptography.hazmat.backends.commoncrypto.backend import backend as be_cc
-        available.append(be_cc)
-    except ImportError:
-        log("failed to import commoncrypto", exc_info=True)
-    try:
-        import _ssl
-        log("loaded _ssl=%s", _ssl)
-    except ImportError:
-        log("failed to import _ssl", exc_info=True)
-    try:
-        from cryptography.hazmat.backends.openssl.backend import backend as be_ossl
-        available.append(be_ossl)
-    except ImportError:
-        log("failed to import openssl backend", exc_info=True)
-    setattr(backends, "_available_backends_list", [
-        be for be in available if be is not None
-    ])
 
 
 def get_ciphers() -> tuple[str, ...]:
