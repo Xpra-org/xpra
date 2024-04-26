@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from itertools import chain
 from typing import Any
 
 from xpra.util.str_fn import strtobytes, bytestostr
@@ -105,38 +104,19 @@ class MutableInteger:
         return self.counter - int(other)
 
 
-_RaiseKeyError = object()
-
-
 class typedict(dict):
     __slots__ = ("warn",)  # no __dict__ - that would be redundant
 
-    @staticmethod  # because this doesn't make sense as a global function.
-    def _process_args(mapping=(), **kwargs) -> dict[str, Any]:
-        if hasattr(mapping, "items"):
-            mapping = getattr(mapping, "items")()
-        return {bytestostr(k): v for k, v in chain(mapping, getattr(kwargs, "items")())}
-
     def __init__(self, mapping=(), **kwargs):
-        super().__init__(self._process_args(mapping, **kwargs))
+        super().__init__(mapping, **kwargs)
         self.warn = self._warn
 
-    def __getitem__(self, k):
-        return super().__getitem__(bytestostr(k))
-
-    def __setitem__(self, k, v):
-        return super().__setitem__(bytestostr(k), v)
-
-    def __delitem__(self, k):
-        return super().__delitem__(bytestostr(k))
-
-    def get(self, k, default=None):
-        kstr = bytestostr(k)
-        if kstr in self:
-            return super().get(kstr, default)
+    def get(self, k: str, default=None):
+        if k in self:
+            return super().get(k, default)
         # try to locate this value in a nested dictionary:
-        if kstr.find(".") > 0:
-            prefix, k = kstr.split(".", 1)
+        if k.find(".") > 0:
+            prefix, k = k.split(".", 1)
             if prefix in self:
                 v = super().get(prefix)
                 if isinstance(v, dict):
@@ -144,22 +124,7 @@ class typedict(dict):
         return default
 
     def setdefault(self, k, default=None):
-        return super().setdefault(bytestostr(k), default)
-
-    def pop(self, k, v=_RaiseKeyError):
-        if v is _RaiseKeyError:
-            return super().pop(bytestostr(k))
-        return super().pop(bytestostr(k), v)
-
-    def update(self, mapping=(), **kwargs):
-        super().update(self._process_args(mapping, **kwargs))
-
-    def __contains__(self, k):
-        return super().__contains__(bytestostr(k))
-
-    @classmethod
-    def fromkeys(cls, keys, v=None):
-        return super().fromkeys((bytestostr(k) for k in keys), v)
+        return super().setdefault(k, default)
 
     def __repr__(self):
         return f'{type(self).__name__}({super().__repr__()})'
@@ -168,8 +133,7 @@ class typedict(dict):
         from xpra.log import Logger
         Logger("util").warn(msg, *args)
 
-    def conv_get(self, k, default=None, conv=None):
-        strkey = bytestostr(k)
+    def conv_get(self, strkey: str, default=None, conv=None):
         if strkey in self:
             v = super().get(strkey)
         else:
