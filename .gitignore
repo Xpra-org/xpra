@@ -137,9 +137,9 @@ tests/unittests/test-file*
 /xpra/scripts/*.c
 /xpra/server/*/*.c
 /xpra/server/*.c
-/xpra/x11/gtk3/bindings.c
-/xpra/x11/gtk3/display_source.c
-/xpra/x11/gtk3/gdk_display_util.c
+/xpra/x11/gtk/bindings.c
+/xpra/x11/gtk/display_source.c
+/xpra/x11/gtk/gdk_display_util.c
 /xpra/x11/bindings/*.c
 /xpra/x11/gtk_x11/*.c
 /xpra/x11/desktop/*.c

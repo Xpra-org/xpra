@@ -16,7 +16,7 @@ from xpra.gtk.keymap import get_gtk_keymap
 from xpra.gtk.error import xsync, xlog
 from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
 from xpra.server.keyboard_config_base import KeyboardConfigBase
-from xpra.x11.gtk_x11.keys import grok_modifier_map
+from xpra.x11.gtk.keys import grok_modifier_map
 from xpra.x11.xkbhelper import (
     do_set_keymap, set_all_keycodes, set_keycode_translation,
     get_modifiers_from_meanings, get_modifiers_from_keycodes,

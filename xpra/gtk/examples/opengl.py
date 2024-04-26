@@ -12,7 +12,7 @@ def main(argv=()):
             from xpra.util.system import is_X11
             from xpra.client.gl.window import get_gl_client_window_module, test_gl_client_window
             if is_X11():
-                from xpra.x11.gtk3.display_source import init_gdk_display_source
+                from xpra.x11.gtk.display_source import init_gdk_display_source
                 init_gdk_display_source()
             if "-v" in argv or "--verbose" in argv:
                 log.enable_debug()

@@ -18,7 +18,7 @@ from xpra.server import EXITING_CODE
 from xpra.common import SYNC_ICC
 from xpra.x11.server.core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
-from xpra.x11.gtk_x11.prop import prop_set, prop_del
+from xpra.x11.gtk.prop import prop_set, prop_del
 from xpra.x11.xsettings_prop import XSettingsType, BLACKLISTED_XSETTINGS
 from xpra.log import Logger
 

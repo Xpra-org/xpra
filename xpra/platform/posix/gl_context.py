@@ -357,7 +357,7 @@ GLContext = GLXContext
 def check_support() -> dict[str, Any]:
     ptr = get_display_ptr()
     if not ptr:
-        from xpra.x11.gtk3.display_source import init_gdk_display_source
+        from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
 
     return GLContext().check_support()

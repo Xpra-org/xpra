@@ -265,7 +265,7 @@ class Keyboard(KeyboardBase):
     def update_modifier_map(self, display, mod_meanings) -> None:
         try:
             # pylint: disable=import-outside-toplevel
-            from xpra.x11.gtk_x11.keys import grok_modifier_map
+            from xpra.x11.gtk.keys import grok_modifier_map
             self.modifier_map = grok_modifier_map(display, mod_meanings)
         except ImportError:
             self.modifier_map = MODIFIER_MAP

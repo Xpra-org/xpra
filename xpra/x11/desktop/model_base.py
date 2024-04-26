@@ -15,8 +15,8 @@ from xpra.gtk.error import xlog
 from xpra.x11.common import get_wm_name
 from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.x11.gtk_x11.damage import WindowDamageHandler
-from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk.damage import WindowDamageHandler
+from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.log import Logger
 

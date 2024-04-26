@@ -3,10 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.x11.gtk3 import gdk_display_source    #@UnresolvedImport, @Reimport
-gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
+from xpra.x11.gtk import gdk_display_source
 
-from xpra.x11.bindings.window import X11WindowBindings #@UnresolvedImport
+gdk_display_source.init_gdk_display_source()
+
+from xpra.x11.bindings.window import X11WindowBindings
+
 X11Window = X11WindowBindings()
 
 from xpra.x11.server.server_uuid import get_mode, get_uuid

@@ -69,7 +69,7 @@ def init_display_source() -> None:
     log(f"init_display_source() {x11=}")
     if x11:
         try:
-            from xpra.x11.gtk3.display_source import init_gdk_display_source
+            from xpra.x11.gtk.display_source import init_gdk_display_source
             init_gdk_display_source()
         except ImportError:  # pragma: no cover
             log("init_gdk_display_source()", exc_info=True)

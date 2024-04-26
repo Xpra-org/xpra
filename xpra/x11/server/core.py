@@ -18,9 +18,9 @@ from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.server.server_uuid import save_uuid, get_uuid, save_mode
 from xpra.x11.vfb_util import parse_resolutions
-from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del
-from xpra.x11.gtk3.display_source import close_gdk_display_source
-from xpra.x11.gtk3.bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
+from xpra.x11.gtk.prop import prop_get, prop_set, prop_del
+from xpra.x11.gtk.display_source import close_gdk_display_source
+from xpra.x11.gtk.bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID
 from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
@@ -387,7 +387,7 @@ class X11ServerCore(GTKServerBase):
                 )
         sinfo = info.setdefault("server", {})
         try:
-            from xpra.x11.gtk_x11.composite import CompositeHelper
+            from xpra.x11.gtk.composite import CompositeHelper
             sinfo["XShm"] = CompositeHelper.XShmEnabled
         except ImportError:
             pass

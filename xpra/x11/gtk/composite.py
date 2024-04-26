@@ -5,11 +5,11 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.x11.gtk_x11.damage import WindowDamageHandler
 from xpra.gtk.gobject import one_arg_signal
-from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
 from xpra.gtk.error import xlog
-from xpra.x11.gtk_x11.world_window import get_world_window
+from xpra.x11.gtk.damage import WindowDamageHandler
+from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk.world_window import get_world_window
 from xpra.x11.bindings.ximage import XImageBindings
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.log import Logger

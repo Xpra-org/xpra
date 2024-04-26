@@ -4,7 +4,7 @@ import sys
 
 
 def dump_xshape(xid):
-    from xpra.x11.bindings.window import X11WindowBindings, SHAPE_KIND #@UnresolvedImport
+    from xpra.x11.bindings.window import X11WindowBindings, SHAPE_KIND  #@UnresolvedImport
     X11Window = X11WindowBindings()
     extents = X11Window.XShapeQueryExtents(xid)
     if not extents:
@@ -13,7 +13,7 @@ def dump_xshape(xid):
     v = {}
     bextents = extents[0]
     cextents = extents[1]
-    if bextents[0]==0 and cextents[0]==0:
+    if bextents[0] == 0 and cextents[0] == 0:
         print("read_shape for window %#x: none enabled" % xid)
         return {}
     v["Bounding.extents"] = bextents
@@ -21,12 +21,13 @@ def dump_xshape(xid):
     for kind in SHAPE_KIND.keys():
         kind_name = SHAPE_KIND[kind]
         rectangles = X11Window.XShapeGetRectangles(xid, kind)
-        v[kind_name+".rectangles"] = rectangles
+        v[kind_name + ".rectangles"] = rectangles
     print("read_shape()=%s" % v)
     return v
 
+
 def main(args):
-    from xpra.x11.gtk3.display_source import init_gdk_display_source
+    from xpra.x11.gtk.display_source import init_gdk_display_source
     init_gdk_display_source()
     for wid in args[1:]:
         print("looking for window %s" % wid)

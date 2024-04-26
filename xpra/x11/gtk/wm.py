@@ -11,16 +11,16 @@ from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk.error import xsync, xswallow, xlog
-from xpra.x11.gtk_x11.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
-from xpra.x11.window_info import window_name, window_info
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.common import Unmanageable
-from xpra.x11.gtk_x11 import GDKX11Window
-from xpra.x11.gtk_x11.selection import ManagerSelection
+from xpra.x11.gtk import GDKX11Window
+from xpra.x11.gtk.selection import ManagerSelection
+from xpra.x11.gtk.prop import prop_set, prop_get, prop_del, raw_prop_set, prop_encode
+from xpra.x11.gtk.world_window import WorldWindow, destroy_world_window
+from xpra.x11.gtk.bindings import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.models.window import WindowModel, configure_bits
-from xpra.x11.gtk_x11.world_window import WorldWindow, destroy_world_window
-from xpra.x11.gtk3.bindings import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
+from xpra.x11.window_info import window_name, window_info
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger

@@ -19,7 +19,7 @@ from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.x11.server.server_uuid import del_mode, del_uuid
-from xpra.x11.gtk_x11.prop import prop_get
+from xpra.x11.gtk.prop import prop_get
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.gtk.util import get_default_root_window, get_root_size
 from xpra.gtk.error import xsync, xlog
@@ -150,7 +150,7 @@ def window_matches(wspec, model_class):
             model.transient_for = None
             if transient_for_xid:
                 try:
-                    from xpra.x11.gtk3.bindings import get_pywindow
+                    from xpra.x11.gtk.bindings import get_pywindow
                     model.transient_for = get_pywindow(transient_for_xid)
                 except ImportError:
                     pass
@@ -485,7 +485,7 @@ def main(*args) -> int:
         s.geometry = geom
         return s
 
-    from xpra.x11.gtk3 import gdk_display_source  # pylint: disable=import-outside-toplevel, no-name-in-module
+    from xpra.x11.gtk import gdk_display_source  # pylint: disable=import-outside-toplevel, no-name-in-module
     gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
     for w in window_matches(args, cb):
         print(f"{w}")

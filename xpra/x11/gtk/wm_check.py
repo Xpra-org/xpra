@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.util.env import envbool
 from xpra.gtk.error import xsync, xlog
-from xpra.x11.gtk_x11.prop import prop_get
+from xpra.x11.gtk.prop import prop_get
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.log import Logger
 
@@ -118,7 +118,7 @@ def wm_check(upgrading=False) -> bool:
 
 def main():
     # pylint: disable=import-outside-toplevel
-    from xpra.x11.gtk3.display_source import init_gdk_display_source
+    from xpra.x11.gtk.display_source import init_gdk_display_source
     init_gdk_display_source()
     wm_check()
 

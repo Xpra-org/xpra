@@ -1501,7 +1501,7 @@ def _do_run_server(script_file: str, cmdline,
     if not (proxying or shadowing) and POSIX and not OSX:
         if not check_xvfb():
             return 1
-        from xpra.x11.gtk3.display_source import init_gdk_display_source
+        from xpra.x11.gtk.display_source import init_gdk_display_source
         if os.environ.get("NO_AT_BRIDGE") is None:
             os.environ["NO_AT_BRIDGE"] = "1"
         init_gdk_display_source()
@@ -1511,7 +1511,7 @@ def _do_run_server(script_file: str, cmdline,
             # try harder to find the pid:
             def _get_int(prop):
                 from xpra.gtk.util import get_default_root_window
-                from xpra.x11.gtk_x11.prop import prop_get
+                from xpra.x11.gtk.prop import prop_get
                 try:
                     xid = get_default_root_window().get_xid()
                     return prop_get(xid, prop, "u32")

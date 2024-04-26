@@ -25,10 +25,10 @@ from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
-from xpra.x11.gtk_x11.prop import prop_set
-from xpra.x11.gtk_x11.tray import get_tray_window, SystemTray
-from xpra.x11.gtk_x11.selection import AlreadyOwned
-from xpra.x11.gtk3.bindings import add_event_receiver, get_pywindow
+from xpra.x11.gtk.prop import prop_set
+from xpra.x11.gtk.tray import get_tray_window, SystemTray
+from xpra.x11.gtk.selection import AlreadyOwned
+from xpra.x11.gtk.bindings import add_event_receiver, get_pywindow
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.randr import RandRBindings
@@ -129,7 +129,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             log.error(" it cannot use a display which lacks the XComposite extension!")
             return False
         # check for an existing window manager:
-        from xpra.x11.gtk_x11.wm_check import wm_check
+        from xpra.x11.gtk.wm_check import wm_check
         return wm_check(self.clobber & CLOBBER_UPGRADE)
 
     def setup(self) -> None:
@@ -181,7 +181,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
     def init_wm(self) -> None:
         # Create the WM object
-        from xpra.x11.gtk_x11.wm import Wm
+        from xpra.x11.gtk.wm import Wm
         x11_errors = []
         self._wm = None
         while self._wm is None:
@@ -248,7 +248,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         elif features.windows:
             # update the static default so the Wm instance will use it
             # when we do instantiate it:
-            from xpra.x11.gtk_x11 import wm as wm_module
+            from xpra.x11.gtk import wm as wm_module
             wm_module.DEFAULT_SIZE_CONSTRAINTS = (0, 0, MAX_WINDOW_SIZE, MAX_WINDOW_SIZE)
 
     def init_packet_handlers(self) -> None:

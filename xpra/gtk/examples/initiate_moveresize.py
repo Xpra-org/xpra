@@ -30,7 +30,7 @@ def make_window():
         return window.get_window().get_screen().get_root_window()
 
     def initiate(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int):
-        from xpra.x11.gtk3.display_source import init_gdk_display_source
+        from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
         from xpra.x11.bindings.core import X11CoreBindings
         from xpra.x11.bindings.window import constants, X11WindowBindings

@@ -40,7 +40,7 @@ class X11Event:
         return f"<X11:{self.name} {d!r}>"
 
 
-# we duplicate some of the code found in gtk_x11.prop ...
+# we duplicate some of the code found in xpra.x11.gtk.prop ...
 # which is still better than having dependencies on that GTK here
 def get_X11_window_property(xid: int, name: str, req_type: str):
     try:

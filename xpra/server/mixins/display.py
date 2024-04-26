@@ -79,7 +79,7 @@ class DisplayManager(StubServerMixin):
             assert backing
         except ImportError:
             return {
-                'error': '`xpra-client-gtk3` is not installed',
+                'error': '`xpra-client-gtk` is not installed',
                 'success': False,
             }
         try:

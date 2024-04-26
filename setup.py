@@ -1288,8 +1288,8 @@ def clean():
         "xpra/x11/bindings/xwayland.c",
         "xpra/x11/bindings/ximage.c",
         "xpra/x11/bindings/xi2.c",
-        "xpra/x11/gtk3/bindings.c",
-        "xpra/x11/gtk3/display_source.c",
+        "xpra/x11/gtk/bindings.c",
+        "xpra/x11/gtk/display_source.c",
         "xpra/platform/win32/propsys.cpp",
         "xpra/platform/darwin/gdk3_bindings.c",
         "xpra/platform/posix/sd_listen.c",
@@ -2280,12 +2280,12 @@ if x11_ENABLED:
     ace("xpra.x11.bindings.res", "x11,xres")
     tace(xinput_ENABLED, "xpra.x11.bindings.xi2", "x11,xi")
 
-toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk_x11")
+toggle_packages(gtk_x11_ENABLED, "xpra.x11.gtk")
 toggle_packages(server_ENABLED and gtk_x11_ENABLED, "xpra.x11.models", "xpra.x11.desktop", "xpra.x11.server")
 if gtk_x11_ENABLED:
     add_packages("xpra.x11.bindings")
-    ace("xpra.x11.gtk3.display_source", "gdk-3.0")
-    ace("xpra.x11.gtk3.bindings,xpra/x11/gtk3/gdk_x11_macros.c", "gdk-3.0,xdamage,xfixes")
+    ace("xpra.x11.gtk.display_source", "gdk-3.0")
+    ace("xpra.x11.gtk.bindings,xpra/x11/gtk/gdk_x11_macros.c", "gdk-3.0,xdamage,xfixes")
 
 tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3cairo",
      extra_compile_args=["-Wno-error=parentheses-equality"] if CC_is_clang() else [])
@@ -2312,7 +2312,7 @@ if client_ENABLED:
     add_packages("xpra.client.mixins", "xpra.client.auth")
     add_modules("xpra.scripts.pinentry")
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
-toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gui")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
@@ -2335,7 +2335,7 @@ if server_ENABLED or proxy_ENABLED:
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl")
-toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
+toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk")
 
 toggle_modules(audio_ENABLED, "xpra.audio")
 toggle_modules(audio_ENABLED and not (OSX or WIN32), "xpra.audio.pulseaudio")
@@ -2500,9 +2500,9 @@ if cythonize_more_ENABLED:
         if opengl_ENABLED:
             ax("xpra.client.gl")
             if gtk3_ENABLED:
-                ax("xpra.client.gl.gtk3")
+                ax("xpra.client.gl.gtk")
         if gtk3_ENABLED:
-            ax("xpra.client.gtk3")
+            ax("xpra.client.gtk")
         ax("xpra.client.gui")
         ax("xpra.client.mixins")
     if clipboard_ENABLED:
@@ -2562,7 +2562,7 @@ if cythonize_more_ENABLED:
         ax("xpra.server.window")
         ax("xpra.server")
     if gtk_x11_ENABLED:
-        ax("xpra.x11.gtk_x11")
+        ax("xpra.x11.gtk")
     if x11_ENABLED:
         ax("xpra.x11")
         ax("xpra.x11.desktop")

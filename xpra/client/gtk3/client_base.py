@@ -760,7 +760,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if not HAS_X11_BINDINGS:
             # nothing more we can do!
             return None
-        from xpra.x11.gtk_x11.prop import prop_get
+        from xpra.x11.gtk.prop import prop_get
         gdkwin = window.get_window()
         assert gdkwin
         v = prop_get(gdkwin.get_xid(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)

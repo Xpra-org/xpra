@@ -6,7 +6,7 @@
 
 from xpra.os_util import gi_import
 from xpra.gtk.gobject import SIGNAL_RUN_LAST, one_arg_signal
-from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "util")

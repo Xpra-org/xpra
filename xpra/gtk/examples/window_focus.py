@@ -98,8 +98,8 @@ def make_window():
     if POSIX and not OSX:
         from xpra.util.system import is_Wayland
         if not is_Wayland():
-            from xpra.x11.gtk3.display_source import init_gdk_display_source
-            from xpra.x11.gtk3.bindings import init_x11_filter
+            from xpra.x11.gtk.display_source import init_gdk_display_source
+            from xpra.x11.gtk.bindings import init_x11_filter
             from xpra.x11.bindings.window import X11WindowBindings  # pylint: disable=no-name-in-module
             from xpra.gtk.error import xlog
             # x11 focus events:

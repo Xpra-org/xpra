@@ -103,7 +103,7 @@ def get_clipboard_native_class() -> str:
         assert x11
     except ImportError:
         return gtk_clipboard_class
-    return "xpra.x11.gtk_x11.clipboard.X11Clipboard"
+    return "xpra.x11.gtk.clipboard.X11Clipboard"
 
 
 def get_native_system_tray_classes() -> list[type]:
@@ -664,7 +664,7 @@ class ClientExtras:
         if self.x11_filter:
             return
         try:
-            from xpra.x11.gtk3.bindings import init_x11_filter  # @UnresolvedImport, @UnusedImport
+            from xpra.x11.gtk.bindings import init_x11_filter  # @UnresolvedImport, @UnusedImport
             self.x11_filter = init_x11_filter()
             log("x11_filter=%s", self.x11_filter)
         except Exception as e:
@@ -677,7 +677,7 @@ class ClientExtras:
         log("cleanup() xsettings_watcher=%s, root_props_watcher=%s", self._xsettings_watcher, self._root_props_watcher)
         if self.x11_filter:
             self.x11_filter = None
-            from xpra.x11.gtk3.bindings import cleanup_x11_filter  # @UnresolvedImport, @UnusedImport
+            from xpra.x11.gtk.bindings import cleanup_x11_filter  # @UnresolvedImport, @UnusedImport
             cleanup_x11_filter()
         if self._xsettings_watcher:
             self._xsettings_watcher.cleanup()
@@ -903,7 +903,7 @@ class ClientExtras:
     def get_resource_manager(self):
         try:
             from xpra.gtk.util import get_default_root_window
-            from xpra.x11.gtk_x11.prop import prop_get
+            from xpra.x11.gtk.prop import prop_get
             root = get_default_root_window()
             xid = root.get_xid()
             value = prop_get(xid, "RESOURCE_MANAGER", "latin1", ignore_errors=True)
@@ -931,7 +931,7 @@ class ClientExtras:
 
 def main() -> int:
     try:
-        from xpra.x11.gtk3.display_source import init_gdk_display_source
+        from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
     except ImportError:
         pass

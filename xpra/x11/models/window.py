@@ -12,7 +12,7 @@ from xpra.util.env import envint, envbool
 from xpra.common import MAX_WINDOW_SIZE
 from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.error import XError, xsync, xswallow, xlog
-from xpra.x11.gtk_x11.prop import prop_set
+from xpra.x11.gtk.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.send_wm import send_wm_take_focus
@@ -20,7 +20,7 @@ from xpra.x11.common import Unmanageable
 from xpra.x11.models.size_hints_util import sanitize_size_hints
 from xpra.x11.models.base import BaseWindowModel, constants
 from xpra.x11.models.core import sanestr
-from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 log = Logger("x11", "window")

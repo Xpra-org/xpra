@@ -2660,7 +2660,7 @@ def run_glcheck(opts) -> ExitValue:
     if POSIX and not OSX and not is_Wayland():
         with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
             try:
-                from xpra.x11.gtk3.display_source import init_gdk_display_source
+                from xpra.x11.gtk.display_source import init_gdk_display_source
                 init_gdk_display_source()
             except ImportError as e:
                 log(f"no bindings x11 bindings: {e}")
@@ -3889,9 +3889,9 @@ def display_wm_info(args) -> dict[str, Any]:
     else:
         raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
     with OSEnvContext(GDK_BACKEND="x11"):
-        from xpra.x11.gtk3.display_source import init_gdk_display_source
+        from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
-        from xpra.x11.gtk_x11.wm_check import get_wm_info
+        from xpra.x11.gtk.wm_check import get_wm_info
         info = get_wm_info()
         gdk = gi_import("Gdk")
         display = gdk.Display.get_default()

@@ -9,7 +9,7 @@ from xpra.gtk.error import xlog
 from xpra.util.env import IgnoreWarningsContext, ignorewarnings
 from xpra.x11.bindings.window import constants
 from xpra.x11.bindings.send_wm import send_wm_take_focus
-from xpra.x11.gtk_x11.prop import prop_set
+from xpra.x11.gtk.prop import prop_set
 from xpra.gtk.util import get_default_root_window
 from xpra.log import Logger
 

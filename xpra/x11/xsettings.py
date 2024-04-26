@@ -7,9 +7,9 @@
 from xpra.os_util import gi_import
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.error import xlog, XError
-from xpra.x11.gtk_x11.prop import raw_prop_set, raw_prop_get
-from xpra.x11.gtk_x11.selection import ManagerSelection
-from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver, get_pywindow, get_xatom
+from xpra.x11.gtk.prop import raw_prop_set, raw_prop_get
+from xpra.x11.gtk.selection import ManagerSelection
+from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_pywindow, get_xatom
 from xpra.x11.xsettings_prop import bytes_to_xsettings, xsettings_to_bytes
 from xpra.log import Logger
 
@@ -129,7 +129,7 @@ GObject.type_register(XSettingsWatcher)
 def main():
     # pylint: disable=import-outside-toplevel
     from xpra.x11.xsettings_prop import XSettingsNames
-    from xpra.x11.gtk3.display_source import init_gdk_display_source
+    from xpra.x11.gtk.display_source import init_gdk_display_source
     init_gdk_display_source()
     s = XSettingsHelper().get_settings()
     assert s

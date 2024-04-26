@@ -3,10 +3,13 @@
 # Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
 
 import time
-from xpra.x11.gtk3.display_source import init_gdk_display_source
+from xpra.x11.gtk.display_source import init_gdk_display_source
+
 init_gdk_display_source()
-from xpra.x11.bindings.keyboard import X11KeyboardBindings        #@UnresolvedImport
+from xpra.x11.bindings.keyboard import X11KeyboardBindings
+
 keyboard_bindings = X11KeyboardBindings()
+
 
 def main():
     while True:

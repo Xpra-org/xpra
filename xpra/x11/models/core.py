@@ -23,9 +23,9 @@ from xpra.x11.bindings.window import X11WindowBindings, constants, SHAPE_KIND
 from xpra.x11.bindings.res import ResBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
 from xpra.x11.models.model_stub import WindowModelStub
-from xpra.x11.gtk_x11.composite import CompositeHelper
-from xpra.x11.gtk_x11.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
-from xpra.x11.gtk3.bindings import add_event_receiver, remove_event_receiver, get_pywindow
+from xpra.x11.gtk.composite import CompositeHelper
+from xpra.x11.gtk.prop import prop_get, prop_set, prop_del, prop_type_get, PYTHON_TYPES
+from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_pywindow
 from xpra.log import Logger
 
 log = Logger("x11", "window")
