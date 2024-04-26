@@ -1,12 +1,11 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
 
-from xpra.util.str_fn import bytestostr
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.log import Logger
 
@@ -862,9 +861,9 @@ cdef class XImageBindingsInstance(X11CoreBindingsInstance):
     def __cinit__(self):
         self.has_xshm = XShmQueryExtension(self.display)
         dn = get_display_name()
-        xshmlog("XShmQueryExtension()=%s on display %s", bool(self.has_xshm), bytestostr(dn))
+        xshmlog("XShmQueryExtension()=%s on display {dn!r}", bool(self.has_xshm))
         if not self.has_xshm:
-            xshmlog.warn("Warning: no XShm support on display %s", bytestostr(dn))
+            xshmlog.warn(f"Warning: no XShm support on display {dn!r}")
 
     def has_XShm(self):
         return bool(self.has_xshm)

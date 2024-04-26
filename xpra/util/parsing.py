@@ -7,7 +7,6 @@ import os
 
 from xpra.util.env import envfloat
 from xpra.scripts.config import TRUE_OPTIONS
-from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
 MIN_SCALING = envfloat("XPRA_MIN_SCALING", 0.1)
@@ -229,7 +228,7 @@ def intrangevalidator(v, min_value=None, max_value=None):
 def parse_encoded_bin_data(data: str) -> bytes:
     if not data:
         return b""
-    header = bytestostr(data).lower()[:10]
+    header = data.lower()[:10]
     if header.startswith("0x"):
         return binascii.unhexlify(data[2:])
     import base64

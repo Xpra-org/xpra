@@ -9,7 +9,7 @@ from time import monotonic
 from typing import Dict
 from collections.abc import Callable
 
-from xpra.util.str_fn import strtobytes, bytestostr
+from xpra.util.str_fn import strtobytes
 from xpra.gtk.error import XError, xsync
 from xpra.x11.common import X11Event
 from xpra.util.str_fn import csv
@@ -391,7 +391,7 @@ cdef atom_str(Display *display, Atom atom):
         return ""
     r = ""
     if atom_name!=NULL:
-        r = bytestostr(atom_name)
+        r = atom_name.decode("latin1")
         XFree(atom_name)
     return r
 

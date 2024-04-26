@@ -16,7 +16,7 @@ from xpra.os_util import gi_import
 from xpra.util.version import XPRA_VERSION
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.util.str_fn import strtobytes, bytestostr, memoryview_to_bytes
+from xpra.util.str_fn import strtobytes, memoryview_to_bytes
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
 from xpra.net.common import PacketType
 from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
@@ -1129,7 +1129,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if proto not in self._server_sources:
             return
         wid = packet[1]
-        sig = bytestostr(packet[2])
+        sig = str(packet[2])
         if sig not in WINDOW_SIGNALS:
             log.warn(f"Warning: window signal {sig!r} not handled")
             return

@@ -11,7 +11,7 @@ from collections.abc import Callable
 
 from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
-from xpra.util.str_fn import std, csv, ellipsizer, bytestostr
+from xpra.util.str_fn import std, csv, ellipsizer
 from xpra.util.env import envbool
 from xpra.log import Logger
 
@@ -301,8 +301,8 @@ class KeyboardHelper:
             self.parse_shortcuts()
 
     def layout_str(self):
-        return " / ".join([bytestostr(x) for x in (
-            self.layout_option or self.layout, self.variant_option or self.variant) if bool(x)])
+        return " / ".join(str(x) for x in (
+            self.layout_option or self.layout, self.variant_option or self.variant) if bool(x))
 
     def send_layout(self):
         log("send_layout() layout_option=%s, layout=%s, variant_option=%s, variant=%s, options=%s",

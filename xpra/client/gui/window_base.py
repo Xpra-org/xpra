@@ -17,7 +17,7 @@ from xpra.os_util import OSX, WIN32
 from xpra.util.system import is_Wayland
 from xpra.common import GravityStr, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.util.objects import typedict
-from xpra.util.str_fn import std, bytestostr
+from xpra.util.str_fn import std
 from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.log import Logger
 
@@ -303,7 +303,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def _get_window_title(self, metadata) -> str:
         try:
-            title = bytestostr(self._client.title).replace("\0", "")
+            title = self._client.title.replace("\0", "")
             if title.find("@") < 0:
                 return title
             # perform metadata variable substitutions:
@@ -350,7 +350,7 @@ class ClientWindowBase(ClientWidgetBase):
                         conn = getattr(proto, "_conn", None)
                         if conn:
                             hostname = conn.info.get("host")
-                            target = bytestostr(conn.target)
+                            target = str(conn.target)
                             if hostname:
                                 if local_hostname == hostname and server_display:
                                     return server_display
@@ -688,7 +688,7 @@ class ClientWindowBase(ClientWidgetBase):
             geomlog.error("Error setting window hints:")
             geomlog.estr(e)
             for k, v in hints.items():
-                geomlog.error("  %s=%s", bytestostr(k), v)
+                geomlog.error(f"  {k}={v}")
             geomlog.error(" from size constraints:")
             for k, v in size_constraints.items():
                 geomlog.error("  %s=%s", k, v)

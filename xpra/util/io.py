@@ -14,7 +14,6 @@ from typing import Any
 
 from xpra.common import noerr
 from xpra.os_util import POSIX
-from xpra.util.str_fn import bytestostr
 
 util_logger = None
 
@@ -246,8 +245,8 @@ def find_lib_ldconfig(libname: str) -> str:
             ldconfig = t
             break
     import subprocess
-    p = subprocess.Popen(f"{ldconfig} -p", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    data = bytestostr(p.communicate()[0])
+    p = subprocess.Popen(f"{ldconfig} -p", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
+    data = p.communicate()[0]
     libpath = re.search(pattern, data, re.MULTILINE)
     if libpath:
         return libpath.group(1)
@@ -326,5 +325,5 @@ def get_proc_cmdline(pid: int) -> tuple[str, ...]:
             try:
                 return tuple(x.decode() for x in cmdline)
             except UnicodeDecodeError:
-                return tuple(bytestostr(x) for x in cmdline)
+                return tuple(x.decode("latin1") for x in cmdline)
     return ()

@@ -52,7 +52,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 )
 
 from xpra.os_util import POSIX, OSX, gi_import
-from xpra.util.str_fn import repr_ellipsized, nonl, bytestostr, hexstr
+from xpra.util.str_fn import repr_ellipsized, nonl, hexstr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.objects import typedict
 from xpra.util.system import is_Wayland
@@ -437,7 +437,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def fail_shader(self, name: str, err: str) -> None:
         from OpenGL.GL import glDeleteShader
-        err_str = bytestostr(err).strip("\n\r")
+        err_str = err.strip("\n\r")
         shader = self.shaders.pop(name, None)
         if shader:
             glDeleteShader(shader)

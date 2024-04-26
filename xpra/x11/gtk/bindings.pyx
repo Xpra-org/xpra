@@ -9,7 +9,7 @@ from collections.abc import Callable
 from typing import Dict, Set
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import strtobytes, bytestostr, csv
+from xpra.util.str_fn import strtobytes, csv
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "gtk")
@@ -192,7 +192,7 @@ cdef _get_pyatom(display, int xatom):
     cdef char *name = XGetAtomName(xdisplay, xatom)
     if name==NULL:
         return ""
-    pyname = bytestostr(name)
+    pyname = name.decode("latin1")
     XFree(name)
     return pyname
 

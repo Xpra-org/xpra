@@ -452,4 +452,4 @@ class X11ServerBase(X11ServerCore):
                     log(f"server_settings: setting {p} to {v}")
                     root_prop_set(p, "latin1", strtobytes(v).decode("latin1"))
                 else:
-                    log.warn(f"Warning: unexpected setting {bytestostr(k)}")
+                    log.warn(f"Warning: unexpected setting {k}")

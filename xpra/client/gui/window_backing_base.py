@@ -15,7 +15,7 @@ from xpra.net.mmap import mmap_read
 from xpra.net import compression
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
@@ -832,9 +832,7 @@ class WindowBackingBase:
                     videolog.error(" %sx%s pixels using %s", width, height, vd.get_type())
                     videolog.error(" frame options:")
                     for k, v in options.items():
-                        if isinstance(v, bytes):
-                            v = bytestostr(v)
-                        videolog.error("   %s=%s", bytestostr(k), v)
+                        videolog.error(f"    {k:10}={v}")
                 return
 
             x, y = self.gravity_adjust(x, y, options)
@@ -921,7 +919,6 @@ class WindowBackingBase:
             assert self._backing is not None
             log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)",
                 x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
-            coding = bytestostr(coding)
             options["encoding"] = coding  # used for choosing the color of the paint box
             if coding == "mmap":
                 self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)

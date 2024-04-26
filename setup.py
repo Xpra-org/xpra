@@ -2312,7 +2312,7 @@ if client_ENABLED:
     add_packages("xpra.client.mixins", "xpra.client.auth")
     add_modules("xpra.scripts.pinentry")
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
-toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk", "xpra.client.gui")
+toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
 if client_ENABLED and WIN32 and MINGW_PREFIX:
     ace("xpra.platform.win32.propsys,xpra/platform/win32/setappid.cpp",
@@ -2502,7 +2502,7 @@ if cythonize_more_ENABLED:
             if gtk3_ENABLED:
                 ax("xpra.client.gl.gtk")
         if gtk3_ENABLED:
-            ax("xpra.client.gtk")
+            ax("xpra.client.gtk3")
         ax("xpra.client.gui")
         ax("xpra.client.mixins")
     if clipboard_ENABLED:

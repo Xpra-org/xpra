@@ -105,7 +105,7 @@ def do_set_keymap(layout:str, variant:str, options, query_struct) -> None:
     safe_setxkbmap("evdev", "pc105", layout, variant, options)
 
 
-def safe_setxkbmap(rules, model:str, layout:str, variant:str, options):
+def safe_setxkbmap(rules, model: str, layout: str, variant: str, options):
     # (we execute the options separately in case that fails..)
     try:
         X11Keyboard.setxkbmap(rules, model, layout, variant, options)
@@ -113,8 +113,7 @@ def safe_setxkbmap(rules, model:str, layout:str, variant:str, options):
     except Exception:
         log("safe_setxkbmap%s", (rules, model, layout, variant, options), exc_info=True)
         log.warn("Warning: failed to set exact keymap,")
-        log.warn(" rules=%s, model=%s, layout=%s, variant=%s, options=%s",
-                 bytestostr(rules), bytestostr(model), bytestostr(layout), bytestostr(variant), bytestostr(options))
+        log.warn(f" {rules=}, {model=}, {layout=}, {variant=}, {options=}")
     if options:
         # try again with no options:
         try:
@@ -504,9 +503,9 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_
                 # noinspection PyChainedComparisons
                 if keycode >= 0 and server_keycode != keycode:
                     keycode_trans[(keycode, name)] = server_keycode
-                    l("keycode_trans[(%s, %s)]=%s", keycode, bytestostr(name), server_keycode)
+                    l(f"keycode_trans[({keycode}, {name})]={server_keycode}")
                 keycode_trans[name] = server_keycode
-                l("keycode_trans[%s]=%s", bytestostr(name), server_keycode)
+                l(f"keycode_trans[{name}]={server_keycode}")
             server_keycodes[server_keycode] = entries
         return server_keycode
 
@@ -690,15 +689,15 @@ def clear_modifiers():
     apply_xmodmap(instructions)
 
 
-def set_modifiers(modifiers):
+def set_modifiers(modifiers: dict[str, Iterable[str]]):
     """
         modifiers is a dict: {modifier : [keynames]}
         Note: the same keysym cannot appear in more than one modifier
     """
     instructions = []
     for modifier, keynames in modifiers.items():
-        mod = X11Keyboard.parse_modifier(bytestostr(modifier))
-        if mod>=0:
+        mod = X11Keyboard.parse_modifier(modifier)
+        if mod >= 0:
             instructions.append(("add", mod, keynames))
         else:
             log.error("Error: unknown modifier %s", modifier)
@@ -723,7 +722,7 @@ def set_modifiers(modifiers):
     return modifiers
 
 
-def get_modifiers_from_meanings(xkbmap_mod_meanings):
+def get_modifiers_from_meanings(xkbmap_mod_meanings: dict[str, str]) -> dict[str, list[str]]:
     """
         xkbmap_mod_meanings maps a keyname to a modifier
         returns keynames_for_mod: {modifier : [keynames]}
@@ -731,10 +730,9 @@ def get_modifiers_from_meanings(xkbmap_mod_meanings):
     # first generate a {modifier : [keynames]} dict:
     modifiers = {}
     for keyname, modifier in xkbmap_mod_meanings.items():
-        l = modifiers.setdefault(bytestostr(modifier), [])
-        kn = bytestostr(keyname)
-        if kn not in l:
-            l.append(kn)
+        keynames = modifiers.setdefault(modifier, [])
+        if keyname not in keynames:
+            keynames.append(keyname)
     log("get_modifiers_from_meanings(%s) modifier dict=%s", xkbmap_mod_meanings, modifiers)
     return modifiers
 

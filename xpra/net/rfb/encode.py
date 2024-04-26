@@ -8,7 +8,7 @@ import struct
 from xpra.net.rfb.const import RFBEncoding
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.pillow.encoder import encode
-from xpra.util.str_fn import bytestostr, hexstr
+from xpra.util.str_fn import hexstr
 from xpra.log import Logger
 
 log = Logger("rfb")
@@ -30,7 +30,7 @@ def rgb222_encode(window, x, y, w, h):
     img = window.get_image(x, y, w, h)
     window.acknowledge_changes()
     header = make_header(RFBEncoding.RAW, x, y, w, h)
-    if bytestostr(img.get_pixel_format()) != "BGRX":
+    if img.get_pixel_format() != "BGRX":
         log.warn("Warning: cannot convert %s to rgb222", img.get_pixel_format())
         return []
     pixels = img.get_pixels()
@@ -84,7 +84,7 @@ def tight_encode(window, x, y, w, h, quality=0):
         # Fill Compression
         header = make_header(RFBEncoding.TIGHT, x, y, w, h)
         header += struct.pack(b"!B", 0x80)
-        pixel_format = bytestostr(img.get_pixel_format())
+        pixel_format = img.get_pixel_format()
         log.warn("fill compression of %s", pixel_format)
         if not rgb_reformat(img, ("RGB",), False):
             log.error("Error: cannot convert %s to RGB", pixel_format)

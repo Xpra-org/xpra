@@ -24,7 +24,6 @@ from xpra.net.common import DEFAULT_PORTS
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import, WIN32
 from xpra.util.env import IgnoreWarningsContext
-from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -46,14 +45,13 @@ def get_session_info(sockpath):
     else:
         socktype = "socket"
     cmd = get_nodock_command() + ["id", f"{socktype}:{sockpath}"]
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     stdout = p.communicate()[0]
     log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
     if p.returncode != 0:
         return None
-    out = bytestostr(stdout)
     info = {}
-    for line in out.splitlines():
+    for line in stdout.splitlines():
         parts = line.split("=", 1)
         if len(parts) == 2:
             info[parts[0]] = parts[1]

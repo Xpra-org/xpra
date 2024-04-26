@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -20,7 +20,7 @@ from collections.abc import ByteString, Callable, Iterable
 from xpra.util.objects import typedict
 from xpra.util.str_fn import (
     csv, hexstr, nicestr,
-    ellipsizer, repr_ellipsized, strtobytes, bytestostr, memoryview_to_bytes,
+    ellipsizer, repr_ellipsized, strtobytes, memoryview_to_bytes,
 )
 from xpra.util.env import envint, envbool
 from xpra.util.thread import make_thread, start_thread
@@ -246,7 +246,7 @@ class SocketProtocol:
 
     def parse_remote_caps(self, caps: typedict) -> None:
         for k, v in caps.dictget("aliases", {}).items():
-            self.send_aliases[bytestostr(k)] = int(v)
+            self.send_aliases[k] = int(v)
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
 
     def set_receive_aliases(self, aliases: dict[int, str]) -> None:
@@ -644,7 +644,7 @@ class SocketProtocol:
             raise
         l = len(main_packet)
         payload_size += l
-        if l > size_check and bytestostr(packet_in[0]) not in self.large_packets:
+        if l > size_check and packet_in[0] not in self.large_packets:
             log.warn("Warning: found large packet")
             log.warn(f" {packet_type!r} packet is {len(main_packet)} bytes: ")
             log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))
@@ -1122,14 +1122,14 @@ class SocketProtocol:
                     else:
                         raise ValueError(f"receive alias not found for packet type {packet_type}")
                 else:
-                    packet_type = bytestostr(packet_type)
+                    packet_type = str(packet_type)
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0) + 1
                 if LOG_RAW_PACKET_SIZE and packet_type != "logging":
                     log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
                 payload_size = -1
                 self.input_packetcount += 1
                 self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
-                log("processing packet %s", bytestostr(packet_type))
+                log("processing packet %s", packet_type)
                 self._process_packet_cb(self, tuple(packet))
                 del packet
 

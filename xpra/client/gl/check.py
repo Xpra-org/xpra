@@ -9,7 +9,7 @@ import sys
 import logging
 from typing import Any
 
-from xpra.util.str_fn import csv, print_nested_dict, bytestostr
+from xpra.util.str_fn import csv, print_nested_dict
 from xpra.util.env import envint, envbool, numpy_import_context
 from xpra.log import Logger, CaptureHandler
 from xpra.client.gl.drivers import GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST, OpenGLFatalError
@@ -413,18 +413,18 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     import OpenGL
     props["pyopengl"] = OpenGL.__version__  # @UndefinedVariable
     from OpenGL.GL import GL_VERSION, glGetString
-    gl_version_str = glGetString(GL_VERSION)
-    if gl_version_str is None and not force_enable:
+    gl_version_str = (glGetString(GL_VERSION) or b"").decode("latin1")
+    if not gl_version_str and not force_enable:
         raise_fatal_error("OpenGL version is missing - cannot continue")
         return props
-    # b'4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
-    log("GL_VERSION=%s", bytestostr(gl_version_str))
-    vparts = bytestostr(gl_version_str).split(" ", 1)[0].split(".")
+    # '4.6.0 NVIDIA 440.59' -> ['4', '6', '0 NVIDIA...']
+    log("GL_VERSION=%s", gl_version_str)
+    vparts = gl_version_str.split(" ", 1)[0].split(".")
     try:
         gl_major = int(vparts[0])
         gl_minor = int(vparts[1])
     except (IndexError, ValueError) as e:
-        msg = "failed to parse gl version '%s': %s" % (bytestostr(gl_version_str), e)
+        msg = "failed to parse gl version '%s': %s" % (gl_version_str, e)
         unsafe(msg)
         log(" assuming this is at least 1.1 to continue")
     else:

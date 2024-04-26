@@ -490,7 +490,7 @@ def create_uinput_device(uid: int, events, name: str) -> tuple[str, Any, str] | 
     return name, device, dev_path
 
 
-def create_uinput_pointer_device(uuid, uid) -> tuple[str, Any, str] | None:
+def create_uinput_pointer_device(uuid: str, uid) -> tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_POINTER", True):
         return None
     from uinput import (
@@ -509,7 +509,7 @@ def create_uinput_pointer_device(uuid, uid) -> tuple[str, Any, str] | None:
     return create_uinput_device(uid, events, name)
 
 
-def create_uinput_touchpad_device(uuid, uid: int) -> tuple[str, Any, str] | None:
+def create_uinput_touchpad_device(uuid: str, uid: int) -> tuple[str, Any, str] | None:
     if not envbool("XPRA_UINPUT_TOUCHPAD", False):
         return None
     from uinput import BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE
@@ -524,7 +524,7 @@ def create_uinput_touchpad_device(uuid, uid: int) -> tuple[str, Any, str] | None
     return create_uinput_device(uid, events, name)
 
 
-def create_uinput_devices(uinput_uuid, uid: int) -> dict[str, Any]:
+def create_uinput_devices(uinput_uuid: str, uid: int) -> dict[str, Any]:
     log = get_logger()
     try:
         import uinput  # @UnresolvedImport
@@ -554,7 +554,7 @@ def create_uinput_devices(uinput_uuid, uid: int) -> dict[str, Any]:
     }
 
 
-def create_input_devices(uinput_uuid, uid: int) -> dict[str, Any]:
+def create_input_devices(uinput_uuid: str, uid: int) -> dict[str, Any]:
     return create_uinput_devices(uinput_uuid, uid)
 
 

@@ -21,7 +21,7 @@ from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.util.io import load_binary_file, stderr_print, umask_context
 from xpra.common import noerr
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, envfloat
 from xpra.log import Logger
 
@@ -68,7 +68,7 @@ AUTH_MODES: tuple[str, ...] = ("none", "agent", "key", "password")
 
 def keymd5(k) -> str:
     import binascii
-    f = bytestostr(binascii.hexlify(k.get_fingerprint()))
+    f = binascii.hexlify(k.get_fingerprint()).decode("latin1")
     s = "MD5"
     while f:
         s += ":" + f[:2]
@@ -97,7 +97,7 @@ class SSHSocketConnection(SocketConnection):
             if not v:
                 log.info("SSH EOF on stderr of %s", chan.get_name())
                 break
-            s = bytestostr(v.rstrip(b"\n\r"))
+            s = v.rstrip(b"\n\r").decode()
             if s:
                 log.info(" SSH: %r", s)
 

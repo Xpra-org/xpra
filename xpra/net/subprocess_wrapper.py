@@ -254,7 +254,7 @@ class subprocess_callee:
         return item, None, None, self.send_queue.qsize() > 0
 
     def process_packet(self, proto, packet) -> None:
-        command = bytestostr(packet[0])
+        command = str(packet[0])
         if command == CONNECTION_LOST:
             log("connection-lost: %s, calling stop", packet[1:])
             self.net_stop()
@@ -462,7 +462,7 @@ class subprocess_caller:
     def process_packet(self, proto, packet) -> None:
         if DEBUG_WRAPPER:
             log("process_packet(%s, %s)", proto, [str(x)[:32] for x in packet])
-        signal_name = bytestostr(packet[0])
+        signal_name = str(packet[0])
         self._fire_callback(signal_name, packet[1:])
         INJECT_FAULT(proto)
 

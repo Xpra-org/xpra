@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,17 +8,17 @@
 # see http://partiwm.org/ticket/34 for details
 
 from time import sleep, monotonic
-from xpra.util.str_fn import bytestostr
 
 from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
 
 
 # timeout is in seconds
-def wait_for_x_server(display_name, int timeout):
+def wait_for_x_server(display_name: str = "", int timeout = 10):
     cdef Display * d
+    bstr = display_name.encode("latin1")
     cdef char* name = NULL
     if display_name:
-        name = display_name
+        name = bstr
     t = 100
     cdef double start = monotonic()
     while (monotonic() - start) < timeout:
@@ -29,5 +29,4 @@ def wait_for_x_server(display_name, int timeout):
         if t>0:
             sleep(t/1000)
             t = t//2
-    raise RuntimeError("could not connect to X server on display '%s' after %i seconds" % (
-        bytestostr(display_name), timeout))
+    raise RuntimeError(f"could not connect to X server on display {display_name!r} after {timeout} seconds")

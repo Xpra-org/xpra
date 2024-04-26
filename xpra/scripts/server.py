@@ -68,9 +68,9 @@ def get_logger():
     return Logger("util")
 
 
-def get_rand_chars(l=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") -> bytes:
+def get_rand_chars(length=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") -> bytes:
     import random
-    return b"".join(chars[random.randint(0, len(chars) - 1):][:1] for _ in range(l))
+    return b"".join(chars[random.randint(0, len(chars) - 1):][:1] for _ in range(length))
 
 
 def deadly_signal(signum, _frame=None):
@@ -1282,7 +1282,7 @@ def _do_run_server(script_file: str, cmdline,
     devices = {}
     if POSIX and not OSX:
         from xpra.server.util import has_uinput, UINPUT_UUID_LEN
-        uinput_uuid = None
+        uinput_uuid = ""
         use_uinput = not (shadowing or proxying) and opts.input_devices.lower() in ("uinput", "auto") and has_uinput()
         if start_vfb:
             progress(40, "starting a virtual display")
@@ -1291,7 +1291,7 @@ def _do_run_server(script_file: str, cmdline,
             pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
             if use_uinput:
                 # this only needs to be fairly unique:
-                uinput_uuid = get_rand_chars(UINPUT_UUID_LEN)
+                uinput_uuid = get_rand_chars(UINPUT_UUID_LEN).decode("latin1")
                 write_session_file("uinput-uuid", uinput_uuid)
             vfb_geom: tuple | None = ()
             if opts.resize_display.lower() not in ALL_BOOLEAN_OPTIONS:
@@ -1345,7 +1345,7 @@ def _do_run_server(script_file: str, cmdline,
                 pass
             log(f"reloaded xvfb.pid={xvfb_pid} from session file")
             if use_uinput:
-                uinput_uuid = load_session_file("uinput-uuid")
+                uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
         if uinput_uuid:
             devices = create_input_devices(uinput_uuid, uid)
 

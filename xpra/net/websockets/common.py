@@ -13,7 +13,7 @@ from typing import Any
 from enum import IntEnum
 from collections.abc import Callable
 
-from xpra.util.str_fn import strtobytes, bytestostr
+from xpra.util.str_fn import strtobytes
 from xpra.log import Logger
 
 log = Logger("websocket")
@@ -120,7 +120,7 @@ def parse_response_header(response: bytes):
     lines = head.split(b"\r\n")
     headers = {}
     for line in lines:
-        parts = bytestostr(line).split(": ", 1)
+        parts = line.decode("latin1").split(": ", 1)
         if len(parts) == 2:
             headers[parts[0].lower()] = parts[1]
     return headers

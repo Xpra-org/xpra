@@ -13,7 +13,6 @@ from xpra.net.bytestreams import ConnectionClosedException
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
-from xpra.util.str_fn import bytestostr
 from xpra.util.env import envbool, restore_script_env, get_saved_env
 from xpra.log import Logger, is_debug_enabled
 
@@ -221,7 +220,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 if not v:
                     log(f"SSH EOF on stderr of {cmd}")
                     break
-                s = bytestostr(v).rstrip("\n\r")
+                s = v.rstrip("\n\r").decode()
                 if s:
                     errs.append(s)
             if errs:

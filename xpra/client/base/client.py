@@ -701,7 +701,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def _process_disconnect(self, packet: PacketType) -> None:
         # ie: ("disconnect", "version error", "incompatible version")
         netlog("%s", packet)
-        info = tuple(nonl(bytestostr(x)) for x in packet[1:])
+        info = tuple(nonl(str(x)) for x in packet[1:])
         reason = info[0]
         if not self.connection_established:
             # server never sent hello to us - so disconnect is an error
@@ -821,16 +821,15 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         start_thread(self.do_process_challenge, "call-challenge-handlers", True, (packet,))
 
     def do_process_challenge(self, packet: PacketType) -> None:
-        digest = bytestostr(packet[3])
+        digest = str(packet[3])
         authlog(f"challenge handlers: {self.challenge_handlers}, digest: {digest}")
         while self.challenge_handlers:
             handler = self.pop_challenge_handler(digest)
             try:
                 challenge = packet[1]
-                digest = bytestostr(packet[3])
                 prompt = "password"
                 if len(packet) >= 6:
-                    prompt = std(bytestostr(packet[5]), extras="-,./: '")
+                    prompt = std(str(packet[5]), extras="-,./: '")
                 authlog(f"calling challenge handler {handler}")
                 value = handler.handle(challenge=challenge, digest=digest, prompt=prompt)
                 authlog(f"{handler.handle}({packet})={obsc(value)}")
@@ -902,7 +901,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p = self._protocol
         if not p:
             return False
-        digest = bytestostr(packet[3]).split(":", 1)[0]
+        digest = str(packet[3]).split(":", 1)[0]
         # don't send XORed password unencrypted:
         if digest in ("xor", "des"):
             encrypted = p.is_sending_encrypted()
@@ -917,7 +916,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 return False
         salt_digest = "xor"
         if len(packet) >= 5:
-            salt_digest = bytestostr(packet[4])
+            salt_digest = str(packet[4])
         if salt_digest in ("xor", "des"):
             self.auth_error(ExitCode.INCOMPATIBLE_VERSION, f"server uses legacy salt digest {salt_digest!r}")
             return False
@@ -955,7 +954,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         # all server versions support a client salt,
         # they also tell us which digest to use:
         server_salt = strtobytes(packet[1])
-        digest = bytestostr(packet[3])
+        digest = str(packet[3])
         actual_digest = digest.split(":", 1)[0]
         if actual_digest == "des":
             salt = client_salt = server_salt
@@ -963,7 +962,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             l = len(server_salt)
             salt_digest = "xor"
             if len(packet) >= 5:
-                salt_digest = bytestostr(packet[4])
+                salt_digest = str(packet[4])
             if salt_digest == "xor":
                 # with xor, we have to match the size
                 if l < 16:
@@ -1248,7 +1247,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         try:
             packet_type = packet[0]
             if packet_type != int:
-                packet_type = bytestostr(packet_type)
+                packet_type = str(packet_type)
 
             def call_handler():
                 may_log_packet(False, packet_type, packet)

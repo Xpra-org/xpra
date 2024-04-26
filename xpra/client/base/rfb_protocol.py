@@ -9,7 +9,7 @@ from collections.abc import Callable
 
 from xpra.net.rfb.protocol import RFBProtocol
 from xpra.net.rfb.const import RFBEncoding, RFBClientMessage, RFBAuth, CLIENT_INIT, AUTH_STR, RFB_KEYS
-from xpra.util.str_fn import csv, repr_ellipsized, bytestostr, hexstr
+from xpra.util.str_fn import csv, repr_ellipsized, hexstr
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")
@@ -226,7 +226,7 @@ class RFBClientProtocol(RFBProtocol):
         try:
             session_name = sn.decode("utf8")
         except UnicodeDecodeError:
-            session_name = bytestostr(sn)
+            session_name = sn.decode("latin1")
         log.info(f"RFB server session {session_name!r}: {w}x{h} {depth} bits")
         log(f"bpp={bpp}, bigendian={bool(bigendian)}")
         if not truecolor:

@@ -9,7 +9,7 @@ import binascii
 
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
-from xpra.util.str_fn import strtobytes, bytestostr
+from xpra.util.str_fn import strtobytes
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("auth")
@@ -71,7 +71,7 @@ class Handler:
                     key_handle_filenames.append(os.path.join(d, f"u2f-keyhandle{hostinfo}.hex"))
             for filename in key_handle_filenames:
                 p = osexpand(filename)
-                key_handle_str = bytestostr(load_binary_file(p).rstrip(b" \n\r"))
+                key_handle_str = load_binary_file(p).rstrip(b" \n\r").decode("latin1")
                 log("key_handle_str(%s)=%s", p, key_handle_str)
                 if key_handle_str:
                     break

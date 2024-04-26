@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -19,7 +19,7 @@ from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import POSIX, WIN32
 from xpra.util.io import umask_context
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool, parse_with_unit
 from xpra.net.common import PacketType
@@ -596,7 +596,7 @@ class FileTransferHandler(FileTransferAttributes):
         rf = options.tupleget("request-file")
         if rf and len(rf) >= 2:
             argf = rf[0]
-            cb = self.file_request_callback.pop(bytestostr(argf), None)
+            cb = self.file_request_callback.pop(argf, None)
             if cb:
                 cb(filename, filesize)
                 return
@@ -847,7 +847,7 @@ class FileTransferHandler(FileTransferAttributes):
         rf = options.tupleget("request-file")
         if rf and len(rf) >= 2:
             argf, openit = rf[:2]
-            openit = self.files_requested.pop(bytestostr(argf), None)
+            openit = self.files_requested.pop(argf, None)
             if openit is not None:
                 self.files_accepted[send_id] = openit
                 cb_answer(True)

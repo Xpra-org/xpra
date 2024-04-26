@@ -22,7 +22,7 @@ from xpra.os_util import POSIX, WIN32, OSX, gi_import
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized, bytestostr
+from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool
 from xpra.exit_codes import ExitCode, ExitValue
@@ -189,7 +189,7 @@ class UIXpraClient(ClientBaseClass):
             c.init(self, opts)
 
         self.title = opts.title
-        self.session_name = bytestostr(opts.session_name)
+        self.session_name = opts.session_name
         self.xsettings_enabled = not (OSX or WIN32) and str_to_bool(opts.xsettings)
         self.readonly = opts.readonly
         self.client_supports_sharing = opts.sharing is True
@@ -587,8 +587,8 @@ class UIXpraClient(ClientBaseClass):
         self._on_server_setting_changed.setdefault(setting, []).append(cb)
 
     def _process_setting_change(self, packet: PacketType):
-        setting, value = packet[1:3]
-        setting = bytestostr(setting)
+        setting = str(packet[1])
+        value = packet[2]
         # convert "hello" / "setting" variable names to client variables:
         if setting in (
                 "clipboard-limits",
@@ -605,7 +605,7 @@ class UIXpraClient(ClientBaseClass):
         ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:
-            log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(bytestostr(value)))
+            log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(value))
             return
         log("_process_setting_change: %s=%s", setting, value)
         # these are too big to log
@@ -632,7 +632,7 @@ class UIXpraClient(ClientBaseClass):
         return commands
 
     def _process_control(self, packet: PacketType):
-        command = bytestostr(packet[1])
+        command = str(packet[1])
         args = packet[2:]
         log("_process_control(%s)", packet)
         if command == "show_session_info":
@@ -652,7 +652,7 @@ class UIXpraClient(ClientBaseClass):
             self._protocol.enable_encoder(pe)
         elif command == "name":
             assert len(args) >= 1
-            self.server_session_name = bytestostr(args[0])
+            self.server_session_name = str(args[0])
             log.info("session name updated from server: %s", self.server_session_name)
             # TODO: reset tray tooltip, session info title, etc..
         elif command == "debug":
@@ -665,7 +665,7 @@ class UIXpraClient(ClientBaseClass):
                 add_backtrace, remove_backtrace,
                 get_all_loggers,
             )
-            log_cmd = bytestostr(args[0])
+            log_cmd = str(args[0])
             if log_cmd == "status":
                 dloggers = [x for x in get_all_loggers() if x.is_debug_enabled()]
                 if dloggers:
@@ -689,7 +689,7 @@ class UIXpraClient(ClientBaseClass):
                 return
             loggers = []
             # each argument is a group
-            groups = [bytestostr(x) for x in args[1:]]
+            groups = [str(x) for x in args[1:]]
             for group in groups:
                 # and each group is a list of categories
                 # preferably separated by "+",

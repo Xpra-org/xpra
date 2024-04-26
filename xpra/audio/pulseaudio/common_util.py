@@ -8,19 +8,18 @@ import os
 import sys
 
 from xpra.util.env import envbool, first_time
-from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
 log = Logger("audio")
 
 
-def get_x11_property(atom_name: str) -> bytes:
+def get_x11_property(atom_name: str) -> str:
     from xpra.os_util import OSX, POSIX
     if envbool("XPRA_NOX11", not POSIX or OSX):
-        return b""
+        return ""
     display = os.environ.get("DISPLAY")
     if not display:
-        return b""
+        return ""
     try:
         from xpra.x11 import bindings
         assert bindings
@@ -28,7 +27,7 @@ def get_x11_property(atom_name: str) -> bytes:
         from xpra.util.env import envint
         if first_time("pulse-x11-bindings") and not envint("XPRA_SKIP_UI", 0):
             log.info("unable to query display properties without the X11 bindings")
-        return b""
+        return ""
     try:
         from xpra.gtk.error import xswallow
         from xpra.x11.bindings.posix_display_source import X11DisplayContext
@@ -37,7 +36,7 @@ def get_x11_property(atom_name: str) -> bytes:
         log("get_x11_property(%s)", atom_name, exc_info=True)
         log.error("Error: unable to query X11 property '%s':", atom_name)
         log.estr(e)
-        return b""
+        return ""
     try:
         with X11DisplayContext(display):
             with xswallow:
@@ -48,29 +47,28 @@ def get_x11_property(atom_name: str) -> bytes:
                     prop = X11Window.XGetWindowProperty(root, atom_name, "STRING")
                 except Exception as e:
                     log("cannot get X11 property '%s': %s", atom_name, e)
-                    return b""
+                    return ""
                 log("XGetWindowProperty(..)=%s", prop)
                 if prop:
-                    from xpra.util.str_fn import strtobytes
                     from xpra.x11.prop_conv import prop_decode
                     v = prop_decode("latin1", prop)
                     log("get_x11_property(%s)=%s", atom_name, v)
-                    return strtobytes(v)
-                return b""
+                    return v
+                return ""
     except Exception as e:
         log("get_x11_property(%s)", atom_name, exc_info=True)
         if not os.environ.get("WAYLAND_DISPLAY"):
             log.error("Error: cannot get X11 property '%s'", atom_name)
             log.estr(e)
-    return b""
+    return ""
 
 
 def get_pulse_server_x11_property() -> str:
-    return bytestostr(get_x11_property("PULSE_SERVER"))
+    return get_x11_property("PULSE_SERVER")
 
 
 def get_pulse_id_x11_property() -> str:
-    return bytestostr(get_x11_property("PULSE_ID"))
+    return get_x11_property("PULSE_ID")
 
 
 def main():

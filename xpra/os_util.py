@@ -129,9 +129,8 @@ def get_machine_id() -> str:
         from xpra.util.io import load_binary_file
         for filename in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
             b = load_binary_file(filename)
-            if b is not None:
-                from xpra.util.str_fn import bytestostr
-                v = bytestostr(b)
+            if b:
+                v = b.decode("latin1")
                 break
     elif WIN32:
         v = str(uuid.getnode())

@@ -543,7 +543,7 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
                     set_sink_mute(device, mute=False)
         except Exception as e:
             log("device %s may still be muted: %s", device, e)
-    return {"device" : bytestostr(device)}
+    return {"device": device}
 
 
 def get_pulse_device(device_name_match=None, want_monitor_device=True,

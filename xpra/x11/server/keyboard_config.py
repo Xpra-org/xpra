@@ -9,7 +9,7 @@ import hashlib
 from typing import Any
 
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.gtk.keymap import get_gtk_keymap
@@ -250,7 +250,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 for keyname in keynames:
                     if keyname in DEFAULT_MODIFIER_NUISANCE_KEYNAMES:
                         self.mod_nuisance.add(modifier)
-                    keyval = Gdk.keyval_from_name(bytestostr(keyname))
+                    keyval = Gdk.keyval_from_name(keyname)
                     if keyval == 0:
                         log.error("Error: no keyval found for keyname '%s' (modifier '%s')", keyname, modifier)
                         continue
@@ -620,7 +620,6 @@ class KeyboardConfig(KeyboardConfigBase):
             m = set()
             mm = self.mod_managed or ()
             for modifier in modifiers:
-                modifier = bytestostr(modifier)
                 if modifier in mm:
                     log("modifier is server managed: %s", modifier)
                     continue
@@ -635,7 +634,6 @@ class KeyboardConfig(KeyboardConfigBase):
         def change_mask(modifiers, press, info):
             failed = []
             for modifier in modifiers:
-                modifier = bytestostr(modifier)
                 if modifier not in self.keynames_for_mod:
                     log.error(f"Error: unknown modifier {modifier!r}")
                     log.error(" known modifiers: %s", csv(self.keynames_for_mod.keys()))

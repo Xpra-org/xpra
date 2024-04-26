@@ -6,7 +6,6 @@
 # cython code for manipulating GdkAtoms
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import bytestostr
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 
 Gdk = gi_import("Gdk")
@@ -47,7 +46,7 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
         #inefficient but what other constructor is there?
         name = gdk_atom_name(atom)
         if name:
-            str_name = bytestostr(name)
+            str_name = name.decode("latin1")
             gdk_atom = Gdk.Atom.intern(str_name, False)
             objects.append(gdk_atom)
     PyBuffer_Release(&py_buf)

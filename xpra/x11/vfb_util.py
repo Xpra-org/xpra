@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -17,7 +17,7 @@ import os.path
 
 from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
-from xpra.util.str_fn import csv, strtobytes, bytestostr
+from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, shellsub, osexpand
 from xpra.os_util import getuid, getgid, POSIX, OSX
 from xpra.server.util import setuidgid
@@ -104,7 +104,7 @@ def osclose(fd) -> None:
         pass
 
 
-def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid: int, gid: int) -> None:
+def create_xorg_device_configs(xorg_conf_dir:str, device_uuid: str, uid: int, gid: int) -> None:
     log = get_vfb_logger()
     log("create_xorg_device_configs(%s, %s, %i, %i)", xorg_conf_dir, device_uuid, uid, gid)
     if not device_uuid:
@@ -134,10 +134,10 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid, uid: int, gid: in
         conf_files.append(f)
 
 
-def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid, uid: int, gid: int) -> str:
+def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid: str, uid: int, gid: int) -> str:
     # create individual device files:
     upper_dev_type = dev_type[:1].upper()+dev_type[1:]   # ie: Pointer
-    product_name = f"Xpra Virtual {upper_dev_type} {bytestostr(device_uuid)}"
+    product_name = f"Xpra Virtual {upper_dev_type} {device_uuid}"
     identifier = f"xpra-virtual-{dev_type}"
     conf_file = os.path.join(xorg_conf_dir, f"{i:02}-{dev_type}.conf")
     with open(conf_file, "w", encoding="utf8") as f:
@@ -186,8 +186,8 @@ def get_xauthority_path(display_name) -> str:
     return os.path.join(d, filename)
 
 
-def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth: int, display_name:str, cwd,
-               uid: int, gid: int, username:str, uinput_uuid=None):
+def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd,
+               uid: int, gid: int, username: str, uinput_uuid=""):
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
     if OSX:
@@ -498,12 +498,12 @@ def check_xvfb_process(xvfb=None, cmd:str="Xvfb", timeout:int=0, command=None) -
     return False
 
 
-def verify_display_ready(xvfb, display_name:str, shadowing_check=True, log_errors=True, timeout=VFB_WAIT) -> bool:
+def verify_display_ready(xvfb, display_name: str, shadowing_check=True, log_errors=True, timeout=VFB_WAIT) -> bool:
     from xpra.x11.bindings.wait_for_x_server import wait_for_x_server  # pylint: disable=import-outside-toplevel
     # Whether we spawned our server or not, it is now running -- or at least
     # starting.  First wait for it to start up:
     try:
-        wait_for_x_server(strtobytes(display_name), timeout)
+        wait_for_x_server(display_name, timeout)
     except Exception as e:
         log = get_vfb_logger()
         log("verify_display_ready%s", (xvfb, display_name, shadowing_check), exc_info=True)
@@ -529,9 +529,9 @@ def verify_display_ready(xvfb, display_name:str, shadowing_check=True, log_error
 def main():
     # pylint: disable=import-outside-toplevel
     import sys
-    display = None
-    if len(sys.argv)>1:
-        display = strtobytes(sys.argv[1])
+    display = ""
+    if len(sys.argv) > 1:
+        display = sys.argv[1]
     from xpra.x11.bindings.wait_for_x_server import wait_for_x_server
     wait_for_x_server(display, VFB_WAIT)
     print("OK")

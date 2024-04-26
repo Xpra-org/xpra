@@ -17,7 +17,6 @@ from xpra.os_util import POSIX, LINUX, OSX, WIN32
 from xpra.util.env import _saved_env
 from xpra.util.thread import main_thread
 from xpra.util.io import load_binary_file, get_util_logger
-from xpra.util.str_fn import bytestostr
 
 
 SIGNAMES: dict[int, str] = {}
@@ -83,7 +82,7 @@ def is_distribution_variant(variant="Debian") -> bool:
         pass
     try:
         d = get_linux_distribution()[0]
-        if d == bytestostr(variant):
+        if d == variant:
             return True
         if variant == "RedHat" and d.startswith(variant):
             return True

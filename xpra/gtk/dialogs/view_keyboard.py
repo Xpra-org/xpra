@@ -6,7 +6,7 @@ import sys
 import warnings
 from collections import deque
 
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
@@ -123,8 +123,8 @@ class KeyboardStateInfoWindow:
         }.items():
             if v:
                 if isinstance(v, (list, tuple)):
-                    v = csv(bytestostr(x) for x in v)
-                self.add_event_text("%16s: %s" % (k, bytestostr(v)))
+                    v = csv(v)
+                self.add_event_text("%16s: %s" % (k, v))
         log.info(f"do_keymap_changed: {msg}")
         log.info("do_keymap_changed: " + csv((layout, layouts, variant, variants, options)))
 
