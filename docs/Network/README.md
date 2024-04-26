@@ -20,6 +20,8 @@ See also: [protocol](./Protocol.md), [authentication](../Usage/Authentication.md
 Unencrypted modes like plain-`TCP` and plain-`WebSocket` can also be secured with [AES](./AES.md).\
 All the sockets that can be accessed via a network connection (all but `vsock` and `named-pipe`) will usually be published via [multicast DNS](./Multicast-DNS.md). On Posix, `unix-domain-sockets` are exposed as `SSH` as we assume that a local SSH server is always available.
 
+By default, local unix domain sockets (`--bind=auto` which is the default) also create [`abstract sockets`](https://github.com/Xpra-org/xpra/issues/4098), use `--bind=noabstract` if needed.
+
 See also: [Security Considerations](../Usage/Security.md)
 
 ## Examples:
