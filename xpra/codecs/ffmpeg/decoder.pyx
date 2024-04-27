@@ -970,23 +970,25 @@ cdef class Decoder:
             log("avcodec actual output pixel format is %s (%s), expected %s (%s)", self.actual_pix_fmt, self.get_actual_colorspace(), self.pix_fmt, self.colorspace)
 
         cs = self.get_actual_colorspace()
+        cdef int width = av_frame.width
+        cdef int height = av_frame.height
         log("actual_colorspace(%s)=%s, frame size: %4ix%-4i",
-                 self.actual_pix_fmt, cs, av_frame.width, av_frame.height)
+                 self.actual_pix_fmt, cs, width, height)
         if cs.find("P")>0:  #ie: GBRP, YUV420P, GBRP10 etc
             divs = get_subsampling_divs(cs)
             nplanes = 3
             for i in range(3):
                 _, dy = divs[i]
                 if dy==1:
-                    height = self.codec_ctx.height
+                    plane_height = self.codec_ctx.height
                 elif dy==2:
-                    height = (self.codec_ctx.height+1)>>1
+                    plane_height = (self.codec_ctx.height+1)>>1
                 else:
                     av_frame_unref(av_frame)
                     av_frame_free(&av_frame)
                     raise ValueError(f"invalid height divisor {dy} for {cs}")
                 stride = av_frame.linesize[i]
-                size = height * stride
+                size = plane_height * stride
                 outsize += size
 
                 out.append(PyMemoryView_FromMemory(<char *>av_frame.data[i], size, True))
@@ -995,7 +997,7 @@ cdef class Decoder:
         else:
             #RGB mode: "out" is a single buffer
             strides = av_frame.linesize[0]+av_frame.linesize[1]+av_frame.linesize[2]
-            outsize = self.codec_ctx.height * strides
+            outsize = height * strides
             out = PyMemoryView_FromMemory(<char *>av_frame.data[0], outsize, True)
             nplanes = 0
             log("decompress_image() read back '%s' buffer: %s bytes", cs, outsize)
@@ -1004,23 +1006,21 @@ cdef class Decoder:
             av_frame_unref(av_frame)
             av_frame_free(&av_frame)
             raise RuntimeError("output size is zero!")
-        if self.codec_ctx.width<self.width or self.codec_ctx.height<self.height:
+        # ignore rounding:
+        if abs(width-self.width)>1 or abs(height-self.height)>1:
             log.warn(f"Error: {self.encoding} context size mismatch")
             log.warn(f" on {self.frames+1} with colorspace {self.colorspace} (actual: {self.get_actual_colorspace()})")
             log.warn(f" {self.get_type()} decoder object is configured for {self.width}x{self.height}")
-            log.warn(f" but AVCodecContext is set to {self.codec_ctx.width}x{self.codec_ctx.height}")
-            #looks like a server bug if the dimensions are rounded down to the nearest multiple of 2
-            #so don't fail in that case:
-            if self.width-self.codec_ctx.width>1 or self.height-self.codec_ctx.height>1:
-                av_frame_unref(av_frame)
-                av_frame_free(&av_frame)
-                raise RuntimeError("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (
-                    self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
+            log.warn(f" but AVCodecContext is set to {width}x{height}")
+            av_frame_unref(av_frame)
+            av_frame_free(&av_frame)
+            raise RuntimeError("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (
+                self.encoding, width, height, self.width, self.height, self.frames+1))
 
         bpp = BYTES_PER_PIXEL.get(self.actual_pix_fmt, 0)
         cdef AVFrameWrapper framewrapper = AVFrameWrapper()
         framewrapper.set_context(self.codec_ctx, av_frame)
-        cdef object img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, bpp, nplanes, thread_safe=False)
+        cdef object img = AVImageWrapper(0, 0, width, height, out, cs, 24, strides, bpp, nplanes, thread_safe=False)
         img.av_frame = framewrapper
         self.frames += 1
         self.weakref_images.add(img)
