@@ -465,7 +465,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         if not force_enable:
             raise_fatal_error(msg)
             return props
-    props["zerocopy"] = accel_version and pyopengl_version == accel_version
+    props["zerocopy"] = bool(accel_version and pyopengl_version == accel_version)
 
     props.update(get_vendor_info())
     props.update(get_GLU_info())
