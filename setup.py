@@ -2335,7 +2335,7 @@ if server_ENABLED or proxy_ENABLED:
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl")
-toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk")
+toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
 
 toggle_modules(audio_ENABLED, "xpra.audio")
 toggle_modules(audio_ENABLED and not (OSX or WIN32), "xpra.audio.pulseaudio")
@@ -2500,7 +2500,7 @@ if cythonize_more_ENABLED:
         if opengl_ENABLED:
             ax("xpra.client.gl")
             if gtk3_ENABLED:
-                ax("xpra.client.gl.gtk")
+                ax("xpra.client.gl.gtk3")
         if gtk3_ENABLED:
             ax("xpra.client.gtk3")
         ax("xpra.client.gui")
