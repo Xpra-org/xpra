@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -61,7 +61,7 @@ class ClientWebSocketConnection(XpraQuicConnection):
         super().__init__(connection, stream_id, transmit, host, port, info, options)
         self.write_buffer = SimpleQueue()
 
-    def flush_writes(self):
+    def flush_writes(self) -> None:
         # flush the buffered writes:
         try:
             while self.write_buffer.qsize():
@@ -154,7 +154,7 @@ class WebSocketClient(QuicConnectionProtocol):
         websocket.http_event_received(event)
 
 
-def create_local_socket(family=socket.AF_INET):
+def create_local_socket(family=socket.AF_INET) -> tuple[socket.socket, tuple[str, int]]:
     if family == socket.AF_INET6:
         local_host = "::"
     else:
@@ -223,7 +223,7 @@ def quic_connect(host: str, port: int, path: str,
     # configuration.quic_logger = QuicFileLogger(args.quic_log)
     # configuration.secrets_log_file = open(args.secrets_log, "a")
 
-    def create_protocol():
+    def create_protocol() -> WebSocketClient:
         connection = QuicConnection(configuration=configuration)
         return WebSocketClient(connection)
 

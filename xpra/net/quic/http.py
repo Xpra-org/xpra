@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -40,7 +40,7 @@ class HttpRequestHandler:
         self.stream_id = stream_id
         self.transmit = transmit
 
-    def send_http3_response(self, code, headers: dict = None, body: bytes = b""):
+    def send_http3_response(self, code, headers: dict = None, body: bytes = b"") -> None:
         self.send_response_header(code, headers)
         if body:
             self.send_response_body(body)
@@ -80,7 +80,7 @@ class HttpRequestHandler:
             return
         self.handle_get_request(req_path)
 
-    def handle_get_request(self, req_path):
+    def handle_get_request(self, req_path: str) -> None:
         web_root = self.xpra_server._www_dir
         headers_dirs = self.xpra_server._http_headers_dirs
         headers = may_reload_headers(headers_dirs)

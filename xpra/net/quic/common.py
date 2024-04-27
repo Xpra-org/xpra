@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,17 +15,17 @@ USER_AGENT = "xpra/aioquic"
 MAX_DATAGRAM_FRAME_SIZE = envint("XPRA_MAX_DATAGRAM_FRAME_SIZE", 65536)
 
 
-def http_date():
+def http_date() -> str:
     """ GMT date in a format suitable for http headers """
     return formatdate(time(), usegmt=True)
 
 
-def binary_headers(headers: dict):
+def binary_headers(headers: dict) -> list[tuple[bytes, bytes]]:
     """ aioquic expects the headers as a list of binary pairs """
     return [(strtobytes(k), strtobytes(v)) for k, v in headers.items()]
 
 
-def override_aioquic_logger():
+def override_aioquic_logger() -> None:
     from xpra.log import Logger, is_debug_enabled
     import logging
     logger = logging.getLogger("quic")

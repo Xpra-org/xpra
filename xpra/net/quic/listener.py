@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -210,7 +210,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
         raise
 
 
-def listen_quic(sock, xpra_server, socket_options: dict):
+def listen_quic(sock, xpra_server, socket_options: dict) -> None:
     log(f"listen_quic({sock}, {xpra_server}, {socket_options})")
     ssl_socket_options = xpra_server.get_ssl_socket_options(socket_options)
     cert = ssl_socket_options.get("cert")

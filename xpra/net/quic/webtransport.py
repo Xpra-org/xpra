@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -49,17 +49,17 @@ class WebTransportHandler(XpraQuicConnection):
         self.send_headers(0, headers)
         self.transmit()
 
-    def flush_http_event_queue(self):
+    def flush_http_event_queue(self) -> None:
         while self.http_event_queue.qsize():
             self.http_event_received(self.http_event_queue.get())
 
-    def send_close(self, code: int = 403, reason: str = ""):
+    def send_close(self, code: int = 403, reason: str = "") -> None:
         if not self.accepted:
             self.closed = True
             self.send_headers(0, {":status": code})
             self.transmit()
 
-    def send_datagram(self, data):
+    def send_datagram(self, data) -> None:
         self.connection.send_datagram(flow_id=self.stream_id, data=data)
         self.transmit()
 
@@ -68,6 +68,6 @@ class WebTransportHandler(XpraQuicConnection):
         self.transmit()
         return len(data)
 
-    def read(self, n):
+    def read(self, n: int) -> bytes:
         log("WebTransportHandler.read(%s)", n)
         return self.read_queue.get()

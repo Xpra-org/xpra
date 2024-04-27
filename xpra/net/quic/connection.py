@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -80,7 +80,7 @@ class XpraQuicConnection(Connection):
         else:
             log.warn(f"Warning: unhandled websocket http event {event}")
 
-    def close(self):
+    def close(self) -> None:
         log("quic.close()")
         if not self.closed:
             try:
@@ -89,7 +89,7 @@ class XpraQuicConnection(Connection):
                 self.closed = True
         Connection.close(self)
 
-    def send_close(self, code: int = 1000, reason: str = ""):
+    def send_close(self, code: int = 1000, reason: str = "") -> None:
         if self.accepted:
             data = close_packet(code, reason)
             self.write(data, "close")
@@ -97,7 +97,7 @@ class XpraQuicConnection(Connection):
             self.send_headers(self.stream_id, headers={":status": code})
             self.transmit()
 
-    def send_headers(self, stream_id: int, headers: dict):
+    def send_headers(self, stream_id: int, headers: dict) -> None:
         self.connection.send_headers(
             stream_id=stream_id,
             headers=binary_headers(headers),
@@ -107,7 +107,7 @@ class XpraQuicConnection(Connection):
         log("quic.write(%s, %s)", ellipsizer(buf), packet_type)
         return self.stream_write(buf, packet_type)
 
-    def stream_write(self, buf, packet_type):
+    def stream_write(self, buf, packet_type) -> int:
         data = memoryview_to_bytes(buf)
         if not packet_type:
             log.warn(f"Warning: missing packet type for {data}")
@@ -132,9 +132,9 @@ class XpraQuicConnection(Connection):
         get_threaded_loop().call(do_write)
         return len(buf)
 
-    def get_packet_stream_id(self, packet_type):
+    def get_packet_stream_id(self, packet_type) -> int:
         return self.stream_id
 
-    def read(self, n):
+    def read(self, n: int) -> bytes:
         log("quic.read(%s)", n)
         return self.read_queue.get()
