@@ -8,6 +8,7 @@ import os
 import sys
 import uuid
 import struct
+from types import ModuleType
 
 # only minimal imports go at the top
 # so that this file can be included everywhere
@@ -42,7 +43,7 @@ GIR_VERSIONS: dict[str, str] = {
 }
 
 
-def gi_import(mod="Gtk", version=""):
+def gi_import(mod="Gtk", version="") -> ModuleType:
     version = version or GIR_VERSIONS.get(mod, "")
     from xpra.util.env import SilenceWarningsContext
     with SilenceWarningsContext(DeprecationWarning, ImportWarning):
@@ -64,7 +65,7 @@ def getgid() -> int:
     return 0
 
 
-def get_shell_for_uid(uid) -> str:
+def get_shell_for_uid(uid: int) -> str:
     if POSIX:
         from pwd import getpwuid
         try:
@@ -74,7 +75,7 @@ def get_shell_for_uid(uid) -> str:
     return ""
 
 
-def get_username_for_uid(uid) -> str:
+def get_username_for_uid(uid: int) -> str:
     if POSIX:
         from pwd import getpwuid
         try:
@@ -84,7 +85,7 @@ def get_username_for_uid(uid) -> str:
     return ""
 
 
-def get_home_for_uid(uid) -> str:
+def get_home_for_uid(uid: int) -> str:
     if POSIX:
         from pwd import getpwuid
         try:
@@ -94,14 +95,14 @@ def get_home_for_uid(uid) -> str:
     return ""
 
 
-def get_groups(username) -> list[str]:
+def get_groups(username: str) -> list[str]:
     if POSIX:
         import grp
         return [gr.gr_name for gr in grp.getgrall() if username in gr.gr_mem]
     return []
 
 
-def get_group_id(group) -> int:
+def get_group_id(group: str) -> int:
     try:
         import grp
         gr = grp.getgrnam(group)
