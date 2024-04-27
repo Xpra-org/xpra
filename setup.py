@@ -1366,7 +1366,7 @@ def clean():
 
 def add_build_info(*args):
     cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
-    r = subprocess.Popen(cmd).wait(30)
+    r = subprocess.Popen(cmd).wait(120)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 
