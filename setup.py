@@ -580,7 +580,7 @@ def convert_doc(fsrc: str, fdst: str, fmt="html", force=False):
     cmd = [pandoc, "--from", "commonmark", "--to", fmt, "-o", fdst, fsrc]
     if fmt=="html" and pandoc_lua_ENABLED:
         cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
-    r = subprocess.Popen(cmd).wait(30)
+    r = subprocess.Popen(cmd).wait(120)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 
