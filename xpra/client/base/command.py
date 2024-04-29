@@ -585,16 +585,16 @@ class PrintClient(SendCommandConnectClient):
                 self.file_data = stdin_binary.read()
             log("read %i bytes from stdin", len(self.file_data))
         else:
-            if not self.check_file_size(os.path.getsize(self.filename)):
+            if not self.validate_file_size(os.path.getsize(self.filename)):
                 return
             from xpra.util.io import load_binary_file
             self.file_data = load_binary_file(self.filename)
             log("read %i bytes from %s", len(self.file_data), self.filename)
-        if not self.check_file_size(len(self.file_data)):
+        if not self.validate_file_size(len(self.file_data)):
             return
         assert self.file_data, "no data found for '%s'" % self.filename
 
-    def check_file_size(self, size: int) -> bool:
+    def validate_file_size(self, size: int) -> bool:
         if size <= self.file_size_limit:
             return True
         self.warn_and_quit(ExitCode.FILE_TOO_BIG,
