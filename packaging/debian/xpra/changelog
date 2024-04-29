@@ -1,3 +1,8 @@
+xpra (6.0.1-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 29 Apr 2024 22:26:08 +0700
+
 xpra (6.0-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     require and take advantage of Python 3.10+

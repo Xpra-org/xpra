@@ -861,6 +861,9 @@ fi
 
 
 %changelog
+* Mon Apr 29 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
+- TODO
+
 * Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> 6.0-10
 - Platforms, build and packaging:
    require and take advantage of Python 3.10+

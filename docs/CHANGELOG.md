@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.0.1] 2024-04-29
+* Platforms, build and packaging:
+    * [avoid timeout on slow build platforms](https://github.com/Xpra-org/xpra/commit/5972ba5fd8f0707d4a90fa5cc276a5ff00298909), [when running pandoc](https://github.com/Xpra-org/xpra/commit/5b66f26c05b2855f5d3e44cfcaf0d7fb14d07892), [raise the timeout on arm and riscv](https://github.com/Xpra-org/xpra/commit/e914616d57762e287769ac540b86d71d78a2dc26)
+* Cosmetic / correctness:
+    * [also bump `__version_info__` automatically](https://github.com/Xpra-org/xpra/commit/f2acaf8ed5fb670b3a36cdfc3f63034508230eb3)
+    * [handle missing PIL more gracefully](https://github.com/Xpra-org/xpra/commit/c580f1b422788c28664126070ea5d1da3b8e7f63)
+    * [wrong time unit shown in error message](https://github.com/Xpra-org/xpra/commit/6a4de8f68d7f5494448deb1e9064c8b6ab2caae1)
+    * [add asbtract socket link to documentation](https://github.com/Xpra-org/xpra/commit/82cc54174012e00c33b6a4be2b11f31f913417e8)
+    * [ensure OpenGL `zerocopy` flag is a boolean](https://github.com/Xpra-org/xpra/commit/7ecd88a8887ab417653d500f77c427cf3d7e656b)
+
 ## [6.0] 2024-04-25
 * Platforms, build and packaging:
     * [build packages for multiple python targets](https://github.com/Xpra-org/xpra/issues/3945)
