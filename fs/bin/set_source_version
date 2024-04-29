@@ -2,6 +2,8 @@
 
 NEWV=$1
 AUTHOR=$2
+NEWVINFO=`python3 -c "print(tuple(int(v) for v in \"$NEWV\".split('.')))"`
+
 if [ -z "${NEWV}" ]; then
 	echo "usage: $0 NEW_VERSION"
 	exit 1
@@ -13,6 +15,7 @@ fi
 
 for f in "fs/lib/cups/backend/xpraforwarder" "xpra/__init__.py"; do
 	sed -i'' "s/__version__ = .*/__version__ = \"$NEWV\"/" $f
+        sed -i'' "s/__version_info__ = .*/__version_info__ = $NEWVINFO/" $f
 done
 
 for k in "AppVersion" "VersionInfoVersion"; do
