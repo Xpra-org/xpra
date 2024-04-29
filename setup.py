@@ -170,6 +170,10 @@ ARCH = get_status_output(["uname", "-m"])[1].strip("\n\r")
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 RISCV = ARCH.startswith("riscv")
 print(f"ARCH={ARCH}")
+TIMEOUT = 60
+if ARM or RISCV:
+    # arm64 and riscv builds run on emulated CPU, very slowly
+    TIMEOUT = 300
 
 INCLUDE_DIRS = os.environ.get("INCLUDE_DIRS", os.path.join(sys.prefix, "include")).split(os.pathsep)
 if os.environ.get("INCLUDE_DIRS", None) is None and not WIN32:
@@ -509,7 +513,7 @@ def convert_doc(fsrc, fdst, fmt="html", force=False):
             print(" cannot preserve HTML links in documentation")
         else:
             cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
-    r = subprocess.Popen(cmd).wait(30)
+    r = subprocess.Popen(cmd).wait(TIMEOUT)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 def convert_doc_dir(src, dst, fmt="html", force=False):
@@ -1274,7 +1278,7 @@ if 'clean' in sys.argv or 'sdist' in sys.argv:
 
 def add_build_info(*args):
     cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
-    r = subprocess.Popen(cmd).wait(120)
+    r = subprocess.Popen(cmd).wait(TIMEOUT)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 if "clean" not in sys.argv:
