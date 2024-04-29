@@ -933,6 +933,8 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def validate_cursor(self) -> bool:
         cursor_data = self.cursor_data
+        if not cursor_data or len(cursor_data)<9:
+            return False
         cw = int(cursor_data[3])
         ch = int(cursor_data[4])
         pixels = cursor_data[8]
@@ -960,6 +962,9 @@ class GLWindowBackingBase(WindowBackingBase):
         if os.path.exists(filename):
             try:
                 from PIL import Image
+            except ImportError:
+                return ()
+            try:
                 img = Image.open(filename)
                 log(f"get_default_cursor_data() Image({filename=})={img}")
                 w, h = img.size
@@ -969,9 +974,9 @@ class GLWindowBackingBase(WindowBackingBase):
                 if img.mode != "RGBA":
                     img = img.convert("RGBA")
                 pixels = img.tobytes("raw", "BGRA")
-            except Exception:
+            except Exception as e:
                 log(f"Image.open({filename})", exc_info=True)
-                log.warn(f"Warning: failed to load {filename!r}")
+                log.warn(f"Warning: failed to load {filename!r}: {e}")
         return "raw", x, y, w, h, xhot, yhot, serial, pixels, name
 
     def set_cursor_data(self, cursor_data) -> None:
