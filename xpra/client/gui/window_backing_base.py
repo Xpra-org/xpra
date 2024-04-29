@@ -680,7 +680,7 @@ class WindowBackingBase:
             self.do_clean_video_decoder()
 
     def make_csc(self, src_width: int, src_height: int, src_format: str,
-                 dst_width: int, dst_height: int, dst_format_options, speed: int = 50):
+                 dst_width: int, dst_height: int, dst_format_options: Iterable[str], speed: int = 50):
         in_options = CSC_OPTIONS.get(src_format, {})
         videolog("make_csc%s",
                  (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
@@ -697,14 +697,34 @@ class WindowBackingBase:
                 score = - (spec.quality + spec.speed + spec.score_boost)
                 csc_scores.setdefault(score, []).append((dst_format, spec))
 
+        def nomatch() -> None:
+            videolog.error("Error: no matching csc options")
+            videolog.error(f" for {src_format!r} {src_width}x{src_height} input")
+            videolog.error(f" to {csv(dst_format_options)} {dst_width}x{dst_height} output")
+            videolog.error(f" speed={speed}")
+            videolog.error(" all csc options:")
+            for k, vdict in CSC_OPTIONS.items():
+                videolog.error(" * %-10s : %s", k, csv(vdict))
+            videolog.error(f" tested {src_format!r} to:")
+            for dst_format in dst_format_options:
+                specs = in_options.get(dst_format)
+                if not specs:
+                    videolog.error(" * %-10s : no match", dst_format)
+                    continue
+                videolog.error(" * %-10s:", dst_format)
+                for spec in specs:
+                    err = ""
+                    size_error = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
+                    if size_error:
+                        try:
+                            err = ": " + (size_error[0] % size_error[1:])
+                        except Exception:
+                            err = f": {size_error}"
+                    videolog.error(f"              - {spec}{err}")
+
         videolog(f"csc scores: {csc_scores}")
         if not csc_scores:
-            log.error("Error: no matching csc options")
-            log.error(f" for {src_format!r} {src_width}x{src_height} input")
-            log.error(f" to {csv(dst_format_options)} {dst_width}x{dst_height}")
-            log.error(" only found:")
-            for k, v in CSC_OPTIONS.items():
-                log.error(" * %-8s : %s", k, csv(v))
+            nomatch()
             raise ValueError(f"no csc options for {src_format!r} input in " + csv(CSC_OPTIONS.keys()))
 
         options = {"speed": speed}
@@ -721,26 +741,8 @@ class WindowBackingBase:
                              exc_info=True)
                     videolog.error("Error: failed to create csc instance %s", spec.codec_class)
                     videolog.error(" for %s to %s: %s", src_format, dst_format, e)
-        videolog.error("Error: no matching CSC module found")
-        videolog.error(f" for {src_width}x{src_height} {src_format} source format,")
-        videolog.error(f" to {dst_width}x{dst_height} " + " or ".join(dst_format_options))
-        videolog.error(f" with options={dst_format_options}, speed={speed}")
-        videolog.error(" tested:")
-        for dst_format in dst_format_options:
-            specs = in_options.get(dst_format)
-            if not specs:
-                continue
-            videolog.error(f" * {dst_format}:")
-            for spec in specs:
-                videolog.error(f"   - {spec}:")
-                v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
-                if v:
-                    videolog.error("       " + v[0], *v[1:])
-        raise ValueError("no csc module found for wid %i %s(%sx%s) to %s(%sx%s) in %s" %
-                         (
-                             self.wid, src_format, src_width, src_height, " or ".join(dst_format_options),
-                             dst_width, dst_height, CSC_OPTIONS)
-                         )
+        nomatch()
+        raise ValueError(f"no csc options for {src_format!r} input in " + csv(CSC_OPTIONS.keys()))
 
     @staticmethod
     def validate_csc_size(spec, src_width: int, src_height: int, dst_width: int, dst_height: int):
