@@ -477,8 +477,7 @@ class WindowBackingBase:
                     options, callbacks: Iterable[Callable]) -> None:
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
-    def nvdec_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
-                     options, callbacks: Iterable[Callable]):
+    def nvdec_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options):
         if not self.nvdec_decoder or width < 16 or height < 16:
             return None
         if encoding not in self.nvdec_decoder.get_encodings():
@@ -493,8 +492,7 @@ class WindowBackingBase:
                 log(f"cuda context error, again: {e}")
         return None
 
-    def nvjpeg_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
-                      options, callbacks: Iterable[Callable]):
+    def nvjpeg_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options):
         if not self.nvjpeg_decoder or width < 16 or height < 16:
             return None
         if encoding not in self.nvjpeg_decoder.get_encodings():
@@ -509,15 +507,14 @@ class WindowBackingBase:
                 log(f"cuda context error, again: {e}")
         return None
 
-    def nv_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
-                  options, callbacks: Iterable[Callable]):
-        return self.nvjpeg_decode(encoding, img_data, x, y, width, height, options, callbacks) or \
-            self.nvdec_decode(encoding, img_data, x, y, width, height, options, callbacks)
+    def nv_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options):
+        return self.nvjpeg_decode(encoding, img_data, x, y, width, height, options) or \
+            self.nvdec_decode(encoding, img_data, x, y, width, height, options)
 
     def do_paint_jpeg(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
                       options, callbacks: Iterable[Callable]):
         alpha_offset = options.intget("alpha-offset", 0)
-        img = self.nv_decode(encoding, img_data, x, y, width, height, options, callbacks)
+        img = self.nv_decode(encoding, img_data, x, y, width, height, options)
         if img is None:
             if encoding == "jpeg":
                 rgb_format = "RGBX"
