@@ -250,11 +250,9 @@ class ConfigureGUI(BaseGUIWindow):
     def paint_twin_windows(self, description: str, paint_data: tuple):
         log("paint_twin_windows() %r", description)
         callbacks: list[Callable] = []
-        seq = 1
         for x, y, w, h, encoding, img_data, rowstride, options in paint_data:
             for window in self.windows:
-                window.draw_region(x, y, w, h, encoding, img_data, rowstride, seq, typedict(options), callbacks)
-            seq += 1
+                window.draw_region(x, y, w, h, encoding, img_data, rowstride, typedict(options), callbacks)
 
     def restart(self, *_args):
         self.close_test_windows()

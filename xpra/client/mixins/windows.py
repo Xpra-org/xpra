@@ -1597,8 +1597,7 @@ class WindowClient(StubClientMixin):
         # if self.xscale!=1 or self.yscale!=1:
         #    options["client-scaling"] = self.xscale, self.yscale
         try:
-            window.draw_region(x, y, width, height, coding, data, rowstride,
-                               packet_sequence, options, [record_decode_time])
+            window.draw_region(x, y, width, height, coding, data, rowstride, options, [record_decode_time])
         except Exception as e:
             drawlog.error("Error drawing on window %i", wid, exc_info=True)
             self.idle_add(record_decode_time, False, str(e))

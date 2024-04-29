@@ -159,10 +159,10 @@ class ClientTray(ClientWidgetBase):
         """
 
     def draw_region(self, x: int, y: int, width: int, height: int,
-                    coding: str, img_data, rowstride: int, packet_sequence: int, options: typedict,
+                    coding: str, img_data, rowstride: int, options: typedict,
                     callbacks: Iterable[Callable]):
         log("%s.draw_region%s", self,
-            (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks))
+            (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, options, callbacks))
 
         # note: a new backing may be assigned between the time we call draw_region
         # and the time we get the callback (as the draw may use idle_add)

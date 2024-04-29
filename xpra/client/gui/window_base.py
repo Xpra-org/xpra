@@ -824,7 +824,7 @@ class ClientWindowBase(ClientWidgetBase):
         self._client.send_refresh_all()
 
     def draw_region(self, x: int, y: int, width: int, height: int,
-                    coding: str, img_data, rowstride: int, _packet_sequence: int,
+                    coding: str, img_data, rowstride: int,
                     options: typedict, callbacks: Iterable[Callable]):
         """ Note: this runs from the draw thread (not UI thread) """
         backing = self._backing

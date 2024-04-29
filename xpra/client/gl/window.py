@@ -187,14 +187,14 @@ def test_gl_client_window(gl_client_window_class: Callable,
             v = pix.increase()
             img_data = bytes([v % 256] * w * 4 * h)
             options["flush"] = 1
-            window.draw_region(0, 0, w, h, "rgb32", img_data, w * 4, v, options, [paint_callback])
+            window.draw_region(0, 0, w, h, "rgb32", img_data, w * 4, options, [paint_callback])
             options["flush"] = 0
             mx = ww // 2 - w // 2
             my = wh // 2 - h // 2
             draw_x = round(mx * (1 + sin(v / 100)))
             draw_y = round(my * (1 + cos(v / 100)))
             log("calling draw_region for test gl icon")
-            window.draw_region(draw_x, draw_y, w, h, coding, icon_data, stride, v, options, [paint_callback])
+            window.draw_region(draw_x, draw_y, w, h, coding, icon_data, stride, options, [paint_callback])
             return REPAINT_DELAY > 0
 
         # the paint code is actually synchronous here,
