@@ -218,6 +218,11 @@ ARCH = get_status_output(["uname", "-m"])[1].strip("\n\r")
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 RISCV = ARCH.startswith("riscv")
 print(f"{ARCH=}")
+TIMEOUT = 60
+if ARM or RISCV:
+    # arm64 and riscv builds run on emulated CPU, very slowly
+    TIMEOUT = 300
+
 
 INCLUDE_DIRS = os.environ.get("INCLUDE_DIRS", os.path.join(sys.prefix, "include")).split(os.pathsep)
 if os.environ.get("INCLUDE_DIRS", None) is None and not WIN32:
@@ -580,7 +585,7 @@ def convert_doc(fsrc: str, fdst: str, fmt="html", force=False):
     cmd = [pandoc, "--from", "commonmark", "--to", fmt, "-o", fdst, fsrc]
     if fmt=="html" and pandoc_lua_ENABLED:
         cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
-    r = subprocess.Popen(cmd).wait(120)
+    r = subprocess.Popen(cmd).wait(TIMEOUT)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 
@@ -1369,7 +1374,7 @@ def clean():
 
 def add_build_info(*args):
     cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
-    r = subprocess.Popen(cmd).wait(120)
+    r = subprocess.Popen(cmd).wait(TIMEOUT)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 
