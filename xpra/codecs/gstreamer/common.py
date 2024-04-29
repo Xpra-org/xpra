@@ -218,15 +218,19 @@ def gst_to_native(value: Any) -> tuple | str:
 _overrides_verified = False
 
 
-def verify_gst_overrides() -> None:
+def verify_gst_overrides() -> bool:
+    hasp3g = has_python3_gstreamer()
     global _overrides_verified
-    if _overrides_verified:
-        return
-    from importlib.util import find_spec
-    if not find_spec("gi.overrides.Gst"):
+    if not hasp3g and not _overrides_verified:
         log.warn("Warning: `python3-gstreamer` is not installed")
         log.warn(" this will prevent the python bindings from working properly")
     _overrides_verified = True
+    return hasp3g
+
+
+def has_python3_gstreamer() -> bool:
+    from importlib.util import find_spec
+    return bool(find_spec("gi.overrides.Gst"))
 
 
 def get_encoder_info(element="vp8enc") -> dict:
