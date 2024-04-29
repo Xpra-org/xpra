@@ -1559,10 +1559,9 @@ class WindowClient(StubClientMixin):
             self.idle_add(draw_cleanup)
             return
         # rename old encoding aliases early:
-        options = {}
+        options = typedict()
         if len(packet) > 10:
-            options = packet[10]
-        options = typedict(options)
+            options.update(packet[10])
         dtype = DRAW_TYPES.get(type(data), type(data))
         drawlog(DRAW_LOG_FMT, len(data), dtype, wid, packet_sequence, width, height, x, y, coding, options)
         start = monotonic()

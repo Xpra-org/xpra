@@ -825,7 +825,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int, _packet_sequence: int,
-                    options, callbacks: Iterable[Callable]):
+                    options: typedict, callbacks: Iterable[Callable]):
         """ Note: this runs from the draw thread (not UI thread) """
         backing = self._backing
         if not backing:

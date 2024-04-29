@@ -5,10 +5,12 @@
 
 from time import time
 from typing import Any
+from collections.abc import Callable, Iterable
 
 from xpra.os_util import gi_import
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import WindowBackingBase
+from xpra.util.objects import typedict
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.env import envbool
 from xpra.log import Logger
@@ -157,7 +159,8 @@ class ClientTray(ClientWidgetBase):
         """
 
     def draw_region(self, x: int, y: int, width: int, height: int,
-                    coding: str, img_data, rowstride: int, packet_sequence: int, options, callbacks):
+                    coding: str, img_data, rowstride: int, packet_sequence: int, options: typedict,
+                    callbacks: Iterable[Callable]):
         log("%s.draw_region%s", self,
             (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, packet_sequence, options, callbacks))
 

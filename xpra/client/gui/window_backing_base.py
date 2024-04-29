@@ -911,7 +911,7 @@ class WindowBackingBase:
         raise NotImplementedError(f"no paint scroll on {type(self)}")
 
     def draw_region(self, x: int, y: int, width: int, height: int, coding: str, img_data, rowstride: int,
-                    options, callbacks: Iterable[Callable]):
+                    options: typedict, callbacks: Iterable[Callable]):
         """ dispatches the paint to one of the paint_XXXX methods """
         self.recpaint(coding)
         try:
