@@ -815,7 +815,7 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # network and status:
     def server_connection_state_change(self) -> None:
-        if not self._server_ok:
+        if not self._server_ok and hasattr(self, "redraw_spinners"):
             log.info("server is not responding, drawing spinners over the windows")
 
             def timer_redraw():
@@ -830,15 +830,6 @@ class UIXpraClient(ClientBaseClass):
 
             self.idle_add(self.redraw_spinners)
             self.timeout_add(250, timer_redraw)
-
-    def redraw_spinners(self) -> None:
-        # draws spinner on top of the window, or not (plain repaint)
-        # depending on whether the server is ok or not
-        ok = self.server_ok()
-        log(f"redraw_spinners() ok={ok}")
-        for w in self._id_to_window.values():
-            if not w.is_tray():
-                w.spinner(ok)
 
     ######################################################################
     # packets:
