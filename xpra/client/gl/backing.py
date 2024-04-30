@@ -780,7 +780,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.draw_pointer()
 
         if self.paint_spinner or FORCE_SPINNER:
-            self.draw_spinner()
+            draw_spinner(bw, bh)
 
         if self.border and self.border.shown:
             self.draw_border()
@@ -851,10 +851,6 @@ class GLWindowBackingBase(WindowBackingBase):
         glDisableVertexAttribArray(position)
 
         glBindTexture(target, 0)
-
-    def draw_spinner(self) -> None:
-        bw, bh = self.size
-        draw_spinner(bw, bh)
 
     def draw_border(self) -> None:
         bw, bh = self.size
