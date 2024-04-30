@@ -145,9 +145,21 @@ void main()
 }}
 """
 
+FIXED_COLOR_SHADER = f"""
+#version {GLSL_VERSION}
+uniform vec4 color;
+layout(location = 0) out vec4 frag_color;
+
+void main()
+{{
+    frag_color = color;
+}}
+"""
+
 SOURCE = {
     "vertex": VERTEX_SHADER,
     "overlay": OVERLAY_SHADER,
+    "fixed-color": FIXED_COLOR_SHADER,
     "NV12_to_RGB": gen_NV12_to_RGB(),
 }
 
