@@ -436,9 +436,15 @@ class GLWindowBackingBase(WindowBackingBase):
             glDetachShader(program, shader)
         self.programs[name] = program
 
-    def fail_shader(self, name: str, err: str) -> None:
+    def fail_shader(self, name: str, err: str | bytes) -> None:
+        err_str = str(err)
+        if not isinstance(err, str):
+            try:
+                err_str = err.decode()
+            except UnicodeError:
+                pass
         from OpenGL.GL import glDeleteShader
-        err_str = err.strip("\n\r")
+        err_str = err_str.strip("\n\r")
         shader = self.shaders.pop(name, None)
         if shader:
             glDeleteShader(shader)
@@ -470,7 +476,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 log(f"{i:3}        {line}")
             log("")
             self.fail_shader(name, infolog)
-        log(f"{name} shader initialized: {infolog}")
+        log(f"{name} shader initialized: {infolog!r}")
         return shader
 
     def gl_init(self, context, skip_fbo=False) -> None:
