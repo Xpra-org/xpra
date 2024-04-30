@@ -2464,7 +2464,9 @@ def do_run_glcheck(opts, show=False) -> Dict[str,Any]:
 
 def run_glcheck(opts) -> int:
     log = Logger("opengl")
+    check_gtk_client()
     if POSIX and not OSX:
+        log("forcing x11 Gdk backend")
         with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
             try:
                 from xpra.x11.gtk3.gdk_display_source import init_gdk_display_source
@@ -2474,7 +2476,6 @@ def run_glcheck(opts) -> int:
             except Exception:
                 log("error initializing gdk display source", exc_info=True)
     try:
-        check_gtk_client()
         props = do_run_glcheck(opts)
     except Exception as e:
         props = {
