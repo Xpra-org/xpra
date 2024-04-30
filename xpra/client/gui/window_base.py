@@ -40,6 +40,8 @@ DEFAULT_GRAVITY = envint("XPRA_DEFAULT_GRAVITY", 0)
 OVERRIDE_GRAVITY = envint("XPRA_OVERRIDE_GRAVITY", 0)
 FORCE_FLUSH = envbool("XPRA_FORCE_FLUSH", False)
 
+SHOW_SPINNER_WINDOW_TYPES = set(os.environ.get("XPRA_SHOW_SPINNER_WINDOW_TYPES", "DIALOG,NORMAL,SPLASH").split(","))
+
 
 def is_wm_property(name: str):
     return name.startswith("_MOTIF") or name.startswith("WM_") or name.startswith("_NET_WM") or name.startswith("_GTK_")
@@ -881,9 +883,7 @@ class ClientWindowBase(ClientWidgetBase):
         if self._backing is None:
             return False
         window_types = self._metadata.strtupleget("window-type")
-        if not window_types:
-            return False
-        return ("NORMAL" in window_types) or ("DIALOG" in window_types) or ("SPLASH" in window_types)
+        return bool(set(window_types) & SHOW_SPINNER_WINDOW_TYPES)
 
     def _focus(self) -> bool:
         return self._client.update_focus(self.wid, True)
