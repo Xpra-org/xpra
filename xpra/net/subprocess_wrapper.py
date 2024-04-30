@@ -10,8 +10,8 @@ from queue import SimpleQueue
 from typing import Any
 
 from xpra.gtk.signals import register_os_signals
-from xpra.util.str_fn import csv, repr_ellipsized, bytestostr, hexstr
-from xpra.util.env import envint, envbool
+from xpra.util.str_fn import csv, repr_ellipsized, hexstr
+from xpra.util.env import envint, envbool, get_exec_env
 from xpra.net.bytestreams import TwoFileConnection
 from xpra.net.common import ConnectionClosedException, PACKET_TYPES
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -310,19 +310,10 @@ def exec_kwargs() -> dict[str, Any]:
     return kwargs
 
 
-def exec_env(blacklist=("LS_COLORS",)) -> dict[str, str]:
-    env = os.environ.copy()
+def exec_env() -> dict[str, str]:
+    env = get_exec_env()
     env["XPRA_SKIP_UI"] = "1"
     env["XPRA_FORCE_COLOR_LOG"] = "1"
-    # let's make things more complicated than they should be:
-    # on win32, the environment can end up containing unicode, and subprocess chokes on it
-    for k, v in env.items():
-        if k in blacklist:
-            continue
-        try:
-            env[k] = bytestostr(v.encode("utf8"))
-        except Exception:
-            env[k] = bytestostr(v)
     return env
 
 
