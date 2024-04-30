@@ -248,6 +248,22 @@ def get_saved_env_var(var, default=None):
     return _saved_env.get(var, default)
 
 
+def get_exec_env(remove=("LS_COLORS", "LESSOPEN", "HISTCONTROL", "HISTSIZE", )) -> dict[str, str]:
+    # let's make things more complicated than they should be:
+    # on win32, the environment can end up containing unicode, and subprocess chokes on it
+    env: dict[str, str] = {}
+    for k, v in os.environ.items():
+        if k in remove:
+            continue
+        try:
+            env[k] = v.encode("utf8").decode("latin1")
+        except UnicodeError:
+            env[k] = str(v)
+    env["XPRA_SKIP_UI"] = "1"
+    env["XPRA_FORCE_COLOR_LOG"] = "1"
+    return env
+
+
 class SilenceWarningsContext(AbstractContextManager):
 
     def __init__(self, *categories):

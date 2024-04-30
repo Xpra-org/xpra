@@ -25,7 +25,7 @@ from collections.abc import Callable, Iterable
 from xpra.common import SocketState, noerr, noop
 from xpra.util.objects import typedict
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr
-from xpra.util.env import envint, envbool, osexpand, save_env, OSEnvContext
+from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, OSEnvContext
 from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
@@ -1833,7 +1833,7 @@ def run_opengl_probe():
     from xpra.platform.paths import get_nodock_command
     log = Logger("opengl")
     cmd = get_nodock_command() + ["opengl"]
-    env = os.environ.copy()
+    env = get_exec_env()
     if is_debug_enabled("opengl"):
         cmd += ["-d", "opengl"]
     else:
@@ -1841,6 +1841,7 @@ def run_opengl_probe():
     env["XPRA_HIDE_DOCK"] = "1"
     env["XPRA_REDIRECT_OUTPUT"] = "0"
     start = monotonic()
+    log(f"run_opengl_probe() using cmd={cmd} with env={env}")
     try:
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
     except Exception as e:
