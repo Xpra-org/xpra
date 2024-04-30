@@ -8,6 +8,7 @@ import os
 import struct
 from time import monotonic
 from typing import Any
+from math import sin, cos, pi
 from ctypes import c_float, c_void_p
 from collections.abc import Callable, Iterable
 from contextlib import AbstractContextManager, nullcontext
@@ -40,10 +41,10 @@ from OpenGL.GL import (
     glDrawBuffer, glReadBuffer,
     GL_FLOAT, GL_ARRAY_BUFFER,
     GL_STATIC_DRAW, GL_FALSE,
-    glDrawArrays, GL_TRIANGLE_STRIP,
+    glDrawArrays, GL_TRIANGLE_STRIP, GL_TRIANGLES,
     glEnableVertexAttribArray, glVertexAttribPointer, glDisableVertexAttribArray,
     glGenVertexArrays, glBindVertexArray, glDeleteVertexArrays,
-    glUseProgram, GL_TEXTURE_RECTANGLE, glGetUniformLocation, glUniform1i, glUniform2f,
+    glUseProgram, GL_TEXTURE_RECTANGLE, glGetUniformLocation, glUniform1i, glUniform2f, glUniform4f,
 )
 from OpenGL.GL.ARB.framebuffer_object import (
     GL_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER,
@@ -67,7 +68,6 @@ from xpra.client.gl.util import (
     save_fbo, SAVE_BUFFERS,
     zerocopy_upload, pixels_for_upload, set_alignment, upload_rgba_texture,
 )
-from xpra.client.gl.spinner import draw_spinner
 from xpra.log import Logger
 
 log = Logger("opengl", "paint")
@@ -214,6 +214,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.offscreen_fbo = None
         self.tmp_fbo = None
         self.vao = None
+        self.spinner_vao = None
         self.pending_fbo_paint: list[tuple[int, int, int, int]] = []
         self.last_flush = monotonic()
         self.last_present_fbo_error = ""
@@ -384,12 +385,14 @@ class GLWindowBackingBase(WindowBackingBase):
         vertex_shader = self.gl_init_shader("vertex", GL_VERTEX_SHADER)
         from xpra.client.gl.shaders import SOURCE
         for name, source in SOURCE.items():
-            if name in ("overlay", "vertex"):
+            if name in ("overlay", "vertex", "fixed-color"):
                 continue
             fragment_shader = self.gl_init_shader(name, GL_FRAGMENT_SHADER)
             self.gl_init_program(name, vertex_shader, fragment_shader)
         overlay_shader = self.gl_init_shader("overlay", GL_FRAGMENT_SHADER)
+        fixed_color = self.gl_init_shader("fixed-color", GL_FRAGMENT_SHADER)
         self.gl_init_program("overlay", vertex_shader, overlay_shader)
+        self.gl_init_program("fixed-color", vertex_shader, fixed_color)
 
     def set_vao(self, index=0):
         vertices = [-1, -1, 1, -1, -1, 1, 1, 1]
@@ -570,6 +573,10 @@ class GLWindowBackingBase(WindowBackingBase):
             vao = self.vao
             if vao:
                 self.vao = None
+                glDeleteVertexArrays(1, [vao])
+            vao = self.spinner_vao
+            if vao:
+                self.spinner_vao = None
                 glDeleteVertexArrays(1, [vao])
             ofbo = self.offscreen_fbo
             if ofbo is not None:
@@ -852,8 +859,41 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindTexture(target, 0)
 
     def draw_spinner(self) -> None:
-        bw, bh = self.size
-        draw_spinner(bw, bh)
+        program = self.programs["fixed-color"]
+        glUseProgram(program)
+
+        # no need to call glGetAttribLocation(program, "position")
+        # since we specify the location in the shader:
+        position = 0
+        n_spinners = 10
+        if not self.spinner_vao:
+            self.spinner_vao = glGenVertexArrays(1)
+            vbuf = glGenBuffers(1)
+            verts = []
+            step = 2 * pi / n_spinners
+            for i in range(n_spinners):
+                deg = i * step
+                verts += [0, 0, 0, 1]
+                verts += [sin(deg), cos(deg), 0, 1]
+                verts += [sin(deg + step / 2), cos(deg + step / 2), 0, 1]
+            glBindVertexArray(self.spinner_vao)
+
+            glBindBuffer(GL_ARRAY_BUFFER, vbuf)
+            glBufferData(GL_ARRAY_BUFFER, (c_float * len(verts))(*verts), GL_STATIC_DRAW)
+            glVertexAttribPointer(position, 4, GL_FLOAT, GL_FALSE, 0, None)
+            glEnableVertexAttribArray(position)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
+        else:
+            glBindVertexArray(self.spinner_vao)
+
+        color = glGetUniformLocation(program, "color")
+        now = monotonic()
+        for step in range(n_spinners):
+            v = (round(abs(step-now*3)) % n_spinners) / n_spinners
+            glUniform4f(color, v, v, v, v)
+            glDrawArrays(GL_TRIANGLES, step * 3, 3)
+
+        glBindVertexArray(0)
 
     def draw_border(self) -> None:
         bw, bh = self.size
