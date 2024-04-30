@@ -13,6 +13,8 @@ if [ -z "${AUTHOR}" ]; then
 fi
 
 
+sed -i'' "s/^version = .*/version = \"$NEWV\"/" ./pyproject.toml
+
 for f in "fs/lib/cups/backend/xpraforwarder" "xpra/__init__.py"; do
 	sed -i'' "s/__version__ = .*/__version__ = \"$NEWV\"/" $f
         sed -i'' "s/__version_info__ = .*/__version_info__ = $NEWVINFO/" $f
@@ -48,6 +50,7 @@ CHANGELOGDATE=`date '+%a %b %d %Y'`
 sed -i'' "/%changelog/a \* $CHANGELOGDATE $AUTHOR $NEWV-10" "./packaging/rpm/xpra.spec"
 
 git commit -m "bump version" \
+	./pyproject.toml
 	xpra/__init__.py \
 	packaging/rpm/xpra.spec \
 	packaging/debian/xpra/changelog \
