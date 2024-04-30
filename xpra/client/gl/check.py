@@ -227,21 +227,21 @@ def check_base_functions() -> str:
         glActiveTexture, glTexSubImage2D, glTexCoord2i,
         glViewport, glMatrixMode, glLoadIdentity, glOrtho,
         glEnableClientState, glGenTextures, glDisable,
-        glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
+        glBindTexture, glPixelStorei, glEnable, glFlush,
         glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple,
         glTexImage2D,
         glMultiTexCoord2i,
-        glVertex2i, glEnd,
+        glVertex2i,
     )
     return check_available(
         glActiveTexture, glTexSubImage2D, glTexCoord2i,
         glViewport, glMatrixMode, glLoadIdentity, glOrtho,
         glEnableClientState, glGenTextures, glDisable,
-        glBindTexture, glPixelStorei, glEnable, glBegin, glFlush,
+        glBindTexture, glPixelStorei, glEnable, glFlush,
         glTexParameteri, glTexEnvi, glHint, glBlendFunc, glLineStipple,
         glTexImage2D,
         glMultiTexCoord2i,
-        glVertex2i, glEnd,
+        glVertex2i,
     )
 
 
