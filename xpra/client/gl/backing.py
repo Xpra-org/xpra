@@ -88,6 +88,7 @@ CONTEXT_REINIT = envbool("XPRA_OPENGL_CONTEXT_REINIT", False)
 NVJPEG = envbool("XPRA_OPENGL_NVJPEG", True)
 NVDEC = envbool("XPRA_OPENGL_NVDEC", False)
 ALWAYS_RGBA = envbool("XPRA_OPENGL_ALWAYS_RGBA", False)
+FORCE_SPINNER = envbool("XPRA_OPENGL_FORCE_SPINNER", False)
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
@@ -778,7 +779,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if self.pointer_overlay:
             self.draw_pointer()
 
-        if self.paint_spinner:
+        if self.paint_spinner or FORCE_SPINNER:
             self.draw_spinner()
 
         if self.border and self.border.shown:
