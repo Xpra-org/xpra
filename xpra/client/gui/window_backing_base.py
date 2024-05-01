@@ -688,10 +688,14 @@ class WindowBackingBase:
             if not specs:
                 continue
             for spec in specs:
+                score = - (spec.quality + spec.speed + spec.score_boost)
+                if not spec.can_scale and (src_width != dst_width or src_height != dst_height):
+                    # prefer csc scaling to cairo's own scaling
+                    score += 100
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
+                    # not suitable
                     continue
-                score = - (spec.quality + spec.speed + spec.score_boost)
                 csc_scores.setdefault(score, []).append((dst_format, spec))
 
         def nomatch() -> None:
@@ -710,14 +714,16 @@ class WindowBackingBase:
                     continue
                 videolog.error(" * %-10s:", dst_format)
                 for spec in specs:
-                    err = ""
+                    errs = []
                     size_error = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                     if size_error:
                         try:
-                            err = ": " + (size_error[0] % size_error[1:])
+                            errs.append(": " + (size_error[0] % size_error[1:]))
                         except Exception:
-                            err = f": {size_error}"
-                    videolog.error(f"              - {spec}{err}")
+                            errs.append(f": {size_error}")
+                    if not spec.can_scale and (src_width != dst_width or src_height != dst_height):
+                        errs.append("scaling not supported")
+                    videolog.error(f"              - {spec}{csv(errs)}")
 
         videolog(f"csc scores: {csc_scores}")
         if not csc_scores:
@@ -729,8 +735,10 @@ class WindowBackingBase:
             for dst_format, spec in csc_scores.get(score):
                 try:
                     csc = spec.codec_class()
+                    width = dst_width if spec.can_scale else src_width
+                    height = dst_height if spec.can_scale else src_height
                     csc.init_context(src_width, src_height, src_format,
-                                     dst_width, dst_height, dst_format, options)
+                                     width, height, dst_format, options)
                     return csc
                 except Exception as e:
                     videolog("make_csc%s",
@@ -743,8 +751,6 @@ class WindowBackingBase:
 
     @staticmethod
     def validate_csc_size(spec, src_width: int, src_height: int, dst_width: int, dst_height: int):
-        if not spec.can_scale and (src_width != dst_width or src_height != dst_height):
-            return "scaling not supported"
         if src_width < spec.min_w:
             return "source width %i is out of range: minimum is %i", src_width, spec.min_w
         if src_height < spec.min_h:
@@ -886,10 +892,12 @@ class WindowBackingBase:
 
         def paint():
             data = rgb.get_pixels()
+            rgb_width = rgb.get_width()
+            rgb_height = rgb.get_height()
             rowstride = rgb.get_rowstride()
             try:
                 self.do_paint_rgb(rgb_format, data,
-                                  x, y, width, height, width, height, rowstride, paint_options, callbacks)
+                                  x, y, rgb_width, rgb_height, width, height, rowstride, paint_options, callbacks)
             finally:
                 rgb.free()
 
