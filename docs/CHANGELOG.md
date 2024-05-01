@@ -1,15 +1,20 @@
 # Changelog
 
-## [5.0.9] 2023-04-15
+## [5.0.9] 2023-05-01
 * Encodings:
     * [video encoding errors causing missed screen updates](https://github.com/Xpra-org/xpra/commit/188e9903754e1abc8cd86ecd65bf9427000e7012)
     * [drop alpha if requested](https://github.com/Xpra-org/xpra/commit/6e1934575cabc412782616704bb4ee24b5f36930) and [for video encoders](https://github.com/Xpra-org/xpra/commit/3cbdccbcdd9be7fdf6eabb67b322e612852f108c)
     * [`konsole` is a text application](https://github.com/Xpra-org/xpra/commit/6c46f648ed923615de08385aa4b7e900ad4357dc)
 * Platforms, build and packaging:
+    * [arm64 and riscv builds can timeout adding build info](https://github.com/Xpra-org/xpra/commit/85ee52e738a75ab63749c0b986bf7702cf135c5d), [and generating the documentation](https://github.com/Xpra-org/xpra/commit/a6c9c98665d9ad384729a0eb8f74d77a62ff4771)
     * [saner source information defaults](https://github.com/Xpra-org/xpra/commit/79b7484c6f50275f48a3195385d80be918e2aa18)
     * [more simple / reliable OpenGL pixel format attributes on MacOS](https://github.com/Xpra-org/xpra/commit/d95bcdb01d13ee0e363b70f281113ec88b1fadca)
     * [MS Windows usernames should also be using strings](https://github.com/Xpra-org/xpra/commit/6a14cedcaf528d106ccc3d9e80db2f900a4ffa93)
+    * [Cython compilation warnings](https://github.com/Xpra-org/xpra/commit/dfd6fea4f3099a3894f93c32c0cfb5904e96ccc5)
 * Major:
+    * [Gtk crashes on exit](https://github.com/Xpra-org/xpra/commit/5032b0144a68e6dadd6f18a095e48c0e8891c4ef)
+    * [OpenGL check failures on X11](https://github.com/Xpra-org/xpra/commit/2cb40fa38a7be95431abbe55d784767e52f6ef60)
+    * [sync-xvfb not honoured](https://github.com/Xpra-org/xpra/commit/fe6b7ea6e0c891ba37844b72bccd71cb48575356)
     * [replace dead ssh agent symlinks](https://github.com/Xpra-org/xpra/commit/37842c6b4d39185385a55df3f34cab4cfd444b0f)
     * [validate http request hostname before sending it back](https://github.com/Xpra-org/xpra/commit/2157a0d12aef852e08d3a75da19a54d510568ee6)
     * [guess content type from commands](https://github.com/Xpra-org/xpra/commit/e1159b5a7b9bf6a25a694646c5b349612bddaba8)
@@ -17,8 +22,15 @@
     * [incorrect client exit code with Python 3.10 and earlier](https://github.com/Xpra-org/xpra/commit/5d8a6f7e78eb7125583049a1cd2a3958fa5193c8), [don't convert enums to strings](https://github.com/Xpra-org/xpra/commit/7a9d8f745b7cf566f7fc62521a2424de000d2e9b), [correct matching type hints](https://github.com/Xpra-org/xpra/commit/523d8b1b4a6315f4de10e292fa5bad1c3314dfef)
     * [fix ssl unit test](https://github.com/Xpra-org/xpra/commit/0a03faadd843450c158df80e7a53729432d1e102), [use SSL specific error codes](https://github.com/Xpra-org/xpra/commit/e52882a6ac2cd3cef3067bb89a227feb59e6fa31)
     * [libyuv converter cannot scale `YUV444P`](https://github.com/Xpra-org/xpra/commit/2623ca48ef3d2314c0afef8fae957e07be889420)
+    * [ffmpeg decoder can accept images with dimensions rounded down to a multiple of 2](https://github.com/Xpra-org/xpra/commit/f2ab789f2c623b93f01bb692982125a472181097), [same for swscale](https://github.com/Xpra-org/xpra/commit/ebed4b2b3541641944615e0b61cbbd91bcfdc697)
     * [case-insensitive window role matching](https://github.com/Xpra-org/xpra/commit/e14e3509be23bdfcd2df9b1779a0fa888e9f1d11)
+    * [splash screen communication errors due to unexpected characters](https://github.com/Xpra-org/xpra/commit/c8c460db288bb41678bd1e69f5447a0c06f18987)
+    * [splash screen can exit cleanly](https://github.com/Xpra-org/xpra/commit/7c9a4748b28a5f422748d9c6264d79d7400cd922)
+    * [standlone bug report tool cannot exit cleanly](https://github.com/Xpra-org/xpra/commit/80aabb353aae2c6f1a7e8de35664fead590279cd)
+    * [never try to start a display in `proxy` or `shadow` modes](https://github.com/Xpra-org/xpra/commit/688c09c7e37cbb980ca2abf46df7832b176099b7)
+    * [do verify that the display is available in `monitor` mode](https://github.com/Xpra-org/xpra/commit/a4a63223409e5a3de2f8eac2f55000e26dec5e9a)
 * Cosmetic:
+    * [fail fast when testing decoders with junk data](https://github.com/Xpra-org/xpra/commit/cb7a7f1914aa8fceec960a17ba5816980c1d5636)
     * [documentation dead link](https://github.com/Xpra-org/xpra/commit/c3d3abb81127fb979c6f1293e37b9e924f1dc1c6)
     * [make version checks more robust](https://github.com/Xpra-org/xpra/commit/e1e409e579cc89f77a8a32d0ec9471aec272ff55)
     * [skip warning about missing amf gstreamer elements](https://github.com/Xpra-org/xpra/commit/5bc11fc6d4498651aefebf3926c28f1907daa92a)
@@ -28,7 +40,7 @@
     * [unused statements](https://github.com/Xpra-org/xpra/commit/4808053c37943048fe572233591de48ec59c8349)
     * [linter warning and consistency](https://github.com/Xpra-org/xpra/commit/717cc581f75f5960007619a6aa99defea7bfc8a1), [consistent return value](https://github.com/Xpra-org/xpra/commit/65f8e5d1ba9e5100e2531ffdb9f6576ea89c8a58)
     * [ignore 'noabstract' v6 bind option](https://github.com/Xpra-org/xpra/commit/72eb7a1861377fc93a163b820723b6f06555890d) + [fixup](https://github.com/Xpra-org/xpra/commit/2dc836e20c1dfba319bd5a2e5538ffbcc25ec667)
-    * fix unit tests: [enable previously broken tests](https://github.com/Xpra-org/xpra/commit/d6b576a71f2de3041173302ff72d316e44dd92dc),  [faulty backport](https://github.com/Xpra-org/xpra/commit/4c3de0c84e085fe57af06895c93e811332035f3c)
+    * fix unit tests: [enable previously broken tests](https://github.com/Xpra-org/xpra/commit/d6b576a71f2de3041173302ff72d316e44dd92dc), [faulty backport](https://github.com/Xpra-org/xpra/commit/4c3de0c84e085fe57af06895c93e811332035f3c)
     * [downgrade Wayland warning](https://github.com/Xpra-org/xpra/commit/8467801befdc8ab8d747930a89f2c2488cf24291)
 
 ## [5.0.8] 2024-04-03
