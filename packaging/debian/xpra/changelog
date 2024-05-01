@@ -1,45 +1,58 @@
 xpra (6.0.1-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+    - avoid timeout on slow build platforms, when running pandoc, raise the timeout on arm and riscv
+    - tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`
+    - version script needs to update `pyproject.toml`, do it
+  * Major:
+    - OpenGL check failures on X11
+    - OpenGL paint errors drawing the spinners, don't check for `glBegin` and `glEnd`
+    - OpenGL check: re-use environment filtering
+  * Cosmetic / correctness:
+    - also bump `__version_info__` automatically
+    - handle missing PIL more gracefully
+    - wrong time unit shown in error message
+    - add asbtract socket link to documentation
+    - ensure OpenGL `zerocopy` flag is a boolean
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 29 Apr 2024 22:26:08 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 01 May 2024 16:22:46 +0700
 
 xpra (6.0-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
-    require and take advantage of Python 3.10+
-    cythonize everything and build test on git push
-    workaround for distributions incompatible with CUDA
-    add `xpra-client-gnome` package
-    use the system provided xxHash library
-    riscv64 builds
-    PEP 517: pyproject.toml
+    - require and take advantage of Python 3.10+
+    - cythonize everything and build test on git push
+    - workaround for distributions incompatible with CUDA
+    - add `xpra-client-gnome` package
+    - use the system provided xxHash library
+    - riscv64 builds
+    - PEP 517: pyproject.toml
   * Features:
-    OpenGL core profile
-    `xpra configure` tool
-    faster `mmap`
-    make it easier to disable almost everything
-    remove legacy compatibility
-    try harder to locate the correct xauth file
-    honour MacOS backing scale factor with OpenGL
-    workspace support for MS Windows 10
-    readonly memoryviews
+    - OpenGL core profile
+    - `xpra configure` tool
+    - faster `mmap`
+    - make it easier to disable almost everything
+    - remove legacy compatibility
+    - try harder to locate the correct xauth file
+    - honour MacOS backing scale factor with OpenGL
+    - workspace support for MS Windows 10
+    - readonly memoryviews
   * Network:
-    abstract sockets
-    wait for local server sockets to become available
-    enable websocket upgrades without the html5 client
-    update ssh agent to active user
-    use libnm to access network information
-    ssl auto upgrade
-    honour `/etc/ssh/ssh_config`
-    `xpra list-clients`
+    - abstract sockets
+    - wait for local server sockets to become available
+    - enable websocket upgrades without the html5 client
+    - update ssh agent to active user
+    - use libnm to access network information
+    - ssl auto upgrade
+    - honour `/etc/ssh/ssh_config`
+    - `xpra list-clients`
   * Cosmetic:
-    silence warnings: #4023, #2177, #3988, #4028
-    easier call tracing
-    PEP 8: code style
+    - silence warnings: #4023, #2177, #3988, #4028
+    - easier call tracing
+    - PEP 8: code style
   * Documentation:
-    ivshmem
-    subsystems
-    authentication handlers
-    record some SBOM data
+    - ivshmem
+    - subsystems
+    - authentication handlers
+    - record some SBOM data
 
  -- Antoine Martin <antoine@xpra.org>  Thu, 25 Apr 2023 14:54:03 +0200
 

@@ -1,8 +1,14 @@
 # Changelog
 
-## [6.0.1] 2024-04-29
+## [6.0.1] 2024-05-01
 * Platforms, build and packaging:
     * [avoid timeout on slow build platforms](https://github.com/Xpra-org/xpra/commit/5972ba5fd8f0707d4a90fa5cc276a5ff00298909), [when running pandoc](https://github.com/Xpra-org/xpra/commit/5b66f26c05b2855f5d3e44cfcaf0d7fb14d07892), [raise the timeout on arm and riscv](https://github.com/Xpra-org/xpra/commit/e914616d57762e287769ac540b86d71d78a2dc26)
+    * [tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`](https://github.com/Xpra-org/xpra/commit/8bf6dec4c6ca291087c69a63d5801274545e8150)
+    * [version script needs to update `pyproject.toml`](https://github.com/Xpra-org/xpra/commit/827b4e0aab43c9ba891ba26cb72cbe707a508868), [do it](https://github.com/Xpra-org/xpra/commit/1409bc4e8f86c1cee8f9eab8970a2e6388607914)
+* Major:
+    * [OpenGL check failures on X11](https://github.com/Xpra-org/xpra/commit/3e87f9f23204b6fb69111b40b2e1f983f37abd8d)
+    * [OpenGL paint errors drawing the spinners](https://github.com/Xpra-org/xpra/commit/54a6f21572ee106bcc669279befd43176f727404), [don't check for `glBegin` and `glEnd`](https://github.com/Xpra-org/xpra/commit/f2e9e4b2ada8f15523b4c88b36c6bb04258f3ce4)
+    * [OpenGL check: re-use environment filtering](https://github.com/Xpra-org/xpra/commit/d567ce9578da03e9fcd666bed6bf51b637e879ca)
 * Cosmetic / correctness:
     * [also bump `__version_info__` automatically](https://github.com/Xpra-org/xpra/commit/f2acaf8ed5fb670b3a36cdfc3f63034508230eb3)
     * [handle missing PIL more gracefully](https://github.com/Xpra-org/xpra/commit/c580f1b422788c28664126070ea5d1da3b8e7f63)

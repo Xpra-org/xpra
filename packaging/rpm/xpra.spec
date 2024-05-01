@@ -861,8 +861,21 @@ fi
 
 
 %changelog
-* Mon Apr 29 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
-- TODO
+* Wed May 01 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
+- Platforms, build and packaging:
+   avoid timeout on slow build platforms, when running pandoc, raise the timeout on arm and riscv
+   tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`
+   version script needs to update `pyproject.toml`, do it
+- Major:
+   OpenGL check failures on X11
+   OpenGL paint errors drawing the spinners, don't check for `glBegin` and `glEnd`
+   OpenGL check: re-use environment filtering
+- Cosmetic / correctness:
+   also bump `__version_info__` automatically
+   handle missing PIL more gracefully
+   wrong time unit shown in error message
+   add asbtract socket link to documentation
+   ensure OpenGL `zerocopy` flag is a boolean
 
 * Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> 6.0-10
 - Platforms, build and packaging:
