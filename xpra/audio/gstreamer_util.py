@@ -797,7 +797,8 @@ def parse_audio_source(all_plugins, audio_source_plugin, device, want_monitor_de
             # choose the first one from
             options = [x for x in get_source_plugins() if x in all_plugins]
             if not options:
-                log.error("no source plugins available")
+                log.error("Error: none of the source plugins are available,")
+                log.error(" needed at least one from: %s", csv(get_source_plugins()))
                 return None, {}
             log("parse_audio_source: no plugin specified, using default: %s", options[0])
             simple_str = options[0]
@@ -806,13 +807,16 @@ def parse_audio_source(all_plugins, audio_source_plugin, device, want_monitor_de
             simple_str = simple_str[:-len(s)]
     gst_audio_source_plugin = NAME_TO_SRC_PLUGIN.get(simple_str)
     if not gst_audio_source_plugin:
-        log.error("unknown source plugin: '%s' / '%s'", simple_str, audio_source_plugin)
+        log.error(f"Error: unknown source plugin: {simple_str!r} / {audio_source_plugin!r}")
         return None, {}
     log("parse_audio_source(%s, %s, %s) plugin=%s", all_plugins, audio_source_plugin, remote, gst_audio_source_plugin)
     options = get_audio_source_options(simple_str, options_str, device, want_monitor_device, remote)
     log("get_audio_source_options%s=%s", (simple_str, options_str, remote), options)
     if options is None:
         # means error
+        log.error("Error: no matching audio source options")
+        log.error(f" for plugin {simple_str!r}, options {options_str!r}")
+        log.error(f" device {device!r} and monitor={want_monitor_device}, {remote=}")
         return None, {}
     return gst_audio_source_plugin, options
 

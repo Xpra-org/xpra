@@ -372,24 +372,24 @@ class SinkSubprocessWrapper(AudioSubprocessWrapper):
 
 
 def start_sending_audio(plugins, audio_source_plugin, device, codec, volume, want_monitor_device,
-                        remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id):
+                        remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id
+                        ) -> SourceSubprocessWrapper | None:
     log("start_sending_audio%s",
         (plugins, audio_source_plugin, device, codec, volume, want_monitor_device,
          remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
-    with log.trap_error("Error setting up audio source"):
+    with log.trap_error("Error setting up %r audio source" % (audio_source_plugin or "auto")):
         # info about the remote end:
         PAInfo = namedtuple("PAInfo", "pulseaudio_server,pulseaudio_id,remote_decoders")
         remote = PAInfo(pulseaudio_server=remote_pulseaudio_server,
                         pulseaudio_id=remote_pulseaudio_id,
                         remote_decoders=remote_decoders)
         plugin, options = parse_audio_source(plugins, audio_source_plugin, device, want_monitor_device, remote)
-        if not plugin:
-            log.error("Error setting up '%s' audio stream source", (audio_source_plugin or "auto"))
-            return None
-        log("parsed '%s':", audio_source_plugin)
-        log("plugin=%s", plugin)
-        log("options=%s", options)
-        return SourceSubprocessWrapper(plugin, options, remote_decoders, volume, options)
+        if plugin:
+            log("parsed '%s':", audio_source_plugin)
+            log("plugin=%s", plugin)
+            log("options=%s", options)
+            return SourceSubprocessWrapper(plugin, options, remote_decoders, volume, options)
+    return None
 
 
 def start_receiving_audio(codec):
