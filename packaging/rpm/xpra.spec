@@ -50,7 +50,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.0
+Version:			6.0.1
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
