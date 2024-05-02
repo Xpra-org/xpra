@@ -12,6 +12,7 @@
     * [MS Windows usernames should also be using strings](https://github.com/Xpra-org/xpra/commit/6a14cedcaf528d106ccc3d9e80db2f900a4ffa93)
     * [Cython compilation warnings](https://github.com/Xpra-org/xpra/commit/dfd6fea4f3099a3894f93c32c0cfb5904e96ccc5)
 * Major:
+    * [handle downscaled video correctly without OpenGL](https://github.com/Xpra-org/xpra/commit/e59d1c5f28c06b295bd28eca1ccf728d4ce06a15)
     * [Gtk crashes on exit](https://github.com/Xpra-org/xpra/commit/5032b0144a68e6dadd6f18a095e48c0e8891c4ef)
     * [OpenGL check failures on X11](https://github.com/Xpra-org/xpra/commit/2cb40fa38a7be95431abbe55d784767e52f6ef60)
     * [sync-xvfb not honoured](https://github.com/Xpra-org/xpra/commit/fe6b7ea6e0c891ba37844b72bccd71cb48575356)
@@ -20,9 +21,11 @@
     * [guess content type from commands](https://github.com/Xpra-org/xpra/commit/e1159b5a7b9bf6a25a694646c5b349612bddaba8)
     * [ssh channel pollution](https://github.com/Xpra-org/xpra/commit/14efe7164d555e8bb6255a91454f17b829a43615)
     * [incorrect client exit code with Python 3.10 and earlier](https://github.com/Xpra-org/xpra/commit/5d8a6f7e78eb7125583049a1cd2a3958fa5193c8), [don't convert enums to strings](https://github.com/Xpra-org/xpra/commit/7a9d8f745b7cf566f7fc62521a2424de000d2e9b), [correct matching type hints](https://github.com/Xpra-org/xpra/commit/523d8b1b4a6315f4de10e292fa5bad1c3314dfef)
-    * [fix ssl unit test](https://github.com/Xpra-org/xpra/commit/0a03faadd843450c158df80e7a53729432d1e102), [use SSL specific error codes](https://github.com/Xpra-org/xpra/commit/e52882a6ac2cd3cef3067bb89a227feb59e6fa31)
     * [libyuv converter cannot scale `YUV444P`](https://github.com/Xpra-org/xpra/commit/2623ca48ef3d2314c0afef8fae957e07be889420)
     * [ffmpeg decoder can accept images with dimensions rounded down to a multiple of 2](https://github.com/Xpra-org/xpra/commit/f2ab789f2c623b93f01bb692982125a472181097), [same for swscale](https://github.com/Xpra-org/xpra/commit/ebed4b2b3541641944615e0b61cbbd91bcfdc697)
+* Minor:
+    * [fix parsing of scaling values as percentages](https://github.com/Xpra-org/xpra/commit/848d1658f2f4eb1bef57312736166e3f438fdca9)
+    * [fix ssl unit test](https://github.com/Xpra-org/xpra/commit/0a03faadd843450c158df80e7a53729432d1e102), [use SSL specific error codes](https://github.com/Xpra-org/xpra/commit/e52882a6ac2cd3cef3067bb89a227feb59e6fa31)
     * [case-insensitive window role matching](https://github.com/Xpra-org/xpra/commit/e14e3509be23bdfcd2df9b1779a0fa888e9f1d11)
     * [splash screen communication errors due to unexpected characters](https://github.com/Xpra-org/xpra/commit/c8c460db288bb41678bd1e69f5447a0c06f18987)
     * [splash screen can exit cleanly](https://github.com/Xpra-org/xpra/commit/7c9a4748b28a5f422748d9c6264d79d7400cd922)
