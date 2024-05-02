@@ -1515,10 +1515,11 @@ class WindowVideoSource(WindowSource):
                         scaling = self.calculate_scaling(width, height, max_w, max_h)
                     else:
                         scaling = (1, 1)
+                    score_delta = encoding_score_delta
                     lossy_csc = enc_in_format in ("NV12", "YUV420P", "YUV422P")
                     if text_hint and (scaling != (1, 1) or lossy_csc):
-                        continue
-                    score_delta = encoding_score_delta
+                        # we should not be using scaling or csc with text!
+                        score_delta -= 500
                     if self.is_shadow and lossy_csc and scaling == (1, 1):
                         # avoid subsampling with shadow servers:
                         score_delta -= 40
