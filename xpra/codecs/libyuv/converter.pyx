@@ -219,7 +219,7 @@ def get_spec(in_colorspace, out_colorspace):
     return CSCSpec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
                     codec_class=Converter, codec_type=get_type(),
                     quality=100, speed=100,
-                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace not in ("NV12", "YUV420P", "YUV444P"),
+                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace!="NV12",
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
@@ -357,6 +357,8 @@ cdef class Converter:
             self.planes = 3
             self.yuv_scaling = scaling
             self.rgb_scaling = False
+            if scaling:
+                self.init_yuv_scaled_buffer(dst_format, dst_width, dst_height)
             self.init_yuv_output()
         elif dst_format=="NV12":
             self.planes = 2
@@ -364,11 +366,11 @@ cdef class Converter:
             self.rgb_scaling = scaling
             self.init_yuv_output()
         elif dst_format in ("RGB", "BGRX", "RGBX", "XBGR"):
-            if scaling:
-                raise ValueError(f"cannot scale {src_format} to {dst_format}")
             self.planes = 1
-            self.yuv_scaling = False
+            self.yuv_scaling = scaling
             self.rgb_scaling = False
+            if scaling:
+                self.init_yuv_scaled_buffer(src_format, dst_width, dst_height)
             self.out_buffer_size = dst_width*len(dst_format)*dst_height
         else:
             raise ValueError(f"invalid destination format: {dst_format!r}")
@@ -395,13 +397,6 @@ cdef class Converter:
             #and round up to memalign each plane:
             #(why two and not just one? libyuv will do this for input data with odd height)
             self.out_buffer_size += roundupl(self.out_size[i] + 2*self.out_stride[i], ALIGN)
-            if self.yuv_scaling:
-                self.scaled_width[i]    = self.dst_width // xdiv
-                self.scaled_height[i]   = self.dst_height // ydiv
-                self.scaled_stride[i]   = roundup(self.scaled_width[i], ALIGN)
-                self.scaled_size[i]     = self.scaled_stride[i] * self.scaled_height[i]
-                self.scaled_offsets[i]  = self.scaled_buffer_size
-                self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
         if self.yuv_scaling:
             #re-use the same temporary buffer every time before scaling:
             self.output_buffer = <uint8_t *> memalign(self.out_buffer_size)
@@ -409,6 +404,21 @@ cdef class Converter:
                 raise RuntimeError("failed to allocate %i bytes for output buffer" % self.out_buffer_size)
         log("buffer size=%i, yuv_scaling=%s, rgb_scaling=%s, filtermode=%s",
             self.out_buffer_size, self.yuv_scaling, self.rgb_scaling, get_fiter_mode_str(self.filtermode))
+
+    def init_yuv_scaled_buffer(self, yuv_format, int width, int height):
+        assert self.yuv_scaling
+        self.scaled_buffer_size = 0
+        divs = get_subsampling_divs(yuv_format)
+        cdef int nplanes = len(divs)
+        assert 0 < nplanes <= 3
+        for i in range(nplanes):
+            xdiv, ydiv = divs[i]
+            self.scaled_width[i]    = width // xdiv
+            self.scaled_height[i]   = height // ydiv
+            self.scaled_stride[i]   = roundup(self.scaled_width[i], ALIGN)
+            self.scaled_size[i]     = self.scaled_stride[i] * self.scaled_height[i]
+            self.scaled_offsets[i]  = self.scaled_buffer_size
+            self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
 
     def get_info(self) -> Dict[str,Any]:
         info = get_info()
@@ -561,7 +571,59 @@ cdef class Converter:
         return ImageWrapper(0, 0, self.dst_width, self.dst_height,
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
 
+    def scale_yuv_image(self, image):
+        assert self.scaled_buffer_size
+        start = monotonic()
+        cdef uint8_t *scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)
+        if scaled_buffer==NULL:
+            raise RuntimeError(f"failed to allocate {self.scaled_buffer_size} bytes for scaled buffer")
+        cdef uint8_t *scaled_planes[3]
+        for i in range(self.planes):
+            scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]
+
+        pixels = image.get_pixels()
+        strides = image.get_rowstride()
+        yuv_format = image.get_pixel_format()
+        cdef int nplanes = image.get_planes()
+        divs = get_subsampling_divs(yuv_format)
+        cdef int width = image.get_width()
+        cdef int height = image.get_height()
+        cdef int src_width = 0
+        cdef int src_height = 0
+        cdef uintptr_t plane
+        cdef int stride = 0
+
+        # scale each plane:
+        for i in range(nplanes):
+            stride = strides[i]
+            x_div, y_div = divs[i]
+            src_width = width // x_div
+            src_height = height // y_div
+            with buffer_context(pixels[i]) as plane_buffer:
+                plane = <uintptr_t> int(plane_buffer)
+                scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]
+                #log(f"scale_yuv_image({image}) {stride=}, {x_div=}, {y_div=}, {src_width=}, {src_height=}")
+                with nogil:
+                    ScalePlane(<uint8_t*> plane, stride,
+                               src_width, src_height,
+                               scaled_planes[i], self.scaled_stride[i],
+                               self.scaled_width[i], self.scaled_height[i],
+                               self.filtermode)
+
+        elapsed = monotonic()-start
+        log("libyuv.ScalePlane %i planes, took %.1fms", nplanes, 1000.0*elapsed)
+        strides = []
+        planes = []
+        for i in range(nplanes):
+            strides.append(self.scaled_stride[i])
+            planes.append(PyMemoryView_FromMemory(<char *> scaled_planes[i], self.scaled_size[i], PyBUF_WRITE))
+        out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, nplanes)
+        out_image.cython_buffer = <uintptr_t> scaled_buffer
+        return out_image
+
     def convert_yuv_image(self, image):
+        if self.yuv_scaling:
+            image = self.scale_yuv_image(image)
         cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
         cdef int width = image.get_width()
@@ -641,6 +703,7 @@ cdef class Converter:
             raise RuntimeError(f"unexpected formats: src={self.src_format}, dst={self.dst_format}")
         if r!=0:
             raise RuntimeError(f"libyuv YUV420PToRGB failed and returned {r}")
+        image.free()
         cdef double elapsed = monotonic()-start
         log(f"libyuv.YUV420P to {self.dst_format} took %.1fms", 1000.0*elapsed)
         self.time += elapsed
