@@ -543,7 +543,13 @@ def parse_scaling_value(v) -> Optional[Tuple[int,int]]:
     if not v:
         return None
     if v.endswith("%"):
-        return float(v[:1]).as_integer_ratio()
+        num = int(v[:-1])
+        denom = 100
+        for div in (2, 5):
+            while (num % div) == 0 and (denom % div) == 0:
+                num = num // div
+                denom = denom // div
+        return num, denom
     values = v.replace("/", ":").replace(",", ":").split(":", 1)
     values = [int(x) for x in values]
     for x in values:
