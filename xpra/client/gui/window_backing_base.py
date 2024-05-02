@@ -31,6 +31,8 @@ PAINT_BOX = envint("XPRA_PAINT_BOX", 0)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
 REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
 SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
+# prefer csc scaling to cairo's own scaling:
+PREFER_CSC_SCALING = envbool("XPRA_PREFER_CSC_SCALING", True)
 
 _PIL_font = None
 
@@ -681,6 +683,8 @@ class WindowBackingBase:
         in_options = CSC_OPTIONS.get(src_format, {})
         videolog("make_csc%s",
                  (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
+        need_scaling = src_width != dst_width or src_height != dst_height
+        # note: the best scores are the lowest!
         csc_scores = {}
         for dst_format in dst_format_options:
             specs = in_options.get(dst_format)
@@ -689,13 +693,13 @@ class WindowBackingBase:
                 continue
             for spec in specs:
                 score = - (spec.quality + spec.speed + spec.score_boost)
-                if not spec.can_scale and (src_width != dst_width or src_height != dst_height):
-                    # prefer csc scaling to cairo's own scaling
-                    score += 100
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
                     # not suitable
                     continue
+                if need_scaling and not spec.can_scale and PREFER_CSC_SCALING:
+                    # keep it, but not a good score:
+                    score += 100
                 csc_scores.setdefault(score, []).append((dst_format, spec))
 
         def nomatch() -> None:
@@ -735,8 +739,8 @@ class WindowBackingBase:
             for dst_format, spec in csc_scores.get(score):
                 try:
                     csc = spec.codec_class()
-                    width = dst_width if spec.can_scale else src_width
-                    height = dst_height if spec.can_scale else src_height
+                    width = dst_width if (spec.can_scale and PREFER_CSC_SCALING) else src_width
+                    height = dst_height if (spec.can_scale and PREFER_CSC_SCALING) else src_height
                     csc.init_context(src_width, src_height, src_format,
                                      width, height, dst_format, options)
                     return csc
@@ -789,20 +793,24 @@ class WindowBackingBase:
                 if frame == 0:
                     videolog("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
+                    self.do_clean_csc_decoder()
                 elif vd.get_encoding() != coding:
                     videolog("paint_with_video_decoder: encoding changed from %s to %s",
                              vd.get_encoding(), coding)
                     self.do_clean_video_decoder()
+                    self.do_clean_csc_decoder()
                 elif vd.get_width() != enc_width or vd.get_height() != enc_height:
                     videolog("paint_with_video_decoder: video dimensions have changed from %s to %s",
                              (vd.get_width(), vd.get_height()), (enc_width, enc_height))
                     self.do_clean_video_decoder()
+                    self.do_clean_csc_decoder()
                 elif vd.get_colorspace() != input_colorspace:
                     # this should only happen on encoder restart, which means this should be the first frame:
                     videolog.warn("Warning: colorspace unexpectedly changed from %s to %s",
                                   vd.get_colorspace(), input_colorspace)
                     videolog.warn(f" decoding {coding} frame {frame} using {vd.get_type()}")
                     self.do_clean_video_decoder()
+                    self.do_clean_csc_decoder()
             if self._video_decoder is None:
                 # find the best decoder type and instantiate it:
                 decoder_options: VdictEntry = VIDEO_DECODERS.get(coding, {})
@@ -861,14 +869,15 @@ class WindowBackingBase:
                 videolog("do_video_paint csc: switching dst format from %s to %s",
                          cd.get_dst_format(), target_rgb_formats)
                 self.do_clean_csc_decoder()
-            elif cd.get_src_width() != enc_width or cd.get_src_height() != enc_height:
-                videolog("do_video_paint csc: switching src size from %sx%s to %sx%s",
-                         enc_width, enc_height, cd.get_src_width(), cd.get_src_height())
-                self.do_clean_csc_decoder()
-            elif cd.get_dst_width() != width or cd.get_dst_height() != height:
-                videolog("do_video_paint csc: switching src size from %sx%s to %sx%s",
-                         width, height, cd.get_dst_width(), cd.get_dst_height())
-                self.do_clean_csc_decoder()
+            elif PREFER_CSC_SCALING:
+                if cd.get_src_width() != enc_width or cd.get_src_height() != enc_height:
+                    videolog("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                             enc_width, enc_height, cd.get_src_width(), cd.get_src_height())
+                    self.do_clean_csc_decoder()
+                elif cd.get_dst_width() != width or cd.get_dst_height() != height:
+                    videolog("do_video_paint csc: switching dst size from %sx%s to %sx%s",
+                             width, height, cd.get_dst_width(), cd.get_dst_height())
+                    self.do_clean_csc_decoder()
         if self._csc_decoder is None:
             # use higher quality csc to compensate for lower quality source
             # (which generally means that we downscaled via YUV422P or lower)
