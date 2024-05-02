@@ -2410,23 +2410,21 @@ class WindowVideoSource(WindowSource):
             # just for diagnostics:
             supported_csc_modes = self.full_csc_modes.strtupleget(encoding)
             encoder_specs = vh.get_encoder_specs(encoding)
-            encoder_types = []
-            ecsc = []
+            encoder_types: set[str] = set()
+            ecsc: set[str] = set()
             for csc in supported_csc_modes:
                 if csc not in encoder_specs:
                     continue
-                if csc not in ecsc:
-                    ecsc.append(csc)
-                for especs in encoder_specs.get(csc, []):
-                    if especs.codec_type not in encoder_types:
-                        encoder_types.append(especs.codec_type)
-            videolog.error("Error: failed to setup a video pipeline for %s encoding with source format %s",
+                ecsc.add(csc)
+                for especs in encoder_specs.get(csc, ()):
+                    encoder_types.add(especs.codec_type)
+            videolog.error("Error: failed to setup a video pipeline for %r encoding with source format %r",
                            encoding, src_format)
             all_encs = {es.codec_type for sublist in encoder_specs.values() for es in sublist}
-            videolog.error(" all encoders: %s", csv(tuple(all_encs)))
-            videolog.error(" supported CSC modes: %s", csv(supported_csc_modes))
-            videolog.error(" supported encoders: %s", csv(encoder_types))
-            videolog.error(" encoders CSC modes: %s", csv(ecsc))
+            videolog.error(f" all encoders for {encoding!r}: %s", csv(tuple(all_encs)))
+            videolog.error(f" client supported CSC modes for {encoding!r}: %s", csv(supported_csc_modes))
+            videolog.error(" supported encoders for these CSC modes: %s", csv(encoder_types))
+            videolog.error(" matching CSC modes: %s", csv(ecsc))
             if FORCE_CSC:
                 videolog.error(" forced csc mode: %s", FORCE_CSC_MODE)
             return self.video_fallback(image, options)
