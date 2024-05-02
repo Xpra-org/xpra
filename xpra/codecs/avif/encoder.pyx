@@ -1,9 +1,10 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
+from typing import Tuple
 
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t    # pylint: disable=syntax-error
 from libc.string cimport memset  # pylint: disable=syntax-error
@@ -44,25 +45,25 @@ THREADS = envint("XPRA_AVIF_THREADS", min(4, max(1, os.cpu_count()//2)))
 DEF AVIF_PLANE_COUNT_YUV = 3
 
 
-def get_type():
+def get_type() -> str:
     return "avif"
 
-def get_encodings():
+def get_encodings() -> Tuple[str, ...]:
     return ("avif", )
 
-def get_version():
+def get_version() -> Tuple[int, int, int]:
     return (AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH)
 
 def get_info():
     return  {
-            "version"       : get_version(),
-            "encodings"     : get_encodings(),
-            }
+        "version"       : get_version(),
+        "encodings"     : get_encodings(),
+    }
 
-def init_module():
+def init_module() -> None:
     log("avif.init_module()")
 
-def cleanup_module():
+def cleanup_module() -> None:
     log("avif.cleanup_module()")
 
 
@@ -72,7 +73,7 @@ AVIF_PIXEL_FORMAT = {
     AVIF_PIXEL_FORMAT_YUV422    : "YUV422",
     AVIF_PIXEL_FORMAT_YUV420    : "YUV420",
     AVIF_PIXEL_FORMAT_YUV400    : "YUV400",
-    }
+}
 
 INPUT_PIXEL_FORMATS = {
     "RGBX"  : AVIF_RGB_FORMAT_RGBA,
@@ -83,7 +84,7 @@ INPUT_PIXEL_FORMATS = {
     "BGR"   : AVIF_RGB_FORMAT_BGR,
     "ARGB"  : AVIF_RGB_FORMAT_ARGB,
     "ABGR"  : AVIF_RGB_FORMAT_ABGR,
-    }
+}
 
 
 cdef check(avifResult r, message):
@@ -91,7 +92,7 @@ cdef check(avifResult r, message):
         err = avifResultToString(r) or AVIF_RESULT.get(r, r)
         raise RuntimeError("%s : %s" % (message, err))
 
-def encode(coding, image, options=None):
+def encode(coding: str, image, options=None) -> tuple:
     options = typedict(options or {})
     pixel_format = image.get_pixel_format()
     if pixel_format not in INPUT_PIXEL_FORMATS:
@@ -188,7 +189,7 @@ def encode(coding, image, options=None):
             avifRWDataFree(&avifOutput)
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     #fake empty buffer:
     from xpra.codecs.checks import make_test_image
     w, h = (24, 16)

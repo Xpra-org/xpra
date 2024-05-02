@@ -77,13 +77,13 @@ def load_video() -> None:
     log("video decoders: %s", VIDEO_DECODERS)
 
 
-def fire_paint_callbacks(callbacks: Iterable[Callable], success: int | bool = True, message=""):
+def fire_paint_callbacks(callbacks: Iterable[Callable], success: int | bool = True, message="") -> None:
     for x in callbacks:
         with log.trap_error("Error calling %s with %s", x, (success, message)):
             x(success, message)
 
 
-def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int = 10, bg=(128, 128, 128, 32)):
+def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int = 10, bg=(128, 128, 128, 32)) -> bytes:
     try:
         from PIL import Image, ImageDraw  # pylint: disable=import-outside-toplevel
     except ImportError:
@@ -167,10 +167,10 @@ class WindowBackingBase:
         self.fps_refresh_timer: int = 0
         self.paint_stats: dict[str, int] = {}
 
-    def idle_add(self, *_args, **_kwargs):
+    def idle_add(self, *_args, **_kwargs) -> int:
         raise NotImplementedError()
 
-    def recpaint(self, encoding):
+    def recpaint(self, encoding: str) -> None:
         self.paint_stats[encoding] = self.paint_stats.get(encoding, 0) + 1
 
     def get_rgb_formats(self) -> tuple[str, ...]:
@@ -258,33 +258,33 @@ class WindowBackingBase:
         self.mmap = mmap_area
         self.mmap_enabled = True
 
-    def gravity_copy_coords(self, oldw: int, oldh: int, bw: int, bh: int):
+    def gravity_copy_coords(self, oldw: int, oldh: int, bw: int, bh: int) -> tuple[int, int, int, int, int, int]:
         sx = sy = dx = dy = 0
 
-        def center_y():
+        def center_y() -> tuple[int, int]:
             if bh >= oldh:
                 # take the whole source, paste it in the middle
                 return 0, (bh - oldh) // 2
             # skip the edges of the source, paste all of it
             return (oldh - bh) // 2, 0
 
-        def center_x():
+        def center_x() -> tuple[int, int]:
             if bw >= oldw:
                 return 0, (bw - oldw) // 2
             return (oldw - bw) // 2, 0
 
-        def east_x():
+        def east_x() -> tuple[int, int]:
             if bw >= oldw:
                 return 0, bw - oldw
             return oldw - bw, 0
 
-        def west_x():
+        def west_x() -> tuple[int, int]:
             return 0, 0
 
-        def north_y():
+        def north_y() -> tuple[int, int]:
             return 0, 0
 
-        def south_y():
+        def south_y() -> tuple[int, int]:
             if bh >= oldh:
                 return 0, bh - oldh
             return oldh - bh, 0
@@ -325,16 +325,15 @@ class WindowBackingBase:
         h = min(bh, oldh)
         return sx, sy, dx, dy, w, h
 
-    def gravity_adjust(self, x, y, options):
+    def gravity_adjust(self, x: int, y: int, options: typedict) -> tuple[int, int]:
         # if the window size has changed,
         # adjust the coordinates honouring the window gravity:
-        window_size = options.inttupleget("window-size", None)
+        window_size = options.inttupleget("window-size")
         g = self.gravity
         log("gravity_adjust%s window_size=%s, size=%s, gravity=%s",
             (x, y, options), window_size, self.size, g or "unknown")
         if not window_size:
             return x, y
-        window_size = tuple(window_size)
         if window_size == self.size:
             return x, y
         if g == 0 or self.gravity == Gravity.NorthWest:
@@ -342,28 +341,28 @@ class WindowBackingBase:
         oldw, oldh = window_size
         bw, bh = self.size
 
-        def center_y():
+        def center_y() -> int:
             if bh >= oldh:
                 return y + (bh - oldh) // 2
             return y - (oldh - bh) // 2
 
-        def center_x():
+        def center_x() -> int:
             if bw >= oldw:
                 return x + (bw - oldw) // 2
             return x - (oldw - bw) // 2
 
-        def east_x():
+        def east_x() -> int:
             if bw >= oldw:
                 return x + (bw - oldw)
             return x - (oldw - bw)
 
-        def west_x():
+        def west_x() -> int:
             return x
 
-        def north_y():
+        def north_y() -> int:
             return y
 
-        def south_y():
+        def south_y() -> int:
             if bh >= oldh:
                 return y + (bh - oldh)
             return y - (oldh - bh)
@@ -451,7 +450,7 @@ class WindowBackingBase:
             "encoding.render-size": self.render_size,
         }
 
-    def _get_full_csc_modes(self, rgb_modes) -> dict[str, Any]:
+    def _get_full_csc_modes(self, rgb_modes: Iterable[str]) -> dict[str, Any]:
         # calculate the server CSC modes the server is allowed to use
         # based on the client CSC modes we can convert to in the backing class we use
         # and trim the transparency if we cannot handle it
@@ -472,14 +471,14 @@ class WindowBackingBase:
         self.cursor_data = cursor_data
 
     def paint_jpeg(self, img_data, x: int, y: int, width: int, height: int,
-                   options, callbacks: Iterable[Callable]) -> None:
+                   options: typedict, callbacks: Iterable[Callable]) -> None:
         self.do_paint_jpeg("jpeg", img_data, x, y, width, height, options, callbacks)
 
     def paint_jpega(self, img_data, x: int, y: int, width: int, height: int,
-                    options, callbacks: Iterable[Callable]) -> None:
+                    options: typedict, callbacks: Iterable[Callable]) -> None:
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
-    def nvdec_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options):
+    def nvdec_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options: typedict):
         if not self.nvdec_decoder or width < 16 or height < 16:
             return None
         if encoding not in self.nvdec_decoder.get_encodings():
@@ -509,12 +508,12 @@ class WindowBackingBase:
                 log(f"cuda context error, again: {e}")
         return None
 
-    def nv_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options):
+    def nv_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options: typedict):
         return self.nvjpeg_decode(encoding, img_data, x, y, width, height, options) or \
             self.nvdec_decode(encoding, img_data, x, y, width, height, options)
 
     def do_paint_jpeg(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
-                      options, callbacks: Iterable[Callable]):
+                      options: typedict, callbacks: Iterable[Callable]):
         alpha_offset = options.intget("alpha-offset", 0)
         img = self.nv_decode(encoding, img_data, x, y, width, height, options)
         if img is None:
@@ -539,7 +538,7 @@ class WindowBackingBase:
                       x, y, w, h, width, height, rowstride, options, callbacks)
 
     def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
-                   options, callbacks: Iterable[Callable]):
+                   options: typedict, callbacks: Iterable[Callable]):
         img = self.avif_decoder.decompress(img_data, options)
         rgb_format = img.get_pixel_format()
         img_data = img.get_pixels()
@@ -550,19 +549,21 @@ class WindowBackingBase:
                       x, y, w, h, width, height, rowstride, options, callbacks)
 
     def paint_image(self, coding: str, img_data, x: int, y: int, width: int, height: int,
-                    options, callbacks: Iterable[Callable]):
+                    options: typedict, callbacks: Iterable[Callable]) -> None:
         # can be called from any thread
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
         self.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
-    def paint_spng(self, img_data, x: int, y: int, width: int, height: int, options, callbacks: Iterable[Callable]):
+    def paint_spng(self, img_data, x: int, y: int, width: int, height: int,
+                   options: typedict, callbacks: Iterable[Callable]) -> None:
         rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data)
         rowstride = iwidth * len(rgb_format)
         self.idle_add(self.do_paint_rgb, rgb_format, rgba,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
-    def paint_webp(self, img_data, x: int, y: int, width: int, height: int, options, callbacks: Iterable[Callable]):
+    def paint_webp(self, img_data, x: int, y: int, width: int, height: int,
+                   options, callbacks: Iterable[Callable]) -> None:
         if not self.webp_decoder or WEBP_PILLOW:
             # if webp is enabled, then Pillow should be able to take care of it:
             self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
@@ -600,7 +601,7 @@ class WindowBackingBase:
                       x, y, iwidth, iheight, width, height, stride, options, callbacks)
 
     def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,
-                  options, callbacks: Iterable[Callable]):
+                  options, callbacks: Iterable[Callable]) -> None:
         """ can be called from a non-UI thread """
         iwidth, iheight = options.intpair("scaled-size", (width, height))
         # was a compressor used?
@@ -616,7 +617,7 @@ class WindowBackingBase:
 
     def do_paint_rgb(self, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
-                     options, callbacks: Iterable[Callable]):
+                     options: typedict, callbacks: Iterable[Callable]) -> None:
         """ must be called from the UI thread
             this method is only here to ensure that we always fire the callbacks,
             the actual paint code is in _do_paint_rgb[24|32]
@@ -657,19 +658,19 @@ class WindowBackingBase:
                 fire_paint_callbacks(callbacks, False, message)
 
     def _do_paint_rgb16(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options):
+                        render_width: int, render_height: int, rowstride: int, options: typedict) -> None:
         raise NotImplementedError
 
     def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options):
+                        render_width: int, render_height: int, rowstride: int, options: typedict) -> None:
         raise NotImplementedError
 
     def _do_paint_rgb30(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options):
+                        render_width: int, render_height: int, rowstride: int, options: typedict) -> None:
         raise NotImplementedError
 
     def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options):
+                        render_width: int, render_height: int, rowstride: int, options: typedict) -> None:
         raise NotImplementedError
 
     def eos(self) -> None:
@@ -754,7 +755,7 @@ class WindowBackingBase:
         raise ValueError(f"no csc options for {src_format!r} input in " + csv(CSC_OPTIONS.keys()))
 
     @staticmethod
-    def validate_csc_size(spec, src_width: int, src_height: int, dst_width: int, dst_height: int):
+    def validate_csc_size(spec, src_width: int, src_height: int, dst_width: int, dst_height: int) -> str:
         if src_width < spec.min_w:
             return "source width %i is out of range: minimum is %i", src_width, spec.min_w
         if src_height < spec.min_h:
@@ -771,10 +772,10 @@ class WindowBackingBase:
             return "target width %i is out of range: maximum is %i", dst_width, spec.max_w
         if dst_height > spec.max_h:
             return "target height %i is out of range: maximum is %i", dst_height, spec.max_h
-        return None
+        return ""
 
     def paint_with_video_decoder(self, coding: str, img_data, x: int, y: int, width: int, height: int,
-                                 options: typedict, callbacks: Iterable[Callable]):
+                                 options: typedict, callbacks: Iterable[Callable]) -> None:
         dl = self._decoder_lock
         if dl is None:
             fire_paint_callbacks(callbacks, False, "no lock - retry")
@@ -854,7 +855,7 @@ class WindowBackingBase:
             self.close_decoder(True)
 
     def do_video_paint(self, img, x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
-                       options, callbacks: Iterable[Callable]):
+                       options, callbacks: Iterable[Callable]) -> None:
         target_rgb_formats = self.get_rgb_formats()
         # as some video formats like vpx can forward transparency
         # also we could skip the csc step in some cases:
@@ -899,7 +900,7 @@ class WindowBackingBase:
 
         # this will also take care of firing callbacks (from the UI thread):
 
-        def paint():
+        def paint() -> None:
             data = rgb.get_pixels()
             rgb_width = rgb.get_width()
             rgb_height = rgb.get_height()
@@ -913,7 +914,7 @@ class WindowBackingBase:
         self.idle_add(paint)
 
     def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
-                   options, callbacks: Iterable[Callable]):
+                   options: typedict, callbacks: Iterable[Callable]) -> None:
         """ must be called from UI thread
             see _mmap_send() in seamless.py for details """
         assert self.mmap_enabled
@@ -923,12 +924,12 @@ class WindowBackingBase:
         x, y = self.gravity_adjust(x, y, options)
         self.do_paint_rgb(rgb_format, data, x, y, width, height, width, height, rowstride, options, callbacks)
 
-    def paint_scroll(self, img_data, options, callbacks: Iterable[Callable]):
+    def paint_scroll(self, img_data, options: typedict, callbacks: Iterable[Callable]) -> None:
         log("paint_scroll%s", (img_data, options, callbacks))
         raise NotImplementedError(f"no paint scroll on {type(self)}")
 
     def draw_region(self, x: int, y: int, width: int, height: int, coding: str, img_data, rowstride: int,
-                    options: typedict, callbacks: Iterable[Callable]):
+                    options: typedict, callbacks: Iterable[Callable]) -> None:
         """ dispatches the paint to one of the paint_XXXX methods """
         self.recpaint(coding)
         try:
@@ -977,7 +978,7 @@ class WindowBackingBase:
     # noinspection PyMethodMayBeStatic
     def do_draw_region(self, _x: int, _y: int, _width: int, _height: int, coding: str,
                        _img_data, _rowstride: int,
-                       _options, callbacks: Iterable[Callable]):
+                       _options, callbacks: Iterable[Callable]) -> None:
         msg = f"invalid encoding: {coding!r}"
         log.error("Error: %s", msg)
         fire_paint_callbacks(callbacks, False, msg)
