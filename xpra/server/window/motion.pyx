@@ -7,6 +7,7 @@
 #cython: boundscheck=False, wraparound=False
 
 import struct
+from typing import Tuple, Dict
 
 from xpra.util.env import envbool
 from xpra.util.str_fn import repr_ellipsized, csv
@@ -28,7 +29,7 @@ from libc.string cimport memset
 
 MIN_LINE_COUNT = 2
 
-def h(v):
+def h(v) -> str:
     return hex(v)[2:].rstrip("L")
 
 cdef inline uint64_t hashtoint64(s):
@@ -64,7 +65,7 @@ cdef class ScrollData:
         return "ScrollDistances(%ix%i)" % (self.width, self.height)
 
     #only used by the unit tests:
-    def test_update(self, arr):
+    def test_update(self, arr) -> None:
         if self.a1:
             free(self.a1)
             self.a1 = NULL
@@ -78,7 +79,8 @@ cdef class ScrollData:
         for i,v in enumerate(arr):
             self.a2[i] = <uint64_t> abs(v)
 
-    def update(self, pixels, int16_t x, int16_t y, uint16_t width, uint16_t height, uint32_t rowstride, uint8_t bpp=4):
+    def update(self, pixels, int16_t x, int16_t y, uint16_t width, uint16_t height,
+               uint32_t rowstride, uint8_t bpp=4) -> None:
         """
             Add a new image to compare with,
             checksum its rows into a2,
@@ -126,7 +128,7 @@ cdef class ScrollData:
                     buf += rowstride
 
 
-    def calculate(self, uint16_t max_distance=1000):
+    def calculate(self, uint16_t max_distance=1000) -> None:
         """
             Find all the scroll distances
             that would move lines from a1 to a2.
@@ -174,7 +176,7 @@ cdef class ScrollData:
             log(" a2=%s", da(self.a2, l))
             log(" %i matches, distances=%s", matches, dd(self.distances, l*2))
 
-    def get_scroll_values(self, uint16_t min_hits=2):
+    def get_scroll_values(self, uint16_t min_hits=2) -> Tuple[Dict, Dict]:
         """
             Return two dictionaries that describe how to go from a1 to a2.
             * scrolls dictionary contains scroll definitions
@@ -226,7 +228,7 @@ cdef class ScrollData:
         if DEBUG:
             log("scroll hits=%s", dict(reversed(sorted(scroll_hits.items()))))
         #return a dict with the scroll distance as key,
-        #and the list of matching lines in a dictionary:
+        #and the list of matching lines as value:
         # {line-start : count, ..}
         cdef uint16_t start = 0, count = 0
         try:
@@ -305,7 +307,7 @@ cdef class ScrollData:
         return line_defs
 
 
-    def invalidate(self, int16_t x, int16_t y, uint16_t w, uint16_t h):
+    def invalidate(self, int16_t x, int16_t y, uint16_t w, uint16_t h) -> None:
         if self.a2==NULL:
             #nothing to invalidate!
             return
@@ -333,8 +335,7 @@ cdef class ScrollData:
             log("invalidating whole scroll data as only %i of it remains valid", 100*nonzero//rect.height)
             self.free()
 
-
-    def get_best_match(self):
+    def get_best_match(self) -> Tuple[int, int]:
         if self.a1==NULL or self.a2==NULL:
             return 0, 0
         cdef uint16_t max_hits = 0
@@ -350,7 +351,7 @@ cdef class ScrollData:
     def __dealloc__(self):
         self.free()
 
-    def free(self):
+    def free(self) -> None:
         cdef void* ptr = <void*> self.distances
         if ptr:
             self.distances = NULL
