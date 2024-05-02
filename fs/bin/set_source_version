@@ -43,7 +43,7 @@ echo "" >> "./packaging/debian/xpra/changelog.new"
 cat "./packaging/debian/xpra/changelog" >> "./packaging/debian/xpra/changelog.new"
 mv "./packaging/debian/xpra/changelog.new" "./packaging/debian/xpra/changelog"
 
-sed -i'' "s/%define version .*/%define version $NEWV/" "./packaging/rpm/xpra.spec"
+sed -i'' "s/Version:.*/Version:			$NEWV/" "./packaging/rpm/xpra.spec"
 sed -i'' "/%changelog/a - TODO" "./packaging/rpm/xpra.spec"
 
 CHANGELOGDATE=`date '+%a %b %d %Y'`
