@@ -8,8 +8,8 @@ Install [XCode](https://developer.apple.com/xcode/) and its command line tools.
 
 Download the latest version of the [gtk-osx](https://wiki.gnome.org/Projects/GTK/OSX/Building) setup script and run it:
 ```shell
-curl -o ~/gtk-osx-setup.sh \
-     https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/gtk-osx-setup.sh
+git clone https://github.com/Xpra-org/gtk-osx-build
+cd gtk-osx-build
 sh gtk-osx-setup.sh
 ```
 This will have installed `jhbuild` in `~/.new_local/bin`, so let's add this to our `$PATH`:
@@ -21,8 +21,8 @@ export PATH=$PATH:~/.new_local/bin/
   <summary>Configure `jhbuild` to use our modules</summary>
 
 ```shell
-curl -o ~/.config/jhbuildrc-custom \
-     https://raw.githubusercontent.com/Xpra-org/gtk-osx-build/master/jhbuildrc-custom
+ln -sf $(pwd)/gtk-osx-build/jhbuildrc-gtk-osx ~/.config/jhbuildrc
+ln -sf $(pwd)/gtk-osx-build/jhbuildrc-custom ~/.config/jhbuildrc-custom
 ```
 </details>
 
