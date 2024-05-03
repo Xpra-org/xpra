@@ -90,7 +90,7 @@ def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int 
         log("rgba_text(..)", exc_info=True)
         if first_time("pillow-text-overlay"):
             log.warn("Warning: cannot show text overlay without python pillow")
-        return None
+        return b""
     rgb_format = "RGBA"
     img = Image.new(rgb_format, (width, height), color=bg)
     draw = ImageDraw.Draw(img)
@@ -722,10 +722,7 @@ class WindowBackingBase:
                     errs = []
                     size_error = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                     if size_error:
-                        try:
-                            errs.append(": " + (size_error[0] % size_error[1:]))
-                        except Exception:
-                            errs.append(f": {size_error}")
+                        errs.append(size_error)
                     if not spec.can_scale and (src_width != dst_width or src_height != dst_height):
                         errs.append("scaling not supported")
                     videolog.error(f"              - {spec}{csv(errs)}")
@@ -757,21 +754,21 @@ class WindowBackingBase:
     @staticmethod
     def validate_csc_size(spec, src_width: int, src_height: int, dst_width: int, dst_height: int) -> str:
         if src_width < spec.min_w:
-            return "source width %i is out of range: minimum is %i", src_width, spec.min_w
+            return f"source width {src_width} is out of range: minimum is {spec.min_w}"
         if src_height < spec.min_h:
-            return "source height %i is out of range: minimum is %i", src_height, spec.min_h
+            return f"source height {src_height} is out of range: minimum is {spec.min_h}"
         if dst_width < spec.min_w:
-            return "target width %i is out of range: minimum is %i", dst_width, spec.min_w
+            return f"target width {dst_width} is out of range: minimum is {spec.min_w}"
         if dst_height < spec.min_h:
-            return "target height %i is out of range: minimum is %i", dst_height, spec.min_h
+            return f"target height {dst_height} is out of range: minimum is {spec.min_h}"
         if src_width > spec.max_w:
-            return "source width %i is out of range: maximum is %i", src_width, spec.max_w
+            return f"source width {src_width} is out of range: maximum is {spec.max_w}"
         if src_height > spec.max_h:
-            return "source height %i is out of range: maximum is %i", src_height, spec.max_h
+            return f"source height {src_height} is out of range: maximum is {spec.max_h}"
         if dst_width > spec.max_w:
-            return "target width %i is out of range: maximum is %i", dst_width, spec.max_w
+            return f"target width {dst_width} is out of range: maximum is {spec.max_w}"
         if dst_height > spec.max_h:
-            return "target height %i is out of range: maximum is %i", dst_height, spec.max_h
+            return f"target height {dst_height} is out of range: maximum is {spec.max_h}"
         return ""
 
     def paint_with_video_decoder(self, coding: str, img_data, x: int, y: int, width: int, height: int,
