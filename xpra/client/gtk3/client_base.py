@@ -610,11 +610,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if self.remote_open_files:
             buttons += [Gtk.STOCK_OPEN, Gtk.ResponseType.ACCEPT]
         buttons += [Gtk.STOCK_OK, Gtk.ResponseType.OK]
-        self.file_dialog = Gtk.FileChooserDialog(
-            "File to upload",
-            parent=None,
-            action=Gtk.FileChooserAction.OPEN,
-            buttons=tuple(buttons))
+        self.file_dialog = Gtk.FileChooserDialog(title="File to upload", action=Gtk.FileChooserAction.OPEN)
+        self.file_dialog.add_buttons(*buttons)
         self.file_dialog.set_default_response(Gtk.ResponseType.OK)
         self.file_dialog.connect("response", self.file_upload_dialog_response)
         self.file_dialog.show()
