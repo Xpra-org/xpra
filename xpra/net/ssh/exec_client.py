@@ -23,7 +23,6 @@ if log.is_debug_enabled():
     import logging
     logging.getLogger("paramiko").setLevel(logging.DEBUG)
 
-INITENV_COMMAND = os.environ.get("XPRA_INITENV_COMMAND", "")    # "xpra initenv"
 MAGIC_QUOTES = envbool("XPRA_SSH_MAGIC_QUOTES", True)
 
 
@@ -83,8 +82,6 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 pc.append(f"--socket-dir={socket_dir}")
             remote_cmd += " ".join(pc)+";"
         remote_cmd += "else echo \"no run-xpra command found\"; exit 1; fi"
-        if INITENV_COMMAND:
-            remote_cmd = INITENV_COMMAND + ";" + remote_cmd
         # how many times we need to escape the remote command string
         # depends on how many times the ssh command is parsed
         nssh = sum(int(x == "ssh") for x in cmd)
