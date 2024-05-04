@@ -6,6 +6,7 @@
 import sys
 import os
 import shlex
+from shutil import which
 from subprocess import PIPE, Popen
 
 from xpra.scripts.main import (
@@ -130,6 +131,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
         if is_debug_enabled("ssh"):
             log.info("executing ssh command: " + " ".join(f"\"{x}\"" for x in cmd))
+        executable = which(cmd[0])
+        if not executable or not os.path.exists(executable):
+            log.warn(f"Warning: ssh command {cmd[0]!r} not found!")
+            log.warn(" trying to continue anyway..")
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
     except OSError as e:
         cmd_info = " ".join(repr(x) for x in cmd)
