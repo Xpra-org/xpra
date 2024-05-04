@@ -640,6 +640,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.progress_process = None
         if pp.poll() is not None:
             return
+        from subprocess import TimeoutExpired
+        try:
+            if pp.wait(0.1) is not None:
+                return
+        except TimeoutExpired:
+            pass
         try:
             pp.terminate()
         except Exception:
