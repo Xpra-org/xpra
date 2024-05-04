@@ -92,7 +92,7 @@ class ConfigureGUI(BaseGUIWindow):
 
     def configure_switches(self, defaults):
         for subsystem, switch in self.subsystem_switch.items():
-            value = getattr(defaults, subsystem, None)
+            value = getattr(defaults, subsystem.replace("-", "_"), None)
             log(f"configure_switches: {subsystem}={value}")
             enabled = str_to_bool(value, False)
             switch.set_sensitive(True)
