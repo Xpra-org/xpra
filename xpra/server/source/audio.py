@@ -218,7 +218,7 @@ class AudioMixin(StubSourceMixin):
             return None
         try:
             from xpra.audio.wrapper import start_sending_audio  # pylint: disable=import-outside-toplevel
-            plugins = self.audio_properties.strtupleget("plugins")
+            plugins = self.audio_properties.strtupleget("sources")
             ss = start_sending_audio(plugins, self.audio_source_plugin,
                                      None, codec, volume, True, [codec],
                                      self.pulseaudio_server, self.pulseaudio_id)
