@@ -301,7 +301,7 @@ class AudioMixin(StubSourceMixin):
             from xpra.util.child_reaper import getChildReaper  # pylint: disable=import-outside-toplevel
             getChildReaper().add_process(proc, "new-stream-sound", cmd, ignore=True, forget=True)
 
-            def stop_new_stream_notification():
+            def stop_new_stream_notification() -> None:
                 if self.new_stream_timers.pop(proc, None):
                     stop_proc(proc)
 
@@ -313,12 +313,12 @@ class AudioMixin(StubSourceMixin):
             log.error(f" using: {cmd_str}:")
             log.estr(e)
 
-    def new_stream(self, audio_source, codec: str) -> None:
+    def new_stream(self, audio_source, codec: str) -> bool:
         log("new_stream(%s, %s)", audio_source, codec)
         self.new_stream_sound()
         if self.audio_source != audio_source:
             log("dropping new-stream signal (current source=%s, signal source=%s)", self.audio_source, audio_source)
-            return
+            return False
         codec = codec or audio_source.codec
         audio_source.codec = codec
         # tell the client this is the start:
@@ -331,6 +331,7 @@ class AudioMixin(StubSourceMixin):
         # run it again after 10 seconds,
         # by that point the source info will actually be populated:
         GLib.timeout_add(10 * 1000, self.call_update_av_sync_delay)
+        return False
 
     def call_update_av_sync_delay(self) -> None:
         # loose coupling with avsync mixin:
