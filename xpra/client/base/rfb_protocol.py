@@ -7,10 +7,13 @@ import struct
 from threading import RLock
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.net.rfb.protocol import RFBProtocol
 from xpra.net.rfb.const import RFBEncoding, RFBClientMessage, RFBAuth, CLIENT_INIT, AUTH_STR, RFB_KEYS
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("network", "protocol", "rfb")
 
@@ -26,7 +29,7 @@ def check_wid(wid) -> bool:
 
 class RFBClientProtocol(RFBProtocol):
 
-    def __init__(self, scheduler, conn, process_packet_cb, next_packet):
+    def __init__(self, conn, process_packet_cb, next_packet):
         self.next_packet = next_packet
         self.rectangles = 0
         self.position = 0, 0
@@ -38,7 +41,7 @@ class RFBClientProtocol(RFBProtocol):
             "configure-window": self.track_window,
         }
         self.send_lock = RLock()
-        super().__init__(scheduler, conn, process_packet_cb)
+        super().__init__(conn, process_packet_cb)
 
     def source_has_more(self) -> None:
         log("source_has_more()")
@@ -262,7 +265,7 @@ class RFBClientProtocol(RFBProtocol):
             self.send_refresh_request(0, 0, 0, w, h)
             return True
 
-        self.timeout_add(1000, request_refresh)
+        GLib.timeout_add(1000, request_refresh)
         return ci_size + name_size
 
     def send_set_encodings(self) -> None:

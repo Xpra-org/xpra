@@ -368,7 +368,7 @@ class InfoTimerClient(MonitorXpraClient):
 
     def do_command(self, caps: typedict) -> None:
         self.send_info_request()
-        self.timeout_add(self.REFRESH_RATE * 1000, self.send_info_request)
+        GLib.timeout_add(self.REFRESH_RATE * 1000, self.send_info_request)
 
     def send_info_request(self, *categories) -> bool:
         self.log("send_info_request%s" % (categories,))
@@ -377,7 +377,7 @@ class InfoTimerClient(MonitorXpraClient):
             window_ids = ()  # no longer used or supported by servers
             self.send("info-request", [self.uuid], window_ids, categories)
         if not self.info_timer:
-            self.info_timer = self.timeout_add((self.REFRESH_RATE + 2) * 1000, self.info_timeout)
+            self.info_timer = GLib.timeout_add((self.REFRESH_RATE + 2) * 1000, self.info_timeout)
         return True
 
     def init_packet_handlers(self) -> None:
@@ -402,7 +402,7 @@ class InfoTimerClient(MonitorXpraClient):
         it = self.info_timer
         if it:
             self.info_timer = 0
-            self.source_remove(it)
+            GLib.source_remove(it)
 
     def info_timeout(self) -> bool:
         self.log("info timeout")
@@ -440,7 +440,7 @@ class ShellXpraClient(SendCommandConnectClient):
         siw = self.stdin_io_watch
         if siw:
             self.stdin_io_watch = None
-            self.source_remove(siw)
+            GLib.source_remove(siw)
         super().cleanup()
 
     def do_command(self, caps: typedict) -> None:
@@ -619,7 +619,7 @@ class PrintClient(SendCommandConnectClient):
         blob = Compressed("print", self.file_data)
         self.send("print", self.filename, blob, *self.command)
         log("print: sending %s as %s for printing", self.filename, blob)
-        self.idle_add(self.send, "disconnect", ConnectionMessage.DONE.value, "detaching")
+        GLib.idle_add(self.send, "disconnect", ConnectionMessage.DONE.value, "detaching")
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = super().make_hello()
@@ -640,7 +640,7 @@ class ExitXpraClient(HelloRequestClient):
         }
 
     def do_command(self, caps: typedict) -> None:
-        self.idle_add(self.send,
+        GLib.idle_add(self.send,
                       "exit-server",
                       os.environ.get("XPRA_EXIT_MESSAGE", ConnectionMessage.SERVER_EXIT.value)
                       )
@@ -662,8 +662,8 @@ class StopXpraClient(HelloRequestClient):
             return
         # with newer (v5) servers, the "stop" request should have done it,
         # but let's try harder for older servers:
-        self.timeout_add(1000, self.send_shutdown_server)
-        # self.idle_add(self.send_shutdown_server)
+        GLib.timeout_add(1000, self.send_shutdown_server)
+        # GLib.idle_add(self.send_shutdown_server)
         # not exiting the client here,
         # the server should send us the shutdown disconnection message anyway
         # and if not, we will then hit the timeout to tell us something went wrong
@@ -678,7 +678,7 @@ class DetachXpraClient(HelloRequestClient):
         }
 
     def do_command(self, caps: typedict) -> None:
-        self.idle_add(self.send, "disconnect", ConnectionMessage.DONE.value, "detaching")
+        GLib.idle_add(self.send, "disconnect", ConnectionMessage.DONE.value, "detaching")
         # not exiting the client here,
         # the server should disconnect us with the response
 
@@ -709,7 +709,7 @@ class RequestStartClient(HelloRequestClient):
             # this can be called again if we receive a challenge,
             # but only print this message once:
             errwrite("requesting new session, please wait")
-        self.timeout_add(1 * 1000, self.dots)
+        GLib.timeout_add(1 * 1000, self.dots)
         return {
             "start-new-session": self.start_new_session,
             # tells proxy servers we don't want to connect to the real / new instance:

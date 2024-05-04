@@ -8,12 +8,15 @@
 from time import monotonic
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.net.common import PacketType
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 keylog = Logger("keyboard")
 mouselog = Logger("mouse")
@@ -252,7 +255,7 @@ class InputServer(StubServerMixin):
         krt = self.key_repeat_timer
         if krt:
             self.key_repeat_timer = 0
-            self.source_remove(krt)
+            GLib.source_remove(krt)
 
     def _key_repeat(self, wid: int, pressed: bool, keyname: str, keyval: int, keycode: int,
                     modifiers: list, is_mod: bool, delay_ms: int = 0) -> None:
@@ -262,7 +265,7 @@ class InputServer(StubServerMixin):
             delay_ms = min(1500, max(250, delay_ms))
             keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             now = monotonic()
-            self.key_repeat_timer = self.timeout_add(delay_ms, self._key_repeat_timeout,
+            self.key_repeat_timer = GLib.timeout_add(delay_ms, self._key_repeat_timeout,
                                                      now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
 
     def _key_repeat_timeout(self, when, delay_ms: int, wid: int, keyname: str, keyval: int, keycode: int,

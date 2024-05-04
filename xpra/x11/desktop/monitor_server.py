@@ -18,6 +18,7 @@ from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
+GLib = gi_import("GLib")
 
 RandR = RandRBindings()
 
@@ -105,7 +106,7 @@ class XpraMonitorServer(DesktopServerBase):
         def unlock():
             self.reconfigure_locked = False
 
-        self.timeout_add(1000, unlock)
+        GLib.timeout_add(1000, unlock)
         return current()
 
     def load_existing_windows(self) -> None:
@@ -125,7 +126,7 @@ class XpraMonitorServer(DesktopServerBase):
         # as we get multiple events for the same change
         log("do_x11_configure_event(%s)", event)
         if not self.reconfigure_timer:
-            self.reconfigure_timer = self.timeout_add(50, self.reconfigure)
+            self.reconfigure_timer = GLib.timeout_add(50, self.reconfigure)
 
     def reconfigure(self) -> None:
         try:

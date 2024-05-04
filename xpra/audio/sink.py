@@ -32,6 +32,8 @@ from xpra.util.env import envint, envbool
 from xpra.util.thread import start_thread
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
+
 log = Logger("audio")
 gstlog = Logger("gstreamer")
 
@@ -184,18 +186,18 @@ class AudioSink(AudioPipeline):
     def start(self) -> bool:
         if not super().start():
             return False
-        self.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
+        GLib.timeout_add(UNMUTE_DELAY, self.start_adjust_volume)
         return True
 
     def start_adjust_volume(self, interval: int = 100) -> bool:
         if self.volume_timer != 0:
-            self.source_remove(self.volume_timer)
-        self.volume_timer = self.timeout_add(interval, self.adjust_volume)
+            GLib.source_remove(self.volume_timer)
+        self.volume_timer = GLib.timeout_add(interval, self.adjust_volume)
         return False
 
     def cancel_volume_timer(self) -> None:
         if self.volume_timer != 0:
-            self.source_remove(self.volume_timer)
+            GLib.source_remove(self.volume_timer)
             self.volume_timer = 0
 
     def adjust_volume(self) -> bool:
@@ -465,8 +467,6 @@ GObject.type_register(AudioSink)
 
 
 def main() -> int:
-    from xpra.os_util import gi_import
-    glib = gi_import("GLib")
     from xpra.platform import program_context
     with program_context("Audio-Record"):
         args = sys.argv
@@ -512,18 +512,18 @@ def main() -> int:
 
         def eos(*args):
             print("eos%s" % (args,))
-            glib.idle_add(glib_mainloop.quit)
+            GLib.idle_add(glib_mainloop.quit)
 
         ss.connect("eos", eos)
         ss.start()
 
-        glib_mainloop = glib.MainLoop()
+        glib_mainloop = GLib.MainLoop()
 
         import signal
 
         def deadly_signal(*_args):
-            glib.idle_add(ss.stop)
-            glib.idle_add(glib_mainloop.quit)
+            GLib.idle_add(ss.stop)
+            GLib.idle_add(glib_mainloop.quit)
 
             def force_quit(_sig, _frame):
                 sys.exit()
@@ -539,12 +539,12 @@ def main() -> int:
             if qtime <= 0:
                 log.info("underrun (end of stream)")
                 start_thread(ss.stop, "stop", daemon=True)
-                glib.timeout_add(500, glib_mainloop.quit)
+                GLib.timeout_add(500, glib_mainloop.quit)
                 return False
             return True
 
-        glib.timeout_add(1000, check_for_end)
-        glib.idle_add(ss.add_data, data)
+        GLib.timeout_add(1000, check_for_end)
+        GLib.idle_add(ss.add_data, data)
 
         glib_mainloop.run()
         return 0

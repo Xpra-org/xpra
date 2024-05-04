@@ -5,15 +5,17 @@
 
 from threading import Lock
 
+from xpra.os_util import gi_import
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("network", "protocol")
 
 
 class FakeJitter:
 
-    def __init__(self, timeout_add, process_packet_cb, delay):
-        self.timeout_add = timeout_add
+    def __init__(self, process_packet_cb, delay):
         self.real_process_packet_cb = process_packet_cb
         self.delay = delay
         self.ok_delay = 10*1000
@@ -25,7 +27,7 @@ class FakeJitter:
     def start_buffering(self):
         log.info("FakeJitter.start_buffering() will buffer for %s ms", self.delay)
         self.delaying = True
-        self.timeout_add(self.delay, self.flush)
+        GLib.timeout_add(self.delay, self.flush)
 
     def flush(self):
         log.info("FakeJitter.flush() processing %s delayed packets", len(self.pending))
@@ -34,7 +36,7 @@ class FakeJitter:
                 self.real_process_packet_cb(proto, packet)
             self.pending = []
             self.delaying = False
-        self.timeout_add(self.ok_delay, self.start_buffering)
+        GLib.timeout_add(self.ok_delay, self.start_buffering)
         log.info("FakeJitter.flush() will start buffering again in %s ms", self.ok_delay)
 
     def process_packet_cb(self, proto, packet):

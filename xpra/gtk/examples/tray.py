@@ -23,9 +23,6 @@ log = Logger("client")
 class FakeApplication:
 
     def __init__(self):
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
         self.display_desc = {}
         self.session_name = "Test System Tray"
         self.mmap_enabled = False
@@ -119,7 +116,7 @@ class FakeApplication:
         self.tray.set_tooltip("Test System Tray")
 
     def after_handshake(self, cb: Callable, *args) -> None:
-        self.idle_add(cb, *args)
+        GLib.idle_add(cb, *args)
 
     def on_server_setting_changed(self, setting: str, cb: Callable) -> None:
         """ this method is part of the GUI client "interface" """
@@ -161,9 +158,9 @@ class FakeApplication:
     def xpra_tray_click(self, button: int, pressed: bool, time: int = 0):
         log("xpra_tray_click(%s, %s, %s)", button, pressed, time)
         if button == 1 and pressed:
-            self.idle_add(self.menu_helper.activate, button, time)
+            GLib.idle_add(self.menu_helper.activate, button, time)
         elif button == 3 and not pressed:
-            self.idle_add(self.menu_helper.popup, button, time)
+            GLib.idle_add(self.menu_helper.popup, button, time)
 
     def xpra_tray_mouseover(self, *args):
         log("xpra_tray_mouseover(%s)", args)

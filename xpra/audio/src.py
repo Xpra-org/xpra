@@ -28,6 +28,7 @@ from xpra.net.compression import compressed_wrapper
 from xpra.scripts.config import InitExit
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
 GObject = gi_import("GObject")
 
 log = Logger("audio")
@@ -285,7 +286,7 @@ class AudioSource(AudioPipeline):
                 # queue was empty, schedule a timer to flush it
                 from random import randint
                 jitter = randint(1, JITTER)
-                self.timeout_add(jitter, self.flush_jitter_queue)
+                GLib.timeout_add(jitter, self.flush_jitter_queue)
                 log("emit_buffer: will flush jitter queue in %ims", jitter)
             for x in self.pending_metadata:
                 self.jitter_queue.put((x, {}))
@@ -379,8 +380,7 @@ def main() -> int:
                 output.write(data)
                 output.flush()
 
-        glib = gi_import("GLib")
-        glib_mainloop = glib.MainLoop()
+        glib_mainloop = GLib.MainLoop()
 
         ss.connect("new-buffer", new_buffer)
         ss.start()
@@ -389,8 +389,8 @@ def main() -> int:
 
         def deadly_signal(sig, _frame):
             log.warn("got deadly signal %s", SIGNAMES.get(sig, sig))
-            glib.idle_add(ss.stop)
-            glib.idle_add(glib_mainloop.quit)
+            GLib.idle_add(ss.stop)
+            GLib.idle_add(glib_mainloop.quit)
 
             def force_quit(_sig, _frame):
                 sys.exit()

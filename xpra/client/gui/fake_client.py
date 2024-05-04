@@ -5,7 +5,6 @@
 
 from xpra.common import noop
 from xpra.util.objects import AdHocStruct
-from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("client")
@@ -43,10 +42,6 @@ class FakeClient(AdHocStruct):
         self.keyboard_grabbed = False
         self.window_with_grab = None
         self.keyboard_helper = None
-        glib = gi_import("GLib")
-        self.idle_add = glib.idle_add
-        self.timeout_add = glib.timeout_add
-        self.source_remove = glib.source_remove
 
     def get_window_frame_sizes(self, *_args):
         return None

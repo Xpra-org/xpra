@@ -15,6 +15,7 @@ try:
 except ImportError:
     Image = None
 
+from xpra.os_util import gi_import
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
@@ -24,6 +25,8 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("server")
 focuslog = Logger("focus")
@@ -256,13 +259,13 @@ class WindowsMixin(StubSourceMixin):
                 cursor_sizes = cd[1]
                 self.do_send_cursor(delay, cursor_data, cursor_sizes)
 
-            self.cursor_timer = self.timeout_add(delay, do_send_cursor)
+            self.cursor_timer = GLib.timeout_add(delay, do_send_cursor)
 
     def cancel_cursor_timer(self) -> None:
         ct = self.cursor_timer
         if ct:
             self.cursor_timer = 0
-            self.source_remove(ct)
+            GLib.source_remove(ct)
 
     def do_send_cursor(self, delay, cursor_data, cursor_sizes, encoding_prefix="") -> None:
         # copy to a new list we can modify (ie: compress):
@@ -556,7 +559,6 @@ class WindowsMixin(StubSourceMixin):
             # pylint: disable=import-outside-toplevel
             from xpra.server.window.video_compress import WindowVideoSource
             ws = WindowVideoSource(
-                self.idle_add, self.timeout_add, self.source_remove,
                 ww, wh,
                 self.record_congestion_event, self.encode_queue_size,
                 self.call_in_encode_thread, self.queue_packet,

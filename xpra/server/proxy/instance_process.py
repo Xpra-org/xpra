@@ -15,7 +15,7 @@ from xpra.net.protocol.factory import get_client_protocol_class, get_server_prot
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE
-from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid
+from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, gi_import
 from xpra.util.env import osexpand
 from xpra.scripts.config import str_to_bool
 from xpra.server.util import setuidgid
@@ -31,6 +31,8 @@ from xpra.net.socket_util import create_unix_domain_socket, handle_socket_error
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("proxy")
 enclog = Logger("encoding")
@@ -120,13 +122,13 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     ################################################################################
 
     def run(self) -> None:
-        register_SIGUSR_signals(self.idle_add)
+        register_SIGUSR_signals(GLib.idle_add)
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
-        self.client_protocol = client_protocol_class(self, self.client_conn,
+        self.client_protocol = client_protocol_class(self.client_conn,
                                                      self.process_client_packet, self.get_client_packet)
         self.client_protocol.restore_state(self.client_state)
-        self.server_protocol = server_protocol_class(self, self.server_conn,
+        self.server_protocol = server_protocol_class(self.server_conn,
                                                      self.process_server_packet, self.get_server_packet)
         self.log_start()
 
@@ -263,12 +265,12 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         sc = SocketConnection(sock, sockname, address, target, "socket")
         log.info("New proxy instance control connection received:")
         log.info(" '%s'", sc)
-        protocol = SocketProtocol(self, sc, self.process_control_packet)
+        protocol = SocketProtocol(sc, self.process_control_packet)
         protocol.large_packets.append("info-response")
         self.potential_protocols.append(protocol)
         protocol.enable_default_encoder()
         protocol.start()
-        self.timeout_add(SOCKET_TIMEOUT * 1000, self.verify_connection_accepted, protocol)
+        GLib.timeout_add(SOCKET_TIMEOUT * 1000, self.verify_connection_accepted, protocol)
 
     def verify_connection_accepted(self, protocol) -> None:
         if not protocol.is_closed() and protocol in self.potential_protocols:
@@ -316,7 +318,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 else:
                     info = {"error": "`info` requests are not enabled for this connection"}
                 proto.send_now(("hello", info))
-                self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+                GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                                  "info sent")
                 return
             if is_req("stop"):
@@ -330,7 +332,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 if caps.boolget("full-version-request"):
                     version = full_version_str()
                 proto.send_now(("hello", {"version": version}))
-                self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+                GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                                  "version sent")
                 return
             log.warn("Warning: invalid hello packet,")

@@ -9,6 +9,7 @@ from math import sqrt
 from typing import Any
 from time import sleep, monotonic
 
+from xpra.os_util import gi_import
 from xpra.common import FULL_INFO
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window import batch_config
@@ -21,6 +22,8 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("encoding")
 proxylog = Logger("proxy")
@@ -214,13 +217,13 @@ class EncodingsMixin(StubSourceMixin):
             add_work_item(self.recalculate_delays)
         else:
             delay = int(1000 * (RECALCULATE_DELAY - delta))
-            self.calculate_timer = self.timeout_add(delay, add_work_item, self.recalculate_delays)
+            self.calculate_timer = GLib.timeout_add(delay, add_work_item, self.recalculate_delays)
 
     def cancel_recalculate_timer(self) -> None:
         ct = self.calculate_timer
         if ct:
             self.calculate_timer = 0
-            self.source_remove(ct)
+            GLib.source_remove(ct)
 
     def parse_client_caps(self, c: typedict) -> None:
         # batch options:

@@ -9,11 +9,14 @@
 import os
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.util.objects import AtomicInteger
 from xpra.util.system import register_SIGUSR_signals
 from xpra.gstreamer.common import import_gst, GST_FLOW_OK
 from xpra.gstreamer.pipeline import Pipeline
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("audio")
 gstlog = Logger("gstreamer")
@@ -87,7 +90,7 @@ class AudioPipeline(Pipeline):
     def start(self) -> bool:
         if not super().start():
             return False
-        register_SIGUSR_signals(self.idle_add)
+        register_SIGUSR_signals(GLib.idle_add)
         log("AudioPipeline.start() codec=%s", self.codec)
         self.idle_emit("new-stream", self.codec)
         self.update_state("active")
@@ -99,16 +102,16 @@ class AudioPipeline(Pipeline):
         # we may never get the stream start,
         # so we synthesize a codec event to get the log message in all cases:
         parts = self.codec.split("+")
-        self.timeout_add(1000, self.new_codec_description, parts[0])
+        GLib.timeout_add(1000, self.new_codec_description, parts[0])
         if len(parts) > 1 and parts[1] != self.stream_compressor:
-            self.timeout_add(1000, self.new_container_description, parts[1])
+            GLib.timeout_add(1000, self.new_container_description, parts[1])
         elif self.container_format:
-            self.timeout_add(1000, self.new_container_description, self.container_format)
+            GLib.timeout_add(1000, self.new_container_description, self.container_format)
         if self.stream_compressor:
             def logsc():
                 self.gstloginfo(f"using stream compression {self.stream_compressor}")
 
-            self.timeout_add(1000, logsc)
+            GLib.timeout_add(1000, logsc)
         log("AudioPipeline.start() done")
         return True
 
@@ -128,7 +131,7 @@ class AudioPipeline(Pipeline):
         # we don't always get the "audio-codec" message…
         # so print the codec from here instead (and assume gstreamer is using what we told it to)
         # after a delay, just in case we do get the real "audio-codec" message!
-        self.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])
+        GLib.timeout_add(500, self.new_codec_description, self.codec.split("+")[0])
 
     def on_message(self, bus, message) -> int:
         try:

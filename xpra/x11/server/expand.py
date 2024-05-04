@@ -109,7 +109,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
 
     def do_run(self) -> None:
         self.start_refresh_timer()
-        # self.timeout_add(1*1000, self.start_evdi_watch)
+        # GLib.timeout_add(1*1000, self.start_evdi_watch)
         self.start_evdi_watch()
         super().do_run()
 
@@ -122,7 +122,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         fdw = self.fd_watch
         if fdw:
             self.fd_watch = None
-            self.source_remove(fdw)
+            GLib.source_remove(fdw)
         c = self.evdi_channel
         if c:
             self.evdi_channel = None

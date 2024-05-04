@@ -12,6 +12,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Callable, Iterable
 
+from xpra.os_util import gi_import
 from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.codecs.image import ImageWrapper
@@ -33,6 +34,8 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, print_nested_dict, memoryview_to_bytes
 from xpra.util.env import envint, envbool, first_time
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("encoding")
 csclog = Logger("csc")
@@ -653,7 +656,7 @@ class WindowVideoSource(WindowSource):
                 gp = self.gstreamer_pipeline
                 self.cancel_gstreamer_timer()
                 if gp:
-                    self.gstreamer_timer = self.timeout_add(GSTREAMER_X11_TIMEOUT, self.gstreamer_nodamage)
+                    self.gstreamer_timer = GLib.timeout_add(GSTREAMER_X11_TIMEOUT, self.gstreamer_nodamage)
                     return
         vs = self.video_subregion
         if vs:
@@ -671,7 +674,7 @@ class WindowVideoSource(WindowSource):
     def cancel_gstreamer_timer(self) -> None:
         gt = self.gstreamer_timer
         if gt:
-            self.source_remove(gt)
+            GLib.source_remove(gt)
 
     def start_gstreamer_pipeline(self) -> bool:
         from xpra.gstreamer.common import plugin_str
@@ -712,7 +715,7 @@ class WindowVideoSource(WindowSource):
         if gp and (LOG_ENCODERS or compresslog.is_debug_enabled()):
             client_info["encoder"] = gp.encoder
         self.direct_queue_draw(coding, data, client_info)
-        self.idle_add(self.gstreamer_continue_damage)
+        GLib.idle_add(self.gstreamer_continue_damage)
 
     def gstreamer_continue_damage(self) -> None:
         # ensures that more damage events will be emitted
@@ -997,7 +1000,7 @@ class WindowVideoSource(WindowSource):
         else:
             self._damage_delayed = DelayedRegions(damage_time, encoding=coding, options=options, regions=regions)
             sublog("send_regions: delaying non video regions %s some more by %ims", regions, delay)
-            self.expire_timer = self.timeout_add(delay, self.expire_delayed_region)
+            self.expire_timer = GLib.timeout_add(delay, self.expire_delayed_region)
 
     def must_encode_full_frame(self, encoding : str) -> bool:
         non_video = self.non_video_encodings
@@ -1121,7 +1124,7 @@ class WindowVideoSource(WindowSource):
         avsynclog("cancel_encode_from_queue() timer=%s for wid=%i", eqt, self.wid)
         if eqt:
             self.encode_from_queue_timer = 0
-            self.source_remove(eqt)
+            GLib.source_remove(eqt)
 
     def free_encode_queue_images(self):
         eq = self.encode_queue
@@ -1142,7 +1145,7 @@ class WindowVideoSource(WindowSource):
         if self.encode_from_queue_due == 0 or due < self.encode_from_queue_due:
             self.cancel_encode_from_queue()
             self.encode_from_queue_due = due
-            self.encode_from_queue_timer = self.timeout_add(av_delay, self.timer_encode_from_queue)
+            self.encode_from_queue_timer = GLib.timeout_add(av_delay, self.timer_encode_from_queue)
 
     def timer_encode_from_queue(self) -> None:
         self.encode_from_queue_timer = 0
@@ -1209,7 +1212,7 @@ class WindowVideoSource(WindowSource):
         first_due = max(ENCODE_QUEUE_MIN_GAP, min(still_due))
         avsynclog("encode_from_queue: first due in %ims, due list=%s (av-sync delay=%i, actual=%i, for wid=%i)",
                   first_due, still_due, self.av_sync_delay, av_delay, self.wid)
-        self.idle_add(self.schedule_encode_from_queue, first_due)
+        GLib.idle_add(self.schedule_encode_from_queue, first_due)
 
     def update_encoding_video_subregion(self) -> None:
         """
@@ -2546,12 +2549,12 @@ class WindowVideoSource(WindowSource):
         bft: int = self.b_frame_flush_timer
         if bft:
             self.b_frame_flush_timer = 0
-            self.source_remove(bft)
+            GLib.source_remove(bft)
 
     def schedule_video_encoder_flush(self, ve, csc, frame, x , y, scaled_size) -> None:
         flush_delay: int = max(150, min(500, int(self.batch_config.delay*10)))
         self.b_frame_flush_data = (ve, csc, frame, x, y, scaled_size)
-        self.b_frame_flush_timer = self.timeout_add(flush_delay, self.flush_video_encoder)
+        self.b_frame_flush_timer = GLib.timeout_add(flush_delay, self.flush_video_encoder)
 
     def flush_video_encoder_now(self) -> None:
         # this can be called before the timer is due
@@ -2578,7 +2581,7 @@ class WindowVideoSource(WindowSource):
             self.ve_clean(self._video_encoder)
             if self.non_video_encodings:
                 log("do_flush_video_encoder() scheduling novideo refresh")
-                self.idle_add(self.refresh, {"novideo" : True})
+                GLib.idle_add(self.refresh, {"novideo" : True})
                 videolog("flushed frame 0, novideo refresh requested")
             return
         w = ve.get_width()
@@ -2620,7 +2623,7 @@ class WindowVideoSource(WindowSource):
         vet: int = self.video_encoder_timer
         if vet:
             self.video_encoder_timer = 0
-            self.source_remove(vet)
+            GLib.source_remove(vet)
 
     def schedule_video_encoder_timer(self) -> None:
         if not self.video_encoder_timer:
@@ -2630,7 +2633,7 @@ class WindowVideoSource(WindowSource):
             else:
                 timeout = VIDEO_NODETECT_TIMEOUT
             if timeout > 0:
-                self.video_encoder_timer = self.timeout_add(timeout*1000, self.video_encoder_timeout)
+                self.video_encoder_timer = GLib.timeout_add(timeout*1000, self.video_encoder_timeout)
 
     def video_encoder_timeout(self) -> None:
         videolog("video_encoder_timeout() will close video encoder=%s", self._video_encoder)

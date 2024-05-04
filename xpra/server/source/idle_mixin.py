@@ -7,11 +7,14 @@ from time import monotonic
 from typing import Any
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.common import NotificationID, ConnectionMessage
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("timeout")
 
@@ -73,24 +76,24 @@ class IdleMixin(StubSourceMixin):
         it = self.idle_timer
         if it:
             self.idle_timer = 0
-            self.source_remove(it)
+            GLib.source_remove(it)
 
     def schedule_idle_timeout(self) -> None:
         log("schedule_idle_timeout() idle_timer=%s, idle_timeout=%s", self.idle_timer, self.idle_timeout)
         if self.idle_timeout > 0:
-            self.idle_timer = self.timeout_add(self.idle_timeout * 1000, self.idle_timedout)
+            self.idle_timer = GLib.timeout_add(self.idle_timeout * 1000, self.idle_timedout)
 
     def cancel_idle_grace_timeout(self) -> None:
         igt = self.idle_grace_timer
         if igt:
             self.idle_grace_timer = 0
-            self.source_remove(igt)
+            GLib.source_remove(igt)
 
     def schedule_idle_grace_timeout(self) -> None:
         log("schedule_idle_grace_timeout() grace timer=%s, idle_timeout=%s", self.idle_grace_timer, self.idle_timeout)
         if self.idle_timeout > 0 and not self.is_closed():
             grace = self.idle_timeout - self.idle_grace_duration
-            self.idle_grace_timer = self.timeout_add(max(0, int(grace * 1000)), self.idle_grace_timedout)
+            self.idle_grace_timer = GLib.timeout_add(max(0, int(grace * 1000)), self.idle_grace_timedout)
             log("schedule_idle_grace_timeout() timer=%s due in %i seconds", self.idle_grace_timer, grace)
 
     def idle_grace_timedout(self) -> None:

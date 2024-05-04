@@ -5,6 +5,7 @@
 
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
@@ -12,6 +13,8 @@ from xpra.net.file_transfer import FileTransferHandler
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.util.thread import start_thread
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 printlog = Logger("printing")
 filelog = Logger("file")
@@ -67,7 +70,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
             if server_printing:
                 self.printer_attributes = caps.strtupleget("printer.attributes",
                                                            ("printer-info", "device-uri"))
-                self.timeout_add(INIT_PRINTING_DELAY * 1000, self.init_printing)
+                GLib.timeout_add(INIT_PRINTING_DELAY * 1000, self.init_printing)
 
     def init_printing(self) -> None:
         try:
@@ -104,14 +107,14 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         # so we wait a bit and fire via a timer to try to batch things together:
         if self.send_printers_timer:
             return
-        self.send_printers_timer = self.timeout_add(500, self.do_send_printers)
+        self.send_printers_timer = GLib.timeout_add(500, self.do_send_printers)
 
     def cancel_send_printers_timer(self) -> None:
         spt = self.send_printers_timer
         printlog("cancel_send_printers_timer() send_printers_timer=%s", spt)
         if spt:
             self.send_printers_timer = 0
-            self.source_remove(spt)
+            GLib.source_remove(spt)
 
     def do_send_printers(self) -> None:
         self.send_printers_timer = 0

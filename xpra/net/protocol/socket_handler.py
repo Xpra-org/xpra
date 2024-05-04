@@ -17,6 +17,7 @@ from queue import Queue, SimpleQueue
 from typing import Any
 from collections.abc import ByteString, Callable, Iterable
 
+from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import (
     csv, hexstr, nicestr,
@@ -50,6 +51,8 @@ from xpra.net.packet_encoding import (
 )
 from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
@@ -97,16 +100,18 @@ class SocketProtocol:
 
     TYPE = "xpra"
 
-    def __init__(self, scheduler, conn, process_packet_cb: Callable, get_packet_cb: Callable | None = None):
+    def __init__(self, conn, process_packet_cb: Callable, get_packet_cb: Callable | None = None):
         """
             You must call this constructor and source_has_more() from the main thread.
         """
-        assert scheduler is not None
-        assert conn is not None
+        if not conn:
+            raise ValueError(f"missing connection: {conn}")
+        for fn in ("read", "write", "close", "peek"):
+            if not hasattr(conn, fn):
+                raise ValueError(f"{conn} doesn't look like a connection object: no {fn!r}")
+            if not callable(getattr(conn, fn)):
+                raise ValueError(f"{fn!r} is not callable")
         self.start_time = monotonic()
-        self.timeout_add: Callable = scheduler.timeout_add
-        self.idle_add: Callable = scheduler.idle_add
-        self.source_remove: Callable = scheduler.source_remove
         self.read_buffer_size: int = READ_BUFFER_SIZE
         self.hangup_delay: int = 1000
         self._conn = conn
@@ -316,9 +321,9 @@ class SocketProtocol:
             if not self._closed:
                 self._read_thread.start()
 
-        self.idle_add(start_network_read_thread)
+        GLib.idle_add(start_network_read_thread)
         if SEND_INVALID_PACKET:
-            self.timeout_add(SEND_INVALID_PACKET * 1000, self.raw_write, SEND_INVALID_PACKET_DATA)
+            GLib.timeout_add(SEND_INVALID_PACKET * 1000, self.raw_write, SEND_INVALID_PACKET_DATA)
 
     def send_disconnect(self, reasons, done_callback=noop) -> None:
         packet = ["disconnect"] + [nicestr(x) for x in reasons]
@@ -779,7 +784,7 @@ class SocketProtocol:
             log("read thread: eof")
             # give time to the parse thread to call close itself,
             # so it has time to parse and process the last packet received
-            self.timeout_add(1000, self.close)
+            GLib.timeout_add(1000, self.close)
             return False
         self.input_raw_packetcount += 1
         return True
@@ -801,7 +806,7 @@ class SocketProtocol:
         log.error(f"Error: {message}", exc_info=ei)
         if exc:
             log.error(f" {exc}", exc_info=exc_info)
-        self.idle_add(self._connection_lost, message)
+        GLib.idle_add(self._connection_lost, message)
 
     def _connection_lost(self, message="", exc_info=False) -> bool:
         log(f"connection lost: {message}", exc_info=exc_info)
@@ -809,14 +814,14 @@ class SocketProtocol:
         return False
 
     def invalid(self, msg, data) -> None:
-        self.idle_add(self._process_packet_cb, self, [INVALID, msg, data])
+        GLib.idle_add(self._process_packet_cb, self, [INVALID, msg, data])
         # Then hang up:
-        self.timeout_add(1000, self._connection_lost, msg)
+        GLib.timeout_add(1000, self._connection_lost, msg)
 
     def gibberish(self, msg, data) -> None:
-        self.idle_add(self._process_packet_cb, self, [GIBBERISH, msg, data])
+        GLib.idle_add(self._process_packet_cb, self, [GIBBERISH, msg, data])
         # Then hang up:
-        self.timeout_add(self.hangup_delay, self._connection_lost, msg)
+        GLib.timeout_add(self.hangup_delay, self._connection_lost, msg)
 
     # delegates to invalid_header()
     # (so this can more easily be intercepted and overridden)
@@ -843,7 +848,7 @@ class SocketProtocol:
         if not self._read_parser_thread and not self._closed:
             if data is None:
                 log("empty marker in read queue, exiting")
-                self.idle_add(self.close)
+                GLib.idle_add(self.close)
                 return
             self.start_read_parser_thread()
         self._read_queue.put(data)
@@ -891,7 +896,7 @@ class SocketProtocol:
             buf = self._read_queue.get()
             if not buf:
                 log("parse thread: empty marker, exiting")
-                self.idle_add(self.close)
+                GLib.idle_add(self.close)
                 return
 
             read_buffers.append(buf)
@@ -980,7 +985,7 @@ class SocketProtocol:
                                 self.invalid(err_msg, packet_header)
                             return False
 
-                        self.timeout_add(1000, check_packet_size, payload_size, header)
+                        GLib.timeout_add(1000, check_packet_size, payload_size, header)
 
                 # how much data do we have?
                 bl = sum(len(v) for v in read_buffers)
@@ -1183,7 +1188,7 @@ class SocketProtocol:
                     return
                 # retry later:
                 log("flush_then_close: still waiting for queue to flush")
-                self.timeout_add(100, wait_for_queue, timeout - 1)
+                GLib.timeout_add(100, wait_for_queue, timeout - 1)
                 return
             if not last_packet:
                 close_and_release()
@@ -1205,7 +1210,7 @@ class SocketProtocol:
                 log("flush_then_close: packet_queued() closed=%s", self._closed)
                 if wait_for_packet_sent():
                     # check again every 100ms
-                    self.timeout_add(100, wait_for_packet_sent)
+                    GLib.timeout_add(100, wait_for_packet_sent)
 
             if encoder:
                 chunks = encoder(last_packet)
@@ -1215,7 +1220,7 @@ class SocketProtocol:
             else:
                 self.raw_write((last_packet,), "flush-then-close")
             # just in case wait_for_packet_sent never fires:
-            self.timeout_add(5 * 1000, close_and_release)
+            GLib.timeout_add(5 * 1000, close_and_release)
 
         def wait_for_write_lock(timeout: int = 100) -> None:
             wl = self._write_lock
@@ -1250,7 +1255,7 @@ class SocketProtocol:
         packet = [CONNECTION_LOST]
         if message:
             packet.append(message)
-        self.idle_add(self._process_packet_cb, self, packet)
+        GLib.idle_add(self._process_packet_cb, self, packet)
         self.may_log_stats()
         if c:
             self._conn = None
@@ -1258,7 +1263,7 @@ class SocketProtocol:
                 log("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
         self.terminate_queue_threads()
-        self.idle_add(self.clean)
+        GLib.idle_add(self.clean)
         log("Protocol.close(%s) done", message)
 
     def may_log_stats(self, log_fn: Callable = log.info):

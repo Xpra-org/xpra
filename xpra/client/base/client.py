@@ -54,6 +54,8 @@ from xpra.client.base.serverinfo import ServerInfoMixin
 from xpra.client.base.fileprint import FilePrintMixin
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 
+GLib = gi_import("GLib")
+
 log = Logger("client")
 netlog = Logger("network")
 authlog = Logger("auth")
@@ -191,13 +193,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 self.progress_timer = 0
                 self.stop_progress_process()
 
-            self.progress_timer = self.timeout_add(SPLASH_EXIT_DELAY * 1000 + 500, stop_progress)
+            self.progress_timer = GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 + 500, stop_progress)
 
     def cancel_progress_timer(self) -> None:
         pt = self.progress_timer
         if pt:
             self.progress_timer = 0
-            self.source_remove(pt)
+            GLib.source_remove(pt)
 
     def init_challenge_handlers(self, challenge_handlers) -> None:
         # register the authentication challenge handlers:
@@ -218,7 +220,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                     self.challenge_handlers.append(instance)
         if DETECT_LEAKS:
             print_leaks = detect_leaks()
-            self.timeout_add(10 * 1000, print_leaks)
+            GLib.timeout_add(10 * 1000, print_leaks)
 
     def get_challenge_handler(self, auth: str, import_error_logger: Callable):
         # the module may have attributes,
@@ -270,7 +272,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         noerr(log.info, "exiting")
         self.signal_cleanup()
         reason = "exit on signal %s" % SIGNAMES.get(signum, signum)
-        self.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, reason)
+        GLib.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, reason)
 
     def install_signal_handlers(self) -> None:
 
@@ -285,16 +287,16 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
         signal.signal(signal.SIGINT, os_signal)
         signal.signal(signal.SIGTERM, os_signal)
-        register_SIGUSR_signals(self.idle_add)
+        register_SIGUSR_signals(GLib.idle_add)
 
     def signal_disconnect_and_quit(self, exit_code: ExitValue, reason: str) -> None:
         log("signal_disconnect_and_quit(%s, %s) exit_on_signal=%s", exit_code, reason, self.exit_on_signal)
         if not self.exit_on_signal:
             # if we get another signal, we'll try to exit without idle_add...
             self.exit_on_signal = True
-            self.idle_add(self.disconnect_and_quit, exit_code, reason)
-            self.idle_add(self.quit, exit_code)
-            self.idle_add(self.exit)
+            GLib.idle_add(self.disconnect_and_quit, exit_code, reason)
+            GLib.idle_add(self.quit, exit_code)
+            GLib.idle_add(self.exit)
             return
         # warning: this will run cleanup code from the signal handler
         self.disconnect_and_quit(exit_code, reason)
@@ -321,11 +323,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
         def protocol_closed():
             log("disconnect_and_quit: protocol_closed()")
-            self.idle_add(self.quit, exit_code)
+            GLib.idle_add(self.quit, exit_code)
 
         if p:
             p.send_disconnect([str(reason)], done_callback=protocol_closed)
-        self.timeout_add(1000, self.quit, exit_code)
+        GLib.timeout_add(1000, self.quit, exit_code)
 
     def exit(self) -> None:
         log("XpraClientBase.exit() calling %s", sys.exit)
@@ -351,16 +353,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             info["sysconfig"] = get_sysconfig_info()
         return info
 
-    def get_scheduler(self):
-        raise NotImplementedError()
-
     def setup_connection(self, conn):
         if not conn:
             raise ValueError("no connection")
         protocol_class = get_client_protocol_class(conn.socktype)
         netlog("setup_connection(%s) timeout=%s, socktype=%s, protocol-class=%s",
                conn, conn.timeout, conn.socktype, protocol_class)
-        protocol = protocol_class(self.get_scheduler(), conn, self.process_packet, self.next_packet)
+        protocol = protocol_class(conn, self.process_packet, self.next_packet)
         # ssh channel may contain garbage initially,
         # tell the protocol to wait for a valid header:
         protocol.wait_for_header = conn.socktype == "ssh"
@@ -380,7 +379,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                                         DEFAULT_KEY_HASH, DEFAULT_KEYSIZE, DEFAULT_ITERATIONS, INITIAL_PADDING)
         self.have_more = protocol.source_has_more
         if conn.timeout > 0:
-            self.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
+            GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
         process = getattr(conn, "process", None)  # ie: ssh is handled by another process
         if process:
             proc, name, command = process
@@ -597,7 +596,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         delay = self._mouse_position_delay - elapsed
         mouselog("send_mouse_position(%s) elapsed=%i, delay left=%i", packet, elapsed, delay)
         if delay > 0:
-            self._mouse_position_timer = self.timeout_add(delay, self.do_send_mouse_position)
+            self._mouse_position_timer = GLib.timeout_add(delay, self.do_send_mouse_position)
         else:
             self.do_send_mouse_position()
 
@@ -612,7 +611,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         mpt = self._mouse_position_timer
         if mpt:
             self._mouse_position_timer = 0
-            self.source_remove(mpt)
+            GLib.source_remove(mpt)
 
     def next_packet(self):
         netlog("next_packet() packets in queues: priority=%i, ordinary=%i, mouse=%s",
@@ -664,8 +663,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     @staticmethod
     def glib_init() -> None:
-        glib = gi_import("GLib")
-        register_SIGUSR_signals(glib.idle_add)
+        register_SIGUSR_signals(GLib.idle_add)
 
     def run(self) -> ExitValue:
         self.start_protocol()
@@ -842,7 +840,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 # (ie: pinentry was cancelled by the user)
                 authlog(f"{handler.handle}({packet}) raised {e!r}")
                 log.info(f"exiting: {e!r}")
-                self.idle_add(self.disconnect_and_quit, e.status, str(e))
+                GLib.idle_add(self.disconnect_and_quit, e.status, str(e))
                 return
             except Exception as e:
                 authlog(f"{handler.handle}({packet})", exc_info=True)
@@ -850,7 +848,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 authlog.estr(e)
                 continue
         authlog.warn("Warning: failed to connect, authentication required")
-        self.idle_add(self.disconnect_and_quit, ExitCode.PASSWORD_REQUIRED, "authentication required")
+        GLib.idle_add(self.disconnect_and_quit, ExitCode.PASSWORD_REQUIRED, "authentication required")
 
     def pop_challenge_handler(self, digest: str = ""):
         # find the challenge handler most suitable for this digest type,
@@ -991,7 +989,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self._protocol.send_challenge_reply(challenge_response)
             return
         # call send_hello from the UI thread:
-        self.idle_add(self.send_hello, challenge_response, client_salt)
+        GLib.idle_add(self.send_hello, challenge_response, client_salt)
 
     ########################################
     # Encryption
@@ -1261,7 +1259,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if not handler:
                 netlog.error("unknown packet type: %s", packet_type)
                 return
-            self.idle_add(call_handler)
+            GLib.idle_add(call_handler)
         except Exception:
             netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
                          packet_type, handler, exc_info=True)

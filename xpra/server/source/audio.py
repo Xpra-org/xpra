@@ -17,6 +17,8 @@ from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
+
 log = Logger("audio")
 
 NEW_STREAM_SOUND = envbool("XPRA_NEW_STREAM_SOUND", True)
@@ -101,7 +103,7 @@ class AudioMixin(StubSourceMixin):
         for proc, timer in timers.items():
             timer = self.new_stream_timers.pop(proc, 0)
             if timer:
-                self.source_remove(timer)
+                GLib.source_remove(timer)
             stop_proc(proc)
 
     def parse_client_caps(self, c: typedict) -> None:
@@ -303,7 +305,7 @@ class AudioMixin(StubSourceMixin):
                 if self.new_stream_timers.pop(proc, None):
                     stop_proc(proc)
 
-            timer = self.timeout_add(NEW_STREAM_SOUND_STOP * 1000, stop_new_stream_notification)
+            timer = GLib.timeout_add(NEW_STREAM_SOUND_STOP * 1000, stop_new_stream_notification)
             self.new_stream_timers[proc] = timer
         except Exception as e:
             log("new_stream_sound() error playing new stream sound", exc_info=True)
@@ -328,7 +330,6 @@ class AudioMixin(StubSourceMixin):
         self.call_update_av_sync_delay()
         # run it again after 10 seconds,
         # by that point the source info will actually be populated:
-        GLib = gi_import("GLib")
         GLib.timeout_add(10 * 1000, self.call_update_av_sync_delay)
 
     def call_update_av_sync_delay(self) -> None:
@@ -427,7 +428,7 @@ class AudioMixin(StubSourceMixin):
             return volume < 1.0
 
         self.cancel_audio_fade_timer()
-        self.audio_fade_timer = self.timeout_add(100, fadein)
+        self.audio_fade_timer = GLib.timeout_add(100, fadein)
         return "fadein started"
 
     def audio_control_start(self, codec: str = "") -> str:
@@ -465,7 +466,7 @@ class AudioMixin(StubSourceMixin):
             return False
 
         self.cancel_audio_fade_timer()
-        self.audio_fade_timer = self.timeout_add(100, fadeout)
+        self.audio_fade_timer = GLib.timeout_add(100, fadeout)
         return "fadeout started"
 
     def audio_control_new_sequence(self, seq_str) -> str:
@@ -476,7 +477,7 @@ class AudioMixin(StubSourceMixin):
         sft = self.audio_fade_timer
         if sft:
             self.audio_fade_timer = 0
-            self.source_remove(sft)
+            GLib.source_remove(sft)
 
     def audio_data(self, codec, data, metadata, packet_metadata=()) -> None:
         log("audio_data(%s, %s, %s, %s) audio sink=%s",

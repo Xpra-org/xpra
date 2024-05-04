@@ -22,6 +22,8 @@ from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
+
 log = Logger("icon")
 
 ARGB_ICONS = envbool("XPRA_ARGB_ICONS", True)
@@ -78,7 +80,7 @@ class WindowIconSource:
         swit = self.send_window_icon_timer
         if swit:
             self.send_window_icon_timer = 0
-            self.source_remove(swit)
+            GLib.source_remove(swit)
 
     def get_info(self) -> dict[str, Any]:
         idata = self.window_icon_data
@@ -220,7 +222,7 @@ class WindowIconSource:
             delay = min(1000, max(50, w * h * self.batch_config.delay_per_megapixel // 1000000))
             log("send_window_icon() window=%s, wid=%s, compression scheduled in %sms for batch delay=%i",
                 self.window, self.wid, delay, self.batch_config.delay_per_megapixel)
-            self.send_window_icon_timer = self.timeout_add(delay, self.call_in_encode_thread,
+            self.send_window_icon_timer = GLib.timeout_add(delay, self.call_in_encode_thread,
                                                            True, self.compress_and_send_window_icon)
 
     def compress_and_send_window_icon(self):

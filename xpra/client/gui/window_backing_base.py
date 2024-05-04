@@ -534,7 +534,7 @@ class WindowBackingBase:
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
-        self.idle_add(self.do_paint_rgb, rgb_format, img_data,
+        GLib.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, w, h, width, height, rowstride, options, callbacks)
 
     def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
@@ -545,21 +545,21 @@ class WindowBackingBase:
         rowstride = img.get_rowstride()
         w = img.get_width()
         h = img.get_height()
-        self.idle_add(self.do_paint_rgb, rgb_format, img_data,
+        GLib.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, w, h, width, height, rowstride, options, callbacks)
 
     def paint_image(self, coding: str, img_data, x: int, y: int, width: int, height: int,
                     options: typedict, callbacks: Iterable[Callable]) -> None:
         # can be called from any thread
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
-        self.idle_add(self.do_paint_rgb, rgb_format, img_data,
+        GLib.idle_add(self.do_paint_rgb, rgb_format, img_data,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def paint_spng(self, img_data, x: int, y: int, width: int, height: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
         rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data)
         rowstride = iwidth * len(rgb_format)
-        self.idle_add(self.do_paint_rgb, rgb_format, rgba,
+        GLib.idle_add(self.do_paint_rgb, rgb_format, rgba,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def paint_webp(self, img_data, x: int, y: int, width: int, height: int,
@@ -597,7 +597,7 @@ class WindowBackingBase:
             callbacks.append(free_buffer)
         # replace with the actual rgb format we get from the decoder / rgb_reformat:
         options["rgb_format"] = rgb_format
-        self.idle_add(self.do_paint_rgb, rgb_format, data,
+        GLib.idle_add(self.do_paint_rgb, rgb_format, data,
                       x, y, iwidth, iheight, width, height, stride, options, callbacks)
 
     def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,
@@ -612,7 +612,7 @@ class WindowBackingBase:
             rgb_data = compression.decompress_by_name(raw_data, algo=comp[0])
         else:
             rgb_data = raw_data
-        self.idle_add(self.do_paint_rgb, rgb_format, rgb_data,
+        GLib.idle_add(self.do_paint_rgb, rgb_format, rgb_data,
                       x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def do_paint_rgb(self, rgb_format: str, img_data,
@@ -908,7 +908,7 @@ class WindowBackingBase:
             finally:
                 rgb.free()
 
-        self.idle_add(paint)
+        GLib.idle_add(paint)
 
     def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
@@ -935,7 +935,7 @@ class WindowBackingBase:
                 x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
             options["encoding"] = coding  # used for choosing the color of the paint box
             if coding == "mmap":
-                self.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
+                GLib.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
                 # avoid confusion over how many bytes-per-pixel we may have:
                 rgb_format = options.strget("rgb_format")

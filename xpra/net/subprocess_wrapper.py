@@ -22,6 +22,8 @@ from xpra.util.system import SIGNAMES
 from xpra.util.child_reaper import getChildReaper
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
+
 log = Logger("util")
 
 # this wrapper allows us to interact with a subprocess as if it was
@@ -111,11 +113,7 @@ class subprocess_callee:
         self.setup_mainloop()
 
     def setup_mainloop(self) -> None:
-        GLib = gi_import("GLib")
         self.mainloop = GLib.MainLoop()
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
 
     def connect_export(self, signal_name: str, *user_data) -> None:
         """ gobject style signal registration for the wrapped object,
@@ -186,7 +184,7 @@ class subprocess_callee:
                                  abort_test=None, target=self.name,
                                  socktype=self.name, close_cb=self.net_stop)
         conn.timeout = 0
-        protocol = SocketProtocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
+        protocol = SocketProtocol(conn, self.process_packet, get_packet_cb=self.get_packet)
         if LOCAL_ALIASES:
             protocol.send_aliases = LOCAL_SEND_ALIASES
             protocol.receive_aliases = LOCAL_RECEIVE_ALIASES
@@ -201,7 +199,7 @@ class subprocess_callee:
         # this is called from the network thread,
         # we use idle add to ensure we clean things up from the main thread
         log("net_stop() will call stop from main thread")
-        self.idle_add(self.stop)
+        GLib.idle_add(self.stop)
 
     def cleanup(self) -> None:
         """ subclasses may override this method """
@@ -226,9 +224,9 @@ class subprocess_callee:
         signame = SIGNAMES.get(sig, sig)
         log("handle_signal(%s) calling stop from main thread", signame)
         self.send("signal", signame)
-        self.timeout_add(0, self.cleanup)
+        GLib.timeout_add(0, self.cleanup)
         # give time for the network layer to send the signal message
-        self.timeout_add(150, self.stop)
+        GLib.timeout_add(150, self.stop)
 
     def signal_stop(self, sig) -> None:
         """ This time we really want to exit without waiting """
@@ -288,7 +286,7 @@ class subprocess_callee:
             return
         if DEBUG_WRAPPER:
             log("calling %s.%s%s", wo, attr, str(tuple(packet[1:]))[:128])
-        self.idle_add(method, *packet[1:])
+        GLib.idle_add(method, *packet[1:])
         INJECT_FAULT(proto)
 
 
@@ -338,10 +336,6 @@ class subprocess_caller:
         # hook a default packet handlers:
         self.connect(CONNECTION_LOST, self.connection_lost)
         self.connect(GIBBERISH, self.gibberish)
-        GLib = gi_import("GLib")
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
 
     def connect(self, signal: str, cb, *args) -> None:
         """ gobject style signal registration """
@@ -369,7 +363,7 @@ class subprocess_caller:
                                  abort_test=self.abort_test, target=self.description,
                                  socktype=self.description, close_cb=self.subprocess_exit)
         conn.timeout = 0
-        protocol = SocketProtocol(self, conn, self.process_packet, get_packet_cb=self.get_packet)
+        protocol = SocketProtocol(conn, self.process_packet, get_packet_cb=self.get_packet)
         if LOCAL_ALIASES:
             protocol.send_aliases = LOCAL_SEND_ALIASES
             protocol.receive_aliases = LOCAL_RECEIVE_ALIASES
@@ -464,4 +458,4 @@ class subprocess_caller:
             for cb, args in callbacks:
                 with log.trap_error(f"Error processing callback {cb} for {signal_name} packet"):
                     all_args = list(args) + list(extra_args)
-                    self.idle_add(cb, self, *all_args)
+                    GLib.idle_add(cb, self, *all_args)

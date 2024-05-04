@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -15,7 +15,7 @@ from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
 from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType, is_request_allowed
 from xpra.scripts.config import str_to_bool
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, gi_import
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import csv, bytestostr
@@ -24,6 +24,8 @@ from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import features
 from xpra.server import EXITING_CODE
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 
 def get_server_base_classes() -> tuple[type, ...]:
@@ -215,7 +217,7 @@ class ServerBase(ServerBaseClass):
             message += ": " + reason
         log.info(message)
         self.cleanup_all_protocols(reason=reason)
-        self.timeout_add(500, self.clean_quit, EXITING_CODE)
+        GLib.timeout_add(500, self.clean_quit, EXITING_CODE)
 
     def _process_shutdown_server(self, _proto, _packet: PacketType = ("shutdown-server", )) -> None:
         if not self.client_shutdown:
@@ -223,7 +225,7 @@ class ServerBase(ServerBaseClass):
             return
         log.info("Shutting down in response to client request")
         self.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
-        self.timeout_add(500, self.clean_quit)
+        GLib.timeout_add(500, self.clean_quit)
 
     def get_mdns_info(self) -> dict[str, Any]:
         mdns_info = ServerCore.get_mdns_info(self)
@@ -392,7 +394,6 @@ class ServerBase(ServerBaseClass):
         cc_class = self.get_client_connection_class(c)
         ss = cc_class(proto, drop_client,
                       self.session_name, self,
-                      self.idle_add, self.timeout_add, self.source_remove,
                       self.setting_changed,
                       self._socket_dir, self.unix_socket_paths, not request,
                       self.bandwidth_limit, self.bandwidth_detection,
@@ -409,7 +410,7 @@ class ServerBase(ServerBaseClass):
         if uuid and send_ui and SSH_AGENT_DISPATCH:
             self.accept_client_ssh_agent(uuid, c.strget("ssh-auth-sock"))
         # process ui half in ui thread:
-        self.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
+        GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
     @staticmethod
     def get_client_connection_class(caps) -> type:
@@ -812,7 +813,7 @@ class ServerBase(ServerBaseClass):
         netlog.info("%s client %i disconnected.", ptype, source.counter)
         has_client = len(remaining_sources) > 0
         if not has_client:
-            self.idle_add(self.last_client_exited)
+            GLib.idle_add(self.last_client_exited)
 
     def last_client_exited(self) -> None:
         # must run from the UI thread (modifies focus and keys)
@@ -928,7 +929,7 @@ class ServerBase(ServerBaseClass):
                 handler = self._authenticated_ui_packet_handlers.get(packet_type)
                 if handler:
                     netlog("process ui packet %s", packet_type)
-                    self.idle_add(call_handler)
+                    GLib.idle_add(call_handler)
                     return
                 handler = self._authenticated_packet_handlers.get(packet_type)
                 if handler:
@@ -950,7 +951,7 @@ class ServerBase(ServerBaseClass):
                 if not ss:
                     proto.close()
 
-            self.idle_add(invalid_packet)
+            GLib.idle_add(invalid_packet)
         except Exception:
             netlog.error(f"Error processing a {packet_type!r} packet")
             netlog.error(f" received from {proto}:")

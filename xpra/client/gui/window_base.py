@@ -10,6 +10,7 @@ import re
 from typing import Any
 from collections.abc import Callable, Iterable
 
+from xpra.os_util import gi_import
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.util.parsing import scaleup_value, scaledown_value
@@ -20,6 +21,8 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import std
 from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("window")
 plog = Logger("paint")
@@ -490,7 +493,7 @@ class ClientWindowBase(ClientWidgetBase):
             was_decorated = self.get_decorated()
             if WIN32 and decorated != was_decorated:
                 log.info("decorations flag toggled, now %s, re-initializing window", decorated)
-                self.idle_add(self._client.reinit_window, self.wid, self)
+                GLib.idle_add(self._client.reinit_window, self.wid, self)
             else:
                 self.set_decorated(metadata.boolget("decorations"))
                 self.apply_geometry_hints(self.geometry_hints)
@@ -853,7 +856,7 @@ class ClientWindowBase(ClientWidgetBase):
         if backing.repaint_all or self._xscale != 1 or self._yscale != 1 or is_Wayland():
             # easy: just repaint the whole window:
             rw, rh = self.get_size()
-            self.idle_add(self.repaint, 0, 0, rw, rh)
+            GLib.idle_add(self.repaint, 0, 0, rw, rh)
             return
         pr = self.pending_refresh
         self.pending_refresh = []
@@ -862,7 +865,7 @@ class ClientWindowBase(ClientWidgetBase):
             if self.window_offset:
                 rx += self.window_offset[0]
                 ry += self.window_offset[1]
-            self.idle_add(self.repaint, rx, ry, rw, rh)
+            GLib.idle_add(self.repaint, rx, ry, rw, rh)
 
     def eos(self) -> None:
         """ Note: this runs from the draw thread (not UI thread) """

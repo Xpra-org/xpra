@@ -9,6 +9,7 @@ import os
 from typing import Any
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -21,6 +22,8 @@ from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.gtk.prop import prop_set, prop_del
 from xpra.x11.xsettings_prop import XSettingsType, BLACKLISTED_XSETTINGS
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("x11", "server")
 mouselog = Logger("x11", "server", "mouse")
@@ -225,7 +228,7 @@ class X11ServerBase(X11ServerCore):
                 self.pointer_device = xtest
                 self.input_devices = "xtest"
 
-        self.timeout_add(1000, verify_uinput_moved)
+        GLib.timeout_add(1000, verify_uinput_moved)
 
     def dpi_changed(self) -> None:
         # re-apply the same settings, which will apply the new dpi override to it:

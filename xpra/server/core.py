@@ -53,7 +53,7 @@ from xpra.platform import set_name, threaded_server_init
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs, get_icon_filename
 from xpra.platform.dotxpra import DotXpra
-from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, POSIX, OSX
+from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, gi_import, POSIX, OSX
 from xpra.util.system import get_frame_info, get_env_info, get_sysconfig_info, platform_name, register_SIGUSR_signals
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf, which
@@ -71,6 +71,8 @@ from xpra.util.env import envint, envbool, envfloat, osexpand, first_time, get_s
 from xpra.log import Logger, get_info as get_log_info
 
 # pylint: disable=import-outside-toplevel
+
+GLib = gi_import("GLib")
 
 log = Logger("server")
 netlog = Logger("network")
@@ -321,14 +323,14 @@ class ServerCore:
     def signal_quit(self, signum, _frame=None) -> None:
         self.closing()
         self.install_signal_handlers(deadly_signal)
-        self.idle_add(self.clean_quit)
-        self.idle_add(sys.exit, 128 + signum)
+        GLib.idle_add(self.clean_quit)
+        GLib.idle_add(sys.exit, 128 + signum)
 
     def clean_quit(self, upgrading=False) -> None:
         log("clean_quit(%s)", upgrading)
         if self._upgrading is None:
             self._upgrading = upgrading
-        self.timeout_add(5000, self.force_quit)
+        GLib.timeout_add(5000, self.force_quit)
         self.closing()
         self.cleanup()
         self.quit_worker()
@@ -371,7 +373,7 @@ class ServerCore:
 
         signal.signal(signal.SIGINT, os_signal)
         signal.signal(signal.SIGTERM, os_signal)
-        register_SIGUSR_signals(self.idle_add)
+        register_SIGUSR_signals(GLib.idle_add)
 
     def threaded_init(self) -> None:
         self.do_threaded_init()
@@ -423,9 +425,9 @@ class ServerCore:
 
     def run(self) -> ExitValue:
         self.install_signal_handlers(self.signal_quit)
-        self.idle_add(self.reset_server_timeout)
-        self.idle_add(self.server_is_ready)
-        self.idle_add(self.print_run_info)
+        GLib.idle_add(self.reset_server_timeout)
+        GLib.idle_add(self.server_is_ready)
+        GLib.idle_add(self.print_run_info)
         self.stop_splash_process()
         self.do_run()
         log("run()")
@@ -628,7 +630,7 @@ class ServerCore:
 
         # open via timeout_add so that the server is running by then,
         # plus a slight delay so that it can settle down:
-        self.timeout_add(1000, open_url)
+        GLib.timeout_add(1000, open_url)
 
     def init_html_proxy(self, opts) -> None:
         httplog(f"init_html_proxy(..) options: html={opts.html!r}")
@@ -847,7 +849,7 @@ class ServerCore:
         log.info(" running with pid %s%s", os.getpid(), osinfo)
         vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO + 1])
         log.info(f" {sys.implementation.name} {vinfo}")
-        self.idle_add(self.print_screen_info)
+        GLib.idle_add(self.print_screen_info)
 
     def notify_new_user(self, ss) -> None:
         pass
@@ -1015,7 +1017,7 @@ class ServerCore:
             netlog("init_sockets(%s) will add %s socket %s (%s)", self._socket_info, socktype, sock, info)
             self.socket_info[sock] = info
             self.socket_options[sock] = options
-            self.idle_add(self.add_listen_socket, socktype, sock, options)
+            GLib.idle_add(self.add_listen_socket, socktype, sock, options)
             if socktype == "socket" and info:
                 if info.startswith("@"):
                     # abstract sockets can't be 'touch'ed
@@ -1029,13 +1031,13 @@ class ServerCore:
                     del e
         if self.unix_socket_paths:
             self.touch_sockets()
-            self.touch_timer = self.timeout_add(60 * 1000, self.touch_sockets)
+            self.touch_timer = GLib.timeout_add(60 * 1000, self.touch_sockets)
 
     def cancel_touch_timer(self) -> None:
         tt = self.touch_timer
         if tt:
             self.touch_timer = 0
-            self.source_remove(tt)
+            GLib.source_remove(tt)
 
     def touch_sockets(self) -> bool:
         netlog("touch_sockets() unix socket paths=%s", self.unix_socket_paths)
@@ -1165,7 +1167,7 @@ class ServerCore:
                 # HTTP 400 error:
                 packet_data = HTTP_UNSUPORTED
             conn.write(packet_data)
-            self.timeout_add(500, force_close_connection, conn)
+            GLib.timeout_add(500, force_close_connection, conn)
         except Exception as e:
             netlog("error sending %r: %s", packet_data, e)
 
@@ -1318,7 +1320,7 @@ class ServerCore:
         log_new_connection(conn, socket_info)
         proto = self.make_protocol(socktype, conn, socket_options, pre_read=pre_read)
         if socktype == "tcp" and not peek_data and self._rfb_upgrade > 0:
-            t = self.timeout_add(self._rfb_upgrade * 1000, self.try_upgrade_to_rfb, proto)
+            t = GLib.timeout_add(self._rfb_upgrade * 1000, self.try_upgrade_to_rfb, proto)
             self.socket_rfb_upgrade_timer[proto] = t
 
     def get_ssl_socket_options(self, socket_options: dict) -> dict[str, Any]:
@@ -1426,14 +1428,14 @@ class ServerCore:
     def cancel_upgrade_to_rfb_timer(self, protocol) -> None:
         t = self.socket_rfb_upgrade_timer.pop(protocol, None)
         if t:
-            self.source_remove(t)
+            GLib.source_remove(t)
 
     def make_protocol(self, socktype: str, conn, socket_options, protocol_class=SocketProtocol, pre_read=None):
         """ create a new xpra Protocol instance and start it """
 
         def xpra_protocol_class(conn):
             """ adds xpra protocol tweaks after creating the instance """
-            protocol = protocol_class(self, conn, self.process_packet)
+            protocol = protocol_class(conn, self.process_packet)
             protocol.large_packets.append("info-response")
             protocol.set_receive_aliases(self._aliases)
             return protocol
@@ -1699,7 +1701,7 @@ class ServerCore:
                 icon[0] = svg_to_png("", icon_data, 48, 48), "png"
                 event.set()
 
-            self.idle_add(convert)
+            GLib.idle_add(convert)
             event.wait()
             icon_data, icon_type = icon[0]
         if icon_type in ("png", "jpeg", "svg", "webp"):
@@ -1800,7 +1802,7 @@ class ServerCore:
         return v
 
     def schedule_verify_connection_accepted(self, protocol: SocketProtocol, timeout: int = 60) -> None:
-        t = self.timeout_add(timeout * 1000, self.verify_connection_accepted, protocol)
+        t = GLib.timeout_add(timeout * 1000, self.verify_connection_accepted, protocol)
         self.socket_verify_timer[protocol] = t
 
     def verify_connection_accepted(self, protocol: SocketProtocol):
@@ -1842,7 +1844,7 @@ class ServerCore:
     def cancel_verify_connection_accepted(self, protocol: SocketProtocol) -> None:
         t = self.socket_verify_timer.pop(protocol, None)
         if t:
-            self.source_remove(t)
+            GLib.source_remove(t)
 
     def send_disconnect(self, proto: SocketProtocol, *reasons) -> None:
         netlog("send_disconnect(%s, %s)", proto, reasons)
@@ -1851,7 +1853,7 @@ class ServerCore:
         if proto.is_closed():
             return
         proto.send_disconnect(reasons)
-        self.timeout_add(1000, self.force_disconnect, proto)
+        GLib.timeout_add(1000, self.force_disconnect, proto)
 
     def force_disconnect(self, proto: SocketProtocol) -> None:
         netlog("force_disconnect(%s)", proto)
@@ -1935,7 +1937,7 @@ class ServerCore:
         version = version_str() if full else XPRA_VERSION.split(".", 1)[0]
         proto.send_now(("hello", {"version": version}))
         # client is meant to close the connection itself, but just in case:
-        self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
+        GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
     def _process_hello(self, proto: SocketProtocol, packet: PacketType) -> None:
         capabilities = packet[1]
@@ -2025,7 +2027,7 @@ class ServerCore:
     def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage) -> None:
         authlog.warn("Warning: authentication failed")
         authlog.warn(f" {nicestr(msg)}")
-        self.timeout_add(1000, self.disconnect_client, proto, msg)
+        GLib.timeout_add(1000, self.disconnect_client, proto, msg)
 
     def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
         def auth_failed(msg: str | ConnectionMessage) -> None:
@@ -2150,10 +2152,10 @@ class ServerCore:
         if command_req:
             # call from UI thread:
             authlog(f"auth_verified(..) command request={command_req}")
-            self.idle_add(self.handle_command_request, proto, *command_req)
+            GLib.idle_add(self.handle_command_request, proto, *command_req)
             return
         # continue processing hello packet in UI thread:
-        self.idle_add(self.call_hello_oked, proto, caps, auth_caps)
+        GLib.idle_add(self.call_hello_oked, proto, caps, auth_caps)
 
     def _process_ssl_upgrade(self, proto: SocketProtocol, packet: PacketType):
         socktype = proto._conn.socktype
@@ -2336,10 +2338,10 @@ class ServerCore:
         if self.server_idle_timeout <= 0:
             return
         if self.server_idle_timer:
-            self.source_remove(self.server_idle_timer)
+            GLib.source_remove(self.server_idle_timer)
             self.server_idle_timer = 0
         if reschedule:
-            self.server_idle_timer = self.timeout_add(self.server_idle_timeout * 1000, self.server_idle_timedout)
+            self.server_idle_timer = GLib.timeout_add(self.server_idle_timeout * 1000, self.server_idle_timedout)
 
     def server_idle_timedout(self) -> None:
         timeoutlog.info("No valid client connections for %s seconds, exiting the server", self.server_idle_timeout)

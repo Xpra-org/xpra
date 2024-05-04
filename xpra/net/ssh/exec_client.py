@@ -68,7 +68,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         assert remote_xpra
         socket_dir = display_desc.get("socket_dir")
         proxy_command: list[str] = display_desc["proxy_command"]      # ie: ["_proxy_start"]
-        display_as_args: list[str] = display_desc["display_as_args"]  # ie: ["--start=xterm", "--env=SSH_AGENT_UUID={uuid}", ":10"]
+        # display_as_args ie: ["--start=xterm", "--env=SSH_AGENT_UUID={uuid}", ":10"]
+        display_as_args: list[str] = display_desc["display_as_args"]
         remote_cmd = ""
         for x in remote_xpra:
             check = "if" if not remote_cmd else "elif"

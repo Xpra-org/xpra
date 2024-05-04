@@ -26,18 +26,12 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def __init__(self):
         self.glib_mainloop = None
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
         GObject.GObject.__init__(self)
         XpraClientBase.__init__(self)
 
     def init(self, opts) -> None:
         XpraClientBase.init(self, opts)
         self.glib_init()
-
-    def get_scheduler(self):
-        return GLib
 
     def install_signal_handlers(self) -> None:
         from xpra.gtk.signals import install_signal_handlers

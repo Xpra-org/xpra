@@ -25,6 +25,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 
@@ -489,7 +490,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def tray_exit_callback(self, *_args) -> None:
         self.close_tray_menu()
-        self.idle_add(self.clean_quit, False)
+        GLib.idle_add(self.clean_quit, False)
 
     def close_tray_menu(self, *_args) -> None:
         if self.tray_menu_shown:

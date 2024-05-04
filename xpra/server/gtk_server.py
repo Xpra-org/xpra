@@ -46,9 +46,6 @@ class GTKServerBase(ServerBase):
 
     def __init__(self):
         log("GTKServerBase.__init__()")
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
         self.cursor_suspended: bool = False
         self.ui_watcher = None
         self.keymap_changing_timer: int = 0
@@ -74,7 +71,7 @@ class GTKServerBase(ServerBase):
                 self.keymap_changing_timer = 0
                 self._keys_changed()
 
-            self.keymap_changing_timer = self.timeout_add(500, do_keys_changed)
+            self.keymap_changing_timer = GLib.timeout_add(500, do_keys_changed)
 
         keymap.connect("keys-changed", keys_changed)
 
@@ -82,7 +79,7 @@ class GTKServerBase(ServerBase):
         kct = self.keymap_changing_timer
         if kct:
             self.keymap_changing_timer = 0
-            self.source_remove(kct)
+            GLib.source_remove(kct)
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
         sstr = self.get_server_mode() + " server"

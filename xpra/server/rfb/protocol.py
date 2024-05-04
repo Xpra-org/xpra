@@ -5,11 +5,14 @@
 
 import struct
 
+from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import strtobytes, hexstr
 from xpra.net.rfb.protocol import RFBProtocol
 from xpra.net.rfb.const import RFBAuth, AUTH_STR, CLIENT_INIT
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("network", "protocol", "rfb")
 authlog = Logger("auth", "rfb")
@@ -17,11 +20,11 @@ authlog = Logger("auth", "rfb")
 
 class RFBServerProtocol(RFBProtocol):
 
-    def __init__(self, scheduler, conn, auth, process_packet_cb, get_rfb_pixelformat, session_name="Xpra", data=b""):
+    def __init__(self, conn, auth, process_packet_cb, get_rfb_pixelformat, session_name="Xpra", data=b""):
         self._authenticator = auth
         self._get_rfb_pixelformat = get_rfb_pixelformat
         self.session_name = session_name
-        super().__init__(scheduler, conn, process_packet_cb, data=data)
+        super().__init__(conn, process_packet_cb, data=data)
 
     def handshake_complete(self):
         log.info("RFB connection from %s", self._conn.target)
@@ -86,7 +89,7 @@ class RFBServerProtocol(RFBProtocol):
             authlog("parse_challenge(%s)", hexstr(response), exc_info=True)
             authlog.error("Error: authentication challenge failure:")
             authlog.estr(e)
-        self.timeout_add(1000, self.send_fail_challenge)
+        GLib.timeout_add(1000, self.send_fail_challenge)
         return len(response)
 
     def send_fail_challenge(self):

@@ -36,6 +36,7 @@ from xpra.x11.server.base import X11ServerBase
 from xpra.gtk.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
 GObject = gi_import("GObject")
 Gdk = gi_import("Gdk")
 GdkX11 = gi_import("GdkX11")
@@ -552,12 +553,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             self.size_notify_clients(window)
             return
         if self.snc_timer > 0:
-            self.source_remove(self.snc_timer)
+            GLib.source_remove(self.snc_timer)
         # TODO: find a better way to choose the timer delay:
         # for now, we wait at least 100ms, up to 250ms if the client has just sent us a resize:
         # (lcce should always be in the past, so min(..) should be redundant here)
         delay = max(100, min(250, 250 + round(1000 * (lcce - monotonic()))))
-        self.snc_timer = self.timeout_add(int(delay), self.size_notify_clients, window, lcce)
+        self.snc_timer = GLib.timeout_add(int(delay), self.size_notify_clients, window, lcce)
 
     def size_notify_clients(self, window, lcce=-1) -> None:
         geomlog("size_notify_clients(%s, %s) last_client_configure_event=%s",
@@ -1068,18 +1069,18 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             if window and window.is_managed():
                 self.refresh_window(window)
 
-        self.configure_damage_timers[wid] = self.timeout_add(delay, damage)
+        self.configure_damage_timers[wid] = GLib.timeout_add(delay, damage)
 
     def cancel_configure_damage(self, wid: int) -> None:
         timer = self.configure_damage_timers.pop(wid, None)
         if timer:
-            self.source_remove(timer)
+            GLib.source_remove(timer)
 
     def cancel_all_configure_damage(self) -> None:
         timers = tuple(self.configure_damage_timers.values())
         self.configure_damage_timers = {}
         for timer in timers:
-            self.source_remove(timer)
+            GLib.source_remove(timer)
 
     def _set_client_properties(self, proto, wid: int, window, new_client_properties: dict) -> None:
         """
@@ -1216,13 +1217,13 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             self.root_overlay, self.repaint_root_overlay_timer, self.sync_xvfb)
         if self.repaint_root_overlay_timer:
             return
-        self.repaint_root_overlay_timer = self.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
+        self.repaint_root_overlay_timer = GLib.timeout_add(self.sync_xvfb, self.do_repaint_root_overlay)
 
     def cancel_repaint_root_overlay(self) -> None:
         rrot = self.repaint_root_overlay_timer
         if rrot:
             self.repaint_root_overlay_timer = 0
-            self.source_remove(rrot)
+            GLib.source_remove(rrot)
 
     def do_repaint_root_overlay(self) -> bool:
         self.repaint_root_overlay_timer = 0

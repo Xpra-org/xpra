@@ -8,12 +8,15 @@ import time
 from time import monotonic
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.common import ConnectionMessage
 from xpra.os_util import POSIX
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("network")
 
@@ -67,7 +70,7 @@ class NetworkStateMixin(StubSourceMixin):
         log("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send_async("ping", now_ms, int(time.time() * 1000), will_have_more=False)
         timeout = PING_TIMEOUT
-        self.check_ping_echo_timers[now_ms] = self.timeout_add(timeout * 1000,
+        self.check_ping_echo_timers[now_ms] = GLib.timeout_add(timeout * 1000,
                                                                self.check_ping_echo_timeout, now_ms, timeout)
 
     def check_ping_echo_timeout(self, now_ms: int, timeout: int) -> None:
@@ -79,7 +82,7 @@ class NetworkStateMixin(StubSourceMixin):
         timers = self.check_ping_echo_timers.values()
         self.check_ping_echo_timers = {}
         for t in timers:
-            self.source_remove(t)
+            GLib.source_remove(t)
 
     def process_ping(self, time_to_echo, sid) -> None:
         l1, l2, l3 = 0, 0, 0
@@ -97,19 +100,19 @@ class NetworkStateMixin(StubSourceMixin):
         self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, sid, will_have_more=False)
         # if the client is pinging us, ping it too:
         if not self.ping_timer:
-            self.ping_timer = self.timeout_add(500, self.ping)
+            self.ping_timer = GLib.timeout_add(500, self.ping)
 
     def cancel_ping_timer(self) -> None:
         pt = self.ping_timer
         if pt:
             self.ping_timer = 0
-            self.source_remove(pt)
+            GLib.source_remove(pt)
 
     def process_ping_echo(self, packet) -> None:
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
         timer = self.check_ping_echo_timers.pop(echoedtime, None)
         if timer:
-            self.source_remove(timer)
+            GLib.source_remove(timer)
         self.last_ping_echoed_time = echoedtime
         client_ping_latency = monotonic() - echoedtime / 1000.0
         stats = getattr(self, "statistics", None)

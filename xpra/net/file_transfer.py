@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from collections.abc import Callable
 
 from xpra.util.child_reaper import getChildReaper
-from xpra.os_util import POSIX, WIN32
+from xpra.os_util import POSIX, WIN32, gi_import
 from xpra.util.io import umask_context
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -26,6 +26,8 @@ from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 printlog = Logger("printing")
 filelog = Logger("file")
@@ -267,19 +269,13 @@ class FileTransferHandler(FileTransferAttributes):
         self.send_chunks_in_progress: dict[str, SendChunkState] = {}
         self.receive_chunks_in_progress: dict[str, ReceiveChunkState] = {}
         self.file_descriptors: set[int] = set()
-        if not getattr(self, "timeout_add", None):
-            from xpra.os_util import gi_import
-            glib = gi_import("GLib")
-            self.timeout_add = glib.timeout_add
-            self.idle_add = glib.idle_add
-            self.source_remove = glib.source_remove
 
     def cleanup(self) -> None:
         for t in self.pending_send_data_timers.values():
-            self.source_remove(t)
+            GLib.source_remove(t)
         self.pending_send_data_timers = {}
         for v in self.receive_chunks_in_progress.values():
-            self.source_remove(v.timer)
+            GLib.source_remove(v.timer)
         self.receive_chunks_in_progress = {}
         for x in tuple(self.file_descriptors):
             try:
@@ -362,7 +358,7 @@ class FileTransferHandler(FileTransferAttributes):
             timer = chunk_state.timer
             if timer:
                 chunk_state.timer = 0
-                self.source_remove(timer)
+                GLib.source_remove(timer)
             osclose(chunk_state.fd)
 
             # remove this transfer after a little while,
@@ -372,7 +368,7 @@ class FileTransferHandler(FileTransferAttributes):
                 self.receive_chunks_in_progress.pop(chunk_id, None)
                 return False
 
-            self.timeout_add(20000, clean_receive_state)
+            GLib.timeout_add(20000, clean_receive_state)
             filename = chunk_state.filename
             try:
                 os.unlink(filename)
@@ -439,9 +435,9 @@ class FileTransferHandler(FileTransferAttributes):
         if has_more:
             progress(chunk_state.written)
             if chunk_state.timer:
-                self.source_remove(chunk_state.timer)
+                GLib.source_remove(chunk_state.timer)
             # remote end will send more after receiving the ack
-            chunk_state.timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
+            chunk_state.timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             pct = round(100 * chunk_state.written / chunk_state.filesize)
             filelog(f"waiting for the next chunk, got {chunk_state.written:8} of {chunk_state.filesize:8}: {pct:3}%")
             return
@@ -556,7 +552,7 @@ class FileTransferHandler(FileTransferAttributes):
                 self.cancel_file(chunk_id, f"too many file transfers in progress: {l}", chunk)
                 osclose(fd)
                 return
-            timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
+            timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             self.receive_chunks_in_progress[chunk_id] = ReceiveChunkState(monotonic(),
                                                                           fd, filename, mimetype,
                                                                           printit, openit, filesize,
@@ -679,7 +675,7 @@ class FileTransferHandler(FileTransferAttributes):
 
         if check_printing_finished():
             # check every 10 seconds:
-            self.timeout_add(10000, check_printing_finished)
+            GLib.timeout_add(10000, check_printing_finished)
 
     def _open_file(self, url: str) -> None:
         filelog("_open_file(%s)", url)
@@ -822,7 +818,7 @@ class FileTransferHandler(FileTransferAttributes):
         spd = SendPendingData(dtype, url, mimetype, data, filesize, printit, openit, options or {})
         self.pending_send_data[send_id] = spd
         delay = self.remote_file_ask_timeout * 1000
-        self.pending_send_data_timers[send_id] = self.timeout_add(delay, self.send_data_ask_timeout, send_id)
+        self.pending_send_data_timers[send_id] = GLib.timeout_add(delay, self.send_data_ask_timeout, send_id)
         filelog(f"sending data request for {dtype} {url!r} with send-id {send_id!r}")
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
@@ -894,7 +890,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
         timer = self.pending_send_data_timers.pop(send_id, None)
         if timer:
-            self.source_remove(timer)
+            GLib.source_remove(timer)
         try:
             spd: SendPendingData = self.pending_send_data[send_id]
         except KeyError:
@@ -960,7 +956,7 @@ class FileTransferHandler(FileTransferAttributes):
             options["file-chunk-id"] = chunk_id
             # timer to check that the other end is requesting more chunks:
             chunk_no = 0
-            timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, chunk_no)
+            timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, chunk_no)
             self.send_chunks_in_progress[chunk_id] = SendChunkState(monotonic(), data, chunk_size, timer, chunk_no)
             cdata = b""
             filelog("using chunks, sending initial file-chunk-id=%s, for chunk size=%s",
@@ -994,7 +990,7 @@ class FileTransferHandler(FileTransferAttributes):
         timer = chunk_state.timer
         if timer:
             chunk_state.timer = 0
-            self.source_remove(timer)
+            GLib.source_remove(timer)
 
     def _process_ack_file_chunk(self, packet: PacketType) -> None:
         # the other end received our send-file or send-file-chunk,
@@ -1032,8 +1028,8 @@ class FileTransferHandler(FileTransferAttributes):
         chunk += 1
         chunk_state.chunk = chunk
         if chunk_state.timer:
-            self.source_remove(chunk_state.timer)
-        chunk_state.timer = self.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, chunk)
+            GLib.source_remove(chunk_state.timer)
+        chunk_state.timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, chunk)
         self.send("send-file-chunk", chunk_id, chunk, cdata, bool(chunk_state.data))
 
     def send(self, *parts) -> None:

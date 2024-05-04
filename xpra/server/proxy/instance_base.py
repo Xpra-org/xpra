@@ -21,7 +21,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, str_to_bool
 from xpra.common import FULL_INFO, ConnectionMessage
-from xpra.os_util import get_hex_uuid
+from xpra.os_util import get_hex_uuid, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, ellipsizer, strtobytes, nicestr
 from xpra.util.env import envint, envbool, first_time
@@ -29,6 +29,8 @@ from xpra.util.version import XPRA_VERSION, vparts
 from xpra.util.thread import start_thread
 from xpra.server.core import get_server_info, get_thread_info, proto_crypto_caps
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("proxy")
 enclog = Logger("encoding")
@@ -164,7 +166,7 @@ class ProxyInstance:
         if proto.is_closed():
             return
         proto.send_disconnect(reasons)
-        self.timeout_add(1000, self.force_disconnect, proto)
+        GLib.timeout_add(1000, self.force_disconnect, proto)
 
     def force_disconnect(self, proto) -> None:
         proto.close()
@@ -389,26 +391,26 @@ class ProxyInstance:
         log("cancel_server_ping_timer() server_ping_timer=%s", spt)
         if spt:
             self.server_ping_timer = 0
-            self.source_remove(spt)
+            GLib.source_remove(spt)
 
     def cancel_client_ping_timer(self) -> None:
         cpt = self.client_ping_timer
         log("cancel_client_ping_timer() client_ping_timer=%s", cpt)
         if cpt:
             self.client_ping_timer = 0
-            self.source_remove(cpt)
+            GLib.source_remove(cpt)
 
     def schedule_server_ping(self) -> None:
         log("schedule_server_ping()")
         self.cancel_server_ping_timer()
         self.server_last_ping_echo = monotonic()
-        self.server_ping_timer = self.timeout_add(PING_INTERVAL, self.send_server_ping)
+        self.server_ping_timer = GLib.timeout_add(PING_INTERVAL, self.send_server_ping)
 
     def schedule_client_ping(self) -> None:
         log("schedule_client_ping()")
         self.cancel_client_ping_timer()
         self.client_last_ping_echo = monotonic()
-        self.client_ping_timer = self.timeout_add(PING_INTERVAL, self.send_client_ping)
+        self.client_ping_timer = GLib.timeout_add(PING_INTERVAL, self.send_client_ping)
 
     def send_server_ping(self) -> bool:
         log("send_server_ping() server_last_ping=%s", self.server_last_ping)
@@ -834,4 +836,4 @@ class ProxyInstance:
                 order.append(x)
         self.video_encoder_types = [x for x in order if x in encoder_types]
         enclog.info("proxy video encoders: %s", csv(self.video_encoder_types or ["none", ]))
-        self.timeout_add(VIDEO_TIMEOUT * 1000, self.timeout_video_encoders)
+        GLib.timeout_add(VIDEO_TIMEOUT * 1000, self.timeout_video_encoders)

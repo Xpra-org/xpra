@@ -46,9 +46,9 @@ class ClientTray(ClientWidgetBase):
         self.mmap_enabled = mmap_enabled
         self.mmap = mmap_area
         self.new_backing(w, h)
-        self.idle_add(self.reconfigure)
+        GLib.idle_add(self.reconfigure)
         # things may have settled by now
-        self.timeout_add(1000, self.send_configure)
+        GLib.timeout_add(1000, self.send_configure)
 
     def reset_size_constraints(self) -> None:
         """ we can't implement this method for trays - it should not be called """
@@ -178,8 +178,8 @@ class ClientTray(ClientWidgetBase):
             if tray_data is None:
                 log.warn("Warning: no pixel data in tray backing for window %i", backing.wid)
                 return
-            self.idle_add(self.set_tray_icon, tray_data)
-            self.idle_add(self.reconfigure)
+            GLib.idle_add(self.set_tray_icon, tray_data)
+            GLib.idle_add(self.reconfigure)
 
         callbacks.append(after_draw_update_tray)
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)

@@ -15,7 +15,7 @@ from contextlib import nullcontext
 from typing import ContextManager, Any
 from collections.abc import Callable, Iterable
 
-from xpra.os_util import POSIX, OSX
+from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
@@ -34,6 +34,8 @@ from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import preforder, LOSSY_PIXEL_FORMATS, PREFERRED_REFRESH_ENCODING_ORDER
 from xpra.net.compression import use, Compressed
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("window", "encoding")
 refreshlog = Logger("window", "refresh")
@@ -172,8 +174,7 @@ class WindowSource(WindowIconSource):
     (also by 'send_window_icon' and clipboard packets)
     """
     def __init__(self,
-                 idle_add:Callable, timeout_add:Callable, source_remove:Callable,
-                 ww:int, wh:int,
+                 ww: int, wh: int,
                  record_congestion_event: Callable, queue_size: Callable,
                  call_in_encode_thread: Callable, queue_packet: Callable,
                  statistics,
@@ -188,9 +189,6 @@ class WindowSource(WindowIconSource):
                  default_encoding_options,
                  mmap, mmap_size:int, bandwidth_limit:int, jitter:int):
         super().__init__(window_icon_encodings, icons_encoding_options)
-        self.idle_add = idle_add
-        self.timeout_add = timeout_add
-        self.source_remove = source_remove
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
@@ -508,7 +506,7 @@ class WindowSource(WindowIconSource):
     def encode_ended(self) -> None:
         log("encode_ended()")
         self._encoders = {}
-        self.idle_add(self.ui_cleanup)
+        GLib.idle_add(self.ui_cleanup)
 
     def ui_cleanup(self) -> None:
         log("ui_cleanup: will disconnect %s", self.window_signal_handlers)
@@ -845,7 +843,7 @@ class WindowSource(WindowIconSource):
             return  # already up to date
         if self.av_sync_timer:
             return  # already scheduled
-        self.av_sync_timer = self.timeout_add(delay, self.update_av_sync_delay)
+        self.av_sync_timer = GLib.timeout_add(delay, self.update_av_sync_delay)
 
     def update_av_sync_delay(self) -> None:
         self.av_sync_timer = 0
@@ -1218,25 +1216,25 @@ class WindowSource(WindowIconSource):
         et = self.expire_timer
         if et:
             self.expire_timer = 0
-            self.source_remove(et)
+            GLib.source_remove(et)
 
     def cancel_may_send_timer(self) -> None:
         mst = self.may_send_timer
         if mst:
             self.may_send_timer = 0
-            self.source_remove(mst)
+            GLib.source_remove(mst)
 
     def cancel_soft_timer(self) -> None:
         st = self.soft_timer
         if st:
             self.soft_timer = 0
-            self.source_remove(st)
+            GLib.source_remove(st)
 
     def cancel_refresh_timer(self) -> None:
         rt = self.refresh_timer
         if rt:
             self.refresh_timer = 0
-            self.source_remove(rt)
+            GLib.source_remove(rt)
             self.refresh_event_time = 0
             self.refresh_target_time = 0
 
@@ -1244,13 +1242,13 @@ class WindowSource(WindowIconSource):
         tt = self.timeout_timer
         if tt:
             self.timeout_timer = 0
-            self.source_remove(tt)
+            GLib.source_remove(tt)
 
     def cancel_av_sync_timer(self) -> None:
         avst = self.av_sync_timer
         if avst:
             self.av_sync_timer = 0
-            self.source_remove(avst)
+            GLib.source_remove(avst)
 
     def is_cancelled(self, sequence=MAX_SEQUENCE) -> bool:
         """ See cancel_damage(wid) """
@@ -1598,7 +1596,7 @@ class WindowSource(WindowIconSource):
                       (x, y, w, h, options), self.wid, len(regions), now-delayed.damage_time)
             if not self.expire_timer and not self.soft_timer and self.soft_expired == 0:
                 log.error("Error: bug, found a delayed region without a timer!")
-                self.expire_timer = self.timeout_add(0, self.expire_delayed_region, now)
+                self.expire_timer = GLib.timeout_add(0, self.expire_delayed_region, now)
             return
 
         # create a new delayed region:
@@ -1655,7 +1653,7 @@ class WindowSource(WindowIconSource):
         damagelog(" delay=%i, elapsed=%i, resize_elapsed=%i, congestion_elapsed=%i, batch=%i, min=%i, inc=%i",
                   delay, elapsed, resize_elapsed, congestion_elapsed, self.batch_config.delay, min_delay, inc)
         due = now+expire_delay/1000.0
-        self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due, target_delay)
+        self.expire_timer = GLib.timeout_add(expire_delay, self.expire_delayed_region, due, target_delay)
 
     def may_update_window_dimensions(self) -> tuple[int, int]:
         ww, wh = self.window.get_dimensions()
@@ -1711,7 +1709,7 @@ class WindowSource(WindowIconSource):
             # not due yet, don't allow soft expiry, just try again later:
             delay = int(1000*(due-now))
             expire_delay = max(self.batch_config.min_delay, min(self.batch_config.expire_delay, delay))
-            self.expire_timer = self.timeout_add(expire_delay, self.expire_delayed_region, due)
+            self.expire_timer = GLib.timeout_add(expire_delay, self.expire_delayed_region, due)
             return False
         # the region has not been sent yet because we are waiting for damage ACKs from the client
         max_soft_expired = min(1+self.statistics.damage_events_count//2, self.max_soft_expired)
@@ -1723,7 +1721,7 @@ class WindowSource(WindowIconSource):
             # we have already waited for "expire delay" to get here,
             # wait gradually longer as we soft-expire more regions:
             soft_delay = self.soft_expired*target_delay
-            self.soft_timer = self.timeout_add(soft_delay, self.delayed_region_soft_timeout)
+            self.soft_timer = GLib.timeout_add(soft_delay, self.delayed_region_soft_timeout)
         else:
             damagelog("expire_delayed_region: soft expire limit reached: %i", max_soft_expired)
             if max_soft_expired == self.max_soft_expired:
@@ -1742,7 +1740,7 @@ class WindowSource(WindowIconSource):
             # but if somehow they go missing... clean it up from a timeout:
             if not self.timeout_timer:
                 delayed_region_time = delayed.damage_time
-                self.timeout_timer = self.timeout_add(self.batch_config.timeout_delay,
+                self.timeout_timer = GLib.timeout_add(self.batch_config.timeout_delay,
                                                       self.delayed_region_timeout, delayed_region_time)
         return False
 
@@ -1836,7 +1834,7 @@ class WindowSource(WindowIconSource):
         def check_again(delay=actual_delay/10.0):
             # schedules a call to check again:
             delay = int(min(self.batch_config.max_delay, max(10.0, delay)))
-            self.may_send_timer = self.timeout_add(delay, self._may_send_delayed)
+            self.may_send_timer = GLib.timeout_add(delay, self._may_send_delayed)
         # locked means a fixed delay we try to honour,
         # this code ensures that we don't fire too early if called from damage_packet_acked
         if self.batch_config.locked:
@@ -2072,7 +2070,7 @@ class WindowSource(WindowIconSource):
             def do_free_image():
                 with ui_context:
                     image.free()
-            self.idle_add(do_free_image)
+            GLib.idle_add(do_free_image)
 
     def get_damage_image(self, x:int, y:int, w:int, h:int) -> ImageWrapper | None:
         self.ui_thread_check()
@@ -2292,7 +2290,7 @@ class WindowSource(WindowIconSource):
                 int(self.base_auto_refresh_delay * mult),
             )
             self.refresh_target_time = now + sched_delay/1000.0
-            self.refresh_timer = self.timeout_add(sched_delay, self.refresh_timer_function, options)
+            self.refresh_timer = GLib.timeout_add(sched_delay, self.refresh_timer_function, options)
             return rec(f"scheduling refresh in {sched_delay}ms (pct={pct}, batch={self.batch_config.delay})")
         # some of those rectangles may overlap,
         # so the value may be greater than the size of the window:
@@ -2367,7 +2365,7 @@ class WindowSource(WindowIconSource):
             self.timer_full_refresh()
             return False
         # re-schedule ourselves:
-        self.refresh_timer = self.timeout_add(int(delta*1000), self.refresh_timer_function, damage_options)
+        self.refresh_timer = GLib.timeout_add(int(delta*1000), self.refresh_timer_function, damage_options)
         refreshlog("refresh_timer_function: rescheduling auto refresh timer with extra delay %ims", int(1000*delta))
         return False
 
@@ -2536,7 +2534,7 @@ class WindowSource(WindowIconSource):
             x, y, width, height = packet[2:6]
             damage_packet_sequence : int = packet[8]
             self.damage_packet_acked(damage_packet_sequence, width, height, 0, "")
-            self.idle_add(self.damage, x, y, width, height)
+            GLib.idle_add(self.damage, x, y, width, height)
         return resend
 
     def estimate_send_delay(self, bytecount: int) -> int:
@@ -2626,7 +2624,7 @@ class WindowSource(WindowIconSource):
             # this function is called from the network thread,
             # call via idle_add to prevent race conditions:
             log("ack with expired delayed region: %s", damage_delayed)
-            self.idle_add(call_may_send_delayed)
+            GLib.idle_add(call_may_send_delayed)
 
     def client_decode_error(self, error, message) -> None:
         # don't print error code -1, which is just a generic code for error
@@ -2644,7 +2642,7 @@ class WindowSource(WindowIconSource):
         self.global_statistics.decode_errors += 1
         if self.window:
             delay = min(1000, 250+self.global_statistics.decode_errors*100)
-            self.decode_error_refresh_timer = self.timeout_add(delay, self.decode_error_refresh)
+            self.decode_error_refresh_timer = GLib.timeout_add(delay, self.decode_error_refresh)
 
     def decode_error_refresh(self) -> None:
         self.decode_error_refresh_timer = 0
@@ -2654,7 +2652,7 @@ class WindowSource(WindowIconSource):
         dert : int = self.decode_error_refresh_timer
         if dert:
             self.decode_error_refresh_timer = 0
-            self.source_remove(dert)
+            GLib.source_remove(dert)
 
     def may_use_scrolling(self, _image, _options) -> bool:
         # overridden in video source
@@ -2805,7 +2803,7 @@ class WindowSource(WindowIconSource):
         # elapsed = monotonic()-start+0.000000001 # make sure never zero!
         # log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
         #    len(data), 1000*elapsed)
-        if mmap_data is None:
+        if not mmap_data:
             return ()
         self.global_statistics.mmap_bytes_sent += len(data)
         self.global_statistics.mmap_free_size = mmap_free_size

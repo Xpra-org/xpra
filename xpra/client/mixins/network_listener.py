@@ -25,6 +25,8 @@ from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitException, InitExit
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
+
 log = Logger("network")
 
 SOCKET_TIMEOUT = envfloat("XPRA_CLIENT_SOCKET_TIMEOUT", 0.1)
@@ -81,7 +83,7 @@ class Networklistener(StubClientMixin):
         ct = dict(self._close_timers)
         self._close_timers = {}
         for proto, tid in ct.items():
-            self.source_remove(tid)
+            GLib.source_remove(tid)
             proto.close()
         socket_cleanup = self.socket_cleanup
         log("cleanup_sockets() socket_cleanup=%s", socket_cleanup)
@@ -103,7 +105,7 @@ class Networklistener(StubClientMixin):
             log("start_listen_sockets() will add %s socket %s (%s)", socktype, sock, info)
             self.socket_info[sock] = info
             self.socket_options[sock] = options
-            self.idle_add(self.add_listen_socket, socktype, sock, options)
+            GLib.idle_add(self.add_listen_socket, socktype, sock, options)
 
     def add_listen_socket(self, socktype: str, sock, options) -> None:
         info = self.socket_info.get(sock)
@@ -155,7 +157,7 @@ class Networklistener(StubClientMixin):
 
     def make_protocol(self, socktype, conn, listener) -> None:
         socktype = socktype.lower()
-        protocol = SocketProtocol(self, conn, self.process_network_packet)
+        protocol = SocketProtocol(conn, self.process_network_packet)
         # protocol.large_packets.append(b"info-response")
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
@@ -191,7 +193,7 @@ class Networklistener(StubClientMixin):
             log.info("packet '%s' is not handled by this client", packet_type)
             proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
         # make sure the connection is closed:
-        tid = self.timeout_add(REQUEST_TIMEOUT * 1000, close)
+        tid = GLib.timeout_add(REQUEST_TIMEOUT * 1000, close)
         self._close_timers[proto] = tid
 
     def handle_hello_request(self, proto, request: str, caps: typedict) -> None:
@@ -216,7 +218,7 @@ class Networklistener(StubClientMixin):
                 hello_reply(info)
 
             # run in UI thread:
-            self.idle_add(send_info)
+            GLib.idle_add(send_info)
             return
         if request == "id":
             hello_reply(self.get_id_info())
@@ -236,8 +238,7 @@ class Networklistener(StubClientMixin):
                 hello_reply({"error": "%s not found" % request})
             else:
                 log.info(f"calling {fn}")
-                glib = gi_import("GLib")
-                glib.idle_add(fn)
+                GLib.idle_add(fn)
                 hello_reply({})
             return
         if request == "connect_test":
@@ -257,7 +258,7 @@ class Networklistener(StubClientMixin):
                     response = str(e)
                 hello_reply({"command_response": (int(code), response)})
 
-            self.idle_add(process_control)
+            GLib.idle_add(process_control)
             return
         log.info(f"`{request}` requests are not handled by this client")
         proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])

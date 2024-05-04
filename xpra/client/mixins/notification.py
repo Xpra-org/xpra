@@ -6,6 +6,7 @@
 
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
 from xpra.net.common import PacketType
@@ -14,6 +15,8 @@ from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("notify")
 
@@ -138,7 +141,7 @@ class NotificationClient(StubClientMixin):
         if THREADED_NOTIFICATIONS:
             show_notification()
         else:
-            self.idle_add(show_notification)
+            GLib.idle_add(show_notification)
 
     def _process_notify_show(self, packet: PacketType):
         if not self.notifications_enabled:

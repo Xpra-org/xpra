@@ -83,6 +83,8 @@ if features.tray:
 CLIENT_BASES: tuple[type, ...] = tuple(CLIENT_BASES)
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
+GLib = gi_import("GLib")
+
 log = Logger("client")
 keylog = Logger("client", "keyboard")
 log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
@@ -261,7 +263,7 @@ class UIXpraClient(ClientBaseClass):
 
     def run(self) -> ExitValue:
         if self.client_extras:
-            self.idle_add(self.client_extras.ready)
+            GLib.idle_add(self.client_extras.ready)
         for c in CLIENT_BASES:
             c.run(self)
         return self.exit_code or 0
@@ -362,7 +364,7 @@ class UIXpraClient(ClientBaseClass):
             self.may_notify(NotificationID.DISCONNECT, title, body, icon_name="disconnected")
             # show text notification then quit:
             delay = NOTIFICATION_EXIT_DELAY * features.notifications
-            self.timeout_add(delay * 1000, XpraClientBase.server_disconnect_warning, self, title, *info)
+            GLib.timeout_add(delay * 1000, XpraClientBase.server_disconnect_warning, self, title, *info)
         self.cleanup()
 
     def server_disconnect(self, reason: str, *info) -> None:
@@ -372,7 +374,7 @@ class UIXpraClient(ClientBaseClass):
         delay = NOTIFICATION_EXIT_DELAY * features.notifications
         if self.exit_code is None:
             self.exit_code = self.server_disconnect_exit_code(reason, *info)
-        self.timeout_add(delay * 1000, XpraClientBase.server_disconnect, self, reason, *info)
+        GLib.timeout_add(delay * 1000, XpraClientBase.server_disconnect, self, reason, *info)
         self.cleanup()
 
     ######################################################################
@@ -436,7 +438,7 @@ class UIXpraClient(ClientBaseClass):
         if not XpraClientBase.server_connection_established(self, caps):
             return False
         # process the rest from the UI thread:
-        self.idle_add(self.process_ui_capabilities, caps)
+        GLib.idle_add(self.process_ui_capabilities, caps)
         return True
 
     def parse_server_capabilities(self, c: typedict) -> bool:
@@ -573,7 +575,7 @@ class UIXpraClient(ClientBaseClass):
         log("after_handshake(%s, %s) on_handshake=%s", cb, args, ellipsizer(self._on_handshake))
         if self._on_handshake is None:
             # handshake has already occurred, just call it:
-            self.idle_add(cb, *args)
+            GLib.idle_add(cb, *args)
         else:
             self._on_handshake.append((cb, args))
 
@@ -828,8 +830,8 @@ class UIXpraClient(ClientBaseClass):
                     log.info("server is OK again")
                 return not ok  # repaint again until ok
 
-            self.idle_add(self.redraw_spinners)
-            self.timeout_add(250, timer_redraw)
+            GLib.idle_add(self.redraw_spinners)
+            GLib.timeout_add(250, timer_redraw)
 
     ######################################################################
     # packets:

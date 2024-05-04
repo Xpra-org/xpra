@@ -98,9 +98,6 @@ class ProxyServer(ServerCore):
         self.instances = {}
         # connections used exclusively for requests:
         self._requests = set()
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
         self._socket_timeout = PROXY_SOCKET_TIMEOUT
         self._ws_timeout = PROXY_WS_TIMEOUT
 
@@ -313,7 +310,7 @@ class ProxyServer(ServerCore):
             if not proto.is_closed():
                 self.send_disconnect(proto, "timeout")
 
-        self.timeout_add(10 * 1000, force_exit_request_client)
+        GLib.timeout_add(10 * 1000, force_exit_request_client)
 
     def proxy_auth(self, client_proto, c, auth_caps) -> None:
         def disconnect(reason, *extras) -> None:

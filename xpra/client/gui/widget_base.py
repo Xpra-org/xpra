@@ -21,10 +21,6 @@ class ClientWidgetBase:
     def __init__(self, client, watcher_pid: int, wid: int, has_alpha: bool):
         self.wid = wid
         self.watcher_pid = watcher_pid
-        # gobject-like scheduler:
-        self.source_remove = client.source_remove
-        self.idle_add = client.idle_add
-        self.timeout_add = client.timeout_add
         # tells us if the server-side window has an alpha channel
         # (whether we are capable of rendering it is down the backing)
         self._has_alpha = has_alpha

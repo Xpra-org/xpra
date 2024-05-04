@@ -7,7 +7,6 @@ import os
 import sys
 from ctypes import c_ubyte, c_uint32
 from typing import Any
-from collections.abc import ByteString
 
 from xpra.common import roundup
 from xpra.util.env import envbool, shellsub
@@ -60,7 +59,7 @@ def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128
         This is used by the client.
     """
 
-    def rerr():
+    def rerr() -> tuple[bool, bool, Any, int, Any, str]:
         return False, False, None, 0, None, ""
 
     log("init_mmap%s", (mmap_group, socket_filename, size, filename))
@@ -68,7 +67,7 @@ def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128
     mmap_temp_file = None
     delete = True
 
-    def validate_size(size: int):
+    def validate_size(size: int) -> None:
         if size < 64 * 1024 * 1024:
             raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
         if size > 16 * 1024 * 1024 * 1024:
@@ -268,7 +267,7 @@ def int_from_buffer(mmap_area, pos: int) -> c_uint32:
 
 # descr_data is a list of (offset, length)
 # areas from the mmap region
-def mmap_read(mmap_area, *descr_data) -> ByteString:
+def mmap_read(mmap_area, *descr_data) -> bytes:
     """
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.
@@ -288,7 +287,7 @@ def mmap_read(mmap_area, *descr_data) -> ByteString:
     return b"".join(data)
 
 
-def mmap_write(mmap_area, mmap_size: int, data):
+def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], int]:
     """
         Sends 'data' to the client via the mmap shared memory region,
         returns the chunks of the mmap area used (or None if it failed)
@@ -328,11 +327,11 @@ def mmap_write(mmap_area, mmap_size: int, data):
     if l > (mmap_size - 8):
         log.warn("Warning: mmap area is too small!")
         log.warn(" we need to store %s bytes but the mmap area is limited to %i", l, (mmap_size - 8))
-        return None, mmap_free_size
+        return [], mmap_free_size
     if mmap_free_size <= 0:
         log.warn("Warning: mmap area is full!")
         log.warn(" we need to store %s bytes but only have %s free space left", l, available)
-        return None, mmap_free_size
+        return [], mmap_free_size
     if l < chunk:
         # data fits in the first chunk:
         # ie: initially:

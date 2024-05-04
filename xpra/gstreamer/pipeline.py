@@ -50,9 +50,6 @@ class Pipeline(GObject.GObject):
         self.start_time: float = 0
         self.state : str = "stopped"
         self.info : dict[str,Any] = {}
-        self.idle_add = GLib.idle_add
-        self.timeout_add = GLib.timeout_add
-        self.source_remove = GLib.source_remove
         self.emit_info_timer : int = 0
         self.file = None
 
@@ -83,12 +80,12 @@ class Pipeline(GObject.GObject):
             f.flush()
 
     def idle_emit(self, sig, *args) -> None:
-        self.idle_add(self.emit, sig, *args)
+        GLib.idle_add(self.emit, sig, *args)
 
     def emit_info(self) -> None:
         if self.emit_info_timer:
             return
-        self.emit_info_timer = self.timeout_add(200, self.do_emit_info)
+        self.emit_info_timer = GLib.timeout_add(200, self.do_emit_info)
 
     def do_emit_info(self) -> None:
         self.emit_info_timer = 0
@@ -102,7 +99,7 @@ class Pipeline(GObject.GObject):
         eit = self.emit_info_timer
         if eit:
             self.emit_info_timer = 0
-            self.source_remove(eit)
+            GLib.source_remove(eit)
 
     def get_info(self) -> dict[str,Any]:
         return self.info.copy()

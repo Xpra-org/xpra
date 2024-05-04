@@ -10,6 +10,7 @@ import threading
 from time import monotonic_ns
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.x11.bindings.core import set_context_check, X11CoreBindings
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -32,6 +33,8 @@ from xpra.server import features
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 set_context_check(verify_sync)
 RandR = RandRBindings()
@@ -470,7 +473,7 @@ class X11ServerCore(GTKServerBase):
         if not self.keymap_changing_timer:
             # use idle_add to give all the pending
             # events a chance to run first (and get ignored)
-            self.keymap_changing_timer = self.timeout_add(100, reenable_keymap_changes)
+            self.keymap_changing_timer = GLib.timeout_add(100, reenable_keymap_changes)
         # if sharing, don't set the keymap, translate the existing one:
         other_ui_clients = [s.uuid for s in self._server_sources.values() if s != server_source and s.ui_client]
         translate_only = len(other_ui_clients) > 0
@@ -707,7 +710,7 @@ class X11ServerCore(GTKServerBase):
                 screenlog.info(msg)
 
             # show dpi via idle_add so server has time to change the screen size (mm)
-            self.idle_add(self.show_dpi, xdpi, ydpi)
+            GLib.idle_add(self.show_dpi, xdpi, ydpi)
         return root_w, root_h
 
     def show_dpi(self, xdpi: int, ydpi: int):

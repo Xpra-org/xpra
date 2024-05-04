@@ -682,7 +682,7 @@ class WindowClient(StubClientMixin):
             if tray_widget:
                 do_tray_geometry(*args)
             else:
-                self.idle_add(do_tray_geometry, *args)
+                GLib.idle_add(do_tray_geometry, *args)
 
         def tray_exit(*args):
             traylog("tray_exit(%s)", args)
@@ -1556,7 +1556,7 @@ class WindowClient(StubClientMixin):
                     # will get a chance to run first (preserving the order)
                 self.send_damage_sequence(wid, packet_sequence, width, height, WINDOW_NOT_FOUND, "window not found")
 
-            self.idle_add(draw_cleanup)
+            GLib.idle_add(draw_cleanup)
             return
         # rename old encoding aliases early:
         options = typedict()
@@ -1591,7 +1591,7 @@ class WindowClient(StubClientMixin):
                          coding, self._draw_counter, packet_sequence)
             if PAINT_FAULT_TELL:
                 msg = f"fault injection for {coding} draw packet {self._draw_counter}, sequence no={packet_sequence}"
-                self.idle_add(record_decode_time, False, msg)
+                GLib.idle_add(record_decode_time, False, msg)
             return
         # we could expose this to the csc step? (not sure how this could be used)
         # if self.xscale!=1 or self.yscale!=1:
@@ -1600,7 +1600,7 @@ class WindowClient(StubClientMixin):
             window.draw_region(x, y, width, height, coding, data, rowstride, options, [record_decode_time])
         except Exception as e:
             drawlog.error("Error drawing on window %i", wid, exc_info=True)
-            self.idle_add(record_decode_time, False, str(e))
+            GLib.idle_add(record_decode_time, False, str(e))
             raise
 
     ######################################################################

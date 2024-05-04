@@ -58,6 +58,7 @@ notifylog = Logger("gtk", "notify")
 grablog = Logger("client", "grab")
 focuslog = Logger("client", "focus")
 
+GLib = gi_import("GLib")
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 GdkPixbuf = gi_import("GdkPixbuf")
@@ -184,14 +185,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.exit_code = exit_code
         if Gtk.main_level() > 0:
             # if for some reason cleanup() hangs, maybe this will fire...
-            self.timeout_add(4 * 1000, self.exit)
+            GLib.timeout_add(4 * 1000, self.exit)
             # try harder!:
-            self.timeout_add(5 * 1000, self.force_quit, exit_code)
+            GLib.timeout_add(5 * 1000, self.force_quit, exit_code)
         self.cleanup()
         log(f"GTKXpraClient.quit({exit_code}) cleanup done, main_level={Gtk.main_level()}")
         if Gtk.main_level() > 0:
             log(f"GTKXpraClient.quit({exit_code}) main loop at level {Gtk.main_level()}, calling gtk quit via timeout")
-            self.timeout_add(500, self.exit)
+            GLib.timeout_add(500, self.exit)
 
     def exit(self) -> None:
         self.show_progress(100, "terminating")
@@ -228,7 +229,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def start_UI_watcher(self, _client) -> None:
         from xpra.platform.ui_thread_watcher import get_UI_watcher
-        self.UI_watcher = get_UI_watcher(self.timeout_add, self.source_remove)
+        self.UI_watcher = get_UI_watcher()
         assert self.UI_watcher
         self.UI_watcher.start()
 
@@ -346,7 +347,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         # so we block the current thread using an event:
         wait = Event()
         values = []
-        self.idle_add(self.do_process_challenge_prompt_dialog, values, wait, prompt)
+        GLib.idle_add(self.do_process_challenge_prompt_dialog, values, wait, prompt)
         wait.wait()
         if not values:
             return None
@@ -510,7 +511,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     ################################
     # file handling
     def ask_data_request(self, cb_answer, send_id, dtype: str, url: str, filesize: int, printit: bool, openit: bool):
-        self.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)
+        GLib.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)
 
     def do_ask_data_request(self, cb_answer, send_id, dtype: str, url: str, filesize: int, printit: bool, openit: bool):
         from xpra.gtk.dialogs.open_requests import getOpenRequestsWindow
@@ -541,7 +542,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None):
         fad = self.file_ask_dialog
         if fad:
-            self.idle_add(fad.transfer_progress_update, send, transfer_id, elapsed, position, total, error)
+            GLib.idle_add(fad.transfer_progress_update, send, transfer_id, elapsed, position, total, error)
 
     def accept_data(self, send_id, dtype: str, url: str, printit: bool, openit: bool):
         # check if we have accepted this file via the GUI:
@@ -725,7 +726,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.bug_report.set_server_log_data(filedata)
 
         self.download_server_log(got_server_log)
-        self.timeout_add(200, init_bug_report)
+        GLib.timeout_add(200, init_bug_report)
 
     def get_image(self, icon_name: str, size=None):
         with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):
@@ -1182,7 +1183,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                             icon_name="opengl", callback=notify_callback)
 
         # wait for the main loop to run:
-        self.timeout_add(2 * 1000, delayed_notify)
+        GLib.timeout_add(2 * 1000, delayed_notify)
 
     # OpenGL bits:
     def init_opengl(self, enable_opengl: str) -> None:
@@ -1513,7 +1514,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         cnt = self.clipboard_notification_timer
         if cnt:
             self.clipboard_notification_timer = 0
-            self.source_remove(cnt)
+            GLib.source_remove(cnt)
 
     def clipboard_notify(self, n: int) -> None:
         tray = self.tray
@@ -1533,7 +1534,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             N = 1
             delay = max(0, round(1000 * (self.last_clipboard_notification + N - monotonic())))
 
-            self.clipboard_notification_timer = self.timeout_add(delay, self.reset_tray_icon)
+            self.clipboard_notification_timer = GLib.timeout_add(delay, self.reset_tray_icon)
 
     def reset_tray_icon(self):
         self.clipboard_notification_timer = 0

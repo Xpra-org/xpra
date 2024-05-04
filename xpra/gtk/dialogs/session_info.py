@@ -1404,7 +1404,7 @@ class SessionInfoClient(InfoTimerClient):
         self._remote_platform_platform = platform_info.strget("platform")
         self._remote_platform_linux_distribution = platform_info.strget("linux_distribution")
         self.server_display = server.strget("display")
-        self.idle_add(self.do_update_screen)
+        GLib.idle_add(self.do_update_screen)
 
     def do_update_screen(self):
         if not self.window:

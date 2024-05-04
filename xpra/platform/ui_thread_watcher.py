@@ -9,10 +9,12 @@ from time import monotonic
 from threading import Event
 from collections.abc import Callable
 
-from xpra.common import noop
+from xpra.os_util import gi_import
 from xpra.util.thread import start_thread
 from xpra.util.env import envint
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("util")
 
@@ -33,9 +35,7 @@ class UI_thread_watcher:
         will run from different threads..
     """
 
-    def __init__(self, timeout_add: Callable, source_remove: Callable, polling_timeout: int, announce_timeout: float):
-        self.timeout_add = timeout_add
-        self.source_remove = source_remove
+    def __init__(self, polling_timeout: int, announce_timeout: float):
         self.polling_timeout = polling_timeout
         self.max_delta: int = polling_timeout * 2
         self.announce_timeout: float = announce_timeout / 1000.0 if announce_timeout else float('inf')
@@ -69,7 +69,7 @@ class UI_thread_watcher:
                 time.sleep(FAKE_UI_LOCKUPS / 1000.0)
                 return True
 
-            self.timeout_add(10 * 1000 + FAKE_UI_LOCKUPS, sleep_in_ui_thread)
+            GLib.timeout_add(10 * 1000 + FAKE_UI_LOCKUPS, sleep_in_ui_thread)
 
     def stop(self) -> None:
         self.exit.set()
@@ -135,7 +135,7 @@ class UI_thread_watcher:
                 log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
                 self.run_callbacks(self.alive_callbacks)
             now = monotonic()
-            self.ui_wakeup_timer = self.timeout_add(0, self.UI_thread_wakeup, now)
+            self.ui_wakeup_timer = GLib.timeout_add(0, self.UI_thread_wakeup, now)
             wstart = monotonic()
             wait_time = self.polling_timeout / 1000.0  # convert to seconds
             self.exit.wait(wait_time)
@@ -158,15 +158,15 @@ class UI_thread_watcher:
         uiwt = self.ui_wakeup_timer
         if uiwt:
             self.ui_wakeup_timer = 0
-            self.source_remove(uiwt)
+            GLib.source_remove(uiwt)
 
 
 UI_watcher: UI_thread_watcher | None = None
 
 
-def get_UI_watcher(timeout_add: Callable = noop, source_remove: Callable = noop) -> UI_thread_watcher | None:
+def get_UI_watcher() -> UI_thread_watcher | None:
     global UI_watcher
-    if UI_watcher is None and timeout_add != noop:
-        UI_watcher = UI_thread_watcher(timeout_add, source_remove, POLLING, ANNOUNCE_TIMEOUT)
-        log("get_UI_watcher(%s)", timeout_add)
+    if UI_watcher is None:
+        UI_watcher = UI_thread_watcher(POLLING, ANNOUNCE_TIMEOUT)
+        log("get_UI_watcher()=%s", UI_watcher)
     return UI_watcher

@@ -85,13 +85,8 @@ def get_client_connection_class(caps: typedict):
 
     class ClientConnectionMuxer(ClientConnectionClass):
 
-        def __init__(self, protocol, disconnect_cb, session_name, server,
-                     idle_add, timeout_add, source_remove,
-                     *args):
+        def __init__(self, protocol, disconnect_cb, session_name, server, *args):
             self.hello_sent = False
-            self.idle_add = idle_add
-            self.timeout_add = timeout_add
-            self.source_remove = source_remove
             from xpra.server.source.client_connection import ClientConnection
             for bc in CC_BASES:
                 try:

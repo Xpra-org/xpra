@@ -5,6 +5,7 @@
 import os
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import bytestostr
@@ -15,6 +16,8 @@ from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.common import get_refresh_rate_for_value, FULL_INFO
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("screen")
 gllog = Logger("opengl")
@@ -259,7 +262,7 @@ class DisplayManager(StubServerMixin):
         w, h = screen.get_width(), screen.get_height()
         log("new screen dimensions: %ix%i", w, h)
         self.set_screen_geometry_attributes(w, h)
-        self.idle_add(self.send_updated_screen_size)
+        GLib.idle_add(self.send_updated_screen_size)
 
     def get_root_window_size(self) -> tuple[int, int]:
         raise NotImplementedError()
@@ -473,7 +476,7 @@ class DisplayManager(StubServerMixin):
                 self.send_disconnect(proto, "screenshot failed")
                 return
             proto.send_now(packet)
-            self.timeout_add(5 * 1000, self.send_disconnect, proto, "screenshot sent")
+            GLib.timeout_add(5 * 1000, self.send_disconnect, proto, "screenshot sent")
         except Exception as e:
             log.error("failed to capture screenshot", exc_info=True)
             self.send_disconnect(proto, "screenshot failed: %s" % e)

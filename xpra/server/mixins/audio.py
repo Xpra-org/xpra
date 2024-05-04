@@ -12,7 +12,7 @@ from threading import Event
 from typing import Any
 from collections.abc import Callable
 
-from xpra.os_util import OSX, POSIX
+from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.io import pollwait
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -25,6 +25,8 @@ from xpra.scripts.parsing import audio_option
 from xpra.scripts.server import save_session_file
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("server")
 audiolog = Logger("audio")
@@ -202,7 +204,7 @@ class AudioServer(StubServerMixin):
                 return
             elapsed = monotonic() - started_at
             if elapsed < 2:
-                self.timeout_add(1000, pulseaudio_warning)
+                GLib.timeout_add(1000, pulseaudio_warning)
             else:
                 audiolog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
             self.pulseaudio_proc = None
@@ -234,7 +236,7 @@ class AudioServer(StubServerMixin):
                     proc = Popen(x, env=env, shell=True)
                     self.add_process(proc, "pulseaudio-configure-command-%i" % i, x, ignore=True)
 
-            self.timeout_add(2 * 1000, configure_pulse)
+            GLib.timeout_add(2 * 1000, configure_pulse)
 
     def cleanup_pulseaudio(self) -> None:
         self.audio_init_done.wait(5)
@@ -351,8 +353,8 @@ class AudioServer(StubServerMixin):
         # query_pulseaudio_properties may access X11,
         # do this from the main thread:
         if bool(self.audio_properties):
-            self.idle_add(self.query_pulseaudio_properties)
-        self.idle_add(self.log_audio_properties)
+            GLib.idle_add(self.query_pulseaudio_properties)
+        GLib.idle_add(self.log_audio_properties)
         self.audio_init_done.set()
 
     def query_pulseaudio_properties(self) -> None:

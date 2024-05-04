@@ -66,7 +66,6 @@ class CairoBackingBase(WindowBackingBase):
 
     def __init__(self, wid, window_alpha, _pixel_depth=0):
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
-        self.idle_add = GLib.idle_add
         self.size = 0, 0
         self.render_size = 0, 0
         self.fps_image = None
@@ -212,7 +211,7 @@ class CairoBackingBase(WindowBackingBase):
         raise NotImplementedError()
 
     def paint_scroll(self, img_data, options, callbacks) -> None:
-        self.idle_add(self.do_paint_scroll, img_data, callbacks)
+        GLib.idle_add(self.do_paint_scroll, img_data, callbacks)
 
     def do_paint_scroll(self, scrolls, callbacks) -> None:
         old_backing = self._backing

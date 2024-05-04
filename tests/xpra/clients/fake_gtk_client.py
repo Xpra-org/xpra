@@ -4,20 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import gi
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk, GLib     # pylint: disable=wrong-import-position @UnresolvedImport
+from xpra.os_util import gi_import
 from xpra.gtk.util import get_default_root_window
 from tests.xpra.clients.fake_client import FakeClient
+
+Gtk = gi_import("Gtk")
 
 
 class FakeGTKClient(FakeClient):
 
     def __init__(self):
         FakeClient.__init__(self)
-        self.source_remove = GLib.source_remove
-        self.timeout_add = GLib.timeout_add
-        self.idle_add = GLib.idle_add
 
     def get_mouse_position(self, *_args):
         root = get_default_root_window()
@@ -29,6 +26,7 @@ class FakeGTKClient(FakeClient):
         #modifiers_mask = root.get_pointer()[-1]
         #return self.mask_to_names(modifiers_mask)
         return []
+
     def window_close_event(self, *_args):
         Gtk.main_quit()
 

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+from xpra.os_util import gi_import
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.util.system import is_X11
 from xpra.net.bytestreams import set_socket_timeout
@@ -13,6 +14,9 @@ from xpra.server.rfb.source import RFBSource
 from xpra.server import features
 from xpra.scripts.config import str_to_bool, parse_number
 from xpra.log import Logger
+
+
+GLib = gi_import("GLib")
 
 log = Logger("rfb")
 mouselog = Logger("rfb", "mouse")
@@ -124,7 +128,7 @@ class RFBServer:
         source = RFBSource(proto, proto.share)
         self._server_sources[proto] = source
         # continue in the UI thread:
-        self.idle_add(self._accept_rfb_source, source)
+        GLib.idle_add(self._accept_rfb_source, source)
 
     def _accept_rfb_source(self, source):
         if features.input_devices:
@@ -160,7 +164,7 @@ class RFBServer:
                         self.button_action(device_id, 0, (x, y), 1 + button, pressed)
                 self.rfb_buttons = buttons
 
-        self.idle_add(process_pointer_event)
+        GLib.idle_add(process_pointer_event)
 
     def _process_rfb_KeyEvent(self, proto, packet):
         if not features.input_devices or self.readonly:
@@ -169,7 +173,7 @@ class RFBServer:
         if not source:
             return
         pressed, p1, p2, key = packet[1:5]
-        self.idle_add(self.process_rfb_key_event, source, pressed, p1, p2, key)
+        GLib.idle_add(self.process_rfb_key_event, source, pressed, p1, p2, key)
 
     def process_rfb_key_event(self, source, pressed, p1, p2, key):
         wid = self._get_rfb_desktop_wid()
@@ -205,7 +209,7 @@ class RFBServer:
         log("RFB: FramebufferUpdateRequest inc=%s, geometry=%s", inc, (x, y, w, h))
         if not inc:
             model = self._get_rfb_desktop_model()
-            self.idle_add(self.refresh_window_area, model, x, y, w, h)
+            GLib.idle_add(self.refresh_window_area, model, x, y, w, h)
 
     def _process_rfb_ClientCutText(self, _proto, packet):
         # l = packet[4]

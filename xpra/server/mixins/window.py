@@ -6,11 +6,14 @@
 
 from typing import Any
 
+from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.server.source.windows import WindowsMixin
 from xpra.net.common import PacketType
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("window")
 focuslog = Logger("focus")
@@ -316,7 +319,7 @@ class WindowServer(StubServerMixin):
             ss.refresh(wid, window, opts)
 
     def _idle_refresh_all_windows(self, proto) -> None:
-        self.idle_add(self._refresh_windows, proto, self._id_to_window, {})
+        GLib.idle_add(self._refresh_windows, proto, self._id_to_window, {})
 
     def refresh_all_windows(self) -> None:
         for ss in tuple(self._server_sources.values()):

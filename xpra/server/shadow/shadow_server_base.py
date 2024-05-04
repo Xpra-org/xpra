@@ -20,6 +20,8 @@ from xpra.util.env import envint, envbool
 from xpra.common import NotificationID, ConnectionMessage
 from xpra.log import Logger
 
+GLib = gi_import("GLib")
+
 log = Logger("shadow")
 notifylog = Logger("notify")
 mouselog = Logger("mouse")
@@ -75,8 +77,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def run(self):
         if NOTIFY_STARTUP:
-            glib = gi_import("GLib")
-            glib.timeout_add(1000, self.notify_startup_complete)
+            GLib.timeout_add(1000, self.notify_startup_complete)
         return super().run()
 
     def cleanup(self) -> None:
@@ -253,7 +254,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
 
     def start_refresh_timer(self) -> None:
         if not self.refresh_timer:
-            self.refresh_timer = self.timeout_add(self.refresh_delay, self.refresh)
+            self.refresh_timer = GLib.timeout_add(self.refresh_delay, self.refresh)
 
     def set_refresh_delay(self, v: int) -> None:
         assert 0 < v < 10000
@@ -281,7 +282,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         log("cancel_refresh_timer() timer=%s", t)
         if t:
             self.refresh_timer = 0
-            self.source_remove(t)
+            GLib.source_remove(t)
 
     def refresh(self) -> bool:
         raise NotImplementedError()
@@ -298,14 +299,14 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         if self.pointer_poll_timer:
             self.cancel_poll_pointer()
         if features.input_devices and POLL_POINTER > 0:
-            self.pointer_poll_timer = self.timeout_add(POLL_POINTER, self.poll_pointer)
+            self.pointer_poll_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
 
     def cancel_poll_pointer(self) -> None:
         ppt = self.pointer_poll_timer
         log("cancel_poll_pointer() pointer_poll_timer=%s", ppt)
         if ppt:
             self.pointer_poll_timer = 0
-            self.source_remove(ppt)
+            GLib.source_remove(ppt)
 
     def poll_pointer(self) -> bool:
         self.poll_pointer_position()

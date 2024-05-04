@@ -15,6 +15,7 @@ from xpra.log import Logger
 
 RandR = RandRBindings()
 
+GLib = gi_import("GLib")
 GObject = gi_import("GObject")
 
 log = Logger("server")
@@ -85,7 +86,7 @@ class XpraDesktopServer(DesktopServerBase):
         # at the same time as he resizes the window..
         self.resize_value = (w, h)
         if not self.resize_timer:
-            self.resize_timer = self.timeout_add(250, self.do_resize)
+            self.resize_timer = GLib.timeout_add(250, self.do_resize)
 
     def do_resize(self) -> None:
         self.resize_timer = 0

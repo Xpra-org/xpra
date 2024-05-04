@@ -20,13 +20,13 @@ def main():
     def evdi_setup():
         #import time
         #time.sleep(2)
-        log.warn(f"evdi_setup()")
+        log.warn("evdi_setup()")
         dev = EvdiDevice(devices[0])
         log.warn(f"evdi_setup() evdi_device={dev}")
         dev.open()
         dev.connect()
         dev.enable_cursor_events()
-        log.warn(f"evdi_setup() done")
+        log.warn("evdi_setup() done")
         return dev
 
     def io_event(channel, condition):
@@ -48,14 +48,15 @@ def main():
         channel = GLib.IOChannel.unix_new(fd_source)
         channel.set_encoding(None)
         channel.set_buffered(False)
-        fd_watch = GLib.io_add_watch(channel, GLib.PRIORITY_LOW, GLib.IO_IN, io_event)
+        GLib.io_add_watch(channel, GLib.PRIORITY_LOW, GLib.IO_IN, io_event)
         GLib.timeout_add(50, refresh)
         return False
     evdi_device = evdi_setup()
-    #self.timeout_add(2*1000, refresh)
+    # GLib.timeout_add(2*1000, refresh)
     GLib.timeout_add(1*1000, start)
     log("run()")
     GLib.MainLoop().run()
+
 
 if __name__ == '__main__':
     main()
