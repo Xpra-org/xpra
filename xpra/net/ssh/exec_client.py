@@ -218,7 +218,10 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 if not v:
                     log(f"SSH EOF on stderr of {cmd}")
                     break
-                s = v.rstrip(b"\n\r").decode()
+                try:
+                    s = v.rstrip(b"\n\r").decode("utf8")
+                except UnicodeDecodeError:
+                    s = str(v.rstrip(b"\n\r"))
                 if s:
                     errs.append(s)
             if errs:
