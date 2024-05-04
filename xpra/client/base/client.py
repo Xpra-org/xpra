@@ -632,11 +632,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         )
         return packet, None, None, None, synchronous, has_more
 
-    def stop_progress_process(self) -> None:
+    def stop_progress_process(self, reason="closing") -> None:
         pp = self.progress_process
         if not pp:
             return
-        self.show_progress(100, "closing")
+        self.show_progress(100, reason)
         self.progress_process = None
         if pp.poll() is not None:
             return

@@ -272,6 +272,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         Gdk.notify_startup_complete()
 
     def do_process_challenge_prompt(self, prompt="password"):
+        self.stop_progress_process(f"showing {prompt} prompt")
         authlog = Logger("auth")
         self.show_progress(100, "authentication")
         PINENTRY = os.environ.get("XPRA_PINENTRY", "")
