@@ -218,7 +218,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 if not v:
                     log(f"SSH EOF on stderr of {cmd}")
                     break
-                s = v.rstrip("\n\r").decode()
+                s = v.rstrip(b"\n\r").decode()
                 if s:
                     errs.append(s)
             if errs:
