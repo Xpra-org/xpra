@@ -105,8 +105,8 @@ class AudioMixin(StubSourceMixin):
             stop_proc(proc)
 
     def parse_client_caps(self, c: typedict) -> None:
-        self.wants_audio = "audio" in c.strtupleget("wants")
         audio = typedict(c.dictget("audio") or {})
+        self.wants_audio = "audio" in c.strtupleget("wants") or audio.boolget("send") or audio.boolget("receive")
         if audio:
             self.pulseaudio_id = audio.strget("pulseaudio.id")
             self.pulseaudio_cookie_hash = audio.strget("pulseaudio.cookie-hash")
