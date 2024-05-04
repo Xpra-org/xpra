@@ -101,8 +101,7 @@ class ProtocolTest(unittest.TestCase):
             pc = make_profiling_protocol_class(self.protocol_class)
         else:
             pc = self.protocol_class
-        p = pc(GLib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
-        #p = Protocol(glib, conn, process_packet_cb, get_packet_cb=get_packet_cb)
+        p = pc(conn, process_packet_cb, get_packet_cb=get_packet_cb)
         p.read_buffer_size = read_buffer_size
         p.hangup_delay = hangup_delay
         assert p.get_info()
