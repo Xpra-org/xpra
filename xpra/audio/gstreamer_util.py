@@ -765,7 +765,8 @@ def parse_audio_source(all_plugins, audio_source_plugin, device, want_monitor_de
             #choose the first one from
             options = [x for x in get_source_plugins() if x in all_plugins]
             if not options:
-                log.error("no source plugins available")
+                log.error("Error: none of the source plugins are available,")
+                log.error(" needed at least one from: %s", csv(get_source_plugins()))
                 return None, {}
             log("parse_audio_source: no plugin specified, using default: %s", options[0])
             simple_str = options[0]
