@@ -282,11 +282,11 @@ GObject.type_register(CaptureAndEncode)
 
 def selftest(_full=False) -> None:
     log("gstreamer encoder selftest: %s", get_info())
-    glib = gi_import("GLib")
+    GLib = gi_import("GLib")
     from xpra.gtk.util import get_root_size
     w, h = get_root_size()
     c = Capture(width=w, height=h)
-    loop = glib.MainLoop()
+    loop = GLib.MainLoop()
 
     def check():
         i = c.get_image()
@@ -295,9 +295,9 @@ def selftest(_full=False) -> None:
             return False
         return True
 
-    glib.timeout_add(500, check)
-    glib.timeout_add(2000, c.stop)
-    glib.timeout_add(2500, loop.quit)
+    GLib.timeout_add(500, check)
+    GLib.timeout_add(2000, c.stop)
+    GLib.timeout_add(2500, loop.quit)
     c.start()
     loop.run()
 

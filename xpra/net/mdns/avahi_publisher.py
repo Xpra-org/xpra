@@ -260,7 +260,7 @@ class AvahiPublisher:
 
 def main():
     from xpra.os_util import gi_import
-    glib = gi_import("GLib")
+    GLib = gi_import("GLib")
     import random
     import signal
     port = int(20000 * random.random()) + 10000
@@ -279,12 +279,12 @@ def main():
         def update_rec():
             publisher.update_txt({b"hello": b"world"})
 
-        glib.idle_add(start)
-        glib.timeout_add(5 * 1000, update_rec)
+        GLib.idle_add(start)
+        GLib.timeout_add(5 * 1000, update_rec)
 
     add(XPRA_TCP_MDNS_TYPE)
     add(XPRA_UDP_MDNS_TYPE)
-    loop = glib.MainLoop()
+    loop = GLib.MainLoop()
 
     def exit_loop(*_args):
         loop.quit()

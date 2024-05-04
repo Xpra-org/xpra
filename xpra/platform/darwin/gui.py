@@ -488,21 +488,19 @@ OPEN_SIGNAL_WAIT = envint("XPRA_OSX_OPEN_SIGNAL_WAIT", 500)
 
 
 def add_open_handlers(open_file_cb: Callable, open_url_cb: Callable) -> None:
-    def idle_add(fn, *args):
-        GLib.idle_add(fn, *args)
 
     def open_URL(url) -> bool:
         global __osx_open_signal
         __osx_open_signal = True
         log("open_URL(%s)", url)
-        idle_add(open_url_cb, url)
+        GLib.idle_add(open_url_cb, url)
         return True
 
     def open_file(_, filename: str, *args) -> bool:
         global __osx_open_signal
         __osx_open_signal = True
         log("open_file(%s, %s)", filename, args)
-        idle_add(open_file_cb, filename)
+        GLib.idle_add(open_file_cb, filename)
         return True
 
     register_file_handler(open_file)
@@ -702,7 +700,7 @@ class ClientExtras:
         if OSX_FOCUS_WORKAROUND and client:
             def first_ui_received(*_args):
                 enable_focus_workaround()
-                client.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
+                GLib.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
 
             client.connect("first-ui-received", first_ui_received)
         log("ClientExtras.__init__(%s, %s)", client, opts)
@@ -719,13 +717,12 @@ class ClientExtras:
                 log("%s.swap_keys=%s", client.keyboard_helper.keyboard, swap_keys)
                 client.keyboard_helper.keyboard.swap_keys = swap_keys
         if client:
-            self.check_display_timer = client.timeout_add(60 * 1000, self.check_display)
+            self.check_display_timer = GLib.timeout_add(60 * 1000, self.check_display)
 
     def cleanup(self) -> None:
         cdt = self.check_display_timer
-        client = self.client
-        if cdt and client:
-            client.source_remove(cdt)
+        if cdt:
+            GLib.source_remove(cdt)
             self.check_display_timer = 0
         try:
             r = CGDisplayRemoveReconfigurationCallback(self.display_change, self)

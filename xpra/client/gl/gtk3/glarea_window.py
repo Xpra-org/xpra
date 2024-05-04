@@ -41,9 +41,6 @@ class GLAreaBacking(GLWindowBackingBase):
     def __repr__(self):
         return "GLAreaBacking(%#x, %s)" % (self.wid, self.size)
 
-    def idle_add(self, *args, **kwargs):
-        GLib.idle_add(*args, **kwargs)
-
     def init_gl_config(self) -> None:
         """
         this implementation does not need to initialize a config object

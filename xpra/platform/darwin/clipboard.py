@@ -44,7 +44,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         super().__init__(selection)
         self.update_change_count()
         # setup clipboard counter watcher:
-        w = get_UI_watcher(GLib.timeout_add, GLib.source_remove)
+        w = get_UI_watcher()
         w.add_alive_callback(self.timer_clipboard_check)
 
     def cleanup(self) -> None:
@@ -271,7 +271,7 @@ def main():
         log.enable_debug()
 
         # init UI watcher with gobject (required by pasteboard monitoring code)
-        get_UI_watcher(GLib.timeout_add, GLib.source_remove)
+        get_UI_watcher()
 
         log.info("testing pasteboard")
 

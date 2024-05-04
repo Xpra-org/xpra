@@ -30,9 +30,6 @@ class GLDrawingArea(GLWindowBackingBase):
     def __repr__(self):
         return "GLDrawingArea(%s, %s)" % (self.wid, self.size)
 
-    def idle_add(self, *args, **kwargs):
-        GLib.idle_add(*args, **kwargs)
-
     def init_gl_config(self) -> None:
         self.context = GLContext(self._alpha_enabled)  # pylint: disable=not-callable
 

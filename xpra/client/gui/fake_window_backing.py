@@ -30,8 +30,8 @@ class FakeBacking:
     def draw_region(self, _x, _y, _width, _height, _coding, _img_data, _rowstride, _options, callbacks):
         log("draw_region(..) faking it after %sms", self.fake_delay)
         from xpra.os_util import gi_import
-        glib = gi_import("GLib")
-        glib.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
+        GLib = gi_import("GLib")
+        GLib.timeout_add(self.fake_delay, fire_paint_callbacks, callbacks, True)
 
     def cairo_draw(self, context, x, y):
         log("cairo_draw%s", (context, x, y))

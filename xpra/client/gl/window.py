@@ -10,7 +10,6 @@ from math import cos, sin
 from typing import Any
 from collections.abc import Callable
 
-from xpra.common import noop
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.objects import AtomicInteger, typedict
 from xpra.util.env import envint, numpy_import_context
@@ -161,9 +160,6 @@ def test_gl_client_window(gl_client_window_class: Callable,
                                         metadata, False, typedict({}),
                                         border, max_window_size, default_cursor_data, pixel_depth)
         window_backing = window._backing
-        window_backing.idle_add = no_idle_add
-        window_backing.timeout_add = noop
-        window_backing.source_remove = noop
         window.realize()
         window_backing.paint_screen = True
         pixel_format = "BGRX"

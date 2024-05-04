@@ -9,10 +9,13 @@ import sys
 from typing import Any
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.util.system import is_Wayland, is_X11
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time, get_saved_env, get_saved_env_var
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("posix")
 eventlog = Logger("posix", "events")
@@ -843,7 +846,7 @@ class ClientExtras:
             self.client.send_input_devices("xi", devices)
 
     def setup_xi(self) -> None:
-        self.client.timeout_add(100, self.do_setup_xi)
+        GLib.timeout_add(100, self.do_setup_xi)
 
     def do_setup_xi(self) -> bool:
         if self.client.server_input_devices not in ("xi", "uinput"):

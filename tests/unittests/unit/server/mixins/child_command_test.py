@@ -47,13 +47,11 @@ class ChildCommandMixinTest(ServerMixinTest):
         opts.source_start = []
         #pynotify can cause crashes,
         #probably due to threading issues?
+
         def noop():
             pass
+
         def _ChildCommandServer():
-            from gi.repository import GLib  # @UnresolvedImport
-            def idle_add(ccs, *args):
-                return GLib.idle_add(*args)
-            child_command.ChildCommandServer.idle_add = idle_add
             ccs = child_command.ChildCommandServer()
             ccs.setup_menu_watcher = noop
             return ccs

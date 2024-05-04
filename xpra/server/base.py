@@ -134,15 +134,6 @@ class ServerBase(ServerBaseClass):
         self.init_packet_handlers()
         self.init_aliases()
 
-    def idle_add(self, *args, **kwargs) -> int:
-        raise NotImplementedError()
-
-    def timeout_add(self, *args, **kwargs) -> int:
-        raise NotImplementedError()
-
-    def source_remove(self, timer) -> None:
-        raise NotImplementedError()
-
     def server_event(self, *args) -> None:
         for s in self._server_sources.values():
             s.send_server_event(*args)

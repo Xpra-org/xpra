@@ -247,15 +247,6 @@ class ServerCore:
     def get_server_mode(self) -> str:
         return "core"
 
-    def idle_add(self, *args, **kwargs) -> int:
-        raise NotImplementedError()
-
-    def timeout_add(self, *args, **kwargs) -> int:
-        raise NotImplementedError()
-
-    def source_remove(self, timer: int) -> None:
-        raise NotImplementedError()
-
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)
         self.session_name = bytestostr(opts.session_name)

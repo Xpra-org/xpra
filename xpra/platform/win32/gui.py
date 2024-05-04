@@ -1090,7 +1090,7 @@ class ClientExtras:
                         self.client.resume()
                 return True
 
-            self._screensaver_timer = client.timeout_add(SCREENSAVER_LISTENER_POLL_DELAY * 1000, log_screensaver)
+            self._screensaver_timer = GLib.timeout_add(SCREENSAVER_LISTENER_POLL_DELAY * 1000, log_screensaver)
         if CONSOLE_EVENT_LISTENER:
             self._console_handler_added = setup_console_event_listener(self.handle_console_event, True)
         from xpra.platform.win32.events import get_win32_event_listener
@@ -1141,7 +1141,7 @@ class ClientExtras:
         sst = self._screensaver_timer
         if sst:
             self._screensaver_timer = 0
-            self.client.source_remove(sst)
+            GLib.source_remove(sst)
         log("ClientExtras.cleanup() ended")
         # self.client = None
 

@@ -14,10 +14,10 @@ _glib_unix_signals: dict[int, int] = {}
 
 
 def quit_on_signals(commandtype: str = ""):
-    gtk = gi_import("Gtk")
+    Gtk = gi_import("Gtk")
 
     def signal_handler(_signum: int):
-        gtk.main_quit()
+        Gtk.main_quit()
 
     register_os_signals(signal_handler, commandtype)
 
@@ -32,7 +32,7 @@ def register_os_signals(callback: Callable[[int], None],
 def register_os_signal(callback: Callable[[int], None],
                        commandtype: str = "",
                        signum: signal.Signals = signal.SIGINT):
-    glib = gi_import("GLib")
+    GLib = gi_import("GLib")
     signame = SIGNAMES.get(signum, str(signum))
     i_signum = int(signum)
 
@@ -55,19 +55,19 @@ def register_os_signal(callback: Callable[[int], None],
         # replace the previous definition if we had one:
         current = _glib_unix_signals.get(signum, None)
         if current:
-            glib.source_remove(current)
+            GLib.source_remove(current)
 
         def handle_signal(_signum) -> bool:
             write_signal()
-            glib.idle_add(do_handle_signal)
+            GLib.idle_add(do_handle_signal)
             return True
 
-        source_id = glib.unix_signal_add(glib.PRIORITY_HIGH, i_signum, handle_signal, signum)
+        source_id = GLib.unix_signal_add(GLib.PRIORITY_HIGH, i_signum, handle_signal, signum)
         _glib_unix_signals[signum] = source_id
     else:
         def os_signal(_signum, _frame) -> None:
             write_signal()
-            glib.idle_add(do_handle_signal)
+            GLib.idle_add(do_handle_signal)
 
         signal.signal(signum, os_signal)
 
@@ -98,5 +98,5 @@ def install_signal_handlers(sstr: str, signal_handler: Callable[[int], None]):
         register_os_signals(signal_handler, sstr)
         register_SIGUSR_signals(sstr)
 
-    glib = gi_import("GLib")
-    glib.idle_add(do_install_signal_handlers)
+    GLib = gi_import("GLib")
+    GLib.idle_add(do_install_signal_handlers)

@@ -127,7 +127,7 @@ class GTKServerBase(ServerBase):
     def do_run(self) -> None:
         if UI_THREAD_WATCHER:
             from xpra.platform.ui_thread_watcher import get_UI_watcher  # pylint: disable=import-outside-toplevel
-            self.ui_watcher = get_UI_watcher(GLib.timeout_add, GLib.source_remove)
+            self.ui_watcher = get_UI_watcher()
             self.ui_watcher.start()
         if features.windows:
             display = Gdk.Display.get_default()

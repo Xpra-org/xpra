@@ -167,9 +167,6 @@ class WindowBackingBase:
         self.fps_refresh_timer: int = 0
         self.paint_stats: dict[str, int] = {}
 
-    def idle_add(self, *_args, **_kwargs) -> int:
-        raise NotImplementedError()
-
     def recpaint(self, encoding: str) -> None:
         self.paint_stats[encoding] = self.paint_stats.get(encoding, 0) + 1
 

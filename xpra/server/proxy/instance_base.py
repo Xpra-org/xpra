@@ -166,7 +166,7 @@ class ProxyInstance:
         if proto.is_closed():
             return
         proto.send_disconnect(reasons)
-        GLib.timeout_add(1000, self.force_disconnect, proto)
+        self.timeout_add(1000, self.force_disconnect, proto)
 
     def force_disconnect(self, proto) -> None:
         proto.close()
@@ -391,26 +391,26 @@ class ProxyInstance:
         log("cancel_server_ping_timer() server_ping_timer=%s", spt)
         if spt:
             self.server_ping_timer = 0
-            GLib.source_remove(spt)
+            self.source_remove(spt)
 
     def cancel_client_ping_timer(self) -> None:
         cpt = self.client_ping_timer
         log("cancel_client_ping_timer() client_ping_timer=%s", cpt)
         if cpt:
             self.client_ping_timer = 0
-            GLib.source_remove(cpt)
+            self.source_remove(cpt)
 
     def schedule_server_ping(self) -> None:
         log("schedule_server_ping()")
         self.cancel_server_ping_timer()
         self.server_last_ping_echo = monotonic()
-        self.server_ping_timer = GLib.timeout_add(PING_INTERVAL, self.send_server_ping)
+        self.server_ping_timer = self.timeout_add(PING_INTERVAL, self.send_server_ping)
 
     def schedule_client_ping(self) -> None:
         log("schedule_client_ping()")
         self.cancel_client_ping_timer()
         self.client_last_ping_echo = monotonic()
-        self.client_ping_timer = GLib.timeout_add(PING_INTERVAL, self.send_client_ping)
+        self.client_ping_timer = self.timeout_add(PING_INTERVAL, self.send_client_ping)
 
     def send_server_ping(self) -> bool:
         log("send_server_ping() server_last_ping=%s", self.server_last_ping)
@@ -836,4 +836,4 @@ class ProxyInstance:
                 order.append(x)
         self.video_encoder_types = [x for x in order if x in encoder_types]
         enclog.info("proxy video encoders: %s", csv(self.video_encoder_types or ["none", ]))
-        GLib.timeout_add(VIDEO_TIMEOUT * 1000, self.timeout_video_encoders)
+        self.timeout_add(VIDEO_TIMEOUT * 1000, self.timeout_video_encoders)

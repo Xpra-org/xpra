@@ -167,14 +167,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             from xpra.platform.keyboard import Keyboard
             log.info("the keymap has been changed: %s", Keyboard().get_layout_spec()[0])
 
-    def timeout_add(self, *args) -> int:
-        # usually done via gobject
-        raise NotImplementedError("subclasses should define this method!")
-
-    def source_remove(self, *args) -> None:
-        # usually done via gobject
-        raise NotImplementedError("subclasses should define this method!")
-
     ############################################################################
     # notifications
     def cleanup_notifier(self) -> None:
