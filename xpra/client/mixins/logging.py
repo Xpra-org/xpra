@@ -36,11 +36,11 @@ class RemoteLogging(StubClientMixin):
         self.request_server_log = False
         self.monotonic_start_time = monotonic()
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.remote_logging = opts.remote_logging
         self.log_both = (opts.remote_logging or "").lower() == "both"
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         ll = self.local_logging
         log("cleanup() local_logging=%s", ll)
         if ll:
@@ -112,13 +112,13 @@ class RemoteLogging(StubClientMixin):
         self.in_remote_logging = True
         ll = self.local_logging
 
-        def local_warn(*args):
+        def local_warn(*warn_args) -> None:
             if ll:
-                ll(logger_log, logging.WARNING, *args)
+                ll(logger_log, logging.WARNING, *warn_args)
 
         try:
             dtime = int(1000 * (monotonic() - self.monotonic_start_time))
-            data : str | Compressed
+            data: str | Compressed
             if args:
                 data = msg % args
             else:

@@ -54,10 +54,10 @@ class WebcamForwarder(StubClientMixin):
             from collections import deque
             self.server_ping_latency: deque[tuple[float, float]] = deque(maxlen=1000)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.stop_sending_webcam()
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.webcam_option = opts.webcam
         self.webcam_forwarding = self.webcam_option.lower() not in FALSE_OPTIONS
         self.server_webcam = False
@@ -101,15 +101,15 @@ class WebcamForwarder(StubClientMixin):
                 self.start_sending_webcam()
         return True
 
-    def webcam_state_changed(self):
+    def webcam_state_changed(self) -> None:
         GLib.idle_add(self.emit, "webcam-changed")
 
     ######################################################################
-    def start_sending_webcam(self):
+    def start_sending_webcam(self) -> None:
         with self.webcam_lock:
             self.do_start_sending_webcam(self.webcam_option)
 
-    def do_start_sending_webcam(self, device_str):
+    def do_start_sending_webcam(self, device_str) -> None:
         self.show_progress(100, "forwarding webcam")
         assert self.server_webcam
         device = 0
@@ -175,31 +175,31 @@ class WebcamForwarder(StubClientMixin):
         except Exception as e:
             log.warn("webcam test capture failed: %s", e)
 
-    def cancel_webcam_send_timer(self):
+    def cancel_webcam_send_timer(self) -> None:
         wst = self.webcam_send_timer
         if wst:
             self.webcam_send_timer = 0
             GLib.source_remove(wst)
 
-    def cancel_webcam_check_ack_timer(self):
+    def cancel_webcam_check_ack_timer(self) -> None:
         wact = self.webcam_ack_check_timer
         if wact:
             self.webcam_ack_check_timer = 0
             GLib.source_remove(wact)
 
-    def webcam_check_acks(self, ack=0):
+    def webcam_check_acks(self, ack=0) -> None:
         self.webcam_ack_check_timer = 0
         log("check_acks: webcam_last_ack=%s", self.webcam_last_ack)
         if self.webcam_last_ack < ack:
             log.warn("Warning: no acknowledgements received from the server for frame %i, stopping webcam", ack)
             self.stop_sending_webcam()
 
-    def stop_sending_webcam(self):
+    def stop_sending_webcam(self) -> None:
         log("stop_sending_webcam()")
         with self.webcam_lock:
             self.do_stop_sending_webcam()
 
-    def do_stop_sending_webcam(self):
+    def do_stop_sending_webcam(self) -> None:
         self.cancel_webcam_send_timer()
         self.cancel_webcam_check_ack_timer()
         wd = self.webcam_device
@@ -218,7 +218,7 @@ class WebcamForwarder(StubClientMixin):
             log.error("Error closing webcam device %s: %s", wd, e)
         self.webcam_state_changed()
 
-    def may_send_webcam_frame(self):
+    def may_send_webcam_frame(self) -> bool:
         self.webcam_send_timer = 0
         if self.webcam_device_no < 0 or not self.webcam_device:
             return False
@@ -237,7 +237,7 @@ class WebcamForwarder(StubClientMixin):
         log("may_send_webcam_frame() latency=%i, not acked=%i, target=%i - trying to send now", latency, not_acked, n)
         return self.send_webcam_frame()
 
-    def send_webcam_frame(self):
+    def send_webcam_frame(self) -> bool:
         if not self.webcam_lock.acquire(False):
             return False
         log("send_webcam_frame() webcam_device=%s", self.webcam_device)
@@ -299,13 +299,13 @@ class WebcamForwarder(StubClientMixin):
 
     ######################################################################
     # packet handlers
-    def _process_webcam_stop(self, packet: PacketType):
+    def _process_webcam_stop(self, packet: PacketType) -> None:
         device_no = packet[1]
         if device_no != self.webcam_device_no:
             return
         self.stop_sending_webcam()
 
-    def _process_webcam_ack(self, packet: PacketType):
+    def _process_webcam_ack(self, packet: PacketType) -> None:
         log("process_webcam_ack: %s", packet)
         with self.webcam_lock:
             if self.webcam_device:
@@ -317,7 +317,7 @@ class WebcamForwarder(StubClientMixin):
                     log("new webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
                     self.webcam_send_timer = GLib.timeout_add(delay, self.may_send_webcam_frame)
 
-    def init_authenticated_packet_handlers(self):
+    def init_authenticated_packet_handlers(self) -> None:
         log("init_authenticated_packet_handlers()")
         self.add_packet_handler("webcam-stop", self._process_webcam_stop)
         self.add_packet_handler("webcam-ack", self._process_webcam_ack)

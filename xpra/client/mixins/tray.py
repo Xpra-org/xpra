@@ -89,7 +89,7 @@ class TrayClient(StubClientMixin):
         log("make_tray_menu_helper() tray menu helper classes: %s", mhc)
         return make_instance(mhc, self)
 
-    def show_menu(self, *_args):
+    def show_menu(self, *_args) -> None:
         if self.menu_helper:
             self.menu_helper.activate()
 

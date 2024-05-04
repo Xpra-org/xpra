@@ -318,7 +318,7 @@ class WindowClient(StubClientMixin):
                         self.overlay_image = Image.open(icon_filename)
         traylog("overlay_image=%s", self.overlay_image)
 
-    def parse_border(self):
+    def parse_border(self) -> None:
         # not implemented here (see bindings client)
         pass
 
@@ -355,7 +355,7 @@ class WindowClient(StubClientMixin):
             modal = w._metadata.boolget("modal", False)
             w.set_modal(modal)
 
-    def set_windows_cursor(self, client_windows, new_cursor):
+    def set_windows_cursor(self, client_windows, new_cursor) -> None:
         raise NotImplementedError()
 
     def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name) -> None:
@@ -877,7 +877,7 @@ class WindowClient(StubClientMixin):
                     return twid
         return 0
 
-    def patch_OR_popup_transient_for(self, metadata: typedict):
+    def patch_OR_popup_transient_for(self, metadata: typedict) -> None:
         pid = metadata.intget("pid", 0)
         twid = metadata.intget("transient-for", 0)
         if is_Wayland():
@@ -1544,7 +1544,7 @@ class WindowClient(StubClientMixin):
         if not window:
             # window is gone
 
-            def draw_cleanup():
+            def draw_cleanup() -> None:
                 if coding == "mmap":
                     assert self.mmap_enabled
                     from xpra.net.mmap import int_from_buffer
@@ -1566,7 +1566,7 @@ class WindowClient(StubClientMixin):
         drawlog(DRAW_LOG_FMT, len(data), dtype, wid, packet_sequence, width, height, x, y, coding, options)
         start = monotonic()
 
-        def record_decode_time(success, message=""):
+        def record_decode_time(success, message="") -> None:
             if success > 0:
                 end = monotonic()
                 decode_time = round(end * 1000 * 1000 - start * 1000 * 1000)

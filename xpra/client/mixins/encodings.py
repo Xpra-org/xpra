@@ -32,7 +32,7 @@ SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 DEFAULT_ENCODINGS = os.environ.get("XPRA_DEFAULT_ENCODINGS", "rgb32,rgb24,jpeg,png").split(",")
 
 
-def get_core_encodings():
+def get_core_encodings() -> tuple[str, ...]:
     """
         This method returns the actual encodings supported.
         ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
@@ -276,25 +276,25 @@ class Encodings(StubClientMixin):
             cenc.append("stream")
         return preforder(cenc)
 
-    def get_cursor_encodings(self):
+    def get_cursor_encodings(self) -> list[str]:
         e = ["raw", "default"]
         if "png" in self.get_core_encodings():
             e.append("png")
         return e
 
-    def get_window_icon_encodings(self):
+    def get_window_icon_encodings(self) -> list[str]:
         e = ["BGRA", "default"]
         if "png" in self.get_core_encodings():
             e.append("png")
         return e
 
-    def get_core_encodings(self):
+    def get_core_encodings(self) -> list[str]:
         core = get_core_encodings()
         r = [x for x in core if x in self.allowed_encodings]
         log(f"get_core_encodings()={r} (core={core}, allowed={self.allowed_encodings})")
         return r
 
-    def set_encoding(self, encoding):
+    def set_encoding(self, encoding: str) -> None:
         log("set_encoding(%s)", encoding)
         if encoding == "auto":
             self.encoding = ""
@@ -310,28 +310,28 @@ class Encodings(StubClientMixin):
             self.encoding = encoding
         self.send("encoding", self.encoding)
 
-    def send_quality(self):
+    def send_quality(self) -> None:
         q = self.quality
         log("send_quality() quality=%s", q)
         if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid quality: {q}")
         self.send("quality", q)
 
-    def send_min_quality(self):
+    def send_min_quality(self) -> None:
         q = self.min_quality
         log("send_min_quality() min-quality=%s", q)
         if q != -1 and (q < 0 or q > 100):
             raise ValueError(f"invalid min-quality: {q}")
         self.send("min-quality", q)
 
-    def send_speed(self):
+    def send_speed(self) -> None:
         s = self.speed
         log("send_speed() min-speed=%s", s)
         if s != -1 and (s < 0 or s > 100):
             raise ValueError(f"invalid speed: {s}")
         self.send("speed", s)
 
-    def send_min_speed(self):
+    def send_min_speed(self) -> None:
         s = self.min_speed
         log("send_min_speed() min-speed=%s", s)
         if s != -1 and (s < 0 or s > 100):

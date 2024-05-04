@@ -7,6 +7,7 @@
 from typing import Any
 
 from xpra.os_util import gi_import
+from xpra.common import NotificationID, noop
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.gui import get_native_notifier_classes
 from xpra.net.common import PacketType
@@ -40,7 +41,7 @@ class NotificationClient(StubClientMixin):
         # override the default handler in client base:
         self.may_notify = self.do_notify
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         if opts.notifications:
             try:
                 from xpra import notifications
@@ -53,7 +54,7 @@ class NotificationClient(StubClientMixin):
                 log("using notifier=%s", self.notifier)
                 self.client_supports_notifications = self.notifier is not None
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         n = self.notifier
         log("NotificationClient.cleanup() notifier=%s", n)
         if n:
@@ -74,7 +75,7 @@ class NotificationClient(StubClientMixin):
             },
         }
 
-    def init_authenticated_packet_handlers(self):
+    def init_authenticated_packet_handlers(self) -> None:
         self.add_packet_handler("notification-show", self._process_notify_show)
         self.add_packet_handler("notification-close", self._process_notify_close)
         self.add_packet_handler("notify_show", self._process_notify_show)
@@ -85,7 +86,7 @@ class NotificationClient(StubClientMixin):
         log("make_notifier() notifier classes: %s", nc)
         return make_instance(nc, self.notification_closed, self.notification_action)
 
-    def notification_closed(self, nid, reason=3, text=""):
+    def notification_closed(self, nid: int, reason=3, text="") -> None:
         log("notification_closed(%i, %i, %s)", nid, reason, text)
         callback = self.callbacks.pop(nid, None)
         if callback:
@@ -93,7 +94,7 @@ class NotificationClient(StubClientMixin):
         else:
             self.send("notification-close", nid, reason, text)
 
-    def notification_action(self, nid, action_id):
+    def notification_action(self, nid: int, action_id: int) -> None:
         log("notification_action(%i, %s)", nid, action_id)
         callback = self.callbacks.get(nid, None)
         if callback:
@@ -101,7 +102,7 @@ class NotificationClient(StubClientMixin):
         else:
             self.send("notification-action", nid, action_id)
 
-    def get_notifier_classes(self):
+    def get_notifier_classes(self) -> list[type]:
         # subclasses will generally add their toolkit specific variants
         # by overriding this method
         # use the native ones first:
@@ -109,8 +110,8 @@ class NotificationClient(StubClientMixin):
             return []
         return get_native_notifier_classes()
 
-    def do_notify(self, nid, summary, body, actions=(),
-                  hints=None, expire_timeout=10 * 1000, icon_name=None, callback=None):
+    def do_notify(self, nid: int | NotificationID, summary: str, body: str, actions=(),
+                  hints=None, expire_timeout=10 * 1000, icon_name: str = "", callback=noop) -> None:
         log("do_notify%s client_supports_notifications=%s, notifier=%s",
             (nid, summary, body, actions, hints, expire_timeout, icon_name),
             self.client_supports_notifications, self.notifier)
@@ -125,7 +126,7 @@ class NotificationClient(StubClientMixin):
                     log.info(" %s", x)
             return
 
-        def show_notification():
+        def show_notification() -> None:
             try:
                 from xpra.notifications.common import parse_image_path
                 icon_filename = get_icon_filename(icon_name)
@@ -143,7 +144,7 @@ class NotificationClient(StubClientMixin):
         else:
             GLib.idle_add(show_notification)
 
-    def _process_notify_show(self, packet: PacketType):
+    def _process_notify_show(self, packet: PacketType) -> None:
         if not self.notifications_enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
@@ -175,7 +176,7 @@ class NotificationClient(StubClientMixin):
                                   app_name, replaces_nid, app_icon,
                                   summary, body, actions, hints, expire_timeout, icon)
 
-    def _process_notify_close(self, packet: PacketType):
+    def _process_notify_close(self, packet: PacketType) -> None:
         if not self.notifications_enabled:
             return
         assert self.notifier

@@ -49,14 +49,14 @@ class ClipboardClient(StubClientMixin):
         self.local_clipboard: str = ""
         self.remote_clipboard: str = ""
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         self.client_clipboard_type = opts.clipboard
         self.client_clipboard_direction = opts.clipboard_direction
         self.client_supports_clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS
         self.remote_clipboard = opts.remote_clipboard
         self.local_clipboard = opts.local_clipboard
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         ch = self.clipboard_helper
         log("ClipboardClient.cleanup() clipboard_helper=%s", ch)
         if ch:
@@ -176,7 +176,7 @@ class ClipboardClient(StubClientMixin):
         ):
             self.add_packet_handler("clipboard-%s" % x, self._process_clipboard_packet)
 
-    def get_clipboard_helper_classes(self):
+    def get_clipboard_helper_classes(self) -> list[type]:
         ct = self.client_clipboard_type
         if ct and ct.lower() in FALSE_OPTIONS:
             return []
@@ -310,7 +310,7 @@ class ClipboardClient(StubClientMixin):
         hc.enable_selections(self.server_clipboard_selections)
         return hc
 
-    def compressible_item(self, compressible):
+    def compressible_item(self, compressible) -> compression.Compressible:
         """
             converts a 'Compressible' item into something that will
             call `self.compressed_wrapper` when compression is requested

@@ -48,7 +48,7 @@ def init_audio_tagging(tray_icon) -> None:
             log.warn(" %s", e)
 
 
-def get_matching_codecs(local_codecs, server_codecs):
+def get_matching_codecs(local_codecs, server_codecs) -> tuple[str, ...]:
     matching_codecs = tuple(x for x in local_codecs if x in server_codecs)
     log("get_matching_codecs(%s, %s)=%s", local_codecs, server_codecs, matching_codecs)
     return matching_codecs
@@ -318,7 +318,7 @@ class AudioClient(StubClientMixin):
         log("start_audio_source(%s)", device)
         assert self.audio_source is None
 
-        def audio_source_state_changed(*_args):
+        def audio_source_state_changed(*_args) -> None:
             self.emit("microphone-changed")
 
         # find the matching codecs:
@@ -349,7 +349,7 @@ class AudioClient(StubClientMixin):
             log.estr(e)
             return False
 
-    def new_stream(self, audio_source, codec: str):
+    def new_stream(self, audio_source, codec: str) -> None:
         log("new_stream(%s)", codec)
         if self.audio_source != audio_source:
             log("dropping new-stream signal (current source=%s, signal source=%s)", self.audio_source, audio_source)
@@ -404,7 +404,7 @@ class AudioClient(StubClientMixin):
                 return
             codec = matching_codecs[0]
 
-            def sink_ready(*args):
+            def sink_ready(*args) -> bool:
                 scodec = codec
                 log("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)
                 self.send("sound-control", "start", scodec)

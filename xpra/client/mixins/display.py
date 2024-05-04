@@ -85,7 +85,7 @@ class DisplayClient(StubClientMixin):
         self.xscale, self.yscale = self.initial_scaling
         scalinglog("scaling(%s)=%s", self.initial_scaling, (self.xscale, self.yscale))
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         ssct = self.screen_size_change_timer
         if ssct:
             self.screen_size_change_timer = 0
