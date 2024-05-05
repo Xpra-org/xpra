@@ -89,7 +89,9 @@ class audio_subprocess(subprocess_callee):
 
     def start(self):
         if not FAKE_START_FAILURE:
-            self.idle_add(self.wrapped_object.start)
+            def wrap_start() -> bool:
+                self.wrapped_object.start()
+            self.idle_add(wrap_start)
         if FAKE_EXIT>0:
             def process_exit():
                 self.cleanup()
