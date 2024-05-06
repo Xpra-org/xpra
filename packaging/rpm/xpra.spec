@@ -777,8 +777,58 @@ fi
 
 
 %changelog
-* Sat Apr 06 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
-- TODO
+* Mon May 06 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
+- Encodings:
+   video encoding errors causing missed screen updates
+   drop alpha if requested and for video encoders
+   `konsole` is a text application
+   smarter auto refresh encoding selection
+- Platforms, build and packaging:
+   arm64 and riscv builds can timeout adding build info, and generating the documentation
+   saner source information defaults
+   more simple / reliable OpenGL pixel format attributes on MacOS
+   MS Windows usernames should also be using strings
+   Cython compilation warnings
+- Major:
+   handle downscaled video correctly without OpenGL
+   Gtk crashes on exit
+   OpenGL check failures on X11
+   sync-xvfb not honoured
+   replace dead ssh agent symlinks
+   validate http request hostname before sending it back
+   guess content type from commands
+   ssh channel pollution
+   incorrect client exit code with Python 3.10 and earlier, don't convert enums to strings, correct matching type hints
+   libyuv converter cannot scale `YUV444P`
+   ffmpeg decoder can accept images with dimensions rounded down to a multiple of 2, same for swscale
+   audio source plugins not found
+- Minor:
+   fix parsing of scaling values as percentages
+   fix ssl unit test, use SSL specific error codes
+   case-insensitive window role matching
+   splash screen communication errors due to unexpected characters
+   splash screen can exit cleanly
+   standlone bug report tool cannot exit cleanly
+   never try to start a display in `proxy` or `shadow` modes
+   do verify that the display is available in `monitor` mode
+   prevent audio DoS in the future
+- Cosmetic:
+   clearer audio error message
+   clearer ssh error message
+   use a consistent shebang
+   file upload deprecation warnings
+   fail fast when testing decoders with junk data
+   documentation dead link
+   make version checks more robust
+   skip warning about missing amf gstreamer elements
+   docstring: server configuration file applies to all servers
+   remove X11 keyword from desktop files
+   potential future issues: variable name shadowing, memoryview handling, strict type
+   unused statements
+   linter warning and consistency, consistent return value
+   ignore 'noabstract' v6 bind option
+   fix unit tests: enable previously broken tests, faulty backport
+   downgrade Wayland warning
 
 * Wed Apr 03 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:

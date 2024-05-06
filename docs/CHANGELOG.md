@@ -1,10 +1,11 @@
 # Changelog
 
-## [5.0.9] 2023-05-01
+## [5.0.9] 2023-05-06
 * Encodings:
     * [video encoding errors causing missed screen updates](https://github.com/Xpra-org/xpra/commit/188e9903754e1abc8cd86ecd65bf9427000e7012)
     * [drop alpha if requested](https://github.com/Xpra-org/xpra/commit/6e1934575cabc412782616704bb4ee24b5f36930) and [for video encoders](https://github.com/Xpra-org/xpra/commit/3cbdccbcdd9be7fdf6eabb67b322e612852f108c)
     * [`konsole` is a text application](https://github.com/Xpra-org/xpra/commit/6c46f648ed923615de08385aa4b7e900ad4357dc)
+    * [smarter auto refresh encoding selection](https://github.com/Xpra-org/xpra/commit/6f138036414a404bf1782d5554009a038dd6feab)
 * Platforms, build and packaging:
     * [arm64 and riscv builds can timeout adding build info](https://github.com/Xpra-org/xpra/commit/85ee52e738a75ab63749c0b986bf7702cf135c5d), [and generating the documentation](https://github.com/Xpra-org/xpra/commit/a6c9c98665d9ad384729a0eb8f74d77a62ff4771)
     * [saner source information defaults](https://github.com/Xpra-org/xpra/commit/79b7484c6f50275f48a3195385d80be918e2aa18)
@@ -23,6 +24,7 @@
     * [incorrect client exit code with Python 3.10 and earlier](https://github.com/Xpra-org/xpra/commit/5d8a6f7e78eb7125583049a1cd2a3958fa5193c8), [don't convert enums to strings](https://github.com/Xpra-org/xpra/commit/7a9d8f745b7cf566f7fc62521a2424de000d2e9b), [correct matching type hints](https://github.com/Xpra-org/xpra/commit/523d8b1b4a6315f4de10e292fa5bad1c3314dfef)
     * [libyuv converter cannot scale `YUV444P`](https://github.com/Xpra-org/xpra/commit/2623ca48ef3d2314c0afef8fae957e07be889420)
     * [ffmpeg decoder can accept images with dimensions rounded down to a multiple of 2](https://github.com/Xpra-org/xpra/commit/f2ab789f2c623b93f01bb692982125a472181097), [same for swscale](https://github.com/Xpra-org/xpra/commit/ebed4b2b3541641944615e0b61cbbd91bcfdc697)
+    * [audio source plugins not found](https://github.com/Xpra-org/xpra/commit/35e8a5c27136294087bd62c6b90fd81128866237)
 * Minor:
     * [fix parsing of scaling values as percentages](https://github.com/Xpra-org/xpra/commit/848d1658f2f4eb1bef57312736166e3f438fdca9)
     * [fix ssl unit test](https://github.com/Xpra-org/xpra/commit/0a03faadd843450c158df80e7a53729432d1e102), [use SSL specific error codes](https://github.com/Xpra-org/xpra/commit/e52882a6ac2cd3cef3067bb89a227feb59e6fa31)
@@ -32,7 +34,12 @@
     * [standlone bug report tool cannot exit cleanly](https://github.com/Xpra-org/xpra/commit/80aabb353aae2c6f1a7e8de35664fead590279cd)
     * [never try to start a display in `proxy` or `shadow` modes](https://github.com/Xpra-org/xpra/commit/688c09c7e37cbb980ca2abf46df7832b176099b7)
     * [do verify that the display is available in `monitor` mode](https://github.com/Xpra-org/xpra/commit/a4a63223409e5a3de2f8eac2f55000e26dec5e9a)
+    * [prevent audio DoS in the future](https://github.com/Xpra-org/xpra/commit/c4a88d406aa5fe9c43e6af4059284f434c26139d)
 * Cosmetic:
+    * [clearer audio error message](https://github.com/Xpra-org/xpra/commit/7adc99fa9143d60e0c8cd7886eb7bdc576373db1)
+    * [clearer ssh error message](https://github.com/Xpra-org/xpra/commit/83750ca62606878a01303257b87119ac4dca62ab)
+    * [use a consistent shebang](https://github.com/Xpra-org/xpra/commit/93ccf524ea43c3fa3cc2355a109e87e8eb4c35e1)
+    * [file upload deprecation warnings](https://github.com/Xpra-org/xpra/commit/f1b44902bbc1e44436fe7988f279f3da89c045c8)
     * [fail fast when testing decoders with junk data](https://github.com/Xpra-org/xpra/commit/cb7a7f1914aa8fceec960a17ba5816980c1d5636)
     * [documentation dead link](https://github.com/Xpra-org/xpra/commit/c3d3abb81127fb979c6f1293e37b9e924f1dc1c6)
     * [make version checks more robust](https://github.com/Xpra-org/xpra/commit/e1e409e579cc89f77a8a32d0ec9471aec272ff55)
