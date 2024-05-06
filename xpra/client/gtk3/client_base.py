@@ -615,6 +615,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         buttons += [Gtk.STOCK_OK, Gtk.ResponseType.OK]
         if FILE_CHOOSER_NATIVE:
             self.file_dialog = Gtk.FileChooserNative(title="File to upload", action=Gtk.FileChooserAction.OPEN)
+            self.file_dialog.self.file_dialog("Upload")
         else:
             self.file_dialog = Gtk.FileChooserDialog(title="File to upload", action=Gtk.FileChooserAction.OPEN)
             self.file_dialog.add_buttons(*buttons)
