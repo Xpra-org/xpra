@@ -129,7 +129,7 @@ elif WIN32 and WIN32_WORKSPACE:
     from _ctypes import COMError
     try:
         from pyvda.pyvda import get_virtual_desktops
-    except (ImportError, COMError, NotImplementedError) as e:
+    except (OSError, ImportError, COMError, NotImplementedError) as e:
         workspacelog(f"no workspace support: {e}")
         WIN32_WORKSPACE = 0
     else:
