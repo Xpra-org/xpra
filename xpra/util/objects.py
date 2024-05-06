@@ -279,10 +279,10 @@ def make_instance(class_options, *args):
             log(f"make_instance(..) {c}()={v}")
             if v:
                 return v
-        except Exception:
-            log.error("make_instance(%s, %s)", class_options, args, exc_info=True)
+        except Exception as e:
+            log("make_instance(%s, %s)", class_options, args, exc_info=True)
             log.error("Error: cannot instantiate %s:", c)
-            log.error(" with arguments %s", tuple(args))
+            log.estr(e)
     return None
 
 
