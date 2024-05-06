@@ -1,16 +1,26 @@
 # Changelog
 
-## [6.0.1] 2024-05-01
+## [6.0.1] 2024-05-06
 * Platforms, build and packaging:
     * [avoid timeout on slow build platforms](https://github.com/Xpra-org/xpra/commit/5972ba5fd8f0707d4a90fa5cc276a5ff00298909), [when running pandoc](https://github.com/Xpra-org/xpra/commit/5b66f26c05b2855f5d3e44cfcaf0d7fb14d07892), [raise the timeout on arm and riscv](https://github.com/Xpra-org/xpra/commit/e914616d57762e287769ac540b86d71d78a2dc26)
     * [tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`](https://github.com/Xpra-org/xpra/commit/8bf6dec4c6ca291087c69a63d5801274545e8150)
     * [version script needs to update `pyproject.toml`](https://github.com/Xpra-org/xpra/commit/827b4e0aab43c9ba891ba26cb72cbe707a508868), [do it](https://github.com/Xpra-org/xpra/commit/1409bc4e8f86c1cee8f9eab8970a2e6388607914)
+    * [MS Windows client fails to start without `explorer.exe` running](https://github.com/Xpra-org/xpra/commit/43c4562275e78ce5025d083dbbee01d5e3245d33)
 * Major:
+    * [DoS with audio pipeline starting repeatedly](https://github.com/Xpra-org/xpra/commit/4a2829a4755f5b409cbe3ff12554d9010559d4a0)
     * [OpenGL check failures on X11](https://github.com/Xpra-org/xpra/commit/3e87f9f23204b6fb69111b40b2e1f983f37abd8d)
     * [OpenGL paint errors drawing the spinners](https://github.com/Xpra-org/xpra/commit/54a6f21572ee106bcc669279befd43176f727404), [don't check for `glBegin` and `glEnd`](https://github.com/Xpra-org/xpra/commit/f2e9e4b2ada8f15523b4c88b36c6bb04258f3ce4)
     * [OpenGL check: re-use environment filtering](https://github.com/Xpra-org/xpra/commit/d567ce9578da03e9fcd666bed6bf51b637e879ca)
+    * [scale during render if needed](https://github.com/Xpra-org/xpra/commit/9988cbd50a2189b8d5de66a4eda2d8f68424d380)
+    * [smarter auto refresh encoding selection](https://github.com/Xpra-org/xpra/commit/366e4390176832807cd7bf738807daead02e921c)
+    * [`xpra configure features` not reloading correctly](https://github.com/Xpra-org/xpra/commit/a399fce7959141a7bb6c4ca068a99d006e5286bb)
+    * [audio not enabled for some clients](https://github.com/Xpra-org/xpra/commit/c16792368631f3c73ac98a0c7cd61062dc5befaf), [source plugins not found](https://github.com/Xpra-org/xpra/commit/68e0e3f4ec1321b46086cef5fb2c0e630ed885eb)
 * Cosmetic / correctness:
-    * [also bump `__version_info__` automatically](https://github.com/Xpra-org/xpra/commit/f2acaf8ed5fb670b3a36cdfc3f63034508230eb3)
+    * [clearer ssh error message](https://github.com/Xpra-org/xpra/commit/b2f9276d0e4a2973226f46260acbddc3ac677417)
+    * [parsing of scaling values as percentages](https://github.com/Xpra-org/xpra/commit/d382473b72f9d433e90dc03b03e9f834ae772e71)
+    * [also bump `__version_info__` automatically](https://github.com/Xpra-org/xpra/commit/f2acaf8ed5fb670b3a36cdfc3f63034508230eb3) and [the RPM spec file](https://github.com/Xpra-org/xpra/commit/9ad9915024ccfc1b66b898d7fc1729d0a97d424d)
+    * [use a consistent shebang](https://github.com/Xpra-org/xpra/commit/73f93272f6a11d9e75f7c1c06054a4d9a5ecdffd)
+    * [file upload deprecation warnings](https://github.com/Xpra-org/xpra/commit/af46cc7d46b0df0ffe7cf8c4a2db91ad91fccfab)
     * [handle missing PIL more gracefully](https://github.com/Xpra-org/xpra/commit/c580f1b422788c28664126070ea5d1da3b8e7f63)
     * [wrong time unit shown in error message](https://github.com/Xpra-org/xpra/commit/6a4de8f68d7f5494448deb1e9064c8b6ab2caae1)
     * [add asbtract socket link to documentation](https://github.com/Xpra-org/xpra/commit/82cc54174012e00c33b6a4be2b11f31f913417e8)

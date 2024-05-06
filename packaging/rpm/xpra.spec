@@ -861,17 +861,27 @@ fi
 
 
 %changelog
-* Wed May 01 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
+* Mon May 06 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
 - Platforms, build and packaging:
    avoid timeout on slow build platforms, when running pandoc, raise the timeout on arm and riscv
    tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`
    version script needs to update `pyproject.toml`, do it
+   MS Windows client fails to start without `explorer.exe` running
 - Major:
+   DoS with audio pipeline starting repeatedly
    OpenGL check failures on X11
    OpenGL paint errors drawing the spinners, don't check for `glBegin` and `glEnd`
    OpenGL check: re-use environment filtering
+   scale during render if needed
+   smarter auto refresh encoding selection
+   `xpra configure features` not reloading correctly
+   audio not enabled for some clients
 - Cosmetic / correctness:
-   also bump `__version_info__` automatically
+   clearer ssh error message
+   parsing of scaling values as percentages
+   also bump `__version_info__` automatically and the RPM spec file
+   use a consistent shebang
+   file upload deprecation warnings
    handle missing PIL more gracefully
    wrong time unit shown in error message
    add asbtract socket link to documentation
