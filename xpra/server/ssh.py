@@ -499,7 +499,11 @@ def make_ssh_server_connection(conn, socket_options: dict,
                 return None
         log("loaded host keys: %s", tuple(host_keys.values()))
         t.start_server(server=ssh_server)
-    except (paramiko.SSHException, EOFError) as e:
+    except EOFError:
+        log("SSH connection closed", exc_info=True)
+        close()
+        return None
+    except paramiko.SSHException as e:
         log("failed to start ssh server", exc_info=True)
         log.error("Error handling SSH connection:")
         log.estr(e)
