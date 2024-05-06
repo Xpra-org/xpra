@@ -118,8 +118,9 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
 
         kwargs["env"] = restore_script_env(env)
 
-        if is_debug_enabled("ssh"):
-            log.info("executing ssh command: " + shlex.join(cmd))
+        log_fn = log.info if is_debug_enabled("ssh") else log.debug
+        log_fn("executing ssh command: " + shlex.join(cmd))
+        log_fn(f"{kwargs=}")
         executable = which(cmd[0])
         if not executable or not os.path.exists(executable):
             log.warn(f"Warning: ssh command {cmd[0]!r} not found!")
@@ -230,7 +231,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 if s:
                     errs.append(s)
             if errs:
-                log.warn("remote SSH stderr:")
+                log.warn("SSH stderr:")
                 for err in errs:
                     log.warn(f" {err}")
         start_thread(stderr_reader, "ssh-stderr-reader", daemon=True)
