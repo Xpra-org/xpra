@@ -76,7 +76,7 @@ NO_OPENGL_WINDOW_TYPES = os.environ.get(
     "XPRA_NO_OPENGL_WINDOW_TYPES",
     "DOCK,TOOLBAR,MENU,UTILITY,SPLASH,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND"
 ).split(",")
-FILE_CHOOSER_NATIVE = envbool("XPRA_FILE_CHOOSER_NATIVE", OSX or WIN32)
+FILE_CHOOSER_NATIVE = envint("XPRA_FILE_CHOOSER_NATIVE", int(OSX or WIN32))
 
 inject_css_overrides()
 init_display_source()
@@ -613,7 +613,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if self.remote_open_files:
             buttons += [Gtk.STOCK_OPEN, Gtk.ResponseType.ACCEPT]
         buttons += [Gtk.STOCK_OK, Gtk.ResponseType.OK]
-        if FILE_CHOOSER_NATIVE:
+        if FILE_CHOOSER_NATIVE > 1 or (FILE_CHOOSER_NATIVE and not self.remote_open_files):
             self.file_dialog = Gtk.FileChooserNative(title="File to upload", action=Gtk.FileChooserAction.OPEN)
             self.file_dialog.self.file_dialog("Upload")
         else:
