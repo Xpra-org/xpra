@@ -194,7 +194,7 @@ class typedict(dict):
         try:
             return conv(v)
         except (TypeError, ValueError, AssertionError) as e:
-            self._warn(f"Warning: failed to convert {k}")
+            self._warn(f"Warning: failed to convert {strkey!r}")
             self._warn(f" from {type(v)} using {conv}: {e}")
             return default
 

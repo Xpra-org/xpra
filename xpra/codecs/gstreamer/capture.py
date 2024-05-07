@@ -169,7 +169,7 @@ def choose_video_encoder(preferred_encoding: str, full_csc_modes: typedict) -> V
         return None
     best_score = sorted(scores)[0]
     best = scores[best_score][0]
-    log(f"choose_video_encoder({preferred_encoding}, {csc_modes})={best}")
+    log(f"choose_video_encoder({preferred_encoding}, {full_csc_modes})={best}")
     return best
 
 
