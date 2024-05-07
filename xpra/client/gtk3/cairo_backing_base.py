@@ -184,30 +184,27 @@ class CairoBackingBase(WindowBackingBase):
         gc.stroke()
 
     def _do_paint_rgb16(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> bool:
-        return self._do_paint_rgb(FORMAT_RGB16_565, False, img_data,
-                                  x, y, width, height, render_width, render_height, rowstride, options)
+                        render_width: int, render_height: int, rowstride: int, options) -> None:
+        self._do_paint_rgb(FORMAT_RGB16_565, False, img_data,
+                           x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> bool:
-        return self._do_paint_rgb(FORMAT_RGB24, False, img_data,
-                                  x, y, width, height, render_width, render_height, rowstride, options)
+                        render_width: int, render_height: int, rowstride: int, options) -> None:
+        self._do_paint_rgb(FORMAT_RGB24, False, img_data,
+                           x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb30(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> bool:
-        return self._do_paint_rgb(FORMAT_RGB30, True, img_data,
-                                  x, y, width, height, render_width, render_height, rowstride, options)
+                        render_width: int, render_height: int, rowstride: int, options) -> None:
+        self._do_paint_rgb(FORMAT_RGB30, True, img_data,
+                           x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> bool:
-        if self._alpha_enabled:
-            cformat = FORMAT_ARGB32
-        else:
-            cformat = FORMAT_RGB24
-        return self._do_paint_rgb(cformat, True, img_data,
-                                  x, y, width, height, render_width, render_height, rowstride, options)
+                        render_width: int, render_height: int, rowstride: int, options) -> None:
+        cformat = FORMAT_ARGB32 if self._alpha_enabled else FORMAT_RGB24
+        self._do_paint_rgb(cformat, True, img_data,
+                           x, y, width, height, render_width, render_height, rowstride, options)
 
-    def _do_paint_rgb(self, *args) -> bool:
+    def _do_paint_rgb(self, *args) -> None:
         raise NotImplementedError()
 
     def paint_scroll(self, img_data, options, callbacks) -> None:

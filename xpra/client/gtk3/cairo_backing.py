@@ -51,7 +51,7 @@ class CairoBacking(CairoBackingBase):
 
     def _do_paint_rgb(self, cairo_format, has_alpha: bool, img_data,
                       x: int, y: int, width: int, height: int, render_width: int, render_height: int,
-                      rowstride: int, options) -> bool:
+                      rowstride: int, options) -> None:
         """ must be called from UI thread """
         log("cairo._do_paint_rgb%s set_image_surface_data=%s, use pixbuf=%s",
             (FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),
@@ -64,7 +64,7 @@ class CairoBacking(CairoBackingBase):
                 img_surface = ImageSurface(cairo_format, width, height)
                 set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
                 self.cairo_paint_surface(img_surface, x, y, render_width, render_height, options)
-                return True
+                return
             log("cannot set image surface data for cairo format %s and rgb_format %s (rgb formats supported: %s)",
                 FORMATS.get(cairo_format, cairo_format), rgb_format, rgb_formats)
 
@@ -83,7 +83,7 @@ class CairoBacking(CairoBackingBase):
                 log(f"scaling using {resample!r} from {width}x{height} to {render_width}x{render_height}")
                 pixbuf = pixbuf.scale_simple(render_width, render_height, interp_type)
             self.cairo_paint_pixbuf(pixbuf, x, y, options)
-            return True
+            return
 
         raise ValueError(f"failed to paint {cairo_format}")
 

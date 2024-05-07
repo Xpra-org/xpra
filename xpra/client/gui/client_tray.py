@@ -232,20 +232,18 @@ class TrayBacking(WindowBackingBase):
         raise RuntimeError("scroll should not be used with tray icons")
 
     def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> bool:
+                        render_width: int, render_height: int, rowstride: int, options) -> None:
         assert width == render_width and height == render_height, "tray rgb must not use scaling"
         self.data = ("rgb24", width, height, rowstride, img_data[:], options)
         if SAVE:
             self.save_tray_png()
-        return True
 
     def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> bool:
+                        render_width: int, render_height: int, rowstride: int, options) -> None:
         assert width == render_width and height == render_height, "tray rgb must not use scaling"
         self.data = ("rgb32", width, height, rowstride, img_data[:], options)
         if SAVE:
             self.save_tray_png()
-        return True
 
     def save_tray_png(self) -> None:
         log("save_tray_png()")
