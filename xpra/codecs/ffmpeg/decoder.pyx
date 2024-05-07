@@ -203,7 +203,6 @@ cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_BAYER_GBRG16BE
     AVPixelFormat AV_PIX_FMT_BAYER_GRBG16LE
     AVPixelFormat AV_PIX_FMT_BAYER_GRBG16BE
-    AVPixelFormat AV_PIX_FMT_XVMC
     AVPixelFormat AV_PIX_FMT_YUV440P10LE
     AVPixelFormat AV_PIX_FMT_YUV440P10BE
     AVPixelFormat AV_PIX_FMT_YUV440P12LE
@@ -294,7 +293,7 @@ cdef extern from "libavcodec/avcodec.h":
     int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
     AVFrame* av_frame_alloc()
     void av_frame_free(AVFrame **frame)
-    int avcodec_close(AVCodecContext *avctx)
+    void avcodec_free_context(AVCodecContext **avctx)
 
     #actual decoding:
     AVPacket *av_packet_alloc() nogil
@@ -462,7 +461,6 @@ FORMAT_TO_STR = {
     AV_PIX_FMT_BAYER_GBRG16BE : "BAYER_GBRG16BE",
     AV_PIX_FMT_BAYER_GRBG16LE : "BAYER_GRBG16LE",
     AV_PIX_FMT_BAYER_GRBG16BE : "BAYER_GRBG16BE",
-    AV_PIX_FMT_XVMC : "XVMC",
     AV_PIX_FMT_YUV440P10LE : "YUV440P10LE",
     AV_PIX_FMT_YUV440P10BE : "YUV440P10BE",
     AV_PIX_FMT_YUV440P12LE : "YUV440P12LE",
@@ -812,10 +810,7 @@ cdef class Decoder:
                     img.clone_pixel_data()
         log("clean_decoder() freeing AVCodecContext: %#x", <uintptr_t> self.codec_ctx)
         if self.codec_ctx!=NULL:
-            r = avcodec_close(self.codec_ctx)
-            if r!=0:
-                log.error("Error: failed to close decoder context %#x:", <uintptr_t> self.codec_ctx)
-                log.error(" %s", av_error_str(r))
+            avcodec_free_context(&self.codec_ctx)
             av_free(self.codec_ctx)
             self.codec_ctx = NULL
         f = self.file

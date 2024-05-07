@@ -120,9 +120,25 @@ cdef extern from "libavformat/avio.h":
     AVIOContext *avio_alloc_context(unsigned char *buffer, int buffer_size, int write_flag,
                   void *opaque,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size) except 0,
+                  int (*write_packet)(void *opaque, const uint8_t *buf, int buf_size) except 0,
                   int64_t (*seek)(void *opaque, int64_t offset, int whence))
 
+
+cdef extern from "libavutil/channel_layout.h":
+    ctypedef int AVChannelOrder
+    ctypedef int AVChannel
+    ctypedef struct AVChannelCustom:
+        AVChannel id
+        char name[16]
+        void *opaque
+    ctypedef union ChannelUnion:
+        uint64_t mask
+        AVChannelCustom* map
+    ctypedef struct AVChannelLayout:
+        AVChannelOrder order
+        int nb_channels
+        ChannelUnion u
+        void *opaque
 
 cdef extern from "libavcodec/avcodec.h":
     int FF_THREAD_SLICE     #allow more than one thread per frame
@@ -190,8 +206,6 @@ cdef extern from "libavcodec/avcodec.h":
         int         format
         int         key_frame
         int64_t     pts
-        int         coded_picture_number
-        int         display_picture_number
         int         quality
         void        *opaque
         AVPictureType pict_type
@@ -288,14 +302,12 @@ cdef extern from "libavcodec/avcodec.h":
         #skipped: AVColor*
         int slices
         int sample_rate
-        int channels
         AVSampleFormat sample_fmt
+        AVChannelLayout ch_layout
         int frame_size
         int frame_number
         int block_align
         int cutoff
-        uint64_t channel_layout
-        uint64_t request_channel_layout
         #skipped: AVAudioServiceType
         #        AVSampleFormat
         int refcounted_frames
@@ -483,7 +495,7 @@ cdef extern from "libavutil/opt.h":
     AVOptionType AV_OPT_TYPE_VIDEO_RATE
     AVOptionType AV_OPT_TYPE_DURATION
     AVOptionType AV_OPT_TYPE_COLOR
-    AVOptionType AV_OPT_TYPE_CHANNEL_LAYOUT
+    AVOptionType AV_OPT_TYPE_CHLAYOUT
     AVOptionType AV_OPT_TYPE_BOOL
 
     int AV_OPT_SEARCH_CHILDREN
@@ -686,7 +698,7 @@ AV_OPT_TYPES = {
     AV_OPT_TYPE_VIDEO_RATE  : "VIDEO_RATE",
     AV_OPT_TYPE_DURATION    : "DURATION",
     AV_OPT_TYPE_COLOR       : "COLOR",
-    AV_OPT_TYPE_CHANNEL_LAYOUT : "CHANNEL_LAYOUT",
+    AV_OPT_TYPE_CHLAYOUT    : "CHANNEL_LAYOUT",
     AV_OPT_TYPE_BOOL        : "BOOL",
     }
 
@@ -1137,7 +1149,7 @@ cdef list_options(void *obj, const AVClass *av_class, int skip=1):
         list_options(child, child_class, skip-1)
 
 
-cdef int write_packet(void *opaque, uint8_t *buf, int buf_size) except 0:
+cdef int write_packet(void *opaque, const uint8_t *buf, int buf_size) except 0:
     global GEN_TO_ENCODER
     encoder = GEN_TO_ENCODER.get(<uintptr_t> opaque)
     #log.warn("write_packet(%#x, %#x, %#x) encoder=%s", <uintptr_t> opaque, <uintptr_t> buf, buf_size, type(encoder))
@@ -1145,6 +1157,7 @@ cdef int write_packet(void *opaque, uint8_t *buf, int buf_size) except 0:
         log.error("Error: write_packet called for unregistered encoder %i!", <uintptr_t> opaque)
         return -1
     return encoder.write_packet(<uintptr_t> buf, buf_size)
+
 
 MAX_WIDTH, MAX_HEIGHT = (4096, 4096)
 def get_specs(encoding, colorspace):
@@ -1504,7 +1517,7 @@ cdef class Encoder:
         self.audio_ctx.time_base.num = 1
         self.audio_ctx.bit_rate = 64000
         self.audio_ctx.sample_rate = 44100
-        self.audio_ctx.channels = 2
+        self.audio_ctx.ch_layout.nb_channels = 2
         #if audio_codec.capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE:
         #    pass
         #cdef AVDictionary *opts = NULL
@@ -1689,8 +1702,6 @@ cdef class Encoder:
             self.av_frame.height = self.height
             self.av_frame.format = self.pix_fmt
             self.av_frame.pts = self.frames+1
-            self.av_frame.coded_picture_number = self.frames+1
-            self.av_frame.display_picture_number = self.frames+1
             #if self.frames==0:
             self.av_frame.pict_type = AV_PICTURE_TYPE_I
             #self.av_frame.key_frame = 1
@@ -1823,7 +1834,7 @@ cdef class Encoder:
 
     def write_packet(self, uintptr_t buf, int buf_size):
         log("write_packet(%#x, %#x)", <uintptr_t> buf, buf_size)
-        cdef uint8_t *cbuf = <uint8_t*> buf
+        cdef const uint8_t *cbuf = <const uint8_t*> buf
         buffer = cbuf[:buf_size]
         self.buffers.append(buffer)
         return buf_size
