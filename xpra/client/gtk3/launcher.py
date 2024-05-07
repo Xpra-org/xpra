@@ -112,7 +112,7 @@ def set_history_from_active(optionmenu):
         optionmenu.set_history(i)
 
 
-def has_mdns():
+def has_mdns() -> bool:
     try:
         # pylint: disable=import-outside-toplevel
         from xpra.net.mdns import get_listener_class

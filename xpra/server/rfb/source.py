@@ -47,7 +47,7 @@ class RFBSource:
             "share": self.share,
         }
 
-    def set_encodings(self, encodings):
+    def set_encodings(self, encodings) -> None:
         known_encodings = []
         unknown_encodings = []
         for v in encodings:
@@ -60,7 +60,7 @@ class RFBSource:
         if unknown_encodings:
             log("RFB %i unknown encodings: %s", len(unknown_encodings), csv(unknown_encodings))
 
-    def set_pixel_format(self, pixel_format):
+    def set_pixel_format(self, pixel_format) -> None:
         # bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift
         self.pixel_format = tuple(pixel_format)
         bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift = pixel_format
@@ -69,19 +69,19 @@ class RFBSource:
         if truecolor:
             log(" RGB max: %s, shift: %s", (rmax, gmax, bmax), (rshift, bshift, gshift))
 
-    def get_window_info(self, _wids):
+    def get_window_info(self, _wids) -> dict:
         return {}
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.close_event.is_set()
 
-    def close(self):
+    def close(self) -> None:
         self.close_event.set()
 
-    def ping(self):
+    def ping(self) -> None:
         """ ignore as there are no equivalent messages in RFB """
 
-    def keys_changed(self):
+    def keys_changed(self) -> None:
         """ not implemented yet """
 
     def set_default_keymap(self):
@@ -96,16 +96,16 @@ class RFBSource:
         kc.set_keymap(True)
         kc.owner = self.uuid
 
-    def send_server_event(self, *_args):
+    def send_server_event(self, *_args) -> None:
         """ ignore as there are no equivalent messages in RFB """
 
-    def send_cursor(self):
+    def send_cursor(self) -> None:
         """ not implemented yet """
 
-    def update_mouse(self, *args):
+    def update_mouse(self, *args) -> None:
         log("update_mouse%s", args)
 
-    def damage(self, _wid, window, x, y, w, h, options=None):
+    def damage(self, _wid, window, x, y, w, h, options=None) -> None:
         polling = options and options.get("polling", False)
         p = self.protocol
         if polling and p is None or p.queue_size() >= 2:
@@ -155,16 +155,16 @@ class RFBSource:
                 self.send(packet)
         send_joined()
 
-    def send_clipboard(self, text):
+    def send_clipboard(self, text) -> None:
         nocr = strtobytes(text.replace("\r", ""))
         msg = struct.pack(b"!BBBBI", 3, 0, 0, 0, len(nocr)) + nocr
         self.send(msg)
 
-    def bell(self, *_args):
+    def bell(self, *_args) -> None:
         msg = struct.pack(b"!B", 2)
         self.send(msg)
 
-    def send(self, msg):
+    def send(self, msg) -> None:
         p = self.protocol
         if p:
             p.send(msg)

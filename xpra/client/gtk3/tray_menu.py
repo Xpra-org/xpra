@@ -891,7 +891,7 @@ class GTKTrayMenu(MenuHelper):
         speaker = self.menuitem("Speaker", "speaker.png", "Forward audio output from the server")
         set_sensitive(speaker, False)
 
-        def is_speaker_on(*_args):
+        def is_speaker_on(*_args) -> bool:
             return self.client.speaker_enabled
 
         def speaker_state(*_args):
@@ -921,7 +921,7 @@ class GTKTrayMenu(MenuHelper):
         microphone = self.menuitem("Microphone", "microphone.png", "Forward audio input to the server")
         set_sensitive(microphone, False)
 
-        def is_microphone_on(*_args):
+        def is_microphone_on(*_args) -> bool:
             return self.client.microphone_enabled
 
         def microphone_state(*_args):

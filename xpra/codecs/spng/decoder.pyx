@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
+from typing import Tuple, Dict
 
 from xpra.log import Logger
 log = Logger("decoder", "spng")
@@ -33,34 +34,40 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
 
 
-COLOR_TYPE_STR = {
+COLOR_TYPE_STR: Dict[int, str] = {
     SPNG_COLOR_TYPE_GRAYSCALE       : "GRAYSCALE",
     SPNG_COLOR_TYPE_TRUECOLOR       : "TRUECOLOR",
     SPNG_COLOR_TYPE_INDEXED         : "INDEXED",
     SPNG_COLOR_TYPE_GRAYSCALE_ALPHA : "GRAYSCALE_ALPHA",
     SPNG_COLOR_TYPE_TRUECOLOR_ALPHA : "TRUECOLOR_ALPHA",
-    }
+}
 
-def get_version():
+
+def get_version() -> Tuple[int, int, int]:
     return (SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH)
 
-def get_encodings():
+
+def get_encodings() -> Tuple[str, ...]:
     return ("png", "png/L", "png/P")
 
-def get_error_str(int r):
+
+def get_error_str(int r) -> str:
     s = spng_strerror(r)
     return str(s)
 
-def check_error(int r, msg):
+
+def check_error(int r, msg) -> int:
     if r:
         log_error(r, msg)
     return r
 
-def log_error(int r, msg):
+
+def log_error(int r, msg) -> None:
     log.error("Error: %s", msg)
     log.error(" code %i: %s", r, get_error_str(r))
 
-def decompress(data):
+
+def decompress(data) -> Tuple:
     cdef spng_ctx *ctx = spng_ctx_new(0)
     if ctx==NULL:
         raise RuntimeError("failed to instantiate an spng context")

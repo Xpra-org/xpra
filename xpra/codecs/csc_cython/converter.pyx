@@ -90,26 +90,32 @@ def init_module() -> None:
     #nothing to do!
     log("csc_cython.init_module()")
 
+
 def cleanup_module() -> None:
     log("csc_cython.cleanup_module()")
+
 
 def get_type() -> str:
     return "cython"
 
+
 def get_version() -> Tuple[int, int]:
     return (4, 2)
 
+
 def get_info() -> Dict[str, Any]:
-    info = {
-            "version"   : (4, 1),
-            }
-    return info
+    return {
+        "version"   : (4, 1),
+    }
+
 
 def get_input_colorspaces() -> Tuple[str, ...]:
     return tuple(COLORSPACES.keys())
 
+
 def get_output_colorspaces(input_colorspace) -> List[str]:
     return COLORSPACES[input_colorspace]
+
 
 def get_spec(in_colorspace:str, out_colorspace:str) -> CSCSpec:
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
@@ -207,6 +213,7 @@ cdef inline unsigned char clamp(const long v) noexcept nogil:
         return 0xff         #2**8-1
     return <unsigned char> (v>>16)
 
+
 cdef inline unsigned short clamp10(const long v) noexcept nogil:
     if v<=0:
         return 0
@@ -232,6 +239,7 @@ cdef inline void r210_to_BGR48_copy(unsigned short *bgr48, const unsigned int *r
             i += 3
         r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
 
+
 cdef inline void gbrp10_to_r210_copy(uintptr_t r210, uintptr_t[3] gbrp10,
                                      unsigned int width, unsigned int height,
                                      unsigned int src_stride, unsigned int dst_stride) noexcept nogil:
@@ -247,6 +255,7 @@ cdef inline void gbrp10_to_r210_copy(uintptr_t r210, uintptr_t[3] gbrp10,
         r = <unsigned short*> ((<uintptr_t> gbrp10[2]) + y*src_stride)
         for x in range(width):
             dst[x] = (b[x] & 0x3ff) + ((g[x] & 0x3ff)<<10) + ((r[x] & 0x3ff)<<20)
+
 
 cdef inline void r210_to_YUV444P10_copy(unsigned short *Y, unsigned short *U, unsigned short *V, uintptr_t r210data,
                                         unsigned int width, unsigned int height,

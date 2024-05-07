@@ -21,7 +21,7 @@ BUS_PATH = "/org/freedesktop/Notifications"
 ACTIONS = envbool("XPRA_NOTIFICATIONS_ACTIONS", True)
 
 
-def parse_hints(dbus_hints):
+def parse_hints(dbus_hints) -> dict:
     hints = {}
     h = dbus_to_native(dbus_hints)
     for x in ("image-data", "icon_data"):
@@ -44,7 +44,7 @@ def parse_hints(dbus_hints):
     return hints
 
 
-def get_capabilities():
+def get_capabilities() -> list[str]:
     caps = ["body", "icon-static"]
     if ACTIONS:
         caps += ["actions", "action-icons"]
@@ -81,7 +81,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
             "capabilities": get_capabilities(),
         }
 
-    def next_id(self):
+    def next_id(self) -> int:
         self.counter += 1
         return self.counter
 
@@ -130,7 +130,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         return caps
 
     @dbus.service.method(BUS_NAME, in_signature='u')
-    def CloseNotification(self, nid):
+    def CloseNotification(self, nid) -> None:
         log("CloseNotification(%s) callback=%s", nid, self.close_callback)
         try:
             self.active_notifications.remove(int(nid))
@@ -141,18 +141,18 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                 self.close_callback(nid)
             self.NotificationClosed(nid, 3)  # 3="The notification was closed by a call to CloseNotification"
 
-    def is_notification_active(self, nid):
+    def is_notification_active(self, nid) -> bool:
         return nid in self.active_notifications
 
     @dbus.service.signal(BUS_NAME, signature='uu')
-    def NotificationClosed(self, nid, reason):
+    def NotificationClosed(self, nid, reason) -> None:
         log(f"NotificationClosed({nid}, {reason})")
 
     @dbus.service.signal(BUS_NAME, signature='us')
-    def ActionInvoked(self, nid, action_key):
+    def ActionInvoked(self, nid, action_key) -> None:
         log(f"ActionInvoked({nid}, {action_key})")
 
-    def release(self):
+    def release(self) -> None:
         try:
             self.bus.release_name(BUS_NAME)
         except dbus.exceptions.DBusException as e:

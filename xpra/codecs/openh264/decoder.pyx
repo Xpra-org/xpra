@@ -151,29 +151,28 @@ cdef class Decoder:
         #dec_param.bParseOnly = 0
         self.context.Initialize(&dec_param)
 
-
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return "h264"
 
-    def get_colorspace(self):
+    def get_colorspace(self) -> str:
         return self.colorspace
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.context!=NULL
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "openh264"
 
     def __dealloc__(self):
         self.clean()
 
-    def clean(self):
+    def clean(self) -> None:
         log("openh264 close context %#x", <uintptr_t> self.context)
         cdef ISVCDecoder *context = self.context
         if context:
@@ -196,7 +195,7 @@ cdef class Decoder:
         return info
 
 
-    def decompress_image(self, data, options: typedict):
+    def decompress_image(self, data, options: typedict) -> ImageWrapper:
         cdef SBufferInfo buf_info
         cdef long r = 0
         cdef unsigned char* src

@@ -92,7 +92,7 @@ cdef check(avifResult r, message):
         err = avifResultToString(r) or AVIF_RESULT.get(r, r)
         raise RuntimeError("%s : %s" % (message, err))
 
-def encode(coding: str, image, options=None) -> tuple:
+def encode(coding: str, image, options=None) -> Tuple:
     options = typedict(options or {})
     pixel_format = image.get_pixel_format()
     if pixel_format not in INPUT_PIXEL_FORMATS:

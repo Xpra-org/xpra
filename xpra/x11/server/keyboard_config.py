@@ -608,12 +608,12 @@ class KeyboardConfig(KeyboardConfigBase):
             return
         if ignored_modifier_keynames is None:
             # this is not a keyboard event, ignore modifiers in "mod_pointermissing"
-            def is_ignored(modifier, _modifier_keynames):
+            def is_ignored(modifier, _modifier_keynames) -> bool:
                 return modifier in (self.mod_pointermissing or [])
         else:
             # keyboard event: ignore the keynames specified
             # (usually the modifier key being pressed/unpressed)
-            def is_ignored(_modifier, modifier_keynames):
+            def is_ignored(_modifier, modifier_keynames) -> bool:
                 return len(set(modifier_keynames or []) & set(ignored_modifier_keynames or [])) > 0
 
         def filtered_modifiers_set(modifiers):

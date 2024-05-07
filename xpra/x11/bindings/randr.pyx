@@ -574,7 +574,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         log(f"found {num_sizes} config sizes")
         return num_sizes>0
 
-    def has_randr(self):
+    def has_randr(self) -> bool:
         return bool(self._has_randr)
 
     def select_crtc_output_changes(self):
@@ -938,7 +938,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 #RandR 1.6 and the dummy version 0.4.0 or later
 ################################################################
 
-    def is_dummy16(self):
+    def is_dummy16(self) -> bool:
         self.context_check("is_dummy16")
         #figure out if we're dealing with the dummy with randr 1.6 support
         if not self._has_randr:
@@ -1000,7 +1000,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         XRRChangeOutputProperty(self.display, rro, prop, ptype,
                                 32, PropModeReplace, data, 1)
 
-    def has_mode(self, unsigned int w, unsigned int h):
+    def has_mode(self, unsigned int w, unsigned int h) -> bool:
         self.context_check("has_mode")
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)

@@ -131,7 +131,7 @@ cdef extern from "webp/decode.h":
     void WebPFreeDecBuffer(WebPDecBuffer* buffer)
 
 
-ERROR_TO_NAME: Dict = {
+ERROR_TO_NAME: Dict[int, str] = {
 #VP8_STATUS_OK
     VP8_STATUS_OUT_OF_MEMORY        : "out of memory",
     VP8_STATUS_INVALID_PARAM        : "invalid parameter",
@@ -142,10 +142,12 @@ ERROR_TO_NAME: Dict = {
     VP8_STATUS_NOT_ENOUGH_DATA      : "not enough data",
 }
 
+
 def get_version() -> Tuple[int, int, int]:
     cdef int version = WebPGetDecoderVersion()
     log("WebPGetDecoderVersion()=%#x", version)
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff
+
 
 def get_info() -> Dict[str, Any]:
     return  {
@@ -153,14 +155,17 @@ def get_info() -> Dict[str, Any]:
         "encodings"    : get_encodings(),
     }
 
+
 def webp_check(int ret) -> None:
     if ret==0:
         return
     err = ERROR_TO_NAME.get(ret, ret)
     raise RuntimeError("error: %s" % err)
 
+
 def get_encodings() -> Tuple[str]:
     return ("webp", )
+
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
@@ -186,7 +191,7 @@ cdef class WebpBufferWrapper:
         assert self.buffer_ptr>0, "WebpBufferWrapper has already been freed!"
         return PyMemoryView_FromMemory(<char *> self.buffer_ptr, self.size, PyBUF_WRITE)
 
-    def free(self):
+    def free(self) -> None:
         if self.buffer_ptr!=0:
             free(<void *>self.buffer_ptr)
             self.buffer_ptr = 0
@@ -250,7 +255,21 @@ def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
     return b, config.input.width, config.input.height, stride, has_alpha and config.input.has_alpha, out_format
 
 
-def decompress_yuv(data, has_alpha=False):
+class YUVImageWrapper(ImageWrapper):
+
+    def _cn(self):
+        return "webp.YUVImageWrapper"
+
+    def free(self) -> None:
+        cdef uintptr_t buf = self.cython_buffer
+        self.cython_buffer = 0
+        log("webp.YUVImageWrapper.free() cython_buffer=%#x", buf)
+        super().free()
+        if buf!=0:
+            free(<void *> buf)
+
+
+def decompress_yuv(data, has_alpha=False) -> YUVImageWrapper:
     """
         This returns a WebpBufferWrapper, you MUST call free() on it
         once the pixel buffer can be freed.
@@ -325,20 +344,6 @@ def decompress_yuv(data, has_alpha=False):
     img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
     img.cython_buffer = <uintptr_t> buf
     return img
-
-
-class YUVImageWrapper(ImageWrapper):
-
-    def _cn(self):
-        return "webp.YUVImageWrapper"
-
-    def free(self):
-        cdef uintptr_t buf = self.cython_buffer
-        self.cython_buffer = 0
-        log("webp.YUVImageWrapper.free() cython_buffer=%#x", buf)
-        super().free()
-        if buf!=0:
-            free(<void *> buf)
 
 
 def selftest(full=False) -> None:

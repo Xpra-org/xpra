@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from typing import Tuple
 
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.log import Logger
@@ -263,49 +264,49 @@ cdef class XImageWrapper:
     def __repr__(self):
         return "XImageWrapper(%s: %i, %i, %i, %i)" % (self.pixel_format, self.x, self.y, self.width, self.height)
 
-    def get_geometry(self):
+    def get_geometry(self) -> Tuple[int, int, int, int, int]:
         return self.x, self.y, self.width, self.height, self.depth
 
-    def get_target_x(self):
+    def get_target_x(self) -> int:
         return self.target_x
 
-    def get_target_y(self):
+    def get_target_y(self) -> int:
         return self.target_y
 
-    def set_target_x(self, target_x):
+    def set_target_x(self, unsigned int target_x):
         self.target_x = target_x
 
-    def set_target_y(self, target_y):
+    def set_target_y(self, unsigned int target_y):
         self.target_y = target_y
 
-    def get_x(self):
+    def get_x(self) -> int:
         return self.x
 
-    def get_y(self):
+    def get_y(self) -> int:
         return self.y
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_rowstride(self):
+    def get_rowstride(self) -> int:
         return self.rowstride
 
     def get_palette(self):
         return self.palette
 
-    def get_planes(self):
+    def get_planes(self) -> int:
         return self.planes
 
-    def get_depth(self):
+    def get_depth(self) -> int:
         return self.depth
 
     def get_bytesperpixel(self):
         return self.bytesperpixel
 
-    def get_size(self):
+    def get_size(self) -> int:
         return self.rowstride * self.height
 
     def get_pixel_format(self):
@@ -352,7 +353,7 @@ cdef class XImageWrapper:
     def get_gpu_buffer(self):
         return None
 
-    def has_pixels(self):
+    def has_pixels(self) -> bool:
         if self.pixels!=NULL:
             return True
         cdef XImage *image = self.image
@@ -360,27 +361,27 @@ cdef class XImageWrapper:
             return False
         return image.data!=NULL
 
-    def is_thread_safe(self):
+    def is_thread_safe(self) -> bool:
         return self.thread_safe
 
-    def get_timestamp(self):
+    def get_timestamp(self) -> int:
         """ time in millis """
         return self.timestamp
 
-    def set_palette(self, palette):
+    def set_palette(self, palette) -> None:
         self.palette = palette
 
-    def set_timestamp(self, timestamp):
+    def set_timestamp(self, timestamp) -> None:
         self.timestamp = timestamp
 
-    def set_rowstride(self, rowstride):
+    def set_rowstride(self, unsigned int rowstride) -> None:
         self.rowstride = rowstride
 
-    def set_pixel_format(self, pixel_format):
+    def set_pixel_format(self, pixel_format) -> None:
         assert pixel_format is not None and pixel_format in RGB_FORMATS, "invalid pixel format: %s" % pixel_format
         self.pixel_format = pixel_format
 
-    def set_pixels(self, pixels):
+    def set_pixels(self, pixels) -> None:
         """ overrides the context of the image with the given pixels buffer """
         if self.pixels!=NULL:
             if not self.sub:
@@ -411,7 +412,7 @@ cdef class XImageWrapper:
         memcpy(self.pixels, py_buf.buf, py_buf.len)
         PyBuffer_Release(&py_buf)
 
-    def free(self):
+    def free(self) -> None:
         ximagedebug("%s.free()", self)
         self.free_image()
         self.free_pixels()
@@ -432,12 +433,12 @@ cdef class XImageWrapper:
                 free(self.pixels)
             self.pixels = NULL
 
-    def freeze(self):
+    def freeze(self) -> bool:
         #we don't need to do anything here because the non-XShm version
         #already uses a copy of the pixels
         return False
 
-    def may_restride(self):
+    def may_restride(self) -> bool:
         #if not given a newstride, assume it is optional and check if it is worth doing at all:
         if self.rowstride<=8 or self.height<=2:
             return False                                    #not worth it
@@ -452,7 +453,7 @@ cdef class XImageWrapper:
             return False
         return self.restride(newstride)
 
-    def restride(self, const unsigned int rowstride):
+    def restride(self, const unsigned int rowstride) -> bool:
         #NOTE: this must be called from the UI thread!
         #start = monotonic()
         cdef unsigned int newsize = rowstride*self.height                #desirable size we could have
@@ -865,7 +866,7 @@ cdef class XImageBindingsInstance(X11CoreBindingsInstance):
         if not self.has_xshm:
             xshmlog.warn(f"Warning: no XShm support on display {dn!r}")
 
-    def has_XShm(self):
+    def has_XShm(self) -> bool:
         return bool(self.has_xshm)
 
     def get_XShmWrapper(self, xwindow):

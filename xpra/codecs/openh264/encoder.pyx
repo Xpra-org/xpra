@@ -330,7 +330,7 @@ cdef class Encoder:
             log.info(f"saving {encoding} stream to {filename!r}")
         self.ready = 1
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return bool(self.ready)
 
     cdef init_encoder(self, options:typedict):
@@ -412,7 +412,6 @@ cdef class Encoder:
 
     def get_src_format(self) -> str:
         return self.src_format
-
 
     def compress_image(self, image, options=None):
         cdef int i

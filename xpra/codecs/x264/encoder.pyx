@@ -274,19 +274,19 @@ cdef const char * const *get_preset_names():
     return x264_preset_names;
 
 
-ADAPT_TYPES = {
-               X264_B_ADAPT_NONE        : "NONE",
-               X264_B_ADAPT_FAST        : "FAST",
-               X264_B_ADAPT_TRELLIS     : "TRELLIS",
-               }
+ADAPT_TYPES: Dict[int, str] = {
+    X264_B_ADAPT_NONE        : "NONE",
+    X264_B_ADAPT_FAST        : "FAST",
+    X264_B_ADAPT_TRELLIS     : "TRELLIS",
+}
 
-RC_TYPES = {
+RC_TYPES: Dict[int, str] = {
     X264_RC_CQP : "CQP",
     X264_RC_CRF : "CRF",
     X264_RC_ABR : "ABR",
-    }
+}
 
-SLICE_TYPES = {
+SLICE_TYPES: Dict[int, str] = {
     X264_TYPE_AUTO  : "auto",
     X264_TYPE_IDR   : "IDR",
     X264_TYPE_I     : "I",
@@ -294,17 +294,17 @@ SLICE_TYPES = {
     X264_TYPE_BREF  : "BREF",
     X264_TYPE_B     : "B",
     X264_TYPE_KEYFRAME  : "KEYFRAME",
-    }
+}
 
-ME_TYPES = {
+ME_TYPES: Dict[int, str] = {
     X264_ME_DIA     : "DIA",
     X264_ME_HEX     : "HEX",
     X264_ME_UMH     : "UMH",
     X264_ME_ESA     : "ESA",
     X264_ME_TESA    : "TESA",
-    }
+}
 
-NAL_TYPES = {
+NAL_TYPES: Dict[int, str] = {
     NAL_UNKNOWN     : "unknown",
     NAL_SLICE       : "slice",
     NAL_SLICE_DPA   : "slice-dpa",
@@ -316,14 +316,14 @@ NAL_TYPES = {
     NAL_PPS         : "pps",
     NAL_AUD         : "aud",
     NAL_FILLER      : "filler",
-    }
+}
 
-NAL_PRIORITIES = {
+NAL_PRIORITIES: Dict[int, str] = {
     NAL_PRIORITY_DISPOSABLE : "disposable",
     NAL_PRIORITY_LOW        : "low",
     NAL_PRIORITY_HIGH       : "high",
     NAL_PRIORITY_HIGHEST    : "highest",
-    }
+}
 
 
 PROFILE_BASELINE = "baseline"
@@ -958,7 +958,7 @@ cdef class Encoder:
             self.file.flush()
         return cdata, client_options
 
-    def flush(self, unsigned long frame_no):
+    def flush(self, unsigned long frame_no) -> None:
         if self.frames>frame_no or self.context==NULL:
             return None, {}
         self.delayed_frames = x264_encoder_delayed_frames(self.context)

@@ -54,7 +54,7 @@ class CUDAImageWrapper(ImageWrapper):
         self.free_cuda()
         ctx.pop()
 
-    def freeze(self):
+    def freeze(self) -> bool:
         # this image is already a copy when we get it
         return True
 
@@ -62,22 +62,22 @@ class CUDAImageWrapper(ImageWrapper):
         self.wait_for_stream()
         return self.cuda_device_buffer
 
-    def has_pixels(self):
+    def has_pixels(self) -> bool:
         return self.pixels is not None
 
     def get_pixels(self):
         self.may_download()
         return super().get_pixels()
 
-    def clone_pixel_data(self):
+    def clone_pixel_data(self) -> None:
         self.may_download()
-        return super().clone_pixel_data()
+        super().clone_pixel_data()
 
     def get_sub_image(self, x, y, w, h):
         self.may_download()
         return super().get_sub_image(x, y, w, h)
 
-    def free_cuda_device_buffer(self):
+    def free_cuda_device_buffer(self) -> None:
         cdb = self.cuda_device_buffer
         if not cdb:
             return
@@ -85,7 +85,7 @@ class CUDAImageWrapper(ImageWrapper):
         self.cuda_device_buffer = None
         cdb.free()
 
-    def free_cuda(self):
+    def free_cuda(self) -> None:
         self.free_cuda_device_buffer()
         self.stream = None
         self.cuda_context = None
@@ -95,7 +95,7 @@ class CUDAImageWrapper(ImageWrapper):
         self.free_cuda()
         return super().free()
 
-    def clean(self):
+    def clean(self) -> None:
         try:
             self.wait_for_stream()
         except LogicError:  # pylint: disable=no-member @UndefinedVariable

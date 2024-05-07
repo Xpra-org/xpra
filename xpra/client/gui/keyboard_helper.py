@@ -321,7 +321,7 @@ class KeyboardHelper:
         import hashlib
         h = hashlib.sha256()
 
-        def hashadd(v):
+        def hashadd(v) -> None:
             h.update(("/%s" % str(v)).encode("utf8"))
 
         for x in (self.mod_meanings, self.mod_pointermissing, self.keycodes, self.x11_keycodes):

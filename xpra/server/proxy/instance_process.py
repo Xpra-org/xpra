@@ -300,7 +300,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 return
             generic_request = caps.strget("request")
 
-            def is_req_allowed(mode):
+            def is_req_allowed(mode) -> bool:
                 try:
                     options = proto._conn.options
                     req_option = options.get(mode, "yes")
@@ -308,7 +308,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                     req_option = "yes"
                 return str_to_bool(req_option)
 
-            def is_req(mode):
+            def is_req(mode) -> bool:
                 return generic_request == mode or caps.boolget(f"{mode}_request")
 
             if is_req("info"):

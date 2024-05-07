@@ -27,7 +27,7 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_image_t,
     VPX_CS_BT_709, VPX_CR_FULL_RANGE,
     vpx_codec_err_to_string, vpx_codec_control_,
-    )
+)
 from libc.stdint cimport uint8_t, int64_t
 from libc.stdlib cimport free, malloc
 from libc.string cimport memset
@@ -48,6 +48,7 @@ cdef inline int MIN(int a, int b):
     if a<=b:
         return a
     return b
+
 cdef inline int MAX(int a, int b):
     if a>=b:
         return a
@@ -169,14 +170,14 @@ cdef extern from "vpx/vpx_encoder.h":
     const vpx_codec_cx_pkt_t *vpx_codec_get_cx_data(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter) nogil
     vpx_codec_err_t vpx_codec_enc_config_set(vpx_codec_ctx_t *ctx, const vpx_codec_enc_cfg_t *cfg)
 
-PACKET_KIND = {
+PACKET_KIND: Dict[int, str] = {
     VPX_CODEC_CX_FRAME_PKT   : "CX_FRAME_PKT",
     VPX_CODEC_STATS_PKT      : "STATS_PKT",
     VPX_CODEC_PSNR_PKT       : "PSNR_PKT",
     VPX_CODEC_CUSTOM_PKT     : "CUSTOM_PKT",
 }
 
-COLORSPACES = {
+COLORSPACES: Dict[str, Tuple[str, ...]] = {
     "vp8": ("YUV420P", ),
 }
 if VPX_ENCODER_ABI_VERSION>=23:
@@ -215,20 +216,20 @@ def get_version() -> Tuple[int,...]:
     return tuple(vparts)
 
 
-def get_type():
+def get_type() -> str:
     return "vpx"
 
 
-def get_encodings():
+def get_encodings() -> Tuple[str, ...]:
     return CODECS
 
 
-def get_input_colorspaces(encoding):
+def get_input_colorspaces(encoding: str):
     assert encoding in get_encodings(), "invalid encoding: %s" % encoding
     return COLORSPACES[encoding]
 
 
-def get_output_colorspaces(encoding, input_colorspace):
+def get_output_colorspaces(encoding: str, input_colorspace: str):
     assert encoding in get_encodings(), "invalid encoding: %s" % encoding
     csoptions = COLORSPACES[encoding]
     assert input_colorspace in csoptions, "invalid input colorspace: %s, %s only supports %s" % (input_colorspace, encoding, csoptions)
@@ -311,11 +312,14 @@ cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
     raise ValueError(f"invalid colorspace {colorspace!r}")
 
 
-def get_error_string(int err):
+def get_error_string(int err) -> str:
     estr = vpx_codec_err_to_string(<vpx_codec_err_t> err)[:]
     if not estr:
-        return err
-    return estr
+        return str(err)
+    try:
+        return estr.decode("latin1")
+    except UnicodeDecodeError:
+        return str(estr)
 
 
 cdef class Encoder:
@@ -437,16 +441,15 @@ cdef class Encoder:
             self.file = open(filename, "wb")
             log.info(f"saving {encoding} stream to {filename!r}")
 
-    def codec_error_str(self):
+    def codec_error_str(self) -> str:
         return vpx_codec_error(self.context).decode("latin1")
 
-    def codec_control(self, info, int attr, int value):
+    def codec_control(self, info, int attr, int value) -> bool:
         cdef vpx_codec_err_t ctrl = vpx_codec_control_(self.context, attr, value)
         log("%s setting %s to %s", self.encoding, info, value)
         if ctrl!=0:
             log.warn("failed to set %s to %s: %s (%s)", info, value, get_error_string(ctrl), ctrl)
         return ctrl==0
-
 
     def log_cfg(self):
         log(" target_bitrate=%s", self.cfg.rc_target_bitrate)
@@ -472,9 +475,8 @@ cdef class Encoder:
         self.cfg.rc_min_quantizer = MAX(0, MIN(63, int((80-self.quality) * 0.63)))
         self.cfg.rc_max_quantizer = MAX(self.cfg.rc_min_quantizer, MIN(63, int((100-self.quality) * 0.63)))
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return True
-
 
     def __repr__(self):
         return "vpx.Encoder(%s)" % self.encoding
@@ -555,8 +557,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-
-    def compress_image(self, image, options=None):
+    def compress_image(self, image, options=None) -> Tuple:
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         assert self.context!=NULL

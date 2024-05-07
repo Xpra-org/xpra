@@ -232,7 +232,7 @@ def get_ssh_port() -> int:
     return 22
 
 
-def has_websocket_handler():
+def has_websocket_handler() -> bool:
     try:
         from xpra.net.websockets.handler import WebSocketRequestHandler
         assert WebSocketRequestHandler

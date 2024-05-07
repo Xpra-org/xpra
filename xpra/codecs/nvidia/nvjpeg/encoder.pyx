@@ -250,20 +250,20 @@ cdef class Encoder:
         r = nvjpegEncoderParamsSetQuality(self.nv_enc_params, self.quality, self.stream)
         errcheck(r, "nvjpegEncoderParamsSetQuality %i", self.quality)
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return self.nv_handle!=NULL
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.nv_handle==NULL
 
-    def clean(self):
+    def clean(self) -> None:
         self.clean_cuda()
         self.clean_nvjpeg()
 
-    def clean_cuda(self):
+    def clean_cuda(self) -> None:
         self.cuda_kernel = None
 
-    def clean_nvjpeg(self):
+    def clean_nvjpeg(self) -> None:
         log("nvjpeg.clean() nv_handle=%#x", <uintptr_t> self.nv_handle)
         if self.nv_handle==NULL:
             return
@@ -277,19 +277,19 @@ cdef class Encoder:
         errcheck(r, "nvjpegDestroy")
         self.nv_handle = NULL
 
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return "jpeg"
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "nvjpeg"
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
     def get_info(self) -> Dict[str,Any]:

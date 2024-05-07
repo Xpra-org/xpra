@@ -1,17 +1,18 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from time import monotonic
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t    # pylint: disable=syntax-error
 from libc.stdlib cimport free    # pylint: disable=syntax-error
 from libc.string cimport memset  # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 
+from xpra.codecs.image import ImageWrapper
 from xpra.net.compression import Compressed
 from xpra.codecs.debug import may_save_image
 from xpra.util.env import envbool, envint
@@ -28,6 +29,7 @@ cdef inline int MIN(int a, int b):
     if a<=b:
         return a
     return b
+
 cdef inline int MAX(int a, int b):
     if a>=b:
         return a
@@ -277,7 +279,7 @@ cdef extern from "webp/encode.h":
     int WebPPictureRescale(WebPPicture* pic, int width, int height) nogil
 
 
-ERROR_TO_NAME = {
+ERROR_TO_NAME: Dict[int, str] = {
 #VP8_ENC_OK
     VP8_ENC_ERROR_OUT_OF_MEMORY             : "memory error allocating objects",
     VP8_ENC_ERROR_BITSTREAM_OUT_OF_MEMORY   : "memory error while flushing bits",
@@ -289,93 +291,100 @@ ERROR_TO_NAME = {
     VP8_ENC_ERROR_BAD_WRITE                 : "error while flushing bytes",
     VP8_ENC_ERROR_FILE_TOO_BIG              : "file is bigger than 4G",
     VP8_ENC_ERROR_USER_ABORT                : "abort request by user",
-    }
+}
 
-PRESETS = {
+PRESETS: Dict[int, str] = {
     WEBP_PRESET_DEFAULT      : "default",
     WEBP_PRESET_PICTURE      : "picture",
     WEBP_PRESET_PHOTO        : "photo",
     WEBP_PRESET_DRAWING      : "drawing",
     WEBP_PRESET_ICON         : "icon",
     WEBP_PRESET_TEXT         : "text",
-    }
+}
 PRESET_NAME_TO_CONSTANT = {}
 for k,v in PRESETS.items():
     PRESET_NAME_TO_CONSTANT[v] = k
 
-CONTENT_TYPE_PRESET = {
+CONTENT_TYPE_PRESET: Dict[str, int] = {
     "picture"   : WEBP_PRESET_PICTURE,
     "text"      : WEBP_PRESET_TEXT,
     "browser"   : WEBP_PRESET_TEXT,
-    }
+}
 
-CSP_NAMES = {
+CSP_NAMES: Dict[int, str] = {
     WEBP_YUV420         : "YUV420",
     WEBP_YUV420A        : "YUV420A",
     WEBP_CSP_UV_MASK    : "UV_MASK",
-    }
+}
 
-IMAGE_HINT = {
+IMAGE_HINT: Dict[int, str] = {
     WEBP_HINT_DEFAULT     : "default",
     WEBP_HINT_PICTURE     : "picture",
     WEBP_HINT_PHOTO       : "photo",
     WEBP_HINT_GRAPH       : "graph",
-    }
+}
 HINT_NAME_TO_CONSTANT = {}
 for k,v in IMAGE_HINT.items():
     HINT_NAME_TO_CONSTANT[v] = k
 
-CONTENT_TYPE_HINT = {
+CONTENT_TYPE_HINT: Dict[str, int] = {
     "picture"   : WEBP_HINT_PICTURE,
-    }
+}
 
 cdef WebPImageHint DEFAULT_IMAGE_HINT = HINT_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_IMAGE_HINT", "default").lower(), WEBP_HINT_DEFAULT)
 cdef WebPPreset DEFAULT_PRESET = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET", "default").lower(), WEBP_PRESET_DEFAULT)
 cdef WebPPreset PRESET_SMALL = PRESET_NAME_TO_CONSTANT.get(os.environ.get("XPRA_WEBP_PRESET_SMALL", "icon").lower(), WEBP_PRESET_ICON)
 
 
-def get_type():
+def get_type() -> str:
     return "webp"
 
-def get_encodings():
+
+def get_encodings() -> Tuple[str, ...]:
     return ("webp", )
 
-def get_version():
+
+def get_version() -> Tuple[int, int, int]:
     cdef int version = WebPGetEncoderVersion()
     log("WebPGetEncoderVersion()=%#x", version)
     return (version >> 16) & 0xff, (version >> 8) & 0xff, version & 0xff
 
-def get_info():
-    return  {
-            "version"       : get_version(),
-            "encodings"     : get_encodings(),
-            "threading"     : bool(WEBP_THREADING),
-            "image-hint"    : DEFAULT_IMAGE_HINT,
-            "image-hints"   : tuple(IMAGE_HINT.values()),
-            "preset"        : DEFAULT_PRESET,
-            "preset-small"  : PRESET_SMALL,
-            "presets"       : tuple(PRESETS.values()),
-            }
 
-def init_module():
+def get_info() -> Dict[str, Any]:
+    return  {
+        "version"       : get_version(),
+        "encodings"     : get_encodings(),
+        "threading"     : bool(WEBP_THREADING),
+        "image-hint"    : DEFAULT_IMAGE_HINT,
+        "image-hints"   : tuple(IMAGE_HINT.values()),
+        "preset"        : DEFAULT_PRESET,
+        "preset-small"  : PRESET_SMALL,
+        "presets"       : tuple(PRESETS.values()),
+    }
+
+def init_module() -> None:
     log("webp.init_module()")
 
-def cleanup_module():
+
+def cleanup_module() -> None:
     log("webp.cleanup_module()")
 
 
 INPUT_PIXEL_FORMATS = ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR")
 
-def get_input_colorspaces(encoding):
+
+def get_input_colorspaces(encoding: str):
     assert encoding=="webp"
     return INPUT_PIXEL_FORMATS
 
-def get_output_colorspaces(encoding, input_colorspace):
+
+def get_output_colorspaces(encoding: str, input_colorspace: str):
     assert encoding=="webp"
     assert input_colorspace in INPUT_PIXEL_FORMATS
     return (input_colorspace, )
 
-def get_specs(encoding, colorspace):
+
+def get_specs(encoding: str, colorspace: str):
     assert encoding=="webp"
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.constants import VideoSpec
@@ -390,11 +399,12 @@ def get_specs(encoding, colorspace):
         )
 
 
-def webp_check(int ret):
+def webp_check(int ret) -> None:
     if ret==0:
         return
     err = ERROR_TO_NAME.get(ret, ret)
     raise RuntimeError("error: %s" % err)
+
 
 cdef float fclamp(int v):
     if v<0:
@@ -428,7 +438,7 @@ cdef get_config_info(WebPConfig *config):
         "emulate_jpeg_size" : config.emulate_jpeg_size,
         "thread_level"      : config.thread_level,
         "low_memory"        : config.low_memory,
-        }
+    }
 
 
 
@@ -474,28 +484,28 @@ cdef class Encoder:
         validate_config(&self.config)
 
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return self.width>0 and self.height>0
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.width==0 or self.height==0
 
-    def clean(self):
+    def clean(self) -> None:
         self.width = self.height = self.quality = 0
 
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return "webp"
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "webp"
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
     def get_info(self) -> Dict[str,Any]:
@@ -510,7 +520,7 @@ cdef class Encoder:
         }
         return info
 
-    def compress_image(self, image, options=None):
+    def compress_image(self, image: ImageWrapper, options=None) -> Tuple:
         options = options or {}
         reconfigure = False
         quality = options.get("quality", -1)
@@ -583,10 +593,12 @@ cdef WebPPreset get_preset(unsigned int width, unsigned int height, content_type
         preset = PRESET_SMALL
     return CONTENT_TYPE_PRESET.get(content_type, preset)
 
+
 cdef config_init(WebPConfig *config):
     cdef int ret = WebPConfigInit(config)
     if not ret:
         raise RuntimeError("failed to initialize webp config")
+
 
 cdef configure_encoder(WebPConfig *config,
                       unsigned int quality, unsigned int speed,
@@ -626,16 +638,19 @@ cdef configure_encoder(WebPConfig *config,
         config.lossless, config.quality, config.method,
         config.alpha_compression, config.alpha_filtering, config.alpha_quality)
 
+
 cdef configure_preset(WebPConfig *config, WebPPreset preset, int quality):
     ret = WebPConfigPreset(config, preset, fclamp(quality))
     if not ret:
         raise ValueError(f"failed to set webp preset {preset} and quality {quality}")
     log("webp config: preset=%-8s", PRESETS.get(preset, preset))
 
-cdef configure_image_hint(WebPConfig *config, content_type):
+
+cdef configure_image_hint(WebPConfig *config, content_type: str):
     cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
     config.image_hint = image_hint
     log("webp config: image hint=%s", IMAGE_HINT.get(image_hint, image_hint))
+
 
 cdef validate_config(WebPConfig *config):
     ret = WebPValidateConfig(config)
@@ -644,7 +659,7 @@ cdef validate_config(WebPConfig *config):
         raise RuntimeError("invalid webp configuration: %s" % info)
 
 
-def encode(coding, image, options=None):
+def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     log("webp.encode(%s, %s, %s)", coding, image, options)
     assert coding=="webp"
     pixel_format = image.get_pixel_format()
@@ -687,7 +702,7 @@ def encode(coding, image, options=None):
 
     client_options = {
         "rgb_format"  : pixel_format,
-        }
+    }
     if quality<SUBSAMPLING_THRESHOLD:
         if alpha:
             to_yuv(&pic, WEBP_YUV420A)
@@ -758,6 +773,7 @@ cdef import_picture(WebPPicture *pic,
     end = monotonic()
     log("webp %s import took %.1fms", pixel_format, 1000*(end-start))
 
+
 cdef scale_picture(WebPPicture *pic, unsigned scaled_width, unsigned int scaled_height):
     cdef double start = monotonic()
     with nogil:
@@ -767,6 +783,7 @@ cdef scale_picture(WebPPicture *pic, unsigned scaled_width, unsigned int scaled_
         raise RuntimeError("WebP failed to resize to %ix%i" % (scaled_width, scaled_height))
     cdef double end = monotonic()
     log("webp %s resizing took %.1fms", 1000*(end-start))
+
 
 cdef to_yuv(WebPPicture *pic, WebPEncCSP csp=WEBP_YUV420):
     cdef double start = monotonic()

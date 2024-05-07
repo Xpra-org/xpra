@@ -392,7 +392,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             return 0
         return xkb_state.group
 
-    def hasXkb(self):
+    def hasXkb(self) -> bool:
         if self.Xkb_checked:
             return self.Xkb_version_major>0 or self.Xkb_version_minor>0
         cdef int major, minor, opr
@@ -997,7 +997,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         # bellID = XkbDfltXIId
         return XkbDeviceBell(self.display, xwindow, XkbUseCoreKbd, bellClass, XkbDfltXIId,  percent, name_atom)
 
-    def hasXTest(self):
+    def hasXTest(self) -> bool:
         self.context_check("hasXTest")
         if self.XTest_checked:
             return self.XTest_version_major>0 or self.XTest_version_minor>0
@@ -1060,7 +1060,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef unsigned int cinterval = interval
         return XkbSetAutoRepeatRate(self.display, deviceSpec, cdelay, cinterval)
 
-    def hasXFixes(self):
+    def hasXFixes(self) -> bool:
         self.context_check("hasXFixes")
         cdef int evbase, errbase
         if not self.XFixes_checked:

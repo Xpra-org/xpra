@@ -1,7 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from typing import Tuple, Dict
 
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs
@@ -34,30 +36,30 @@ cdef extern from *:
     ctypedef unsigned long size_t
 
 
-AVIF_PIXEL_FORMAT = {
+AVIF_PIXEL_FORMAT: Dict[int, str] = {
     AVIF_PIXEL_FORMAT_NONE      : "NONE",
     AVIF_PIXEL_FORMAT_YUV444    : "YUV444",
     AVIF_PIXEL_FORMAT_YUV422    : "YUV422",
     AVIF_PIXEL_FORMAT_YUV420    : "YUV420",
     AVIF_PIXEL_FORMAT_YUV400    : "YUV400",
-    }
+}
 
-AVIF_RANGE = {
+AVIF_RANGE: Dict[int, str] = {
     AVIF_RANGE_LIMITED  : "LIMITED",
     AVIF_RANGE_FULL     : "FULL",
-    }
+}
 
 
-def get_version():
+def get_version() -> Tuple[int, int, int]:
     return (AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH)
 
-def get_info():
+def get_info() -> Dict:
     return  {
         "version"      : get_version(),
         "encodings"    : get_encodings(),
-        }
+    }
 
-def get_encodings():
+def get_encodings() -> Tuple[str, ...]:
     return ("avif", )
 
 
@@ -66,7 +68,7 @@ cdef check(avifResult r, message):
         err = avifResultToString(r).decode("latin1") or AVIF_RESULT.get(r, r)
         raise RuntimeError("%s : %s" % (message, err))
 
-def decompress(data, options=None, yuv=False):
+def decompress(data, options=None, yuv=False) -> ImageWrapper:
     cdef avifRGBImage rgb
     memset(&rgb, 0, sizeof(avifRGBImage))
     cdef avifDecoder * decoder = avifDecoderCreate()

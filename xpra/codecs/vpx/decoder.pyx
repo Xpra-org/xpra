@@ -275,7 +275,7 @@ cdef class Decoder:
     def __dealloc__(self):
         self.clean()
 
-    def clean(self):
+    def clean(self) -> None:
         if self.context!=NULL:
             vpx_codec_destroy(self.context)
             self.context = NULL
@@ -291,7 +291,7 @@ cdef class Decoder:
             f.close()
 
 
-    def decompress_image(self, data:bytes, options: typedict) -> ImageWrapper:
+    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
         cdef vpx_codec_iter_t citer = NULL
         cdef MemBuf output_buf
         cdef void *output

@@ -1,14 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
 
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 from time import monotonic
 
 from libc.stdint cimport uintptr_t
+from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context     # pylint: disable=syntax-error
 from xpra.codecs.constants import get_subsampling_divs
 from xpra.codecs.debug import may_save_image
@@ -72,7 +73,7 @@ cdef extern from "turbojpeg.h":
                     unsigned long *jpegSize, int jpegQual,
                     int flags) nogil
 
-TJPF_VAL = {
+TJPF_VAL: Dict[str, int] = {
     "RGB"   : TJPF_RGB,
     "BGR"   : TJPF_BGR,
     "RGBX"  : TJPF_RGBX,
@@ -85,34 +86,40 @@ TJPF_VAL = {
     "ABGR"  : TJPF_ABGR,
     "ARGB"  : TJPF_ARGB,
     "CMYK"  : TJPF_CMYK,
-    }
-TJSAMP_STR = {
+}
+TJSAMP_STR: Dict[int, str] = {
     TJSAMP_444  : "444",
     TJSAMP_422  : "422",
     TJSAMP_420  : "420",
     TJSAMP_GRAY : "GRAY",
     TJSAMP_440  : "440",
     TJSAMP_411  : "411",
-    }
+}
 
 
-def get_version():
+def get_version() -> Tuple[int, int]:
     return (2, 0)
 
-def get_type():
+
+def get_type() -> str:
     return "jpeg"
 
-def get_info():
+
+def get_info() -> Dict[str, Any]:
     return {"version"   : get_version()}
 
-def get_encodings():
+
+def get_encodings() -> Tuple[str, ...]:
     return ("jpeg", "jpega")
 
-def init_module():
+
+def init_module() -> None:
     log("jpeg.init_module()")
 
-def cleanup_module():
+
+def cleanup_module() -> None:
     log("jpeg.cleanup_module()")
+
 
 if YUV:
     JPEG_INPUT_COLORSPACES = ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR", "YUV420P", "YUV422P", "YUV444P")
@@ -120,18 +127,20 @@ else:
     JPEG_INPUT_COLORSPACES = ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR")
 
 
-def get_input_colorspaces(encoding):
+def get_input_colorspaces(encoding: str) -> Tuple[str, ...]:
     if encoding=="jpeg":
         return JPEG_INPUT_COLORSPACES
     assert encoding=="jpega"
     return ("BGRA", "RGBA", )
 
-def get_output_colorspaces(encoding, input_colorspace):
+
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Tuple[str, ...]:
     assert encoding in get_encodings()
     assert input_colorspace in get_input_colorspaces(encoding)
     return (input_colorspace, )
 
-def get_specs(encoding, colorspace):
+
+def get_specs(encoding: str, colorspace: str):
     assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.constants import VideoSpec
@@ -161,6 +170,7 @@ cdef inline int norm_quality(int quality) nogil:
         return 100
     return <int> round(sqrt(<double> quality)*10)
 
+
 cdef class Encoder:
     cdef tjhandle compressor
     cdef int width
@@ -178,7 +188,7 @@ cdef class Encoder:
         if self.compressor==NULL:
             raise RuntimeError("Error: failed to instantiate a JPEG compressor")
 
-    def init_context(self, encoding, width : int, height : int, src_format, options: typedict):
+    def init_context(self, encoding, width : int, height : int, src_format, options: typedict) -> None:
         assert encoding in ("jpeg", "jpega"), "invalid encoding: %s" % encoding
         assert src_format in get_input_colorspaces(encoding)
         scaled_width = options.intget("scaled-width", width)
@@ -191,13 +201,13 @@ cdef class Encoder:
         self.grayscale = options.boolget("grayscale")
         self.quality = options.intget("quality", 50)
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return self.compressor!=NULL
 
-    def is_closed(self):
+    def is_closed(self) -> bool:
         return self.compressor==NULL
 
-    def clean(self):
+    def clean(self) -> None:
         self.width = self.height = self.quality = 0
         if self.compressor:
             r = tjDestroy(self.compressor)
@@ -206,19 +216,19 @@ cdef class Encoder:
                 log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
                 log.error(" %s", get_error_str())
 
-    def get_encoding(self):
+    def get_encoding(self) -> str:
         return self.encoding
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "jpeg"
 
-    def get_src_format(self):
+    def get_src_format(self) -> str:
         return self.src_format
 
     def get_info(self) -> Dict[str,Any]:
@@ -233,7 +243,7 @@ cdef class Encoder:
         }
         return info
 
-    def compress_image(self, image, options=None):
+    def compress_image(self, image, options=None) -> Tuple:
         options = options or {}
         quality = options.get("quality", -1)
         if quality>0:
@@ -265,14 +275,19 @@ cdef class Encoder:
         return memoryview(cdata), client_options
 
 
-def get_error_str():
-    cdef char *err = tjGetErrorStr()
-    return bytestostr(err)
+def get_error_str() -> str:
+    err = tjGetErrorStr()
+    try:
+        return err.decode("latin1")
+    except:
+        return bytestostr(err)
+
 
 JPEG_INPUT_FORMATS = ("RGB", "RGBX", "BGRX", "XBGR", "XRGB", )
 JPEGA_INPUT_FORMATS = ("RGBA", "BGRA", "ABGR", "ARGB")
 
-def encode(coding, image, options=None):
+
+def encode(coding, image: ImageWrapper, options=None) -> Tuple:
     assert coding in ("jpeg", "jpega")
     options = options or {}
     rgb_format = image.get_pixel_format()
@@ -302,11 +317,11 @@ def encode(coding, image, options=None):
 
     client_options = {
         "quality"   : quality
-        }
+    }
     cdef tjhandle compressor = tjInitCompress()
     if compressor==NULL:
         log.error("Error: failed to instantiate a JPEG compressor")
-        return None
+        return ()
     cdef int r
     try:
         cdata = encode_rgb(compressor, image, quality, grayscale)
@@ -334,12 +349,14 @@ def encode(coding, image, options=None):
             log.error("Error: failed to destroy the JPEG compressor, code %i:", r)
             log.error(" %s", get_error_str())
 
+
 cdef TJSAMP get_subsamp(int quality):
     if quality<60:
         return TJSAMP_420
     elif quality<80:
         return TJSAMP_422
     return TJSAMP_444
+
 
 cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
     pfstr = image.get_pixel_format()
@@ -359,6 +376,7 @@ cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
     return do_encode_rgb(compressor, pfstr, pixels,
                          width, height, stride,
                          quality, tjpf, subsamp)
+
 
 cdef do_encode_rgb(tjhandle compressor, pfstr, pixels,
                    int width, int height, int stride,
@@ -390,6 +408,7 @@ cdef do_encode_rgb(tjhandle compressor, pfstr, pixels,
     assert out_size>0 and out!=NULL, "jpeg compression produced no data"
     return makebuf(out, out_size)
 
+
 cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
     pfstr = image.get_pixel_format()
     assert pfstr in ("YUV420P", "YUV422P"), "invalid yuv pixel format %s" % pfstr
@@ -411,6 +430,7 @@ cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
     return do_encode_yuv(compressor, pfstr, planes,
                          width, height, rowstrides,
                          quality, subsamp)
+
 
 cdef do_encode_yuv(tjhandle compressor, pfstr, planes,
                    int width, int height, rowstrides,

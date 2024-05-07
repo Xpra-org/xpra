@@ -1,13 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2021-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
+from typing import Tuple
 
 from xpra.log import Logger
 log = Logger("decoder", "spng")
 
+from xpra.codecs.image import ImageWrapper
 from xpra.net.compression import Compressed
 from xpra.codecs.debug import may_save_image
 from xpra.codecs.argb.argb import unpremultiply_argb
@@ -41,31 +43,38 @@ cdef extern from "zlib.h":
     int Z_HUFFMAN_ONLY
 
 
-def get_version():
+def get_version() -> Tuple[int, int, int]:
     return (SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH)
 
-def get_type():
+
+def get_type() -> str:
     return "spng"
 
-def get_encodings():
+
+def get_encodings() -> Tuple[str, ...]:
     return ("png", "png/L")
 
-def get_error_str(int r):
+
+def get_error_str(int r) -> str:
     b = spng_strerror(r)
     return b.decode()
 
-def check_error(int r, msg):
+
+def check_error(int r, msg) -> int:
     if r:
         log_error(r, msg)
     return r
 
-def log_error(int r, msg):
+
+def log_error(int r, msg) -> None:
     log.error("Error: %s", msg)
     log.error(" code %i: %s", r, get_error_str(r))
 
+
 INPUT_FORMATS = "RGBA", "RGB"
 
-def encode(coding, image, options=None):
+
+def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     assert coding in ("png", "png/L")
     options = options or {}
     cdef int grayscale = options.get("grayscale", 0) or coding=="png/L"
@@ -152,31 +161,31 @@ def encode(coding, image, options=None):
     if check_error(spng_set_option(ctx, SPNG_IMG_COMPRESSION_LEVEL, clevel),
                    "failed to set compression level"):
         spng_ctx_free(ctx)
-        return None
+        return ()
     if check_error(spng_set_option(ctx, SPNG_TEXT_WINDOW_BITS, 15),
                    "failed to set window bits"):
         spng_ctx_free(ctx)
-        return None
+        return ()
     if check_error(spng_set_option(ctx, SPNG_IMG_COMPRESSION_STRATEGY, Z_HUFFMAN_ONLY),
                    "failed to set compression strategy"):
         spng_ctx_free(ctx)
-        return None
+        return ()
     if check_error(spng_set_option(ctx, SPNG_IMG_MEM_LEVEL, MAX_MEM_LEVEL),
                    "failed to set mem level"):
         spng_ctx_free(ctx)
-        return None
+        return ()
     cdef int filter = SPNG_FILTER_CHOICE_NONE
     if speed<30:
         filter |= SPNG_FILTER_CHOICE_SUB
     if check_error(spng_set_option(ctx, SPNG_FILTER_CHOICE, filter),
                    "failed to set filter choice"):
         spng_ctx_free(ctx)
-        return None
+        return ()
 
     if check_error(spng_set_option(ctx, SPNG_ENCODE_TO_BUFFER, 1),
                    "failed to set encode-to-buffer option"):
         spng_ctx_free(ctx)
-        return None
+        return ()
 
     cdef spng_format fmt = SPNG_FMT_PNG
     cdef int flags = SPNG_ENCODE_FINALIZE
@@ -196,7 +205,7 @@ def encode(coding, image, options=None):
         log.error(" %i bytes of %s pixel data", data_len, rgb_format)
         log.error(" for %s", image)
         spng_ctx_free(ctx)
-        return None
+        return ()
 
     cdef int error
     cdef size_t png_len
@@ -204,11 +213,11 @@ def encode(coding, image, options=None):
     if check_error(error,
                    "failed get png buffer"):
         spng_ctx_free(ctx)
-        return None
+        return ()
     if png_data==NULL:
         log.error("Error: spng buffer is NULL")
         spng_ctx_free(ctx)
-        return None
+        return ()
 
     cdef membuf = makebuf(png_data, png_len)
     spng_ctx_free(ctx)

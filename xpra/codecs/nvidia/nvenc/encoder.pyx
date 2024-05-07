@@ -1758,7 +1758,7 @@ cdef class Encoder:
         self.ready = 1
         log("init_device(%s) took %1.fms", options, (end-start)*1000.0)
 
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return bool(self.ready)
 
 

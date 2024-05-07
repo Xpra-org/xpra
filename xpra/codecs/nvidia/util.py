@@ -6,6 +6,7 @@
 
 import sys
 import os
+from typing import Any
 
 from xpra.util.str_fn import csv, print_nested_dict, pver, strtobytes, bytestostr
 from xpra.util.env import envbool
@@ -24,15 +25,15 @@ NVIDIA_HARDWARE = envbool("XPRA_NVIDIA_HARDWARE", False)
 nvidia_hardware = 0
 
 
-def has_nvidia_hardware():
+def has_nvidia_hardware() -> bool:
     global nvidia_hardware
     if nvidia_hardware == 0:
         nvidia_hardware = _has_nvidia_hardware()
     log(f"has_nvidia_hardware()={nvidia_hardware}")
-    return nvidia_hardware
+    return bool(nvidia_hardware)
 
 
-def _has_nvidia_hardware():
+def _has_nvidia_hardware() -> bool | None:
     if NVIDIA_HARDWARE:
         return True
     # first, check for the kernel module file, this should be very quick:
@@ -101,7 +102,7 @@ def wrap_nvml_init(nvmlInit, warn=True) -> bool:
         return False
 
 
-def get_nvml_driver_version():
+def get_nvml_driver_version() -> tuple:
     try:
         # pylint: disable=import-outside-toplevel
         from pynvml import nvmlInit, nvmlShutdown, nvmlSystemGetDriverVersion
@@ -116,7 +117,7 @@ def get_nvml_driver_version():
                 finally:
                     nvmlShutdown()
                 log(f"nvmlSystemGetDriverVersion={bytestostr(v)}")
-                return bytestostr(v).split(".")
+                return tuple(bytestostr(v).split("."))
         except Exception as e:
             log("get_nvml_driver_version() pynvml error", exc_info=True)
             log.warn("Warning: failed to query the NVidia kernel module version using NVML:")
@@ -124,7 +125,7 @@ def get_nvml_driver_version():
     return ()
 
 
-def get_proc_driver_version():
+def get_proc_driver_version() -> tuple:
     if not POSIX:
         return ()
     v = load_binary_file(NVIDIA_PROC_FILE)
@@ -138,10 +139,10 @@ def get_proc_driver_version():
         log.warn("unknown NVidia kernel module version")
         return ""
     v = bytestostr(v[p + len(KSTR):].strip().split(b" ")[0])
-    return v.split(".")
+    return tuple(v.split("."))
 
 
-def identify_nvidia_module_version():
+def identify_nvidia_module_version() -> tuple:
     v = get_nvml_driver_version() or get_proc_driver_version()
     # only keep numeric values:
     numver = []
@@ -170,8 +171,8 @@ def get_nvidia_module_version(probe=True):
     return nvidia_module_version
 
 
-def identify_cards():
-    devices = {}
+def identify_cards() -> dict:
+    devices: dict[int, dict[str, Any]] = {}
     try:
         # pylint: disable=import-outside-toplevel
         import pynvml
@@ -185,7 +186,7 @@ def identify_cards():
             for i in range(deviceCount):
                 handle = nvmlDeviceGetHandleByIndex(i)
                 log(f"identify_cards() handle({i})={handle}")
-                props = {}
+                props: dict[str, Any] = {}
 
                 def meminfo(memory):
                     return {
@@ -279,7 +280,7 @@ def get_cards(probe=True):
     return _cards
 
 
-def is_blacklisted():
+def is_blacklisted() -> bool | None:
     v = get_nvidia_module_version(True)
     if v:
         try:
@@ -295,7 +296,7 @@ def is_blacklisted():
 _version_warning = False
 
 
-def validate_driver_yuv444lossless():
+def validate_driver_yuv444lossless() -> bool:
     # this should log the kernel module version
     v = get_nvidia_module_version()
     if not v:
@@ -323,7 +324,7 @@ def validate_driver_yuv444lossless():
     return True
 
 
-def parse_nvfbc_hex_key(s):
+def parse_nvfbc_hex_key(s) -> bytes:
     # ie: 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
     # ie: 0102030405060708090A0B0C0D0E0F10
     # start by removing spaces and 0x:

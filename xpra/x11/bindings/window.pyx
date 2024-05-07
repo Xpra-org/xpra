@@ -535,10 +535,10 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XSelectInput(self.display, xwindow, mask)
 
     # Mapped status
-    def is_mapped(self, Window xwindow):
+    def is_mapped(self, Window xwindow) -> bool:
         return self.get_map_state(xwindow) != IsUnmapped
 
-    def get_map_state(self, Window xwindow):
+    def get_map_state(self, Window xwindow) -> int:
         self.context_check("get_map_state")
         cdef XWindowAttributes attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
@@ -547,22 +547,22 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return attrs.map_state
 
     # Override-redirect status
-    def is_override_redirect(self, Window xwindow):
+    def is_override_redirect(self, Window xwindow) -> bool:
         self.context_check("is_override_redirect")
         cdef XWindowAttributes or_attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &or_attrs)
         if status==0:
             return False
-        return or_attrs.override_redirect
+        return bool(or_attrs.override_redirect)
 
     # Mapped status
-    def is_inputonly(self, Window xwindow):
+    def is_inputonly(self, Window xwindow) -> bool:
         self.context_check("is_inputonly")
         cdef XWindowAttributes attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
         if status==0:
             return False
-        return attrs._class==InputOnly
+        return bool(attrs._class==InputOnly)
 
 
     def geometry_with_border(self, Window xwindow):

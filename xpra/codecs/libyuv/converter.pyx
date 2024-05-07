@@ -209,11 +209,11 @@ def get_input_colorspaces() -> Tuple[str,...]:
     return tuple(COLORSPACES.keys())
 
 
-def get_output_colorspaces(input_colorspace):
+def get_output_colorspaces(input_colorspace: str):
     return COLORSPACES.get(input_colorspace, ())
 
 
-def get_spec(in_colorspace, out_colorspace):
+def get_spec(in_colorspace: str, out_colorspace: str):
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
     assert out_colorspace in COLORSPACES[in_colorspace], "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES[in_colorspace])
     return CSCSpec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
@@ -237,7 +237,7 @@ class YUVImageWrapper(ImageWrapper):
             free(<void *> buf)
 
 
-def argb_to_gray(image):
+def argb_to_gray(image: ImageWrapper) -> ImageWrapper:
     cdef iplanes = image.get_planes()
     pixels = image.get_pixels()
     cdef int stride = image.get_rowstride()
@@ -332,7 +332,7 @@ cdef class Converter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, options:typedict=None):
+                           int dst_width, int dst_height, dst_format, options:typedict=None) -> None:
         log("libyuv.Converter.init_context%s", (
             src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         if src_format not in COLORSPACES:
@@ -376,7 +376,7 @@ cdef class Converter:
             raise ValueError(f"invalid destination format: {dst_format!r}")
         log(f"{src_format} -> {dst_format} planes={self.planes}, yuv-scaling={self.yuv_scaling}, rgb-scaling={self.rgb_scaling}, output buffer-size={self.out_buffer_size}")
 
-    def init_yuv_output(self):
+    def init_yuv_output(self) -> None:
         #pre-calculate unscaled YUV plane heights:
         divs = get_subsampling_divs(self.dst_format)
         for i in range(self.planes):
@@ -405,7 +405,7 @@ cdef class Converter:
         log("buffer size=%i, yuv_scaling=%s, rgb_scaling=%s, filtermode=%s",
             self.out_buffer_size, self.yuv_scaling, self.rgb_scaling, get_fiter_mode_str(self.filtermode))
 
-    def init_yuv_scaled_buffer(self, yuv_format, int width, int height):
+    def init_yuv_scaled_buffer(self, yuv_format, int width, int height) -> None:
         assert self.yuv_scaling
         self.scaled_buffer_size = 0
         divs = get_subsampling_divs(yuv_format)
@@ -473,7 +473,7 @@ cdef class Converter:
     def get_type(self) -> str:
         return  "libyuv"
 
-    def clean(self):
+    def clean(self) -> None:
         self.src_width = 0
         self.src_height = 0
         self.dst_width = 0
@@ -496,7 +496,7 @@ cdef class Converter:
     def is_closed(self) -> bool:
         return self.out_buffer_size==0
 
-    def convert_image(self, image):
+    def convert_image(self, image: ImageWrapper) -> ImageWrapper:
         cdef int width = image.get_width()
         cdef int height = image.get_height()
         if width<self.src_width:
@@ -571,7 +571,7 @@ cdef class Converter:
         return ImageWrapper(0, 0, self.dst_width, self.dst_height,
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
 
-    def scale_yuv_image(self, image):
+    def scale_yuv_image(self, image: ImageWrapper) -> ImageWrapper:
         assert self.scaled_buffer_size
         start = monotonic()
         cdef uint8_t *scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)
@@ -621,7 +621,7 @@ cdef class Converter:
         out_image.cython_buffer = <uintptr_t> scaled_buffer
         return out_image
 
-    def convert_yuv_image(self, image):
+    def convert_yuv_image(self, image: ImageWrapper) -> ImageWrapper:
         if self.yuv_scaling:
             image = self.scale_yuv_image(image)
         cdef double start = monotonic()
@@ -710,7 +710,7 @@ cdef class Converter:
         return ImageWrapper(0, 0, self.dst_width, self.dst_height,
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
 
-    def convert_bgrx_image(self, image):
+    def convert_bgrx_image(self, image: ImageWrapper) -> ImageWrapper:
         cdef uint8_t *output_buffer
         cdef uint8_t *out_planes[3]
         cdef uint8_t *scaled_buffer

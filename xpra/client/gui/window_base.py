@@ -46,8 +46,8 @@ FORCE_FLUSH = envbool("XPRA_FORCE_FLUSH", False)
 SHOW_SPINNER_WINDOW_TYPES = set(os.environ.get("XPRA_SHOW_SPINNER_WINDOW_TYPES", "DIALOG,NORMAL,SPLASH").split(","))
 
 
-def is_wm_property(name: str):
-    return name.startswith("_MOTIF") or name.startswith("WM_") or name.startswith("_NET_WM") or name.startswith("_GTK_")
+def is_wm_property(name: str) -> bool:
+    return any(name.startswith(prefix) for prefix in ("_MOTIF", "WM_", "_NET_WM", "_GTK_"))
 
 
 class ClientWindowBase(ClientWidgetBase):

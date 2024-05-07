@@ -53,7 +53,7 @@ class GUI(BaseGUIWindow):
         self.widgets = []
         super().__init__(header_bar=(True, True, True))
 
-    def populate(self):
+    def populate(self) -> None:
         def browse_tooltip() -> str:
             if not has_client():
                 return "the client is not installed"
@@ -91,33 +91,33 @@ class GUI(BaseGUIWindow):
             grid.attach(widget, i % 2, i // 2, 1, 1)
         self.vbox.add(grid)
 
-    def add_widget(self, widget):
+    def add_widget(self, widget) -> None:
         self.widgets.append(widget)
 
-    def get_xpra_command(self, *args):
+    def get_xpra_command(self, *args) -> list[str]:
         argv = list(self.argv[1:])
         if argv.index("gui") >= 0:
             argv.pop(argv.index("gui"))
         return super().get_xpra_command(*args) + argv
 
-    def shadow(self, button):
+    def shadow(self, button) -> None:
         cmd_args = ["shadow", "--bind-tcp=0.0.0.0:14500,auth=sys,ssl-cert=auto"] if (WIN32 or OSX) else ["shadow"]
         self.button_command(button, *cmd_args)
 
-    def browse(self, btn):
+    def browse(self, btn) -> None:
         self.button_command(btn, "sessions")
 
-    def show_launcher(self, btn):
+    def show_launcher(self, btn) -> None:
         self.button_command(btn, "launcher")
 
-    def start(self, btn):
+    def start(self, btn) -> None:
         self.button_command(btn, "start-gui")
 
-    def open_file(self, filename):
+    def open_file(self, filename: str) -> None:
         log("open_file(%s)", filename)
         self.exec_subcommand("launcher", filename)
 
-    def open_url(self, url):
+    def open_url(self, url: str) -> None:
         log("open_url(%s)", url)
         self.exec_subcommand("attach", url)
 
