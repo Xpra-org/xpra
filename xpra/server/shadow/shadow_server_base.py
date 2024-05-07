@@ -44,6 +44,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     DEFAULT_REFRESH_RATE: int = 20
 
     def __init__(self, root_window, capture=None):
+        # noinspection PyArgumentList
         super().__init__()
         self.capture = capture
         self.root = root_window
