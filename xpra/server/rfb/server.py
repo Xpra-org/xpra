@@ -83,7 +83,7 @@ class RFBServer:
             if len(auths) == 1:
                 auth = auths[0]
             log("creating RFB protocol with authentication=%s", auth)
-            return RFBServerProtocol(self, conn, auth,
+            return RFBServerProtocol(conn, auth,
                                      self.process_rfb_packet, self.get_rfb_pixelformat,
                                      self.session_name or "Xpra Server",
                                      data)
