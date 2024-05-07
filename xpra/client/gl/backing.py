@@ -833,6 +833,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindVertexArray(self.spinner_vao)
 
             glBindBuffer(GL_ARRAY_BUFFER, vbuf)
+            # noinspection PyCallingNonCallable
             glBufferData(GL_ARRAY_BUFFER, (c_float * len(verts))(*verts), GL_STATIC_DRAW)
             glVertexAttribPointer(position, 4, GL_FLOAT, GL_FALSE, 0, None)
             glEnableVertexAttribArray(position)
