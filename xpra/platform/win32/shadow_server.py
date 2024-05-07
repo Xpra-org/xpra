@@ -380,7 +380,7 @@ class ShadowServer(GTKShadowServerBase):
         assert self.window_matches
         ourpid = os.getpid()
         taskbar = FindWindowA("Shell_TrayWnd", None)
-        windows = {}
+        windows: dict[int, tuple[str, tuple[int, int, int, int]]] = {}
 
         def enum_windows_cb(hwnd, lparam):
             if not IsWindowVisible(hwnd):
@@ -401,10 +401,9 @@ class ShadowServer(GTKShadowServerBase):
             # skipping IsWindowEnabled check
             length = GetWindowTextLengthW(hwnd)
             buf = create_unicode_buffer(length + 1)
+            window_title = ''
             if GetWindowTextW(hwnd, buf, length + 1) > 0:
                 window_title = buf.value
-            else:
-                window_title = ''
             left, top, right, bottom = int(rect.left), int(rect.top), int(rect.right), int(rect.bottom)
             w = right - left
             h = bottom - top
@@ -420,7 +419,7 @@ class ShadowServer(GTKShadowServerBase):
         log("makeDynamicWindowModels() windows=%s", windows)
         models = []
 
-        def add_model(hwnd: int, title: str, geometry):
+        def add_model(hwnd: int, title: str, geometry: tuple[int, int, int, int]):
             model = Win32ShadowModel(self.root, self.capture, title=title, geometry=geometry)
             model.hwnd = hwnd
             models.append(model)
