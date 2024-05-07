@@ -19,7 +19,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
-from xpra.common import Gravity
+from xpra.common import Gravity, roundup
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -600,7 +600,6 @@ class WindowBackingBase:
     def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,
                   options, callbacks: Iterable[Callable]) -> None:
         """ can be called from a non-UI thread """
-        iwidth, iheight = options.intpair("scaled-size", (width, height))
         # was a compressor used?
         comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
         if comp:
@@ -610,7 +609,7 @@ class WindowBackingBase:
         else:
             rgb_data = raw_data
         GLib.idle_add(self.do_paint_rgb, rgb_format, rgb_data,
-                      x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
+                      x, y, width, height, width, height, rowstride, options, callbacks)
 
     def do_paint_rgb(self, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
@@ -626,6 +625,8 @@ class WindowBackingBase:
             bpp = 16
         else:
             bpp = len(rgb_format) * 8  # ie: "BGRA" -> 32
+        if rowstride == 0:
+            rowstride = width * roundup(bpp, 8) // 8
         try:
             if not options.boolget("paint", True):
                 fire_paint_callbacks(callbacks)
@@ -940,8 +941,6 @@ class WindowBackingBase:
                         "rgb24": "RGB",
                         "rgb32": "RGBX",
                     }.get(coding, "RGB")
-                if rowstride == 0:
-                    rowstride = width * len(rgb_format)
                 self.paint_rgb(rgb_format, img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in VIDEO_DECODERS:
                 self.paint_with_video_decoder(coding,
