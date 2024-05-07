@@ -304,15 +304,6 @@ def validate_encoding(elements) -> bool:
     if force_enabled(encoding):
         log.info("audio codec %s force enabled", encoding)
         return True
-    if encoding in (VORBIS_OGG, VORBIS) and get_gst_version() < (1, 12):
-        log("skipping %s - not sure which GStreamer versions support it", encoding)
-        return False
-    if encoding.startswith(OPUS):
-        if encoding == OPUS_MKA and get_gst_version() < (1, 8):
-            # this causes "could not link opusenc0 to webmmux0"
-            # (not sure which versions are affected, but 1.8.x is not)
-            log("skipping %s with GStreamer %s", encoding, get_gst_version())
-            return False
     try:
         stream_compressor = elements[5]
     except IndexError:
