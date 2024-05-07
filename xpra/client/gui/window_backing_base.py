@@ -909,14 +909,13 @@ class WindowBackingBase:
 
     def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
-        """ must be called from UI thread
-            see _mmap_send() in seamless.py for details """
         assert self.mmap_enabled
         data = mmap_read(self.mmap, *img_data)
         rgb_format = options.strget("rgb_format", "RGB")
         # Note: BGR(A) is only handled by gl.backing
         x, y = self.gravity_adjust(x, y, options)
-        self.do_paint_rgb(rgb_format, data, x, y, width, height, width, height, rowstride, options, callbacks)
+        GLib.idle_add(self.do_paint_rgb, rgb_format, data, x, y, width, height, width, height, rowstride,
+                      options, callbacks)
 
     def paint_scroll(self, img_data, options: typedict, callbacks: Iterable[Callable]) -> None:
         log("paint_scroll%s", (img_data, options, callbacks))
@@ -932,7 +931,7 @@ class WindowBackingBase:
                 x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
             options["encoding"] = coding  # used for choosing the color of the paint box
             if coding == "mmap":
-                GLib.idle_add(self.paint_mmap, img_data, x, y, width, height, rowstride, options, callbacks)
+                self.paint_mmap(img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):
                 # avoid confusion over how many bytes-per-pixel we may have:
                 rgb_format = options.strget("rgb_format")
