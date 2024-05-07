@@ -365,6 +365,7 @@ class subprocess_caller:
         conn.timeout = 0
         protocol = SocketProtocol(conn, self.process_packet, get_packet_cb=self.get_packet)
         if LOCAL_ALIASES:
+            protocol._log_stats = envbool("XPRA_LOG_SOCKET_STATS", False)
             protocol.send_aliases = LOCAL_SEND_ALIASES
             protocol.receive_aliases = LOCAL_RECEIVE_ALIASES
         setup_fastencoder_nocompression(protocol)

@@ -42,7 +42,9 @@ def get_full_audio_command():
 
 
 def get_audio_wrapper_env():
-    env = {}
+    env = {
+        "XPRA_LOG_SOCKET_STATS": os.environ.get("XPRA_LOG_SOCKET_STATS", "0"),
+    }
     if WIN32:
         # we don't want the output to go to a log file
         env["XPRA_REDIRECT_OUTPUT"] = "0"
@@ -248,7 +250,7 @@ class AudioSubprocessWrapper(subprocess_caller):
         * forward get/set volume calls (get_volume uses the value found in "info")
     """
 
-    def __init__(self, description):
+    def __init__(self, description: str):
         super().__init__(description)
         self.state = "stopped"
         self.codec = "unknown"

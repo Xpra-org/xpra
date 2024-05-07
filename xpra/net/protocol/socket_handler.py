@@ -142,6 +142,8 @@ class SocketProtocol:
         self.send_aliases: dict[str, int] = {}
         self.receive_aliases: dict[int, str] = {}
         self._log_stats = None  # None here means auto-detect
+        if "XPRA_LOG_SOCKET_STATS" in os.environ:
+            self._log_stats = envbool("XPRA_LOG_SOCKET_STATS")
         self._closed = False
         self.encoder = "none"
         self._encoder = packet_encoding.get_encoder("none")
