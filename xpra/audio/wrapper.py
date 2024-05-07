@@ -94,6 +94,7 @@ class AudioSubprocess(subprocess_callee):
         if not FAKE_START_FAILURE:
             def wrap_start() -> bool:
                 self.wrapped_object.start()
+                return False
             GLib.idle_add(wrap_start)
         if FAKE_EXIT > 0:
             def process_exit():
