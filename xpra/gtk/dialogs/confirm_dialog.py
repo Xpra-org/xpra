@@ -39,14 +39,14 @@ class ConfirmDialogWindow(Gtk.Dialog):
         vbox = self.get_content_area()
         vbox.set_spacing(10)
 
-        def al(text, font="sans 14", xalign=0.0):
-            l = label(text, font=font)
+        def al(text: str, font="sans 14", xalign=0.0) -> Gtk.Alignment:
+            lbl = label(text, font=font)
             if text.startswith("WARNING"):
-                modify_fg(l, color_parse("red"))
-            al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
-            al.add(l)
-            al.show_all()
-            return al
+                modify_fg(lbl, color_parse("red"))
+            align = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
+            align.add(lbl)
+            align.show_all()
+            return align
 
         vbox.add(al(title, "sans 18", 0.5))
         info_box = Gtk.VBox()
@@ -57,8 +57,8 @@ class ConfirmDialogWindow(Gtk.Dialog):
         vbox.add(al(prompt))
 
         # Buttons:
-        for text, code in buttons:
-            btn = self.add_button(text, code)
+        for txt, code in buttons:
+            btn = self.add_button(txt, code)
             btn.set_size_request(100, 48)
 
     def quit(self, *args) -> bool:

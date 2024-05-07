@@ -60,7 +60,7 @@ IGNORED_OUTPUT_DEVICES = os.environ.get("XPRA_SOUND_IGNORED_OUTPUT_DEVICES", "be
 
 
 def force_enabled(codec_name):
-    return os.environ.get("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), "0")=="1"
+    return envbool("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), False)
 
 
 NAME_TO_SRC_PLUGIN = {
@@ -125,7 +125,7 @@ MUX_OPTIONS: tuple[tuple[str, str, str], ...] = (
     (MKA,    "matroskamux",  "matroskademux"),
     (MPEG4,  "mp4mux",   "qtdemux"),
 )
-emux = [x for x in os.environ.get("XPRA_MUXER_OPTIONS", "").split(",") if len(x.strip())>0]
+emux = [x for x in os.environ.get("XPRA_MUXER_OPTIONS", "").split(",") if len(x.strip()) > 0]
 if emux:
     mo = tuple(v for v in MUX_OPTIONS if v[0] in emux)
     if mo:
@@ -224,7 +224,7 @@ CODEC_ORDER = (
 )
 
 
-def get_encoder_default_options(encoder:str) -> dict[str,Any]:
+def get_encoder_default_options(encoder: str) -> dict[str, Any]:
     # strip the muxer:
     enc = encoder.split("+")[0]
     options = ENCODER_DEFAULT_OPTIONS_COMMON.get(enc, {}).copy()
@@ -232,10 +232,10 @@ def get_encoder_default_options(encoder:str) -> dict[str,Any]:
     return options
 
 
-CODECS : dict[str,bool] = {}
-CODEC_DEFS = dict[str, tuple[Any,Any,Any]]
-ENCODERS : CODEC_DEFS = {}       # (encoder, payloader, stream-compressor)
-DECODERS : CODEC_DEFS = {}       # (decoder, depayloader, stream-compressor)
+CODECS: dict[str, bool] = {}
+CODEC_DEFS = dict[str, tuple[Any, Any, Any]]
+ENCODERS: CODEC_DEFS = {}       # (encoder, payloader, stream-compressor)
+DECODERS: CODEC_DEFS = {}       # (decoder, depayloader, stream-compressor)
 
 
 def get_encoders() -> CODEC_DEFS:
@@ -304,11 +304,11 @@ def validate_encoding(elements) -> bool:
     if force_enabled(encoding):
         log.info("audio codec %s force enabled", encoding)
         return True
-    if encoding in (VORBIS_OGG, VORBIS) and get_gst_version()<(1, 12):
+    if encoding in (VORBIS_OGG, VORBIS) and get_gst_version() < (1, 12):
         log("skipping %s - not sure which GStreamer versions support it", encoding)
         return False
     if encoding.startswith(OPUS):
-        if encoding==OPUS_MKA and get_gst_version()<(1, 8):
+        if encoding == OPUS_MKA and get_gst_version() < (1, 8):
             # this causes "could not link opusenc0 to webmmux0"
             # (not sure which versions are affected, but 1.8.x is not)
             log("skipping %s with GStreamer %s", encoding, get_gst_version())
@@ -328,14 +328,14 @@ def has_stream_compressor(stream_compressor: str) -> bool:
         log.warn("Warning: invalid stream compressor '%s'", stream_compressor)
         return False
     from xpra.net.compression import use
-    if stream_compressor=="lz4" and not use("lz4"):
+    if stream_compressor == "lz4" and not use("lz4"):
         return False
     return True
 
 
 def get_muxers() -> list[str]:
     muxers = []
-    for name,muxer,_ in MUX_OPTIONS:
+    for name, muxer, _ in MUX_OPTIONS:
         if has_plugins(muxer):
             muxers.append(name)
     return muxers
@@ -343,7 +343,7 @@ def get_muxers() -> list[str]:
 
 def get_demuxers() -> list[str]:
     demuxers = []
-    for name,_,demuxer in MUX_OPTIONS:
+    for name, _, demuxer in MUX_OPTIONS:
         if has_plugins(demuxer):
             demuxers.append(name)
     return demuxers
@@ -368,7 +368,7 @@ def get_encoder_elements(name) -> tuple[str, str, str]:
     return encoder, formatter, stream_compressor
 
 
-def get_decoder_elements(name) -> tuple[str,str,str]:
+def get_decoder_elements(name) -> tuple[str, str, str]:
     decoders = get_decoders()
     dec = decoders.get(name)
     if dec is None:
@@ -383,7 +383,7 @@ def get_decoder_elements(name) -> tuple[str,str,str]:
     return decoder, parser, stream_compressor
 
 
-def has_encoder(name:str) -> bool:
+def has_encoder(name: str) -> bool:
     encoders = get_encoders()
     enc = encoders.get(name)
     if enc is None:
@@ -509,11 +509,11 @@ def get_default_sink_plugin() -> str:
     return ""
 
 
-def get_test_defaults(*_args) -> dict[str,Any]:
+def get_test_defaults(*_args) -> dict[str, Any]:
     return {
-        "wave" : 2,
-        "freq" : 110,
-        "volume" : 0.4,
+        "wave": 2,
+        "freq": 110,
+        "volume": 0.4,
     }
 
 
@@ -521,7 +521,7 @@ WARNED_MULTIPLE_DEVICES = False
 
 
 def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
-                       input_or_output=None, remote=None, env_device_name=None) -> dict[str,Any]:
+                       input_or_output=None, remote=None, env_device_name=None) -> dict[str, Any]:
     try:
         device = get_pulse_device(device_name_match, want_monitor_device, input_or_output, remote, env_device_name)
     except Exception as e:
@@ -571,13 +571,13 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
         log("start audio, remote pulseaudio server=%s, local pulseaudio server=%s", remote.pulseaudio_server, pa_server)
         # only worth comparing if we have a real server string
         # one that starts with {UUID}unix:/..
-        if pa_server and pa_server.startswith("{") and remote.pulseaudio_server and remote.pulseaudio_server==pa_server:
+        if pa_server and pa_server.startswith("{") and remote.pulseaudio_server and remote.pulseaudio_server == pa_server:
             log.error("Error: audio is disabled to prevent a loop")
             log.error(" identical Pulseaudio server '%s'", pa_server)
             return ""
         pa_id = get_pulse_id()
         log("start audio, client id=%s, server id=%s", remote.pulseaudio_id, pa_id)
-        if remote.pulseaudio_id and remote.pulseaudio_id==pa_id:
+        if remote.pulseaudio_id and remote.pulseaudio_id == pa_id:
             log.error("Error: audio is disabled to prevent a loop")
             log.error(" identical Pulseaudio ID '%s'", pa_id)
             return ""
@@ -598,7 +598,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
     if ignore and devices:
         # filter out the ignore list:
         filtered = {}
-        for k,v in devices.items():
+        for k, v in devices.items():
             kl = bytestostr(k).strip().lower()
             vl = bytestostr(v).strip().lower()
             if kl not in ignore and vl not in ignore:
@@ -614,25 +614,25 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
     if env_device_name:
         env_device = os.environ.get(env_device_name)
     # try to match one of the devices using the device name filters:
-    if len(devices)>1:
+    if len(devices) > 1:
         filters = []
         matches = {}
         for match in (device_name_match, env_device):
             if not match:
                 continue
-            if match!=env_device:
+            if match != env_device:
                 filters.append(match)
             match = match.lower()
             log("trying to match '%s' in devices=%s", match, devices)
             matches = {
-                k : v for k, v in devices.items()
+                k: v for k, v in devices.items()
                 if (bytestostr(k).strip().lower().find(match) >= 0 or bytestostr(v).strip().lower().find(match) >= 0)
             }
             # log("matches(%s, %s)=%s", devices, match, matches)
-            if len(matches)==1:
+            if len(matches) == 1:
                 log("found name match for '%s': %s", match, tuple(matches.items())[0])
                 break
-            elif len(matches)>1:
+            elif len(matches) > 1:
                 log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, match)
                 log.warn(" matched %i devices", len(matches))
         if filters or matches:
@@ -640,14 +640,14 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
                 log.warn("Warning: Pulseaudio %s device name filters:", device_type_str)
                 log.warn(" %s", csv("'%s'" % x for x in filters))
                 log.warn(" did not match any of the devices found:")
-                for k,v in devices.items():
+                for k, v in devices.items():
                     log.warn(" * '%s'", k)
                     log.warn("   '%s'", v)
                 return ""
             devices = matches
 
     # still have too many devices to choose from?
-    if len(devices)>1:
+    if len(devices) > 1:
         if want_monitor_device:
             # use the monitor of the default sink if we find it:
             default_sink = get_default_sink()
@@ -691,7 +691,7 @@ def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, 
                               env_device_name=XPRA_PULSE_SOURCE_DEVICE_NAME)
 
 
-def get_pulse_sink_defaults() -> dict[str,Any]:
+def get_pulse_sink_defaults() -> dict[str, Any]:
     return get_pulse_defaults(want_monitor_device=False, input_or_output=False,
                               env_device_name=XPRA_PULSE_SINK_DEVICE_NAME)
 
@@ -716,15 +716,15 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
             device_name = None
             if device_name_match:
                 for name in names:
-                    if name.lower().find(device_name_match)>=0:
+                    if name.lower().find(device_name_match) >= 0:
                         device_name = name
                         break
             if device_name is None:
                 for name in names:
-                    if name.lower().find("primary")>=0:
+                    if name.lower().find("primary") >= 0:
                         device_name = name
                         break
-            log("best matching %sdevice: %s", ["","capture "][want_monitor_device], device_name)
+            log("best matching %sdevice: %s", ["", "capture "][want_monitor_device], device_name)
             if device_name is None and want_monitor_device:
                 # we have to choose one because the default device
                 # may not be a capture device?
@@ -733,7 +733,7 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
                 log.info("using directsound %sdevice:", ["","capture "][want_monitor_device])
                 log.info(" '%s'", device_name)
                 return {
-                    "device-name" : device_name,
+                    "device-name": device_name,
                 }
     except Exception as e:
         log("get_directsound_source_defaults%s", (device_name_match, want_monitor_device, remote), exc_info=True)
@@ -745,11 +745,11 @@ def get_directsound_source_defaults(device_name_match=None, want_monitor_device=
 # a list of functions to call to get the plugin options
 # at runtime (so we can perform runtime checks on remote data,
 # to avoid audio loops for example)
-DEFAULT_SRC_PLUGIN_OPTIONS : dict[str,Callable] = {
+DEFAULT_SRC_PLUGIN_OPTIONS : dict[str, Callable] = {
     "test"                  : get_test_defaults,
     "direct"                : get_directsound_source_defaults,
 }
-DEFAULT_SINK_PLUGIN_OPTIONS : dict[str,Any] = {}
+DEFAULT_SINK_PLUGIN_OPTIONS : dict[str, Any] = {}
 if POSIX and not OSX:
     DEFAULT_SINK_PLUGIN_OPTIONS["pulse"] = get_pulse_sink_defaults
     DEFAULT_SRC_PLUGIN_OPTIONS["pulse"] = get_pulse_source_defaults
@@ -789,7 +789,7 @@ def parse_audio_source(all_plugins, audio_source_plugin, device, want_monitor_de
     # ie: test:wave=2,freq=110,volume=0.4
     # ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo
     plugin = audio_source_plugin.split(":")[0]
-    options_str = (audio_source_plugin+":").split(":",1)[1].rstrip(":")
+    options_str = (audio_source_plugin+":").split(":", 1)[1].rstrip(":")
     simple_str = plugin.lower().strip()
     if not simple_str:
         simple_str = get_default_source()
@@ -842,7 +842,7 @@ def main():
         if not v:
             print("no gstreamer version information")
         else:
-            if v[-1]==0:
+            if v[-1] == 0:
                 v = v[:-1]
             gst_vinfo = ".".join(str(x) for x in v)
             print("Loaded Python GStreamer version {} for Python {}.{}".format(

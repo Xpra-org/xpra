@@ -40,12 +40,12 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         vbox = self.get_content_area()
         vbox.set_spacing(10)
 
-        def al(text, font="sans 14", xalign=0):
-            l = label(text, font=font)
-            al = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
-            al.add(l)
-            vbox.add(al)
-            al.show_all()
+        def al(text: str, font="sans 14", xalign=0) -> None:
+            lbl = label(text, font=font)
+            align = Gtk.Alignment(xalign=xalign, yalign=0.5, xscale=0.0, yscale=0)
+            align.add(lbl)
+            vbox.add(align)
+            align.show_all()
 
         # window title is visible so this would be redundant:
         # al(title, "sans 18", 0.5)

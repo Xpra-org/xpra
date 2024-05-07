@@ -131,8 +131,8 @@ class RFBProtocol:
             encodings = estruct.unpack(packet[s.size:size])
             values.append(encodings)
         elif ptype == RFBClientMessage.ClientCutText:
-            l = values[4]
-            size += l
+            count = values[4]
+            size += count
             if len(packet) < size:
                 return 0
             text = packet[s.size:size]
@@ -176,8 +176,8 @@ class RFBProtocol:
             log("connection is closed already, not sending packet")
             return
         if log.is_debug_enabled():
-            l = len(packet)
-            lstr = str(l) if l <= 16 else std_unit(l)
+            size = len(packet)
+            lstr = str(size) if size <= 16 else std_unit(size)
             log(f"send({lstr} bytes: %s..)", hexstr(packet[:16]))
         if self.log:
             self.log.write(f"send: {hexstr(packet)}\n")
@@ -314,10 +314,10 @@ class RFBProtocol:
         self.terminate_queue_threads()
         self._process_packet_cb(self, [CONNECTION_LOST])
         GLib.idle_add(self.clean)
-        l = self.log
-        if l:
+        log_file = self.log
+        if log_file:
             self.log = None
-            l.close()
+            log_file.close()
         log("RFBProtocol.close() done")
 
     def clean(self) -> None:

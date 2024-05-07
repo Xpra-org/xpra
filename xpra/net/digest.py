@@ -97,13 +97,13 @@ def verify_digest(digest: str, password: str, salt, challenge_response: bytes) -
     return True
 
 
-def get_salt(l: int = DEFAULT_SALT_LENGTH) -> bytes:
+def get_salt(length: int = DEFAULT_SALT_LENGTH) -> bytes:
     # too short: we would not feed enough random data to HMAC
-    if l < 32:
-        raise ValueError(f"salt is too short: only {l} bytes")
+    if length < 32:
+        raise ValueError(f"salt is too short: only {length} bytes")
     # too long: limit the amount of random data we request from the system
-    if l >= 1024:
-        raise ValueError(f"salt is too long: {l} bytes")
+    if length >= 1024:
+        raise ValueError(f"salt is too long: {length} bytes")
     # all server versions support a client salt,
     # they also tell us which digest to use:
-    return os.urandom(l)
+    return os.urandom(length)

@@ -853,13 +853,13 @@ class SessionInfo(Gtk.Window):
             self.output_packets_label.set_text(std_unit_dec(p.output_packetcount))
             self.output_bytes_label.set_text(std_unit_dec(c.output_bytecount))
         else:
-            for l in (
+            for lbl in (
                     self.input_packets_label,
                     self.input_bytes_label,
                     self.output_packets_label,
                     self.output_bytes_label,
             ):
-                l.set_text("n/a")
+                lbl.set_text("n/a")
 
         if features.audio:
 
@@ -1117,11 +1117,11 @@ class SessionInfo(Gtk.Window):
                 window_encoder_stats = self.get_window_encoder_stats()
                 # log("window_encoder_stats=%s", window_encoder_stats)
                 for wid, props in window_encoder_stats.items():
-                    l = slabel("%s (%s)" % (wid, bytestostr(props.get(""))))
-                    l.show()
+                    lbl = slabel("%s (%s)" % (wid, bytestostr(props.get(""))))
+                    lbl.show()
                     info = ("%s=%s" % (k, v) for k, v in props.items() if k != "")
-                    l.set_tooltip_text(" ".join(info))
-                    self.encoder_info_box.add(l)
+                    lbl.set_tooltip_text(" ".join(info))
+                    self.encoder_info_box.add(lbl)
         return True
 
     def get_window_encoder_stats(self):

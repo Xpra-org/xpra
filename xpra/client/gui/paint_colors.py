@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 
+# noinspection PyPep8
 DEFAULT_BOX_COLORS = {
     "png"       : "yellow",
     "h264"      : "blue",
@@ -25,6 +26,7 @@ DEFAULT_BOX_COLORS = {
 
 ALPHA = 0.6
 # converted from gtk lookups:
+# noinspection PyPep8
 BOX_COLORS = {
     "h264"      : (0.0,                 0.0,                    0.9999847412109375, ALPHA),
     "h265"      : (0.941162109375,      0.901947021484375,      0.54901123046875,   ALPHA),

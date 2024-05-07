@@ -92,8 +92,8 @@ class Authenticator(SysAuthenticatorBase):
                 return False
             if is_debug_enabled("auth"):
                 log("ldap3 server info:")
-                for l in server.info.splitlines():
-                    log(" %s", l)
+                for line in server.info.splitlines():
+                    log(f" {line}")
             log("ldap3 who_am_i()=%s", conn.extend.standard.who_am_i())
             return True
         except Exception as e:

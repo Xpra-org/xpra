@@ -74,19 +74,19 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
     # compression stage:
     level = 0
     algo = "not"
-    l = len(pixels)
+    size = len(pixels)
     lz4 = options.get("lz4", False)
     if not lz4:
         level = 0
-    elif l >= 512 and (lz4 or speed < 100):
-        if l >= 4096:
+    elif size >= 512 and (lz4 or speed < 100):
+        if size >= 4096:
             level = 1 + max(0, min(7, int(100 - speed) // 14))
         else:
             # fewer pixels, make it more likely we won't bother compressing
             # and use a lower level (max=3)
             level = max(0, min(3, int(125 - speed) // 35))
     if level > 0:
-        can_inline = l <= 32768
+        can_inline = size <= 32768
         cwrapper = compressed_wrapper(coding, pixels, level=level,
                                       lz4=lz4,
                                       can_inline=can_inline)
@@ -113,7 +113,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
     else:
         bpp = 24
     log("rgb_encode using level=%s for %5i bytes at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s",
-        level, l, speed, algo, width, height, coding, pixel_format, len(pixels), len(cwrapper.data))
+        level, size, speed, algo, width, height, coding, pixel_format, len(pixels), len(cwrapper.data))
     # wrap it using "Compressed" so the network layer receiving it
     # won't decompress it (leave it to the client's draw thread)
     return coding, cwrapper, client_options, width, height, stride, bpp

@@ -198,23 +198,23 @@ class SeamlessRootWindowModel(RootWindowModel):
 
     def get_shape_rectangles(self, logit=False) -> list:
         # get the list of windows
-        l = log
+        log_fn = log.debug
         if logit or envbool("XPRA_SHAPE_DEBUG", False):
-            l = shapelog
+            log_fn = shapelog.debug
         taskbar = FindWindowA("Shell_TrayWnd", None)
-        l("taskbar window=%#x", taskbar)
+        log_fn("taskbar window=%#x", taskbar)
         ourpid = os.getpid()
-        l("our pid=%i", ourpid)
+        log_fn("our pid=%i", ourpid)
         rectangles = []
 
         def enum_windows_cb(hwnd, lparam):
             if not IsWindowVisible(hwnd):
-                l("skipped invisible window %#x", hwnd)
+                log_fn("skipped invisible window %#x", hwnd)
                 return True
             pid = c_ulong()
             thread_id = GetWindowThreadProcessId(hwnd, byref(pid))
             if pid == ourpid:
-                l("skipped our own window %#x", hwnd)
+                log_fn("skipped our own window %#x", hwnd)
                 return True
             # skipping IsWindowEnabled check
             length = GetWindowTextLengthW(hwnd)
@@ -223,17 +223,17 @@ class SeamlessRootWindowModel(RootWindowModel):
                 window_title = buf.value
             else:
                 window_title = ''
-            l("get_shape_rectangles() found window '%s' with pid=%i and thread id=%i", window_title, pid, thread_id)
+            log_fn("get_shape_rectangles() found window '%s' with pid=%i and thread id=%i", window_title, pid, thread_id)
             rect = RECT()
             if GetWindowRect(hwnd, byref(rect)) == 0:  # NOSONAR
-                l("GetWindowRect failure")
+                log_fn("GetWindowRect failure")
                 return True
             left, top, right, bottom = int(rect.left), int(rect.top), int(rect.right), int(rect.bottom)
             if right < 0 or bottom < 0:
-                l("skipped offscreen window at %ix%i", right, bottom)
+                log_fn("skipped offscreen window at %ix%i", right, bottom)
                 return True
             if hwnd == taskbar:
-                l("skipped taskbar")
+                log_fn("skipped taskbar")
                 return True
             # dirty way:
             if window_title == 'Program Manager':
@@ -257,13 +257,13 @@ class SeamlessRootWindowModel(RootWindowModel):
             #    return True
             w = right - left
             h = bottom - top
-            l("shape(%s - %#x)=%s", window_title, hwnd, (left, top, w, h))
+            log_fn("shape(%s - %#x)=%s", window_title, hwnd, (left, top, w, h))
             if w <= 0 and h <= 0:
-                l("skipped invalid window size: %ix%i", w, h)
+                log_fn("skipped invalid window size: %ix%i", w, h)
                 return True
             if left == -32000 and top == -32000:
                 # there must be a better way of skipping those - I haven't found it
-                l("skipped special window")
+                log_fn("skipped special window")
                 return True
             # now clip rectangle:
             if left < 0:
@@ -276,7 +276,7 @@ class SeamlessRootWindowModel(RootWindowModel):
             return True
 
         EnumWindows(EnumWindowsProc(enum_windows_cb), 0)
-        l("get_shape_rectangles()=%s", rectangles)
+        log_fn("get_shape_rectangles()=%s", rectangles)
         return sorted(rectangles)
 
     def get_property(self, prop):

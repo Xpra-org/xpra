@@ -269,7 +269,7 @@ class X11ServerCore(GTKServerBase):
             # errors happen because windows are being destroyed
             # (even more so when we call `cleanup`)
             # and we don't really care too much about this
-            for l in (log, log, log, log, log.warn):
+            for log_fn in (log.debug, log.debug, log.debug, log.debug, log.warn):
                 try:
                     with xsync:
                         cleanup_all_event_receivers()
@@ -277,7 +277,8 @@ class X11ServerCore(GTKServerBase):
                         log("all event receivers have been removed")
                         break
                 except Exception as e:
-                    l("failed to remove event receivers: %s", e)
+                    log("do_cleanup() cleanup_all_event_receivers()", exc_info=True)
+                    log_fn("failed to remove event receivers: %s", e)
         with xlog:
             clean_keyboard_state()
         # prop_del does its own xsync:
@@ -724,10 +725,10 @@ class X11ServerCore(GTKServerBase):
             screenlog("wanted: %s x %s", xdpi, ydpi)
         else:
             # should this be a warning:
-            l = screenlog.info
+            log_fn = screenlog.info
             maxdelta = max(abs(actual_xdpi - xdpi), abs(actual_ydpi - ydpi))
             if maxdelta >= 10:
-                l = log.warn
+                log_fn = screenlog.warn
             messages = [
                 f"DPI set to {actual_xdpi} x {actual_ydpi} (wanted {xdpi} x {ydpi})",
             ]
@@ -736,7 +737,7 @@ class X11ServerCore(GTKServerBase):
                 messages.append("to fix this issue, try the dpi switch, or use a patched Xorg dummy driver")
                 self.notify_dpi_warning("\n".join(messages))
             for i, message in enumerate(messages):
-                l("%s%s", ["", " "][i > 0], message)
+                log_fn("%s%s", ["", " "][i > 0], message)
 
     def mirror_client_monitor_layout(self) -> dict[int, Any]:
         with xsync:

@@ -40,7 +40,7 @@ def root_prop_set(prop_name: str, prop_type, value) -> None:
     prop_set(X11Keyboard.get_root_xid(), prop_name, prop_type, value)
 
 
-def root_prop_del(prop_name: str):
+def root_prop_del(prop_name: str) -> None:
     prop_del(X11Keyboard.get_root_xid(), prop_name)
 
 
@@ -216,7 +216,7 @@ class X11ServerBase(X11ServerCore):
         nx, ny = 200, 200
         self.pointer_device.move_pointer(nx, ny)
 
-        def verify_uinput_moved():
+        def verify_uinput_moved() -> None:
             pos = None  # @UnusedVariable
             with xswallow:
                 pos = X11Keyboard.query_pointer()

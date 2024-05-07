@@ -5,6 +5,7 @@
 
 from xpra.util.str_fn import strtobytes
 
+# noinspection PyPep8
 HEADERS = {
     b"Connection"               : b"Upgrade",
     b"Upgrade"                  : b"websocket",
@@ -13,7 +14,7 @@ HEADERS = {
 }
 
 
-def get_headers(host:str, port: int) -> dict[bytes,bytes]:     # pylint: disable=unused-argument
+def get_headers(host: str, port: int) -> dict[bytes, bytes]:     # pylint: disable=unused-argument
     headers = HEADERS.copy()
     if host:
         headers[b"Host"] = strtobytes(f"{host}:{port}")

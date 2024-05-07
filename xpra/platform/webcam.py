@@ -37,11 +37,11 @@ _video_device_change_callbacks: list[Callable] = []
 
 
 def _fire_video_device_change(create=None, pathname=None) -> None:
-    for x in _video_device_change_callbacks:
+    for callback in _video_device_change_callbacks:
         try:
-            x(create, pathname)
+            callback(create, pathname)
         except Exception as e:
-            log("error on %s", x, exc_info=True)
+            log("error on %s", callback, exc_info=True)
             log.error("Error: video device change callback error")
             log.estr(e)
 

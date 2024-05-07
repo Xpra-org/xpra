@@ -328,15 +328,15 @@ class Wm(GObject.GObject):
                 win = WindowModel(root.get_xid(), xid, desktop_geometry, self.size_constraints)
         except Exception as e:
             if LOG_MANAGE_FAILURES or not isinstance(e, Unmanageable):
-                l = log.warn
+                log_fn = log.warn
             else:
-                l = log
-            l("Warning: failed to manage client window %#x:", xid)
-            l(" %s", e)
-            l("", exc_info=True)
+                log_fn = log.debug
+            log_fn("Warning: failed to manage client window %#x:", xid)
+            log_fn(" %s", e)
+            log_fn("", exc_info=True)
             with xswallow:
-                l(" window name: %s", window_name(xid))
-                l(" window info: %s", window_info(xid))
+                log_fn(" window name: %s", window_name(xid))
+                log_fn(" window info: %s", window_info(xid))
         else:
             win.managed_connect("unmanaged", self._handle_client_unmanaged, xid)
             self._windows[xid] = win

@@ -672,8 +672,8 @@ class UIXpraClient(ClientBaseClass):
                 dloggers = [x for x in get_all_loggers() if x.is_debug_enabled()]
                 if dloggers:
                     log.info("logging is enabled for:")
-                    for l in dloggers:
-                        log.info(" - %s", l)
+                    for logger in dloggers:
+                        log.info(" - %s", logger)
                 else:
                     log.info("logging is not enabled for any loggers")
                 return
@@ -708,8 +708,8 @@ class UIXpraClient(ClientBaseClass):
                 log.info("%s debugging, no new loggers matching: %s", log_cmd, csv(groups))
             else:
                 log.info("%sd debugging for:", log_cmd)
-                for l in loggers:
-                    log.info(" - %s", l)
+                for logger in loggers:
+                    log.info(" - %s", logger)
         else:
             log.warn("received invalid control command from server: %s", command)
 

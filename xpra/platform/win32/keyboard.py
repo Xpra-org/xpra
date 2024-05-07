@@ -194,9 +194,9 @@ class Keyboard(KeyboardBase):
         options = ""
         layout_code = 0
         try:
-            l = _GetKeyboardLayoutList()
-            log("GetKeyboardLayoutList()=%s", csv(hex(v) for v in l))
-            for hkl in l:
+            hkl_list = _GetKeyboardLayoutList()
+            log("GetKeyboardLayoutList()=%s", csv(hex(v) for v in hkl_list))
+            for hkl in hkl_list:
                 for mask, bitshifts in KMASKS.items():
                     kbid = 0
                     for bitshift in bitshifts:

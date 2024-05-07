@@ -547,9 +547,9 @@ class FileTransferHandler(FileTransferAttributes):
                 break
         if chunk_id:
             chunk = 0
-            l = len(self.receive_chunks_in_progress)
-            if l >= MAX_CONCURRENT_FILES:
-                self.cancel_file(chunk_id, f"too many file transfers in progress: {l}", chunk)
+            nfiles = len(self.receive_chunks_in_progress)
+            if nfiles >= MAX_CONCURRENT_FILES:
+                self.cancel_file(chunk_id, f"too many file transfers in progress: {nfiles}", chunk)
                 osclose(fd)
                 return
             timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
@@ -767,13 +767,13 @@ class FileTransferHandler(FileTransferAttributes):
     def send_file(self, filename, mimetype, data, filesize=0,
                   printit=False, openit=False, options=None):
         if printit:
-            l = printlog
             if not self.printing:
-                l.warn("Warning: printing is not enabled for %s", self)
+                printlog.warn("Warning: printing is not enabled for %s", self)
                 return False
             if not self.remote_printing:
-                l.warn("Warning: remote end does not support printing")
+                printlog.warn("Warning: remote end does not support printing")
                 return False
+            logger = printlog
             ask = self.remote_printing_ask
             action = "print"
         else:
@@ -781,15 +781,15 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.warn("Warning: file transfers are not enabled for %s", self)
                 return False
             if not self.remote_file_transfer:
-                printlog.warn("Warning: remote end does not support file transfers")
+                filelog.warn("Warning: remote end does not support file transfers")
                 return False
-            l = filelog
+            logger = filelog
             ask = self.remote_file_transfer_ask
             action = "upload"
             if openit:
                 if not self.remote_open_files:
-                    l.info("opening the file after transfer is disabled on the remote end")
-                    l.info(" sending only, the file will need to be opened manually")
+                    logger.info("opening the file after transfer is disabled on the remote end")
+                    logger.info(" sending only, the file will need to be opened manually")
                     openit = False
                     action = "upload"
                 else:
@@ -797,8 +797,8 @@ class FileTransferHandler(FileTransferAttributes):
                     action = "open"
         assert len(data) >= filesize, "data is smaller then the given file size!"
         data = data[:filesize]  # gio may null terminate it
-        l("send_file%s action=%s, ask=%s",
-          (filename, mimetype, type(data), f"{filesize} bytes", printit, openit, options), action, ask)
+        logger("send_file%s action=%s, ask=%s",
+               (filename, mimetype, type(data), f"{filesize} bytes", printit, openit, options), action, ask)
         self.dump_remote_caps()
         if not self.check_file_size(action, filename, filesize):
             return False
@@ -933,11 +933,11 @@ class FileTransferHandler(FileTransferAttributes):
                      printit: bool = False, openit: bool = False, options=None, send_id: str = "") -> bool:
         if printit:
             action = "print"
-            l = printlog
+            logger = printlog
         else:
             action = "upload"
-            l = filelog
-        l("do_send_file%s", (filename, mimetype, type(data), f"{filesize} bytes", printit, openit, options))
+            logger = filelog
+        logger("do_send_file%s", (filename, mimetype, type(data), f"{filesize} bytes", printit, openit, options))
         if not self.check_file_size(action, filename, filesize):
             return False
         h = hashlib.sha256()

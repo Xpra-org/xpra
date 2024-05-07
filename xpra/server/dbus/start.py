@@ -41,16 +41,16 @@ def start_dbus(dbus_launch) -> tuple[int, dict]:
         # parse and add to global env:
         dbus_env: dict[str, str] = {}
         log("out(%s)=%r", cmd, out)
-        for l in out.splitlines():
-            if l.startswith("export "):
+        for line in out.splitlines():
+            if line.startswith("export "):
                 continue
             sep = "="
-            if l.startswith("setenv "):
-                l = l[len("setenv "):]
+            if line.startswith("setenv "):
+                line = line[len("setenv "):]
                 sep = " "
-            if l.startswith("set "):
-                l = l[len("set "):]
-            parts = l.split(sep, 1)
+            if line.startswith("set "):
+                line = line[len("set "):]
+            parts = line.split(sep, 1)
             if len(parts) != 2:
                 continue
             k, v = parts

@@ -37,6 +37,28 @@ def obsc(v) -> str:
     return v
 
 
+def convert(text: str) -> float | str:
+    return float(text) if text.isdigit() else text
+
+
+def alphanum(key: str) -> list:
+    return [convert(c) for c in re.split(r'([-+]?\d+\.?\d*)', key)]
+
+
+def sort_human(lst: list[str]) -> list:
+    lst.sort(key=alphanum)
+    return lst
+
+
+def sorted_nicely(items: Iterable) -> Iterable[str]:
+    """ Sort the given iterable in the way that humans expect."""
+
+    def alphanum_key(key) -> list:
+        return [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
+
+    return sorted(items, key=alphanum_key)
+
+
 def csv(v: Iterable) -> str:
     try:
         return ", ".join(str(x) for x in v)
@@ -113,13 +135,13 @@ def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32
             pass
         return nonl(pver(v, ", ", ", "))
 
-    l = pad - len(prefix) - len(lchar)
+    indent = pad - len(prefix) - len(lchar)
     for k in sorted_nicely(d.keys()):
         v = d[k]
         if isinstance(v, dict):
             nokey = v.get("", (v.get(None)))
             if nokey is not None:
-                sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, nokey)))
+                sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(indent), vf(k, nokey)))
                 for x in ("", None):
                     v.pop(x, None)
             else:
@@ -127,7 +149,7 @@ def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32
             print_nested_dict(v, prefix + "  ", "-", vformat=vformat, print_fn=print_fn,
                               version_keys=version_keys, hex_keys=hex_keys)
         else:
-            sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(l), vf(k, v)))
+            sprint("%s%s %s : %s" % (prefix, lchar, bytestostr(k).ljust(indent), vf(k, v)))
 
 
 def nicestr(obj) -> str:
@@ -185,20 +207,6 @@ def pver(v, numsep: str = ".", strsep: str = ", ") -> str:
 
                 return strsep.join(s(x) for x in v)
     return bytestostr(v)
-
-
-def sorted_nicely(l: Iterable):
-    """ Sort the given iterable in the way that humans expect."""
-
-    def convert(text):
-        if text.isdigit():
-            return int(text)
-        return text
-
-    def alphanum_key(key):
-        return [convert(c) for c in re.split(r"(\d+)", bytestostr(key))]
-
-    return sorted(l, key=alphanum_key)
 
 
 def memoryview_to_bytes(v) -> bytes:

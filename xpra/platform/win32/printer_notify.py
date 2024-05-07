@@ -1,4 +1,3 @@
-#@PydevCodeAnalysisIgnore
 # This file is part of Xpra.
 # Copyright (C) 2013 eryksun
 # https://stackoverflow.com/questions/15748386/how-to-catch-printer-event-in-python
@@ -358,8 +357,8 @@ winspool.FindFirstPrinterChangeNotification.errcheck = check_ihv
 winspool.FindFirstPrinterChangeNotification.restype = wintypes.HANDLE
 winspool.FindFirstPrinterChangeNotification.argtypes = (
     wintypes.HANDLE,  # _In_ hPrinter
-    wintypes.DWORD,  #      fdwFilter
-    wintypes.DWORD,  #      fdwOptions
+    wintypes.DWORD,  # fdwFilter
+    wintypes.DWORD,  # fdwOptions
     PPRINTER_NOTIFY_OPTIONS)  # _In_opt_ pPrinterNotifyOptions
 
 winspool.FindNextPrinterChangeNotification.errcheck = check_bool

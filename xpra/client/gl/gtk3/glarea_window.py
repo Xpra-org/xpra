@@ -73,9 +73,9 @@ class GLAreaBacking(GLWindowBackingBase):
         log(f"GLAreaBacking.on_realize({args}) callbacks=%s", tuple(ellipsizer(x) for x in onrcb))
         gl_context.update_geometry = noop
         self.on_realize_cb = []
-        for x, xargs in onrcb:
-            with log.trap_error("Error calling realize callback %s", ellipsizer(x)):
-                x(gl_context, *xargs)
+        for callback, xargs in onrcb:
+            with log.trap_error("Error calling realize callback %s", ellipsizer(callback)):
+                callback(gl_context, *xargs)
 
     def with_gl_context(self, cb: Callable, *args):
         da = self._backing

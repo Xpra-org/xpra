@@ -89,8 +89,8 @@ class FakeClient(FileTransferHandler):
     def fire_handshake_callbacks(self):
         cbs = self.handshake_callbacks
         self.handshake_callbacks = []
-        for x in cbs:
-            x()
+        for callback in cbs:
+            callback()
 
     def send_refresh(self, *args):
         self.log("send_refresh(%s)", args)

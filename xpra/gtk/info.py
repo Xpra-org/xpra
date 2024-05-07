@@ -355,10 +355,10 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1):
         screenlog(" monitor %s: %s, model=%s, manufacturer=%s",
                   j, type(monitor).__name__, monitor.get_model(), monitor.get_manufacturer())
 
-        def vmwx(v):
+        def vmwx(v) -> bool:
             return v < geom.x or v > geom.x + geom.width
 
-        def vmwy(v):
+        def vmwy(v) -> bool:
             return v < geom.y or v > geom.y + geom.height
 
         def valid_workarea(work_x, work_y, work_width, work_height):
@@ -382,10 +382,10 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1):
     if workarea:
         work_x, work_y, work_width, work_height = swork(*workarea)  # pylint: disable=not-an-iterable
 
-        def vwx(v):
+        def vwx(v) -> bool:
             return v < 0 or v > sw
 
-        def vwy(v):
+        def vwy(v) -> bool:
             return v < 0 or v > sh
 
         if vwx(work_x) or vwx(work_x + work_width) or vwy(work_y) or vwy(work_y + work_height):

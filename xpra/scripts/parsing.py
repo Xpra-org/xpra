@@ -734,7 +734,7 @@ def supports_x11_server() -> bool:
         return False
 
 
-def has_module(name:str):
+def has_module(name: str):
     try:
         return bool(find_spec(name))
     except (ModuleNotFoundError, ValueError):

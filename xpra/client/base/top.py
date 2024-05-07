@@ -307,10 +307,10 @@ class TopClient:
                 if height <= hpos:
                     return
                 info = self.get_display_info(display, state_paths)
-                l = len(info)
-                if height <= hpos + l + 2:
+                nlines = len(info)
+                if height <= hpos + nlines + 2:
                     break
-                self.box(1, hpos, width - 2, l + 2, open_top=i > 0, open_bottom=i < n - 1)
+                self.box(1, hpos, width - 2, nlines + 2, open_top=i > 0, open_bottom=i < n - 1)
                 hpos += 1
                 if i == self.position:
                     self.selected_session = display
@@ -668,18 +668,18 @@ class TopSessionClient(InfoTimerClient):
                 ci = client_info.dictget(client_no)
                 assert ci
                 ci = self.get_client_info(self.td(ci))
-                l = len(ci)
-                if hpos + 2 + l > height:
+                nlines = len(ci)
+                if hpos + 2 + nlines > height:
                     if hpos < height:
                         more = ngui - client_index
                         addstr_box(hpos, 0, f"{more} clients not shown", curses.A_BOLD)
                     break
-                self.box(1, hpos, width - 2, 2 + l)
+                self.box(1, hpos, width - 2, 2 + nlines)
                 for i, info in enumerate(ci):
                     info_text, color = info
                     cpair = curses.color_pair(color)
                     addstr_box(hpos + i + 1, 2, info_text, cpair)
-                hpos += 2 + l
+                hpos += 2 + nlines
 
             windows = self.slidictget("windows")
             if hpos < height - 3:
@@ -690,20 +690,20 @@ class TopSessionClient(InfoTimerClient):
             nwindows = len(wins)
             for win_no, win in enumerate(wins):
                 wi = get_window_info(self.td(win))
-                l = len(wi)
-                if hpos + 2 + l > height:
+                nlines = len(wi)
+                if hpos + 2 + nlines > height:
                     if hpos < height:
                         more = nwindows - win_no
                         addstr_main(hpos, 0,
                                     f"terminal window is too small: {more} windows not shown",
                                     curses.A_BOLD)
                     break
-                self.box(1, hpos, width - 2, 2 + l)
+                self.box(1, hpos, width - 2, 2 + nlines)
                 for i, info in enumerate(wi):
                     info_text, color = info
                     cpair = curses.color_pair(color)
                     addstr_box(hpos + i + 1, 2, info_text, cpair)
-                hpos += 2 + l
+                hpos += 2 + nlines
         except Exception as e:
             self.err(e)
 

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.util.objects import typedict, AtomicInteger
+from xpra.util.objects import AtomicInteger
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import IgnoreWarningsContext
 from xpra.common import GravityStr, WORKSPACE_UNSET
@@ -20,16 +20,10 @@ Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
 
-def slabel(text: str = "", tooltip: str = "", font: str = ""):
-    l = label(text, tooltip, font)
-    l.set_selectable(True)
-    return l
-
-
-def x(self):
-    self.size_constraints = typedict()
-    self.geometry_hints = typedict()
-    self.pending_refresh = []
+def slabel(text: str = "", tooltip: str = "", font: str = "") -> Gtk.Label:
+    lbl = label(text, tooltip, font)
+    lbl.set_selectable(True)
+    return lbl
 
 
 def dict_str(d):
@@ -108,28 +102,28 @@ class WindowInfo(Gtk.Window):
         row = AtomicInteger()
 
         def new_row(text="", widget=None) -> None:
-            l = label(text)
-            l.set_xalign(1)
-            l.set_margin_end(10)
-            grid.attach(l, 1, int(row), 1, 1)
+            lbl = label(text)
+            lbl.set_xalign(1)
+            lbl.set_margin_end(10)
+            grid.attach(lbl, 1, int(row), 1, 1)
             if widget:
                 grid.attach(widget, 2, int(row), 1, 1)
             row.increase()
 
         def lrow(text: str) -> Gtk.Label:
-            l = label()
-            l.set_margin_start(10)
-            l.set_xalign(0)
-            l.set_line_wrap(True)
-            new_row(text, l)
-            return l
+            lbl = label()
+            lbl.set_margin_start(10)
+            lbl.set_xalign(0)
+            lbl.set_line_wrap(True)
+            new_row(text, lbl)
+            return lbl
 
         def irow(text) -> Gtk.Image:
-            i = Gtk.Image()
-            i.set_margin_start(10)
-            i.set_halign(0)
-            new_row(text, i)
-            return i
+            image = Gtk.Image()
+            image.set_margin_start(10)
+            image.set_halign(0)
+            new_row(text, image)
+            return image
 
         def sep() -> None:
             s = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)

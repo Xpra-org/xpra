@@ -104,7 +104,7 @@ def osclose(fd) -> None:
         pass
 
 
-def create_xorg_device_configs(xorg_conf_dir:str, device_uuid: str, uid: int, gid: int) -> None:
+def create_xorg_device_configs(xorg_conf_dir: str, device_uuid: str, uid: int, gid: int) -> None:
     log = get_vfb_logger()
     log("create_xorg_device_configs(%s, %s, %i, %i)", xorg_conf_dir, device_uuid, uid, gid)
     if not device_uuid:
@@ -134,7 +134,7 @@ def create_xorg_device_configs(xorg_conf_dir:str, device_uuid: str, uid: int, gi
         conf_files.append(f)
 
 
-def save_input_conf(xorg_conf_dir:str, i, dev_type, device_uuid: str, uid: int, gid: int) -> str:
+def save_input_conf(xorg_conf_dir: str, i, dev_type, device_uuid: str, uid: int, gid: int) -> str:
     # create individual device files:
     upper_dev_type = dev_type[:1].upper()+dev_type[1:]   # ie: Pointer
     product_name = f"Xpra Virtual {upper_dev_type} {device_uuid}"
@@ -158,7 +158,7 @@ EndSection
     return conf_file
 
 
-def valid_xauth(filename:str, uid: int=getuid(), gid: int=getgid()) -> str:
+def valid_xauth(filename: str, uid: int = getuid(), gid: int = getgid()) -> str:
     if not filename:
         return ""
     if not os.path.exists(filename):
@@ -170,7 +170,7 @@ def valid_xauth(filename:str, uid: int=getuid(), gid: int=getgid()) -> str:
     return filename
 
 
-def get_xauthority_path(display_name) -> str:
+def get_xauthority_path(display_name: str) -> str:
     assert POSIX
     # pylint: disable=import-outside-toplevel
     from xpra.platform.posix.paths import _get_xpra_runtime_dir
@@ -199,11 +199,11 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
     log("start_Xvfb%s XVFB_EXTRA_ARGS=%s",
         (xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid),
         XVFB_EXTRA_ARGS)
-    use_display_fd = display_name[0]=='S'
+    use_display_fd = display_name[0] == 'S'
     if XVFB_EXTRA_ARGS:
         xvfb_str += " "+XVFB_EXTRA_ARGS
 
-    subs: dict[str,str] = {}
+    subs: dict[str, str] = {}
 
     def pathexpand(s):
         return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
@@ -211,9 +211,9 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
     if etc_prefix.endswith("/usr"):
         etc_prefix = etc_prefix[:-4]
     subs |= {
-        "DISPLAY"       : display_name,
-        "XPRA_LOG_DIR"  : pathexpand(os.environ.get("XPRA_LOG_DIR")),
-        "XORG_CONFIG_PREFIX" : os.environ.get("XORG_CONFIG_PREFIX", etc_prefix),
+        "DISPLAY": display_name,
+        "XPRA_LOG_DIR": pathexpand(os.environ.get("XPRA_LOG_DIR")),
+        "XORG_CONFIG_PREFIX": os.environ.get("XORG_CONFIG_PREFIX", etc_prefix),
     }
 
     # identify logfile argument if it exists,
@@ -233,7 +233,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
         except ValueError:
             no_arg = -1
         geom_str = "%sx%s" % ("x".join(str(x) for x in vfb_geom[:2]), pixel_depth)
-        if no_arg>0 and xvfb_cmd[no_arg-1]=="-screen" and len(xvfb_cmd)>(no_arg+1):
+        if no_arg > 0 and xvfb_cmd[no_arg-1] == "-screen" and len(xvfb_cmd) > (no_arg+1):
             # found an existing "-screen" argument for this screen number,
             # replace it:
             xvfb_cmd[no_arg+1] = geom_str
@@ -242,7 +242,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
             xvfb_cmd += ["-screen", "0", geom_str]
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
-        if logfile_argindex+1>=len(xvfb_cmd):
+        if logfile_argindex+1 >= len(xvfb_cmd):
             raise InitException("invalid xvfb command string: -logfile should not be last")
         xorg_log_file = xvfb_cmd[logfile_argindex+1]
     except ValueError:
@@ -258,7 +258,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
             try:
                 log("creating Xorg log dir '%s'", xorg_log_dir)
                 os.mkdir(xorg_log_dir, 0o700)
-                if POSIX and uid!=getuid() or gid!=getgid():
+                if POSIX and uid != getuid() or gid != getgid():
                     try:
                         os.lchown(xorg_log_dir, uid, gid)
                     except OSError:
@@ -275,7 +275,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
             log.warn("Warning: cannot use uinput")
             log.warn(" '-config' argument not found in the xvfb command")
         else:
-            if config_argindex+1>=len(xvfb_cmd):
+            if config_argindex+1 >= len(xvfb_cmd):
                 raise InitException("invalid xvfb command string: -config should not be last")
             xorg_conf = xvfb_cmd[config_argindex+1]
             if xorg_conf.endswith("xorg.conf"):
@@ -288,7 +288,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
             create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
 
     xvfb_executable = xvfb_cmd[0]
-    if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth>0:
+    if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth > 0:
         xvfb_cmd.append("-depth")
         xvfb_cmd.append(str(pixel_depth))
     xvfb = None
@@ -304,7 +304,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
 
                 def preexec():
                     os.setpgrp()
-                    if getuid()==0 and uid:
+                    if getuid() == 0 and uid:
                         setuidgid(uid, gid)
                 try:
                     # pylint: disable=consider-using-with
@@ -350,7 +350,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
             xvfb_cmd.append(display_name)
 
             def preexec():
-                if getuid()==0 and (uid!=0 or gid!=0):
+                if getuid() == 0 and (uid != 0 or gid != 0):
                     setuidgid(uid, gid)
                 else:
                     os.setsid()
@@ -369,7 +369,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
     return xvfb, display_name
 
 
-def kill_xvfb(xvfb_pid:int) -> None:
+def kill_xvfb(xvfb_pid: int) -> None:
     log = get_vfb_logger()
     log.info("killing xvfb with pid %s", xvfb_pid)
     try:
@@ -382,7 +382,7 @@ def kill_xvfb(xvfb_pid:int) -> None:
         os.unlink(xauthority)
 
 
-def set_initial_resolution(resolutions, dpi:int=0) -> None:
+def set_initial_resolution(resolutions, dpi: int = 0) -> None:
     log = get_vfb_logger()
     log("set_initial_resolution(%s)", resolutions)
     try:
@@ -398,17 +398,17 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
             monitors = {}
             x, y = 0, 0
             for i, res in enumerate(resolutions):
-                assert len(res)==3
+                assert len(res) == 3
                 if not all(isinstance(v, int) for v in res):
                     raise ValueError(f"resolution values must be ints, found: {res} ({csv(type(v) for v in res)})")
                 w, h, hz = res
                 mdpi = dpi
                 # guess the DPI if we don't have one:
-                if mdpi<=0:
+                if mdpi <= 0:
                     # use a higher DPI for higher resolutions
-                    if w>=4096 or h>=2560:
+                    if w >= 4096 or h >= 2560:
                         mdpi = 144
-                    elif w>=2560 or h>=1440:
+                    elif w >= 2560 or h >= 1440:
                         mdpi = 120
                     else:
                         mdpi = 96
@@ -416,13 +416,13 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
                 def rdpi(v):
                     return round(v * 25.4 / mdpi)
                 monitors[i] = {
-                    "name"      : f"VFB-{i}",
-                    "primary"   : i==0,
-                    "geometry"  : (x, y, w, h),
-                    "width-mm"  : rdpi(w),
-                    "height-mm" : rdpi(h),
-                    "refresh-rate" : hz*1000,
-                    "automatic" : True,
+                    "name": f"VFB-{i}",
+                    "primary": i == 0,
+                    "geometry": (x, y, w, h),
+                    "width-mm": rdpi(w),
+                    "height-mm": rdpi(h),
+                    "refresh-rate": hz*1000,
+                    "automatic": True,
                 }
                 x += w
                 # arranging vertically:
@@ -447,13 +447,13 @@ def set_initial_resolution(resolutions, dpi:int=0) -> None:
         log.estr(e)
 
 
-def xauth_add(filename:str, display_name:str, xauth_data:str, uid:int, gid:int) -> None:
+def xauth_add(filename: str, display_name: str, xauth_data: str, uid: int, gid: int) -> None:
     xauth_args = ["-f", filename, "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
     xauth_cmd = ["xauth"] + xauth_args
     try:
         def preexec():
             os.setsid()
-            if getuid()==0 and uid:
+            if getuid() == 0 and uid:
                 setuidgid(uid, gid)
         start = monotonic()
         log = get_vfb_logger()
@@ -461,7 +461,7 @@ def xauth_add(filename:str, display_name:str, xauth_data:str, uid:int, gid:int) 
         code = call(xauth_cmd, preexec_fn=preexec)
         end = monotonic()
         elapsed = round(end-start)
-        if code!=0 and elapsed>=10:
+        if code != 0 and elapsed >= 10:
             log.warn(f"Warning: xauth command took {elapsed} seconds and failed")
             # took more than 10 seconds to fail, check for stale locks:
             if glob.glob(f"{filename}-*"):
@@ -469,7 +469,7 @@ def xauth_add(filename:str, display_name:str, xauth_data:str, uid:int, gid:int) 
                 xauth_cmd = ["xauth", "-b"]+xauth_args
                 log(f"xauth command: {xauth_cmd}")
                 code = call(xauth_cmd, preexec_fn=preexec)
-        if code!=0:
+        if code != 0:
             raise OSError(f"non-zero exit code: {code}")
     except OSError as e:
         # trying to continue anyway!
@@ -480,7 +480,7 @@ def xauth_add(filename:str, display_name:str, xauth_data:str, uid:int, gid:int) 
         log.estr(e)
 
 
-def check_xvfb_process(xvfb=None, cmd:str="Xvfb", timeout:int=0, command=None) -> bool:
+def check_xvfb_process(xvfb=None, cmd: str = "Xvfb", timeout: int = 0, command=None) -> bool:
     if xvfb is None:
         # we don't have a process to check
         return True

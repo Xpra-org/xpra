@@ -182,6 +182,6 @@ class DebugControl(ArgsControlCommand):
             log.info("%s debugging, no new loggers matching: %s", log_cmd, csv(groups))
         else:
             log.info("%sd debugging for:", log_cmd)
-            for l in loggers:
-                log.info(" - %s", l)
+            for logger in loggers:
+                log.info(" - %s", logger)
         return f"logging {log_cmd}d for " + (csv(loggers) or "<no match found>")

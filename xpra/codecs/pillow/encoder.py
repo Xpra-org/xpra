@@ -296,9 +296,9 @@ def selftest(full=False) -> None:
                         cdata = v[1].data
                         log("encode(%s)=%s", (encoding, img, q, s, alpha), hexstr(cdata))
         except Exception as e:  # pragma: no cover
-            l = log.warn
-            l("Pillow error saving %s with quality=%s, speed=%s, alpha=%s", encoding, q, s, alpha)
-            l(" %s", e, exc_info=True)
+            log_fn = log.warn
+            log_fn("Pillow error saving %s with quality=%s, speed=%s, alpha=%s", encoding, q, s, alpha)
+            log_fn(" %s", e, exc_info=True)
             encs: list[str] = list(ENCODINGS)
             encs.remove(encoding)
             ENCODINGS = tuple(encs)

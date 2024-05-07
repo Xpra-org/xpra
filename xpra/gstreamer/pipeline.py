@@ -33,27 +33,27 @@ class Pipeline(GObject.GObject):
 
     generation = AtomicInteger()
 
-    __generic_signals__ : dict[str,tuple] = {
-        "state-changed"     : one_arg_signal,
-        "error"             : one_arg_signal,
-        "new-stream"        : one_arg_signal,
-        "info"              : one_arg_signal,
+    __generic_signals__: dict[str, tuple] = {
+        "state-changed": one_arg_signal,
+        "error": one_arg_signal,
+        "new-stream": one_arg_signal,
+        "info": one_arg_signal,
     }
 
     def __init__(self):
         super().__init__()
         self.bus = None
-        self.bitrate : int = -1
-        self.pipeline : Gst.Pipeline | None = None
+        self.bitrate: int = -1
+        self.pipeline: Gst.Pipeline | None = None
         self.pipeline_str = ""
-        self.element_handlers : dict[Any,list[int]] = {}
+        self.element_handlers: dict[Any, list[int]] = {}
         self.start_time: float = 0
-        self.state : str = "stopped"
-        self.info : dict[str,Any] = {}
-        self.emit_info_timer : int = 0
+        self.state: str = "stopped"
+        self.info: dict[str, Any] = {}
+        self.emit_info_timer: int = 0
         self.file = None
 
-    def element_connect(self, element, sig:str, handler:Callable) -> None:
+    def element_connect(self, element, sig: str, handler: Callable) -> None:
         """ keeps track of signal ids so we can cleanup later """
         sid = element.connect(sig, handler)
         self.element_handlers.setdefault(element, []).append(sid)
@@ -67,7 +67,7 @@ class Pipeline(GObject.GObject):
             for sid in sids:
                 element.disconnect(sid)
 
-    def update_state(self, state:str) -> None:
+    def update_state(self, state: str) -> None:
         log("update_state(%s)", state)
         self.state = state
         self.info["state"] = state
@@ -101,7 +101,7 @@ class Pipeline(GObject.GObject):
             self.emit_info_timer = 0
             GLib.source_remove(eit)
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         return self.info.copy()
 
     def setup_pipeline_and_bus(self, elements) -> bool:
@@ -116,8 +116,8 @@ class Pipeline(GObject.GObject):
             log.error("Error setting up the pipeline:")
             log.estr(e)
             log.error(" GStreamer pipeline for:")
-            for i,x in enumerate(elements):
-                sep = " ! \\" if i<(len(elements)-1) else ""
+            for i, x in enumerate(elements):
+                sep = " ! \\" if i < (len(elements)-1) else ""
                 log.error(f"  {x}{sep}")
             self.cleanup()
             return False
@@ -131,10 +131,10 @@ class Pipeline(GObject.GObject):
         if not self.pipeline:
             return "stopped"
         return {
-            Gst.State.PLAYING   : "active",
-            Gst.State.PAUSED    : "paused",
-            Gst.State.NULL      : "stopped",
-            Gst.State.READY     : "ready",
+            Gst.State.PLAYING: "active",
+            Gst.State.PAUSED: "paused",
+            Gst.State.NULL: "stopped",
+            Gst.State.READY: "ready",
         }.get(state, "unknown")
 
     def get_state(self) -> str:
@@ -187,13 +187,13 @@ class Pipeline(GObject.GObject):
         log("Pipeline.cleanup() done")
 
     def gstloginfo(self, msg, *args) -> None:
-        if self.state!="stopped":
+        if self.state != "stopped":
             log.info(msg, *args)
         else:
             log(msg, *args)
 
     def gstlogwarn(self, msg, *args) -> None:
-        if self.state!="stopped":
+        if self.state != "stopped":
             log.warn(msg, *args)
         else:
             log(msg, *args)
@@ -219,13 +219,13 @@ class Pipeline(GObject.GObject):
             p.set_state(Gst.State.NULL)
             err, details = message.parse_error()
             log.error("Gstreamer pipeline error: %s", err.message)
-            for l in err.args:
-                if l!=err.message:
-                    log(" %s", l)
+            for earg in err.args:
+                if earg != err.message:
+                    log(" %s", earg)
             try:
                 # prettify (especially on win32):
                 p = details.find("\\Source\\")
-                if p>0:
+                if p > 0:
                     details = details[p+len("\\Source\\"):]
                 for d in details.split(": "):
                     for dl in d.splitlines():
@@ -296,7 +296,7 @@ class Pipeline(GObject.GObject):
     def parse_element_message(self, message) -> None:
         structure = message.get_structure()
         props = {
-            "seqnum" : int(message.seqnum),
+            "seqnum": int(message.seqnum),
         }
         for i in range(structure.n_fields()):
             name = structure.nth_field_name(i)
@@ -306,12 +306,12 @@ class Pipeline(GObject.GObject):
     def do_parse_element_message(self, message, name, props=None) -> None:
         log("do_parse_element_message%s", (message, name, props))
 
-    def get_element_properties(self, element, *properties, ignore_missing=False) -> dict[str,Any]:
+    def get_element_properties(self, element, *properties, ignore_missing=False) -> dict[str, Any]:
         info = {}
         for x in properties:
             try:
                 v = element.get_property(x)
-                if v>=0:
+                if v >= 0:
                     info[x] = v
             except TypeError as e:
                 if not ignore_missing and first_time("gst-property-%s" % x):

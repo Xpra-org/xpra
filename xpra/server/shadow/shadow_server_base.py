@@ -128,12 +128,12 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         if self.window_matches:
             return
         try:
-            l = len(self._id_to_window)
+            count = len(self._id_to_window)
         except AttributeError as e:
             log(f"no screen info: {e}")
             return
-        if l > 1:
-            log.info(f" with {l} monitors:")
+        if count > 1:
+            log.info(f" with {count} monitors:")
             for window in self._id_to_window.values():
                 title = window.get_property("title")
                 x, y, w, h = window.geometry
@@ -185,13 +185,13 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def make_notifier(self) -> None:
         nc = self.get_notifier_classes()
         notifylog("make_notifier() notifier classes: %s", nc)
-        for x in nc:
+        for nclass in nc:
             try:
-                self.notifier = x()
+                self.notifier = nclass()
                 notifylog("notifier=%s", self.notifier)
                 break
             except Exception:
-                notifylog("failed to instantiate %s", x, exc_info=True)
+                notifylog("failed to instantiate %s", nclass, exc_info=True)
 
     def get_notifier_classes(self) -> list[type]:
         # subclasses will generally add their toolkit specific variants

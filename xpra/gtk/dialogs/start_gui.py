@@ -1015,7 +1015,7 @@ class DisplayWindow(SessionOptions):
             for size in SCREEN_SIZES:
                 try:
                     w, h = size.split("x")
-                    size_options[f"{w}x{h}"] =f"{w} x {h}"
+                    size_options[f"{w}x{h}"] = f"{w} x {h}"
                 except (TypeError, ValueError, IndexError):
                     size_options[size] = size
             self.combo("Screen Size", "resize-display", size_options)

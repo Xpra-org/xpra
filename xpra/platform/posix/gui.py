@@ -438,8 +438,8 @@ WINDOW_ADD_HOOKS: list[Callable] = []
 
 
 def add_window_hooks(window) -> None:
-    for x in WINDOW_ADD_HOOKS:
-        x(window)
+    for callback in WINDOW_ADD_HOOKS:
+        callback(window)
     log("add_window_hooks(%s) added %s", window, WINDOW_ADD_HOOKS)
 
 
@@ -447,8 +447,8 @@ WINDOW_REMOVE_HOOKS: list[Callable] = []
 
 
 def remove_window_hooks(window):
-    for x in WINDOW_REMOVE_HOOKS:
-        x(window)
+    for callback in WINDOW_REMOVE_HOOKS:
+        callback(window)
     log("remove_window_hooks(%s) added %s", window, WINDOW_REMOVE_HOOKS)
 
 

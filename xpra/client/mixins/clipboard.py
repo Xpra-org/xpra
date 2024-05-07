@@ -33,19 +33,19 @@ class ClipboardClient(StubClientMixin):
         super().__init__()
         self.client_clipboard_type: str = ""
         self.client_clipboard_direction: str = "both"
-        self.client_supports_clipboard : bool = False
-        self.clipboard_enabled : bool = False
+        self.client_supports_clipboard: bool = False
+        self.clipboard_enabled: bool = False
         self.server_clipboard_direction: str = "both"
-        self.server_clipboard : bool = False
+        self.server_clipboard: bool = False
         self.server_clipboard_preferred_targets: tuple[str, ...] = ()
-        self.server_clipboards: tuple[str,...] = ()
-        self.server_clipboard_greedy : bool = False
-        self.server_clipboard_want_targets : bool = False
+        self.server_clipboards: tuple[str, ...] = ()
+        self.server_clipboard_greedy: bool = False
+        self.server_clipboard_want_targets: bool = False
         self.server_clipboard_selections: tuple[str, ...] = ()
         self.clipboard_helper = None
-        self.local_clipboard_requests : int = 0
-        self.remote_clipboard_requests : int = 0
-        #only used with the translated clipboard class:
+        self.local_clipboard_requests: int = 0
+        self.remote_clipboard_requests: int = 0
+        # only used with the translated clipboard class:
         self.local_clipboard: str = ""
         self.remote_clipboard: str = ""
 
@@ -64,7 +64,7 @@ class ClipboardClient(StubClientMixin):
             with log.trap_error(f"Error on clipboard helper {ch} cleanup"):
                 ch.cleanup()
 
-    def get_info(self) -> dict[str, dict[str,Any]]:
+    def get_info(self) -> dict[str, dict[str, Any]]:
         info: dict[str, Any] = {
             "client":
             {
@@ -112,13 +112,13 @@ class ClipboardClient(StubClientMixin):
             return True
         self.server_clipboard = c.boolget("clipboard")
         self.server_clipboard_direction = c.strget("clipboard-direction", "both")
-        if self.server_clipboard_direction!=self.client_clipboard_direction and self.server_clipboard_direction!="both":
-            if self.client_clipboard_direction=="disabled":
+        if self.server_clipboard_direction not in ("both", self.client_clipboard_direction):
+            if self.client_clipboard_direction == "disabled":
                 log("client clipboard is disabled")
-            elif self.server_clipboard_direction=="disabled":
+            elif self.server_clipboard_direction == "disabled":
                 log.warn("Warning: server clipboard synchronization is currently disabled")
                 self.client_clipboard_direction = "disabled"
-            elif self.client_clipboard_direction=="both":
+            elif self.client_clipboard_direction == "both":
                 log.warn("Warning: server only supports '%s' clipboard transfers", self.server_clipboard_direction)
                 self.client_clipboard_direction = self.server_clipboard_direction
             else:
@@ -159,11 +159,11 @@ class ClipboardClient(StubClientMixin):
             self.clipboard_enabled = ch is not None
             log("clipboard helper=%s", ch)
             if self.clipboard_enabled:
-                #tell the server about which selections we really want to sync with
-                #(could have been translated, or limited if the client only has one, etc.)
+                # tell the server about which selections we really want to sync with
+                # (could have been translated, or limited if the client only has one, etc.)
                 self.send_clipboard_selections(ch.get_remote_selections())
                 ch.send_all_tokens()
-        #ui may want to know this is now set:
+        # ui may want to know this is now set:
         self.emit("clipboard-toggled")
 
     def init_authenticated_packet_handlers(self) -> None:
@@ -186,9 +186,9 @@ class ClipboardClient(StubClientMixin):
             get_clipboard_native_class(),
         ]
         log("get_clipboard_helper_classes() unfiltered list=%s", clipboard_options)
-        if ct and ct.lower()!="auto" and ct.lower() not in TRUE_OPTIONS:
+        if ct and ct.lower() != "auto" and ct.lower() not in TRUE_OPTIONS:
             # try to match the string specified:
-            filtered = [x for x in clipboard_options if x and x.lower().find(self.client_clipboard_type)>=0]
+            filtered = [x for x in clipboard_options if x and x.lower().find(self.client_clipboard_type) >= 0]
             if not filtered:
                 log.warn("Warning: no clipboard types matching '%s'", self.client_clipboard_type)
                 log.warn(" clipboard synchronization is disabled")
@@ -236,14 +236,14 @@ class ClipboardClient(StubClientMixin):
         ch = self.clipboard_helper
         log("process_clipboard_packet: %s, helper=%s", bytestostr(packet[0]), ch)
         packet_type = packet[0]
-        if packet_type=="clipboard-status":
+        if packet_type == "clipboard-status":
             self._process_clipboard_status(packet)
         elif ch:
             ch.process_clipboard_packet(packet)
 
     def _process_clipboard_status(self, packet: PacketType) -> None:
         clipboard_enabled, reason = packet[1:3]
-        if self.clipboard_enabled!=clipboard_enabled:
+        if self.clipboard_enabled != clipboard_enabled:
             log.info("clipboard toggled to %s by the server, reason given:", ["off", "on"][int(clipboard_enabled)])
             log.info(" %s", bytestostr(reason))
             self.clipboard_enabled = bool(clipboard_enabled)
@@ -267,7 +267,7 @@ class ClipboardClient(StubClientMixin):
     def setup_clipboard_helper(self, helperClass):
         log("setup_clipboard_helper(%s)", helperClass)
         # first add the platform specific one, (which may be None):
-        kwargs= {
+        kwargs = {
             # all the local clipboards supported:
             "clipboards.local": CLIPBOARDS,
             # all the remote clipboards supported:

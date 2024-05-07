@@ -12,13 +12,16 @@
 # The x11 keymap name was found in /usr/share/X11/xkb/rules/*
 # This is used for converting the layout we detect using win32api into
 # something that can be used by X11 (a layout with optional variant)
-UNICODE=-1
-LATAM_VARIANTS  : tuple[str, ...] = ("nodeadkeys", "deadtilde", "sundeadkeys")
-ARA_VARIANTS    : tuple[str, ...] = ("azerty", "azerty_digits", "digits", "qwerty", "qwerty_digits", "buckwalter")
-ES_VARIANTS     : tuple[str, ...] = ("nodeadkeys", "deadtilde", "sundeadkeys", "dvorak", "est", "cat", "mac")
-RS_VARIANTS     : tuple[str, ...] = ("yz", "latin", "latinunicode", "latinyz", "latinunicodeyz", "alternatequotes", "latinalternatequotes", "rue")
-FR_VARIANTS     : tuple[str, ...] = ("nodeadkeys", "sundeadkeys", "oss", "oss_latin9", "oss_nodeadkeys", "oss_sundeadkeys", "latin9", "latin9_nodeadkeys", "latin9_sundeadkeys", "bepo", "bepo_latin9", "dvorak", "mac", "bre", "oci", "geo")
-WIN32_LAYOUTS : dict[int,tuple[str, str, str, int, str, tuple[str, ...]]]= {
+UNICODE = -1
+LATAM_VARIANTS: tuple[str, ...] = ("nodeadkeys", "deadtilde", "sundeadkeys")
+ARA_VARIANTS: tuple[str, ...] = ("azerty", "azerty_digits", "digits", "qwerty", "qwerty_digits", "buckwalter")
+ES_VARIANTS: tuple[str, ...] = ("nodeadkeys", "deadtilde", "sundeadkeys", "dvorak", "est", "cat", "mac")
+RS_VARIANTS: tuple[str, ...] = ("yz", "latin", "latinunicode", "latinyz", "latinunicodeyz", "alternatequotes",
+                                "latinalternatequotes", "rue")
+FR_VARIANTS: tuple[str, ...] = ("nodeadkeys", "sundeadkeys", "oss", "oss_latin9", "oss_nodeadkeys", "oss_sundeadkeys",
+                                "latin9", "latin9_nodeadkeys", "latin9_sundeadkeys", "bepo", "bepo_latin9", "dvorak",
+                                "mac", "bre", "oci", "geo")
+WIN32_LAYOUTS: dict[int,tuple[str, str, str, int, str, tuple[str, ...]]] = {
     1025: ("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", ()),
     1026: ("BGR", "Bulgaria",       "Bulgarian",                1251,   "bg", ("phonetic", "bas_phonetic")),
     1027: ("CAT", "Spain",          "Catalan",                  1252,   "ad", ()),

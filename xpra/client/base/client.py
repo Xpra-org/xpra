@@ -276,7 +276,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def install_signal_handlers(self) -> None:
 
-        def os_signal(signum: int | signal.Signals, _frame: FrameType | None=None) -> None:
+        def os_signal(signum: int | signal.Signals, _frame: FrameType | None = None) -> None:
             if self.exit_code is None:
                 try:
                     stderr_print()
@@ -735,13 +735,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def server_disconnect_exit_code(self, reason: str, *extra_info) -> ExitCode:
         if self.exit_code is None and (LOG_DISCONNECT or disconnect_is_an_error(reason)):
-            l = log.info
+            log_fn = log.info
         else:
-            l = log
-        l("server requested disconnect:")
-        l(" %s", reason)
+            log_fn = log.debug
+        log_fn("server requested disconnect:")
+        log_fn(" %s", reason)
         for x in extra_info:
-            l(" %s", x)
+            log_fn(" %s", x)
         if reason == ConnectionMessage.SERVER_UPGRADE.value:
             return ExitCode.UPGRADE
         if ConnectionMessage.AUTHENTICATION_FAILED.value in extra_info:
@@ -896,7 +896,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def auth_error(self, code: int,
                    message: str,
-                   server_message: str | ConnectionMessage=ConnectionMessage.AUTHENTICATION_FAILED) -> None:
+                   server_message: str | ConnectionMessage = ConnectionMessage.AUTHENTICATION_FAILED) -> None:
         authlog.error("Error: authentication failed:")
         authlog.error(f" {message}")
         self.disconnect_and_quit(code, server_message)
@@ -963,20 +963,20 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         if actual_digest == "des":
             salt = client_salt = server_salt
         else:
-            l = len(server_salt)
+            length = len(server_salt)
             salt_digest = "xor"
             if len(packet) >= 5:
                 salt_digest = str(packet[4])
             if salt_digest == "xor":
                 # with xor, we have to match the size
-                if l < 16:
-                    raise ValueError(f"server salt is too short: only {l} bytes, minimum is 16")
-                if l > 256:
-                    raise ValueError(f"server salt is too long: {l} bytes, maximum is 256")
+                if length < 16:
+                    raise ValueError(f"server salt is too short: only {length} bytes, minimum is 16")
+                if length > 256:
+                    raise ValueError(f"server salt is too long: {length} bytes, maximum is 256")
             else:
                 # other digest, 32 random bytes is enough:
-                l = 32
-            client_salt = get_salt(l)
+                length = 32
+            client_salt = get_salt(length)
             salt = gendigest(salt_digest, client_salt, server_salt)
             authlog(f"combined {salt_digest} salt({hexstr(server_salt)}, {hexstr(client_salt)})={hexstr(salt)}")
 

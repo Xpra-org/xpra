@@ -441,10 +441,8 @@ def select_best_free_memory(min_compute: int = 0) -> tuple[int, Any]:
                     context.pop()
                     context.detach()
         if selected_device_id >= 0 and selected_device:
-            l = log.debug
-            if len(devices) > 1:
-                l = log.info
-            l("selected device %s: %s", selected_device_id, device_info(selected_device))
+            log_fn = log.info if len(devices) > 1 else log.debug
+            log_fn("selected device %s: %s", selected_device_id, device_info(selected_device))
             return selected_device_id, selected_device
     return -1, None
 

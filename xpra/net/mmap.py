@@ -306,8 +306,8 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], 
     mmap_data_end: c_uint32 = int_from_buffer(mmap_area, 4)
     start = max(8, mmap_data_start.value)
     end = max(8, mmap_data_end.value)
-    l = len(data)
-    log("mmap: start=%i, end=%i, size of data to write=%i", start, end, l)
+    size = len(data)
+    log("mmap: start=%i, end=%i, size of data to write=%i", start, end, size)
     if end < start:
         # we have wrapped around but the client hasn't yet:
         # [++++++++E--------------------S+++++]
@@ -323,16 +323,16 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], 
         chunk = mmap_size - end
         available = chunk + (start - 8)
     # update global mmap stats:
-    mmap_free_size = available - l
-    if l > (mmap_size - 8):
+    mmap_free_size = available - size
+    if size > (mmap_size - 8):
         log.warn("Warning: mmap area is too small!")
-        log.warn(" we need to store %s bytes but the mmap area is limited to %i", l, (mmap_size - 8))
+        log.warn(" we need to store %s bytes but the mmap area is limited to %i", size, (mmap_size - 8))
         return [], mmap_free_size
     if mmap_free_size <= 0:
         log.warn("Warning: mmap area is full!")
-        log.warn(" we need to store %s bytes but only have %s free space left", l, available)
+        log.warn(" we need to store %s bytes but only have %s free space left", size, available)
         return [], mmap_free_size
-    if l < chunk:
+    if size < chunk:
         # data fits in the first chunk:
         # ie: initially:
         # [----------------------------------]
@@ -342,18 +342,18 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], 
         # [+++++++++**********E--------------]
         mmap_area.seek(end)
         mmap_area.write(data)
-        chunks = [(end, l)]
-        mmap_data_end.value = end + l
+        chunks = [(end, size)]
+        mmap_data_end.value = end + size
     else:
         # data does not fit in first chunk alone:
-        if not ALWAYS_WRAP and available >= (mmap_size / 2) and available >= (l * 3) and l < (start - 8):
+        if not ALWAYS_WRAP and available >= (mmap_size / 2) and available >= (size * 3) and size < (start - 8):
             # still plenty of free space, don't wrap around: just start again:
             # [------------------S+++++++++E------]
             # [*******E----------S+++++++++-------]
             mmap_area.seek(8)
             mmap_area.write(data)
-            chunks = [(8, l)]
-            mmap_data_end.value = 8 + l
+            chunks = [(8, size)]
+            mmap_data_end.value = 8 + size
         else:
             # split in 2 chunks: wrap around the end of the mmap buffer:
             # [------------------S+++++++++E------]
@@ -362,7 +362,7 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], 
             mmap_area.write(data[:chunk])
             mmap_area.seek(8)
             mmap_area.write(data[chunk:])
-            l2 = l - chunk
+            l2 = size - chunk
             chunks = [(end, chunk), (8, l2)]
             mmap_data_end.value = 8 + l2
     log("sending damage with mmap: %s bytes", len(data))

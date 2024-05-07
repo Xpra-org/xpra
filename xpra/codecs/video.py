@@ -20,7 +20,7 @@ log = Logger("codec", "video")
 
 # the codec loader uses the names...
 # but we need the module name to be able to probe without loading the codec:
-CODEC_TO_MODULE : dict[str, str] = {
+CODEC_TO_MODULE: dict[str, str] = {
     "enc_vpx"       : "vpx.encoder",
     "dec_vpx"       : "vpx.decoder",
     "enc_x264"      : "x264.encoder",
@@ -120,8 +120,8 @@ def filt(prefix: str, name: str, inlist, all_fn: Callable, all_options: tuple[st
             return "-"+autoprefix(prefix, v[1:])
         return autoprefix(prefix, v)
 
-    def apl(l: Iterable[str]) -> list[str]:
-        return [ap(v) for v in l]
+    def apl(items: Iterable[str]) -> list[str]:
+        return [ap(v) for v in items]
 
     inlist = [x for x in instr.split(",") if x.strip()]
     while "all" in inlist:
@@ -177,9 +177,9 @@ class VideoHelper:
     """
 
     def __init__(self, vencspecs=None, cscspecs=None, vdecspecs=None, init=False):
-        self._video_encoder_specs : Vdict = vencspecs or {}
-        self._csc_encoder_specs : Vdict = cscspecs or {}
-        self._video_decoder_specs : Vdict = vdecspecs or {}
+        self._video_encoder_specs: Vdict = vencspecs or {}
+        self._csc_encoder_specs: Vdict = cscspecs or {}
+        self._video_decoder_specs: Vdict = vdecspecs or {}
         self.video_encoders = []
         self.csc_modules = []
         self.video_decoders = []
@@ -239,7 +239,7 @@ class VideoHelper:
         return VideoHelper(ves, ces, vds, True)
 
     def get_info(self) -> dict[str, Any]:
-        d : dict[str, Any] = {}
+        d: dict[str, Any] = {}
         if not (self.video_encoders or self.csc_modules or self.video_decoders):
             # shortcut out: nothing to show
             return d
@@ -346,7 +346,7 @@ class VideoHelper:
         log("found %i video encoder formats: %s",
             len(self._video_encoder_specs), csv(self._video_encoder_specs))
 
-    def init_video_encoder_option(self, encoder_name:str) -> None:
+    def init_video_encoder_option(self, encoder_name: str) -> None:
         encoder_module = get_codec(encoder_name)
         log("init_video_encoder_option(%s)", encoder_name)
         log(" module=%s", encoder_module)
@@ -414,7 +414,7 @@ class VideoHelper:
                 load_codec(mod)
                 self.init_video_decoder_option(mod)
             except ImportError:
-                log.warn(f"Warning: cannot add {x!r} decoder",exc_info=True)
+                log.warn(f"Warning: cannot add {x!r} decoder", exc_info=True)
         log("found %s video decoder formats: %s",
             len(self._video_decoder_specs), csv(self._video_decoder_specs))
         log("video decoder options: %s", self._video_decoder_specs)

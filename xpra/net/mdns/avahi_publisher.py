@@ -209,10 +209,10 @@ class AvahiPublisher:
                 log.estr(e)
                 log.error(" %s", message)
             else:
-                for l in str(e).splitlines():
-                    for x in l.split(":", 1):
-                        if x:
-                            log.error(" %s", x)
+                for line in str(e).splitlines():
+                    for part in line.split(":", 1):
+                        if part:
+                            log.error(f" {part}")
             self.stop()
 
     def stop(self) -> None:

@@ -140,7 +140,7 @@ def main():
             vstr = value.decode()
         else:
             vstr = str(value)
-        if serial>0:
+        if serial > 0:
             vstr += f" (serial={serial:x})"
         print("%8s: %32s = %-32s" % (XSettingsNames.get(vtype, "?"), prop.decode(), vstr))
 

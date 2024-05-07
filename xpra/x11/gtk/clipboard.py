@@ -87,10 +87,10 @@ log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
 
 
 def xatoms_to_strings(data: bytes) -> tuple[str, ...]:
-    l = len(data)
-    if l % sizeof_long != 0:
-        raise ValueError(f"invalid length for atom array: {l}, value={repr_ellipsized(data)}")
-    natoms = l // sizeof_long
+    length = len(data)
+    if length % sizeof_long != 0:
+        raise ValueError(f"invalid length for atom array: {length}, value={repr_ellipsized(data)}")
+    natoms = length // sizeof_long
     atoms = struct.unpack(b"@" + b"L" * natoms, data)
     with xsync:
         return tuple(bytestostr(name) for name in (X11Window.XGetAtomName(atom)
@@ -322,19 +322,19 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         req_target = target
         if self.targets and target not in self.targets:
             if first_time(f"client-{wininfo}-invalidtarget-{target}"):
-                l = log.info
+                log_fn = log.info
             else:
-                l = log.debug
-            l("client %s is requesting an unknown target: '%s'", wininfo, target)
+                log_fn = log.debug
+            log_fn("client %s is requesting an unknown target: '%s'", wininfo, target)
             translated_targets = TRANSLATED_TARGETS.get(target, ())
             can_translate = tuple(x for x in translated_targets if x in self.targets)
             if can_translate:
                 req_target = can_translate[0]
-                l(" using '%s' instead", req_target)
+                log_fn(" using '%s' instead", req_target)
             else:
-                l(" valid targets: %s", csv(self.targets))
+                log_fn(" valid targets: %s", csv(self.targets))
                 if must_discard_extra(target):
-                    l(" dropping the request")
+                    log_fn(" dropping the request")
                     nodata()
                     return
 

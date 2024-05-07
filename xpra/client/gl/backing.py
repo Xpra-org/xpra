@@ -184,7 +184,8 @@ class GLWindowBackingBase(WindowBackingBase):
 
     We create an OpenGL framebuffer object, which will be always up-to-date with the latest windows contents.
     This framebuffer object is updated with YUV painting and RGB painting. It is presented on screen by drawing a
-    textured quad when requested, that is: after each YUV or RGB painting operation, and upon receiving an `expose` event.
+    textured quad when requested, that is: after each YUV or RGB painting operation,
+    and upon receiving an `expose` event.
     The use of an intermediate framebuffer object is the only way to guarantee that the client keeps
     an always fully up-to-date window image, which is critical because of backbuffer content losses upon buffer swaps
     or offscreen window movement.
@@ -981,7 +982,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def validate_cursor(self) -> bool:
         cursor_data = self.cursor_data
-        if not cursor_data or len(cursor_data)<9:
+        if not cursor_data or len(cursor_data) < 9:
             return False
         cw = int(cursor_data[3])
         ch = int(cursor_data[4])

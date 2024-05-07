@@ -27,6 +27,17 @@ filelog = Logger("file")
 SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
 
 
+def _save_print_job(filename, file_data) -> None:
+    save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
+    try:
+        with open(save_filename, "wb") as f:
+            f.write(file_data)
+        printlog.info("saved print job to: %s", save_filename)
+    except Exception as e:
+        printlog.error("Error: failed to save print job to %s", save_filename)
+        printlog.estr(e)
+
+
 class FilePrintServer(StubServerMixin):
     """
     Mixin for servers that can handle file transfers and forwarded printers.
@@ -186,7 +197,7 @@ class FilePrintServer(StubServerMixin):
         }
         printlog("parsed printer options: %s", options)
         if SAVE_PRINT_JOBS:
-            self._save_print_job(filename, file_data)
+            _save_print_job(filename, file_data)
 
         sent = 0
         sources = tuple(self._server_sources.values())
@@ -212,22 +223,9 @@ class FilePrintServer(StubServerMixin):
             if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
                 sent += 1
         # warn if not sent:
-        if sent == 0:
-            l = printlog.warn
-        else:
-            l = printlog.info
+        log_fn = printlog.warn if sent == 0 else printlog.info
         unit_str, v = to_std_unit(len(file_data), unit=1024)
-        l("'%s' (%i%sB) sent to %i clients for printing", title or filename, v, unit_str, sent)
-
-    def _save_print_job(self, filename, file_data) -> None:
-        save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
-        try:
-            with open(save_filename, "wb") as f:
-                f.write(file_data)
-            printlog.info("saved print job to: %s", save_filename)
-        except Exception as e:
-            printlog.error("Error: failed to save print job to %s", save_filename)
-            printlog.estr(e)
+        log_fn("'%s' (%i%sB) sent to %i clients for printing", title or filename, v, unit_str, sent)
 
     def _process_printers(self, proto, packet: PacketType) -> None:
         if not self.file_transfer.printing or WIN32:

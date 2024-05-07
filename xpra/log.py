@@ -183,6 +183,7 @@ def enable_format(format_string: str) -> None:
         pass
 
 
+# noinspection PyPep8
 STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
     "Client": {
         "client"        : "All client code",
@@ -334,12 +335,12 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
 # flatten it:
 KNOWN_FILTERS: dict[str, str] = {}
 for d in STRUCT_KNOWN_FILTERS.values():
-    for k,v in d.items():
+    for k, v in d.items():
         KNOWN_FILTERS[k] = v
 
 
 def isenvdebug(category: str) -> bool:
-    return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_").replace("+", "_"), "0")=="1"
+    return os.environ.get("XPRA_%s_DEBUG" % category.upper().replace("-", "_").replace("+", "_"), "0") == "1"
 
 
 def get_info() -> dict[str, Any]:
@@ -356,7 +357,7 @@ def get_info() -> dict[str, Any]:
         "debug-modules" : DEBUG_MODULES,
     }
     from xpra.common import FULL_INFO
-    if FULL_INFO>1:
+    if FULL_INFO > 1:
         info["filters"] = STRUCT_KNOWN_FILTERS
     return info
 
@@ -388,7 +389,7 @@ class Logger:
         while n < 10:
             try:
                 caller = sys._getframe(n).f_globals["__name__"]  # pylint: disable=protected-access
-                if caller=="__main__" or caller.startswith("importlib"):
+                if caller == "__main__" or caller.startswith("importlib"):
                     n += 1
                 else:
                     break
@@ -430,9 +431,9 @@ class Logger:
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "categories"    : self.categories,
-            "debug"         : self.debug_enabled,
-            "level"         : self._logger.getEffectiveLevel(),
+            "categories": self.categories,
+            "debug": self.debug_enabled,
+            "level": self._logger.getEffectiveLevel(),
         }
 
     def __repr__(self):
@@ -538,9 +539,9 @@ all_loggers: dict[str, set['weakref.ReferenceType[Logger]']] = {}
 def add_logger(categories, logger: Logger) -> None:
     categories = list(categories)
     categories.append("all")
-    l = weakref.ref(logger)
+    ref_logger = weakref.ref(logger)
     for cat in categories:
-        all_loggers.setdefault(cat, set()).add(l)
+        all_loggers.setdefault(cat, set()).add(ref_logger)
 
 
 def get_all_loggers() -> set[Logger]:
@@ -561,27 +562,27 @@ def get_loggers_for_categories(*cat) -> list[Logger]:
         return list(get_all_loggers())
     cset = set(cat)
     matches = set()
-    for l in get_all_loggers():
-        if set(l.categories).issuperset(cset):
-            matches.add(l)
+    for logger in get_all_loggers():
+        if set(logger.categories).issuperset(cset):
+            matches.add(logger)
     return list(matches)
 
 
 def enable_debug_for(*cat) -> list[Logger]:
     loggers: list[Logger] = []
-    for l in get_loggers_for_categories(*cat):
-        if not l.is_debug_enabled():
-            l.enable_debug()
-            loggers.append(l)
+    for logger in get_loggers_for_categories(*cat):
+        if not logger.is_debug_enabled():
+            logger.enable_debug()
+            loggers.append(logger)
     return loggers
 
 
 def disable_debug_for(*cat) -> list[Logger]:
     loggers: list[Logger] = []
-    for l in get_loggers_for_categories(*cat):
-        if l.is_debug_enabled():
-            l.disable_debug()
-            loggers.append(l)
+    for logger in get_loggers_for_categories(*cat):
+        if logger.is_debug_enabled():
+            logger.disable_debug()
+            loggers.append(logger)
     return loggers
 
 

@@ -1308,15 +1308,15 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 # log at warn level if the limit is low:
                 # (if we're likely to hit it - if the screen is as big or bigger)
                 w, h = self.get_root_size()
-                l = opengllog.info
+                log_fn = opengllog.info
                 if w * 2 <= self.gl_texture_size_limit and h * 2 <= self.gl_texture_size_limit:
-                    l = opengllog
+                    log_fn = opengllog.debug
                 if w >= self.gl_texture_size_limit or h >= self.gl_texture_size_limit:
-                    l = opengllog.warn
-                l("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i",
-                  self.gl_texture_size_limit, self.gl_texture_size_limit)
+                    log_fn = opengllog.warn
+                log_fn("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i",
+                       self.gl_texture_size_limit, self.gl_texture_size_limit)
                 glver = pver(self.opengl_props.get("opengl", ""))
-                l(f" for OpenGL {glver} renderer {renderer!r}")
+                log_fn(f" for OpenGL {glver} renderer {renderer!r}")
             if self.opengl_enabled and enable_opengl != "probe-success" and not self.opengl_force:
                 draw_result = test_gl_client_window(self.GLClientWindowClass,
                                                     max_window_size=self.max_window_size,
@@ -1437,7 +1437,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         leader_xid = metadata.intget("group-leader-xid", -1)
         log(f"get_group_leader: leader pid={pid}, xid={leader_xid}")
         reftype = "xid"
-        ref : str | int = leader_xid
+        ref: str | int = leader_xid
         if ref < 0:
             ci = metadata.strtupleget("class-instance")
             if ci:

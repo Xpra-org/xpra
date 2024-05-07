@@ -159,30 +159,30 @@ def run_dbutil(database_util_class=DatabaseUtilBase, conn_str="databaseURI", arg
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("SQL Auth", "SQL Auth"):
-        l = len(argv)
-        if l < 3:
+        nargs = len(argv)
+        if nargs < 3:
             return usage()
         uri = argv[1]
         dbutil = database_util_class(uri)
         cmd = argv[2]
         if cmd == "create":
-            if l != 3:
+            if nargs != 3:
                 return usage()
             dbutil.create()
         elif cmd == "add":
-            if l < 5 or l > 10:
+            if nargs < 5 or nargs > 10:
                 return usage()
             dbutil.add_user(*argv[3:])
         elif cmd == "remove":
-            if l not in (4, 5):
+            if nargs not in (4, 5):
                 return usage()
             dbutil.remove_user(*argv[3:])
         elif cmd == "list":
-            if l != 3:
+            if nargs != 3:
                 return usage()
             dbutil.list_users()
         elif cmd == "authenticate":
-            if l != 5:
+            if nargs != 5:
                 return usage()
             dbutil.authenticate(*argv[3:])
         else:

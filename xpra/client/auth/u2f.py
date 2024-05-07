@@ -28,7 +28,7 @@ class Handler:
     def get_digest() -> str:
         return "u2f"
 
-    def handle(self, challenge: str, digest: str, prompt: str) ->(
+    def handle(self, challenge: str, digest: str, prompt: str) -> (
             tuple[bytes, bytes] | None):  # pylint: disable=unused-argument
         if not digest.startswith("u2f:"):
             log("%s is not a u2f challenge", digest)

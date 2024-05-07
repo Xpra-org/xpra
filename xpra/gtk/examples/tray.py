@@ -90,12 +90,12 @@ class FakeApplication:
             classes.append(GTKTrayMenu)
         except ImportError as e:
             log.warn("failed to load GTK tray menu class: %s", e)
-        for x in classes:
-            if x:
+        for hclass in classes:
+            if hclass:
                 try:
-                    self.menu_helper = x(self)
+                    self.menu_helper = hclass(self)
                 except Exception as e:
-                    log.warn("failed to create menu helper %s: %s", x, e)
+                    log.warn("failed to create menu helper %s: %s", hclass, e)
         assert self.menu_helper
         menu = self.menu_helper.build()
         tray_classes = list(get_native_tray_classes())
@@ -104,15 +104,15 @@ class FakeApplication:
             tray_classes.append(GTKStatusIconTray)
         except ImportError:
             log("no StatusIcon tray")
-        for x in tray_classes:
+        for tray_class in tray_classes:
             try:
                 xpra_app_id = 0
                 tray_icon_filename = "xpra"
-                self.tray = x(self, xpra_app_id, menu, "Test System Tray", tray_icon_filename,
-                              self.xpra_tray_geometry, self.xpra_tray_click,
-                              self.xpra_tray_mouseover, self.xpra_tray_exit)
+                self.tray = tray_class(self, xpra_app_id, menu, "Test System Tray", tray_icon_filename,
+                                       self.xpra_tray_geometry, self.xpra_tray_click,
+                                       self.xpra_tray_mouseover, self.xpra_tray_exit)
             except Exception as e:
-                log.warn("failed to create tray %s: %s", x, e)
+                log.warn("failed to create tray %s: %s", tray_class, e)
         self.tray.set_tooltip("Test System Tray")
 
     def after_handshake(self, cb: Callable, *args) -> None:

@@ -36,48 +36,48 @@ CODEC_FAIL_SELFTEST = os.environ.get("XPRA_CODEC_FAIL_SELFTEST", "").split(",")
 log(f"codec loader settings: {SELFTEST=}, {FULL_SELFTEST=}, {CODEC_FAIL_IMPORT=}, {CODEC_FAIL_SELFTEST=}")
 
 
-SKIP_LIST: tuple[str,...] = ()
+SKIP_LIST: tuple[str, ...] = ()
 if OSX:
     SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg")
 
 
-def autoprefix(prefix:str, name: str) -> str:
+def autoprefix(prefix: str, name: str) -> str:
     return (name if (name.startswith(prefix) or name.endswith(prefix)) else f"{prefix}_{name}").replace("-", "_")
 
 
-def filt(*values) -> tuple[str,...]:
-    return tuple(x for x in values if all(x.find(s)<0 for s in SKIP_LIST))
+def filt(*values) -> tuple[str, ...]:
+    return tuple(x for x in values if all(x.find(s) < 0 for s in SKIP_LIST))
 
 
-def gfilt(generator) -> tuple[str,...]:
+def gfilt(generator) -> tuple[str, ...]:
     return filt(*generator)
 
 
-CSC_CODECS: tuple[str,...] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
-ENCODER_CODECS: tuple[str,...] = gfilt(f"enc_{x}" for x in (
+CSC_CODECS: tuple[str, ...] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
+ENCODER_CODECS: tuple[str, ...] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif",
 ))
-ENCODER_VIDEO_CODECS: tuple[str,...] = gfilt(autoprefix("enc", x) for x in (
+ENCODER_VIDEO_CODECS: tuple[str, ...] = gfilt(autoprefix("enc", x) for x in (
     "vpx", "x264", "openh264", "nvenc", "gstreamer",
 ))
-DECODER_CODECS: tuple[str,...] = gfilt(f"dec_{x}" for x in (
+DECODER_CODECS: tuple[str, ...] = gfilt(f"dec_{x}" for x in (
     "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
 ))
-DECODER_VIDEO_CODECS: tuple[str,...] = gfilt(autoprefix("dec", x) for x in (
+DECODER_VIDEO_CODECS: tuple[str, ...] = gfilt(autoprefix("dec", x) for x in (
     "vpx", "openh264", "nvdec",
 ))
-SOURCES: tuple[str,...] = filt("v4l2", "evdi", "drm", "nvfbc")
+SOURCES: tuple[str, ...] = filt("v4l2", "evdi", "drm", "nvfbc")
 
-ALL_CODECS: tuple[str,...] = filt(*set(
+ALL_CODECS: tuple[str, ...] = filt(*set(
     CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS + SOURCES)
 )
 
 
-codec_errors : dict[str, str] = {}
-codecs : dict[str, ModuleType] = {}
+codec_errors: dict[str, str] = {}
+codecs: dict[str, ModuleType] = {}
 
 
-def should_warn(name:str) -> bool:
+def should_warn(name: str) -> bool:
     if name in NOWARN:
         return False
     if name in ("csc_cython", "dec_avif") or name.find("enc") >= 0 or name.startswith("nv"):
@@ -94,7 +94,7 @@ def should_warn(name:str) -> bool:
 def codec_import_check(name: str, description: str, top_module, class_module, classnames):
     log(f"{name}:")
     log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
-    if any(name.find(s)>=0 for s in SKIP_LIST):
+    if any(name.find(s) >= 0 for s in SKIP_LIST):
         log(f" skipped from list: {csv(SKIP_LIST)}")
         return None
     try:
@@ -162,9 +162,9 @@ def codec_import_check(name: str, description: str, top_module, class_module, cl
             return ic
         except ImportError as e:
             codec_errors[name] = str(e)
-            l = log.error if should_warn(name) else log.debug
-            l(f"Error importing {name} ({description})")
-            l(f" {e}")
+            log_fn = log.error if should_warn(name) else log.debug
+            log_fn(f"Error importing {name} ({description})")
+            log_fn(f" {e}")
             log("", exc_info=True)
     except Exception as e:
         codec_errors[name] = str(e)
@@ -177,10 +177,10 @@ def codec_import_check(name: str, description: str, top_module, class_module, cl
     return None
 
 
-codec_versions : dict[str, tuple[Any, ...]] = {}
+codec_versions: dict[str, tuple[Any, ...]] = {}
 
 
-def add_codec_version(name: str, top_module, version: str="get_version()", alt_version: str="__version__"):
+def add_codec_version(name: str, top_module, version: str = "get_version()", alt_version: str = "__version__"):
     try:
         fieldnames = [x for x in (version, alt_version) if x is not None]
         for fieldname in fieldnames:
@@ -228,7 +228,7 @@ def xpra_codec_import(name: str, description: str, top_module, class_module, cla
 platformname = sys.platform.rstrip("0123456789")
 
 
-CODEC_OPTIONS : dict[str, tuple[str, str, str, str]] = {
+CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     # encoders:
     "enc_rgb"       : ("RGB encoder",       "argb",         "encoder", "encode"),
     "enc_pillow"    : ("Pillow encoder",    "pillow",       "encoder", "encode"),
@@ -236,7 +236,7 @@ CODEC_OPTIONS : dict[str, tuple[str, str, str, str]] = {
     "enc_webp"      : ("webp encoder",      "webp",         "encoder", "encode"),
     "enc_jpeg"      : ("JPEG encoder",      "jpeg",         "encoder", "encode"),
     "enc_avif"      : ("avif encoder",      "avif",         "encoder", "encode"),
-    "enc_nvjpeg"    : ("nvjpeg encoder",    "nvidia.nvjpeg","encoder", "encode"),
+    "enc_nvjpeg"    : ("nvjpeg encoder",    "nvidia.nvjpeg", "encoder", "encode"),
     # video encoders:
     "enc_vpx"       : ("vpx encoder",       "vpx",          "encoder", "Encoder"),
     "enc_x264"      : ("x264 encoder",      "x264",         "encoder", "Encoder"),
@@ -252,7 +252,7 @@ CODEC_OPTIONS : dict[str, tuple[str, str, str, str]] = {
     "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb,decompress_to_yuv"),
     "dec_avif"      : ("avif decoder",      "avif",         "decoder", "decompress"),
-    "dec_nvjpeg"    : ("nvjpeg decoder",    "nvidia.nvjpeg","decoder", "decompress"),
+    "dec_nvjpeg"    : ("nvjpeg decoder",    "nvidia.nvjpeg", "decoder", "decompress"),
     # video decoders:
     "dec_vpx"       : ("vpx decoder",       "vpx",          "decoder", "Decoder"),
     "dec_openh264"  : ("openh264 decoder",  "openh264",     "decoder", "Decoder"),
@@ -262,7 +262,7 @@ CODEC_OPTIONS : dict[str, tuple[str, str, str, str]] = {
     "v4l2"          : ("v4l2 source",       "v4l2",         "virtual", "VirtualWebcam"),
     "evdi"          : ("evdi source",       "evdi",         "capture", "EvdiDevice"),
     "drm"           : ("drm device query",  "drm",          "drm",      "query"),
-    "nvfbc"         : ("NVIDIA Capture SDK","nvidia.nvfbc", f"capture_{platformname}", "NvFBC_SysCapture"),
+    "nvfbc"         : ("NVIDIA Capture SDK", "nvidia.nvfbc", f"capture_{platformname}", "NvFBC_SysCapture"),
 }
 
 NOLOAD: list[str] = []
@@ -276,7 +276,7 @@ if OSX or WIN32:
     NOLOAD += ["v4l2", "evdi", "drm"]
 
 
-def load_codec(name:str):
+def load_codec(name: str):
     log("load_codec(%s)", name)
     name = name.replace("-", "_")
     if not has_codec(name):
@@ -322,7 +322,7 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=Fals
     return tuple(loaded)
 
 
-def show_codecs(show:tuple[str,...]=()) -> None:
+def show_codecs(show: tuple[str,...] = ()) -> None:
     for name in sorted(show or ALL_CODECS):
         log(f"* {name.ljust(20)} : {str(name in codecs).ljust(10)} {codecs.get(name, '')}")
     log("codecs versions:")
@@ -331,21 +331,21 @@ def show_codecs(show:tuple[str,...]=()) -> None:
         log(f"* {name.ljust(20)} : {version}")
 
 
-def get_codec_error(name:str) -> str:
+def get_codec_error(name: str) -> str:
     return codec_errors.get(name, "")
 
 
-def get_codec(name:str):
+def get_codec(name: str):
     if name not in CODEC_OPTIONS:
         log.warn(f"Warning: invalid codec name {name}")
     return codecs.get(name)
 
 
-def get_codec_version(name:str):
+def get_codec_version(name: str):
     return codec_versions.get(name)
 
 
-def has_codec(name:str) -> bool:
+def has_codec(name: str) -> bool:
     return name in codecs
 
 
@@ -353,14 +353,14 @@ def get_rgb_compression_options() -> list[str]:
     # pylint: disable=import-outside-toplevel
     from xpra.net import compression
     compressors = compression.get_enabled_compressors()
-    compressors = tuple(x for x in compressors if x!="brotli")
+    compressors = tuple(x for x in compressors if x != "brotli")
     RGB_COMP_OPTIONS: list[str] = ["Raw RGB"]
     if compressors:
-        RGB_COMP_OPTIONS  += ["/".join(compressors)]
+        RGB_COMP_OPTIONS += ["/".join(compressors)]
     return RGB_COMP_OPTIONS
 
 
-def get_encoding_name(encoding:str) -> str:
+def get_encoding_name(encoding: str) -> str:
     ENCODINGS_TO_NAME : dict[str, str] = {
         "auto"    : "automatic",
         "stream"  : "video stream",
@@ -382,7 +382,7 @@ def get_encoding_name(encoding:str) -> str:
     return ENCODINGS_TO_NAME.get(encoding, encoding)
 
 
-def get_encoding_help(encoding:str) -> str:
+def get_encoding_help(encoding: str) -> str:
     # pylint: disable=import-outside-toplevel
     from xpra.net import compression
     compressors = [x for x in compression.get_enabled_compressors()
@@ -420,7 +420,7 @@ def encodings_help(encodings) -> list[str]:
     return h
 
 
-def encoding_help(encoding:str) -> str:
+def encoding_help(encoding: str) -> str:
     ehelp = get_encoding_help(encoding) or ""
     return encoding.ljust(12) + ehelp
 
@@ -489,17 +489,17 @@ def main(args) -> int:
                 out.info(f"* {name.ljust(20)} : {f}")
                 if verbose:
                     try:
-                        if name.find("csc")>=0:
+                        if name.find("csc") >= 0:
                             cs = list(mod.get_input_colorspaces())
                             for c in list(cs):
                                 cs += list(mod.get_output_colorspaces(c))
                             out(f"                         colorspaces: {csv(list(set(cs)))}")
-                        elif name.find("enc")>=0 or name.find("dec")>=0:
+                        elif name.find("enc") >= 0 or name.find("dec") >= 0:
                             encodings = mod.get_encodings()
                             out(f"                         encodings: {csv(encodings)}")
                         try:
                             i = mod.get_info()
-                            for k,v in sorted(i.items()):
+                            for k, v in sorted(i.items()):
                                 out(f"                         {k} = {v}")
                         except Exception:
                             pass

@@ -477,12 +477,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 suggested_action, actions, targets)
         dtype = selection.get_data_type()
         fmt = selection.get_format()
-        l = selection.get_length()
+        length = selection.get_length()
         target = selection.get_target()
         text = selection.get_text()
         uris = selection.get_uris()
         draglog("drag_got_data_cb selection: data type=%s, format=%s, length=%s, target=%s, text=%s, uris=%s",
-                dtype, fmt, l, target, text, uris)
+                dtype, fmt, length, target, text, uris)
         if not uris:
             return
         filelist = []
@@ -1002,9 +1002,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         add_window_hooks(self)
         cb = self.on_realize_cb
         self.on_realize_cb = {}
-        for x, args in cb.values():
-            with eventslog.trap_error(f"Error on realize callback {x} for window {self.wid}"):
-                x(*args)
+        for callback, args in cb.values():
+            with eventslog.trap_error(f"Error on realize callback {callback} for window {self.wid}"):
+                callback(*args)
         if HAS_X11_BINDINGS:
             # request frame extents if the window manager supports it
             self._client.request_frame_extents(self)
@@ -2202,7 +2202,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 mid = i
                 break
         geom = monitor.get_geometry()
-        manufacturer, model = monitor.get_manufacturer(), monitor.get_model()
+        manufacturer = monitor.get_manufacturer()
+        model = monitor.get_model()
         if manufacturer == "unknown":
             manufacturer = ""
         if model == "unknown":

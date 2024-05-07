@@ -51,9 +51,9 @@ def export(entry, properties: tuple[str, ...]) -> dict[str, Any]:
     name = entry.getName()
     props: dict[str, Any] = {}
     if any(x and name.lower().find(x.lower()) >= 0 for x in DEBUG_COMMANDS):
-        l = log.info
+        log_fn = log.info
     else:
-        l = log
+        log_fn = log.debug
     for prop in properties:
         fn_name = f"get{prop}"
         try:
@@ -61,17 +61,17 @@ def export(entry, properties: tuple[str, ...]) -> dict[str, Any]:
             if fn:
                 v = fn()
                 if isinstance(v, (list, tuple, Generator)):
-                    l(f"{prop}={v} (%s)", type(x for x in v))
+                    log_fn(f"{prop}={v} (%s)", type(x for x in v))
                 else:
-                    l(f"{prop}={v} ({type(v)})")
+                    log_fn(f"{prop}={v} ({type(v)})")
                 if not isvalidtype(v):
                     log.warn(f"Warning: found invalid type for {v}: {type(v)}")
                 else:
                     props[prop] = v
         except Exception as e:
-            l("error on %s", entry, exc_info=True)
+            log_fn("error on %s", entry, exc_info=True)
             log.error(f"Error parsing {prop!r}: {e}")
-    l(f"properties({name})={props}")
+    log_fn(f"properties({name})={props}")
     load_entry_icon(props)
     return props
 
@@ -378,10 +378,10 @@ def load_menu():
         xdg_menu_data = load_xdg_menu_data()
     end = monotonic()
     if xdg_menu_data:
-        l = sum(len(x) for x in xdg_menu_data.values())
+        count = sum(len(x) for x in xdg_menu_data.values())
         submenus = len(xdg_menu_data)
         elapsed = end - start
-        log.info(f"loaded {l} start menu entries from {submenus} sub-menus in {elapsed:.1f} seconds")
+        log.info(f"loaded {count} start menu entries from {submenus} sub-menus in {elapsed:.1f} seconds")
     n_large = len(icon_util.large_icons)
     if n_large:
         log.warn(f"Warning: found {n_large} large icons:")

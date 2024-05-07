@@ -229,13 +229,13 @@ def w_to_utf8(data):
         raise ValueError("unicode data is too large: %i bytes" % ulen)
     buftype = c_char * ulen
     buf = buftype()
-    l = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
-    if l == 0:
+    length = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, byref(buf), ulen, None, None)
+    if length == 0:
         raise ValueError("failed to convert to UTF8: %s" % FormatError(get_last_error()))
-    if buf.raw[l - 1:l] == b"\0":
-        b = buf.raw[:l - 1]
+    if buf.raw[length - 1:length] == b"\0":
+        b = buf.raw[:length - 1]
     else:
-        b = buf.raw[:l]
+        b = buf.raw[:length]
     log("got %i UTF8 bytes: %s", len(b), ellipsizer(b))
     if CONVERT_LINE_ENDINGS:
         return b.decode("utf8").replace("\r\n", "\n").encode("utf8")

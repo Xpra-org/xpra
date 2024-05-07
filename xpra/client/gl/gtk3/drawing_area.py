@@ -54,9 +54,9 @@ class GLDrawingArea(GLWindowBackingBase):
         self.on_realize_cb = []
         gl_context = self.gl_context()
         with gl_context:
-            for x, args in onrcb:
-                with log.trap_error("Error calling realize callback %s", ellipsizer(x)):
-                    x(gl_context, *args)
+            for callback, args in onrcb:
+                with log.trap_error("Error calling realize callback %s", ellipsizer(callback)):
+                    callback(gl_context, *args)
 
     def with_gl_context(self, cb: Callable, *args):
         da = self._backing

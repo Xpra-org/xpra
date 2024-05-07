@@ -455,13 +455,11 @@ class ClientWindowBase(ClientWidgetBase):
         if "has-alpha" in metadata:
             new_alpha = metadata.boolget("has-alpha")
             if new_alpha != self._has_alpha:
-                l = alphalog
-                if not WIN32:
-                    # win32 without opengl can't do transparency,
-                    # so it triggers too many warnings
-                    l = log.warn
-                l("Warning: window %#x changed its transparency attribute", self.wid)
-                l(" from %s to %s, behaviour is undefined", self._has_alpha, new_alpha)
+                # win32 without opengl can't do transparency,
+                # so it triggers too many warnings
+                log_fn = alphalog.debug if WIN32 else alphalog.warn
+                log_fn("Warning: window %#x changed its transparency attribute", self.wid)
+                log_fn(" from %s to %s, behaviour is undefined", self._has_alpha, new_alpha)
                 self._has_alpha = new_alpha
 
         if "maximized" in metadata:

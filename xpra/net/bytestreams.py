@@ -528,14 +528,14 @@ class SocketPeekFile:
         if self.peeked:
             newline = self.peeked.find(b"\n")
             peeked = self.peeked
-            l = len(peeked)
+            length = len(peeked)
             if newline == -1:
-                if limit == -1 or limit > l:
+                if limit == -1 or limit > length:
                     # we need to read more until we hit a newline:
                     if limit == -1:
                         more = self.fileobj.readline(limit)
                     else:
-                        more = self.fileobj.readline(limit - len(self.peeked))
+                        more = self.fileobj.readline(limit - length)
                     self.peeked = b""
                     self.update_peek(self.peeked)
                     return peeked + more
@@ -574,11 +574,11 @@ class SocketPeekWrapper:
 
     def recv(self, bufsize, flags=0) -> bytes:
         if flags & socket.MSG_PEEK:
-            l = len(self.peeked)
-            if l >= bufsize:
+            length = len(self.peeked)
+            if length >= bufsize:
                 log("patched_recv() peeking using existing data: %i bytes", bufsize)
                 return self.peeked[:bufsize]
-            v = self.socket.recv(bufsize - l)
+            v = self.socket.recv(bufsize - length)
             if v:
                 log("patched_recv() peeked more: %i bytes", len(v))
                 self.peeked += v

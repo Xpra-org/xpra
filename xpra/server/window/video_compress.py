@@ -18,7 +18,7 @@ from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SU
 from xpra.codecs.image import ImageWrapper
 from xpra.server.window.compress import (
     WindowSource, DelayedRegions, get_encoder_type,
-    STRICT_MODE, AUTO_REFRESH_SPEED, AUTO_REFRESH_QUALITY, LOSSLESS_WINDOW_TYPES,
+    STRICT_MODE, LOSSLESS_WINDOW_TYPES,
     DOWNSCALE_THRESHOLD, DOWNSCALE, TEXT_QUALITY,
     COMPRESS_FMT_PREFIX, COMPRESS_FMT_SUFFIX, COMPRESS_FMT,
     LOG_ENCODERS,
@@ -140,7 +140,7 @@ def get_pipeline_score_info(score, scaling,
     }
     if encoder_scaling != (1, 1):
         ei["scaling"] = encoder_scaling
-    pi : dict[str,Any] = {
+    pi : dict[str, Any] = {
         "score"             : score,
         "format"            : str(enc_in_format),
         "encoder"           : ei,
@@ -148,7 +148,7 @@ def get_pipeline_score_info(score, scaling,
     if scaling != (1, 1):
         pi["scaling"] = scaling
     if csc_spec:
-        csci : dict[str,Any] = {
+        csci : dict[str, Any] = {
             ""         : specinfo(csc_spec),
             "width"    : csc_width,
             "height"   : csc_height,
@@ -172,7 +172,7 @@ class WindowVideoSource(WindowSource):
         super().__init__(*args)
         self.scroll_min_percent: int = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.scroll_preference: int = self.encoding_options.intget("scrolling.preference", 100)
-        self.supports_video_b_frames : tuple[str,...] = self.encoding_options.strtupleget("video_b_frames", ())
+        self.supports_video_b_frames : tuple[str, ...] = self.encoding_options.strtupleget("video_b_frames", ())
         self.video_max_size = self.encoding_options.inttupleget("video_max_size", (8192, 8192), 2, 2)
         self.video_stream_file = None
 
@@ -197,9 +197,9 @@ class WindowVideoSource(WindowSource):
 
         self.video_subregion = VideoSubregion(self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.video_subregion.supported = VIDEO_SUBREGION
-        self.video_encodings : tuple[str,...] = ()
-        self.common_video_encodings : tuple[str,...] = ()
-        self.non_video_encodings : tuple[str,...] = ()
+        self.video_encodings : tuple[str, ...] = ()
+        self.common_video_encodings : tuple[str, ...] = ()
+        self.non_video_encodings : tuple[str, ...] = ()
         self.video_fallback_encodings : dict = {}
         self.edge_encoding : str = ""
         self.start_video_frame: int = 0
@@ -282,7 +282,7 @@ class WindowVideoSource(WindowSource):
                       ve, d, self.av_sync_frame_delay)
         self.may_update_av_sync_delay()
 
-    def get_property_info(self) -> dict[str,Any]:
+    def get_property_info(self) -> dict[str, Any]:
         i = super().get_property_info()
         if self.scaling_control is None:
             i["scaling.control"] = "auto"
@@ -291,7 +291,7 @@ class WindowVideoSource(WindowSource):
         i["scaling"] = self.scaling or (1, 1)
         return i
 
-    def get_info(self) -> dict[str,Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         sr = self.video_subregion
         if sr:
@@ -330,14 +330,14 @@ class WindowVideoSource(WindowSource):
             einfo["pipeline_last_check"] = int(1000*(monotonic()-self._last_pipeline_check))
         lps = self.last_pipeline_scores
         if lps:
-            popts : dict[int,dict[str,Any]] = {}
+            popts : dict[int, dict[str, Any]] = {}
             for i, lp in enumerate(lps):
                 popts[i] = get_pipeline_score_info(*lp)
             einfo["pipeline_option"] = popts
         info.setdefault("encoding", {}).update(einfo)
         return info
 
-    def get_pipeline_info(self) -> dict[str,Any]:
+    def get_pipeline_info(self) -> dict[str, Any]:
         lp = self.last_pipeline_params
         if not lp:
             return {}
@@ -605,11 +605,11 @@ class WindowVideoSource(WindowSource):
             if now-self.global_statistics.last_congestion_time > 5:
                 lde = tuple(self.statistics.last_damage_events)
                 lim = now-4
-                pixels_last_4secs = sum(w*h for when,_,_,w,h in lde if when > lim)
+                pixels_last_4secs = sum(w*h for when, _, _, w, h in lde if when > lim)
                 if pixels_last_4secs < ((3+text_hint*6)*videomin):
                     return nonvideo(info="not enough frames")
                 lim = now-1
-                pixels_last_sec = sum(w*h for when, _ , _, w, h in lde if when > lim)
+                pixels_last_sec = sum(w*h for when, _, _, w, h in lde if when > lim)
                 if pixels_last_sec < pixels_last_4secs//8:
                     # framerate is dropping?
                     return nonvideo(30, "framerate lowered")
@@ -632,7 +632,7 @@ class WindowVideoSource(WindowSource):
                 return nonvideo(info=f"not enough pixels: {pixel_count}<{max_nvp}")
         return current_encoding
 
-    def get_best_nonvideo_encoding(self, ww: int, wh: int, options : dict,
+    def get_best_nonvideo_encoding(self, ww: int, wh: int, options: dict,
                                    current_encoding=None, encoding_options=()) -> str:
         if self.encoding == "grayscale":
             return self.encoding_is_grayscale(ww, wh, options, current_encoding or self.encoding)
@@ -726,7 +726,7 @@ class WindowVideoSource(WindowSource):
         super().update_window_dimensions(ww, wh)
         self.stop_gstreamer_pipeline()
 
-    def cancel_damage(self, limit: int=0):
+    def cancel_damage(self, limit: int = 0):
         self.cancel_encode_from_queue()
         self.free_encode_queue_images()
         vsr = self.video_subregion
@@ -741,7 +741,7 @@ class WindowVideoSource(WindowSource):
         # we will resend a key frame because we may be missing a frame
         self.cleanup_codecs()
 
-    def full_quality_refresh(self, damage_options : dict) -> None:
+    def full_quality_refresh(self, damage_options: dict) -> None:
         vs = self.video_subregion
         if vs and vs.rectangle:
             if vs.detection:
@@ -809,8 +809,8 @@ class WindowVideoSource(WindowSource):
         if vr:
             w, h = vr.width, vr.height
         options = {
-            "speed"     : AUTO_REFRESH_SPEED,
-            "quality"   : AUTO_REFRESH_QUALITY,
+            "speed": self.refresh_speed,
+            "quality": self.refresh_quality,
         }
         return self.get_best_nonvideo_encoding(w, h, options,
                                                self.auto_refresh_encodings[0], self.auto_refresh_encodings)
@@ -873,14 +873,14 @@ class WindowVideoSource(WindowSource):
             return False
         return True
 
-    def send_regions(self, damage_time, regions, coding : str, options):
+    def send_regions(self, damage_time, regions, coding: str, options):
         """
             Overridden here so that we can try to intercept the `video_subregion` if one exists.
         """
         vr = self.video_subregion.rectangle
         # overrides the default method for finding the encoding of a region,
         # so we can ensure we don't use the video encoder when we don't want to:
-        def send_nonvideo(regions=regions, encoding:str=coding, exclude_region=None,
+        def send_nonvideo(regions=regions, encoding:str = coding, exclude_region=None,
                           get_best_encoding=self.get_best_nonvideo_encoding):
             if self.b_frame_flush_timer and exclude_region is None:
                 # a b-frame is already due, don't clobber it!
@@ -1002,7 +1002,7 @@ class WindowVideoSource(WindowSource):
             sublog("send_regions: delaying non video regions %s some more by %ims", regions, delay)
             self.expire_timer = GLib.timeout_add(delay, self.expire_delayed_region)
 
-    def must_encode_full_frame(self, encoding : str) -> bool:
+    def must_encode_full_frame(self, encoding: str) -> bool:
         non_video = self.non_video_encodings
         r = self.full_frames_only or not non_video or (encoding in self.video_encodings and encoding not in non_video)
         log("must_encode_full_frame(%s)=%s full_frames_only=%s, non_video=%s, video=%s",
@@ -1010,7 +1010,7 @@ class WindowVideoSource(WindowSource):
         return r
 
     def process_damage_region(self, damage_time, x: int, y: int, w: int, h: int,
-                              coding : str, options, flush=0):
+                              coding: str, options, flush=0):
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
@@ -1055,7 +1055,7 @@ class WindowVideoSource(WindowSource):
         if must_freeze:
             image.freeze()
 
-        def call_encode(ew: int, eh: int, eimage, encoding : str, flush: int):
+        def call_encode(ew: int, eh: int, eimage, encoding: str, flush: int):
             if self.is_cancelled(sequence):
                 self.free_image_wrapper(image)
                 log("call_encode: sequence %s is cancelled", sequence)
@@ -1176,7 +1176,7 @@ class WindowVideoSource(WindowSource):
         sequence = None
         done_packet = False     # only one packet per iteration
         try:
-            for index,item in enumerate(eq):
+            for index, item in enumerate(eq):
                 # item = (w, h, damage_time, now, image, coding, sequence, options, flush)
                 sequence = item[6]
                 if self.is_cancelled(sequence):
@@ -1551,7 +1551,7 @@ class WindowVideoSource(WindowSource):
                         for csc_spec in l:
                             add_scores(f"via {out_csc}", csc_spec, out_csc)
             scorelog("no matching colorspace specs for %s: %s", encoding, no_match)
-        s = tuple(sorted(scores, key=lambda x : -x[0]))
+        s = tuple(sorted(scores, key=lambda x: -x[0]))
         scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
         if self.is_cancelled():
             self.last_pipeline_params = ()
@@ -1575,16 +1575,16 @@ class WindowVideoSource(WindowSource):
         now = monotonic()
         # calculate full frames per second (measured in pixels vs window size):
         stime = now-5           # only look at the last 5 seconds max
-        lde = tuple((t,w,h) for t,_,_,w,h in tuple(self.statistics.last_damage_events) if t > stime)
+        lde = tuple((t, w, h) for t, _, _, w, h in tuple(self.statistics.last_damage_events) if t > stime)
         if len(lde) >= 10:
             # the first event's first element is the oldest event time:
             otime = lde[0][0]
             if now > otime:
-                pixels = sum(w*h for _,w,h in lde)
+                pixels = sum(w*h for _, w, h in lde)
                 return int(pixels/(width*height)/(now - otime))
         return 0
 
-    def calculate_scaling(self, width: int, height: int, max_w: int= 4096, max_h: int= 4096) -> tuple[int, int]:
+    def calculate_scaling(self, width: int, height: int, max_w: int = 4096, max_h: int = 4096) -> tuple[int, int]:
         if width == 0 or height == 0:
             return 1, 1
         now = monotonic()
@@ -1752,17 +1752,17 @@ class WindowVideoSource(WindowSource):
             qs = s > (q-er*10) and q < (50+er*15)
             # scalinglog("calculate_scaling: er=%.1f, qs=%s, ffps=%s", er, qs, ffps)
             if self.fullscreen and (qs or ffps >= max(2, round(10-er*3))):
-                scaling = 1,3
+                scaling = 1, 3
             elif self.maximized and (qs or ffps >= max(2, round(10-er*3))):
-                scaling = 1,2
+                scaling = 1, 2
             elif width*height >= (2560-er*768)*1600 and (qs or ffps >= max(4, round(25-er*5))):
-                scaling = 1,3
+                scaling = 1, 3
             elif width*height >= (1920-er*384)*1200 and (qs or ffps >= max(5, round(30-er*10))):
-                scaling = 2,3
+                scaling = 2, 3
             elif width*height >= (1200-er*256)*1024 and (qs or ffps >= max(10, round(50-er*15))):
-                scaling = 2,3
+                scaling = 2, 3
             else:
-                scaling = 1,1
+                scaling = 1, 1
             if scaling:
                 scalinglog("calculate_scaling value %s enabled by heuristics for %ix%i q=%i, s=%i, er=%.1f, qs=%s, ffps=%i, scaling-control(%i)=%i",   # noqa: E501
                            scaling, width, height, q, s, er, qs, ffps, self.scaling_control, sc)
@@ -1780,7 +1780,7 @@ class WindowVideoSource(WindowSource):
                    (width, height, max_w, max_h), scaling, q, s, self.scaling_control)
         return scaling
 
-    def check_pipeline(self, encoding : str, width: int, height: int, src_format : str) -> bool:
+    def check_pipeline(self, encoding: str, width: int, height: int, src_format: str) -> bool:
         """
             Checks that the current pipeline is still valid
             for the given input. If not, close it and make a new one.
@@ -1805,7 +1805,7 @@ class WindowVideoSource(WindowSource):
         scores = self.get_video_pipeline_options(encodings, w, h, src_format)
         return self.setup_pipeline(scores, width, height, src_format)
 
-    def do_check_pipeline(self, encodings : tuple[str,...], width: int, height: int, src_format : str) -> bool:
+    def do_check_pipeline(self, encodings: tuple[str, ...], width: int, height: int, src_format: str) -> bool:
         """
             Checks that the current pipeline is still valid
             for the given input.
@@ -1870,7 +1870,7 @@ class WindowVideoSource(WindowSource):
             return False
         return True
 
-    def setup_pipeline(self, scores : tuple, width: int, height: int, src_format : str) -> bool:
+    def setup_pipeline(self, scores: tuple, width: int, height: int, src_format: str) -> bool:
         """
             Given a list of pipeline options ordered by their score
             and an input format (width, height and source pixel format),
@@ -1920,9 +1920,9 @@ class WindowVideoSource(WindowSource):
                 videolog.error(" %s", option)
         return False
 
-    def setup_pipeline_option(self, width: int, height: int, src_format : str,
+    def setup_pipeline_option(self, width: int, height: int, src_format: str,
                               _score: int, scaling, _csc_scaling, csc_width: int, csc_height: int, csc_spec,
-                              enc_in_format : str, encoder_scaling,
+                              enc_in_format: str, encoder_scaling,
                               enc_width: int, enc_height: int, encoder_spec) -> bool:
         options = typedict(self.encoding_options)
         self.assign_sq_options(options)
@@ -1943,7 +1943,7 @@ class WindowVideoSource(WindowSource):
             speed = options.get("speed", self._current_speed)
             quality = options.get("quality", self._current_quality)
             csc_speed = max(1, min(speed, 100-quality/2.0))
-            csc_options = typedict({"speed" : csc_speed})
+            csc_options = typedict({"speed": csc_speed})
             csc_start = monotonic()
             csce = csc_spec.make_instance()
             csce.init_context(csc_width, csc_height, src_format,
@@ -1961,7 +1961,7 @@ class WindowVideoSource(WindowSource):
             min_h = max(min_h, encoder_spec.min_h)
             max_w = min(max_w, encoder_spec.max_w)
             max_h = min(max_h, encoder_spec.max_h)
-            if encoder_scaling != (1,1) and not encoder_spec.can_scale:
+            if encoder_scaling != (1, 1) and not encoder_spec.can_scale:
                 videolog("scaling is now enabled, so skipping %s", encoder_spec)
                 return False
         self._csc_encoder = csce
@@ -1996,7 +1996,7 @@ class WindowVideoSource(WindowSource):
         scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
         return True
 
-    def get_video_encoder_options(self, encoding, width, height) -> dict[str,Any]:
+    def get_video_encoder_options(self, encoding, width, height) -> dict[str, Any]:
         # tweaks for "real" video:
         recentscroll = (monotonic() - self.last_scroll_time) < 5
         opts = {}
@@ -2026,7 +2026,7 @@ class WindowVideoSource(WindowSource):
         return super().get_fail_cb(packet)
 
     def make_draw_packet(self, x: int, y: int, w: int, h: int,
-                         coding : str, data, outstride: int, client_options, options) -> tuple:
+                         coding: str, data, outstride: int, client_options, options) -> tuple:
         # overridden so we can invalidate the scroll data:
         # log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
         packet = super().make_draw_packet(x, y, w, h, coding, data, outstride, client_options, options)
@@ -2051,7 +2051,7 @@ class WindowVideoSource(WindowSource):
             self.scroll_data = None
             sd.free()
 
-    def may_use_scrolling(self, image : ImageWrapper, options) -> bool:
+    def may_use_scrolling(self, image: ImageWrapper, options) -> bool:
         scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_type=%s, non-video=%s",
                   image, options, self.supports_scrolling, image.has_pixels,
                   self.content_type, self.non_video_encodings)
@@ -2096,14 +2096,14 @@ class WindowVideoSource(WindowSource):
                 return False
         return self.do_scroll_encode(image, options, self.scroll_min_percent)
 
-    def scroll_encode(self, coding : str, image: ImageWrapper, options) -> None:
+    def scroll_encode(self, coding: str, image: ImageWrapper, options) -> None:
         assert coding == "scroll"
         self.do_scroll_encode(image, options, 0)
         # do_scroll_encode() sends the packets
         # so there is nothing to return:
         return None
 
-    def do_scroll_encode(self, image : ImageWrapper, options, min_percent: int=0) -> bool:
+    def do_scroll_encode(self, image: ImageWrapper, options, min_percent: int = 0) -> bool:
         x = image.get_target_x()
         y = image.get_target_y()
         w = image.get_width()
@@ -2164,7 +2164,7 @@ class WindowVideoSource(WindowSource):
             self.do_free_scroll_data()
         return False
 
-    def encode_scrolling(self, scroll_data, image : ImageWrapper, options, match_pct: int, max_zones: int=20) -> None:
+    def encode_scrolling(self, scroll_data, image: ImageWrapper, options, match_pct: int, max_zones: int = 20) -> None:
         # generate all the packets for this screen update
         # using 'scroll' encoding and picture encodings for the other regions
         start = monotonic()
@@ -2177,7 +2177,7 @@ class WindowVideoSource(WindowSource):
         y = image.get_target_y()
         w = image.get_width()
         h = image.get_height()
-        raw_scroll, non_scroll = {}, {0 : h}
+        raw_scroll, non_scroll = {}, {0: h}
         if x+w > ww or y+h > wh:
             # window may have been resized
             pass
@@ -2191,7 +2191,7 @@ class WindowVideoSource(WindowSource):
                     scrolllog("too many items: %i scrolls, %i non-scrolls - sending just one image instead",
                               len(raw_scroll), len(non_scroll))
                     raw_scroll = {}
-                    non_scroll = {0 : h}
+                    non_scroll = {0: h}
         scrolllog(" will send scroll data=%s, non-scroll=%s", raw_scroll, non_scroll)
         flush = len(non_scroll)
         # convert to a screen rectangle list for the client:
@@ -2210,7 +2210,7 @@ class WindowVideoSource(WindowSource):
         # send the scrolls if we have any
         # (zero change scrolls have been removed - so maybe there are none)
         if scrolls:
-            client_options = {"flush" : flush}
+            client_options = {"flush": flush}
             coding = "scroll"
             end = monotonic()
             packet = self.make_draw_packet(x, y, w, h,
@@ -2279,7 +2279,7 @@ class WindowVideoSource(WindowSource):
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         self.free_image_wrapper(image)
 
-    def do_schedule_auto_refresh(self, encoding : str, data, region, client_options, options) -> None:
+    def do_schedule_auto_refresh(self, encoding: str, data, region, client_options, options) -> None:
         # for scroll encoding, data is a LargeStructure wrapper:
         if encoding == "scroll" and hasattr(data, "data"):
             if not self.refresh_regions:
@@ -2310,7 +2310,7 @@ class WindowVideoSource(WindowSource):
             return
         super().do_schedule_auto_refresh(encoding, data, region, client_options, options)
 
-    def video_fallback(self, image : ImageWrapper, options, warn=False) -> tuple:
+    def video_fallback(self, image: ImageWrapper, options, warn=False) -> tuple:
         if warn and first_time(f"non-video-{self.wid}"):
             videolog.warn("Warning: using non-video fallback encoding")
             videolog.warn(f" for {image} of window {self.wid}")
@@ -2336,13 +2336,13 @@ class WindowVideoSource(WindowSource):
                                                         else get_encoder_type(encoder))
         return ret
 
-    def video_encode(self, encoding : str, image : ImageWrapper, options : dict) -> tuple:
+    def video_encode(self, encoding: str, image: ImageWrapper, options: dict) -> tuple:
         try:
             return self.do_video_encode(encoding, image, options)
         finally:
             self.free_image_wrapper(image)
 
-    def do_video_encode(self, encoding : str, image : ImageWrapper, options : dict) -> tuple:
+    def do_video_encode(self, encoding: str, image: ImageWrapper, options: dict) -> tuple:
         """
             This method is used by make_data_packet to encode frames using video encoders.
             Video encoders only deal with fixed dimensions,
@@ -2377,8 +2377,8 @@ class WindowVideoSource(WindowSource):
             kwargs = {}
             if SAVE_VIDEO_FRAMES == "jpeg":
                 kwargs = {
-                    "quality"     : 0,
-                    "optimize"    : False,
+                    "quality": 0,
+                    "optimize": False,
                 }
             t = monotonic()
             tstr = time.strftime("%H-%M-%S", time.localtime(t))
@@ -2551,7 +2551,7 @@ class WindowVideoSource(WindowSource):
             self.b_frame_flush_timer = 0
             GLib.source_remove(bft)
 
-    def schedule_video_encoder_flush(self, ve, csc, frame, x , y, scaled_size) -> None:
+    def schedule_video_encoder_flush(self, ve, csc, frame, x: int, y: int, scaled_size) -> None:
         flush_delay: int = max(150, min(500, int(self.batch_config.delay*10)))
         self.b_frame_flush_data = (ve, csc, frame, x, y, scaled_size)
         self.b_frame_flush_timer = GLib.timeout_add(flush_delay, self.flush_video_encoder)
@@ -2581,7 +2581,7 @@ class WindowVideoSource(WindowSource):
             self.ve_clean(self._video_encoder)
             if self.non_video_encodings:
                 log("do_flush_video_encoder() scheduling novideo refresh")
-                GLib.idle_add(self.refresh, {"novideo" : True})
+                GLib.idle_add(self.refresh, {"novideo": True})
                 videolog("flushed frame 0, novideo refresh requested")
             return
         w = ve.get_width()

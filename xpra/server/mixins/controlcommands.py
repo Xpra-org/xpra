@@ -44,10 +44,10 @@ class ServerBaseControlCommands(StubServerMixin):
                 return False
             raise ControlError(f"a boolean is required, not {v!r}")
 
-        def parse_4intlist(v):
+        def parse_4intlist(v) -> list:
             if not v:
                 return []
-            l = []
+            intlist = []
             # ie: v = " (0,10,100,20), (200,300,20,20)"
             while v:
                 v = v.strip().strip(",").strip()  # ie: "(0,10,100,20)"
@@ -58,8 +58,8 @@ class ServerBaseControlCommands(StubServerMixin):
                 item = v[lp + 1:rp].strip()  # "0,10,100,20"
                 items = [int(x) for x in item]  # 0,10,100,20
                 assert len(items) == 4, f"expected 4 numbers but got {len(items)}"
-                l.append(items)
-            return l
+                intlist.append(items)
+            return intlist
 
         for cmd in (
                 ArgsControlCommand("focus", "give focus to the window id", validation=[int]),
@@ -398,15 +398,15 @@ class ServerBaseControlCommands(StubServerMixin):
                 # skip the warning if the client is not interactive
                 # (for now just check for 'top' client):
                 if not hasattr(ss, source_flag_name) or ss.client_type == "top":
-                    l = filelog
+                    log_fn = filelog.debug
                 else:
-                    l = filelog.warn
-                l(f"Warning: cannot {command_type} {filename!r} to {ss.client_type} client")
-                l(f" feature flag {source_flag_name!r}")
+                    log_fn = filelog.warn
+                log_fn(f"Warning: cannot {command_type} {filename!r} to {ss.client_type} client")
+                log_fn(f" feature flag {source_flag_name!r}")
                 if not server_support:
-                    l(" this feature is not supported by the server connection")
+                    log_fn(" this feature is not supported by the server connection")
                 if not client_support:
-                    l(f" client {ss.uuid} does not support this feature")
+                    log_fn(f" client {ss.uuid} does not support this feature")
             elif file_size > ss.file_size_limit:
                 filelog.warn(f"Warning: cannot {command_type} {filename!r}")
                 filelog.warn(" client %s file size limit is %sB (file is %sB)",
@@ -419,9 +419,9 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_remove_window_filters(self) -> str:
         # modify the existing list object,
         # which is referenced by all the sources
-        l = len(self.window_filters)
+        count = len(self.window_filters)
         self.window_filters[:] = []
-        return f"removed {l} window-filters"
+        return f"removed {count} window-filters"
 
     def control_command_add_window_filter(self, object_name: str, property_name: str, operator: str, value,
                                           client_uuids="") -> str:
@@ -577,13 +577,13 @@ class ServerBaseControlCommands(StubServerMixin):
             for ws in tuple(self._ws_from_args(*wids)):
                 encodings = list(ws.encodings)
                 core_encodings = list(ws.core_encodings)
-                for l in (encodings, core_encodings):
-                    if cmd == "add" and encoding not in l:
-                        log("adding %s to %s for %s", encoding, l, ws)
-                        l.append(encoding)
-                    elif cmd == "remove" and encoding in l:
-                        log("removing %s from %s for %s", encoding, l, ws)
-                        l.remove(encoding)
+                for enc_list in (encodings, core_encodings):
+                    if cmd == "add" and encoding not in enc_list:
+                        log(f"adding {encoding} to {enc_list} for {ws}")
+                        enc_list.append(encoding)
+                    elif cmd == "remove" and encoding in enc_list:
+                        log(f"removing {encoding} to {enc_list} for {ws}")
+                        enc_list.remove(encoding)
                     else:
                         continue
                 ws.encodings = tuple(encodings)

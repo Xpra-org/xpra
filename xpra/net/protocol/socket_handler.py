@@ -580,7 +580,7 @@ class SocketProtocol:
             if isinstance(item, (int, bool, dict, list, tuple)):
                 continue
             try:
-                l = len(item)
+                size = len(item)
             except TypeError as e:
                 raise TypeError(f"invalid type {type(item)} in {packet_type!r} packet at index {i}: {e}") from None
             if isinstance(item, Compressible):
@@ -598,7 +598,7 @@ class SocketProtocol:
                 continue
             if isinstance(item, Compressed):
                 # already compressed data (usually pixels, cursors, etc)
-                if not item.can_inline or l > INLINE_SIZE:
+                if not item.can_inline or size > INLINE_SIZE:
                     il = 0
                     if isinstance(item, LevelCompressed):
                         # unlike `Compressed` (usually pixels, decompressed in the paint thread),
@@ -613,10 +613,10 @@ class SocketProtocol:
                     packet[i] = item.data
                     if isinstance(item.data, memoryview) and self.encoder != "rencodeplus":
                         packet[i] = item.data.tobytes()
-                    min_comp_size += l
-                    size_check += l
+                    min_comp_size += size
+                    size_check += size
                 continue
-            if isinstance(item, bytes) and level > 0 and l > LARGE_PACKET_SIZE:
+            if isinstance(item, bytes) and level > 0 and size > LARGE_PACKET_SIZE:
                 log.warn("Warning: found a large uncompressed item")
                 log.warn(f" in packet {packet_type!r} at position {i}: {len(item)} bytes")
                 # add new binary packet with large item:
@@ -647,16 +647,16 @@ class SocketProtocol:
             from xpra.net.protocol.check import verify_packet
             verify_packet(packet)
             raise
-        l = len(main_packet)
-        payload_size += l
-        if l > size_check and packet_in[0] not in self.large_packets:
+        size = len(main_packet)
+        payload_size += size
+        if size > size_check and packet_in[0] not in self.large_packets:
             log.warn("Warning: found large packet")
             log.warn(f" {packet_type!r} packet is {len(main_packet)} bytes: ")
             log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))
             log.warn(" sizes: %s", csv(len(strtobytes(x)) for x in packet[1:]))
             log.warn(f" packet: {repr_ellipsized(packet, limit=4096)}")
         # compress, but don't bother for small packets:
-        if level > 0 and l > min_comp_size:
+        if level > 0 and size > min_comp_size:
             try:
                 cl, cdata = self._compress(main_packet, level)
                 if LOG_RAW_PACKET_SIZE and packet_type != "logging":

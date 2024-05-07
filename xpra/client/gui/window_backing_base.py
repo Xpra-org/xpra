@@ -78,9 +78,9 @@ def load_video() -> None:
 
 
 def fire_paint_callbacks(callbacks: Iterable[Callable], success: int | bool = True, message="") -> None:
-    for x in callbacks:
-        with log.trap_error("Error calling %s with %s", x, (success, message)):
-            x(success, message)
+    for callback in callbacks:
+        with log.trap_error("Error calling %s with %s", callback, (success, message)):
+            callback(success, message)
 
 
 def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int = 10, bg=(128, 128, 128, 32)) -> bytes:
@@ -241,9 +241,9 @@ class WindowBackingBase:
         if not pe:
             return False
         last_fps_event = pe[-1]
-        # or if there was an event less than N seconds ago:
-        N = 4
-        return monotonic() - last_fps_event < N
+        # or if there was an event less than `max_time` seconds ago:
+        max_time = 4
+        return monotonic() - last_fps_event < max_time
 
     def cancel_fps_refresh(self) -> None:
         frt = self.fps_refresh_timer

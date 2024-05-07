@@ -495,10 +495,10 @@ class ClipboardProtocolHelperCore:
         if proxy is None:
             # this can happen if the server has fewer clipboards than the client,
             # ie: with win32 shadow servers
-            l: Callable = log.debug
+            log_fn: Callable = log.debug
             if name in ALL_CLIPBOARDS:
-                l = log.warn
-            l("ignoring token for clipboard '%s' (no proxy)", name)
+                log_fn = log.warn
+            log_fn("ignoring token for clipboard '%s' (no proxy)", name)
             return
         if not proxy.is_enabled():
             log.warn("ignoring token for disabled clipboard '%s'", name)
@@ -702,13 +702,13 @@ class ClipboardProtocolHelperCore:
             log.warn("Warning: clipboard contents are too big and have not been sent")
             log.warn(" %s compressed bytes dropped (maximum is %s)", len(wire_data), self.max_clipboard_packet_size)
             return None
-        l = len(wire_data)
-        if isinstance(wire_data, (str, bytes)) and l >= MIN_CLIPBOARD_COMPRESS_SIZE:
+        size = len(wire_data)
+        if isinstance(wire_data, (str, bytes)) and size >= MIN_CLIPBOARD_COMPRESS_SIZE:
             if isinstance(wire_data, str):
                 # compression requires bytes:
                 # but this would require the receiving end to know it needs to decode the bytes
                 wire_data = wire_data.encode("utf8")
-                log("encoded %i characters to %i utf8 bytes", l, len(wire_data))
+                log("encoded %i characters to %i utf8 bytes", size, len(wire_data))
             return Compressible(f"clipboard: {dtype} / {dformat}", wire_data)
         return wire_data
 

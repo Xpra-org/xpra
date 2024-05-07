@@ -6,6 +6,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import sys
 import os.path
 import stat
@@ -24,7 +25,7 @@ from collections.abc import Callable, Iterable
 
 from xpra.common import SocketState, noerr, noop
 from xpra.util.objects import typedict
-from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr
+from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr, sort_human
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, OSEnvContext
 from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
@@ -2894,7 +2895,7 @@ def start_server_subprocess(script_file, args, mode, opts,
                 log.error(f" {msg}")
 
             n = parse_displayfd(buf, displayfd_err)
-            if n>=0:
+            if n >= 0:
                 matching_display = f":{n}"
                 log(f"displayfd={matching_display}")
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets,
@@ -4089,17 +4090,6 @@ def run_list_windows(error_cb, opts, extra_args) -> ExitValue:
     if not displays:
         sys.stdout.write("No xpra sessions found\n")
         return 0
-    import re
-
-    def convert(text):
-        return float(text) if text.isdigit() else text
-
-    def alphanum(key):
-        return [convert(c) for c in re.split(r'([-+]?\d+\.?\d*)', key)]
-
-    def sort_human(l):
-        l.sort(key=alphanum)
-        return l
 
     sys.stdout.write("Display   Status    Name           Windows\n")
     for display in sort_human(displays):
@@ -4244,7 +4234,6 @@ def run_showconfig(options, args) -> ExitValue:
         if isinstance(dv, str) and dv.find("\n") > 0:
             # newline is written with a "\" continuation character,
             # so we don't read the newline back when loading the config files
-            import re
             cmpv.append(re.sub("\\\\\n *", " ", dv))
         if cv not in cmpv:
             w("%-20s  (used)   = %-32s  %s", opt, vstr(otype, cv), type(cv))

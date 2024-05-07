@@ -21,11 +21,11 @@ log = Logger("client", "util")
 inject_css_overrides()
 
 
-def lal(s, font=""):
-    al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
-    l = label(s, font=font)
-    al.add(l)
-    return al
+def lal(text: str, font="") -> Gtk.Alignment:
+    align = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
+    lbl = label(text, font=font)
+    align.add(lbl)
+    return align
 
 
 class ShortcutInfo(Gtk.Window):
@@ -64,15 +64,15 @@ class ShortcutInfo(Gtk.Window):
 
         row = 0
 
-        def attach(s, x=0, font=""):
-            al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
-            l = label(s, font=font)
-            l.set_margin_start(5)
-            l.set_margin_top(2)
-            l.set_margin_end(5)
-            l.set_margin_bottom(2)
-            al.add(l)
-            grid.attach(al, x, row, 1, 1)
+        def attach(s: str, x=0, font="") -> None:
+            align = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
+            lbl = label(s, font=font)
+            lbl.set_margin_start(5)
+            lbl.set_margin_top(2)
+            lbl.set_margin_end(5)
+            lbl.set_margin_bottom(2)
+            align.add(lbl)
+            grid.attach(align, x, row, 1, 1)
 
         attach("Keys", 0, "sans bold 12")
         attach("Action", 1, "sans bold 12")

@@ -159,9 +159,9 @@ class Win32Eventlistener:
         self.event_callbacks.setdefault(event, []).append(callback)
 
     def remove_event_callback(self, event: int, callback: EVENT_CALLBACK_TYPE):
-        l = self.event_callbacks.get(event)
-        if l and callback in l:
-            l.remove(callback)
+        callbacks = self.event_callbacks.get(event, [])
+        if callback in callbacks:
+            callbacks.remove(callback)
 
     def WndProc(self, hWnd: int, msg: int, wParam: int, lParam: int):
         callbacks = self.event_callbacks.get(msg)
@@ -177,7 +177,7 @@ class Win32Eventlistener:
             elif msg in self.log_events:
                 log.info("%s: %s / %s", self.log_events.get(msg), wParam, lParam)
             else:
-                l = log.warn
+                log_fn = log.warn
                 if 0 <= msg <= win32con.WM_USER or msg > 0xFFFF:
                     ut = "reserved system"
                 elif win32con.WM_USER <= msg <= 0x7FFF:
@@ -186,10 +186,10 @@ class Win32Eventlistener:
                     ut = "WM_APP"
                 elif 0xC000 <= msg <= 0xFFFF:
                     ut = "string"
-                    l = log.debug
+                    log_fn = log.debug
                 else:
                     ut = "/ unexpected"
-                l("unknown %s message: %s / %#x / %#x", ut, event_name, int(wParam), int(lParam))
+                log_fn("unknown %s message: %s / %#x / %#x", ut, event_name, int(wParam), int(lParam))
             if msg == win32con.WM_DESTROY:
                 self.cleanup()
         elif self.hwnd and hWnd:

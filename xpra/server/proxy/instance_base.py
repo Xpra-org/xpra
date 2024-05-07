@@ -536,7 +536,7 @@ class ProxyInstance:
                 # client may have already responded to the challenge,
                 # so we have to handle authentication from this end
                 server_salt = strtobytes(packet[1])
-                l = len(server_salt)
+                length = len(server_salt)
                 digest = str(packet[3])
                 salt_digest = "xor"
                 if len(packet) >= 5:
@@ -546,14 +546,14 @@ class ProxyInstance:
                     return
                 if salt_digest == "xor":
                     # with xor, we have to match the size
-                    if l < 16:
+                    if length < 16:
                         raise ValueError("server salt is too short: only {l} bytes, minimum is 16")
-                    if l > 256:
+                    if length > 256:
                         raise ValueError("server salt is too long: {l} bytes, maximum is 256")
                 else:
                     # other digest, 32 random bytes is enough:
-                    l = 32
-                client_salt = get_salt(l)
+                    length = 32
+                client_salt = get_salt(length)
                 salt = gendigest(salt_digest, client_salt, server_salt)
                 challenge_response = gendigest(digest, password, salt)
                 if not challenge_response:

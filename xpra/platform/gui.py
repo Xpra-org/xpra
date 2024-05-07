@@ -9,7 +9,7 @@ import os
 import sys
 import binascii
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from xpra.common import noop
 from xpra.platform import platform_import
@@ -340,8 +340,8 @@ def get_info_base() -> dict[str, Any]:
         except AttributeError:
             return str(v)
 
-    def fnames(l):
-        return [fname(x) for x in l]
+    def fnames(flist: Iterable):
+        return [fname(x) for x in flist]
 
     return {
         "native-clipboard": get_clipboard_native_class(),

@@ -405,12 +405,12 @@ def get_uinput_device_path(device) -> str:
         log("fd(%s)=%s", device, fd)
         import fcntl
         import ctypes
-        l = 16
-        buf = ctypes.create_string_buffer(l)
+        path_len = 16
+        buf = ctypes.create_string_buffer(path_len)
         # this magic value was calculated using the C macros:
-        l = fcntl.ioctl(fd, 2148554028, buf)
-        if 0 < l < 16:
-            virt_dev_path = (buf.raw[:l].rstrip(b"\0")).decode()
+        path_len = fcntl.ioctl(fd, 2148554028, buf)
+        if 0 < path_len < 16:
+            virt_dev_path = (buf.raw[:path_len].rstrip(b"\0")).decode()
             log("UI_GET_SYSNAME(%s)=%s", fd, virt_dev_path)
             uevent_path = "/sys/devices/virtual/input/%s" % virt_dev_path
             event_dirs = [x for x in os.listdir(uevent_path) if x.startswith("event")]

@@ -113,10 +113,12 @@ def get_output_colorspaces(encoding: str, input_colorspace: str) -> tuple[str, .
 
 def get_specs(encoding: str, colorspace: str) -> tuple[VideoSpec]:
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
+    if colorspace not in get_input_colorspaces(encoding):
+        raise ValueError("invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding)))
     return (
         VideoSpec(
-            encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_output_colorspaces(encoding, colorspace),
+            encoding=encoding,
+            input_colorspace=colorspace, output_colorspaces=get_output_colorspaces(encoding, colorspace),
             has_lossless_mode=encoding == "vp9" and colorspace == "YUV444P",
             codec_class=Decoder, codec_type=get_type(),
             quality=50, speed=50,
@@ -196,8 +198,6 @@ class Decoder(VideoPipeline):
         ]
         if not self.setup_pipeline_and_bus(elements):
             raise RuntimeError("failed to setup gstreamer pipeline")
-        #decoder = self.pipeline.get_by_name("decoder")
-        #self.element_connect(decoder, "message", self.on_message)
 
     def get_colorspace(self) -> str:
         return self.colorspace

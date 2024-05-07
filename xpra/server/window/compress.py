@@ -91,12 +91,12 @@ DAMAGE_STATISTICS = envbool("XPRA_DAMAGE_STATISTICS", False)
 
 SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
 FORCE_PILLOW = envbool("XPRA_FORCE_PILLOW", False)
-HARDCODED_ENCODING : str = os.environ.get("XPRA_HARDCODED_ENCODING", "")
+HARDCODED_ENCODING: str = os.environ.get("XPRA_HARDCODED_ENCODING", "")
 
 MAX_SEQUENCE = 2**64
 
 
-def get_env_encodings(etype:str, valid_options:Iterable[str]=()) -> tuple[str,...]:
+def get_env_encodings(etype: str, valid_options: Iterable[str] = ()) -> tuple[str, ...]:
     v = os.environ.get(f"XPRA_{etype}_ENCODINGS")
     encodings = tuple(valid_options)
     if v:

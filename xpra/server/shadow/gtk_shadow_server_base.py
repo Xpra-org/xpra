@@ -459,7 +459,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             traylog.warn("Warning: failed to set tray icon to %s", filename)
             traylog.warn(" %s", e)
 
-    def traymenuitem(self, title: str, icon_name="", tooltip="", cb: Callable=noop) -> Gtk.ImageMenuItem:
+    def traymenuitem(self, title: str, icon_name="", tooltip="", cb: Callable = noop) -> Gtk.ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """
         # pylint: disable=import-outside-toplevel
         from xpra.gtk.widget import menuitem

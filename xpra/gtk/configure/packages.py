@@ -49,10 +49,10 @@ class ConfigureGUI(BaseGUIWindow):
     def __init__(self, parent: Gtk.Window | None = None):
         self.terminal = get_terminal()
         self.sudo = which("sudo")
-        self.package_switch : dict[str, Gtk.Switch] = {}
+        self.package_switch: dict[str, Gtk.Switch] = {}
         self.package_system = ""
-        self.initial_state : dict[str, bool] = {}
-        self.current_state : dict[str, bool] = {}
+        self.initial_state: dict[str, bool] = {}
+        self.current_state: dict[str, bool] = {}
         self.apply_button = None
         super().__init__(
             "Install or remove Xpra Packages",
@@ -68,7 +68,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.add_widget(label("Install or remove xpra packages", font="sans 20"))
 
         def fail(messages: tuple[str, ...]) -> None:
-            self.populate_form(messages,("Exit", self.dismiss))
+            self.populate_form(messages, ("Exit", self.dismiss))
         if not self.terminal:
             fail((
                 "Unable to locate a terminal application to use.",
@@ -131,14 +131,14 @@ class ConfigureGUI(BaseGUIWindow):
 
         for i, (package, description) in enumerate(
                 {
-                    "Client" : "For connecting to servers",
-                    "Client GTK3" : "The main xpra client",
-                    "HTML5" : "The html5 client",
-                    "Server" : "For creating sessions",
-                    "X11" : "X11 component for both clients and servers",
-                    "Audio" : "Audio support: forwarding of speaker and microphone",
-                    "Codecs" : "Core picture compression codecs",
-                    "Codecs Extras" : "video compression codecs with heavier footprint and / or licensing requirements",
+                    "Client": "For connecting to servers",
+                    "Client GTK3": "The main xpra client",
+                    "HTML5": "The html5 client",
+                    "Server": "For creating sessions",
+                    "X11": "X11 component for both clients and servers",
+                    "Audio": "Audio support: forwarding of speaker and microphone",
+                    "Codecs": "Core picture compression codecs",
+                    "Codecs Extras": "video compression codecs with heavier footprint and / or licensing requirements",
                     "Codecs NVidia": "extra proprietary NVidia codecs",
                 }.items()
         ):

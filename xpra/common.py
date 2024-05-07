@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+# noinspection PyPep8
+
 import binascii
 import os
 from enum import Enum, IntEnum
@@ -51,7 +53,7 @@ XPRA_GUID2: Final[int] = 0xe470
 XPRA_GUID3: Final[int] = 0x4a5f
 XPRA_GUID4: Final[tuple[int, ...]] = (0xb6, 0x53, 0x6f, 0x6f, 0x98, 0xfe, 0x60, 0x81)
 XPRA_GUID_STR: Final[str] = "67B3EFA2-E470-4A5F-B653-6F6F98FE6081"
-XPRA_GUID_BYTES: Final[bytes] = binascii.unhexlify(XPRA_GUID_STR.replace("-",""))
+XPRA_GUID_BYTES: Final[bytes] = binascii.unhexlify(XPRA_GUID_STR.replace("-", ""))
 XPRA_NOTIFICATIONS_OFFSET: Final[int] = 2**24
 
 
@@ -202,7 +204,7 @@ FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO >= 0
 LOG_HELLO: bool = envbool("XPRA_LOG_HELLO", False)
 
-SSH_AGENT_DISPATCH: bool = envbool("XPRA_SSH_AGENT_DISPATCH", os.name=="posix")
+SSH_AGENT_DISPATCH: bool = envbool("XPRA_SSH_AGENT_DISPATCH", os.name == "posix")
 
 MIN_COMPRESS_SIZE: int = envint("XPRA_MIN_DECOMPRESSED_SIZE", -1)
 MAX_DECOMPRESSED_SIZE: int = envint("XPRA_MAX_DECOMPRESSED_SIZE", 256*1024*1024)
@@ -237,7 +239,7 @@ WINDOW_DECODE_ERROR: Final[int] = -1
 WINDOW_NOT_FOUND: Final[int] = -2
 
 
-ScreenshotData = tuple[int,int,str,int,bytes]
+ScreenshotData = tuple[int, int, str, int, bytes]
 
 
 def get_refresh_rate_for_value(refresh_rate_str, invalue: int) -> int:

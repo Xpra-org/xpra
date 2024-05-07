@@ -5,5 +5,5 @@
 
 import sys
 
-if sys.platform.startswith("win") or sys.platform=="darwin":    # pragma: no cover
+if sys.platform.startswith("win") or sys.platform == "darwin":    # pragma: no cover
     raise ImportError("no X11 support on %s" % sys.platform)

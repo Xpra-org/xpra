@@ -32,11 +32,11 @@ BLACKLISTED_XSETTINGS: list[str] = os.environ.get(
 
 # undocumented XSETTINGS endianness values:
 LITTLE_ENDIAN: int = 0
-BIG_ENDIAN: int    = 1
+BIG_ENDIAN: int = 1
 
 
 def get_local_byteorder() -> int:
-    if sys.byteorder=="little":
+    if sys.byteorder == "little":
         return LITTLE_ENDIAN
     return BIG_ENDIAN   # pragma: no cover
 
@@ -49,29 +49,29 @@ class XSettingsType(IntEnum):
     Color = 2
 
 
-XSettingsNames : dict[int,str] = {
-    XSettingsType.Integer    : "Integer",
-    XSettingsType.String     : "String",
-    XSettingsType.Color      : "Color",
+XSettingsNames: dict[int, str] = {
+    XSettingsType.Integer: "Integer",
+    XSettingsType.String: "String",
+    XSettingsType.Color: "Color",
 }
 
 
 XSETTINGS_CACHE: tuple[int, list[tuple]] = (0, [])
 
 
-def bytes_to_xsettings(d:bytes) -> tuple[int, list[tuple[int, str, Any, int]]]:
+def bytes_to_xsettings(d: bytes) -> tuple[int, list[tuple[int, str, Any, int]]]:
     global XSETTINGS_CACHE
     DEBUG_XSETTINGS = envbool("XPRA_XSETTINGS_DEBUG", False)
     # parse xsettings according to
     # http://standards.freedesktop.org/xsettings-spec/xsettings-spec-0.5.html
-    assert len(d)>=12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
+    assert len(d) >= 12, "_XSETTINGS_SETTINGS property is too small: %s" % len(d)
     if DEBUG_XSETTINGS:
         log("bytes_to_xsettings(%s)", tuple(d))
     byte_order, _, _, _, serial, n_settings = struct.unpack(b"=BBBBII", d[:12])
     cache = XSETTINGS_CACHE
     log("bytes_to_xsettings(..) found byte_order=%s (local is %s), serial=%s, n_settings=%s, cache=%s",
         byte_order, get_local_byteorder(), serial, n_settings, cache)
-    if cache and cache[0]==serial:
+    if cache and cache[0] == serial:
         log("bytes_to_xsettings(..) returning value from cache")
         return cache
     settings: list[tuple] = []
@@ -82,7 +82,7 @@ def bytes_to_xsettings(d:bytes) -> tuple[int, list[tuple[int, str, Any, int]]]:
         if remain < nbytes:
             raise ValueError(f"not enough data ({remain} bytes) to extract {what} ({nbytes} bytes needed)")
 
-    while n_settings>len(settings):
+    while n_settings > len(settings):
         log("bytes_to_xsettings(..) pos=%i (len=%i), data=%s", pos, len(d), hexstr(d[pos:]))
         istart = pos
         # parse header:
@@ -106,18 +106,18 @@ def bytes_to_xsettings(d:bytes) -> tuple[int, list[tuple[int, str, Any, int]]]:
             if DEBUG_XSETTINGS:
                 log("bytes_to_xsettings(..) %s -> %s", tuple(d[istart:pos]), setting)
             settings.append(setting)
-        if setting_type==XSettingsType.Integer:
+        if setting_type == XSettingsType.Integer:
             req("int", 4)
             add(int(struct.unpack(b"=I", d[pos:pos+4])[0]))
             pos += 4
-        elif setting_type==XSettingsType.String:
+        elif setting_type == XSettingsType.String:
             req("string length", 4)
             value_len = struct.unpack(b"=I", d[pos:pos+4])[0]
             pos += 4
             req("string", value_len)
             add(d[pos:pos+value_len])
             pos += (value_len + 0x3) & ~0x3
-        elif setting_type==XSettingsType.Color:
+        elif setting_type == XSettingsType.Color:
             req("color", 8)
             red, blue, green, alpha = struct.unpack(b"=HHHH", d[pos:pos+8])
             add((red, blue, green, alpha))
@@ -147,16 +147,16 @@ def xsettings_to_bytes(d: tuple[int, list[tuple[int, str, Any, int]]]) -> bytes:
             pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)
             x += b'\0'*pad_len
             x += struct.pack(b"=I", last_change_serial)
-            if setting_type==XSettingsType.Integer:
+            if setting_type == XSettingsType.Integer:
                 assert isinstance(value, int), f"invalid value type: integer wanted, not {type(value)}"
                 x += struct.pack(b"=I", int(value))
-            elif setting_type==XSettingsType.String:
+            elif setting_type == XSettingsType.String:
                 value = strtobytes(value)
                 x += struct.pack(b"=I", len(value))
                 x += value
                 pad_len = ((len(value) + 0x3) & ~0x3) - len(value)
                 x += b'\0'*pad_len
-            elif setting_type==XSettingsType.Color:
+            elif setting_type == XSettingsType.Color:
                 red, blue, green, alpha = value
                 x += struct.pack(b"=HHHH", red, blue, green, alpha)
             else:

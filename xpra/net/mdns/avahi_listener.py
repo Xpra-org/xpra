@@ -124,7 +124,7 @@ def main():
     loop_init()
     from xpra.os_util import gi_import
     glib = gi_import("GLib")
-    listeners = []
+    listeners: list[Avahilistener] = []
 
     def add(service_type):
         listener = Avahilistener(service_type, mdns_found, mdns_add, mdns_remove)
@@ -136,8 +136,8 @@ def main():
     try:
         glib.MainLoop().run()
     finally:
-        for l in listeners:
-            l.stop()
+        for listener in listeners:
+            listener.stop()
 
 
 if __name__ == "__main__":

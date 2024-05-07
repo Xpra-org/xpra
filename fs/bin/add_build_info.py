@@ -61,7 +61,7 @@ def write_props(f, props: dict, prefix="") -> None:
             w(f"{prefix}{fmt(name)}")
         else:
             w(name)
-        w(f"={fmt(props[name])}\n")
+        w(f" = {fmt(props[name])}\n")
 
 
 def save_properties(props: dict, filename: str) -> None:

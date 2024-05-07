@@ -201,7 +201,8 @@ class SysAuthenticatorBase:
             return b""
         salt = self.get_response_salt(client_salt)
         value = gendigest("xor", challenge_response, salt)
-        log(f"unxor_response(..) challenge-response={obsc(repr(challenge_response))}, client-salt={client_salt!r}, response salt={salt!r}")
+        log(f"unxor_response(..) challenge-response={obsc(repr(challenge_response))}")
+        log(f"client-salt={client_salt!r}, response salt={salt!r}")
         return value
 
     def default_authenticate_check(self, caps: typedict) -> bool:

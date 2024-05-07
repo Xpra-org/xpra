@@ -124,31 +124,31 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
             and if the window has finished setting up, and it is still managed.
             Can only be used for AutoPropGObjectMixin properties.
         """
-        l = self.get_logger(name)
+        logger = self.get_logger(name)
         cur = self._gproperties.get(name, None)
         if name not in self._gproperties or cur != value:
-            l("updateprop(%s, %s) previous value=%s", name, value, cur)
+            logger("updateprop(%s, %s) previous value=%s", name, value, cur)
             self._gproperties[name] = value
             if self._setup_done and self._managed:
                 self.notify(name)
             else:
-                l("not sending notify(%s) (setup done=%s, managed=%s)", name, self._setup_done, self._managed)
+                logger("not sending notify(%s) (setup done=%s, managed=%s)", name, self._setup_done, self._managed)
             return True
-        l("updateprop(%s, %s) unchanged", name, value)
+        logger("updateprop(%s, %s) unchanged", name, value)
         return False
 
     def get(self, name: str, default_value=None) -> object:
         """ Allows us to avoid defining all the attributes we may ever query,
             returns the default value if the property does not exist.
         """
-        l = self.get_logger(name)
+        logger = self.get_logger(name)
         if name in set(self._property_names + self._dynamic_property_names + self._internal_property_names):
             v = self.get_property(name)
-            l("get(%s, %s) using get_property=%s", name, default_value, v)
+            logger("get(%s, %s) using get_property=%s", name, default_value, v)
         else:
             v = default_value
             if name not in ("override-redirect", "tray"):
-                l("get(%s, %s) not a property of %s, returning default value=%s", name, default_value, type(self), v)
+                logger("get(%s, %s) not a property of %s, returning default value=%s", name, default_value, type(self), v)
         return v
 
     def show(self) -> None:

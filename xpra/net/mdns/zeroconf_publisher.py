@@ -136,7 +136,9 @@ class ZeroconfPublishers:
 
 
 class ZeroconfPublisher:
-    def __init__(self, address, host: str, port: int, service_name: str, service_type=XPRA_TCP_MDNS_TYPE, text_dict=None):
+    def __init__(self, address, host: str, port: int,
+                 service_name: str, service_type=XPRA_TCP_MDNS_TYPE,
+                 text_dict=None):
         log("ZeroconfPublisher%s", (address, host, port, service_name, service_type, text_dict))
         self.address = address
         self.host = host

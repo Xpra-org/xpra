@@ -98,7 +98,7 @@ grablog("detail constants: %s", DETAIL_CONSTANTS)
 PROPERTIES_IGNORED = [x for x in os.environ.get("XPRA_X11_PROPERTIES_IGNORED", "").split(",") if x]
 # make it easier to debug property changes, just add them here:
 # ie: {"WM_PROTOCOLS" : ["atom"]}
-X11_PROPERTIES_DEBUG : dict[str, Any] = {}
+X11_PROPERTIES_DEBUG: dict[str, Any] = {}
 PROPERTIES_DEBUG = [
     prop_debug.strip()
     for prop_debug in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")

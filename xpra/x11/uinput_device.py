@@ -4,9 +4,9 @@
 # later version. See the file COPYING for details.
 
 from uinput import (
-    BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA,   # @UnresolvedImport
-    REL_WHEEL, REL_HWHEEL,                                  # @UnresolvedImport
-    REL_X, REL_Y, BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,    # @UnresolvedImport
+    BTN_LEFT, BTN_RIGHT, BTN_MIDDLE, BTN_SIDE, BTN_EXTRA,  # @UnresolvedImport
+    REL_WHEEL, REL_HWHEEL,  # @UnresolvedImport
+    REL_X, REL_Y, BTN_TOUCH, ABS_X, ABS_Y, ABS_PRESSURE,  # @UnresolvedImport
 )
 
 from xpra.util.env import envint
@@ -18,18 +18,16 @@ log = Logger("x11", "server", "mouse")
 
 X11Keyboard = X11KeyboardBindings()
 
-
 MOUSE_WHEEL_CLICK_MULTIPLIER = envint("XPRA_MOUSE_WHEEL_CLICK_MULTIPLIER", 30)
 
-
 BUTTON_STR = {
-    BTN_LEFT     : "BTN_LEFT",
-    BTN_RIGHT    : "BTN_RIGHT",
-    BTN_MIDDLE   : "BTN_MIDDLE",
-    BTN_SIDE     : "BTN_SIDE",
-    BTN_EXTRA    : "BTN_EXTRA",
-    REL_WHEEL    : "REL_WHEEL",
-    REL_HWHEEL   : "REL_HWHEEL",
+    BTN_LEFT: "BTN_LEFT",
+    BTN_RIGHT: "BTN_RIGHT",
+    BTN_MIDDLE: "BTN_MIDDLE",
+    BTN_SIDE: "BTN_SIDE",
+    BTN_EXTRA: "BTN_EXTRA",
+    REL_WHEEL: "REL_WHEEL",
+    REL_HWHEEL: "REL_HWHEEL",
 }
 BUTTON_MAP: dict[int, tuple[int, int]] = {
     1: BTN_LEFT,
@@ -46,7 +44,7 @@ class UInputDevice:
     def __init__(self, device, device_path):
         self.device = device
         self.device_path: str = device_path
-        self.wheel_delta : dict[int,float] = {}
+        self.wheel_delta: dict[int, float] = {}
         # the first event always goes MIA:
         # http://who-t.blogspot.co.at/2012/06/xi-21-protocol-design-issues.html
         # so synthesize a dummy one now:
@@ -56,7 +54,7 @@ class UInputDevice:
             xi2 = X11XI2Bindings()
             v = xi2.get_xi_version()
             log("XInput version %s", ".".join(str(x) for x in v))
-            if v<=(2, 2):
+            if v <= (2, 2):
                 self.wheel_motion(4, 1)
 
     def click(self, button, pressed, _props):
@@ -64,25 +62,25 @@ class UInputDevice:
         # MOUSE_WHEEL_CLICK_COUNT=360
         # MOUSE_WHEEL_CLICK_ANGLE=1
         mult = MOUSE_WHEEL_CLICK_MULTIPLIER
-        if button==4:
+        if button == 4:
             ubutton = REL_WHEEL
-            val = 1*mult
-            if pressed:     # only send one event
+            val = 1 * mult
+            if pressed:  # only send one event
                 return
-        elif button==5:
+        elif button == 5:
             ubutton = REL_WHEEL
-            val = -1*mult
-            if pressed:     # only send one event
+            val = -1 * mult
+            if pressed:  # only send one event
                 return
-        elif button==6:
+        elif button == 6:
             ubutton = REL_HWHEEL
-            val = 1*mult
-            if pressed:     # only send one event
+            val = 1 * mult
+            if pressed:  # only send one event
                 return
-        elif button==7:
+        elif button == 7:
             ubutton = REL_HWHEEL
-            val = -1*mult
-            if pressed:     # only send one event
+            val = -1 * mult
+            if pressed:  # only send one event
                 return
         else:
             ubutton = BUTTON_MAP.get(button)
@@ -95,12 +93,12 @@ class UInputDevice:
             log("UInput.click(%i, %s) uinput button not found - using XTest", button, pressed)
             X11Keyboard.xtest_fake_button(button, pressed)
 
-    def wheel_motion(self, button: int, distance:float):
+    def wheel_motion(self, button: int, distance: float):
         if button in (4, 5):
-            val = distance*MOUSE_WHEEL_CLICK_MULTIPLIER
+            val = distance * MOUSE_WHEEL_CLICK_MULTIPLIER
             ubutton = REL_WHEEL
         elif button in (6, 7):
-            val = distance*MOUSE_WHEEL_CLICK_MULTIPLIER
+            val = distance * MOUSE_WHEEL_CLICK_MULTIPLIER
             ubutton = REL_HWHEEL
         else:
             log.warn("Warning: %s", self)
@@ -108,13 +106,13 @@ class UInputDevice:
             log.warn(" this event has been dropped")
             return
         saved = self.wheel_delta.get(ubutton, 0)
-        delta = saved+val
+        delta = saved + val
         ival = round(delta)
         log("UInput.wheel_motion(%i, %.4f) %s: %s+%s=%s, will emit %i",
             button, distance, BUTTON_STR.get(ubutton), saved, val, delta, ival)
-        if ival!=0:
+        if ival != 0:
             self.device.emit(ubutton, ival)
-        self.wheel_delta[ubutton] = delta-ival
+        self.wheel_delta[ubutton] = delta - ival
 
     def has_precise_wheel(self) -> bool:
         return True
@@ -131,15 +129,15 @@ class UInputPointerDevice(UInputDevice):
         with xsync:
             cx, cy = X11Keyboard.query_pointer()
             log("X11Keyboard.query_pointer=%s, %s", cx, cy)
-            dx = x-cx
-            dy = y-cy
+            dx = x - cx
+            dy = y - cy
             log("delta(%s, %s)=%s, %s", cx, cy, dx, dy)
         # self.device.emit(ABS_X, x, syn=(dy==0))
         # self.device.emit(ABS_Y, y, syn=True)
         if dx or dy:
-            if dx!=0:
-                self.device.emit(REL_X, dx, syn=(dy==0))
-            if dy!=0:
+            if dx != 0:
+                self.device.emit(REL_X, dx, syn=(dy == 0))
+            if dy != 0:
                 self.device.emit(REL_Y, dy, syn=True)
 
 
@@ -157,8 +155,8 @@ class UInputTouchpadDevice(UInputDevice):
     def move_pointer(self, x: int, y: int, props=None):
         log("UInputTouchpadDevice.move_pointer(%s, %s, %s)", x, y, props)
         self.device.emit(BTN_TOUCH, 1, syn=False)
-        self.device.emit(ABS_X, x*(2**24)//self.root_w, syn=False)
-        self.device.emit(ABS_Y, y*(2**24)//self.root_h, syn=False)
+        self.device.emit(ABS_X, x * (2 ** 24) // self.root_w, syn=False)
+        self.device.emit(ABS_Y, y * (2 ** 24) // self.root_h, syn=False)
         self.device.emit(ABS_PRESSURE, 255, syn=False)
         self.device.emit(BTN_TOUCH, 0, syn=True)
         with xsync:

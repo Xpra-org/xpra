@@ -86,7 +86,7 @@ def get_wm_name() -> str:
 
 
 def get_icc_data() -> dict[str, Any]:
-    icc : dict[str, Any] = {}
+    icc: dict[str, Any] = {}
     try:
         data = get_X11_root_property("_ICC_PROFILE", "CARDINAL")
         if data:
@@ -221,7 +221,7 @@ def send_client_message(window, message_type: str, *values) -> None:
 device_bell = None
 
 
-def system_bell(window, device, percent: int, _pitch, _duration: int, bell_class, bell_id, bell_name:str) -> bool:
+def system_bell(window, device, percent: int, _pitch, _duration: int, bell_class, bell_id, bell_name: str) -> bool:
     global device_bell
     if device_bell is False:
         # failed already

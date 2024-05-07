@@ -784,9 +784,10 @@ def get_workarea() -> tuple:
         maxwx = max(w[2] for w in workareas)
         maxwy = max(w[3] for w in workareas)
         # sanity checks:
-        assert minwx >= minmx and minwy >= minmy and maxwx <= maxmx and maxwy <= maxmy, "workspace %s is outside monitor space %s" % (
-            (minwx, minwy, maxwx, maxwy), (minmx, minmy, maxmx, maxmy)
-        )
+        if minwx < minmx or minwy < minmy or maxwx > maxmx or maxwy > maxmy:
+            raise ValueError("workspace %s is outside monitor space %s" % (
+                (minwx, minwy, maxwx, maxwy), (minmx, minmy, maxmx, maxmy)
+            ))
         # now make it relative to the monitor space:
         wx1 = minwx - minmx
         wy1 = minwy - minmy
@@ -795,6 +796,7 @@ def get_workarea() -> tuple:
         assert wx1 < wx2 and wy1 < wy2, "invalid workarea coordinates: %s" % ((wx1, wy1, wx2, wy2),)
         return wx1, wy1, wx2 - wx1, wy2 - wy1
     except Exception as e:
+        screenlog("get_workarea()", exc_info=True)
         screenlog.warn("failed to query workareas: %s", e)
         return ()
 

@@ -6,9 +6,9 @@
 
 # ruff: noqa: F601
 
-#found those here:
-#http://wiki.winehq.org/list_Of_Windows_Messages
-#which was extracted from MSDN somehow
+# found those here:
+# http://wiki.winehq.org/list_Of_Windows_Messages
+# which was extracted from MSDN somehow
 WNDPROC_EVENT_NAMES = {
     0x0000: "WM_NULL",
     0x0001: "WM_CREATE",

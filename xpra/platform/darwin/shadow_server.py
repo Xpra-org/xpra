@@ -63,8 +63,8 @@ def patch_pixels_to_bytes() -> None:
     def pixels_to_bytes(v):
         if isinstance(v, BTYPES):
             return memoryview_to_bytes(v)
-        l = CFDataGetLength(v)
-        return CFDataGetBytes(v, (0, l), None)
+        size = CFDataGetLength(v)
+        return CFDataGetBytes(v, (0, size), None)
 
     from xpra.codecs import rgb_transform
     rgb_transform.pixels_to_bytes = pixels_to_bytes

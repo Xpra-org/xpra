@@ -226,7 +226,7 @@ def _read_image(stream):
             log.warn("Warning: corrupt _NET_WM_ICON, execpted %i bytes but got %i",
                      expected, len(data))
             return None
-        if int_size!=long_size:
+        if int_size != long_size:
             # long to ints (CARD32):
             longs = struct.unpack(b"@"+b"l"*(width*height), data)
             data = struct.pack(b"@"+b"i"*(width*height), *longs)

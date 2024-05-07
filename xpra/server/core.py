@@ -359,7 +359,7 @@ class ServerCore:
         raise NotImplementedError()
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
-        def os_signal(signum: signal.Signals | int, _frame: FrameType | None=None):
+        def os_signal(signum: signal.Signals | int, _frame: FrameType | None = None):
             callback(signum)
 
         signal.signal(signal.SIGINT, os_signal)
@@ -1074,7 +1074,7 @@ class ServerCore:
     def get_all_protocols(self) -> tuple[SocketProtocol, ...]:
         return tuple(self._potential_protocols)
 
-    def cleanup_protocols(self, protocols, reason: str | ConnectionMessage ="", force=False) -> None:
+    def cleanup_protocols(self, protocols, reason: str | ConnectionMessage = "", force=False) -> None:
         if not reason:
             if self._upgrading:
                 reason = ConnectionMessage.SERVER_UPGRADE

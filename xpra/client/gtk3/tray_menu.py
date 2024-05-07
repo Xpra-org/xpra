@@ -1233,20 +1233,20 @@ class GTKTrayMenu(MenuHelper):
             if variants:
                 for v in variants:
                     self.layout_submenu.append(kbitem(f"{layout} - {v}", layout, v))
-            for l in uniq(layouts):
-                if l != layout:
-                    self.layout_submenu.append(kbitem(l, l, ""))
+            for uq_l in uniq(layouts):
+                if uq_l != layout:
+                    self.layout_submenu.append(kbitem(uq_l, uq_l, ""))
         elif layout and len(variants) > 1:
             variants_submenu(layout, variants)
         elif layout or kh.query_struct:
-            l = layout or kh.query_struct.get("layout", "")
+            khl = layout or kh.query_struct.get("layout", "")
             from xpra.keyboard.layouts import LAYOUT_VARIANTS
-            variants = LAYOUT_VARIANTS.get(l) if l else ()
+            variants = LAYOUT_VARIANTS.get(khl) if khl else ()
             if variants:
-                variants_submenu(l, variants)
+                variants_submenu(khl, variants)
             else:
-                if l:
-                    keyboard.set_tooltip_text(f"Detected {l!r}")
+                if khl:
+                    keyboard.set_tooltip_text(f"Detected {khl!r}")
                 set_sensitive(keyboard, False)
                 return keyboard
         elif not FULL_LAYOUT_LIST:

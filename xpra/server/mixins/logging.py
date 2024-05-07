@@ -196,8 +196,8 @@ class LoggingServer(StubServerMixin):
                 dmsg = " ".join(decode(x) for x in msg)
             else:
                 dmsg = decode(msg)
-            for l in dmsg.splitlines():
-                self.do_log(level, prefix + l)
+            for line in dmsg.splitlines():
+                self.do_log(level, prefix + line)
         except Exception as e:
             log("log message decoding error", exc_info=True)
             log.error("Error: failed to parse logging message:")

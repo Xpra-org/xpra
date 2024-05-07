@@ -39,7 +39,7 @@ def draw_data(x: int, y: int, w: int, h: int, pixel_data: bytes):
     rgb_format = "BGRX" if len(pixel_data) == 4 else "BGR"
     return (
         x, y, w, h,
-        coding, pixel_data*w*h, len(pixel_data)*w, {"rgb_format" : rgb_format}
+        coding, pixel_data*w*h, len(pixel_data)*w, {"rgb_format": rgb_format}
     )
 
 
@@ -97,15 +97,15 @@ def add_test_images():
             encodings += decoder.get_encodings()
 
     for name, description in {
-        "smpte-rp-219.png" : "smpte-rp-219 test bars (png)",
-        "pinwheel.jpg" : "pinwheel pattern (jpeg)",
-        "gradient.webp" : "gradient pattern (webp)",
+        "smpte-rp-219.png": "smpte-rp-219 test bars (png)",
+        "pinwheel.jpg": "pinwheel pattern (jpeg)",
+        "gradient.webp": "gradient pattern (webp)",
     }.items():
         encoding = name.split(".")[-1]
         if encoding not in encodings:
             continue
         width, height, image_data = load_image(name)
-        options : dict[str, str] = {}
+        options: dict[str, str] = {}
         if width and height and image_data:
             paint_data = (
                 0, 0, width, height,
@@ -134,10 +134,10 @@ def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[G
     ww, wh = WW, WH
     metadata = typedict({
         # prevent resizing:
-        "maximum-size" : (WW, WH),
-        "minimum-size" : (WW, WH),
-        "modal" : True,
-        "has-alpha" : not WIN32,
+        "maximum-size": (WW, WH),
+        "minimum-size": (WW, WH),
+        "modal": True,
+        "has-alpha": not WIN32,
         "transient-for": wid,
     })
     border = WindowBorder(False)

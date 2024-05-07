@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("encoding")
 
 
-def noswap(image, rgb_formats, _supports_transparency):
+def noswap(image, rgb_formats, _supports_transparency) -> None:
     pixel_format = image.get_pixel_format()
     raise RuntimeError(f"cannot convert from {pixel_format} to {csv(rgb_formats)} without the argb module")
 
@@ -32,7 +32,7 @@ pixels_to_bytes = memoryview_to_bytes
 
 
 # source format  : [(PIL input format, output format), ..]
-PIL_conv: dict[str, tuple[tuple[str,str], ...]] = {
+PIL_conv: dict[str, tuple[tuple[str, str], ...]] = {
     "XRGB": (("XRGB", "RGB"), ),
     # try to drop alpha channel since it isn't used:
     "BGRX": (("BGRX", "RGB"), ("BGRX", "RGBX")),
@@ -40,7 +40,7 @@ PIL_conv: dict[str, tuple[tuple[str,str], ...]] = {
     "BGRA": (("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")),
 }
 # as above but for clients which cannot handle alpha:
-PIL_conv_noalpha : dict[str, tuple[tuple[str,str], ...]] = {
+PIL_conv_noalpha: dict[str, tuple[tuple[str, str], ...]] = {
     "XRGB": (("XRGB", "RGB"), ),
     # try to drop alpha channel since it isn't used:
     "BGRX": (("BGRX", "RGB"), ("BGRX", "RGBX")),
@@ -49,7 +49,7 @@ PIL_conv_noalpha : dict[str, tuple[tuple[str,str], ...]] = {
 }
 
 
-def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) -> bool:
+def rgb_reformat(image: ImageWrapper, rgb_formats, supports_transparency: bool) -> bool:
     """ convert the RGB pixel data into a format supported by the client """
     # need to convert to a supported format!
     pixel_format = image.get_pixel_format()
@@ -61,7 +61,7 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
         # (required for r210 which is not handled by PIL directly)
         log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
-    modes: tuple[tuple[str,str], ...] = ()
+    modes: tuple[tuple[str, str], ...] = ()
     try:
         # pylint: disable=import-outside-toplevel
         from PIL import Image
@@ -72,7 +72,7 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
             modes = PIL_conv.get(pixel_format, ())
         else:
             modes = PIL_conv_noalpha.get(pixel_format, ())
-    target_rgb: tuple[tuple[str,str], ...] = tuple((im,om) for (im,om) in modes if om in rgb_formats)
+    target_rgb: tuple[tuple[str, str], ...] = tuple((im, om) for (im, om) in modes if om in rgb_formats)
     if not target_rgb:
         log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
         # try argb module:

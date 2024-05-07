@@ -308,18 +308,18 @@ def validate_driver_yuv444lossless():
     if bl is None:
         global _version_warning
         if _version_warning:
-            l = log
+            log_fn = log.debug
         else:
-            l = log.warn
+            log_fn = log.warn
             _version_warning = True
         if v:
-            l(f"Warning: NVidia driver version {pver(v)} is untested with NVENC")
-            l(f" (this encoder has been tested with versions {MIN_VERSION}.x and later only)")
+            log_fn(f"Warning: NVidia driver version {pver(v)} is untested with NVENC")
+            log_fn(f" (this encoder has been tested with versions {MIN_VERSION}.x and later only)")
         if not envbool("XPRA_NVENC_YUV444P", False):
-            l(" disabling YUV444P and lossless mode")
-            l(" use XPRA_NVENC_YUV444P=1 to force enable")
+            log_fn(" disabling YUV444P and lossless mode")
+            log_fn(" use XPRA_NVENC_YUV444P=1 to force enable")
             return False
-        l(" force enabling YUV444P and lossless mode")
+        log_fn(" force enabling YUV444P and lossless mode")
     return True
 
 

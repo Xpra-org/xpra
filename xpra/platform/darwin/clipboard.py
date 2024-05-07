@@ -139,8 +139,8 @@ class OSXClipboardProxy(ClipboardProxyCore):
             return None
         if not img_data:
             return None
-        l = CFDataGetLength(img_data)
-        img_data = CFDataGetBytes(img_data, (0, l), None)
+        length = CFDataGetLength(img_data)
+        img_data = CFDataGetBytes(img_data, (0, length), None)
         img_data = self.filter_data(dtype=src_dtype, dformat=8, data=img_data, trusted=False, output_dtype=target)
         log("get_image_contents(%s)=%i %s", target, len(img_data or ()), type(img_data))
         return img_data

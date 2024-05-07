@@ -31,7 +31,7 @@ PREFERRED_ENCODING_ORDER: tuple[str, ...] = (
 PREFERRED_REFRESH_ENCODING_ORDER: tuple[str, ...] = (
     "webp", "avif", "png", "png/P", "png/L", "rgb", "rgb24", "rbg32", "jpeg", "jpega",
 )
-STREAM_ENCODINGS: tuple[str,...] = (
+STREAM_ENCODINGS: tuple[str, ...] = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "h265", "av1",
@@ -71,7 +71,7 @@ def get_plane_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
     }.get(pixel_format, list(pixel_format))[index]
 
 
-PIXEL_SUBSAMPLING : dict[str,tuple] = {
+PIXEL_SUBSAMPLING : dict[str, tuple] = {
     # NV12 is actually subsampled horizontally too - just like YUV420P
     # (but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):
     "NV12"      : ((1, 1), (1, 2)),
@@ -87,7 +87,7 @@ PIXEL_SUBSAMPLING : dict[str,tuple] = {
 }
 
 
-def get_subsampling_divs(pixel_format:str) -> tuple[tuple[int, int], ...]:
+def get_subsampling_divs(pixel_format: str) -> tuple[tuple[int, int], ...]:
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
     if pixel_format not in PIXEL_SUBSAMPLING:
@@ -168,7 +168,7 @@ class CodecSpec:
     width_mask      : int = 0xFFFF
     height_mask     : int = 0xFFFF
     max_instances   : int = 0
-    skipped_fields : tuple[str,...] = ("instances", "skipped_fields", )
+    skipped_fields : tuple[str, ...] = ("instances", "skipped_fields", )
     # not exported:
     instances       : WeakSet[Any] = field(default_factory=WeakSet)
 
@@ -225,7 +225,7 @@ class VideoSpec(CodecSpec):
 
     encoding           : str = "invalid"
     input_colorspace   : str = "invalid"
-    output_colorspaces : tuple[str,...] = ()      # ie: ("YUV420P" : "YUV420P", ...)
+    output_colorspaces : tuple[str, ...] = ()      # ie: ("YUV420P" : "YUV420P", ...)
     has_lossless_mode   : bool = False
 
     def __repr__(self):

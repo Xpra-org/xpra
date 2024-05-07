@@ -55,9 +55,9 @@ class ConfigureGUI(BaseGUIWindow):
         self.add_widget(label("Minimum Speed (percentage)", font="Sans 14"))
         self.add_widget(label("Increasing the speed costs bandwidth and CPU time"))
         scale = make_scale(adj1_100(config.min_speed), {
-            1 : "Lowest",
-            50 : "Average",
-            100 : "Highest",
+            1: "Lowest",
+            50: "Average",
+            100: "Highest",
         })
         scale.connect("value-changed", self.speed_changed)
         self.add_widget(scale)
@@ -65,9 +65,9 @@ class ConfigureGUI(BaseGUIWindow):
         self.add_widget(label("Minimum Quality (percentage)", font="Sans 14"))
         self.add_widget(label("Increasing the quality costs bandwidth, CPU time and may also increase the latency"))
         scale = make_scale(adj1_100(config.min_quality), {
-            1 : "Lowest",
-            50 : "Average",
-            100 : "Highest",
+            1: "Lowest",
+            50: "Average",
+            100: "Highest",
         })
         scale.connect("value-changed", self.quality_changed)
         self.add_widget(scale)
@@ -77,9 +77,9 @@ class ConfigureGUI(BaseGUIWindow):
         adjust = Gtk.Adjustment(value=config.auto_refresh_delay, lower=0, upper=1000,
                                 step_increment=50, page_increment=0, page_size=0)
         scale = make_scale(adjust, {
-            0 : "Disabled",
-            50 : "Fast",
-            500 : "Average",
+            0: "Disabled",
+            50: "Fast",
+            500: "Average",
             1000: "Slow",
         })
         scale.connect("value-changed", self.ar_changed)
