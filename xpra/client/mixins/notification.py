@@ -5,6 +5,7 @@
 # pylint: disable-msg=E1101
 
 from typing import Any
+from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.common import NotificationID, noop
@@ -37,7 +38,7 @@ class NotificationClient(StubClientMixin):
         self.notifications_enabled = False
         self.notifier = None
         self.tray = None
-        self.callbacks = {}
+        self.callbacks: dict[int, Callable] = {}
         # override the default handler in client base:
         self.may_notify = self.do_notify
 
