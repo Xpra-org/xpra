@@ -136,8 +136,8 @@ def get_proc_driver_version() -> tuple:
     KSTR = b"Kernel Module"
     p = v.find(KSTR)
     if not p:
-        log.warn("unknown NVidia kernel module version")
-        return ""
+        log.warn("Warning: unknown NVidia kernel module version")
+        return ()
     v = bytestostr(v[p + len(KSTR):].strip().split(b" ")[0])
     return tuple(v.split("."))
 
