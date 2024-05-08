@@ -253,7 +253,12 @@ class GLWindowBackingBase(WindowBackingBase):
         }
         return info
 
-    def with_gl_context(self, cb: Callable, *args):
+    def with_gfx_context(self, function: Callable, *args):
+        # first make the call from the main thread via `idle_add`
+        # then run the function from a GL context:
+        GLib.idle_add(self.with_gl_context, function, *args)
+
+    def with_gl_context(self, cb: Callable, *args) -> None:
         raise NotImplementedError()
 
     def init_gl_config(self) -> None:
@@ -553,7 +558,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.with_gl_context(self.close_gl)
         super().close()
 
-    def close_gl(self, context):
+    def close_gl(self, context) -> None:
         log("close_gl(%s)", context)
         self.free_cuda_context()
         try:
@@ -606,7 +611,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def paint_scroll(self, scroll_data, options: typedict, callbacks: Iterable[Callable]) -> None:
         flush = options.intget("flush", 0)
-        GLib.idle_add(self.with_gl_context, self.do_scroll_paints, scroll_data, flush, callbacks)
+        self.with_gfx_context(self.do_scroll_paints, scroll_data, flush, callbacks)
 
     def do_scroll_paints(self, context, scrolls, flush=0, callbacks: Iterable[Callable] = ()) -> None:
         log("do_scroll_paints%s", (context, scrolls, flush))
@@ -1062,21 +1067,21 @@ class GLWindowBackingBase(WindowBackingBase):
                 def paint_nvjpeg(gl_context):
                     self.paint_nvjpeg(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
 
-                GLib.idle_add(self.with_gl_context, paint_nvjpeg)
+                self.with_gfx_context(paint_nvjpeg)
                 return
             if self.nvdec_decoder and NVDEC and encoding in self.nvdec_decoder.get_encodings():
                 def paint_nvdec(gl_context):
                     self.paint_nvdec(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
 
-                GLib.idle_add(self.with_gl_context, paint_nvdec)
+                self.with_gfx_context(paint_nvdec)
                 return
         if JPEG_YUV and width >= 2 and height >= 2 and encoding == "jpeg":
             img = self.jpeg_decoder.decompress_to_yuv(img_data)
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
-            GLib.idle_add(self.gl_paint_planar, "YUV420P_to_RGB_FULL", flush, encoding, img,
-                          x, y, w, h, width, height, options, callbacks)
+            self.with_gfx_context(self.gl_paint_planar, "YUV420P_to_RGB_FULL", flush, encoding, img,
+                                  x, y, w, h, width, height, options, callbacks)
             return
         if encoding == "jpeg":
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data)
@@ -1088,8 +1093,8 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         rgb_format = img.get_pixel_format()
-        GLib.idle_add(self.do_paint_rgb, rgb_format, img.get_pixels(), x, y, w, h, width, height,
-                      img.get_rowstride(), options, callbacks)
+        self.ui_paint_rgb(rgb_format, img.get_pixels(), x, y, w, h, width, height,
+                          img.get_rowstride(), options, callbacks)
 
     def cuda_buffer_to_pbo(self, gl_context, cuda_buffer, rowstride: int, src_y: int, height: int, stream):
         # must be called with an active cuda context, and from the UI thread
@@ -1227,8 +1232,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 flush = options.intget("flush", 0)
                 w = img.get_width()
                 h = img.get_height()
-                GLib.idle_add(self.gl_paint_planar, f"{subsampling}_to_RGB", flush, "webp", img,
-                              x, y, w, h, width, height, options, callbacks)
+                self.with_gfx_context(self.gl_paint_planar, f"{subsampling}_to_RGB", flush, "webp", img,
+                                      x, y, w, h, width, height, options, callbacks)
                 return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
 
@@ -1241,21 +1246,13 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         if pixel_format.startswith("YUV"):
-            GLib.idle_add(self.gl_paint_planar, f"{pixel_format}_to_RGB_FULL", flush, "avif", img,
-                          x, y, w, h, width, height, options, callbacks)
+            self.with_gfx_context(self.gl_paint_planar, f"{pixel_format}_to_RGB_FULL", flush, "avif", img,
+                                  x, y, w, h, width, height, options, callbacks)
         else:
-            GLib.idle_add(self.do_paint_rgb, pixel_format, img.get_pixels(), x, y, w, h, width, height,
-                          img.get_rowstride(), options, callbacks)
+            self.ui_paint_rgb(pixel_format, img.get_pixels(), x, y, w, h, width, height,
+                              img.get_rowstride(), options, callbacks)
 
-    def do_paint_rgb(self, rgb_format: str, img_data,
-                     x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
-                     options: typedict, callbacks: Iterable[Callable]) -> None:
-        self.with_gl_context(self.gl_paint_rgb,
-                             rgb_format, img_data,
-                             x, y, width, height,
-                             render_width, render_height, rowstride, options, callbacks)
-
-    def gl_paint_rgb(self, context, rgb_format: str, img_data,
+    def do_paint_rgb(self, context, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
         log("%s.gl_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
@@ -1355,21 +1352,14 @@ class GLWindowBackingBase(WindowBackingBase):
             super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
         shader = f"{pixel_format}_to_RGB"
-        GLib.idle_add(self.gl_paint_planar, shader, options.intget("flush", 0), options.strget("encoding"), img,
-                      x, y, enc_width, enc_height, width, height, options, callbacks)
+        flush = options.intget("flush", 0)
+        encoding = options.strget("encoding")
+        self.with_gfx_context(self.gl_paint_planar, shader, flush, encoding, img,
+                              x, y, enc_width, enc_height, width, height, options, callbacks)
 
-    def gl_paint_planar(self, shader: str, flush: int, encoding: str, img,
+    def gl_paint_planar(self, context, shader: str, flush: int, encoding: str, img,
                         x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
                         options: typedict, callbacks: Iterable[Callable]) -> None:
-        # this function runs in the UI thread, no video_decoder lock held
-        log("gl_paint_planar%s", (flush, encoding, img, x, y, enc_width, enc_height, width, height, options, callbacks))
-        self.with_gl_context(self.do_gl_paint_planar, shader, flush, encoding, img,
-                             x, y, enc_width, enc_height,
-                             width, height, options, callbacks)
-
-    def do_gl_paint_planar(self, context, shader: str, flush: int, encoding: str, img,
-                           x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
-                           options: typedict, callbacks: Iterable[Callable]):
         pixel_format = img.get_pixel_format()
         if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
             raise ValueError(f"the GL backing does not handle pixel format {pixel_format!r} yet!")

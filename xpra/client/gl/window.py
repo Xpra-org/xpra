@@ -162,6 +162,10 @@ def test_gl_client_window(gl_client_window_class: Callable,
         window_backing = window._backing
         window.realize()
         window_backing.paint_screen = True
+        # we run this function single threaded,
+        # so this is already the UI thread,
+        # bypass the call to idle_add:
+        window_backing.with_gfx_context = window_backing.with_gl_context
         pixel_format = "BGRX"
         options = typedict({"pixel_format": pixel_format})
         widget = window_backing._backing

@@ -77,7 +77,7 @@ class GLAreaBacking(GLWindowBackingBase):
             with log.trap_error("Error calling realize callback %s", ellipsizer(callback)):
                 callback(gl_context, *xargs)
 
-    def with_gl_context(self, cb: Callable, *args):
+    def with_gl_context(self, cb: Callable, *args) -> None:
         da = self._backing
         if da and da.get_mapped():
             gl_context = self.gl_context()
