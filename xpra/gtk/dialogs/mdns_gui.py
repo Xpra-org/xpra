@@ -50,15 +50,10 @@ class mdns_sessions(SessionsGUI):
 
     def mdns_remove(self, r_interface, r_protocol, r_name, r_stype, r_domain, r_flags):
         log("mdns_remove%s", (r_interface, r_protocol, r_name, r_stype, r_domain, r_flags))
-        old_recs = self.records
-        self.records = [
-            (interface, protocol, name, stype, domain, host, address, port, text) for
-            (interface, protocol, name, stype, domain, host, address, port, text) in self.records
-            if (
-                interface != r_interface or protocol != r_protocol or name != r_name or stype != r_stype or domain != r_domain
-            )
-        ]
-        if old_recs != self.records:
+        cmp = (r_interface, r_protocol, r_name, r_stype, r_domain)
+        updated_recs = [rec for rec in self.records if rec[:5] != cmp]
+        if self.records != updated_recs:
+            self.records = updated_recs
             GLib.idle_add(self.populate_table)
 
     def mdns_add(self, interface, protocol, name, stype, domain, host, address, port, text):
