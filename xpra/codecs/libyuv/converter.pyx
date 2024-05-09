@@ -169,12 +169,12 @@ cdef inline uintptr_t memalign_ptr(uintptr_t ptr):
     return <uintptr_t> roundupl(<uintptr_t> ptr, ALIGN)
 
 
-def init_module():
+def init_module() -> None:
     #nothing to do!
     log("csc_libyuv.init_module()")
 
 
-def cleanup_module():
+def cleanup_module() -> None:
     log("csc_libyuv.cleanup_module()")
 
 
@@ -189,7 +189,7 @@ def get_version() -> Tuple[int,int]:
 #hardcoded for now:
 MAX_WIDTH = 32768
 MAX_HEIGHT = 32768
-COLORSPACES = {
+COLORSPACES: Dict[str, Tuple[str, ...]] = {
     "BGRX" : ("YUV444P", "YUV420P", "NV12"),
     "NV12" : ("RGB", "BGRX", "RGBX"),
     "YUV420P" : ("RGB", "XBGR", "RGBX"),
@@ -197,7 +197,7 @@ COLORSPACES = {
 }
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> Dict[str, Any]:
     return {
         "version"           : get_version(),
         "formats"           : COLORSPACES,
@@ -209,11 +209,11 @@ def get_input_colorspaces() -> Tuple[str,...]:
     return tuple(COLORSPACES.keys())
 
 
-def get_output_colorspaces(input_colorspace: str):
+def get_output_colorspaces(input_colorspace: str) -> Tuple[str, ...]:
     return COLORSPACES.get(input_colorspace, ())
 
 
-def get_spec(in_colorspace: str, out_colorspace: str):
+def get_spec(in_colorspace: str, out_colorspace: str) -> CSCSpec:
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
     assert out_colorspace in COLORSPACES[in_colorspace], "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES[in_colorspace])
     return CSCSpec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
@@ -225,10 +225,10 @@ def get_spec(in_colorspace: str, out_colorspace: str):
 
 class YUVImageWrapper(ImageWrapper):
 
-    def _cn(self):
+    def _cn(self) -> str:
         return "libyuv.YUVImageWrapper"
 
-    def free(self):
+    def free(self) -> None:
         cdef uintptr_t buf = self.cython_buffer
         self.cython_buffer = 0
         log("libyuv.YUVImageWrapper.free() cython_buffer=%#x", buf)
@@ -266,7 +266,7 @@ def argb_to_gray(image: ImageWrapper) -> ImageWrapper:
     return gray_image
 
 
-def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilterNone):
+def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilterNone) -> ImageWrapper:
     cdef iplanes = image.get_planes()
     pixels = image.get_pixels()
     cdef int stride = image.get_rowstride()
@@ -513,7 +513,7 @@ cdef class Converter:
         else:
             raise RuntimeError(f"invalid source format {self.src_format}")
 
-    def convert_nv12_image(self, image):
+    def convert_nv12_image(self, image: ImageWrapper):
         cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
         cdef int width = image.get_width()
@@ -806,7 +806,7 @@ cdef class Converter:
         return out_image
 
 
-def selftest(full = False):
+def selftest(full = False) -> None:
     global MAX_WIDTH, MAX_HEIGHT
     from xpra.codecs.checks import testcsc, get_csc_max_size
     from xpra.codecs.libyuv import converter
