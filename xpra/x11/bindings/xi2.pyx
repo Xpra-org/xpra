@@ -11,7 +11,7 @@ log = Logger("x11", "bindings", "xinput")
 
 from xpra.gtk.error import xlog
 from xpra.x11.common import X11Event
-from xpra.os_util import hexstr
+from xpra.util.str_fn import hexstr
 
 from libc.string cimport memset  # pylint: disable=syntax-error
 from xpra.x11.bindings.xlib cimport (
