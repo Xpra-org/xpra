@@ -131,15 +131,21 @@ def get_proc_driver_version() -> tuple:
     v = load_binary_file(NVIDIA_PROC_FILE)
     if not v:
         log.warn("Warning: NVidia kernel module not installed?")
-        log.warn(f" cannot open {NVIDIA_PROC_FILE!r}")
+        log.warn(f" cannot load {NVIDIA_PROC_FILE!r}")
         return ()
     KSTR = b"Kernel Module"
     p = v.find(KSTR)
     if not p:
-        log.warn("Warning: unknown NVidia kernel module version")
-        return ()
-    v = bytestostr(v[p + len(KSTR):].strip().split(b" ")[0])
-    return tuple(v.split("."))
+        log.warn("Warning: unable to parse NVidia kernel module version")
+        log_fn = log.warn
+        vtuple = ()
+    else:
+        log_fn = log.debug
+        vtuple = bytestostr(v[p + len(KSTR):].strip().split(b" ")[0])
+    log_fn(f" {NVIDIA_PROC_FILE!r} contents:")
+    for line in p.splitlines():
+        log_fn(f"  {bytestostr(line)!r}")
+    return vtuple
 
 
 def identify_nvidia_module_version() -> tuple:
@@ -157,7 +163,7 @@ def identify_nvidia_module_version() -> tuple:
             log.info("NVidia driver version %s", pver(numver))
             return tuple(numver)
     except Exception as e:
-        log.warn(f"failed to parse Nvidia driver version {v!r}: {e}")
+        log.warn(f"Warning: failed to parse Nvidia driver version {v!r}: {e}")
     return ()
 
 
