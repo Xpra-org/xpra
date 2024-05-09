@@ -87,5 +87,5 @@ For more generic version-agnostic information, checkout [the wiki](https://githu
 # Help
 Make sure to check the [FAQ](https://github.com/Xpra-org/xpra/blob/master/docs/FAQ.md), your question may already be answered there.  
 You can send your questions to the [mailing list](http://lists.devloop.org.uk/mailman/listinfo/shifter-users), join us on the IRC channel `#xpra` on [libera.chat](https://libera.chat)
-or [using discord](https://discord.gg/gjrJRy88).
+or [using discord](https://discord.gg/2mtC6cDv6Q).
 If you have hit a bug (sorry about that!), please see [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs).
