@@ -5,6 +5,7 @@
 
 import os
 import shlex
+from typing import Iterable
 
 from xpra.os_util import gi_import, getuid
 from xpra.util.system import is_distribution_variant
@@ -67,7 +68,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.clear_vbox()
         self.add_widget(label("Install or remove xpra packages", font="sans 20"))
 
-        def fail(messages: tuple[str, ...]) -> None:
+        def fail(messages: Iterable[str]) -> None:
             self.populate_form(messages, ("Exit", self.dismiss))
         if not self.terminal:
             fail((

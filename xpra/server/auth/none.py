@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.server.auth.sys_auth_base import SysAuthenticator
 from xpra.util.objects import typedict
 
@@ -16,7 +18,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def get_challenge(self, _digests: tuple[str, ...]):
+    def get_challenge(self, _digests: Sequence[str]):
         return None
 
     def get_password(self) -> str:

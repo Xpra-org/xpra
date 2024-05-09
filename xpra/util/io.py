@@ -11,6 +11,7 @@ import sys
 from subprocess import PIPE, Popen
 from tempfile import NamedTemporaryFile
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.common import noerr
 from xpra.os_util import POSIX
@@ -141,7 +142,7 @@ class CaptureStdErr:
             os.dup2(self.savedstderr, 2)
 
 
-def path_permission_info(filename: str, ftype=None) -> tuple[str, ...]:
+def path_permission_info(filename: str, ftype=None) -> Sequence[str]:
     from xpra.os_util import POSIX
     if not POSIX:
         return ()
@@ -315,7 +316,7 @@ def get_status_output(*args, **kwargs) -> tuple[int, Any, Any]:
     return p.returncode, stdout, stderr
 
 
-def get_proc_cmdline(pid: int) -> tuple[str, ...]:
+def get_proc_cmdline(pid: int) -> Sequence[str]:
     from xpra.os_util import POSIX
     if pid and POSIX:
         # try to find the command via /proc:

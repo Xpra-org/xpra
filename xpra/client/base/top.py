@@ -8,6 +8,7 @@ import curses
 import signal
 import traceback
 from time import monotonic, sleep
+from collections.abc import Sequence
 from subprocess import Popen, PIPE, DEVNULL
 from datetime import datetime, timedelta
 
@@ -118,7 +119,7 @@ def get_display_id_info(path: str) -> dict[str, str]:
     return d
 
 
-def get_window_info(wi: typedict) -> tuple[tuple[str, int], ...]:
+def get_window_info(wi: typedict) -> Sequence[tuple[str, int]]:
     # version info:
     geom = wi.inttupleget("geometry")
     g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])

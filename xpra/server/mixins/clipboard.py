@@ -6,6 +6,7 @@
 
 import os.path
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.platform.features import (
     CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS,
@@ -34,7 +35,7 @@ class ClipboardServer(StubServerMixin):
         self.clipboard_filter_file = None
         self._clipboard_helper = None
         self._clipboard_client = None
-        self._clipboards: tuple[str, ...] = ()
+        self._clipboards: Sequence[str] = ()
 
     def init(self, opts) -> None:
         self.clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,7 @@ import os
 import socket
 import sys
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from importlib import import_module
 
 from xpra.net.bytestreams import get_socket_config
@@ -21,7 +21,7 @@ from xpra.log import Logger
 
 log = Logger("network", "util")
 
-netifaces_version: tuple[Any, ...] = ()
+netifaces_version: Sequence[Any] = ()
 _netifaces = None
 
 
@@ -303,7 +303,7 @@ def get_net_sys_config() -> dict[str, Any]:
     ):
         addproc(f"/proc/sys/net/ipv4/{k}", "ipv4", k)
 
-    def parsenums(v: str) -> tuple[int, ...]:
+    def parsenums(v: str) -> Sequence[int]:
         return tuple(int(x.strip()) for x in v.split("\t") if len(x.strip()) > 0)
 
     for k in ("tcp_mem", "tcp_rmem", "tcp_wmem", "ip_local_port_range", "ip_local_reserved_ports",):
@@ -390,7 +390,7 @@ def get_network_caps(full_info: int = 1) -> dict[str, Any]:
     return caps
 
 
-def get_paramiko_info() -> dict[str, tuple[int, ...]]:
+def get_paramiko_info() -> dict[str, Sequence[int]]:
     paramiko = sys.modules.get("paramiko")
     if paramiko:
         return {

@@ -9,6 +9,7 @@ import socket
 import sys
 from time import sleep, monotonic
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
 from xpra.platform.paths import get_ssh_known_hosts_files
@@ -63,7 +64,7 @@ PARAMIKO_SESSION_LOST = "No existing session"
 
 WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
 
-AUTH_MODES: tuple[str, ...] = ("none", "agent", "key", "password")
+AUTH_MODES: Sequence[str] = ("none", "agent", "key", "password")
 
 
 def keymd5(k) -> str:
@@ -625,7 +626,7 @@ def do_connect_to(transport, host: str, username: str, password: str,
             log(f"trying {keyfile_path!r}")
             key = None
             import paramiko
-            try_key_formats: tuple[str, ...] = ()
+            try_key_formats: Sequence[str] = ()
             for kf in ("RSA", "DSS", "ECDSA", "Ed25519"):
                 if keyfile_path.lower().endswith(kf.lower()):
                     try_key_formats = (kf,)

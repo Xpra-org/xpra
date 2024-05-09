@@ -9,6 +9,7 @@ import os
 import socket
 import platform
 from typing import Any, Final
+from collections.abc import Sequence
 
 import xpra
 from xpra.util.objects import typedict
@@ -19,7 +20,7 @@ from xpra.util.system import get_linux_distribution, platform_release, platform_
 from xpra.common import FULL_INFO
 
 XPRA_VERSION: Final[str] = xpra.__version__
-XPRA_NUMERIC_VERSION: Final[tuple[int, ...]] = xpra.__version_info__
+XPRA_NUMERIC_VERSION: Final[Sequence[int]] = xpra.__version_info__
 
 CHECK_SSL: bool = envbool("XPRA_VERSION_CHECK_SSL", True)
 SSL_CAFILE: str = ""
@@ -229,7 +230,7 @@ def get_build_info(full: int = 1) -> dict[str, Any]:
     return info
 
 
-def parse_version(v) -> tuple[Any, ...]:
+def parse_version(v) -> Sequence[Any]:
     if isinstance(v, str) and v:
         def maybeint(v):
             try:
@@ -302,12 +303,12 @@ def get_platform_info():
     return platform_info_cache
 
 
-def get_version_from_url(url) -> tuple[int, ...] | None:
+def get_version_from_url(url: str) -> Sequence[int]:
     try:
         from urllib.request import urlopen
     except ImportError as e:
         log("get_version_from_url(%s) urllib2 not found: %s", url, e)
-        return None
+        return ()
     try:
         response = urlopen(url, cafile=SSL_CAFILE)
         latest_version = response.read().rstrip(b"\n\r")
@@ -320,7 +321,7 @@ def get_version_from_url(url) -> tuple[int, ...] | None:
             log("no version at url=%s", url)
         else:
             log("Error retrieving URL '%s': %s", url, e)
-    return None
+    return ()
 
 
 def version_update_check():
@@ -342,7 +343,7 @@ def version_update_check():
         latest_version_no = get_version_from_url(url)
         if latest_version_no:
             break
-    if latest_version_no is None:
+    if not latest_version_no:
         log("version_update_check() failed to contact version server")
         return None
     if latest_version_no > our_version_no or FAKE_NEW_VERSION:

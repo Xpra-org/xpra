@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.os_util import WIN32, OSX, gi_import
 from xpra.common import roundup
@@ -46,17 +47,17 @@ assert get_type()  # all codecs must define this function
 COLORSPACES: dict[str, dict[str, list[str]]] = {}
 
 
-def get_encodings() -> tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return tuple(COLORSPACES.keys())
 
 
-def get_input_colorspaces(encoding: str) -> tuple[str, ...]:
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     return tuple(colorspaces.keys())
 
 
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> tuple[str, ...]:
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     colorspaces = COLORSPACES.get(encoding)
     assert colorspaces, f"invalid input colorspace for {encoding}"
     out_colorspaces = colorspaces.get(input_colorspace)
@@ -73,7 +74,7 @@ def ElementEncoderClass(element: str):
     return ElementEncoder
 
 
-def make_spec(element: str, encoding: str, cs_in: str, css_out: tuple[str, ...],
+def make_spec(element: str, encoding: str, cs_in: str, css_out: Sequence[str],
               cpu_cost: int = 50, gpu_cost: int = 50):
     # use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
     # each with different pipeline arguments based on the make_spec parameters:

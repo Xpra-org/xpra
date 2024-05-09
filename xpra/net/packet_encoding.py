@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -8,7 +8,7 @@
 # pylint: disable=import-outside-toplevel
 
 from typing import Any, ByteString
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 
 from xpra.log import Logger
@@ -17,11 +17,11 @@ from xpra.util.str_fn import strtobytes
 from xpra.util.env import envbool
 
 # all the encoders we know about:
-ALL_ENCODERS: tuple[str, ...] = ("rencodeplus", "none")
+ALL_ENCODERS: Sequence[str] = ("rencodeplus", "none")
 # the encoders we may have, in the best compatibility order
-TRY_ENCODERS: tuple[str, ...] = ("rencodeplus", "none")
+TRY_ENCODERS: Sequence[str] = ("rencodeplus", "none")
 # order for performance:
-PERFORMANCE_ORDER: tuple[str, ...] = ("rencodeplus",)
+PERFORMANCE_ORDER: Sequence[str] = ("rencodeplus",)
 
 
 @dataclass
@@ -100,7 +100,7 @@ def get_packet_encoding_caps(full_info: int = 1) -> dict[str, Any]:
     return caps
 
 
-def get_enabled_encoders(order: tuple[str, ...] = TRY_ENCODERS) -> tuple[str, ...]:
+def get_enabled_encoders(order: Iterable[str] = TRY_ENCODERS) -> Sequence[str]:
     return tuple(x for x in order if x in ENCODERS)
 
 

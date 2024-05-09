@@ -6,6 +6,7 @@
 import os
 from time import monotonic
 from typing import Any, Dict, Tuple
+from collections.abc import Sequence
 
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t    # pylint: disable=syntax-error
 from libc.stdlib cimport free    # pylint: disable=syntax-error
@@ -24,6 +25,7 @@ log = Logger("encoder", "webp")
 cdef int LOG_CONFIG = envbool("XPRA_WEBP_LOG_CONFIG", False)
 cdef int WEBP_THREADING = envbool("XPRA_WEBP_THREADING", True)
 cdef int SUBSAMPLING_THRESHOLD = envint("XPRA_WEBP_SUBSAMPLING_THRESHOLD", 80)
+
 
 cdef inline int MIN(int a, int b):
     if a<=b:
@@ -340,7 +342,7 @@ def get_type() -> str:
     return "webp"
 
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return ("webp", )
 
 
@@ -362,6 +364,7 @@ def get_info() -> Dict[str, Any]:
         "presets"       : tuple(PRESETS.values()),
     }
 
+
 def init_module() -> None:
     log("webp.init_module()")
 
@@ -373,18 +376,18 @@ def cleanup_module() -> None:
 INPUT_PIXEL_FORMATS = ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR")
 
 
-def get_input_colorspaces(encoding: str):
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     assert encoding=="webp"
     return INPUT_PIXEL_FORMATS
 
 
-def get_output_colorspaces(encoding: str, input_colorspace: str):
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     assert encoding=="webp"
     assert input_colorspace in INPUT_PIXEL_FORMATS
     return (input_colorspace, )
 
 
-def get_specs(encoding: str, colorspace: str):
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
     assert encoding=="webp"
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.constants import VideoSpec
@@ -459,7 +462,7 @@ cdef class Encoder:
     def __init__(self):
         self.width = self.height = self.quality = self.frames = 0
 
-    def init_context(self, encoding, width : int, height : int, src_format, options: typedict):
+    def init_context(self, encoding: str, width : int, height : int, src_format: str, options: typedict):
         assert encoding=="webp", "invalid encoding: %s" % encoding
         assert src_format in get_input_colorspaces(encoding)
         self.width = width
@@ -819,7 +822,7 @@ cdef webp_encode(WebPConfig *config, WebPPicture *pic):
     return cdata
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     #fake empty buffer:
     from xpra.codecs.checks import make_test_image
     w, h = (24, 16)

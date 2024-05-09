@@ -5,6 +5,7 @@
 
 import os
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.gstreamer.common import (
     GST_FLOW_OK, STREAM_TYPE, GST_FORMAT_BYTES,
@@ -33,9 +34,9 @@ log(f"decoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
 FORMATS = os.environ.get("XPRA_GSTREAMER_DECODER_FORMATS", "h264,hevc,vp8,vp9,av1").split(",")
 
 
-def get_default_mappings() -> dict[str, tuple[str, ...]]:
+def get_default_mappings() -> dict[str, Sequence[str]]:
     # should always be available:
-    m: dict[str, tuple[str, ...]] = {
+    m: dict[str, Sequence[str]] = {
         "vp8": ("vp8dec",),
         "vp9": ("vp9dec",),
     }
@@ -57,7 +58,7 @@ def get_default_mappings() -> dict[str, tuple[str, ...]]:
     return m
 
 
-def get_codecs_options() -> dict[str, tuple[str, ...]]:
+def get_codecs_options() -> dict[str, Sequence[str]]:
     dm = os.environ.get("XPRA_GSTREAMER_DECODER_MAPPINGS")
     if not dm:
         return get_default_mappings()
@@ -87,7 +88,7 @@ def find_codecs(options) -> dict[str, str]:
 CODECS = find_codecs(get_codecs_options())
 
 
-def get_encodings() -> tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return tuple(CODECS.keys())
 
 
@@ -95,13 +96,13 @@ def get_min_size(_encoding: str):
     return 48, 16
 
 
-def get_input_colorspaces(encoding: str) -> tuple[str, ...]:
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     if encoding not in CODECS:
         raise ValueError(f"unsupported encoding {encoding}")
     return ("YUV420P",)
 
 
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> tuple[str, ...]:
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     decoder = CODECS.get(encoding)
     if not decoder:
         raise ValueError(f"unsupported encoding {encoding}")
@@ -213,8 +214,8 @@ class Decoder(VideoPipeline):
             Ystride = roundup(self.width, 4)
             Ysize = Ystride * roundup(self.height, 2)
             Y = mem[:Ysize]
-            planes: tuple[memoryview, ...]
-            strides: tuple[int, ...]
+            planes: Sequence[memoryview]
+            strides: Sequence[int]
             if self.output_format == "YUV420P":
                 UVstride = roundup(roundup(self.width, 2) // 2, 4)
                 UVsize = UVstride * roundup(self.height, 2) // 2

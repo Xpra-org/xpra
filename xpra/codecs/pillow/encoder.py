@@ -8,6 +8,7 @@ from io import BytesIO
 import PIL
 from PIL import Image, ImagePalette
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.codecs.debug import may_save_image
 from xpra.util.objects import typedict
@@ -45,7 +46,7 @@ def get_type() -> str:
     return "pillow"
 
 
-def do_get_encodings() -> tuple[str, ...]:
+def do_get_encodings() -> Sequence[str]:
     log("PIL.Image.SAVE=%s", Image.SAVE)
     encodings: list[str] = []
     for encoding in ENCODE_FORMATS:
@@ -57,11 +58,11 @@ def do_get_encodings() -> tuple[str, ...]:
     return tuple(encodings)
 
 
-def get_encodings() -> tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return ENCODINGS
 
 
-ENCODINGS: tuple[str, ...] = do_get_encodings()
+ENCODINGS: Sequence[str] = do_get_encodings()
 
 
 def get_info() -> dict[str, Any]:
@@ -278,7 +279,7 @@ def selftest(full=False) -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.checks import make_test_image
     img = make_test_image("BGRA", 128, 128)
-    vrange: tuple[int, ...] = (50,)
+    vrange: Sequence[int] = (50,)
     if full:
         vrange = (0, 50, 100)
     for encoding in tuple(ENCODINGS):

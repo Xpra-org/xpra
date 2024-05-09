@@ -15,7 +15,7 @@ from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue, SimpleQueue
 from typing import Any
-from collections.abc import ByteString, Callable, Iterable
+from collections.abc import ByteString, Callable, Iterable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -174,7 +174,7 @@ class SocketProtocol:
         self.source_has_more = self.source_has_more_start
         self.flush_then_close = self.do_flush_then_close
 
-    STATE_FIELDS: tuple[str, ...] = (
+    STATE_FIELDS: Sequence[str] = (
         "max_packet_size", "large_packets", "send_aliases", "receive_aliases",
         "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
         "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
@@ -243,7 +243,7 @@ class SocketProtocol:
     def __repr__(self):
         return f"Protocol({self._conn})"
 
-    def get_threads(self) -> tuple[Thread, ...]:
+    def get_threads(self) -> Sequence[Thread]:
         return tuple(x for x in (
             self._write_thread,
             self._read_thread,

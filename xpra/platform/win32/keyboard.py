@@ -8,7 +8,7 @@ import ctypes
 from ctypes.wintypes import HANDLE
 from ctypes import create_string_buffer, byref
 from ctypes.wintypes import DWORD
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.platform.win32.common import (
@@ -190,7 +190,7 @@ class Keyboard(KeyboardBase):
         layout = ""
         layouts_defs = {}
         variant = ""
-        variants: tuple[str, ...] = ()
+        variants: Sequence[str] = ()
         options = ""
         layout_code = 0
         try:

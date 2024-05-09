@@ -8,7 +8,7 @@ import os
 from io import BytesIO
 from time import monotonic
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 try:
     from PIL import Image
@@ -81,7 +81,7 @@ class WindowsMixin(StubSourceMixin):
         self.window_frame_sizes: dict = {}
         self.suspended = False
         self.send_cursors = False
-        self.cursor_encodings: tuple[str, ...] = ()
+        self.cursor_encodings: Sequence[str] = ()
         self.send_bell = False
         self.send_windows = True
         self.pointer_grabs = False
@@ -89,7 +89,7 @@ class WindowsMixin(StubSourceMixin):
         self.window_max_size: tuple[int, int] = (0, 0)
         self.window_restack = False
         self.system_tray = False
-        self.metadata_supported: tuple[str, ...] = ()
+        self.metadata_supported: Sequence[str] = ()
         self.cursor_timer = 0
         self.last_cursor_sent: tuple = ()
 

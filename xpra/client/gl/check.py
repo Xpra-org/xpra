@@ -8,6 +8,7 @@
 import sys
 import logging
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.util.env import envint, envbool, numpy_import_context
@@ -16,7 +17,7 @@ from xpra.client.gl.drivers import GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST
 
 log = Logger("opengl")
 
-required_extensions: tuple[str, ...] = ("GL_ARB_texture_rectangle", "GL_ARB_vertex_program")
+required_extensions: Sequence[str] = ("GL_ARB_texture_rectangle", "GL_ARB_vertex_program")
 
 GL_ALPHA_SUPPORTED: bool = envbool("XPRA_ALPHA", True)
 DOUBLE_BUFFERED: bool = envbool("XPRA_OPENGL_DOUBLE_BUFFERED", True)
@@ -40,7 +41,7 @@ gl_check_error = raise_error
 gl_fatal_error = raise_fatal_error
 
 
-def parse_pyopengl_version(vstr: str) -> tuple[int, ...]:
+def parse_pyopengl_version(vstr: str) -> Sequence[int]:
     def numv(s):
         try:
             return int(s)
@@ -73,7 +74,7 @@ def get_max_texture_size() -> int:
     return int(min(rect_texture_size, texture_size))
 
 
-def get_array_handlers() -> tuple[str, ...]:
+def get_array_handlers() -> Sequence[str]:
     from OpenGL.arrays.arraydatatype import ArrayDatatype
     try:
         return tuple(getattr(atype, "__name__", str(atype)) for atype in set(ArrayDatatype.getRegistry().values()))

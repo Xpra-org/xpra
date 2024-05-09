@@ -6,6 +6,7 @@
 
 import os
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
@@ -37,11 +38,11 @@ class ClipboardClient(StubClientMixin):
         self.clipboard_enabled: bool = False
         self.server_clipboard_direction: str = "both"
         self.server_clipboard: bool = False
-        self.server_clipboard_preferred_targets: tuple[str, ...] = ()
-        self.server_clipboards: tuple[str, ...] = ()
+        self.server_clipboard_preferred_targets: Sequence[str] = ()
+        self.server_clipboards: Sequence[str] = ()
         self.server_clipboard_greedy: bool = False
         self.server_clipboard_want_targets: bool = False
-        self.server_clipboard_selections: tuple[str, ...] = ()
+        self.server_clipboard_selections: Sequence[str] = ()
         self.clipboard_helper = None
         self.local_clipboard_requests: int = 0
         self.remote_clipboard_requests: int = 0
@@ -125,7 +126,7 @@ class ClipboardClient(StubClientMixin):
                 log.warn("Warning: incompatible clipboard direction settings")
                 log.warn(" server setting: %s, client setting: %s",
                          self.server_clipboard_direction, self.client_clipboard_direction)
-        clipboards: tuple[str, ...] = ()
+        clipboards: Sequence[str] = ()
         try:
             from xpra.clipboard.core import ALL_CLIPBOARDS
             clipboards = ALL_CLIPBOARDS

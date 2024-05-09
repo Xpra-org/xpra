@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Iterable, Callable
+from collections.abc import Iterable, Callable, Sequence
 
 from xpra.util.env import first_time
 from xpra.util.str_fn import bytestostr
@@ -37,7 +37,7 @@ class ClientDisplayMixin(StubSourceMixin):
         self.screen_sizes: list = []
         self.monitors: dict[int, Any] = {}
         self.desktops: int = 1
-        self.desktop_names: tuple[str, ...] = ()
+        self.desktop_names: Sequence[str] = ()
         self.show_desktop_allowed: bool = False
         self.opengl_props: dict[str, Any] = {}
 

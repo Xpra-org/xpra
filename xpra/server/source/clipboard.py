@@ -7,6 +7,7 @@
 from time import monotonic
 from typing import Any, Deque
 from collections import deque
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -40,7 +41,7 @@ class ClipboardConnection(StubSourceMixin):
         self.clipboard_greedy = False
         self.clipboard_want_targets = False
         self.clipboard_selections = CLIPBOARDS
-        self.clipboard_preferred_targets: tuple[str, ...] = ()
+        self.clipboard_preferred_targets: Sequence[str] = ()
 
     def cleanup(self) -> None:
         self.cancel_clipboard_progress_timer()

@@ -8,7 +8,7 @@ import socket
 import struct
 import threading
 from typing import Any, Union, TypeAlias, Final
-from collections.abc import Callable, ByteString
+from collections.abc import Callable, ByteString, Sequence
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop
@@ -74,10 +74,10 @@ SSL_UPGRADE: bool = envbool("XPRA_SSL_UPGRADE", False)
 AUTO_ABSTRACT_SOCKET = envbool("XPRA_AUTO_ABSTRACT_SOCKET", LINUX)
 ABSTRACT_SOCKET_PREFIX = "xpra/"
 
-SOCKET_TYPES: tuple[str, ...] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
+SOCKET_TYPES: Sequence[str] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
 
-IP_SOCKTYPES: tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
-TCP_SOCKTYPES: tuple[str, ...] = ("tcp", "ssl", "ws", "wss", "ssh")
+IP_SOCKTYPES: Sequence[str] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
+TCP_SOCKTYPES: Sequence[str] = ("tcp", "ssl", "ws", "wss", "ssh")
 
 URL_MODES: dict[str, str] = {
     "xpra": "tcp",
@@ -143,7 +143,7 @@ PACKET_TYPES: list[str] = [
 ]
 
 
-def get_log_packets(exclude=False) -> tuple[str, ...]:
+def get_log_packets(exclude=False) -> Sequence[str]:
     lp = os.environ.get("XPRA_LOG_PACKETS")
     if not lp:
         return ()
@@ -168,8 +168,8 @@ def _may_log_packet(sending, packet_type, packet) -> None:
             get_logger().info(s)
 
 
-LOG_PACKETS: tuple[str, ...] = ()
-NOLOG_PACKETS: tuple[str, ...] = ()
+LOG_PACKETS: Sequence[str] = ()
+NOLOG_PACKETS: Sequence[str] = ()
 LOG_PACKET_TYPE: bool = False
 PACKET_LOG_MAX_SIZE: int = 500
 

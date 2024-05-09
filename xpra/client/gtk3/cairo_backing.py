@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from cairo import ImageSurface, FORMAT_ARGB32  # pylint: disable=no-name-in-module
 
 from xpra.common import noop
@@ -19,7 +21,7 @@ GdkPixbuf = gi_import("GdkPixbuf")
 
 CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
 set_image_surface_data = noop
-CAIRO_FORMATS: dict[int, tuple[str, ...]] = {}
+CAIRO_FORMATS: dict[int, Sequence[str]] = {}
 try:
     from xpra.client.gtk3 import cairo_workaround
 
@@ -39,7 +41,7 @@ class CairoBacking(CairoBackingBase):
     This requires `cairo_bindings`.
     """
 
-    RGB_MODES: tuple[str, ...] = ("BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565")
+    RGB_MODES: Sequence[str] = ("BGRA", "BGRX", "RGBA", "RGBX", "BGR", "RGB", "r210", "BGR565")
 
     def __repr__(self):
         b = self._backing

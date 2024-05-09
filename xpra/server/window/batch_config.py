@@ -8,6 +8,7 @@
 import os
 from time import monotonic
 from typing import Any, Deque
+from collections.abc import Sequence
 
 from collections import deque
 from xpra.util.stats import get_list_stats
@@ -92,7 +93,7 @@ class DamageBatchConfig:
         self.last_updated: int = 0
         # the metrics derived from statistics which we use for calculating the new batch delay:
         # (see batch delay calculator)
-        self.factors: tuple[tuple[str, dict, int, int], ...] = ()
+        self.factors: Sequence[tuple[str, dict, int, int]] = ()
 
     def cleanup(self) -> None:
         self.factors = ()

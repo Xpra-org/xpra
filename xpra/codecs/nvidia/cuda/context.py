@@ -9,9 +9,10 @@
 
 import os
 import sys
+from typing import Any
 from time import monotonic
 from threading import RLock
-from typing import Any
+from collections.abc import Sequence
 
 from xpra.codecs.constants import TransientCodecException
 from xpra.util.objects import typedict
@@ -81,7 +82,7 @@ def compute_capability(d) -> int:
     return (smmajor << 4) + smminor
 
 
-def get_pycuda_version() -> tuple[int, ...]:
+def get_pycuda_version() -> Sequence[int]:
     return pycuda.VERSION
 
 

@@ -24,6 +24,8 @@
 # G = Y - (a * e / b) * Cr - (c * d / b) * Cb
 # B = Y + d * Cb
 
+from typing import Iterable
+
 from xpra.codecs.constants import get_subsampling_divs
 
 GLSL_VERSION = "330 core"
@@ -35,7 +37,7 @@ CS_MULTIPLIERS = {
 }
 
 
-def gen_YUV_to_RGB(divs: tuple[tuple[int, int], ...], cs="bt601", full_range=True):
+def gen_YUV_to_RGB(divs: Iterable[tuple[int, int]], cs="bt601", full_range=True):
     if cs not in CS_MULTIPLIERS:
         raise ValueError(f"unsupported colorspace {cs}")
     a, b, c, d, e = CS_MULTIPLIERS[cs]

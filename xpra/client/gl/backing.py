@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 from math import sin, cos, pi
 from ctypes import c_float, c_void_p
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Sequence, Iterable
 from contextlib import AbstractContextManager, nullcontext
 
 from OpenGL.error import GLError
@@ -104,7 +104,7 @@ PIXEL_FORMAT_TO_CONSTANT: dict[str, IntConstant] = {
     "BGR565": GL_RGB,
     "RGB565": GL_RGB,
 }
-PIXEL_INTERNAL_FORMAT: dict[str, tuple[IntConstant, ...]] = {
+PIXEL_INTERNAL_FORMAT: dict[str, Sequence[IntConstant]] = {
     # defaults to: GL_R8, GL_R8, GL_R8
     # (meaning: 3 planes, 8 bits each)
     # override for formats that use 16 bit per channel:
@@ -114,7 +114,7 @@ PIXEL_INTERNAL_FORMAT: dict[str, tuple[IntConstant, ...]] = {
     "YUV444P10": (GL_R16, GL_R16, GL_R16),
     "YUV444P16": (GL_R16, GL_R16, GL_R16),
 }
-PIXEL_DATA_FORMAT: dict[str, tuple[IntConstant, ...]] = {
+PIXEL_DATA_FORMAT: dict[str, Sequence[IntConstant]] = {
     # defaults to: (GL_RED, GL_RED, GL_RED))
     # (meaning: uploading one channel at a time)
     "NV12": (GL_LUMINANCE, GL_LUMINANCE_ALPHA),  # Y is one channel, UV contains two channels
@@ -191,7 +191,7 @@ class GLWindowBackingBase(WindowBackingBase):
     or offscreen window movement.
     """
 
-    RGB_MODES: tuple[str, ...] = (
+    RGB_MODES: Sequence[str] = (
         "YUV420P", "YUV422P", "YUV444P", "NV12",
         "GBRP", "BGRA", "BGRX", "RGBA", "RGBX",
         "RGB", "BGR",

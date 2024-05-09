@@ -7,7 +7,7 @@
 import os
 import sys
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.system import is_Wayland, is_X11
@@ -301,13 +301,13 @@ def get_number_of_desktops() -> int:
     return 0
 
 
-def get_desktop_names() -> tuple[str, ...]:
+def get_desktop_names() -> Sequence[str]:
     if x11_bindings():
         from xpra.x11.common import get_desktop_names as get_x11_desktop_names
         from xpra.gtk.error import xsync
         with xsync:
             return get_x11_desktop_names()
-    return ("Main",)
+    return ("Main", )
 
 
 def get_vrefresh() -> int:
@@ -480,7 +480,7 @@ class XI2_Window:
         self.X11Window = X11WindowBindings()
         self.window = window
         self.xid = window.get_window().get_xid()
-        self.windows: tuple[int, ...] = ()
+        self.windows: Sequence[int] = ()
         self.motion_valuators = {}
         window.connect("configure-event", self.configured)
         self.configured()
@@ -515,7 +515,7 @@ class XI2_Window:
     def do_xi_hierarchy_changed(self, *_args) -> None:
         self.motion_valuators = {}
 
-    def get_parent_windows(self, oxid: int) -> tuple[int, ...]:
+    def get_parent_windows(self, oxid: int) -> Sequence[int]:
         windows = [oxid]
         root = self.X11Window.get_root_xid()
         xid = oxid

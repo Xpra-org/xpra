@@ -6,6 +6,7 @@
 #cython: wraparound=False
 
 from typing import Any, Dict, Tuple
+from collections.abc import Sequence
 from time import monotonic
 
 from libc.stdint cimport uintptr_t
@@ -109,7 +110,7 @@ def get_info() -> Dict[str, Any]:
     return {"version"   : get_version()}
 
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return ("jpeg", "jpega")
 
 
@@ -127,20 +128,20 @@ else:
     JPEG_INPUT_COLORSPACES = ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR")
 
 
-def get_input_colorspaces(encoding: str) -> Tuple[str, ...]:
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     if encoding=="jpeg":
         return JPEG_INPUT_COLORSPACES
     assert encoding=="jpega"
     return ("BGRA", "RGBA", )
 
 
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Tuple[str, ...]:
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     assert encoding in get_encodings()
     assert input_colorspace in get_input_colorspaces(encoding)
     return (input_colorspace, )
 
 
-def get_specs(encoding: str, colorspace: str):
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
     assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.constants import VideoSpec
@@ -188,7 +189,7 @@ cdef class Encoder:
         if self.compressor==NULL:
             raise RuntimeError("Error: failed to instantiate a JPEG compressor")
 
-    def init_context(self, encoding, width : int, height : int, src_format, options: typedict) -> None:
+    def init_context(self, encoding: str, width : int, height : int, src_format: str, options: typedict) -> None:
         assert encoding in ("jpeg", "jpega"), "invalid encoding: %s" % encoding
         assert src_format in get_input_colorspaces(encoding)
         scaled_width = options.intget("scaled-width", width)
@@ -243,7 +244,7 @@ cdef class Encoder:
         }
         return info
 
-    def compress_image(self, image, options=None) -> Tuple:
+    def compress_image(self, image: ImageWrapper, options=None) -> Tuple:
         options = options or {}
         quality = options.get("quality", -1)
         if quality>0:
@@ -484,7 +485,7 @@ cdef do_encode_yuv(tjhandle compressor, pfstr, planes,
     return makebuf(out, out_size)
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     log("jpeg selftest")
     from xpra.codecs.checks import make_test_image
     img = make_test_image("BGRA", 32, 32)

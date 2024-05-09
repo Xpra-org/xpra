@@ -5,6 +5,7 @@
 
 import os
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.util.str_fn import csv, ellipsizer, bytestostr
 from xpra.os_util import gi_import
@@ -39,7 +40,7 @@ class DBUS_Notifier(NotifierBase):
     def __init__(self, *args):
         super().__init__(*args)
         self.app_name_format = NOTIFICATION_APP_NAME
-        self.last_notification: tuple[Any, ...] = ()
+        self.last_notification: Sequence[Any, ...] = ()
         self.actual_notification_id: dict[int, int] = {}
         self.dbusnotify = None
         self.setup_dbusnotify()

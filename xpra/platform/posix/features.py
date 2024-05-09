@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.util.system import is_Wayland
 
 AUTOSTART = True
@@ -36,17 +38,17 @@ DEFAULT_START_ENV = (
 
 DEFAULT_SSH_CMD = "ssh"
 
-CLIPBOARDS: tuple[str, ...] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
+CLIPBOARDS: Sequence[str] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
 CLIPBOARD_GREEDY = False
 if is_Wayland():
     CLIPBOARDS = ("CLIPBOARD", "PRIMARY")
     CLIPBOARD_GREEDY = True
-CLIPBOARD_PREFERRED_TARGETS = ("UTF8_STRING", "TEXT", "STRING", "text/plain", "image/png")
+CLIPBOARD_PREFERRED_TARGETS: Sequence[str] = ("UTF8_STRING", "TEXT", "STRING", "text/plain", "image/png")
 
 OPEN_COMMAND = ("/usr/bin/xdg-open",)
 
-INPUT_DEVICES = ("auto", "xi", "uinput")
+INPUT_DEVICES: Sequence[str] = ("auto", "xi", "uinput")
 
-SOURCE = ("/etc/profile",)
+SOURCE: Sequence[str] = ("/etc/profile", )
 
-COMMAND_SIGNALS = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")
+COMMAND_SIGNALS: Sequence[str] = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")

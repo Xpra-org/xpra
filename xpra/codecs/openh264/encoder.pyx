@@ -8,6 +8,7 @@
 import os
 from time import monotonic
 from typing import Any, Dict, Tuple
+from collections.abc import Sequence
 
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
@@ -219,7 +220,7 @@ cdef extern from "wels/codec_api.h":
     void WelsDestroySVCEncoder(ISVCEncoder* pDecoder)
 
 
-FRAME_TYPES = {
+FRAME_TYPES: Dict[int, str] = {
     videoFrameTypeInvalid   : "invalid",
     videoFrameTypeIDR       : "IDR",
     videoFrameTypeI         : "I",
@@ -231,6 +232,7 @@ FRAME_TYPES = {
 COLORSPACES: Dict[str, str] = {
     "YUV420P"   : "YUV420P",
 }
+
 
 def init_module() -> None:
     log("openh264.init_module()")
@@ -256,16 +258,16 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return ("h264", )
 
 
-def get_input_colorspaces(encoding) -> Tuple[str, ...]:
+def get_input_colorspaces(encoding) -> Sequence[str]:
     assert encoding in get_encodings()
     return tuple(COLORSPACES.keys())
 
 
-def get_output_colorspaces(encoding, input_colorspace) -> Tuple[str, ...]:
+def get_output_colorspaces(encoding, input_colorspace) -> Sequence[str]:
     assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
     return (COLORSPACES[input_colorspace],)
@@ -275,7 +277,7 @@ def get_output_colorspaces(encoding, input_colorspace) -> Tuple[str, ...]:
 #MAX_WIDTH, MAX_HEIGHT = (16384, 16384)
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
-def get_specs(encoding, colorspace) -> Tuple[VideoSpec, ...]:
+def get_specs(encoding, colorspace) -> Sequence[VideoSpec]:
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
@@ -309,7 +311,7 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options:typedict=None):
+    def init_context(self, encoding: str, unsigned int width, unsigned int height, src_format: str, options:typedict=None):
         log("openh264.init_context%s", (encoding, width, height, src_format, options))
         options = options or typedict()
         assert src_format=="YUV420P", "invalid source format: %s, must be one of: %s" % (src_format, csv(COLORSPACES.keys()))

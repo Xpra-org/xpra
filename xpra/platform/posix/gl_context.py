@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 from contextlib import AbstractContextManager
 from ctypes import c_int, c_void_p, byref, cast, POINTER
 
@@ -71,7 +72,7 @@ def get_xdisplay() -> XDISPLAY:
     return cast(ptr, POINTER(struct__XDisplay))
 
 
-def get_extensions(xdisplay: int) -> tuple[str, ...]:
+def get_extensions(xdisplay: int) -> Sequence[str]:
     bext = GLX.glXQueryExtensionsString(xdisplay, 0)
     if not bext:
         return ()

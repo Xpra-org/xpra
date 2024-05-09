@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.platform.gui import init as gui_init, force_focus
@@ -78,7 +78,7 @@ class UpdateStatusWindow:
         vbox.show_all()
         self.window.vbox = vbox
         self.window.add(vbox)
-        self.newer_version: None | bool | tuple[int, ...] = None
+        self.newer_version: None | bool | Sequence[int] = None
 
     def check(self):
         if self.progress:

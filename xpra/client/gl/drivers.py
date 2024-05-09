@@ -6,10 +6,12 @@
 # later version. See the file COPYING for details.
 
 from typing import TypeAlias
+from collections.abc import Sequence
+
 
 # These chipsets will use OpenGL,
 # there will not be any warnings, even if the vendor is greylisted:
-GL_MATCH_LIST: TypeAlias = dict[str, tuple[str, ...]]
+GL_MATCH_LIST: TypeAlias = dict[str, Sequence[str]]
 
 WHITELIST: GL_MATCH_LIST = {
 }

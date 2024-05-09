@@ -7,7 +7,7 @@
 
 import sys
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.client.base.client import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper
@@ -80,7 +80,7 @@ if features.tray:
 
     CLIENT_BASES.append(TrayClient)
 
-CLIENT_BASES: tuple[type, ...] = tuple(CLIENT_BASES)
+CLIENT_BASES: Sequence[type] = tuple(CLIENT_BASES)
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 GLib = gi_import("GLib")
@@ -161,7 +161,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_keyboard: bool = True
         self.server_pointer: bool = True
         self.server_commands_info = False
-        self.server_commands_signals: tuple[str, ...] = ()
+        self.server_commands_signals: Sequence[str] = ()
         self.server_readonly = False
 
         self.client_supports_opengl: bool = False
@@ -181,8 +181,8 @@ class UIXpraClient(ClientBaseClass):
         self.menu_helper = None
 
         # state:
-        self._on_handshake: list[tuple[Callable, tuple[Any, ...]]] | None = []
-        self._on_server_setting_changed: dict[str, list[Callable]] = {}
+        self._on_handshake: Sequence[tuple[Callable, Sequence[Any]]] | None = []
+        self._on_server_setting_changed: dict[str, Sequence[Callable]] = {}
 
     def init(self, opts) -> None:
         """ initialize variables from configuration """

@@ -6,6 +6,7 @@
 
 import os.path
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX
 from xpra.util.str_fn import bytestostr
@@ -26,7 +27,7 @@ class WebcamServer(StubServerMixin):
 
     def __init__(self):
         self.webcam_device = ""
-        self.webcam_encodings: tuple[str, ...] = ()
+        self.webcam_encodings: Sequence[str] = ()
         self.webcam_enabled: bool = False
         self.webcam_virtual_video_devices: int = 0
 

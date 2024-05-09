@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from time import monotonic
 from contextlib import nullcontext
 from typing import ContextManager, Any
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.system import is_Wayland
@@ -96,7 +96,7 @@ HARDCODED_ENCODING: str = os.environ.get("XPRA_HARDCODED_ENCODING", "")
 MAX_SEQUENCE = 2**64
 
 
-def get_env_encodings(etype: str, valid_options: Iterable[str] = ()) -> tuple[str, ...]:
+def get_env_encodings(etype: str, valid_options: Iterable[str] = ()) -> Sequence[str]:
     v = os.environ.get(f"XPRA_{etype}_ENCODINGS")
     encodings = tuple(valid_options)
     if v:
@@ -107,7 +107,7 @@ def get_env_encodings(etype: str, valid_options: Iterable[str] = ()) -> tuple[st
 
 
 TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32", "jpega"))
-LOSSLESS_ENCODINGS: tuple[str, ...] = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jpeg", "jpega")
+LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jpeg", "jpega")
 if TRUE_LOSSLESS:
     LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L", "webp", "avif")
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", LOSSLESS_ENCODINGS)
@@ -178,16 +178,16 @@ class WindowSource(WindowIconSource):
                  record_congestion_event: Callable, queue_size: Callable,
                  call_in_encode_thread: Callable, queue_packet: Callable,
                  statistics,
-                 wid:int, window, batch_config, auto_refresh_delay:int,
-                 av_sync:bool, av_sync_delay:int,
+                 wid: int, window, batch_config, auto_refresh_delay: int,
+                 av_sync: bool, av_sync_delay: int,
                  video_helper,
                  cuda_device_context,
-                 server_core_encodings:tuple[str,...], server_encodings:tuple[str,...],
-                 encoding:str, encodings:tuple[str,...], core_encodings:tuple[str,...], window_icon_encodings:tuple[str,...],
-                 encoding_options:typedict, icons_encoding_options:typedict,
-                 rgb_formats:tuple[str,...],
+                 server_core_encodings: Sequence[str], server_encodings: Sequence[str],
+                 encoding:str, encodings: Sequence[str], core_encodings: Sequence[str], window_icon_encodings: Sequence[str],
+                 encoding_options:typedict, icons_encoding_options: typedict,
+                 rgb_formats: Sequence[str],
                  default_encoding_options,
-                 mmap, mmap_size:int, bandwidth_limit:int, jitter:int):
+                 mmap, mmap_size: int, bandwidth_limit: int, jitter: int):
         super().__init__(window_icon_encodings, icons_encoding_options)
         # mmap:
         self._mmap = mmap
@@ -220,7 +220,7 @@ class WindowSource(WindowIconSource):
         self.server_encodings = server_encodings
         self.encoding = encoding                        # the current encoding
         self.encodings = encodings                      # all the encodings supported by the client
-        self.common_encodings: tuple[str, ...] = ()
+        self.common_encodings: Sequence[str] = ()
         self.core_encodings = core_encodings            # the core encodings supported by the client
         self.picture_encodings = ()                     # non-video only
         self.rgb_formats = rgb_formats                  # supported RGB formats (RGB, RGBA, ...) - used by mmap
@@ -230,7 +230,7 @@ class WindowSource(WindowIconSource):
         self.client_bit_depth : int = encoding_options.intget("bit-depth", 24)
         self.supports_transparency : bool = HAS_ALPHA and encoding_options.boolget("transparency", True)
         self.full_frames_only : bool = self.is_tray or encoding_options.boolget("full_frames_only")
-        self.client_refresh_encodings : tuple[str, ...] = encoding_options.strtupleget("auto_refresh_encodings")
+        self.client_refresh_encodings : Sequence[str] = encoding_options.strtupleget("auto_refresh_encodings")
         self.max_soft_expired : int = max(0, min(100, encoding_options.intget("max-soft-expired", MAX_SOFT_EXPIRED)))
         self.send_timetamps : bool = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
         self.send_window_size : bool = encoding_options.boolget("send-window-size", False)
@@ -430,7 +430,7 @@ class WindowSource(WindowIconSource):
         self.encoding = ""
         self.encodings = ()
         self.encoding_last_used = ""
-        self.auto_refresh_encodings: tuple[str, ...] = ()
+        self.auto_refresh_encodings: Sequence[str] = ()
         self.core_encodings = ()
         self.rgb_formats = ()
         self.full_csc_modes = typedict()
@@ -900,7 +900,7 @@ class WindowSource(WindowIconSource):
         if (self.refresh_quality < 100 or not TRUE_LOSSLESS) and self.image_depth > 16:
             ropts.add("jpeg")
             ropts.add("jpega")
-        are : tuple[str,...] = ()
+        are: Sequence[str] = ()
         if self.supports_transparency:
             are = tuple(x for x in self.common_encodings if x in ropts and x in TRANSPARENCY_ENCODINGS)
         if not are:

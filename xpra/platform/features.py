@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.platform import platform_import
@@ -15,48 +16,48 @@ CAN_DAEMONIZE: bool = True
 REINIT_WINDOWS: bool = False
 AUTOSTART: bool = False
 
-INPUT_DEVICES: tuple[str, ...] = ("auto",)
+INPUT_DEVICES: Sequence[str] = ("auto",)
 
-SOURCE: tuple[str, ...] = ()
+SOURCE: Sequence[str] = ()
 
 SYSTEM_PROXY_SOCKET: str = os.environ.get("XPRA_SYSTEM_PROXY_SOCKET", "/run/xpra/system")
 
-CLIPBOARDS: tuple[str, ...] = ()
+CLIPBOARDS: Sequence[str] = ()
 CLIPBOARD_WANT_TARGETS: bool = envbool("XPRA_CLIPBOARD_WANT_TARGETS")
 CLIPBOARD_GREEDY: bool = envbool("XPRA_CLIPBOARD_GREEDY")
-CLIPBOARD_PREFERRED_TARGETS: tuple[str, ...] = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
+CLIPBOARD_PREFERRED_TARGETS: Sequence[str] = ("UTF8_STRING", "TEXT", "STRING", "text/plain")
 
 EXECUTABLE_EXTENSION: str = ""
 
-OPEN_COMMAND: list[str] = []
+OPEN_COMMAND: Sequence[str] = ()
 
-COMMAND_SIGNALS: tuple[str, ...] = ()
+COMMAND_SIGNALS: Sequence[str] = ()
 
-DEFAULT_START_ENV: tuple[str, ...] = ()
-DEFAULT_ENV: tuple[str, ...] = ()
+DEFAULT_START_ENV: Sequence[str] = ()
+DEFAULT_ENV: Sequence[str] = ()
 
 # DEFAULT_SSH_COMMAND = "paramiko"
 DEFAULT_SSH_COMMAND: str = "ssh -x"
-DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS: tuple[tuple[str, str, str], ...] = (
+DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS: Sequence[tuple[str, str, str]] = (
     ("pactl", "set-default-sink", "Xpra-Speaker"),
     ("pactl", "set-default-source", "Xpra-Mic-Source"),
 )
 
-SOCKET_OPTIONS: tuple[str, ...] = (
+SOCKET_OPTIONS: Sequence[str] = (
     "SO_BROADCAST", "SO_RCVLOWAT",
     "SO_DONTROUTE", "SO_ERROR", "SO_EXCLUSIVEADDRUSE",
     "SO_KEEPALIVE", "SO_LINGER", "SO_OOBINLINE", "SO_RCVBUF",
     "SO_RCVTIMEO", "SO_REUSEADDR", "SO_REUSEPORT",
     "SO_SNDBUF", "SO_SNDTIMEO", "SO_TIMEOUT", "SO_TYPE",
 )
-IP_OPTIONS: tuple[str, ...] = (
+IP_OPTIONS: Sequence[str] = (
     # "IP_MULTICAST_IF", "IP_MULTICAST_LOOP", "IP_MULTICAST_TTL",
     "IP_DONTFRAG", "IP_OPTIONS", "IP_RECVLCLIFADDR",
     "IP_RECVPKTINFO", "IP_TOS", "IP_TTL",
 )
-TCP_OPTIONS: tuple[str, ...] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
+TCP_OPTIONS: Sequence[str] = ("TCP_NODELAY", "TCP_MAXSEG", "TCP_KEEPALIVE")
 
-_features_list_: tuple[str, ...] = (
+_features_list_: Sequence[str] = (
     "AUTOSTART",
     "CAN_DAEMONIZE",
     "REINIT_WINDOWS",

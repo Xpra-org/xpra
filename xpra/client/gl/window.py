@@ -8,7 +8,7 @@ import os
 from io import BytesIO
 from math import cos, sin
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.objects import AtomicInteger, typedict
@@ -22,7 +22,7 @@ from xpra.client.gui.fake_client import FakeClient
 log = Logger("opengl", "paint")
 
 
-def get_opengl_module_names(opengl="on") -> tuple[str, ...]:
+def get_opengl_module_names(opengl="on") -> Sequence[str]:
     log(f"get_opengl_module_names({opengl})")
     # ie: "auto", "no", "probe-success", "yes:gtk", "gtk", "yes:native", "native"
     parts = opengl.lower().split(":")

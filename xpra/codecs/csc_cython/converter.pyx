@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2013 Arthur Huillet
-# Copyright (C) 2012-2023 Antoine Martin <antoine@devloop.org.uk>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@devloop.org.uk>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,7 +10,9 @@ import os
 import sys
 import time
 from typing import Any, Tuple, List, Dict
+from collections.abc import Sequence
 
+from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 log = Logger("csc", "cython")
 
@@ -72,18 +74,19 @@ def get_CS(in_cs, valid_options):
             log.warn("invalid colorspace override for %s: %s (only supports: %s)", in_cs, cs, valid_options)
     log("environment override for %s: %s", in_cs, env_override)
     return env_override
+
 COLORSPACES = {
-               "BGRX"       : get_CS("BGRX",    ["YUV420P"]),
-               "RGBX"       : get_CS("RGBX",    ["YUV420P"]),
-               "BGR"        : get_CS("BGR",     ["YUV420P"]),
-               "RGB"        : get_CS("RGB",     ["YUV420P"]),
-               "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX"]),
-               "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
-               "r210"       : get_CS("r210",    ["YUV420P", "BGR48", "YUV444P10"]),
-               "YUV444P10"  : get_CS("YUV444P10", ["r210"]),
-               "YUV444P"    : get_CS("YUV444P",  ["BGRX", ]),
-               "GBRP10"     : get_CS("GBRP10",  ["r210", ]),
-               }
+    "BGRX"       : get_CS("BGRX",    ["YUV420P"]),
+    "RGBX"       : get_CS("RGBX",    ["YUV420P"]),
+    "BGR"        : get_CS("BGR",     ["YUV420P"]),
+    "RGB"        : get_CS("RGB",     ["YUV420P"]),
+    "YUV420P"    : get_CS("YUV420P", ["RGB", "BGR", "RGBX", "BGRX"]),
+    "GBRP"       : get_CS("GBRP",    ["RGBX", "BGRX"]),
+    "r210"       : get_CS("r210",    ["YUV420P", "BGR48", "YUV444P10"]),
+    "YUV444P10"  : get_CS("YUV444P10", ["r210"]),
+    "YUV444P"    : get_CS("YUV444P",  ["BGRX", ]),
+    "GBRP10"     : get_CS("GBRP10",  ["r210", ]),
+}
 
 
 def init_module() -> None:
@@ -109,15 +112,15 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-def get_input_colorspaces() -> Tuple[str, ...]:
+def get_input_colorspaces() -> Sequence[str]:
     return tuple(COLORSPACES.keys())
 
 
-def get_output_colorspaces(input_colorspace) -> List[str]:
+def get_output_colorspaces(input_colorspace) -> Sequence[str]:
     return COLORSPACES[input_colorspace]
 
 
-def get_spec(in_colorspace:str, out_colorspace:str) -> CSCSpec:
+def get_spec(in_colorspace: str, out_colorspace: str) -> CSCSpec:
     assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
     assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
     can_scale = True
@@ -352,8 +355,8 @@ cdef class Converter:
 
     cdef object __weakref__
 
-    def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, options=None) -> None:
+    def init_context(self, int src_width, int src_height, src_format: str,
+                           int dst_width, int dst_height, dst_format: str, options=None) -> None:
         cdef int i
         assert src_format in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (src_format, get_input_colorspaces())
         assert dst_format in get_output_colorspaces(src_format), "invalid output colorspace: %s (must be one of %s)" % (dst_format, get_output_colorspaces(src_format))
@@ -528,7 +531,7 @@ cdef class Converter:
         return  "cython"
 
 
-    def convert_image(self, image) -> CythonImageWrapper:
+    def convert_image(self, image: ImageWrapper) -> CythonImageWrapper:
         cdef double start = time.time()
         fn = self.convert_image_function
         r = fn(image)
@@ -539,23 +542,23 @@ cdef class Converter:
         return r
 
 
-    def r210_to_YUV420P(self, image) -> CythonImageWrapper:
+    def r210_to_YUV420P(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 4, 0, 0, 0)
 
-    def BGR_to_YUV420P(self, image) -> CythonImageWrapper:
+    def BGR_to_YUV420P(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 3, BGR_R, BGR_G, BGR_B)
 
-    def RGB_to_YUV420P(self, image) -> CythonImageWrapper:
+    def RGB_to_YUV420P(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 3, RGB_R, RGB_G, RGB_B)
 
-    def BGRX_to_YUV420P(self, image) -> CythonImageWrapper:
+    def BGRX_to_YUV420P(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 4, BGRX_R, BGRX_G, BGRX_B)
 
-    def RGBX_to_YUV420P(self, image) -> CythonImageWrapper:
+    def RGBX_to_YUV420P(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_RGB_to_YUV420P(image, 4, RGBX_R, RGBX_G, RGBX_B)
 
     cdef do_RGB_to_YUV420P(self,
-                           image,
+                           image: ImageWrapper,
                            const uint8_t Bpp,
                            const uint8_t Rindex,
                            const uint8_t Gindex,
@@ -682,14 +685,13 @@ cdef class Converter:
         out_image.cython_buffer = <uintptr_t> buf
         return out_image
 
-
-    def validate_rgb_image(self, image) -> None:
+    def validate_rgb_image(self, image: ImageWrapper) -> None:
         assert image.get_planes()==ImageWrapper.PACKED, "invalid input format: %s planes" % image.get_planes()
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         assert image.get_pixels(), "failed to get pixels from %s" % image
 
-    def r210_to_YUV444P10(self, image) -> CythonImageWrapper:
+    def r210_to_YUV444P10(self, image: ImageWrapper) -> CythonImageWrapper:
         self.validate_rgb_image(image)
         pixels = image.get_pixels()
         cdef unsigned int input_stride = image.get_rowstride()
@@ -721,7 +723,7 @@ cdef class Converter:
                                        input_stride)
         return self.planar3_image_wrapper(output_image)
 
-    def YUV444P10_to_r210(self, image) -> CythonImageWrapper:
+    def YUV444P10_to_r210(self, image: ImageWrapper) -> CythonImageWrapper:
         self.validate_planar3_image(image)
         planes = image.get_pixels()
         input_strides = image.get_rowstride()
@@ -762,7 +764,7 @@ cdef class Converter:
             PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(output_image, 30)
 
-    def YUV444P_to_BGRX(self, image) -> CythonImageWrapper:
+    def YUV444P_to_BGRX(self, image: ImageWrapper) -> CythonImageWrapper:
         self.validate_planar3_image(image)
         planes = image.get_pixels()
         input_strides = image.get_rowstride()
@@ -803,8 +805,7 @@ cdef class Converter:
             PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(output_image, 30)
 
-
-    def r210_to_BGR48(self, image) -> CythonImageWrapper:
+    def r210_to_BGR48(self, image: ImageWrapper) -> CythonImageWrapper:
         self.validate_rgb_image(image)
         pixels = image.get_pixels()
         input_stride = image.get_rowstride()
@@ -836,13 +837,13 @@ cdef class Converter:
         out_image.cython_buffer = <uintptr_t> buf
         return out_image
 
-    def validate_planar3_image(self, image) -> None:
+    def validate_planar3_image(self, image: ImageWrapper) -> None:
         assert image.get_planes()==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % image.get_planes()
         assert image.get_width()>=self.src_width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.src_width)
         assert image.get_height()>=self.src_height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.src_height)
         assert image.get_pixels(), "failed to get pixels from %s" % image
 
-    def GBRP10_to_r210(self, image) -> CythonImageWrapper:
+    def GBRP10_to_r210(self, image: ImageWrapper) -> CythonImageWrapper:
         self.validate_planar3_image(image)
         pixels = image.get_pixels()
         input_strides = image.get_rowstride()
@@ -880,20 +881,19 @@ cdef class Converter:
             PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(<char *> r210, 30)
 
-
-    def YUV420P_to_RGBX(self, image) -> CythonImageWrapper:
+    def YUV420P_to_RGBX(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_YUV420P_to_RGB(image, 4, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
 
-    def YUV420P_to_RGB(self, image) -> CythonImageWrapper:
+    def YUV420P_to_RGB(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_YUV420P_to_RGB(image, 3, RGB_R, RGB_G, RGB_B, 0)
 
-    def YUV420P_to_BGRX(self, image) -> CythonImageWrapper:
+    def YUV420P_to_BGRX(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_YUV420P_to_RGB(image, 4, BGRX_R, BGRX_G, BGRX_B, BGRX_X)
 
-    def YUV420P_to_BGR(self, image) -> CythonImageWrapper:
+    def YUV420P_to_BGR(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_YUV420P_to_RGB(image, 3, BGR_R, BGR_G, BGR_B, 0)
 
-    cdef do_YUV420P_to_RGB(self, image,
+    cdef do_YUV420P_to_RGB(self, image: ImageWrapper,
                            const uint8_t Bpp,
                            const uint8_t Rindex,
                            const uint8_t Gindex,
@@ -968,14 +968,13 @@ cdef class Converter:
             PyBuffer_Release(&py_buf[i])
         return self.packed_image_wrapper(<char *> output_image, 24)
 
-
-    def GBRP_to_RGBX(self, image) -> CythonImageWrapper:
+    def GBRP_to_RGBX(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_RGBP_to_RGB(image, 2, 0, 1, RGBX_R, RGBX_G, RGBX_B, RGBX_X)
 
-    def GBRP_to_BGRX(self, image) -> CythonImageWrapper:
+    def GBRP_to_BGRX(self, image: ImageWrapper) -> CythonImageWrapper:
         return self.do_RGBP_to_RGB(image, 2, 0, 1, RGBX_B, RGBX_G, RGBX_R, RGBX_X)
 
-    cdef do_RGBP_to_RGB(self, image,
+    cdef do_RGBP_to_RGB(self, image: ImageWrapper,
                         const uint8_t Rsrc,
                         const uint8_t Gsrc,
                         const uint8_t Bsrc,

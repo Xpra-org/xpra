@@ -10,7 +10,7 @@ import platform
 from typing import Any
 from time import monotonic
 from collections import deque
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.version import XPRA_VERSION, revision_str, make_revision_str, caps_to_revision
@@ -158,8 +158,8 @@ def make_os_str(sys_platform, platform_release, platform_platform, platform_linu
     s = [platform_name(sys_platform, platform_release)]
     pld = platform_linux_distribution
 
-    def remstr(values: Iterable) -> Iterable[str]:
-        return (v for v in values if v not in (None, "", "n/a"))
+    def remstr(values: Sequence) -> Sequence[str]:
+        return (str(v) for v in values if v not in (None, "", "n/a"))
     if pld and len(pld) == 3 and pld[0]:
         s.append(" ".join(remstr(pld)))
     elif platform_platform:

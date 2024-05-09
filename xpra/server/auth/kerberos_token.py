@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from collections.abc import Sequence
 
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
@@ -33,7 +34,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "kerberos-token"
 
-    def get_challenge(self, digests: tuple[str, ...]):
+    def get_challenge(self, digests: Sequence[str]):
         assert not self.challenge_sent
         self.req_challenge(digests, "kerberos")
         self.salt = get_salt()

@@ -7,6 +7,7 @@ import os
 import re
 from time import monotonic
 from typing import Any
+from collections.abc import Sequence
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT, POINT, BYTE
 
@@ -52,7 +53,7 @@ NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
 GDI = envbool("XPRA_SHADOW_GDI", True)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
-GSTREAMER_CAPTURE_ELEMENTS: tuple[str, ...] = ("d3d11screencapturesrc", "dx9screencapsrc", "gdiscreencapsrc")
+GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = ("d3d11screencapturesrc", "dx9screencapsrc", "gdiscreencapsrc")
 
 
 def check_gstreamer() -> bool:

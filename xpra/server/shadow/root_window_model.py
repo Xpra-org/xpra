@@ -4,8 +4,9 @@
 # later version. See the file COPYING for details.
 
 import socket
-from collections import namedtuple
 from typing import Any
+from collections import namedtuple
+from collections.abc import Sequence
 
 from xpra.util.system import get_linux_distribution, get_generic_os_name, do_get_generic_os_name
 from xpra.util.io import load_binary_file
@@ -15,7 +16,7 @@ from xpra.log import Logger
 log = Logger("shadow")
 
 
-def get_os_icons() -> tuple[tuple[int, int, str, bytes], ...]:
+def get_os_icons() -> Sequence[tuple[int, int, str, bytes]]:
     try:
         from PIL import Image  # pylint: disable=import-outside-toplevel
     except ImportError:

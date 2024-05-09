@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
+from collections.abc import Sequence
 
 from xpra.net.digest import get_salt, choose_digest
 from xpra.server.auth.sys_auth_base import SysAuthenticator
@@ -46,7 +47,7 @@ class FileAuthenticatorBase(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests: tuple[str, ...]) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str] | None:
         if self.salt is not None:
             log.error("challenge already sent!")
             if self.salt is not False:

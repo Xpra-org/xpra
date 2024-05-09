@@ -8,7 +8,7 @@
 import os
 import weakref
 from time import monotonic
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
@@ -1346,7 +1346,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             err("Error loading OpenGL support:", e)
 
     def get_client_window_classes(self, w: int, h: int, metadata: typedict,
-                                  override_redirect: bool) -> tuple[type, ...]:
+                                  override_redirect: bool) -> Sequence[type]:
         log("get_client_window_class%s", (w, h, metadata, override_redirect))
         log(" ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s",
             self.ClientWindowClass, self.GLClientWindowClass,

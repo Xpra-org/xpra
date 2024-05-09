@@ -9,6 +9,7 @@ from math import sqrt
 from time import monotonic
 from typing import Any
 from collections import deque
+from collections.abc import Sequence
 
 from xpra.server.cystats import (
     logp, calculate_time_weighted_average, calculate_size_weighted_average,
@@ -113,7 +114,7 @@ class GlobalPerformanceStatistics:
         self.client_latency.append((wid, now, pixels, net_total_latency))
         self.frame_total_latency.append((wid, now, pixels, latency))
 
-    def get_damage_pixels(self, wid: int) -> tuple[tuple[float, int], ...]:
+    def get_damage_pixels(self, wid: int) -> Sequence[tuple[float, int]]:
         """ returns the tuple of (event_time, pixelcount) for the given window id """
         return tuple(
             (event_time, value) for event_time, dwid, value in tuple(self.damage_packet_qpixels) if dwid == wid)

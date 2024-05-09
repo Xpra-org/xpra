@@ -6,7 +6,7 @@
 import os
 import hmac
 import hashlib
-from collections.abc import Callable, ByteString
+from collections.abc import Callable, ByteString, Sequence
 
 from xpra.util.str_fn import csv, strtobytes, hexstr, memoryview_to_bytes
 from xpra.util.env import envint
@@ -18,7 +18,7 @@ BLACKLISTED_HASHES = ("sha1", "md5")
 DEFAULT_SALT_LENGTH = envint("XPRA_DEFAULT_SALT_LENGTH", 64)
 
 
-def get_digests() -> tuple[str, ...]:
+def get_digests() -> Sequence[str]:
     digests = ["xor"]
     digests += [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
                 if not x.startswith("shake_") and x not in BLACKLISTED_HASHES and getattr(hashlib, x, None) is not None]
@@ -46,7 +46,7 @@ def get_digest_module(digest: str) -> Callable | None:
         return None
 
 
-def choose_digest(options) -> str:
+def choose_digest(options: Sequence[str]) -> str:
     assert len(options) > 0, "no digest options"
     log(f"choose_digest({options})")
     # prefer stronger hashes:

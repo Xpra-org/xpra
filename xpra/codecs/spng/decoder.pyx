@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2021-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
 from typing import Tuple, Dict
+from collections.abc import Sequence
 
 from xpra.log import Logger
 log = Logger("decoder", "spng")
@@ -20,7 +21,7 @@ from xpra.codecs.spng.spng cimport (
     spng_ctx_new, spng_ctx_free,
     spng_get_ihdr, spng_format,
     spng_decode_image, spng_set_png_buffer, spng_decoded_image_size,
-    )
+)
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from xpra.util.env import envint
@@ -47,7 +48,7 @@ def get_version() -> Tuple[int, int, int]:
     return (SPNG_VERSION_MAJOR, SPNG_VERSION_MINOR, SPNG_VERSION_PATCH)
 
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return ("png", "png/L", "png/P")
 
 
@@ -67,7 +68,7 @@ def log_error(int r, msg) -> None:
     log.error(" code %i: %s", r, get_error_str(r))
 
 
-def decompress(data) -> Tuple:
+def decompress(data) -> Tuple[memoryview, str, int, int]:
     cdef spng_ctx *ctx = spng_ctx_new(0)
     if ctx==NULL:
         raise RuntimeError("failed to instantiate an spng context")
@@ -140,7 +141,7 @@ def decompress(data) -> Tuple:
     return memoryview(membuf), rgb_format, ihdr.width, ihdr.height
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     log("spng version %s selftest" % (get_version(),))
     from xpra.codecs.checks import TEST_PICTURES   # pylint: disable=import-outside-toplevel
     for size, samples in TEST_PICTURES["png"].items():

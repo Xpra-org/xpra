@@ -4,7 +4,8 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Tuple
+from typing import Tuple, Dict
+from collections.abc import Sequence
 
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t    # pylint: disable=syntax-error
 from libc.string cimport memset  # pylint: disable=syntax-error
@@ -32,11 +33,12 @@ from xpra.codecs.avif.avif cimport (
     avifImageRGBToYUV,
     avifRGBImageSetDefaults,
     avifResultToString,
-    )
+)
 
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.net.compression import Compressed
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.debug import may_save_image
 from xpra.log import Logger
 log = Logger("encoder", "avif")
@@ -48,7 +50,7 @@ DEF AVIF_PLANE_COUNT_YUV = 3
 def get_type() -> str:
     return "avif"
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> Sequence[str, ...]:
     return ("avif", )
 
 def get_version() -> Tuple[int, int, int]:
@@ -67,7 +69,7 @@ def cleanup_module() -> None:
     log("avif.cleanup_module()")
 
 
-AVIF_PIXEL_FORMAT = {
+AVIF_PIXEL_FORMAT: Dict[int, str] = {
     AVIF_PIXEL_FORMAT_NONE      : "NONE",
     AVIF_PIXEL_FORMAT_YUV444    : "YUV444",
     AVIF_PIXEL_FORMAT_YUV422    : "YUV422",
@@ -75,7 +77,7 @@ AVIF_PIXEL_FORMAT = {
     AVIF_PIXEL_FORMAT_YUV400    : "YUV400",
 }
 
-INPUT_PIXEL_FORMATS = {
+INPUT_PIXEL_FORMATS: Dict[str, int] = {
     "RGBX"  : AVIF_RGB_FORMAT_RGBA,
     "RGBA"  : AVIF_RGB_FORMAT_RGBA,
     "BGRX"  : AVIF_RGB_FORMAT_BGRA,
@@ -87,12 +89,13 @@ INPUT_PIXEL_FORMATS = {
 }
 
 
-cdef check(avifResult r, message):
+cdef check(avifResult r, message: str):
     if r != AVIF_RESULT_OK:
         err = avifResultToString(r) or AVIF_RESULT.get(r, r)
         raise RuntimeError("%s : %s" % (message, err))
 
-def encode(coding: str, image, options=None) -> Tuple:
+
+def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     options = typedict(options or {})
     pixel_format = image.get_pixel_format()
     if pixel_format not in INPUT_PIXEL_FORMATS:

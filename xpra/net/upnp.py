@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util.str_fn import csv
+from collections.abc import Sequence
 
 
 def upnp_add(socktype: str, info, options):
@@ -50,7 +51,7 @@ def upnp_add(socktype: str, info, options):
                 device = upnp.get_igd()
                 log("using IGD device %s", device)
             except Exception as e:
-                dstr: tuple[str, ...] = ()
+                dstr: Sequence[str] = ()
                 if devices:
                     dstr = (
                         "%i devices:" % len(devices),

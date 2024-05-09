@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.server import features
 from xpra.util.str_fn import print_nested_dict
@@ -14,7 +15,7 @@ from xpra.log import Logger
 log = Logger("server")
 
 
-def get_enabled_mixins() -> tuple[type, ...]:
+def get_enabled_mixins() -> Sequence[type]:
     # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo import ClientInfoMixin
     mixins: list[type] = [ClientInfoMixin]
@@ -66,7 +67,7 @@ def get_enabled_mixins() -> tuple[type, ...]:
     return tuple(mixins)
 
 
-def get_needed_based_classes(caps: typedict) -> tuple[type, ...]:
+def get_needed_based_classes(caps: typedict) -> Sequence[type]:
     from xpra.server.source.client_connection import ClientConnection
     classes = [ClientConnection]
     mixins = get_enabled_mixins()

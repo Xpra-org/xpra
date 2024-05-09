@@ -15,7 +15,7 @@ import optparse
 import warnings
 from urllib import parse
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from importlib.util import find_spec
 
 from xpra.util.str_fn import csv
@@ -760,7 +760,7 @@ def supports_shadow() -> bool:
     return has_module("xpra.server.shadow")
 
 
-def get_subcommands() -> tuple[str, ...]:
+def get_subcommands() -> Sequence[str]:
     return tuple(x.split(" ")[0] for x in get_usage())
 
 
@@ -1957,7 +1957,7 @@ def parse_command_line(cmdline, defaults):
     return options, args
 
 
-def validated_encodings(encodings) -> tuple[str, ...]:
+def validated_encodings(encodings) -> Sequence[str]:
     try:
         from xpra.codecs.constants import preforder
     except ImportError:

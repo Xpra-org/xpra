@@ -18,7 +18,7 @@ from queue import SimpleQueue
 from threading import Thread
 from typing import Any
 from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.platform.gui import (
     get_window_min_size, get_window_max_size,
@@ -197,8 +197,8 @@ class WindowClient(StubClientMixin):
 
         self.server_window_frame_extents: bool = False
         self.server_is_desktop: bool = False
-        self.server_window_states: tuple[str, ...] = ()
-        self.server_window_signals: tuple[str, ...] = ()
+        self.server_window_states: Sequence[str] = ()
+        self.server_window_signals: Sequence[str] = ()
 
         self.server_input_devices = None
         self.server_precise_wheel: bool = False
@@ -468,7 +468,7 @@ class WindowClient(StubClientMixin):
 
     def send_wheel_delta(self, device_id: int, wid: int, button: int, distance, pointer=None, props=None) -> float:
         modifiers = self.get_current_modifiers()
-        buttons: tuple[int, ...] = ()
+        buttons: Sequence[int] = ()
         mouselog("send_wheel_deltas%s precise wheel=%s, modifiers=%s, pointer=%s",
                  (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
@@ -1145,7 +1145,7 @@ class WindowClient(StubClientMixin):
         # subclasses that wish to implement the feature may override this method
         return None
 
-    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect) -> tuple[type, ...]:
+    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect) -> Sequence[type]:
         return (self.ClientWindowClass,)
 
     def _process_new_window(self, packet: PacketType) -> None:

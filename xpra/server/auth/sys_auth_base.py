@@ -1,12 +1,12 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 from collections import deque
 from typing import Deque
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.common import SocketState
 from xpra.platform.info import get_username
@@ -112,7 +112,7 @@ class SysAuthenticatorBase:
         if required not in digests:
             raise RuntimeError(f"{self!r} authenticator requires the {required!r} digest")
 
-    def get_challenge(self, digests: tuple[str, ...]) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str] | None:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None
@@ -124,7 +124,7 @@ class SysAuthenticatorBase:
         self.challenge_sent = True
         return self.salt, self.digest
 
-    def get_passwords(self) -> tuple[str, ...]:
+    def get_passwords(self) -> Sequence[str]:
         """ this default implementation just returns a tuple
             with the password from `get_password` if there is one """
         p = self.get_password()  # pylint: disable=assignment-from-none

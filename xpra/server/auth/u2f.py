@@ -11,6 +11,7 @@ import binascii
 import base64
 from struct import pack, unpack
 from hashlib import sha256
+from collections.abc import Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, strtobytes, hexstr
@@ -83,7 +84,7 @@ class Authenticator(SysAuthenticator):
             raise RuntimeError("u2f authenticator requires at least one public key")
         self.authenticate_check = self.u2f_check
 
-    def get_challenge(self, digests: tuple[str, ...]) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str] | None:
         if "u2f" not in digests:
             log.error("Error: client does not support u2f authentication")
             return None

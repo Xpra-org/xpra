@@ -10,7 +10,7 @@ import ctypes
 import struct
 from weakref import WeakValueDictionary
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 import objc
 import Quartz
@@ -320,7 +320,7 @@ def get_display_modes_info(modes) -> dict[int, Any]:
     return {i: get_display_mode_info(mode) for i, mode in enumerate(modes)}
 
 
-def _call_CG_conv(defs: tuple[tuple[str, str, Callable], ...], argument) -> dict[str, Any]:
+def _call_CG_conv(defs: Sequence[tuple[str, str, Callable]], argument) -> dict[str, Any]:
     # utility for calling functions on CG with an argument,
     # then convert the return value using another function
     # missing functions are ignored, and None values are skipped

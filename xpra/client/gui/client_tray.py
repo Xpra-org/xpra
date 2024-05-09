@@ -5,7 +5,7 @@
 
 from time import time
 from typing import Any
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.client.gui.widget_base import ClientWidgetBase
@@ -160,7 +160,7 @@ class ClientTray(ClientWidgetBase):
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int, options: typedict,
-                    callbacks: Iterable[Callable]):
+                    callbacks: Sequence[Callable]):
         log("%s.draw_region%s", self,
             (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, options, callbacks))
 
@@ -213,7 +213,7 @@ class TrayBacking(WindowBackingBase):
 
     # keep it simple: only accept 32-bit RGB(X),
     # all tray implementations support alpha
-    RGB_MODES: tuple[str, ...] = ("RGBA", "RGBX")
+    RGB_MODES: Sequence[str] = ("RGBA", "RGBX")
     HAS_ALPHA = True
 
     def __init__(self, wid: int, _w: int, _h: int, _has_alpha: bool, data=None):

@@ -1,10 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import base64
 import binascii
+from collections.abc import Sequence
 
 from xpra.util.str_fn import obsc
 from xpra.util.env import envbool
@@ -53,7 +54,7 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests: tuple[str, ...]) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str] | None:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
             return None

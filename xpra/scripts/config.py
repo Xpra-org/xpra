@@ -10,7 +10,7 @@ import os
 import glob
 import shlex
 from typing import Any
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
 from xpra.util.str_fn import csv
@@ -781,14 +781,14 @@ BIND_OPTIONS : list[str] = [
 
 # keep track of the options added since v5,
 # so we can generate command lines that work with older supported versions:
-OPTIONS_ADDED_SINCE_V5 : list[str] = [
+OPTIONS_ADDED_SINCE_V5: list[str] = [
     "minimal",
 ]
-OPTIONS_COMPAT_NAMES : dict[str, str] = {
-    "--compression_level=" : "-z"
+OPTIONS_COMPAT_NAMES: dict[str, str] = {
+    "--compression_level=": "-z"
 }
 
-CLIENT_OPTIONS : list[str] = [
+CLIENT_OPTIONS: list[str] = [
     "title", "username", "password", "session-name",
     "dock-icon", "tray-icon", "window-icon",
     "clipboard", "clipboard-direction", "clipboard-filter-file",
@@ -824,7 +824,7 @@ CLIENT_OPTIONS : list[str] = [
     "env",
 ]
 
-CLIENT_ONLY_OPTIONS : list[str] = [
+CLIENT_ONLY_OPTIONS: list[str] = [
     "username", "swap-keys", "dock-icon",
     "tray", "delay-tray", "tray-icon",
     "attach",
@@ -833,7 +833,7 @@ CLIENT_ONLY_OPTIONS : list[str] = [
 
 # options that clients can pass to the proxy
 # and which will be forwarded to the new proxy instance process:
-PROXY_START_OVERRIDABLE_OPTIONS : list[str] = [
+PROXY_START_OVERRIDABLE_OPTIONS: list[str] = [
     "env", "start-env", "chdir",
     "dpi",
     "encoding", "encodings",
@@ -1234,10 +1234,10 @@ CLONES: dict[str, str] = {}
 NO_FILE_OPTIONS = ("daemon", )
 
 
-TRUE_OPTIONS: tuple[Any, ...] = ("yes", "true", "1", "on", True)
-FALSE_OPTIONS: tuple[Any, ...] = ("no", "false", "0", "off", False)
-ALL_BOOLEAN_OPTIONS: tuple[Any, ...] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
-OFF_OPTIONS: tuple[str, ...] = ("off", )
+TRUE_OPTIONS: Sequence[str, bool] = ("yes", "true", "1", "on", True)
+FALSE_OPTIONS: Sequence[str, bool] = ("no", "false", "0", "off", False)
+ALL_BOOLEAN_OPTIONS: Sequence[str, bool] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
+OFF_OPTIONS: Sequence[str] = ("off", )
 
 
 def str_to_bool(v: Any, default: bool = True) -> bool:

@@ -6,14 +6,14 @@
 from queue import SimpleQueue
 from threading import Timer, RLock
 from typing import Any, TypeAlias
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.util.objects import AtomicInteger
 from xpra.log import Logger
 
 log = Logger("util")
 
-ScheduledItemType: TypeAlias = tuple[Callable, tuple[Any, ...], dict[str, Any]]
+ScheduledItemType: TypeAlias = tuple[Callable, Sequence[Any], dict[str, Any]]
 
 
 # emulate the glib main loop using a single thread + queue:

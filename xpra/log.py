@@ -11,13 +11,13 @@ import logging
 import weakref
 import itertools
 from typing import Any, Final
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
 # This module is used by non-GUI programs and thus must not import gtk.
 
 LOG_PREFIX: str = ""
 LOG_FORMAT: str = "%(asctime)s %(message)s"
-DEBUG_MODULES: tuple[str, ...] = ()
+DEBUG_MODULES: Sequence[str] = ()
 if os.name != "posix" or os.getuid() != 0:
     LOG_FORMAT = os.environ.get("XPRA_LOG_FORMAT", LOG_FORMAT)
     LOG_PREFIX = os.environ.get("XPRA_LOG_PREFIX", LOG_PREFIX)
@@ -26,7 +26,7 @@ NOPREFIX_FORMAT: Final[str] = "%(message)s"
 
 
 BACKTRACE_LEVEL = int(os.environ.get("XPRA_LOG_BACKTRACE_LEVEL", logging.CRITICAL))
-BACKTRACE_REGEXES: tuple[str, ...] = tuple(
+BACKTRACE_REGEXES: Sequence[str] = tuple(
     x for x in os.environ.get("XPRA_LOG_BACKTRACE_REGEXES", "").split("|") if x
 )
 

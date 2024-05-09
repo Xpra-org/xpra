@@ -9,7 +9,7 @@ import sys
 import secrets
 from struct import pack
 from typing import Any
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 from xpra.util.str_fn import csv, print_nested_dict, strtobytes, hexstr
 from xpra.util.env import envint, envbool
@@ -53,7 +53,7 @@ if INITIAL_PADDING not in ALL_PADDING_OPTIONS:
 # make sure the preferred one is first in the list:
 
 
-def get_padding_options() -> tuple[str, ...]:
+def get_padding_options() -> Sequence[str]:
     options = [PREFERRED_PADDING]
     for x in ALL_PADDING_OPTIONS:
         if x not in options:
@@ -61,13 +61,13 @@ def get_padding_options() -> tuple[str, ...]:
     return tuple(options)
 
 
-PADDING_OPTIONS: tuple[str, ...] = get_padding_options()
+PADDING_OPTIONS: Sequence[str] = get_padding_options()
 
 # pylint: disable=import-outside-toplevel
-CIPHERS: tuple[str, ...] = ()
-MODES: tuple[str, ...] = ()
-KEY_HASHES: tuple[str, ...] = ()
-KEY_STRETCHING: tuple[str, ...] = ()
+CIPHERS: Sequence[str] = ()
+MODES: Sequence[str] = ()
+KEY_HASHES: Sequence[str] = ()
+KEY_STRETCHING: Sequence[str] = ()
 
 
 def crypto_backend_init():
@@ -103,15 +103,15 @@ def crypto_backend_init():
     return None
 
 
-def get_ciphers() -> tuple[str, ...]:
+def get_ciphers() -> Sequence[str]:
     return CIPHERS
 
 
-def get_modes() -> tuple[str, ...]:
+def get_modes() -> Sequence[str]:
     return MODES
 
 
-def get_key_hashes() -> tuple[str, ...]:
+def get_key_hashes() -> Sequence[str]:
     return KEY_HASHES
 
 

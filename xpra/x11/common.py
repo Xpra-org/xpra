@@ -5,7 +5,7 @@
 
 import struct
 from typing import Any, cast
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.util.str_fn import ellipsizer, bytestostr, hexstr
 from xpra.log import Logger
@@ -169,8 +169,8 @@ def get_workarea() -> tuple[int, int, int, int] | None:
     return None
 
 
-def get_desktop_names() -> tuple[str, ...]:
-    v: tuple[str, ...] = ("Main", )
+def get_desktop_names() -> Sequence[str]:
+    ret: Sequence[str] = ("Main", )
     d = None
     try:
         d = get_X11_root_property("_NET_DESKTOP_NAMES", "UTF8_STRING")
@@ -178,12 +178,12 @@ def get_desktop_names() -> tuple[str, ...]:
             d = d.split(b"\0")
             if len(d) > 1 and d[-1] == b"":
                 d = d[:-1]
-            return tuple(x.decode("utf8") for x in d)
+            ret = tuple(x.decode("utf8") for x in d)
     except Exception as e:
         log.error("Error querying `_NET_DESKTOP_NAMES`:")
         log.estr(e)
-    log("get_desktop_names() %s=%s", hexstr(d or ""), v)
-    return v
+    log("get_desktop_names() %s=%s", hexstr(d or ""), ret)
+    return ret
 
 
 def get_vrefresh() -> int:

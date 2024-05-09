@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
@@ -48,7 +48,7 @@ def init_audio_tagging(tray_icon) -> None:
             log.warn(" %s", e)
 
 
-def get_matching_codecs(local_codecs, server_codecs) -> tuple[str, ...]:
+def get_matching_codecs(local_codecs, server_codecs) -> Sequence[str]:
     matching_codecs = tuple(x for x in local_codecs if x in server_codecs)
     log("get_matching_codecs(%s, %s)=%s", local_codecs, server_codecs, matching_codecs)
     return matching_codecs
@@ -85,8 +85,8 @@ class AudioClient(StubClientMixin):
         self.server_av_sync: bool = False
         self.server_pulseaudio_id = ""
         self.server_pulseaudio_server = ""
-        self.server_audio_decoders: tuple[str, ...] = ()
-        self.server_audio_encoders: tuple[str, ...] = ()
+        self.server_audio_decoders: Sequence[str] = ()
+        self.server_audio_encoders: Sequence[str] = ()
         self.server_audio_receive: bool = False
         self.server_audio_send: bool = False
         self.queue_used_sent: int = 0
@@ -104,7 +104,7 @@ class AudioClient(StubClientMixin):
             self.microphone_device = mic[1]
         self.audio_source_plugin = opts.audio_source
 
-        def nooptions(*_args) -> tuple[str, ...]:
+        def nooptions(*_args) -> Sequence[str]:
             return ()
 
         audio_option_fn: Callable = nooptions

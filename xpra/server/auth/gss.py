@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from collections.abc import Sequence
 
 from xpra.util.io import stderr_print
 from xpra.util.objects import typedict
@@ -32,7 +33,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "gss"
 
-    def get_challenge(self, digests: tuple[str, ...]):
+    def get_challenge(self, digests: Sequence[str]):
         assert not self.challenge_sent
         if "gss" not in digests:
             log.error("Error: client does not support gss authentication")

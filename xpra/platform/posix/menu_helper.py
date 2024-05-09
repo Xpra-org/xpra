@@ -15,7 +15,7 @@ import glob
 from time import monotonic
 from contextlib import nullcontext
 from typing import Any
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 
 from xpra.util.env import envbool, OSEnvContext, first_time, IgnoreWarningsContext, get_saved_env
 from xpra.codecs import icon_util
@@ -47,7 +47,7 @@ def isvalidtype(v) -> bool:
     return isinstance(v, (bytes, str, bool, int))
 
 
-def export(entry, properties: tuple[str, ...]) -> dict[str, Any]:
+def export(entry, properties: Sequence[str]) -> dict[str, Any]:
     name = entry.getName()
     props: dict[str, Any] = {}
     if any(x and name.lower().find(x.lower()) >= 0 for x in DEBUG_COMMANDS):
@@ -134,7 +134,7 @@ if LOAD_FROM_THEME:
 
         init_themes()
 
-EXTENSIONS: tuple[str, ...] = ("png", "svg", "xpm")
+EXTENSIONS: Sequence[str] = ("png", "svg", "xpm")
 
 
 def check_xdg() -> bool:

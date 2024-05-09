@@ -9,7 +9,7 @@ from time import monotonic
 from threading import Lock
 from collections import deque
 from typing import Any
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.net.mmap import mmap_read
 from xpra.net import compression
@@ -121,7 +121,7 @@ class WindowBackingBase:
     Generic superclass for all Backing code,
     see CairoBackingBase and GTKWindowBacking subclasses for actual implementations
     """
-    RGB_MODES: tuple[str, ...] = ()
+    RGB_MODES: Sequence[str] = ()
 
     def __init__(self, wid: int, window_alpha: bool):
         load_video()
@@ -170,7 +170,7 @@ class WindowBackingBase:
     def recpaint(self, encoding: str) -> None:
         self.paint_stats[encoding] = self.paint_stats.get(encoding, 0) + 1
 
-    def get_rgb_formats(self) -> tuple[str, ...]:
+    def get_rgb_formats(self) -> Sequence[str]:
         if self._alpha_enabled:
             return self.RGB_MODES
         # remove modes with alpha:

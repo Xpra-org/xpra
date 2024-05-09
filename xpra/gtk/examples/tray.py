@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.platform import program_context
@@ -124,7 +124,7 @@ class FakeApplication:
     def connect(self, *args) -> None:
         """ this method is part of the GUI client "interface" """
 
-    def get_encodings(self) -> tuple[str, ...]:
+    def get_encodings(self) -> Sequence[str]:
         from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
         return PREFERRED_ENCODING_ORDER
 

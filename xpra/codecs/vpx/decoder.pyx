@@ -8,6 +8,7 @@
 import os
 from time import monotonic
 from typing import Any, Tuple, List, Dict
+from collections.abc import Sequence
 
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
@@ -58,6 +59,7 @@ VPX_COLOR_RANGES : Dict[int,str] = {
 cdef unsigned int cpus = os.cpu_count()
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", max(1, cpus-1))
 
+
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
@@ -93,7 +95,7 @@ cdef extern from "vpx/vpx_decoder.h":
 
 #https://groups.google.com/a/webmproject.org/forum/?fromgroups#!msg/webm-discuss/f5Rmi-Cu63k/IXIzwVoXt_wJ
 #"RGB is not supported.  You need to convert your source to YUV, and then compress that."
-COLORSPACES : Dict[str, Tuple[str,...]] = {
+COLORSPACES : Dict[str, Sequence[str]] = {
     "vp8"   : ("YUV420P", ),
     "vp9"   : ("YUV420P", "YUV444P"),
 }
@@ -114,7 +116,7 @@ def get_abi_version() -> int:
     return VPX_DECODER_ABI_VERSION
 
 
-def get_version() -> Tuple[int,...]:
+def get_version() -> Sequence[int]:
     b = vpx_codec_version_str()
     vstr = b.decode("latin1").lstrip("v")
     log("vpx_codec_version_str()=%s", vstr)
@@ -131,7 +133,7 @@ def get_type() -> str:
     return "vpx"
 
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return CODECS
 
 
@@ -139,12 +141,12 @@ def get_min_size(encoding:str) -> Tuple[int, int]:
     return 16, 16
 
 
-def get_input_colorspaces(encoding:str) -> Tuple[str,...]:
+def get_input_colorspaces(encoding:str) -> Sequence[str]:
     assert encoding in CODECS
     return COLORSPACES.get(encoding)
 
 
-def get_output_colorspaces(encoding:str, csc:str) -> Tuple[str, ...]:
+def get_output_colorspaces(encoding:str, csc:str) -> Sequence[str]:
     #same as input
     assert encoding in CODECS
     colorspaces = COLORSPACES.get(encoding)
@@ -152,7 +154,7 @@ def get_output_colorspaces(encoding:str, csc:str) -> Tuple[str, ...]:
     return (csc, )
 
 
-def get_specs(encoding: str, colorspace: str) -> tuple[VideoSpec]:
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid output colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
     return (
@@ -188,6 +190,7 @@ cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
         return vpx_codec_vp9_dx()
     raise ValueError(f"unsupported encoding: {encoding!r}")
 
+
 cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
     if colorspace == "YUV444P":
         return VPX_IMG_FMT_I444
@@ -208,7 +211,7 @@ cdef class Decoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding, width, height, colorspace):
+    def init_context(self, encoding: str, width: int, height: int, colorspace: str):
         log("vpx decoder init_context%s", (encoding, width, height, colorspace))
         assert encoding in CODECS
         assert colorspace in get_input_colorspaces(encoding)
@@ -290,7 +293,6 @@ cdef class Decoder:
             self.file = None
             f.close()
 
-
     def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
         cdef vpx_codec_iter_t citer = NULL
         cdef MemBuf output_buf
@@ -363,7 +365,7 @@ cdef class Decoder:
         return vpx_codec_error(self.context).decode("latin1")
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     global CODECS
     from xpra.codecs.checks import testdecoder
     from xpra.codecs.vpx import decoder

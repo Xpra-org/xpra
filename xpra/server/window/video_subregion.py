@@ -6,7 +6,7 @@
 import math
 from time import monotonic
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.env import envint, envbool
@@ -314,7 +314,7 @@ class VideoSubregion:
         sslog("identify_video_subregion%s",
               (ww, wh, damage_events_count, last_damage_events, starting_at, children))
 
-        children_rects: tuple[rectangle, ...] = ()
+        children_rects: Sequence[rectangle] = ()
         if children:
             children_rects = tuple(rectangle(x, y, w, h)
                                    for _xid, x, y, w, h, _border, _depth in children

@@ -7,6 +7,7 @@
 import os
 import sys
 import socket
+from collections.abc import Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import obsc, strtobytes
@@ -53,7 +54,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "ldap"
 
-    def get_challenge(self, digests: tuple[str, ...]):
+    def get_challenge(self, digests: Sequence[str]):
         if "xor" not in digests:
             log.error("Error: ldap authentication requires the 'xor' digest")
             return None

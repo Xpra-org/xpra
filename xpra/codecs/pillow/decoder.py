@@ -9,7 +9,7 @@ from io import BytesIO
 import PIL
 from PIL import Image
 from typing import Any
-from collections.abc import Callable, ByteString
+from collections.abc import Callable, ByteString, Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, strtobytes, hexstr
@@ -115,11 +115,11 @@ def do_get_encodings() -> list[str]:
     return encodings
 
 
-def get_encodings() -> tuple[str, ...]:
+ENCODINGS: Sequence[str] = tuple(do_get_encodings())
+
+
+def get_encodings() -> Sequence[str]:
     return ENCODINGS
-
-
-ENCODINGS: tuple[str, ...] = tuple(do_get_encodings())
 
 
 def get_info() -> dict[str, Any]:

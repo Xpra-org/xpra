@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 
 import Quartz.CoreGraphics as CG
 
@@ -27,7 +28,7 @@ log = Logger("shadow", "osx")
 USE_TIMER = envbool("XPRA_OSX_SHADOW_USE_TIMER", False)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
-GSTREAMER_CAPTURE_ELEMENTS: tuple[str, ...] = ("avfvideosrc", )
+GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = ("avfvideosrc", )
 
 
 def check_gstreamer() -> bool:

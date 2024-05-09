@@ -6,7 +6,7 @@
 import os
 import struct
 from typing import Any
-from collections.abc import Iterable, Callable
+from collections.abc import Iterable, Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.gtk.error import xsync, xswallow
@@ -86,7 +86,7 @@ TRANSLATED_TARGETS = parse_translated_targets(os.environ.get(
 log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
 
 
-def xatoms_to_strings(data: bytes) -> tuple[str, ...]:
+def xatoms_to_strings(data: bytes) -> Sequence[str]:
     length = len(data)
     if length % sizeof_long != 0:
         raise ValueError(f"invalid length for atom array: {length}, value={repr_ellipsized(data)}")
@@ -124,7 +124,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.remote_requests: dict[str, list[tuple]] = {}
         self.local_requests: dict[str, dict[int, tuple[int, Callable]]] = {}
         self.local_request_counter: int = 0
-        self.targets: tuple[str, ...] = ()
+        self.targets: Sequence[str] = ()
         self.target_data: dict[str, tuple[str, int, Any]] = {}
         self.reset_incr_data()
 
@@ -464,7 +464,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
 
         self.get_contents("TARGETS", got_targets)
 
-    def choose_targets(self, targets) -> tuple[str, ...]:
+    def choose_targets(self, targets) -> Sequence[str]:
         if self.preferred_targets:
             # prefer PNG, but only if supported by the client:
             fmts = []

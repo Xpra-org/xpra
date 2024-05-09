@@ -7,7 +7,7 @@ import os
 import struct
 from time import monotonic
 from socket import error as socket_error
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from queue import Queue
 
 from xpra.os_util import gi_import
@@ -150,7 +150,7 @@ class RFBProtocol:
     def get_threads(self) -> tuple:
         return tuple(x for x in (self._write_thread, self._read_thread) if x is not None)
 
-    def get_info(self, *_args) -> dict[str, tuple[int, ...] | dict[str, bool]]:
+    def get_info(self, *_args) -> dict[str, Sequence[int] | dict[str, bool]]:
         info: dict[str, tuple | dict] = {
             "protocol": PROTOCOL_VERSION,
             "thread": dict((thread.name, thread.is_alive()) for thread in self.get_threads()),

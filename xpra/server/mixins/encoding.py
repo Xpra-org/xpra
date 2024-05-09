@@ -5,6 +5,7 @@
 # pylint: disable-msg=E1101
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util.env import envint
@@ -47,15 +48,15 @@ class EncodingServer(StubServerMixin):
         self.default_min_quality = 0
         self.default_speed = -1
         self.default_min_speed = 0
-        self.allowed_encodings: tuple[str, ...] = ()
-        self.core_encodings: tuple[str, ...] = ()
-        self.encodings: tuple[str, ...] = ()
-        self.lossless_encodings: tuple[str, ...] = ()
-        self.lossless_mode_encodings: tuple[str, ...] = ()
+        self.allowed_encodings: Sequence[str] = ()
+        self.core_encodings: Sequence[str] = ()
+        self.encodings: Sequence[str] = ()
+        self.lossless_encodings: Sequence[str] = ()
+        self.lossless_mode_encodings: Sequence[str] = ()
         self.default_encoding: str = ""
         self.scaling_control = None
-        self.video_encoders: tuple[str, ...] = ()
-        self.csc_modules: tuple[str, ...] = ()
+        self.video_encoders: Sequence[str] = ()
+        self.csc_modules: Sequence[str] = ()
         self.video = True
 
     def init(self, opts) -> None:

@@ -5,6 +5,7 @@
 
 from time import sleep
 from textwrap import wrap
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.env import envint
@@ -43,7 +44,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.warning_labels: list[Gtk.Label] = []
         self.labels: list[Gtk.Label] = []
         self.buttons: list[Gtk.Button] = []
-        self.elements: tuple[str, ...] = ()
+        self.elements: Sequence[str] = ()
         super().__init__(
             "Configure Xpra's GStreamer Codecs",
             "gstreamer.png",

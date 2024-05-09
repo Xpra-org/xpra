@@ -8,11 +8,13 @@ import math
 from collections import deque
 from time import monotonic
 from typing import Any, Dict, Tuple
+from collections.abc import Sequence
 
 from xpra.log import Logger
 log = Logger("encoder", "vpx")
 
 from xpra.codecs.constants import VideoSpec, get_subsampling_divs
+from xpra.codecs.image import ImageWrapper
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.env import envint, envbool
 from xpra.util.objects import AtomicInteger, typedict
@@ -177,7 +179,7 @@ PACKET_KIND: Dict[int, str] = {
     VPX_CODEC_CUSTOM_PKT     : "CUSTOM_PKT",
 }
 
-COLORSPACES: Dict[str, Tuple[str, ...]] = {
+COLORSPACES: Dict[str, Sequence[str]] = {
     "vp8": ("YUV420P", ),
 }
 if VPX_ENCODER_ABI_VERSION>=23:
@@ -203,7 +205,7 @@ def get_abi_version() -> int:
     return VPX_ENCODER_ABI_VERSION
 
 
-def get_version() -> Tuple[int,...]:
+def get_version() -> Sequence[int]:
     b = vpx_codec_version_str()
     vstr = b.decode("latin1").lstrip("v")
     log("vpx_codec_version_str()=%s", vstr)
@@ -220,7 +222,7 @@ def get_type() -> str:
     return "vpx"
 
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return CODECS
 
 
@@ -277,7 +279,7 @@ if WIN32:
     MAX_SIZE["vp9"] = (4096, 4096)
 
 
-def get_specs(encoding, colorspace) -> Tuple[VideoSpec, ...]:
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
     #setup cost is reasonable (usually about 5ms)
@@ -302,12 +304,12 @@ def get_specs(encoding, colorspace) -> Tuple[VideoSpec, ...]:
         )
 
 
-cdef vpx_img_fmt_t get_vpx_colorspace(colorspace) except -1:
-    if colorspace=="YUV420P":
+cdef vpx_img_fmt_t get_vpx_colorspace(colorspace: str) except -1:
+    if colorspace == "YUV420P":
         return VPX_IMG_FMT_I420
-    if colorspace=="YUV444P":
+    if colorspace == "YUV444P":
         return VPX_IMG_FMT_I444
-    if colorspace=="YUV444P10":
+    if colorspace == "YUV444P10":
         return VPX_IMG_FMT_I44416
     raise ValueError(f"invalid colorspace {colorspace!r}")
 
@@ -451,7 +453,7 @@ cdef class Encoder:
             log.warn("failed to set %s to %s: %s (%s)", info, value, get_error_string(ctrl), ctrl)
         return ctrl==0
 
-    def log_cfg(self):
+    def log_cfg(self) -> None:
         log(" target_bitrate=%s", self.cfg.rc_target_bitrate)
         log(" min_quantizer=%s", self.cfg.rc_min_quantizer)
         log(" max_quantizer=%s", self.cfg.rc_max_quantizer)
@@ -557,7 +559,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-    def compress_image(self, image, options=None) -> Tuple:
+    def compress_image(self, image: ImageWrapper, options=None) -> Tuple:
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         assert self.context!=NULL

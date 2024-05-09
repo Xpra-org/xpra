@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.os_util import gi_import
 from xpra.util.env import envint
 from xpra.gtk.configure.common import run_gui, get_config_env, update_config_env
@@ -17,7 +19,7 @@ log = Logger("gstreamer", "util")
 
 STEP_DELAY = envint("XPRA_CONFIGURE_STEP_DELAY", 100)
 
-SHADOW_BACKENDS: dict[str, tuple[str, ...]] = {
+SHADOW_BACKENDS: dict[str, Sequence[str]] = {
     "auto": (
         "Automatic runtime detection",
         "this is the default behaviour,",

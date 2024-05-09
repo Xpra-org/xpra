@@ -3,9 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from queue import Queue, Empty, Full
-from collections.abc import Iterable
 from typing import Any
+from queue import Queue, Empty, Full
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
@@ -173,7 +173,7 @@ def choose_video_encoder(preferred_encoding: str, full_csc_modes: typedict) -> V
     return best
 
 
-def choose_csc(modes: Iterable[str], quality=100) -> str:
+def choose_csc(modes: Sequence[str], quality=100) -> str:
     prefer = "YUV420P" if quality < 80 else "YUV444P"
     if not modes or prefer in modes:
         return prefer

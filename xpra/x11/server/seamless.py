@@ -11,6 +11,7 @@ import math
 from time import monotonic, sleep
 from collections import deque
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.version import XPRA_VERSION
@@ -803,7 +804,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         for ss in self.window_sources():
             ss.restack_window(wid, window, detail, sibling)
 
-    def _set_window_state(self, proto, wid: int, window, new_window_state) -> tuple[str, ...]:
+    def _set_window_state(self, proto, wid: int, window, new_window_state) -> Sequence[str]:
         if proto not in self._server_sources:
             return ()
         if not new_window_state:

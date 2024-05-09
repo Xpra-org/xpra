@@ -9,7 +9,7 @@ import re
 from time import monotonic
 from collections import deque
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence, Iterable
 
 from xpra.net.device_info import (
     get_NM_adapter_type, get_device_value, guess_adapter_type,
@@ -74,7 +74,7 @@ class NetworkState(StubClientMixin):
         self.info_request_pending: bool = False
 
         # network state:
-        self.server_packet_encoders: tuple[str, ...] = ()
+        self.server_packet_encoders: Sequence[str] = ()
         self.server_ping_latency: deque[tuple[float, float]] = deque(maxlen=1000)
         self.server_load = (0, 0, 0)
         self.client_ping_latency: deque[tuple[float, float]] = deque(maxlen=1000)
@@ -187,7 +187,7 @@ class NetworkState(StubClientMixin):
             GLib.source_remove(pt)
 
     def cancel_ping_echo_timers(self) -> None:
-        pet: tuple[int, ...] = tuple(self.ping_echo_timers.values())
+        pet: Iterable[int] = tuple(self.ping_echo_timers.values())
         self.ping_echo_timers = {}
         for t in pet:
             GLib.source_remove(t)
@@ -266,7 +266,7 @@ class NetworkState(StubClientMixin):
         wait = 1000 * MIN_PING_TIMEOUT
         aspl = tuple(self.server_ping_latency)
         if aspl:
-            spl: tuple[float, ...] = tuple(x[1] for x in aspl)
+            spl: Iterable[float] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
             wait = max(1000 * MIN_PING_TIMEOUT, min(1000 * MAX_PING_TIMEOUT, round(1000 + avg * 2000)))
             log("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",

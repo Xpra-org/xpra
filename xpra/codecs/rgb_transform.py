@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from collections.abc import Sequence
 
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, memoryview_to_bytes
@@ -32,7 +33,7 @@ pixels_to_bytes = memoryview_to_bytes
 
 
 # source format  : [(PIL input format, output format), ..]
-PIL_conv: dict[str, tuple[tuple[str, str], ...]] = {
+PIL_conv: dict[str, Sequence[tuple[str, str]]] = {
     "XRGB": (("XRGB", "RGB"), ),
     # try to drop alpha channel since it isn't used:
     "BGRX": (("BGRX", "RGB"), ("BGRX", "RGBX")),
@@ -40,7 +41,7 @@ PIL_conv: dict[str, tuple[tuple[str, str], ...]] = {
     "BGRA": (("BGRA", "RGBA"), ("BGRX", "RGB"), ("BGRX", "RGBX")),
 }
 # as above but for clients which cannot handle alpha:
-PIL_conv_noalpha: dict[str, tuple[tuple[str, str], ...]] = {
+PIL_conv_noalpha: dict[str, Sequence[tuple[str, str]]] = {
     "XRGB": (("XRGB", "RGB"), ),
     # try to drop alpha channel since it isn't used:
     "BGRX": (("BGRX", "RGB"), ("BGRX", "RGBX")),
@@ -61,7 +62,7 @@ def rgb_reformat(image: ImageWrapper, rgb_formats, supports_transparency: bool) 
         # (required for r210 which is not handled by PIL directly)
         log("rgb_reformat: using argb_swap for %s", image)
         return argb_swap(image, rgb_formats, supports_transparency)
-    modes: tuple[tuple[str, str], ...] = ()
+    modes: Sequence[tuple[str, str]] = ()
     try:
         # pylint: disable=import-outside-toplevel
         from PIL import Image
@@ -72,7 +73,7 @@ def rgb_reformat(image: ImageWrapper, rgb_formats, supports_transparency: bool) 
             modes = PIL_conv.get(pixel_format, ())
         else:
             modes = PIL_conv_noalpha.get(pixel_format, ())
-    target_rgb: tuple[tuple[str, str], ...] = tuple((im, om) for (im, om) in modes if om in rgb_formats)
+    target_rgb: Sequence[tuple[str, str]] = tuple((im, om) for (im, om) in modes if om in rgb_formats)
     if not target_rgb:
         log("rgb_reformat: no matching target modes for converting %s to %s", image, rgb_formats)
         # try argb module:

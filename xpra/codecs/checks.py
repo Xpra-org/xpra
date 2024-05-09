@@ -6,7 +6,7 @@
 # pylint: disable=line-too-long
 
 import binascii
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.common import roundup
 from xpra.util.objects import typedict
@@ -26,7 +26,7 @@ def unhex(s: str) -> bytes:
 DEFAULT_TEST_SIZE = 128, 128
 
 # this test data was generated using a 24x16 blank image as input
-TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int],tuple[bytes, ...]]]] = {
+TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int], Sequence[bytes]]]] = {
     "h264": {
         "YUV420P": {
             (24, 16): (
@@ -189,7 +189,7 @@ TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int],tuple[bytes, ...]
     },
 }
 
-TEST_PICTURES: dict[str,dict[tuple[int,int], tuple[bytes, ...]]] = {
+TEST_PICTURES: dict[str, dict[tuple[int, int], Sequence[bytes]]] = {
     "png": {
         (32, 32): (
             unhex("89504e470d0a1a0a0000000d4948445200000020000000200806000000737a7af40000002849444154785eedd08100000000c3a0f9531fe4855061c0800103060c183060c0800103060cbc0f0c102000013337932a0000000049454e44ae426082"),
@@ -299,7 +299,7 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values=(0x20, 0x80,
     raise ValueError(f"don't know how to create a {pixel_format} image")
 
 
-def testdecoder(decoder_module, full: bool) -> tuple[str, ...]:
+def testdecoder(decoder_module, full: bool) -> Sequence[str]:
     dtype = decoder_module.get_type()
     codecs = list(decoder_module.get_encodings())
     for encoding in tuple(codecs):
@@ -316,10 +316,10 @@ def testdecoder(decoder_module, full: bool) -> tuple[str, ...]:
 
 
 def testdecoding(decoder_module, encoding: str, full: bool) -> None:
-    test_data_set: dict[str, dict[tuple[int, int],tuple[bytes, ...]]] | None = TEST_COMPRESSED_DATA.get(encoding)
+    test_data_set: dict[str, dict[tuple[int, int], Sequence[bytes]]] | None = TEST_COMPRESSED_DATA.get(encoding)
     for cs in decoder_module.get_input_colorspaces(encoding):
         min_w, min_h = decoder_module.get_min_size(encoding)
-        test_data: dict[tuple[int, int],tuple[bytes, ...]] = {}
+        test_data: dict[tuple[int, int], Sequence[bytes]] = {}
         if test_data_set:
             test_data = test_data_set.get(cs, {})
         elif encoding in TEST_PICTURES:
@@ -369,7 +369,7 @@ def testdecoding(decoder_module, encoding: str, full: bool) -> None:
                 decoder.clean()
 
 
-def testencoder(encoder_module, full: bool) -> tuple[str, ...]:
+def testencoder(encoder_module, full: bool) -> Sequence[str]:
     etype = encoder_module.get_type()
     codecs = list(encoder_module.get_encodings())
     for encoding in tuple(codecs):

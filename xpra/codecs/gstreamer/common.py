@@ -142,7 +142,7 @@ def get_default_decoder_options() -> dict[str, dict[str, Any]]:
     return options
 
 
-def get_version() -> tuple[int, ...]:
+def get_version() -> tuple[int, int]:
     return 5, 0
 
 

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2022 Nathalie Casati <nat@yuka.ch>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -7,6 +7,7 @@
 import os
 import sys
 import json
+from collections.abc import Sequence
 
 from xpra.server.auth.sys_auth_base import SysAuthenticator, log
 
@@ -65,7 +66,7 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "keycloak"
 
-    def get_challenge(self, digests: tuple[str, ...]):
+    def get_challenge(self, digests: Sequence[str]):
         assert not self.challenge_sent
         if "keycloak" not in digests:
             log.error("Error: client does not support keycloak authentication")

@@ -3,9 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
 from time import monotonic
 from collections import deque
-from typing import Any
+from collections.abc import Sequence
 
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict
@@ -15,7 +16,7 @@ from xpra.log import Logger
 log = Logger("encoder", "proxy")
 
 
-def get_version() -> tuple[int, ...]:
+def get_version() -> Sequence[int]:
     return 0, 2
 
 
@@ -27,7 +28,7 @@ def get_info() -> dict[str, Any]:
     return {"version": get_version()}
 
 
-def get_encodings() -> tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return ("proxy",)
 
 

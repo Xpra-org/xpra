@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.common import noop
 from xpra.os_util import gi_import
@@ -35,7 +35,7 @@ def GLArea(alpha: bool) -> Gtk.GLArea:
 class GLAreaBacking(GLWindowBackingBase):
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
-        self.on_realize_cb: list[tuple[Callable, tuple[Any, ...]]] = []
+        self.on_realize_cb: list[tuple[Callable, Sequence[Any]]] = []
         super().__init__(wid, window_alpha, pixel_depth)
 
     def __repr__(self):

@@ -7,7 +7,7 @@
 
 import os
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
@@ -64,7 +64,7 @@ class KeyboardHelper:
         self.keyboard.set_modifier_mappings(mappings)
 
     def reset_state(self) -> None:
-        self.keycodes: tuple[tuple[int, str, int, int, int], ...] = ()
+        self.keycodes: Sequence[tuple[int, str, int, int, int]] = ()
         self.x11_keycodes: dict[int, list[str]] = {}
         self.mod_meanings: dict[str, Any] = {}
         self.mod_managed: list[str] = []
@@ -332,7 +332,7 @@ class KeyboardHelper:
                 hashadd(self.query_struct.get(k))
         self.hash = "/".join([str(x) for x in (self.layout, self.variant, h.hexdigest()) if bool(x)])
 
-    def get_full_keymap(self) -> tuple[tuple[int, str, int, int, int], ...]:
+    def get_full_keymap(self) -> Sequence[tuple[int, str, int, int, int]]:
         return ()
 
     def get_keymap_properties(self, skip=()):

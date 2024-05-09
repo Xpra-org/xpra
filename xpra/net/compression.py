@@ -6,20 +6,20 @@
 # later version. See the file COPYING for details.
 
 from typing import Any, ByteString
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from xpra.util.env import envbool
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
 
 # all the compressors we know about:
-ALL_COMPRESSORS: tuple[str, ...] = ("lz4", "zlib", "brotli", "none")
+ALL_COMPRESSORS: Sequence[str] = ("lz4", "zlib", "brotli", "none")
 # the compressors we may want to use, in the best compatibility order:
-TRY_COMPRESSORS: tuple[str, ...] = ("lz4", "brotli", "none")
+TRY_COMPRESSORS: Sequence[str] = ("lz4", "brotli", "none")
 # order for performance:
-PERFORMANCE_ORDER: tuple[str, ...] = ("none", "lz4", "brotli")
+PERFORMANCE_ORDER: Sequence[str] = ("none", "lz4", "brotli")
 # require compression (disallow 'none'):
-PERFORMANCE_COMPRESSION: tuple[str, ...] = ("lz4", "brotli")
+PERFORMANCE_COMPRESSION: Sequence[str] = ("lz4", "brotli")
 
 
 @dataclass
@@ -131,7 +131,7 @@ def get_compression_caps(full_info: int = 1) -> dict[str, Any]:
     return caps
 
 
-def get_enabled_compressors(order=TRY_COMPRESSORS) -> tuple[str, ...]:
+def get_enabled_compressors(order=TRY_COMPRESSORS) -> Sequence[str]:
     return tuple(x for x in order if x in COMPRESSION)
 
 

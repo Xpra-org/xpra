@@ -5,7 +5,7 @@
 
 from io import BytesIO
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from AppKit import (
     NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,
@@ -31,7 +31,7 @@ TARGET_TRANS = {
 IMAGE_FORMATS = ["image/png", "image/jpeg", "image/tiff"]
 
 
-def filter_targets(targets) -> tuple[str, ...]:
+def filter_targets(targets) -> Sequence[str]:
     return _filter_targets(TARGET_TRANS.get(x, x) for x in targets)
 
 

@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.env import first_time
@@ -526,7 +526,7 @@ class BaseWindowModel(CoreX11WindowModel):
     #      directly by the "state" property, and reading/writing them in fact
     #      accesses the "state" set directly.  This is done by overriding
     #      do_set_property and do_get_property.
-    _state_properties: dict[str, tuple[str, ...]] = {
+    _state_properties: dict[str, Sequence[str]] = {
         "attention-requested": ("_NET_WM_STATE_DEMANDS_ATTENTION",),
         "fullscreen": ("_NET_WM_STATE_FULLSCREEN",),
         "maximized": ("_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ"),

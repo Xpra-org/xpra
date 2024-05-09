@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.str_fn import ellipsizer
@@ -22,7 +22,7 @@ GLib = gi_import("GLib")
 class GLDrawingArea(GLWindowBackingBase):
 
     def __init__(self, wid: int, window_alpha: bool, pixel_depth: int = 0):
-        self.on_realize_cb: list[tuple[Callable, tuple[Any, ...]]] = []
+        self.on_realize_cb: list[tuple[Callable, Sequence[Any]]] = []
         self.window_context = None
         self.context: GLContext | None = None
         super().__init__(wid, window_alpha, pixel_depth)

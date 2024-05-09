@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.util.str_fn import csv
 from xpra.util.parsing import parse_str_dict
 from xpra.os_util import getuid, getgid
@@ -23,7 +25,7 @@ class SQLAuthenticator(SysAuthenticator):
     def db_cursor(self, *sqlargs):
         raise NotImplementedError()
 
-    def get_passwords(self) -> tuple[str, ...]:
+    def get_passwords(self) -> Sequence[str]:
         cursor = self.db_cursor(self.password_query, (self.username,))
         data = cursor.fetchall()
         if not data:
@@ -89,7 +91,7 @@ class DatabaseUtilBase:
 
     def remove_user(self, username: str, password: str = "") -> None:
         sql = "DELETE FROM users WHERE username=%s" % self.param
-        sqlargs: tuple[str, ...] = (username,)
+        sqlargs: Sequence[str] = (username,)
         if password:
             sql += " AND password=%s" % self.param
             sqlargs = (username, password)

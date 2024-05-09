@@ -9,7 +9,7 @@ import os
 import sys
 import binascii
 from typing import Any
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
 from xpra.platform import platform_import
@@ -226,7 +226,7 @@ def get_number_of_desktops() -> int:
     return 1
 
 
-def get_desktop_names() -> tuple[str, ...]:
+def get_desktop_names() -> Sequence[str]:
     return ()
 
 
@@ -340,7 +340,7 @@ def get_info_base() -> dict[str, Any]:
         except AttributeError:
             return str(v)
 
-    def fnames(flist: Iterable):
+    def fnames(flist: Iterable) -> Sequence:
         return [fname(x) for x in flist]
 
     return {

@@ -10,7 +10,7 @@ import re
 from time import monotonic
 from io import BytesIO
 from typing import Any
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
 from xpra.net.compression import Compressible
@@ -31,14 +31,14 @@ MAX_CLIPBOARD_PACKET_SIZE: int = 16 * 1024 * 1024
 MAX_CLIPBOARD_RECEIVE_SIZE: int = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE: int = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
-ALL_CLIPBOARDS: tuple[str, ...] = tuple(PLATFORM_CLIPBOARDS)
+ALL_CLIPBOARDS: Iterable[str] = tuple(PLATFORM_CLIPBOARDS)
 CLIPBOARDS: list[str] = list(PLATFORM_CLIPBOARDS)
 CLIPBOARDS_ENV: str | None = os.environ.get("XPRA_CLIPBOARDS")
 if CLIPBOARDS_ENV is not None:
     CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS_ENV.split(",")]
 del CLIPBOARDS_ENV
 
-TEXT_TARGETS: tuple[str, ...] = tuple(
+TEXT_TARGETS: Iterable[str] = tuple(
     os.environ.get("XPRA_CLIPBOARD_TEXT_TARGETS",
                    "UTF8_STRING,TEXT,STRING,text/plain,text/html").split(",")
 )
@@ -47,7 +47,7 @@ TEST_DROP_CLIPBOARD_REQUESTS = envint("XPRA_TEST_DROP_CLIPBOARD")
 DELAY_SEND_TOKEN = envint("XPRA_DELAY_SEND_TOKEN", 100)
 
 
-def get_discard_targets(envname: str = "DISCARD", default_value: tuple[str, ...] = ()):
+def get_discard_targets(envname: str = "DISCARD", default_value: Iterable[str] = ()) -> Iterable[str]:
     _discard_target_strs_ = os.environ.get("XPRA_%s_TARGETS" % envname)
     if _discard_target_strs_ is None:
         return default_value
@@ -97,7 +97,7 @@ def must_discard_extra(target: str) -> bool:
     return any(x for x in DISCARD_EXTRA_TARGETS if x.match(target))
 
 
-def _filter_targets(targets: Iterable[str]) -> tuple[str, ...]:
+def _filter_targets(targets: Iterable[str]) -> Sequence[str]:
     targets_strs = tuple(bytestostr(x) for x in targets)
     f = tuple(target for target in targets_strs if not must_discard(target))
     log("_filter_targets(%s)=%s", csv(targets_strs), f)
@@ -336,14 +336,13 @@ class ClipboardProtocolHelperCore:
         self.max_clipboard_receive_size: int = d.intget("max-receive-size", MAX_CLIPBOARD_RECEIVE_SIZE)
         self.max_clipboard_send_size: int = d.intget("max-send-size", MAX_CLIPBOARD_SEND_SIZE)
         self.filter_res = []
-        filter_res: tuple[str, ...] = d.strtupleget("filters")
-        if filter_res:
-            for x in filter_res:
-                try:
-                    self.filter_res.append(re.compile(x))
-                except Exception as e:
-                    log.error("Error: invalid clipboard filter regular expression")
-                    log.error(" '%s': %s", x, e)
+        filter_res: Iterable[str] = d.strtupleget("filters")
+        for x in filter_res:
+            try:
+                self.filter_res.append(re.compile(x))
+            except Exception as e:
+                log.error("Error: invalid clipboard filter regular expression")
+                log.error(" '%s': %s", x, e)
         self._clipboard_request_counter: int = 0
         self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
         self._local_to_remote: dict[str, str] = {}
@@ -531,10 +530,10 @@ class ClipboardProtocolHelperCore:
         synchronous_client = len(packet) >= 11 and bool(packet[10])
         proxy.got_token(targets, target_data, claim, synchronous_client)
 
-    def local_targets(self, remote_targets: Iterable[str]):
+    def local_targets(self, remote_targets: Iterable[str]) -> Sequence[str]:
         return _filter_targets(remote_targets)
 
-    def remote_targets(self, local_targets: Iterable[str]):
+    def remote_targets(self, local_targets: Iterable[str]) -> Sequence[str]:
         return _filter_targets(local_targets)
 
     def _munge_raw_selection_to_wire(self, target: str, dtype: str, dformat: int, data) -> tuple[Any, Any]:

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs import rgb_transform
@@ -21,7 +22,7 @@ def get_type() -> str:
     return "rgb"
 
 
-def get_encodings() -> tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return "rgb24", "rgb32"
 
 

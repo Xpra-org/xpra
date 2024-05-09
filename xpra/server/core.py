@@ -18,7 +18,7 @@ from time import sleep, time, monotonic
 from threading import Lock
 from types import FrameType
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.net.http.common import HTTP_UNSUPORTED
 from xpra.util.version import (
@@ -745,7 +745,7 @@ class ServerCore:
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog(f"init_auth(..) auth={self.auth_classes}")
 
-    def get_auth_modules(self, socket_type: str, auth_strs) -> tuple[tuple[str, Any, type, dict], ...]:
+    def get_auth_modules(self, socket_type: str, auth_strs) -> Sequence[tuple[str, Any, type, dict]]:
         authlog(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
         if not auth_strs:
             return ()
@@ -947,7 +947,7 @@ class ServerCore:
             return self.ssh_upgrade
         return False
 
-    def get_mdns_socktypes(self, socktype: str, options: dict[str, str]) -> tuple[str, ...]:
+    def get_mdns_socktypes(self, socktype: str, options: dict[str, str]) -> Sequence[str]:
         # for a given socket type,
         # what socket types we should expose via mdns
         if socktype in ("vsock", "named-pipe"):
@@ -1071,7 +1071,7 @@ class ServerCore:
         protocols = self.get_all_protocols()
         self.cleanup_protocols(protocols, reason=reason, force=force)
 
-    def get_all_protocols(self) -> tuple[SocketProtocol, ...]:
+    def get_all_protocols(self) -> Sequence[SocketProtocol]:
         return tuple(self._potential_protocols)
 
     def cleanup_protocols(self, protocols, reason: str | ConnectionMessage = "", force=False) -> None:
@@ -1961,7 +1961,7 @@ class ServerCore:
         # in which case we'll end up here parsing the hello again
         start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
-    def make_authenticators(self, socktype: str, remote, conn) -> tuple[Any, ...]:
+    def make_authenticators(self, socktype: str, remote, conn) -> Sequence[Any]:
         authlog("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
         sock_options = conn.options
         sock_auth = sock_options.get("auth", "")

@@ -10,7 +10,8 @@ import os.path
 from time import monotonic
 from urllib.parse import unquote
 from typing import Optional
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+
 from cairo import (  # pylint: disable=no-name-in-module
     RectangleInt, Region,  # @UnresolvedImport
     OPERATOR_OVER, LINE_CAP_ROUND,  # @UnresolvedImport
@@ -258,7 +259,7 @@ GRAB_EVENT_MASK |= Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOT
 GRAB_EVENT_MASK |= Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK
 
 wth = Gdk.WindowTypeHint
-ALL_WINDOW_TYPES: tuple[Gdk.WindowTypeHint, ...] = (
+ALL_WINDOW_TYPES: Sequence[Gdk.WindowTypeHint] = (
     wth.NORMAL,
     wth.DIALOG,
     wth.MENU,
@@ -280,7 +281,7 @@ WINDOW_NAME_TO_HINT: dict[str, Gdk.WindowTypeHint] = {
 }
 
 
-def get_follow_window_types() -> tuple[Gdk.WindowTypeHint, ...]:
+def get_follow_window_types() -> Sequence[Gdk.WindowTypeHint]:
     types_strs: list[str] = os.environ.get(
         "XPRA_FOLLOW_WINDOW_TYPES",
         "DIALOG,MENU,TOOLBAR,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,COMBO,DND"

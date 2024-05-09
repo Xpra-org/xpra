@@ -6,8 +6,9 @@
 
 #cython: wraparound=False
 
-from typing import Any, Tuple, Dict
 from time import monotonic
+from typing import Any, Tuple, Dict
+from collections.abc import Sequence
 
 from xpra.log import Logger
 log = Logger("csc", "libyuv")
@@ -189,7 +190,7 @@ def get_version() -> Tuple[int,int]:
 #hardcoded for now:
 MAX_WIDTH = 32768
 MAX_HEIGHT = 32768
-COLORSPACES: Dict[str, Tuple[str, ...]] = {
+COLORSPACES: Dict[str, Sequence[str]] = {
     "BGRX" : ("YUV444P", "YUV420P", "NV12"),
     "NV12" : ("RGB", "BGRX", "RGBX"),
     "YUV420P" : ("RGB", "XBGR", "RGBX"),
@@ -205,11 +206,11 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-def get_input_colorspaces() -> Tuple[str,...]:
+def get_input_colorspaces() -> Sequence[str]:
     return tuple(COLORSPACES.keys())
 
 
-def get_output_colorspaces(input_colorspace: str) -> Tuple[str, ...]:
+def get_output_colorspaces(input_colorspace: str) -> Sequence[str]:
     return COLORSPACES.get(input_colorspace, ())
 
 
@@ -331,8 +332,8 @@ cdef class Converter:
 
     cdef object __weakref__
 
-    def init_context(self, int src_width, int src_height, src_format,
-                           int dst_width, int dst_height, dst_format, options:typedict=None) -> None:
+    def init_context(self, int src_width, int src_height, src_format: str,
+                           int dst_width, int dst_height, dst_format: str, options:typedict=None) -> None:
         log("libyuv.Converter.init_context%s", (
             src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         if src_format not in COLORSPACES:

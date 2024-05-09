@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.util.env import envbool
 from xpra.util.str_fn import is_valid_hostname, strtobytes
@@ -19,7 +19,7 @@ HTTPS_REDIRECT_PERMANENT = envbool("XPRA_HTTPS_REDIRECT_PERMANENT", True)
 # HyBi-07 report version 7
 # HyBi-08 - HyBi-12 report version 8
 # HyBi-13 reports version 13
-SUPPORT_HyBi_PROTOCOLS: tuple[str, ...] = ("7", "8", "13")
+SUPPORT_HyBi_PROTOCOLS: Sequence[str] = ("7", "8", "13")
 
 
 class WebSocketRequestHandler(HTTPRequestHandler):

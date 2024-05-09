@@ -9,9 +9,10 @@ import re
 import sys
 import signal
 import threading
+from typing import Any
 from subprocess import Popen, PIPE
 from threading import Thread
-from typing import Any
+from collections.abc import Iterable
 
 from xpra.os_util import POSIX, LINUX, OSX, WIN32
 from xpra.util.env import _saved_env
@@ -237,7 +238,7 @@ def nn(x) -> str:
     return str(x)
 
 
-def get_frame_info(ignore_threads: tuple[Thread, ...] = ()) -> dict[str | int, Any]:
+def get_frame_info(ignore_threads: Iterable[Thread] = ()) -> dict[str | int, Any]:
     info: dict[str | int, Any] = {
         "count": threading.active_count() - len(ignore_threads),
         "native-id": threading.get_native_id(),

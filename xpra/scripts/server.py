@@ -14,8 +14,9 @@ import sys
 import glob
 import os.path
 import datetime
-from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from typing import Any
+from subprocess import Popen  # pylint: disable=import-outside-toplevel
+from collections.abc import Sequence
 
 from xpra import __version__
 from xpra.util.io import info, warn
@@ -532,12 +533,12 @@ def clean_session_path(path) -> None:
                         log.error(f" {finfo}")
 
 
-SERVER_SAVE_SKIP_OPTIONS: tuple[str, ...] = (
+SERVER_SAVE_SKIP_OPTIONS: Sequence[str] = (
     "systemd-run",
     "daemon",
 )
 
-SERVER_LOAD_SKIP_OPTIONS: tuple[str, ...] = (
+SERVER_LOAD_SKIP_OPTIONS: Sequence[str] = (
     "systemd-run",
     "daemon",
     "start",

@@ -5,6 +5,7 @@
 
 #cython: wraparound=False
 from typing import Tuple
+from collections.abc import Sequence
 
 from xpra.log import Logger
 log = Logger("decoder", "spng")
@@ -31,7 +32,7 @@ from xpra.codecs.spng.spng cimport (
     spng_set_option, spng_set_ihdr,
     spng_encode_image, spng_get_png_buffer,
     spng_format,
-    )
+)
 from libc.stdint cimport uintptr_t, uint32_t, uint8_t
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
@@ -51,7 +52,7 @@ def get_type() -> str:
     return "spng"
 
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return ("png", "png/L")
 
 
@@ -226,7 +227,7 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     return coding, Compressed(coding, cdata), {}, width, height, 0, len(rgb_format)*8
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     log("spng version %s selftest" % (get_version(),))
     from xpra.codecs.checks import make_test_image
     for rgb_format in ("RGBA", "RGB", "BGRA", "BGRX"):

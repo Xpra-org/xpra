@@ -5,7 +5,7 @@
 
 from time import monotonic
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -106,7 +106,7 @@ class IdleMixin(StubSourceMixin):
         nid = NotificationID.IDLE
         if nid in self.notification_callbacks:
             return
-        actions: tuple[str, ...] = ()
+        actions: Sequence[str] = ()
         if self.send_notifications_actions:
             actions = ("cancel", "Cancel Timeout")
         if self.session_name != "Xpra":

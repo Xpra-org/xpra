@@ -6,9 +6,9 @@
 
 import sys
 import os
-from types import ModuleType
-from collections.abc import Callable
 from typing import Any
+from types import ModuleType
+from collections.abc import Callable, Sequence
 
 from xpra.common import noop
 from xpra.os_util import gi_import
@@ -98,10 +98,10 @@ def normv(v: int) -> int:
     return int(v)
 
 
-all_plugin_names: tuple[str, ...] = ()
+all_plugin_names: Sequence[str] = ()
 
 
-def get_all_plugin_names() -> tuple[str, ...]:
+def get_all_plugin_names() -> Sequence[str]:
     global all_plugin_names
     if not all_plugin_names and Gst:
         registry = Gst.Registry.get()
@@ -112,7 +112,7 @@ def get_all_plugin_names() -> tuple[str, ...]:
     return all_plugin_names
 
 
-def has_plugins(*names) -> bool:
+def has_plugins(*names: str) -> bool:
     allp = get_all_plugin_names()
     # support names that contain a gstreamer chain, ie: "flacparse ! flacdec"
     snames = []

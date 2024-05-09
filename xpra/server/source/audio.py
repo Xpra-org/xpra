@@ -7,6 +7,7 @@ import os
 from subprocess import Popen
 from shutil import which
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -82,8 +83,8 @@ class AudioMixin(StubSourceMixin):
         self.pulseaudio_id = ""
         self.pulseaudio_cookie_hash = ""
         self.pulseaudio_server = ""
-        self.audio_decoders: tuple[str, ...] = ()
-        self.audio_encoders: tuple[str, ...] = ()
+        self.audio_decoders: Sequence[str] = ()
+        self.audio_encoders: Sequence[str] = ()
         self.audio_receive = False
         self.audio_send = False
         self.audio_fade_timer = 0

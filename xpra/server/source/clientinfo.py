@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std
@@ -32,7 +33,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.username = ""
         self.user = ""
         self.name = ""
-        self.argv: tuple[str, ...] = ()
+        self.argv: Sequence[str] = ()
         self.sharing = False
         # client capabilities/options:
         self.client_type = ""
@@ -43,7 +44,7 @@ class ClientInfoMixin(StubSourceMixin):
         self.client_machine = ""
         self.client_processor = ""
         self.client_release = ""
-        self.client_linux_distribution: tuple[str, ...] = ()
+        self.client_linux_distribution: Sequence[str] = ()
         self.client_proxy = False
         self.client_wm_name = ""
         self.client_session_type = ""

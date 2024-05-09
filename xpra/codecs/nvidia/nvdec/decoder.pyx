@@ -11,6 +11,7 @@ from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf  # pylint: disab
 
 from weakref import WeakValueDictionary
 from typing import Any, Dict, Tuple
+from collections.abc import Sequence
 from threading import Event
 
 from xpra.util.str_fn import csv
@@ -360,15 +361,16 @@ cdef extern from "cuviddec.h":
     CUresult cuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags)
     CUresult cuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags)
 
-DECODE_STATUS_STR = {
+
+DECODE_STATUS_STR: Dict[int, str] = {
     cuvidDecodeStatus_Invalid       : "invalid",
     cuvidDecodeStatus_InProgress    : "in-progress",
     cuvidDecodeStatus_Success       : "success",
     cuvidDecodeStatus_Error         : "error",
     cuvidDecodeStatus_Error_Concealed : "error-concealed",
-    }
+}
 
-CODEC_NAMES = {
+CODEC_NAMES: Dict[int, str] = {
 #    cudaVideoCodec_MPEG1    : "mpeg1",
 #    cudaVideoCodec_MPEG2    : "mpeg2",
     cudaVideoCodec_MPEG4    : "mpeg4",
@@ -381,68 +383,80 @@ CODEC_NAMES = {
     cudaVideoCodec_VP8      : "vp8",
     cudaVideoCodec_VP9      : "vp9",
     cudaVideoCodec_AV1      : "av1",
-    }
+}
 
-CHROMA_NAMES = {
+CHROMA_NAMES: Dict[int, str] = {
     cudaVideoChromaFormat_Monochrome    : "monochrome",
     cudaVideoChromaFormat_420           : "420",
     cudaVideoChromaFormat_422           : "422",
     cudaVideoChromaFormat_444           : "444",
-    }
+}
 
-SURFACE_NAMES = {
+SURFACE_NAMES: Dict[int, str] = {
     cudaVideoSurfaceFormat_NV12     : "NV12",
     cudaVideoSurfaceFormat_P016     : "P016",
     cudaVideoSurfaceFormat_YUV444   : "YUV444P",
     cudaVideoSurfaceFormat_YUV444_16Bit : "YUV444P16",
-    }
+}
 
 CODEC_MAP = dict((v,k) for k,v in CODEC_NAMES.items())
-CS_CHROMA = {
+CS_CHROMA: Dict[str, int] = {
     "YUV420P" : cudaVideoChromaFormat_420,
     "YUV422P" : cudaVideoChromaFormat_422,
     "YUV444P" : cudaVideoChromaFormat_444,
-    }
-MIN_SIZES = {}
+}
 
 
-def init_module():
+def init_module() -> None:
     log("nvdec.init_module()")
     from xpra.codecs.nvidia.util import has_nvidia_hardware
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
 
-def cleanup_module():
+
+def cleanup_module() -> None:
     log("nvdec.cleanup_module()")
 
-def get_version():
+
+def get_version() -> Tuple[int]:
     return (0, )
 
-def get_type():
+
+def get_type() -> str:
     return "nvdec"
 
-def get_info():
+
+def get_info() -> Dict[str, Any]:
     return {
         "version"   : get_version(),
-        }
+    }
 
-def get_min_size(encoding):
+
+MIN_SIZES: Dict[str, Tuple[int, int]] = {}
+
+
+def get_min_size(encoding: str) -> Tuple[int, int]:
     return MIN_SIZES.get(encoding, (48, 16))
+
 
 #CODECS = ("jpeg", "h264", "vp8", "vp9")
 CODECS = ("jpeg", )
-def get_encodings():
+
+
+def get_encodings() -> Sequence[str]:
     return CODECS
 
-def get_input_colorspaces(encoding):
+
+def get_input_colorspaces(encoding) -> Sequence[str]:
     #return ("YUV420P", "YUV422P", "YUV444P")
     return ("YUV420P", )
 
-def get_output_colorspaces(encoding, csc) -> Tuple[str, ...]:
+
+def get_output_colorspaces(encoding, csc) -> Sequence[str, ...]:
     return ("NV12", )
 
 
-def get_specs(encoding: str, colorspace: str) -> Tuple[VideoSpec, ...]:
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec, ...]:
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid output colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
     return (
@@ -464,17 +478,21 @@ cdef int seq_cb(void *user_data, CUVIDEOFORMAT *vf) except 0:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.sequence_callback(vf)
 
+
 cdef int decode_cb(void *user_data, CUVIDPICPARAMS *pp) except 0:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.decode_callback(pp)
+
 
 cdef int display_cb(void *user_data, CUVIDPARSERDISPINFO *pdi) except 0:
     cdef Decoder decoder = <Decoder> decoders.get(int(<uintptr_t> user_data))
     return decoder.display_callback(pdi.picture_index, pdi.timestamp)
 
+
 cdef int getop_cb(void *user_data, CUVIDOPERATINGPOINTINFO *op) except 0:
     #av1 specific, we don't care
     return 1
+
 
 cdef int getseimsg_cb(void *user_data, CUVIDSEIMESSAGEINFO *seimsg) except 0:
     log(f"getseimsg_cb {seimsg.sei_message_count} sei messages")
@@ -508,7 +526,7 @@ cdef class Decoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding, width, height, colorspace):
+    def init_context(self, encoding: str, width: int, height: int, colorspace: str) -> None:
         log("nvdec.Decoder.init_context%s", (encoding, width, height, colorspace))
         if encoding not in CODEC_MAP:
             raise ValueError(f"invalid encoding {encoding} for nvdec")
@@ -529,7 +547,7 @@ cdef class Decoder:
             self.init_parser()
         decoders[self.sequence] = self
 
-    def init_parser(self):
+    def init_parser(self) -> None:
         log("init_parser()")
         cdef CUVIDPARSERPARAMS pp
         memset(&pp, 0, sizeof(CUVIDPARSERPARAMS))
@@ -577,7 +595,7 @@ cdef class Decoder:
         self.image = self.get_output_image(picture_index)
         return int(self.image is not None)
 
-    def init_decoder(self, int decode_surfaces=2):
+    def init_decoder(self, int decode_surfaces=2) -> None:
         log(f"init_decoder({decode_surfaces})")
         cdef CUVIDDECODECREATEINFO pdci
         memset(&pdci, 0, sizeof(CUVIDDECODECREATEINFO))
@@ -615,15 +633,15 @@ cdef class Decoder:
     def __repr__(self):
         return f"nvdec({self.encoding})"
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> Dict[str, Any]:
         return {
-                "type"      : self.get_type(),
-                "width"     : self.width,
-                "height"    : self.height,
-                "encoding"  : self.encoding,
-                "frames"    : int(self.frames),
-                "colorspace": self.colorspace,
-                }
+            "type"      : self.get_type(),
+            "width"     : self.width,
+            "height"    : self.height,
+            "encoding"  : self.encoding,
+            "frames"    : int(self.frames),
+            "colorspace": self.colorspace,
+        }
 
     def get_colorspace(self) -> str:
         return self.colorspace
@@ -646,7 +664,7 @@ cdef class Decoder:
     def __dealloc__(self):
         self.clean()
 
-    def clean(self):
+    def clean(self) -> None:
         cdef CUresult r = 0
         self.event.set()
         if self.parser!=NULL:
@@ -665,7 +683,7 @@ cdef class Decoder:
         self.colorspace = ""
         self.encoding = ""
 
-    def decompress_image(self, data, options: typedict):
+    def decompress_image(self, data, options: typedict) -> ImageWrapper:
         log(f"nvdec.decompress_image({len(data)} bytes, {options})")
         cdef CUresult r
         cdef CUVIDSOURCEDATAPACKET packet
@@ -732,7 +750,7 @@ cdef class Decoder:
         #        raise RuntimeError(f"GPU decoding status returned error {sinfo!r}")
         #    cudacheck(r, "GPU picture decoding status error")
 
-    def get_output_image(self, int pic_idx=0):
+    def get_output_image(self, int pic_idx=0) -> ImageWrapper:
         #map it as a CUDA buffer:
         cdef CUVIDPROCPARAMS map_params
         map_params.progressive_frame = 1
@@ -780,7 +798,7 @@ cdef class Decoder:
             log(f"cuvidParseVideoData(..)={r}")
 
 
-def download_from_gpu(buf, size_t size):
+def download_from_gpu(buf, size_t size) -> MemBuf:
     log("nvdec download_from_gpu%s", (buf, size))
     start = monotonic()
     cdef MemBuf pixels = getbuf(size, False)
@@ -789,7 +807,8 @@ def download_from_gpu(buf, size_t size):
     log("nvdec downloaded %i bytes in %ims", size, 1000*(end-start))
     return pixels
 
-def decompress(encoding, img_data, width, height, rgb_format, options=None):
+
+def decompress(encoding: str, img_data, width: int, height: int, rgb_format: str, options=None) -> ImageWrapper:
     #decompress using the default device,
     #and download the pixel data from the GPU:
     dev = get_default_device_context()
@@ -804,7 +823,8 @@ def decompress(encoding, img_data, width, height, rgb_format, options=None):
             options["stream"] = stream
         return decompress_and_download(encoding, img_data, rgb_format, options)
 
-def decompress_and_download(encoding, img_data, width, height, options=None):
+
+def decompress_and_download(encoding: str, img_data, width: int, height: int, options=None) -> ImageWrapper:
     img = decompress_with_device(encoding, img_data, width, height, options)
     cuda_buffer = img.get_pixels()
     rowstrides = img.get_rowstride()
@@ -823,7 +843,8 @@ def decompress_and_download(encoding, img_data, width, height, options=None):
     img.set_pixels(planes)
     return img
 
-def decompress_with_device(encoding, img_data, width, height, options=None):
+
+def decompress_with_device(encoding: str, img_data, width: int, height: int, options=None) -> ImageWrapper:
     cdef Decoder decoder = Decoder()
     try:
         decoder.init_context(encoding, width, height, "YUV420P")
@@ -832,7 +853,7 @@ def decompress_with_device(encoding, img_data, width, height, options=None):
         decoder.clean()
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     from xpra.codecs.nvidia.util import has_nvidia_hardware, get_nvidia_module_version
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")

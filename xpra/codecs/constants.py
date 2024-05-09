@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -7,7 +7,7 @@ import os
 from typing import Any
 from weakref import WeakSet
 from dataclasses import dataclass, field, asdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.env import envint
@@ -18,7 +18,7 @@ FAST_DECODE_MIN_SPEED: int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
 # note: this is just for defining the order of encodings,
 # so we have both core encodings (rgb24/rgb32) and regular encodings (rgb) in here:
-PREFERRED_ENCODING_ORDER: tuple[str, ...] = (
+PREFERRED_ENCODING_ORDER: Sequence[str] = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "png", "png/P", "png/L", "webp", "avif",
@@ -28,23 +28,23 @@ PREFERRED_ENCODING_ORDER: tuple[str, ...] = (
     "grayscale",
     "stream",
 )
-PREFERRED_REFRESH_ENCODING_ORDER: tuple[str, ...] = (
+PREFERRED_REFRESH_ENCODING_ORDER: Sequence[str] = (
     "webp", "avif", "png", "png/P", "png/L", "rgb", "rgb24", "rbg32", "jpeg", "jpega",
 )
-STREAM_ENCODINGS: tuple[str, ...] = (
+STREAM_ENCODINGS: Sequence[str] = (
     "h264", "vp9", "vp8", "mpeg4",
     "mpeg4+mp4", "h264+mp4", "vp8+webm", "vp9+webm",
     "h265", "av1",
 )
 
 # encoding order for edges (usually one pixel high or wide):
-EDGE_ENCODING_ORDER: tuple[str, ...] = (
+EDGE_ENCODING_ORDER: Sequence[str] = (
     "rgb24", "rgb32",
     "png", "webp",
     "png/P", "png/L", "rgb", "jpeg", "jpega",
 )
 
-HELP_ORDER: tuple[str, ...] = (
+HELP_ORDER: Sequence[str] = (
     "auto",
     "stream",
     "grayscale",
@@ -71,7 +71,7 @@ def get_plane_name(pixel_format: str = "YUV420P", index: int = 0) -> str:
     }.get(pixel_format, list(pixel_format))[index]
 
 
-PIXEL_SUBSAMPLING : dict[str, tuple] = {
+PIXEL_SUBSAMPLING : dict[str, Sequence[tuple[int, int]]] = {
     # NV12 is actually subsampled horizontally too - just like YUV420P
     # (but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):
     "NV12"      : ((1, 1), (1, 2)),
@@ -87,7 +87,7 @@ PIXEL_SUBSAMPLING : dict[str, tuple] = {
 }
 
 
-def get_subsampling_divs(pixel_format: str) -> tuple[tuple[int, int], ...]:
+def get_subsampling_divs(pixel_format: str) -> Sequence[tuple[int, int]]:
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)
     if pixel_format not in PIXEL_SUBSAMPLING:
@@ -95,7 +95,7 @@ def get_subsampling_divs(pixel_format: str) -> tuple[tuple[int, int], ...]:
     return PIXEL_SUBSAMPLING[pixel_format]
 
 
-def preforder(encodings: Iterable[str]) -> tuple[str, ...]:
+def preforder(encodings: Iterable[str]) -> Sequence[str]:
     encs: set[str] = set(encodings)
     return tuple(x for x in PREFERRED_ENCODING_ORDER if x in encs)
 
@@ -129,7 +129,7 @@ def get_x264_preset(speed: int = 50, fast_decode: bool = False) -> int:
     return 5 - max(0, min(4, speed // 20))
 
 
-RGB_FORMATS: tuple[str, ...] = (
+RGB_FORMATS: Sequence[str] = (
     "XRGB",
     "BGRX",
     "ARGB",
@@ -168,7 +168,7 @@ class CodecSpec:
     width_mask      : int = 0xFFFF
     height_mask     : int = 0xFFFF
     max_instances   : int = 0
-    skipped_fields : tuple[str, ...] = ("instances", "skipped_fields", )
+    skipped_fields : Sequence[str] = ("instances", "skipped_fields", )
     # not exported:
     instances       : WeakSet[Any] = field(default_factory=WeakSet)
 
@@ -225,7 +225,7 @@ class VideoSpec(CodecSpec):
 
     encoding           : str = "invalid"
     input_colorspace   : str = "invalid"
-    output_colorspaces : tuple[str, ...] = ()      # ie: ("YUV420P" : "YUV420P", ...)
+    output_colorspaces : Sequence[str] = ()      # ie: ("YUV420P" : "YUV420P", ...)
     has_lossless_mode   : bool = False
 
     def __repr__(self):

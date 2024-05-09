@@ -8,7 +8,7 @@ import os
 import signal
 from socket import gethostname
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool, first_time
@@ -689,7 +689,7 @@ class CoreX11WindowModel(WindowModelStub):
 
     def _handle_opaque_region_change(self) -> None:
         rectangles = []
-        v: tuple[int, ...] = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
+        v: Sequence[int] = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
         if OPAQUE_REGION and len(v) % 4 == 0:
             while v:
                 rectangles.append(v[:4])

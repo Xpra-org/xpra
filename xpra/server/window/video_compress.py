@@ -10,7 +10,7 @@ from math import sqrt, ceil
 from functools import reduce
 from time import monotonic
 from typing import Any
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.net.compression import Compressed, LargeStructure
@@ -172,7 +172,7 @@ class WindowVideoSource(WindowSource):
         super().__init__(*args)
         self.scroll_min_percent: int = self.encoding_options.intget("scrolling.min-percent", SCROLL_MIN_PERCENT)
         self.scroll_preference: int = self.encoding_options.intget("scrolling.preference", 100)
-        self.supports_video_b_frames : tuple[str, ...] = self.encoding_options.strtupleget("video_b_frames", ())
+        self.supports_video_b_frames: Sequence[str] = self.encoding_options.strtupleget("video_b_frames", ())
         self.video_max_size = self.encoding_options.inttupleget("video_max_size", (8192, 8192), 2, 2)
         self.video_stream_file = None
 
@@ -197,11 +197,11 @@ class WindowVideoSource(WindowSource):
 
         self.video_subregion = VideoSubregion(self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.video_subregion.supported = VIDEO_SUBREGION
-        self.video_encodings : tuple[str, ...] = ()
-        self.common_video_encodings : tuple[str, ...] = ()
-        self.non_video_encodings : tuple[str, ...] = ()
-        self.video_fallback_encodings : dict = {}
-        self.edge_encoding : str = ""
+        self.video_encodings: Sequence[str] = ()
+        self.common_video_encodings: Sequence[str] = ()
+        self.non_video_encodings: Sequence[str] = ()
+        self.video_fallback_encodings: dict = {}
+        self.edge_encoding: str = ""
         self.start_video_frame: int = 0
         self.gstreamer_timer: int = 0
         self.video_encoder_timer: int = 0
@@ -1805,7 +1805,7 @@ class WindowVideoSource(WindowSource):
         scores = self.get_video_pipeline_options(encodings, w, h, src_format)
         return self.setup_pipeline(scores, width, height, src_format)
 
-    def do_check_pipeline(self, encodings: tuple[str, ...], width: int, height: int, src_format: str) -> bool:
+    def do_check_pipeline(self, encodings: Sequence[str], width: int, height: int, src_format: str) -> bool:
         """
             Checks that the current pipeline is still valid
             for the given input.

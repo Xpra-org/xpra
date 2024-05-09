@@ -8,6 +8,7 @@ import sys
 import os.path
 from types import ModuleType
 from typing import Any
+from collections.abc import Sequence, Iterable
 
 from xpra.util.str_fn import csv, print_nested_dict, pver
 from xpra.util.env import envbool, numpy_import_context
@@ -36,7 +37,7 @@ CODEC_FAIL_SELFTEST = os.environ.get("XPRA_CODEC_FAIL_SELFTEST", "").split(",")
 log(f"codec loader settings: {SELFTEST=}, {FULL_SELFTEST=}, {CODEC_FAIL_IMPORT=}, {CODEC_FAIL_SELFTEST=}")
 
 
-SKIP_LIST: tuple[str, ...] = ()
+SKIP_LIST: Sequence[str] = ()
 if OSX:
     SKIP_LIST = ("avif", "nvenc", "nvdec", "nvjpeg")
 
@@ -45,30 +46,30 @@ def autoprefix(prefix: str, name: str) -> str:
     return (name if (name.startswith(prefix) or name.endswith(prefix)) else f"{prefix}_{name}").replace("-", "_")
 
 
-def filt(*values) -> tuple[str, ...]:
+def filt(*values) -> Sequence[str]:
     return tuple(x for x in values if all(x.find(s) < 0 for s in SKIP_LIST))
 
 
-def gfilt(generator) -> tuple[str, ...]:
+def gfilt(generator) -> Sequence[str]:
     return filt(*generator)
 
 
-CSC_CODECS: tuple[str, ...] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
-ENCODER_CODECS: tuple[str, ...] = gfilt(f"enc_{x}" for x in (
+CSC_CODECS: Sequence[str] = gfilt(f"csc_{x}" for x in ("cython", "libyuv"))
+ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif",
 ))
-ENCODER_VIDEO_CODECS: tuple[str, ...] = gfilt(autoprefix("enc", x) for x in (
+ENCODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("enc", x) for x in (
     "vpx", "x264", "openh264", "nvenc", "gstreamer",
 ))
-DECODER_CODECS: tuple[str, ...] = gfilt(f"dec_{x}" for x in (
+DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
     "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
 ))
-DECODER_VIDEO_CODECS: tuple[str, ...] = gfilt(autoprefix("dec", x) for x in (
+DECODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("dec", x) for x in (
     "vpx", "openh264", "nvdec",
 ))
-SOURCES: tuple[str, ...] = filt("v4l2", "evdi", "drm", "nvfbc")
+SOURCES: Sequence[str] = filt("v4l2", "evdi", "drm", "nvfbc")
 
-ALL_CODECS: tuple[str, ...] = filt(*set(
+ALL_CODECS: Sequence[str] = filt(*set(
     CSC_CODECS + ENCODER_CODECS + ENCODER_VIDEO_CODECS + DECODER_CODECS + DECODER_VIDEO_CODECS + SOURCES)
 )
 
@@ -177,7 +178,7 @@ def codec_import_check(name: str, description: str, top_module, class_module, cl
     return None
 
 
-codec_versions: dict[str, tuple[Any, ...]] = {}
+codec_versions: dict[str, Iterable[Any]] = {}
 
 
 def add_codec_version(name: str, top_module, version: str = "get_version()", alt_version: str = "__version__"):
@@ -291,7 +292,7 @@ def load_codec(name: str):
     return get_codec(name)
 
 
-def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=False) -> tuple[str, ...]:
+def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=False) -> Sequence[str]:
     log("loading codecs")
     loaded: list[str] = []
 
@@ -322,7 +323,7 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=Fals
     return tuple(loaded)
 
 
-def show_codecs(show: tuple[str,...] = ()) -> None:
+def show_codecs(show: Iterable[str] = ()) -> None:
     for name in sorted(show or ALL_CODECS):
         log(f"* {name.ljust(20)} : {str(name in codecs).ljust(10)} {codecs.get(name, '')}")
     log("codecs versions:")

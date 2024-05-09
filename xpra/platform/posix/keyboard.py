@@ -6,7 +6,7 @@
 
 import os
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.dbus.helper import DBusHelper, native_to_dbus, dbus_to_native
@@ -169,7 +169,7 @@ class Keyboard(KeyboardBase):
         log("get_keymap_spec()=%r", query_struct)
         return query_struct
 
-    def get_xkb_rules_names_property(self) -> tuple[str, ...]:
+    def get_xkb_rules_names_property(self) -> Sequence[str]:
         # parses the "_XKB_RULES_NAMES" X11 property
         if not is_X11():
             return ()

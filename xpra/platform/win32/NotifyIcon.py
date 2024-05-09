@@ -14,7 +14,7 @@ from ctypes import (
 )
 from ctypes.wintypes import HWND, UINT, POINT, HICON, BOOL, CHAR, WCHAR, DWORD, HMODULE, RECT
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
@@ -191,7 +191,7 @@ class win32NotifyIcon:
         self.click_callback = click_callback
         self.exit_callback = exit_callback
         self.command_callback = command_callback
-        self.reset_function: tuple[Callable, tuple[Any, ...]] | None = None
+        self.reset_function: tuple[Callable, Sequence[Any]] | None = None
         self.image_cache: dict[str, Any] = {}
         # Create the Window.
         if iconPathName:

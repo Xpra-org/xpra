@@ -7,7 +7,7 @@
 
 import sys
 from typing import Any, TypeAlias
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from time import sleep, monotonic
 from threading import Event
 from collections import deque
@@ -35,7 +35,7 @@ YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
 
-ENCODE_WORK_ITEM_TUPLE = tuple[bool, Callable, tuple[Any, ...]]
+ENCODE_WORK_ITEM_TUPLE = tuple[bool, Callable, Sequence[Any]]
 ENCODE_WORK_ITEM: TypeAlias = ENCODE_WORK_ITEM_TUPLE | None
 
 
@@ -80,7 +80,7 @@ class ClientConnection(StubSourceMixin):
         # this queue will hold functions to call to compress data (pixels, clipboard)
         # items placed in this queue are picked off by the "encode" thread,
         # the functions should add the packets they generate to the 'packet_queue'
-        self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, tuple[Any, ...]]] = SimpleQueue()
+        self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, Sequence[Any]]] = SimpleQueue()
         self.encode_thread = None
         self.ordinary_packets: list[tuple[PacketType, bool, Callable, bool]] = []
         self.socket_dir = socket_dir
@@ -106,7 +106,7 @@ class ClientConnection(StubSourceMixin):
         self.hello_sent = False
         self.share = False
         self.lock = False
-        self.control_commands: tuple[str, ...] = ()
+        self.control_commands: Sequence[str] = ()
         self.xdg_menu = True
         self.bandwidth_limit = self.server_bandwidth_limit
         self.soft_bandwidth_limit = self.bandwidth_limit

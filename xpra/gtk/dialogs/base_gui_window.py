@@ -6,6 +6,7 @@
 import os
 import signal
 import subprocess
+from typing import Iterable
 from collections.abc import Callable
 
 from xpra.gtk.window import add_close_accel, add_window_accel
@@ -102,7 +103,7 @@ class BaseGUIWindow(Gtk.Window):
         for x in self.vbox.get_children():
             self.vbox.remove(x)
 
-    def populate_form(self, lines: tuple[str, ...] = (), *buttons) -> None:
+    def populate_form(self, lines: Iterable[str] = (), *buttons) -> None:
         self.clear_vbox()
         self.add_widget(label(self.get_title(), font="sans 20"))
         self.add_text_lines(lines)

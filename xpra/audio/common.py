@@ -4,6 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Iterable
+from collections.abc import Sequence
+
 from xpra.util.str_fn import csv
 from xpra.log import Logger
 
@@ -44,7 +47,7 @@ MP3_ID3V2 = MP3 + "+" + ID3V2
 
 
 # used for parsing codec names specified on the command line:
-def audio_option_or_all(name: str, options, all_values: tuple[str, ...]) -> tuple[str, ...]:
+def audio_option_or_all(name: str, options, all_values: Iterable[str]) -> Sequence[str]:
     log("audio_option_or_all%s", (name, options, all_values))
     if not options:
         v = list(all_values)  # not specified on command line: use default

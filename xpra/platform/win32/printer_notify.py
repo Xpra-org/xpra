@@ -6,6 +6,7 @@
 
 import ctypes
 from ctypes import wintypes
+from collections.abc import Sequence
 
 kernel32 = ctypes.WinDLL('kernel32.dll', use_last_error=True)
 winspool = ctypes.WinDLL('winspool.drv', use_last_error=True)
@@ -404,7 +405,7 @@ def wait_for_print_job(printer_filter=PRINTER_CHANGE_ADD_JOB,
         winspool.ClosePrinter(hPrinter)
 
 
-DEFAULT_FIELDS: tuple[int, ...] = (
+DEFAULT_FIELDS: Sequence[int] = (
     JOB_NOTIFY_FIELD_PRINTER_NAME,
     JOB_NOTIFY_FIELD_STATUS,
     JOB_NOTIFY_FIELD_DOCUMENT,

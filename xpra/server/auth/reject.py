@@ -1,7 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from collections.abc import Sequence
 
 from xpra.server.auth.sys_auth_base import SessionData
 from xpra.net.digest import get_salt, choose_digest
@@ -17,11 +19,11 @@ class Authenticator:
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests: tuple[str, ...]) -> tuple[bytes, str]:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         self.challenge_sent = True
         return get_salt(), choose_digest(digests)
 
-    def choose_salt_digest(self, digest_modes) -> str:
+    def choose_salt_digest(self, digest_modes: Sequence[str]) -> str:
         return choose_digest(digest_modes)
 
     def get_uid(self) -> int:
@@ -30,7 +32,7 @@ class Authenticator:
     def get_gid(self) -> int:
         return -1
 
-    def get_passwords(self) -> tuple[str, ...]:
+    def get_passwords(self) -> Sequence[str]:
         return ()
 
     def get_password(self) -> str:

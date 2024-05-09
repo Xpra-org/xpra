@@ -8,6 +8,7 @@ import os
 from math import sqrt
 from typing import Any
 from time import sleep, monotonic
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.common import FULL_INFO
@@ -48,11 +49,11 @@ class EncodingsMixin(StubSourceMixin):
         self.global_batch_config = self.default_batch_config.clone()  # global batch config
 
         self.encoding = ""  # the default encoding for all windows
-        self.encodings: tuple[str, ...] = ()  # all the encodings supported by the client
-        self.core_encodings: tuple[str, ...] = ()
+        self.encodings: Sequence[str] = ()  # all the encodings supported by the client
+        self.core_encodings: Sequence[str] = ()
         self.full_csc_modes = dict()
-        self.window_icon_encodings: tuple[str, ...] = ()
-        self.rgb_formats: tuple[str, ...] = ("RGB",)
+        self.window_icon_encodings: Sequence[str] = ()
+        self.rgb_formats: Sequence[str] = ("RGB",)
         self.encoding_options = typedict()
         self.icons_encoding_options = typedict()
         self.default_encoding_options = typedict()

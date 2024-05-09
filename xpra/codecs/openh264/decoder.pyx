@@ -7,6 +7,7 @@
 
 from time import monotonic
 from typing import Any, Dict, Tuple
+from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec
 from xpra.util.objects import typedict
@@ -63,11 +64,14 @@ COLORSPACES : Dict[str, str] = {
     "YUV420P"   : "YUV420P",
 }
 
+
 def init_module() -> None:
     log("openh264.init_module()")
 
+
 def cleanup_module() -> None:
     log("openh264.cleanup_module()")
+
 
 def get_version() -> Tuple[int, int, int]:
     cdef OpenH264Version version
@@ -83,10 +87,10 @@ def get_info() -> Dict[str, Any]:
     return {
         "version"   : get_version(),
         "formats"   : tuple(COLORSPACES.keys()),
-        }
+    }
 
 
-def get_encodings() -> Tuple[str, ...]:
+def get_encodings() -> Sequence[str]:
     return ("h264", )
 
 
@@ -94,12 +98,12 @@ def get_min_size(encoding) -> Tuple[int, int]:
     return 32, 32
 
 
-def get_input_colorspaces(encoding: str) -> Tuple[str, ...]:
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     assert encoding in get_encodings()
     return tuple(COLORSPACES.keys())
 
 
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Tuple[str, ...]:
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
     return (input_colorspace, )
@@ -108,7 +112,7 @@ def get_output_colorspaces(encoding: str, input_colorspace: str) -> Tuple[str, .
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
 
-def get_specs(encoding, colorspace) -> tuple[VideoSpec, ...]:
+def get_specs(encoding, colorspace) -> Sequence[VideoSpec]:
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
@@ -134,7 +138,7 @@ cdef class Decoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding, int width, int height, colorspace):
+    def init_context(self, encoding: str, int width, int height, colorspace: str):
         log("openh264.init_context%s", (encoding, width, height, colorspace))
         assert encoding=="h264", f"invalid encoding: {encoding}"
         self.width = width
@@ -228,7 +232,7 @@ cdef class Decoder:
         return ImageWrapper(0, 0, width, height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3)
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     log("openh264 selftest: %s", get_info())
     from xpra.codecs.checks import testdecoder
     from xpra.codecs.openh264 import decoder

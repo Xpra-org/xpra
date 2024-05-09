@@ -5,6 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.client.gui.keyboard_helper import KeyboardHelper, log
 from xpra.gtk.keymap import get_gtk_keymap
 from xpra.os_util import gi_import
@@ -86,7 +88,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
         return old_hash != self.hash
 
-    def get_full_keymap(self) -> tuple[tuple[int, str, int, int, int], ...]:
+    def get_full_keymap(self) -> Sequence[tuple[int, str, int, int, int]]:
         return get_gtk_keymap()
 
     def cleanup(self) -> None:

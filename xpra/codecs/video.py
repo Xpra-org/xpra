@@ -8,7 +8,7 @@ import sys
 import traceback
 from threading import Lock
 from typing import Any
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Sequence, Iterable
 
 from xpra.scripts.config import csvstrl
 from xpra.codecs.constants import VideoSpec, CodecSpec
@@ -61,12 +61,12 @@ def try_import_modules(prefix: str, *codec_names) -> list[str]:
 
 
 # all the codecs we know about:
-ALL_VIDEO_ENCODER_OPTIONS: tuple[str, ...] = ("x264", "openh264", "vpx", "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer")
-HARDWARE_ENCODER_OPTIONS: tuple[str, ...] = ("nvenc", "nvjpeg")
-ALL_CSC_MODULE_OPTIONS: tuple[str, ...] = ("cython", "libyuv")
-ALL_VIDEO_DECODER_OPTIONS: tuple[str, ...] = ("openh264", "vpx", "gstreamer", "nvdec")
+ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("x264", "openh264", "vpx", "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer")
+HARDWARE_ENCODER_OPTIONS: Sequence[str] = ("nvenc", "nvjpeg")
+ALL_CSC_MODULE_OPTIONS: Sequence[str] = ("cython", "libyuv")
+ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("openh264", "vpx", "gstreamer", "nvdec")
 
-PREFERRED_ENCODER_ORDER: tuple[str, ...] = tuple(
+PREFERRED_ENCODER_ORDER: Sequence[str] = tuple(
     autoprefix("enc", x) for x in (
         "nvenc", "nvjpeg", "x264", "vpx", "jpeg", "webp", "gstreamer")
 )
@@ -109,7 +109,7 @@ def get_hardware_encoders(names=HARDWARE_ENCODER_OPTIONS) -> list[str]:
     return try_import_modules("enc", *names)
 
 
-def filt(prefix: str, name: str, inlist, all_fn: Callable, all_options: tuple[str, ...]) -> list[str]:
+def filt(prefix: str, name: str, inlist, all_fn: Callable, all_options: Iterable[str]) -> list[str]:
     # log("filt%s", (prefix, name, inlist, all_fn, all_list))
     instr = csvstrl(set(inlist or ())).strip(",")
     if instr == "none":
@@ -306,22 +306,22 @@ class VideoHelper:
     def get_gpu_decodings(self) -> dict[str, list[CodecSpec]]:
         return self.get_gpu_options(self._video_decoder_specs)
 
-    def get_encodings(self) -> tuple[str, ...]:
+    def get_encodings(self) -> Sequence[str]:
         return tuple(self._video_encoder_specs.keys())
 
-    def get_decodings(self) -> tuple[str, ...]:
+    def get_decodings(self) -> Sequence[str]:
         return tuple(self._video_decoder_specs.keys())
 
-    def get_csc_inputs(self) -> tuple[str, ...]:
+    def get_csc_inputs(self) -> Sequence[str]:
         return tuple(self._csc_encoder_specs.keys())
 
-    def get_encoder_specs(self, encoding) -> VdictEntry:
+    def get_encoder_specs(self, encoding: str) -> VdictEntry:
         return self._video_encoder_specs.get(encoding, {})
 
-    def get_csc_specs(self, src_format) -> VdictEntry:
+    def get_csc_specs(self, src_format: str) -> VdictEntry:
         return self._csc_encoder_specs.get(src_format, {})
 
-    def get_decoder_specs(self, encoding) -> VdictEntry:
+    def get_decoder_specs(self, encoding: str) -> VdictEntry:
         return self._video_decoder_specs.get(encoding, {})
 
     def init_video_encoders_options(self) -> None:
@@ -463,7 +463,7 @@ class VideoHelper:
         log("get_server_full_csc_modes(%s)=%s", client_supported_csc_modes, full_csc_modes)
         return full_csc_modes
 
-    def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes) -> dict[str, list[str]]:
+    def get_server_full_csc_modes_for_rgb(self, *target_rgb_modes: str) -> dict[str, list[str]]:
         """ given a list of RGB modes the client can handle,
             returns the CSC modes per encoding that the server can encode with,
             this will include the RGB modes themselves too.

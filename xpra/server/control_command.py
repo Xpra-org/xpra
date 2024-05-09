@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.log import (
     Logger,
@@ -65,7 +65,7 @@ class ArgsControlCommand(ControlCommand):
         args = self.get_validated_args(*args)
         return super().run(*args)
 
-    def get_validated_args(self, *targs) -> tuple[Any, ...]:
+    def get_validated_args(self, *targs) -> Sequence[Any]:
         args = list(targs)
         for i, validation in enumerate(self.validation):
             if i >= len(args):

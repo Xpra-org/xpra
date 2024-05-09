@@ -6,6 +6,7 @@
 
 import os
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
@@ -32,7 +33,7 @@ SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 DEFAULT_ENCODINGS = os.environ.get("XPRA_DEFAULT_ENCODINGS", "rgb32,rgb24,jpeg,png").split(",")
 
 
-def get_core_encodings() -> tuple[str, ...]:
+def get_core_encodings() -> Sequence[str]:
     """
         This method returns the actual encodings supported.
         ie: ["rgb24", "vp8", "webp", "png", "png/L", "png/P", "jpeg", "h264", "vpx"]
@@ -80,11 +81,11 @@ class Encodings(StubClientMixin):
         self.video_scaling = None
         self.video_max_size = VIDEO_MAX_SIZE
 
-        self.server_encodings: tuple[str, ...] = ()
-        self.server_core_encodings: tuple[str, ...] = ()
-        self.server_encodings_with_speed: tuple[str, ...] = ()
-        self.server_encodings_with_quality: tuple[str, ...] = ()
-        self.server_encodings_with_lossless_mode: tuple[str, ...] = ()
+        self.server_encodings: Sequence[str] = ()
+        self.server_core_encodings: Sequence[str] = ()
+        self.server_encodings_with_speed: Sequence[str] = ()
+        self.server_encodings_with_quality: Sequence[str] = ()
+        self.server_encodings_with_lossless_mode: Sequence[str] = ()
 
         # what we told the server about our encoding defaults:
         self.encoding_defaults = {}
@@ -262,7 +263,7 @@ class Encodings(StubClientMixin):
         log("encoding capabilities: %s", caps)
         return caps
 
-    def get_encodings(self) -> tuple[str, ...]:
+    def get_encodings(self) -> Sequence[str]:
         """
             Unlike get_core_encodings(), this method returns "rgb" for both "rgb24" and "rgb32".
             That's because although we may support both, the encoding chosen is plain "rgb",
