@@ -111,9 +111,6 @@ class AudioServer(StubServerMixin):
         log("get_server_features(%s)=%s", source, d)
         return d
 
-    def get_http_scripts(self) -> dict[str, Callable]:
-        return {}
-
     def init_pulseaudio(self) -> None:
         audiolog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if self.pulseaudio is False:

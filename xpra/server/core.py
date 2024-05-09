@@ -31,7 +31,7 @@ from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE,
-    may_log_packet, is_request_allowed, PacketType, get_ssh_port, has_websocket_handler,
+    may_log_packet, is_request_allowed, PacketType, get_ssh_port, has_websocket_handler, HttpResponse,
 )
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -184,7 +184,7 @@ class ServerCore:
         self.websocket_upgrade = has_websocket_handler()
         self.ssh_upgrade = False
         self._html: bool = False
-        self._http_scripts: dict[str, Callable] = {}
+        self._http_scripts: dict[str, Callable[[str], HttpResponse]] = {}
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
         self._aliases: dict = {}
@@ -706,7 +706,7 @@ class ServerCore:
 
     def init_http_scripts(self, http_scripts: str):
         if http_scripts.lower() not in FALSE_OPTIONS:
-            script_options: dict[str, Callable] = {
+            script_options: dict[str, Callable[[str], HttpResponse]] = {
                 "/Status": self.http_status_request,
                 "/Info": self.http_info_request,
                 "/Sessions": self.http_sessions_request,
@@ -728,7 +728,7 @@ class ServerCore:
                         script = "/" + script
                     handler = script_options.get(script)
                     if not handler:
-                        httplog.warn("Warning: unknown script '%s'", script)
+                        httplog.warn(f"Warning: unknown script {script!r}")
                     else:
                         self._http_scripts[script] = handler
         httplog("init_http_scripts(%s)=%s", http_scripts, self._http_scripts)
@@ -1664,17 +1664,17 @@ class ServerCore:
                         req_info, pretty_socket(frominfo), exc_info=True)
         force_close_connection(conn)
 
-    def get_http_scripts(self) -> dict[str, Any]:
+    def get_http_scripts(self) -> dict[str, Callable[[str], HttpResponse]]:
         return self._http_scripts
 
     def http_query_dict(self, path) -> dict:
         return dict(parse_qsl(urlparse(path).query))
 
-    def send_json_response(self, data):
+    def send_json_response(self, data) -> HttpResponse:
         import json  # pylint: disable=import-outside-toplevel
         return self.http_response(json.dumps(data), "application/json")
 
-    def send_icon(self, icon_type: str, icon_data: bytes):
+    def send_icon(self, icon_type: str, icon_data: bytes) -> HttpResponse:
         httplog("send_icon%s", (icon_type, ellipsizer(icon_data)))
         if not icon_data:
             icon_filename = get_icon_filename("noicon.png")
@@ -1701,18 +1701,18 @@ class ServerCore:
             mime_type = "application/octet-stream"
         return self.http_response(icon_data, mime_type)
 
-    def http_menu_request(self, _uri: str):
+    def http_menu_request(self, _uri: str) -> HttpResponse:
         xdg_menu = self.menu_provider.get_menu_data(remove_icons=True)
         return self.send_json_response(xdg_menu or "not available")
 
-    def http_desktop_menu_request(self, _uri: str):
+    def http_desktop_menu_request(self, _uri: str) -> HttpResponse:
         xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
         return self.send_json_response(xsessions or "not available")
 
-    def http_menu_icon_request(self, uri: str):
-        def invalid_path():
+    def http_menu_icon_request(self, uri: str) -> HttpResponse:
+        def invalid_path() -> HttpResponse:
             httplog(f"invalid menu-icon request path {uri!r}")
-            return 404, None, None
+            return 404, {}, b""
 
         parts = unquote(uri).split("/MenuIcon/", 1)
         # ie: "/menu-icon/a/b" -> ['', 'a/b']
@@ -1773,10 +1773,10 @@ class ServerCore:
             "uuid": self.uuid,
         }
 
-    def http_status_request(self, _uri: str):
+    def http_status_request(self, _uri: str) -> HttpResponse:
         return self.http_response("ready")
 
-    def http_response(self, content, content_type: str = "text/plain"):
+    def http_response(self, content, content_type: str = "text/plain") -> HttpResponse:
         if not content:
             return 404, {}, None
         if isinstance(content, str):

@@ -40,6 +40,8 @@ DEFAULT_PORTS: dict[str, int] = {
     "quic": 20000,
 }
 
+HttpResponse: TypeAlias = tuple[int, dict, bytes]
+
 PacketElement: TypeAlias = Union[
     tuple, list, dict, int, bool, str, bytes, memoryview,
     Compressible, Compressed, LargeStructure,

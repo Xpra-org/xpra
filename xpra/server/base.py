@@ -13,7 +13,7 @@ from collections.abc import Callable, Sequence
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
-from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType, is_request_allowed
+from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType, is_request_allowed, HttpResponse
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
 from xpra.util.io import is_socket
@@ -744,7 +744,7 @@ class ServerBase(ServerBaseClass):
         info["clients"] = len(self._server_sources)
         return info
 
-    def get_http_scripts(self) -> dict[str, Any]:
+    def get_http_scripts(self) -> dict[str, Callable[[str], HttpResponse]]:
         scripts = {}
         for c in SERVER_BASES:
             scripts.update(c.get_http_scripts(self))

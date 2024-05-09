@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,9 +10,10 @@ import mimetypes
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
 from typing import Any
-from collections.abc import Iterable
+from collections.abc import Iterable, Callable
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
+from xpra.net.common import HttpResponse
 from xpra.net.http.common import EXTENSION_TO_MIMETYPE
 from xpra.net.http.directory_listing import list_directory
 from xpra.net.bytestreams import pretty_socket
@@ -227,8 +228,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def __init__(self, sock, addr,
                  web_root: str = "/usr/share/xpra/www/",
-                 http_headers_dirs: Iterable[str] = ("/etc/xpra/http-headers",), script_paths=None,
-                 username: str = AUTH_USERNAME, password: str = AUTH_PASSWORD):
+                 http_headers_dirs: Iterable[str] = ("/etc/xpra/http-headers", ),
+                 script_paths: dict[str, Callable[[str], HttpResponse]] = None,
+                 username: str = AUTH_USERNAME,
+                 password: str = AUTH_PASSWORD):
         self.web_root = web_root
         self.http_headers_dirs = http_headers_dirs
         self.script_paths = script_paths or {}

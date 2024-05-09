@@ -10,7 +10,7 @@ from collections.abc import Callable
 
 from xpra.util.objects import typedict
 from xpra.os_util import WIN32
-from xpra.net.common import ServerPacketHandlerType
+from xpra.net.common import ServerPacketHandlerType, HttpResponse
 
 
 class StubServerMixin:
@@ -141,7 +141,7 @@ class StubServerMixin:
             return [cmd]
         return shlex.split(str(cmd))
 
-    def get_http_scripts(self) -> dict[str, Callable]:
+    def get_http_scripts(self) -> dict[str, Callable[[str], HttpResponse]]:
         return {}
 
     def add_packet_handler(self, packet_type: str, handler: ServerPacketHandlerType, main_thread=True) -> None:

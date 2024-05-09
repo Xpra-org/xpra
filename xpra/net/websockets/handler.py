@@ -7,6 +7,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.util.env import envbool
 from xpra.util.str_fn import is_valid_hostname, strtobytes
+from xpra.net.common import HttpResponse
 from xpra.net.websockets.common import make_websocket_accept_hash
 from xpra.net.http.handler import HTTPRequestHandler, AUTH_USERNAME, AUTH_PASSWORD
 from xpra.log import Logger
@@ -28,9 +29,10 @@ class WebSocketRequestHandler(HTTPRequestHandler):
     def __init__(self, sock, addr, new_websocket_client,
                  web_root="/usr/share/xpra/www/",
                  http_headers_dir="/etc/xpra/http-headers",
-                 script_paths=None,
+                 script_paths: dict[str, Callable[[str], HttpResponse]] = None,
                  redirect_https=False,
-                 username=AUTH_USERNAME, password=AUTH_PASSWORD,
+                 username=AUTH_USERNAME,
+                 password=AUTH_PASSWORD,
                  ):
         self.new_websocket_client: Callable = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
