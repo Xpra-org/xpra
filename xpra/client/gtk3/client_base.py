@@ -691,8 +691,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             force_focus()
             self.session_info.present()
             return
-        p = self._protocol
-        conn = p._conn if p else None
+        conn = getattr(self._protocol, "._conn", None)
         from xpra.gtk.dialogs.session_info import SessionInfo
         self.session_info = SessionInfo(self, self.session_name, conn)
         self.session_info.set_args(*args)
