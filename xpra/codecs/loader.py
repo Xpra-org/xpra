@@ -46,11 +46,11 @@ def autoprefix(prefix: str, name: str) -> str:
     return (name if (name.startswith(prefix) or name.endswith(prefix)) else f"{prefix}_{name}").replace("-", "_")
 
 
-def filt(*values) -> Sequence[str]:
+def filt(*values) -> tuple[str, ...]:
     return tuple(x for x in values if all(x.find(s) < 0 for s in SKIP_LIST))
 
 
-def gfilt(generator) -> Sequence[str]:
+def gfilt(generator) -> tuple[str, ...]:
     return filt(*generator)
 
 
