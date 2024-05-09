@@ -388,7 +388,7 @@ class FileTransferHandler(FileTransferAttributes):
         file_data: bytes = packet[3]
         has_more = bool(packet[4])
         # if len(file_data)<1024:
-        #    from xpra.os_util import hexstr
+        #    from xpra.util.str_fn import hexstr
         #    filelog.warn("file_data=%s", hexstr(file_data))
         # filelog(f"file_data={len(file_data)} {type(file_data)}")
         filelog(f"file_data={len(file_data)} {type(file_data)}")
