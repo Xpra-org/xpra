@@ -212,7 +212,7 @@ class MenuProvider:
         if not category:
             log("get_menu_icon: invalid menu category '%s'", category_name)
             return "", b""
-        if app_name is None:
+        if not app_name:
             return category.get("IconType"), category.get("IconData")
         entries = category.get("Entries")
         if not entries:

@@ -1723,7 +1723,7 @@ class ServerCore:
         category_name = path[0]
         if len(path) < 2:
             # only the category is present
-            app_name = None
+            app_name = ""
         else:
             app_name = path[1]
         httplog("http_menu_icon_request: category_name=%s, app_name=%s", category_name, app_name)
