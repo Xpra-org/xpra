@@ -10,6 +10,7 @@
 
 import re
 import shlex
+import warnings
 import os.path
 import optparse
 from urllib import parse
@@ -330,10 +331,12 @@ def normalize_display_name(display_name:str) -> str:
         host = legacy_ssh.group(1)
         display = legacy_ssh.group(3)
         display_name = f"ssh://{host}/{display}"
+        warnings.warn("Warning: the syntax `ssh:host` will be removed in a future release", DeprecationWarning)
     elif pos>0 and len(display_name)>pos+2 and display_name[pos+1]!="/":
         #replace the first ":" with "://"
         #so we end up with parsable URL, ie: "tcp://host:port"
         display_name = display_name[:pos]+"://"+display_name[pos+1:]
+        warnings.warn("Warning: the syntax `protocol:host` will be removed in a future release", DeprecationWarning)
     #workaround missing [] around IPv6 addresses:
     try:
         netloc = parse.urlparse(display_name).netloc
