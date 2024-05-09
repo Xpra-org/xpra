@@ -13,7 +13,7 @@ from collections.abc import Callable
 
 from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
 from xpra.util.str_fn import csv
-from xpra.util.env import hasenv, envint, envbool
+from xpra.util.env import hasenv, envint, envbool, SilenceWarningsContext
 from xpra.common import FULL_INFO
 from xpra.util.thread import start_thread
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
@@ -618,7 +618,8 @@ class SSLSocketConnection(SocketConnection):
         }.items():
             sfn = getattr(self._socket, fn, None)
             if sfn:
-                v = sfn()
+                with SilenceWarningsContext(DeprecationWarning):
+                    v = sfn()
                 if v is not None:
                     i[k] = v
         cipher_fn = getattr(self._socket, "cipher", None)
