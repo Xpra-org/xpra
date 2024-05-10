@@ -19,7 +19,7 @@ from glob import glob
 from time import sleep
 from collections.abc import Sequence
 
-if sys.version_info<(3, 10):
+if sys.version_info < (3, 10):
     raise RuntimeError("xpra no longer supports Python versions older than 3.10")
 
 try:
@@ -93,7 +93,7 @@ long_description = "".join(
 url = "https://xpra.org/"
 
 
-XPRA_VERSION = xpra.__version__         #@UndefinedVariable
+XPRA_VERSION = xpra.__version__
 setup_options = {
     "name"              : "xpra",
     "version"           : XPRA_VERSION,
@@ -149,7 +149,7 @@ def check_cython3():
     except (ValueError, ImportError):
         print("WARNING: unable to detect Cython version")
     else:
-        if version<3:
+        if version < 3:
             print("*******************************************")
             print("please switch to Cython 3.x")
             print(f" version {version} is not supported")
@@ -165,7 +165,7 @@ PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 
 def check_pkgconfig():
     v = get_status_output([PKG_CONFIG, "--version"])
-    has_pkg_config = v[0]==0 and v[1]
+    has_pkg_config = v[0] == 0 and v[1]
     if has_pkg_config:
         print("found pkg-config version: %s" % v[1].strip("\n\r"))
     else:
@@ -188,12 +188,12 @@ def no_pkgconfig(*_pkgs_options, **_ekw):
 
 
 def pkg_config_ok(*args):
-    return get_status_output([PKG_CONFIG] + [str(x) for x in args])[0]==0
+    return get_status_output([PKG_CONFIG] + [str(x) for x in args])[0] == 0
 
 
-def pkg_config_version(req_version, pkgname):
+def pkg_config_version(req_version, pkgname: str):
     r, out, _ = get_status_output([PKG_CONFIG, "--modversion", pkgname])
-    if r!=0 or not out:
+    if r != 0 or not out:
         return False
     out = out.rstrip("\n\r").split(" ")[0]  # ie: "0.155.2917 0a84d98" -> "0.155.2917"
     # workaround for libx264 invalid version numbers:
@@ -259,7 +259,7 @@ modules_ENABLED = DEFAULT
 data_ENABLED = DEFAULT
 
 
-def find_header_file(name, isdir=False):
+def find_header_file(name: str, isdir=False):
     matches = [v for v in
                [d+name for d in INCLUDE_DIRS]
                if os.path.exists(v) and os.path.isdir(v)==isdir]
