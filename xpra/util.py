@@ -413,6 +413,14 @@ class typedict(dict):
 def parse_scaling_value(v):
     if not v:
         return None
+    if v.endswith("%"):
+        num = int(v[:-1])
+        denom = 100
+        for div in (2, 5):
+            while (num % div) == 0 and (denom % div) == 0:
+                num = num // div
+                denom = denom // div
+        return num, denom
     values = v.replace("/", ":").replace(",", ":").split(":", 1)
     values = [int(x) for x in values]
     for x in values:
