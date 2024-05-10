@@ -29,7 +29,7 @@ from xpra.gtk.cursors import cursor_types, get_default_cursor
 from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow
 from xpra.gtk.info import get_monitors_info, get_screen_sizes
-from xpra.gtk.widget import scaled_image, label, color_parse
+from xpra.gtk.widget import scaled_image, label, color_parse, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitCode, ExitValue
@@ -76,7 +76,6 @@ NO_OPENGL_WINDOW_TYPES = os.environ.get(
     "XPRA_NO_OPENGL_WINDOW_TYPES",
     "DOCK,TOOLBAR,MENU,UTILITY,SPLASH,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND"
 ).split(",")
-FILE_CHOOSER_NATIVE = envint("XPRA_FILE_CHOOSER_NATIVE", int(OSX or WIN32))
 
 inject_css_overrides()
 init_display_source()
@@ -613,11 +612,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if self.remote_open_files:
             buttons += [Gtk.STOCK_OPEN, Gtk.ResponseType.ACCEPT]
         buttons += [Gtk.STOCK_OK, Gtk.ResponseType.OK]
+        title = "File to upload"
         if FILE_CHOOSER_NATIVE > 1 or (FILE_CHOOSER_NATIVE and not self.remote_open_files):
-            self.file_dialog = Gtk.FileChooserNative(title="File to upload", action=Gtk.FileChooserAction.OPEN)
+            self.file_dialog = Gtk.FileChooserNative(title=title, action=Gtk.FileChooserAction.OPEN)
             self.file_dialog.set_accept_label("Upload")
         else:
-            self.file_dialog = Gtk.FileChooserDialog(title="File to upload", action=Gtk.FileChooserAction.OPEN)
+            self.file_dialog = Gtk.FileChooserDialog(title=title, action=Gtk.FileChooserAction.OPEN)
             self.file_dialog.add_buttons(*buttons)
             self.file_dialog.set_default_response(Gtk.ResponseType.OK)
         self.file_dialog.connect("response", self.file_upload_dialog_response)

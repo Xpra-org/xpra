@@ -5,8 +5,8 @@
 
 from collections.abc import Callable
 
-from xpra.os_util import gi_import
-from xpra.util.env import IgnoreWarningsContext, ignorewarnings
+from xpra.os_util import gi_import, OSX, WIN32
+from xpra.util.env import IgnoreWarningsContext, ignorewarnings, envint
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -15,6 +15,8 @@ Pango = gi_import("Pango")
 GdkPixbuf = gi_import("GdkPixbuf")
 
 log = Logger("gtk", "util")
+
+FILE_CHOOSER_NATIVE = envint("XPRA_FILE_CHOOSER_NATIVE", int(OSX or WIN32))
 
 
 def scaled_image(pixbuf, icon_size: int = 0) -> Gtk.Image | None:

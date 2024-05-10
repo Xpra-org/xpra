@@ -25,7 +25,7 @@ from xpra.client.gui import features
 from xpra.client.base.command import InfoTimerClient
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.graph import make_graph_imagesurface
-from xpra.gtk.widget import imagebutton, title_box, slabel
+from xpra.gtk.widget import imagebutton, title_box, slabel, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger
 
@@ -1286,14 +1286,18 @@ class SessionInfo(Gtk.Window):
 
     def save_graph(self, _ebox, btn, graph):
         log("save_graph%s", (btn, graph))
-        chooser = Gtk.FileChooserDialog("Save graph as a PNG image",
-                                        parent=self, action=Gtk.FileChooserAction.SAVE,
-                                        buttons=(
-                                            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                            Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
-                                        )
-        chooser.set_select_multiple(False)
-        chooser.set_default_response(Gtk.ResponseType.OK)
+        title = "Save graph as a PNG image"
+        if FILE_CHOOSER_NATIVE:
+            chooser = Gtk.FileChooserNative(title=title, action=Gtk.FileChooserAction.SAVE)
+            chooser.set_accept_label("Save")
+        else:
+            chooser = Gtk.FileChooserDialog(title=title, action=Gtk.FileChooserAction.SAVE)
+            buttons = (
+                Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                Gtk.STOCK_SAVE, Gtk.ResponseType.OK,
+            )
+            chooser.add_buttons(*buttons)
+            chooser.set_default_response(Gtk.ResponseType.OK)
         file_filter = Gtk.FileFilter()
         file_filter.set_name("PNG")
         file_filter.add_pattern("*.png")
@@ -1322,7 +1326,7 @@ class SessionInfo(Gtk.Window):
         elif response in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.CLOSE, Gtk.ResponseType.DELETE_EVENT):
             log("closed/cancelled")
         else:
-            log.warn("unknown chooser response: %d" % response)
+            log.warn(f"Warning: unknown chooser response: {response}")
 
     def close(self, *args):
         log("SessionInfo.close(%s) is_closed=%s", args, self.is_closed)
