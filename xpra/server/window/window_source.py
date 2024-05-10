@@ -27,7 +27,7 @@ from xpra.codecs.xor.cyxor import xor_str           #@UnresolvedImport
 from xpra.codecs.argb.argb import argb_swap         #@UnresolvedImport
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
-from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS
+from xpra.codecs.codec_constants import PREFERED_ENCODING_ORDER, LOSSY_PIXEL_FORMATS, PREFERRED_REFRESH_ENCODING_ORDER
 from xpra.net import compression
 from xpra.log import Logger
 
@@ -807,7 +807,9 @@ class WindowSource(WindowIconSource):
             are = tuple(x for x in self.common_encodings if x in ropts and x in TRANSPARENCY_ENCODINGS)
         if not are:
             are = tuple(x for x in self.common_encodings if x in ropts) or self.common_encodings
-        self.auto_refresh_encodings = tuple(x for x in PREFERED_ENCODING_ORDER if x in are)
+        self.auto_refresh_encodings = tuple(x for x in PREFERRED_REFRESH_ENCODING_ORDER if x in are)
+        if not self.auto_refresh_encodings:
+            self.auto_refresh_encodings = tuple(x for x in PREFERED_ENCODING_ORDER if x in are)
         log("update_encoding_selection: client refresh encodings=%s, auto_refresh_encodings=%s",
             self.client_refresh_encodings, self.auto_refresh_encodings)
         self.update_quality()

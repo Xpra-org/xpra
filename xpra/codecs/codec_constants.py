@@ -16,6 +16,9 @@ PREFERED_ENCODING_ORDER = (
     "rgb", "rgb24", "rgb32", "jpeg",
     "h265", "mpeg1", "mpeg2",
     )
+PREFERRED_REFRESH_ENCODING_ORDER = (
+    "webp", "avif", "png", "png/P", "png/L", "rgb", "rgb24", "rbg32", "jpeg", "jpega",
+)
 #encoding order for edges (usually one pixel high or wide):
 EDGE_ENCODING_ORDER = (
     "rgb24", "rgb32",
