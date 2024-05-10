@@ -50,6 +50,7 @@ MODE_TCP = "tcp"
 MODE_SSL = "ssl"
 MODE_WS = "ws"
 MODE_WSS = "wss"
+MODE_QUIC = "quic"
 
 # what we save in the config file:
 SAVED_FIELDS = [
@@ -131,6 +132,7 @@ def get_connection_modes():
         import ssl
         assert ssl
         modes.append(MODE_SSL)
+        modes.append(MODE_QUIC)
     except ImportError:
         pass
     # assume crypto is available
@@ -625,7 +627,7 @@ class ApplicationWindow:
                 self.check_boxes_hbox.hide()
                 self.proxy_password_hbox.hide()
         self.validate()
-        if mode in (MODE_SSL, MODE_WSS) or (mode == MODE_SSH and not WIN32):
+        if mode in (MODE_SSL, MODE_WSS, MODE_QUIC) or (mode == MODE_SSH and not WIN32):
             self.nostrict_host_check.show()
         else:
             self.nostrict_host_check.hide()
@@ -775,13 +777,13 @@ class ApplicationWindow:
             params["display"] = f":{self.config.port}"
             params["display_name"] = f"unix-domain:{self.config.port}"
         else:
-            if self.config.mode not in (MODE_TCP, MODE_SSL, MODE_WS, MODE_WSS):
+            if self.config.mode not in (MODE_TCP, MODE_SSL, MODE_QUIC, MODE_WS, MODE_WSS):
                 raise ValueError(f"invalid / unsupported mode {self.config.mode}")
             params["host"] = self.config.host
             params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
             params["display_name"] = f"{self.config.mode}://{self.config.host}:{self.config.port}"
-            if self.config.mode in (MODE_SSL, MODE_WSS) and self.nostrict_host_check.get_active():
+            if self.config.mode in (MODE_SSL, MODE_WSS, MODE_QUIC) and self.nostrict_host_check.get_active():
                 params["strict-host-check"] = False
 
         # print("connect_to(%s)" % params)
@@ -979,7 +981,7 @@ class ApplicationWindow:
             self.config.mode = MODE_TCP
             if mode_enc.find("aes") > 0:
                 self.config.encryption = "AES-" + mode_enc.split("aes-")[1].upper()
-        elif mode_enc in (MODE_SSL, MODE_SSH, MODE_WS, MODE_WSS, MODE_NESTED_SSH):
+        elif mode_enc in (MODE_SSL, MODE_QUIC, MODE_SSH, MODE_WS, MODE_WSS, MODE_NESTED_SSH):
             self.config.mode = mode_enc
             self.config.encryption = ""
         log("update_options_from_gui() %s",
@@ -1045,7 +1047,7 @@ class ApplicationWindow:
         from xpra.scripts.parsing import parse_URL
         address, props = parse_URL(url)
         pa = address.split("://")
-        if pa[0] in (MODE_TCP, MODE_SSH, MODE_SSL, MODE_WS, MODE_WSS) and len(pa) >= 2:
+        if pa[0] in (MODE_TCP, MODE_SSH, MODE_SSL, MODE_QUIC, MODE_WS, MODE_WSS) and len(pa) >= 2:
             props["mode"] = pa[0]
             host = pa[1]
             if host.find("@") > 0:
