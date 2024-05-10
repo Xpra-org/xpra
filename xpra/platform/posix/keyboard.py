@@ -46,7 +46,8 @@ class Keyboard(KeyboardBase):
         self.__input_sources: dict[str, int] = {}
         try:
             self.__dbus_helper = DBusHelper()
-        except ImportError as e:
+            # we really want to catch `dbus.exceptions.DBusException` here instead:
+        except Exception as e:
             self.__dbus_helper = None
             log.info(f"gnome input sources requires dbus: {e}")
         else:
