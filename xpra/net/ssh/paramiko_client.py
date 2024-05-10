@@ -8,7 +8,7 @@ import re
 import socket
 import sys
 from time import sleep, monotonic
-from typing import Any
+from typing import Any, NoReturn
 from collections.abc import Sequence
 
 from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
@@ -198,7 +198,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         "port": port,
     }
 
-    def fail(msg: str) -> None:
+    def fail(msg: str) -> NoReturn:
         log("connect_to(%s)", display_desc, exc_info=True)
         raise InitExit(ExitCode.SSH_FAILURE, msg) from None
 
