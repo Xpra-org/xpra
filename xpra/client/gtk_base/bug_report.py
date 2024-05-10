@@ -242,10 +242,14 @@ class BugReport(object):
 
     def close(self, *args):
         log("close%s", args)
+        self.hide_window()
+        return True
+
+    def hide_window(self) -> None:
+        log("hide_window()")
         if self.window:
             self.hide()
             self.window = None
-        return True
 
     def destroy(self, *args):
         log("destroy%s", args)
@@ -261,7 +265,7 @@ class BugReport(object):
 
     def quit(self, *args):
         log("quit%s", args)
-        self.close()
+        self.hide_window()
         gtk.main_quit()
 
 
