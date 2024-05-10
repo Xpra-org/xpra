@@ -15,7 +15,10 @@
     * [smarter auto refresh encoding selection](https://github.com/Xpra-org/xpra/commit/366e4390176832807cd7bf738807daead02e921c)
     * [`xpra configure features` not reloading correctly](https://github.com/Xpra-org/xpra/commit/a399fce7959141a7bb6c4ca068a99d006e5286bb)
     * [audio not enabled for some clients](https://github.com/Xpra-org/xpra/commit/c16792368631f3c73ac98a0c7cd61062dc5befaf), [source plugins not found](https://github.com/Xpra-org/xpra/commit/68e0e3f4ec1321b46086cef5fb2c0e630ed885eb)
+    * [xi2 bindings failed to load](https://github.com/Xpra-org/xpra/commit/afb554fa4a2f433a6ff05b2277a3037ddbb106e8)
+    * [client startup failures caused by `dbus`](https://github.com/Xpra-org/xpra/commit/3d647b43d00ad4b4e28e3a8d5b0c0c7f7111ac61)
 * Cosmetic / correctness:
+    * [discord link had expired, again](https://github.com/Xpra-org/xpra/commit/8dcc04cd0b1315cc579c37148fb28370c26ec957)
     * [clearer ssh error message](https://github.com/Xpra-org/xpra/commit/b2f9276d0e4a2973226f46260acbddc3ac677417)
     * [parsing of scaling values as percentages](https://github.com/Xpra-org/xpra/commit/d382473b72f9d433e90dc03b03e9f834ae772e71)
     * [also bump `__version_info__` automatically](https://github.com/Xpra-org/xpra/commit/f2acaf8ed5fb670b3a36cdfc3f63034508230eb3) and [the RPM spec file](https://github.com/Xpra-org/xpra/commit/9ad9915024ccfc1b66b898d7fc1729d0a97d424d)
@@ -25,6 +28,10 @@
     * [wrong time unit shown in error message](https://github.com/Xpra-org/xpra/commit/6a4de8f68d7f5494448deb1e9064c8b6ab2caae1)
     * [add asbtract socket link to documentation](https://github.com/Xpra-org/xpra/commit/82cc54174012e00c33b6a4be2b11f31f913417e8)
     * [ensure OpenGL `zerocopy` flag is a boolean](https://github.com/Xpra-org/xpra/commit/7ecd88a8887ab417653d500f77c427cf3d7e656b)
+    * [explicit return statement](https://github.com/Xpra-org/xpra/commit/0bc125ba5135ef254b4e0b175b1286405eef5e80)
+    * [incorrect debug logging](https://github.com/Xpra-org/xpra/commit/8ebd269c4c0159b2f556bbb969b87e804bf4d728)
+    * [warn users about deprecated syntax](https://github.com/Xpra-org/xpra/commit/b0d6436e9f2578a4f370ab5c8d947b3a8d19b036)
+    * [pass strict type check](https://github.com/Xpra-org/xpra/commit/455860ca94f2428f8c84a8555ad5c8fcd769c74f)
 
 ## [6.0] 2024-04-25
 * Platforms, build and packaging:
