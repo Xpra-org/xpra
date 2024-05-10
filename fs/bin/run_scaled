@@ -1,130 +1,149 @@
 #!/usr/bin/env python3
 
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 import os
 import sys
+import shlex
+from shutil import which
 
-def join(args):
-    import shlex
-    #shlex.join() was only added in Python 3.8:
-    if hasattr(shlex, "join"):
-        return shlex.join(args)
-    return ' '.join(shlex.quote(x) for x in args)
 
-def which(pgm):
-    path = os.getenv("PATH")
-    for p in path.split(os.path.pathsep):
-        p = os.path.join(p, pgm)
-        if os.path.exists(p) and os.access(p, os.X_OK):
-            return p
-    return None
+DEFAULT_XPRA_ARGS = [
+    "--attach=yes",
+    "--exit-with-children=yes",
+    # "--exit-with-client=yes",
+    "--encodings=rgb",
+    "--compress=0",
+    "--audio=no",
+    "--video=no",
+    "--mdns=no",
+    "--start-new-commands=no",
+    "--systemd-run=no",
+]
 
-def usage(msg, exit_code=1):
+
+def usage(msg="", exit_code=1):
     if msg:
         sys.stderr.write("%s\n" % msg)
-    sys.stderr.write("usage: run_scaled --scale=VALUE application [optionalarguments]\n")
-    sys.stderr.write("   ie: run_scaled --scale=2     xterm +ls -fg blue\n")
+    sys.stderr.write("usage:   run_scaled --scale=VALUE application [optionalarguments]\n")
+    sys.stderr.write("   ie:   run_scaled --scale=2     xterm +ls -fg blue\n")
+    sys.stderr.write("or also using `--` for clarity\n")
+    sys.stderr.write("usage:   run_scaled --scale=VALUE [extra xpra arguments] -- application [optionalarguments]")
+    sys.stderr.write("   ie:   run_scaled --scale=3     --mousewheel=invert-y  -- xterm -n foo -fg red\n")
     sys.exit(exit_code)
+
 
 def parse_scale(scale):
     try:
         try:
             if scale.endswith("%"):
-                value = float(scale[:-1])/100
+                value = float(scale[:-1]) / 100
             else:
                 value = float(scale)
         except ValueError:
-            #try parsing as a fraction:
+            # try parsing it as a fraction:
             from fractions import Fraction
             value = float(Fraction(scale))
     except ValueError:
-        return usage("invalid scale value '%s'" % (scale,))
-    if value<0.1 or value>10:
-        return usage("scale value %f is out of range" % (value,))
+        usage(f"invalid scale value {scale!r}")
+    if value < 0.1 or value > 10:
+        usage(f"scale value {value} is out of range")
     return value
 
+
+def dpiv(size, size_mm):
+    """ convert a screen size ratio into a DPI value """
+    return round(size * 25.4 / size_mm)
+
+
 def get_screen_spec():
-    #figure out the dpi and vfb size to use,
+    # figure out the dpi and vfb size to use,
     dpi = width = height = 0
-    from xpra.os_util import OSEnvContext
-    with OSEnvContext():
+    try:
+        from xpra.util.env import OSEnvContext
+        context = OSEnvContext
+    except ImportError:
+        from contextlib import nullcontext
+        context = nullcontext
+    with context():
         os.environ["GDK_SCALE"] = "1"
         os.environ["GDK_DPI_SCALE"] = "1"
-        import gi
-        gi.require_version('Gdk', '3.0')
-        from gi.repository import Gdk
-        screen = Gdk.Screen.get_default()
+        try:
+            import gi
+            gi.require_version('Gdk', '3.0')
+            from gi.repository import Gdk
+            screen = Gdk.Screen.get_default()
+        except ImportError:
+            screen = None
         if screen:
             import warnings
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 width = screen.get_width()
                 height = screen.get_height()
-                if 0<width<2**16 and 0<height<2**16:
-                    def dpiv(size, size_mm):
-                        return int(0.5 + size * 25.4 / size_mm)
-                    dpi = (dpiv(width, screen.get_width_mm()) + dpiv(height, screen.get_height_mm()))//2
+                if 0 < width < 2 ** 16 and 0 < height < 2 ** 16:
+                    dpi = (dpiv(width, screen.get_width_mm()) + dpiv(height, screen.get_height_mm())) // 2
     return width, height, dpi
 
-xpra_cmd = which("xpra")
-if not xpra_cmd and sys.argv[0].find("run_scaled")>=0:
-    xpra_cmd = sys.argv[0].replace("run_scaled", "xpra")
-if not xpra_cmd or not os.path.exists(xpra_cmd):
-    usage("cannot find 'xpra' on $PATH")
 
-def get_argv():
-    #default value:
+def parse_argv(argv):
+    # default scaling value is 2:
     scale = 2
     command_argv = []
-    extra_xpra_args = None
+    extra_xpra_args = []
 
     # If "--" is present, the command is after that
-    if "--" in sys.argv:
-        split_idx = sys.argv.index("--")
-        args = sys.argv[1:split_idx]
-        command_argv = sys.argv[split_idx+1:]
-        extra_xpra_args = []
+    if "--" in argv:
+        split_idx = argv.index("--")
     else:
-        args = sys.argv[1:]
+        split_idx = -1
 
-    for x in args:
+    for i, x in enumerate(argv):
         if x in ("--help", "-h"):
-            usage(None, 0)
+            usage("", 0)
         elif x.startswith("--scale="):
             scale = parse_scale(x[len("--scale="):])
+        elif i == 0 or i == split_idx:
+            # x == "run_scaled" or x == "--"
+            continue
         else:
-            if extra_xpra_args is None:
+            if i >= split_idx:
                 command_argv.append(x)
             else:
                 extra_xpra_args.append(x)
     if not command_argv:
         usage("missing command argument")
+    return scale, command_argv, extra_xpra_args
 
-    xpra_argv = [
-        xpra_cmd,
-        "start",
-        "--start-child=%s" % join(command_argv),
-        "--attach=yes",
-        "--exit-with-children=yes",
-        "--desktop-scaling=%s" % scale,
-        "--encodings=rgb",
-        "--compress=0",
-        "--systemd-run=no",
-        ]
-    if extra_xpra_args:
-        xpra_argv += extra_xpra_args
 
+def find_xpra():
+    xpra = which("xpra") or ""
+    if not xpra and sys.argv[0].find("run_scaled") >= 0:
+        xpra = sys.argv[0].replace("run_scaled", "xpra")
+    if not xpra or not os.path.exists(xpra):
+        usage("cannot find 'xpra' on $PATH")
+    return xpra
+
+
+xpra_cmd = find_xpra()
+
+
+def get_argv():
+    scale, command_argv, extra_xpra_args = parse_argv(sys.argv)
+    argv = [xpra_cmd, "start",
+            "--start-child=%s" % shlex.join(command_argv),
+            "--desktop-scaling=%s" % scale] + DEFAULT_XPRA_ARGS + extra_xpra_args
     width, height, dpi = get_screen_spec()
-    #if found, prefer Xvfb, as it is faster to startup:
-    xvfb = which("Xvfb")
+    # if found, prefer Xvfb, as it is faster to startup:
+    xvfb = which("Xvfb") or ""
     if xvfb:
         from xpra.scripts.config import get_Xvfb_command
-        xpra_argv.append("--xvfb=%s" % join(get_Xvfb_command(width, height, dpi*scale)))
-    if width>0 and height>0:
-        xpra_argv.append("--resize-display=%ix%i" % (width//scale, height//scale))
-    if 10<dpi<1000:
-        xpra_argv.append("--dpi=%i" % (dpi*scale))
-    return xpra_argv
+        argv.append("--xvfb=%s" % shlex.join(get_Xvfb_command(width, height, dpi * scale)))
+    if width > 0 and height > 0:
+        argv.append("--resize-display=%ix%i" % (width // scale, height // scale))
+    if 10 < dpi < 1000:
+        argv.append("--dpi=%i" % (dpi * scale))
+    return argv
+
 
 os.execv(xpra_cmd, get_argv())
