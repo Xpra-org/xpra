@@ -281,9 +281,8 @@ Description: Picture and video codecs
 
 Package: xpra-codecs-extras
 Architecture: any
-Conflicts: python2-xpra, python3-xpra, xpra (<< 5)
+Conflicts: python2-xpra, python3-xpra, xpra (<< 5), xpra-codecs (<< 6)
 Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
-Conflicts: xpra-codecs (<< 6)
 Enhances: xpra-codecs (= ${binary:Version})
 Depends: xpra-codecs (= ${binary:Version})
         ,${codecsextras:Depends}
