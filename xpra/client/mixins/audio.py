@@ -365,8 +365,8 @@ class AudioClient(StubClientMixin):
 
     def stop_sending_audio(self) -> None:
         """ stop the audio source and emit client signal """
-        log("stop_sending_audio() audio source=%s", self.audio_source)
         ss = self.audio_source
+        log("stop_sending_audio() audio source=%s", ss)
         if self.microphone_enabled:
             self.microphone_enabled = False
             self.emit("microphone-changed")
@@ -424,8 +424,8 @@ class AudioClient(StubClientMixin):
             and toggle the flag so that we ignore further packets
             and emit the `new-sequence` client signal
         """
-        log("stop_receiving_audio(%s) audio sink=%s", tell_server, self.audio_sink)
         ss = self.audio_sink
+        log("stop_receiving_audio(%s) audio sink=%s", tell_server, ss)
         if self.speaker_enabled:
             self.speaker_enabled = False
             self.emit("speaker-changed")
@@ -445,7 +445,7 @@ class AudioClient(StubClientMixin):
             log("audio_sink_state_changed(%s, %s) not the current sink, ignoring it", audio_sink, state)
             return
         log("audio_sink_state_changed(%s, %s) on_sink_ready=%s", audio_sink, state, self.on_sink_ready)
-        if bytestostr(state) == "ready" and self.on_sink_ready:
+        if state == "ready" and self.on_sink_ready:
             if not self.on_sink_ready():
                 self.on_sink_ready = None
         self.emit("speaker-changed")
@@ -537,9 +537,9 @@ class AudioClient(StubClientMixin):
             packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         self.send_audio_data(audio_source, data, metadata, packet_metadata)
 
-    def send_audio_data(self, audio_source, data, metadata, packet_metadata=None) -> None:
+    def send_audio_data(self, audio_source, data, metadata, packet_metadata=()) -> None:
         codec = audio_source.codec
-        packet_data = [codec, Compressed(codec, data), metadata, packet_metadata or ()]
+        packet_data = [codec, Compressed(codec, data), metadata, packet_metadata]
         self.send("sound-data", *packet_data)
 
     def send_audio_sync(self, v) -> None:
@@ -550,7 +550,7 @@ class AudioClient(StubClientMixin):
 
     def _process_sound_data(self, packet: PacketType) -> None:
         codec, data, metadata = packet[1:4]
-        codec = bytestostr(codec)
+        codec = str(codec)
         metadata = typedict(metadata)
         if data:
             self.audio_in_bytecount += len(data)
