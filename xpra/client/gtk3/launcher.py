@@ -849,7 +849,6 @@ class ApplicationWindow:
         log("do_start_XpraClient(%s, %s) client=%s", conn, display_desc, self.client)
         self.client.encoding = self.config.encoding
         self.client.display_desc = display_desc
-        self.client.init_ui(self.config)
         self.client.setup_connection(conn)
         self.set_info_text("Network connection established")
         log("start_XpraClient() client initialized")
