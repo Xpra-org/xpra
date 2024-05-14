@@ -1830,7 +1830,7 @@ def make_progress_process(title="Xpra") -> Popen | None:
     return progress_process
 
 
-def run_opengl_probe():
+def run_opengl_probe() -> tuple[str, dict]:
     from xpra.platform.paths import get_nodock_command
     log = Logger("opengl")
     cmd = get_nodock_command() + ["opengl"]
@@ -1870,13 +1870,28 @@ def run_opengl_probe():
     for line in stdout.splitlines():
         parts = line.split("=", 1)
         if len(parts) == 2:
-            props[parts[0]] = parts[1]
+            key = parts[0]
+            value = parts[1]
+            if key.find("-size") > 0:
+                try:
+                    value = int(value)
+                except ValueError:
+                    pass
+            if key.endswith("-dims"):
+                try:
+                    value = tuple(int(item.strip(" ")) for item in value.split(","))
+                except ValueError:
+                    pass
+            elif value in ("True", "False"):
+                value = value == "True"
+            props[key] = value
     log("parsed OpenGL properties=%s", props)
 
     def probe_message() -> str:
-        err = props.get("error", "")
-        msg = props.get("message", "")
-        warning = props.get("warning", "").split(":")[0]
+        tdprops = typedict(props)
+        err = tdprops.strget("error")
+        msg = tdprops.strget("message")
+        warning = tdprops.strget("warning").split(":")[0]
         if err:
             return f"error:{err}"
         if r == 1:
@@ -1887,14 +1902,16 @@ def run_opengl_probe():
             return "failed:%s" % SIGNAMES.get(r - 128)
         if r != 0:
             return "failed:%s" % SIGNAMES.get(0 - r, 0 - r)
-        if props.get("success", "False").lower() in FALSE_OPTIONS:
+        if not tdprops.boolget("success", False):
             return "error:%s" % (err or msg or warning)
-        if props.get("safe", "False").lower() in FALSE_OPTIONS:
+        if tdprops.boolget("safe", False):
             return "warning:%s" % (err or msg)
         return "success"
 
     # log.warn("Warning: OpenGL probe failed: %s", msg)
-    return probe_message(), props
+    message = probe_message()
+    log(f"probe_message()={message!r}")
+    return message, props
 
 
 def make_client(error_cb: Callable, opts):
@@ -1948,16 +1965,17 @@ def make_client(error_cb: Callable, opts):
 
         if opts.opengl in ("probe", "nowarn"):
             app.show_progress(20, "validating OpenGL configuration")
-            probe, glinfo = run_opengl_probe()
+            probe, probe_info = run_opengl_probe()
+            glinfo = typedict(probe_info)
             if opts.opengl == "nowarn":
                 # just on or off from here on:
-                safe = glinfo.get("safe", "False").lower() in TRUE_OPTIONS
+                safe = glinfo.boolget("safe", False)
                 opts.opengl = ["off", "on"][safe]
             else:
                 opts.opengl = f"probe-{probe}"
             r = probe  # ie: "success"
             if glinfo:
-                renderer = glinfo.get("renderer")
+                renderer = glinfo.strget("renderer")
                 if renderer:
                     # ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
                     parts = renderer.split("(")
@@ -1968,7 +1986,7 @@ def make_client(error_cb: Callable, opts):
                     r += f" ({renderer})"
             app.show_progress(20, f"validating OpenGL: {r}")
             if probe == "error":
-                message = glinfo.get("message")
+                message = glinfo.strget("message")
                 if message:
                     app.show_progress(21, f" {message}")
     except Exception:
