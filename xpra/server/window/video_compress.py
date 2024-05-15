@@ -1920,8 +1920,7 @@ class WindowVideoSource(WindowSource):
                               _score: int, scaling, _csc_scaling, csc_width: int, csc_height: int, csc_spec,
                               enc_in_format : str, encoder_scaling,
                               enc_width: int, enc_height: int, encoder_spec) -> bool:
-        options = typedict(self.encoding_options)
-        self.assign_sq_options(options)
+        options = self.assign_sq_options(dict(self.encoding_options))
         min_w = 8
         min_h = 8
         max_w = 16384
@@ -1975,7 +1974,7 @@ class WindowVideoSource(WindowSource):
             options["scaled-height"] = enc_height*n//d
         options["dst-formats"] = dst_formats
 
-        ve.init_context(encoder_spec.encoding, enc_width, enc_height, enc_in_format, options)
+        ve.init_context(encoder_spec.encoding, enc_width, enc_height, enc_in_format, typedict(options))
         # record new actual limits:
         self.actual_scaling = scaling
         self.width_mask = width_mask
