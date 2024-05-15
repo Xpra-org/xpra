@@ -7,7 +7,7 @@ import os
 from subprocess import Popen
 from shutil import which
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterable, Callable
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -189,7 +189,9 @@ class AudioMixin(StubSourceMixin):
         return False
 
     def start_sending_audio(self, codec: str = "", volume: float = 1.0,
-                            new_stream=None, new_buffer=None, skip_client_codec_check=False):
+                            new_stream: Callable | None = None,
+                            new_buffer: Callable | None = None,
+                            skip_client_codec_check=False):
         log("start_sending_audio(%s)", codec)
         ss = None
         if getattr(self, "suspended", False):
@@ -247,7 +249,7 @@ class AudioMixin(StubSourceMixin):
                 # tell the client we're not sending anything:
                 self.send_eos(codec)
 
-    def audio_source_error(self, source, message) -> None:
+    def audio_source_error(self, source, message: str) -> None:
         # this should be printed to stderr by the audio process already
         if source == self.audio_source:
             log("audio capture error: %s", message)
@@ -257,7 +259,7 @@ class AudioMixin(StubSourceMixin):
         if source == self.audio_source:
             self.stop_sending_audio()
 
-    def audio_source_info(self, source, info) -> None:
+    def audio_source_info(self, source, info: dict) -> None:
         log("audio_source_info(%s, %s)", source, info)
 
     def stop_sending_audio(self) -> None:
@@ -341,7 +343,7 @@ class AudioMixin(StubSourceMixin):
         if callable(update_av_sync):
             update_av_sync()  # pylint: disable=not-callable
 
-    def new_audio_buffer(self, audio_source, data, metadata, packet_metadata=None) -> None:
+    def new_audio_buffer(self, audio_source, data: bytes, metadata: dict, packet_metadata: Iterable = ()) -> None:
         log("new_audio_buffer(%s, %s, %s, %s) info=%s",
             audio_source, len(data or []), metadata, [len(x) for x in packet_metadata], audio_source.info)
         if self.audio_source != audio_source or self.is_closed():
@@ -358,7 +360,8 @@ class AudioMixin(StubSourceMixin):
         can_drop_packet = (audio_source.info or {}).get("buffer_count", 0) > 10
         self.send_audio_data(audio_source, data, metadata, packet_metadata, can_drop_packet)
 
-    def send_audio_data(self, audio_source, data, metadata, packet_metadata=None, can_drop_packet=False) -> None:
+    def send_audio_data(self, audio_source, data: bytes, metadata: dict,
+                        packet_metadata: Iterable = (), can_drop_packet=False) -> None:
         packet_data = [audio_source.codec, Compressed(audio_source.codec, data), metadata, packet_metadata or ()]
         sequence = audio_source.sequence
         if sequence >= 0:
@@ -382,8 +385,7 @@ class AudioMixin(StubSourceMixin):
 
     ##########################################################################
     # audio control commands:
-    def audio_control(self, action, *args):
-        action = bytestostr(action)
+    def audio_control(self, action: str, *args):
         fn = "audio_control_" + action.replace("-", "_")
         method = getattr(self, fn, None)
         log(f"audio_control({action}, {args}) {self}.{fn}={method}")
@@ -481,7 +483,7 @@ class AudioMixin(StubSourceMixin):
             self.audio_fade_timer = 0
             GLib.source_remove(sft)
 
-    def audio_data(self, codec, data, metadata, packet_metadata=()) -> None:
+    def audio_data(self, codec: str, data: bytes, metadata: dict, packet_metadata: Iterable = ()) -> None:
         log("audio_data(%s, %s, %s, %s) audio sink=%s",
             codec, len(data or []), metadata, packet_metadata, self.audio_sink)
         if self.is_closed():

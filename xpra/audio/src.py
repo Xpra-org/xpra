@@ -52,7 +52,7 @@ class AudioSource(AudioPipeline):
         "new-buffer": n_arg_signal(3),
     }
 
-    def __init__(self, src_type=None, src_options=None, codecs=(), codec_options=None, volume=1.0):
+    def __init__(self, src_type="", src_options=None, codecs=(), codec_options=None, volume=1.0):
         if not src_type:
             try:
                 from xpra.audio.pulseaudio.util import get_pa_device_options
@@ -266,7 +266,7 @@ class AudioSource(AudioPipeline):
             return GST_FLOW_OK
         return self._emit_buffer(data, metadata)
 
-    def _emit_buffer(self, data, metadata) -> int:
+    def _emit_buffer(self, data: bytes, metadata: dict) -> int:
         if self.stream_compressor and data:
             cdata = compressed_wrapper("audio", data, level=9, can_inline=True,
                                        lz4=self.stream_compressor == "lz4")
@@ -301,7 +301,7 @@ class AudioSource(AudioPipeline):
             d, m = self.jitter_queue.get(False)
             self.do_emit_buffer(d, m)
 
-    def do_emit_buffer(self, data, metadata) -> int:
+    def do_emit_buffer(self, data: bytes, metadata: dict) -> int:
         self.inc_buffer_count()
         self.inc_byte_count(len(data))
         for x in self.pending_metadata:

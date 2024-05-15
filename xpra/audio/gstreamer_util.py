@@ -7,7 +7,7 @@
 import sys
 import os
 from typing import Any
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Iterable
 
 from xpra.gstreamer.common import (
     has_plugins, get_all_plugin_names,
@@ -775,7 +775,7 @@ def get_audio_source_options(plugin, options_str, device, want_monitor_device, r
     return options
 
 
-def parse_audio_source(all_plugins, audio_source_plugin, device, want_monitor_device, remote):
+def parse_audio_source(all_plugins: Iterable[str], audio_source_plugin: str, device: str, want_monitor_device: bool, remote: bool):
     # format: PLUGINNAME:options
     # ie: test:wave=2,freq=110,volume=0.4
     # ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo

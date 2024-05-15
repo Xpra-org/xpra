@@ -4,14 +4,14 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Iterable
 
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
 from xpra.net.common import PacketType
 from xpra.net.compression import Compressed
 from xpra.net.protocol.constants import CONNECTION_LOST
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, noop
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
@@ -54,6 +54,10 @@ def get_matching_codecs(local_codecs, server_codecs) -> Sequence[str]:
     return matching_codecs
 
 
+def nooptions(*_args) -> Sequence[str]:
+    return ()
+
+
 class AudioClient(StubClientMixin):
     """
     Utility mixin for clients that handle audio
@@ -62,19 +66,19 @@ class AudioClient(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self.audio_source_plugin = None
+        self.audio_source_plugin = ""
         self.speaker_allowed: bool = False
         self.speaker_enabled: bool = False
         self.speaker_codecs = []
         self.microphone_allowed: bool = False
         self.microphone_enabled: bool = False
         self.microphone_codecs = []
-        self.microphone_device = None
+        self.microphone_device = ""
         self.av_sync: bool = False
         self.av_sync_delta: int = AV_SYNC_DELTA
         self.audio_properties: typedict = typedict()
         # audio state:
-        self.on_sink_ready: Callable | None = None
+        self.on_sink_ready: Callable[[], None] = noop
         self.audio_sink = None
         self.audio_sink_sequence: int = 0
         self.server_audio_eos_sequence: bool = False
@@ -99,13 +103,10 @@ class AudioClient(StubClientMixin):
         # ie: "on", "off", "on:Some Device", "off:Some Device"
         mic = [x.strip() for x in opts.microphone.split(":", 1)]
         self.microphone_allowed = audio_option(mic[0]) in ("on", "off")
-        self.microphone_device = None
+        self.microphone_device = ""
         if self.microphone_allowed and len(mic) == 2:
             self.microphone_device = mic[1]
         self.audio_source_plugin = opts.audio_source
-
-        def nooptions(*_args) -> Sequence[str]:
-            return ()
 
         audio_option_fn: Callable = nooptions
         if self.speaker_allowed or self.microphone_allowed:
@@ -282,7 +283,8 @@ class AudioClient(StubClientMixin):
             log.warn(" %s", x)
         return False
 
-    def no_matching_codec_error(self, forwarding="speaker", server_codecs=(), client_codecs=()) -> None:
+    def no_matching_codec_error(self, forwarding="speaker",
+                                server_codecs: Iterable[str] = (), client_codecs: Iterable[str] = ()) -> None:
         summary = "Failed to start %s forwarding" % forwarding
         body = "No matching codecs between client and server"
         self.may_notify_audio(summary, body)
@@ -290,7 +292,7 @@ class AudioClient(StubClientMixin):
         log.error(" server supports: %s", csv(server_codecs))
         log.error(" client supports: %s", csv(client_codecs))
 
-    def start_sending_audio(self, device=None) -> None:
+    def start_sending_audio(self, device="") -> None:
         """ (re)start an audio source and emit client signal """
         log("start_sending_audio(%s)", device)
         enabled = False
@@ -301,11 +303,11 @@ class AudioClient(StubClientMixin):
                 return
             ss = self.audio_source
             if ss:
+                enabled = True
                 if ss.get_state() == "active":
                     log.error("Error: microphone forwarding is already active")
-                    enabled = True
-                    return
-                ss.start()
+                else:
+                    ss.start()
             else:
                 enabled = self.start_audio_source(device)
         finally:
@@ -314,7 +316,7 @@ class AudioClient(StubClientMixin):
                 self.emit("microphone-changed")
             log("start_sending_audio(%s) done, microphone_enabled=%s", device, enabled)
 
-    def start_audio_source(self, device=None) -> bool:
+    def start_audio_source(self, device="") -> bool:
         log("start_audio_source(%s)", device)
         assert self.audio_source is None
 
@@ -445,9 +447,9 @@ class AudioClient(StubClientMixin):
             log("audio_sink_state_changed(%s, %s) not the current sink, ignoring it", audio_sink, state)
             return
         log("audio_sink_state_changed(%s, %s) on_sink_ready=%s", audio_sink, state, self.on_sink_ready)
-        if state == "ready" and self.on_sink_ready:
-            if not self.on_sink_ready():
-                self.on_sink_ready = None
+        if state == "ready":
+            self.on_sink_ready()
+            self.on_sink_ready = noop
         self.emit("speaker-changed")
 
     def audio_sink_bitrate_changed(self, audio_sink, bitrate: int) -> None:
@@ -522,7 +524,7 @@ class AudioClient(StubClientMixin):
             self.audio_sink_error(self.audio_sink, e)
             return False
 
-    def new_audio_buffer(self, audio_source, data, metadata, packet_metadata=()) -> None:
+    def new_audio_buffer(self, audio_source, data: bytes, metadata: dict, packet_metadata: Iterable = ()) -> None:
         log("new_audio_buffer(%s, %s, %s, %s)", audio_source, len(data or ()), metadata, packet_metadata)
         if audio_source.sequence < self.audio_source_sequence:
             log("audio buffer dropped: old sequence number: %s (current is %s)",
@@ -537,7 +539,7 @@ class AudioClient(StubClientMixin):
             packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         self.send_audio_data(audio_source, data, metadata, packet_metadata)
 
-    def send_audio_data(self, audio_source, data, metadata, packet_metadata=()) -> None:
+    def send_audio_data(self, audio_source, data: bytes, metadata: dict, packet_metadata=()) -> None:
         codec = audio_source.codec
         packet_data = [codec, Compressed(codec, data), metadata, packet_metadata]
         self.send("sound-data", *packet_data)
@@ -571,7 +573,7 @@ class AudioClient(StubClientMixin):
                     return
                 self.speaker_enabled = True
                 self.emit("speaker-changed")
-                self.on_sink_ready = None
+                self.on_sink_ready = noop
                 codec = metadata.strget("codec")
                 log("starting speaker on server request using codec %s", codec)
                 self.start_audio_sink(codec)

@@ -7,6 +7,7 @@ import os
 import sys
 from time import monotonic
 from collections import namedtuple
+from collections.abc import Iterable
 
 from xpra.gstreamer.common import import_gst, format_element_options
 from xpra.audio.gstreamer_util import (
@@ -378,8 +379,10 @@ class SinkSubprocessWrapper(AudioSubprocessWrapper):
         return "sink_subprocess_wrapper(%s)" % proc
 
 
-def start_sending_audio(plugins, audio_source_plugin, device, codec, volume, want_monitor_device,
-                        remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id
+def start_sending_audio(plugins, audio_source_plugin: str, device: str, codec: str, volume: float,
+                        want_monitor_device: bool,
+                        remote_decoders: Iterable[str],
+                        remote_pulseaudio_server: str, remote_pulseaudio_id: str
                         ) -> SourceSubprocessWrapper | None:
     log("start_sending_audio%s",
         (plugins, audio_source_plugin, device, codec, volume, want_monitor_device,
