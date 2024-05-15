@@ -1148,9 +1148,9 @@ class SocketProtocol:
 
         def closing_already(packet_encoder: Callable | None = None,
                             packet_data=None,
-                            flush_callback: Callable = noop) -> None:
+                            done_callback: Callable = noop) -> None:
             log("flush_then_close%s had already been called, this new request has been ignored",
-                (packet_encoder, packet_data, flush_callback))
+                (packet_encoder, packet_data, done_callback))
 
         self.flush_then_close = closing_already
         log("flush_then_close%s closed=%s", (encoder, last_packet, done_callback), self._closed)
