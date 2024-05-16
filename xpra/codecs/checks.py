@@ -510,7 +510,7 @@ def test_encoder_spec(encoder_class:Callable, encoding:str, cs_in:str, cs_out:st
                 wrong_format = wrong_formats[0]
                 try:
                     image = make_test_image(wrong_format, W, H)
-                    out = e.compress_image(None, image, options=options)
+                    out = e.compress_image(image, options=options)
                 except Exception:
                     out = None
                 if out is not None:
@@ -520,7 +520,7 @@ def test_encoder_spec(encoder_class:Callable, encoding:str, cs_in:str, cs_out:st
                     continue
                 try:
                     image = make_test_image(cs_in, w, h)
-                    out = e.compress_image(None, image, options=options)
+                    out = e.compress_image(image, options=options)
                 except Exception:
                     out = None
                 if out is not None:
