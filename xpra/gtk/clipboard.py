@@ -79,8 +79,18 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 if dformat != 8:
                     continue
                 text = str(data)
-                log("setting text data %s / %s of size %i: %s",
-                    dtype, dformat, len(text), ellipsizer(text))
+                if isinstance(data, bytes):
+                    if text_target.lower().find("utf8") >= 0:
+                        try:
+                            text = data.decode("utf8")
+                        except UnicodeDecodeError:
+                            pass
+                    else:
+                        try:
+                            text = data.decode("latin1")
+                        except UnicodeDecodeError:
+                            pass
+                log("setting text data %s / %s of size %i: %s", dtype, dformat, len(text), ellipsizer(text))
                 self._owner_change_embargo = monotonic()
                 self.clipboard.set_text(text, len(text))
                 return
