@@ -2456,7 +2456,7 @@ class WindowVideoSource(WindowSource):
         start = monotonic()
         options.update(self.get_video_encoder_options(ve.get_encoding(), width, height))
         try:
-            ret = ve.compress_image(csc_image, options)
+            ret = ve.compress_image(csc_image, typedict(options))
         except Exception as e:
             videolog("%s.compress_image%s", ve, (csc_image, options), exc_info=True)
             if self.is_cancelled():

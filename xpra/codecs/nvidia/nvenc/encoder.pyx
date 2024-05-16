@@ -12,6 +12,7 @@ from typing import Any, Dict
 import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
+from collections.abc import Sequence
 
 from xpra.os_util import WIN32, LINUX
 from xpra.util.thread import start_thread
@@ -1002,7 +1003,7 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_RESOURCE_REGISTER_FAILED : "This indicates that the ::NvEncRegisterResource API failed to register the resource.",
     NV_ENC_ERR_RESOURCE_NOT_REGISTERED : "This indicates that the client is attempting to unregister a resource that has not been successfully registered.",
     NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfully mapped.",
-      }
+}
 
 OPEN_TRANSIENT_ERROR = (
     NV_ENC_ERR_NO_ENCODE_DEVICE,
@@ -1013,80 +1014,81 @@ OPEN_TRANSIENT_ERROR = (
     NV_ENC_ERR_OUT_OF_MEMORY,
     NV_ENC_ERR_ENCODER_BUSY,
     NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY,
-    )
+)
 
 CAPS_NAMES = {
-        NV_ENC_CAPS_NUM_MAX_BFRAMES             : "NUM_MAX_BFRAMES",
-        NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES : "SUPPORTED_RATECONTROL_MODES",
-        NV_ENC_CAPS_SUPPORT_FIELD_ENCODING      : "SUPPORT_FIELD_ENCODING",
-        NV_ENC_CAPS_SUPPORT_MONOCHROME          : "SUPPORT_MONOCHROME",
-        NV_ENC_CAPS_SUPPORT_FMO                 : "SUPPORT_FMO",
-        NV_ENC_CAPS_SUPPORT_QPELMV              : "SUPPORT_QPELMV",
-        NV_ENC_CAPS_SUPPORT_BDIRECT_MODE        : "SUPPORT_BDIRECT_MODE",
-        NV_ENC_CAPS_SUPPORT_CABAC               : "SUPPORT_CABAC",
-        NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM  : "SUPPORT_ADAPTIVE_TRANSFORM",
-        NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS     : "NUM_MAX_TEMPORAL_LAYERS",
-        NV_ENC_CAPS_SUPPORT_HIERARCHICAL_PFRAMES: "SUPPORT_HIERARCHICAL_PFRAMES",
-        NV_ENC_CAPS_SUPPORT_HIERARCHICAL_BFRAMES: "SUPPORT_HIERARCHICAL_BFRAMES",
-        NV_ENC_CAPS_LEVEL_MAX                   : "LEVEL_MAX",
-        NV_ENC_CAPS_LEVEL_MIN                   : "LEVEL_MIN",
-        NV_ENC_CAPS_SEPARATE_COLOUR_PLANE       : "SEPARATE_COLOUR_PLANE",
-        NV_ENC_CAPS_WIDTH_MAX                   : "WIDTH_MAX",
-        NV_ENC_CAPS_HEIGHT_MAX                  : "HEIGHT_MAX",
-        NV_ENC_CAPS_SUPPORT_TEMPORAL_SVC        : "SUPPORT_TEMPORAL_SVC",
-        NV_ENC_CAPS_SUPPORT_DYN_RES_CHANGE      : "SUPPORT_DYN_RES_CHANGE",
-        NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE  : "SUPPORT_DYN_BITRATE_CHANGE",
-        NV_ENC_CAPS_SUPPORT_DYN_FORCE_CONSTQP   : "SUPPORT_DYN_FORCE_CONSTQP",
-        NV_ENC_CAPS_SUPPORT_DYN_RCMODE_CHANGE   : "SUPPORT_DYN_RCMODE_CHANGE",
-        NV_ENC_CAPS_SUPPORT_SUBFRAME_READBACK   : "SUPPORT_SUBFRAME_READBACK",
-        NV_ENC_CAPS_SUPPORT_CONSTRAINED_ENCODING: "SUPPORT_CONSTRAINED_ENCODING",
-        NV_ENC_CAPS_SUPPORT_INTRA_REFRESH       : "SUPPORT_INTRA_REFRESH",
-        NV_ENC_CAPS_SUPPORT_CUSTOM_VBV_BUF_SIZE : "SUPPORT_CUSTOM_VBV_BUF_SIZE",
-        NV_ENC_CAPS_SUPPORT_DYNAMIC_SLICE_MODE  : "SUPPORT_DYNAMIC_SLICE_MODE",
-        NV_ENC_CAPS_SUPPORT_REF_PIC_INVALIDATION: "SUPPORT_REF_PIC_INVALIDATION",
-        NV_ENC_CAPS_PREPROC_SUPPORT             : "PREPROC_SUPPORT",
-        NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT        : "ASYNC_ENCODE_SUPPORT",
-        NV_ENC_CAPS_MB_NUM_MAX                  : "MB_NUM_MAX",
-        NV_ENC_CAPS_EXPOSED_COUNT               : "EXPOSED_COUNT",
-        NV_ENC_CAPS_SUPPORT_YUV444_ENCODE       : "SUPPORT_YUV444_ENCODE",
-        NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE     : "SUPPORT_LOSSLESS_ENCODE",
-        NV_ENC_CAPS_SUPPORT_SAO                 : "SUPPORT_SAO",
-        NV_ENC_CAPS_SUPPORT_MEONLY_MODE         : "SUPPORT_MEONLY_MODE",
-        NV_ENC_CAPS_SUPPORT_LOOKAHEAD           : "SUPPORT_LOOKAHEAD",
-        NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ         : "SUPPORT_TEMPORAL_AQ",
-        NV_ENC_CAPS_SUPPORT_10BIT_ENCODE        : "SUPPORT_10BIT_ENCODE",
-        NV_ENC_CAPS_NUM_MAX_LTR_FRAMES          : "NUM_MAX_LTR_FRAMES",
-        NV_ENC_CAPS_SUPPORT_WEIGHTED_PREDICTION : "SUPPORT_WEIGHTED_PREDICTION",
-        NV_ENC_CAPS_DYNAMIC_QUERY_ENCODER_CAPACITY  : "DYNAMIC_QUERY_ENCODER_CAPACITY",
-        NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE     : "SUPPORT_BFRAME_REF_MODE",
-        NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP  : "SUPPORT_EMPHASIS_LEVEL_MAP",
-        }
+    NV_ENC_CAPS_NUM_MAX_BFRAMES             : "NUM_MAX_BFRAMES",
+    NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES : "SUPPORTED_RATECONTROL_MODES",
+    NV_ENC_CAPS_SUPPORT_FIELD_ENCODING      : "SUPPORT_FIELD_ENCODING",
+    NV_ENC_CAPS_SUPPORT_MONOCHROME          : "SUPPORT_MONOCHROME",
+    NV_ENC_CAPS_SUPPORT_FMO                 : "SUPPORT_FMO",
+    NV_ENC_CAPS_SUPPORT_QPELMV              : "SUPPORT_QPELMV",
+    NV_ENC_CAPS_SUPPORT_BDIRECT_MODE        : "SUPPORT_BDIRECT_MODE",
+    NV_ENC_CAPS_SUPPORT_CABAC               : "SUPPORT_CABAC",
+    NV_ENC_CAPS_SUPPORT_ADAPTIVE_TRANSFORM  : "SUPPORT_ADAPTIVE_TRANSFORM",
+    NV_ENC_CAPS_NUM_MAX_TEMPORAL_LAYERS     : "NUM_MAX_TEMPORAL_LAYERS",
+    NV_ENC_CAPS_SUPPORT_HIERARCHICAL_PFRAMES: "SUPPORT_HIERARCHICAL_PFRAMES",
+    NV_ENC_CAPS_SUPPORT_HIERARCHICAL_BFRAMES: "SUPPORT_HIERARCHICAL_BFRAMES",
+    NV_ENC_CAPS_LEVEL_MAX                   : "LEVEL_MAX",
+    NV_ENC_CAPS_LEVEL_MIN                   : "LEVEL_MIN",
+    NV_ENC_CAPS_SEPARATE_COLOUR_PLANE       : "SEPARATE_COLOUR_PLANE",
+    NV_ENC_CAPS_WIDTH_MAX                   : "WIDTH_MAX",
+    NV_ENC_CAPS_HEIGHT_MAX                  : "HEIGHT_MAX",
+    NV_ENC_CAPS_SUPPORT_TEMPORAL_SVC        : "SUPPORT_TEMPORAL_SVC",
+    NV_ENC_CAPS_SUPPORT_DYN_RES_CHANGE      : "SUPPORT_DYN_RES_CHANGE",
+    NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE  : "SUPPORT_DYN_BITRATE_CHANGE",
+    NV_ENC_CAPS_SUPPORT_DYN_FORCE_CONSTQP   : "SUPPORT_DYN_FORCE_CONSTQP",
+    NV_ENC_CAPS_SUPPORT_DYN_RCMODE_CHANGE   : "SUPPORT_DYN_RCMODE_CHANGE",
+    NV_ENC_CAPS_SUPPORT_SUBFRAME_READBACK   : "SUPPORT_SUBFRAME_READBACK",
+    NV_ENC_CAPS_SUPPORT_CONSTRAINED_ENCODING: "SUPPORT_CONSTRAINED_ENCODING",
+    NV_ENC_CAPS_SUPPORT_INTRA_REFRESH       : "SUPPORT_INTRA_REFRESH",
+    NV_ENC_CAPS_SUPPORT_CUSTOM_VBV_BUF_SIZE : "SUPPORT_CUSTOM_VBV_BUF_SIZE",
+    NV_ENC_CAPS_SUPPORT_DYNAMIC_SLICE_MODE  : "SUPPORT_DYNAMIC_SLICE_MODE",
+    NV_ENC_CAPS_SUPPORT_REF_PIC_INVALIDATION: "SUPPORT_REF_PIC_INVALIDATION",
+    NV_ENC_CAPS_PREPROC_SUPPORT             : "PREPROC_SUPPORT",
+    NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT        : "ASYNC_ENCODE_SUPPORT",
+    NV_ENC_CAPS_MB_NUM_MAX                  : "MB_NUM_MAX",
+    NV_ENC_CAPS_EXPOSED_COUNT               : "EXPOSED_COUNT",
+    NV_ENC_CAPS_SUPPORT_YUV444_ENCODE       : "SUPPORT_YUV444_ENCODE",
+    NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE     : "SUPPORT_LOSSLESS_ENCODE",
+    NV_ENC_CAPS_SUPPORT_SAO                 : "SUPPORT_SAO",
+    NV_ENC_CAPS_SUPPORT_MEONLY_MODE         : "SUPPORT_MEONLY_MODE",
+    NV_ENC_CAPS_SUPPORT_LOOKAHEAD           : "SUPPORT_LOOKAHEAD",
+    NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ         : "SUPPORT_TEMPORAL_AQ",
+    NV_ENC_CAPS_SUPPORT_10BIT_ENCODE        : "SUPPORT_10BIT_ENCODE",
+    NV_ENC_CAPS_NUM_MAX_LTR_FRAMES          : "NUM_MAX_LTR_FRAMES",
+    NV_ENC_CAPS_SUPPORT_WEIGHTED_PREDICTION : "SUPPORT_WEIGHTED_PREDICTION",
+    NV_ENC_CAPS_DYNAMIC_QUERY_ENCODER_CAPACITY  : "DYNAMIC_QUERY_ENCODER_CAPACITY",
+    NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE     : "SUPPORT_BFRAME_REF_MODE",
+    NV_ENC_CAPS_SUPPORT_EMPHASIS_LEVEL_MAP  : "SUPPORT_EMPHASIS_LEVEL_MAP",
+}
 
 PIC_TYPES = {
-             NV_ENC_PIC_TYPE_P              : "P",
-             NV_ENC_PIC_TYPE_B              : "B",
-             NV_ENC_PIC_TYPE_I              : "I",
-             NV_ENC_PIC_TYPE_IDR            : "IDR",
-             NV_ENC_PIC_TYPE_BI             : "BI",
-             NV_ENC_PIC_TYPE_SKIPPED        : "SKIPPED",
-             NV_ENC_PIC_TYPE_INTRA_REFRESH  : "INTRA_REFRESH",
-             NV_ENC_PIC_TYPE_UNKNOWN        : "UNKNOWN",
-            }
+    NV_ENC_PIC_TYPE_P              : "P",
+    NV_ENC_PIC_TYPE_B              : "B",
+    NV_ENC_PIC_TYPE_I              : "I",
+    NV_ENC_PIC_TYPE_IDR            : "IDR",
+    NV_ENC_PIC_TYPE_BI             : "BI",
+    NV_ENC_PIC_TYPE_SKIPPED        : "SKIPPED",
+    NV_ENC_PIC_TYPE_INTRA_REFRESH  : "INTRA_REFRESH",
+    NV_ENC_PIC_TYPE_UNKNOWN        : "UNKNOWN",
+}
 
 TUNING_STR = {
-        NV_ENC_TUNING_INFO_UNDEFINED            : "undefined",
-        NV_ENC_TUNING_INFO_HIGH_QUALITY         : "high-quality",
-        NV_ENC_TUNING_INFO_LOW_LATENCY          : "low-latency",
-        NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY    : "ultra-low-latency",
-        NV_ENC_TUNING_INFO_LOSSLESS             : "lossless",
-        }
+    NV_ENC_TUNING_INFO_UNDEFINED            : "undefined",
+    NV_ENC_TUNING_INFO_HIGH_QUALITY         : "high-quality",
+    NV_ENC_TUNING_INFO_LOW_LATENCY          : "low-latency",
+    NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY    : "ultra-low-latency",
+    NV_ENC_TUNING_INFO_LOSSLESS             : "lossless",
+}
 TUNINGS = dict((v, k) for k,v in TUNING_STR.items())
 
 
 NvEncodeAPICreateInstance = None
 cuCtxGetCurrent = None
 
-def init_nvencode_library():
+
+def init_nvencode_library() -> None:
     global NvEncodeAPICreateInstance, cuCtxGetCurrent
     if WIN32:
         load = ctypes.WinDLL
@@ -1140,6 +1142,7 @@ cdef guidstr(GUID guid):
     #log.info("guidstr(%s)=%s", guid, s)
     return s
 
+
 cdef GUID c_parseguid(src) except *:
     #just as ugly as above - shoot me now
     #only this format is allowed:
@@ -1181,14 +1184,18 @@ cdef GUID c_parseguid(src) except *:
     log("c_parseguid(%s)=%s", src, guid)
     return guid
 
+
 def parseguid(s):
     return c_parseguid(s)
 
-def test_parse():
+
+def test_parse() -> None:
     sample_guid = "CE788D20-AAA9-4318-92BB-AC7E858C8D36"
     x = c_parseguid(sample_guid)
     v = guidstr(x)
     assert v==sample_guid, "expected %s but got %s" % (sample_guid, v)
+
+
 test_parse()
 
 
@@ -1301,7 +1308,8 @@ PRESET_SPEED = {
     "low-latency"   : 80,
     "low-latency-hp": 100,
     "streaming"     : -1000,    #disabled for now
-    }
+}
+
 PRESET_QUALITY = {
     "lossless"      : 100,
     "lossless-hp"   : 100,
@@ -1320,34 +1328,32 @@ PRESET_QUALITY = {
     "P5"            : 70,
     "P6"            : 85,
     "P7"            : 100,
-    }
-
+}
 
 CHROMA_FORMATS = {
     "BGRX" : 3,
     "r210" : 3,
     "NV12" : 1,
     "YUV444P" : 3,
-    }
-
+}
 
 BUFFER_FORMAT = {
-        NV_ENC_BUFFER_FORMAT_UNDEFINED              : "undefined",
-        NV_ENC_BUFFER_FORMAT_NV12                   : "NV12_PL",
-        NV_ENC_BUFFER_FORMAT_YV12                   : "YV12_PL",
-        NV_ENC_BUFFER_FORMAT_IYUV                   : "IYUV_PL",
-        NV_ENC_BUFFER_FORMAT_YUV444                 : "YUV444_PL",
-        NV_ENC_BUFFER_FORMAT_YUV420_10BIT           : "YUV420_10BIT",
-        NV_ENC_BUFFER_FORMAT_YUV444_10BIT           : "YUV444_10BIT",
-        NV_ENC_BUFFER_FORMAT_ARGB                   : "ARGB",
-        NV_ENC_BUFFER_FORMAT_ARGB10                 : "ARGB10",
-        NV_ENC_BUFFER_FORMAT_AYUV                   : "AYUV",
-        NV_ENC_BUFFER_FORMAT_ABGR                   : "ABGR",
-        NV_ENC_BUFFER_FORMAT_ABGR10                 : "ABGR10",
-        }
+    NV_ENC_BUFFER_FORMAT_UNDEFINED              : "undefined",
+    NV_ENC_BUFFER_FORMAT_NV12                   : "NV12_PL",
+    NV_ENC_BUFFER_FORMAT_YV12                   : "YV12_PL",
+    NV_ENC_BUFFER_FORMAT_IYUV                   : "IYUV_PL",
+    NV_ENC_BUFFER_FORMAT_YUV444                 : "YUV444_PL",
+    NV_ENC_BUFFER_FORMAT_YUV420_10BIT           : "YUV420_10BIT",
+    NV_ENC_BUFFER_FORMAT_YUV444_10BIT           : "YUV444_10BIT",
+    NV_ENC_BUFFER_FORMAT_ARGB                   : "ARGB",
+    NV_ENC_BUFFER_FORMAT_ARGB10                 : "ARGB10",
+    NV_ENC_BUFFER_FORMAT_AYUV                   : "AYUV",
+    NV_ENC_BUFFER_FORMAT_ABGR                   : "ABGR",
+    NV_ENC_BUFFER_FORMAT_ABGR10                 : "ABGR10",
+}
 
 
-def get_COLORSPACES(encoding):
+def get_COLORSPACES(encoding: str) -> Dict[str, Sequence[str]]:
     global YUV420_ENABLED, YUV444_ENABLED, YUV444_CODEC_SUPPORT
     out_cs = []
     if YUV420_ENABLED:
@@ -1363,10 +1369,12 @@ def get_COLORSPACES(encoding):
         COLORSPACES["r210"] = ("GBRP10", )
     return COLORSPACES
 
-def get_input_colorspaces(encoding):
+
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     return list(get_COLORSPACES(encoding).keys())
 
-def get_output_colorspaces(encoding, input_colorspace):
+
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     cs = get_COLORSPACES(encoding)
     out = cs.get(input_colorspace)
     if not out:
@@ -1387,6 +1395,7 @@ cdef double last_context_failure = 0
 # per-device preset denylist - should be mutated with device_lock held
 bad_presets = {}
 
+
 def get_runtime_factor() -> float:
     global last_context_failure, context_counter
     device_count = len(init_all_devices())
@@ -1406,17 +1415,19 @@ def get_runtime_factor() -> float:
 
 MAX_SIZE = {}
 
-def get_width_mask(colorspace):
+def get_width_mask(colorspace: str) -> int:
     if colorspace.startswith("YUV42"):
         return 0xFFFE
     return 0xFFFF
-def get_height_mask(colorspace):
+
+
+def get_height_mask(colorspace: str) -> int:
     if colorspace=="YUV420":
         return 0xFFFE
     return 0xFFFF
 
 
-def get_specs(encoding, colorspace):
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
     assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_COLORSPACES(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES(encoding))
     #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
@@ -1451,14 +1462,14 @@ def get_version():
 def get_type() -> str:
     return "nvenc"
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> Dict[str, Any]:
     global last_context_failure, context_counter, context_gen_counter
     info = {
-            "version"           : PRETTY_VERSION,
-            "device_count"      : len(get_devices() or []),
-            "context_count"     : context_counter.get(),
-            "generation"        : context_gen_counter.get(),
-            }
+        "version"           : PRETTY_VERSION,
+        "device_count"      : len(get_devices() or []),
+        "context_count"     : context_counter.get(),
+        "generation"        : context_gen_counter.get(),
+    }
     cards = get_cards()
     if cards:
         info["cards"] = cards
@@ -1473,10 +1484,11 @@ def get_info() -> Dict[str,Any]:
     return info
 
 
-ENCODINGS = []
-def get_encodings():
+ENCODINGS: Sequence[str] = []
+def get_encodings() -> Sequence[str]:
     global ENCODINGS
     return ENCODINGS
+
 
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
@@ -1488,8 +1500,10 @@ cdef uintptr_t cmalloc(size_t size, what) except 0:
         raise RuntimeError("failed to allocate %i bytes of memory for %s" % (size, what))
     return <uintptr_t> ptr
 
+
 cdef nvencStatusInfo(NVENCSTATUS ret):
-    return NV_ENC_STATUS_TXT.get(ret)
+    return NV_ENC_STATUS_TXT.get(ret, str(ret))
+
 
 class NVENCException(Exception):
     def __init__(self, code, fn):
@@ -1500,6 +1514,7 @@ class NVENCException(Exception):
         if self.api_message:
             msg += ": %s" % self.api_message
         super().__init__(msg)
+
 
 cdef inline raiseNVENC(NVENCSTATUS ret, msg):
     if DEBUG_API:
@@ -1643,7 +1658,8 @@ cdef class Encoder:
                     return c_parseguid(preset_guid)
         raise ValueError("no matching presets available for '%s' with speed=%i and quality=%i" % (self.codec_name, self.speed, self.quality))
 
-    def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options:typedict=None):
+    def init_context(self, encoding: str, unsigned int width, unsigned int height, src_format: str,
+                     options: typedict) -> None:
         assert NvEncodeAPICreateInstance is not None, "encoder module is not initialized"
         log("init_context%s", (encoding, width, height, src_format, options))
         options = options or typedict()
@@ -1693,7 +1709,6 @@ cdef class Encoder:
         else:
             self.init_device(options)
 
-
     cdef _get_profile(self, options):
         #convert the pixel format into a "colourspace" string:
         csc_mode = "YUV420P"
@@ -1707,7 +1722,6 @@ cdef class Encoder:
         #now see if the client has requested a different value:
         profile = options.strget("h264.%s.profile" % csc_mode, profile)
         return profile
-
 
     def threaded_init_device(self, options: typedict):
         global device_lock
@@ -1761,8 +1775,7 @@ cdef class Encoder:
     def is_ready(self) -> bool:
         return bool(self.ready)
 
-
-    def get_target_pixel_format(self, quality):
+    def get_target_pixel_format(self, int quality):
         global NATIVE_RGB, YUV420_ENABLED, YUV444_ENABLED, LOSSLESS_ENABLED, YUV444_THRESHOLD, YUV444_CODEC_SUPPORT
         v = None
         hasyuv444 = YUV444_CODEC_SUPPORT.get(self.encoding, YUV444_ENABLED) and "YUV444P" in self.dst_formats
@@ -1797,7 +1810,7 @@ cdef class Encoder:
             return False
         return quality>=LOSSLESS_THRESHOLD
 
-    def init_cuda(self, cuda_context):
+    def init_cuda(self, cuda_context) -> None:
         cdef int result
         cdef uintptr_t context_pointer
 
@@ -1910,14 +1923,13 @@ cdef class Encoder:
         self.inputBuffer = driver.pagelocked_zeros(self.inputPitch*self.input_height, dtype=numpy.byte)
         log("inputBuffer=%s (size=%s)", self.inputBuffer, self.inputPitch*self.input_height)
 
-
-    def init_nvenc(self):
+    def init_nvenc(self) -> None:
         log("init_nvenc()")
         self.open_encode_session()
         self.init_encoder()
         self.init_buffers()
 
-    def init_encoder(self):
+    def init_encoder(self) -> None:
         log("init_encoder()")
         cdef GUID codec = self.init_codec()
         cdef NVENCSTATUS r
@@ -1995,7 +2007,6 @@ cdef class Encoder:
         config.profileGUID = profile
         self.tune_preset(config)
         params.encodeConfig = config
-
 
     cdef int get_chroma_format(self):
         cdef int chroma = CHROMA_FORMATS.get(self.pixel_format, -1)
@@ -2137,7 +2148,7 @@ cdef class Encoder:
             raise RuntimeError("bitstream buffer pointer is null")
 
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> Dict[str, Any]:
         global YUV444_CODEC_SUPPORT, YUV444_ENABLED, LOSSLESS_CODEC_SUPPORT, LOSSLESS_ENABLED
         cdef double pps
         info = get_info()
@@ -2220,8 +2231,7 @@ cdef class Encoder:
         if not self.closed:
             self.clean()
 
-
-    def clean(self):
+    def clean(self) -> None:
         if not self.closed:
             self.closed = 1
             if self.threaded_init:
@@ -2229,12 +2239,12 @@ cdef class Encoder:
             else:
                 self.do_clean()
 
-    def threaded_clean(self):
+    def threaded_clean(self) -> None:
         global device_lock
         with device_lock:
             self.do_clean()
 
-    def do_clean(self):
+    def do_clean(self) -> None:
         cdc = self.cuda_device_context
         log("clean() cuda_context=%s, encoder context=%#x", cdc, <uintptr_t> self.context)
         if cdc:
@@ -2280,7 +2290,6 @@ cdef class Encoder:
         self.bytes_in = 0
         self.bytes_out = 0
         log("clean() done")
-
 
     cdef cuda_clean(self):
         log("cuda_clean()")
@@ -2383,7 +2392,7 @@ cdef class Encoder:
         #best to just tear down the encoder context and create a new one
         return
 
-    def update_bitrate(self):
+    def update_bitrate(self) -> None:
         #use an exponential scale so for a 1Kx1K image (after scaling), roughly:
         #speed=0   -> 1Mbit/s
         #speed=50  -> 10Mbit/s
@@ -2400,7 +2409,6 @@ cdef class Encoder:
         self.target_bitrate = min(lim, max(1000000, int(((0.5+self.speed/200.0)**8)*lim*MPixels*mult)))
         self.max_bitrate = 2*self.target_bitrate
 
-
     cdef flushEncoder(self):
         cdef NV_ENC_PIC_PARAMS pic
         cdef NVENCSTATUS r
@@ -2414,7 +2422,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &pic)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image, options=None, int retry=0):
+    def compress_image(self, image: ImageWrapper, options: typedict, int retry=0):
         options = options or {}
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
@@ -2428,7 +2436,7 @@ cdef class Encoder:
                 self.set_encoding_speed(speed)
             return self.do_compress_image(cuda_context, image)
 
-    cdef do_compress_image(self, cuda_context, image):
+    cdef do_compress_image(self, cuda_context, image: ImageWrapper):
         assert self.context, "nvenc context is not initialized"
         assert cuda_context, "missing device context"
         cdef unsigned int w = image.get_width()
@@ -2745,15 +2753,16 @@ cdef class Encoder:
         presetConfig.presetCfg.version = NV_ENC_CONFIG_VER
         if DEBUG_API:
             log("nvEncGetEncodePresetConfig(%s, %s)", codecstr(encode_GUID), presetstr(preset_GUID))
-        tuning = self.get_tuning()
+        cdef int tuning = self.get_tuning()
         log("tuning=%s (%i)", TUNING_STR.get(tuning, "unknown"), tuning)
-        r = self.functionList.nvEncGetEncodePresetConfigEx(self.context, encode_GUID, preset_GUID, tuning, presetConfig)
+        r = self.functionList.nvEncGetEncodePresetConfigEx(self.context, encode_GUID,
+                                                           preset_GUID, <NV_ENC_TUNING_INFO> tuning, presetConfig)
         if r!=0:
             log.warn("failed to get preset config for %s (%s / %s): %s", name, guidstr(encode_GUID), guidstr(preset_GUID), NV_ENC_STATUS_TXT.get(r, r))
             return NULL
         return presetConfig
 
-    def get_tuning(self):
+    cdef int get_tuning(self):
         if DESIRED_TUNING:
             tuning = TUNINGS.get(DESIRED_TUNING, -1)
             log(f"tuning override {DESIRED_TUNING!r}={tuning}")
@@ -2964,8 +2973,7 @@ cdef class Encoder:
         log("codecs=%s", csv(codecs.keys()))
         return codecs
 
-
-    def open_encode_session(self):
+    def open_encode_session(self) -> None:
         global context_counter, context_gen_counter, last_context_failure
         cdef NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS params
 
@@ -3023,7 +3031,7 @@ cdef class Encoder:
 
 
 _init_message = False
-def init_module():
+def init_module() -> None:
     from xpra.codecs.nvidia.util import has_nvidia_hardware
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
@@ -3215,12 +3223,12 @@ def init_module():
         _init_message = True
 
 
-def cleanup_module():
+def cleanup_module() -> None:
     log("nvenc.cleanup_module()")
     reset_state()
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     from xpra.codecs.nvidia.util import has_nvidia_hardware
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")

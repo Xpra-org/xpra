@@ -142,7 +142,7 @@ class Decoder(VideoPipeline):
             return f"gstreamer-{self.decoder_element}(uninitialized)"
         return f"gstreamer-{self.decoder_element}({self.colorspace} - {self.width}x{self.height})"
 
-    def create_pipeline(self, options: typedict):
+    def create_pipeline(self, options: typedict) -> None:
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")
@@ -237,7 +237,7 @@ class Decoder(VideoPipeline):
             self.frame_queue.put(image)
         return GST_FLOW_OK
 
-    def decompress_image(self, data: bytes, options: typedict):
+    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper | None:
         log(f"decompress_image(.., {options}) state={self.state} data size={len(data)}")
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
@@ -256,7 +256,7 @@ class Decoder(VideoPipeline):
 GObject.type_register(Decoder)
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     log("gstreamer decoder selftest: %s", get_info())
     from xpra.codecs.checks import testdecoder
     from xpra.codecs.gstreamer import decoder

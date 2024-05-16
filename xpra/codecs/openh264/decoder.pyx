@@ -138,7 +138,7 @@ cdef class Decoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding: str, int width, int height, colorspace: str):
+    def init_context(self, encoding: str, int width, int height, colorspace: str) -> None:
         log("openh264.init_context%s", (encoding, width, height, colorspace))
         assert encoding=="h264", f"invalid encoding: {encoding}"
         self.width = width
@@ -188,7 +188,7 @@ cdef class Decoder:
         self.height = 0
         self.colorspace = ""
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> Dict[str, Any]:
         info = get_info()
         info |= {
             "frames"        : int(self.frames),
@@ -199,7 +199,7 @@ cdef class Decoder:
         return info
 
 
-    def decompress_image(self, data, options: typedict) -> ImageWrapper:
+    def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
         cdef SBufferInfo buf_info
         cdef long r = 0
         cdef unsigned char* src
@@ -210,8 +210,7 @@ cdef class Decoder:
             src = <unsigned char*> (<uintptr_t> int(bc))
             src_len = len(bc)
             with nogil:
-                r = self.context.DecodeFrameNoDelay(<const unsigned char*> src, <const int> src_len,
-                                                    yuv, &buf_info)
+                r = self.context.DecodeFrameNoDelay(<const unsigned char*> src, <const int> src_len, yuv, &buf_info)
         if r:
             raise RuntimeError(f"openh264 frame decoding error {r}")
         end = monotonic()
@@ -227,7 +226,7 @@ cdef class Decoder:
             yuv[0][:ystride*height],
             yuv[1][:uvstride*(height//2)],
             yuv[2][:uvstride*(height//2)],
-            ]
+        ]
         log(f"openh264 decoded {src_len:8} bytes into {width}x{height} YUV420P in {int((end-start)*1000):3}ms")
         return ImageWrapper(0, 0, width, height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3)
 

@@ -488,8 +488,9 @@ def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out
         N = 5
         data = meta = None
         for i in range(N):
+            options = typedict()
             image = make_test_image(cs_in, W, H)
-            v = e.compress_image(image)
+            v = e.compress_image(image, options)
             if v is None:
                 raise RuntimeError(f"{encoding} compression failed on image {i+1} of {N}")
             data, meta = v
@@ -589,7 +590,7 @@ def do_testcsc(csc_module, iw: int, ih: int, ow: int, oh: int,
             log(f"{cstype}: testing {cs_in} -> {cs_out}")
             e = csc_module.Converter()
             try:
-                e.init_context(iw, ih, cs_in, ow, oh, cs_out)
+                e.init_context(iw, ih, cs_in, ow, oh, cs_out, typedict())
                 image = make_test_image(cs_in, iw, ih)
                 out = e.convert_image(image)
                 if out.get_width() != ow:

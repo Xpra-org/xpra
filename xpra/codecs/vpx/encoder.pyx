@@ -253,7 +253,7 @@ def get_info() -> Dict[str,Any]:
         "abi_version"   : get_abi_version(),
         "counter"       : generation.get(),
         "build_config"  : b.decode("latin1"),
-        }
+    }
     for e, maxsize in MAX_SIZE.items():
         info["%s.max-size" % e] = maxsize
     for k,v in COLORSPACES.items():
@@ -559,7 +559,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-    def compress_image(self, image: ImageWrapper, options=None) -> Tuple:
+    def compress_image(self, image: ImageWrapper, options=None) -> Tuple[bytes, Dict]:
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         assert self.context!=NULL
@@ -690,7 +690,6 @@ cdef class Encoder:
         if self.file and size>0:
             self.file.write(img)
             self.file.flush()
-        v = img
         return img
 
     def set_encoding_speed(self, int pct) -> None:

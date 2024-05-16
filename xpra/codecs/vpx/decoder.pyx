@@ -211,7 +211,7 @@ cdef class Decoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding: str, width: int, height: int, colorspace: str):
+    def init_context(self, encoding: str, width: int, height: int, colorspace: str) -> None:
         log("vpx decoder init_context%s", (encoding, width, height, colorspace))
         assert encoding in CODECS
         assert colorspace in get_input_colorspaces(encoding)

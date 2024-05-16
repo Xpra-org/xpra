@@ -192,7 +192,7 @@ class Encoder(VideoPipeline):
     Dispatch video encoding to a gstreamer pipeline
     """
 
-    def create_pipeline(self, options: typedict):
+    def create_pipeline(self, options: typedict) -> None:
         if self.encoding not in get_encodings():
             raise ValueError(f"invalid encoding {self.encoding!r}")
         self.dst_formats = options.strtupleget("dst-formats")

@@ -112,7 +112,7 @@ class Capture(Pipeline):
         log("new-preroll")
         return GST_FLOW_OK
 
-    def get_image(self, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
+    def get_image(self, x: int = 0, y: int = 0, width: int = 0, height: int = 0) -> ImageWrapper | None:
         log("get_image%s", (x, y, width, height))
         if self.state == "stopped":
             return None
@@ -288,7 +288,7 @@ def selftest(_full=False) -> None:
     c = Capture(width=w, height=h)
     loop = GLib.MainLoop()
 
-    def check():
+    def check() -> bool:
         i = c.get_image()
         if i:
             c.stop()

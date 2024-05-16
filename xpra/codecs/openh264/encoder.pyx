@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
 
+from xpra.codecs.image import ImageWrapper
 from xpra.util.str_fn import csv, bytestostr, strtobytes
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import VideoSpec
@@ -311,14 +312,14 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding: str, unsigned int width, unsigned int height, src_format: str, options:typedict=None):
+    def init_context(self, encoding: str, unsigned int width, unsigned int height, src_format: str,
+                     options: typedict) -> None:
         log("openh264.init_context%s", (encoding, width, height, src_format, options))
-        options = options or typedict()
         assert src_format=="YUV420P", "invalid source format: %s, must be one of: %s" % (src_format, csv(COLORSPACES.keys()))
         assert encoding=="h264", "invalid encoding: %s" % encoding
         assert options.intget("scaled-width", width)==width, "openh264 encoder does not handle scaling"
         assert options.intget("scaled-height", height)==height, "openh264 encoder does not handle scaling"
-        if width%2!=0 or height%2!=0:
+        if width%2 != 0 or height% 2!= 0:
             raise ValueError(f"invalid odd width {width} or height {height} for {src_format}")
         self.width = width
         self.height = height
@@ -415,17 +416,17 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
-    def compress_image(self, image, options=None):
+    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
         cdef int i
         cdef unsigned int width = image.get_width()
         cdef unsigned int height = image.get_height()
         assert width>=self.width
         assert height>=self.height
-        assert image.get_pixel_format()=="YUV420P", "expected YUV420P but got %s" % image.get_pixel_format()
+        if image.get_pixel_format()!="YUV420P":
+            raise ValueError("expected YUV420P but got %s" % image.get_pixel_format())
         pixels = image.get_pixels()
         strides = image.get_rowstride()
 
-        options = typedict(options or {})
         #encoder.SetOption(ENCODER_OPTION_SVC_ENCODE_PARAM_BASE, &param)
 
         cdef SFrameBSInfo frame_info

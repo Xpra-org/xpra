@@ -329,8 +329,7 @@ class VideoPipeline(Pipeline):
     Dispatch video encoding or decoding to a gstreamer pipeline
     """
 
-    def init_context(self, encoding: str, width: int, height: int, colorspace: str, options=None):
-        options = typedict(options or {})
+    def init_context(self, encoding: str, width: int, height: int, colorspace: str, options: typedict) -> None:
         self.encoding: str = encoding
         self.width: int = width
         self.height: int = height

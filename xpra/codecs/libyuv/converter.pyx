@@ -183,7 +183,7 @@ def get_type() -> str:
     return "libyuv"
 
 
-def get_version() -> Tuple[int,int]:
+def get_version() -> Tuple[int, int]:
     return (1, 0)
 
 
@@ -333,7 +333,7 @@ cdef class Converter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format: str,
-                           int dst_width, int dst_height, dst_format: str, options:typedict=None) -> None:
+                           int dst_width, int dst_height, dst_format: str, options: typedict) -> None:
         log("libyuv.Converter.init_context%s", (
             src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         if src_format not in COLORSPACES:
@@ -342,7 +342,7 @@ cdef class Converter:
             raise ValueError(f"invalid output colorspace {dst_format} for {src_format} input, must be one of " + csv(COLORSPACES.get(src_format, ())))
         self.src_format = src_format
         self.dst_format = dst_format
-        cdef int speed = typedict(options or {}).intget("speed", 100)
+        cdef int speed = options.intget("speed", 100)
         self.filtermode = get_filtermode(speed)
         self.src_width = src_width
         self.src_height = src_height
@@ -514,7 +514,7 @@ cdef class Converter:
         else:
             raise RuntimeError(f"invalid source format {self.src_format}")
 
-    def convert_nv12_image(self, image: ImageWrapper):
+    def convert_nv12_image(self, image: ImageWrapper) -> ImageWrapper:
         cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
         cdef int width = image.get_width()
