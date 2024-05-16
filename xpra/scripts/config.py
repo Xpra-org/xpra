@@ -49,10 +49,10 @@ class InitExit(Exception):
 
 DEBUG_CONFIG_PROPERTIES: list[str] = os.environ.get("XPRA_DEBUG_CONFIG_PROPERTIES", "").split()
 
-DEFAULT_XPRA_CONF_FILENAME : str = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
-DEFAULT_NET_WM_NAME : str = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
+DEFAULT_XPRA_CONF_FILENAME: str = os.environ.get("XPRA_CONF_FILENAME", 'xpra.conf')
+DEFAULT_NET_WM_NAME: str = os.environ.get("XPRA_NET_WM_NAME", "Xpra")
 
-DEFAULT_POSTSCRIPT_PRINTER : str = ""
+DEFAULT_POSTSCRIPT_PRINTER: str = ""
 if POSIX:
     DEFAULT_POSTSCRIPT_PRINTER = os.environ.get("XPRA_POSTSCRIPT_PRINTER", "drv:///sample.drv/generic.ppd")
 DEFAULT_PULSEAUDIO = None   # auto
@@ -63,8 +63,8 @@ if OSX or WIN32:   # pragma: no cover
 
 
 def remove_dupes(seq: Iterable[Any]) -> list[Any]:
-    seen : set[Any] = set()
-    seen_add : Callable = seen.add
+    seen: set[Any] = set()
+    seen_add: Callable = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
 
 
@@ -190,8 +190,8 @@ def get_Xvfb_command(width=8192, height=4096, dpi=96) -> list[str]:
 
 
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
-                        Xdummy_ENABLED: bool | None = None, Xdummy_wrapper_ENABLED: bool | None=None,
-                        warn_fn:Callable = warn) -> list[str]:
+                        Xdummy_ENABLED: bool | None = None, Xdummy_wrapper_ENABLED: bool | None = None,
+                        warn_fn: Callable = warn) -> list[str]:
     """
     This function returns the xvfb command to use.
     It can either be an `Xvfb` command or one that uses `Xdummy`,
@@ -201,7 +201,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
         return []
     if OSX:     # pragma: no cover
         return get_Xvfb_command()
-    if sys.platform.find("bsd")>=0 and Xdummy_ENABLED is None:  # pragma: no cover
+    if sys.platform.find("bsd") >= 0 and Xdummy_ENABLED is None:  # pragma: no cover
         warn_fn(f"Warning: sorry, no support for Xdummy on {sys.platform}")
         return get_Xvfb_command()
     # if is_arm():
@@ -238,8 +238,8 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
         # auto-detect
         import stat
         xorg_stat = os.stat(xorg_bin)
-        if (xorg_stat.st_mode & stat.S_ISUID)!=0:
-            if (xorg_stat.st_mode & stat.S_IROTH)==0:
+        if (xorg_stat.st_mode & stat.S_ISUID) != 0:
+            if (xorg_stat.st_mode & stat.S_IROTH) == 0:
                 warn_fn(f"{xorg_bin} is suid and not readable, Xdummy support unavailable")
                 return get_Xvfb_command()
             debug(f"{xorg_bin} is suid and readable, using the xpra_Xdummy wrapper")
@@ -266,7 +266,7 @@ def wrap_cmd_str(cmd) -> str:
         while cmd:
             item = cmd[0]
             l = len(item)
-            if (item.startswith("-") or item.startswith("+")) and len(cmd)>1:
+            if (item.startswith("-") or item.startswith("+")) and len(cmd) > 1:
                 l += len(cmd[1])
             if s and len(s)+l > 55:
                 break
@@ -355,7 +355,7 @@ def read_config(conf_file: str) -> dict[str, Any]:
         If the same key is specified more than once,
         the value for this key will be an array of strings.
     """
-    d : dict[str, str | list[str]] = {}
+    d: dict[str, str | list[str]] = {}
     if not os.path.exists(conf_file) or not os.path.isfile(conf_file):
         debug("read_config(%s) is not a file or does not exist", conf_file)
         return d
@@ -505,7 +505,7 @@ def get_xpra_defaults_dirs(username: str | None = None, uid=None, gid=None):
     return defaults_dirs
 
 
-def may_create_user_config(xpra_conf_filename:str = DEFAULT_XPRA_CONF_FILENAME):
+def may_create_user_config(xpra_conf_filename: str = DEFAULT_XPRA_CONF_FILENAME):
     from xpra.platform.paths import get_user_conf_dirs
     # save a user config template:
     udirs = get_user_conf_dirs()
@@ -543,7 +543,7 @@ def may_create_user_config(xpra_conf_filename:str = DEFAULT_XPRA_CONF_FILENAME):
                     debug(f"failed to create default config in {conf_file!r}: {e}")
 
 
-OPTIONS_VALIDATION : dict[str, Callable] = {}
+OPTIONS_VALIDATION: dict[str, Callable] = {}
 
 OPTION_TYPES = {
     # string options:
@@ -1358,7 +1358,7 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
     validations.update(extras_validation)
     option_types = OPTION_TYPES.copy()
     option_types.update(extras_types)
-    nd : dict[str, Any] = {}
+    nd: dict[str, Any] = {}
     for k, v in d.items():
         if k in discard:
             warn(f"Warning: option {k!r} is not allowed in configuration files")
@@ -1423,16 +1423,16 @@ def make_defaults_struct(extras_defaults=None, extras_types=None, extras_validat
                                    username, uid, gid)
 
 
-def do_make_defaults_struct(extras_defaults:dict, extras_types:dict, extras_validation:dict,
-                            username:str, uid:int, gid:int) -> XpraConfig:
-    #populate config with default values:
+def do_make_defaults_struct(extras_defaults: dict, extras_types: dict, extras_validation: dict,
+                            username:str, uid: int, gid: int) -> XpraConfig:
+    # populate config with default values:
     if not username and uid:
         username = get_username_for_uid(uid)
     defaults = read_xpra_defaults(username, uid, gid)
     return dict_to_validated_config(defaults, extras_defaults, extras_types, extras_validation)
 
 
-def dict_to_validated_config(d:dict, extras_defaults=None, extras_types=None, extras_validation=None) -> XpraConfig:
+def dict_to_validated_config(d: dict, extras_defaults=None, extras_types=None, extras_validation=None) -> XpraConfig:
     options = get_defaults().copy()
     if extras_defaults:
         options.update(extras_defaults)
@@ -1452,7 +1452,7 @@ def dict_to_config(options) -> XpraConfig:
     return config
 
 
-def fixup_debug_option(value:str) -> str:
+def fixup_debug_option(value: str) -> str:
     """ backwards compatible parsing of the debug option, which used to be a boolean """
     if not value:
         return ""
@@ -1652,8 +1652,8 @@ def abs_paths(options) -> None:
               "ssl-key", "ssl-cert", "ssl-ca-certs"):
         f = k.replace("-", "_")
         v = getattr(options, f)
-        if v and (k!="ssl-ca-certs" or v!="default"):
-            if os.path.isabs(v) or v=="auto":
+        if v and (k != "ssl-ca-certs" or v != "default"):
+            if os.path.isabs(v) or v == "auto":
                 continue
             if v.startswith("~") or v.startswith("$"):
                 continue
@@ -1679,9 +1679,9 @@ def main():
     from xpra.util.str_fn import nonl
 
     def print_options(o):
-        for k,ot in sorted(OPTION_TYPES.items()):
+        for k, ot in sorted(OPTION_TYPES.items()):
             v = getattr(o, name_to_field(k), "")
-            if ot==bool and v is None:
+            if ot == bool and v is None:
                 v = "Auto"
             if isinstance(v, list):
                 v = csv(str(x) for x in v)

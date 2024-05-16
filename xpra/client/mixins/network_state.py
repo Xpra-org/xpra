@@ -266,7 +266,7 @@ class NetworkState(StubClientMixin):
         wait = 1000 * MIN_PING_TIMEOUT
         aspl = tuple(self.server_ping_latency)
         if aspl:
-            spl: Iterable[float] = tuple(x[1] for x in aspl)
+            spl: Sequence[float] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
             wait = max(1000 * MIN_PING_TIMEOUT, min(1000 * MAX_PING_TIMEOUT, round(1000 + avg * 2000)))
             log("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",

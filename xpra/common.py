@@ -20,6 +20,7 @@ except ImportError:     # pragma: no cover
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import nicestr
 
+# noinspection PyPep8
 RESOLUTION_ALIASES: dict[str, tuple[int, int]] = {
     "QVGA"  : (320, 240),
     "VGA"   : (640, 480),

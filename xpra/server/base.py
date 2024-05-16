@@ -8,7 +8,7 @@
 import os
 from time import monotonic
 from typing import Any
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
@@ -28,7 +28,7 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 
-def get_server_base_classes() -> Sequence[type]:
+def get_server_base_classes() -> tuple[type]:
     classes: list[type] = [ServerCore]
     if features.control:
         from xpra.server.mixins.controlcommands import ServerBaseControlCommands

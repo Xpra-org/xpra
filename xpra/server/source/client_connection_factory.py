@@ -67,7 +67,7 @@ def get_enabled_mixins() -> Sequence[type]:
     return tuple(mixins)
 
 
-def get_needed_based_classes(caps: typedict) -> Sequence[type]:
+def get_needed_based_classes(caps: typedict) -> tuple[type]:
     from xpra.server.source.client_connection import ClientConnection
     classes = [ClientConnection]
     mixins = get_enabled_mixins()

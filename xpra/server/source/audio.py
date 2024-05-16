@@ -30,9 +30,11 @@ class FakeSink:
     def __init__(self, codec):
         self.codec = codec
 
-    def add_data(self, *args):
+    @staticmethod
+    def add_data(*args):
         log("FakeSink.add_data%s ignored", args)
 
+    @staticmethod
     def cleanup(self, *args):
         log("FakeSink.cleanup%s ignored", args)
 
@@ -45,7 +47,7 @@ def stop_proc(proc) -> None:
         return
     try:
         proc.terminate()
-    except Exception:
+    except OSError:
         log("failed to stop subprocess %s", proc)
 
 
@@ -256,6 +258,7 @@ class AudioMixin(StubSourceMixin):
         if source == self.audio_source:
             self.stop_sending_audio()
 
+    @staticmethod
     def audio_source_info(self, source, info: dict) -> None:
         log("audio_source_info(%s, %s)", source, info)
 

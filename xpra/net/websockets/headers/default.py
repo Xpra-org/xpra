@@ -7,10 +7,10 @@ from xpra.util.str_fn import strtobytes
 
 # noinspection PyPep8
 HEADERS = {
-    b"Connection"               : b"Upgrade",
-    b"Upgrade"                  : b"websocket",
-    b"Sec-WebSocket-Version"    : b"13",
-    b"Sec-WebSocket-Protocol"   : b"binary",
+    b"Connection": b"Upgrade",
+    b"Upgrade": b"websocket",
+    b"Sec-WebSocket-Version": b"13",
+    b"Sec-WebSocket-Protocol": b"binary",
 }
 
 

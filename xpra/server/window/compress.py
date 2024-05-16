@@ -331,7 +331,7 @@ class WindowSource(WindowIconSource):
         if self.has_alpha and BROWSER_ALPHA_FIX and not self.is_OR:
             # remove alpha from 'NORMAL' browser windows
             # of a size greater than 200x200:
-            if self.content_type.find("browser")>=0 and "NORMAL" in self.window_type and ww >= 200 and wh >= 200:
+            if self.content_type.find("browser") >= 0 and "NORMAL" in self.window_type and ww >= 200 and wh >= 200:
                 self.has_alpha = False
 
         # will be overridden by update_quality() and update_speed() called from update_encoding_selection()
@@ -542,7 +542,7 @@ class WindowSource(WindowIconSource):
             pass
 
         # "encodings" info:
-        esinfo: dict[str,Any] = {
+        esinfo: dict[str, Any] = {
             ""                : self.encodings,
             "core"            : self.core_encodings,
             "auto-refresh"    : self.client_refresh_encodings,
@@ -615,7 +615,7 @@ class WindowSource(WindowIconSource):
     def get_damage_fps(self) -> int:
         now = monotonic()
         cutoff = now-5
-        lde = tuple(x[0] for x in tuple(self.statistics.last_damage_events) if x[0]>=cutoff)
+        lde = tuple(x[0] for x in tuple(self.statistics.last_damage_events) if x[0] >= cutoff)
         fps = 0
         if len(lde) >= 2:
             elapsed = now-min(lde)
@@ -795,7 +795,7 @@ class WindowSource(WindowIconSource):
         rgb_formats = properties.strtupleget("encodings.rgb_formats", self.rgb_formats)
         if not self.supports_transparency:
             # remove rgb formats with alpha
-            rgb_formats = tuple(x for x in rgb_formats if x.find("A")<0)
+            rgb_formats = tuple(x for x in rgb_formats if x.find("A") < 0)
         self.rgb_formats = rgb_formats
         self.send_window_size = properties.boolget("encoding.send-window-size", self.send_window_size)
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default=None))
@@ -858,7 +858,7 @@ class WindowSource(WindowIconSource):
         if self.av_sync_delay != self.av_sync_delay_target:
             self.schedule_av_sync_update(AV_SYNC_TIME_CHANGE)
 
-    def set_new_encoding(self, encoding:str, strict:bool) -> None:
+    def set_new_encoding(self, encoding: str, strict: bool) -> None:
         if strict is not None or STRICT_MODE:
             self.strict = strict or STRICT_MODE
         if self.encoding == encoding:
@@ -869,7 +869,7 @@ class WindowSource(WindowIconSource):
     def update_encoding_selection(self, encoding="", exclude=(), init: bool = False) -> None:
         # now we have the real list of encodings we can use:
         # "rgb32" and "rgb24" encodings are both aliased to "rgb"
-        if self._mmap_size > 0 and self.encoding!="grayscale":
+        if self._mmap_size > 0 and self.encoding != "grayscale":
             self.auto_refresh_encodings = ()
             self.encoding = "mmap"
             self.encodings = ("mmap", )
@@ -944,7 +944,7 @@ class WindowSource(WindowIconSource):
         weight = 1 + int(self.is_OR or self.is_tray or self.is_shadow)*2
         v = int(MAX_PIXELS_PREFER_RGB * pcmult * smult * qmult * weight)
         crs = self.client_render_size
-        if crs and DOWNSCALE and (crs[0]<ww or crs[1]<wh):
+        if crs and DOWNSCALE and (crs[0] < ww or crs[1] < wh):
             # client will downscale, best to avoid sending rgb,
             # so we can more easily downscale at this end:
             max_rgb_threshold = 1024
@@ -1105,7 +1105,7 @@ class WindowSource(WindowIconSource):
             if not lossy and depth > 24 and self.client_bit_depth > 24:
                 return "rgb32"
         grayscale = self.encoding == "grayscale"
-        webp = "webp" in co and 16383 >= w >=2 and 16383 >= h >= 2 and not grayscale
+        webp = "webp" in co and 16383 >= w >= 2 and 16383 >= h >= 2 and not grayscale
         if webp and depth in (24, 32) and w*h <= WEBP_EFFICIENCY_CUTOFF:
             return "webp"
         if "jpega" in co and w >= 2 and h >= 2 and (lossy or not TRUE_LOSSLESS):
@@ -1276,7 +1276,7 @@ class WindowSource(WindowIconSource):
                 return      # things must have got reset anyway
             since_last = tuple((pixels, compressed_size) for t, _, pixels, _, compressed_size, _
                                in tuple(self.statistics.encoding_stats) if t >= lr)
-            if len(since_last)<=5:
+            if len(since_last) <= 5:
                 statslog("calculate_batch_delay for wid=%i, skipping - only %i events since the last update",
                          self.wid, len(since_last))
                 return
@@ -1360,7 +1360,7 @@ class WindowSource(WindowIconSource):
 
     def set_min_speed(self, min_speed: int) -> None:
         min_speed = capr(min_speed)
-        if self._fixed_min_speed!=min_speed:
+        if self._fixed_min_speed != min_speed:
             if min_speed > 0:
                 self._fixed_speed = 0
             self._fixed_min_speed = min_speed
@@ -1374,7 +1374,7 @@ class WindowSource(WindowIconSource):
 
     def set_speed(self, speed: int) -> None:
         speed = capr(speed)
-        if self._fixed_speed!=speed:
+        if self._fixed_speed != speed:
             self._fixed_speed = speed
             self._current_speed = speed
             self.reconfigure(True)
@@ -1483,7 +1483,7 @@ class WindowSource(WindowIconSource):
             min_delay = max(min_delay, 1000*1000*1000//bwl)
         max_delay = int(1000*cf)
         raw_delay = int(sizef * qf * sf * cf)
-        if self.content_type.find("text")>=0:
+        if self.content_type.find("text") >= 0:
             raw_delay = raw_delay*2//3
         elif self.content_type == "video":
             raw_delay = raw_delay*3//2
@@ -1566,7 +1566,7 @@ class WindowSource(WindowIconSource):
 
     def do_damage(self, ww: int, wh: int, x: int, y: int, w: int, h: int, options: dict) -> None:
         now = monotonic()
-        if self.refresh_timer and options.get("quality", self._current_quality)<self.refresh_quality:
+        if self.refresh_timer and options.get("quality", self._current_quality) < self.refresh_quality:
             rr = tuple(self.refresh_regions)
             if rr:
                 # does this screen update intersect with
@@ -1608,7 +1608,7 @@ class WindowSource(WindowIconSource):
             try:
                 # batch more when recently resized,
                 # but only if this is not the first recent resize event:
-                if now-self.statistics.resize_events[-2]<1:
+                if now-self.statistics.resize_events[-2] < 1:
                     delay += (500-resize_elapsed)//2
             except IndexError:
                 pass
@@ -1759,7 +1759,7 @@ class WindowSource(WindowIconSource):
             # delayed region got sent
             return False
         region_time = delayed.damage_time
-        if region_time!=delayed_region_time:
+        if region_time != delayed_region_time:
             # this is a different region
             return False
         # ouch: same region!
@@ -1785,7 +1785,7 @@ class WindowSource(WindowIconSource):
             log_fn(" %i late responses:", len(dap))
             for seq in sorted(dap.keys()):
                 ack_data = dap[seq]
-                if ack_data[3]==0:
+                if ack_data[3] == 0:
                     log_fn(" %6i %-5s: queued but not sent yet", seq, ack_data[1])
                 else:
                     log_fn(" %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
@@ -1859,13 +1859,13 @@ class WindowSource(WindowIconSource):
         if pixels_encoding_backlog >= (ww*wh):
             log("send_delayed for wid %s, delaying again because too many pixels are waiting to be encoded: %s",
                 self.wid, pixels_encoding_backlog)
-            if self.statistics.get_acks_pending()==0:
+            if self.statistics.get_acks_pending() == 0:
                 check_again()
             return
         if enc_backlog_count > 10:
             log("send_delayed for wid %s, delaying again because too many damage regions are waiting to be encoded: %s",
                 self.wid, enc_backlog_count)
-            if self.statistics.get_acks_pending()==0:
+            if self.statistics.get_acks_pending() == 0:
                 check_again()
             return
         # no backlog, so ok to send, clear soft-expired counter:
@@ -1935,7 +1935,7 @@ class WindowSource(WindowIconSource):
                 send_full_window_update("full-frames-only set")
                 return
 
-            if len(regions)>self.max_small_regions:
+            if len(regions) > self.max_small_regions:
                 # too many regions!
                 send_full_window_update(f"too many regions: {len(regions)}")
                 return
@@ -1951,7 +1951,7 @@ class WindowSource(WindowIconSource):
                     non_ex.add(v)
             regions = tuple(non_ex)
 
-        if MERGE_REGIONS and len(regions)>1:
+        if MERGE_REGIONS and len(regions) > 1:
             merge_threshold = ww*wh*self.max_bytes_percent//100
             pixel_count = sum(rect.width*rect.height for rect in regions)
             packet_cost = pixel_count+self.small_packet_cost*len(regions)
@@ -1989,7 +1989,7 @@ class WindowSource(WindowIconSource):
         # figure out which encoding will get used,
         # and shortcut out if this needs to be a full window update:
         i_reg_enc = []
-        for i,region in enumerate(regions):
+        for i, region in enumerate(regions):
             actual_encoding = get_encoding(region.width, region.height)
             if self.must_encode_full_frame(actual_encoding):
                 log("send_delayed_regions: using full frame for %s encoding of %ix%i",
@@ -2488,7 +2488,7 @@ class WindowSource(WindowIconSource):
         now = monotonic()
         send_speed = cur_send_speed
         avg_send_speed = 0
-        if len(gs.bytes_sent)>=5:
+        if len(gs.bytes_sent) >= 5:
             # find a sample more than a second old
             # (hopefully before the congestion started)
             stime1 = svalue1 = svalue2 = 0
@@ -2507,7 +2507,7 @@ class WindowSource(WindowIconSource):
                 if t > 10:
                     # too far back, not enough data sent in 10 seconds
                     break
-                if t >= 4 and (svalue1-svalue2)>=65536:
+                if t >= 4 and (svalue1-svalue2) >= 65536:
                     break
                 i += 1
             if 4 <= t <= 10:
@@ -2590,7 +2590,7 @@ class WindowSource(WindowIconSource):
             # when flushing a screen update as multiple packets (network layer aggregation),
             # we could ignore all but the last one (flush=0):
             # flush = client_options.get("flush", 0)
-            if frame_no!=0:
+            if frame_no != 0:
                 netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
                 sendlatency = min(200, self.estimate_send_delay(bytecount))
                 # decode = pixels//100000         # 0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
@@ -2716,7 +2716,7 @@ class WindowSource(WindowIconSource):
         # check for cancellation again since the code above may take some time to encode:
         # but never cancel mmap after encoding because we need to reclaim the space
         # by getting the client to move the mmap received pointer
-        if coding!="mmap":
+        if coding != "mmap":
             if self.is_cancelled(sequence):
                 return nodata("cancelled after encoding")
             if self.suspended:

@@ -356,7 +356,7 @@ class ProxyInstance:
 
     def replace_packet_item(self, packet: PacketType,
                             index: int,
-                            new_value: Compressed | str | dict) -> PacketType:
+                            new_value: Compressed | str | dict | int) -> PacketType:
         # make the packet data mutable and replace the contents at `index`:
         assert index > 0
         lpacket = list(packet)

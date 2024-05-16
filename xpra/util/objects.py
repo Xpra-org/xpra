@@ -104,6 +104,7 @@ class MutableInteger:
         return self.counter - int(other)
 
 
+# noinspection PyPep8Naming
 class typedict(dict):
     __slots__ = ("warn",)  # no __dict__ - that would be redundant
 

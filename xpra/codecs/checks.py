@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 # pylint: disable=line-too-long
+# noinspection PyPep8
 
 import binascii
 from collections.abc import Callable, Sequence

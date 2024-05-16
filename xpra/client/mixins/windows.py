@@ -918,8 +918,8 @@ class WindowClient(StubClientMixin):
                              border, self.max_window_size, self.default_cursor_data, self.pixel_depth,
                              self.headerbar)
                 break
-            except Exception:
-                log.warn("failed to instantiate %s", cwc, exc_info=True)
+            except (RuntimeError, ValueError):
+                log.warn(f"Warning: failed to instantiate {cwc!r}", exc_info=True)
         if window is None:
             log.warn("no more options.. this window will not be shown, sorry")
             return None
@@ -1335,17 +1335,14 @@ class WindowClient(StubClientMixin):
             try:
                 log("destroy_all_windows() destroying %s / %s", wid, window)
                 self.destroy_window(wid, window)
-            except Exception:
-                pass
+            except (RuntimeError, ValueError):
+                log(f"destroy_all_windows() failed to destroy {window}", exc_info=True)
         self._id_to_window = {}
         self._window_to_id = {}
         # signal watchers should have been killed in destroy_window(),
         # make sure we don't leave any behind:
         for signalwatcher in tuple(self._signalwatcher_to_wids.keys()):
-            try:
-                kill_signalwatcher(signalwatcher)
-            except Exception:
-                log("destroy_all_windows() error killing signal watcher %s", signalwatcher, exc_info=True)
+            kill_signalwatcher(signalwatcher)
 
     ######################################################################
     # bell

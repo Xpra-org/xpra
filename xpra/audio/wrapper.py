@@ -120,7 +120,7 @@ class AudioSubprocess(subprocess_callee):
             self.wrapped_object = None
             try:
                 wo.cleanup()
-            except Exception:
+            except RuntimeError:
                 log("cleanup() failed to clean %s", wo, exc_info=True)
         GLib.timeout_add(1000, self.do_stop)
 
@@ -131,7 +131,7 @@ class AudioSubprocess(subprocess_callee):
         return wo is not None
 
 
-class audio_record(AudioSubprocess):
+class AudioRecord(AudioSubprocess):
     """ wraps SoundSource as a subprocess """
 
     def __init__(self, *pipeline_args):
@@ -141,7 +141,7 @@ class audio_record(AudioSubprocess):
         self.large_packets = ["new-buffer"]
 
 
-class audio_play(AudioSubprocess):
+class AudioPlay(AudioSubprocess):
     """ wraps AudioSink as a subprocess """
 
     def __init__(self, *pipeline_args):
@@ -162,9 +162,9 @@ def run_audio(mode, error_cb, options, args):
     with program_context(f"Xpra-Audio-{info}", f"Xpra Audio {info}"):
         log("run_audio(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
         if info == "record":
-            subproc = audio_record
+            subproc = AudioRecord
         elif info == "play":
-            subproc = audio_play
+            subproc = AudioPlay
         elif info == "query":
             plugins = get_all_plugin_names()
             sources = [x for x in get_source_plugins() if x in plugins]
@@ -223,7 +223,7 @@ def run_audio(mode, error_cb, options, args):
         except InitException as e:
             log.error(f"{info}: {e}")
             return 1
-        except Exception:
+        except OSError:
             log.error("run_audio%s error", (mode, error_cb, options, args), exc_info=True)
             return 1
         finally:

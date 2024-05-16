@@ -12,6 +12,8 @@ from collections.abc import Callable, Iterable, Sequence
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 
+# noinspection PyPep8
+
 
 FAST_DECODE_MIN_SPEED: int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 

@@ -1778,7 +1778,7 @@ class ServerCore:
 
     def http_response(self, content, content_type: str = "text/plain") -> HttpResponse:
         if not content:
-            return 404, {}, None
+            return 404, {}, b""
         if isinstance(content, str):
             content = content.encode("latin1")
         return 200, {

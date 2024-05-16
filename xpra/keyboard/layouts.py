@@ -23,7 +23,7 @@ RS_VARIANTS: Sequence[str] = ("yz", "latin", "latinunicode", "latinyz", "latinun
 FR_VARIANTS: Sequence[str] = ("nodeadkeys", "sundeadkeys", "oss", "oss_latin9", "oss_nodeadkeys", "oss_sundeadkeys",
                               "latin9", "latin9_nodeadkeys", "latin9_sundeadkeys", "bepo", "bepo_latin9", "dvorak",
                               "mac", "bre", "oci", "geo")
-WIN32_LAYOUTS: dict[int,tuple[str, str, str, int, str, Sequence[str]]] = {
+WIN32_LAYOUTS: dict[int, tuple[str, str, str, int, str, Sequence[str]]] = {
     1025: ("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", ()),
     1026: ("BGR", "Bulgaria",       "Bulgarian",                1251,   "bg", ("phonetic", "bas_phonetic")),
     1027: ("CAT", "Spain",          "Catalan",                  1252,   "ad", ()),

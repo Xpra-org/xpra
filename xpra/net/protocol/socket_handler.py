@@ -13,7 +13,7 @@ from enum import Enum, IntEnum
 from time import monotonic
 from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
-from queue import Queue, SimpleQueue
+from queue import Queue, SimpleQueue, Empty, Full
 from typing import Any
 from collections.abc import ByteString, Callable, Iterable, Sequence
 
@@ -70,6 +70,8 @@ MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 SEND_INVALID_PACKET = envint("XPRA_SEND_INVALID_PACKET", 0)
 SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_DATA", b"ZZinvalid-packetZZ"))
 
+PACKET_HEADER_CHAR = ord("P")
+
 
 def exit_queue() -> SimpleQueue[tuple | None]:
     queue: SimpleQueue[tuple | None] = SimpleQueue()
@@ -79,15 +81,15 @@ def exit_queue() -> SimpleQueue[tuple | None]:
 
 
 def force_flush_queue(q: Queue):
+    # discard all elements in the old queue and push the None marker:
     try:
-        # discard all elements in the old queue and push the None marker:
-        try:
-            while q.qsize() > 0:
-                q.get(False)
-        except Exception:
-            log("force_flush_queue(%s)", q, exc_info=True)
+        while q.qsize() > 0:
+            q.get(False)
+    except Empty:
+        log("force_flush_queue(%s)", q, exc_info=True)
+    try:
         q.put_nowait(None)
-    except Exception:
+    except Full:
         log("force_flush_queue(%s)", q, exc_info=True)
 
 
@@ -892,7 +894,6 @@ class SocketProtocol:
         data_size = 0
         compression_level = 0
         raw_packets = {}
-        PACKET_HEADER_CHAR = ord("P")
         while not self._closed:
             # log("parse thread: %i items in read queue", self._read_queue.qsize())
             buf = self._read_queue.get()
@@ -1028,7 +1029,7 @@ class SocketProtocol:
                         def debug_str(s):
                             try:
                                 return hexstr(s)
-                            except Exception:
+                            except (TypeError, ValueError, UnicodeError):
                                 return csv(tuple(s))
 
                         # pad byte value is number of padding bytes added

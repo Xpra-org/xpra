@@ -746,7 +746,7 @@ if POSIX and not OSX:
     DEFAULT_SRC_PLUGIN_OPTIONS["pulse"] = get_pulse_source_defaults
 
 
-def get_audio_source_options(plugin, options_str, device, want_monitor_device, remote):
+def get_audio_source_options(plugin: str, options_str: str, device: str, want_monitor_device: bool, remote):
     """
         Given a plugin (short name), options string and remote info,
         return the options for the plugin given,
@@ -775,7 +775,7 @@ def get_audio_source_options(plugin, options_str, device, want_monitor_device, r
     return options
 
 
-def parse_audio_source(all_plugins: Iterable[str], audio_source_plugin: str, device: str, want_monitor_device: bool, remote: bool):
+def parse_audio_source(all_plugins: Iterable[str], audio_source_plugin: str, device: str, want_monitor_device: bool, remote):
     # format: PLUGINNAME:options
     # ie: test:wave=2,freq=110,volume=0.4
     # ie: pulse:device=device.alsa_input.pci-0000_00_14.2.analog-stereo

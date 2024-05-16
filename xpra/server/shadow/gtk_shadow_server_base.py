@@ -63,7 +63,7 @@ def parse_geometries(s) -> list:
     return g
 
 
-def checkitem(title: str, cb=noop, active=False) -> Gtk.CheckMenuItem:
+def checkitem(title: str, cb: Callable[[Any], None] = noop, active=False) -> Gtk.CheckMenuItem:
     check_item = Gtk.CheckMenuItem(label=title)
     check_item.set_active(active)
     if cb:
@@ -394,7 +394,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
             self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", cb=show_about))
             if features.windows:
-                def readonly_toggled(menuitem):
+                def readonly_toggled(menuitem) -> None:
                     log("readonly_toggled(%s)", menuitem)
                     ro = menuitem.get_active()
                     if ro != self.readonly:

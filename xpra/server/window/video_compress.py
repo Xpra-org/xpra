@@ -1196,7 +1196,7 @@ class WindowVideoSource(WindowSource):
                     # we only process one item per call (see "done_packet")
                     # and just keep track of extra ones:
                     still_due.append(int(1000*(due-now)))
-        except Exception:
+        except RuntimeError:
             if not self.is_cancelled(sequence):
                 avsynclog.error("error processing encode queue at index %i", index)
                 avsynclog.error("item=%s", item, exc_info=True)
@@ -1904,8 +1904,9 @@ class WindowVideoSource(WindowSource):
                 videolog.warn(" %s:", option)
                 videolog.warn(" %s", e)
                 del e
-            except Exception:
+            except (RuntimeError, ValueError) as e:
                 if self.is_cancelled():
+                    videolog(f"ignoring {e} in cancelled state")
                     return False
                 videolog.warn("Warning: failed to setup video pipeline %s", option, exc_info=True)
             # we're here because an exception occurred, cleanup before trying again:
@@ -2154,7 +2155,7 @@ class WindowVideoSource(WindowSource):
             if match_pct >= min_percent:
                 self.encode_scrolling(scroll_data, image, options, match_pct, max_zones)
                 return True
-        except Exception:
+        except (RuntimeError, ValueError):
             scrolllog("do_scroll_encode(%s, %s)", image, options, exc_info=True)
             if not self.is_cancelled():
                 scrolllog.error("Error during scrolling detection")

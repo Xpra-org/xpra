@@ -9,7 +9,6 @@ import os
 import socket
 import platform
 from typing import Any, Final
-from collections.abc import Sequence
 
 import xpra
 from xpra.util.objects import typedict
@@ -20,7 +19,7 @@ from xpra.util.system import get_linux_distribution, platform_release, platform_
 from xpra.common import FULL_INFO
 
 XPRA_VERSION: Final[str] = xpra.__version__
-XPRA_NUMERIC_VERSION: Final[Sequence[int]] = xpra.__version_info__
+XPRA_NUMERIC_VERSION: tuple[int] = xpra.__version_info__
 
 CHECK_SSL: bool = envbool("XPRA_VERSION_CHECK_SSL", True)
 SSL_CAFILE: str = ""
@@ -230,7 +229,7 @@ def get_build_info(full: int = 1) -> dict[str, Any]:
     return info
 
 
-def parse_version(v) -> Sequence[Any]:
+def parse_version(v) -> tuple[Any]:
     if isinstance(v, str) and v:
         def maybeint(v):
             try:
@@ -303,7 +302,7 @@ def get_platform_info():
     return platform_info_cache
 
 
-def get_version_from_url(url: str) -> Sequence[int]:
+def get_version_from_url(url: str) -> tuple[int]:
     try:
         from urllib.request import urlopen
     except ImportError as e:
