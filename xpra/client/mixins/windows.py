@@ -688,7 +688,7 @@ class WindowClient(StubClientMixin):
             traylog("tray_exit(%s)", args)
 
         title = metadata.strget("title")
-        tray_widget = self.make_system_tray(app_id, None, title, None,
+        tray_widget = self.make_system_tray(app_id, None, title, "",
                                             tray_geometry, tray_click, tray_mouseover, tray_exit)
         traylog("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
         assert tray_widget, "could not instantiate a system tray for tray id %s" % wid
