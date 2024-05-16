@@ -333,7 +333,7 @@ class AudioClient(StubClientMixin):
             from xpra.audio.wrapper import start_sending_audio
             plugins = self.audio_properties.get("sources")
             ss = start_sending_audio(plugins, self.audio_source_plugin, device or self.microphone_device,
-                                     None, 1.0, False, matching_codecs,
+                                     "", 1.0, False, matching_codecs,
                                      self.server_pulseaudio_server, self.server_pulseaudio_id)
             if not ss:
                 return False
