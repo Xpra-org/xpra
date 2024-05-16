@@ -335,7 +335,7 @@ def testdecoding(decoder_module, encoding: str, full: bool) -> None:
                 continue
             try:
                 decoder = decoder_module.Decoder()
-                decoder.init_context(encoding, w, h, cs)
+                decoder.init_context(encoding, w, h, cs, typedict())
             except Exception:
                 log.error(f"Error creating context {encoding} {w}x{h} {cs}")
                 raise

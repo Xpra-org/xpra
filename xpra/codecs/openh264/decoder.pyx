@@ -138,7 +138,7 @@ cdef class Decoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding: str, int width, int height, colorspace: str) -> None:
+    def init_context(self, encoding: str, int width, int height, colorspace: str, options: typedict) -> None:
         log("openh264.init_context%s", (encoding, width, height, colorspace))
         assert encoding=="h264", f"invalid encoding: {encoding}"
         self.width = width

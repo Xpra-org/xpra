@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2022-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2022-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -194,7 +194,7 @@ class Test_Roundtrip(unittest.TestCase):
         assert cdata
         #decode it:
         decoder = decoder_class()
-        decoder.init_context(encoding, width, height, in_csc)
+        decoder.init_context(encoding, width, height, in_csc, options)
         out_image = decoder.decompress_image(cdata, typedict(client_options))
         if not out_image:
             raise ValueError("no image")

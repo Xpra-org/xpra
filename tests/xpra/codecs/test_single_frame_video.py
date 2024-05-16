@@ -76,7 +76,8 @@ def main(files):
                 print(f"  encoder rejected {w}x{h} {image.get_pixel_format()}")
                 continue
             try:
-                r = encoder.compress_image(image)
+                td = typedict()
+                r = encoder.compress_image(image, td)
             except Exception:
                 print(f"error on {enc.get_type()} : {enc.encode}")
                 raise
