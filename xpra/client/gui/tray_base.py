@@ -61,9 +61,6 @@ class TrayBase:
     def hide(self) -> None:
         raise NotImplementedError
 
-    def get_screen(self) -> int:
-        return -1
-
     def get_orientation(self):
         return None  # assume "HORIZONTAL"
 
