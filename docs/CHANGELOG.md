@@ -11,6 +11,7 @@
     * [OpenGL check failures on X11](https://github.com/Xpra-org/xpra/commit/3e87f9f23204b6fb69111b40b2e1f983f37abd8d)
     * [OpenGL paint errors drawing the spinners](https://github.com/Xpra-org/xpra/commit/54a6f21572ee106bcc669279befd43176f727404), [don't check for `glBegin` and `glEnd`](https://github.com/Xpra-org/xpra/commit/f2e9e4b2ada8f15523b4c88b36c6bb04258f3ce4)
     * [OpenGL check: re-use environment filtering](https://github.com/Xpra-org/xpra/commit/d567ce9578da03e9fcd666bed6bf51b637e879ca)
+    * [Wayland UTF8 clipboard byte strings](https://github.com/Xpra-org/xpra/commit/a445c760ff0d08641373c9de41a7e0c8cab02abf)
     * [scale during render if needed](https://github.com/Xpra-org/xpra/commit/9988cbd50a2189b8d5de66a4eda2d8f68424d380)
     * [smarter auto refresh encoding selection](https://github.com/Xpra-org/xpra/commit/366e4390176832807cd7bf738807daead02e921c)
     * [`xpra configure features` not reloading correctly](https://github.com/Xpra-org/xpra/commit/a399fce7959141a7bb6c4ca068a99d006e5286bb)
@@ -19,7 +20,9 @@
     * [client startup failures caused by `dbus`](https://github.com/Xpra-org/xpra/commit/3d647b43d00ad4b4e28e3a8d5b0c0c7f7111ac61)
     * [use the dynamic speed and quality assigned for video encoders](https://github.com/Xpra-org/xpra/commit/8d6907a3705c0378b3fe2fd7e8b4bf299d2843e1)
     * [really avoid scaling text, but don't discard the option](https://github.com/Xpra-org/xpra/commit/6e864a5cc122b4e4fb1ed5ee854096c0acd1da0c)
+    * [proxy compression broken](https://github.com/Xpra-org/xpra/commit/398592a97a5f7a037731b1f206a4e1cb2103f692)
 * Cosmetic / correctness:
+    * [help video decoders with colorspace metadata](https://github.com/Xpra-org/xpra/commit/42804b51dd4eb6f3a1cb38b1611a81f6a77cc1a7)
     * [don't initialize UI twice when connecting from launcher](https://github.com/Xpra-org/xpra/commit/b4facc13ffedb0d4611d2acfb88a9c5472cae4b0)
     * [add `quic` connections to launcher](https://github.com/Xpra-org/xpra/commit/2198699c1970aae5785cf70b0a50279a37736608)
     * [warnings when dropping packets during shutdown](https://github.com/Xpra-org/xpra/commit/d084888b0affb89c99ec7e1db535dd8a75681909)
@@ -38,6 +41,7 @@
     * [incorrect debug logging](https://github.com/Xpra-org/xpra/commit/8ebd269c4c0159b2f556bbb969b87e804bf4d728)
     * [warn users about deprecated syntax](https://github.com/Xpra-org/xpra/commit/b0d6436e9f2578a4f370ab5c8d947b3a8d19b036)
     * [pass strict type check](https://github.com/Xpra-org/xpra/commit/455860ca94f2428f8c84a8555ad5c8fcd769c74f)
+    * [codec self tests](https://github.com/Xpra-org/xpra/commit/90b897664a6850b59b61667b634db52d7ccbd530)
 
 ## [6.0] 2024-04-25
 * Platforms, build and packaging:
