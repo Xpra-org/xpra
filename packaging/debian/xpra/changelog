@@ -13,7 +13,15 @@ xpra (6.0.1-1) UNRELEASED; urgency=low
     - smarter auto refresh encoding selection
     - `xpra configure features` not reloading correctly
     - audio not enabled for some clients
+    - xi2 bindings failed to load
+    - client startup failures caused by `dbus`
+    - use the dynamic speed and quality assigned for video encoders
+    - really avoid scaling text, but don't discard the option
   * Cosmetic / correctness:
+    - don't initialize UI twice when connecting from launcher
+    - add `quic` connections to launcher
+    - warnings when dropping packets during shutdown
+    - system tray icon filename should be a string
     - clearer ssh error message
     - parsing of scaling values as percentages
     - also bump `__version_info__` automatically and the RPM spec file
@@ -24,7 +32,7 @@ xpra (6.0.1-1) UNRELEASED; urgency=low
     - add asbtract socket link to documentation
     - ensure OpenGL `zerocopy` flag is a boolean
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 06 May 2024 22:00:57 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 16 May 2024 10:59:36 +0700
 
 xpra (6.0-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

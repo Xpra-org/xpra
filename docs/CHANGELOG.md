@@ -1,9 +1,9 @@
 # Changelog
 
-## [6.0.1] 2024-05-06
+## [6.0.1] 2024-05-16
 * Platforms, build and packaging:
     * [avoid timeout on slow build platforms](https://github.com/Xpra-org/xpra/commit/5972ba5fd8f0707d4a90fa5cc276a5ff00298909), [when running pandoc](https://github.com/Xpra-org/xpra/commit/5b66f26c05b2855f5d3e44cfcaf0d7fb14d07892), [raise the timeout on arm and riscv](https://github.com/Xpra-org/xpra/commit/e914616d57762e287769ac540b86d71d78a2dc26)
-    * [tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`](https://github.com/Xpra-org/xpra/commit/8bf6dec4c6ca291087c69a63d5801274545e8150)
+    * [tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`](https://github.com/Xpra-org/xpra/commit/8bf6dec4c6ca291087c69a63d5801274545e8150) [+ fixup](https://github.com/Xpra-org/xpra/commit/25c18e25ccbef98f9884745309c6ce2588634f43)
     * [version script needs to update `pyproject.toml`](https://github.com/Xpra-org/xpra/commit/827b4e0aab43c9ba891ba26cb72cbe707a508868), [do it](https://github.com/Xpra-org/xpra/commit/1409bc4e8f86c1cee8f9eab8970a2e6388607914)
     * [MS Windows client fails to start without `explorer.exe` running](https://github.com/Xpra-org/xpra/commit/43c4562275e78ce5025d083dbbee01d5e3245d33)
 * Major:
@@ -17,7 +17,13 @@
     * [audio not enabled for some clients](https://github.com/Xpra-org/xpra/commit/c16792368631f3c73ac98a0c7cd61062dc5befaf), [source plugins not found](https://github.com/Xpra-org/xpra/commit/68e0e3f4ec1321b46086cef5fb2c0e630ed885eb)
     * [xi2 bindings failed to load](https://github.com/Xpra-org/xpra/commit/afb554fa4a2f433a6ff05b2277a3037ddbb106e8)
     * [client startup failures caused by `dbus`](https://github.com/Xpra-org/xpra/commit/3d647b43d00ad4b4e28e3a8d5b0c0c7f7111ac61)
+    * [use the dynamic speed and quality assigned for video encoders](https://github.com/Xpra-org/xpra/commit/8d6907a3705c0378b3fe2fd7e8b4bf299d2843e1)
+    * [really avoid scaling text, but don't discard the option](https://github.com/Xpra-org/xpra/commit/6e864a5cc122b4e4fb1ed5ee854096c0acd1da0c)
 * Cosmetic / correctness:
+    * [don't initialize UI twice when connecting from launcher](https://github.com/Xpra-org/xpra/commit/b4facc13ffedb0d4611d2acfb88a9c5472cae4b0)
+    * [add `quic` connections to launcher](https://github.com/Xpra-org/xpra/commit/2198699c1970aae5785cf70b0a50279a37736608)
+    * [warnings when dropping packets during shutdown](https://github.com/Xpra-org/xpra/commit/d084888b0affb89c99ec7e1db535dd8a75681909)
+    * [system tray icon filename should be a string](https://github.com/Xpra-org/xpra/commit/aa6dbffc6f6b80c0de9c61ca47b173040c95c427)
     * [discord link had expired, again](https://github.com/Xpra-org/xpra/commit/8dcc04cd0b1315cc579c37148fb28370c26ec957)
     * [clearer ssh error message](https://github.com/Xpra-org/xpra/commit/b2f9276d0e4a2973226f46260acbddc3ac677417)
     * [parsing of scaling values as percentages](https://github.com/Xpra-org/xpra/commit/d382473b72f9d433e90dc03b03e9f834ae772e71)

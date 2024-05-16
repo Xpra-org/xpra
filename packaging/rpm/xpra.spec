@@ -861,7 +861,7 @@ fi
 
 
 %changelog
-* Mon May 06 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
+* Thu May 16 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
 - Platforms, build and packaging:
    avoid timeout on slow build platforms, when running pandoc, raise the timeout on arm and riscv
    tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`
@@ -876,7 +876,15 @@ fi
    smarter auto refresh encoding selection
    `xpra configure features` not reloading correctly
    audio not enabled for some clients
+   xi2 bindings failed to load
+   client startup failures caused by `dbus`
+   use the dynamic speed and quality assigned for video encoders
+   really avoid scaling text, but don't discard the option
 - Cosmetic / correctness:
+   don't initialize UI twice when connecting from launcher
+   add `quic` connections to launcher
+   warnings when dropping packets during shutdown
+   system tray icon filename should be a string
    clearer ssh error message
    parsing of scaling values as percentages
    also bump `__version_info__` automatically and the RPM spec file
