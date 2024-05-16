@@ -7,7 +7,7 @@ import os
 from subprocess import Popen
 from shutil import which
 from typing import Any
-from collections.abc import Sequence, Iterable, Callable
+from collections.abc import Sequence, Iterable
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
@@ -188,10 +188,7 @@ class AudioMixin(StubSourceMixin):
             log.warn(" %s", x)
         return False
 
-    def start_sending_audio(self, codec: str = "", volume: float = 1.0,
-                            new_stream: Callable | None = None,
-                            new_buffer: Callable | None = None,
-                            skip_client_codec_check=False):
+    def start_sending_audio(self, codec: str = "", volume: float = 1.0):
         log("start_sending_audio(%s)", codec)
         ss = None
         if getattr(self, "suspended", False):
@@ -215,7 +212,7 @@ class AudioMixin(StubSourceMixin):
         elif codec not in self.speaker_codecs:
             log.warn("Warning: invalid codec specified: %s", codec)
             return None
-        elif (codec not in self.audio_decoders) and not skip_client_codec_check:
+        elif codec not in self.audio_decoders:
             log.warn("Error sending audio: invalid codec '%s'", codec)
             log.warn(" is not in the list of decoders supported by the client: %s", csv(self.audio_decoders))
             return None
@@ -232,8 +229,8 @@ class AudioMixin(StubSourceMixin):
             if not ss:
                 return None
             ss.sequence = self.audio_source_sequence
-            ss.connect("new-buffer", new_buffer or self.new_audio_buffer)
-            ss.connect("new-stream", new_stream or self.new_stream)
+            ss.connect("new-buffer", self.new_audio_buffer)
+            ss.connect("new-stream", self.new_stream)
             ss.connect("info", self.audio_source_info)
             ss.connect("exit", self.audio_source_exit)
             ss.connect("error", self.audio_source_error)
