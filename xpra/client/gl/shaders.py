@@ -30,14 +30,14 @@ from xpra.codecs.constants import get_subsampling_divs
 
 GLSL_VERSION = "330 core"
 
-CS_MULTIPLIERS = {
+CS_MULTIPLIERS: dict[str, tuple[int, int, int, int, int]] = {
     "bt601": (0.299, 0.587, 0.114, 1.772, 1.402),
     "bt709": (0.2126, 0.7152, 0.0722, 1.8556, 1.5748),
     "bt2020": (0.2627, 0.6780, 0.0593, 1.8814, 1.4746),
 }
 
 
-def gen_YUV_to_RGB(divs: Iterable[tuple[int, int]], cs="bt601", full_range=True):
+def gen_YUV_to_RGB(divs: Iterable[tuple[int, int]], cs="bt601", full_range=True) -> str:
     if cs not in CS_MULTIPLIERS:
         raise ValueError(f"unsupported colorspace {cs}")
     a, b, c, d, e = CS_MULTIPLIERS[cs]
@@ -89,7 +89,7 @@ void main()
 """
 
 
-def gen_NV12_to_RGB(cs="bt601"):
+def gen_NV12_to_RGB(cs="bt601") -> str:
     if cs not in CS_MULTIPLIERS:
         raise ValueError(f"unsupported colorspace {cs}")
     a, b, c, d, e = CS_MULTIPLIERS[cs]
@@ -158,7 +158,7 @@ void main()
 }}
 """
 
-SOURCE = {
+SOURCE: dict[str, str] = {
     "vertex": VERTEX_SHADER,
     "overlay": OVERLAY_SHADER,
     "fixed-color": FIXED_COLOR_SHADER,
@@ -169,3 +169,16 @@ for fmt in ("YUV420P", "YUV422P", "YUV444P"):
     divs = get_subsampling_divs(fmt)
     SOURCE[f"{fmt}_to_RGB"] = gen_YUV_to_RGB(divs, full_range=False)
     SOURCE[f"{fmt}_to_RGB_FULL"] = gen_YUV_to_RGB(divs, full_range=True)
+
+
+def main():
+    for shader, source in SOURCE.items():
+        print("#"*80)
+        print(f"#{shader}:")
+        print()
+        print(source)
+        print()
+
+
+if __name__ == "__main__":
+    main()
