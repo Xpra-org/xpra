@@ -1,8 +1,9 @@
 # This file is part of Xpra.
-# Copyright (C) 2021-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict, Iterable, Any
 from time import monotonic
 
 from libc.string cimport memset  # pylint: disable=syntax-error
@@ -19,12 +20,12 @@ from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
     nvjpegJpegState_t,
     nvjpegJpegStateCreate, nvjpegJpegStateDestroy,
     nvjpegGetImageInfo,
-    )
+)
 from xpra.codecs.nvidia.nvjpeg.common import (
     get_version,
     errcheck, NVJPEG_Exception,
     ERR_STR, CSS_STR,
-    )
+)
 from xpra.codecs.nvidia.cuda.context import get_default_device_context
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
@@ -55,22 +56,26 @@ cdef extern from "nvjpeg.h":
 def get_type() -> str:
     return "nvjpeg"
 
-def get_encodings():
+
+def get_encodings() -> Iterable[str]:
     return ("jpeg", "jpega")
 
-def get_info():
+
+def get_info() -> Dict[str, Any]:
     info = {"version"   : get_version()}
     #if default_device:
     #    info["device"] = default_device.get_info()
     return info
 
-def init_module():
+
+def init_module() -> None:
     log("nvjpeg.decoder.init_module() version=%s", get_version())
     from xpra.codecs.nvidia.util import has_nvidia_hardware
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
 
-def cleanup_module():
+
+def cleanup_module() -> None:
     log("nvjpeg.decoder.cleanup_module()")
 
 
@@ -87,7 +92,8 @@ def download_from_gpu(buf, size_t size):
     log("nvjpeg downloaded %i bytes in %ims", size, 1000*(end-start))
     return pixels
 
-def decompress(rgb_format, img_data, options=None):
+
+def decompress(rgb_format: str, img_data, options=None) -> ImageWrapper:
     #decompress using the default device,
     #and download the pixel data from the GPU:
     dev = get_default_device_context()
@@ -97,7 +103,8 @@ def decompress(rgb_format, img_data, options=None):
         log("cuda_context=%s for device=%s", cuda_context, dev.get_info())
         return decompress_and_download(rgb_format, img_data, options)
 
-def decompress_and_download(rgb_format, img_data, options=None):
+
+def decompress_and_download(rgb_format: str, img_data, options=None) -> ImageWrapper:
     img = decompress_with_device(rgb_format, img_data, options)
     cuda_buffer = img.get_pixels()
     pixels = download_from_gpu(cuda_buffer, img.get_rowstride() * img.get_height())
@@ -105,7 +112,8 @@ def decompress_and_download(rgb_format, img_data, options=None):
     img.set_pixels(pixels)
     return img
 
-def decompress_with_device(rgb_format, img_data, options=None):
+
+def decompress_with_device(rgb_format: str, img_data, options=None) -> ImageWrapper:
     log("decompress_with_device(%s, %i bytes, %s)", rgb_format, len(img_data), options)
     cdef unsigned int alpha_offset = (options or {}).get("alpha-offset", 0)
     cdef double start, end
@@ -240,7 +248,7 @@ def decompress_with_device(rgb_format, img_data, options=None):
     return ImageWrapper(0, 0, width, height, pixels, rgb_format, len(rgb_format)*8, rowstride, planes=len(rgb_format))
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     from xpra.util.env import envbool
     from xpra.codecs.nvidia.util import has_nvidia_hardware, get_nvidia_module_version
     mod_ver = get_nvidia_module_version()
