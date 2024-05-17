@@ -52,7 +52,7 @@ class NetworkStateServer(StubServerMixin):
 
     def init(self, opts) -> None:
         self.pings = opts.pings
-        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
+        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
         bandwidthlog("bandwidth-limit(%s)=%s", opts.bandwidth_limit, self.bandwidth_limit)
         self.init_cpuinfo()
 

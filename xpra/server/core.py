@@ -252,7 +252,7 @@ class ServerCore:
         self.session_name = bytestostr(opts.session_name)
         set_name("Xpra", self.session_name or "Xpra")
 
-        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit)
+        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
         self.unix_socket_paths = []
         self._socket_dir = opts.socket_dir or ""
         if not self._socket_dir and opts.socket_dirs:
