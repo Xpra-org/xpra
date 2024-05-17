@@ -124,13 +124,13 @@ class typedict(dict):
                     return typedict(v).get(k, default)
         return default
 
-    def setdefault(self, k, default=None):
+    def setdefault(self, k: str, default=None):
         return super().setdefault(k, default)
 
     def __repr__(self):
         return f'{type(self).__name__}({super().__repr__()})'
 
-    def _warn(self, msg, *args):
+    def _warn(self, msg: str, *args):
         from xpra.log import Logger
         Logger("util").warn(msg, *args)
 
@@ -163,22 +163,22 @@ class typedict(dict):
             self._warn(f" from {type(v)} using {conv}: {e}")
             return default
 
-    def strget(self, k, default: str = "") -> str:
+    def strget(self, k: str, default: str = "") -> str:
         return self.conv_get(k, default, bytestostr)
 
-    def bytesget(self, k, default: bytes = b"") -> bytes:
+    def bytesget(self, k: str, default: bytes = b"") -> bytes:
         return self.conv_get(k, default, strtobytes)
 
-    def intget(self, k, default: int = 0) -> int:
+    def intget(self, k: str, default: int = 0) -> int:
         return self.conv_get(k, default, int)
 
-    def boolget(self, k, default: bool = False) -> bool:
+    def boolget(self, k: str, default: bool = False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k, default: dict | None = None) -> dict:
+    def dictget(self, k: str, default: dict | None = None) -> dict:
         return self.conv_get(k, default, checkdict)
 
-    def intpair(self, k, default_value: tuple[int, int] | None = None) -> tuple[int, int] | None:
+    def intpair(self, k: str, default_value: tuple[int, int] | None = None) -> tuple[int, int] | None:
         v = self.inttupleget(k, default_value)
         if v is None:
             return default_value
@@ -190,20 +190,20 @@ class typedict(dict):
         except ValueError:
             return default_value
 
-    def strtupleget(self, k, default_value=(),
+    def strtupleget(self, k: str, default_value=(),
                     min_items: int | None = None, max_items: int | None = None) -> tuple[str, ...]:
         return self.tupleget(k, default_value, str, min_items, max_items)
 
-    def inttupleget(self, k, default_value=(),
+    def inttupleget(self, k: str, default_value=(),
                     min_items: int | None = None, max_items: int | None = None) -> tuple[int, ...]:
         return self.tupleget(k, default_value, int, min_items, max_items)
 
-    def tupleget(self, k, default_value=(), item_type=None,
+    def tupleget(self, k: str, default_value=(), item_type=None,
                  min_items: int | None = None, max_items: int | None = None) -> tuple[Any, ...]:
         v = self._listget(k, default_value, item_type, min_items, max_items)
         return tuple(v or ())
 
-    def _listget(self, k, default_value, item_type=None,
+    def _listget(self, k: str, default_value, item_type=None,
                  min_items: int | None = None, max_items: int | None = None) -> list[Any] | tuple[Any, ...]:
         v = self.get(k)
         if v is None:

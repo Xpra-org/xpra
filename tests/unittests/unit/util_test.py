@@ -66,14 +66,12 @@ class TestTypedict(unittest.TestCase):
         d = typedict({
             b"bytekey" : b"bytevalue",
             "strkey" : "strvalue",
-            1 : 1,
             "boolvalue" : True,
             "intpair" : (1, 2),
             "strtuple" : ["a", "b"],
         })
         #test all accessors:
         self.assertEqual(d.strget("strkey"), "strvalue")
-        self.assertEqual(d.intget(1), 1)
         self.assertEqual(d.boolget("boolvalue"), True)
         self.assertEqual(d.intpair("intpair"), (1, 2))
         self.assertEqual(d.strtupleget("strtuple"), ("a", "b"))
@@ -94,28 +92,30 @@ class TestTypedict(unittest.TestCase):
                 self.assertIn(v, values_allowed, "unexpected value for %s" % k)
 
     def test_strget(self):
-        d = typedict({b"bytekey"    : b"bytevalue",
+        d = typedict({"bytekey"    : b"bytevalue",
                       "unicodekey" : "unicodevalue"})
         self._test_values_type(d, d.strget, [str, ])
 
     def test_intget(self):
-        d = typedict({b"bytekey"    : "1",
-                      "unicodekey" : 2,
-                      996           : 3.14})
+        d = typedict({
+            "strvalue": "1",
+            "unicodekey": 2,
+            "float-coercion": 3.14,
+        })
         self._test_values_type(d, d.intget, [int], [1, 2, 3])
 
     def test_boolget(self):
-        d = typedict({b"empty-string-is-false"          : b"",
-                      b"False boolean stays as it is"   : False,
-                      b"zero is False"                  : 0})
+        d = typedict({"empty-string-is-false"          : b"",
+                      "False boolean stays as it is"   : False,
+                      "zero is False"                  : 0})
         self._test_values_type(d, d.boolget, [bool], [False])
-        d = typedict({b"non-empty-string-is-true"       : "hello",
-                      b"True boolean stays as it is"    : True,
-                      b"non-zero number is True"        : -1})
+        d = typedict({"non-empty-string-is-true"       : "hello",
+                      "True boolean stays as it is"    : True,
+                      "non-zero number is True"        : -1})
         self._test_values_type(d, d.boolget, [bool], [True])
 
     def test_dictget(self):
-        d = typedict({b"nested" : {}})
+        d = typedict({"nested": {}})
         self._test_values_type(d, d.dictget, [dict])
 
     #def intpair(self, k, default_value=None):
