@@ -192,7 +192,7 @@ class Test_Roundtrip(unittest.TestCase):
         out_csc = out_image.get_pixel_format()
         md = 0
         if in_csc.startswith("YUV"):
-            if (in_csc="YUV444P" and out_csc="GBRP") or out_csc=="NV12":
+            if (in_csc=="YUV444P" and out_csc=="GBRP") or out_csc=="NV12":
                 log.info(f"{out_csc} cannot be compared with {in_csc} (not implemented)")
                 return
             if in_csc!=out_csc:
