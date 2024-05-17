@@ -345,10 +345,12 @@ cdef class Encoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding, unsigned int width, unsigned int height, src_format, options):
+    def init_context(self, encoding: str,
+                     unsigned int width, unsigned int height,
+                     src_format: str,
+                     options: typedict) -> None:
         log("vpx init_context%s", (encoding, width, height, src_format, options))
         assert encoding in CODECS, "invalid encoding: %s" % encoding
-        options = options or typedict()
         assert options.get("scaled-width", width)==width, "vpx encoder does not handle scaling"
         assert options.get("scaled-height", height)==height, "vpx encoder does not handle scaling"
         assert encoding in get_encodings()

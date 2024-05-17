@@ -170,7 +170,7 @@ def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
         )
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> Dict[str, Any]:
     global CODECS
     info = {
         "version"       : get_version(),
@@ -211,7 +211,7 @@ cdef class Decoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding: str, width: int, height: int, colorspace: str) -> None:
+    def init_context(self, encoding: str, width: int, height: int, colorspace: str, options: typedict) -> None:
         log("vpx decoder init_context%s", (encoding, width, height, colorspace))
         assert encoding in CODECS
         assert colorspace in get_input_colorspaces(encoding)
@@ -246,7 +246,7 @@ cdef class Decoder:
     def __repr__(self):
         return "vpx.Decoder(%s)" % self.encoding
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> Dict[str, Any]:
         return {
             "type"      : self.get_type(),
             "width"     : self.get_width(),
