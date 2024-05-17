@@ -657,7 +657,7 @@ cdef class Encoder:
         param.vui.i_sar_width = 0
         param.vui.i_overscan = 1        # no overscan
         param.vui.i_vidformat = 0
-        param.vui.b_fullrange = 1
+        param.vui.b_fullrange = 0
         param.vui.i_colorprim = 1
         param.vui.i_transfer = 1
         param.vui.i_colmatrix = 0
