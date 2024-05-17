@@ -7,7 +7,7 @@
 
 import sys
 from typing import Any, TypeAlias
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Iterable
 from time import sleep, monotonic
 from threading import Event
 from collections import deque
@@ -18,7 +18,7 @@ from xpra.common import FULL_INFO, noop
 from xpra.util.objects import AtomicInteger, typedict, notypedict
 from xpra.util.env import envint, envbool
 from xpra.net.common import PacketType, PacketElement
-from xpra.net.compression import compressed_wrapper
+from xpra.net.compression import compressed_wrapper, Compressed, LevelCompressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -59,9 +59,10 @@ class ClientConnection(StubSourceMixin):
     and added to the damage_packet_queue.
     """
 
-    def __init__(self, protocol, disconnect_cb, session_name,
-                 setting_changed,
-                 socket_dir, unix_socket_paths, log_disconnect, bandwidth_limit, bandwidth_detection,
+    def __init__(self, protocol, disconnect_cb: Callable, session_name: str,
+                 setting_changed: Callable[[str, Any], None],
+                 socket_dir: str, unix_socket_paths: Iterable[str],
+                 log_disconnect: bool, bandwidth_limit: int, bandwidth_detection: bool,
                  ):
         self.counter = counter.increase()
         self.protocol = protocol
@@ -94,7 +95,7 @@ class ClientConnection(StubSourceMixin):
         self.bandwidth_detection = bandwidth_detection
         self.queue_encode: Callable[[ENCODE_WORK_ITEM], None] = self.start_queue_encode
 
-    def run(self):
+    def run(self) -> None:
         # ready for processing:
         self.protocol.set_packet_source(self.next_packet)
 
@@ -102,7 +103,7 @@ class ClientConnection(StubSourceMixin):
         classname = type(self).__name__
         return f"{classname}({self.counter} : {self.protocol})"
 
-    def init_state(self):
+    def init_state(self) -> None:
         self.hello_sent = False
         self.share = False
         self.lock = False
@@ -126,13 +127,13 @@ class ClientConnection(StubSourceMixin):
     def is_closed(self) -> bool:
         return self.close_event.is_set()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         log("%s.close()", self)
         self.close_event.set()
         self.protocol = None
         self.statistics.reset(0)
 
-    def may_notify(self, *args, **kwargs):
+    def may_notify(self, *args, **kwargs) -> None:
         # fugly workaround,
         # MRO is depth first and would hit the default implementation
         # instead of the mixin unless we force it:
@@ -140,13 +141,13 @@ class ClientConnection(StubSourceMixin):
         if notification_mixin and isinstance(self, notification_mixin.NotificationMixin):
             notification_mixin.NotificationMixin.may_notify(self, *args, **kwargs)
 
-    def compressed_wrapper(self, datatype, data, **kwargs):
+    def compressed_wrapper(self, datatype, data, **kwargs) -> Compressed | LevelCompressed:
         # set compression flags based on self.lz4:
         kw = {"lz4": getattr(self, "lz4", False)}
         kw.update(kwargs)
         return compressed_wrapper(datatype, data, can_inline=False, **kw)
 
-    def update_bandwidth_limits(self):
+    def update_bandwidth_limits(self) -> None:
         if not self.bandwidth_detection:
             return
         mmap_size = getattr(self, "mmap_size", 0)
@@ -189,7 +190,7 @@ class ClientConnection(StubSourceMixin):
                 weight = window_weight.get(wid, 0)
                 ws.bandwidth_limit = max(MIN_BANDWIDTH // 10, bandwidth_limit * weight // total_weight)
 
-    def parse_client_caps(self, c: typedict):
+    def parse_client_caps(self, c: typedict) -> None:
         # general features:
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
@@ -227,7 +228,7 @@ class ClientConnection(StubSourceMixin):
         # auto: use 80% of socket speed if we have it:
         return socket_speed * AUTO_BANDWIDTH_PCT // 100 or 0
 
-    def startup_complete(self):
+    def startup_complete(self) -> None:
         log("startup_complete()")
         self.send("startup-complete")
 
@@ -245,7 +246,7 @@ class ClientConnection(StubSourceMixin):
     def encode_queue_size(self) -> int:
         return self.encode_work_queue.qsize()
 
-    def call_in_encode_thread(self, optional: bool, fn: Callable, *args):
+    def call_in_encode_thread(self, optional: bool, fn: Callable, *args) -> None:
         """
             This is used by WindowSource to queue damage processing to be done in the 'encode' thread.
             The 'encode_and_send_cb' will then add the resulting packet to the 'packet_queue' via 'queue_packet'.
@@ -257,7 +258,7 @@ class ClientConnection(StubSourceMixin):
                      start_send_cb: Callable | None = None,
                      end_send_cb: Callable | None = None,
                      fail_cb: Callable | None = None,
-                     wait_for_more=False):
+                     wait_for_more=False) -> None:
         """
             Add a new 'draw' packet to the 'packet_queue'.
             Note: this code runs in the non-ui thread
@@ -273,7 +274,7 @@ class ClientConnection(StubSourceMixin):
         if p:
             p.source_has_more()
 
-    def encode_loop(self):
+    def encode_loop(self) -> None:
         """
             This runs in a separate thread and calls all the function callbacks
             which are added to the 'encode_work_queue'.
@@ -316,7 +317,7 @@ class ClientConnection(StubSourceMixin):
             have_more = packet is not None and bool(self.ordinary_packets or self.packet_queue)
         return packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more
 
-    def send(self, *parts: PacketElement, **kwargs):
+    def send(self, *parts: PacketElement, **kwargs) -> None:
         """ This method queues non-damage packets (higher priority) """
         synchronous = bool(kwargs.get("synchronous", True))
         will_have_more = bool(kwargs.get("will_have_more", not synchronous))
@@ -326,11 +327,11 @@ class ClientConnection(StubSourceMixin):
             self.ordinary_packets.append((parts, synchronous, fail_cb, will_have_more))
             p.source_has_more()
 
-    def send_more(self, *parts, **kwargs):
+    def send_more(self, *parts, **kwargs) -> None:
         kwargs["will_have_more"] = True
         self.send(*parts, **kwargs)
 
-    def send_async(self, *parts, **kwargs):
+    def send_async(self, *parts, **kwargs) -> None:
         kwargs["synchronous"] = False
         kwargs["will_have_more"] = False
         self.send(*parts, **kwargs)
@@ -369,16 +370,16 @@ class ClientConnection(StubSourceMixin):
         }
         return info
 
-    def send_info_response(self, info):
+    def send_info_response(self, info) -> None:
         self.send_async("info-response", notypedict(info))
 
-    def send_setting_change(self, setting, value):
+    def send_setting_change(self, setting: str, value) -> None:
         self.send_more("setting-change", setting, value)
 
-    def send_server_event(self, *args):
+    def send_server_event(self, *args) -> None:
         if "events" in self.wants:
             self.send_more("server-event", *args)
 
-    def send_client_command(self, *args):
+    def send_client_command(self, *args) -> None:
         if self.hello_sent:
             self.send_more("control", *args)

@@ -379,7 +379,7 @@ class ServerBase(ServerBaseClass):
         if not WIN32:
             set_socket_timeout(proto._conn, None)
 
-        def drop_client(reason="unknown", *args):
+        def drop_client(reason="unknown", *args) -> None:
             self.disconnect_client(proto, reason, *args)
 
         cc_class = self.get_client_connection_class(c)
@@ -711,7 +711,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # settings toggle:
-    def setting_changed(self, setting: str, value) -> None:
+    def setting_changed(self, setting: str, value: Any) -> None:
         # tell all the clients (that can) about the new value for this setting
         for ss in tuple(self._server_sources.values()):
             ss.send_setting_change(setting, value)
