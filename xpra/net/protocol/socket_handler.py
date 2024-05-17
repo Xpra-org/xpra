@@ -1029,7 +1029,7 @@ class SocketProtocol:
                         def debug_str(s):
                             try:
                                 return hexstr(s)
-                            except (TypeError, ValueError, UnicodeError):
+                            except (TypeError, ValueError):
                                 return csv(tuple(s))
 
                         # pad byte value is number of padding bytes added
