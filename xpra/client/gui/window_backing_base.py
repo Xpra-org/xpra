@@ -829,7 +829,7 @@ class WindowBackingBase:
                          decoder_spec.codec_type, (coding, enc_width, enc_height, input_colorspace))
                 try:
                     vd = decoder_spec.codec_class()
-                    vd.init_context(coding, enc_width, enc_height, input_colorspace)
+                    vd.init_context(coding, enc_width, enc_height, input_colorspace, options)
                 except Exception as e:
                     log(f"failed to initialize decoder {decoder_spec.codec_type}: {e}")
                     raise
