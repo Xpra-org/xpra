@@ -528,8 +528,11 @@ FORMAT_TO_ENUM = {
 #for planar formats, this is the number of bytes per channel
 BYTES_PER_PIXEL = {
     AV_PIX_FMT_YUV420P  : 1,
+    AV_PIX_FMT_YUVJ420P : 1,
     AV_PIX_FMT_YUV422P  : 1,
+    AV_PIX_FMT_YUVJ422P : 1,
     AV_PIX_FMT_YUV444P  : 1,
+    AV_PIX_FMT_YUVJ444P : 1,
     AV_PIX_FMT_RGB24    : 3,
     AV_PIX_FMT_0RGB     : 4,
     AV_PIX_FMT_BGR0     : 4,
@@ -547,6 +550,9 @@ COLORSPACES = list(FORMAT_TO_ENUM.keys())+["r210", "YUV444P10"]
 ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
     ENUM_TO_FORMAT[av_enum] = pix_fmt
+ENUM_TO_FORMAT[AV_PIX_FMT_YUVJ420P] = "YUV420P"
+ENUM_TO_FORMAT[AV_PIX_FMT_YUVJ422P] = "YUV422P"
+ENUM_TO_FORMAT[AV_PIX_FMT_YUVJ444P] = "YUV444P"
 FORMAT_TO_ENUM["r210"] = AV_PIX_FMT_GBRP10LE
 
 
