@@ -27,7 +27,7 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_codec_version_str, vpx_codec_build_config,
     VPX_IMG_FMT_I420, VPX_IMG_FMT_I444, VPX_IMG_FMT_I44416,
     vpx_image_t,
-    VPX_CS_BT_709, VPX_CR_FULL_RANGE,
+    VPX_CS_BT_709, VPX_CR_FULL_RANGE, VPX_CR_STUDIO_RANGE,
     vpx_codec_err_to_string, vpx_codec_control_,
 )
 from libc.stdint cimport uint8_t, int64_t
@@ -567,6 +567,7 @@ cdef class Encoder:
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
+        cdef int full_range = int(image.get_full_range())
         pf = image.get_pixel_format().replace("A", "X")
         if pf != self.src_format:
             raise ValueError(f"expected {self.src_format} but got {image.get_pixel_format()}")
@@ -604,9 +605,10 @@ cdef class Encoder:
                     py_buf[i].len, "YUV"[i], istrides[i]*(self.height//ydiv))
                 pic_in[i] = <uint8_t *> py_buf[i].buf
                 strides[i] = istrides[i]
-            return self.do_compress_image(pic_in, strides), {
+            return self.do_compress_image(pic_in, strides, full_range), {
                 "csc"       : self.src_format,
                 "frame"     : int(self.frames),
+                "full-range" : bool(full_range),
                 #"quality"  : min(99+self.lossless, self.quality),
                 #"speed"    : self.speed,
             }
@@ -615,7 +617,7 @@ cdef class Encoder:
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
 
-    cdef do_compress_image(self, uint8_t *pic_in[3], int strides[3]):
+    cdef do_compress_image(self, uint8_t *pic_in[3], int strides[3], int full_range):
         #actual compression (no gil):
         cdef vpx_codec_iter_t iter = NULL
         cdef int flags = 0
@@ -627,7 +629,10 @@ cdef class Encoder:
         image.h = self.height
         image.fmt = self.pixfmt
         image.cs = VPX_CS_BT_709
-        image.range = VPX_CR_FULL_RANGE
+        if full_range:
+            image.range = VPX_CR_FULL_RANGE
+        else:
+            image.range = VPX_CR_STUDIO_RANGE
         for i in range(3):
             image.planes[i] = pic_in[i]
             image.stride[i] = strides[i]

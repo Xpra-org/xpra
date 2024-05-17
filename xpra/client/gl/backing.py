@@ -1352,6 +1352,8 @@ class GLWindowBackingBase(WindowBackingBase):
             super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
         shader = f"{pixel_format}_to_RGB"
+        if img.get_full_range():
+            shader += "_FULL"
         flush = options.intget("flush", 0)
         encoding = options.strget("encoding")
         self.with_gfx_context(self.gl_paint_planar, shader, flush, encoding, img,
@@ -1391,7 +1393,7 @@ class GLWindowBackingBase(WindowBackingBase):
                   flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)
 
-    def update_planar_textures(self, width: int, height: int, img, pixel_format, scaling=False, pbo=False) -> None:
+    def update_planar_textures(self, width: int, height: int, img, pixel_format: str, scaling=False, pbo=False) -> None:
         if len(self.textures) == 0:
             raise RuntimeError("no OpenGL textures")
         upload_formats = PIXEL_UPLOAD_FORMAT[pixel_format]

@@ -50,6 +50,7 @@ class ImageWrapper:
         self.freed: bool = False
         self.timestamp: int = int(monotonic() * 1000)
         self.palette = palette
+        self.full_range = False
         if width <= 0 or height <= 0:
             raise ValueError(f"invalid geometry {x},{y},{width},{height}")
 
@@ -113,6 +114,9 @@ class ImageWrapper:
     def get_palette(self):
         return self.palette
 
+    def get_full_range(self) -> bool:
+        return self.full_range
+
     def get_gpu_buffer(self):
         return None
 
@@ -130,20 +134,23 @@ class ImageWrapper:
         """ time in millis """
         return self.timestamp
 
-    def set_timestamp(self, timestamp: int):
+    def set_timestamp(self, timestamp: int) -> None:
         self.timestamp = timestamp
 
-    def set_planes(self, planes: PlanarFormat):
+    def set_planes(self, planes: PlanarFormat) -> None:
         self.planes = planes
 
-    def set_rowstride(self, rowstride: int):
+    def set_rowstride(self, rowstride: int) -> None:
         self.rowstride = rowstride
 
-    def set_pixel_format(self, pixel_format):
+    def set_pixel_format(self, pixel_format) -> None:
         self.pixel_format = pixel_format
 
     def set_palette(self, palette) -> None:
         self.palette = palette
+
+    def set_full_range(self, full_range: bool) -> None:
+        self.full_range = full_range
 
     def set_pixels(self, pixels) -> None:
         if self.freed:

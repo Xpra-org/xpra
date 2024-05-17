@@ -1925,7 +1925,10 @@ class WindowVideoSource(WindowSource):
                               _score: int, scaling, _csc_scaling, csc_width: int, csc_height: int, csc_spec,
                               enc_in_format: str, encoder_scaling,
                               enc_width: int, enc_height: int, encoder_spec) -> bool:
+        encoding = encoder_spec.encoding
         options = self.assign_sq_options(dict(self.encoding_options))
+        # tell the csc and encoder what colorspace range the client supports:
+        options["ranges"] = self.csc_ranges.strtupleget(encoding) or self.csc_ranges.strtupleget("default")
         min_w = 8
         min_h = 8
         max_w = 16384
@@ -1943,7 +1946,8 @@ class WindowVideoSource(WindowSource):
             speed = options.get("speed", self._current_speed)
             quality = options.get("quality", self._current_quality)
             csc_speed = max(1, min(speed, 100-quality/2.0))
-            csc_options = typedict({"speed": csc_speed})
+            csc_options = typedict(options)
+            csc_options["speed"] = csc_speed
             csc_start = monotonic()
             csce = csc_spec.make_instance()
             csce.init_context(csc_width, csc_height, src_format,
@@ -1967,9 +1971,9 @@ class WindowVideoSource(WindowSource):
         self._csc_encoder = csce
         enc_start = monotonic()
         # FIXME: filter dst_formats to only contain formats the encoder knows about?
-        dst_formats = self.full_csc_modes.strtupleget(encoder_spec.encoding)
+        dst_formats = self.full_csc_modes.strtupleget(encoding)
         ve = encoder_spec.make_instance()
-        options.update(self.get_video_encoder_options(encoder_spec.encoding, width, height))
+        options.update(self.get_video_encoder_options(encoding, width, height))
         if self.encoding == "grayscale":
             options["grayscale"] = True
         if encoder_scaling != (1, 1):
@@ -1979,7 +1983,7 @@ class WindowVideoSource(WindowSource):
             options["scaled-height"] = enc_height*n//d
         options["dst-formats"] = dst_formats
 
-        ve.init_context(encoder_spec.encoding, enc_width, enc_height, enc_in_format, typedict(options))
+        ve.init_context(encoding, enc_width, enc_height, enc_in_format, typedict(options))
         # record new actual limits:
         self.actual_scaling = scaling
         self.width_mask = width_mask

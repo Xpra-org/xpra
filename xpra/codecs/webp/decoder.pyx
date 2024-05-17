@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Dict, Tuple
+from collections.abc import Sequence
 
 from xpra.log import Logger
 log = Logger("encoder", "webp")
@@ -197,7 +198,7 @@ cdef class WebpBufferWrapper:
             self.buffer_ptr = 0
 
 
-def decompress(data, has_alpha, rgb_format=None, rgb_formats=()):
+def decompress(data, has_alpha: bool, rgb_format: str = "", rgb_formats: Sequence[str] = ()):
     """
         This returns a WebpBufferWrapper, you MUST call free() on it
         once the pixel buffer can be freed.
@@ -342,6 +343,7 @@ def decompress_yuv(data, has_alpha=False) -> YUVImageWrapper:
             PyMemoryView_FromMemory(<char *> YUVA.v, v_size, PyBUF_WRITE),
         )
     img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
+    img.set_full_range(True)
     img.cython_buffer = <uintptr_t> buf
     return img
 

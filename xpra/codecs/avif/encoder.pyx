@@ -14,7 +14,7 @@ from xpra.codecs.avif.avif cimport (
     AVIF_RESULT_OK, AVIF_RESULT,
     AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH,
     AVIF_QUANTIZER_LOSSLESS, AVIF_QUANTIZER_BEST_QUALITY, AVIF_QUANTIZER_WORST_QUALITY,
-    AVIF_RANGE_FULL,
+    AVIF_RANGE_LIMITED, AVIF_RANGE_FULL,
     avifResult,
     avifRWData,
     AVIF_PIXEL_FORMAT_NONE, AVIF_PIXEL_FORMAT_YUV400,
@@ -138,7 +138,10 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
         rgb.pixels = <uint8_t*> (<uintptr_t> int(bc))
         log("avif.encode(%s, %s, %s) pixels=%#x", coding, image, options, int(bc))
         try:
-            avif_image.yuvRange = AVIF_RANGE_FULL
+            if image.get_full_range():
+                avif_image.yuvRange = AVIF_RANGE_FULL
+            else:
+                avif_image.yuvRange = AVIF_RANGE_LIMITED
             if grayscale:
                 avif_image.yuvFormat = AVIF_PIXEL_FORMAT_YUV400
                 client_options["subsampling"] = "YUV400"

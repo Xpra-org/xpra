@@ -198,8 +198,12 @@ cdef class XImageWrapper:
     cdef object del_callback
     cdef uint64_t timestamp
     cdef object palette
+    cdef unsigned char full_range
 
-    def __cinit__(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height, uintptr_t pixels=0, pixel_format="", unsigned int depth=24, unsigned int rowstride=0, int planes=0, unsigned int bytesperpixel=4, thread_safe=False, sub=False, palette=None):
+    def __cinit__(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height,
+                        uintptr_t pixels=0, pixel_format="", unsigned int depth=24, unsigned int rowstride=0,
+                        int planes=0, unsigned int bytesperpixel=4, thread_safe=False, sub=False,
+                        palette=None, full_range=True):
         self.image = NULL
         self.pixels = NULL
         self.x = x
@@ -218,6 +222,7 @@ cdef class XImageWrapper:
         self.pixels = <void *> pixels
         self.timestamp = int(monotonic()*1000)
         self.palette = palette
+        self.full_range = int(full_range)
 
     cdef set_image(self, XImage* image):
         assert not self.sub
@@ -297,6 +302,9 @@ cdef class XImageWrapper:
     def get_palette(self):
         return self.palette
 
+    def get_full_range(self) -> bool:
+        return bool(self.full_range)
+
     def get_planes(self) -> int:
         return self.planes
 
@@ -334,7 +342,8 @@ cdef class XImageWrapper:
         cdef unsigned char Bpp = BYTESPERPIXEL(self.depth)
         cdef uintptr_t sub_ptr = (<uintptr_t> src) + x*Bpp + y*self.rowstride
         image = XImageWrapper(self.x+x, self.y+y, w, h, sub_ptr, self.pixel_format,
-                             self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True, self.palette)
+                             self.depth, self.rowstride, self.planes, self.bytesperpixel, True, True,
+                             self.palette, self.full_range)
         image.set_target_x(self.target_x+x)
         image.set_target_y(self.target_y+y)
         return image
@@ -370,6 +379,9 @@ cdef class XImageWrapper:
 
     def set_palette(self, palette) -> None:
         self.palette = palette
+
+    def set_full_range(self, full_range: bool) -> None:
+        self.full_range = int(full_range)
 
     def set_timestamp(self, timestamp) -> None:
         self.timestamp = timestamp

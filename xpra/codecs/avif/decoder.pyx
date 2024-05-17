@@ -154,7 +154,9 @@ def decompress(data, options=None, yuv=False) -> ImageWrapper:
             may_save_image("avif", data)
             if decoder.imageCount>1:
                 log.warn("Warning: more than one image in avif data")
-            return ImageWrapper(0, 0, width, height, memoryview(pixels), rgb_format, bpp, stride, planes=ImageWrapper.PACKED)
+            img = ImageWrapper(0, 0, width, height, memoryview(pixels), rgb_format, bpp, stride, planes=ImageWrapper.PACKED)
+            img.set_full_range(image.yuvRange == AVIF_RANGE_FULL)
+            return img
     finally:
         avifDecoderDestroy(decoder)
 

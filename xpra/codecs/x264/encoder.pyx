@@ -507,6 +507,7 @@ cdef class Encoder:
     cdef int max_delayed
     cdef int delayed_frames
     cdef int export_nals
+    cdef int full_range
     cdef unsigned long bandwidth_limit
     cdef unsigned long long bytes_in
     cdef unsigned long long bytes_out
@@ -536,6 +537,7 @@ cdef class Encoder:
         self.height = height
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
+        self.full_range = 0
         #self.opencl = USE_OPENCL and width>=32 and height>=32
         self.content_type = options.strget("content-type", "unknown")      #ie: "video"
         self.b_frames = options.intget("b-frames", 0)
@@ -671,7 +673,7 @@ cdef class Encoder:
         param.vui.i_sar_width = 0
         param.vui.i_overscan = 1        # no overscan
         param.vui.i_vidformat = 0
-        param.vui.b_fullrange = 1
+        param.vui.b_fullrange = self.full_range
         param.vui.i_colorprim = 1
         param.vui.i_transfer = 1
         param.vui.i_colmatrix = 0
@@ -771,6 +773,7 @@ cdef class Encoder:
         return {
             "me"                : self.get_analyse_info(param),
             "rc"                : self.get_rc_info(param),
+            "vui"               : self.get_vui_info(param),
             "vfr-input"         : bool(param.b_vfr_input),
             "bframe-adaptive"   :  ADAPT_TYPES.get(param.i_bframe_adaptive, param.i_bframe_adaptive),
             "open-gop"          : bool(param.b_open_gop),
@@ -782,6 +785,12 @@ cdef class Encoder:
             "constrained_intra" : bool(param.b_constrained_intra),
             "threads"           : {0 : "auto"}.get(param.i_threads, param.i_threads),
             "sliced-threads"    : bool(param.b_sliced_threads),
+        }
+
+    cdef get_vui_info(self, x264_param_t *param):
+        return {
+            # "overscan": bool(param.vui.i_overscan),
+            "fullrange" : bool(param.vui.b_fullrange),
         }
 
     cdef get_analyse_info(self, x264_param_t *param):
@@ -849,6 +858,11 @@ cdef class Encoder:
 
         if self.first_frame_timestamp==0:
             self.first_frame_timestamp = image.get_timestamp()
+
+        cdef int full_range = image.get_full_range()
+        if full_range != self.full_range:
+            self.full_range = full_range
+            self.reconfig_tune()
 
         options = typedict(options or {})
         content_type = options.strget("content-type", self.content_type)
@@ -967,12 +981,13 @@ cdef class Encoder:
             self.set_encoding_quality(self.quality)
         #info for client:
         client_options = {
-                "frame"     : int(self.frames),
-                "pts"       : int(pic_out.i_pts),
-                #"quality"   : max(0, min(100, quality)),
-                #"speed"     : max(0, min(100, speed)),
-                "csc"       : self.csc_format,
-                }
+            "frame"     : int(self.frames),
+            "pts"       : int(pic_out.i_pts),
+            # "quality"   : max(0, min(100, quality)),
+            # "speed"     : max(0, min(100, speed)),
+            "csc"       : self.csc_format,
+            "full-range" : self.full_range,
+        }
         if slice_type!="P":
             client_options["type"] = slice_type
         if self.delayed_frames>0:
@@ -1041,6 +1056,15 @@ cdef class Encoder:
         #adjust quality:
         set_f_rf(param, get_x264_quality(self.quality, self.profile))
         self.tune_param(param, typedict())
+        self.do_reconfig(param)
+
+    def reconfig(self) -> None:
+        cdef x264_param_t param
+        x264_encoder_parameters(self.context, &param)
+        self.tune_param(&param, typedict())
+        self.do_reconfig(&param)
+
+    cdef do_reconfig(self, x264_param_t *param):
         #apply it:
         if x264_encoder_reconfig(self.context, param)!=0:
             raise RuntimeError("x264_encoder_reconfig failed")

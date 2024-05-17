@@ -68,6 +68,12 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
                     uint8_t* dst_rgb24, int dst_stride_rgb24,
                     int width, int height) nogil
 
+    int J420ToRGB24(const uint8_t* src_y, int src_stride_y,
+                    const uint8_t* src_u, int src_stride_u,
+                    const uint8_t* src_v, int src_stride_v,
+                    uint8_t* dst_rgb24, int dst_stride_rgb24,
+                    int width, int height) nogil
+
     int I420ToRGBA(const uint8_t* src_y, int src_stride_y,
                    const uint8_t* src_u, int src_stride_u,
                    const uint8_t* src_v, int src_stride_v,
@@ -75,6 +81,12 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
                    int width, int height) nogil
 
     int I420ToABGR(const uint8_t* src_y, int src_stride_y,
+                   const uint8_t* src_u, int src_stride_u,
+                   const uint8_t* src_v, int src_stride_v,
+                   uint8_t* dst_abgr, int dst_stride_abgr,
+                   int width, int height) nogil
+
+    int J420ToABGR(const uint8_t* src_y, int src_stride_y,
                    const uint8_t* src_u, int src_stride_u,
                    const uint8_t* src_v, int src_stride_v,
                    uint8_t* dst_abgr, int dst_stride_abgr,
@@ -305,6 +317,7 @@ cdef class Converter:
     cdef int src_height
     cdef int dst_width
     cdef int dst_height
+    cdef int dst_full_range
     cdef uint8_t yuv_scaling
     cdef uint8_t rgb_scaling
     cdef int planes
@@ -333,7 +346,8 @@ cdef class Converter:
     cdef object __weakref__
 
     def init_context(self, int src_width, int src_height, src_format: str,
-                           int dst_width, int dst_height, dst_format: str, options: typedict) -> None:
+                           int dst_width, int dst_height, dst_format: str,
+                           options: typedict) -> None:
         log("libyuv.Converter.init_context%s", (
             src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         if src_format not in COLORSPACES:
@@ -348,6 +362,7 @@ cdef class Converter:
         self.src_height = src_height
         self.dst_width = dst_width
         self.dst_height = dst_height
+        self.dst_full_range = int("full" in options.strtupleget("ranges"))
         self.out_buffer_size = 0
         self.scaled_buffer_size = 0
         self.time = 0
@@ -629,6 +644,7 @@ cdef class Converter:
         cdef int iplanes = image.get_planes()
         cdef int width = image.get_width()
         cdef int height = image.get_height()
+        cdef int full_range = image.get_full_range()
         if iplanes!=3:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.src_format not in ("YUV420P", "YUV444P"):
@@ -663,13 +679,21 @@ cdef class Converter:
                     if self.dst_format=="RGB" and self.src_format=="YUV420P":
                         matched = 1
                         with nogil:
-                            r = I420ToRGB24(<const uint8_t*> y, y_stride,
-                                            <const uint8_t*> u, u_stride,
-                                            <const uint8_t*> v, v_stride,
-                                            rgb, rowstride,
-                                            width, height)
+                            if full_range:
+                                r = J420ToRGB24(<const uint8_t*> y, y_stride,
+                                                <const uint8_t*> u, u_stride,
+                                                <const uint8_t*> v, v_stride,
+                                                rgb, rowstride,
+                                                width, height)
+                            else:
+                                r = I420ToRGB24(<const uint8_t*> y, y_stride,
+                                                <const uint8_t*> u, u_stride,
+                                                <const uint8_t*> v, v_stride,
+                                                rgb, rowstride,
+                                                width, height)
                     elif self.dst_format=="XBGR" and self.src_format=="YUV420P":
                         matched = 1
+                        # we can't handle full-range here!
                         with nogil:
                             r = I420ToRGBA(<const uint8_t*> y, y_stride,
                                            <const uint8_t*> u, u_stride,
@@ -679,14 +703,28 @@ cdef class Converter:
                     elif self.dst_format=="BGRX" and self.src_format=="YUV444P":
                         matched = 1
                         with nogil:
-                            r = I444ToARGB(<const uint8_t*> y, y_stride,
-                                           <const uint8_t*> u, u_stride,
-                                           <const uint8_t*> v, v_stride,
-                                           rgb, rowstride,
-                                           width, height)
+                            if full_range:
+                                r = J444ToARGB(<const uint8_t*> y, y_stride,
+                                               <const uint8_t*> u, u_stride,
+                                               <const uint8_t*> v, v_stride,
+                                               rgb, rowstride,
+                                               width, height)
+                            else:
+                                r = I444ToARGB(<const uint8_t*> y, y_stride,
+                                               <const uint8_t*> u, u_stride,
+                                               <const uint8_t*> v, v_stride,
+                                               rgb, rowstride,
+                                               width, height)
                     elif self.dst_format=="RGBX" and self.src_format=="YUV420P":
                         matched = 1
                         with nogil:
+                            if full_range:
+                                r = J420ToABGR(<const uint8_t*> y, y_stride,
+                                                <const uint8_t*> u, u_stride,
+                                                <const uint8_t*> v, v_stride,
+                                                rgb, rowstride,
+                                                width, height)
+                            else:
                                 r = I420ToABGR(<const uint8_t*> y, y_stride,
                                                 <const uint8_t*> u, u_stride,
                                                 <const uint8_t*> v, v_stride,
@@ -695,11 +733,18 @@ cdef class Converter:
                     elif self.src_format=="YUV444P" and self.dst_format=="RGBX":
                         matched = 1
                         with nogil:
-                            r = I444ToABGR(<const uint8_t*> y, y_stride,
-                                           <const uint8_t*> u, u_stride,
-                                           <const uint8_t*> v, v_stride,
-                                           rgb, rowstride,
-                                           width, height)
+                            if full_range:
+                                r = J444ToABGR(<const uint8_t*> y, y_stride,
+                                               <const uint8_t*> u, u_stride,
+                                               <const uint8_t*> v, v_stride,
+                                               rgb, rowstride,
+                                               width, height)
+                            else:
+                                r = I444ToABGR(<const uint8_t*> y, y_stride,
+                                               <const uint8_t*> u, u_stride,
+                                               <const uint8_t*> v, v_stride,
+                                               rgb, rowstride,
+                                               width, height)
         if not matched:
             raise RuntimeError(f"unexpected formats: src={self.src_format}, dst={self.dst_format}")
         if r!=0:
@@ -744,22 +789,34 @@ cdef class Converter:
             out_planes[i] = <uint8_t*> (memalign_ptr(<uintptr_t> output_buffer) + self.out_offsets[i])
         #get pointer to input:
         cdef int result = -1
+        cdef int full_range = self.dst_full_range
         cdef const uint8_t* src
         with buffer_context(pixels) as bc:
             src = <const uint8_t*> (<uintptr_t> int(bc))
             with nogil:
                 if self.dst_format=="NV12":
+                    # we can't handle full-range here!
+                    full_range = 0
                     result = ARGBToNV12(src, stride,
                                         out_planes[0], self.out_stride[0],
                                         out_planes[1], self.out_stride[1],
                                         width, height)
                 elif self.dst_format=="YUV420P":
-                    result = ARGBToJ420(src, stride,
-                                        out_planes[0], self.out_stride[0],
-                                        out_planes[1], self.out_stride[1],
-                                        out_planes[2], self.out_stride[2],
-                                        width, height)
+                    if full_range:
+                        result = ARGBToJ420(src, stride,
+                                            out_planes[0], self.out_stride[0],
+                                            out_planes[1], self.out_stride[1],
+                                            out_planes[2], self.out_stride[2],
+                                            width, height)
+                    else:
+                        result = ARGBToI420(src, stride,
+                                            out_planes[0], self.out_stride[0],
+                                            out_planes[1], self.out_stride[1],
+                                            out_planes[2], self.out_stride[2],
+                                            width, height)
                 elif self.dst_format=="YUV444P":
+                    # we can't handle full-range here!
+                    full_range = 0
                     result = ARGBToI444(src, stride,
                                         out_planes[0], self.out_stride[0],
                                         out_planes[1], self.out_stride[1],
@@ -768,9 +825,9 @@ cdef class Converter:
                 else:
                     raise RuntimeError(f"unexpected src format {self.src_format}")
         if result!=0:
-            raise RuntimeError(f"libyuv ARGBToJ420/NV12 failed and returned {result}")
+            raise RuntimeError(f"libyuv ARGB to {self.dst_format} failed and returned {result}")
         cdef double elapsed = monotonic()-start
-        log("libyuv.ARGBToI420/NV12 took %.1fms", 1000.0*elapsed)
+        log("libyuv.ARGB to %s took %.1fms", self.dst_format, 1000.0*elapsed)
         self.time += elapsed
         cdef object planes = []
         cdef object strides = []
@@ -804,6 +861,7 @@ cdef class Converter:
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
             out_image.cython_buffer = <uintptr_t> output_buffer
+        out_image.set_full_range(bool(full_range))
         return out_image
 
 
