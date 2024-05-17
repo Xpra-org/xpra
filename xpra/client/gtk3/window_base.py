@@ -1394,7 +1394,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
         def do_set_region():
             log("set_opaque_region(%s)", r)
-            self.get_window().set_opaque_region(r)
+            try:
+                self.get_window().set_opaque_region(r)
+            except KeyError as e:
+                if first_time("region-KeyError"):
+                    log.warn("Warning: cannot set opaque region %r", r)
+                    log.warn(" a package may be missing")
+                    log.warn(f" {e}")
 
         self.when_realized("set-opaque-region", do_set_region)
 
