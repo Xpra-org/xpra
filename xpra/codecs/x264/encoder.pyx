@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -15,6 +15,7 @@ log = Logger("encoder", "x264")
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv, bytestostr, strtobytes
 from xpra.util.objects import typedict, AtomicInteger
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import VideoSpec, get_profile, get_x264_quality, get_x264_preset
 from collections import deque
 
@@ -284,6 +285,7 @@ cdef extern from "x264.h":
 cdef set_f_rf(x264_param_t *param, float q):
     param.rc.f_rf_constant = q
 
+
 cdef const char * const *get_preset_names():
     return x264_preset_names;
 
@@ -382,16 +384,22 @@ if SUPPORT_24BPP:
 def init_module() -> None:
     log("enc_x264.init_module()")
 
+
 def cleanup_module() -> None:
     log("enc_x264.cleanup_module()")
 
-def get_version() -> Tuple[int,...]:
+
+def get_version() -> Tuple[int]:
     return (X264_BUILD, )
+
 
 def get_type() -> str:
     return "x264"
 
+
 generation = AtomicInteger()
+
+
 def get_info() -> Dict[str,Any]:
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
@@ -401,23 +409,28 @@ def get_info() -> Dict[str,Any]:
         "formats"   : tuple(COLORSPACES.keys()),
         }
 
+
 def get_encodings() -> Tuple[str,...]:
     return ("h264", )
 
-def get_input_colorspaces(encoding:str):
+
+def get_input_colorspaces(encoding: str):
     assert encoding in get_encodings()
     return tuple(COLORSPACES.keys())
 
-def get_output_colorspaces(encoding:str, input_colorspace:str):
+
+def get_output_colorspaces(encoding: str, input_colorspace: str):
     assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
     return (COLORSPACES[input_colorspace],)
+
 
 #actual limits (which we cannot reach because we hit OOM):
 #MAX_WIDTH, MAX_HEIGHT = (16384, 16384)
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
-def get_specs(encoding:str, colorspace:str):
+
+def get_specs(encoding: str, colorspace: str):
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed
@@ -440,7 +453,7 @@ def get_specs(encoding:str, colorspace:str):
         )
 
 
-#maps a log level to one of our logger functions:
+# maps a log level to one of our logger functions:
 LOGGERS : Dict[int,Callable] = {
            X264_LOG_ERROR   : log.error,
            X264_LOG_WARNING : log.warn,
@@ -448,23 +461,24 @@ LOGGERS : Dict[int,Callable] = {
            X264_LOG_DEBUG   : log.debug,
            }
 
-#maps a log level string to the actual constant:
-LOG_LEVEL : Dict[str,int] = {
-             "ERROR"    : X264_LOG_ERROR,
-             "WARNING"  : X264_LOG_WARNING,
-             "WARN"     : X264_LOG_WARNING,
-             "INFO"     : X264_LOG_INFO,
-             #getting segfaults with "DEBUG" level logging...
-             #so this is currently disabled
-             #"DEBUG"    : X264_LOG_DEBUG,
-             }.get(LOGGING.upper(), X264_LOG_WARNING)
+# maps a log level string to the actual constant:
+X264_LOG_MAP: Dict[str, int] = {
+    "ERROR"    : X264_LOG_ERROR,
+    "WARNING"  : X264_LOG_WARNING,
+    "WARN"     : X264_LOG_WARNING,
+    "INFO"     : X264_LOG_INFO,
+    # getting segfaults with "DEBUG" level logging...
+    # so this is currently disabled
+    # "DEBUG"    : X264_LOG_DEBUG,
+}
+LOG_LEVEL: int = X264_LOG_MAP.get(LOGGING.upper(), X264_LOG_WARNING)
 
 
-#the static logging function we want x264 to use:
+# the static logging function we want x264 to use:
 cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) noexcept with gil:
     cdef char buf[256]
     cdef int r = vsnprintf(buf, 256, psz_fmt, arg)
-    if r<0:
+    if r < 0:
         log.error("X264_log: vsnprintf returned %s on format string '%s'", r, psz_fmt)
         return
     s = bytestostr(buf[:r]).rstrip("\n\r")
@@ -514,9 +528,9 @@ cdef class Encoder:
         assert encoding=="h264", "invalid encoding: %s" % encoding
         assert options.intget("scaled-width", width)==width, "x264 encoder does not handle scaling"
         assert options.intget("scaled-height", height)==height, "x264 encoder does not handle scaling"
-        if width%2!=0 and src_format not in ("BGRX", "YUV444P"):
+        if width%2 != 0 and src_format not in ("BGRX", "YUV444P"):
             raise ValueError(f"invalid odd width {width} for {src_format}")
-        if height%2!=0 and src_format=="YUV420P":
+        if height%2 != 0 and src_format=="YUV420P":
             raise ValueError(f"invalid odd height {height} for {src_format}")
         self.width = width
         self.height = height
@@ -580,7 +594,7 @@ cdef class Encoder:
             tunes.append(b"fastdecode")
         return b",".join(tunes)
 
-    cdef init_encoder(self, options:typedict):
+    cdef init_encoder(self, options: typedict):
         cdef x264_param_t param
         cdef const char *preset = get_preset_names()[self.preset]
         self.tune = self.get_tune()
@@ -596,7 +610,7 @@ cdef class Encoder:
         log("x264 params: %s", self.get_param_info(&param))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
-    cdef tune_param(self, x264_param_t *param, options:typedict):
+    cdef tune_param(self, x264_param_t *param, options: typedict):
         param.i_lookahead_threads = 0
         if MIN_SLICED_THREADS_SPEED>0 and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
             param.b_sliced_threads = 1
@@ -667,7 +681,6 @@ cdef class Encoder:
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL
 
-
     def clean(self) -> None:
         log("x264 close context %#x", <uintptr_t> self.context)
         cdef x264_t *context = self.context
@@ -695,8 +708,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> Dict[str, Any]:
         cdef double pps
         if self.profile is None:
             return {}
@@ -770,17 +782,17 @@ cdef class Encoder:
             "constrained_intra" : bool(param.b_constrained_intra),
             "threads"           : {0 : "auto"}.get(param.i_threads, param.i_threads),
             "sliced-threads"    : bool(param.b_sliced_threads),
-            }
+        }
 
     cdef get_analyse_info(self, x264_param_t *param):
         return {
-                "type"              : ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method),
-                "me-range"          : param.analyse.i_me_range,
-                "mv-range"          : param.analyse.i_mv_range,
-                "mv-range-thread"   : param.analyse.i_mv_range_thread,
-                "subpel_refine"     : param.analyse.i_subpel_refine,
-                "weighted-pred"     : param.analyse.i_weighted_pred,
-                }
+            "type"              : ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method),
+            "me-range"          : param.analyse.i_me_range,
+            "mv-range"          : param.analyse.i_mv_range,
+            "mv-range-thread"   : param.analyse.i_mv_range_thread,
+            "subpel_refine"     : param.analyse.i_subpel_refine,
+            "weighted-pred"     : param.analyse.i_weighted_pred,
+        }
 
     cdef get_rc_info(self, x264_param_t *param):
         return {
@@ -797,8 +809,7 @@ cdef class Encoder:
 
             "mb-tree"           : bool(param.rc.b_mb_tree),
             "lookahead"         : param.rc.i_lookahead,
-            }
-
+        }
 
     def __repr__(self):
         if self.src_format is None:
@@ -826,8 +837,7 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
-
-    def compress_image(self, image, options=None):
+    def compress_image(self, image: ImageWrapper, options=None):
         cdef x264_picture_t pic_in
         cdef int i
 
@@ -993,7 +1003,6 @@ cdef class Encoder:
         x264_picture_init(&pic_out)
         return self.do_compress_image(NULL)
 
-
     def set_encoding_speed(self, int pct) -> None:
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
         assert self.context!=NULL, "context is closed!"
@@ -1022,7 +1031,6 @@ cdef class Encoder:
         self.quality = pct
         self.reconfig_tune()
 
-
     def reconfig_tune(self) -> None:
         cdef x264_param_t param
         x264_encoder_parameters(self.context, &param)
@@ -1038,7 +1046,7 @@ cdef class Encoder:
             raise RuntimeError("x264_encoder_reconfig failed")
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     log("enc_x264 selftest: %s", get_info())
     global SAVE_TO_FILE
     from xpra.codecs.checks import testencoder, get_encoder_max_sizes
