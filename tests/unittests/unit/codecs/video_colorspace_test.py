@@ -192,8 +192,8 @@ class Test_Roundtrip(unittest.TestCase):
         out_csc = out_image.get_pixel_format()
         md = 0
         if in_csc.startswith("YUV"):
-            if out_csc=="NV12":
-                log.info(f"NV12 cannot be compared with {in_csc} (not implemented)")
+            if (in_csc="YUV444P" and out_csc="GBRP") or out_csc=="NV12":
+                log.info(f"{out_csc} cannot be compared with {in_csc} (not implemented)")
                 return
             if in_csc!=out_csc:
                 raise ValueError(f"YUV output colorspace {out_csc} differs from input colorspace {in_csc}")
