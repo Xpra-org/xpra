@@ -2086,14 +2086,14 @@ cdef class Encoder:
             h264.intraRefreshPeriod = 16
             #h264.singleSliceIntraRefresh = 0
         #h264.maxNumRefFrames = 0
-        h264.h264VUIParameters.videoFullRangeFlag = 0
         cdef NV_ENC_CONFIG_H264_VUI_PARAMETERS *vui = &h264.h264VUIParameters
+        vui.videoSignalTypePresentFlag = 1          # videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present
+        vui.videoFormat = 0                         # 0=Component
+        vui.videoFullRangeFlag = 1
         vui.colourDescriptionPresentFlag = 0
-        vui.videoSignalTypePresentFlag = 0
-        #vui.colourMatrix = 5    #AVCOL_SPC_BT470BG  - switch to AVCOL_SPC_BT709?
         #vui.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
         #vui.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
-        #vui.videoFullRangeFlag = 0
+        #vui.colourMatrix = 5    #AVCOL_SPC_BT470BG  - switch to AVCOL_SPC_BT709?
 
     cdef tune_hevc(self, NV_ENC_CONFIG_HEVC *hevc, int gopLength):
         hevc.chromaFormatIDC = self.get_chroma_format()
@@ -2104,9 +2104,9 @@ cdef class Encoder:
         #hevc.maxNumRefFramesInDPB = 16
         #hevc.hevcVUIParameters.videoFormat = ...
         cdef NV_ENC_CONFIG_HEVC_VUI_PARAMETERS *vui = &hevc.hevcVUIParameters
-        vui.videoSignalTypePresentFlag = 1          # specifies  that the videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present.
-        vui.videoFormat = 0                         # 0 = composite
-        vui.videoFullRangeFlag = 0
+        vui.videoSignalTypePresentFlag = 1          # videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present
+        vui.videoFormat = 0                         # 0=Component
+        vui.videoFullRangeFlag = 1
         vui.colourDescriptionPresentFlag = 0
         #vui.colourPrimaries = 1
         #vui.transferCharacteristics = 1
@@ -2484,7 +2484,7 @@ cdef class Encoder:
         cdef NV_ENC_INPUT_PTR mappedResource = self.map_input_resource()
         assert mappedResource!=NULL
         try:
-            return self.nvenc_compress(input_size, mappedResource, image.get_timestamp())
+            return self.nvenc_compress(input_size, mappedResource, image.get_timestamp(), image.get_full_range())
         finally:
             self.unmap_input_resource(mappedResource)
 
@@ -2636,7 +2636,7 @@ cdef class Encoder:
         cdef int r = self.functionList.nvEncUnmapInputResource(self.context, mappedResource)
         raiseNVENC(r, "unmapping input resource")
 
-    cdef nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0):
+    cdef nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0, full_range=True):
         cdef NV_ENC_PIC_PARAMS pic
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         assert input_size>0, "invalid input size %i" % input_size
@@ -2721,10 +2721,11 @@ cdef class Encoder:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
         client_options = {
-                    "csc"       : CSC_ALIAS.get(self.src_format, self.src_format),
-                    "frame"     : int(self.frames),
-                    "pts"       : int(timestamp-self.first_frame_timestamp),
-                    }
+            "csc"       : CSC_ALIAS.get(self.src_format, self.src_format),
+            "frame"     : int(self.frames),
+            "pts"       : int(timestamp-self.first_frame_timestamp),
+            "full-range" : full_range,
+        }
         if pic.pictureType==NV_ENC_PIC_TYPE_IDR:
             client_options["type"] = "IDR"
         if self.lossless and not self.scaling:

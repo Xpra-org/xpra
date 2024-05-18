@@ -1,13 +1,15 @@
 # This file is part of Xpra.
-# Copyright (C) 2021-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 from time import monotonic
 from math import ceil
-from typing import Any, Dict
+from typing import Any, Dict, Tuple, List
+from collections.abc import Sequence
 
 from libc.stdint cimport uintptr_t
+from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
     NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
@@ -17,12 +19,12 @@ from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
     nvjpegGetProperty, nvjpegCreateSimple, nvjpegDestroy,
     NVJPEG_ENCODING_BASELINE_DCT, NVJPEG_CSS_GRAY, NVJPEG_INPUT_RGBI, NVJPEG_INPUT_RGB,
     NVJPEG_CSS_444, NVJPEG_CSS_422, NVJPEG_CSS_420,
-    )
+)
 from xpra.codecs.nvidia.nvjpeg.common import (
     get_version,
     errcheck, NVJPEG_Exception,
     CSS_STR, ENCODING_STR, NVJPEG_INPUT_STR,
-    )
+)
 from xpra.codecs.debug import may_save_image
 from xpra.codecs.nvidia.cuda.context import get_CUDA_function, select_device, cuda_device_context
 from xpra.net.compression import Compressed
@@ -114,39 +116,48 @@ cdef extern from "nvjpeg.h":
             size_t *length,
             cudaStream_t stream) nogil
 
+
 def get_type() -> str:
     return "nvjpeg"
 
-def get_encodings():
+
+def get_encodings() -> Sequence[str]:
     return ("jpeg", "jpega")
 
-def get_info():
+
+def get_info() -> Dict[str, Any]:
     return {"version"   : get_version()}
 
-def init_module():
+
+def init_module() -> None:
     log("nvjpeg.encoder.init_module() version=%s", get_version())
     from xpra.codecs.nvidia.util import has_nvidia_hardware
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
 
-def cleanup_module():
+
+def cleanup_module() -> None:
     log("nvjpeg.encoder.cleanup_module()")
 
-NVJPEG_INPUT_FORMATS = {
+
+NVJPEG_INPUT_FORMATS: Dict[str, Sequence[str]] = {
     "jpeg"  : ("BGRX", "RGBX", ),
     "jpega"  : ("BGRA", "RGBA", ),
-    }
+}
 
-def get_input_colorspaces(encoding):
+
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     assert encoding in ("jpeg", "jpega")
     return NVJPEG_INPUT_FORMATS[encoding]
 
-def get_output_colorspaces(encoding, input_colorspace):
+
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     assert encoding in ("jpeg", "jpega")
     assert input_colorspace in get_input_colorspaces(encoding)
     return NVJPEG_INPUT_FORMATS[encoding]
 
-def get_specs(encoding, colorspace):
+
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
     assert encoding in ("jpeg", "jpega")
     assert colorspace in get_input_colorspaces(encoding)
     from xpra.codecs.constants import VideoSpec
@@ -159,7 +170,7 @@ def get_specs(encoding, colorspace):
             min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
             can_scale=True,
             score_boost=-50),
-        )
+    )
 
 
 cdef class Encoder:
@@ -184,7 +195,7 @@ cdef class Encoder:
     def __init__(self):
         self.width = self.height = self.quality = self.speed = self.frames = 0
 
-    def init_context(self, encoding, width : int, height : int, src_format, options: typedict):
+    def init_context(self, encoding, width : int, height : int, src_format, options: typedict) -> None:
         assert encoding in ("jpeg", "jpega")
         assert src_format in get_input_colorspaces(encoding)
         options = options or typedict()
@@ -210,14 +221,14 @@ cdef class Encoder:
             raise RuntimeError(f"missing {kernel_name!r} kernel")
         self.init_nvjpeg()
 
-    def init_nvjpeg(self):
+    def init_nvjpeg(self) -> None:
         # initialize nvjpeg structures
         errcheck(nvjpegCreateSimple(&self.nv_handle), "nvjpegCreateSimple")
         errcheck(nvjpegEncoderStateCreate(self.nv_handle, &self.nv_enc_state, self.stream), "nvjpegEncoderStateCreate")
         errcheck(nvjpegEncoderParamsCreate(self.nv_handle, &self.nv_enc_params, self.stream), "nvjpegEncoderParamsCreate")
         self.configure_nvjpeg()
 
-    def configure_nvjpeg(self):
+    def configure_nvjpeg(self) -> None:
         self.configure_subsampling(self.grayscale)
         self.configure_quality(self.quality)
         cdef int huffman = int(self.speed<80)
@@ -233,7 +244,7 @@ cdef class Encoder:
         log("configure_nvjpeg() quality=%s, huffman=%s, encoding type=%s",
             self.quality, huffman, ENCODING_STR.get(encoding_type, "invalid"))
 
-    def configure_subsampling(self, grayscale=False):
+    def configure_subsampling(self, grayscale=False) -> None:
         cdef nvjpegChromaSubsampling_t subsampling
         if grayscale:
             subsampling = NVJPEG_CSS_GRAY
@@ -245,7 +256,7 @@ cdef class Encoder:
                  <const nvjpegChromaSubsampling_t> subsampling, CSS_STR.get(subsampling, "invalid"))
         log("configure_subsampling(%s) using %s", grayscale, CSS_STR.get(subsampling, "invalid"))
 
-    def configure_quality(self, int quality):
+    def configure_quality(self, int quality) -> None:
         cdef int r
         r = nvjpegEncoderParamsSetQuality(self.nv_enc_params, self.quality, self.stream)
         errcheck(r, "nvjpegEncoderParamsSetQuality %i", self.quality)
@@ -303,7 +314,7 @@ cdef class Encoder:
         }
         return info
 
-    def compress_image(self, image, options=None):
+    def compress_image(self, image, options=None) -> Tuple[bytes, Dict[str, Any]]:
         options = options or {}
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
@@ -457,7 +468,7 @@ cdef class Encoder:
                     self.configure_quality(self.quality)
 
 
-def compress_file(filename, save_to="./out.jpeg"):
+def compress_file(filename: str, save_to="./out.jpeg") -> None:
     from PIL import Image
     img = Image.open(filename)
     rgb_format = "RGB"
@@ -473,6 +484,7 @@ def compress_file(filename, save_to="./out.jpeg"):
     jpeg_data = encode("jpeg", image)[0]
     with open(save_to, "wb") as f:
         f.write(jpeg_data)
+
 
 cdef nvjpegChromaSubsampling_t get_subsampling(int quality):
     if quality>=80:
@@ -493,12 +505,14 @@ def get_device_context():
     log("device init took %.1fms", 1000*(end-start))
     return cuda_context
 
-errors = []
-def get_errors():
+
+errors: List[str] = []
+def get_errors() -> Sequence[str]:
     global errors
     return errors
 
-def encode(coding, image, options=None):
+
+def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     if coding not in ("jpeg", "jpega"):
         raise ValueError("invalid encoding: %s" % coding)
     global errors
@@ -513,7 +527,7 @@ def encode(coding, image, options=None):
         oldpfstr = pfstr
         if not argb_swap(image, input_formats):
             log("nvjpeg: argb_swap failed to convert %s to a suitable format: %s" % (pfstr, input_formats))
-            return None
+            return ()
         pfstr = image.get_pixel_format()
         end = monotonic()
         log("nvjpeg: argb_swap converted %s to %s in %.1fms", oldpfstr, pfstr, 1000*(end-start))
@@ -527,18 +541,18 @@ def encode(coding, image, options=None):
         encoder.init_context(coding, width, height, pfstr, options=options)
         r = encoder.compress_image(image, options)
         if not r:
-            return None
+            return ()
         cdata, options = r
         may_save_image("jpeg", cdata)
         return coding, Compressed(coding, cdata, False), options, width, height, 0, 24
     except NVJPEG_Exception as e:
         errors.append(str(e))
-        return None
+        return ()
     finally:
         encoder.clean()
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     from xpra.codecs.nvidia.util import has_nvidia_hardware
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")

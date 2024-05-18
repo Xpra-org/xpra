@@ -1,26 +1,26 @@
 /*
  * This file is part of Xpra.
- * Copyright (C) 2013-2022 Antoine Martin <antoine@xpra.org>
+ * Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
  * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
  * later version. See the file COPYING for details.
  */
 
 #include <stdint.h>
 
-// Y = 0.299 * R + 0.587 * G + 0.114 * B
-#define YR 0.299
-#define YG 0.587
-#define YB 0.114
+// Y = 0.257 * R + 0.504 * G + 0.098 * B + 0
+#define YR 0.257
+#define YG 0.504
+#define YB 0.098
 #define YC 0
-// U = -0.169 * R - 0.331 * G + 0.500 * B
-#define UR -0.169
-#define UG -0.331
-#define UB 0.500
+// U = -0.148 * R - 0.291 * G + 0.439 * B + 128
+#define UR -0.148
+#define UG -0.291
+#define UB 0.439
 #define UC 128
-// V = 0.500 * R - 0.419 * G - 0.081 * B
-#define VR 0.500
-#define VG -0.419
-#define VB -0.081
+// V = 0.439 * R - 0.368 * G - 0.071 * B + 128
+#define VR 0.439
+#define VG -0.368
+#define VB -0.071
 #define VC 128
 
 extern "C" __global__ void XRGB_to_NV12(uint8_t *srcImage, int src_w, int src_h, int srcPitch,

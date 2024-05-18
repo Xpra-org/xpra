@@ -1,11 +1,27 @@
 /*
  * This file is part of Xpra.
- * Copyright (C) 2013-2021 Antoine Martin <antoine@xpra.org>
+ * Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
  * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
  * later version. See the file COPYING for details.
  */
 
 #include <stdint.h>
+
+// Y = 0.257 * R + 0.504 * G + 0.098 * B + 0
+#define YR 0.257
+#define YG 0.504
+#define YB 0.098
+#define YC 0
+// U = -0.148 * R - 0.291 * G + 0.439 * B + 128
+#define UR -0.148
+#define UG -0.291
+#define UB 0.439
+#define UC 128
+// V = 0.439 * R - 0.368 * G - 0.071 * B + 128
+#define VR 0.439
+#define VG -0.368
+#define VB -0.071
+#define VC 128
 
 extern "C" __global__ void BGRX_to_YUV444(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
                              uint8_t *dstImage, int dst_w, int dst_h, int dstPitch,
@@ -28,10 +44,10 @@ extern "C" __global__ void BGRX_to_YUV444(uint8_t *srcImage, int src_w, int src_
 
         uint32_t di;
         di = (gy * dstPitch) + gx;
-        dstImage[di] = __float2int_rn(0.299 * R + 0.587 * G + 0.114 * B);
+        dstImage[di] = __float2int_rn(YR * R + YG * G + YB * B + YC);
         di += dstPitch*dst_h;
-        dstImage[di] = __float2int_rn(-0.169 * R - 0.331 * G + 0.500 * B + 128);
+        dstImage[di] = __float2int_rn(UR * R + UG * G + UB * B + UC);
         di += dstPitch*dst_h;
-        dstImage[di] = __float2int_rn(0.500 * R - 0.419 * G - 0.081 * B + 128);
+        dstImage[di] = __float2int_rn(VR * R + VG * G + VB * B + VC);
     }
 }
