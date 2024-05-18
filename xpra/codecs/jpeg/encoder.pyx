@@ -260,7 +260,9 @@ cdef class Encoder:
             return None
         now = monotonic()
         may_save_image("jpeg", cdata, now)
-        client_options = {}
+        client_options = {
+            "full-range": image.get_full_range(),
+        }
         if self.encoding=="jpega":
             from xpra.codecs.argb.argb import alpha
             a = alpha(image)
