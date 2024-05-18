@@ -908,7 +908,11 @@ class WindowBackingBase:
         rgb_width = rgb.get_width()
         rgb_height = rgb.get_height()
         rowstride = rgb.get_rowstride()
-        callbacks.append(rgb.free)
+
+        def free_rgb_image(*args) -> None:
+            rgb.free()
+
+        callbacks.append(free_rgb_image)
         self.ui_paint_rgb(rgb_format, data,
                           x, y, rgb_width, rgb_height, width, height, rowstride, paint_options, callbacks)
 
