@@ -19,12 +19,14 @@ from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import VideoSpec
 from collections import deque
 
+from libcpp cimport bool as bool_t
 from libc.string cimport memset
 from libc.stdint cimport uint8_t, uintptr_t
 
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
+DEF MAX_SPATIAL_LAYER_NUM = 4
 DEF MAX_LAYER_NUM_OF_FRAME = 128
 
 cdef extern from "Python.h":
@@ -131,6 +133,52 @@ cdef extern from "wels/codec_app_def.h":
         SCREEN_CONTENT_NON_REAL_TIME,
         INPUT_CONTENT_TYPE_ALL
 
+    ctypedef enum EColorPrimaries:
+        CP_RESERVED0
+        CP_BT709
+        CP_UNDEF
+        CP_RESERVED3
+        CP_BT470M
+        CP_BT470BG
+        CP_SMPTE170M
+        CP_SMPTE240M
+        CP_FILM
+        CP_BT2020
+        CP_NUM_ENUM
+
+    ctypedef enum ETransferCharacteristics:
+        TRC_RESERVED0
+        TRC_BT709
+        TRC_UNDEF
+        TRC_RESERVED3
+        TRC_BT470M
+        TRC_BT470BG
+        TRC_SMPTE170M
+        TRC_SMPTE240M
+        TRC_LINEAR
+        TRC_LOG100
+        TRC_LOG316
+        TRC_IEC61966_2_4
+        TRC_BT1361E
+        TRC_IEC61966_2_1
+        TRC_BT2020_10
+        TRC_BT2020_12
+        TRC_NUM_ENUM
+
+    ctypedef enum EColorMatrix:
+        CM_GBR
+        CM_BT709
+        CM_UNDEF
+        CM_RESERVED3
+        CM_FCC
+        CM_BT470BG
+        CM_SMPTE170M
+        CM_SMPTE240M
+        CM_YCGCO
+        CM_BT2020NC
+        CM_BT2020C
+        CM_NUM_ENUM
+
     ctypedef struct SEncParamBase:
         EUsageType  iUsageType      #application type; please refer to the definition of EUsageType
         int       iPicWidth         #width of picture in luminance samples (the maximum of all layers if multiple spatial layers presents)
@@ -139,8 +187,86 @@ cdef extern from "wels/codec_app_def.h":
         RC_MODES  iRCMode           #rate control mode
         float     fMaxFrameRate     #maximal input frame rate
 
+    ctypedef struct SSpatialLayerConfig:
+        int   iVideoWidth           # width of picture in luminance samples of a layer
+        int   iVideoHeight          # height of picture in luminance samples of a layer
+        float fFrameRate            # frame rate specified for a layer
+        int   iSpatialBitrate       # target bitrate for a spatial layer, in unit of bps
+        int   iMaxSpatialBitrate    # maximum  bitrate for a spatial layer, in unit of bps
+        EProfileIdc  uiProfileIdc   # value of profile IDC (PRO_UNKNOWN for auto-detection)
+        ELevelIdc    uiLevelIdc     # value of profile IDC (0 for auto-detection)
+        int          iDLayerQp      # value of level IDC (0 for auto-detection)
+
+        # SSliceArgument sSliceArgument
+
+        # Note: members bVideoSignalTypePresent through uiColorMatrix below are also defined in SWelsSPS in parameter_sets.h.
+        bool_t      bVideoSignalTypePresent       # false => do not write any of the following information to the header
+        unsigned char uiVideoFormat             # EVideoFormatSPS; 3 bits in header; 0-5 => component, kpal, ntsc, secam, mac, undef
+        bool_t      bFullRange                    # false => analog video data range [16, 235]; true => full data range [0,255]
+        bool_t      bColorDescriptionPresent      # false => do not write any of the following three items to the header
+        unsigned char uiColorPrimaries          # EColorPrimaries; 8 bits in header; 0 - 9 => ???, bt709, undef, ???, bt470m, bt470bg,
+                                                # smpte170m, smpte240m, film, bt2020
+        unsigned char uiTransferCharacteristics # ETransferCharacteristics; 8 bits in header; 0 - 15 => ???, bt709, undef, ???, bt470m, bt470bg, smpte170m,
+                                                # smpte240m, linear, log100, log316, iec61966-2-4, bt1361e, iec61966-2-1, bt2020-10, bt2020-12
+        unsigned char uiColorMatrix             # EColorMatrix; 8 bits in header (corresponds to FFmpeg "colorspace"); 0 - 10 => GBR, bt709,
+                                                # undef, ???, fcc, bt470bg, smpte170m, smpte240m, YCgCo, bt2020nc, bt2020c
+        bool_t bAspectRatioPresent                # aspect ratio present in VUI
+        # ESampleAspectRatio eAspectRatio         # aspect ratio idc
+        unsigned short sAspectRatioExtWidth     # use if aspect ratio idc == 255
+        unsigned short sAspectRatioExtHeight    # use if aspect ratio idc == 255
+
     ctypedef struct SEncParamExt:
-        pass
+        EUsageType iUsageType               # same as in TagEncParamBase
+        int       iPicWidth                 # same as in TagEncParamBase
+        int       iPicHeight                # same as in TagEncParamBase
+        int       iTargetBitrate            # same as in TagEncParamBase
+        RC_MODES  iRCMode                   # same as in TagEncParamBase
+        float     fMaxFrameRate             # same as in TagEncParamBase
+
+        int       iTemporalLayerNum         # temporal layer number, max temporal layer = 4
+        int       iSpatialLayerNum          # spatial layer number,1<= iSpatialLayerNum <= MAX_SPATIAL_LAYER_NUM, MAX_SPATIAL_LAYER_NUM = 4
+        SSpatialLayerConfig sSpatialLayers[MAX_SPATIAL_LAYER_NUM]
+
+        # ECOMPLEXITY_MODE iComplexityMode
+        unsigned int      uiIntraPeriod     # period of Intra frame
+        int               iNumRefFrame      # number of reference frame used
+        # EParameterSetStrategy eSpsPpsIdStrategy     # different stategy in adjust ID in SPS/PPS: 0- constant ID, 1-additional ID, 6-mapping and additional
+        bool_t    bPrefixNalAddingCtrl        # false:not use Prefix NAL; true: use Prefix NAL
+        bool_t    bEnableSSEI                 # false:not use SSEI; true: use SSEI -- TODO: planning to remove the interface of SSEI
+        bool_t    bSimulcastAVC               # (when encoding more than 1 spatial layer) false: use SVC syntax for higher layers; true: use Simulcast AVC
+        int     iPaddingFlag                # 0:disable padding;1:padding
+        int     iEntropyCodingModeFlag      # 0:CAVLC  1:CABAC.
+
+        # rc control
+        bool_t    bEnableFrameSkip            # False: don't skip frame even if VBV buffer overflow.True: allow skipping frames to keep the bitrate within limits
+        int     iMaxBitrate                 # the maximum bitrate, in unit of bps, set it to UNSPECIFIED_BIT_RATE if not needed
+        int     iMaxQp                      # the maximum QP encoder supports
+        int     iMinQp                      # the minmum QP encoder supports
+        unsigned int uiMaxNalSize           # the maximum NAL size.  This value should be not 0 for dynamic slice mode
+
+        # LTR settings
+        bool_t     bEnableLongTermReference   # 1: on, 0: off
+        int      iLTRRefNum                 # the number of LTR(long term reference),TODO: not supported to set it arbitrary yet
+        unsigned int      iLtrMarkPeriod    # the LTR marked period that is used in feedback.
+        # multi-thread settings
+        unsigned short iMultipleThreadIdc   # 1 # 0: auto(dynamic imp. internal encoder); 1: multiple threads imp. disabled; lager than 1: count number of threads;
+        bool_t  bUseLoadBalancing             # only used when uiSliceMode=1 or 3, will change slicing of a picture during the run-time of multi-thread encoding, so the result of each run may be different
+
+        # Deblocking loop filter
+        int       iLoopFilterDisableIdc     # 0: on, 1: off, 2: on except for slice boundaries
+        int       iLoopFilterAlphaC0Offset  # AlphaOffset: valid range [-6, 6], default 0
+        int       iLoopFilterBetaOffset     # BetaOffset: valid range [-6, 6], default 0
+
+        # pre-processing feature
+        bool_t    bEnableDenoise              # denoise control
+        bool_t    bEnableBackgroundDetection  # background detection control //VAA_BACKGROUND_DETECTION //BGD cmd
+        bool_t    bEnableAdaptiveQuant        # adaptive quantization control
+        bool_t    bEnableFrameCroppingFlag    # enable frame cropping flag: TRUE always in application
+        bool_t    bEnableSceneChangeDetect
+
+        bool_t    bIsLosslessLink             # LTR advanced setting
+        bool_t    bFixRCOverShoot             # fix rate control overshooting
+        int     iIdrBitrateRatio            # the target bits of IDR is (idr_bitrate_ratio/100) * average target bit per frame.
 
     ctypedef struct SLayerBSInfo:
         unsigned char uiTemporalId
@@ -210,15 +336,15 @@ cdef extern from "wels/codec_api.h":
     ctypedef void *WelsTraceCallback(void* ctx, int level, const char* string)
     cdef cppclass ISVCEncoder:
         long Initialize(const SEncParamBase* pParam) nogil
-        long Uninitialize()
-        int InitializeExt(const SEncParamExt* pParam)
-        int GetDefaultParams(SEncParamExt* pParam)
+        long Uninitialize() nogil
+        int InitializeExt(const SEncParamExt* pParam) nogil
+        int GetDefaultParams(SEncParamExt* pParam) nogil
         int SetOption(ENCODER_OPTION eOptionId, void* pOption)
         int EncodeFrame(const SSourcePicture* kpSrcPic, SFrameBSInfo* pBsInfo) nogil
 
     void WelsGetCodecVersionEx(OpenH264Version* pVersion)
-    int WelsCreateSVCEncoder(ISVCEncoder** ppDecoder)
-    void WelsDestroySVCEncoder(ISVCEncoder* pDecoder)
+    int WelsCreateSVCEncoder(ISVCEncoder** ppDecoder) nogil
+    void WelsDestroySVCEncoder(ISVCEncoder* pDecoder) nogil
 
 
 FRAME_TYPES: Dict[int, str] = {
@@ -337,7 +463,9 @@ cdef class Encoder:
         return bool(self.ready)
 
     cdef init_encoder(self, options:typedict):
-        cdef int r = WelsCreateSVCEncoder(&self.context)
+        cdef int r = 0
+        with nogil:
+            r = WelsCreateSVCEncoder(&self.context)
         log("WelsCreateSVCEncoder context=%#x", <uintptr_t> self.context)
         if r or self.context==NULL:
             raise RuntimeError(f"failed to create openh264 svc encoder, error {r}")
@@ -350,8 +478,8 @@ cdef class Encoder:
         cdef int level = LEVEL_3_0
         self.context.SetOption(ENCODER_OPTION_LEVEL, &level)
 
-        cdef SEncParamBase param
-        memset(&param, 0, sizeof(SEncParamBase))
+        cdef SEncParamExt param
+        memset(&param, 0, sizeof(SEncParamExt))
         param.iUsageType    = SCREEN_CONTENT_REAL_TIME
         param.fMaxFrameRate = 30
         param.iPicWidth     = self.width
@@ -359,20 +487,29 @@ cdef class Encoder:
         param.iRCMode       = RC_OFF_MODE
         #param.iTargetBitrate = 5000000
         with nogil:
-            self.context.Initialize(&param)
+            r = self.context.InitializeExt(&param)
+        if r:
+            raise RuntimeError("failed to initialize openh264 encoder context")
+        with nogil:
+            r = self.context.GetDefaultParams(&param)
+        if r:
+            raise RuntimeError("failed to get default openh264 encoder parameters")
         #cdef int profile = PRO_MAIN
         #self.context.SetOption(ENCODER_OPTION_PROFILE, &profile)
         #a void (*)(void* context, int level, const char* message) function which receives log messages
         trace_level = WELS_LOG_WARNING
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
+        for i in range(param.iSpatialLayerNum):
+            log("spatial layer %i bFullRange=%s", i, param.sSpatialLayers[i].bFullRange)
 
     def clean(self) -> None:
         log("openh264 close context %#x", <uintptr_t> self.context)
         cdef ISVCEncoder *context = self.context
         if context!=NULL:
-            context.Uninitialize()
             self.context = NULL
-            WelsDestroySVCEncoder(context)
+            with nogil:
+                context.Uninitialize()
+                WelsDestroySVCEncoder(context)
         self.frames = 0
         self.width = 0
         self.height = 0
@@ -481,7 +618,9 @@ cdef class Encoder:
         else:
             bdata = b"".join(data)
         log(f"openh264 compress_image: {len(bdata)} bytes")
-        return bdata, {}
+        return bdata, {
+            "full-range": False,
+        }
 
 
 def selftest(full=False) -> None:

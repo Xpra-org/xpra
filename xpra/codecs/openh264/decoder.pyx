@@ -15,6 +15,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "openh264")
 
+from libcpp cimport bool as bool_t
 from libc.string cimport memset
 from libc.stdint cimport uint8_t, uintptr_t
 from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
@@ -51,8 +52,33 @@ cdef extern from "wels/codec_api.h":
     long WelsCreateDecoder(ISVCDecoder** ppDecoder)
     void WelsDestroyDecoder(ISVCDecoder* pDecoder)
 
+    ctypedef enum ERROR_CON_IDC:
+        ERROR_CON_DISABLE
+        ERROR_CON_FRAME_COPY
+        ERROR_CON_SLICE_COPY
+        ERROR_CON_FRAME_COPY_CROSS_IDR
+        ERROR_CON_SLICE_COPY_CROSS_IDR
+        ERROR_CON_SLICE_COPY_CROSS_IDR_FREEZE_RES_CHANGE
+        ERROR_CON_SLICE_MV_COPY_CROSS_IDR
+        ERROR_CON_SLICE_MV_COPY_CROSS_IDR_FREEZE_RES_CHANGE
+
+    ctypedef enum VIDEO_BITSTREAM_TYPE:
+        VIDEO_BITSTREAM_AVC
+        VIDEO_BITSTREAM_SVC
+        VIDEO_BITSTREAM_DEFAULT
+
+    ctypedef struct SVideoProperty:
+        unsigned int          size          # size of the struct
+        VIDEO_BITSTREAM_TYPE  eVideoBsType
+
     ctypedef struct SDecodingParam:
-        pass
+        char*     pFileNameRestructed       # file name of reconstructed frame used for PSNR calculation based debug
+        unsigned int  uiCpuLoad             # CPU load
+        unsigned char uiTargetDqLayer       # setting target dq layer id
+        ERROR_CON_IDC eEcActiveIdc          # whether active error concealment feature in decoder
+        bool_t bParseOnly                     # decoder for parse only, no reconstruction. When it is true, SPS/PPS size should not exceed SPS_PPS_BS_SIZE (128). Otherwise, it will return error info
+        SVideoProperty   sVideoProperty
+
     cdef cppclass ISVCDecoder:
         long Initialize(const SDecodingParam* pParam)
         long Uninitialize()
