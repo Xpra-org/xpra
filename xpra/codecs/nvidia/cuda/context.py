@@ -349,7 +349,7 @@ def reset_state() -> None:
     DEVICE_STATE = {}
 
 
-def select_device(preferred_device_id=-1, min_compute=0):
+def select_device(preferred_device_id=-1, min_compute=0) -> tuple[int, Any]:
     log("select_device(%s, %s)", preferred_device_id, min_compute)
     for device_id in (preferred_device_id, get_pref("device-id")):
         if device_id is not None and device_id >= 0:
@@ -377,7 +377,7 @@ def select_device(preferred_device_id=-1, min_compute=0):
 rr = 0
 
 
-def select_round_robin(min_compute: int):
+def select_round_robin(min_compute: int) -> tuple[int, Any]:
     if not driver_init():
         return -1, None
     enabled_gpus = get_gpu_list("enabled-devices")
@@ -509,7 +509,7 @@ def get_default_device_context():
 class cuda_device_context:
     __slots__ = ("device_id", "device", "context", "lock", "opengl")
 
-    def __init__(self, device_id, device, opengl=False):
+    def __init__(self, device_id: int, device, opengl=False):
         assert device, "no cuda device"
         self.device_id = device_id
         self.device = device

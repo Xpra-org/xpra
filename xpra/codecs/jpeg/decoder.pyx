@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -88,7 +88,7 @@ TJSAMP_STR = {
     TJSAMP_GRAY : "GRAY",
     TJSAMP_440  : "440",
     TJSAMP_411  : "411",
-    }
+}
 
 TJCS_STR = {
     TJCS_RGB    : "RGB",
@@ -96,7 +96,7 @@ TJCS_STR = {
     TJCS_GRAY   : "GRAY",
     TJCS_CMYK   : "CMYK",
     TJCS_YCCK   : "YCCK",
-    }
+}
 
 TJPF_STR = {
     TJPF_RGB    : "RGB",
@@ -111,14 +111,15 @@ TJPF_STR = {
     TJPF_ABGR   : "ABGR",
     TJPF_ARGB   : "ARGB",
     TJPF_CMYK   : "CMYK",
-    }
+}
 TJPF_VAL = reverse_dict(TJPF_STR)
 
 
-def get_version() -> Tuple[int,int]:
+def get_version() -> Tuple[int, int]:
     return (1, 0)
 
-def get_encodings() -> Tuple[str,...]:
+
+def get_encodings() -> Sequence[str, str]:
     return ("jpeg", "jpega")
 
 
@@ -127,11 +128,13 @@ cdef inline int roundup(int n, int m):
 
 DEF ALIGN = 4
 
-def get_error_str():
+
+def get_error_str() -> str:
     cdef char *err = tjGetErrorStr()
     return str(err)
 
-def decompress_to_yuv(data, unsigned char nplanes=3) -> ImageWrapper:
+
+def decompress_to_yuv(data: bytes, unsigned char nplanes=3) -> ImageWrapper:
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
         raise RuntimeError("failed to instantiate a JPEG decompressor")
@@ -225,7 +228,7 @@ def decompress_to_yuv(data, unsigned char nplanes=3) -> ImageWrapper:
     return ImageWrapper(0, 0, w, h, pyplanes, pixel_format, 24, pystrides, planes=ImageWrapper.PLANAR_3)
 
 
-def decompress_to_rgb(rgb_format:str, data:bytes, unsigned long alpha_offset=0) -> ImageWrapper:
+def decompress_to_rgb(rgb_format: str, data: bytes, unsigned long alpha_offset=0) -> ImageWrapper:
     assert rgb_format in TJPF_VAL
     cdef TJPF pixel_format = TJPF_VAL[rgb_format]
 
@@ -331,23 +334,20 @@ def decompress_to_rgb(rgb_format:str, data:bytes, unsigned long alpha_offset=0) 
     return ImageWrapper(0, 0, w, h, memoryview(membuf), rgb_format, bpp, stride, planes=ImageWrapper.PACKED)
 
 
-def selftest(full=False):
-    try:
-        log("jpeg selftest")
-        import binascii
-        data = binascii.unhexlify("ffd8ffe000104a46494600010101004800480000fffe00134372656174656420776974682047494d50ffdb0043000302020302020303030304030304050805050404050a070706080c0a0c0c0b0a0b0b0d0e12100d0e110e0b0b1016101113141515150c0f171816141812141514ffdb00430103040405040509050509140d0b0d1414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414ffc20011080010001003011100021101031101ffc4001500010100000000000000000000000000000008ffc40014010100000000000000000000000000000000ffda000c03010002100310000001aa4007ffc40014100100000000000000000000000000000020ffda00080101000105021fffc40014110100000000000000000000000000000020ffda0008010301013f011fffc40014110100000000000000000000000000000020ffda0008010201013f011fffc40014100100000000000000000000000000000020ffda0008010100063f021fffc40014100100000000000000000000000000000020ffda0008010100013f211fffda000c03010002000300000010924fffc40014110100000000000000000000000000000020ffda0008010301013f101fffc40014110100000000000000000000000000000020ffda0008010201013f101fffc40014100100000000000000000000000000000020ffda0008010100013f101fffd9")
-        def test_rgbx(*args):
-            return decompress_to_rgb("RGBX", *args)
-        for fn in (decompress_to_yuv, test_rgbx):
-            img = fn(data)
-            log("%s(%i bytes)=%s", fn, len(data), img)
-            if full:
-                try:
-                    v = decompress_to_yuv(data[:len(data)//2])
-                    assert v is not None
-                except:
-                    pass
-                else:
-                    raise RuntimeError("should not be able to decompress incomplete data, but got %s" % v)
-    finally:
-        pass
+def selftest(full=False) -> None:
+    log("jpeg selftest")
+    import binascii
+    data = binascii.unhexlify("ffd8ffe000104a46494600010101004800480000fffe00134372656174656420776974682047494d50ffdb0043000302020302020303030304030304050805050404050a070706080c0a0c0c0b0a0b0b0d0e12100d0e110e0b0b1016101113141515150c0f171816141812141514ffdb00430103040405040509050509140d0b0d1414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414ffc20011080010001003011100021101031101ffc4001500010100000000000000000000000000000008ffc40014010100000000000000000000000000000000ffda000c03010002100310000001aa4007ffc40014100100000000000000000000000000000020ffda00080101000105021fffc40014110100000000000000000000000000000020ffda0008010301013f011fffc40014110100000000000000000000000000000020ffda0008010201013f011fffc40014100100000000000000000000000000000020ffda0008010100063f021fffc40014100100000000000000000000000000000020ffda0008010100013f211fffda000c03010002000300000010924fffc40014110100000000000000000000000000000020ffda0008010301013f101fffc40014110100000000000000000000000000000020ffda0008010201013f101fffc40014100100000000000000000000000000000020ffda0008010100013f101fffd9")
+    def test_rgbx(*args):
+        return decompress_to_rgb("RGBX", *args)
+    for fn in (decompress_to_yuv, test_rgbx):
+        img = fn(data)
+        log("%s(%i bytes)=%s", fn, len(data), img)
+        if full:
+            try:
+                v = decompress_to_yuv(data[:len(data)//2])
+                assert v is not None
+            except:
+                pass
+            else:
+                raise RuntimeError("should not be able to decompress incomplete data, but got %s" % v)

@@ -8,7 +8,7 @@ import os
 import platform
 from collections import deque
 from time import monotonic
-from typing import Any, Dict
+from typing import Any, Dict, Tuple, List
 import ctypes
 from ctypes import cdll, POINTER
 from threading import Lock
@@ -68,14 +68,14 @@ cdef int INTRA_REFRESH = envbool("XPRA_NVENC_INTRA_REFRESH", True)
 device_lock = Lock()
 
 
-YUV444_CODEC_SUPPORT = {
+YUV444_CODEC_SUPPORT: Dict[str, bool] = {
     "h264"  : True,
     "h265"  : True,
 }
-LOSSLESS_CODEC_SUPPORT = {}
+LOSSLESS_CODEC_SUPPORT: Dict[str, bool] = {}
 
 #so we can warn just once per unknown preset:
-UNKNOWN_PRESETS = []
+UNKNOWN_PRESETS: List[str] = []
 
 
 cdef inline int MIN(int a, int b):
@@ -453,17 +453,17 @@ cdef extern from "nvEncodeAPI.h":
     ctypedef struct NV_ENC_CONFIG_HEVC_VUI_PARAMETERS:
         uint32_t    overscanInfoPresentFlag         #[in]: if set to 1 , it specifies that the overscanInfo is present
         uint32_t    overscanInfo                    #[in]: Specifies the overscan info(as defined in Annex E of the ITU-T Specification).
-        uint32_t    videoSignalTypePresentFlag      #[in]: If set to 1, it specifies  that the videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present. */
-        uint32_t    videoFormat                     #[in]: Specifies the source video format(as defined in Annex E of the ITU-T Specification).*/
-        uint32_t    videoFullRangeFlag              #[in]: Specifies the output range of the luma and chroma samples(as defined in Annex E of the ITU-T Specification). */
-        uint32_t    colourDescriptionPresentFlag    #[in]: If set to 1, it specifies that the colourPrimaries, transferCharacteristics and colourMatrix are present. */
-        uint32_t    colourPrimaries                 #[in]: Specifies color primaries for converting to RGB(as defined in Annex E of the ITU-T Specification) */
-        uint32_t    transferCharacteristics         #[in]: Specifies the opto-electronic transfer characteristics to use (as defined in Annex E of the ITU-T Specification) */
-        uint32_t    colourMatrix                    #[in]: Specifies the matrix coefficients used in deriving the luma and chroma from the RGB primaries (as defined in Annex E of the ITU-T Specification). */
-        uint32_t    chromaSampleLocationFlag        #[in]: if set to 1 , it specifies that the chromaSampleLocationTop and chromaSampleLocationBot are present.*/
-        uint32_t    chromaSampleLocationTop         #[in]: Specifies the chroma sample location for top field(as defined in Annex E of the ITU-T Specification) */
-        uint32_t    chromaSampleLocationBot         #[in]: Specifies the chroma sample location for bottom field(as defined in Annex E of the ITU-T Specification) */
-        uint32_t    bitstreamRestrictionFlag        #[in]: if set to 1, it specifies the bitstream restriction parameters are present in the bitstream.*/
+        uint32_t    videoSignalTypePresentFlag      #[in]: If set to 1, it specifies  that the videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present.
+        uint32_t    videoFormat                     #[in]: Specifies the source video format(as defined in Annex E of the ITU-T Specification)
+        uint32_t    videoFullRangeFlag              #[in]: Specifies the output range of the luma and chroma samples(as defined in Annex E of the ITU-T Specification).
+        uint32_t    colourDescriptionPresentFlag    #[in]: If set to 1, it specifies that the colourPrimaries, transferCharacteristics and colourMatrix are present.
+        uint32_t    colourPrimaries                 #[in]: Specifies color primaries for converting to RGB(as defined in Annex E of the ITU-T Specification)
+        uint32_t    transferCharacteristics         #[in]: Specifies the opto-electronic transfer characteristics to use (as defined in Annex E of the ITU-T Specification)
+        uint32_t    colourMatrix                    #[in]: Specifies the matrix coefficients used in deriving the luma and chroma from the RGB primaries (as defined in Annex E of the ITU-T Specification).
+        uint32_t    chromaSampleLocationFlag        #[in]: if set to 1 , it specifies that the chromaSampleLocationTop and chromaSampleLocationBot are present
+        uint32_t    chromaSampleLocationTop         #[in]: Specifies the chroma sample location for top field(as defined in Annex E of the ITU-T Specification)
+        uint32_t    chromaSampleLocationBot         #[in]: Specifies the chroma sample location for bottom field(as defined in Annex E of the ITU-T Specification)
+        uint32_t    bitstreamRestrictionFlag        #[in]: if set to 1, it specifies the bitstream restriction parameters are present in the bitstream.
         uint32_t    reserved[15]
 
     ctypedef struct NV_ENC_CONFIG_H264_VUI_PARAMETERS:
@@ -952,7 +952,7 @@ cdef extern from "nvEncodeAPI.h":
     unsigned int NV_ENC_RECONFIGURE_PARAMS_VER
 
 
-NV_ENC_STATUS_TXT = {
+NV_ENC_STATUS_TXT: Dict[int, str] = {
     NV_ENC_SUCCESS : "This indicates that API call returned with no errors.",
     NV_ENC_ERR_NO_ENCODE_DEVICE       : "This indicates that no encode capable devices were detected",
     NV_ENC_ERR_UNSUPPORTED_DEVICE     : "This indicates that devices pass by the client is not supported.",
@@ -1005,7 +1005,7 @@ API has not been registered with encoder driver using ::NvEncRegisterAsyncEvent(
     NV_ENC_ERR_RESOURCE_NOT_MAPPED : "This indicates that the client is attempting to unmap a resource that has not been successfully mapped.",
 }
 
-OPEN_TRANSIENT_ERROR = (
+OPEN_TRANSIENT_ERROR: Sequence[int] = (
     NV_ENC_ERR_NO_ENCODE_DEVICE,
     #NV_ENC_ERR_UNSUPPORTED_DEVICE,
     #NV_ENC_ERR_INVALID_ENCODERDEVICE,
@@ -1016,7 +1016,7 @@ OPEN_TRANSIENT_ERROR = (
     NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY,
 )
 
-CAPS_NAMES = {
+CAPS_NAMES: Dict[int, str] = {
     NV_ENC_CAPS_NUM_MAX_BFRAMES             : "NUM_MAX_BFRAMES",
     NV_ENC_CAPS_SUPPORTED_RATECONTROL_MODES : "SUPPORTED_RATECONTROL_MODES",
     NV_ENC_CAPS_SUPPORT_FIELD_ENCODING      : "SUPPORT_FIELD_ENCODING",
@@ -1074,14 +1074,14 @@ PIC_TYPES = {
     NV_ENC_PIC_TYPE_UNKNOWN        : "UNKNOWN",
 }
 
-TUNING_STR = {
+TUNING_STR: Dict[int, str] = {
     NV_ENC_TUNING_INFO_UNDEFINED            : "undefined",
     NV_ENC_TUNING_INFO_HIGH_QUALITY         : "high-quality",
     NV_ENC_TUNING_INFO_LOW_LATENCY          : "low-latency",
     NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY    : "ultra-low-latency",
     NV_ENC_TUNING_INFO_LOSSLESS             : "lossless",
 }
-TUNINGS = dict((v, k) for k,v in TUNING_STR.items())
+TUNINGS: Dict[str, int] = dict((v, k) for k,v in TUNING_STR.items())
 
 
 NvEncodeAPICreateInstance = None
@@ -1185,7 +1185,7 @@ cdef GUID c_parseguid(src) except *:
     return guid
 
 
-def parseguid(s):
+def parseguid(s) -> GUID:
     return c_parseguid(s)
 
 
@@ -1215,17 +1215,17 @@ if CLIENT_KEYS_STR:
                 del e
     CLIENT_KEYS_STR = validated
 
-CODEC_GUIDS = {
+CODEC_GUIDS: Dict[str, str] = {
     guidstr(NV_ENC_CODEC_H264_GUID)         : "H264",
     guidstr(NV_ENC_CODEC_HEVC_GUID)         : "HEVC",
-    }
+}
 
 cdef codecstr(GUID guid):
     s = guidstr(guid)
     return CODEC_GUIDS.get(s, s)
 
 
-CODEC_PROFILES_GUIDS = {
+CODEC_PROFILES_GUIDS: Dict[str, Dict[str, str]] = {
     guidstr(NV_ENC_CODEC_H264_GUID) : {
         guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
         guidstr(NV_ENC_H264_PROFILE_BASELINE_GUID)          : "baseline",
@@ -1237,14 +1237,14 @@ CODEC_PROFILES_GUIDS = {
         guidstr(NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID)  : "constrained-high",
         #new in SDK v4:
         guidstr(NV_ENC_H264_PROFILE_HIGH_444_GUID)          : "high-444",
-        },
+    },
     guidstr(NV_ENC_CODEC_HEVC_GUID) : {
         guidstr(NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID)       : "auto",
         guidstr(NV_ENC_HEVC_PROFILE_MAIN_GUID)              : "main",
         guidstr(NV_ENC_HEVC_PROFILE_MAIN10_GUID)            : "main10",
         guidstr(NV_ENC_HEVC_PROFILE_FREXT_GUID)             : "frext",
-        },
-    }
+    },
+}
 
 PROFILE_STR = {}
 for codec_guid, profiles in CODEC_PROFILES_GUIDS.items():
@@ -1268,7 +1268,7 @@ PRESET_LOSSLESS         = "D5BFB716-C604-44E7-9BB8-DEA5510FC3AC"
 PRESET_LOSSLESS_HP      = "149998E7-2364-411D-82EF-179888093409"
 
 
-CODEC_PRESETS_GUIDS = {
+CODEC_PRESETS_GUIDS: Dict[str, str] = {
     PRESET_STREAMING    : "streaming",
     PRESET_DEFAULT      : "default",
     PRESET_HP_GUID      : "hp",
@@ -1288,8 +1288,8 @@ CODEC_PRESETS_GUIDS = {
     guidstr(NV_ENC_PRESET_P7_GUID)  : "P7",
 }
 
-YUV444_PRESETS = ("high-444", "lossless", "lossless-hp",)
-LOSSLESS_PRESETS = ("lossless", "lossless-hp",)
+YUV444_PRESETS: Sequence[str] = ("high-444", "lossless", "lossless-hp",)
+LOSSLESS_PRESETS: Sequence[str] = ("lossless", "lossless-hp",)
 
 cdef presetstr(GUID preset):
     s = guidstr(preset)
@@ -1297,7 +1297,7 @@ cdef presetstr(GUID preset):
 
 
 #try to map preset names to a "speed" value:
-PRESET_SPEED = {
+PRESET_SPEED: Dict[str, int] = {
     "lossless"      : 0,
     "lossless-hp"   : 30,
     "bd"            : 40,
@@ -1310,7 +1310,7 @@ PRESET_SPEED = {
     "streaming"     : -1000,    #disabled for now
 }
 
-PRESET_QUALITY = {
+PRESET_QUALITY: Dict[str, int] = {
     "lossless"      : 100,
     "lossless-hp"   : 100,
     "bd"            : 80,
@@ -1330,14 +1330,14 @@ PRESET_QUALITY = {
     "P7"            : 100,
 }
 
-CHROMA_FORMATS = {
+CHROMA_FORMATS: Dict[str, int] = {
     "BGRX" : 3,
     "r210" : 3,
     "NV12" : 1,
     "YUV444P" : 3,
 }
 
-BUFFER_FORMAT = {
+BUFFER_FORMAT: Dict[int, str] = {
     NV_ENC_BUFFER_FORMAT_UNDEFINED              : "undefined",
     NV_ENC_BUFFER_FORMAT_NV12                   : "NV12_PL",
     NV_ENC_BUFFER_FORMAT_YV12                   : "YV12_PL",
@@ -1456,11 +1456,14 @@ def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
 #ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
 PRETTY_VERSION = (int(NVENCAPI_MAJOR_VERSION), int(NVENCAPI_MINOR_VERSION))
 
+
 def get_version():
     return PRETTY_VERSION
 
+
 def get_type() -> str:
     return "nvenc"
+
 
 def get_info() -> Dict[str, Any]:
     global last_context_failure, context_counter, context_gen_counter
@@ -1723,7 +1726,7 @@ cdef class Encoder:
         profile = options.strget("h264.%s.profile" % csc_mode, profile)
         return profile
 
-    def threaded_init_device(self, options: typedict):
+    def threaded_init_device(self, options: typedict) -> None:
         global device_lock
         with device_lock:
             if SLOW_DOWN_INIT:
@@ -1746,7 +1749,7 @@ cdef class Encoder:
                 log.warn(" %s", e)
                 self.clean()
 
-    def init_device(self, options: typedict):
+    def init_device(self, options: typedict) -> None:
         global bad_presets
         cdef double start = monotonic()
         with self.cuda_device_context as cuda_context:
@@ -2077,25 +2080,20 @@ cdef class Encoder:
         h264.repeatSPSPPS = 0
         h264.outputAUD = 1
         h264.outputPictureTimingSEI = 1
-        h264.h264VUIParameters.colourDescriptionPresentFlag = 0
-        h264.h264VUIParameters.videoSignalTypePresentFlag = 0
         h264.idrPeriod = gopLength
         h264.enableIntraRefresh = INTRA_REFRESH
         if INTRA_REFRESH:
             h264.intraRefreshPeriod = 16
             #h264.singleSliceIntraRefresh = 0
         #h264.maxNumRefFrames = 0
-        #h264.h264VUIParameters.colourMatrix = 1      #AVCOL_SPC_BT709 ?
-        #h264.h264VUIParameters.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
-        #h264.h264VUIParameters.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
         h264.h264VUIParameters.videoFullRangeFlag = 0
         cdef NV_ENC_CONFIG_H264_VUI_PARAMETERS *vui = &h264.h264VUIParameters
         vui.colourDescriptionPresentFlag = 0
-        #vui.colourMatrix = 5    #AVCOL_SPC_BT470BG
-        #vui.colourPrimaries = ??
-        #vui.transferCharacteristics = ??
-        #vui.videoFullRangeFlag = 0
         vui.videoSignalTypePresentFlag = 0
+        #vui.colourMatrix = 5    #AVCOL_SPC_BT470BG  - switch to AVCOL_SPC_BT709?
+        #vui.colourPrimaries = 1   #AVCOL_PRI_BT709 ?
+        #vui.transferCharacteristics = 1   #AVCOL_TRC_BT709 ?
+        #vui.videoFullRangeFlag = 0
 
     cdef tune_hevc(self, NV_ENC_CONFIG_HEVC *hevc, int gopLength):
         hevc.chromaFormatIDC = self.get_chroma_format()
@@ -2105,9 +2103,16 @@ cdef class Encoder:
         #hevc.pixelBitDepthMinus8 = 2*int(self.bufferFmt==NV_ENC_BUFFER_FORMAT_ARGB10)
         #hevc.maxNumRefFramesInDPB = 16
         #hevc.hevcVUIParameters.videoFormat = ...
+        cdef NV_ENC_CONFIG_HEVC_VUI_PARAMETERS *vui = &hevc.hevcVUIParameters
+        vui.videoSignalTypePresentFlag = 1          # specifies  that the videoFormat, videoFullRangeFlag and colourDescriptionPresentFlag are present.
+        vui.videoFormat = 0                         # 0 = composite
+        vui.videoFullRangeFlag = 0
+        vui.colourDescriptionPresentFlag = 0
+        #vui.colourPrimaries = 1
+        #vui.transferCharacteristics = 1
+        #vui.colourMatrix = 5
 
-
-    def init_buffers(self):
+    def init_buffers(self) -> None:
         log("init_buffers()")
         cdef NV_ENC_REGISTER_RESOURCE registerResource
         cdef NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBufferParams
@@ -2146,7 +2151,6 @@ cdef class Encoder:
         log("output bitstream buffer=%#x", <uintptr_t> self.bitstreamBuffer)
         if self.bitstreamBuffer==NULL:
             raise RuntimeError("bitstream buffer pointer is null")
-
 
     def get_info(self) -> Dict[str, Any]:
         global YUV444_CODEC_SUPPORT, YUV444_ENABLED, LOSSLESS_CODEC_SUPPORT, LOSSLESS_ENABLED
@@ -2324,7 +2328,7 @@ cdef class Encoder:
             log("skipping encoder context cleanup")
         self.cuda_context_ptr = <void *> 0
 
-    def buffer_clean(self):
+    def buffer_clean(self) -> None:
         if self.inputHandle!=NULL and self.context!=NULL:
             log("buffer_clean() unregistering CUDA output buffer input handle %#x", <uintptr_t> self.inputHandle)
             if DEBUG_API:
@@ -2360,12 +2364,12 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
-    def set_encoding_speed(self, int speed):
+    def set_encoding_speed(self, int speed) -> None:
         if self.speed!=speed:
             self.speed = speed
             self.update_bitrate()
 
-    def set_encoding_quality(self, int quality):
+    def set_encoding_quality(self, int quality) -> None:
         #cdef NV_ENC_RECONFIGURE_PARAMS reconfigure_params
         assert self.context, "context is not initialized"
         if self.quality==quality:
@@ -2422,7 +2426,7 @@ cdef class Encoder:
             r = self.functionList.nvEncEncodePicture(self.context, &pic)
         raiseNVENC(r, "flushing encoder buffer")
 
-    def compress_image(self, image: ImageWrapper, options: typedict, int retry=0):
+    def compress_image(self, image: ImageWrapper, options: typedict, int retry=0) -> Tuple[bytes, Dict]:
         options = options or {}
         cuda_device_context = options.get("cuda-device-context")
         assert cuda_device_context, "no cuda device context"
@@ -2916,7 +2920,7 @@ cdef class Encoder:
             log("query_encoder_caps(%s, %s) %s=%s", codecstr(encode_GUID), caps_type, CAPS_NAMES.get(caps_type, caps_type), val)
         return val
 
-    def query_codecs(self, full_query=False):
+    def query_codecs(self, full_query=False) -> Dict[str, Dict]:
         cdef uint32_t GUIDCount
         cdef uint32_t GUIDRetCount
         cdef GUID* encode_GUIDs
