@@ -24,12 +24,13 @@
 #
 
 import sys
+from collections.abc import Sequence, Mapping
 
 from cpython cimport bool
 from libc.stdlib cimport realloc, free
 from libc.string cimport memcpy
 
-__version__ = ("Cython", 1, 0, 8)
+__version__ = ("Cython", 1, 0, 9)
 
 
 cdef extern from "Python.h":
@@ -317,10 +318,10 @@ cdef encode(char **buf, unsigned int *pos, data):
     elif t == bool:
         encode_bool(buf, pos, data)
 
-    elif t == list or t == tuple:
+    elif isinstance(data, Sequence):
         encode_list(buf, pos, data)
 
-    elif t == dict:
+    elif isinstance(data, Mapping):
         encode_dict(buf, pos, data)
 
     else:
