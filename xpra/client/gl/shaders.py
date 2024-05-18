@@ -89,12 +89,14 @@ void main()
 """
 
 
-def gen_NV12_to_RGB(cs="bt601") -> str:
+def gen_NV12_to_RGB(cs="bt601", full_range=True) -> str:
     if cs not in CS_MULTIPLIERS:
         raise ValueError(f"unsupported colorspace {cs}")
     a, b, c, d, e = CS_MULTIPLIERS[cs]
     f = - c * d / b
     g = - a * e / b
+    ymult = "" if full_range else " * 1.1643835616438356"
+    umult = vmult = "" if full_range else " * 1.1383928571428572"
     return f"""
 #version {GLSL_VERSION}
 layout(origin_upper_left) in vec4 gl_FragCoord;
@@ -107,9 +109,9 @@ layout(location = 0) out vec4 frag_color;
 void main()
 {{
     vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
-    highp float y = texture(Y, pos).r;
-    highp float u = texture(UV, pos).r - 0.5;
-    highp float v = texture(UV, pos).g - 0.5;
+    highp float y = texture(Y, pos).r {ymult};
+    highp float u = (texture(UV, pos).r - 0.5) {umult};
+    highp float v = (texture(UV, pos).g - 0.5) {vmult};
 
     highp float r = y +           {e} * v;
     highp float g = y + {f} * u + {g} * v;
@@ -162,7 +164,8 @@ SOURCE: dict[str, str] = {
     "vertex": VERTEX_SHADER,
     "overlay": OVERLAY_SHADER,
     "fixed-color": FIXED_COLOR_SHADER,
-    "NV12_to_RGB": gen_NV12_to_RGB(),
+    "NV12_to_RGB": gen_NV12_to_RGB(full_range=False),
+    "NV12_to_RGB_FULL": gen_NV12_to_RGB(full_range=True),
 }
 
 for fmt in ("YUV420P", "YUV422P", "YUV444P"):

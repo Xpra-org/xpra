@@ -7,20 +7,20 @@
 
 #include <stdint.h>
 
-// Y = 0.257 * R + 0.504 * G + 0.098 * B + 0
-#define YR 0.257
-#define YG 0.504
-#define YB 0.098
+// Y = 0.299 * R + 0.587 * G + 0.114 * B + 0
+#define YR 0.299
+#define YG 0.587
+#define YB 0.114
 #define YC 0
-// U = -0.148 * R - 0.291 * G + 0.439 * B + 128
-#define UR -0.148
-#define UG -0.291
-#define UB 0.439
+// U = -0.168736 * R - 0.331264 * G + 0.5 * B + 128
+#define UR -0.168736
+#define UG -0.331264
+#define UB 0.5
 #define UC 128
-// V = 0.439 * R - 0.368 * G - 0.071 * B + 128
-#define VR 0.439
-#define VG -0.368
-#define VB -0.071
+// V = 0.5 * R - 0.418688 * G - 0.081312 * B + 128
+#define VR 0.5
+#define VG -0.418688
+#define VB -0.081312
 #define VC 128
 
 extern "C" __global__ void XRGB_to_YUV444(uint8_t *srcImage, int src_w, int src_h, int srcPitch,
