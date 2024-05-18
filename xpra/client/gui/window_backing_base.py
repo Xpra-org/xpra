@@ -687,7 +687,11 @@ class WindowBackingBase:
             self.do_clean_video_decoder()
 
     def make_csc(self, src_width: int, src_height: int, src_format: str,
-                 dst_width: int, dst_height: int, dst_format_options: Iterable[str], speed: int = 50):
+                 dst_width: int, dst_height: int, dst_format_options: Iterable[str],
+                 options: typedict):
+        q = options.intget("quality", 50)
+        speed = min(100, 100 - q, round(100.0 * (src_width * src_height) / (dst_width * dst_height)))
+
         in_options = CSC_OPTIONS.get(src_format, {})
         videolog("make_csc%s",
                  (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
@@ -739,7 +743,9 @@ class WindowBackingBase:
             nomatch()
             raise ValueError(f"no csc options for {src_format!r} input in " + csv(CSC_OPTIONS.keys()))
 
-        options = {"speed": speed}
+        # make a copy to override speed:
+        options = typedict(options)
+        options["speed"] = speed
         for score in sorted(csc_scores):
             for dst_format, spec in csc_scores.get(score):
                 try:
@@ -859,7 +865,7 @@ class WindowBackingBase:
             self.close_decoder(True)
 
     def do_video_paint(self, img, x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
-                       options, callbacks: Iterable[Callable]) -> None:
+                       options: typedict, callbacks: Iterable[Callable]) -> None:
         target_rgb_formats = self.get_rgb_formats()
         # as some video formats like vpx can forward transparency
         # also we could skip the csc step in some cases:
@@ -887,10 +893,8 @@ class WindowBackingBase:
             # use higher quality csc to compensate for lower quality source
             # (which generally means that we downscaled via YUV422P or lower)
             # or when upscaling the video:
-            q = options.intget("quality", 50)
-            csc_speed = min(100, 100 - q, round(100.0 * (enc_width * enc_height) / (width * height)))
             cd = self.make_csc(enc_width, enc_height, pixel_format,
-                               width, height, target_rgb_formats, csc_speed)
+                               width, height, target_rgb_formats, options)
             videolog("do_video_paint new csc decoder: %s", cd)
             self._csc_decoder = cd
         rgb_format = cd.get_dst_format()
