@@ -15,7 +15,7 @@ from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue, SimpleQueue, Empty, Full
 from typing import Any
-from collections.abc import ByteString, Callable, Iterable, Sequence
+from collections.abc import ByteString, Callable, Iterable, Sequence, Mapping
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -581,7 +581,7 @@ class SocketProtocol:
             if isinstance(item, Enum):
                 packet[i] = str(item)
                 continue
-            if isinstance(item, (int, bool, dict, list, tuple)):
+            if isinstance(item, (int, bool, Mapping, Iterable)):
                 continue
             try:
                 size = len(item)
