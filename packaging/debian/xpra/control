@@ -157,6 +157,8 @@ Recommends: xpra-codecs (= ${binary:Version})
         ,xpra-codecs-extras (= ${binary:Version})
         ,xpra-x11 (= ${binary:Version})
         ,xpra-html5
+# sync-xvfb:
+        ,python3-gi-cairo
 # socket activation:
         ,libsystemd
 # query parent pid:
@@ -221,6 +223,7 @@ Depends: xpra-client (= ${binary:Version})
         ,${python3:Depends}
         ,gir1.2-gtk-3.0
         ,python3-cairo
+        ,python3-gi-cairo
         ,python3-pil
 Recommends: xpra-codecs (= ${binary:Version})
         ,xpra-audio (= ${binary:Version})

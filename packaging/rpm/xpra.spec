@@ -294,6 +294,7 @@ Summary:			GTK3 xpra client
 Group:				Networking
 Requires:			xpra-client = %{version}-%{release}
 Requires:			gtk3
+Requires:           		python3-cairo
 Recommends:			xpra-codecs = %{version}-%{release}
 Recommends:			xpra-x11 = %{version}-%{release}
 Recommends:			pinentry
