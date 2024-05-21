@@ -313,6 +313,7 @@ This package contains the xpra client.
 Summary:			GTK3 xpra client
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			gtk3
+Requires:           %{python3}-cairo
 Requires(post):     coreutils
 Requires(postun):   gtk-update-icon-cache
 Requires(posttrans): gtk-update-icon-cache
