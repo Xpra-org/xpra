@@ -52,8 +52,14 @@ def get_gtk_version_info() -> dict[str, Any]:
 
     MAJORMICROMINOR("gtk", gi_import("Gtk"))
     MAJORMICROMINOR("glib", gi_import("GLib"))
-    import cairo
-    av("cairo", parse_version(cairo.version_info))  # pylint: disable=no-member
-    pango = gi_import("Pango")
-    av("pango", parse_version(pango.version_string()))
+    try:
+        import cairo
+        av("cairo", parse_version(cairo.version_info))  # pylint: disable=no-member
+    except ImportError:
+        pass
+    try:
+        pango = gi_import("Pango")
+        av("pango", parse_version(pango.version_string()))
+    except ImportError:
+        pass
     return GTK_VERSION_INFO.copy()
