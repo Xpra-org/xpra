@@ -161,6 +161,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def init_root_overlay(self) -> None:
         xid = get_default_root_window().get_xid()
         try:
+            import cairo
+            log(f"init_root_overlay() found cairo: {cairo}")
             with xsync:
                 self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                 log("init_root_overlay() root_overlay=%#x", self.root_overlay)
