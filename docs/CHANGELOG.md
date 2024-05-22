@@ -23,6 +23,7 @@
     * [really avoid scaling text, but don't discard the option](https://github.com/Xpra-org/xpra/commit/6e864a5cc122b4e4fb1ed5ee854096c0acd1da0c)
     * [proxy compression broken](https://github.com/Xpra-org/xpra/commit/398592a97a5f7a037731b1f206a4e1cb2103f692)
 * Cosmetic / correctness:
+    * [`openh264` decoder size warnings](https://github.com/Xpra-org/xpra/commit/b5d6f578d7d511724f64b54e1e53338817d3c22d)
     * [`sync-xvfb` requires cairo](https://github.com/Xpra-org/xpra/commit/c2cf38834acbb5e7fbc4abf0c8e1789ccce1522c)
     * [help video decoders with colorspace metadata](https://github.com/Xpra-org/xpra/commit/42804b51dd4eb6f3a1cb38b1611a81f6a77cc1a7), [but don't use full range h264 yet](https://github.com/Xpra-org/xpra/commit/c1719b520035feb31bb321ee06169ac8ce3a5bf4)
     * [don't initialize UI twice when connecting from launcher](https://github.com/Xpra-org/xpra/commit/b4facc13ffedb0d4611d2acfb88a9c5472cae4b0)

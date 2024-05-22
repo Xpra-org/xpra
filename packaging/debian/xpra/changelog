@@ -21,6 +21,7 @@ xpra (6.0.1-1) UNRELEASED; urgency=low
     - really avoid scaling text, but don't discard the option
     - proxy compression broken
   * Cosmetic / correctness:
+    - `openh264` decoder size warnings
     - `sync-xvfb` requires cairo
     - help video decoders with colorspace metadata, but don't use full range h264 yet
     - don't initialize UI twice when connecting from launcher
@@ -44,7 +45,7 @@ xpra (6.0.1-1) UNRELEASED; urgency=low
     - codec self tests
     - Gtk version tool should not require `pango` or `cairo`
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 22 May 2024 19:28:46 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 22 May 2024 23:21:20 +0700
 
 xpra (6.0-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

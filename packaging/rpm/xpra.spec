@@ -885,6 +885,7 @@ fi
    really avoid scaling text, but don't discard the option
    proxy compression broken
 - Cosmetic / correctness:
+   `openh264` decoder size warnings
    `sync-xvfb` requires cairo
    help video decoders with colorspace metadata, but don't use full range h264 yet
    don't initialize UI twice when connecting from launcher
