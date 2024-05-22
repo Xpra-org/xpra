@@ -517,6 +517,7 @@ cdef class Encoder:
     cdef object blank_buffer
     cdef uint64_t first_frame_timestamp
     cdef uint8_t ready
+    cdef uint8_t need_reconfig
 
     cdef object __weakref__
 
@@ -551,6 +552,7 @@ cdef class Encoder:
         self.frame_types = {}
         self.last_frame_times = deque(maxlen=200)
         self.time = 0
+        self.need_reconfig = 0
         self.first_frame_timestamp = 0
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         default_profile = os.environ.get("XPRA_X264_PROFILE", "")
@@ -862,7 +864,7 @@ cdef class Encoder:
         cdef int full_range = image.get_full_range()
         if full_range != self.full_range:
             self.full_range = full_range
-            self.reconfig_tune()
+            self.need_reconfig = 1
 
         options = typedict(options or {})
         content_type = options.strget("content-type", self.content_type)
@@ -872,7 +874,7 @@ cdef class Encoder:
             log("compress_image: reconfig b-frames=%s, content_type=%s (from %s, %s)", b_frames, content_type, self.b_frames, self.content_type)
             self.content_type = content_type
             self.b_frames = b_frames
-            self.reconfig_tune()
+            self.need_reconfig = 1
 
         cdef int speed = options.intget("speed", 50)
         if speed>=0:
@@ -979,6 +981,8 @@ cdef class Encoder:
             self.set_encoding_speed(self.speed)
         if quality>=0:
             self.set_encoding_quality(self.quality)
+        if self.need_reconfig:
+            self.reconfig_tune()
         #info for client:
         client_options = {
             "frame"     : int(self.frames),
@@ -1025,15 +1029,14 @@ cdef class Encoder:
         cdef int new_preset = get_x264_preset(pct)
         if new_preset == self.preset:
             return
+        self.preset = new_preset
         self.speed = pct
         #retrieve current parameters:
         x264_encoder_parameters(self.context, &param)
         #apply new preset:
         self.tune = self.get_tune()
         x264_param_default_preset(&param, get_preset_names()[new_preset], self.tune)
-        #ensure quality remains what it was:
-        self.do_reconfig_tune(&param)
-        self.preset = new_preset
+        self.need_reconfig = 1
 
     def set_encoding_quality(self, int pct) -> None:
         assert pct>=0 and pct<=100, "invalid percentage: %s" % pct
@@ -1044,29 +1047,15 @@ cdef class Encoder:
             return
         #adjust quality:
         self.quality = pct
-        self.reconfig_tune()
+        self.need_reconfig = 1
 
     def reconfig_tune(self) -> None:
-        cdef x264_param_t param
-        x264_encoder_parameters(self.context, &param)
-        self.do_reconfig_tune(&param)
-
-    cdef do_reconfig_tune(self, x264_param_t *param):
+        self.need_reconfig = 0
         assert self.context!=NULL, "context is closed!"
-        #adjust quality:
-        set_f_rf(param, get_x264_quality(self.quality, self.profile))
-        self.tune_param(param, typedict())
-        self.do_reconfig(param)
-
-    def reconfig(self) -> None:
         cdef x264_param_t param
         x264_encoder_parameters(self.context, &param)
         self.tune_param(&param, typedict())
-        self.do_reconfig(&param)
-
-    cdef do_reconfig(self, x264_param_t *param):
-        #apply it:
-        if x264_encoder_reconfig(self.context, param)!=0:
+        if x264_encoder_reconfig(self.context, &param) != 0:
             raise RuntimeError("x264_encoder_reconfig failed")
 
 
