@@ -259,7 +259,7 @@ class AudioMixin(StubSourceMixin):
             self.stop_sending_audio()
 
     @staticmethod
-    def audio_source_info(self, source, info: dict) -> None:
+    def audio_source_info(source, info: dict) -> None:
         log("audio_source_info(%s, %s)", source, info)
 
     def stop_sending_audio(self) -> None:
