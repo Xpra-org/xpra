@@ -862,10 +862,11 @@ fi
 
 
 %changelog
-* Thu May 16 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
+* Wed May 22 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
 - Platforms, build and packaging:
    avoid timeout on slow build platforms, when running pandoc, raise the timeout on arm and riscv
-   tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`
+   tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`, + fixups
+   minimal installations missing dependency and unable to paint without OpenGL
    version script needs to update `pyproject.toml`, do it
    MS Windows client fails to start without `explorer.exe` running
 - Major:
@@ -873,6 +874,7 @@ fi
    OpenGL check failures on X11
    OpenGL paint errors drawing the spinners, don't check for `glBegin` and `glEnd`
    OpenGL check: re-use environment filtering
+   Wayland UTF8 clipboard byte strings
    scale during render if needed
    smarter auto refresh encoding selection
    `xpra configure features` not reloading correctly
@@ -881,11 +883,15 @@ fi
    client startup failures caused by `dbus`
    use the dynamic speed and quality assigned for video encoders
    really avoid scaling text, but don't discard the option
+   proxy compression broken
 - Cosmetic / correctness:
+   `sync-xvfb` requires cairo
+   help video decoders with colorspace metadata, but don't use full range h264 yet
    don't initialize UI twice when connecting from launcher
    add `quic` connections to launcher
    warnings when dropping packets during shutdown
    system tray icon filename should be a string
+   discord link had expired, again
    clearer ssh error message
    parsing of scaling values as percentages
    also bump `__version_info__` automatically and the RPM spec file
@@ -895,6 +901,12 @@ fi
    wrong time unit shown in error message
    add asbtract socket link to documentation
    ensure OpenGL `zerocopy` flag is a boolean
+   explicit return statement
+   incorrect debug logging
+   warn users about deprecated syntax
+   pass strict type check, ie: [bandwidth-limit is a number
+   codec self tests
+   Gtk version tool should not require `pango` or `cairo`
 
 * Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> 6.0-10
 - Platforms, build and packaging:

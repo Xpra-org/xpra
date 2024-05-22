@@ -1,9 +1,10 @@
 # Changelog
 
-## [6.0.1] 2024-05-16
+## [6.0.1] 2024-05-22
 * Platforms, build and packaging:
     * [avoid timeout on slow build platforms](https://github.com/Xpra-org/xpra/commit/5972ba5fd8f0707d4a90fa5cc276a5ff00298909), [when running pandoc](https://github.com/Xpra-org/xpra/commit/5b66f26c05b2855f5d3e44cfcaf0d7fb14d07892), [raise the timeout on arm and riscv](https://github.com/Xpra-org/xpra/commit/e914616d57762e287769ac540b86d71d78a2dc26)
-    * [tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`](https://github.com/Xpra-org/xpra/commit/8bf6dec4c6ca291087c69a63d5801274545e8150) [+ fixup](https://github.com/Xpra-org/xpra/commit/25c18e25ccbef98f9884745309c6ce2588634f43)
+    * [tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`](https://github.com/Xpra-org/xpra/commit/8bf6dec4c6ca291087c69a63d5801274545e8150) [+ fixup](https://github.com/Xpra-org/xpra/commit/25c18e25ccbef98f9884745309c6ce2588634f43), [+ fixup](https://github.com/Xpra-org/xpra/commit/aadcc3acae9b1ccd2581f126377c794b6ec6d23b)
+    * [minimal installations missing dependency and unable to paint without OpenGL](https://github.com/Xpra-org/xpra/commit/d1e75bb6d773fbb1d91937138d4132e75dd7b506)
     * [version script needs to update `pyproject.toml`](https://github.com/Xpra-org/xpra/commit/827b4e0aab43c9ba891ba26cb72cbe707a508868), [do it](https://github.com/Xpra-org/xpra/commit/1409bc4e8f86c1cee8f9eab8970a2e6388607914)
     * [MS Windows client fails to start without `explorer.exe` running](https://github.com/Xpra-org/xpra/commit/43c4562275e78ce5025d083dbbee01d5e3245d33)
 * Major:
@@ -22,7 +23,8 @@
     * [really avoid scaling text, but don't discard the option](https://github.com/Xpra-org/xpra/commit/6e864a5cc122b4e4fb1ed5ee854096c0acd1da0c)
     * [proxy compression broken](https://github.com/Xpra-org/xpra/commit/398592a97a5f7a037731b1f206a4e1cb2103f692)
 * Cosmetic / correctness:
-    * [help video decoders with colorspace metadata](https://github.com/Xpra-org/xpra/commit/42804b51dd4eb6f3a1cb38b1611a81f6a77cc1a7)
+    * [`sync-xvfb` requires cairo](https://github.com/Xpra-org/xpra/commit/c2cf38834acbb5e7fbc4abf0c8e1789ccce1522c)
+    * [help video decoders with colorspace metadata](https://github.com/Xpra-org/xpra/commit/42804b51dd4eb6f3a1cb38b1611a81f6a77cc1a7), [but don't use full range h264 yet](https://github.com/Xpra-org/xpra/commit/c1719b520035feb31bb321ee06169ac8ce3a5bf4)
     * [don't initialize UI twice when connecting from launcher](https://github.com/Xpra-org/xpra/commit/b4facc13ffedb0d4611d2acfb88a9c5472cae4b0)
     * [add `quic` connections to launcher](https://github.com/Xpra-org/xpra/commit/2198699c1970aae5785cf70b0a50279a37736608)
     * [warnings when dropping packets during shutdown](https://github.com/Xpra-org/xpra/commit/d084888b0affb89c99ec7e1db535dd8a75681909)
@@ -40,8 +42,9 @@
     * [explicit return statement](https://github.com/Xpra-org/xpra/commit/0bc125ba5135ef254b4e0b175b1286405eef5e80)
     * [incorrect debug logging](https://github.com/Xpra-org/xpra/commit/8ebd269c4c0159b2f556bbb969b87e804bf4d728)
     * [warn users about deprecated syntax](https://github.com/Xpra-org/xpra/commit/b0d6436e9f2578a4f370ab5c8d947b3a8d19b036)
-    * [pass strict type check](https://github.com/Xpra-org/xpra/commit/455860ca94f2428f8c84a8555ad5c8fcd769c74f)
+    * [pass strict type check](https://github.com/Xpra-org/xpra/commit/455860ca94f2428f8c84a8555ad5c8fcd769c74f), ie: [bandwidth-limit is a number](https://github.com/Xpra-org/xpra/commit/e481a9043d54172246400326a96c9ec5e109b215)
     * [codec self tests](https://github.com/Xpra-org/xpra/commit/90b897664a6850b59b61667b634db52d7ccbd530)
+    * [Gtk version tool should not require `pango` or `cairo`](https://github.com/Xpra-org/xpra/commit/ead682ab3b54480ca3c3ab2842cec91cb021bf4f)
 
 ## [6.0] 2024-04-25
 * Platforms, build and packaging:
