@@ -56,7 +56,10 @@ log("DesktopServerBaseClass%s", DESKTOPSERVER_BASES)
 
 def do_modify_gsettings(defs: dict[str, Any], value=False) -> dict[str, Any]:
     modified = {}
-    schemas = Gio.Settings.list_schemas()
+    try:
+        schemas = Gio.SettingsSchemaSource.get_default().list_schemas(True)
+    except AttributeError:
+        schemas = Gio.Settings.list_schemas()
     for schema, attributes in defs.items():
         if schema not in schemas:
             continue
@@ -105,8 +108,7 @@ class DesktopServerBase(DesktopServerBaseClass):
     def x11_init(self) -> None:
         X11ServerBase.x11_init(self)
         display = Gdk.Display.get_default()
-        assert display.get_n_screens() == 1
-        screen = display.get_screen(0)
+        screen = display.get_default_screen()
         root = screen.get_root_window()
         add_event_receiver(root.get_xid(), self)
         add_catchall_receiver("x11-motion-event", self)
