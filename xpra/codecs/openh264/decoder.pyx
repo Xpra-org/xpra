@@ -217,9 +217,12 @@ cdef class Decoder:
         strides = [ystride, uvstride, uvstride]
         cdef int width = buf_info.UsrData.sSystemBuffer.iWidth
         cdef int height = buf_info.UsrData.sSystemBuffer.iHeight
-        if abs(width-self.width) > 1 or abs(height-self.height) > 1:
-            log.warn("Warning: image bigger than expected")
-            log.warn(f" {width}x{height} instead of {self.width}x{self.height}")
+        cdef int wdelta = width - self.width
+        cdef int hdelta = height - self.height
+        if abs(wdelta) > 1 or abs(hdelta) > 1:
+            if (wdelta & 0xfff0) > 0 or (hdelta & 0xffff0) > 0:
+                log.warn("Warning: image bigger than expected")
+                log.warn(f" {width}x{height} instead of {self.width}x{self.height}")
         pixels = [
             yuv[0][:ystride*height],
             yuv[1][:uvstride*(height//2)],
