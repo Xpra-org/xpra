@@ -8,7 +8,7 @@
 import os
 import weakref
 from time import monotonic
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Iterable
 from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
@@ -76,11 +76,22 @@ NO_OPENGL_WINDOW_TYPES = os.environ.get(
     "XPRA_NO_OPENGL_WINDOW_TYPES",
     "DOCK,TOOLBAR,MENU,UTILITY,SPLASH,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND"
 ).split(",")
+WINDOW_GROUPING = os.environ.get("XPRA_WINDOW_GROUPING", "group-leader-xid,class-instance,pid,command").split(",")
 
 inject_css_overrides()
 init_display_source()
 # must come after init_display_source()
 from xpra.client.gtk3.window_base import HAS_X11_BINDINGS, XSHAPE  # noqa: E402
+
+
+def get_group_ref(metadata: typedict) -> str:
+    for ref in WINDOW_GROUPING:
+        if ref in metadata:
+            value = metadata.get(ref)
+            if isinstance(value, Iterable):
+                return f"{ref}:{csv(value)}"
+            return f"{ref}:{value}"
+    return ""
 
 
 # pylint: disable=import-outside-toplevel
@@ -1432,29 +1443,15 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log(f"get_group_leader(..)={win}")
         if win:
             return win
-        pid = metadata.intget("pid", -1)
-        leader_xid = metadata.intget("group-leader-xid", -1)
-        log(f"get_group_leader: leader pid={pid}, xid={leader_xid}")
-        reftype = "xid"
-        ref: str | int = leader_xid
-        if ref < 0:
-            ci = metadata.strtupleget("class-instance")
-            if ci:
-                reftype = "class"
-                ref = "|".join(ci)
-            elif pid > 0:
-                reftype = "pid"
-                ref = pid
-            else:
-                # no reference to use
-                return None
-        refkey = f"{reftype}:{ref}"
+
+        refkey = get_group_ref(metadata) or str(wid)
+        log(f"get_group_leader: refkey={refkey}, metadata={metadata}, refs={self._ref_to_group_leader}")
         group_leader_window = self._ref_to_group_leader.get(refkey)
         if group_leader_window:
             log("found existing group leader window %s using ref=%s", group_leader_window, refkey)
             return group_leader_window
         # we need to create one:
-        title = "%s group leader for %s" % (self.session_name or "Xpra", pid)
+        title = "%s group leader for window %s" % (self.session_name or "Xpra", wid)
         # group_leader_window = Gdk.Window(None, 1, 1, Gtk.WindowType.TOPLEVEL, 0, Gdk.INPUT_ONLY, title)
         # static new(parent, attributes, attributes_mask)
         group_leader_window = GDKWindow(wclass=Gdk.WindowWindowClass.INPUT_ONLY, title=title)
