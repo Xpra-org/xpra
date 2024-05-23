@@ -46,6 +46,14 @@ def has_shadow() -> bool:
         return False
 
 
+def has_configure() -> bool:
+    try:
+        from xpra.gtk import configure
+        return bool(configure)
+    except ImportError:
+        return False
+
+
 class GUI(BaseGUIWindow):
 
     def __init__(self, argv=()):
@@ -78,6 +86,8 @@ class GUI(BaseGUIWindow):
             ))
         self.ib("Shadow", "server-connected.png", shadow_tooltip(), self.shadow, sensitive=has_shadow())
 
+        self.ib("Configure", "ticked.png", "", self.configure, sensitive=has_configure())
+
         def start_tooltip() -> str:
             if not has_client():
                 return "the client is not installed"
@@ -99,6 +109,9 @@ class GUI(BaseGUIWindow):
         if argv.index("gui") >= 0:
             argv.pop(argv.index("gui"))
         return super().get_xpra_command(*args) + argv
+
+    def configure(self, button) -> None:
+        self.button_command(button, "configure")
 
     def shadow(self, button) -> None:
         cmd_args = ["shadow", "--bind-tcp=0.0.0.0:14500,auth=sys,ssl-cert=auto"] if (WIN32 or OSX) else ["shadow"]
