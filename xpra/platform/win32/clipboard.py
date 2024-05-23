@@ -611,7 +611,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 self.send_clipboard_request_handler(self, self._selection, image_formats[0])
         elif dformat == 8 and dtype in TEXT_TARGETS:
             log("we got a byte string: %s", ellipsizer(data))
-            self.set_clipboard_text(bytestostr(data))
+            if dtype.lower().find("utf8") >= 0:
+                text = data.decode("utf8")
+            else:
+                text = bytestostr(data)
+            self.set_clipboard_text(text)
         elif dformat == 8 and dtype.startswith("image/"):
             img_format = dtype.split("/")[-1]  # ie: 'png'
             self.set_clipboard_image(img_format, data)
