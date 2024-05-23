@@ -1444,7 +1444,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if win:
             return win
 
-        refkey = get_group_ref(metadata) or str(wid)
+        refkey = get_group_ref(metadata)
         log(f"get_group_leader: refkey={refkey}, metadata={metadata}, refs={self._ref_to_group_leader}")
         group_leader_window = self._ref_to_group_leader.get(refkey)
         if group_leader_window:
