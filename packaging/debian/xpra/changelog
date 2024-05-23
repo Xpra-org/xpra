@@ -7,10 +7,11 @@ xpra (6.0.1-1) UNRELEASED; urgency=low
     - MS Windows client fails to start without `explorer.exe` running
   * Major:
     - DoS with audio pipeline starting repeatedly
+    - GStreamer video disabled to avoid crashes
     - OpenGL check failures on X11
     - OpenGL paint errors drawing the spinners, don't check for `glBegin` and `glEnd`
     - OpenGL check: re-use environment filtering
-    - Wayland UTF8 clipboard byte strings
+    - Wayland UTF8 clipboard byte strings, same for MS Windows
     - scale during render if needed
     - smarter auto refresh encoding selection
     - `xpra configure features` not reloading correctly
@@ -45,7 +46,7 @@ xpra (6.0.1-1) UNRELEASED; urgency=low
     - codec self tests
     - Gtk version tool should not require `pango` or `cairo`
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 22 May 2024 23:21:20 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 23 May 2024 17:03:18 +0700
 
 xpra (6.0-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

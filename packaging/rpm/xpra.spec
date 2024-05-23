@@ -862,7 +862,7 @@ fi
 
 
 %changelog
-* Wed May 22 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
+* Thu May 23 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
 - Platforms, build and packaging:
    avoid timeout on slow build platforms, when running pandoc, raise the timeout on arm and riscv
    tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`, + fixups
@@ -871,10 +871,11 @@ fi
    MS Windows client fails to start without `explorer.exe` running
 - Major:
    DoS with audio pipeline starting repeatedly
+   GStreamer video disabled to avoid crashes
    OpenGL check failures on X11
    OpenGL paint errors drawing the spinners, don't check for `glBegin` and `glEnd`
    OpenGL check: re-use environment filtering
-   Wayland UTF8 clipboard byte strings
+   Wayland UTF8 clipboard byte strings, same for MS Windows
    scale during render if needed
    smarter auto refresh encoding selection
    `xpra configure features` not reloading correctly

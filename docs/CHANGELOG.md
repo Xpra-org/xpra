@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.0.1] 2024-05-22
+## [6.0.1] 2024-05-23
 * Platforms, build and packaging:
     * [avoid timeout on slow build platforms](https://github.com/Xpra-org/xpra/commit/5972ba5fd8f0707d4a90fa5cc276a5ff00298909), [when running pandoc](https://github.com/Xpra-org/xpra/commit/5b66f26c05b2855f5d3e44cfcaf0d7fb14d07892), [raise the timeout on arm and riscv](https://github.com/Xpra-org/xpra/commit/e914616d57762e287769ac540b86d71d78a2dc26)
     * [tell dpkg to remove or upgrade `xpra-codecs` before `xpra-codecs-extra`](https://github.com/Xpra-org/xpra/commit/8bf6dec4c6ca291087c69a63d5801274545e8150) [+ fixup](https://github.com/Xpra-org/xpra/commit/25c18e25ccbef98f9884745309c6ce2588634f43), [+ fixup](https://github.com/Xpra-org/xpra/commit/aadcc3acae9b1ccd2581f126377c794b6ec6d23b)
@@ -9,10 +9,11 @@
     * [MS Windows client fails to start without `explorer.exe` running](https://github.com/Xpra-org/xpra/commit/43c4562275e78ce5025d083dbbee01d5e3245d33)
 * Major:
     * [DoS with audio pipeline starting repeatedly](https://github.com/Xpra-org/xpra/commit/4a2829a4755f5b409cbe3ff12554d9010559d4a0)
+    * [GStreamer video disabled to avoid crashes](https://github.com/Xpra-org/xpra/commit/5323058d9a3fb0cdac0110f31c88898415e9a41b)
     * [OpenGL check failures on X11](https://github.com/Xpra-org/xpra/commit/3e87f9f23204b6fb69111b40b2e1f983f37abd8d)
     * [OpenGL paint errors drawing the spinners](https://github.com/Xpra-org/xpra/commit/54a6f21572ee106bcc669279befd43176f727404), [don't check for `glBegin` and `glEnd`](https://github.com/Xpra-org/xpra/commit/f2e9e4b2ada8f15523b4c88b36c6bb04258f3ce4)
     * [OpenGL check: re-use environment filtering](https://github.com/Xpra-org/xpra/commit/d567ce9578da03e9fcd666bed6bf51b637e879ca)
-    * [Wayland UTF8 clipboard byte strings](https://github.com/Xpra-org/xpra/commit/a445c760ff0d08641373c9de41a7e0c8cab02abf)
+    * [Wayland UTF8 clipboard byte strings](https://github.com/Xpra-org/xpra/commit/a445c760ff0d08641373c9de41a7e0c8cab02abf), [same for MS Windows](https://github.com/Xpra-org/xpra/commit/5f5a05adc331bfe8ee1770c1e8c530619dc24d96)
     * [scale during render if needed](https://github.com/Xpra-org/xpra/commit/9988cbd50a2189b8d5de66a4eda2d8f68424d380)
     * [smarter auto refresh encoding selection](https://github.com/Xpra-org/xpra/commit/366e4390176832807cd7bf738807daead02e921c)
     * [`xpra configure features` not reloading correctly](https://github.com/Xpra-org/xpra/commit/a399fce7959141a7bb6c4ca068a99d006e5286bb)
