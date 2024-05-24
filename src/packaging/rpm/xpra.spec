@@ -479,6 +479,7 @@ Summary:			python3 build of xpra client
 Group:				Networking
 Requires:			xpra-common-client = %{version}-%{release}
 Requires:			python3-xpra = %{version}-%{release}
+Requires:           		python3-cairo
 BuildRequires:		python3-pyxdg
 BuildRequires:		python3-cups
 Recommends:			python3-xpra-audio
