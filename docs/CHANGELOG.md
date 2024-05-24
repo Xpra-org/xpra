@@ -1,7 +1,16 @@
 # Changelog
 
-## [6.1] 2024-04-25
-* TODO
+## [6.1] 2024-05-24
+* Platforms, build and packaging:
+    * None so far!
+* Features:
+    * [use native file chooser on some platforms](https://github.com/Xpra-org/xpra/issues/4222)
+    * [support custom window grouping](https://github.com/Xpra-org/xpra/issues/4208)
+    * [full range video compression](https://github.com/Xpra-org/xpra/issues/3837)
+    * [scale YUV before converting to RGB](https://github.com/Xpra-org/xpra/issues/4209)
+* Cosmetic:
+    * many type hints added
+    * linter warnings fixed
 
 ## [6.0] 2024-04-25
 * Platforms, build and packaging:
