@@ -42,8 +42,11 @@ ctypedef long AVPixelFormat
 cdef extern from "libavutil/pixfmt.h":
     AVPixelFormat AV_PIX_FMT_NONE
     AVPixelFormat AV_PIX_FMT_YUV420P
+    AVPixelFormat AV_PIX_FMT_YUVJ420P
     AVPixelFormat AV_PIX_FMT_YUV422P
+    AVPixelFormat AV_PIX_FMT_YUVJ422P
     AVPixelFormat AV_PIX_FMT_YUV444P
+    AVPixelFormat AV_PIX_FMT_YUVJ444P
     AVPixelFormat AV_PIX_FMT_RGB24
     AVPixelFormat AV_PIX_FMT_0RGB
     AVPixelFormat AV_PIX_FMT_BGR0
@@ -120,8 +123,11 @@ FORMAT_TO_ENUM = {
 #for planar formats, this is the number of bytes per channel
 BYTES_PER_PIXEL = {
     AV_PIX_FMT_YUV420P  : 1,
+    AV_PIX_FMT_YUVJ420P : 1,
     AV_PIX_FMT_YUV422P  : 1,
+    AV_PIX_FMT_YUVJ422P : 1,
     AV_PIX_FMT_YUV444P  : 1,
+    AV_PIX_FMT_YUVJ444P : 1,
     AV_PIX_FMT_RGB24    : 3,
     AV_PIX_FMT_0RGB     : 4,
     AV_PIX_FMT_BGR0     : 4,
@@ -135,6 +141,9 @@ COLORSPACES = tuple(FORMAT_TO_ENUM.keys())
 ENUM_TO_FORMAT = {}
 for pix_fmt, av_enum in FORMAT_TO_ENUM.items():
     ENUM_TO_FORMAT[av_enum] = pix_fmt
+ENUM_TO_FORMAT[AV_PIX_FMT_YUVJ420P] = "YUV420P"
+ENUM_TO_FORMAT[AV_PIX_FMT_YUVJ422P] = "YUV422P"
+ENUM_TO_FORMAT[AV_PIX_FMT_YUVJ444P] = "YUV444P"
 
 def get_version():
     return (LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO)
