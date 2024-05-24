@@ -257,6 +257,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         if self.sync_xvfb>0:
             xid = get_xwindow(root)
             try:
+                import cairo
+                log(f"init_root_overlay() found cairo: {cairo}")
                 with xsync:
                     self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                     if self.root_overlay:
