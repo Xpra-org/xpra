@@ -14,6 +14,7 @@
     * [Cython compilation warnings](https://github.com/Xpra-org/xpra/commit/dfd6fea4f3099a3894f93c32c0cfb5904e96ccc5)
     * [CI: build test with Python 3.6 and 3.12](https://github.com/Xpra-org/xpra/commit/1101463901b4db5f2d13b15b8a0b6a52705dbd9a)
     * [missing explicit `cairo` dependency](https://github.com/Xpra-org/xpra/commit/21bc5d847965ff00d548af8d8fb4db90efa53ea0)
+    * [RPM revision number missing](https://github.com/Xpra-org/xpra/commit/92247353d4a32b99aab49aa9e499cb29a74beb5a)
 * Major:
     * [handle downscaled video correctly without OpenGL](https://github.com/Xpra-org/xpra/commit/e59d1c5f28c06b295bd28eca1ccf728d4ce06a15)
     * [Gtk crashes on exit](https://github.com/Xpra-org/xpra/commit/5032b0144a68e6dadd6f18a095e48c0e8891c4ef)

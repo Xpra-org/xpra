@@ -792,6 +792,7 @@ fi
    Cython compilation warnings
    CI: build test with Python 3.6 and 3.12
    missing explicit `cairo` dependency
+   RPM revision number missing
 - Major:
    handle downscaled video correctly without OpenGL
    Gtk crashes on exit
