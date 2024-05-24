@@ -157,6 +157,18 @@ cdef extern from "x264.h":
         int         i_weighted_pred     # weighting for P-frames
         int         b_weighted_bipred   # implicit weighting for B-frames
 
+    ctypedef struct vui:
+        int         i_sar_height
+        int         i_sar_width
+        int         i_overscan          # 0=undef, 1=no overscan, 2=overscan
+        # see h264 annex E for the values of the following
+        int         i_vidformat
+        int         b_fullrange
+        int         i_colorprim
+        int         i_transfer
+        int         i_colmatrix
+        int         i_chroma_loc        # both top & bottom
+
     ctypedef struct x264_param_t:
         unsigned int cpu
         int i_threads           #encode multiple frames in parallel
@@ -171,6 +183,8 @@ cdef extern from "x264.h":
         int i_csp               #CSP of encoded bitstream
         int i_level_idc
         int i_frame_total       #number of frames to encode if known, else 0
+
+        vui vui
 
         int i_log_level
         void* pf_log
@@ -619,7 +633,15 @@ cdef class Encoder:
         #logging hook:
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL
-
+        param.vui.i_sar_height = 0
+        param.vui.i_sar_width = 0
+        param.vui.i_overscan = 1        # no overscan
+        param.vui.i_vidformat = 0
+        param.vui.b_fullrange = 0
+        param.vui.i_colorprim = 1
+        param.vui.i_transfer = 1
+        param.vui.i_colmatrix = 0
+        param.vui.i_chroma_loc = 0
 
     def clean(self):                        #@DuplicatedSignature
         log("x264 close context %#x", <uintptr_t> self.context)
