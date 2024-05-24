@@ -778,7 +778,7 @@ fi
 
 
 %changelog
-* Mon May 06 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
+* Fri May 24 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
 - Encodings:
    video encoding errors causing missed screen updates
    drop alpha if requested and for video encoders
@@ -790,6 +790,8 @@ fi
    more simple / reliable OpenGL pixel format attributes on MacOS
    MS Windows usernames should also be using strings
    Cython compilation warnings
+   CI: build test with Python 3.6 and 3.12
+   missing explicit `cairo` dependency
 - Major:
    handle downscaled video correctly without OpenGL
    Gtk crashes on exit
@@ -803,6 +805,10 @@ fi
    libyuv converter cannot scale `YUV444P`
    ffmpeg decoder can accept images with dimensions rounded down to a multiple of 2, same for swscale
    audio source plugins not found
+   client startup failures caused by `dbus`
+   updated `run_scaled` script
+   use the dynamic speed and quality assigned for video encoders
+   proxy compression broken
 - Minor:
    fix parsing of scaling values as percentages
    fix ssl unit test, use SSL specific error codes
@@ -813,6 +819,9 @@ fi
    never try to start a display in `proxy` or `shadow` modes
    do verify that the display is available in `monitor` mode
    prevent audio DoS in the future
+   help video decodes with colorspace metadata
+   handle decoding of full-range YUV
+   `sync-xvfb` requires cairo
 - Cosmetic:
    clearer audio error message
    clearer ssh error message
@@ -830,6 +839,10 @@ fi
    ignore 'noabstract' v6 bind option
    fix unit tests: enable previously broken tests, faulty backport
    downgrade Wayland warning
+   explicit return statement
+   warn users about deprecated syntax
+   discord link had expired
+   codec self tests, skip tests without sample data
 
 * Wed Apr 03 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:

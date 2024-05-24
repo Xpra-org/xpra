@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.9] 2023-05-06
+## [5.0.9] 2023-05-24
 * Encodings:
     * [video encoding errors causing missed screen updates](https://github.com/Xpra-org/xpra/commit/188e9903754e1abc8cd86ecd65bf9427000e7012)
     * [drop alpha if requested](https://github.com/Xpra-org/xpra/commit/6e1934575cabc412782616704bb4ee24b5f36930) and [for video encoders](https://github.com/Xpra-org/xpra/commit/3cbdccbcdd9be7fdf6eabb67b322e612852f108c)
@@ -12,6 +12,8 @@
     * [more simple / reliable OpenGL pixel format attributes on MacOS](https://github.com/Xpra-org/xpra/commit/d95bcdb01d13ee0e363b70f281113ec88b1fadca)
     * [MS Windows usernames should also be using strings](https://github.com/Xpra-org/xpra/commit/6a14cedcaf528d106ccc3d9e80db2f900a4ffa93)
     * [Cython compilation warnings](https://github.com/Xpra-org/xpra/commit/dfd6fea4f3099a3894f93c32c0cfb5904e96ccc5)
+    * [CI: build test with Python 3.6 and 3.12](https://github.com/Xpra-org/xpra/commit/1101463901b4db5f2d13b15b8a0b6a52705dbd9a)
+    * [missing explicit `cairo` dependency](https://github.com/Xpra-org/xpra/commit/21bc5d847965ff00d548af8d8fb4db90efa53ea0)
 * Major:
     * [handle downscaled video correctly without OpenGL](https://github.com/Xpra-org/xpra/commit/e59d1c5f28c06b295bd28eca1ccf728d4ce06a15)
     * [Gtk crashes on exit](https://github.com/Xpra-org/xpra/commit/5032b0144a68e6dadd6f18a095e48c0e8891c4ef)
@@ -25,6 +27,10 @@
     * [libyuv converter cannot scale `YUV444P`](https://github.com/Xpra-org/xpra/commit/2623ca48ef3d2314c0afef8fae957e07be889420)
     * [ffmpeg decoder can accept images with dimensions rounded down to a multiple of 2](https://github.com/Xpra-org/xpra/commit/f2ab789f2c623b93f01bb692982125a472181097), [same for swscale](https://github.com/Xpra-org/xpra/commit/ebed4b2b3541641944615e0b61cbbd91bcfdc697)
     * [audio source plugins not found](https://github.com/Xpra-org/xpra/commit/35e8a5c27136294087bd62c6b90fd81128866237)
+    * [client startup failures caused by `dbus`](https://github.com/Xpra-org/xpra/commit/160032c06d5f3857986462f80a7007ce7bb117b5)
+    * [updated `run_scaled` script](https://github.com/Xpra-org/xpra/commit/d7643c8252bbe7d7d5053323d23d70f1cd5b1706)
+    * [use the dynamic speed and quality assigned for video encoders](https://github.com/Xpra-org/xpra/commit/3d4f05939feb82e27c50725f7039c8f8d536407f)
+    * [proxy compression broken](https://github.com/Xpra-org/xpra/commit/7138c22ac0b530e66c67e29753f213b65a7dd5dd)
 * Minor:
     * [fix parsing of scaling values as percentages](https://github.com/Xpra-org/xpra/commit/848d1658f2f4eb1bef57312736166e3f438fdca9)
     * [fix ssl unit test](https://github.com/Xpra-org/xpra/commit/0a03faadd843450c158df80e7a53729432d1e102), [use SSL specific error codes](https://github.com/Xpra-org/xpra/commit/e52882a6ac2cd3cef3067bb89a227feb59e6fa31)
@@ -35,6 +41,9 @@
     * [never try to start a display in `proxy` or `shadow` modes](https://github.com/Xpra-org/xpra/commit/688c09c7e37cbb980ca2abf46df7832b176099b7)
     * [do verify that the display is available in `monitor` mode](https://github.com/Xpra-org/xpra/commit/a4a63223409e5a3de2f8eac2f55000e26dec5e9a)
     * [prevent audio DoS in the future](https://github.com/Xpra-org/xpra/commit/c4a88d406aa5fe9c43e6af4059284f434c26139d)
+    * [help video decodes with colorspace metadata](https://github.com/Xpra-org/xpra/commit/288a2a5bd8def111efa72eed29eaa24763de3286)
+    * [handle decoding of full-range YUV](https://github.com/Xpra-org/xpra/commit/8427da4d6219d74ec7fe075ffbb9feb6949972f8)
+    * [`sync-xvfb` requires cairo](https://github.com/Xpra-org/xpra/commit/20ef5ce0f29cb839d428d78c759c35f80b46af8e)
 * Cosmetic:
     * [clearer audio error message](https://github.com/Xpra-org/xpra/commit/7adc99fa9143d60e0c8cd7886eb7bdc576373db1)
     * [clearer ssh error message](https://github.com/Xpra-org/xpra/commit/83750ca62606878a01303257b87119ac4dca62ab)
@@ -52,6 +61,10 @@
     * [ignore 'noabstract' v6 bind option](https://github.com/Xpra-org/xpra/commit/72eb7a1861377fc93a163b820723b6f06555890d) + [fixup](https://github.com/Xpra-org/xpra/commit/2dc836e20c1dfba319bd5a2e5538ffbcc25ec667)
     * fix unit tests: [enable previously broken tests](https://github.com/Xpra-org/xpra/commit/d6b576a71f2de3041173302ff72d316e44dd92dc), [faulty backport](https://github.com/Xpra-org/xpra/commit/4c3de0c84e085fe57af06895c93e811332035f3c)
     * [downgrade Wayland warning](https://github.com/Xpra-org/xpra/commit/8467801befdc8ab8d747930a89f2c2488cf24291)
+    * [explicit return statement](https://github.com/Xpra-org/xpra/commit/bd0b1f0c072853e1df6457fcb9a3450d0766dc84)
+    * [warn users about deprecated syntax](https://github.com/Xpra-org/xpra/commit/4a1aaf1d64a924d9e67fe199b52715c87b8dc719)
+    * [discord link had expired](https://github.com/Xpra-org/xpra/commit/f7557893fad97892a49d6fe4b727dd21a1883c36)
+    * [codec self tests](https://github.com/Xpra-org/xpra/commit/cc759a64d8168796ccf1f8e755bb15829cabb5fb), [skip tests without sample data](https://github.com/Xpra-org/xpra/commit/08bb25365dd7c476d60b803a514a2d07724a4df6)
 
 ## [5.0.8] 2024-04-03
 * Platforms, build and packaging:
