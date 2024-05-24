@@ -7,6 +7,8 @@ As a result, the architecture, features and options are often directly related t
 These defenses can be applied to a client protecting itself from a potentially hostile application or server and also in the opposite direction to confine users to the environment assigned to them.
 A default xpra installation should be quite secure by default, but there are trade-offs to be made.
 
+Be aware that these defenses all count for nothing when using [downstream out of date packages](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
+
 
 ## Architecture
 The way xpra is structured into independent python submodules allows it to partition off each subsystem.
