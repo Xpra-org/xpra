@@ -1284,7 +1284,7 @@ class SessionInfo(Gtk.Window):
             self.set_graph_surface(self.audio_queue_graph, surface)
         return True
 
-    def save_graph(self, _ebox, btn, graph):
+    def save_graph(self, _ebox, btn, graph) -> None:
         log("save_graph%s", (btn, graph))
         title = "Save graph as a PNG image"
         if FILE_CHOOSER_NATIVE:
@@ -1305,7 +1305,8 @@ class SessionInfo(Gtk.Window):
         response = chooser.run()
         filenames = chooser.get_filenames()
         chooser.hide()
-        chooser.close()
+        if hasattr(chooser, "close"):
+            chooser.close()
         if response == Gtk.ResponseType.OK:
             if len(filenames) == 1:
                 filename = filenames[0]
