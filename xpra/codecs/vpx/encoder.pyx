@@ -574,7 +574,7 @@ cdef class Encoder:
         istrides = image.get_rowstride()
         pf = image.get_pixel_format().replace("A", "X")
         if pf != self.src_format:
-            raise ValueError("expected %s but got %s" % (self.src_format, image.get_pixel_format())
+            raise ValueError("expected %s but got %s" % (self.src_format, image.get_pixel_format()))
         assert image.get_width()==self.width, "invalid image width %s, expected %s" % (image.get_width(), self.width)
         assert image.get_height()==self.height, "invalid image height %s, expected %s" % (image.get_height(), self.height)
         assert pixels, "failed to get pixels from %s" % image
