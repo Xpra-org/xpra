@@ -18,7 +18,6 @@ FLAC = "flac"
 MP3 = "mp3"
 WAV = "wav"
 OPUS = "opus"
-SPEEX = "speex"
 WAVPACK = "wavpack"
 
 OGG = "ogg"
@@ -34,7 +33,6 @@ LZ4 = "lz4"
 
 FLAC_OGG = FLAC + "+" + OGG
 OPUS_OGG = OPUS + "+" + OGG
-SPEEX_OGG = SPEEX + "+" + OGG
 VORBIS_OGG = VORBIS + "+" + OGG
 OPUS_MKA = OPUS + "+" + MKA
 # OPUS_RTP    = OPUS+"+"+RTP

@@ -14,9 +14,9 @@ from xpra.gstreamer.common import (
     import_gst, get_gst_version,
 )
 from xpra.audio.common import (
-    FLAC_OGG, OPUS_OGG, OPUS_MKA, SPEEX_OGG, VORBIS_OGG, VORBIS_MKA,
+    FLAC_OGG, OPUS_OGG, OPUS_MKA, VORBIS_OGG, VORBIS_MKA,
     AAC_MPEG4, WAV_LZ4,
-    VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, SPEEX, WAV, WAVPACK, MP3_ID3V2,
+    VORBIS, FLAC, MP3, MP3_MPEG4, OPUS, WAV, WAVPACK, MP3_ID3V2,
     MPEG4, MKA, OGG,
 )
 from xpra.os_util import WIN32, OSX, POSIX
@@ -209,7 +209,6 @@ ENCODER_LATENCY : dict[str, int] = {
     WAV         : 0,
     WAVPACK     : 600,
     OPUS        : 0,
-    SPEEX       : 0,
 }
 
 CODEC_ORDER = (
@@ -220,7 +219,7 @@ CODEC_ORDER = (
     # YMMV:
     OPUS_OGG, VORBIS_MKA, VORBIS_OGG, VORBIS,
     MP3, MP3_ID3V2, FLAC_OGG, AAC_MPEG4,
-    SPEEX_OGG, VORBIS, OPUS_MKA, MP3_MPEG4,
+    VORBIS, OPUS_MKA, MP3_MPEG4,
 )
 
 

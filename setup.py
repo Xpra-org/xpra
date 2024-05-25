@@ -1640,7 +1640,7 @@ if WIN32:
                 "audioparsers", "audiorate", "audioconvert", "audioresample", "audiotestsrc",
                 "coreelements", "directsound", "directsoundsrc", "wasapi",
                 # codecs:
-                "opus", "opusparse", "flac", "lame", "mpg123", "speex", "faac", "faad",
+                "opus", "opusparse", "flac", "lame", "mpg123", "faac", "faad",
                 "volume", "vorbis", "wavenc", "wavpack", "wavparse",
                 "autodetect",
                 # decodebin used for playing "new-client" sound:

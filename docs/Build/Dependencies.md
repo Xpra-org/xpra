@@ -97,7 +97,6 @@ See [audio forwarding](../Features/Audio.md)
 |[Ogg](http://xiph.org/ogg/)|http://downloads.xiph.org/releases/ogg/|ogg container format|
 |[opus](https://www.opus-codec.org/)|http://downloads.xiph.org/releases/opus/|opus codec|
 |[Flac](https://xiph.org/flac/)|http://downloads.xiph.org/releases/flac/|flac codec|
-|[Speex](http://www.speex.org/)|http://downloads.xiph.org/releases/speex/|speex codec|
 |[Vorbis](http://www.vorbis.com/)|http://downloads.xiph.org/releases/vorbis/|vorbis codec|
 |[wavpack](http://www.wavpack.com/)|http://www.wavpack.com/downloads.html|wavpack codec|
 |[faac](https://github.com/knik0/faac)|https://github.com/knik0/faac/releases|aac encoder|
