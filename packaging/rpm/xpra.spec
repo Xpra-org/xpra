@@ -50,7 +50,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.0.1
+Version:			6.0.2
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -862,6 +862,8 @@ fi
 
 
 %changelog
+* Tue May 28 2024 Antoine Martin <antoine@xpra.org> 6.0.2-10
+- TODO
 * Thu May 23 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
 - Platforms, build and packaging:
    avoid timeout on slow build platforms, when running pandoc, raise the timeout on arm and riscv

@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.0.2] 2024-05-28
+* TODO
+
 ## [6.0.1] 2024-05-23
 * Platforms, build and packaging:
     * [avoid timeout on slow build platforms](https://github.com/Xpra-org/xpra/commit/5972ba5fd8f0707d4a90fa5cc276a5ff00298909), [when running pandoc](https://github.com/Xpra-org/xpra/commit/5b66f26c05b2855f5d3e44cfcaf0d7fb14d07892), [raise the timeout on arm and riscv](https://github.com/Xpra-org/xpra/commit/e914616d57762e287769ac540b86d71d78a2dc26)
