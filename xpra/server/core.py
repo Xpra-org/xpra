@@ -1874,11 +1874,12 @@ class ServerCore:
                 proto_info = " " + pretty_socket(conn.local)
         except (KeyError, AttributeError):
             pass
-        self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
-        self._log_disconnect(protocol, " %s", i)
         self.cancel_verify_connection_accepted(protocol)
         self.cancel_upgrade_to_rfb_timer(protocol)
-        protocol.send_disconnect(reasons)
+        if not protocol.is_closed():
+            self._log_disconnect(protocol, "Disconnecting client%s:", proto_info)
+            self._log_disconnect(protocol, " %s", i)
+            protocol.send_disconnect(reasons)
         self.cleanup_protocol(protocol)
 
     def cleanup_protocol(self, protocol: SocketProtocol) -> None:
