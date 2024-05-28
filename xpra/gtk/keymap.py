@@ -19,7 +19,7 @@ log = Logger("keyboard")
 KEY_TRANSLATIONS: dict[tuple[str, int, int], str] = {}
 
 
-def get_gtk_keymap(ignore_keys=(None, "VoidSymbol", "0xffffff")) -> Sequence[tuple[int, str, int, int, int]]:
+def get_gtk_keymap(ignore_keys=("", "VoidSymbol", "0xffffff")) -> Sequence[tuple[int, str, int, int, int]]:
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
         by adding the keyval_name.
@@ -50,7 +50,7 @@ def do_get_gtk_keymap(display, ignore_keys: Iterable[Any]) -> Sequence[tuple[int
         for j, key in enumerate(keys):
             keyval = keyvals[j]
             keycode = key.keycode
-            name = Gdk.keyval_name(keyval)
+            name = Gdk.keyval_name(keyval) or ""
             name = KEY_TRANSLATIONS.get((name, keyval, keycode), name)
             group = key.group or 0
             if name not in ignore_keys:
@@ -62,7 +62,7 @@ def do_get_gtk_keymap(display, ignore_keys: Iterable[Any]) -> Sequence[tuple[int
     return tuple(keycodes)
 
 
-def main():  # pragma: no cover
+def main() -> None:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     import sys
     from xpra.platform import program_context
