@@ -270,6 +270,7 @@ class SocketProtocol:
             "aliases": USE_ALIASES,
             "has_more": shm and shm.is_set(),
             "receive-pending": self.receive_pending,
+            "closed": self._closed,
         }
         comp = self.compressor
         if comp:
