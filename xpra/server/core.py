@@ -2015,15 +2015,15 @@ class ServerCore:
         proto.send_now(("challenge", salt, auth_caps or {}, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
-    def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage) -> None:
+    def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage, authenticator=None) -> None:
         authlog.warn("Warning: authentication failed")
-        authlog.warn(f" {nicestr(msg)}")
+        wmsg = nicestr(msg)
+        if authenticator:
+            wmsg = f"{authenticator!r}: "+wmsg
+        authlog.warn(f" {wmsg}")
         GLib.timeout_add(1000, self.disconnect_client, proto, msg)
 
     def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
-        def auth_failed(msg: str | ConnectionMessage) -> None:
-            self.auth_failed(proto, msg)
-
         remote = {}
         for key in ("hostname", "uuid", "session-id", "username", "name"):
             v = c.strget(key)
@@ -2038,7 +2038,7 @@ class ServerCore:
                 authlog(f"instantiating authenticator for {socktype}", exc_info=True)
                 authlog.error(f"Error instantiating authenticators for {proto.socket_type} connection:")
                 authlog.estr(e)
-                auth_failed(str(e))
+                self.auth_failed(proto, str(e))
                 return
 
         digest_modes = c.strtupleget("digest", ("hmac",))
@@ -2078,6 +2078,10 @@ class ServerCore:
             if authenticator not in remaining_authenticators:
                 authlog(f"authenticator[{index}]={authenticator} (already passed)")
                 continue
+
+            def fail(msg: str | ConnectionMessage) -> None:
+                self.auth_failed(proto, msg, authenticator)
+
             req = authenticator.requires_challenge()
             csent = authenticator.challenge_sent
             authlog(f"authenticator[{index}]={authenticator}, requires-challenge={req}, challenge-sent={csent}")
@@ -2085,7 +2089,7 @@ class ServerCore:
                 # this authentication module does not need a challenge
                 # (ie: "peercred", "exec" or "none")
                 if not authenticator.authenticate(c):
-                    auth_failed(f"{authenticator} authentication failed")
+                    fail("authentication failed")
                     return
                 authenticator.passed = True
                 authlog(f"authentication passed for {authenticator} (no challenge provided)")
@@ -2098,7 +2102,7 @@ class ServerCore:
                 challenge = authenticator.get_challenge(digest_modes)
                 if challenge is None:
                     if authenticator.requires_challenge():
-                        auth_failed("invalid state, unexpected challenge response")
+                        fail("invalid state, unexpected challenge response")
                         return
                     authlog.warn(f"Warning: authentication module {authenticator!r} does not require any credentials")
                     authlog.warn(f" but the client {proto} supplied them")
@@ -2115,17 +2119,17 @@ class ServerCore:
                 authlog.info(
                     f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")  # noqa: E501
                 if actual_digest not in digest_modes:
-                    auth_failed(f"cannot proceed without {actual_digest!r} digest support")
+                    fail(f"cannot proceed without {actual_digest!r} digest support")
                     return
                 salt_digest: str = authenticator.choose_salt_digest(salt_digest_modes)
                 if salt_digest in ("xor", "des"):
-                    auth_failed(f"insecure salt digest {salt_digest!r} rejected")
+                    fail(f"insecure salt digest {salt_digest!r} rejected")
                     return
-                authlog(f"sending challenge {authenticator.prompt!r}")
+                authlog(f"{authenticator!r} sending challenge {authenticator.prompt!r}")
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
             if not authenticator.authenticate(c):
-                auth_failed(ConnectionMessage.AUTHENTICATION_FAILED)
+                fail(ConnectionMessage.AUTHENTICATION_FAILED)
                 return
         client_expects_challenge = c.strget("challenge")
         if client_expects_challenge:
