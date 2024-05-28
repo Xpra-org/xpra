@@ -9,6 +9,7 @@ import sys
 from typing import Any
 
 # default implementation uses pycups
+from xpra.common import noop
 from xpra.platform import platform_import
 from xpra.util.str_fn import print_nested_dict, pver
 from xpra.util.env import envbool
@@ -39,7 +40,7 @@ def printing_finished(_printpid) -> bool:
     return True
 
 
-def init_printing(printers_modified_callback=None) -> None:  # pylint: disable=unused-argument
+def init_printing(printers_modified_callback=noop) -> None:  # pylint: disable=unused-argument
     """ overridden in platform code """
 
 

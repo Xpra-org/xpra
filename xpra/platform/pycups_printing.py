@@ -13,13 +13,15 @@ import tempfile
 from subprocess import PIPE, Popen
 import shlex
 from threading import Lock
-from collections.abc import Callable
+from typing import Any
+from collections.abc import Callable, Iterable
 from cups import Connection  # @UnresolvedImport
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS, noop
 from xpra.os_util import OSX
 from xpra.util.str_fn import bytestostr
 from xpra.util.parsing import parse_simple_dict
+from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
@@ -76,22 +78,22 @@ log("DEFAULT_CUPS_OPTIONS=%s", DEFAULT_CUPS_OPTIONS)
 
 
 # allows us to inject the lpadmin and lpinfo commands from the config file
-def set_lpadmin_command(lpadmin: str):
+def set_lpadmin_command(lpadmin: str) -> None:
     global LPADMIN
     LPADMIN = lpadmin
 
 
-def set_add_printer_options(options: list[str]):
+def set_add_printer_options(options: list[str]) -> None:
     global ADD_OPTIONS
     ADD_OPTIONS = options
 
 
-def set_lpinfo_command(lpinfo: str):
+def set_lpinfo_command(lpinfo: str) -> None:
     global LPINFO
     LPINFO = lpinfo
 
 
-def find_ppd_file(short_name: str, filename: str):
+def find_ppd_file(short_name: str, filename: str) -> str:
     ev = os.environ.get(f"XPRA_{short_name}_PPD")
     if ev and os.path.exists(ev):
         log("using environment override for %s ppd file: %s", short_name, ev)
@@ -108,7 +110,7 @@ def find_ppd_file(short_name: str, filename: str):
         if os.path.exists(f) and os.path.isfile(f):
             return f
     log("cannot find %s in %s", filename, paths)
-    return None
+    return ""
 
 
 def get_lpinfo_drv(make_and_model: str) -> str:
@@ -131,7 +133,7 @@ def get_lpinfo_drv(make_and_model: str) -> str:
     cr.add_process(proc, "lpinfo", command, ignore=True, forget=True)
     from xpra.util.thread import start_thread
 
-    def watch_lpinfo():
+    def watch_lpinfo() -> None:
         # give it 15 seconds to run:
         for _ in range(15):
             if proc.poll() is not None:
@@ -238,16 +240,16 @@ def get_printer_definition(mimetype: str) -> str:
     return v[1]  # ie: /usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd
 
 
-def exec_lpadmin(args, success_cb: Callable = noop):
+def exec_lpadmin(args: Iterable[str], success_cb: Callable = noop) -> None:
     # pylint: disable=import-outside-toplevel
-    command = shlex.split(LPADMIN) + args
+    command = shlex.split(LPADMIN) + list(args)
     log("exec_lpadmin(%s) command=%s", args, command)
     proc = Popen(command, start_new_session=True)
     # use the global child reaper to make sure this doesn't end up as a zombie
     from xpra.util.child_reaper import getChildReaper
     cr = getChildReaper()
 
-    def check_returncode(_proc_cb):
+    def check_returncode(_proc_cb) -> None:
         returncode = proc.poll()
         log("returncode(%s)=%s", command, returncode)
         if returncode != 0:
@@ -264,21 +266,22 @@ def exec_lpadmin(args, success_cb: Callable = noop):
         raise RuntimeError(f"lpadmin command {command!r} failed and returned {proc.poll()}")
 
 
-def sanitize_name(name):
+def sanitize_name(name: str) -> str:
     name = name.replace(" ", "-")
     valid_chars = f"-_.:{string.ascii_letters}{string.digits}"
     return ''.join(c for c in name if c in valid_chars)
 
 
-def add_printer(name, options, info, location, attributes, success_cb=None):
+def add_printer(name: str, options: typedict, info: str, location: str,
+                attributes: dict, success_cb: Callable = noop) -> None:
     log("add_printer%s", (name, options, info, location, attributes, success_cb))
     mimetypes = options.strtupleget("mimetypes", (DEFAULT_MIMETYPE,))
     if not mimetypes:
-        log.error("Error: no mimetypes specified for printer '%s'", name)
+        log.error(f"Error: no mimetypes specified for printer {name!r}")
         return
     xpra_printer_name = PRINTER_PREFIX + sanitize_name(name)
     if xpra_printer_name in get_all_printers():
-        log.warn("Warning: not adding duplicate printer '%s'", name)
+        log.warn(f"Warning: not adding duplicate printer {name!r}")
         return
     # find a matching definition:
     mimetype, printer_def = None, None
@@ -314,7 +317,7 @@ def add_printer(name, options, info, location, attributes, success_cb=None):
     exec_lpadmin(command, success_cb=success_cb)
 
 
-def remove_printer(name):
+def remove_printer(name: str) -> None:
     log("remove_printer(%s)", name)
     exec_lpadmin(["-x", PRINTER_PREFIX + sanitize_name(name)])
 
@@ -325,13 +328,13 @@ DBUS_PATH = "/com/redhat/PrinterSpooler"
 DBUS_IFACE = "com.redhat.PrinterSpooler"
 
 
-def handle_dbus_signal(*args):
+def handle_dbus_signal(*args) -> None:
     log("handle_dbus_signal(%s) printers_modified_callback=%s", args, printers_modified_callback)
     if printers_modified_callback:
         printers_modified_callback()
 
 
-def init_dbus_listener():
+def init_dbus_listener() -> bool:
     if not CUPS_DBUS:
         return False
     global dbus_init
@@ -355,10 +358,10 @@ def init_dbus_listener():
             else:
                 log.error("failed to initialize dbus cups event listener", exc_info=True)
             dbus_init = False
-    return dbus_init
+    return bool(dbus_init)
 
 
-def check_printers():
+def check_printers() -> None:
     # we don't actually check anything here and just
     # fire the callback every time, relying in client_base
     # to notice that nothing has changed and avoid sending the same printers to the server
@@ -371,7 +374,7 @@ def check_printers():
 _polling_timer = 0
 
 
-def schedule_polling_timer():
+def schedule_polling_timer() -> None:
     # fallback to polling:
     cancel_polling_timer()
     from threading import Timer
@@ -381,7 +384,7 @@ def schedule_polling_timer():
     log("schedule_polling_timer() timer=%s", _polling_timer)
 
 
-def cancel_polling_timer():
+def cancel_polling_timer() -> None:
     global _polling_timer
     pt = _polling_timer
     log("cancel_polling_timer() timer=%s", pt)
@@ -393,7 +396,7 @@ def cancel_polling_timer():
             log("error cancelling polling timer %s", pt, exc_info=True)
 
 
-def init_printing(callback=None):
+def init_printing(callback=noop) -> None:
     global printers_modified_callback
     log("init_printing(%s) printers_modified_callback=%s", callback, printers_modified_callback)
     printers_modified_callback = callback
@@ -402,33 +405,33 @@ def init_printing(callback=None):
         schedule_polling_timer()
 
 
-def cleanup_printing():
+def cleanup_printing() -> None:
     cancel_polling_timer()
 
 
-def get_printers():
+def get_printers() -> dict[str, dict]:
     all_printers = get_all_printers()
     return {k: v for k, v in all_printers.items() if k not in SKIPPED_PRINTERS}
 
 
-def get_all_printers():
+def get_all_printers() -> dict[str, dict]:
     conn = Connection()
     printers = conn.getPrinters()
     log("pycups.get_all_printers()=%s", printers)
     return printers
 
 
-def get_default_printer():
+def get_default_printer() -> str:
     conn = Connection()
-    return conn.getDefault()
+    return conn.getDefault() or ""
 
 
-def get_printer_attributes(name):
+def get_printer_attributes(name: str) -> dict[str, str | Iterable[str]]:
     conn = Connection()
     return conn.getPrinterAttributes(name)
 
 
-def print_files(printer, filenames, title, options):
+def print_files(printer: str, filenames: Iterable[str], title: str, options: dict) -> int:
     if printer not in get_printers():
         raise ValueError("invalid printer: '%s'" % printer)
     log("pycups.print_files%s", (printer, filenames, title, options))
@@ -461,21 +464,21 @@ def print_files(printer, filenames, title, options):
     return printpid
 
 
-def printing_finished(printpid):
+def printing_finished(printpid: int) -> bool:
     conn = Connection()
     f = conn.getJobs().get(printpid, None) is None
     log("pycups.printing_finished(%s)=%s", printpid, f)
     return f
 
 
-PRINTER_STATE = {
+PRINTER_STATE: dict[int, str] = {
     3: "idle",
     4: "printing",
     5: "stopped",
 }
 
 
-def get_info():
+def get_info() -> dict[str, Any]:
     from xpra.platform.printing import get_mimetypes, DEFAULT_MIMETYPES
     return {
         "mimetypes": {
@@ -510,7 +513,7 @@ def get_info():
     }
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     for arg in list(sys.argv):
         if arg in ("-v", "--verbose"):
