@@ -69,6 +69,7 @@ FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
 MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 SEND_INVALID_PACKET = envint("XPRA_SEND_INVALID_PACKET", 0)
 SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_DATA", b"ZZinvalid-packetZZ"))
+ALIAS_INFO = envbool("XPRA_ALIAS_INFO", False)
 
 PACKET_HEADER_CHAR = ord("P")
 
@@ -261,7 +262,7 @@ class SocketProtocol:
     def set_receive_aliases(self, aliases: dict[int, str]) -> None:
         self.receive_aliases = aliases
 
-    def get_info(self, alias_info: bool = True) -> dict[str, Any]:
+    def get_info(self, alias_info: bool = ALIAS_INFO) -> dict[str, Any]:
         shm = self._source_has_more
         info = {
             "large_packets": self.large_packets,
