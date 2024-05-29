@@ -455,6 +455,8 @@ class ServerCore:
             netlog("cleanup removing pidfile %s", self.pidfile)
             rm_pidfile(self.pidfile, self.pidinode)
             self.pidinode = 0
+        from xpra.util.child_reaper import reaper_cleanup
+        reaper_cleanup()
 
     def clean_session_files(self) -> None:
         self.do_clean_session_files(*self.session_files)

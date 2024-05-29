@@ -13,7 +13,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.platform.features import COMMAND_SIGNALS
-from xpra.util.child_reaper import getChildReaper, ProcInfo, reaper_cleanup
+from xpra.util.child_reaper import getChildReaper, ProcInfo
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
@@ -126,7 +126,6 @@ class ChildCommandServer(StubServerMixin):
         self.reaper_exit = noop
         if self.menu_provider:
             self.menu_provider.cleanup()
-        reaper_cleanup()
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {
