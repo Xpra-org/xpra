@@ -26,6 +26,21 @@ def makeabs(filename: str) -> str:
     return os.path.abspath(os.path.expanduser(filename))
 
 
+def find_auth_password_file(auth_defs: Sequence[AuthDef]) -> str:
+    for auth in auth_defs:
+        try:
+            name, _, authclass, authoptions = auth
+            filename = authoptions.get("file")
+            log(f"file for {name} / {authclass} : {filename!r}")
+            if filename:
+                return filename
+        except RuntimeError as e:
+            log.error("Error locating authentication password file for printer backend:")
+            log.error(f" attributes: {auth}")
+            log.estr(e)
+    return ""
+
+
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     @classmethod
@@ -102,15 +117,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
         }
 
         if auth_defs:
-            auth_password_file = ""
-            for auth in auth_defs:
-                try:
-                    name, _, authclass, authoptions = auth
-                    auth_password_file = authoptions.get("file")
-                    log(f"file for {name} / {authclass} : {password_file!r}")
-                except Exception as e:
-                    log.error("Error handling authentication attributes for printer backend:")
-                    log.estr(e)
+            auth_password_file = find_auth_password_file(auth_defs)
             if auth_password_file or password_file:
                 attributes["password-file"] = makeabs(auth_password_file or password_file[0])
         if encryption:
