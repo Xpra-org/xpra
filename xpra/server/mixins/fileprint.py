@@ -9,6 +9,7 @@
 import os.path
 import hashlib
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.util.stats import to_std_unit, std_unit
 from xpra.os_util import WIN32, POSIX
@@ -16,6 +17,7 @@ from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.common import NotificationID
+from xpra.server.auth.auth_helper import AuthDef
 from xpra.net.common import PacketType
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -129,7 +131,7 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
             printing = False
         # verify that we can talk to the socket:
-        auth_class = self.auth_classes.get("socket")
+        auth_class = self.auth_classes.get("socket", ())
         if printing and auth_class:
             try:
                 # this should be the name of the auth module:
@@ -235,8 +237,8 @@ class FilePrintServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        printers = packet[1]
-        auth_class = self.auth_classes.get("socket")
+        printers = dict(packet[1])
+        auth_class: Sequence[AuthDef] = self.auth_classes.get("socket", ())
         ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
 
     ######################################################################

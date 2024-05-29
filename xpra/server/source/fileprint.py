@@ -5,11 +5,13 @@
 
 import os
 from typing import Any
+from collections.abc import Iterable, Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import get_machine_id
 from xpra.net.file_transfer import FileTransferHandler
+from xpra.server.auth.auth_helper import AuthDef
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
 
@@ -17,6 +19,11 @@ log = Logger("printing")
 
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
+
+
+def makeabs(filename: str) -> str:
+    # convert to an absolute path since the backend may run as a different user:
+    return os.path.abspath(os.path.expanduser(filename))
 
 
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
@@ -57,9 +64,10 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     ######################################################################
     # printing:
-    def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile) -> None:
+    def set_printers(self, printers: dict, password_file: Iterable[str], auth_defs: Sequence[AuthDef],
+                     encryption: str, encryption_keyfile: str) -> None:
         log("set_printers%s for %s",
-            (printers, password_file, auth, encryption, encryption_keyfile), self)
+            (printers, password_file, auth_defs, encryption, encryption_keyfile), self)
         if self.machine_id == get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
             log("local client with identical machine id,")
@@ -79,11 +87,11 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 printers.pop(k, None)
                 continue
             if npd is None:
-                log("printer %s no longer exists", k)
+                log(f"printer {k} no longer exists")
             else:
-                log("printer %s has been modified:", k)
-                log(" was %s", cpd)
-                log(" now %s", npd)
+                log(f"printer {k} has been modified:")
+                log(f" was {cpd}")
+                log(f" now {npd}")
             # remove it:
             self.printers.pop(k, None)
             self.remove_printer(k)
@@ -93,24 +101,22 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             "source": self.uuid,
         }
 
-        def makeabs(filename):
-            # convert to an absolute path since the backend may run as a different user:
-            return os.path.abspath(os.path.expanduser(filename))
-
-        if auth:
-            auth_password_file = None
-            try:
-                name, _, authclass, authoptions = auth
-                auth_password_file = authoptions.get("file")
-                log("file for %s / %s: '%s'", name, authclass, password_file)
-            except Exception as e:
-                log.error("Error: cannot forward authentication attributes to printer backend:")
-                log.estr(e)
+        if auth_defs:
+            auth_password_file = ""
+            for auth in auth_defs:
+                try:
+                    name, _, authclass, authoptions = auth
+                    auth_password_file = authoptions.get("file")
+                    log(f"file for {name} / {authclass} : {password_file!r}")
+                except Exception as e:
+                    log.error("Error handling authentication attributes for printer backend:")
+                    log.estr(e)
             if auth_password_file or password_file:
                 attributes["password-file"] = makeabs(auth_password_file or password_file[0])
         if encryption:
             if not encryption_keyfile:
                 log.error("Error: no encryption keyfile found for printing")
+                log.error(f" but encryption is set to {encryption!r}")
             else:
                 attributes["encryption"] = encryption
                 attributes["encryption-keyfile"] = makeabs(encryption_keyfile)
@@ -131,9 +137,9 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                     return x
         return self.unix_socket_paths[0]
 
-    def setup_printer(self, printer, props: typedict, attributes: dict) -> None:
+    def setup_printer(self, printer: str, props_dict: dict, attributes: dict) -> None:
         from xpra.platform.pycups_printing import add_printer  # pylint: disable=import-outside-toplevel
-        props = typedict(props)
+        props = typedict(props_dict)
         info = props.strget("printer-info")
         attrs = attributes.copy()
         attrs["remote-printer"] = printer
@@ -149,7 +155,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
                 # once the printer has been added, register it in the list
                 # (so it will be removed on exit)
                 log.info("the remote printer '%s' has been configured", printer)
-                self.printers[printer] = props
+                self.printers[printer] = props_dict
                 self.printers_added.add(printer)
 
             add_printer(printer, props, info, location, attrs, success_cb=printer_added)
@@ -174,8 +180,8 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             try:
                 from xpra.platform.pycups_printing import remove_printer
                 remove_printer(printer)
-                log.info("removed remote printer '%s'", printer)
+                log.info(f"removed remote printer {printer!r}")
             except Exception as e:
                 log("remove_printer(%s)", printer, exc_info=True)
-                log.error("Error: failed to remove printer '%s':", printer)
+                log.error("Error: failed to remove printer {printer!r}:")
                 log.estr(e)

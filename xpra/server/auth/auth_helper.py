@@ -1,11 +1,11 @@
 # This file is part of Xpra.
-# Copyright (C) 2021-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2021-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import sys
-from typing import Any
+from typing import Any, TypeAlias
 
 from xpra.util.parsing import parse_simple_dict
 from xpra.os_util import WIN32
@@ -15,7 +15,10 @@ from xpra.log import Logger
 log = Logger("auth")
 
 
-def get_auth_module(auth_str, cwd=os.getcwd(), **auth_options) -> tuple[str, Any, type, dict]:
+AuthDef: TypeAlias = tuple[str, Any, type, dict]
+
+
+def get_auth_module(auth_str: str, cwd=os.getcwd(), **auth_options) -> AuthDef:
     log("get_auth_module(%s, {..})", auth_str)
     # separate options from the auth module name
     # either with ":" or "," as separator

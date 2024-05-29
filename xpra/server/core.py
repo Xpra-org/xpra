@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -18,7 +18,7 @@ from time import sleep, time, monotonic
 from threading import Lock
 from types import FrameType
 from typing import Any
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Iterable
 
 from xpra.net.http.common import HTTP_UNSUPORTED
 from xpra.util.version import (
@@ -59,7 +59,7 @@ from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf, which
 from xpra.server.background_worker import add_work_item, quit_worker
 from xpra.server.menu_provider import get_menu_provider
-from xpra.server.auth.auth_helper import get_auth_module
+from xpra.server.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, ConnectionMessage, noerr
 from xpra.util.pysystem import dump_all_frames
@@ -163,7 +163,7 @@ class ServerCore:
         log("ServerCore.__init__()")
         self.start_time = time()
         self.uuid = ""
-        self.auth_classes = {}
+        self.auth_classes: dict[str, Sequence[AuthDef]] = {}
         self.child_reaper = None
         self.original_desktop_display = None
         self.session_type: str = "unknown"
@@ -225,11 +225,11 @@ class ServerCore:
         self.readonly = False
         self.mdns = False
         self.mdns_publishers = {}
-        self.encryption = None
-        self.encryption_keyfile = None
-        self.tcp_encryption = None
-        self.tcp_encryption_keyfile = None
-        self.password_file = None
+        self.encryption = ""
+        self.encryption_keyfile = ""
+        self.tcp_encryption = ""
+        self.tcp_encryption_keyfile = ""
+        self.password_file: Iterable[str] = ()
         self.compression_level = 1
         self.exit_with_client = False
         self.server_idle_timeout = 0
@@ -745,7 +745,7 @@ class ServerCore:
             self.auth_classes[x] = self.get_auth_modules(x, opts_value)
         authlog(f"init_auth(..) auth={self.auth_classes}")
 
-    def get_auth_modules(self, socket_type: str, auth_strs) -> Sequence[tuple[str, Any, type, dict]]:
+    def get_auth_modules(self, socket_type: str, auth_strs: Iterable[str]) -> Sequence[AuthDef]:
         authlog(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
         if not auth_strs:
             return ()

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -67,7 +67,7 @@ class FileAuthenticatorBase(SysAuthenticator):
     def parse_filedata(self, data: str):  # pragma: no cover
         raise NotImplementedError()
 
-    def load_password_file(self):
+    def load_password_file(self) -> bytes | None:
         if not self.password_filename:
             return None
         full_path = os.path.abspath(self.password_filename)
