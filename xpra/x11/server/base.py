@@ -111,21 +111,20 @@ class X11ServerBase(X11ServerCore):
 
     def kill_display(self) -> None:
         if self.display_pid:
-            if self._upgrading == EXITING_CODE:
-                log.info("exiting: not cleaning up Xvfb")
-            elif self._upgrading:
-                log.info("upgrading: not cleaning up Xvfb")
-            else:
-                from xpra.x11.vfb_util import kill_xvfb
-                kill_xvfb(self.display_pid)
-                self.do_clean_session_files(
-                    "xvfb.pid",
-                    "xauthority",
-                    "Xorg.log",
-                    "Xorg.log.old",
-                    "xorg.conf.d/*"
-                    "xorg.conf.d"
-                )
+            if self._upgrading:
+                action = "exiting" if self._upgrading == EXITING_CODE else "upgrading"
+                log.info(f"{action}: not cleaning up Xvfb")
+                return
+            from xpra.x11.vfb_util import kill_xvfb
+            kill_xvfb(self.display_pid)
+            self.do_clean_session_files(
+                "xvfb.pid",
+                "xauthority",
+                "Xorg.log",
+                "Xorg.log.old",
+                "xorg.conf.d/*"
+                "xorg.conf.d"
+            )
 
     def late_cleanup(self) -> None:
         super().late_cleanup()
