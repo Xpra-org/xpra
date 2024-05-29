@@ -12,6 +12,7 @@ import glob
 import shlex
 import signal
 from time import monotonic
+from typing import NoReturn
 from subprocess import Popen, PIPE, call
 import os.path
 
@@ -97,7 +98,7 @@ def get_vfb_logger() -> Logger:
     return vfb_logger
 
 
-def osclose(fd) -> None:
+def osclose(fd: int) -> None:
     try:
         os.close(fd)
     except OSError:
@@ -187,7 +188,7 @@ def get_xauthority_path(display_name: str) -> str:
 
 
 def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd,
-               uid: int, gid: int, username: str, uinput_uuid=""):
+               uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
     if OSX:
@@ -205,7 +206,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
 
     subs: dict[str, str] = {}
 
-    def pathexpand(s):
+    def pathexpand(s: str) -> str:
         return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
     etc_prefix = os.environ.get("XPRA_INSTALL_PREFIX", "")
     if etc_prefix.endswith("/usr"):
@@ -294,7 +295,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
     xvfb = None
     try:
         if use_display_fd:
-            def displayfd_err(msg):
+            def displayfd_err(msg: str) -> NoReturn:
                 raise InitException(f"{xvfb_executable}: {msg}")
             r_pipe, w_pipe = os.pipe()
             try:
@@ -302,7 +303,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
                 xvfb_cmd += ["-displayfd", str(w_pipe)]
                 xvfb_cmd[0] = f"{xvfb_executable}-for-Xpra-" + display_name.lstrip(":")
 
-                def preexec():
+                def preexec() -> None:
                     os.setpgrp()
                     if getuid() == 0 and uid:
                         setuidgid(uid, gid)
@@ -349,7 +350,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
             xvfb_cmd[0] = f"{xvfb_executable}-for-Xpra-"+display_name.lstrip(":")
             xvfb_cmd.append(display_name)
 
-            def preexec():
+            def preexec() -> None:
                 if getuid() == 0 and (uid != 0 or gid != 0):
                     setuidgid(uid, gid)
                 else:
@@ -526,7 +527,7 @@ def verify_display_ready(xvfb, display_name: str, shadowing_check=True, log_erro
     return True
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     import sys
     display = ""
