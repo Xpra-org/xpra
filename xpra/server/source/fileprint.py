@@ -19,6 +19,21 @@ ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 
 
+def find_auth_password_file(auth_defs) -> str:
+    for auth in auth_defs:
+        try:
+            name, _, authclass, authoptions = auth
+            filename = authoptions.get("file")
+            log(f"file for {name} / {authclass} : {filename!r}")
+            if filename:
+                return filename
+        except RuntimeError as e:
+            log.error("Error locating authentication password file for printer backend:")
+            log.error(f" attributes: {auth}")
+            log.estr(e)
+    return ""
+
+
 class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     @classmethod
@@ -57,9 +72,9 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     ######################################################################
     # printing:
-    def set_printers(self, printers, password_file, auth, encryption, encryption_keyfile) -> None:
+    def set_printers(self, printers, password_file, auth_defs, encryption, encryption_keyfile) -> None:
         log("set_printers%s for %s",
-            (printers, password_file, auth, encryption, encryption_keyfile), self)
+            (printers, password_file, auth_defs, encryption, encryption_keyfile), self)
         if self.machine_id == get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
             log("local client with identical machine id,")
@@ -97,15 +112,8 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             # convert to an absolute path since the backend may run as a different user:
             return os.path.abspath(os.path.expanduser(filename))
 
-        if auth:
-            auth_password_file = None
-            try:
-                name, _, authclass, authoptions = auth
-                auth_password_file = authoptions.get("file")
-                log("file for %s / %s: '%s'", name, authclass, password_file)
-            except Exception as e:
-                log.error("Error: cannot forward authentication attributes to printer backend:")
-                log.estr(e)
+        if auth_defs:
+            auth_password_file = find_auth_password_file(auth_defs)
             if auth_password_file or password_file:
                 attributes["password-file"] = makeabs(auth_password_file or password_file[0])
         if encryption:

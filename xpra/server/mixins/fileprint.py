@@ -14,7 +14,7 @@ from xpra.util.stats import to_std_unit, std_unit
 from xpra.os_util import WIN32, POSIX
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
-from xpra.util.str_fn import repr_ellipsized, bytestostr
+from xpra.util.str_fn import repr_ellipsized, bytestostr, csv
 from xpra.common import NotificationID
 from xpra.net.common import PacketType
 from xpra.net.file_transfer import FileTransferAttributes
@@ -118,16 +118,20 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: failed to set lpadmin and lpinfo commands", exc_info=True)
             printing = False
         # verify that we can talk to the socket:
-        auth_class = self.auth_classes.get("socket")
-        if printing and auth_class:
-            try:
-                # this should be the name of the auth module:
-                auth_name = auth_class[0]
-            except Exception:
-                auth_name = str(auth_class)
-            if auth_name not in ("none", "file"):
-                printlog.warn("Warning: printer forwarding cannot be used,")
-                printlog.warn(" it conflicts with socket authentication module '%r'", auth_name)
+        auth_classes = self.auth_classes.get("socket", ())
+        if printing and auth_classes:
+            fail = []
+            for auth_class in auth_classes:
+                try:
+                    # this should be the name of the auth module:
+                    auth_name = auth_class[0]
+                except Exception:
+                    auth_name = str(auth_class)
+                if auth_name not in ("allow", "file", "hosts", "none", "peercred"):
+                    fail.append(auth_name)
+            if fail:
+                printlog.warn("Warning: printer forwarding is not supported")
+                printlog.warn(" with sockets using authentication modules %s", csv(fail))
                 printing = False
         # update file transfer attributes since printing nay have been disabled here
         self.file_transfer.printing = printing
