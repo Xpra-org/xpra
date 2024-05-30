@@ -5,7 +5,7 @@
 
 import os
 from typing import Any
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -79,7 +79,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     ######################################################################
     # printing:
-    def set_printers(self, printers: dict, password_file: Iterable[str], auth_defs: Sequence[AuthDef],
+    def set_printers(self, printers: dict, password_file: Sequence[str], auth_defs: Sequence[AuthDef],
                      encryption: str, encryption_keyfile: str) -> None:
         log("set_printers%s for %s",
             (printers, password_file, auth_defs, encryption, encryption_keyfile), self)
