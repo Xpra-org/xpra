@@ -27,6 +27,7 @@ BLACKLIST: GL_MATCH_LIST = {
         (
             "SVGA3D",
             "Software Rasterizer",
+            "llvmpipe"
         ),
     "vendor":
         (
