@@ -62,7 +62,7 @@ def do_get_gtk_keymap(display, ignore_keys: Iterable[Any]) -> Sequence[tuple[int
     return tuple(keycodes)
 
 
-def main() -> None:  # pragma: no cover
+def main() -> int:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     import sys
     from xpra.platform import program_context
