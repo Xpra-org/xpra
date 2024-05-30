@@ -270,7 +270,6 @@ def get_display_info(xscale=1, yscale=1) -> dict[str, Any]:
     with IgnoreWarningsContext():
         info: dict[str, Any] = {
             "root-size": xy(root_size),
-            "screens": display.get_n_screens(),
             "name": display.get_name(),
             "pointer": xy(display.get_pointer()[-3:-1]),
             "devices": len(display.list_devices()),
@@ -309,8 +308,8 @@ def get_display_info(xscale=1, yscale=1) -> dict[str, Any]:
 def get_screens_info() -> dict[int, dict]:
     display = Gdk.Display.get_default()
     info: dict[int, dict] = {}
-    assert display.get_n_screens() == 1, "GTK3: The number of screens is always 1"
     with IgnoreWarningsContext():
+        assert display.get_n_screens() == 1, "GTK3: The number of screens is always 1"
         screen = display.get_screen(0)
     info[0] = get_screen_info(display, screen)
     return info
