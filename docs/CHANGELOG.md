@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.9] 2023-05-24
+## [5.0.9] 2023-05-31
 * Encodings:
     * [video encoding errors causing missed screen updates](https://github.com/Xpra-org/xpra/commit/188e9903754e1abc8cd86ecd65bf9427000e7012)
     * [drop alpha if requested](https://github.com/Xpra-org/xpra/commit/6e1934575cabc412782616704bb4ee24b5f36930) and [for video encoders](https://github.com/Xpra-org/xpra/commit/3cbdccbcdd9be7fdf6eabb67b322e612852f108c)
@@ -45,6 +45,8 @@
     * [help video decodes with colorspace metadata](https://github.com/Xpra-org/xpra/commit/288a2a5bd8def111efa72eed29eaa24763de3286)
     * [handle decoding of full-range YUV](https://github.com/Xpra-org/xpra/commit/8427da4d6219d74ec7fe075ffbb9feb6949972f8)
     * [`sync-xvfb` requires cairo](https://github.com/Xpra-org/xpra/commit/20ef5ce0f29cb839d428d78c759c35f80b46af8e)
+    * [blacklist `llvmpipe` software OpenGL renderer](https://github.com/Xpra-org/xpra/commit/1055dc14b112e5907e09fa5bea34894a261a3139)
+    * [allow printing with more socket authentication modules](https://github.com/Xpra-org/xpra/commit/0f73968a69d2a1867635c48d6eb68bf949981775)
 * Cosmetic:
     * [clearer audio error message](https://github.com/Xpra-org/xpra/commit/7adc99fa9143d60e0c8cd7886eb7bdc576373db1)
     * [clearer ssh error message](https://github.com/Xpra-org/xpra/commit/83750ca62606878a01303257b87119ac4dca62ab)
@@ -66,6 +68,9 @@
     * [warn users about deprecated syntax](https://github.com/Xpra-org/xpra/commit/4a1aaf1d64a924d9e67fe199b52715c87b8dc719)
     * [discord link had expired](https://github.com/Xpra-org/xpra/commit/f7557893fad97892a49d6fe4b727dd21a1883c36)
     * [codec self tests](https://github.com/Xpra-org/xpra/commit/cc759a64d8168796ccf1f8e755bb15829cabb5fb), [skip tests without sample data](https://github.com/Xpra-org/xpra/commit/08bb25365dd7c476d60b803a514a2d07724a4df6)
+    * [pam authentication error messages](https://github.com/Xpra-org/xpra/commit/138f934a72758292bda5fc5230e5625dcdf0af1b), [twice](https://github.com/Xpra-org/xpra/commit/10c6be61a9965c2d1de30cdab61f7bb0dd241240)
+    * [prevent future MacOS Gdk Pixbuf path errors](https://github.com/Xpra-org/xpra/commit/8ab8168732076f40c1a686462b2fa82969cb0b3b)
+    * [log full details with all threaded initialization errors](https://github.com/Xpra-org/xpra/commit/4448bb0643c4b5aeea9f01533aa2a68202880c55)
 
 ## [5.0.8] 2024-04-03
 * Platforms, build and packaging:

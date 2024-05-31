@@ -43,6 +43,8 @@ xpra (5.0.9-1) UNRELEASED; urgency=low
    - help video decodes with colorspace metadata
    - handle decoding of full-range YUV
    - `sync-xvfb` requires cairo
+   - blacklist `llvmpipe` software OpenGL renderer
+   - allow printing with more socket authentication modules
   * Cosmetic:
    - clearer audio error message
    - clearer ssh error message
@@ -64,8 +66,11 @@ xpra (5.0.9-1) UNRELEASED; urgency=low
    - warn users about deprecated syntax
    - discord link had expired
    - codec self tests, skip tests without sample data
+   - pam authentication error messages
+   - prevent future MacOS Gdk Pixbuf path errors
+   - log full details with all threaded initialization errors
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 24 May 2024 14:34:04 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 31 May 2024 13:39:09 +0700
 
 xpra (5.0.8-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

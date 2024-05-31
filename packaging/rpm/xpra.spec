@@ -778,7 +778,7 @@ fi
 
 
 %changelog
-* Fri May 24 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
+* Fri May 31 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
 - Encodings:
    video encoding errors causing missed screen updates
    drop alpha if requested and for video encoders
@@ -823,6 +823,8 @@ fi
    help video decodes with colorspace metadata
    handle decoding of full-range YUV
    `sync-xvfb` requires cairo
+   blacklist `llvmpipe` software OpenGL renderer
+   allow printing with more socket authentication modules
 - Cosmetic:
    clearer audio error message
    clearer ssh error message
@@ -844,6 +846,9 @@ fi
    warn users about deprecated syntax
    discord link had expired
    codec self tests, skip tests without sample data
+   pam authentication error messages
+   prevent future MacOS Gdk Pixbuf path errors
+   log full details with all threaded initialization errors
 
 * Wed Apr 03 2024 Antoine Martin <antoine@xpra.org> 5.0.8-10
 - Platforms, build and packaging:
