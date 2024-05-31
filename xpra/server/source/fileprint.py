@@ -116,10 +116,9 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
             "source": self.uuid,
         }
 
-        if auth_defs:
-            auth_password_file = find_auth_password_file(auth_defs)
-            if auth_password_file or password_file:
-                attributes["password-file"] = makeabs(auth_password_file or password_file[0])
+        auth_password_file = find_auth_password_file(auth_defs) if auth_defs else ""
+        if auth_password_file or password_file:
+            attributes["password-file"] = makeabs(auth_password_file or password_file[0])
         if encryption:
             if not encryption_keyfile:
                 log.error("Error: no encryption keyfile found for printing")
