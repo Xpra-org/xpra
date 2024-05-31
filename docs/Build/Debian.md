@@ -6,7 +6,28 @@ Debian and Ubuntu also ships xpra packages, though their _stable_ versions are c
 
 For general information, see [building](./README.md).
 
-## Build and runtime requirements
+## Build requirements
+The easiest way to install the build dependencies
+is using the `dev-env` build subcommand which will honour setup arguments. ie:
+```shell
+./setup.py dev-env --minimal --with-openh264
+```
+_(available in xpra v6.1 onwards)_
+
+
+Alternatively, you can install these sets yourself:
+<details>
+  <summary>Common dependencies</summary>
+
+To be able to run xpra, you are likely to need:
+```shell
+apt-get install xvfb python3-cairo python3-gi-cairo \
+    python3-opengl python3-pil
+```
+</details>
+<details>
+  <summary>X11</summary>
+
 ```shell
 apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev libxres-dev \
                 libxkbfile-dev \
@@ -15,19 +36,20 @@ apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev libxres-
                 libsystemd-dev \
                 liblz4-dev
 ```
-GTK3 for the server and GUI client:
-```shell
-apt-get install libgtk-3-dev python3-dev python3-cairo-dev python-gi-dev cython3
-```
-Also install some X11 utilities if not installed already:
+
+These X11 utilities are usually required at runtime:
 ```shell
 apt-get install xauth x11-xkb-utils
 ```
-To be able to run xpra, you are likely to need:
+</details>
+<details>
+  <summary>GTK3</summary>
+
+GTK3 toolkit for the server and GUI client:
 ```shell
-apt-get install xvfb python3-cairo python3-gi-cairo \
-    python3-opengl python3-pil
+apt-get install libgtk-3-dev python3-dev python3-cairo-dev python-gi-dev cython3
 ```
+</details>
 
 ### Optional:
 <details>

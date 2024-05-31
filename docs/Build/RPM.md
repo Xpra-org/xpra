@@ -20,6 +20,14 @@ dnf builddep xpra.spec
 ```
 You may also refer to the more generic list of [dependencies](./Dependencies.md)
 
+Alternatively, if you want to install a more limited set of build dependencies,
+you can use the `dev-env` build subcommand which will honour setup arguments. ie:
+```shell
+./setup.py dev-env --minimal --with-openh264
+```
+_(available in xpra v6.1 onwards)_
+
+
 ## Build
 ```shell
 python3 ./setup.py install
