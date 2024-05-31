@@ -710,12 +710,81 @@ def install_dev_env():
     os.execv(exe, cmd)
 
 
+def install_repo(repo_variant=""):
+    if not LINUX:
+        print(f"'install{repo_variant}-repo' subcommand is not supported on {sys.platform!r}")
+        sys.exit(1)
+    distro = get_linux_distribution()
+    setup_cmds: list[list[str]] = []
+
+    if distro[0] in ("Debian", "Ubuntu"):
+        variant = distro[2]     # ie: "noble"
+        ext = ".sources"
+        if variant not in (
+            "xenial", "bionic", "focal", "jammy", "mantic", "noble",
+            "bullseye", "bookworm", "trixie", "sid",
+        ):
+            raise ValueError(f"Debian / Ubuntu variant {variant} is not supported by this subcommand")
+        to = "/etc/apt/sources.list.d/"
+        setup_cmds.append(["wget", "-O", "/usr/share/keyrings/xpra.asc", "https://xpra.org/xpra.asc"])
+        setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra.sources", to])
+        if repo_variant == "-beta":
+            setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra-beta.sources", to])
+
+    else:
+        # assume RPM
+        variant = "Fedora"
+
+        def add_epel() -> None:
+            setup_cmds.append(["dnf", "config-manager", "--set-enabled", "crb"])
+            setup_cmds.append(["dnf", "install", "epel-release"])
+
+        if is_Fedora():
+            release = get_status_output(["rpm", "-E", "%fedora"])
+            assert release[0] == 0, "failed to run `rpm -E %fedora`"
+            release_name = release[1].strip("\n\r")
+            setup_cmds.append(["dnf", "install", f"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{release_name}.noarch.rpm"])
+            # setup_cmds.append(["dnf", "install", f"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-nonfree-release-{release_name}.noarch.rpm"])
+            setup_cmds.append(["dnf", "config-manager", "--set-enabled", "fedora-cisco-openh264"])
+        elif is_RedHat() or is_AlmaLinux():
+            variant = "almalinux"
+            add_epel()
+        elif is_RockyLinux():
+            variant = "rockylinux"
+            add_epel()
+        elif is_OracleLinux():
+            variant = "oraclelinux"
+            add_epel()
+        elif is_CentOS():
+            variant = "CentOS-Stream"
+            add_epel()
+        else:
+            raise ValueError(f"unsupported distribution {csv(distro)}")
+        to = "/etc/yum.repos.d/"
+        setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra.repo", to])
+        if repo_variant == "-beta":
+            setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra-beta.repo", to])
+
+    for cmd in setup_cmds:
+        if os.geteuid() != 0:
+            cmd.insert(0, "sudo")
+        subprocess.run(cmd)
+
+
 if "doc" in sys.argv:
     convert_docs("html")
     sys.exit(0)
 
 if "dev-env" in sys.argv:
     install_dev_env()
+    sys.exit(0)
+
+if "install-repo" in sys.argv:
+    install_repo()
+    sys.exit(0)
+
+if "install-beta-repo" in sys.argv:
+    install_repo("-beta")
     sys.exit(0)
 
 if "pdf-doc" in sys.argv:
