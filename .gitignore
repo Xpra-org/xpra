@@ -140,6 +140,16 @@ tests/unittests/test-file*
 /xpra/x11/gtk/bindings.c
 /xpra/x11/gtk/display_source.c
 /xpra/x11/gtk/gdk_display_util.c
+/xpra/x11/gtk/clipboard.c
+/xpra/x11/gtk/composite.c
+/xpra/x11/gtk/damage.c
+/xpra/x11/gtk/keys.c
+/xpra/x11/gtk/prop.c
+/xpra/x11/gtk/selection.c
+/xpra/x11/gtk/tray.c
+/xpra/x11/gtk/wm.c
+/xpra/x11/gtk/wm_check.c
+/xpra/x11/gtk/world_window.c
 /xpra/x11/bindings/*.c
 /xpra/x11/gtk_x11/*.c
 /xpra/x11/desktop/*.c
