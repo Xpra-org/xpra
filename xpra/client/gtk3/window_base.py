@@ -1279,7 +1279,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         log("strut=%s", strut)
         d = typedict(strut)
-        values = []
+        values: list[int] = []
         for x in ("left", "right", "top", "bottom"):
             v = d.intget(x, 0)
             # handle scaling:
@@ -1305,8 +1305,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             values.append(v)
         log("setting strut=%s, has partial=%s", values, has_partial)
         if has_partial:
-            self.set_x11_property("_NET_WM_STRUT_PARTIAL", ["u32"], values)
-        self.set_x11_property("_NET_WM_STRUT", ["u32"], values[:4])
+            self.set_x11_property("_NET_WM_STRUT_PARTIAL", "u32", values)
+        self.set_x11_property("_NET_WM_STRUT", "u32", values[:4])
 
     def set_window_type(self, window_types) -> None:
         hints = 0
