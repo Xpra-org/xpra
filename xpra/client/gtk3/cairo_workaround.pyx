@@ -24,6 +24,9 @@
 
 #cython: boundscheck=False
 
+from typing import Dict
+from collections.abc import Sequence
+
 import cairo
 from libc.stdint cimport uintptr_t
 from libc.string cimport memcpy
@@ -69,7 +72,7 @@ cdef extern from "pycairo/py3cairo.h":
     ctypedef PycairoSurface PycairoImageSurface
 
 
-CAIRO_FORMAT = {
+CAIRO_FORMAT: Dict[cairo_format_t, str] = {
     CAIRO_FORMAT_INVALID    : "Invalid",
     CAIRO_FORMAT_ARGB32     : "ARGB32",
     CAIRO_FORMAT_RGB24      : "RGB24",
@@ -94,7 +97,7 @@ cdef void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stri
                 dst += dst_stride
 
 
-CAIRO_FORMATS = {
+CAIRO_FORMATS: Dict[cairo_format_t, Sequence[str]] = {
     CAIRO_FORMAT_RGB24  : ("RGB", "RGBX", "BGR", "BGRX"),
     CAIRO_FORMAT_ARGB32 : ("BGRX", "BGRA"),
     CAIRO_FORMAT_RGB16_565  : ("BGR565", ),
@@ -102,7 +105,8 @@ CAIRO_FORMATS = {
 }
 
 
-def set_image_surface_data(object image_surface, rgb_format, object pixels, int width, int height, int stride):
+def set_image_surface_data(object image_surface, rgb_format: str, object pixels,
+                           int width, int height, int stride) -> None:
     #convert pixel_data to a C buffer:
     #convert cairo.ImageSurface python object to a cairo_surface_t
     if not isinstance(image_surface, cairo.ImageSurface):

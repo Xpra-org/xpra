@@ -6,6 +6,7 @@
 import os
 import re
 from collections.abc import Callable
+from collections.abc import Sequence
 
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.util.env import envbool, IgnoreWarningsContext
@@ -27,7 +28,7 @@ MENU_ICONS = envbool("XPRA_MENU_ICONS", True)
 HIDE_DISABLED_MENU_ENTRIES = envbool("XPRA_HIDE_DISABLED_MENU_ENTRIES", False)
 
 LOSSLESS = "Lossless"
-QUALITY_OPTIONS_COMMON = {
+QUALITY_OPTIONS_COMMON: dict[int, str] = {
     50: "Average",
     30: "Low",
 }
@@ -46,7 +47,7 @@ QUALITY_OPTIONS |= {
 }
 QUALITY_OPTIONS = dict(sorted(QUALITY_OPTIONS.items()))
 
-SPEED_OPTIONS_COMMON = {
+SPEED_OPTIONS_COMMON: dict[int, str] = {
     70: "Low Latency",
     50: "Average",
     30: "Low Bandwidth",
@@ -63,7 +64,7 @@ SPEED_OPTIONS |= {
 SPEED_OPTIONS = dict(sorted(SPEED_OPTIONS.items()))
 
 
-def get_bandwidth_menu_options():
+def get_bandwidth_menu_options() -> Sequence[int]:
     options = []
     for x in os.environ.get("XPRA_BANDWIDTH_MENU_OPTIONS", "1,2,5,10,20,50,100").split(","):
         try:
@@ -99,7 +100,7 @@ def load_pixbuf(data) -> GdkPixbuf.Pixbuf:
     return loader.get_pixbuf()
 
 
-def get_appimage(app_name, icondata=None, menu_icon_size=24) -> Gtk.Image | None:
+def get_appimage(app_name, icondata=b"", menu_icon_size=24) -> Gtk.Image | None:
     pixbuf = None
     if app_name and not icondata:
         # try to load from our icons:
@@ -288,13 +289,13 @@ def make_min_auto_menu(title, min_options, options,
     return submenu
 
 
-def make_encodingsmenu(get_current_encoding, set_encoding, encodings, server_encodings):
+def make_encodingsmenu(get_current_encoding, set_encoding, encodings, server_encodings) -> Gtk.Menu:
     encodings_submenu = Gtk.Menu()
     populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding, encodings, server_encodings)
     return encodings_submenu
 
 
-def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding, encodings, server_encodings):
+def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding, encodings, server_encodings) -> None:
     from xpra.codecs.loader import get_encoding_help, get_encoding_name
     encodings_submenu.get_current_encoding = get_current_encoding
     encodings_submenu.set_encoding = set_encoding
@@ -355,7 +356,7 @@ class MenuHelper:
         self.handshake_menuitem: Callable = self.do_handshake_menuitem
         self.set_client(client)
 
-    def set_client(self, client):
+    def set_client(self, client) -> None:
         if client:
             self.client = client
 

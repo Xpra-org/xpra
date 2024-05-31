@@ -62,7 +62,7 @@ class TrayBase:
         raise NotImplementedError
 
     def get_orientation(self):
-        return None  # assume "HORIZONTAL"
+        return ""  # assume "HORIZONTAL"
 
     def get_geometry(self):
         raise NotImplementedError

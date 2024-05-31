@@ -44,14 +44,14 @@ class GTKStatusIconTray(TrayBase):
             self.set_icon()
         ignorewarnings(self.tray_widget.set_visible, True)
 
-    def may_guess(self):
+    def may_guess(self) -> None:
         log("may_guess() GUESS_GEOMETRY=%s, current guess=%s", GUESS_GEOMETRY, self.geometry_guess)
         if GUESS_GEOMETRY:
             x, y = get_default_root_window().get_pointer()[-3:-1]
             w, h = self.get_size()
             self.recalculate_geometry(x, y, w, h)
 
-    def activate_menu(self, widget):
+    def activate_menu(self, widget) -> None:
         modifiers_mask = get_default_root_window().get_pointer()[-1]
         log("activate_menu(%s) modifiers_mask=%s", widget, modifiers_mask)
         if (modifiers_mask & Gdk.ModifierType.SHIFT_MASK) ^ OSX:
@@ -59,7 +59,7 @@ class GTKStatusIconTray(TrayBase):
         else:
             self.handle_click(1)
 
-    def popup_menu(self, widget, button, event_time, *args):
+    def popup_menu(self, widget, button: int, event_time, *args) -> None:
         modifiers_mask = get_default_root_window().get_pointer()[-1]
         log("popup_menu(%s, %s, %s, %s) modifiers_mask=%s", widget, button, event_time, args, modifiers_mask)
         if (modifiers_mask & Gdk.ModifierType.SHIFT_MASK) ^ OSX:
@@ -67,31 +67,31 @@ class GTKStatusIconTray(TrayBase):
         else:
             self.handle_click(3)
 
-    def handle_click(self, button, event_time=0):
+    def handle_click(self, button: int, event_time=0) -> None:
         log("handle_click(%i, %i)", button, event_time)
         self.may_guess()
         if self.click_cb:
             self.click_cb(button, 1, event_time)
             self.click_cb(button, 0, event_time)
 
-    def hide(self):
+    def hide(self) -> None:
         log("%s.set_visible(False)", self.tray_widget)
         if self.tray_widget:
             self.tray_widget.set_visible(False)
 
-    def show(self):
+    def show(self) -> None:
         log("%s.set_visible(True)", self.tray_widget)
         if self.tray_widget:
             self.tray_widget.set_visible(True)
 
-    def get_orientation(self):
+    def get_orientation(self) -> str:
         if not self.tray_widget:
-            return None
+            return ""
         ag = self.tray_widget.get_geometry()
         if ag is None:
-            return None
+            return ""
         gtk_orientation = ag[-1]
-        return ORIENTATION.get(gtk_orientation)
+        return ORIENTATION.get(gtk_orientation, "")
 
     def get_geometry(self):
         assert self.tray_widget
@@ -126,23 +126,23 @@ class GTKStatusIconTray(TrayBase):
         s = max(8, min(256, self.tray_widget.get_size()))
         return [s, s]
 
-    def set_tooltip(self, tooltip: str = ""):
+    def set_tooltip(self, tooltip: str = "") -> None:
         if self.tray_widget:
             ignorewarnings(self.tray_widget.set_tooltip_text, tooltip or "Xpra")
 
-    def set_blinking(self, on: bool):
+    def set_blinking(self, on: bool) -> None:
         # no longer supported with GTK3
         pass
 
-    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, _options=None):
+    def set_icon_from_data(self, pixels, has_alpha: bool, w: int, h: int, rowstride: int, _options=None) -> None:
         tray_icon = get_pixbuf_from_data(pixels, has_alpha, w, h, rowstride)
         self.set_icon_from_pixbuf(tray_icon)
 
-    def do_set_icon_from_file(self, filename):
+    def do_set_icon_from_file(self, filename: str) -> None:
         tray_icon = get_icon_from_file(filename)
         self.set_icon_from_pixbuf(tray_icon)
 
-    def set_icon_from_pixbuf(self, tray_icon):
+    def set_icon_from_pixbuf(self, tray_icon) -> None:
         if not tray_icon or not self.tray_widget:
             return
         tw, th = self.get_geometry()[2:4]
@@ -163,7 +163,7 @@ class GTKStatusIconTray(TrayBase):
         self.icon_timestamp = monotonic()
 
 
-def main():
+def main() -> None:
     log.enable_debug()
     GLib = gi_import("GLib")
     log.enable_debug()

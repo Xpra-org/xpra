@@ -26,7 +26,7 @@ def slabel(text: str = "", tooltip: str = "", font: str = "") -> Gtk.Label:
     return lbl
 
 
-def dict_str(d):
+def dict_str(d) -> str:
     return "\n".join("%s : %s" % (k, v) for k, v in d.items())
 
 
@@ -91,7 +91,7 @@ class WindowInfo(Gtk.Window):
         self.set_icon(get_icon_pixbuf("information.png"))
         self.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)
 
-        def window_deleted(*_args):
+        def window_deleted(*_args) -> None:
             self.is_closed = True
 
         self.connect('delete_event', window_deleted)
@@ -267,16 +267,16 @@ class WindowInfo(Gtk.Window):
         if b:
             self.backing_properties.show()
 
-            def pv(value):
+            def dict_to_str(d, sep="\n", eq="=", exclude=()) -> str:
+                strdict = {k: pv(v) for k, v in d.items() if k not in exclude}
+                return sep.join("%s%s%s" % (k, eq, v) for k, v in strdict.items() if v)
+
+            def pv(value) -> str:
                 if isinstance(value, (tuple, list)):
                     return csv(value)
                 if isinstance(value, dict):
                     return dict_to_str(value, ", ", ":")
                 return str(value)
-
-            def dict_to_str(d, sep="\n", eq="=", exclude=()):
-                strdict = {k: pv(v) for k, v in d.items() if k not in exclude}
-                return sep.join("%s%s%s" % (k, eq, v) for k, v in strdict.items() if v)
 
             self.backing_properties.set_text(dict_to_str(binfo, exclude=(
                 "transparency",

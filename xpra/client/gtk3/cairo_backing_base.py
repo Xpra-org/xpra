@@ -85,7 +85,7 @@ class CairoBackingBase(WindowBackingBase):
         }
         return info
 
-    def create_surface(self):
+    def create_surface(self) -> Context | None:
         bw, bh = self.size
         old_backing = self._backing
         # should we honour self.depth here?
@@ -269,7 +269,7 @@ class CairoBackingBase(WindowBackingBase):
 
             # width, height = self.fps_buffer_size
 
-            def refresh_screen():
+            def refresh_screen() -> None:
                 self.fps_refresh_timer = 0
                 b = self._backing
                 if b:

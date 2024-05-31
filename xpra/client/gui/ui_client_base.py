@@ -14,11 +14,12 @@ from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
 from xpra.common import FULL_INFO, noop, NotificationID, ConnectionMessage, noerr
-from xpra.util.version import full_version_str
 from xpra.net import compression, packet_encoding
 from xpra.net.common import PacketType
-from xpra.util.child_reaper import reaper_cleanup
+from xpra.keyboard.common import KeyEvent
 from xpra.os_util import POSIX, WIN32, OSX, gi_import
+from xpra.util.child_reaper import reaper_cleanup
+from xpra.util.version import full_version_str, get_platform_info
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
@@ -26,7 +27,6 @@ from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.util.version import get_platform_info
 from xpra.client.gui import features
 from xpra.log import Logger
 
@@ -782,7 +782,7 @@ class UIXpraClient(ClientBaseClass):
         if self.keyboard_helper:
             self.keyboard_helper.keymap_changed()
 
-    def handle_key_action(self, window, key_event):
+    def handle_key_action(self, window, key_event: KeyEvent) -> bool:
         kh = self.keyboard_helper
         if not kh:
             return False

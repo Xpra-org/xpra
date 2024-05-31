@@ -246,7 +246,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
         # if server supports it, enable UI thread monitoring workaround when needed:
 
-        def UI_resumed():
+        def UI_resumed() -> None:
             self.send("resume", True, tuple(self._id_to_window.keys()))
             # maybe the system was suspended?
             # so we may want to call WindowClient.resume()
@@ -254,7 +254,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if resume:
                 resume()
 
-        def UI_failed():
+        def UI_failed() -> None:
             self.send("suspend", True, tuple(self._id_to_window.keys()))
 
         self.UI_watcher.add_resume_callback(UI_resumed)
@@ -338,10 +338,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         values = []
         errs = []
 
-        def rec(value=None):
+        def rec(value=None) -> None:
             values.append(value)
 
-        def err(value=None):
+        def err(value=None) -> None:
             errs.append(value)
 
         from xpra.scripts.pinentry import pinentry_getpin
@@ -376,7 +376,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.REJECT)
         dialog.add_button(Gtk.STOCK_OK, Gtk.ResponseType.ACCEPT)
 
-        def add(widget, padding=0):
+        def add(widget, padding=0) -> None:
             widget.set_halign(Gtk.Align.CENTER)
             widget.set_margin_start(padding)
             widget.set_margin_end(padding)
@@ -395,7 +395,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         dialog.vbox.show_all()
         dialog.password_input = password_input
 
-        def handle_response(dialog, response):
+        def handle_response(dialog, response) -> None:
             if values:
                 return
             if OSX:
@@ -417,7 +417,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 values.append(password)
             wait.set()
 
-        def password_activate(*_args):
+        def password_activate(*_args) -> None:
             handle_response(dialog, Gtk.ResponseType.ACCEPT)
 
         password_input.connect("activate", password_activate)
@@ -522,10 +522,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     ################################
     # file handling
-    def ask_data_request(self, cb_answer, send_id, dtype: str, url: str, filesize: int, printit: bool, openit: bool):
+    def ask_data_request(self, cb_answer, send_id, dtype: str, url: str, filesize: int,
+                         printit: bool, openit: bool) -> None:
         GLib.idle_add(self.do_ask_data_request, cb_answer, send_id, dtype, url, filesize, printit, openit)
 
-    def do_ask_data_request(self, cb_answer, send_id, dtype: str, url: str, filesize: int, printit: bool, openit: bool):
+    def do_ask_data_request(self, cb_answer, send_id, dtype: str, url: str, filesize: int,
+                            printit: bool, openit: bool) -> None:
         from xpra.gtk.dialogs.open_requests import getOpenRequestsWindow
         timeout = self.remote_file_ask_timeout
 
@@ -540,23 +542,23 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.file_ask_dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
         self.file_ask_dialog.show()
 
-    def close_ask_data_dialog(self):
+    def close_ask_data_dialog(self) -> None:
         fad = self.file_ask_dialog
         if fad:
             self.file_ask_dialog = None
             fad.close()
 
-    def show_ask_data_dialog(self, *_args):
+    def show_ask_data_dialog(self, *_args) -> None:
         from xpra.gtk.dialogs.open_requests import getOpenRequestsWindow
         self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
         self.file_ask_dialog.show()
 
-    def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None):
+    def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None) -> None:
         fad = self.file_ask_dialog
         if fad:
             GLib.idle_add(fad.transfer_progress_update, send, transfer_id, elapsed, position, total, error)
 
-    def accept_data(self, send_id, dtype: str, url: str, printit: bool, openit: bool):
+    def accept_data(self, send_id, dtype: str, url: str, printit: bool, openit: bool) -> tuple:
         # check if we have accepted this file via the GUI:
         r = self.data_send_requests.pop(send_id, None)
         if not r:
@@ -578,7 +580,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         # return the printit and openit flag we got from the UI:
         return r[2], r[3]
 
-    def file_size_warning(self, action, location, basefilename, filesize, limit):
+    def file_size_warning(self, action: str, location: str, basefilename: str, filesize: int, limit: int) -> None:
         if self.file_size_dialog:
             # close previous warning
             self.file_size_dialog.close()
@@ -599,22 +601,22 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.file_size_dialog.connect("response", self.close_file_size_warning)
         self.file_size_dialog.show()
 
-    def close_file_size_warning(self, *_args):
+    def close_file_size_warning(self, *_args) -> None:
         fsd = self.file_size_dialog
         if fsd:
             self.file_size_dialog = None
             fsd.close()
 
-    def download_server_log(self, callback: Callable = noop):
+    def download_server_log(self, callback: Callable = noop) -> None:
         filename = "${XPRA_SERVER_LOG}"
         self.file_request_callback[filename] = callback
         self.send_request_file(filename, self.open_files)
 
-    def send_download_request(self, *_args):
+    def send_download_request(self, *_args) -> None:
         command = ["xpra", "send-file"]
         self.send_start_command("Client-Download-File", command, True)
 
-    def show_file_upload(self, *args):
+    def show_file_upload(self, *args) -> None:
         if self.file_dialog:
             self.file_dialog.present()
             return
@@ -634,14 +636,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.file_dialog.connect("response", self.file_upload_dialog_response)
         self.file_dialog.show()
 
-    def close_file_upload_dialog(self):
+    def close_file_upload_dialog(self) -> None:
         fd = self.file_dialog
         # the `FileChooserNative` is already closed automatically
         if fd and hasattr(fd, "close"):
             fd.close()
             self.file_dialog = None
 
-    def file_upload_dialog_response(self, dialog, v):
+    def file_upload_dialog_response(self, dialog, v) -> None:
         if v not in (Gtk.ResponseType.OK, Gtk.ResponseType.ACCEPT):
             filelog(f"dialog response code {v}")
             self.close_file_upload_dialog()
@@ -718,7 +720,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         from xpra.gtk.dialogs.bug_report import BugReport
         self.bug_report = BugReport()
 
-        def init_bug_report():
+        def init_bug_report() -> None:
             # skip things we aren't using:
             includes = {
                 "keyboard": bool(self.keyboard_helper),
@@ -745,7 +747,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.download_server_log(got_server_log)
         GLib.timeout_add(200, init_bug_report)
 
-    def get_image(self, icon_name: str, size=None):
+    def get_image(self, icon_name: str, size=None) -> Gtk.Image | None:
         with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):
             pixbuf = get_icon_pixbuf(icon_name)
             log(f"get_image({icon_name!r}, {size}) pixbuf={pixbuf}")
@@ -846,13 +848,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def get_root_size(self):
         return get_root_size()
 
-    def get_raw_mouse_position(self):
+    def get_raw_mouse_position(self) -> tuple[int, int]:
         root = self.get_root_window()
         if not root:
             return -1, -1
         return root.get_pointer()[-3:-1]
 
-    def get_mouse_position(self):
+    def get_mouse_position(self) -> tuple[int, int]:
         p = self.get_raw_mouse_position()
         return self.cp(p[0], p[1])
 
@@ -940,12 +942,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def get_screen_sizes(self, xscale=1, yscale=1) -> list:
         return get_screen_sizes(xscale, yscale)
 
-    def reset_windows_cursors(self, *_args):
+    def reset_windows_cursors(self, *_args) -> None:
         cursorlog("reset_windows_cursors() resetting cursors for: %s", tuple(self._cursors.keys()))
         for w, cursor_data in tuple(self._cursors.items()):
             self.set_windows_cursor([w], cursor_data)
 
-    def set_windows_cursor(self, windows, cursor_data):
+    def set_windows_cursor(self, windows, cursor_data) -> None:
         cursorlog(f"set_windows_cursor({windows}, args[{len(cursor_data)}])")
         cursor = None
         if cursor_data:
@@ -1539,7 +1541,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
             self.clipboard_notification_timer = GLib.timeout_add(delay, self.reset_tray_icon)
 
-    def reset_tray_icon(self):
+    def reset_tray_icon(self) -> None:
         self.clipboard_notification_timer = 0
         tray = self.tray
         if not tray:

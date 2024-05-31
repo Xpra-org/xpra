@@ -391,30 +391,31 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def init_widget_events(self, widget) -> None:
         widget.add_events(self.get_window_event_mask())
 
-        def motion(_w, event):
+        def motion(_w, event) -> bool:
             self._do_motion_notify_event(event)
             return True
 
         widget.connect("motion-notify-event", motion)
 
-        def press(_w, event):
+        def press(_w, event) -> bool:
             self._do_button_press_event(event)
             return True
 
         widget.connect("button-press-event", press)
 
-        def release(_w, event):
+        def release(_w, event) -> bool:
             self._do_button_release_event(event)
             return True
 
         widget.connect("button-release-event", release)
 
-        def scroll(_w, event):
+        def scroll(_w, event) -> bool:
             self._do_scroll_event(event)
             return True
 
-        def configure_event(_w, event):
+        def configure_event(_w, event) -> bool:
             geomlog("widget configure_event: new size=%ix%i", event.width, event.height)
+            return True
 
         widget.connect("configure-event", configure_event)
         widget.connect("scroll-event", scroll)
@@ -457,12 +458,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         Gdk.drag_status(context, Gdk.DragAction.COPY, time)
         return True  # accept this data
 
-    def drag_got_data_cb(self, wid: int, context, x: int, y: int, selection, info, time: int):
+    def drag_got_data_cb(self, wid: int, context, x: int, y: int, selection, info, time: int) -> None:
         draglog("drag_got_data_cb%s", (wid, context, x, y, selection, info, time))
         targets = list(x.name() for x in context.list_targets())
         actions = context.get_actions()
 
-        def xid(w):
+        def xid(w) -> int:
             # TODO: use a generic window handle function
             # this only used for debugging for now
             if w and POSIX:
@@ -504,7 +505,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         draglog("drag_got_data_cb: will try to upload: %s", csv(filelist))
         pending = set(filelist)
 
-        def file_done(filename):
+        def file_done(filename: str) -> None:
             if not pending:
                 return
             try:
@@ -520,7 +521,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         for filename in filelist:
             self.drag_process_file(filename, file_done)
 
-    def drag_process_file(self, filename: str, file_done_cb: Callable):
+    def drag_process_file(self, filename: str, file_done_cb: Callable) -> None:
         def got_file_info(gfile, result, arg=None):
             draglog("got_file_info(%s, %s, %s)", gfile, result, arg)
             file_info = gfile.query_info_finish(result)
@@ -529,7 +530,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             size = file_info.get_size()
             draglog("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
 
-            def got_file_data(gfile, result, user_data=None):
+            def got_file_data(gfile, result, user_data=None) -> None:
                 _, data, entity = gfile.load_contents_finish(result)
                 filesize = len(data)
                 draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
@@ -581,11 +582,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
         # other platforms should bet getting regular focus events instead:
 
-        def focus_in(_window, event):
+        def focus_in(_window, event) -> None:
             focuslog("focus-in-event for wid=%s", self.wid)
             self.do_x11_focus_in_event(event)
 
-        def focus_out(_window, event):
+        def focus_out(_window, event) -> None:
             focuslog("focus-out-event for wid=%s", self.wid)
             self.do_x11_focus_out_event(event)
 
@@ -594,7 +595,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not self._override_redirect:
             self.connect("notify::has-toplevel-focus", self._focus_change)
 
-        def grab_broken(win, event):
+        def grab_broken(win, event) -> None:
             grablog("grab_broken%s", (win, event))
             self._client._window_with_grab = None
 
@@ -753,7 +754,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return False
         return metadata.boolget("decorations", True)
 
-    def set_decorated(self, decorated: bool):
+    def set_decorated(self, decorated: bool) -> None:
         was_decorated = self.get_decorated()
         if self._fullscreen and was_decorated and not decorated:
             # fullscreen windows aren't decorated anyway!
@@ -776,7 +777,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     x, y = self.get_position()
                     Gtk.Window.move(self, max(0, x - nx + fx), max(0, y - ny + fy))
 
-    def setup_window(self, *args):
+    def setup_window(self, *args) -> None:
         log("setup_window%s OR=%s", args, self._override_redirect)
         self.set_alpha()
 
@@ -794,7 +795,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.set_initial_position(self._requested_position or self._pos)
         self.set_default_size(*self._size)
 
-    def set_initial_position(self, pos):
+    def set_initial_position(self, pos) -> None:
         x, y = self.adjusted_position(*pos)
         w, h = self._size
         if self.is_OR():
@@ -866,7 +867,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.cancel_follow_handler()
         self._follow = follow
 
-        def follow_unmapped(window):
+        def follow_unmapped(window) -> None:
             log("follow_unmapped(%s)", window)
             self._follow = None
             self.cancel_follow_handler()
@@ -889,7 +890,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.when_realized("cursor", GLib.idle_add, self._backing.set_cursor_data, self.cursor_data)
         return b
 
-    def set_cursor_data(self, cursor_data):
+    def set_cursor_data(self, cursor_data) -> None:
         self.cursor_data = cursor_data
         b = self._backing
         if b:
@@ -1183,12 +1184,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def set_command(self, command) -> None:
         self.set_x11_property("WM_COMMAND", "latin1", command)
 
-    def set_x11_property(self, prop_name: str, dtype=None, value=None) -> None:
+    def set_x11_property(self, prop_name: str, dtype: str, value) -> None:
         if not HAS_X11_BINDINGS:
             return
         self.when_realized("x11-prop-%s" % prop_name, self.do_set_x11_property, prop_name, dtype, value)
 
-    def do_set_x11_property(self, prop_name: str, dtype: str = None, value=None) -> None:
+    def do_set_x11_property(self, prop_name: str, dtype: str, value) -> None:
         xid = self.get_window().get_xid()
         metalog(f"do_set_x11_property({prop_name!r}, {dtype!r}, {value!r}) xid={xid}")
         dtype = bytestostr(dtype)
@@ -1219,7 +1220,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not HAS_X11_BINDINGS or not XSHAPE:
             return
 
-        def do_set_shape():
+        def do_set_shape() -> None:
             xid = self.get_window().get_xid()
             x_off, y_off = shape.get("x", 0), shape.get("y", 0)
             for kind, name in SHAPE_KIND.items():
@@ -1268,7 +1269,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         shapelog("back to rectangles")
         return rectangles
 
-    def set_bypass_compositor(self, v):
+    def set_bypass_compositor(self, v) -> None:
         if v not in (0, 1, 2):
             v = 0
         self.set_x11_property("_NET_WM_BYPASS_COMPOSITOR", "u32", v)
@@ -1307,7 +1308,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.set_x11_property("_NET_WM_STRUT_PARTIAL", ["u32"], values)
         self.set_x11_property("_NET_WM_STRUT", ["u32"], values[:4])
 
-    def set_window_type(self, window_types):
+    def set_window_type(self, window_types) -> None:
         hints = 0
         for window_type in window_types:
             # win32 workaround:
@@ -1351,7 +1352,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # platform specific code:
         log("set_shaded(%s)", shaded)
 
-        def do_set_shaded():
+        def do_set_shaded() -> None:
             set_shaded(self.get_window(), shaded)
 
         self.when_realized("shaded", do_set_shaded)
@@ -1359,7 +1360,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def restack(self, other_window, above: int = 0) -> None:
         log("restack(%s, %s)", other_window, above)
 
-        def do_restack():
+        def do_restack() -> None:
             self.get_window().restack(other_window, above)
 
         self.when_realized("restack", do_restack)
@@ -1367,7 +1368,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def set_fullscreen(self, fullscreen: bool) -> None:
         statelog("%s.set_fullscreen(%s)", self, fullscreen)
 
-        def do_set_fullscreen():
+        def do_set_fullscreen() -> None:
             if fullscreen:
                 # we may need to temporarily remove the max-window-size restrictions
                 # to be able to honour the fullscreen request:
@@ -1404,7 +1405,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
         self.when_realized("set-opaque-region", do_set_region)
 
-    def set_xid(self, xid: str | int):
+    def set_xid(self, xid: str | int) -> None:
         if xid.startswith("0x") and xid.endswith("L"):
             xid = xid[:-1]
         try:
@@ -1414,13 +1415,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         self.set_x11_property("XID", "u32", iid)
 
-    def xget_u32_property(self, target, name: str):
+    def xget_u32_property(self, target, name: str) -> int:
         if prop_get:
             v = prop_get(target.get_xid(), name, "u32", ignore_errors=True)
             log("%s.xget_u32_property(%s, %s)=%s", self, target, name, v)
             if isinstance(v, int):
                 return v
-        return None
+        return 0
 
     def property_changed(self, widget, event) -> None:
         atom = str(event.atom)
@@ -1654,7 +1655,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             root = get_default_root_window()
         return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
 
-    def get_window_workspace(self):
+    def get_window_workspace(self) -> int:
         if WIN32:
             if not WIN32_WORKSPACE:
                 return 0
@@ -2024,7 +2025,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             ww, wh = self.get_size()
             self.moveresize_event = [x_root, y_root, direction, button, None, wx, wy, ww, wh]
 
-    def initiate_moveresize_X11(self, x_root: int, y_root: int, direction: int, button: int, source_indication: int):
+    def initiate_moveresize_X11(self, x_root: int, y_root: int, direction: int,
+                                button: int, source_indication: int) -> None:
         statelog("initiate_moveresize_X11%s",
                  (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction),
                   button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
@@ -2534,7 +2536,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def _event_buttons(self, event) -> list[int]:
         return [button for mask, button in BUTTON_MASK.items() if event.state & mask]
 
-    def parse_key_event(self, event, pressed):
+    def parse_key_event(self, event, pressed: bool) -> KeyEvent:
         keyval = event.keyval
         keycode = event.hardware_keycode
         keyname = Gdk.keyval_name(keyval) or ""
@@ -2568,35 +2570,38 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         keyeventlog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
         return key_event
 
-    def handle_key_press_event(self, _window, event):
+    def handle_key_press_event(self, _window, event) -> bool:
         key_event = self.parse_key_event(event, True)
         if self.moveresize_event and key_event.keyname in BREAK_MOVERESIZE:
             # cancel move resize if there is one:
             self.moveresize_event = None
             self.cancel_moveresize_timer()
-        return self._client.handle_key_action(self, key_event)
+        self._client.handle_key_action(self, key_event)
+        return True
 
-    def handle_key_release_event(self, _window, event):
+    def handle_key_release_event(self, _window, event) -> bool:
         key_event = self.parse_key_event(event, False)
-        return self._client.handle_key_action(self, key_event)
+        self._client.handle_key_action(self, key_event)
+        return True
 
-    def _do_scroll_event(self, event):
+    def _do_scroll_event(self, event) -> bool:
         if self._client.readonly:
-            return
+            return True
         if event.direction == Gdk.ScrollDirection.SMOOTH:
             mouselog("smooth scroll event: %s", event)
             pointer = self.get_pointer_data(event)
             device_id = -1
             self._client.wheel_event(device_id, self.wid, event.delta_x, -event.delta_y, pointer)
-            return
+            return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s",
                  self._device_info(event), event.direction, button_mapping)
         if button_mapping >= 0:
             self._button_action(button_mapping, event, True)
             self._button_action(button_mapping, event, False)
+        return True
 
-    def update_icon(self, img):
+    def update_icon(self, img) -> None:
         self._current_icon = img
         has_alpha = img.mode == "RGBA"
         width, height = img.size

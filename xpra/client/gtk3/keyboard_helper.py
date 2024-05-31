@@ -62,7 +62,7 @@ class GTKKeyboardHelper(KeyboardHelper):
             return
         self._keymap_changing = True
 
-        def do_keys_changed():
+        def do_keys_changed() -> None:
             # re-register the change handler:
             self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
             self._keymap_changing = False
@@ -101,7 +101,7 @@ class GTKKeyboardHelper(KeyboardHelper):
                 log.warn("failed to disconnect keymap change handler: %s", e)
 
 
-def main():
+def main() -> None:
     # use gtk as display source:
     # pylint: disable=import-outside-toplevel
     from xpra.gtk.util import init_display_source

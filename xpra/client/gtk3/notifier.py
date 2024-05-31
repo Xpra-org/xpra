@@ -13,14 +13,14 @@ class GINotifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon,
-                    summary: str, body: str, actions, hints, timeout: int, icon):
+                    summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)
         Notify.init(app_name or "Xpra")
         n = Notify.Notification.new(summary=summary, body=body, icon=icon_string)
 
-        def closed(*_args):
+        def closed(*_args) -> None:
             self.clean_notification(nid)
 
         n.connect("closed", closed)
