@@ -130,8 +130,10 @@ def get_client_connection_class(caps: typedict):
             self.send("hello", capabilities)
             self.hello_sent = True
 
-        def threaded_init_complete(self, server):
+        def threaded_init_complete(self, server) -> None:
+            log("threaded_init_complete(%s) calling base classes %s", server, CC_BASES)
             for bc in CC_BASES:
+                log("calling %s.threaded_init_complete(%s, %s)", bc, self, server)
                 bc.threaded_init_complete(self, server)
 
         def get_info(self) -> dict[str, Any]:

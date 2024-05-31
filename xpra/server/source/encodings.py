@@ -112,7 +112,7 @@ class EncodingsMixin(StubSourceMixin):
             caps["auto_refresh_delay"] = self.auto_refresh_delay
         return caps
 
-    def threaded_init_complete(self, server):
+    def threaded_init_complete(self, server) -> None:
         if "encodings" not in self.wants:
             return
         # by now, all the codecs have been initialized

@@ -237,7 +237,7 @@ class ServerCore:
         self.bandwidth_limit = 0
 
         self.init_thread = None
-        self.init_thread_callbacks = []
+        self.init_thread_callbacks: list[tuple[Callable, tuple]] = []
         self.init_thread_lock = Lock()
         self.menu_provider = None
 
@@ -386,6 +386,7 @@ class ServerCore:
             log("call_init_thread_callbacks() init_thread_callbacks=%s", self.init_thread_callbacks)
             for cb, args in self.init_thread_callbacks:
                 try:
+                    log("calling %s%s", cb, args)
                     cb(*args)
                 except Exception as e:
                     log("threaded_init()", exc_info=True)
@@ -394,9 +395,11 @@ class ServerCore:
                     log.estr(e)
 
     def add_init_thread_callback(self, callback: Callable, *args) -> None:
+        log("add_init_thread_callback(%s, %s)", callback, args)
         self.init_thread_callbacks.append((callback, args))
 
     def after_threaded_init(self, callback: Callable, *args) -> None:
+        log("after_threaded_init(%s, %s)", callback, args)
         with self.init_thread_lock:
             if self.init_thread is None or self.init_thread.is_alive():
                 self.add_init_thread_callback(callback, *args)
