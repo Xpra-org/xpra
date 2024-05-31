@@ -425,7 +425,8 @@ class ServerCore:
                     cb()
                 except Exception as e:
                     log("threaded_init()", exc_info=True)
-                    log.error("Error in initialization thread callback %s", cb)
+                    log.error("Error in initialization thread callback")
+                    log.error(" calling %s%s", cb, args, exc_info=True)
                     log.estr(e)
 
     def add_init_thread_callback(self, callback:Callable) -> None:
