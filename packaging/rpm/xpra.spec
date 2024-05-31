@@ -89,6 +89,7 @@ BuildRequires:		gcc-c++
 BuildRequires:		%{python3}-Cython
 BuildRequires:		pkgconfig
 BuildRequires:		%{python3}-setuptools
+BuildRequires:		coreutils
 Requires:			xpra-html5 >= 5
 Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -172,12 +173,6 @@ BuildRequires:		pkgconfig(libbrotlienc)
 Recommends:			brotli
 BuildRequires:		pkgconfig(libqrencode)
 Recommends:			qrencode
-BuildRequires:		coreutils
-BuildRequires:		gcc
-BuildRequires:		gcc-c++
-BuildRequires:		%{python3}
-BuildRequires:		%{python3}-devel
-BuildRequires:		%{python3}-Cython
 BuildRequires:		%{python3}-gobject
 BuildRequires:		pkgconfig(pygobject-3.0)
 BuildRequires:		pkgconfig(py3cairo)
@@ -214,6 +209,7 @@ Requires:			openh264
 %endif
 %if 0%{?fedora}
 BuildRequires:		pkgconfig(spng)
+BuildRequires:		zlib-devel
 Requires:			libspng
 %endif
 #not available yet:
@@ -329,7 +325,6 @@ Suggests:           %{package_prefix}-client-gnome
 %if 0%{?run_tests}
 %if 0%{?fedora}
 BuildRequires:		xclip
-BuildRequires:		zlib-devel
 %endif
 %endif
 %description -n%{package_prefix}-client-gtk3
@@ -411,7 +406,7 @@ Suggests:			tcp_wrappers-libs
 Suggests:			%{python3}-ldap3
 Suggests:			%{python3}-ldap
 Suggests:			%{python3}-oauthlib
-%if 0%{?fedora}>=39
+%if 0%{?fedora}
 # looks like they forgot to expose the pkgconfig?
 BuildRequires:		procps-ng-devel
 %else
