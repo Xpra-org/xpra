@@ -10,7 +10,7 @@ For general information, see [building](./README.md).
 ```shell
 apt-get install libx11-dev libxtst-dev libxcomposite-dev libxdamage-dev libxres-dev \
                 libxkbfile-dev \
-                python-all-dev \
+                python3-dev \
                 pandoc \
                 libsystemd-dev \
                 liblz4-dev
