@@ -34,7 +34,7 @@ except ImportError as e:
 
 import xpra
 from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
-from xpra.util.system import is_distribution_variant, is_Ubuntu, is_Debian
+from xpra.util.system import is_distribution_variant, get_linux_distribution, is_Ubuntu, is_Debian
 from xpra.util.io import load_binary_file, get_status_output
 
 if BITS != 64:
@@ -624,8 +624,98 @@ def convert_docs(fmt="html"):
         convert_doc_dir("docs", "build/docs", fmt=fmt)
 
 
+def install_dev_env():
+    if not LINUX:
+        print(f"'dev-env' subcommand is not supported on {sys.platform!r}")
+        sys.exit(1)
+    elif is_Fedora() or is_CentOS() or is_AlmaLinux() or is_RockyLinux() or is_RedHat() or is_OracleLinux():
+        py3 = os.environ.get("PYTHON3", "python3")
+        flag_to_pkgs = {
+            "modules": (
+                # generic build requirements:
+                "tar", "grep", "gawk", "gcc", "gcc-c++", "pkgconfig",
+                "which", "coreutils",
+                f"{py3}-cryptography", ),
+            "cython": (f"{py3}-devel", f"{py3}-Cython", f"{py3}-setuptools", "xxhash-devel", ),
+            "lz4": ("pkgconfig(liblz4)", ),
+            "brotli": ("pkgconfig(libbrotlidec)", "pkgconfig(libbrotlienc)", ),
+            "qrencode": ("pkgconfig(libqrencode)", ),
+            "gtk3": (
+                f"{py3}-gobject", "pkgconfig(pygobject-3.0)", "pkgconfig(py3cairo)", "pkgconfig(gtk+-3.0)",
+                "pkgconfig(gobject-introspection-1.0)",
+            ),
+            "nvidia|tests": (f"{py3}-numpy", ),
+            "drm": ("pkgconfig(libdrm)", ),
+            "vpx": ("pkgconfig(vpx)", ),
+            "webp": ("pkgconfig(libwebp)", ),
+            "jpeg_decoder|jpeg_encoder": ("pkgconfig(libturbojpeg)", ),
+            "csc_libyuv": ("pkgconfig(libyuv)", ),
+            "openh264": ("pkgconfig(openh264)", ),
+            "spng_decoder|spng_encoder": ("pkgconfig(spng)", ),
+            "evdi": ("libevdi-devel", ),
+            "enc_x264": ("pkgconfig(x264)", ),
+            "avif": ("pkgconfig(libavif)", ),
+            "nvidia": ("cuda", ),
+            "docs": ("pandoc", ),
+            "tests": ("gstreamer1", "gstreamer1-plugins-good", "pulseaudio", "pulseaudio-utils", "desktop-file-utils", "xclip", ),
+            "x11": ("pkgconfig(xkbfile)", "pkgconfig(xtst)", "pkgconfig(xcomposite)", "pkgconfig(xdamage)", "pkgconfig(xres)", "pkgconfig(xfixes)", "pkgconfig(xrandr)", ),
+            "proc": ("procps-ng-devel" if is_Fedora() else "pkgconfig(libprocps)", ),
+            "printing": (f"{py3}-cups", ),
+            "sd_listen": ("pkgconfig(libsystemd)", ),
+            "pam": ("pam-devel", ),
+        }
+        cmd = ["dnf", "install"]
+    elif is_Debian() or is_Ubuntu():
+        flag_to_pkgs = {
+            "modules": (
+                "python3-dev",
+                "pkgconf", "xz-utils", "lsb-release",
+            ),
+            "cython": ("gcc", "cython3", "libxxhash-dev", ),
+            "x11": ("libx11-dev", "libxcomposite-dev", "libxdamage-dev", "libxtst-dev", "libxkbfile-dev", "libxres-dev"),
+            "drm": ("libdrm-dev", ),
+            "edvi": ("libevdi0-dev", ),
+            "avif": ("libavif-dev", ),
+            "csc_libyuv": ("libyuv-dev", ),
+            "vpx": ("libvpx-dev", ),
+            "enc_x264": ("libx264-dev", ),
+            "openh264": ("libopenh264-dev", ),
+            "webp": ("libwebp-dev", ),
+            "jpeg_decoder|jpeg_encoder": ("libturbojpeg-dev", ),
+            "spng": ("libspng-dev", ),
+            "gtk3": ("libgtk-3-dev", "python3-cairo-dev", "python-gi-dev"),
+            "sd_listen": ("python-gi-dev", ),
+            "pam": ("libpam0g-dev", ),
+            "proc": ("libproc2-dev | libprocps-dev", ),
+            "lz4": ("liblz4-dev", ),
+            "brotli": ("libbrotli-dev", ),
+            "qrencode": ("libqrencode-dev", ),
+            "doc": ("pandoc", ),
+        }
+        cmd = ["apt", "install"]
+    else:
+        distro = get_linux_distribution()
+        print("'dev-env' subcommand is not supported on your distribution")
+        print(" %s" % " ".join(distro))
+        print(" please submit a patch")
+        sys.exit(1)
+    if os.geteuid() != 0:
+        cmd.insert(0, "sudo")
+    for flag_str, pkg_names in flag_to_pkgs.items():
+        flags = flag_str.split("|")
+        if any(globals()[f"{flag}_ENABLED"] for flag in flags):
+            cmd += list(pkg_names)
+    from shutil import which
+    exe = which(cmd[0])
+    os.execv(exe, cmd)
+
+
 if "doc" in sys.argv:
     convert_docs("html")
+    sys.exit(0)
+
+if "dev-env" in sys.argv:
+    install_dev_env()
     sys.exit(0)
 
 if "pdf-doc" in sys.argv:
