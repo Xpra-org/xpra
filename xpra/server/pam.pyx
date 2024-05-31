@@ -184,7 +184,11 @@ cdef class pam_session:
         if r!=PAM_SUCCESS:
             self.pam_handle = NULL
             log.error("Error: pam_start failed: %s", PAM_ERR_STR.get(r, r))
-            log.error(" %s", pam_strerror(self.pam_handle, r))
+            berr = pam_strerror(self.pam_handle, r)
+            try:
+                log.warn(" %s", berr.decode("latin1"))
+            except UnicodeError:
+                log.warn(" %r", berr)
             return False
         return True
 
