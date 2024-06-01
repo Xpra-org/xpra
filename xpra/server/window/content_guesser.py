@@ -5,8 +5,8 @@
 
 import re
 import os.path
-from typing import Any
-from collections.abc import Callable
+from typing import Any, TypeAlias
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.util.str_fn import ellipsizer
 from xpra.util.env import envbool
@@ -20,6 +20,9 @@ log = Logger("window", "util")
 GUESS_CONTENT = envbool("XPRA_GUESS_CONTENT", True)
 DEFAULT_CONTENT_TYPE = os.environ.get("XPRA_DEFAULT_CONTENT_TYPE", "")
 CONTENT_TYPE_DEFS = os.environ.get("XPRA_CONTENT_TYPE_DEFS", "")
+
+ConfDict: TypeAlias = dict[str, Any]
+ConfParser: TypeAlias = Callable[[Sequence[str]], ConfDict]
 
 
 def getprop(window, prop: str):
@@ -35,7 +38,7 @@ def getprop(window, prop: str):
 ################################################################
 
 
-def _load_dict_file(filename: str, parser: Callable) -> dict:
+def _load_dict_file(filename: str, parser: ConfParser) -> ConfDict:
     # filter out comments and remove line endings
     lines = []
     with open(filename, encoding="utf8") as f:
@@ -48,7 +51,7 @@ def _load_dict_file(filename: str, parser: Callable) -> dict:
     return parser(lines)
 
 
-def _load_dict_dir(d: str, parser: Callable) -> dict:
+def _load_dict_dir(d: str, parser: ConfParser) -> ConfDict:
     # load all the .conf files from the directory
     if not os.path.exists(d) or not os.path.isdir(d):
         log("load_content_categories_dir(%s) directory not found", d)
@@ -68,7 +71,7 @@ def _load_dict_dir(d: str, parser: Callable) -> dict:
     return v
 
 
-def _load_dict_dirs(dirname: str, parser: Callable) -> dict:
+def _load_dict_dirs(dirname: str, parser: ConfParser) -> ConfDict:
     if not GUESS_CONTENT:
         return {}
     # finds all the ".conf" files from the dirname specified
@@ -89,10 +92,10 @@ def _load_dict_dirs(dirname: str, parser: Callable) -> dict:
 # `content-type` mapping:
 ################################################################
 
-content_type_defs: dict | None = None
+content_type_defs: ConfDict | None = None
 
 
-def load_content_type_defs() -> dict:
+def load_content_type_defs() -> ConfDict:
     global content_type_defs
     if content_type_defs is None:
         content_type_defs = _load_dict_dirs("content-type", parse_content_types)
@@ -137,7 +140,7 @@ def parse_content_types(lines) -> dict[str, dict[Any, tuple[str, str]]]:
     return defs
 
 
-def get_content_type_properties():
+def get_content_type_properties() -> Iterable[str]:
     """ returns the list of window properties which can be used
         to guess the content-type.
     """
@@ -173,8 +176,8 @@ def guess_content_type_from_defs(window) -> str:
 ################################################################
 
 
-def parse_content_categories_file(lines) -> dict:
-    d = {}
+def parse_content_categories_file(lines) -> ConfDict:
+    d: dict[str, str] = {}
     for line in lines:
         parts = line.rsplit(":", 1)
         # ie: "title:helloworld=text   #some comments here" -> "title:helloworld", "text   #some comments here"
@@ -188,7 +191,7 @@ def parse_content_categories_file(lines) -> dict:
     return d
 
 
-def load_categories_to_type() -> dict:
+def load_categories_to_type() -> ConfDict:
     return _load_dict_dirs("content-categories", parse_content_categories_file)
 
 
@@ -274,7 +277,7 @@ def parse_content_parent(lines) -> dict[str, str]:
 parent_to_type = None
 
 
-def get_parent_to_type():
+def get_parent_to_type() -> dict[str, Any]:
     global parent_to_type
     if parent_to_type is None:
         parent_to_type = _load_dict_dirs("content-parent", parse_content_parent)
@@ -288,7 +291,7 @@ def guess_content_type_from_parent(window) -> str:
     return guess_content_from_parent_pid(ppid)
 
 
-def guess_content_from_parent_pid(ppid) -> str:
+def guess_content_from_parent_pid(ppid: int) -> str:
     parent_command = get_proc_cmdline(ppid)
     if not parent_command:
         return ""
@@ -309,10 +312,16 @@ def guess_content_type(window) -> str:
 def main():
     # pylint: disable=import-outside-toplevel
     import sys
-    assert len(sys.argv) == 2
-    ppid = int(sys.argv[1])
-    c = guess_content_from_parent_pid(ppid)
-    print(f"guess_content_from_parent_pid({ppid})={c}")
+    args = sys.argv[1:]
+    while "-v" in args:
+        args.remove("-v")
+        log.enable_debug()
+    if not args:
+        print("usage: %s pids" % sys.argv[0])
+        return
+    for ppid in args:
+        c = guess_content_from_parent_pid(int(ppid))
+        print(f"guess_content_from_parent_pid({ppid})={c}")
 
 
 if __name__ == "__main__":  # pragma: no cover
