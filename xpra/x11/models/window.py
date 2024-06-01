@@ -459,8 +459,9 @@ class WindowModel(BaseWindowModel):
         with xlog:
             if X11Window.is_mapped(self.corral_xid):
                 X11Window.Unmap(self.corral_xid)
-            X11Window.Reparent(self.corral_xid, self.parking_window_xid, 0, 0)
-            X11Window.sendConfigureNotify(self.xid)
+            if X11Window.getParent(self.corral_xid) != self.parking_window_xid:
+                X11Window.Reparent(self.corral_xid, self.parking_window_xid, 0, 0)
+                X11Window.sendConfigureNotify(self.xid)
 
 
     def _update_client_geometry(self) -> None:
