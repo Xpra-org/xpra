@@ -719,7 +719,6 @@ def install_repo(repo_variant=""):
 
     if distro[0] in ("Debian", "Ubuntu"):
         variant = distro[2]     # ie: "noble"
-        ext = ".sources"
         if variant not in (
             "xenial", "bionic", "focal", "jammy", "mantic", "noble",
             "bullseye", "bookworm", "trixie", "sid",
