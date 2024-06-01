@@ -11,17 +11,18 @@ Be aware that these defenses all count for nothing when using [downstream out of
 
 
 ## Architecture
-The way xpra is structured into independent python submodules allows it to partition off each subsystem.
-When features are disabled, they are not just unused, they are [not even loaded into memory](https://github.com/Xpra-org/xpra/issues/1861#issuecomment-76549942500) in the first place. Those subsystem interfaces cannot be abused since they don't even exist in that process space - very much like when features are not installed on the system at all.
-For details, see [dynamic client connection class](https://github.com/Xpra-org/xpra/issues/2351) and [completely skip server base classes](https://github.com/Xpra-org/xpra/issues/1838)
-The same principle applies to [codecs](https://github.com/Xpra-org/xpra/issues/2344) and [all swappable components](https://github.com/Xpra-org/xpra/issues/614).
+The way xpra is structured into independent python submodules allows it to partition off each subsystem.  
+When features are disabled, they are not just unused, they are [not even loaded into memory](https://github.com/Xpra-org/xpra/issues/1861#issuecomment-76549942500) in the first place. Those subsystem interfaces cannot be abused since they don't even exist in that process space - very much like when features are not installed on the system at all.  
+When combined with fine-grained [sub-packages](../Build/Packaging.md), you can also do exactly that: install only what is strictly needed.  
+For technical details, see [dynamic client connection class](https://github.com/Xpra-org/xpra/issues/2351) and [completely skip server base classes](https://github.com/Xpra-org/xpra/issues/1838)  
+The same principle applies to [codecs](https://github.com/Xpra-org/xpra/issues/2344) and [all swappable components](https://github.com/Xpra-org/xpra/issues/614).  
 Moreover, the use of pure Python code for the vast majority of the data handling completely prevents whole classes of vulnerabilities. The parts of the code that do require high performance (data mangling, (de)compression, etc) use heavily optimized libraries (see _audio_ and _encodings_ below) - which are all optional.
 
 
 ## Subsystems
-Most of the features below have explicit command line switches which can be used to completely disable the subsystem, to start with the feature turned off or to restrict the feature in its scope or impact.
-If a client or server turns off a subsystem then the remote end cannot enable the feature. Some switches only affect the on / off state of the feature instead, which does allow for the feature to be enabled through a user action once the connection is established.
-These toggles may also be accessible through the server's control channel and dbus interface.
+Most of the features below have explicit command line switches which can be used to completely disable the subsystem, to start with the feature turned off or to restrict the feature in its scope or impact.  
+If a client or server turns off a subsystem then the remote end cannot enable the feature. Some switches only affect the on / off state of the feature instead, which does allow for the feature to be enabled through a user action once the connection is established.  
+These toggles may also be accessible through the server's control channel and dbus interface.  
 
 <details>
   <summary>Specific Subsystems</summary>
@@ -187,7 +188,12 @@ Using containers or virtual machines is a very popular way of deploying xpra, bo
 
 
 ## Vulnerabilities
-It is difficult to keep track of all the security related issues that have affected the project over the years.
-Some have been assigned CVEs, most have not.
-Likewise, it is quite hard to keep track of all the bugs affecting the libraries xpra is built on. But here are some examples: [Rencode Denial Of Service](https://packetstormsecurity.com/files/164084/) - [rencode segfault](https://github.com/Xpra-org/xpra/issues/1217), [brotli integer overflow](https://github.com/Xpra-org/xpra/commit/781fb67827f891f427c66d9988b8423049954b64). (see also the "binaries" paragraph above which has more platform specific examples)
+It is difficult to keep track of all the security related issues that have affected the project over the years.  
+Some have been assigned CVEs, most have not.  
+Likewise, it is quite hard to keep track of all the bugs affecting the libraries xpra is built on. But here are some examples:
+* [Rencode Denial Of Service](https://packetstormsecurity.com/files/164084/) - [rencode segfault](https://github.com/Xpra-org/xpra/issues/1217)
+* [brotli integer overflow](https://github.com/Xpra-org/xpra/commit/781fb67827f891f427c66d9988b8423049954b64).
+
+(see also the "binaries" paragraph above which has more platform specific examples)
+
 By and large, the biggest concern is the complete lack of security updates from [downstream distributions](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages) - even when faced with [serious system crashes](https://github.com/Xpra-org/xpra/issues/2834).
