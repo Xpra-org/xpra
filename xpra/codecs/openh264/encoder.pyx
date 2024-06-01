@@ -344,7 +344,7 @@ cdef class Encoder:
         #self.context.SetOption(ENCODER_OPTION_TRACE_CALLBACK_CONTEXT, NULL)
         cdef int videoFormat = videoFormatI420
         self.context.SetOption(ENCODER_OPTION_DATAFORMAT, &videoFormat)
-        cdef int level = LEVEL_3_0
+        cdef int level = LEVEL_4_1
         self.context.SetOption(ENCODER_OPTION_LEVEL, &level)
 
         cdef SEncParamBase param
