@@ -265,7 +265,7 @@ def guess_content_from_parent_pid(ppid):
         return None
     executable = os.path.basename(parent_command[0])
     pt = get_parent_to_type()
-    return pt.get(executable)
+    return pt.get(executable, "")
 
 
 def guess_content_type(window):
