@@ -407,6 +407,8 @@ class CoreX11WindowModel(WindowModelStub):
     #########################################
 
     def acknowledge_changes(self) -> None:
+        if not self._managed:
+            return
         c = self._composite
         if not c:
             raise RuntimeError("composite window destroyed outside the UI thread?")
