@@ -450,13 +450,13 @@ class WindowModel(BaseWindowModel):
         if self.get_property("iconic"):
             self.set_property("iconic", False)
         self._update_client_geometry()
-        with xsync:
+        with xlog:
             if not X11Window.is_mapped(self.corral_xid):
                 X11Window.MapWindow(self.corral_xid)
 
     def hide(self) -> None:
         self._internal_set_property("shown", False)
-        with xsync:
+        with xlog:
             if X11Window.is_mapped(self.corral_xid):
                 X11Window.Unmap(self.corral_xid)
             X11Window.Reparent(self.corral_xid, self.parking_window_xid, 0, 0)
