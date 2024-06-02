@@ -530,35 +530,6 @@ for group, items in SWITCH_ALIAS.items():
             globals()[f"{group}_ENABLED"] = True
             break
 sys.argv = filtered_args
-if "clean" not in sys.argv and "sdist" not in sys.argv:
-    def show_switch_info():
-        switches_info = {}
-        for x in SWITCHES:
-            switches_info[x] = globals()[f"{x}_ENABLED"]
-        print("build switches:")
-        for k in SWITCHES:
-            v = switches_info[k]
-            print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Yes", False : "No"}.get(v, v)))
-    show_switch_info()
-
-    # sanity check the flags:
-    if clipboard_ENABLED and not server_ENABLED and not gtk3_ENABLED:
-        print("Warning: clipboard can only be used with the server or one of the gtk clients!")
-        clipboard_ENABLED = False
-    if x11_ENABLED and WIN32:
-        print("Warning: enabling x11 on MS Windows is unlikely to work!")
-    if gtk_x11_ENABLED and not x11_ENABLED:
-        print("Error: you must enable x11 to support gtk_x11!")
-        sys.exit(1)
-    if client_ENABLED and not gtk3_ENABLED:
-        print("Warning: client is enabled but none of the client toolkits are!?")
-    if DEFAULT and (not client_ENABLED and not server_ENABLED):
-        print("Warning: you probably want to build at least the client or server!")
-    if DEFAULT and not pillow_ENABLED:
-        print("Warning: including Python Pillow is VERY STRONGLY recommended")
-    if DEFAULT and (not enc_x264_ENABLED and not vpx_ENABLED):
-        print("Warning: no x264 and no vpx support!")
-        print(" you should enable at least one of these two video encodings")
 
 if install is None and WIN32:
     MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
@@ -758,7 +729,7 @@ def install_repo(repo_variant=""):
             variant = "CentOS-Stream"
             add_epel()
         else:
-            raise ValueError(f"unsupported distribution {csv(distro)}")
+            raise ValueError(f"unsupported distribution {distro}")
         to = "/etc/yum.repos.d/"
         setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra.repo", to])
         if repo_variant == "-beta":
@@ -774,6 +745,10 @@ if "doc" in sys.argv:
     convert_docs("html")
     sys.exit(0)
 
+if "pdf-doc" in sys.argv:
+    convert_docs("pdf")
+    sys.exit(0)
+
 if "dev-env" in sys.argv:
     install_dev_env()
     sys.exit(0)
@@ -786,17 +761,59 @@ if "install-beta-repo" in sys.argv:
     install_repo("-beta")
     sys.exit(0)
 
-if "pdf-doc" in sys.argv:
-    convert_docs("pdf")
-    sys.exit(0)
-
-if len(sys.argv)<2:
+if len(sys.argv) < 2:
     print(f"{sys.argv[0]} arguments are missing!")
+    print("usage:")
+    for subcommand in (
+        "--help",
+        "clean",
+        "sdist",
+        "pkg-info",
+        "build",
+        "install",
+        "doc",
+        "pdf-doc",
+        "dev-env",
+        "install-repo",
+        "install-beta-repo",
+        "unittests",
+    ):
+        print(f"{sys.argv[0]} {subcommand}")
     sys.exit(1)
 
-if sys.argv[1]=="unittests":
+if sys.argv[1] == "unittests":
     os.execv("./tests/unittests/run", ["run"] + sys.argv[2:])
 assert "unittests" not in sys.argv, sys.argv
+
+
+if "clean" not in sys.argv and "sdist" not in sys.argv:
+    def show_switch_info():
+        switches_info = {}
+        for x in SWITCHES:
+            switches_info[x] = globals()[f"{x}_ENABLED"]
+        print("build switches:")
+        for k in SWITCHES:
+            v = switches_info[k]
+            print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Yes", False : "No"}.get(v, v)))
+    show_switch_info()
+
+    def check_sane_defaults():
+        if x11_ENABLED and WIN32:
+            print("Warning: enabling x11 on MS Windows is unlikely to work!")
+        if gtk_x11_ENABLED and not x11_ENABLED:
+            print("Error: you must enable x11 to support gtk_x11!")
+            sys.exit(1)
+        if client_ENABLED and not gtk3_ENABLED:
+            print("Warning: client is enabled but none of the client toolkits are!?")
+        if DEFAULT and (not client_ENABLED and not server_ENABLED):
+            print("Warning: you probably want to build at least the client or server!")
+        if DEFAULT and not pillow_ENABLED:
+            print("Warning: including Python Pillow is VERY STRONGLY recommended")
+        if DEFAULT and (not enc_x264_ENABLED and not vpx_ENABLED):
+            print("Warning: no x264 and no vpx support!")
+            print(" you should enable at least one of these two video encodings")
+
+    check_sane_defaults()
 
 
 #*******************************************************************************
