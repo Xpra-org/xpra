@@ -566,7 +566,7 @@ cdef class Encoder:
 
         client_options = {
             "rgb_format"  : pixel_format,
-            }
+        }
         if self.quality<SUBSAMPLING_THRESHOLD:
             if self.alpha:
                 to_yuv(&pic, WEBP_YUV420A)
@@ -589,7 +589,7 @@ cdef class Encoder:
         return cdata, client_options
 
 
-cdef WebPPreset get_preset(unsigned int width, unsigned int height, content_type):
+cdef WebPPreset get_preset(unsigned int width, unsigned int height, content_type: str):
     cdef WebPPreset preset = DEFAULT_PRESET
     #only use icon for small squarish rectangles
     if width*height<=2304 and abs(width-height)<=16:
@@ -686,7 +686,7 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     cdef WebPConfig config
     config_init(&config)
 
-    content_type = options.get("content-type", None)
+    content_type = options.get("content-type", "")
     cdef WebPPreset preset = get_preset(width, height, content_type)
     configure_preset(&config, preset, quality)
     configure_encoder(&config, quality, speed, alpha)
