@@ -164,14 +164,15 @@ SOURCE: dict[str, str] = {
     "vertex": VERTEX_SHADER,
     "overlay": OVERLAY_SHADER,
     "fixed-color": FIXED_COLOR_SHADER,
-    "NV12_to_RGB": gen_NV12_to_RGB(full_range=False),
-    "NV12_to_RGB_FULL": gen_NV12_to_RGB(full_range=True),
 }
 
-for fmt in ("YUV420P", "YUV422P", "YUV444P"):
-    divs = get_subsampling_divs(fmt)
-    SOURCE[f"{fmt}_to_RGB"] = gen_YUV_to_RGB(divs, full_range=False)
-    SOURCE[f"{fmt}_to_RGB_FULL"] = gen_YUV_to_RGB(divs, full_range=True)
+for full in (False, True):
+    suffix = "_FULL" if full else ""
+    SOURCE[f"NV12_to_RGB{suffix}"] = gen_NV12_to_RGB(full_range=full)
+
+    for fmt in ("YUV420P", "YUV422P", "YUV444P"):
+        divs = get_subsampling_divs(fmt)
+        SOURCE[f"{fmt}_to_RGB{suffix}"] = gen_YUV_to_RGB(divs, full_range=full)
 
 
 def main():
