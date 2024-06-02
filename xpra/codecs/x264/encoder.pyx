@@ -990,7 +990,7 @@ cdef class Encoder:
             # "quality"   : max(0, min(100, quality)),
             # "speed"     : max(0, min(100, speed)),
             "csc"       : self.csc_format,
-            "full-range" : self.full_range,
+            "full-range" : bool(self.full_range),
         }
         if slice_type!="P":
             client_options["type"] = slice_type
