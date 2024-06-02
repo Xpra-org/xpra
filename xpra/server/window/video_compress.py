@@ -2538,7 +2538,7 @@ class WindowVideoSource(WindowSource):
             # make sure we time out the encoder if no new frames come through:
             self.schedule_video_encoder_timer()
         actual_encoding = ve.get_encoding()
-        videolog("video_encode %s encoder: %4s %4ix%-4i result is %7i bytes, %6.1f MPixels/s, client options=%s",
+        videolog("video_encode %s encoder: %4s %4ix%-4i result is %7i bytes, %5i MPixels/s, client options=%s",
                  ve.get_type(), actual_encoding, enc_width, enc_height, len(data or ""),
                  (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
         if not data:
@@ -2663,7 +2663,7 @@ class WindowVideoSource(WindowSource):
         start = monotonic()
         csc_image = csce.convert_image(image)
         end = monotonic()
-        csclog("csc_image(%s, %s, %s) converted to %s in %.1fms, %6.1f MPixels/s",
+        csclog("csc_image(%s, %s, %s) converted to %s in %.1fms, %5i MPixels/s",
                image, width, height,
                csc_image, (1000.0*end-1000.0*start), (width*height/(end-start+0.000001)/1024.0/1024.0))
         if not csc_image:
