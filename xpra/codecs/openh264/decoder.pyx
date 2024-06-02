@@ -221,7 +221,6 @@ cdef class Decoder:
         }
         return info
 
-
     def decompress_image(self, data: bytes, options: typedict) -> ImageWrapper:
         cdef SBufferInfo buf_info
         cdef long r = 0
@@ -248,11 +247,11 @@ cdef class Decoder:
             if (wdelta & 0xfff0) > 0 or (hdelta & 0xffff0) > 0:
                 log.warn("Warning: image bigger than expected")
                 log.warn(f" {width}x{height} instead of {self.width}x{self.height}")
-        pixels = [
+        pixels = (
             yuv[0][:ystride*height],
             yuv[1][:uvstride*(height//2)],
             yuv[2][:uvstride*(height//2)],
-        ]
+        )
         log(f"openh264 decoded {src_len:8} bytes into {width}x{height} YUV420P in {int((end-start)*1000):3}ms")
         return ImageWrapper(0, 0, width, height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3)
 
