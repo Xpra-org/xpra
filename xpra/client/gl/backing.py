@@ -1162,9 +1162,9 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         options["pbo"] = True
-        self.do_gl_paint_planar(context, "NV12_to_RGB", flush, encoding, img,
-                                x, y, w, h, width, height,
-                                options, callbacks)
+        self.gl_paint_planar(context, "NV12_to_RGB", flush, encoding, img,
+                             x, y, w, h, width, height,
+                             options, callbacks)
 
     def paint_nvjpeg(self, gl_context, encoding, img_data, x: int, y: int, width: int, height: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
