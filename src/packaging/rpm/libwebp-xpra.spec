@@ -1,7 +1,7 @@
 %define _disable_source_fetch 0
 
 Name:	     libwebp-xpra
-Version:     1.3.2
+Version:     1.4.0
 Release:     1%{?dist}
 Summary:     WebP library and conversion tools for xpra
 
@@ -33,7 +33,7 @@ WebP images.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "2a499607df669e40258e53d0ade8035ba4ec0175244869d1025d460562aa09b4" ]; then
+if [ "${sha256}" != "61f873ec69e3be1b99535634340d5bde750b2e4447caa1db9f61be3fd49ab1e5" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -94,6 +94,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Mon Jun 03 2023 Antoine Martin <antoine@xpra.org> 1.4.0-1
+- new upstream release
+
 * Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> 1.3.2-1
 - new upstream release
 
