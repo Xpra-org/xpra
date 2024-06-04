@@ -618,8 +618,10 @@ cdef class Encoder:
         else:
             bdata = b"".join(data)
         log(f"openh264 compress_image: {len(bdata)} bytes")
+        self.frames += 1
         return bdata, {
-            "full-range": False,
+            "full-range": image.get_full_range(),
+            "frame": self.frames,
         }
 
 
