@@ -21,7 +21,7 @@ Those are required by almost every component.
 _(*)_ needed for running any kind of server, or GUI clients.
 It is not required for running text-only clients like `xpra top` or `xpra info`.
 
-And some their transitive dependencies:
+And some of their transitive dependencies:
 
 | Project                                                                        | Source Download Link                                              | Purpose                              |
 |--------------------------------------------------------------------------------|-------------------------------------------------------------------|--------------------------------------|
@@ -49,18 +49,19 @@ ie: `lz4`, `libpng`, etc..
 
 See [Network](../Network/README.md)
 
-| Project                                                            | Source Download Link                                    | Purpose                                                          | Client or Server | Notes                                                |
-|--------------------------------------------------------------------|---------------------------------------------------------|------------------------------------------------------------------|------------------|:-----------------------------------------------------|
-| [lz4](https://github.com/lz4/lz4)                                  | https://github.com/lz4/lz4/releases                     | [packet compression](./PacketEncoding)                           | both             | Strongly recommended                                 |
-| [aioquic](https://github.com/aiortc/aioquic)                       | https://pypi.org/project/aioquic/                       | low level network protocol                                       | both             | [quic](https://github.com/Xpra-org/xpra/issues/3376) |
-| [python-cryptography](https://cryptography.io/en/latest/)          | https://pypi.python.org/pypi/cryptography               | [Encryption](./Encryption)                                       | both             |                                                      |
-| [python-zeroconf](https://github.com/jstasiak/python-zeroconf)     | https://pypi.org/project/zeroconf/                      | [Multicast DNS](./Multicast-DNS) session publishing and browsing | both             |                                                      |
-| [python-netifaces](http://alastairs-place.net/projects/netifaces/) | https://pypi.python.org/pypi/netifaces                  | [Multicast DNS](./Multicast-DNS) session publishing              | server           |                                                      |
-| [dbus-python](https://pypi.python.org/pypi/dbus-python/)           | https://dbus.freedesktop.org/releases/dbus-python/      | desktop integration, server control interface                    | both             | not applicable to MS Windows or Mac OSX              |
-| [openssl](https://www.openssl.org/)                                | https://www.openssl.org/source/                         | [SSL](./SSL)                                                     | both             |                                                      |
-| [paramiko](https://pypi.org/project/paramiko/)                     | https://pypi.org/project/paramiko/                      | [ssh integration](./SSH)                                         | both             |                                                      |
-| [sshpass](https://sourceforge.net/projects/sshpass/)               | https://sourceforge.net/projects/sshpass/files/sshpass/ | non-interactive SSH password authentication                      | usually client   |                                                      |
-| [brotli](https://github.com/google/brotli)                         | https://github.com/google/brotli/releases               | HTML client compression                                          | r15540           |
+| Project                                                            | Source Download Link                                    | Purpose                                                          | Client or Server    | Notes                                                |
+|--------------------------------------------------------------------|---------------------------------------------------------|------------------------------------------------------------------|---------------------|:-----------------------------------------------------|
+| [lz4](https://github.com/lz4/lz4)                                  | https://github.com/lz4/lz4/releases                     | [packet compression](./PacketEncoding)                           | both                | Strongly recommended                                 |
+| [aioquic](https://github.com/aiortc/aioquic)                       | https://pypi.org/project/aioquic/                       | low level network protocol                                       | both                | [quic](https://github.com/Xpra-org/xpra/issues/3376) |
+| [python-cryptography](https://cryptography.io/en/latest/)          | https://pypi.python.org/pypi/cryptography               | [Encryption](./Encryption)                                       | both                |                                                      |
+| [python-zeroconf](https://github.com/jstasiak/python-zeroconf)     | https://pypi.org/project/zeroconf/                      | [Multicast DNS](./Multicast-DNS) session publishing and browsing | both                |                                                      |
+| [python-netifaces](http://alastairs-place.net/projects/netifaces/) | https://pypi.python.org/pypi/netifaces                  | [Multicast DNS](./Multicast-DNS) session publishing              | server              |                                                      |
+| [dbus-python](https://pypi.python.org/pypi/dbus-python/)           | https://dbus.freedesktop.org/releases/dbus-python/      | desktop integration, server control interface                    | both                | not applicable to MS Windows or Mac OSX              |
+| [openssl](https://www.openssl.org/)                                | https://www.openssl.org/source/                         | [SSL](./SSL)                                                     | both                |                                                      |
+| [paramiko](https://pypi.org/project/paramiko/)                     | https://pypi.org/project/paramiko/                      | [ssh integration](./SSH)                                         | both                |                                                      |
+| [sshpass](https://sourceforge.net/projects/sshpass/)               | https://sourceforge.net/projects/sshpass/files/sshpass/ | non-interactive SSH password authentication                      | usually client      |                                                      |
+| [brotli](https://github.com/google/brotli)                         | https://github.com/google/brotli/releases               | HTML client compression                                          | r15540              |
+| [PySocks](https://github.com/Anorov/PySocks)                       | https://github.com/Anorov/PySocks/releases              | client                                                           | SOCKS proxy support | https://github.com/Xpra-org/xpra/issues/2105         |
 </details>
 
 <details>
@@ -144,7 +145,7 @@ See [audio forwarding](../Features/Audio.md)
 <details>
   <summary>Dependency Graphs</summary>
 
-  These graphs were generated using `jhbuild dot` on MacOS.  
+  These graphs were generated using `jhbuild dot` on MacOS.
   The MacOS builds include very low level build dependencies.
 
   ### Codecs
