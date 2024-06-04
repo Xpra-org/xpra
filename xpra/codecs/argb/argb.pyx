@@ -776,3 +776,20 @@ cdef bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len,
             if start<end:
                 rectangles.append((start, y, end-start, 1))
     return rectangles
+
+
+cdef show_plane_range(name, plane, int width, int stride, int height):
+    cdef unsigned char minv = 255
+    cdef unsigned char maxv = 0
+    cdef unsigned char value
+    cdef const unsigned char *plane_buf
+    with buffer_context(plane) as buf:
+        plane_buf = <unsigned char *> (<uintptr_t> int(buf))
+        for y in range(height):
+            for x in range(width):
+                value = plane_buf[y*stride + x]
+                if value < minv:
+                    minv = value
+                if value > maxv:
+                    maxv = value
+    log.info("%s plane: min=%s, max=%s", name, minv, maxv)
