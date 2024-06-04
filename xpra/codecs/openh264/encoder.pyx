@@ -479,7 +479,8 @@ cdef class Encoder:
         else:
             bdata = b"".join(data)
         log(f"openh264 compress_image: {len(bdata)} bytes")
-        return bdata, {}
+        self.frames += 1
+        return bdata, {"frame": self.frames}
 
 
 def selftest(full=False) -> None:
