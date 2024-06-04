@@ -21,6 +21,22 @@ from libc.stdint cimport uint8_t, uintptr_t
 from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
 
 cdef extern from "wels/codec_app_def.h":
+    ctypedef enum DECODING_STATE:
+        dsErrorFree             # bit stream error-free
+        dsFramePending          # need more throughput to generate a frame output,
+        dsRefLost               # layer lost at reference frame with temporal id 0
+        dsBitstreamError        # error bitstreams(maybe broken internal frame) the decoder cared
+        dsDepLayerLost          # dependented layer is ever lost
+        dsNoParamSets           # no parameter set NALs involved
+        dsDataErrorConcealed    # current data error concealed specified
+        dsRefListNullPtrs       # ref picure list contains null ptrs within uiRefCount range
+
+        # Errors derived from logic level
+        dsInvalidArgument       # invalid argument specified
+        dsInitialOptExpected    # initializing operation is expected
+        dsOutOfMemory           # out of memory due to new request
+        dsDstBufNeedExpan       # actual picture size exceeds size of dst pBuffer feed in decoder, so need expand its size
+
     ctypedef struct OpenH264Version:
         unsigned int uMajor
         unsigned int uMinor
@@ -81,6 +97,23 @@ cdef extern from "wels/codec_api.h":
         long Uninitialize()
         long DecodeFrameNoDelay(const unsigned char* pSrc, const int iSrcLen,
                                 unsigned char** ppDst, SBufferInfo* pDstInfo) nogil
+
+ERROR_STR: Dict[int, str] = {
+    dsErrorFree: "no error",
+    dsFramePending: "need more throughput to generate a frame output",
+    dsRefLost: "layer lost at reference frame with temporal id 0",
+    dsBitstreamError: "error bitstreams(maybe broken internal frame) the decoder cared",
+    dsDepLayerLost: "dependented layer is ever lost",
+    dsNoParamSets: "no parameter set NALs involved",
+    dsDataErrorConcealed: "current data error concealed specified",
+    dsRefListNullPtrs: "ref picure list contains null ptrs within uiRefCount range",
+
+    # Errors derived from logic level
+    dsInvalidArgument: "invalid argument specified",
+    dsInitialOptExpected: "initializing operation is expected",
+    dsOutOfMemory: "out of memory due to new request",
+    dsDstBufNeedExpan: "actual picture size exceeds size of dst pBuffer feed in decoder, so need expand its size",
+}
 
 
 COLORSPACES : Dict[str, str] = {
@@ -234,15 +267,17 @@ cdef class Decoder:
             with nogil:
                 r = self.context.DecodeFrameNoDelay(<const unsigned char*> src, <const int> src_len, yuv, &buf_info)
         if r:
-            raise RuntimeError(f"openh264 frame decoding error {r}")
+            msg = ERROR_STR.get(r, "unknown")
+            raise RuntimeError(f"openh264 frame decoding error {msg!r}")
         end = monotonic()
         cdef int ystride = buf_info.UsrData.sSystemBuffer.iStride[0]
         cdef int uvstride = buf_info.UsrData.sSystemBuffer.iStride[1]
-        strides = [ystride, uvstride, uvstride]
+        strides = (ystride, uvstride, uvstride)
         cdef int width = buf_info.UsrData.sSystemBuffer.iWidth
         cdef int height = buf_info.UsrData.sSystemBuffer.iHeight
         cdef int wdelta = width - self.width
         cdef int hdelta = height - self.height
+        log(f"openh264 strides=%s, size=%s", strides, (width, height))
         if abs(wdelta) > 1 or abs(hdelta) > 1:
             if (wdelta & 0xfff0) > 0 or (hdelta & 0xffff0) > 0:
                 log.warn("Warning: image bigger than expected")
