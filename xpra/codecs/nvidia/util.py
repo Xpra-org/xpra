@@ -17,7 +17,7 @@ from xpra.log import Logger
 
 log = Logger("encoder", "util")
 
-MIN_VERSION = 466
+MIN_VERSION = 515
 
 NVIDIA_PROC_FILE = "/proc/driver/nvidia/version"
 NVIDIA_HARDWARE = envbool("XPRA_NVIDIA_HARDWARE", False)
