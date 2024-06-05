@@ -90,11 +90,11 @@ class LoggingServer(StubServerMixin):
             return
         ll = self.local_logging
 
-        def local_warn(*args):
+        def local_warn(*args) -> None:
             if ll:
                 ll(log, logging.WARNING, *args)
 
-        def local_err(message, e=None):
+        def local_err(message, e=None) -> None:
             if self._closing:
                 return
             local_warn("Warning: %s:", message)
@@ -120,6 +120,15 @@ class LoggingServer(StubServerMixin):
 
         self.in_remote_logging = True
         try:
+            if not kwargs.pop("remote", True):
+                if ll:
+                    try:
+                        ll(log, level, msg, *args, **kwargs)
+                    except Exception as e:
+                        local_warn("Warning: failed to log message locally")
+                        local_warn(" %s", e)
+                        local_warn(" %s", msg)
+                return
             try:
                 if args:
                     data = msg % args

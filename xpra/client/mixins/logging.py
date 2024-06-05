@@ -117,6 +117,17 @@ class RemoteLogging(StubClientMixin):
                 ll(logger_log, logging.WARNING, *warn_args)
 
         try:
+            if not kwargs.pop("remote", True):
+                # keyword is telling us not to forward it!
+                if ll:
+                    try:
+                        ll(logger_log, level, msg, *args, **kwargs)
+                    except Exception as e:
+                        local_warn("Warning: failed to log message locally")
+                        local_warn(" %s", e)
+                        local_warn(" %s", msg)
+                return
+
             dtime = int(1000 * (monotonic() - self.monotonic_start_time))
             data: str | Compressed
             if args:
