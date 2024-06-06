@@ -37,18 +37,44 @@ def cmpe(info: str, p1, p2, tolerance=2):
 def mod_check(mod_name: str, in_csc: str, out_csc: str):
     csc_mod = loader.load_codec(mod_name)
     if not csc_mod:
-        print("%s not found" % mod_name)
-        return
+        raise ValueError(f"{mod_name} not found")
     if in_csc not in csc_mod.get_input_colorspaces():
-        raise Exception("%s does not support %s as input for %s" % (mod_name, in_csc, out_csc))
+        raise ValueError(f"{mod_name} does not support {in_csc!r} as input for {out_csc!r}")
     if out_csc not in csc_mod.get_output_colorspaces(in_csc):
-        raise Exception("%s does not support %s as output for %s" % (mod_name, out_csc, in_csc))
+        raise ValueError(f"{mod_name} does not support {out_csc!r} as output for {in_csc}")
     return csc_mod
 
 
 def pstr(pixel_data) -> str:
     bdata = memoryview_to_bytes(pixel_data)
     return repr_ellipsized(hexstr(bdata))
+
+
+CS_TEST_DATA = {
+    "full": (
+        ("black", "000000ff", "00", "80", "80"),
+        ("white", "ffffffff", "ff", "80", "80"),
+        ("red", "00ff00ff", "95", "2c", "15"),
+        ("blue", "ff0000ff", "1d", "ff", "6b"),
+        ("green", "0000ffff", "4d", "55", "ff"),
+        ("cyan", "00ffffff", "e2", "00", "94"),
+        ("magenta", "ff00ffff", "6a", "d4", "eb"),
+        ("yellow", "ffff00ff", "b2", "ab", "01"),
+    ),
+    "studio": {
+        ("black", "000000ff", "10", "80", "80"),
+        ("white", "ffffffff", "eb", "80", "80"),
+        ("red", "00ff00ff", "90", "36", "22"),
+        ("blue", "ff0000ff", "29", "ef", "6e"),
+        ("green", "0000ffff", "52", "5a", "ef"),
+        ("cyan", "00ffffff", "d2", "10", "91"),
+        ("magenta", "ff00ffff", "6a", "c9", "dd"),
+        ("yellow", "ffff00ff", "a9", "a5", "10"),
+        ("beige", "f5f5dcff", "dc", "83", "75"),
+        ("orange", "ffa500ff", "7c", "bf", "31"),
+        ("brown", "a52a2aff", "40", "b5", "77"),
+    },
+}
 
 
 class Test_CSC_Colorspace(unittest.TestCase):
@@ -98,33 +124,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
 
     def _test_RGB_to_YUV(self, mod_out, mod_in, in_csc="BGRX", out_csc="YUV420P", cs_range="full"):
         width = height = 32
-        CS_TEST_DATA = {
-            "full": (
-                ("black", "000000ff", "00", "80", "80"),
-                ("white", "ffffffff", "ff", "80", "80"),
-                ("red", "00ff00ff", "95", "2c", "15"),
-                ("blue", "ff0000ff", "1d", "ff", "6b"),
-                ("green", "0000ffff", "4d", "55", "ff"),
-                ("cyan", "00ffffff", "e2", "00", "94"),
-                ("magenta", "ff00ffff", "6a", "d4", "eb"),
-                ("yellow", "ffff00ff", "b2", "ab", "01"),
-            ),
-            "studio": {
-                ("black", "000000ff", "10", "80", "80"),
-                ("white", "ffffffff", "eb", "80", "80"),
-                ("red", "00ff00ff", "90", "36", "22"),
-                ("blue", "ff0000ff", "29", "ef", "6e"),
-                ("green", "0000ffff", "52", "5a", "ef"),
-                ("cyan", "00ffffff", "d2", "10", "91"),
-                ("magenta", "ff00ffff", "6a", "c9", "dd"),
-                ("yellow", "ffff00ff", "a9", "a5", "10"),
-                ("beige", "f5f5dcff", "dc", "83", "75"),
-                ("orange", "ffa500ff", "7c", "bf", "31"),
-                ("brown", "a52a2aff", "40", "b5", "77"),
-            },
-        }
-        cs_test_data = CS_TEST_DATA.copy()
-        test_data = cs_test_data[cs_range]
+        test_data = CS_TEST_DATA[cs_range]
         options = typedict({"ranges": (cs_range,)})
         for color_name, pixel, Y, U, V in test_data:
             self._do_test_RGB_to_YUV(
@@ -146,11 +146,14 @@ class Test_CSC_Colorspace(unittest.TestCase):
 
     def test_BGRX_to_YUV(self):
         modules = loader.CSC_CODECS
+        found = []
         for mod in modules:
-            self.do_test_RGB_to_YUV(mod, mod, "BGRX")
-        if len(modules) >= 2:
-            self.do_test_RGB_to_YUV(modules[0], modules[1], "BGRX")
-            self.do_test_RGB_to_YUV(modules[1], modules[0], "BGRX")
+            if loader.load_codec(mod):
+                found.append(mod)
+                self.do_test_RGB_to_YUV(mod, mod, "BGRX")
+        if len(found) >= 2:
+            self.do_test_RGB_to_YUV(found[0], found[1], "BGRX")
+            self.do_test_RGB_to_YUV(found[1], found[0], "BGRX")
 
 
 def main():
