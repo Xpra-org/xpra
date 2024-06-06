@@ -130,6 +130,7 @@ def set_default_level(level: int) -> None:
 
 def standard_logging(log, level: int, msg: str, *args, **kwargs) -> None:
     # this function just delegates to the regular python stdlib logging `log`:
+    kwargs.pop("remote", None)
     log(level, msg, *args, **kwargs)
 
 
