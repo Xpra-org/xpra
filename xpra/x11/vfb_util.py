@@ -296,6 +296,9 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
     try:
         if use_display_fd:
             def displayfd_err(msg: str) -> NoReturn:
+                if xvfb and xvfb.poll() is None:
+                    log.error(" stopping vfb process with pid %i", xvfb.pid)
+                    xvfb.terminate()
                 raise InitException(f"{xvfb_executable}: {msg}")
             r_pipe, w_pipe = os.pipe()
             try:
