@@ -32,8 +32,9 @@ class ImageWrapper:
         PACKED, PLANAR_2, PLANAR_3, PLANAR_4,
     )
 
-    def __init__(self, x: int, y: int, width: int, height: int, pixels, pixel_format, depth: int, rowstride,
-                 bytesperpixel: int = 4, planes: PlanarFormat = PACKED, thread_safe: bool = True, palette=None):
+    def __init__(self, x: int, y: int, width: int, height: int, pixels, pixel_format: str, depth: int, rowstride,
+                 bytesperpixel: int = 4, planes: PlanarFormat = PACKED, thread_safe: bool = True, palette=None,
+                 full_range=True):
         self.x: int = x
         self.y: int = y
         self.target_x: int = x
@@ -41,7 +42,7 @@ class ImageWrapper:
         self.width: int = width
         self.height: int = height
         self.pixels = pixels
-        self.pixel_format: str = pixel_format
+        self.pixel_format = pixel_format
         self.depth: int = depth
         self.rowstride = rowstride
         self.bytesperpixel: int = bytesperpixel
@@ -50,7 +51,7 @@ class ImageWrapper:
         self.freed: bool = False
         self.timestamp: int = int(monotonic() * 1000)
         self.palette = palette
-        self.full_range = False
+        self.full_range = full_range
         if width <= 0 or height <= 0:
             raise ValueError(f"invalid geometry {x},{y},{width},{height}")
 
@@ -247,7 +248,7 @@ class ImageWrapper:
             lines.append(memoryview_to_bytes(pixels[pos:pos + newstride]))
             pos += oldstride
         image = ImageWrapper(self.x + x, self.y + y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride,
-                             planes=self.planes, thread_safe=True, palette=self.palette)
+                             planes=self.planes, thread_safe=True, palette=self.palette, full_range=self.full_range)
         image.set_target_x(self.target_x + x)
         image.set_target_y(self.target_y + y)
         return image

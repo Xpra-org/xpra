@@ -15,12 +15,17 @@ log = Logger("csc", "libyuv")
 
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
+from xpra.util.env import envbool
 from xpra.codecs.constants import get_subsampling_divs, CSCSpec
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf, memalign, buffer_context    # pylint: disable=syntax-error
 
+from xpra.codecs.argb.argb cimport show_plane_range
 from libc.stdint cimport uint8_t, uintptr_t
 from libc.stdlib cimport free
+
+
+cdef uint8_t SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
 
 
 cdef extern from "Python.h":
@@ -87,6 +92,18 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
                    int width, int height) nogil
 
     int J420ToABGR(const uint8_t* src_y, int src_stride_y,
+                   const uint8_t* src_u, int src_stride_u,
+                   const uint8_t* src_v, int src_stride_v,
+                   uint8_t* dst_abgr, int dst_stride_abgr,
+                   int width, int height) nogil
+
+    int I420ToARGB(const uint8_t* src_y, int src_stride_y,
+                   const uint8_t* src_u, int src_stride_u,
+                   const uint8_t* src_v, int src_stride_v,
+                   uint8_t* dst_abgr, int dst_stride_abgr,
+                   int width, int height) nogil
+
+    int J420ToARGB(const uint8_t* src_y, int src_stride_y,
                    const uint8_t* src_u, int src_stride_u,
                    const uint8_t* src_v, int src_stride_v,
                    uint8_t* dst_abgr, int dst_stride_abgr,
@@ -205,7 +222,7 @@ MAX_HEIGHT = 32768
 COLORSPACES: Dict[str, Sequence[str]] = {
     "BGRX" : ("YUV444P", "YUV420P", "NV12"),
     "NV12" : ("RGB", "BGRX", "RGBX"),
-    "YUV420P" : ("RGB", "XBGR", "RGBX"),
+    "YUV420P" : ("RGB", "XBGR", "RGBX", "BGRX"),
     "YUV444P" : ("BGRX", "RGBX"),
 }
 
@@ -362,7 +379,7 @@ cdef class Converter:
         self.src_height = src_height
         self.dst_width = dst_width
         self.dst_height = dst_height
-        self.dst_full_range = int("full" in options.strtupleget("ranges"))
+        self.dst_full_range = int("full" in options.strtupleget("ranges")) #and dst_format != "YUV444P"
         self.out_buffer_size = 0
         self.scaled_buffer_size = 0
         self.time = 0
@@ -554,6 +571,10 @@ cdef class Converter:
         if not rgb_buffer:
             raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
         log("convert_nv12_image(%s) to %s", image, self.dst_format)
+        if SHOW_PLANE_RANGES:
+            show_plane_range("Y", pixels[0], width, y_stride, height)
+            show_plane_range("UV", pixels[1], width, uv_stride, height//2)
+
         with buffer_context(pixels[0]) as y_buf:
             y = <uintptr_t> int(y_buf)
             with buffer_context(pixels[1]) as uv_buf:
@@ -669,6 +690,13 @@ cdef class Converter:
         if not rgb_buffer:
             raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
         log("convert_yuv_image(%s) to %s", image, self.dst_format)
+        if SHOW_PLANE_RANGES:
+            divs = get_subsampling_divs(self.src_format)
+            for i in range(3):
+                xdiv, ydiv = divs[i]
+                show_plane_range("YUV"[i], pixels[i], width // xdiv, strides[i], height // ydiv)
+
+        fn_name = ""
         with buffer_context(pixels[0]) as y_buf:
             y = <uintptr_t> int(y_buf)
             with buffer_context(pixels[1]) as u_buf:
@@ -677,7 +705,7 @@ cdef class Converter:
                     v = <uintptr_t> int(v_buf)
                     rgb = <uint8_t*> rgb_buffer.get_mem()
                     if self.dst_format=="RGB" and self.src_format=="YUV420P":
-                        matched = 1
+                        fn_name = "J420ToRGB24" if full_range else "I420ToRGB24"
                         with nogil:
                             if full_range:
                                 r = J420ToRGB24(<const uint8_t*> y, y_stride,
@@ -692,7 +720,7 @@ cdef class Converter:
                                                 rgb, rowstride,
                                                 width, height)
                     elif self.dst_format=="XBGR" and self.src_format=="YUV420P":
-                        matched = 1
+                        fn_name = "I420ToRGBA"
                         # we can't handle full-range here!
                         with nogil:
                             r = I420ToRGBA(<const uint8_t*> y, y_stride,
@@ -701,7 +729,7 @@ cdef class Converter:
                                            rgb, rowstride,
                                            width, height)
                     elif self.dst_format=="BGRX" and self.src_format=="YUV444P":
-                        matched = 1
+                        fn_name = "J444ToARGB" if full_range else "I444ToARGB"
                         with nogil:
                             if full_range:
                                 r = J444ToARGB(<const uint8_t*> y, y_stride,
@@ -716,7 +744,7 @@ cdef class Converter:
                                                rgb, rowstride,
                                                width, height)
                     elif self.dst_format=="RGBX" and self.src_format=="YUV420P":
-                        matched = 1
+                        fn_name = "J420ToABGR" if full_range else "I420ToABGR"
                         with nogil:
                             if full_range:
                                 r = J420ToABGR(<const uint8_t*> y, y_stride,
@@ -730,8 +758,23 @@ cdef class Converter:
                                                 <const uint8_t*> v, v_stride,
                                                 rgb, rowstride,
                                                 width, height)
-                    elif self.src_format=="YUV444P" and self.dst_format=="RGBX":
-                        matched = 1
+                    elif self.dst_format=="BGRX" and self.src_format=="YUV420P":
+                        fn_name = "J420ToARGB" if full_range else "I420ToARGB"
+                        with nogil:
+                            if full_range:
+                                r = J420ToARGB(<const uint8_t*> y, y_stride,
+                                                <const uint8_t*> u, u_stride,
+                                                <const uint8_t*> v, v_stride,
+                                                rgb, rowstride,
+                                                width, height)
+                            else:
+                                r = I420ToARGB(<const uint8_t*> y, y_stride,
+                                                <const uint8_t*> u, u_stride,
+                                                <const uint8_t*> v, v_stride,
+                                                rgb, rowstride,
+                                                width, height)
+                    elif self.dst_format=="RGBX" and self.src_format=="YUV444P":
+                        fn_name = "J444ToABGR" if full_range else "I444ToABGR"
                         with nogil:
                             if full_range:
                                 r = J444ToABGR(<const uint8_t*> y, y_stride,
@@ -745,16 +788,33 @@ cdef class Converter:
                                                <const uint8_t*> v, v_stride,
                                                rgb, rowstride,
                                                width, height)
-        if not matched:
+                    elif self.dst_format=="BGRX" and self.src_format=="YUV444P":
+                        fn_name = "J444ToARGB" if full_range else "I444ToARGB"
+                        with nogil:
+                            if full_range:
+                                r = J444ToARGB(<const uint8_t*> y, y_stride,
+                                               <const uint8_t*> u, u_stride,
+                                               <const uint8_t*> v, v_stride,
+                                               rgb, rowstride,
+                                               width, height)
+                            else:
+                                r = I444ToARGB(<const uint8_t*> y, y_stride,
+                                               <const uint8_t*> u, u_stride,
+                                               <const uint8_t*> v, v_stride,
+                                               rgb, rowstride,
+                                               width, height)
+        if not fn_name:
             raise RuntimeError(f"unexpected formats: src={self.src_format}, dst={self.dst_format}")
         if r!=0:
-            raise RuntimeError(f"libyuv YUV420PToRGB failed and returned {r}")
+            raise RuntimeError(f"libyuv {fn_name} failed and returned {r}")
         image.free()
         cdef double elapsed = monotonic()-start
-        log(f"libyuv.YUV420P to {self.dst_format} took %.1fms", 1000.0*elapsed)
+        log("libyuv.%s took %.1fms (full-range=%s)", fn_name, 1000.0*elapsed, bool(full_range))
         self.time += elapsed
-        return ImageWrapper(0, 0, self.dst_width, self.dst_height,
+        img = ImageWrapper(0, 0, self.dst_width, self.dst_height,
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
+        img.set_full_range(full_range)
+        return img
 
     def convert_bgrx_image(self, image: ImageWrapper) -> ImageWrapper:
         cdef uint8_t *output_buffer
@@ -791,43 +851,52 @@ cdef class Converter:
         cdef int result = -1
         cdef int full_range = self.dst_full_range
         cdef const uint8_t* src
+        fn_name = ""
         with buffer_context(pixels) as bc:
             src = <const uint8_t*> (<uintptr_t> int(bc))
-            with nogil:
-                if self.dst_format=="NV12":
-                    # we can't handle full-range here!
-                    full_range = 0
+            if self.dst_format=="NV12":
+                # we can't handle full-range here!
+                full_range = 0
+                fn_name = "ARGBToNV12"
+                with nogil:
                     result = ARGBToNV12(src, stride,
                                         out_planes[0], self.out_stride[0],
                                         out_planes[1], self.out_stride[1],
                                         width, height)
-                elif self.dst_format=="YUV420P":
-                    if full_range:
+            elif self.dst_format=="YUV420P":
+                if full_range:
+                    fn_name = "ARGBToJ420"
+                    with nogil:
                         result = ARGBToJ420(src, stride,
                                             out_planes[0], self.out_stride[0],
                                             out_planes[1], self.out_stride[1],
                                             out_planes[2], self.out_stride[2],
                                             width, height)
-                    else:
+                else:
+                    fn_name = "ARGBToI420"
+                    with nogil:
                         result = ARGBToI420(src, stride,
                                             out_planes[0], self.out_stride[0],
                                             out_planes[1], self.out_stride[1],
                                             out_planes[2], self.out_stride[2],
                                             width, height)
-                elif self.dst_format=="YUV444P":
-                    # we can't handle full-range here!
-                    full_range = 0
+            elif self.dst_format=="YUV444P":
+                # we can't handle full-range here as there is no `ARGBToJ444`
+                # we always supply full range RGB, so we can just update the metadata:
+                fn_name = "ARGBToI444"
+                full_range = False
+                with nogil:
                     result = ARGBToI444(src, stride,
                                         out_planes[0], self.out_stride[0],
                                         out_planes[1], self.out_stride[1],
                                         out_planes[2], self.out_stride[2],
                                         width, height)
-                else:
-                    raise RuntimeError(f"unexpected src format {self.src_format}")
+            else:
+                raise RuntimeError(f"unexpected src format {self.src_format}")
         if result!=0:
-            raise RuntimeError(f"libyuv ARGB to {self.dst_format} failed and returned {result}")
+            raise RuntimeError(f"libyuv.{fn_name} failed and returned {result}")
         cdef double elapsed = monotonic()-start
-        log("libyuv.ARGB to %s took %.1fms", self.dst_format, 1000.0*elapsed)
+        log("libyuv.%s took %.1fms (full-range=%s)", fn_name, 1000.0*elapsed, bool(full_range))
         self.time += elapsed
         cdef object planes = []
         cdef object strides = []
@@ -857,10 +926,16 @@ cdef class Converter:
             #use output buffer directly:
             for i in range(self.planes):
                 strides.append(self.out_stride[i])
-                planes.append(PyMemoryView_FromMemory(<char *> out_planes[i], self.out_size[i], PyBUF_WRITE))
+                plane = PyMemoryView_FromMemory(<char *> out_planes[i], self.out_size[i], PyBUF_WRITE)
+                planes.append(plane)
             self.frames += 1
             out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, self.planes)
             out_image.cython_buffer = <uintptr_t> output_buffer
+        if SHOW_PLANE_RANGES:
+            divs = get_subsampling_divs(self.dst_format)
+            for i in range(self.planes):
+                xdiv, ydiv = divs[i]
+                show_plane_range("YUV"[i], planes[i], self.dst_width // xdiv, strides[i], self.dst_height // ydiv)
         out_image.set_full_range(bool(full_range))
         return out_image
 
