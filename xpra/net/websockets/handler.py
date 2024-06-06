@@ -77,7 +77,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         # but do call the superclass's finish() method:
         self.finish = super().finish
 
-    def write_byte_strings(self, *bstrings):
+    def write_byte_strings(self, *bstrings) -> None:
         bdata = b"\r\n".join(bstrings)
         self.wfile.write(bdata)
         self.wfile.flush()

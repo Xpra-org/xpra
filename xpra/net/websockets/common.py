@@ -50,7 +50,7 @@ def make_websocket_accept_hash(key: bytes) -> bytes:
     return b64encode(accept)
 
 
-def get_headers(host: str, port: int) -> dict:
+def get_headers(host: str, port: int) -> dict[bytes, bytes]:
     headers = {}
     for mod_name in HEADERS_MODULES:
         try:
@@ -78,7 +78,7 @@ def client_upgrade(read: Callable, write: Callable, host: str, port: int, path="
     log("client_upgrade: done")
 
 
-def get_client_upgrade_request(host: str, port: int, path: str, key: bytes):
+def get_client_upgrade_request(host: str, port: int, path: str, key: bytes) -> bytes:
     url_path = quote(path)
     request = f"GET /{url_path} HTTP/1.1"
     log(f"client websocket upgrade request: {request!r}")
@@ -92,7 +92,7 @@ def get_client_upgrade_request(host: str, port: int, path: str, key: bytes):
     return b"\r\n".join(lines)
 
 
-def write_request(write: Callable, http_request):
+def write_request(write: Callable, http_request) -> None:
     now = monotonic()
     while http_request:
         elapsed = monotonic() - now
@@ -102,11 +102,11 @@ def write_request(write: Callable, http_request):
         http_request = http_request[w:]
 
 
-def read_server_upgrade(read: Callable):
+def read_server_upgrade(read: Callable) -> dict[str, str]:
     now = monotonic()
     response = b""
 
-    def hasheader(k):
+    def hasheader(k) -> bool:
         return k in parse_response_header(response)
 
     while monotonic() - now < MAX_READ_TIME and not (
@@ -115,7 +115,7 @@ def read_server_upgrade(read: Callable):
     return parse_response_header(response)
 
 
-def parse_response_header(response: bytes):
+def parse_response_header(response: bytes) -> dict[str, str]:
     head = response.split(b"\r\n\r\n", 1)[0]
     lines = head.split(b"\r\n")
     headers = {}
