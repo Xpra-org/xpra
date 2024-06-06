@@ -40,6 +40,9 @@ class ColorPlainWindow(Gtk.Window):
 
     def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()
+        self.area_draw(self, cr)
+
+    def area_draw(self, _widget, cr):
         cr.set_font_size(32)
         # Clear everything:
         cr.set_operator(OPERATOR_CLEAR)

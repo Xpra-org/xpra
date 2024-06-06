@@ -58,6 +58,10 @@ class FontWindow(Gtk.Window):
 
     def do_expose_event(self, *_args):
         cr = self.get_window().cairo_create()
+        self.area_draw(self, cr)
+
+    def area_draw(self, _widget, cr):
+        cr = self.get_window().cairo_create()
         layout = PangoCairo.create_layout(cr)
         pctx = layout.get_context()
         if envbool("XPRA_LOG_PANGO", False):

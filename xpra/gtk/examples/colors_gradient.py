@@ -71,6 +71,10 @@ class ColorGradientWindow(Gtk.Window):
         return True
 
     def do_expose_event(self, *_args):
+        cr = self.get_window().cairo_create()
+        self.area_draw(self, cr)
+
+    def area_draw(self, _widget, cr):
         # print("do_expose_event")
         cr = self.get_window().cairo_create()
         cr.save()

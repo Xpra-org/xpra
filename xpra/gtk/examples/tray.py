@@ -50,6 +50,10 @@ class FakeApplication:
         self.server_start_new_commands = True
         self.server_xdg_menu = False
         self.server_commands_info = None
+        self.server_multi_monitors = False
+        self.server_bandwidth_limit = 0
+        self.server_monitors = {}
+        self.bandwidth_limit = 0
         self.speaker_allowed = True
         self.speaker_enabled = True
         self.microphone_enabled = True
