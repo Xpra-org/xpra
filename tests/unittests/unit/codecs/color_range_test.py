@@ -59,15 +59,17 @@ class TestColorRange(unittest.TestCase):
                     }.items():
                         options = typedict({"quality": quality})
                         bdata = mod.encode(fmt, image, options=options)
-                        # tuple[str, Compressed, dict[str, Any], int, int, int, int]:
+                        # tuple[str, Compressed, dict[str, Any], int, int, int, int]
                         if bdata:
                             ext = fmt.replace("/", "")  # ie: "png/L" -> "pngL"
                             filename = f"./{name}-{color}.{ext}"
-                            with open(filename, "wb") as f:
-                                f.write(bdata[1].data)
+                            # with open(filename, "wb") as f:
+                            #    f.write(bdata[1].data)
                             if ext in ("png", "webp", "jpeg"):
+                                from io import BytesIO
                                 from PIL import Image
-                                img = Image.open(filename)
+                                file_data = bdata[1].data
+                                img = Image.open(BytesIO(file_data))
                                 img = img.convert("RGBA")
                                 rdata = img.tobytes("raw", rgb_format.replace("X", "A"))
                                 # compare the first 4 pixels:
