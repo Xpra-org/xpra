@@ -629,10 +629,7 @@ cdef class Encoder:
         image.h = self.height
         image.fmt = self.pixfmt
         image.cs = VPX_CS_BT_709
-        if full_range:
-            image.range = VPX_CR_FULL_RANGE
-        else:
-            image.range = VPX_CR_STUDIO_RANGE
+        image.range = VPX_CR_FULL_RANGE if full_range else VPX_CR_STUDIO_RANGE
         for i in range(3):
             image.planes[i] = pic_in[i]
             image.stride[i] = strides[i]
