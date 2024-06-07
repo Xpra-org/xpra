@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util.str_fn import memoryview_to_bytes, hexstr
+from xpra.util.str_fn import memoryview_to_bytes, hexstr, sorted_nicely
 from xpra.util.objects import typedict
 from xpra.codecs import loader
 from xpra.codecs.image import ImageWrapper
@@ -41,6 +41,7 @@ def cmp_pixels(img1, img2, tolerance=1) -> bool:
 class TestColorRange(unittest.TestCase):
 
     def test_save_rgb(self):
+        test_info: set[str] = set()
         width = 48
         height = 32
         for enc_name in loader.ENCODER_CODECS:
@@ -86,6 +87,8 @@ class TestColorRange(unittest.TestCase):
                                 raise RuntimeError(f"pixels reloaded from {filename} do not match:"
                                                    f"expected {hexstr(pixels[:16])} but got {hexstr(rdata[:16])}"
                                                    f"with {enc_options=}")
+                            test_info.add(f"{enc_name:12}  {fmt:12}  pillow                                    {rgb_format}")
+
                         # try to decompress to rgb:
                         for dec_name in loader.DECODER_CODECS:
                             dec_mod = loader.load_codec(dec_name)
@@ -103,6 +106,7 @@ class TestColorRange(unittest.TestCase):
                                 dec_tolerance += 1
                             if not cmpimage(rimage, dec_tolerance):
                                 raise RuntimeError(f"decoder {dec_name} produced an image that differs with {enc_options=}")
+                            test_info.add(f"{enc_name:12}  {fmt:12}  {dec_name:12}                              {rgb_format}")
 
                         # try to decompress to yuv
                         for dec_name in loader.DECODER_CODECS:
@@ -140,6 +144,10 @@ class TestColorRange(unittest.TestCase):
                                 if not cmpimage(rgb_image, dec_tolerance + 1):
                                     raise RuntimeError(f"decoder {dec_name} produced a YUV image that differs with {enc_options=}"
                                                        f" (converted to {rgb_format} from {yuv_format} using {csc_name})")
+                                test_info.add(f"{enc_name:12}  {fmt:12}  {dec_name:12}  {yuv_format:12}  {csc_name:12}  {rgb_format:12}")
+        print("successfully tested:")
+        for s in sorted_nicely(test_info):
+            print(f"{s}")
 
 
 def main():
