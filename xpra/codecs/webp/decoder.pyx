@@ -276,7 +276,7 @@ class YUVImageWrapper(ImageWrapper):
             free(<void *> buf)
 
 
-def decompress_yuv(data, options: typedict, has_alpha=False) -> YUVImageWrapper:
+def decompress_to_yuv(data, options: typedict, has_alpha=False) -> YUVImageWrapper:
     """
         This returns a WebpBufferWrapper, you MUST call free() on it
         once the pixel buffer can be freed.
@@ -285,7 +285,7 @@ def decompress_yuv(data, options: typedict, has_alpha=False) -> YUVImageWrapper:
     config.options.use_threads = 1
     WebPInitDecoderConfig(&config)
     webp_check(WebPGetFeatures(data, len(data), &config.input))
-    log("webp decompress_yuv found features: width=%4i, height=%4i, has_alpha=%-5s", config.input.width, config.input.height, bool(config.input.has_alpha))
+    log("webp decompress_to_yuv found features: width=%4i, height=%4i, has_alpha=%-5s", config.input.width, config.input.height, bool(config.input.has_alpha))
 
     config.output.colorspace = MODE_YUV
     cdef int alpha = has_alpha and config.input.has_alpha
@@ -355,7 +355,7 @@ def decompress_yuv(data, options: typedict, has_alpha=False) -> YUVImageWrapper:
             show_plane_range("YUV"[i], planes[i], w // xdiv, strides[i], h // ydiv)
 
     img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
-    img.set_full_range(True)
+    img.set_full_range(False)
     img.cython_buffer = <uintptr_t> buf
     return img
 

@@ -1076,7 +1076,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.with_gfx_context(paint_nvdec)
                 return
         if JPEG_YUV and width >= 2 and height >= 2 and encoding == "jpeg":
-            img = self.jpeg_decoder.decompress_to_yuv(img_data)
+            img = self.jpeg_decoder.decompress_to_yuv(img_data, options)
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
@@ -1228,7 +1228,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if subsampling in ("YUV420P", "YUV422P", "YUV444P") and WEBP_YUV and webp_decoder and not WEBP_PILLOW:
             # validate dimensions:
             if not has_alpha and width >= 2 and height >= 2:
-                img = webp_decoder.decompress_yuv(img_data)
+                img = webp_decoder.decompress_to_yuv(img_data, options, has_alpha)
                 flush = options.intget("flush", 0)
                 w = img.get_width()
                 h = img.get_height()

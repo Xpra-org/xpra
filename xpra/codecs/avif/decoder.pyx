@@ -73,7 +73,11 @@ cdef check(avifResult r, message: str):
         raise RuntimeError("%s : %s" % (message, err))
 
 
-def decompress(data, options: typedict, yuv=False) -> ImageWrapper:
+def decompress_to_yuv(data: bytes, options: typedict) -> ImageWrapper:
+    return decompress(data, options, True)
+
+
+def decompress(data: bytes, options: typedict, yuv=False) -> ImageWrapper:
     cdef avifRGBImage rgb
     memset(&rgb, 0, sizeof(avifRGBImage))
     cdef avifDecoder * decoder = avifDecoderCreate()
@@ -156,6 +160,7 @@ def decompress(data, options: typedict, yuv=False) -> ImageWrapper:
             if decoder.imageCount>1:
                 log.warn("Warning: more than one image in avif data")
             img = ImageWrapper(0, 0, width, height, memoryview(pixels), rgb_format, bpp, stride, planes=ImageWrapper.PACKED)
+            img.set_full_range(image.yuvRange == AVIF_RANGE_FULL and options.boolget("full-range", True))
             return img
     finally:
         avifDecoderDestroy(decoder)

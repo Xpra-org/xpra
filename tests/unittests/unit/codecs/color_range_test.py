@@ -102,7 +102,7 @@ class TestColorRange(unittest.TestCase):
                             if dec_name == "dec_jpeg":
                                 dec_tolerance += 1
                             if not cmpimage(rimage, dec_tolerance):
-                                raise RuntimeError(f"decoder {dec_name} produced an image that differs")
+                                raise RuntimeError(f"decoder {dec_name} produced an image that differs with {enc_options=}")
 
                         # try to decompress to yuv
                         for dec_name in loader.DECODER_CODECS:
@@ -115,7 +115,7 @@ class TestColorRange(unittest.TestCase):
                             if not decompress_to_yuv:
                                 continue
                             dec_tolerance = tolerance
-                            if dec_name == "dec_jpeg":
+                            if dec_name in ("dec_jpeg", "dec_avif", "dec_webp"):
                                 dec_tolerance += 1
                             dec_options = typedict()
                             yuv_image = decompress_to_yuv(file_data, dec_options)
@@ -138,7 +138,7 @@ class TestColorRange(unittest.TestCase):
                                 rgb_image = converter.convert_image(yuv_image)
                                 assert rgb_image
                                 if not cmpimage(rgb_image, dec_tolerance + 1):
-                                    raise RuntimeError(f"decoder {dec_name} produced a YUV image that differs"
+                                    raise RuntimeError(f"decoder {dec_name} produced a YUV image that differs with {enc_options=}"
                                                        f" (converted to {rgb_format} from {yuv_format} using {csc_name})")
 
 
