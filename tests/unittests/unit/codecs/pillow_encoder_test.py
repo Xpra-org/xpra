@@ -88,7 +88,7 @@ class TestPillow(unittest.TestCase):
                                 "alpha" : transparency,
                             }
                             try:
-                                comp = encode(encoding, image, options)
+                                comp = encode(encoding, image, typedict(options))
                                 if not comp:
                                     raise ValueError(f"{encode} returned {comp}")
                             except Exception as e:
