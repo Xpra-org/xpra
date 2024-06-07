@@ -27,7 +27,7 @@ Gio = gi_import("Gio")
 log = Logger("client", "util")
 
 
-def exec_command(cmd):
+def exec_command(cmd: Iterable[str]) -> subprocess.Popen:
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     creationflags = 0
@@ -86,7 +86,7 @@ BUTTON_GROUPS: dict[str, Iterable[tuple[str, str, str]]] = {
 }
 
 
-def get_cmd(modpath) -> list[str]:
+def get_cmd(modpath: str) -> list[str]:
     cp = os.path.dirname(__file__)
     script_path = os.path.join(cp, "../../../" + modpath.replace(".", "/"))
     if WIN32 and os.path.sep == "/":
@@ -153,7 +153,7 @@ class ToolboxGUI(Gtk.Window):
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
 
-        def addhbox(blabel, buttons):
+        def addhbox(blabel: str, buttons: Iterable[tuple[str, str, str]]) -> None:
             self.vbox.add(self.label(blabel))
             hbox = Gtk.HBox(homogeneous=False, spacing=10)
             self.vbox.add(hbox)
@@ -166,11 +166,11 @@ class ToolboxGUI(Gtk.Window):
         self.vbox.show_all()
 
     @staticmethod
-    def label(text):
+    def label(text) -> Gtk.Label:
         return label(text, font="sans 14")
 
     @staticmethod
-    def button(label_str, tooltip, modpath, enabled=True):
+    def button(label_str, tooltip, modpath, enabled=True) -> Gtk.Button:
         cmd = get_cmd(modpath)
         if not cmd:
             enabled = False
@@ -188,16 +188,16 @@ class ToolboxGUI(Gtk.Window):
         ib.set_sensitive(enabled)
         return ib
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
         Gtk.main_quit()
 
-    def app_signal(self, signum):
+    def app_signal(self, signum) -> None:
         self.exit_code = 128 + signum
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.quit()
 
-    def show_about(self, *_args):
+    def show_about(self, *_args) -> None:
         from xpra.gtk.dialogs.about import about
         about(parent=self)
 
