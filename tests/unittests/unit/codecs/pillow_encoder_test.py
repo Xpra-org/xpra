@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2020-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import unittest
 
 from xpra.common import noerr
+from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.pillow.encoder import (
     get_encodings, encode,
@@ -51,15 +52,15 @@ class TestPillow(unittest.TestCase):
         image = ImageWrapper(0, 0, W, H, pixel_data, "BGRA", 32,
                              W*Bpp, Bpp, planes=ImageWrapper.PACKED,
                              thread_safe=True)
-        comp = encode("png", image, {"grayscale"  : True})
+        comp = encode("png", image, typedict({"grayscale": True}))
         assert comp
 
     def test_encode_image_formats(self):
         for pixel_format, bpp in {
-            "r210"      : 32,
-            "BGRA"      : 32,
-            "BGR565"    : 16,
-            "RLE8"      : 8,
+            "r210": 32,
+            "BGRA": 32,
+            "BGR565": 16,
+            "RLE8": 8,
         }.items():
             for encoding in get_encodings():
                 if encoding=="jpeg" and pixel_format!="BGRA":
