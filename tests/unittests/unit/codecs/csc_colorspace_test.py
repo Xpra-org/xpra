@@ -5,16 +5,11 @@
 # later version. See the file COPYING for details.
 
 import unittest
-import binascii
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import hexstr, memoryview_to_bytes, repr_ellipsized
 from xpra.codecs import loader
-from xpra.codecs.checks import make_test_image
-
-
-def h2b(s) -> bytes:
-    return binascii.unhexlify(s)
+from xpra.codecs.checks import make_test_image, h2b
 
 
 def cmpp(p1, p2) -> int:
@@ -89,10 +84,8 @@ class Test_CSC_Colorspace(unittest.TestCase):
         csc_out = csc_mod.Converter()
         csc_out.init_context(width, height, in_csc,
                              width, height, out_csc, options)
-        in_image = make_test_image(in_csc, width, height)
-        size = in_image.get_rowstride() // 4 * in_image.get_height()
-        in_pixels = h2b(pixel) * size
-        in_image.set_pixels(in_pixels)
+        in_image = make_test_image(in_csc, width, height, pixel)
+        in_pixels = h2b(pixel) * width * height
         out_image = csc_out.convert_image(in_image)
         csc_out.clean()
         assert out_image.get_planes() >= len(expected)

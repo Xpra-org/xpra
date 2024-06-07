@@ -6,8 +6,9 @@
 # pylint: disable=line-too-long
 # noinspection PyPep8
 
+import struct
 import binascii
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Iterable
 
 from xpra.common import roundup
 from xpra.util.objects import typedict
@@ -235,16 +236,26 @@ def makebuf(size, b=0x20) -> bytearray:
     return bytearray(d)
 
 
-def make_test_image(pixel_format: str, w: int, h: int, plane_values=(0x20, 0x80, 0x80, 0x0)):
+def h2b(s) -> bytes:
+    return binascii.unhexlify(s)
+
+
+def convert_pixel(rgbx="00112233", fmt="BGRX") -> str:
+    pixel = ""
+    for color in fmt:
+        index = "RGBX".index(color)         # "RGBX".index("R") -> 0
+        pixel += rgbx[index*2:(index+1)*2]  # 0 -> "00"
+    return pixel
+
+
+assert convert_pixel(rgbx="01234567", fmt="RGBX") == "01234567"
+assert convert_pixel(rgbx="01234567", fmt="BGRX") == "45230167"
+
+
+def make_test_image(pixel_format: str, w: int, h: int, plane_values: Iterable[int] | str = (0x20, 0x80, 0x80, 0x0)):
     # pylint: disable=import-outside-toplevel
     from xpra.codecs.image import ImageWrapper
     from xpra.codecs.constants import get_subsampling_divs
-    if isinstance(plane_values, str):
-        # assume this is a path
-        from PIL import Image
-        img = Image.open(plane_values)
-    else:
-        img = None
 
     def makeimage(pixels, **kwargs) -> ImageWrapper:
         kwargs["thread_safe"] = True
@@ -262,11 +273,9 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values=(0x20, 0x80,
         nplanes = 2 if pixel_format == "NV12" else 3
         strides = tuple(w//divs[i][0]*Bpp for i in range(nplanes))
         sizes = tuple(strides[i]*h//divs[i][1]*Bpp for i in range(nplanes))
-        if img:
-            raise RuntimeError("YUV from file not implemented yet!")
-            # yuv = img.convert("YCbCr")
-            # yuv444 = yuv.tobytes("raw", "YCbCr")
-            # planes = ()
+        if isinstance(plane_values, Iterable):
+            planes = tuple(struct.pack(b"B", plane_value) * sizes[i]
+                           for i, plane_value in enumerate(plane_values[:nplanes]))
         else:
             planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
         return makeimage(planes, rowstride=strides, planes=nplanes)
@@ -276,27 +285,11 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values=(0x20, 0x80,
         if pixel_format == "BGR48":
             Bpp = 6
         stride = w*Bpp
-        if img:
-            rgb = img.convert("RGB")
-            rgb_data = rgb.tobytes("raw", "RGB")
-            log.warn(f"using {rgb} from {plane_values}")
-            image = makeimage(rgb_data, pixel_format="RGB", rowstride=w*3)
-            # must convert to pixel_format!
-            if pixel_format != "RGB":
-                from xpra.codecs.rgb_transform import rgb_reformat
-                if not rgb_reformat(image, (pixel_format,), False):
-                    log.warn(f"Warning: unable to convert test image to {pixel_format}")
-                    return
-            return image
-        rgb_data = makebuf(stride*h)
-        for y in range(h):
-            x = 0
-            while x < stride:
-                for i in range(len(plane_values)):
-                    while x+i < stride:
-                        rgb_data[y*stride+x+i] = plane_values[i]
-                        x += Bpp
-        return makeimage(bytes(rgb_data), bytesperpixel=Bpp, rowstride=stride)
+        if isinstance(plane_values, str):
+            rgb_data = h2b(plane_values) * w * h
+        else:
+            rgb_data = bytes(makebuf(stride*h))
+        return makeimage(rgb_data, bytesperpixel=Bpp, rowstride=stride)
     raise ValueError(f"don't know how to create a {pixel_format} image")
 
 
