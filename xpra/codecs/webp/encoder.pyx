@@ -523,7 +523,7 @@ cdef class Encoder:
         }
         return info
 
-    def compress_image(self, image: ImageWrapper, options=None) -> Tuple:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple:
         options = options or {}
         reconfigure = False
         quality = options.get("quality", -1)
@@ -559,15 +559,16 @@ cdef class Encoder:
                        self.alpha,
                        pixel_format, pixels)
 
-        cdef int scaled_width = options.get("scaled-width", self.width)
-        cdef int scaled_height = options.get("scaled-height", self.height)
+        cdef int scaled_width = options.intget("scaled-width", self.width)
+        cdef int scaled_height = options.intget("scaled-height", self.height)
         if scaled_width!=self.width or scaled_height!=self.height:
             scale_picture(&pic, self.scaled_width, self.scaled_height)
 
         client_options = {
             "rgb_format"  : pixel_format,
         }
-        if self.quality<SUBSAMPLING_THRESHOLD:
+        cdef int subsample = self.quality < SUBSAMPLING_THRESHOLD
+        if subsample:
             if self.alpha:
                 to_yuv(&pic, WEBP_YUV420A)
             else:
@@ -662,7 +663,7 @@ cdef validate_config(WebPConfig *config):
         raise RuntimeError("invalid webp configuration: %s" % info)
 
 
-def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
+def encode(coding: str, image: ImageWrapper, options: typedict) -> Tuple:
     log("webp.encode(%s, %s, %s)", coding, image, options)
     assert coding=="webp"
     pixel_format = image.get_pixel_format()
@@ -674,19 +675,19 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     cdef unsigned int height = image.get_height()
     cdef unsigned int stride = image.get_rowstride()
     assert width<16384 and height<16384, "invalid image dimensions: %ix%i" % (width, height)
-    cdef unsigned int scaled_width = options.get("scaled-width", width)
-    cdef unsigned int scaled_height = options.get("scaled-height", height)
+    cdef unsigned int scaled_width = options.intget("scaled-width", width)
+    cdef unsigned int scaled_height = options.intget("scaled-height", height)
     assert scaled_width<16384 and scaled_height<16384, "invalid image dimensions: %ix%i" % (width, height)
     cdef unsigned int Bpp = len(pixel_format)   #ie: "BGRA" -> 4
-    cdef unsigned int supports_alpha = options.get("alpha", True)
+    cdef unsigned int supports_alpha = options.boolget("alpha", True)
     cdef unsigned char alpha = supports_alpha and pixel_format.find("A")>=0
-    cdef int quality = options.get("quality", 50)
-    cdef int speed = options.get("speed", 50)
+    cdef int quality = options.intget("quality", 50)
+    cdef int speed = options.intget("speed", 50)
 
     cdef WebPConfig config
     config_init(&config)
 
-    content_type = options.get("content-type", "")
+    content_type = options.strget("content-type", "")
     cdef WebPPreset preset = get_preset(width, height, content_type)
     configure_preset(&config, preset, quality)
     configure_encoder(&config, quality, speed, alpha)
@@ -706,7 +707,8 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
     client_options = {
         "rgb_format"  : pixel_format,
     }
-    if quality<SUBSAMPLING_THRESHOLD:
+    cdef int subsample = quality < SUBSAMPLING_THRESHOLD
+    if subsample:
         if alpha:
             to_yuv(&pic, WEBP_YUV420A)
         else:
@@ -829,7 +831,7 @@ def selftest(full=False) -> None:
     for has_alpha in (True, False):
         img = make_test_image("BGR%s" % ["X", "A"][has_alpha], w, h)
         for q in (10, 50, 90):
-            r = encode("webp", img, {"quality" : q, "speed" : 50, "alpha" : has_alpha})
+            r = encode("webp", img, typedict({"quality" : q, "speed" : 50, "alpha" : has_alpha}))
             assert len(r)>0
         #import binascii
         #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

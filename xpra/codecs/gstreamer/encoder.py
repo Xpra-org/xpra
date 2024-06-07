@@ -279,7 +279,7 @@ class Encoder(VideoPipeline):
             log(f"added data to frame queue, client_info={client_info}")
         return GST_FLOW_OK
 
-    def compress_image(self, image: ImageWrapper, options=None):
+    def compress_image(self, image: ImageWrapper, options: typedict):
         if image.get_planes() == ImageWrapper.PACKED:
             data = image.get_pixels()
             rowstride = image.get_rowstride()
@@ -293,7 +293,7 @@ class Encoder(VideoPipeline):
         if self.state in ("stopped", "error"):
             log(f"pipeline is in {self.state} state, dropping buffer")
             return None
-        return self.process_buffer(wrap_buffer(data), typedict(options or {}))
+        return self.process_buffer(wrap_buffer(data), options)
 
 
 GObject.type_register(Encoder)

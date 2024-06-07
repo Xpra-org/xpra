@@ -11,7 +11,7 @@ from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
 from xpra.util.env import envbool
-from xpra.util.objects import reverse_dict
+from xpra.util.objects import reverse_dict, typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t, uint8_t
@@ -134,7 +134,7 @@ def get_error_str() -> str:
     return str(err)
 
 
-def decompress_to_yuv(data: bytes, unsigned char nplanes=3) -> ImageWrapper:
+def decompress_to_yuv(data: bytes, options: typedict, unsigned char nplanes=3) -> ImageWrapper:
     cdef tjhandle decompressor = tjInitDecompress()
     if decompressor==NULL:
         raise RuntimeError("failed to instantiate a JPEG decompressor")
@@ -341,7 +341,7 @@ def selftest(full=False) -> None:
     def test_rgbx(bdata):
         return decompress_to_rgb("RGBX", bdata)
     def test_yuv(bdata):
-        return decompress_to_yuv(bdata)
+        return decompress_to_yuv(bdata, typedict())
     for fn in (test_yuv, test_rgbx):
         img = fn(data)
         log("%s(%i bytes)=%s", fn, len(data), img)

@@ -6,6 +6,7 @@
 from typing import Tuple, Dict
 from collections.abc import Sequence
 
+from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs
 from xpra.codecs.debug import may_save_image
@@ -72,7 +73,7 @@ cdef check(avifResult r, message: str):
         raise RuntimeError("%s : %s" % (message, err))
 
 
-def decompress(data, options=None, yuv=False) -> ImageWrapper:
+def decompress(data, options: typedict, yuv=False) -> ImageWrapper:
     cdef avifRGBImage rgb
     memset(&rgb, 0, sizeof(avifRGBImage))
     cdef avifDecoder * decoder = avifDecoderCreate()
@@ -155,7 +156,6 @@ def decompress(data, options=None, yuv=False) -> ImageWrapper:
             if decoder.imageCount>1:
                 log.warn("Warning: more than one image in avif data")
             img = ImageWrapper(0, 0, width, height, memoryview(pixels), rgb_format, bpp, stride, planes=ImageWrapper.PACKED)
-            img.set_full_range(image.yuvRange == AVIF_RANGE_FULL)
             return img
     finally:
         avifDecoderDestroy(decoder)
@@ -167,7 +167,8 @@ def selftest(full=False) -> None:
                              (False, "00000020667479706176696600000000617669666d6966316d6961664d413141000000f26d657461000000000000002868646c720000000000000000706963740000000000000000000000006c696261766966000000000e7069746d0000000000010000001e696c6f6300000000440000010001000000010000011a000000180000002869696e660000000000010000001a696e6665020000000001000061763031436f6c6f72000000006a697072700000004b6970636f0000001469737065000000000000001800000010000000107069786900000000030808080000000c617631438120000000000013636f6c726e636c78000200020002800000001769706d61000000000000000100010401028304000000206d64617412000a053810efed12320d100000c5c030e847ff81dca0c0")):
         import binascii
         bdata = binascii.unhexlify(hexdata)
-        img = decompress(bdata, {"alpha" : has_alpha})
+        options = typedict({"alpha" : has_alpha})
+        img = decompress(bdata, options)
         assert img.get_width()==w and img.get_height()==h
         assert len(img.get_pixels())>0
         #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

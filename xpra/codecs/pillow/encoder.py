@@ -72,11 +72,10 @@ def get_info() -> dict[str, Any]:
     }
 
 
-def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
+def encode(coding: str, image, options=typedict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
     if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
         raise ValueError(f"unsupported encoding: {coding}")
     log("pillow.encode%s", (coding, image, options))
-    options = typedict(options or {})
     quality = options.intget("quality", 50)
     speed = options.intget("speed", 50)
     supports_transparency = options.boolget("alpha", True)
@@ -208,7 +207,7 @@ def encode(coding: str, image, options=None) -> tuple[str, Compressed, dict[str,
             # (optimizing jpeg is pretty cheap and worth doing)
             kwargs["optimize"] = True
         elif coding == "webp" and q >= 100:
-            kwargs["lossless"] = 1
+            kwargs["lossless"] = True
             kwargs["quality"] = 0
         pil_fmt = coding.upper()
     else:
@@ -289,10 +288,10 @@ def selftest(full=False) -> None:
             for q in vrange:
                 for s in vrange:
                     for alpha in (True, False):
-                        v = encode(encoding, img, {
+                        v = encode(encoding, img, typedict({
                             "quality": q,
                             "speed": s,
-                            "alpha": alpha})
+                            "alpha": alpha}))
                         assert v, "encode output was empty!"
                         cdata = v[1].data
                         log("encode(%s)=%s", (encoding, img, q, s, alpha), hexstr(cdata))

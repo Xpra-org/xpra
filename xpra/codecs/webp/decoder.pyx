@@ -9,14 +9,20 @@ from collections.abc import Sequence
 from xpra.log import Logger
 log = Logger("encoder", "webp")
 
+from xpra.util.env import envbool
+from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.debug import may_save_image
 from xpra.buffers.membuf cimport memalign, buffer_context
 
+from xpra.codecs.argb.argb cimport show_plane_range
 from libc.stdint cimport uint8_t, uint32_t, uintptr_t
 from libc.stdlib cimport free
 
 DEF ALIGN = 4
+
+cdef uint8_t SHOW_PLANE_RANGES = envbool("XPRA_SHOW_PLANE_RANGES", False)
+
 
 cdef extern from *:
     ctypedef unsigned long size_t
@@ -270,7 +276,7 @@ class YUVImageWrapper(ImageWrapper):
             free(<void *> buf)
 
 
-def decompress_yuv(data, has_alpha=False) -> YUVImageWrapper:
+def decompress_yuv(data, options: typedict, has_alpha=False) -> YUVImageWrapper:
     """
         This returns a WebpBufferWrapper, you MUST call free() on it
         once the pixel buffer can be freed.
@@ -342,6 +348,12 @@ def decompress_yuv(data, has_alpha=False) -> YUVImageWrapper:
             PyMemoryView_FromMemory(<char *> YUVA.u, u_size, PyBUF_WRITE),
             PyMemoryView_FromMemory(<char *> YUVA.v, v_size, PyBUF_WRITE),
         )
+    if SHOW_PLANE_RANGES:
+        for i in range(3):
+            # YUV420P
+            ydiv = xdiv = 2 if i > 1 else 1
+            show_plane_range("YUV"[i], planes[i], w // xdiv, strides[i], h // ydiv)
+
     img = YUVImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
     img.set_full_range(True)
     img.cython_buffer = <uintptr_t> buf

@@ -290,19 +290,18 @@ JPEG_INPUT_FORMATS = ("RGB", "RGBX", "BGRX", "XBGR", "XRGB", )
 JPEGA_INPUT_FORMATS = ("RGBA", "BGRA", "ABGR", "ARGB")
 
 
-def encode(coding, image: ImageWrapper, options=None) -> Tuple:
+def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
     assert coding in ("jpeg", "jpega")
-    options = options or {}
     rgb_format = image.get_pixel_format()
     if coding=="jpega" and rgb_format.find("A")<0:
         #why did we select 'jpega' then!?
         coding = "jpeg"
-    cdef int quality = options.get("quality", 50)
-    cdef int grayscale = options.get("grayscale", 0)
+    cdef int quality = options.intget("quality", 50)
+    cdef int grayscale = options.boolget("grayscale", False)
     cdef int width = image.get_width()
     cdef int height = image.get_height()
-    cdef int scaled_width = options.get("scaled-width", width)
-    cdef int scaled_height = options.get("scaled-height", height)
+    cdef int scaled_width = options.intget("scaled-width", width)
+    cdef int scaled_height = options.intget("scaled-height", height)
     cdef char resize = scaled_width!=width or scaled_height!=height
     log("encode%s", (coding, image, options))
     input_formats = JPEG_INPUT_FORMATS if coding=="jpeg" else JPEGA_INPUT_FORMATS
@@ -492,5 +491,5 @@ def selftest(full=False) -> None:
     from xpra.codecs.checks import make_test_image
     img = make_test_image("BGRA", 32, 32)
     for q in (0, 50, 100):
-        v = encode("jpeg", img, {"quality" : q})
+        v = encode("jpeg", img, typedict({"quality" : q}))
         assert v, "encode output was empty!"
