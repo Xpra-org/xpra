@@ -788,7 +788,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode == "toolbox":
         check_gtk_client()
         from xpra.gtk.dialogs import toolbox
-        return toolbox.main()
+        return toolbox.main(args)
     if mode == "initenv":
         if not POSIX:
             raise InitExit(ExitCode.UNSUPPORTED, "initenv is not supported on this OS")

@@ -9,6 +9,7 @@ import sys
 import glob
 import os.path
 import subprocess
+from collections.abc import Iterable
 
 from xpra.util.child_reaper import getChildReaper
 from xpra.gtk.signals import register_os_signals
@@ -16,9 +17,8 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.platform.paths import get_python_execfile_command, get_python_exec_command
-from xpra.os_util import WIN32, OSX, gi_import
+from xpra.os_util import WIN32, gi_import
 from xpra.util.env import IgnoreWarningsContext
-from xpra.util.system import is_X11
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -39,6 +39,76 @@ def exec_command(cmd):
 
 
 TITLE = "Xpra Toolbox"
+
+EPATH = "xpra.gtk.examples."
+BUTTON_GROUPS: dict[str, Iterable[tuple[str, str, str]]] = {
+    "Colors": (
+        ("Squares", "Shows RGB+Grey squares in a window", EPATH + "colors_plain"),
+        ("Animated", "Shows RGB+Grey squares animated", EPATH + "colors"),
+        ("Bit Depth", "Shows color gradients and visualize bit depth clipping", EPATH + "colors_gradient"),
+    ),
+    "Transparency and Rendering": (
+        ("Circle", "Shows a semi-opaque circle in a transparent window", EPATH + "transparent_window"),
+        ("RGB Squares", "RGB+Black shaded squares in a transparent window", EPATH + "transparent_colors"),
+        ("OpenGL", "OpenGL window - transparent on some platforms", EPATH + "opengl"),
+    ),
+    "Widgets": (
+        ("Text Entry", "Simple text entry widget", EPATH + "text_entry"),
+        ("File Selector", "Open the file selector widget", EPATH + "file_chooser"),
+        ("Header Bar", "Window with a custom header bar", EPATH + "header_bar"),
+    ),
+    "Events": (
+        ("Grabs", "Test keyboard and pointer grabs", EPATH + "grabs"),
+        ("Clicks", "Double and triple click events", EPATH + "clicks"),
+        ("Focus", "Shows window focus events", EPATH + "window_focus"),
+    ),
+    "Windows": (
+        ("States", "Toggle various window attributes", EPATH + "window_states"),
+        ("Title", "Update the window title", EPATH + "window_title"),
+        ("Opacity", "Change window opacity", EPATH + "window_opacity"),
+        ("Transient", "Show transient windows", EPATH + "window_transient"),
+        ("Override Redirect", "Shows an override redirect window", EPATH + "window_overrideredirect"),
+    ),
+    "Geometry": (
+        ("Size constraints", "Specify window geometry size constraints", EPATH + "window_geometry_hints"),
+        ("Move-Resize", "Initiate move resize from application", EPATH + "initiate_moveresize"),
+    ),
+    "Keyboard and Clipboard": (
+        ("Keyboard", "Keyboard event viewer", "xpra.gtk.dialogs.view_keyboard"),
+        ("Clipboard", "Clipboard event viewer", "xpra.gtk.dialogs.view_clipboard"),
+    ),
+    "Misc": (
+        ("Tray", "Show a system tray icon", EPATH + "tray"),
+        ("Font Rendering", "Render characters with and without anti-aliasing", EPATH + "fontrendering"),
+        ("Bell", "Test system bell", EPATH + "bell"),
+        ("Cursors", "Show named cursors", EPATH + "cursors"),
+    ),
+}
+
+
+def get_cmd(modpath) -> list[str]:
+    cp = os.path.dirname(__file__)
+    script_path = os.path.join(cp, "../../../" + modpath.replace(".", "/"))
+    if WIN32 and os.path.sep == "/":
+        script_path = script_path.replace("/", "\\")
+    script_path = os.path.abspath(script_path)
+    script = script_path + ".py"
+    cmd = []
+    if os.path.exists(script):
+        cmd = get_python_execfile_command() + [script]
+    else:
+        for compiled_ext in (".pyc", ".*.pyd", ".*.so"):
+            script = script_path + compiled_ext
+            matches = glob.glob(script)
+            log(f"glob.glob({script})={matches}")
+            if matches and os.path.exists(matches[0]):
+                cmd = get_python_exec_command() + [f"from {modpath} import main;main()"]
+                break
+    if not cmd:
+        log.warn(f"Warning: cannot find '{modpath}'")
+    else:
+        log(f"{modpath!r} : {cmd}")
+    return cmd
 
 
 class ToolboxGUI(Gtk.Window):
@@ -83,8 +153,6 @@ class ToolboxGUI(Gtk.Window):
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
 
-        epath = "xpra.gtk.examples."
-
         def addhbox(blabel, buttons):
             self.vbox.add(self.label(blabel))
             hbox = Gtk.HBox(homogeneous=False, spacing=10)
@@ -93,50 +161,8 @@ class ToolboxGUI(Gtk.Window):
                 if button:
                     hbox.add(self.button(*button))
 
-        # some things don't work on wayland:
-        wox11 = WIN32 or OSX or (os.environ.get("GDK_BACKEND", "") == "x11" or is_X11())
-
-        addhbox("Colors:", (
-            ("Squares", "Shows RGB+Grey squares in a window", epath + "colors_plain"),
-            ("Animated", "Shows RGB+Grey squares animated", epath + "colors"),
-            ("Bit Depth", "Shows color gradients and visualize bit depth clipping", epath + "colors_gradient"),
-        ))
-        addhbox("Transparency and Rendering", (
-            ("Circle", "Shows a semi-opaque circle in a transparent window", epath + "transparent_window"),
-            ("RGB Squares", "RGB+Black shaded squares in a transparent window", epath + "transparent_colors"),
-            ("OpenGL", "OpenGL window - transparent on some platforms", epath + "opengl", wox11),
-        ))
-        addhbox("Widgets:", (
-            ("Text Entry", "Simple text entry widget", epath + "text_entry"),
-            ("File Selector", "Open the file selector widget", epath + "file_chooser"),
-            ("Header Bar", "Window with a custom header bar", epath + "header_bar"),
-        ))
-        addhbox("Events:", (
-            ("Grabs", "Test keyboard and pointer grabs", epath + "grabs"),
-            ("Clicks", "Double and triple click events", epath + "clicks"),
-            ("Focus", "Shows window focus events", epath + "window_focus"),
-        ))
-        addhbox("Windows:", (
-            ("States", "Toggle various window attributes", epath + "window_states"),
-            ("Title", "Update the window title", epath + "window_title"),
-            ("Opacity", "Change window opacity", epath + "window_opacity"),
-            ("Transient", "Show transient windows", epath + "window_transient"),
-            ("Override Redirect", "Shows an override redirect window", epath + "window_overrideredirect"),
-        ))
-        addhbox("Geometry:", (
-            ("Size constraints", "Specify window geometry size constraints", epath + "window_geometry_hints"),
-            ("Move-Resize", "Initiate move resize from application", epath + "initiate_moveresize", wox11),
-        ))
-        addhbox("Keyboard and Clipboard:", (
-            ("Keyboard", "Keyboard event viewer", "xpra.gtk.dialogs.view_keyboard"),
-            ("Clipboard", "Clipboard event viewer", "xpra.gtk.dialogs.view_clipboard"),
-        ))
-        addhbox("Misc:", (
-            ("Tray", "Show a system tray icon", epath + "tray"),
-            ("Font Rendering", "Render characters with and without anti-aliasing", epath + "fontrendering"),
-            ("Bell", "Test system bell", epath + "bell"),
-            ("Cursors", "Show named cursors", epath + "cursors"),
-        ))
+        for category, button_defs in BUTTON_GROUPS.items():
+            addhbox(f"{category}:", button_defs)
         self.vbox.show_all()
 
     @staticmethod
@@ -145,23 +171,7 @@ class ToolboxGUI(Gtk.Window):
 
     @staticmethod
     def button(label_str, tooltip, modpath, enabled=True):
-        cp = os.path.dirname(__file__)
-        script_path = os.path.join(cp, "../../../" + modpath.replace(".", "/"))
-        if WIN32 and os.path.sep == "/":
-            script_path = script_path.replace("/", "\\")
-        script_path = os.path.abspath(script_path)
-        script = script_path + ".py"
-        cmd = []
-        if os.path.exists(script):
-            cmd = get_python_execfile_command() + [script]
-        else:
-            for compiled_ext in (".pyc", ".*.pyd", ".*.so"):
-                script = script_path + compiled_ext
-                matches = glob.glob(script)
-                log(f"glob.glob({script})={matches}")
-                if matches and os.path.exists(matches[0]):
-                    cmd = get_python_exec_command() + [f"from {modpath} import main;main()"]
-                    break
+        cmd = get_cmd(modpath)
         if not cmd:
             enabled = False
             log.warn(f"Warning: cannot find '{modpath}'")
@@ -192,7 +202,17 @@ class ToolboxGUI(Gtk.Window):
         about(parent=self)
 
 
-def main():
+def main(args) -> int:
+    if len(args) == 1:
+        # find a matching script or label:
+        match = args[0].lower()
+        for category, button_defs in BUTTON_GROUPS.items():
+            for btn_label, tooltip, modpath in button_defs:
+                if btn_label.lower() == match or modpath.split(".")[-1] == match:
+                    cmd = get_cmd(modpath)
+                    proc = exec_command(cmd)
+                    return proc.wait()
+
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready, set_default_icon
@@ -212,5 +232,5 @@ def main():
 
 
 if __name__ == "__main__":
-    r = main()
+    r = main(sys.argv[1:])
     sys.exit(r)
