@@ -88,6 +88,12 @@ class FakeApplication:
         self.send_download_request = None
         self._remote_subcommands = ()
         self._process_encodings = noop
+        self._window_to_id = {}
+        self.remote_printing_ask = False
+        self.remote_open_files_ask = False
+        self.remote_open_url_ask = False
+        self._remote_server_log = ""
+        self.start_new_commands = False
         classes = [get_native_tray_menu_helper_class()]
         try:
             from xpra.client.gtk3.tray_menu import GTKTrayMenu
