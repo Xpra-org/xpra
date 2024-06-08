@@ -37,11 +37,11 @@ class TestPillow(unittest.TestCase):
             image = ImageWrapper(0, 0, W, H, pixel_data, "BGRX", 32,
                                  W*Bpp, Bpp, planes=ImageWrapper.PACKED,
                                  thread_safe=True)
-            comp = encode("png", image, {
+            comp = encode("png", image, typedict({
                 "speed" : speed,
                 "scaled-width" : 64,
                 "scaled-height" : 64,
-            })
+            }))
             assert comp
 
     def test_grayscale(self):
@@ -106,7 +106,7 @@ class TestPillow(unittest.TestCase):
                              width*Bpp, Bpp, planes=ImageWrapper.PACKED,
                              thread_safe=True, palette=None)
         try:
-            encode("png", image)
+            encode("png", image, typedict())
         except Exception:
             pass
         else:
@@ -124,7 +124,7 @@ class TestPillow(unittest.TestCase):
                              thread_safe=True, palette=None)
         for encoding in (None, "", True, "hello", 1):
             try:
-                encode(encoding, image)
+                encode(encoding, image, typedict())
             except Exception:
                 pass
             else:
