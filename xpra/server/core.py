@@ -20,7 +20,6 @@ from types import FrameType
 from typing import Any
 from collections.abc import Callable, Sequence, Iterable
 
-from xpra.net.http.common import HTTP_UNSUPORTED
 from xpra.util.version import (
     XPRA_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
     get_platform_info, get_host_info, parse_version,
@@ -31,7 +30,7 @@ from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE,
-    may_log_packet, is_request_allowed, PacketType, get_ssh_port, has_websocket_handler, HttpResponse,
+    may_log_packet, is_request_allowed, PacketType, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
 )
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
