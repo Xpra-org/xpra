@@ -90,11 +90,13 @@ class TestColorRange(unittest.TestCase):
                     pixels = image.get_pixels()
 
                     for quality, tolerance in {
-                        "100": 1 if (enc_name in ("enc_pillow", "enc_jpeg") and fmt in ("webp", "jpeg")) else 0,
-                        "90": 6,
-                        "50": 0xd if enc_name == "enc_webp" else 7,
-                        "10": 0x20,
+                        "100": 1 if fmt in ("jpeg", ) else 0,
+                        "90": 3 if fmt in ("webp", ) else 1,
+                        "50": 4,
+                        "10": 0xc if fmt in ("webp", ) else 4,
                     }.items():
+                        if enc_name == "enc_pillow" and fmt == "webp":
+                            tolerance *= 2  # not sure why, but we don't really care is it should not be used
                         enc_options = typedict({"quality": quality})
                         bdata = enc_mod.encode(fmt, image, options=enc_options)
                         # tuple[str, Compressed, dict[str, Any], int, int, int, int]
@@ -145,9 +147,7 @@ class TestColorRange(unittest.TestCase):
                             decompress_to_yuv = getattr(dec_mod, "decompress_to_yuv", None)
                             if not decompress_to_yuv:
                                 continue
-                            dec_tolerance = tolerance
-                            if dec_name in ("dec_jpeg", "dec_avif", "dec_webp"):
-                                dec_tolerance += 1
+                            dec_tolerance = tolerance + 2
                             dec_options = typedict()
                             yuv_image = decompress_to_yuv(file_data, dec_options)
                             assert yuv_image
@@ -168,7 +168,7 @@ class TestColorRange(unittest.TestCase):
                                                        width, height, rgb_format, csc_options)
                                 rgb_image = converter.convert_image(yuv_image)
                                 assert rgb_image
-                                if not cmp_images(image, rgb_image, dec_tolerance + 1):
+                                if not cmp_images(image, rgb_image, dec_tolerance):
                                     raise RuntimeError(f"decoder {dec_name} from {enc_name} produced a YUV image that differs with {enc_options=}"
                                                        f" (converted to {rgb_format} from {yuv_format} using {csc_name})")
                                 test_info.add(f"{enc_name:12}  {fmt:12}  {dec_name:12}  {yuv_format:12}  {csc_name:12}  {rgb_format:12}")

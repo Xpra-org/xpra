@@ -409,7 +409,7 @@ def webp_check(int ret) -> None:
     raise RuntimeError("error: %s" % err)
 
 
-cdef float fclamp(int v):
+cdef inline float fclamp(int v):
     if v<0:
         v = 0
     elif v>100:
@@ -618,7 +618,7 @@ cdef configure_encoder(WebPConfig *config,
         #so we can go lower,
         #[0,10,...,90,100] maps to:
         #[0, 1, 3, 5, 9, 14, 23, 34, 50, 71, 99]
-        config.quality = fclamp((quality//4+((quality+15)**4//(100**3)))//2)
+        config.quality = fclamp(quality)
         config.segments = 1
         config.sns_strength = 0
         config.filter_strength = 0
