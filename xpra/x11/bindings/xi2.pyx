@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import struct
+from typing import Dict
 from collections import deque
 
 from xpra.log import Logger
