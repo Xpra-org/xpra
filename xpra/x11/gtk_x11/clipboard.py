@@ -601,7 +601,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.targets = xatoms_to_strings(data or b"")
         self.got_local_contents(target, dtype, dformat, data)
 
-    def got_local_contents(self, target: str, dtype=None, dformat=None, data=None) -> None:
+    def got_local_contents(self, target: str, dtype="", dformat: int = 8, data=b"") -> None:
         data = self.filter_data(dtype, dformat, data)
         target_requests = self.local_requests.pop(target, {})
         for timer, got_contents in target_requests.values():
