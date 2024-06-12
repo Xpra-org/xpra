@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import Tuple
+from typing import List, Tuple
 
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.log import Logger
@@ -582,7 +582,7 @@ cdef class XShmWrapper:
             return False, True, False
         return True, True, False
 
-    def get_size(self):
+    def get_size(self) -> Tuple[int, int]:
         return self.width, self.height
 
     def get_image(self, Drawable drawable, int x, int y, int w, int h):
@@ -627,7 +627,7 @@ cdef class XShmWrapper:
         xshmdebug("XShmWrapper.get_image(%#x, %i, %i, %i, %i)=%s (ref_count=%i)", drawable, x, y, w, h, imageWrapper, self.ref_count)
         return imageWrapper
 
-    def read_palette(self):
+    def read_palette(self) -> List[Tuple[int, int, int]]:
         #FIXME: we assume screen is zero
         cdef XWindowAttributes attrs
         cdef XVisualInfo vinfo_template
@@ -661,7 +661,7 @@ cdef class XShmWrapper:
         palette = [(colors[i].red, colors[i].green, colors[i].blue) for i in range(256)]
         return palette
 
-    def discard(self):
+    def discard(self) -> None:
         #force next get_image call to get a new image from the server
         self.got_image = False
 
@@ -669,7 +669,7 @@ cdef class XShmWrapper:
         xshmdebug("XShmWrapper.__dealloc__() ref_count=%i", self.ref_count)
         self.cleanup()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         #ok, we want to free resources... problem is,
         #we may have handed out some XShmImageWrappers
         #and they will point to our Image XShm area.
@@ -680,7 +680,7 @@ cdef class XShmWrapper:
         if self.ref_count==0:
             self.free()
 
-    def free_image_callback(self):
+    def free_image_callback(self) -> None:
         self.ref_count -= 1
         xshmdebug("XShmWrapper.free_image_callback() closed=%s, new ref_count=%i", self.closed, self.ref_count)
         if self.closed and self.ref_count==0:
@@ -731,13 +731,13 @@ cdef class XShmImageWrapper(XImageWrapper):
         xshmdebug("XShmImageWrapper.get_pixels_ptr()=%#x %s", <uintptr_t> ptr, self)
         return ptr
 
-    def freeze(self):
+    def freeze(self) -> bool:
         #we just force a restride, which will allocate a new pixel buffer:
         cdef unsigned int newstride = roundup(self.width*len(self.pixel_format), 4)
         self.timestamp = int(monotonic()*1000)
         return self.restride(newstride)
 
-    def free(self):
+    def free(self) -> None:
         #ensure we never try to XDestroyImage:
         self.image = NULL
         self.free_pixels()
@@ -773,13 +773,13 @@ cdef class PixmapWrapper:
     def __repr__(self):
         return "PixmapWrapper(%#x, %i, %i)" % (self.pixmap, self.width, self.height)
 
-    def get_width(self):
+    def get_width(self) -> int:
         return self.width
 
-    def get_height(self):
+    def get_height(self) -> int:
         return self.height
 
-    def get_pixmap(self):
+    def get_pixmap(self) -> Pixmap:
         return self.pixmap
 
     def get_image(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
@@ -807,7 +807,7 @@ cdef class PixmapWrapper:
             global xpixmap_counter
             xpixmap_counter -= 1
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         ximagedebug("%s.cleanup()", self)
         self.do_cleanup()
 

@@ -99,7 +99,7 @@ cdef class ResBindingsInstance(X11CoreBindingsInstance):
     def __repr__(self):
         return "XResBindings(%s)" % self.display_name
 
-    def check_xres(self, min_version=(1, 2)):
+    def check_xres(self, min_version=(1, 2)) -> bool:
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
         cdef Bool r = XResQueryExtension(self.display, &event_base, &ignored)
         log("XResQueryExtension()=%i", r)
@@ -111,6 +111,6 @@ cdef class ResBindingsInstance(X11CoreBindingsInstance):
         log("found XRes extension version %i.%i", cmajor, cminor)
         return (cmajor, cminor) >= min_version
 
-    def get_pid(self, Window xid):
+    def get_pid(self, Window xid) -> int:
         self.context_check("get_pid")
         return get_pid(self.display, xid)

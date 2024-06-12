@@ -423,11 +423,11 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                                  % (extension, cmajor, cminor, major, minor))
 
 
-    def get_all_x11_windows(self):
+    def get_all_x11_windows(self) -> List[Window]:
         cdef Window root = XDefaultRootWindow(self.display);
         return self.get_all_children(root)
 
-    def get_all_children(self, Window xid):
+    def get_all_children(self, Window xid) -> List[Window]:
         self.context_check("get_all_children")
         cdef Window root = XDefaultRootWindow(self.display)
         cdef Window parent = 0
@@ -448,7 +448,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             windows += self.get_all_children(window)
         return windows
 
-    def get_absolute_position(self, Window xid):
+    def get_absolute_position(self, Window xid) -> Tuple[int, int]:
         self.context_check("get_absolute_position")
         cdef Window root = XDefaultRootWindow(self.display)
         cdef int dest_x = 0, dest_y = 0
@@ -460,36 +460,36 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             return None
         return dest_x, dest_y
 
-    def MapWindow(self, Window xwindow):
+    def MapWindow(self, Window xwindow) -> None:
         self.context_check("MapWindow")
         XMapWindow(self.display, xwindow)
 
-    def MapRaised(self, Window xwindow):
+    def MapRaised(self, Window xwindow) -> None:
         self.context_check("MapRaised")
         XMapRaised(self.display, xwindow)
 
-    def Withdraw(self, Window xwindow):
+    def Withdraw(self, Window xwindow) -> None:
         self.context_check("Withdraw")
         return XWithdrawWindow(self.display, xwindow, screen_number)
 
-    def Reparent(self, Window xwindow, Window xparent, int x, int y):
+    def Reparent(self, Window xwindow, Window xparent, int x, int y) -> None:
         self.context_check("Reparent")
         XReparentWindow(self.display, xwindow, xparent, x, y)
 
-    def Iconify(self, Window xwindow):
+    def Iconify(self, Window xwindow) -> None:
         self.context_check("Iconify")
         return XIconifyWindow(self.display, xwindow, screen_number)
 
     ###################################
     # XUnmapWindow
     ###################################
-    def Unmap(self, Window xwindow):
+    def Unmap(self, Window xwindow) -> int:
         self.context_check("Unmap")
         cdef unsigned long serial = NextRequest(self.display)
         XUnmapWindow(self.display, xwindow)
         return serial
 
-    def getWindowAttributes(self, Window xwindow):
+    def getWindowAttributes(self, Window xwindow) -> Dict[str, Any]:
         self.context_check("getWindowAttributes")
         cdef XWindowAttributes attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
@@ -522,7 +522,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             "override-redirect"     : attrs.override_redirect,
         }
 
-    def getEventMask(self, Window xwindow):
+    def getEventMask(self, Window xwindow) -> int:
         self.context_check("getEventMask")
         cdef XWindowAttributes attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
@@ -530,7 +530,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             return 0
         return attrs.your_event_mask;
 
-    def setEventMask(self, Window xwindow, int mask):
+    def setEventMask(self, Window xwindow, int mask) -> None:
         self.context_check("setEventMask")
         XSelectInput(self.display, xwindow, mask)
 
@@ -565,7 +565,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return bool(attrs._class==InputOnly)
 
 
-    def geometry_with_border(self, Window xwindow):
+    def geometry_with_border(self, Window xwindow) -> Tuple[int, int, int, int, int] | None:
         self.context_check("geometry_with_border")
         cdef XWindowAttributes geom_attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &geom_attrs)
@@ -573,7 +573,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             return None
         return (geom_attrs.x, geom_attrs.y, geom_attrs.width, geom_attrs.height, geom_attrs.border_width)
 
-    def get_depth(self, Drawable d):
+    def get_depth(self, Drawable d) -> int:
         self.context_check("get_depth")
         cdef Window root
         cdef int x, y
@@ -584,33 +584,33 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return depth
 
     # Focus management
-    def XSetInputFocus(self, Window xwindow, object time=CurrentTime):
+    def XSetInputFocus(self, Window xwindow, object time=CurrentTime) -> None:
         self.context_check("XSetInputFocus")
         # Always does RevertToParent
         XSetInputFocus(self.display, xwindow, RevertToParent, time)
 
-    def XGetInputFocus(self):
+    def XGetInputFocus(self) -> Tuple[int, int]:
         #context check not needed!
         cdef Window w = 0
         cdef int revert_to = 0
         XGetInputFocus(self.display, &w, &revert_to)
         return int(w), int(revert_to)
 
-    def XRaiseWindow(self, Window window):
+    def XRaiseWindow(self, Window window) -> None:
         self.context_check("XRaiseWindow")
         XRaiseWindow(self.display, window)
 
     ###################################
     # XKillClient
     ###################################
-    def XKillClient(self, Window xwindow):
+    def XKillClient(self, Window xwindow) -> int:
         self.context_check("XKillClient")
         return XKillClient(self.display, xwindow)
 
     ###################################
     # Shape
     ###################################
-    def displayHasXShape(self):
+    def displayHasXShape(self) -> bool:
         cdef int event_base = 0, ignored = 0
         cdef int cmajor, cminor
         if self.has_xshape is not None:
@@ -629,12 +629,12 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         log("displayHasXShape()=%s", self.has_xshape)
         return self.has_xshape
 
-    def XShapeSelectInput(self, Window window):
+    def XShapeSelectInput(self, Window window) -> None:
         self.context_check("XShapeSelectInput")
         cdef int ShapeNotifyMask = 1
         XShapeSelectInput(self.display, window, ShapeNotifyMask)
 
-    def XShapeQueryExtents(self, Window window):
+    def XShapeQueryExtents(self, Window window) -> Tuple[Tuple, Tuple]:
         self.context_check("XShapeQueryExtents")
         cdef Bool bounding_shaped, clip_shaped
         cdef int x_bounding, y_bounding, x_clip, y_clip
@@ -648,7 +648,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             (clip_shaped, x_clip, y_clip, w_clip, h_clip)
         )
 
-    def XShapeGetRectangles(self, Window window, int kind):
+    def XShapeGetRectangles(self, Window window, int kind) -> List[Tuple[int, int, int, int]]:
         self.context_check("XShapeGetRectangles")
         cdef int count, ordering
         cdef XRectangle* rect = XShapeGetRectangles(self.display, window, kind, &count, &ordering)
@@ -660,7 +660,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             rectangles.append((rect[i].x, rect[i].y, rect[i].width, rect[i].height))
         return rectangles
 
-    def XShapeCombineRectangles(self, Window window, int kind, int x_off, int y_off, rectangles):
+    def XShapeCombineRectangles(self, Window window, int kind, int x_off, int y_off, rectangles) -> None:
         self.context_check("XShapeCombineRectangles")
         cdef int n_rects = len(rectangles)
         cdef int op = 0     #SET
@@ -684,14 +684,14 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     ###################################
     # Composite
     ###################################
-    def ensure_XComposite_support(self):
+    def ensure_XComposite_support(self) -> None:
         # We need NameWindowPixmap, but we don't need the overlay window
         # (v0.3) or the special manual-redirect clipping semantics (v0.4).
         self.ensure_extension_support(0, 2, "Composite",
                                   XCompositeQueryExtension,
                                   XCompositeQueryVersion)
 
-    def displayHasXComposite(self):
+    def displayHasXComposite(self) -> bool:
         try:
             self.ensure_XComposite_support()
             return  True
@@ -699,31 +699,31 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             log.error("%s", e)
         return False
 
-    def XCompositeRedirectWindow(self, Window xwindow):
+    def XCompositeRedirectWindow(self, Window xwindow) -> None:
         self.context_check("XCompositeRedirectWindow")
         XCompositeRedirectWindow(self.display, xwindow, CompositeRedirectManual)
 
-    def XCompositeRedirectSubwindows(self, Window xwindow):
+    def XCompositeRedirectSubwindows(self, Window xwindow) -> None:
         self.context_check("XCompositeRedirectSubwindows")
         XCompositeRedirectSubwindows(self.display, xwindow, CompositeRedirectManual)
 
-    def XCompositeUnredirectWindow(self, Window xwindow):
+    def XCompositeUnredirectWindow(self, Window xwindow) -> None:
         self.context_check("XCompositeUnredirectWindow")
         XCompositeUnredirectWindow(self.display, xwindow, CompositeRedirectManual)
 
-    def XCompositeUnredirectSubwindows(self, Window xwindow):
+    def XCompositeUnredirectSubwindows(self, Window xwindow) -> None:
         self.context_check("XCompositeUnredirectSubwindows")
         XCompositeUnredirectSubwindows(self.display, xwindow, CompositeRedirectManual)
 
-    def XCompositeGetOverlayWindow(self, Window window):
+    def XCompositeGetOverlayWindow(self, Window window) -> Window:
         self.context_check("XCompositeGetOverlayWindow")
         return XCompositeGetOverlayWindow(self.display, window)
 
-    def XCompositeReleaseOverlayWindow(self, Window window):
+    def XCompositeReleaseOverlayWindow(self, Window window) -> None:
         self.context_check("XCompositeReleaseOverlayWindow")
         XCompositeReleaseOverlayWindow(self.display, window)
 
-    def AllowInputPassthrough(self, Window window):
+    def AllowInputPassthrough(self, Window window) -> None:
         self.context_check("AllowInputPassthrough")
         cdef XserverRegion region = XFixesCreateRegion(self.display, NULL, 0)
         XFixesSetWindowShapeRegion(self.display, window, ShapeBounding, 0, 0, 0)
@@ -733,20 +733,20 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     ###################################
     # Xdamage
     ###################################
-    def ensure_XDamage_support(self):
+    def ensure_XDamage_support(self) -> None:
         self.ensure_extension_support(1, 0, "DAMAGE",
                                   XDamageQueryExtension,
                                   XDamageQueryVersion)
 
-    def XDamageCreate(self, Window xwindow):
+    def XDamageCreate(self, Window xwindow) -> None:
         self.context_check("XDamageCreate")
         return XDamageCreate(self.display, xwindow, XDamageReportDeltaRectangles)
 
-    def XDamageDestroy(self, Damage handle):
+    def XDamageDestroy(self, Damage handle) -> None:
         self.context_check("XDamageDestroy")
         XDamageDestroy(self.display, handle)
 
-    def XDamageSubtract(self, Damage handle):
+    def XDamageSubtract(self, Damage handle) -> None:
         self.context_check("XDamageSubtract")
         # def xdamage_acknowledge(display_source, handle, x, y, width, height):
         # cdef XRectangle rect
@@ -775,7 +775,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     # Smarter convenience wrappers
     ###################################
 
-    def XGetSelectionOwner(self, atom):
+    def XGetSelectionOwner(self, atom) -> Window:
         self.context_check("XGetSelectionOwner")
         return XGetSelectionOwner(self.display, self.str_to_atom(atom))
 
@@ -784,7 +784,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return XSetSelectionOwner(self.display, self.str_to_atom(atom), xwindow, time)
 
     def sendClientMessage(self, Window xtarget, Window xwindow, int propagate, int event_mask,
-                          message_type, data0=0, data1=0, data2=0, data3=0, data4=0):
+                          message_type, data0=0, data1=0, data2=0, data3=0, data4=0) -> None:
         self.context_check("sendClientMessage")
         # data0 etc. are passed through get_xatom, so they can be integers, which
         # are passed through directly, or else they can be strings, which are
@@ -806,7 +806,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if s == 0:
             raise ValueError("failed to serialize ClientMessage")
 
-    def sendClick(self, Window xtarget, int button, onoff, x_root, y_root, x, y):
+    def sendClick(self, Window xtarget, int button, onoff, int x_root, int y_root, int x, int y) -> None:
         self.context_check("sendClick")
         cdef Window r = XDefaultRootWindow(self.display)
         log("sending message to %#x", xtarget)
@@ -833,7 +833,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if s == 0:
             raise ValueError("failed to serialize ButtonPress Message")
 
-    def send_xembed_message(self, Window xwindow, opcode, detail, data1, data2):
+    def send_xembed_message(self, Window xwindow, opcode, detail, data1, data2) -> None:
         """
          Display* dpy, /* display */
          Window w, /* receiver */
@@ -861,7 +861,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     ###################################
     # Clipboard
     ###################################
-    def selectXFSelectionInput(self, Window window, selection_str):
+    def selectXFSelectionInput(self, Window window, selection_str) -> None:
         self.context_check("selectXFSelectionInput")
         cdef unsigned long event_mask = (
             XFixesSetSelectionOwnerNotifyMask |
@@ -871,11 +871,11 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef Atom selection = self.str_to_atom(selection_str)
         XFixesSelectSelectionInput(self.display, window, selection, event_mask)
 
-    def selectSelectionInput(self, Window xwindow):
+    def selectSelectionInput(self, Window xwindow) -> None:
         self.context_check("selectSelectionInput")
         self.addXSelectInput(xwindow, SelectionNotify)
 
-    def sendSelectionNotify(self, Window xwindow, selection, target, property, time=CurrentTime):
+    def sendSelectionNotify(self, Window xwindow, selection, target, property, time=CurrentTime) -> None:
         self.context_check("sendSelectionNotify")
         cdef XEvent e
         e.type = SelectionNotify
@@ -891,12 +891,12 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if s == 0:
             raise ValueError("failed to serialize SelectionNotify")
 
-    def ConvertSelection(self, selection, target, property, Window requestor, time=CurrentTime):
+    def ConvertSelection(self, selection, target, property, Window requestor, time=CurrentTime) -> int:
         self.context_check("ConvertSelection")
         return XConvertSelection(self.display, self.str_to_atom(selection), self.str_to_atom(target),
                                  self.str_to_atom(property), requestor, time)
 
-    def sendConfigureNotify(self, Window xwindow):
+    def sendConfigureNotify(self, Window xwindow) -> None:
         self.context_check("sendConfigureNotify")
         cdef Window root_window = XDefaultRootWindow(self.display)
 
@@ -932,7 +932,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if s == 0:
             raise ValueError("failed to serialize ConfigureNotify")
 
-    def CreateCorralWindow(self, Window parent, Window xid, int x, int y):
+    def CreateCorralWindow(self, Window parent, Window xid, int x, int y) -> Window:
         self.context_check("CreateCorralWindow")
         #copy most attributes from the window we will wrap:
         cdef int ox, oy
@@ -959,14 +959,14 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                                            valuemask, &attributes)
         return window
 
-    def DestroyWindow(self, Window w):
+    def DestroyWindow(self, Window w) -> None:
         self.context_check("DestroyWindow")
         return XDestroyWindow(self.display, w)
 
     def ConfigureWindow(self, Window xwindow,
                         int x, int y, int width, int height, int border=0,
                         int sibling=0, int stack_mode=0,
-                        int value_mask=CONFIGURE_GEOMETRY_MASK):
+                        int value_mask=CONFIGURE_GEOMETRY_MASK) -> None:
         self.context_check("ConfigureWindow")
         cdef XWindowChanges changes
         changes.x = x
@@ -978,7 +978,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         changes.stack_mode = stack_mode
         XConfigureWindow(self.display, xwindow, value_mask, &changes)
 
-    def configure(self, Window xwindow, x, y, width, height, fields=None):
+    def configure(self, Window xwindow, x, y, width, height, fields=None) -> None:
         # Reconfigure the window.  We have to use XConfigureWindow directly
         # instead of GdkWindow.resize, because GDK does not give us any way to
         # squash the border.
@@ -998,15 +998,15 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         fields = fields | CWBorderWidth
         self.ConfigureWindow(xwindow, x, y, width, height, value_mask=fields)
 
-    def MoveResizeWindow(self, Window xwindow, int x, int y, int width, int height):
+    def MoveResizeWindow(self, Window xwindow, int x, int y, int width, int height) -> bool:
         self.context_check("MoveResizeWindow")
         return bool(XMoveResizeWindow(self.display, xwindow, x, y, width, height))
 
-    def ResizeWindow(self, Window xwindow, int width, int height):
+    def ResizeWindow(self, Window xwindow, int width, int height) -> bool:
         self.context_check("ResizeWindow")
         return bool(XResizeWindow(self.display, xwindow, width, height))
 
-    def MoveWindow(self, Window xwindow, int x, int y):
+    def MoveWindow(self, Window xwindow, int x, int y) -> bool:
         self.context_check("MoveWindow")
         return bool(XMoveWindow(self.display, xwindow, x, y))
 
@@ -1016,19 +1016,19 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XGetWindowAttributes(self.display, xwindow, &curr)
         return get_mask_strs(curr.your_event_mask)
 
-    def addDefaultEvents(self, Window xwindow):
+    def addDefaultEvents(self, Window xwindow) -> None:
         self.context_check("addDefaultEvents")
         ADDMASK = StructureNotifyMask | PropertyChangeMask | FocusChangeMask | PointerMotionMask | PointerMotionHintMask | ButtonMotionMask
         self.addXSelectInput(xwindow, ADDMASK)
 
-    def addXSelectInput(self, Window xwindow, long add_mask):
+    def addXSelectInput(self, Window xwindow, long add_mask) -> None:
         self.context_check("addXSelectInput")
         cdef XWindowAttributes curr
         XGetWindowAttributes(self.display, xwindow, &curr)
         cdef long mask = curr.your_event_mask | add_mask
         XSelectInput(self.display, xwindow, mask)
 
-    def substructureRedirect(self, Window xwindow):
+    def substructureRedirect(self, Window xwindow) -> None:
         """Enable SubstructureRedirect on the given window.
 
         This enables reception of MapRequest and ConfigureRequest events.  At the
@@ -1042,11 +1042,12 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("substructureRedirect")
         self.addXSelectInput(xwindow, SubstructureRedirectMask)
 
-    def selectFocusChange(self, Window xwindow):
+    def selectFocusChange(self, Window xwindow) -> None:
         self.context_check("selectFocusChange")
         self.addXSelectInput(xwindow, FocusChangeMask)
 
-    def XGetWindowProperty(self, Window xwindow, property, req_type="", int buffer_size=64*1024, delete=False, incr=False):
+    def XGetWindowProperty(self, Window xwindow, property, req_type="",
+                           int buffer_size=64*1024, delete=False, incr=False) -> bytes:
         # NB: Accepts req_type == 0 for AnyPropertyType
         # "64k is enough for anybody"
         # (Except, I've found window icons that are strictly larger)
@@ -1100,7 +1101,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(prop)
         return data
 
-    def GetWindowPropertyType(self, Window xwindow, property, incr=False):
+    def GetWindowPropertyType(self, Window xwindow, property, incr=False) -> Tuple[bytes, int]:
         #as above, but for any property type
         #and returns the type found
         self.context_check("GetWindowPropertyType")
@@ -1133,11 +1134,11 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(prop)
         return self.XGetAtomName(xactual_type), actual_format
 
-    def XDeleteProperty(self, Window xwindow, property):
+    def XDeleteProperty(self, Window xwindow, property) -> None:
         self.context_check("XDeleteProperty")
         XDeleteProperty(self.display, xwindow, self.str_to_atom(property))
 
-    def XChangeProperty(self, Window xwindow, property, dtype, int dformat, data):
+    def XChangeProperty(self, Window xwindow, property, dtype, int dformat, data) -> None:
         "Set a property on a window."
         self.context_check("XChangeProperty")
         if dformat not in (8, 16, 32):
@@ -1157,15 +1158,15 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                         nitems)
 
     # Save set handling
-    def XAddToSaveSet(self, Window xwindow):
+    def XAddToSaveSet(self, Window xwindow) -> None:
         self.context_check("XAddToSaveSet")
         XAddToSaveSet(self.display, xwindow)
 
-    def XRemoveFromSaveSet(self, Window xwindow):
+    def XRemoveFromSaveSet(self, Window xwindow) -> None:
         self.context_check("XRemoveFromSaveSet")
         XRemoveFromSaveSet(self.display, xwindow)
 
-    def setRootIconSizes(self, int w, int h):
+    def setRootIconSizes(self, int w, int h) -> None:
         cdef Window root = XDefaultRootWindow(self.display);
         cdef XIconSize *icon_size = XAllocIconSize()
         assert icon_size
@@ -1178,12 +1179,14 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XSetIconSizes(self.display, root, icon_size, 1)
         XFree(icon_size)
 
-    def setClassHint(self, Window xwindow, wmclass, wmname):
+    def setClassHint(self, Window xwindow, wmclass: str, wmname: str) -> None:
         self.context_check("setClassHint")
         cdef XClassHint *classhints = XAllocClassHint()
         assert classhints!=NULL
-        classhints.res_class = wmclass
-        classhints.res_name = wmname
+        res_class = wmclass.encode("latin1")
+        res_name = wmname.encode("latin1")
+        classhints.res_class = res_class
+        classhints.res_name = res_name
         XSetClassHint(self.display, xwindow, classhints)
         XFree(classhints)
 
@@ -1204,7 +1207,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         log("XGetClassHint(%#x) classhints: %s, %s", xwindow, _name, _class)
         return (_name, _class)
 
-    def getGeometry(self, Drawable d) -> Tuple[int,int,int,int,int,int]:
+    def getGeometry(self, Drawable d) -> Tuple[int, int, int, int, int, int]:
         self.context_check("getGeometry")
         cdef Window root_return
         cdef int x, y                                           #@pydev dupe
@@ -1227,7 +1230,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             return 0
         return int(parent)
 
-    def get_children(self, Window xwindow):
+    def get_children(self, Window xwindow) -> List[Window]:
         cdef Window root = 0, parent = 0
         cdef Window * children = <Window *> 0
         cdef unsigned int i, nchildren = 0
@@ -1276,7 +1279,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(size_hints)
         return hints
 
-    def setSizeHints(self, Window xwindow, hints : Dict[str,Any]):
+    def setSizeHints(self, Window xwindow, hints : Dict[str,Any]) -> None:
         self.context_check("setSizeHints")
         cdef XSizeHints *size_hints = XAllocSizeHints()
         assert size_hints!=NULL

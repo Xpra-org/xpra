@@ -105,11 +105,11 @@ def do_set_keymap(layout: str, variant: str, options, query_struct) -> None:
     safe_setxkbmap("evdev", "pc105", layout, variant, options)
 
 
-def safe_setxkbmap(rules, model: str, layout: str, variant: str, options):
+def safe_setxkbmap(rules: str, model: str, layout: str, variant: str, options: str):
     # (we execute the options separately in case that fails..)
     try:
-        X11Keyboard.setxkbmap(rules, model, layout, variant, options)
-        return True
+        if X11Keyboard.setxkbmap(rules, model, layout, variant, options):
+            return True
     except Exception:
         log("safe_setxkbmap%s", (rules, model, layout, variant, options), exc_info=True)
         log.warn("Warning: failed to set exact keymap,")
@@ -693,7 +693,7 @@ def set_modifiers(modifiers: dict[str, Iterable[str]]):
         modifiers is a dict: {modifier : [keynames]}
         Note: the same keysym cannot appear in more than one modifier
     """
-    instructions = []
+    instructions: list[tuple[str, str, Iterable[str]]] = []
     for modifier, keynames in modifiers.items():
         mod = X11Keyboard.parse_modifier(modifier)
         if mod >= 0:
@@ -702,21 +702,23 @@ def set_modifiers(modifiers: dict[str, Iterable[str]]):
             log.error("Error: unknown modifier %s", modifier)
     log("set_modifiers: %s", instructions)
 
-    def apply_or_trim(instructions: list[tuple]):
+    def apply_or_trim(instructions: list[tuple[str, str, Iterable[str]]]) -> None:
         err = apply_xmodmap(instructions)
         log("set_modifiers: err=%s", err)
-        if err:
-            log("set_modifiers %s failed, retrying one more at a time", instructions)
-            count = len(instructions)
-            for i in range(1, count):
-                subset = instructions[:i]
-                log("set_modifiers testing with [:%s]=%s", i, subset)
-                err = apply_xmodmap(subset)
-                log("err=%s", err)
-                if err:
-                    log.warn("removing problematic modifier mapping: %s", instructions[i-1])
-                    instructions = instructions[:i-1]+instructions[i:]
-                    return apply_or_trim(instructions)
+        if not err:
+            return
+        log("set_modifiers %s failed, retrying one more at a time", instructions)
+        count = len(instructions)
+        for i in range(1, count):
+            subset = instructions[:i]
+            log("set_modifiers testing with [:%s]=%s", i, subset)
+            err = apply_xmodmap(subset)
+            log("err=%s", err)
+            if err:
+                log.warn("removing problematic modifier mapping: %s", instructions[i-1])
+                instructions = instructions[:i-1]+instructions[i:]
+                apply_or_trim(instructions)
+                return
     apply_or_trim(instructions)
     return modifiers
 

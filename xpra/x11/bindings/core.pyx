@@ -1,8 +1,10 @@
 # This file is part of Xpra.
 # Copyright (C) 2008, 2009 Nathaniel Smith <njs@pobox.com>
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
+from collections.abc import Callable
 
 from xpra.x11.bindings.xlib cimport (
     Display, Time, Bool, Status,
@@ -37,19 +39,19 @@ def X11CoreBindings():
     return singleton
 
 
-def noop(*args):
+def noop(*args) -> None:
     pass
 
 
 cdef object context_check = noop
 
 
-def set_context_check(fn):
+def set_context_check(fn: Callable) -> None:
     global context_check
     context_check = fn
 
 
-def call_context_check(*args):
+def call_context_check(*args) -> None:
     context_check(*args)
 
 
@@ -65,23 +67,23 @@ cdef class X11CoreBindingsInstance:
         self.display_name = bstr
         self.XSynchronize(envbool("XPRA_X_SYNC", False))
 
-    def XSynchronize(self, enable: bool):
+    def XSynchronize(self, enable: bool) -> None:
         XSynchronize(self.display, enable)
 
-    def XSync(self, discard=False):
+    def XSync(self, discard=False) -> None:
         XSync(self.display, discard)
 
-    def XFlush(self):
+    def XFlush(self) -> None:
         XFlush(self.display)
 
-    def context_check(self, *args):
+    def context_check(self, *args) -> None:
         global context_check
         context_check(*args)
 
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
 
-    def get_root_xid(self):
+    def get_root_xid(self) -> int:
         assert self.display
         return XDefaultRootWindow(self.display)
 
@@ -101,7 +103,7 @@ cdef class X11CoreBindingsInstance:
             return <Atom> str_or_int
         return self.str_to_atom(str_or_int)
 
-    def intern_atoms(self, atom_names):
+    def intern_atoms(self, atom_names) -> None:
         cdef int count = len(atom_names)
         cdef char** names = <char **> malloc(sizeof(uintptr_t)*(count+1))
         assert names!=NULL
@@ -125,7 +127,7 @@ cdef class X11CoreBindingsInstance:
         self.context_check("XGetAtomName")
         cdef char *v = XGetAtomName(self.display, atom)
         if v == NULL:
-            return None
+            return ""
         r = v[:]
         XFree(v)
         return r
@@ -139,13 +141,13 @@ cdef class X11CoreBindingsInstance:
         XGetErrorText(self.display, code, buffer, 128)
         return (bytes(buffer[:128]).split(b"\0", 1)[0]).decode("latin1")
 
-    def UngrabKeyboard(self, Time time=CurrentTime):
+    def UngrabKeyboard(self, Time time=CurrentTime) -> int:
         self.context_check("UngrabKeyboard")
         if self.display == NULL:
             raise RuntimeError("display is closed")
         return XUngrabKeyboard(self.display, time)
 
-    def UngrabPointer(self, Time time=CurrentTime):
+    def UngrabPointer(self, Time time=CurrentTime) -> int:
         self.context_check("UngrabPointer")
         if self.display == NULL:
             raise RuntimeError("display is closed")

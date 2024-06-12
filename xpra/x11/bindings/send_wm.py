@@ -16,7 +16,7 @@ SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
 
-def send_wm_take_focus(xid: int, timestamp: int = CurrentTime):
+def send_wm_take_focus(xid: int, timestamp: int = CurrentTime) -> None:
     log("sending WM_TAKE_FOCUS: %#x, X11 timestamp=%r", xid, int(timestamp or 0))
     if timestamp < 0:
         timestamp = 0
@@ -31,7 +31,7 @@ def send_wm_take_focus(xid: int, timestamp: int = CurrentTime):
                                 "WM_TAKE_FOCUS", timestamp)
 
 
-def send_wm_delete_window(xid: int, timestamp: int = CurrentTime):
+def send_wm_delete_window(xid: int, timestamp: int = CurrentTime) -> None:
     log("sending WM_DELETE_WINDOW to %#x", xid)
     X11Window.sendClientMessage(xid, xid, False, 0,
                                 "WM_PROTOCOLS",
@@ -39,7 +39,7 @@ def send_wm_delete_window(xid: int, timestamp: int = CurrentTime):
                                 timestamp)
 
 
-def send_wm_workspace(root_xid: int, xid: int, workspace: int = 0, timestamp: int = CurrentTime):
+def send_wm_workspace(root_xid: int, xid: int, workspace: int = 0, timestamp: int = CurrentTime) -> None:
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
     X11Window.sendClientMessage(root_xid, xid, False, event_mask,
                                 "_NET_WM_DESKTOP",
@@ -47,7 +47,7 @@ def send_wm_workspace(root_xid: int, xid: int, workspace: int = 0, timestamp: in
                                 timestamp)
 
 
-def send_wm_request_frame_extents(root_xid: int, xid: int, timestamp: int = CurrentTime):
+def send_wm_request_frame_extents(root_xid: int, xid: int, timestamp: int = CurrentTime) -> None:
     event_mask = SubstructureNotifyMask | SubstructureRedirectMask
     X11Window.sendClientMessage(root_xid, xid, False, event_mask,
                                 "_NET_REQUEST_FRAME_EXTENTS",

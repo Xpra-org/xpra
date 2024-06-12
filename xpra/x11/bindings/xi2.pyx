@@ -300,19 +300,19 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
     def __repr__(self):
         return "X11XI2Bindings(%s)" % self.display_name
 
-    def connect(self, window, event, handler):
+    def connect(self, window, event, handler) -> None:
         self.event_handlers.setdefault(window, {})[event] = handler
 
-    def disconnect(self, window):
+    def disconnect(self, window) -> None:
         try:
             del self.event_handlers[window]
         except:
             pass
 
-    def reset_events(self):
+    def reset_events(self) -> None:
         self.events = deque(maxlen=100)
 
-    def find_event(self, event_name, serial):
+    def find_event(self, event_name: str, serial: int) -> int:
         for x in reversed(self.events):
             #log.info("find_event(%s, %#x) checking %s", event_name, serial, x)
             if x.name==event_name and x.serial==serial:
@@ -320,10 +320,10 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 return x
             if x.serial<serial:
                 #log.info("serial too old")
-                return None
-        return None
+                return 0
+        return 0
 
-    def find_events(self, event_name, windows):
+    def find_events(self, event_name: str, windows) -> List[int]:
         cdef Window found = 0
         cdef Window window
         matches = []
@@ -336,7 +336,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 break
         return matches
 
-    def get_xi_version(self, int major=2, int minor=2):
+    def get_xi_version(self, int major=2, int minor=2) -> Tuple[int, int]:
         self.context_check("get_xi_version")
         cdef int rmajor = major, rminor = minor
         cdef int rc = XIQueryVersion(self.display, &rmajor, &rminor)
@@ -413,7 +413,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
             name = XI_EVENT_NAMES[e]
             add_x_event_type_name(event, name)
 
-    def select_xi2_events(self):
+    def select_xi2_events(self) -> None:
         self.context_check("select_xi2_events")
         cdef Window win = XDefaultRootWindow(self.display)
         log("select_xi2_events() root window=%#x", win)
@@ -549,7 +549,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         log("parse_xi_event: no handler for %s", event_name)
         return None
 
-    def get_devices(self, show_all=True, show_disabled=False):
+    def get_devices(self, show_all=True, show_disabled=False) -> Dict:
         log("get_devices(%s, %s)", show_all, show_disabled)
         self.context_check("get_devices")
         global XI_USE
@@ -587,7 +587,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         self.device_cache = dinfo
         return dinfo
 
-    def get_device_properties(self, deviceid):
+    def get_device_properties(self, deviceid) -> Dict[str, Any]:
         self.context_check("get_device_properties")
         cdef int nprops, i
         cdef Atom *atoms = XIListProperties(self.display, deviceid, &nprops)
@@ -712,7 +712,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
             }
         return info
 
-    def gdk_inject(self):
+    def gdk_inject(self) -> None:
         self.get_xi_opcode()
         #log.info("XInput Devices:")
         #from xpra.util.str_fn import print_nested_dict

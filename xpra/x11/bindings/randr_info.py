@@ -10,7 +10,7 @@ from xpra.x11.gtk.display_source import init_gdk_display_source
 from xpra.x11.bindings.randr import RandRBindings  # pylint: disable=no-name-in-module
 
 
-def main():
+def main() -> None:
     init_gdk_display_source()
     randr = RandRBindings()
     # print(randr.is_dummy16())

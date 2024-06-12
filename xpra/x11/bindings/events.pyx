@@ -372,7 +372,7 @@ def set_debug_events() -> None:
         log.warn(" event codes: %s", csv(debug_route_events))
 
 
-x_event_parsers : Dict[int,Callable] = {}
+x_event_parsers : Dict[int, Callable] = {}
 
 
 def add_x_event_parser(extension_opcode: int, parser : Callable) -> None:

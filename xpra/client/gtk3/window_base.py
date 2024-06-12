@@ -19,7 +19,7 @@ from cairo import (  # pylint: disable=no-name-in-module
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland, is_X11
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, strtobytes, bytestostr
+from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time, ignorewarnings
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.util import ds_inited, get_default_root_window, GRAB_STATUS_STRING
@@ -1212,7 +1212,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         elif HAS_X11_BINDINGS:
             xid = self.get_window().get_xid()
             with xlog:
-                X11Window.setClassHint(xid, strtobytes(wmclass_class), strtobytes(wmclass_name))
+                X11Window.setClassHint(xid, wmclass_class, wmclass_name)
                 log("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
 
     def set_shape(self, shape) -> None:

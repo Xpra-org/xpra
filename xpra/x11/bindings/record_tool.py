@@ -10,7 +10,7 @@ from xpra.x11.gtk.display_source import init_gdk_display_source
 from xpra.x11.bindings.record import RecordBindings   # pylint: disable=no-name-in-module
 
 
-def main():
+def main() -> None:
     init_gdk_display_source()
     record = RecordBindings()
     print_nested_dict(record.get_info())

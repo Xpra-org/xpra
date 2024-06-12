@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import struct
+from typing import Dict
 from time import monotonic
 
 from xpra.log import Logger
@@ -17,7 +18,7 @@ from xpra.x11.bindings.xlib cimport (
     XFree, XFlush, XSync,
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
-    )
+)
 from xpra.common import DEFAULT_REFRESH_RATE
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.str_fn import csv, decode_str, strtobytes, bytestostr
@@ -70,7 +71,7 @@ cdef extern from "X11/extensions/randr.h":
     int RROutputPropertyNotifyMask
 
 
-MODE_FLAGS_STR = {
+MODE_FLAGS_STR: Dict[int, str] = {
     RR_HSyncPositive    : "HSyncPositive",
     RR_HSyncNegative    : "HSyncNegative",
     RR_VSyncPositive    : "VSyncPositive",
@@ -85,25 +86,27 @@ MODE_FLAGS_STR = {
     RR_PixelMultiplex   : "PixelMultiplex",
     RR_DoubleClock      : "DoubleClock",
     RR_ClockDivideBy2   : "ClockDivideBy2",
-    }
+}
 
-ROTATIONS = {
+ROTATIONS: Dict[int, str] = {
     RR_Rotate_0             : 0,
     RR_Rotate_90            : 90,
     RR_Rotate_180           : 180,
     RR_Rotate_270           : 270,
-    }
+}
 
-CONNECTION_STR = {
+CONNECTION_STR: Dict[int, str] = {
     RR_Connected            : "Connected",
     RR_Disconnected         : "Disconnected",
     RR_UnknownConnection    : "Unknown",
-    }
+}
 
-def get_rotation(Rotation v):
+
+def get_rotation(Rotation v) -> int:
     return ROTATIONS.get(v, 0)
 
-def get_rotations(Rotation v):
+
+def get_rotations(Rotation v) -> List[int]:
     rotations = []
     for renum, rval in ROTATIONS.items():
         if renum & v:
@@ -546,10 +549,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def __repr__(self):
         return f"RandRBindings({self.display_name})"
 
-    def get_version(self):
+    def get_version(self) -> Tuple[int, int]:
         return self.version
 
-    def query_version(self):
+    def query_version(self) -> Tuple[int, int]:
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
         cdef int r = XRRQueryExtension(self.display, &event_base, &ignored)
         log(f"XRRQueryExtension()={r}")
@@ -561,7 +564,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         log(f"found XRandR extension version {cmajor}.{cminor}")
         return cmajor, cminor
 
-    def check_randr_sizes(self):
+    def check_randr_sizes(self) -> bool:
         #check for wayland, which has no sizes:
         #(and we wouldn't be able to set screen resolutions)
         cdef Window window = XDefaultRootWindow(self.display)
@@ -577,7 +580,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
     def has_randr(self) -> bool:
         return bool(self._has_randr)
 
-    def select_crtc_output_changes(self):
+    def select_crtc_output_changes(self) -> None:
         cdef int mask = RRScreenChangeNotifyMask | RRCrtcChangeNotifyMask | RROutputChangeNotifyMask | RROutputPropertyNotifyMask
         cdef Window root = XDefaultRootWindow(self.display)
         XRRSelectInput(self.display, root, mask)
@@ -594,7 +597,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             sizes.append((xrr.width, xrr.height))
         return sizes
 
-    def get_xrr_screen_sizes(self):
+    def get_xrr_screen_sizes(self) -> List[Tuple[int, int]]:
         v = self._get_xrr_screen_sizes()
         log(f"get_xrr_screen_sizes()={v}")
         return v
@@ -668,10 +671,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenConfigInfo(config)
 
-    def get_screen_count(self):
+    def get_screen_count(self) -> int:
         return XScreenCount(self.display)
 
-    def get_screen_size_mm(self):
+    def get_screen_size_mm(self) -> Tuple[int, int]:
         sizes = self.get_screen_sizes_mm()
         tw, th = 0, 0
         for w,h in sizes:
@@ -679,7 +682,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             th += h
         return tw, th
 
-    def get_screen_sizes_mm(self):
+    def get_screen_sizes_mm(self) -> List[Tuple[int, int]]:
         cdef unsigned int n = XScreenCount(self.display)
         cdef unsigned int i, w, h
         cdef object sizes = []
@@ -689,7 +692,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             sizes.append((w, h))
         return sizes
 
-    def get_screen_sizes(self):
+    def get_screen_sizes(self) -> List[Tuple[int, int]]:
         cdef unsigned int n = XScreenCount(self.display)
         cdef unsigned int i, w, h
         cdef object sizes = []
@@ -699,7 +702,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             sizes.append((w, h))
         return sizes
 
-    def get_screen_size(self):
+    def get_screen_size(self) -> Tuple[int, int]:
         return self._get_screen_size()
 
     def _get_screen_size(self):
@@ -734,13 +737,13 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenConfigInfo(config)
 
-    def get_vrefresh(self):
+    def get_vrefresh(self) -> int:
         voutputs = self.get_vrefresh_outputs()
         if voutputs:
             return min(voutputs.values())
         return self.get_vrefresh_display()
 
-    def get_vrefresh_display(self):
+    def get_vrefresh_display(self) -> int:
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenConfiguration *config = XRRGetScreenInfo(self.display, window)
         if config==NULL:
@@ -751,7 +754,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenConfigInfo(config)
 
-    def get_vrefresh_outputs(self):
+    def get_vrefresh_outputs(self) -> Dict[int, int]:
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRROutputInfo *output_info = NULL
         cdef XRRCrtcInfo *crtc_info = NULL
@@ -790,10 +793,10 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRFreeScreenResources(rsc)
         return rates
 
-    def set_screen_size(self, width, height):
+    def set_screen_size(self, int width, int height) -> bool:
         return self._set_screen_size(width, height)
 
-    def add_screen_size(self, unsigned int w, unsigned int h, unsigned int vrefresh=DEFAULT_REFRESH_RATE):
+    def add_screen_size(self, unsigned int w, unsigned int h, unsigned int vrefresh=DEFAULT_REFRESH_RATE) -> RRMode:
         hz = round(vrefresh/1000)
         name = f"{w}x{h}@{hz}"
         mode = self.do_add_screen_size(name, w, h, vrefresh)
@@ -805,7 +808,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRAddOutputMode(self.display, output, mode)
         return mode
 
-    cdef do_add_screen_size(self, name, unsigned int w, unsigned int h, unsigned int vrefresh):
+    cdef RRMode do_add_screen_size(self, name, unsigned int w, unsigned int h, unsigned int vrefresh):
         self.context_check("do_add_screen_size")
         log("do_add_screen_size(%s, %i, %i, %i)", name, w, h, vrefresh)
         cdef XRRModeInfo *new_mode = self.calculate_mode(name, w, h, vrefresh)
@@ -893,7 +896,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         mode.modeFlags = 0
         return mode
 
-    def remove_screen_size(self, unsigned int w, unsigned int h):
+    def remove_screen_size(self, unsigned int w, unsigned int h) -> None:
         #TODO: instead of keeping the mode ID,
         #we should query the output and find the mode dynamically...
         name = "%sx%s" % (w, h)
@@ -901,7 +904,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if mode and self.remove_mode(mode):
             del self._added_modes[name]
 
-    def remove_mode(self, RRMode mode):
+    def remove_mode(self, RRMode mode) -> None:
         self.context_check("remove_mode")
         cdef RROutput output = self.get_current_output()
         log(f"remove_mode({mode}) output={output}")
@@ -925,7 +928,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenResources(rsc)
 
-    def xrr_set_screen_size(self, w, h, wmm, hmm):
+    def xrr_set_screen_size(self, int w, int h, int wmm, int hmm) -> None:
         self.context_check("xrr_set_screen_size")
         #and now use it:
         cdef Window window = XDefaultRootWindow(self.display)
@@ -976,15 +979,15 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             XRRFreeMonitors(monitors)
         return True
 
-    def get_monitor_properties(self):
+    def get_monitor_properties(self) -> Dict[str, Any]:
         self.context_check("get_monitor_properties")
         return get_monitor_properties(self.display)
 
-    def get_all_screen_properties(self):
+    def get_all_screen_properties(self) -> Dict[str, Any]:
         self.context_check("get_all_screen_properties")
         return get_all_screen_properties(self.display)
 
-    def set_output_int_property(self, int output, prop_name, int value):
+    def set_output_int_property(self, int output, prop_name: str, int value) -> None:
         self.context_check("set_output_int_property")
         cdef Window window = XDefaultRootWindow(self.display)
         cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(self.display, window)
@@ -1012,7 +1015,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenResources(rsc)
 
-    def set_crtc_config(self, monitor_defs):
+    def set_crtc_config(self, monitor_defs: Dict) -> None:
         self.context_check("set_crtc_config")
         log(f"set_crtc_config({monitor_defs})")
         def dpi96(v):

@@ -20,7 +20,7 @@ cdef int exit_code = -1
 exit_event = threading.Event()
 
 
-def err(s):
+def err(s) -> None:
     try:
         sys.stderr.write("%s\n"  % s)
         sys.stderr.flush()
@@ -52,11 +52,11 @@ for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.
     SIGNAMES[getattr(signal, signame)] = signame
 
 
-def os_signal(signum, _frame=None):
+def os_signal(signum, _frame=None) -> None:
     end("\ngot signal %s" % SIGNAMES.get(signum, signum), 128-signum)
 
 
-def xwait(display_name):
+def xwait(display_name: str="") -> None:
     global exit_code
     if not display_name:
         end("no display specified", 1)

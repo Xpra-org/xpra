@@ -14,7 +14,7 @@ from xpra.x11.bindings.display_source import set_display_name  # @UnresolvedImpo
 from libc.stdint cimport uintptr_t
 
 
-def init_posix_display_source():
+def init_posix_display_source() -> None:
     display_name = os.environ.get("DISPLAY")
     if not display_name:
         raise ValueError("cannot open display, the environment variable DISPLAY is not set!")
@@ -32,7 +32,7 @@ cdef do_init_posix_display_source(display_name):
     return <uintptr_t> display
 
 
-def close_display_source(uintptr_t ptr):
+def close_display_source(uintptr_t ptr) -> int:
     assert ptr!=0, "invalid NULL display pointer"
     cdef Display * display = <Display *> ptr
     set_display(NULL)

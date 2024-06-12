@@ -645,9 +645,10 @@ class WindowModel(BaseWindowModel):
             children.append([xid] + list(geom))
         self._internal_set_property("children", children)
 
-    def configure_geometry(self, x: int, y: int, w: int, h: int) -> None:
+    def configure_geometry(self, x: int, y: int, w: int, h: int) -> bool:
         # the client window may have been resized or moved (generally programmatically)
         # so we may need to update the corral_window to match
+        geomlog("configure_geometry%s", (x, y, w, h))
         cow, coh = X11Window.getGeometry(self.corral_xid)[2:4]
         # size changes (and position if any):
         hints = self.get_property("size-hints")
@@ -658,7 +659,7 @@ class WindowModel(BaseWindowModel):
         geomlog("configure_geometry%s hints=%s, constrained size=%s, corral=%s, geometry=%s, resized=%s, moved=%s",
                 (x, y, w, h), hints, (w, h), (cow, coh), (cx, cy, cw, ch), resized, moved)
         if not (moved or resized):
-            return
+            return False
         if moved:
             self._internal_set_property("set-initial-position", True)
             self._internal_set_property("requested-position", (x, y))
@@ -676,7 +677,7 @@ class WindowModel(BaseWindowModel):
             X11Window.ResizeWindow(self.corral_xid, w, h)
             x = cx
             y = cy
-        self._updateprop("geometry", (x, y, w, h))
+        return self._updateprop("geometry", (x, y, w, h))
 
     def do_x11_child_configure_request_event(self, event) -> None:
         hints = self.get_property("size-hints")
