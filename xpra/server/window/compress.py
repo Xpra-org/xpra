@@ -2140,7 +2140,7 @@ class WindowSource(WindowIconSource):
         return image
 
     def process_damage_region(self, damage_time, x: int, y: int, w: int, h: int,
-                              coding: str, options, flush=0) -> bool:
+                              coding: str, options: dict, flush=0) -> bool:
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
@@ -2160,16 +2160,17 @@ class WindowSource(WindowIconSource):
         log("get_damage_image%s took %ims", (x, y, w, h), 1000*(monotonic()-rgb_request_time))
         sequence = self._sequence
 
+        eoptions = typedict(options)
         if self.send_window_size:
-            options["window-size"] = self.window_dimensions
+            eoptions["window-size"] = self.window_dimensions
         resize = self.scaled_size(image)
         if resize:
             sw, sh = resize
-            options["scaled-width"] = sw
-            options["scaled-height"] = sh
+            eoptions["scaled-width"] = sw
+            eoptions["scaled-height"] = sh
 
         now = monotonic()
-        item = (w, h, damage_time, now, image, coding, sequence, options, flush)
+        item = (w, h, damage_time, now, image, coding, sequence, eoptions, flush)
         self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
         log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
             self.wid, sequence, w, h, coding, 1000*(now-damage_time), 1000*(now-rgb_request_time))
@@ -2189,7 +2190,7 @@ class WindowSource(WindowIconSource):
         return None
 
     def make_data_packet_cb(self, w: int, h: int, damage_time: float, process_damage_time: float,
-                            image: ImageWrapper, coding: str, sequence: int, options, flush=0) -> None:
+                            image: ImageWrapper, coding: str, sequence: int, options: typedict, flush=0) -> None:
         """ This function is called from the damage data thread!
             Extra care must be taken to prevent access to X11 functions on window.
         """
@@ -2214,7 +2215,7 @@ class WindowSource(WindowIconSource):
         # queue packet for sending:
         self.queue_damage_packet(packet, damage_time, process_damage_time, options)
 
-    def schedule_auto_refresh(self, packet: tuple, options: dict) -> None:
+    def schedule_auto_refresh(self, packet: tuple, options: typedict) -> None:
         if not self.can_refresh():
             self.cancel_refresh_timer()
             return
@@ -2224,7 +2225,7 @@ class WindowSource(WindowIconSource):
         client_options: dict = packet[10]         # info about this packet from the encoder
         self.do_schedule_auto_refresh(encoding, data, region, client_options, options)
 
-    def do_schedule_auto_refresh(self, encoding: str, data, region, client_options: dict, options: dict) -> None:
+    def do_schedule_auto_refresh(self, encoding: str, data, region, client_options: dict, options: typedict) -> None:
         assert data
         if self.encoding == "stream":
             # streaming mode doesn't use refresh
@@ -2253,7 +2254,7 @@ class WindowSource(WindowIconSource):
                        " %s (region=%s, refresh regions=%s, exclude=%s)",
                        encoding, actual_quality, lossy, msg,
                        region, self.refresh_regions, refresh_exclude)
-        if not lossy or options.get("auto_refresh", False):
+        if not lossy or options.boolget("auto_refresh"):
             # subtract this region from the list of refresh regions:
             # (window video source may remove it from the video subregion)
             self.remove_refresh_region(region)
@@ -2357,7 +2358,7 @@ class WindowSource(WindowIconSource):
             return False
         return True
 
-    def refresh_timer_function(self, damage_options: dict) -> bool:
+    def refresh_timer_function(self, damage_options: typedict) -> bool:
         """ Must be called from the UI thread:
             this makes it easier to prevent races,
             and we're also allowed to use the window object.
@@ -2445,7 +2446,9 @@ class WindowSource(WindowIconSource):
             "speed"         : self.refresh_speed,
         }
 
-    def queue_damage_packet(self, packet, damage_time: float = 0, process_damage_time: float = 0, options=None) -> None:
+    def queue_damage_packet(self, packet,
+                            damage_time, process_damage_time,
+                            options: typedict) -> None:
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
@@ -2484,7 +2487,7 @@ class WindowSource(WindowIconSource):
                     late_pct = round(elapsed_ms*100/max_send_delay)-100
                     send_speed = int(ldata*8*1000/elapsed_ms)
                     self.networksend_congestion_event("slow send", late_pct, send_speed)
-            self.schedule_auto_refresh(packet, options or {})
+            self.schedule_auto_refresh(packet, options)
         if process_damage_time > 0:
             now = monotonic()
             damage_in_latency = now-process_damage_time
@@ -2669,13 +2672,13 @@ class WindowSource(WindowIconSource):
             self.decode_error_refresh_timer = 0
             GLib.source_remove(dert)
 
-    def may_use_scrolling(self, _image: ImageWrapper, _options: dict) -> bool:
+    def may_use_scrolling(self, _image: ImageWrapper, _options: typedict) -> bool:
         # overridden in video source
         return False
 
     def make_data_packet(self, damage_time: float, process_damage_time: float,
                          image: ImageWrapper, coding: str, sequence: int,
-                         options: dict, flush: int = 0) -> tuple | None:
+                         options: typedict, flush: int = 0) -> tuple | None:
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'
@@ -2721,7 +2724,12 @@ class WindowSource(WindowIconSource):
             if self.is_cancelled(sequence):
                 return nodata("cancelled")
             raise RuntimeError(f"BUG: no encoder found for {coding!r} with options={options}")
-        ret = encoder(coding, image, options)
+        tdoptions = typedict(options)
+        try:
+            ret = encoder(coding, image, tdoptions)
+        except (TypeError, RuntimeError) as e:
+            log.error(f"Error on {encoder}({coding}, {image}, {tdoptions})")
+            return nodata(str(e))
         if not ret:
             return nodata("no data from encoder %s for %s",
                           get_encoder_type(encoder), (coding, image, options))
@@ -2783,7 +2791,7 @@ class WindowSource(WindowIconSource):
         # this is a frame from a compressed stream,
         # send it to all the window sources for this window:
         cdata = Compressed(coding, data)
-        options: dict[str, Any] = {}
+        options = typedict()
         x = y = 0
         w, h = self.window_dimensions
         psize = w*h*4

@@ -1034,19 +1034,20 @@ class WindowVideoSource(WindowSource):
 
         w = image.get_width()
         h = image.get_height()
+        eoptions = typedict(options)
         if self.send_window_size:
-            options["window-size"] = self.window_dimensions
+            eoptions["window-size"] = self.window_dimensions
         resize = self.scaled_size(image)
         if resize:
             sw, sh = resize
-            options["scaled-width"] = sw
-            options["scaled-height"] = sh
+            eoptions["scaled-width"] = sw
+            eoptions["scaled-height"] = sh
 
         # freeze if:
         # * we want av-sync
         # * the video encoder needs a thread safe image
         #   (the xshm backing may change from underneath us if we don't freeze it)
-        av_delay = options.get("av-delay", 0)
+        av_delay = eoptions.intget("av-delay", 0)
         cve = self.common_video_encodings
         video_mode = coding in cve or (coding in ("auto", "stream") and cve)
         must_freeze = av_delay > 0 or (video_mode and not image.is_thread_safe())
@@ -1063,7 +1064,7 @@ class WindowVideoSource(WindowSource):
             now = monotonic()
             log("process_damage_region: wid=%i, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms, frame delay=%3ims",   # noqa: E501
                 self.wid, sequence, ew, eh, encoding, 1000*(now-damage_time), 1000*(now-rgb_request_time), av_delay)
-            item = (ew, eh, damage_time, now, eimage, encoding, sequence, options, flush)
+            item = (ew, eh, damage_time, now, eimage, encoding, sequence, eoptions, flush)
             if av_delay <= 0:
                 self.call_in_encode_thread(True, self.make_data_packet_cb, *item)
             else:
@@ -2030,13 +2031,13 @@ class WindowVideoSource(WindowSource):
         return super().get_fail_cb(packet)
 
     def make_draw_packet(self, x: int, y: int, w: int, h: int,
-                         coding: str, data, outstride: int, client_options: dict, options: dict) -> tuple:
+                         coding: str, data, outstride: int, client_options: dict, options: typedict) -> tuple:
         # overridden so we can invalidate the scroll data:
         # log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
         packet = super().make_draw_packet(x, y, w, h, coding, data, outstride, client_options, options)
         sd = self.scroll_data
-        if sd and not options.get("scroll"):
-            if client_options.get("scaled_size") or client_options.get("quality", 100) < 20:
+        if sd and not options.boolget("scroll"):
+            if client_options.get("scaled_size") or client_options.intget("quality", 100) < 20:
                 # don't scroll very low quality content, better to refresh it
                 scrolllog("low quality %s update, invalidating all scroll data (scaled_size=%s, quality=%s)",
                           coding, client_options.get("scaled_size"), client_options.get("quality", 100))
@@ -2055,7 +2056,7 @@ class WindowVideoSource(WindowSource):
             self.scroll_data = None
             sd.free()
 
-    def may_use_scrolling(self, image: ImageWrapper, options: dict) -> bool:
+    def may_use_scrolling(self, image: ImageWrapper, options: typedict) -> bool:
         scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_type=%s, non-video=%s",
                   image, options, self.supports_scrolling, image.has_pixels,
                   self.content_type, self.non_video_encodings)
@@ -2065,7 +2066,7 @@ class WindowVideoSource(WindowSource):
         if not self.supports_scrolling:
             scrolllog("no scrolling: not supported")
             return False
-        if options.get("auto_refresh"):
+        if options.boolget("auto_refresh"):
             scrolllog("no scrolling: auto-refresh")
             return False
         # don't download the pixels if we have a GPU buffer,
@@ -2086,7 +2087,7 @@ class WindowVideoSource(WindowSource):
             scrolllog("no scrolling: b_frame_flush_timer=%s", self.b_frame_flush_timer)
             self.do_free_scroll_data()
             return False
-        speed = options.get("speed", self._current_speed)
+        speed = options.intget("speed", self._current_speed)
         if speed >= 50 or self.scroll_preference < 100:
             now = monotonic()
             scroll_event_elapsed = now-self.last_scroll_event
@@ -2100,20 +2101,20 @@ class WindowVideoSource(WindowSource):
                 return False
         return self.do_scroll_encode(image, options, self.scroll_min_percent)
 
-    def scroll_encode(self, coding: str, image: ImageWrapper, options: dict) -> None:
+    def scroll_encode(self, coding: str, image: ImageWrapper, options: typedict) -> None:
         assert coding == "scroll"
         self.do_scroll_encode(image, options, 0)
         # do_scroll_encode() sends the packets
         # so there is nothing to return:
         return None
 
-    def do_scroll_encode(self, image: ImageWrapper, options: dict, min_percent: int = 0) -> bool:
+    def do_scroll_encode(self, image: ImageWrapper, options: typedict, min_percent: int = 0) -> bool:
         x = image.get_target_x()
         y = image.get_target_y()
         w = image.get_width()
         h = image.get_height()
         scroll_data = self.scroll_data
-        if options.get("scroll") is True:
+        if options.boolget("scroll"):
             scrolllog("no scrolling: detection has already been used on this image")
             return False
         if w >= 32000 or h >= 32000:
@@ -2168,7 +2169,7 @@ class WindowVideoSource(WindowSource):
             self.do_free_scroll_data()
         return False
 
-    def encode_scrolling(self, scroll_data, image: ImageWrapper, options: dict,
+    def encode_scrolling(self, scroll_data, image: ImageWrapper, options: typedict,
                          match_pct: int, max_zones: int = 20) -> None:
         # generate all the packets for this screen update
         # using 'scroll' encoding and picture encodings for the other regions
@@ -2284,7 +2285,7 @@ class WindowVideoSource(WindowSource):
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         self.free_image_wrapper(image)
 
-    def do_schedule_auto_refresh(self, encoding: str, data, region, client_options: dict, options: dict) -> None:
+    def do_schedule_auto_refresh(self, encoding: str, data, region, client_options: dict, options: typedict) -> None:
         # for scroll encoding, data is a LargeStructure wrapper:
         if encoding == "scroll" and hasattr(data, "data"):
             if not self.refresh_regions:
@@ -2341,13 +2342,13 @@ class WindowVideoSource(WindowSource):
                                                         else get_encoder_type(encoder))
         return ret
 
-    def video_encode(self, encoding: str, image: ImageWrapper, options: dict) -> tuple:
+    def video_encode(self, encoding: str, image: ImageWrapper, options: typedict) -> tuple:
         try:
             return self.do_video_encode(encoding, image, options)
         finally:
             self.free_image_wrapper(image)
 
-    def do_video_encode(self, encoding: str, image: ImageWrapper, options: dict) -> tuple:
+    def do_video_encode(self, encoding: str, image: ImageWrapper, options: typedict) -> tuple:
         """
             This method is used by make_data_packet to encode frames using video encoders.
             Video encoders only deal with fixed dimensions,
@@ -2615,9 +2616,10 @@ class WindowVideoSource(WindowSource):
                  flush_data, len(data or ()), type(data), client_options)
         # warning: 'options' will be missing the "window-size",
         # so we may end up not honouring gravity during window resizing:
-        options = {}
-        packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0, client_options, options)
-        self.queue_damage_packet(packet)
+        options = typedict()
+        packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0,
+                                       client_options, options)
+        self.queue_damage_packet(packet, 0, 0, options)
         # check for more delayed frames since we want to support multiple b-frames:
         if not self.b_frame_flush_timer and client_options.get("delayed", 0) > 0:
             self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
