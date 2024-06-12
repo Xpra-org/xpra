@@ -174,7 +174,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         if claim:
             self._have_token = True
 
-    def got_contents(self, target, dtype=None, dformat=None, data=None) -> None:
+    def got_contents(self, target, dtype="", dformat: int = 8, data=b"") -> None:
         # if this is the special target 'TARGETS', cache the result:
         if target == "TARGETS" and dtype == "ATOM" and dformat == 32:
             self.targets = _filter_targets(data)

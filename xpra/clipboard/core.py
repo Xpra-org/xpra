@@ -271,7 +271,7 @@ class ClipboardProxyCore:
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         raise NotImplementedError()
 
-    def filter_data(self, dtype: str = "", dformat: int = 0, data=None, trusted: bool = False, output_dtype=None):
+    def filter_data(self, dtype: str = "", dformat: int = 0, data=b"", trusted: bool = False, output_dtype=None):
         log("filter_data(%s, %s, %i %s, %s, %s)",
             dtype, dformat, len(data), type(data), trusted, output_dtype)
         if not data:
@@ -658,7 +658,7 @@ class ClipboardProtocolHelperCore:
             log.warn("clipboard request %s dropped for testing!", request_id)
             return
 
-        def got_contents(dtype="", dformat=0, data=b"") -> None:
+        def got_contents(dtype="STRING", dformat=0, data=b"") -> None:
             self.proxy_got_contents(request_id, selection, target, dtype, dformat, data)
 
         proxy.get_contents(target, got_contents)
