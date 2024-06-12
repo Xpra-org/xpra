@@ -91,7 +91,7 @@ class TestColorRange(unittest.TestCase):
 
                     for quality, tolerance in {
                         "100": 1 if fmt in ("jpeg", ) else 0,
-                        "90": 3 if fmt in ("webp", ) else 1,
+                        "90": 2 if fmt in ("webp", ) else 1,
                         "50": 4,
                         "10": 0xc if fmt in ("webp", ) else 4,
                     }.items():
@@ -172,7 +172,7 @@ class TestColorRange(unittest.TestCase):
                                     raise RuntimeError(f"decoder {dec_name} from {enc_name} produced a YUV image that differs with {enc_options=}"
                                                        f" (converted to {rgb_format} from {yuv_format} using {csc_name})")
                                 test_info.add(f"{enc_name:12}  {fmt:12}  {dec_name:12}  {yuv_format:12}  {csc_name:12}  {rgb_format:12}")
-        print("successfully tested:")
+        print(f"successfully tested {rgb_format} input with:")
         for s in sorted_nicely(test_info):
             print(f"{s}")
 
