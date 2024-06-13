@@ -37,8 +37,8 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
     pixel_format = image.get_pixel_format()
     # log("rgb_encode%s pixel_format=%s, rgb_formats=%s",
     #    (coding, image, rgb_formats, supports_transparency, speed, rgb_zlib, rgb_lz4), pixel_format, rgb_formats)
-    if pixel_format in ("BGRX", "BGRA", "RGBA"):
-        rgb_formats = options.get("rgb_formats", ("BGRX", "BGRA", "RGBA"))
+    if pixel_format in ("BGRX", "BGRA", "RGBA", "RGBX"):
+        rgb_formats = options.get("rgb_formats", ("BGRX", "BGRA", "RGBA", "RGBX"))
     elif pixel_format in ("RGB", "BGR"):
         rgb_formats = options.get("rgb_formats", ("RGB", "BGR"))
     else:
