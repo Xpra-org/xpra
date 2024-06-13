@@ -1,0 +1,11 @@
+--- a/setup.py	2024-06-13 21:10:17.429866015 +0700
++++ b/setup.py	2024-06-13 21:10:41.883706396 +0700
+@@ -64,7 +64,7 @@
+     )
+
+ try:
+-    import numpy
++    import numpyZZ
+ except ImportError:
+     sys.stderr.write("""Unable to import numpy, skipping numpy extension building\n""")
+ else:

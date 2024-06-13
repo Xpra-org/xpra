@@ -26,6 +26,7 @@ URL:            http://pyopengl.sourceforge.net/
 Source0:        https://files.pythonhosted.org/packages/source/P/%{srcname}/%{srcname}-%{version}.tar.gz
 Source1:        https://files.pythonhosted.org/packages/source/P/%{srcname}-accelerate/%{srcname}-accelerate-%{version}.tar.gz
 Patch0:         pyopengl-egl-open-warning.patch
+Patch1:         pyopengl-py3.13-nonumpy.patch
 
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
@@ -72,8 +73,14 @@ if [ "${sha256}" != "2b123621273a939f7fd2ec227541e399f9b5d4e815d69ae0bdb1b6c70a2
 	exit 1
 fi
 %setup -q -c -n %{srcname}-%{version} -T -a0 -a1
-cd %{srcname}-%{version}
+pushd %{srcname}-%{version}
 %patch -p1 -P 0
+popd
+%if "%{python3}" == "python3.13"
+pushd %{srcname}-accelerate-%{version}
+%patch -p1 -P 1
+popd
+%endif
 
 
 %build
