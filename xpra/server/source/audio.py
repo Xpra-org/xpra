@@ -35,7 +35,7 @@ class FakeSink:
         log("FakeSink.add_data%s ignored", args)
 
     @staticmethod
-    def cleanup(self, *args):
+    def cleanup(*args):
         log("FakeSink.cleanup%s ignored", args)
 
 

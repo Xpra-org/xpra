@@ -1237,7 +1237,7 @@ pkgconfig = exec_pkgconfig
 #*******************************************************************************
 
 
-def get_base_conf_dir(install_dir: str, stripbuildroot=True):
+def get_base_conf_dir(install_dir: str, stripbuildroot=True) -> Sequence[str]:
     # in some cases we want to strip the buildroot (to generate paths in the config file)
     # but in other cases we want the buildroot path (when writing out the config files)
     # and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
@@ -1301,7 +1301,7 @@ def get_conf_dir(install_dir: str, stripbuildroot=True) -> str:
     return os.path.join(*dirs)
 
 
-def detect_xorg_setup(install_dir=None):
+def detect_xorg_setup(install_dir="") -> Sequence[str]:
     # pylint: disable=import-outside-toplevel
     from xpra.scripts import config
     config.debug = config.warn
@@ -1312,7 +1312,7 @@ def detect_xorg_setup(install_dir=None):
     return config.detect_xvfb_command(conf_dir, None, dummy, Xdummy_wrapper_ENABLED)
 
 
-def detect_xdummy_setup(install_dir=None):
+def detect_xdummy_setup(install_dir="") -> Sequence:
     # pylint: disable=import-outside-toplevel
     from xpra.scripts import config
     config.debug = config.warn
@@ -1365,7 +1365,7 @@ def build_xpra_conf(install_dir: str):
         except Exception as e:
             print(f"could not probe for pdf/postscript printers: {e}")
 
-    def pretty_cmd(cmd):
+    def pretty_cmd(cmd: Sequence[str]) -> str:
         return " ".join(cmd)
     # OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
     webcam = webcam_ENABLED and not (OSX or WIN32)

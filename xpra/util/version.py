@@ -247,7 +247,7 @@ def vtrim(v, parts=FULL_INFO + 1):
     return v
 
 
-def dict_version_trim(d, parts=FULL_INFO + 1):
+def dict_version_trim(d, parts=FULL_INFO + 1) -> dict:
     """
     trims version numbers from info dictionaries
     """
@@ -295,14 +295,14 @@ def do_get_platform_info() -> dict[str, Any]:
 platform_info_cache = None
 
 
-def get_platform_info():
+def get_platform_info() -> dict[str, Any]:
     global platform_info_cache
     if platform_info_cache is None:
         platform_info_cache = do_get_platform_info()
     return platform_info_cache
 
 
-def get_version_from_url(url: str) -> tuple[int]:
+def get_version_from_url(url: str) -> tuple[int, ...]:
     try:
         from urllib.request import urlopen
     except ImportError as e:
@@ -323,7 +323,7 @@ def get_version_from_url(url: str) -> tuple[int]:
     return ()
 
 
-def version_update_check():
+def version_update_check() -> bool | None | tuple[int, ...]:
     FAKE_NEW_VERSION = envbool("XPRA_FAKE_NEW_VERSION", False)
     CURRENT_VERSION_URL = ("https" if CHECK_SSL else "http") + "://xpra.org/CURRENT_VERSION"
     PLATFORM_FRIENDLY_NAMES = {

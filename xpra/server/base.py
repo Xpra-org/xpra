@@ -8,7 +8,7 @@
 import os
 from time import monotonic
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
@@ -28,7 +28,7 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 
-def get_server_base_classes() -> tuple[type]:
+def get_server_base_classes() -> Sequence[type]:
     classes: list[type] = [ServerCore]
     if features.control:
         from xpra.server.mixins.controlcommands import ServerBaseControlCommands
@@ -664,6 +664,9 @@ class ServerBase(ServerBaseClass):
             "unauthenticated": sum(1 for p in self._potential_protocols
                                    if ((p is not proto) and (p not in self._server_sources))),
         }
+        log.info("unauthenticated protocols:")
+        for i, p in enumerate(self._potential_protocols):
+            log.info(f"{i:3} : {p}={p.get_info()}")
         # find the server source to report on:
         n = len(server_sources)
         if n == 1:

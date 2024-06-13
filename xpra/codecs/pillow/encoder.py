@@ -291,7 +291,8 @@ def selftest(full=False) -> None:
                         v = encode(encoding, img, typedict({
                             "quality": q,
                             "speed": s,
-                            "alpha": alpha}))
+                            "alpha": alpha,
+                        }))
                         assert v, "encode output was empty!"
                         cdata = v[1].data
                         log("encode(%s)=%s", (encoding, img, q, s, alpha), hexstr(cdata))

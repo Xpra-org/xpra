@@ -389,6 +389,7 @@ class Logger:
         caller = None
         while n < 10:
             try:
+                # noinspection PyProtectedMember
                 caller = sys._getframe(n).f_globals["__name__"]  # pylint: disable=protected-access
                 if caller == "__main__" or caller.startswith("importlib"):
                     n += 1

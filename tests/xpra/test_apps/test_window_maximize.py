@@ -60,20 +60,20 @@ def main():
             Gdk.WindowState.WITHDRAWN: "withdrawn",
             Gdk.WindowState.ICONIFIED: "iconified",
             Gdk.WindowState.MAXIMIZED: "maximized",
-            Gdk.WindowState.STICKY	: "sticky",
-				Gdk.WindowState.FULLSCREEN	: "fullscreen",
-				Gdk.WindowState.ABOVE		: "above",
-				Gdk.WindowState.BELOW		: "below",
-				}
-		print("window_state(%s, %s)" % (widget, event))
-		print("flags: %s" % [STATES[x] for x in STATES.keys() if x & event.new_window_state])
-	window.connect("window-state-event", window_state)
+            Gdk.WindowState.STICKY: "sticky",
+            Gdk.WindowState.FULLSCREEN: "fullscreen",
+            Gdk.WindowState.ABOVE: "above",
+            Gdk.WindowState.BELOW: "below",
+        }
+        print("window_state(%s, %s)" % (widget, event))
+        print("flags: %s" % [STATES[x] for x in STATES.keys() if x & event.new_window_state])
+    window.connect("window-state-event", window_state)
 
-	window.add(vbox)
-	window.show_all()
-	Gtk.main()
-	return 0
+    window.add(vbox)
+    window.show_all()
+    Gtk.main()
+    return 0
 
 
 if __name__ == "__main__":
-	main()
+    main()

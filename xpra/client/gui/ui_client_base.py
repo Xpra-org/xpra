@@ -80,7 +80,7 @@ if features.tray:
 
     CLIENT_BASES.append(TrayClient)
 
-CLIENT_BASES: tuple[type] = tuple(CLIENT_BASES)
+CLIENT_BASES: Sequence[type] = tuple(CLIENT_BASES)
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 GLib = gi_import("GLib")

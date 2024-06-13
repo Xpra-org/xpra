@@ -185,7 +185,7 @@ class BugReport:
                 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
                 rwm = GTKImageCapture(get_default_root_window())
                 take_screenshot_fn = rwm.take_screenshot
-            except Exception:
+            except (ImportError, AttributeError):
                 log.warn("Warning: failed to load gtk screenshot code", exc_info=True)
         log("take_screenshot_fn=%s", take_screenshot_fn)
         if take_screenshot_fn != noop:
@@ -231,8 +231,8 @@ class BugReport:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
 
-        def btn(label, tooltip_text, callback, icon_name=None):
-            b = Gtk.Button(label=label)
+        def btn(text, tooltip_text, callback, icon_name=None):
+            b = Gtk.Button(label=text)
             b.set_tooltip_text(tooltip_text)
             b.connect("clicked", callback)
             if icon_name:
@@ -274,7 +274,7 @@ class BugReport:
         if self.window:
             self.window.hide()
 
-    def close(self, *args) -> bool:
+    def close(self, *_args) -> bool:
         self.hide_window()
         return True
 
@@ -447,5 +447,4 @@ def main(argv=()) -> int:
 
 
 if __name__ == "__main__":
-    v = main(sys.argv)
-    sys.exit(v)
+    sys.exit(main(sys.argv))

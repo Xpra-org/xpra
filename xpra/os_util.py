@@ -163,4 +163,5 @@ def get_user_uuid() -> str:
 
 # here so we can override it when needed
 def force_quit(status=1) -> None:
+    # noinspection PyProtectedMember
     os._exit(int(status))  # pylint: disable=protected-access
