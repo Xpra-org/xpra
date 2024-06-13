@@ -34,7 +34,7 @@ class GenSSLCertContext:
         self._clear()
 
     def _clear(self):
-        self.tmpdir = self.keyfile = self.outfile = self.certfile = None
+        self.tmpdir = self.keyfile = self.outfile = self.certfile = ""
 
     def __enter__(self):
         self.tmpdir = tempfile.mkdtemp(suffix='ssl-xpra')
