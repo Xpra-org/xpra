@@ -776,7 +776,8 @@ class WindowBackingBase:
 
             vd = self._video_decoder
             if vd:
-                if options.intget("frame", -1)==0:
+                frame = options.intget("frame", -1)
+                if frame == 0 or frame == 1:
                     videolog("paint_with_video_decoder: first frame of new stream")
                     self.do_clean_video_decoder()
                 elif vd.get_encoding()!=coding:
