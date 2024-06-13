@@ -113,8 +113,6 @@ Recommends: ${qrcode:Depends}
 # printer forwarding:
         ,python3-cups
 Suggests: openssh-server
-# only useful when connecting using a JSON / YAML only client:
-        ,python3-yaml
 Description: tool to detach/reattach running X programs,
  this is the common components for all xpra sub-packages
 
