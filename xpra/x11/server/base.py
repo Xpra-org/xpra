@@ -216,7 +216,7 @@ class X11ServerBase(X11ServerCore):
         self.pointer_device.move_pointer(nx, ny)
 
         def verify_uinput_moved() -> None:
-            pos = None  # @UnusedVariable
+            pos = (ox, oy)
             with xswallow:
                 pos = X11Keyboard.query_pointer()
                 mouselog("X11Keyboard.query_pointer=%s", pos)
