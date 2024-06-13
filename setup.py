@@ -134,6 +134,7 @@ if "pkg-info" in sys.argv:
 
 
 print("Xpra version %s" % XPRA_VERSION)
+print("Python version %s" % (".".join(str(v) for v in sys.version_info[:3])))
 #*******************************************************************************
 # Most of the options below can be modified on the command line
 # using --with-OPTION or --without-OPTION
