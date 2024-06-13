@@ -62,7 +62,7 @@ if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
     fi
 fi
 if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
-	coverage erase
+	${COVERAGE} erase
 fi
 
 $PYTHON ./unit/run.py "$@"
