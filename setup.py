@@ -2025,6 +2025,10 @@ if WIN32:
         "ctypes.macholib",
     )
 
+    if quic_ENABLED:
+        external_includes += ["pyasn1", "aioquic", "pylsqpack"]
+        add_modules("aioquic._buffer")
+
     if webcam_ENABLED:
         external_includes.append("cv2")
     else:

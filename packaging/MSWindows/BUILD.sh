@@ -497,14 +497,14 @@ rmdir xpra/* 2> /dev/null
 if [ "${ZIP_MODULES}" == "1" ]; then
 	#these modules contain native code or data files,
 	#so they will require special treatment:
-	#xpra numpy cryptography PIL nacl cffi gtk gobject glib > /dev/null
+	#xpra numpy cryptography PIL nacl cffi gtk gobject glib aioquic pylsqpack > /dev/null
 	if [ "${DO_FULL}" == "0" ]; then
-		rm -fr test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3 psutil
+		rm -fr test unittest gssapi pynvml ldap ldap3 pyu2f sqlite3 psutil
 	else
-		zip --move -ur library.zip test unittest gssapi pynvml ldap ldap3 pyasn1 asn1crypto pyu2f sqlite3 psutil
+		zip --move -ur library.zip test unittest gssapi pynvml ldap ldap3 pyu2f sqlite3 psutil
 	fi
 	zip --move -ur library.zip OpenGL encodings future paramiko html \
-			aioquic pylsqpack async_timeout \
+			pyasn1 asn1crypto async_timeout \
 			certifi OpenSSL pkcs11 keyring \
 			ifaddr pyaes browser_cookie3 service_identity\
 			re platformdirs attr setproctitle pyvda zipp \
