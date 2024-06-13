@@ -250,7 +250,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     # decoders:
     "dec_pillow"    : ("Pillow decoder",    "pillow",       "decoder", "decompress"),
     "dec_spng"      : ("png decoder",       "spng",         "decoder", "decompress"),
-    "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress"),
+    "dec_webp"      : ("webp decoder",      "webp",         "decoder", "decompress_to_rgb,decompress_to_yuv"),
     "dec_jpeg"      : ("JPEG decoder",      "jpeg",         "decoder", "decompress_to_rgb,decompress_to_yuv"),
     "dec_avif"      : ("avif decoder",      "avif",         "decoder", "decompress"),
     "dec_nvjpeg"    : ("nvjpeg decoder",    "nvidia.nvjpeg", "decoder", "decompress"),

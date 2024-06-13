@@ -567,31 +567,20 @@ class WindowBackingBase:
             return
         rgb_format = options.strget("rgb_format")
         has_alpha = options.boolget("has_alpha", False)
-        (
-            buffer_wrapper,
-            iwidth, iheight, stride, has_alpha,
-            rgb_format,
-        ) = self.webp_decoder.decompress(img_data, has_alpha, rgb_format, self.get_rgb_formats())
-
-        data = buffer_wrapper.get_pixels()
+        img = self.webp_decoder.decompress_to_rgb(rgb_format, img_data, has_alpha, self.get_rgb_formats())
+        rgb_format = img.get_pixel_format()
         # if the backing can't handle this format,
         # ie: tray only supports RGBA
         if rgb_format not in self.get_rgb_formats():
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.rgb_transform import rgb_reformat
-            from xpra.codecs.image import ImageWrapper
-            img = ImageWrapper(x, y, iwidth, iheight, data, rgb_format,
-                               len(rgb_format) * 8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
-            rgb_reformat(img, self.get_rgb_formats(), has_alpha and self._alpha_enabled)
-            buffer_wrapper.free()
+            has_alpha = rgb_format.find("A") >= 0 and self._alpha_enabled
+            rgb_reformat(img, self.get_rgb_formats(), has_alpha)
             rgb_format = img.get_pixel_format()
-            data = img.get_pixels()
-            stride = img.get_rowstride()
-        else:
-            def free_buffer(*_args):
-                buffer_wrapper.free()
-            callbacks = list(callbacks)
-            callbacks.append(free_buffer)
+        data = img.get_pixels()
+        iwidth = img.get_width()
+        iheight = img.get_height()
+        stride = img.get_rowstride()
         # replace with the actual rgb format we get from the decoder / rgb_reformat:
         options["rgb_format"] = rgb_format
         self.ui_paint_rgb(rgb_format, data,
