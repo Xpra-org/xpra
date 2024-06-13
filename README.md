@@ -5,21 +5,21 @@
 5. [Help](#help)
 
 # About
-Xpra is known as _"screen for X"_ : its [seamless mode](./docs/Usage/Seamless.md) allows you to run X11 programs,
+Xpra is known as _"screen for X"_ : its [seamless mode](docs/Usage/Seamless.md) allows you to run X11 programs,
 usually on a remote host, direct their display to your local machine,
 and then to disconnect from these programs and reconnect from the same or another machine(s),
 without losing any state.
 Effectively giving you remote access to individual graphical applications.
 It can also be used to
-[access existing desktop sessions](./docs/Usage/Shadow.md) and [start remote desktop sessions](./docs/Usage/Desktop.md).
+[access existing desktop sessions](docs/Usage/Shadow.md) and [start remote desktop sessions](docs/Usage/Desktop.md).
 
-Xpra is _open-source_ ([GPLv2+](./COPYING)) with clients available for [many supported platforms](https://github.com/Xpra-org/xpra/wiki/Platforms)
+Xpra is _open-source_ ([GPLv2+](COPYING)) with clients available for [many supported platforms](https://github.com/Xpra-org/xpra/wiki/Platforms)
 and the server includes a built-in [HTML5 client](https://github.com/Xpra-org/xpra-html5).
-Xpra is usable over a wide variety of [network protocols](./docs/Network/README.md) and does its best to adapt to any network conditions.
+Xpra is usable over a wide variety of [network protocols](docs/Network/README.md) and does its best to adapt to any network conditions.
 
 Xpra forwards and synchronizes many extra desktop features which allows remote applications
 to integrate transparently into the client's desktop environment:
-[audio input and output](./docs/Features/Audio.md), [printers](./docs/Features/Printing.md), [clipboard](./docs/Features/Clipboard.md),
+[audio input and output](docs/Features/Audio.md), [printers](docs/Features/Printing.md), [clipboard](docs/Features/Clipboard.md),
 [system trays](./docs/Features/System-Tray.md), [notifications](./docs/Features/Notifications.md), [webcams](./docs/Features/Webcam.md), etc
 
 It can also [open documents and URLs remotely](./docs/Features/File-Transfers.md),
