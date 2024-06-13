@@ -374,13 +374,13 @@ class WindowModel(BaseWindowModel):
         X11Window.XRaiseWindow(get_xwindow(self.client_window))
 
     def unmap(self):
-        with xsync:
+        with xlog:
             if X11Window.is_mapped(self.xid):
                 self.last_unmap_serial = X11Window.Unmap(self.xid)
                 log("client window %#x unmapped, serial=%#x", self.xid, self.last_unmap_serial)
 
     def map(self):
-        with xsync:
+        with xlog:
             if not X11Window.is_mapped(self.xid):
                 X11Window.MapWindow(self.xid)
                 log("client window %#x mapped", self.xid)
