@@ -89,7 +89,7 @@ class DisplayManager(StubServerMixin):
             # pylint: disable=import-outside-toplevel
             from subprocess import Popen, PIPE
             from xpra.platform.paths import get_xpra_command
-            cmd = self.get_full_child_command(get_xpra_command() + ["opengl", "--opengl=yes"])
+            cmd = self.get_full_child_command(get_xpra_command() + ["opengl", "--opengl=force"])
             env = self.get_child_env()
             # we want the output so we can parse it:
             env["XPRA_REDIRECT_OUTPUT"] = "0"
