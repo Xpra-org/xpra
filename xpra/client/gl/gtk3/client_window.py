@@ -47,8 +47,7 @@ class GLClientWindowBase(ClientWindow):
         b = self._backing
         if not b:
             return
-        rect = (x, y, w, h)
-        b.gl_expose_rect(rect)
+        b.gl_expose_rect(x, y, w, h)
 
     def monitor_changed(self, monitor) -> None:
         super().monitor_changed(monitor)
