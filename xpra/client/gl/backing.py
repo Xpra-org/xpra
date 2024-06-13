@@ -374,32 +374,32 @@ class GLWindowBackingBase(WindowBackingBase):
 
             GLib.timeout_add(FBO_RESIZE_DELAY, self.with_gl_context, redraw)
 
-    def gl_init_textures(self) -> None:
-        log("gl_init_textures()")
+    def init_textures(self) -> None:
+        log("init_textures()")
         assert self.offscreen_fbo is None
         if not bool(glGenFramebuffers):
             raise RuntimeError("current context lacks framebuffer support: no glGenFramebuffers")
         self.textures = glGenTextures(N_TEXTURES)
         self.offscreen_fbo = glGenFramebuffers(1)
         self.tmp_fbo = glGenFramebuffers(1)
-        log("%s.gl_init_textures() textures: %s, offscreen fbo: %s, tmp fbo: %s",
+        log("%s.init_textures() textures: %s, offscreen fbo: %s, tmp fbo: %s",
             self, self.textures, self.offscreen_fbo, self.tmp_fbo)
 
-    def gl_init_shaders(self) -> None:
+    def init_shaders(self) -> None:
         self.vao = glGenVertexArrays(1)
         # Create and assign fragment programs
         from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER
-        vertex_shader = self.gl_init_shader("vertex", GL_VERTEX_SHADER)
+        vertex_shader = self.init_shader("vertex", GL_VERTEX_SHADER)
         from xpra.client.gl.shaders import SOURCE
         for name, source in SOURCE.items():
             if name in ("overlay", "vertex", "fixed-color"):
                 continue
-            fragment_shader = self.gl_init_shader(name, GL_FRAGMENT_SHADER)
-            self.gl_init_program(name, vertex_shader, fragment_shader)
-        overlay_shader = self.gl_init_shader("overlay", GL_FRAGMENT_SHADER)
-        fixed_color = self.gl_init_shader("fixed-color", GL_FRAGMENT_SHADER)
-        self.gl_init_program("overlay", vertex_shader, overlay_shader)
-        self.gl_init_program("fixed-color", vertex_shader, fixed_color)
+            fragment_shader = self.init_shader(name, GL_FRAGMENT_SHADER)
+            self.init_program(name, vertex_shader, fragment_shader)
+        overlay_shader = self.init_shader("overlay", GL_FRAGMENT_SHADER)
+        fixed_color = self.init_shader("fixed-color", GL_FRAGMENT_SHADER)
+        self.init_program("overlay", vertex_shader, overlay_shader)
+        self.init_program("fixed-color", vertex_shader, fixed_color)
 
     def set_vao(self, index=0):
         vertices = [-1, -1, 1, -1, -1, 1, 1, 1]
@@ -414,7 +414,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glEnableVertexAttribArray(index)
         return buf
 
-    def gl_init_program(self, name: str, *shaders: int) -> None:
+    def init_program(self, name: str, *shaders: int) -> None:
         from OpenGL.GL import (
             glAttachShader, glDetachShader,
             glCreateProgram, glDeleteProgram, glLinkProgram, glGetProgramInfoLog,
@@ -463,7 +463,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 log.error(" %s", line.strip())
         raise RuntimeError(f"OpenGL failed to compile shader {name!r}: {nonl(err_str)}")
 
-    def gl_init_shader(self, name, shader_type) -> int:
+    def init_shader(self, name, shader_type) -> int:
         # Create and assign fragment programs
         from OpenGL.GL import (
             glCreateShader, glShaderSource, glCompileShader, glGetShaderInfoLog,
@@ -515,7 +515,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glDisable(GL_BLEND)
 
         if len(self.textures) == 0:
-            self.gl_init_textures()
+            self.init_textures()
 
         mag_filter = self.get_init_magfilter()
         # Define empty tmp FBO
@@ -525,7 +525,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.init_fbo(TEX_FBO, self.offscreen_fbo, w, h, mag_filter)
 
         # Create and assign fragment programs
-        self.gl_init_shaders()
+        self.init_shaders()
 
         self.gl_setup = True
         log("gl_init(%s, %s) done", context, skip_fbo)
@@ -1043,14 +1043,14 @@ class GLWindowBackingBase(WindowBackingBase):
         ch = cursor_data[4]
         pixels = cursor_data[8]
 
-        def gl_upload_cursor(context) -> None:
+        def upload_cursor(context) -> None:
             if context:
                 self.gl_init(context)
                 texture = int(self.textures[TEX_CURSOR])
                 glActiveTexture(GL_TEXTURE0)
                 upload_rgba_texture(texture, cw, ch, pixels)
 
-        self.with_gl_context(gl_upload_cursor)
+        self.with_gl_context(upload_cursor)
 
     def paint_jpeg(self, img_data, x: int, y: int, width: int, height: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
@@ -1162,9 +1162,9 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         options["pbo"] = True
-        self.gl_paint_planar(context, "NV12_to_RGB", flush, encoding, img,
-                             x, y, w, h, width, height,
-                             options, callbacks)
+        self.paint_planar(context, "NV12_to_RGB", flush, encoding, img,
+                          x, y, w, h, width, height,
+                          options, callbacks)
 
     def paint_nvjpeg(self, gl_context, encoding, img_data, x: int, y: int, width: int, height: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
@@ -1232,7 +1232,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 flush = options.intget("flush", 0)
                 w = img.get_width()
                 h = img.get_height()
-                self.with_gfx_context(self.gl_paint_planar, f"{subsampling}_to_RGB", flush, "webp", img,
+                self.with_gfx_context(self.paint_planar, f"{subsampling}_to_RGB", flush, "webp", img,
                                       x, y, w, h, width, height, options, callbacks)
                 return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
@@ -1246,7 +1246,7 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         if pixel_format.startswith("YUV"):
-            self.with_gfx_context(self.gl_paint_planar, f"{pixel_format}_to_RGB_FULL", flush, "avif", img,
+            self.with_gfx_context(self.paint_planar, f"{pixel_format}_to_RGB_FULL", flush, "avif", img,
                                   x, y, w, h, width, height, options, callbacks)
         else:
             self.ui_paint_rgb(pixel_format, img.get_pixels(), x, y, w, h, width, height,
@@ -1339,7 +1339,7 @@ class GLWindowBackingBase(WindowBackingBase):
         pixel_format = img.get_pixel_format()
         if FORCE_VIDEO_PIXEL_FORMAT:
             cd = self.make_csc(enc_width, enc_height, pixel_format,
-                               width, height, (FORCE_VIDEO_PIXEL_FORMAT,))
+                               width, height, (FORCE_VIDEO_PIXEL_FORMAT,), options)
             img = cd.convert_image(img)
             pixel_format = img.get_pixel_format()
             log.warn(f"converting to {pixel_format} using {cd}")
@@ -1356,12 +1356,12 @@ class GLWindowBackingBase(WindowBackingBase):
             shader += "_FULL"
         flush = options.intget("flush", 0)
         encoding = options.strget("encoding")
-        self.with_gfx_context(self.gl_paint_planar, shader, flush, encoding, img,
+        self.with_gfx_context(self.paint_planar, shader, flush, encoding, img,
                               x, y, enc_width, enc_height, width, height, options, callbacks)
 
-    def gl_paint_planar(self, context, shader: str, flush: int, encoding: str, img,
-                        x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
-                        options: typedict, callbacks: Iterable[Callable]) -> None:
+    def paint_planar(self, context, shader: str, flush: int, encoding: str, img,
+                     x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
+                     options: typedict, callbacks: Iterable[Callable]) -> None:
         pixel_format = img.get_pixel_format()
         if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
             raise ValueError(f"the GL backing does not handle pixel format {pixel_format!r} yet!")
