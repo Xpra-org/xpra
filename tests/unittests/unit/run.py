@@ -10,7 +10,8 @@ import shutil
 import os.path
 import subprocess
 
-COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1") == "1"
+TEST_COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1") == "1"
+COVERAGE = os.environ.get("COVERAGE", shutil.which("coverage") or shutil.which("python3-coverage"))
 
 
 def getargs():
@@ -24,13 +25,13 @@ def getargs():
 
 
 def main(args):
-    if COVERAGE:
+    if TEST_COVERAGE:
         # pylint: disable=import-outside-toplevel
         #only include xpra in the report,
         #and to do that, we need the path to the module (weird):
         import xpra
         xpra_mod_dir = os.environ.get("XPRA_MODULE_DIR") or os.path.dirname(xpra.__file__)
-        run_cmd = ["coverage", "run", "--parallel-mode", "--include=%s/*" % xpra_mod_dir]
+        run_cmd = [COVERAGE, "run", "--parallel-mode", "--include=%s/*" % xpra_mod_dir]
         #make sure we continue to use coverage to run sub-commands:
         xpra_cmd = os.environ.get("XPRA_COMMAND", shutil.which("xpra")) or "xpra"
         if xpra_cmd.find("coverage") < 0:
