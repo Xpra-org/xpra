@@ -36,9 +36,6 @@ jobs:
                 openssl \
                 x11-xserver-utils dbus-x11
 
-        # tests/unittests/run wants "coverage", but debian installs as /usr/bin/python3-coverage
-        sudo ln -s /usr/bin/python3-coverage /usr/local/bin/coverage
-
     - name: "Build/Install/Test"
       run: >
         python3 setup.py unittests

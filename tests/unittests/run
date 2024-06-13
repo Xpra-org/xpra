@@ -22,10 +22,15 @@ SRC_DIR=`dirname $TESTS_DIR`
 
 PYTHON_VERSION=`$PYTHON --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
 
+
 INSTALL_ROOT="$SRC_DIR/dist/python${PYTHON_VERSION}"
+rm -fr $INSTALL_ROOT
 pushd $SRC_DIR
 $PYTHON ./setup.py install --without-nvidia --without-printing --without-docs --with-scripts --with-cython_tracing --prefix=/usr --root=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
 popd
+
+# workaround for the prefix not being honoured:
+mv $INSTALL_ROOT/usr/local/* $INSTALL_ROOT/usr/
 
 if [ `uname` == "Linux" ]; then
 	export "GDK_BACKEND=x11"
@@ -50,6 +55,13 @@ echo "<html><head><title>fake html client</title></head><body>nothing here</body
 
 pushd $UNITTESTS_DIR
 if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
+    COVERAGE=`which coverage || which python3-coverage`
+    if [ -z "${COVERAGE}" ]; then
+      echo "python3-coverage is not installed, turning off coverage report"
+      XPRA_TEST_COVERAGE=0
+    fi
+fi
+if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
 	coverage erase
 fi
 
@@ -57,11 +69,11 @@ $PYTHON ./unit/run.py "$@"
 
 if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
 	ls -la
-	coverage combine
+	${COVERAGE} combine
 	ls -la
-	coverage report -m
+	${COVERAGE} report -m
 	ls -la
-	coverage html
+	${COVERAGE} html
 	[ "$GITHUB_ACTIONS" ] || xdg-open ./htmlcov/index.html
 fi
 popd
