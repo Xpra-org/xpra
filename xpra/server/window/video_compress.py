@@ -2037,7 +2037,7 @@ class WindowVideoSource(WindowSource):
         packet = super().make_draw_packet(x, y, w, h, coding, data, outstride, client_options, options)
         sd = self.scroll_data
         if sd and not options.boolget("scroll"):
-            if client_options.get("scaled_size") or client_options.intget("quality", 100) < 20:
+            if client_options.get("scaled_size") or client_options.get("quality", 100) < 20:
                 # don't scroll very low quality content, better to refresh it
                 scrolllog("low quality %s update, invalidating all scroll data (scaled_size=%s, quality=%s)",
                           coding, client_options.get("scaled_size"), client_options.get("quality", 100))
