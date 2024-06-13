@@ -45,10 +45,9 @@ class TransparentColorWindow(Gtk.Window):
         super().present()
 
     def do_expose_event(self, *_args):
-        cr = self.get_window().cairo_create()
-        self.area_draw(self, cr)
+        self.area_draw()
 
-    def area_draw(self, _widget, cr):
+    def area_draw(self, *_args):
         cr = self.get_window().cairo_create()
         cr.set_font_size(32)
         # Clear everything:

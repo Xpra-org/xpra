@@ -46,8 +46,7 @@ class AnimatedColorWindow(Gtk.Window):
 
     # noinspection PyTypeChecker
     def do_expose_event(self, *_args):
-        cr = self.get_window().cairo_create()
-        self.area_draw(self, cr)
+        self.area_draw()
 
     def on_press(self, _window, event):
         if event == self.last_event:
@@ -61,11 +60,12 @@ class AnimatedColorWindow(Gtk.Window):
             self.queue_draw()
         return True
 
-    def area_draw(self, widget, cr):
+    def area_draw(self, *_args):
+        cr = self.get_window().cairo_create()
         cr.set_font_size(32)
         # Clear everything:
         cr.set_operator(OPERATOR_CLEAR)
-        alloc = widget.get_allocated_size()[0]
+        alloc = self.get_allocated_size()[0]
         w, h = alloc.width, alloc.height
         cr.rectangle(0, 0, w, h)
         cr.fill()

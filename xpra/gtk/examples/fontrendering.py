@@ -57,10 +57,9 @@ class FontWindow(Gtk.Window):
         super().present()
 
     def do_expose_event(self, *_args):
-        cr = self.get_window().cairo_create()
-        self.area_draw(self, cr)
+        self.area_draw()
 
-    def area_draw(self, _widget, cr):
+    def area_draw(self, *_args):
         cr = self.get_window().cairo_create()
         layout = PangoCairo.create_layout(cr)
         pctx = layout.get_context()
