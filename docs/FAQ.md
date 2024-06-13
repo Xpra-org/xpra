@@ -17,6 +17,8 @@ Please use the [new key](https://github.com/Xpra-org/xpra/issues/3863).
 Run `apt-get update --allow-releaseinfo-change`.
 ### Debian's Aptitude says *Some index files failed to download* when updating
 See above.
+### I found a security issue
+Please [tell us](./SECURITY.md)
 
 ***
 
