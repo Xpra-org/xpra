@@ -23,6 +23,7 @@ from xpra.log import Logger
 MAX_DELTA = 7
 
 log = Logger("video")
+log.enable_debug()
 
 
 def h2b(s):
@@ -133,7 +134,6 @@ class Test_Roundtrip(unittest.TestCase):
                 encs = vh.get_encoder_specs(encoding)
                 decs = vh.get_decoder_specs(encoding)
                 for in_csc, enc_specs in encs.items():
-                    print(f"{in_csc=} {enc_specs=}")
                     for enc_spec in enc_specs:
                         if enc_spec.codec_type.startswith("nv"):
                             #cuda context is not available?
