@@ -38,6 +38,7 @@ class ExitCode(IntEnum):
     NO_DATA = 27
     AUTHENTICATION_FAILED = 28
     DEVICE_NOT_FOUND = 29
+    OPENGL_UNSAFE = 30
 
 
 ExitValue: TypeAlias = ExitCode | int

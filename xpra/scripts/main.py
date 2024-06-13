@@ -2620,7 +2620,7 @@ def run_glprobe(opts, show=False) -> ExitValue:
     import signal
 
     def signal_handler(signum, frame):
-        os._exit(1)
+        os._exit(128 - signum)
 
     for name in ("ABRT", "BUS", "FPE", "HUP", "ILL", "INT", "PIPE", "SEGV", "TERM"):
         value = getattr(signal, f"SIG{name}", 0)
@@ -2629,10 +2629,10 @@ def run_glprobe(opts, show=False) -> ExitValue:
 
     props = do_run_glcheck(opts, show)
     if not props.get("success", False):
-        return 3
+        return ExitCode.FAILURE
     if not props.get("safe", False):
-        return 2
-    return 0
+        return ExitCode.OPENGL_UNSAFE
+    return ExitCode.OK
 
 
 def do_run_glcheck(opts, show=False) -> dict[str, Any]:
