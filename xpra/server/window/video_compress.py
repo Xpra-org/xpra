@@ -2239,10 +2239,11 @@ class WindowVideoSource(WindowSource):
                 quality = min(100, quality + max(60, match_pct)//2)
                 options["quality"] = quality
             nsstart = monotonic()
+            sel_options = dict(options)
             for sy, sh in non_scroll.items():
                 substart = monotonic()
                 sub = image.get_sub_image(0, sy, w, sh)
-                encoding = self.get_best_nonvideo_encoding(w, sh, options)
+                encoding = self.get_best_nonvideo_encoding(w, sh, sel_options)
                 if not encoding:
                     raise RuntimeError(f"no nonvideo encoding found for {w}x{sh} screen update")
                 encode_fn = self._encoders[encoding]
