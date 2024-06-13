@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   unittest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
 
@@ -18,21 +18,22 @@ jobs:
                 xauth x11-xkb-utils \
                 xvfb python3-cairo python3-gi-cairo \
                 libturbojpeg-dev libwebp-dev python3-pil \
-                libx264-dev libvpx-dev libyuv-dev libavif-dev libopenh264-dev \
+                libx264-dev libvpx-dev libyuv-dev libavif-dev libopenh264-dev libspng-dev \
                 python3-dbus python3-cryptography \
                 python3-netifaces \
                 openssh-client sshpass python3-paramiko \
                 python3-setproctitle python3-xdg python3-pyinotify \
                 libpam-dev xserver-xorg-dev xutils-dev xserver-xorg-video-dummy xvfb keyboard-configuration \
-                python3-kerberos python3-gssapi \
+                python3-kerberos python3-gssapi python3-aioquic \
                 python3-gst-1.0 \
                 gstreamer1.0-pulseaudio gstreamer1.0-alsa \
                 gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
                 gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-vaapi \
                 liblz4-dev python3-lz4 \
                 libbrotli-dev \
-                libxxhash-dev \
+                libxxhash-dev libqrencode-dev \
                 python3-coverage \
+                openssl \
                 x11-xserver-utils dbus-x11
 
         # tests/unittests/run wants "coverage", but debian installs as /usr/bin/python3-coverage
@@ -41,7 +42,6 @@ jobs:
         # use pip to install cython v3:
         python -m pip install --upgrade pip
         pip install cython
-        pip install aioquic
 
     - name: "Build/Install/Test"
       run: >
