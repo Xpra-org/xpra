@@ -10,6 +10,10 @@
 # Cb and Cr (aka U and V) range from 16 to 240
 #  hence: 255/(240-16) = 1.1383928571428572
 
+# same for the offset:
+#  Y: 16/255 = 0.062745098
+#  U and V: 0.5 + 0.062745098 = 0.562745098
+
 # https://gist.github.com/yohhoy/dafa5a47dade85d8b40625261af3776a
 # Y  = a * R + b * G + c * B
 # Cb = (B - Y) / d
@@ -30,7 +34,7 @@ from xpra.codecs.constants import get_subsampling_divs
 
 GLSL_VERSION = "330 core"
 
-CS_MULTIPLIERS: dict[str, tuple[int, int, int, int, int]] = {
+CS_MULTIPLIERS: dict[str, tuple[float, float, float, float, float]] = {
     "bt601": (0.299, 0.587, 0.114, 1.772, 1.402),
     "bt709": (0.2126, 0.7152, 0.0722, 1.8556, 1.5748),
     "bt2020": (0.2627, 0.6780, 0.0593, 1.8814, 1.4746),
@@ -44,7 +48,9 @@ def gen_YUV_to_RGB(divs: Iterable[tuple[int, int]], cs="bt601", full_range=True)
     f = - c * d / b
     g = - a * e / b
     ymult = "" if full_range else " * 1.1643835616438356"
-    umult = vmult = "" if full_range else " * 1.1383928571428572"
+    uvmult = "" if full_range else " * 1.1383928571428572"
+    yoffset = "" if full_range else " - 0.062745098"
+    uvoffset = " - 0.5" if full_range else " - 0.562745098"
     defines = []
 
     def add_div(name: str, xdiv=1, ydiv=1):
@@ -76,9 +82,9 @@ layout(location = 0) out vec4 frag_color;
 void main()
 {{
     vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
-    highp float y = texture(Y, pos/Ydiv).r {ymult};
-    highp float u = (texture(U, pos/Udiv).r - 0.5) {umult};
-    highp float v = (texture(V, pos/Vdiv).r - 0.5) {vmult};
+    highp float y = (texture(Y, pos/Ydiv).r{yoffset}){ymult};
+    highp float u = (texture(U, pos/Udiv).r{uvoffset}){uvmult};
+    highp float v = (texture(V, pos/Vdiv).r{uvoffset}){uvmult};
 
     highp float r = y +           {e} * v;
     highp float g = y + {f} * u + {g} * v;

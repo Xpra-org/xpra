@@ -1080,7 +1080,10 @@ class GLWindowBackingBase(WindowBackingBase):
             flush = options.intget("flush", 0)
             w = img.get_width()
             h = img.get_height()
-            self.with_gfx_context(self.gl_paint_planar, "YUV420P_to_RGB_FULL", flush, encoding, img,
+            shader = "YUV420P_to_RGB"
+            if img.get_full_range():
+                shader += "_FULL"
+            self.with_gfx_context(self.paint_planar, shader, flush, encoding, img,
                                   x, y, w, h, width, height, options, callbacks)
             return
         if encoding == "jpeg":
@@ -1166,7 +1169,7 @@ class GLWindowBackingBase(WindowBackingBase):
                           x, y, w, h, width, height,
                           options, callbacks)
 
-    def paint_nvjpeg(self, gl_context, encoding, img_data, x: int, y: int, width: int, height: int,
+    def paint_nvjpeg(self, gl_context, encoding: str, img_data, x: int, y: int, width: int, height: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
         with self.assign_cuda_context(True):
             # we can import pycuda safely here,
@@ -1232,7 +1235,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 flush = options.intget("flush", 0)
                 w = img.get_width()
                 h = img.get_height()
-                self.with_gfx_context(self.paint_planar, f"{subsampling}_to_RGB", flush, "webp", img,
+                shader = f"{subsampling}_to_RGB"
+                if img.get_full_range():
+                    shader += "_FULL"
+                self.with_gfx_context(self.paint_planar, shader, flush, "webp", img,
                                       x, y, w, h, width, height, options, callbacks)
                 return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
@@ -1246,7 +1252,10 @@ class GLWindowBackingBase(WindowBackingBase):
         w = img.get_width()
         h = img.get_height()
         if pixel_format.startswith("YUV"):
-            self.with_gfx_context(self.paint_planar, f"{pixel_format}_to_RGB_FULL", flush, "avif", img,
+            shader = f"{pixel_format}_to_RGB"
+            if img.get_full_range():
+                shader += "_FULL"
+            self.with_gfx_context(self.paint_planar, shader, flush, "avif", img,
                                   x, y, w, h, width, height, options, callbacks)
         else:
             self.ui_paint_rgb(pixel_format, img.get_pixels(), x, y, w, h, width, height,
