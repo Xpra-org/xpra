@@ -1,7 +1,36 @@
 # Changelog
 
-## [6.0.2] 2024-05-28
-* TODO
+## [6.0.2] 2024-06-13
+* Platforms, build and packaging:
+    * [revision number not detected in RPM spec file](https://github.com/Xpra-org/xpra/commit/767a66a3509e10f2e20135b076b42c2bc5766b36)
+    * [MacOS pixbuf crash on launch](https://github.com/Xpra-org/xpra/commit/6ca3172fa02b6059cd002400e65c69eb52ddbebd)
+    * [add security warning about downstream packages](https://github.com/Xpra-org/xpra/commit/7ff4ff3152e7b8e9a376a2298c2637be2b539e30)
+    * [new unavoidable clang build warning on MacOS](https://github.com/Xpra-org/xpra/commit/2fdcaf85f49a8d6391d977e7f7bb8330912454a6)
+    * [server built `--without-http` does not start](https://github.com/Xpra-org/xpra/commit/afdf70b01da5f2bf69a202c02e50fd958cb264d1)
+    * [missing QUIC transport in MS Windows builds](https://github.com/Xpra-org/xpra/commit/f8c9bea697accc7f9e4a685a803fc06413033e99)
+    * [unnecessary DEB dependency on unused `python3-yaml`](https://github.com/Xpra-org/xpra/commit/6438759d23447ef8b7110c041616d526f9f1c755)
+    * [`pyopengl` builds for Python 3.13](https://github.com/Xpra-org/xpra/commit/872ccd669b48e74737089806c53c0a257c9d6222)
+* Major:
+    * [connection failures when server is still initializing](https://github.com/Xpra-org/xpra/commit/0e7bb07349721244c0cc6c00aa14b5293f27cd64)
+* Minor:
+    * [allow printing with more socket authenication modules](https://github.com/Xpra-org/xpra/commit/1083c27f46cdb196ed39c2d1e62d61d595f44af9)
+    * [map Visual Studio Code to `text`](https://github.com/Xpra-org/xpra/commit/dbd90105e55dbdfdd8b71d1ebd34e4393de6f7b4) (partial fix)
+    * [isolate failures to show or hide a window](https://github.com/Xpra-org/xpra/commit/cf843fcc6936b8d40bc53138146530cf13ac4e7e)
+    * [only reparent windows if needed](https://github.com/Xpra-org/xpra/commit/6463e46506ab702954f3b19397e653310c02580f) [but always send `ConfigureNotify`](https://github.com/Xpra-org/xpra/commit/0e62bffd736263eb73739a3c9a5a0f12fefd4991)
+    * [full self-tests for `jpeg` decoder](https://github.com/Xpra-org/xpra/commit/e8274721943ca55bd0ddfa0f82d7f425878dcb5f)
+    * [first video frame number is 1](https://github.com/Xpra-org/xpra/commit/d70a762335fefff484e8c831f7f31e5a9334dc62)
+    * [rendering of some toolbox test applications](https://github.com/Xpra-org/xpra/commit/4f1e8258a183214e971b945c9f3ab05c77341768)
+* Cosmetic / correctness:
+    * [correct type for clipboard default arguments](https://github.com/Xpra-org/xpra/commit/6337aec99e6e32b2c58e97ea5812274abfa2d012)
+    * [decode pam authentication failure message](https://github.com/Xpra-org/xpra/commit/60aa4f0930369255a74fc412b553c90a19057d83) [and error](https://github.com/Xpra-org/xpra/commit/542d888e29e186eaf8a2d1326552c8b291ac807a)
+    * [syntax error in `set_source_version` script](https://github.com/Xpra-org/xpra/commit/877cda8a01eff31c0756d80db6ffab93d0fea03d)
+    * [log init thread failure details](https://github.com/Xpra-org/xpra/commit/9b01a21e8e96c98b1c37a30517f3c108ca2638ed)
+    * [blacklist the `llvmpipe` software renderer](https://github.com/Xpra-org/xpra/commit/da73d5c99e5f8ce654968ce7ee6a766502f8c257) [but probe server opengl properties anyway](https://github.com/Xpra-org/xpra/commit/971b3da820a25ff080a9faae3bde3eafd180ade8)
+    * [no need to clear X11 damage of unmanaged windows](https://github.com/Xpra-org/xpra/commit/a5130a4c65e7429fa7633f449a5944eac205261b)
+    * [match function signature](https://github.com/Xpra-org/xpra/commit/e55177653f0ba69bcaa7b8fe60324a262036ee51)
+    * [bump openh264 bitstream level](https://github.com/Xpra-org/xpra/commit/f6b854f3e47efc63de92a5c85d9dae10aa417d17)
+    * [openh264 encoder should set the frame number](https://github.com/Xpra-org/xpra/commit/c7fdf74002cd1204017728155d826c5ab5d866d4)
+    * [avoid warning when running the tray test application](https://github.com/Xpra-org/xpra/commit/23be61b820049cafb2b87ff6c3e4daaf964b2c0c)
 
 ## [6.0.1] 2024-05-23
 * Platforms, build and packaging:
