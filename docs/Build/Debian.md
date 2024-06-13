@@ -4,7 +4,7 @@ The debian packaging files can be found here: [packaging/debian](https://github.
 
 Debian and Ubuntu also ships xpra packages, though their _stable_ versions are completely out of date, broken and unsupported, [they should not be used](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
 
-For general information, see [building](./README.md).
+For general information, see [building](README.md).
 
 ## Build requirements
 The easiest way to install the build dependencies

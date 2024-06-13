@@ -1,6 +1,6 @@
 ![OpenGL](../images/icons/opengl.png)
 
-This documentation is about running OpenGL _applications_ in an xpra session and this has nothing to do with the [client's opengl acceleration](./Client-OpenGL.md).
+This documentation is about running OpenGL _applications_ in an xpra session and this has nothing to do with the [client's opengl acceleration](Client-OpenGL.md).
 
 By default, OpenGL applications are supported, but they are executed in a virtual framebuffer context which uses a software renderer, and therefore without any GPU acceleration.
 
@@ -19,7 +19,7 @@ xpra start --exec-wrapper="vglrun" --start="glxgears"
 ```
 
 * ## via WSL - Windows Subsystem for Linux
-See [WSL - Windows Subsystem for Linux](./WSL.md) OpenGL acceleration.
+See [WSL - Windows Subsystem for Linux](WSL.md) OpenGL acceleration.
 
 * ## via Xwayland
 From within an X11 session, you can use start the Weston Wayland compositor, then start Xwayland and the xpra server with the `-use-display` option:
@@ -31,8 +31,8 @@ xpra start :20 --use-display
 
 
 * ## Shadowing
-If the GPU is driving an existing display, you can [shadow](./Shadow.md) it.\
-The limitation here is that the performance of shadow sessions is inferior to [seamless](./Seamless.md) and [desktop](./Desktop.md) sessions.
+If the GPU is driving an existing display, you can [shadow](Shadow.md) it.\
+The limitation here is that the performance of shadow sessions is inferior to [seamless](Seamless.md) and [desktop](Desktop.md) sessions.
 
 
 * ## Taking over an existing display

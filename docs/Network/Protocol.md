@@ -1,6 +1,6 @@
 # ![Protocol](../images/icons/connect.png) Protocol
 
-See also: [network layer](../).
+See also: [network layer](README.md).
 
 Every packet exchanged between xpra servers and clients
 must follow exactly the same format: an 8 byte header followed by
@@ -39,7 +39,7 @@ The _protocol flags_ is an 8-bit bitmask value.
 It must contain the value `16` for `rencodeplus` packet data. Other values are no longer supported.  
 This value can then be ORed with:
 * `8` to set the `flush` flag which notifies the packet layer that there aren't any other packets immediately following this one
-* `2` to set the `cipher` flag for [AES encrypted packets](./AES.md)
+* `2` to set the `cipher` flag for [AES encrypted packets](AES.md)
 
 ### Compression Level
 

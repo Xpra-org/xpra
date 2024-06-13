@@ -1,6 +1,6 @@
 # ![sound](../images/icons/sound.png) Audio
 
-Unless you disable audio forwarding, you can start and stop it from the [system tray](./System-Tray.md) at any time.
+Unless you disable audio forwarding, you can start and stop it from the [system tray](System-Tray.md) at any time.
 
 The client and server will negotiate which codec to use. The most widely tested and supported codecs are [opus](http://opus-codec.org/), [vorbis](http://www.vorbis.com/), [flac](https://xiph.org/flac/) and mp3.
 

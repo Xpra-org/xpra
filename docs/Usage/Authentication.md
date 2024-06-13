@@ -3,9 +3,9 @@
 Xpra's authentication modules can be useful for:
 * securing socket connections
 * making the unix domain socket accessible to other users safely
-* using the [proxy server](./Proxy-Server.md)
+* using the [proxy server](Proxy-Server.md)
 
-For more information on the different types of connections, see [network](../Network/README.md). For more generic security information, please see [security considerations](./Security.md)
+For more information on the different types of connections, see [network](../Network/README.md). For more generic security information, please see [security considerations](Security.md)
 
 SSL mode can also be used for authentication using certificates (see #1252)
 
@@ -15,7 +15,7 @@ When using [SSH](../Network/SSH.md) to connect to a server, [encryption](../Netw
 
 ## Server Syntax
 Starting with version 4.0, the preferred way of specifying authentication is within the socket option itself. \
-ie for starting a [seamless](./Seamless.md) server with a `TCP` socket protected by a password stored in a `file`:
+ie for starting a [seamless](Seamless.md) server with a `TCP` socket protected by a password stored in a `file`:
 ```shell
 xpra start --start=xterm -d auth
      --bind-tcp=0.0.0.0:10000,auth=file:filename=password.txt
@@ -121,7 +121,7 @@ xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt -
 ### Password File
 
 * with the `file` module, the password-file contains a single password, the whole file is the password (including any trailing newline characters). To write a password to a file without the trailing newline character, you can use `echo -n "thepassword" > password.txt`
-* with `multifile`, the password-file contains a list of authentication values, see [proxy server](./Proxy-Server) - this module is deprecated in favour of the `sqlite` module which is much easier to configure
+* with `multifile`, the password-file contains a list of authentication values, see [proxy server](Proxy-Server) - this module is deprecated in favour of the `sqlite` module which is much easier to configure
 
 ### Usernames
 The username can be specified:
@@ -152,7 +152,7 @@ xpra attach tcp://foobar:password@host:port/
 Only the following modules will make use of both the username and password to authenticate against their respective backend: `kerberos-password`, `ldap`, `ldap3`, `sys` (`pam` and `win32`), `sqlite`, `multifile` and `u2f`.
 In this case, using an invalid username will cause the authentication to fail.
 
-The username is usually more relevant when authenticating against a [proxy server](./Proxy-Server.md) (see authentication details there).
+The username is usually more relevant when authenticating against a [proxy server](Proxy-Server.md) (see authentication details there).
 
 
 ***
@@ -177,7 +177,7 @@ The steps below assume that the client and server have been configured to use au
 * encryption is processed before authentication
 * when used over TCP sockets, password authentication is vulnerable to man-in-the-middle attacks where an attacker could intercept the initial exchange and use the stolen authentication challenge response to access the session, [encryption](../Network/Encryption.md) prevents that
 * the client does not verify the authenticity of the server, using [encryption](../Network/Encryption.md) effectively does
-* enabling `auth` [debug logging](./Logging.md) may leak some authentication information
+* enabling `auth` [debug logging](Logging.md) may leak some authentication information
 * if you are concerned about security, use [SSH](../Network/SSH.md) as transport instead
 
 For more information on packets, see [network](../Network/README.md).

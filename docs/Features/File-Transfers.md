@@ -1,6 +1,6 @@
 # ![Upload](../images/icons/upload.png) File Transfers
 
-This feature shares most of the code with [printer forwarding](./Printing.md).
+This feature shares most of the code with [printer forwarding](Printing.md).
 
 This is not meant to replace a network filesystem, it is only there to facilitate the transfer of individual files between the client and server.
 

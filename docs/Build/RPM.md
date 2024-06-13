@@ -18,7 +18,7 @@ https://github.com/Xpra-org/xpra/tree/master/packaging/rpm/xpra.spec
 ```shell
 dnf builddep xpra.spec
 ```
-You may also refer to the more generic list of [dependencies](./Dependencies.md)
+You may also refer to the more generic list of [dependencies](Dependencies.md)
 
 Alternatively, if you want to install a more limited set of build dependencies,
 you can use the `dev-env` build subcommand which will honour setup arguments. ie:

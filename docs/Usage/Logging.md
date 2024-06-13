@@ -58,7 +58,7 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 | paint                                | client window paint code                                           |
 | draw                                 | client draw packets processing                                     |
 | cairo                                | calls to the cairo drawing library                                 |
-| opengl                               | [OpenGL rendering](./Client-OpenGL.md)                             |
+| opengl                               | [OpenGL rendering](Client-OpenGL.md)                             |
 | info                                 | `About` and `Session info` dialogs                                 |
 | launcher                             | client launcher program                                            |
 | **General:**                         |                                                                    |
@@ -90,7 +90,7 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 | grab                                 | window grabs (both keyboard and mouse)                             |
 | dragndrop                            | window drag-n-drop events                                          |
 | filters                              | window filters                                                     |
-| **[Encoding](./Encodings.md):**      |                                                                    |
+| **[Encoding](Encodings.md):**      |                                                                    |
 | codec                                | all codecs                                                         |
 | loader                               | codec loader                                                       |
 | video                                | video encoding and decoding                                        |
@@ -103,7 +103,7 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 | regionrefresh                        | video region refresh                                               |
 | refresh                              | refresh of lossy screen updates                                    |
 | compress                             | pixel compression                                                  |
-| **[Codec](./Encodings.md):**         |                                                                    |
+| **[Codec](Encodings.md):**         |                                                                    |
 | csc                                  | colourspace conversion codecs                                      |
 | cuda                                 | CUDA device access (nvenc)                                         |
 | cython                               | Cython CSC module                                                  |
@@ -140,12 +140,12 @@ The full list of categories can be shown using `xpra -d help`, to see this list 
 | websocket                            | WebSocket layer                                                    |
 | named-pipe                           | Named pipe                                                         |
 | crypto                               | [encryption](../Network/Encryption.md)                             |
-| auth                                 | [authentication](./Authentication.md)                              |
+| auth                                 | [authentication](Authentication.md)                              |
 | upnp                                 | UPnP                                                               |
 | **Server:**                          |                                                                    |
 | server                               | all server code                                                    |
-| proxy                                | [proxy server](./Proxy-Server.md)                                  |
-| shadow                               | [shadow server](./Shadow.md)                                       |
+| proxy                                | [proxy server](Proxy-Server.md)                                  |
+| shadow                               | [shadow server](Shadow.md)                                       |
 | command                              | server control channel                                             |
 | timeout                              | server timeouts                                                    |
 | exec                                 | executing commands                                                 |
