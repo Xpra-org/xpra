@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.9] 2023-05-31
+## [5.0.9] 2023-06-13
 * Encodings:
     * [video encoding errors causing missed screen updates](https://github.com/Xpra-org/xpra/commit/188e9903754e1abc8cd86ecd65bf9427000e7012)
     * [drop alpha if requested](https://github.com/Xpra-org/xpra/commit/6e1934575cabc412782616704bb4ee24b5f36930) and [for video encoders](https://github.com/Xpra-org/xpra/commit/3cbdccbcdd9be7fdf6eabb67b322e612852f108c)
@@ -45,8 +45,15 @@
     * [help video decodes with colorspace metadata](https://github.com/Xpra-org/xpra/commit/288a2a5bd8def111efa72eed29eaa24763de3286)
     * [handle decoding of full-range YUV](https://github.com/Xpra-org/xpra/commit/8427da4d6219d74ec7fe075ffbb9feb6949972f8)
     * [`sync-xvfb` requires cairo](https://github.com/Xpra-org/xpra/commit/20ef5ce0f29cb839d428d78c759c35f80b46af8e)
-    * [blacklist `llvmpipe` software OpenGL renderer](https://github.com/Xpra-org/xpra/commit/1055dc14b112e5907e09fa5bea34894a261a3139)
+    * [blacklist `llvmpipe` software OpenGL renderer](https://github.com/Xpra-org/xpra/commit/1055dc14b112e5907e09fa5bea34894a261a3139) [but probe server opengl properties anyway](https://github.com/Xpra-org/xpra/commit/b7beadf2ee32198719145463839166fb8e30a106)
     * [allow printing with more socket authentication modules](https://github.com/Xpra-org/xpra/commit/0f73968a69d2a1867635c48d6eb68bf949981775)
+    * [map Visual Studio Code to `text`](https://github.com/Xpra-org/xpra/commit/431eca8468dc41c892c21840972ae81d2327dd21)
+    * [isolate failures to show or hide a window](https://github.com/Xpra-org/xpra/commit/9087d1bc684a0a6da4a40206d53fe5497acc22c0)
+    * [bump openh264 bitstream level](https://github.com/Xpra-org/xpra/commit/16278362c0a417cc4df810b41c738f9bdeab8654)
+    * [only reparent windows if needed](https://github.com/Xpra-org/xpra/commit/0356c81c1529c139532f8177f8070afa0d453c29) [but always send `ConfigureNotify`](https://github.com/Xpra-org/xpra/commit/91f1a0b03440c291f53eee836d599931dd06dc60)
+    * [full self-tests for `jpeg` decoder](https://github.com/Xpra-org/xpra/commit/df2c2e77f76d0924962b025c72269f97f3727664)
+    * [first video frame number is 1](https://github.com/Xpra-org/xpra/commit/01eac63eff9212d6bfc615e92b32cd66bde27ce1)
+    * [openh264 encoder should set the frame number](https://github.com/Xpra-org/xpra/commit/96fdb7ca2252acd8023ddf0dfaea3c869c9a3aea)
 * Cosmetic:
     * [clearer audio error message](https://github.com/Xpra-org/xpra/commit/7adc99fa9143d60e0c8cd7886eb7bdc576373db1)
     * [clearer ssh error message](https://github.com/Xpra-org/xpra/commit/83750ca62606878a01303257b87119ac4dca62ab)
@@ -71,6 +78,8 @@
     * [pam authentication error messages](https://github.com/Xpra-org/xpra/commit/138f934a72758292bda5fc5230e5625dcdf0af1b), [twice](https://github.com/Xpra-org/xpra/commit/10c6be61a9965c2d1de30cdab61f7bb0dd241240)
     * [prevent future MacOS Gdk Pixbuf path errors](https://github.com/Xpra-org/xpra/commit/8ab8168732076f40c1a686462b2fa82969cb0b3b)
     * [log full details with all threaded initialization errors](https://github.com/Xpra-org/xpra/commit/4448bb0643c4b5aeea9f01533aa2a68202880c55)
+    * [match function signature](https://github.com/Xpra-org/xpra/commit/534aec50b9d8b3646f2e4701983bc9b0a2a2895a)
+
 
 ## [5.0.8] 2024-04-03
 * Platforms, build and packaging:
