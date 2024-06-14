@@ -30,7 +30,10 @@ $PYTHON ./setup.py install --without-nvidia --without-printing --without-docs --
 popd
 
 # workaround for the prefix not being honoured:
-mv $INSTALL_ROOT/usr/local/* $INSTALL_ROOT/usr/
+if [ -d "$INSTALL_ROOT/usr/local" ]; then
+    mv $INSTALL_ROOT/usr/local/* $INSTALL_ROOT/usr/
+    rmdir "$INSTALL_ROOT/usr/local"
+fi
 
 if [ `uname` == "Linux" ]; then
 	export "GDK_BACKEND=x11"
