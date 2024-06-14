@@ -1,7 +1,7 @@
 Use this option if you can securely distribute the AES key to each client.\
-It is somewhat similar to [SSL](SSL.md) mode with a self-signed certificate.
+It is somewhat similar to [SSL](./SSL.md) mode with a self-signed certificate.
 
-Xpra's AES [encryption](Encryption.md) layer uses the [python cryptography](https://pypi.python.org/pypi/cryptography) library to encrypt the network packets with [AES-256 - Advanced Encryption Standard](http://en.wikipedia.org/wiki/Advanced_Encryption_Standard) in [CBC - Cipher Block Chaining](http://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher-block_chaining_.28CBC.29), [GCM - Galois/Counter Mode](https://en.wikipedia.org/wiki/Galois/Counter_Mode), [CTR - Counter Mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR)) or [CFB - Cipher_feedback](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)).
+Xpra's AES [encryption](./Encryption.md) layer uses the [python cryptography](https://pypi.python.org/pypi/cryptography) library to encrypt the network packets with [AES-256 - Advanced Encryption Standard](http://en.wikipedia.org/wiki/Advanced_Encryption_Standard) in [CBC - Cipher Block Chaining](http://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher-block_chaining_.28CBC.29), [GCM - Galois/Counter Mode](https://en.wikipedia.org/wiki/Galois/Counter_Mode), [CTR - Counter Mode](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Counter_(CTR)) or [CFB - Cipher_feedback](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation#Cipher_feedback_(CFB)).
 
 The encryption key can be stored in a keyfile or specified using the `keydata` socket option. If neither is present and an authentication module was used, the password will be used as key data.\
 The key data is stretched using [PBKDF2](http://en.wikipedia.org/wiki/PBKDF2)(Password-Based Key Derivation Function 2).\

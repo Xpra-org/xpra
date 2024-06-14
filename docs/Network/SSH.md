@@ -1,6 +1,6 @@
 # ![SSH](../images/icons/ssh.png) SSH Transport
 
-See also [network](README.md)
+See also [network](./README.md)
 
 ***
 

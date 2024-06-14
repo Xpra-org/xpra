@@ -8,7 +8,7 @@ All window management operations are handled directly by the client's operating 
 which means that any latency between client and server does not get in the way of window management actions like minimizing,
 moving or resizing the windows.\
 This makes a huge difference in usability when compared to other modes
-([desktop](Desktop.md) and [shadow](Shadow.md)) and other remote desktop solutions like `VNC`.
+([desktop](./Desktop.md) and [shadow](./Shadow.md)) and other remote desktop solutions like `VNC`.
 
 Obviously, this also means that unlike `VNC`, the remote windows are not trapped within a single desktop window.
 Except with the [html5 client](https://github.com/Xpra-org/xpra-html5) where the windows must still be contained within the browser's canvas.

@@ -34,7 +34,7 @@ You can select the pseudo-encoding using the `--encoding=ENC` switch.
 | `jpeg`   | 24                                       | fast            | easy to support                                                             |
 | `avif`   | 24                                       | average         | limited support                                                             |
 | `png`    | 24 / 32                                  | slow            | easy to support                                                             |
-| `png/P`  | 8                                        | slow            | only useful for 8-bit [desktop mode](Desktop.md)                          |
+| `png/P`  | 8                                        | slow            | only useful for 8-bit [desktop mode](./Desktop.md)                          |
 | `png/L`  | 8                                        | slow            | greyscale                                                                   |
 </details>
 <details>
@@ -60,7 +60,7 @@ Xpra ships the following encoder modules:
 |-----------------------|---------------------|-----------------------------|
 | `vpx`                 | `vp8`, `vp9`        |
 | `x264`                | `h264`              | fast                        |
-| [`nvenc`](NVENC.md) | `h264`, `hevc`      | fastest (requires hardware) |
+| [`nvenc`](./NVENC.md) | `h264`, `hevc`      | fastest (requires hardware) |
 
 Which encodings are actually supported by each encoder may vary, depending on the version used, the build options, hardware capabilities, etc.
 
@@ -164,7 +164,7 @@ Using lower values costs more CPU, which reduces bandwidth consumption but may a
 <details>
   <summary>Best</summary>
 
-The best possible setup is to use [NVENC](NVENC.md) or another hardware encoder supported by `libva`: hardware encoders compress very well and do so incredibly fast.
+The best possible setup is to use [NVENC](./NVENC.md) or another hardware encoder supported by `libva`: hardware encoders compress very well and do so incredibly fast.
 </details>
 <details>
   <summary>Further reading!</summary>

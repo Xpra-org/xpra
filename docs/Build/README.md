@@ -2,11 +2,11 @@
 
 ## Platform specific instructions:
 Please refer to the instructions most appropriate for your build platform:
-* [Fedora, CentOS / RHEL](RPM.md)
-* [Debian and Ubuntu](Debian.md)
-* [MS Windows](MSWindows.md)
-* [MacOS](MacOS.md)
-* [Others](Other.md)
+* [Fedora, CentOS / RHEL](./RPM.md)
+* [Debian and Ubuntu](./Debian.md)
+* [MS Windows](./MSWindows.md)
+* [MacOS](./MacOS.md)
+* [Others](./Other.md)
 
 
 ## Download the xpra source code
@@ -16,7 +16,7 @@ Use one of the following locations:
 * `xpra.org`: https://xpra.org/src/ (releases only)
 
 ## Build
-First, make sure that all the required [dependencies](Dependencies.md) are installed, then:
+First, make sure that all the required [dependencies](./Dependencies.md) are installed, then:
 ```shell
 git clone https://github.com/Xpra-org/xpra
 cd xpra

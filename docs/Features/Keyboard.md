@@ -21,7 +21,7 @@ The exact key `#` stands for varies by platform and can be overriden in configur
 
 In the Xpra Keyboard Shortcuts window, the `#` placeholder is named as "Prefix:":
 
-![The Xpra Keyboard Shortcuts window as of v5.0.5-r27 in Ubuntu 20.04](Keyboard-Shortcut-Window.png "Xpra Keyboard Shortcuts Window in Ubuntu 20.04")
+![The Xpra Keyboard Shortcuts window as of v5.0.5-r27 in Ubuntu 20.04](./Keyboard-Shortcut-Window.png "Xpra Keyboard Shortcuts Window in Ubuntu 20.04")
 
 ## Common Issues
 * When connecting over high latency links, use the `--no-keyboard-sync` option to prevent keys from repeating.

@@ -2,7 +2,7 @@
 
 The native client can use OpenGL for better window rendering performance.
 
-This is in no way related to the [OpenGL capabilities of the server](OpenGL.md).
+This is in no way related to the [OpenGL capabilities of the server](./OpenGL.md).
 
 
 # Configuration
@@ -18,7 +18,7 @@ The client will only actually enable this acceleration for some windows as OpenG
 # Benefits
 The window's pixels are kept in GPU buffers and so re-painting the window can be done quickly and efficiently.
 
-Some screen updates, in particular for some of the [video codecs](Encodings.md), can also be processed directly on the GPU - at least partially.
+Some screen updates, in particular for some of the [video codecs](./Encodings.md), can also be processed directly on the GPU - at least partially.
 
 
 # GPUs and drivers

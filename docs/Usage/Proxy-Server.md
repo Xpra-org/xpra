@@ -4,19 +4,19 @@ The proxy server is used for starting or accessing multiple xpra sessions throug
 
 This can be useful for hosts that have a limited number of publicly accessible ports or for clients accessing servers through firewalls with outbound port filtering. (ie: you can put the server on port 80 or 443 and access many sessions from this single port)
 
-When started as `root`, which is the case when the proxy server runs as a [system service](Service.md), this can also help to ensure that the sessions outlive the environment they were started from.
+When started as `root`, which is the case when the proxy server runs as a [system service](./Service.md), this can also help to ensure that the sessions outlive the environment they were started from.
 
-Alternatively, you can use an [apache proxy server](Apache-Proxy.md).
+Alternatively, you can use an [apache proxy server](./Apache-Proxy.md).
 
 
 ## Configuration
-Depending on the [authentication](Authentication.md) module configured, the proxy server can:
+Depending on the [authentication](./Authentication.md) module configured, the proxy server can:
 * expose all the local sessions and start new ones (this is the default behaviour)
 * provide access to a custom list of sessions (ie: using the `sqlite` authentication module)
 
 
 ## GPU Accelerated Transcoding
-If the proxy server has access to a hardware accelerated encoding device (ie: [NVENC](NVENC.md)) and the servers it proxies do not, then it can automatically be used for speeding up screen update compression. (details in [#504](https://github.com/Xpra-org/xpra/issues/504))
+If the proxy server has access to a hardware accelerated encoding device (ie: [NVENC](./NVENC.md)) and the servers it proxies do not, then it can automatically be used for speeding up screen update compression. (details in [#504](https://github.com/Xpra-org/xpra/issues/504))
 
 
 ## Diagram
@@ -133,7 +133,7 @@ Further notes:
 
 ## Username Matters
 The proxy server can also be used to expose all local sessions dynamically.\
-This is what the [system service](Service.md) (aka "system-wide proxy server") does.
+This is what the [system service](./Service.md) (aka "system-wide proxy server") does.
 
 In this case, the username, uid and gid are used to locate all the sessions for the user once it has authenticated, in the same way that a user can list sessions by running `xpra list`.
 This type of proxy server usually runs as root to be able to access the sessions for multiple users.
