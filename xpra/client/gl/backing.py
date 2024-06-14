@@ -1318,10 +1318,10 @@ class GLWindowBackingBase(WindowBackingBase):
             log("Error in %s paint of %i bytes, options=%s", rgb_format, len(img_data), options, exc_info=True)
         fire_paint_callbacks(callbacks, False, message)
 
-    def do_video_paint(self, img,
+    def do_video_paint(self, coding: str, img,
                        x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
                        options: typedict, callbacks: Iterable[Callable]):
-        log("do_video_paint%s", (x, y, enc_width, enc_height, width, height, options, callbacks))
+        log("do_video_paint%s", (coding, img, x, y, enc_width, enc_height, width, height, options, callbacks))
         if not zerocopy_upload or FORCE_CLONE:
             # copy so the data will be usable (usually a str)
             img.clone_pixel_data()
@@ -1338,7 +1338,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if pixel_format in ("GBRP10", "YUV444P10"):
             # call superclass to handle csc
             # which will end up calling paint rgb with r210 data
-            super().do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
+            super().do_video_paint(coding, img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
         shader = f"{pixel_format}_to_RGB"
         if img.get_full_range():

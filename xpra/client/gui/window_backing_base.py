@@ -527,7 +527,7 @@ class WindowBackingBase:
     def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
                    options: typedict, callbacks: Iterable[Callable]):
         img = self.avif_decoder.decompress(img_data, options)
-        self.paint_image_wrapper(img)
+        self.paint_image_wrapper("avif", img, x, y, width, height, options, callbacks)
 
     def paint_pillow(self, coding: str, img_data, x: int, y: int, width: int, height: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
@@ -582,7 +582,7 @@ class WindowBackingBase:
         if rgb_format in ("NV12", "YUV420P"):
             # jpeg may be decoded to these formats by nvjpeg / nvdec
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
-            self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
+            self.do_video_paint(encoding, img, x, y, enc_width, enc_height, width, height, options, callbacks)
             return
         if img.get_planes() > 1:
             raise ValueError(f"cannot handle {img.get_planes()} in this backend")
@@ -794,11 +794,11 @@ class WindowBackingBase:
                 return
 
             x, y = self.gravity_adjust(x, y, options)
-            self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
+            self.do_video_paint(coding, img, x, y, enc_width, enc_height, width, height, options, callbacks)
         if self._backing is None:
             self.close_decoder(True)
 
-    def do_video_paint(self, img, x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
+    def do_video_paint(self, coding: str, img, x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
                        options: typedict, callbacks: Iterable[Callable]) -> None:
         target_rgb_formats = self.get_rgb_formats()
         # as some video formats like vpx can forward transparency
@@ -839,7 +839,7 @@ class WindowBackingBase:
             raise RuntimeError(f"invalid number of planes for {rgb_format}: {rgb.get_planes()}")
 
         # this will also take care of firing callbacks (from the UI thread):
-        self.paint_image_wrapper(rgb, x, y, width, height, options, callbacks)
+        self.paint_image_wrapper(coding, rgb, x, y, width, height, options, callbacks)
 
     def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
