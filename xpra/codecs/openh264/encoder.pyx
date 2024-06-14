@@ -617,8 +617,8 @@ cdef class Encoder:
             bdata = data[0]
         else:
             bdata = b"".join(data)
-        log(f"openh264 compress_image: {len(bdata)} bytes")
         self.frames += 1
+        log(f"openh264 compress_image: {len(bdata)} bytes for frame {self.frames}")
         return bdata, {
             "frame": self.frames,
         }
