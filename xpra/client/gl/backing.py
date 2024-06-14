@@ -1064,40 +1064,27 @@ class GLWindowBackingBase(WindowBackingBase):
                       options: typedict, callbacks: Iterable[Callable]) -> None:
         if width >= 16 and height >= 16:
             if self.nvjpeg_decoder and NVJPEG:
-                def paint_nvjpeg(gl_context):
+                def paint_nvjpeg(gl_context) -> None:
                     self.paint_nvjpeg(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
 
                 self.with_gfx_context(paint_nvjpeg)
                 return
             if self.nvdec_decoder and NVDEC and encoding in self.nvdec_decoder.get_encodings():
-                def paint_nvdec(gl_context):
+                def paint_nvdec(gl_context) -> None:
                     self.paint_nvdec(gl_context, encoding, img_data, x, y, width, height, options, callbacks)
 
                 self.with_gfx_context(paint_nvdec)
                 return
         if JPEG_YUV and width >= 2 and height >= 2 and encoding == "jpeg":
             img = self.jpeg_decoder.decompress_to_yuv(img_data, options)
-            flush = options.intget("flush", 0)
-            w = img.get_width()
-            h = img.get_height()
-            shader = "YUV420P_to_RGB"
-            if img.get_full_range():
-                shader += "_FULL"
-            self.with_gfx_context(self.paint_planar, shader, flush, encoding, img,
-                                  x, y, w, h, width, height, options, callbacks)
-            return
-        if encoding == "jpeg":
+        elif encoding == "jpeg":
             img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data)
         elif encoding == "jpega":
             alpha_offset = options.intget("alpha-offset", 0)
             img = self.jpeg_decoder.decompress_to_rgb("BGRA", img_data, alpha_offset)
         else:
             raise ValueError(f"invalid encoding {encoding}")
-        w = img.get_width()
-        h = img.get_height()
-        rgb_format = img.get_pixel_format()
-        self.ui_paint_rgb(rgb_format, img.get_pixels(), x, y, w, h, width, height,
-                          img.get_rowstride(), options, callbacks)
+        self.paint_image_wrapper(encoding, img, x, y, width, height, options, callbacks)
 
     def cuda_buffer_to_pbo(self, gl_context, cuda_buffer, rowstride: int, src_y: int, height: int, stream):
         # must be called with an active cuda context, and from the UI thread
@@ -1161,11 +1148,10 @@ class GLWindowBackingBase(WindowBackingBase):
                 cuda_buffer.free()
             img.set_pixels((y_pbo, uv_pbo))
 
-        flush = options.intget("flush", 0)
         w = img.get_width()
         h = img.get_height()
         options["pbo"] = True
-        self.paint_planar(context, "NV12_to_RGB", flush, encoding, img,
+        self.paint_planar(context, "NV12_to_RGB", encoding, img,
                           x, y, w, h, width, height,
                           options, callbacks)
 
@@ -1232,40 +1218,35 @@ class GLWindowBackingBase(WindowBackingBase):
             # validate dimensions:
             if not has_alpha and width >= 2 and height >= 2:
                 img = webp_decoder.decompress_to_yuv(img_data, options, has_alpha)
-                flush = options.intget("flush", 0)
-                w = img.get_width()
-                h = img.get_height()
-                shader = f"{subsampling}_to_RGB"
-                if img.get_full_range():
-                    shader += "_FULL"
-                self.with_gfx_context(self.paint_planar, shader, flush, "webp", img,
-                                      x, y, w, h, width, height, options, callbacks)
+                self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
                 return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
 
     def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
         alpha = options.boolget("alpha")
-        img = self.avif_decoder.decompress(img_data, options, yuv=not alpha)
+        image = self.avif_decoder.decompress(img_data, options, yuv=not alpha)
+        self.paint_image_wrapper("avif", image, x, y, width, height, options, callbacks)
+
+    def do_paint_image_wrapper(self, context, encoding: str, img, x: int, y: int, width: int, height: int,
+                               options: typedict, callbacks: Iterable[Callable]) -> None:
+        # overridden to handle YUV using shaders:
         pixel_format = img.get_pixel_format()
-        flush = options.intget("flush", 0)
-        w = img.get_width()
-        h = img.get_height()
         if pixel_format.startswith("YUV"):
+            w = img.get_width()
+            h = img.get_height()
             shader = f"{pixel_format}_to_RGB"
             if img.get_full_range():
                 shader += "_FULL"
-            self.with_gfx_context(self.paint_planar, shader, flush, "avif", img,
-                                  x, y, w, h, width, height, options, callbacks)
-        else:
-            self.ui_paint_rgb(pixel_format, img.get_pixels(), x, y, w, h, width, height,
-                              img.get_rowstride(), options, callbacks)
+            self.paint_planar(shader, encoding, img, x, y, w, h, width, height, options, callbacks)
+            return
+        super().do_paint_image_wrapper(context, encoding, img, x, y, width, height, options, callbacks)
 
-    def do_paint_rgb(self, context, rgb_format: str, img_data,
+    def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
-        log("%s.do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
-            self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
+        log("%s.do_paint_rgb(%s, %s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
+            self, encoding, rgb_format, len(img_data), x, y, width, height, rowstride, options)
         x, y = self.gravity_adjust(x, y, options)
         if not context:
             log("%s.do_paint_rgb(..) no context!", self)
@@ -1322,7 +1303,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
             glBindTexture(target, 0)
 
-            self.paint_box(options.strget("encoding"), x, y, render_width, render_height)
+            self.paint_box(encoding, x, y, render_width, render_height)
             # Present update to screen
             if not self.draw_needs_refresh:
                 self.present_fbo(context, x, y, render_width, render_height, options.intget("flush", 0))
@@ -1362,21 +1343,23 @@ class GLWindowBackingBase(WindowBackingBase):
         shader = f"{pixel_format}_to_RGB"
         if img.get_full_range():
             shader += "_FULL"
-        flush = options.intget("flush", 0)
         encoding = options.strget("encoding")
-        self.with_gfx_context(self.paint_planar, shader, flush, encoding, img,
+        self.with_gfx_context(self.paint_planar, shader, encoding, img,
                               x, y, enc_width, enc_height, width, height, options, callbacks)
 
-    def paint_planar(self, context, shader: str, flush: int, encoding: str, img,
+    def paint_planar(self, context, shader: str, encoding: str, img,
                      x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
         pixel_format = img.get_pixel_format()
         if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
+            img.free()
             raise ValueError(f"the GL backing does not handle pixel format {pixel_format!r} yet!")
         if not context:
+            img.free()
             log("%s._do_paint_rgb(..) no OpenGL context!", self)
             fire_paint_callbacks(callbacks, False, "failed to get a gl context")
             return
+        flush = options.intget("flush", 0)
         x, y = self.gravity_adjust(x, y, options)
         try:
             self.gl_init(context)
@@ -1389,7 +1372,6 @@ class GLWindowBackingBase(WindowBackingBase):
             # Present it on screen
             if not self.draw_needs_refresh:
                 self.present_fbo(context, x, y, width, height, flush)
-            img.free()
             return
         except GLError as e:
             message = f"OpenGL {encoding} paint failed: {e!r}"
@@ -1397,6 +1379,8 @@ class GLWindowBackingBase(WindowBackingBase):
         except Exception as e:
             message = f"OpenGL {encoding} paint failed: {e}"
             log.error("Error painting planar update", exc_info=True)
+        finally:
+            img.free()
         log.error(" flush=%i, image=%s, coords=%s, size=%ix%i",
                   flush, img, (x, y, enc_width, enc_height), width, height)
         fire_paint_callbacks(callbacks, False, message)

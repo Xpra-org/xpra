@@ -522,31 +522,15 @@ class WindowBackingBase:
                 raise ValueError(f"invalid encoding {encoding!r}")
             assert self.jpeg_decoder is not None
             img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
-        rgb_format = img.get_pixel_format()
-        img_data = img.get_pixels()
-        rowstride = img.get_rowstride()
-        w = img.get_width()
-        h = img.get_height()
-        if rgb_format in ("NV12", "YUV420P"):
-            enc_width, enc_height = options.intpair("scaled_size", (width, height))
-            self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
-            return
-        self.ui_paint_rgb(rgb_format, img_data,
-                          x, y, w, h, width, height, rowstride, options, callbacks)
+        self.paint_image_wrapper(encoding, img, x, y, width, height, options, callbacks)
 
     def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
                    options: typedict, callbacks: Iterable[Callable]):
         img = self.avif_decoder.decompress(img_data, options)
-        rgb_format = img.get_pixel_format()
-        pixels = img.get_pixels()
-        rowstride = img.get_rowstride()
-        w = img.get_width()
-        h = img.get_height()
-        self.ui_paint_rgb(rgb_format, pixels,
-                          x, y, w, h, width, height, rowstride, options, callbacks)
+        self.paint_image_wrapper(img)
 
-    def paint_image(self, coding: str, img_data, x: int, y: int, width: int, height: int,
-                    options: typedict, callbacks: Iterable[Callable]) -> None:
+    def paint_pillow(self, coding: str, img_data, x: int, y: int, width: int, height: int,
+                     options: typedict, callbacks: Iterable[Callable]) -> None:
         # can be called from any thread
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
         self.ui_paint_rgb(rgb_format, img_data,
@@ -563,28 +547,12 @@ class WindowBackingBase:
                    options: typedict, callbacks: Iterable[Callable]) -> None:
         if not self.webp_decoder or WEBP_PILLOW:
             # if webp is enabled, then Pillow should be able to take care of it:
-            self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
+            self.paint_pillow("webp", img_data, x, y, width, height, options, callbacks)
             return
         rgb_format = options.strget("rgb_format", "BGRX")
         has_alpha = options.boolget("has_alpha", False)
         img = self.webp_decoder.decompress_to_rgb(rgb_format, img_data, has_alpha, self.get_rgb_formats())
-        rgb_format = img.get_pixel_format()
-        # if the backing can't handle this format,
-        # ie: tray only supports RGBA
-        if rgb_format not in self.get_rgb_formats():
-            # pylint: disable=import-outside-toplevel
-            from xpra.codecs.rgb_transform import rgb_reformat
-            has_alpha = rgb_format.find("A") >= 0 and self._alpha_enabled
-            rgb_reformat(img, self.get_rgb_formats(), has_alpha)
-            rgb_format = img.get_pixel_format()
-        pixels = img.get_pixels()
-        iwidth = img.get_width()
-        iheight = img.get_height()
-        stride = img.get_rowstride()
-        # replace with the actual rgb format we get from the decoder / rgb_reformat:
-        options["rgb_format"] = rgb_format
-        self.ui_paint_rgb(rgb_format, pixels,
-                          x, y, iwidth, iheight, width, height, stride, options, callbacks)
+        self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
 
     def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,
                   options, callbacks: Iterable[Callable]) -> None:
@@ -604,12 +572,43 @@ class WindowBackingBase:
         """ calls do_paint_rgb from the ui thread """
         self.with_gfx_context(self.do_paint_rgb, *args)
 
+    def paint_image_wrapper(self, encoding: str, img, x: int, y: int, width: int, height: int,
+                            options: typedict, callbacks: Iterable[Callable]) -> None:
+        self.with_gfx_context(self.do_paint_image_wrapper, encoding, img, x, y, width, height, options, callbacks)
+
+    def do_paint_image_wrapper(self, context, encoding: str, img, x: int, y: int, width: int, height: int,
+                               options: typedict, callbacks: Iterable[Callable]) -> None:
+        rgb_format = img.get_pixel_format()
+        if rgb_format in ("NV12", "YUV420P"):
+            # jpeg may be decoded to these formats by nvjpeg / nvdec
+            enc_width, enc_height = options.intpair("scaled_size", (width, height))
+            self.do_video_paint(img, x, y, enc_width, enc_height, width, height, options, callbacks)
+            return
+        if img.get_planes() > 1:
+            raise ValueError(f"cannot handle {img.get_planes()} in this backend")
+        # if the backing can't handle this format,
+        # ie: tray only supports RGBA
+        if rgb_format not in self.get_rgb_formats():
+            # pylint: disable=import-outside-toplevel
+            from xpra.codecs.rgb_transform import rgb_reformat
+            has_alpha = rgb_format.find("A") >= 0 and self._alpha_enabled
+            rgb_reformat(img, self.get_rgb_formats(), has_alpha)
+            rgb_format = img.get_pixel_format()
+        # replace with the actual rgb format we get from the decoder / rgb_reformat:
+        options["rgb_format"] = rgb_format
+        w = img.get_width()
+        h = img.get_height()
+        pixels = img.get_pixels()
+        stride = img.get_rowstride()
+        self.do_paint_rgb(context, encoding, rgb_format, pixels, x, y, w, h, width, height, stride, options, callbacks)
+        img.free()
+
     def with_gfx_context(self, function: Callable, *args) -> None:
         # the opengl backend overrides this function
         # to provide the opengl context, we use None here:
         GLib.idle_add(function, None, *args)
 
-    def do_paint_rgb(self, context, rgb_format: str, img_data,
+    def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
         """ must be called from the UI thread
@@ -892,22 +891,9 @@ class WindowBackingBase:
         img.free()
         if rgb.get_planes() != 0:
             raise RuntimeError(f"invalid number of planes for {rgb_format}: {rgb.get_planes()}")
-        # make a new options dict and set the rgb format:
-        paint_options = typedict(options)
 
         # this will also take care of firing callbacks (from the UI thread):
-
-        data = rgb.get_pixels()
-        rgb_width = rgb.get_width()
-        rgb_height = rgb.get_height()
-        rowstride = rgb.get_rowstride()
-
-        def free_rgb_image(*args) -> None:
-            rgb.free()
-
-        callbacks.append(free_rgb_image)
-        self.ui_paint_rgb(rgb_format, data,
-                          x, y, rgb_width, rgb_height, width, height, rowstride, paint_options, callbacks)
+        self.paint_image_wrapper(rgb, x, y, width, height, options, callbacks)
 
     def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
@@ -955,7 +941,7 @@ class WindowBackingBase:
             elif self.spng_decoder and coding == "png":
                 self.paint_spng(img_data, x, y, width, height, options, callbacks)
             elif coding in self._PIL_encodings:
-                self.paint_image(coding, img_data, x, y, width, height, options, callbacks)
+                self.paint_pillow(coding, img_data, x, y, width, height, options, callbacks)
             elif coding == "scroll":
                 self.paint_scroll(img_data, options, callbacks)
             else:
