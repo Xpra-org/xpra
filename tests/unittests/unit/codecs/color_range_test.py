@@ -161,8 +161,7 @@ class TestColorRange(unittest.TestCase):
                                     continue
                                 if rgb_format not in csc_mod.get_output_colorspaces(yuv_format):
                                     continue
-                                cs_range = "full" if yuv_image.get_full_range() else "studio"
-                                csc_options = typedict({"ranges": (cs_range, )})
+                                csc_options = typedict({"full-range": yuv_image.get_full_range()})
                                 converter = csc_mod.Converter()
                                 converter.init_context(width, height, yuv_format,
                                                        width, height, rgb_format, csc_options)
