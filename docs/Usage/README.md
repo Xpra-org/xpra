@@ -1,14 +1,14 @@
 # Command line usage Examples
 
-Xpra includes a _start_ GUI capable of replacing most of the example command lines found below.  
+Xpra includes a _start_ GUI capable of replacing most of the example command lines found below. \
 
 These examples should work for the [current versions](https://github.com/Xpra-org/xpra/wiki/Versions).\
-Use `man xpra` to get the manual corresponding to the version you have installed.  
-On MS Windows, please see [windows command line](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Client.md#command-line).  
+Use `man xpra` to get the manual corresponding to the version you have installed. \
+On MS Windows, please see [windows command line](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Client.md#command-line). \
 
 ## Simple [seamless](./Seamless.md) application forwarding
 This is how xpra is most often used.\
-This command will start an `xterm` (or any graphical application of your choice) on `HOST` and display it to your local desktop through an [SSH](../Network/SSH) transport:
+This command will start an `xterm` (or any graphical application of your choice) on `HOST` and display it to your local desktop through an [SSH](../Network/SSH.md) transport:
 ```shell
 xpra start ssh://USERNAME@HOST/ --start-child=xterm
 ```

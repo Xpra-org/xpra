@@ -14,7 +14,7 @@ For usage related information, see [webcam feature](../Features/Webcam.md).
 
 ## Capabilities
 
-The client exposes a single `webcam` boolean capability.  
+The client exposes a single `webcam` boolean capability. \
 The server exposes the following attributes using the  `webcam` capability prefix:
 * `enabled` boolean
 * `encodings` list of strings - encodings supported: only `png` or `jpeg` are guaranteed to be supported

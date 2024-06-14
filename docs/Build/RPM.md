@@ -44,5 +44,5 @@ cp dist/*xz patches/* ~/rpmbuild/SOURCES/
 rpmbuild -ba ./packaging/rpm/xpra.spec
 ls -s ~/rpmbuild/RPMS/*/
 ```
-This builds fresh packages from git master.  
+This builds fresh packages from git master. \
 You can also use other branches, tags or download a [source release](https://xpra.org/src/) instead.

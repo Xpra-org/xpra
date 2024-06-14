@@ -40,7 +40,7 @@ OpenGL ES profile shading language version string: OpenGL ES GLSL ES 3.00
 
 ### Setup Steps
 
-One of these steps is obviously specific to the (Lenovo laptop) hardware it was tested on.  
+One of these steps is obviously specific to the (Lenovo laptop) hardware it was tested on. \
 You will need to adapt it to your hardware.
 
 * Create an installer USB stick with Microsoft's media creation tool. Don't use the insider's edition of Windows 11
@@ -69,9 +69,9 @@ those look like they were installed as a dependency of gedit. (perhaps mesa pack
 
 https://github.com/damiongans/ubuntu-wsl2-systemd-script
 
-Clone that repository on the Windows host side, then change `basic.target` to `multi-user.target` in `start-systemd-namespace` and `enter-systemd-namespace`.  
-To enable `systemd` in WSL 2, run `bash ubuntu-wsl2-systemd-script.sh` on the Windows host side.  
-The next time you run bash, it'll show a line about enabling systemd.  
+Clone that repository on the Windows host side, then change `basic.target` to `multi-user.target` in `start-systemd-namespace` and `enter-systemd-namespace`. \
+To enable `systemd` in WSL 2, run `bash ubuntu-wsl2-systemd-script.sh` on the Windows host side. \
+The next time you run bash, it'll show a line about enabling systemd. \
 After this run `sudo systemctl set-default multi-user.target` in WSL 2.
 
 ### Ensure there will be X0 socket in `/tmp/.X11-unix`
@@ -82,13 +82,13 @@ Create `/etc/rc.local` and put the following content in it:
 
 ln -s /mnt/wslg/.X11-unix/X0 /tmp/.X11-unix
 ```
-Then make it executable with `chmod +x /etc/rc.local`.  
+Then make it executable with `chmod +x /etc/rc.local`. \
 Now either run that `ln` command manually or restart WSL 2 as shown above.
 
 ### Enable SSH Password Authentication
-Edit `/etc/ssh/sshd_config` and set `PasswordAuthentication yes`.  
-Enable ssh with "sudo systemctl enable --now ssh". 
+Edit `/etc/ssh/sshd_config` and set `PasswordAuthentication yes`. \
+Enable ssh with "sudo systemctl enable --now ssh".
 
 ### Install xpra
-Now you can install xpra server in WSL 2 and the xpra client on Windows.  
+Now you can install xpra server in WSL 2 and the xpra client on Windows. \
 You can see the WSL 2 IP address with `ip a` in WSL 2.

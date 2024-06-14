@@ -14,15 +14,15 @@ For usage related information, see [audio feature](../Features/Audio.md).
 ## Common
 
 [xpra.audio](https://github.com/Xpra-org/xpra/tree/master/xpra/audio/) contains the components used for capturing and playing back audio streams
-using [GStreamer](https://gstreamer.freedesktop.org/).  
+using [GStreamer](https://gstreamer.freedesktop.org/). \
 In order to avoid interfering with the performance of the main thread,
-all audio processing is done in a separate process.  
+all audio processing is done in a separate process. \
 For historical reasons, this is done using a [subprocess wrapper](https://github.com/Xpra-org/xpra/tree/master/xpra/audio/wrapper.py)
 rather than the builtin [multiprocessing](https://docs.python.org/3/library/multiprocessing.html) module.
 
 ### Pulseaudio
 
-[xpra.audio.pulseaudio](https://github.com/Xpra-org/xpra/tree/master/xpra/audio/pulseaudio) is often used for playback on Linux systems.  
+[xpra.audio.pulseaudio](https://github.com/Xpra-org/xpra/tree/master/xpra/audio/pulseaudio) is often used for playback on Linux systems. \
 This is also the prefered backend for audio capture in server sessions.
 The xpra server will usually start a pulseaudio instance hidden away
 in a per-session user prefix so that multiple sessions can forward audio streams
@@ -40,7 +40,7 @@ with the `audio` prefix:
 | `send`     | boolean         | If sending audio is enabled                        |
 | `receive`  | boolean         | If receiving audio is enabled                      |
 
-The lists of `decoders` and `encoders` contain strings such as: `mp3`, `opus+ogg`, `vorbis`...  
+The lists of `decoders` and `encoders` contain strings such as: `mp3`, `opus+ogg`, `vorbis`... \
 You can run [xpra.audio.gstreamer_util](https://github.com/Xpra-org/xpra/blob/master/xpra/audio/gstreamer_util.py) to see which
 encoders and decoders are available on the system.
 

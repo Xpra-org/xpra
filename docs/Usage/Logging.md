@@ -33,7 +33,7 @@ xpra start :10 -d all,-window,-focus
 
 ***
 
-Each logging category can also be enabled using environment variables.  
+Each logging category can also be enabled using environment variables. \
 This can be useful if you cannot modify the command line, or if the logging should happen
 very early on, or if you aren't calling the code from its normal wrappers.
 <details>

@@ -1,9 +1,9 @@
 # Dependencies
-Most of these dependencies should be installed automatically when you install official packages.  
+Most of these dependencies should be installed automatically when you install official packages. \
 Unless otherwise stated, the dependencies are all optional.
 
-The tools required for building all of these projects are not listed here.  
-Typically, you will need: `gcc` or `clang`, `gnu-make`, `libiconv`, `gettext`, `cmake`, `autoconf`, `automake`, `pkg-config` or `pkgconf`, `bison`, `flex`, `intltool`, etc  
+The tools required for building all of these projects are not listed here. \
+Typically, you will need: `gcc` or `clang`, `gnu-make`, `libiconv`, `gettext`, `cmake`, `autoconf`, `automake`, `pkg-config` or `pkgconf`, `bison`, `flex`, `intltool`, etc
 For building xpra itself and some of the python modules, you will also need [Cython](https://cython.org/)
 
 
@@ -58,7 +58,7 @@ See [Network](../Network/README.md)
 | [python-netifaces](http://alastairs-place.net/projects/netifaces/) | https://pypi.python.org/pypi/netifaces                  | [Multicast DNS](./Multicast-DNS) session publishing              | server              |                                                      |
 | [dbus-python](https://pypi.python.org/pypi/dbus-python/)           | https://dbus.freedesktop.org/releases/dbus-python/      | desktop integration, server control interface                    | both                | not applicable to MS Windows or Mac OSX              |
 | [openssl](https://www.openssl.org/)                                | https://www.openssl.org/source/                         | [SSL](./SSL)                                                     | both                |                                                      |
-| [paramiko](https://pypi.org/project/paramiko/)                     | https://pypi.org/project/paramiko/                      | [ssh integration](./SSH)                                         | both                |                                                      |
+| [paramiko](https://pypi.org/project/paramiko/)                     | https://pypi.org/project/paramiko/                      | [ssh integration](./SSH.md)                                      | both                |                                                      |
 | [sshpass](https://sourceforge.net/projects/sshpass/)               | https://sourceforge.net/projects/sshpass/files/sshpass/ | non-interactive SSH password authentication                      | usually client      |                                                      |
 | [brotli](https://github.com/google/brotli)                         | https://github.com/google/brotli/releases               | HTML client compression                                          | r15540              |
 | [PySocks](https://github.com/Anorov/PySocks)                       | https://github.com/Anorov/PySocks/releases              | client                                                           | SOCKS proxy support | https://github.com/Xpra-org/xpra/issues/2105         |

@@ -55,6 +55,6 @@ Proprietary graphics drivers can interfere with software OpenGL, [glvnd](https:/
 VirtualGL and Xwayland will tie the OpenGL application to a secondary context (X11 / Wayland server) and if this server is killed or restarted then the application will crash - this is no longer the case with the EGL backend in VirtualGL version 3.
 
 ## VirtualGL setup
-Please refer to the extensive [documentation](https://github.com/VirtualGL/virtualgl/tree/master/doc).  
+Please refer to the extensive [documentation](https://github.com/VirtualGL/virtualgl/tree/master/doc). \
 Some applications may require workarounds, ie: [12: Using VirtualGL with setuid/setgid Executables
 ](https://github.com/VirtualGL/virtualgl/blob/master/doc/setuid.txt).

@@ -9,7 +9,7 @@ Since then, the X11 server gained the ability to run without those `LD_SO_PRELOA
 
 ## Why use `Xdummy` instead of `Xvfb`?
 
-`Xvfb` lacks the ability to simulate arbitrary [DPI](../Features/DPI.md) values and add or remove virtual monitors at runtime.  
+`Xvfb` lacks the ability to simulate arbitrary [DPI](../Features/DPI.md) values and add or remove virtual monitors at runtime. \
 This affects some X11 application's geometry and font rendering, and prevents the use of the `monitor` subcommand.
 
 ## Usage
@@ -21,14 +21,14 @@ You can start a new display using the dummy driver without needing any special p
 Xorg -noreset +extension GLX +extension RANDR +extension RENDER \
      -logfile ./10.log -config /etc/xpra/xorg.conf :10
 ```
-This is roughly equivallent to running `Xvfb :10`.  
+This is roughly equivallent to running `Xvfb :10`. \
 You can find a sample configuration file for dummy here: [xorg.conf](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/xorg.conf).
 </details>
 <details>
   <summary>Xdummy with Xpra</summary>
 
-With Xpra, this should have been configured automatically for you when installing -  this is not enabled on Debian or Ubuntu.  
-You choose at [build time](../Build/README.md) whether or not to use `Xdummy` using the `--with[out]-Xdummy` build switch.  
+With Xpra, this should have been configured automatically for you when installing -  this is not enabled on Debian or Ubuntu. \
+You choose at [build time](../Build/README.md) whether or not to use `Xdummy` using the `--with[out]-Xdummy` build switch. \
 If your packages do not enable `Xdummy` by default, you may be able to switch to it by modifying the `xvfb` value in `/etc/xpra/conf.d/55_server_x11.conf`, something like:
 ```
 xvfb=Xorg -dpi 96 -noreset -nolisten tcp \
@@ -41,7 +41,7 @@ The `-noreset` option is only needed if the window manager is not the first appl
 
 ## Configuration
 
-By default, the configuration file shipped with xpra allocates 768MB of memory, and a maximum `virtual size` of `11520 6318`.  
+By default, the configuration file shipped with xpra allocates 768MB of memory, and a maximum `virtual size` of `11520 6318`. \
 You may want to increase these values to use very high resolutions or many virtual monitors.
 
 
@@ -72,8 +72,8 @@ The alternative is often to disable `OpenGL` altogether, more information here: 
 <details>
   <summary>Debian and Ubuntu</summary>
 
-Debian and Ubuntu do weird things with their Xorg server which prevents it from running Xdummy (tty permission issues).  
-Warning: this may also interfere with other sessions running on the same server when they should be completely isolated from each other.  
+Debian and Ubuntu do weird things with their Xorg server which prevents it from running Xdummy (tty permission issues). \
+Warning: this may also interfere with other sessions running on the same server when they should be completely isolated from each other. \
 [Crashing other X11 sessions](https://github.com/Xpra-org/xpra/issues/2834) is a serious security issue, caused by Debian's packaging and still left unsolved after many years.
 
 </details>
@@ -81,8 +81,8 @@ Warning: this may also interfere with other sessions running on the same server 
 <details>
   <summary>non-suid binary</summary>
 
-If you distribution ships the newer version but only installs a suid Xorg binary, Xpra should have installed the [xpra_Xdummy](https://github.com/Xpra-org/xpra/tree/master/fs/bin/xpra_Xdummy) wrapper script and configured xpra.conf to use it instead of the regular Xorg binary. 
+If you distribution ships the newer version but only installs a suid Xorg binary, Xpra should have installed the [xpra_Xdummy](https://github.com/Xpra-org/xpra/tree/master/fs/bin/xpra_Xdummy) wrapper script and configured xpra.conf to use it instead of the regular Xorg binary.
 
-This script executes `Xorg` via `ld-linux.so`, which takes care of stripping the suid bit.  
+This script executes `Xorg` via `ld-linux.so`, which takes care of stripping the suid bit. \
 Some more exotic distributions have issues with non world-readable binaries which prevent this from working.
 </details>
