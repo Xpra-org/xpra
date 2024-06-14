@@ -463,7 +463,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 log.error(" %s", line.strip())
         raise RuntimeError(f"OpenGL failed to compile shader {name!r}: {nonl(err_str)}")
 
-    def init_shader(self, name, shader_type) -> int:
+    def init_shader(self, name: str, shader_type) -> int:
         # Create and assign fragment programs
         from OpenGL.GL import (
             glCreateShader, glShaderSource, glCompileShader, glGetShaderInfoLog,
@@ -960,7 +960,7 @@ class GLWindowBackingBase(WindowBackingBase):
                               rx, bh - ry, rx + rw, bh - (ry + rh),
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
 
-    def update_fps_buffer(self, width, height, pixels) -> None:
+    def update_fps_buffer(self, width: int, height: int, pixels) -> None:
         # we always call 'record_fps_event' from a gl context,
         # so it is safe to upload the texture:
         texture = int(self.textures[TEX_FPS])
@@ -1033,7 +1033,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 log.warn(f"Warning: failed to load {filename!r}: {e}")
         return "raw", x, y, w, h, xhot, yhot, serial, pixels, name
 
-    def set_cursor_data(self, cursor_data) -> None:
+    def set_cursor_data(self, cursor_data: Sequence) -> None:
         if not cursor_data or cursor_data[0] is None:
             cursor_data = self.get_default_cursor_data()
         self.cursor_data = cursor_data
@@ -1264,11 +1264,11 @@ class GLWindowBackingBase(WindowBackingBase):
     def do_paint_rgb(self, context, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
-        log("%s.gl_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
+        log("%s.do_paint_rgb(%s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
             self, rgb_format, len(img_data), x, y, width, height, rowstride, options)
         x, y = self.gravity_adjust(x, y, options)
         if not context:
-            log("%s.gl_paint_rgb(..) no context!", self)
+            log("%s.do_paint_rgb(..) no context!", self)
             fire_paint_callbacks(callbacks, False, "no opengl context")
             return
         if not options.boolget("paint", True):
@@ -1291,8 +1291,7 @@ class GLWindowBackingBase(WindowBackingBase):
             gl_marker("%s update at (%d,%d) size %dx%d (%s bytes) to %dx%d, using GL %s format=%s / %s to internal=%s",
                       rgb_format, x, y, width, height, len(img_data), render_width, render_height,
                       upload, CONSTANT_TO_PIXEL_FORMAT.get(pformat), DATATYPE_TO_STR.get(ptype),
-                      INTERNAL_FORMAT_TO_STR.get(self.internal_format)
-                      )
+                      INTERNAL_FORMAT_TO_STR.get(self.internal_format))
 
             # Upload data as temporary RGB texture
             target = GL_TEXTURE_RECTANGLE
@@ -1340,7 +1339,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def do_video_paint(self, img,
                        x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
-                       options, callbacks: Iterable[Callable]):
+                       options: typedict, callbacks: Iterable[Callable]):
         log("do_video_paint%s", (x, y, enc_width, enc_height, width, height, options, callbacks))
         if not zerocopy_upload or FORCE_CLONE:
             # copy so the data will be usable (usually a str)

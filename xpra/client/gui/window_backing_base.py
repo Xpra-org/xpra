@@ -490,14 +490,14 @@ class WindowBackingBase:
                 log(f"cuda context error, again: {e}")
         return None
 
-    def nvjpeg_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options):
+    def nvjpeg_decode(self, encoding: str, data, x: int, y: int, width: int, height: int, options: typedict) -> None:
         if not self.nvjpeg_decoder or width < 16 or height < 16:
             return None
         if encoding not in self.nvjpeg_decoder.get_encodings():
             return None
         try:
             with self.assign_cuda_context(False):
-                return self.nvjpeg_decoder.decompress_and_download("RGB", img_data)
+                return self.nvjpeg_decoder.decompress_and_download("RGB", data)
         except Exception as e:
             if first_time(str(e)):
                 log.error("Error accessing cuda context", exc_info=True)
@@ -510,7 +510,7 @@ class WindowBackingBase:
             self.nvdec_decode(encoding, img_data, x, y, width, height, options)
 
     def do_paint_jpeg(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
-                      options: typedict, callbacks: Iterable[Callable]):
+                      options: typedict, callbacks: Iterable[Callable]) -> None:
         alpha_offset = options.intget("alpha-offset", 0)
         img = self.nv_decode(encoding, img_data, x, y, width, height, options)
         if img is None:
@@ -538,11 +538,11 @@ class WindowBackingBase:
                    options: typedict, callbacks: Iterable[Callable]):
         img = self.avif_decoder.decompress(img_data, options)
         rgb_format = img.get_pixel_format()
-        img_data = img.get_pixels()
+        pixels = img.get_pixels()
         rowstride = img.get_rowstride()
         w = img.get_width()
         h = img.get_height()
-        self.ui_paint_rgb(rgb_format, img_data,
+        self.ui_paint_rgb(rgb_format, pixels,
                           x, y, w, h, width, height, rowstride, options, callbacks)
 
     def paint_image(self, coding: str, img_data, x: int, y: int, width: int, height: int,
@@ -560,12 +560,12 @@ class WindowBackingBase:
                           x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def paint_webp(self, img_data, x: int, y: int, width: int, height: int,
-                   options, callbacks: Iterable[Callable]) -> None:
+                   options: typedict, callbacks: Iterable[Callable]) -> None:
         if not self.webp_decoder or WEBP_PILLOW:
             # if webp is enabled, then Pillow should be able to take care of it:
             self.paint_image("webp", img_data, x, y, width, height, options, callbacks)
             return
-        rgb_format = options.strget("rgb_format")
+        rgb_format = options.strget("rgb_format", "BGRX")
         has_alpha = options.boolget("has_alpha", False)
         img = self.webp_decoder.decompress_to_rgb(rgb_format, img_data, has_alpha, self.get_rgb_formats())
         rgb_format = img.get_pixel_format()
@@ -577,13 +577,13 @@ class WindowBackingBase:
             has_alpha = rgb_format.find("A") >= 0 and self._alpha_enabled
             rgb_reformat(img, self.get_rgb_formats(), has_alpha)
             rgb_format = img.get_pixel_format()
-        data = img.get_pixels()
+        pixels = img.get_pixels()
         iwidth = img.get_width()
         iheight = img.get_height()
         stride = img.get_rowstride()
         # replace with the actual rgb format we get from the decoder / rgb_reformat:
         options["rgb_format"] = rgb_format
-        self.ui_paint_rgb(rgb_format, data,
+        self.ui_paint_rgb(rgb_format, pixels,
                           x, y, iwidth, iheight, width, height, stride, options, callbacks)
 
     def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,
@@ -600,11 +600,11 @@ class WindowBackingBase:
         self.ui_paint_rgb(rgb_format, rgb_data,
                           x, y, width, height, width, height, rowstride, options, callbacks)
 
-    def ui_paint_rgb(self, *args):
+    def ui_paint_rgb(self, *args) -> None:
         """ calls do_paint_rgb from the ui thread """
         self.with_gfx_context(self.do_paint_rgb, *args)
 
-    def with_gfx_context(self, function: Callable, *args):
+    def with_gfx_context(self, function: Callable, *args) -> None:
         # the opengl backend overrides this function
         # to provide the opengl context, we use None here:
         GLib.idle_add(function, None, *args)
@@ -654,7 +654,7 @@ class WindowBackingBase:
                 fire_paint_callbacks(callbacks, False, message)
 
     def _do_paint_rgb16(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options: typedict) -> bool:
+                        render_width: int, render_height: int, rowstride: int, options: typedict) -> None:
         raise NotImplementedError
 
     def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
@@ -969,7 +969,7 @@ class WindowBackingBase:
     # noinspection PyMethodMayBeStatic
     def do_draw_region(self, _x: int, _y: int, _width: int, _height: int, coding: str,
                        _img_data, _rowstride: int,
-                       _options, callbacks: Iterable[Callable]) -> None:
+                       _options: typedict, callbacks: Iterable[Callable]) -> None:
         msg = f"invalid encoding: {coding!r}"
         log.error("Error: %s", msg)
         fire_paint_callbacks(callbacks, False, msg)
