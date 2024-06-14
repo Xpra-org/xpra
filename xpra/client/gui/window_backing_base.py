@@ -533,14 +533,14 @@ class WindowBackingBase:
                      options: typedict, callbacks: Iterable[Callable]) -> None:
         # can be called from any thread
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
-        self.ui_paint_rgb(rgb_format, img_data,
+        self.ui_paint_rgb(coding, rgb_format, img_data,
                           x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def paint_spng(self, img_data, x: int, y: int, width: int, height: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
         rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data)
         rowstride = iwidth * len(rgb_format)
-        self.ui_paint_rgb(rgb_format, rgba,
+        self.ui_paint_rgb("png", rgb_format, rgba,
                           x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def paint_webp(self, img_data, x: int, y: int, width: int, height: int,
@@ -565,7 +565,7 @@ class WindowBackingBase:
             rgb_data = compression.decompress_by_name(raw_data, algo=comp[0])
         else:
             rgb_data = raw_data
-        self.ui_paint_rgb(rgb_format, rgb_data,
+        self.ui_paint_rgb("rgb", rgb_format, rgb_data,
                           x, y, width, height, width, height, rowstride, options, callbacks)
 
     def ui_paint_rgb(self, *args) -> None:
@@ -848,7 +848,7 @@ class WindowBackingBase:
         rgb_format = options.strget("rgb_format", "RGB")
         # Note: BGR(A) is only handled by gl.backing
         x, y = self.gravity_adjust(x, y, options)
-        self.ui_paint_rgb(rgb_format, data, x, y, width, height, width, height, rowstride,
+        self.ui_paint_rgb("mmap", rgb_format, data, x, y, width, height, width, height, rowstride,
                           options, callbacks)
 
     def paint_scroll(self, img_data, options: typedict, callbacks: Iterable[Callable]) -> None:
