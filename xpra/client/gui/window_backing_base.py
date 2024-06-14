@@ -19,7 +19,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
-from xpra.common import Gravity, roundup
+from xpra.common import Gravity
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -611,62 +611,8 @@ class WindowBackingBase:
     def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
                      options: typedict, callbacks: Iterable[Callable]) -> None:
-        """ must be called from the UI thread
-            this method is only here to ensure that we always fire the callbacks,
-            the actual paint code is in _do_paint_rgb[24|32]
-        """
-        x, y = self.gravity_adjust(x, y, options)
-        if rgb_format == "r210":
-            bpp = 30
-        elif rgb_format == "BGR565":
-            bpp = 16
-        else:
-            bpp = len(rgb_format) * 8  # ie: "BGRA" -> 32
-        if rowstride == 0:
-            rowstride = width * roundup(bpp, 8) // 8
-        try:
-            if not options.boolget("paint", True):
-                fire_paint_callbacks(callbacks)
-                return
-            if self._backing is None:
-                fire_paint_callbacks(callbacks, -1, "no backing")
-                return
-            if bpp == 16:
-                paint_fn = self._do_paint_rgb16
-            elif bpp == 24:
-                paint_fn = self._do_paint_rgb24
-            elif bpp == 30:
-                paint_fn = self._do_paint_rgb30
-            elif bpp == 32:
-                paint_fn = self._do_paint_rgb32
-            else:
-                raise ValueError(f"invalid rgb format {rgb_format!r}")
-            options["rgb_format"] = rgb_format
-            paint_fn(img_data, x, y, width, height, render_width, render_height, rowstride, options)
-            fire_paint_callbacks(callbacks, True)
-        except Exception as e:
-            if not self._backing:
-                fire_paint_callbacks(callbacks, -1, "paint error on closed backing ignored")
-            else:
-                log.error("Error painting rgb%s", bpp, exc_info=True)
-                message = f"paint rgb{bpp} error: {e}"
-                fire_paint_callbacks(callbacks, False, message)
-
-    def _do_paint_rgb16(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options: typedict) -> None:
-        raise NotImplementedError
-
-    def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options: typedict) -> None:
-        raise NotImplementedError
-
-    def _do_paint_rgb30(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options: typedict) -> None:
-        raise NotImplementedError
-
-    def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options: typedict) -> None:
-        raise NotImplementedError
+        # see subclasses `GLWindowBackingBase` and `CairoBacking`
+        raise NotImplementedError()
 
     def eos(self) -> None:
         dl = self._decoder_lock

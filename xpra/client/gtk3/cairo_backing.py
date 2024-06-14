@@ -11,6 +11,7 @@ from cairo import ImageSurface, FORMAT_ARGB32  # pylint: disable=no-name-in-modu
 from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
+from xpra.util.objects import typedict
 from xpra.client.gtk3.cairo_backing_base import CairoBackingBase, FORMATS
 from xpra.log import Logger
 
@@ -53,7 +54,7 @@ class CairoBacking(CairoBackingBase):
 
     def _do_paint_rgb(self, cairo_format, has_alpha: bool, img_data,
                       x: int, y: int, width: int, height: int, render_width: int, render_height: int,
-                      rowstride: int, options) -> None:
+                      rowstride: int, options: typedict) -> None:
         """ must be called from UI thread """
         log("cairo._do_paint_rgb%s set_image_surface_data=%s, use pixbuf=%s",
             (FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),

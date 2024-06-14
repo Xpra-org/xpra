@@ -6,6 +6,7 @@
 
 from time import monotonic
 from typing import Any
+from collections.abc import Callable, Iterable
 import cairo
 from cairo import (  # pylint: disable=no-name-in-module
     Context, ImageSurface,  # @UnresolvedImport
@@ -14,7 +15,9 @@ from cairo import (  # pylint: disable=no-name-in-module
 )
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks
+from xpra.common import roundup
 from xpra.util.str_fn import memoryview_to_bytes
+from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -64,7 +67,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
 class CairoBackingBase(WindowBackingBase):
     HAS_ALPHA = envbool("XPRA_ALPHA", True)
 
-    def __init__(self, wid, window_alpha, _pixel_depth=0):
+    def __init__(self, wid: int, window_alpha: bool, _pixel_depth=0):
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
         self.size = 0, 0
         self.render_size = 0, 0
@@ -134,12 +137,12 @@ class CairoBackingBase(WindowBackingBase):
         log("source image surface: %s",
             (img_surface.get_format(), iw, ih, img_surface.get_stride(), img_surface.get_content(),))
 
-        def set_source_surface(gc, surface, sx, sy):
+        def set_source_surface(gc, surface, sx: int, sy: int) -> None:
             gc.set_source_surface(surface, sx, sy)
 
         self.cairo_paint_from_source(set_source_surface, img_surface, x, y, iw, ih, width, height, options)
 
-    def cairo_paint_from_source(self, set_source_fn, source,
+    def cairo_paint_from_source(self, set_source_fn: Callable, source,
                                 x: int, y: int, iw: int, ih: int, width: int, height: int, options) -> None:
         """ must be called from UI thread """
         backing = self._backing
@@ -183,6 +186,50 @@ class CairoBackingBase(WindowBackingBase):
         gc.rectangle(x, y, w, h)
         gc.stroke()
 
+    def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
+                     x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
+                     options: typedict, callbacks: Iterable[Callable]) -> None:
+        """ must be called from the UI thread
+            this method is only here to ensure that we always fire the callbacks,
+            the actual paint code is in _do_paint_rgb[16|24|30|32]
+        """
+        x, y = self.gravity_adjust(x, y, options)
+        if rgb_format == "r210":
+            bpp = 30
+        elif rgb_format == "BGR565":
+            bpp = 16
+        else:
+            bpp = len(rgb_format) * 8  # ie: "BGRA" -> 32
+        if rowstride == 0:
+            rowstride = width * roundup(bpp, 8) // 8
+        try:
+            if not options.boolget("paint", True):
+                fire_paint_callbacks(callbacks)
+                return
+            if self._backing is None:
+                fire_paint_callbacks(callbacks, -1, "no backing")
+                return
+            if bpp == 16:
+                paint_fn = self._do_paint_rgb16
+            elif bpp == 24:
+                paint_fn = self._do_paint_rgb24
+            elif bpp == 30:
+                paint_fn = self._do_paint_rgb30
+            elif bpp == 32:
+                paint_fn = self._do_paint_rgb32
+            else:
+                raise ValueError(f"invalid rgb format {rgb_format!r}")
+            options["rgb_format"] = rgb_format
+            paint_fn(img_data, x, y, width, height, render_width, render_height, rowstride, options)
+            fire_paint_callbacks(callbacks, True)
+        except Exception as e:
+            if not self._backing:
+                fire_paint_callbacks(callbacks, -1, "paint error on closed backing ignored")
+            else:
+                log.error("Error painting rgb%s", bpp, exc_info=True)
+                message = f"paint rgb{bpp} error: {e}"
+                fire_paint_callbacks(callbacks, False, message)
+
     def _do_paint_rgb16(self, img_data, x: int, y: int, width: int, height: int,
                         render_width: int, render_height: int, rowstride: int, options) -> None:
         self._do_paint_rgb(FORMAT_RGB16_565, False, img_data,
@@ -205,12 +252,13 @@ class CairoBackingBase(WindowBackingBase):
                            x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb(self, *args) -> None:
+        # see CairoBacking
         raise NotImplementedError()
 
-    def paint_scroll(self, img_data, options, callbacks) -> None:
+    def paint_scroll(self, img_data, options: typedict, callbacks: Iterable[Callable]) -> None:
         GLib.idle_add(self.do_paint_scroll, img_data, callbacks)
 
-    def do_paint_scroll(self, scrolls, callbacks) -> None:
+    def do_paint_scroll(self, scrolls, callbacks: Iterable[Callable]) -> None:
         old_backing = self._backing
         if not old_backing:
             fire_paint_callbacks(callbacks, False, message="no backing")

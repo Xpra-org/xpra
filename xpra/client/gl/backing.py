@@ -1238,7 +1238,7 @@ class GLWindowBackingBase(WindowBackingBase):
             shader = f"{pixel_format}_to_RGB"
             if img.get_full_range():
                 shader += "_FULL"
-            self.paint_planar(shader, encoding, img, x, y, w, h, width, height, options, callbacks)
+            self.paint_planar(context, shader, encoding, img, x, y, w, h, width, height, options, callbacks)
             return
         super().do_paint_image_wrapper(context, encoding, img, x, y, width, height, options, callbacks)
 
@@ -1356,7 +1356,7 @@ class GLWindowBackingBase(WindowBackingBase):
             raise ValueError(f"the GL backing does not handle pixel format {pixel_format!r} yet!")
         if not context:
             img.free()
-            log("%s._do_paint_rgb(..) no OpenGL context!", self)
+            log("%s.paint_planar(..) no OpenGL context!", self)
             fire_paint_callbacks(callbacks, False, "failed to get a gl context")
             return
         flush = options.intget("flush", 0)
