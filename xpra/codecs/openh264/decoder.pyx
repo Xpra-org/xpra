@@ -190,6 +190,11 @@ cdef class Decoder:
         strides = [ystride, uvstride, uvstride]
         cdef int width = buf_info.UsrData.sSystemBuffer.iWidth
         cdef int height = buf_info.UsrData.sSystemBuffer.iHeight
+        log(f"openh264 strides=%s, size=%s", strides, (width, height))
+        if width < self.width:
+            raise ValueError(f"stream width {width} is smaller than decoder width {self.width}")
+        if height < self.height:
+            raise ValueError(f"stream width {height} is smaller than decoder width {self.height}")
         cdef int wdelta = width - self.width
         cdef int hdelta = height - self.height
         if abs(wdelta) > 1 or abs(hdelta) > 1:
@@ -202,7 +207,7 @@ cdef class Decoder:
             yuv[2][:uvstride*(height//2)],
             ]
         log(f"openh264 decoded {src_len:8} bytes into {width}x{height} YUV420P in {int((end-start)*1000):3}ms")
-        return ImageWrapper(0, 0, width, height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3)
+        return ImageWrapper(0, 0, self.width, self.height, pixels, self.colorspace, 24, strides, 1, ImageWrapper.PLANAR_3)
 
 
 def selftest(full=False):
