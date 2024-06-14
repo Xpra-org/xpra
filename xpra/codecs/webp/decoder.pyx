@@ -349,8 +349,15 @@ def selftest(full=False) -> None:
     ):
         import binascii
         bdata = binascii.unhexlify(hexdata)
+
         img = decompress_to_rgb("BGRA" if has_alpha else "BGRX", bdata, has_alpha)
         assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format().find("A")>=0) == has_alpha
+        assert len(img.get_pixels())>0
+        img.free()
+        #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))
+
+        img = decompress_to_yuv(bdata, typedict(), False)
+        assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format() == "YUV420P")
         assert len(img.get_pixels())>0
         img.free()
         #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))
