@@ -1928,8 +1928,6 @@ class WindowVideoSource(WindowSource):
                               enc_width: int, enc_height: int, encoder_spec) -> bool:
         encoding = encoder_spec.encoding
         options = self.assign_sq_options(dict(self.encoding_options))
-        # tell the csc and encoder what colorspace range the client supports:
-        options["ranges"] = self.csc_ranges.strtupleget(encoding) or self.csc_ranges.strtupleget("default")
         min_w = 8
         min_h = 8
         max_w = 16384
@@ -1949,6 +1947,7 @@ class WindowVideoSource(WindowSource):
             csc_speed = max(1, min(speed, 100-quality/2.0))
             csc_options = typedict(options)
             csc_options["speed"] = csc_speed
+            csc_options["full-range"] = True        # TODO: check which video encoders require "studio" range, none?
             csc_start = monotonic()
             csce = csc_spec.make_instance()
             csce.init_context(csc_width, csc_height, src_format,

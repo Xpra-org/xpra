@@ -379,7 +379,7 @@ cdef class Converter:
         self.src_height = src_height
         self.dst_width = dst_width
         self.dst_height = dst_height
-        self.dst_full_range = int("full" in options.strtupleget("ranges")) #and dst_format != "YUV444P"
+        self.dst_full_range = options.boolget("full-range")
         self.out_buffer_size = 0
         self.scaled_buffer_size = 0
         self.time = 0
@@ -407,7 +407,8 @@ cdef class Converter:
             self.out_buffer_size = dst_width*len(dst_format)*dst_height
         else:
             raise ValueError(f"invalid destination format: {dst_format!r}")
-        log(f"{src_format} -> {dst_format} planes={self.planes}, yuv-scaling={self.yuv_scaling}, rgb-scaling={self.rgb_scaling}, output buffer-size={self.out_buffer_size}")
+        log(f"{src_format} -> {dst_format} planes={self.planes}, output buffer-size={self.out_buffer_size}")
+        log(f" yuv-scaling={self.yuv_scaling}, rgb-scaling={self.rgb_scaling}, full-range={self.dst_full_range}")
 
     def init_yuv_output(self) -> None:
         #pre-calculate unscaled YUV plane heights:
@@ -575,24 +576,28 @@ cdef class Converter:
             show_plane_range("Y", pixels[0], width, y_stride, height)
             show_plane_range("UV", pixels[1], width, uv_stride, height//2)
 
+        fn_name = "error"
         with buffer_context(pixels[0]) as y_buf:
             y = <uintptr_t> int(y_buf)
             with buffer_context(pixels[1]) as uv_buf:
                 uv = <uintptr_t> int(uv_buf)
                 rgb = <uint8_t*> rgb_buffer.get_mem()
                 if self.dst_format=="RGB":
+                    fn_name = "NV12ToRGB24"
                     with nogil:
                         r = NV12ToRGB24(<const uint8_t*> y, y_stride,
                                         <const uint8_t*> uv, uv_stride,
                                         rgb, rowstride,
                                         width, height)
                 elif self.dst_format=="BGRX":
+                    fn_name = "NV12ToARGB"
                     with nogil:
                         r = NV12ToARGB(<const uint8_t*> y, y_stride,
                                         <const uint8_t*> uv, uv_stride,
                                         rgb, rowstride,
                                         width, height)
                 elif self.dst_format=="RGBX":
+                    fn_name = "NV12ToABGR"
                     with nogil:
                         r = NV12ToABGR(<const uint8_t*> y, y_stride,
                                         <const uint8_t*> uv, uv_stride,
@@ -603,7 +608,7 @@ cdef class Converter:
         if r!=0:
             raise RuntimeError(f"libyuv NV12ToRGB failed and returned {r}")
         cdef double elapsed = monotonic()-start
-        log(f"libyuv.NV12 to {self.dst_format} took %.1fms", 1000.0*elapsed)
+        log("libyuv.%s took %.1fms", fn_name, 1000.0*elapsed)
         self.time += elapsed
         return ImageWrapper(0, 0, self.dst_width, self.dst_height,
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)

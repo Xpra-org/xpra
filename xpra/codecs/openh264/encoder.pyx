@@ -620,7 +620,6 @@ cdef class Encoder:
         log(f"openh264 compress_image: {len(bdata)} bytes")
         self.frames += 1
         return bdata, {
-            "full-range": False,
             "frame": self.frames,
         }
 

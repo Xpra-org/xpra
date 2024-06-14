@@ -240,15 +240,6 @@ class Encodings(StubClientMixin):
         log("supported full csc_modes=%s", full_csc_modes)
         caps["full_csc_modes"] = full_csc_modes
 
-        # advertise that this clients can handle both 'full' and 'studio' csc range:
-        ranges = ("full", "studio")
-        csc_ranges = {}
-        for encoding in self.get_core_encodings():
-            # ranges are meaningless for rgb or png:
-            if encoding.find("rgb") < 0 and encoding.find("png") < 0:
-                csc_ranges[encoding] = ranges
-        caps["csc-ranges"] = csc_ranges
-
         if "h264" in self.get_core_encodings():
             # some profile options: "baseline", "main", "high", "high10", ...
             # set the default to "high10" for YUV420P

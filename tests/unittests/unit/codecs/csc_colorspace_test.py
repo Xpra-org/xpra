@@ -118,7 +118,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
     def _test_RGB_to_YUV(self, mod_out, mod_in, in_csc="BGRX", out_csc="YUV420P", cs_range="full"):
         width = height = 32
         test_data = CS_TEST_DATA[cs_range]
-        options = typedict({"ranges": (cs_range,)})
+        options = typedict({"full-range": cs_range == "full"})
         for color_name, pixel, Y, U, V in test_data:
             self._do_test_RGB_to_YUV(
                 mod_out, mod_in,

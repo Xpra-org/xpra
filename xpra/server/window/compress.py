@@ -93,16 +93,6 @@ SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
 FORCE_PILLOW = envbool("XPRA_FORCE_PILLOW", False)
 HARDCODED_ENCODING: str = os.environ.get("XPRA_HARDCODED_ENCODING", "")
 
-# pre v6.1, the colorspace ranges were fixed,
-# only jpeg and avif handled full range,
-# every other encoding used `studio`
-DEFAULT_CSC_RANGES: dict[str, Sequence[str]] = {
-    "jpeg": ("full", ),
-    "avif": ("full", ),
-    "default": ("studio", ),
-}
-
-
 MAX_SEQUENCE = 2**64
 
 
@@ -245,7 +235,6 @@ class WindowSource(WindowIconSource):
         self.send_timetamps: bool = encoding_options.boolget("send-timestamps", SEND_TIMESTAMPS)
         self.send_window_size: bool = encoding_options.boolget("send-window-size", False)
         self.decoder_speed = typedict(self.encoding_options.dictget("decoder-speed") or {})
-        self.csc_ranges = typedict(self.encoding_options.dictget("csc-ranges") or DEFAULT_CSC_RANGES)
         self.batch_config = batch_config
         # auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
@@ -445,7 +434,6 @@ class WindowSource(WindowIconSource):
         self.core_encodings = ()
         self.rgb_formats = ()
         self.full_csc_modes = typedict()
-        self.csc_ranges = typedict(DEFAULT_CSC_RANGES)
         self.client_refresh_encodings = ()
         self.encoding_options = typedict()
         self.rgb_lz4 = False
@@ -559,7 +547,6 @@ class WindowSource(WindowIconSource):
             "core"            : self.core_encodings,
             "auto-refresh"    : self.client_refresh_encodings,
             "csc_modes"       : dict(self.full_csc_modes or {}),
-            "csc-range"       : dict(self.csc_ranges),
             "decoder-speed"   : dict(self.decoder_speed),
         }
         larm = self.last_auto_refresh_message
@@ -812,7 +799,6 @@ class WindowSource(WindowIconSource):
         self.rgb_formats = rgb_formats
         self.send_window_size = properties.boolget("encoding.send-window-size", self.send_window_size)
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default=None))
-        self.csc_ranges = typedict(properties.dictget("encoding.csc-ranges", dict(self.csc_ranges)))
         # select the defaults encoders:
         # (in case pillow was selected previously and the client side scaling changed)
         for encoding, encoders in self._all_encoders.items():

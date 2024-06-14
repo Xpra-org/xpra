@@ -485,7 +485,7 @@ cdef class Converter:
         self.dst_height = dst_height
         self.src_format = src_format
         self.dst_format = dst_format
-        self.full_range = int("full" in options.strtupleget("ranges"))
+        self.full_range = options.boolget("full-range", True)
 
         self.time = 0
         self.frames = 0
