@@ -52,7 +52,6 @@
     * [bump openh264 bitstream level](https://github.com/Xpra-org/xpra/commit/16278362c0a417cc4df810b41c738f9bdeab8654)
     * [only reparent windows if needed](https://github.com/Xpra-org/xpra/commit/0356c81c1529c139532f8177f8070afa0d453c29) [but always send `ConfigureNotify`](https://github.com/Xpra-org/xpra/commit/91f1a0b03440c291f53eee836d599931dd06dc60)
     * [full self-tests for `jpeg` decoder](https://github.com/Xpra-org/xpra/commit/df2c2e77f76d0924962b025c72269f97f3727664)
-    * [first video frame number is 1](https://github.com/Xpra-org/xpra/commit/01eac63eff9212d6bfc615e92b32cd66bde27ce1)
     * [openh264 encoder should set the frame number](https://github.com/Xpra-org/xpra/commit/96fdb7ca2252acd8023ddf0dfaea3c869c9a3aea)
 * Cosmetic:
     * [clearer audio error message](https://github.com/Xpra-org/xpra/commit/7adc99fa9143d60e0c8cd7886eb7bdc576373db1)
