@@ -18,7 +18,6 @@
     * [isolate failures to show or hide a window](https://github.com/Xpra-org/xpra/commit/cf843fcc6936b8d40bc53138146530cf13ac4e7e)
     * [only reparent windows if needed](https://github.com/Xpra-org/xpra/commit/6463e46506ab702954f3b19397e653310c02580f) [but always send `ConfigureNotify`](https://github.com/Xpra-org/xpra/commit/0e62bffd736263eb73739a3c9a5a0f12fefd4991)
     * [full self-tests for `jpeg` decoder](https://github.com/Xpra-org/xpra/commit/e8274721943ca55bd0ddfa0f82d7f425878dcb5f)
-    * [first video frame number is 1](https://github.com/Xpra-org/xpra/commit/d70a762335fefff484e8c831f7f31e5a9334dc62)
     * [rendering of some toolbox test applications](https://github.com/Xpra-org/xpra/commit/4f1e8258a183214e971b945c9f3ab05c77341768)
 * Cosmetic / correctness:
     * [correct type for clipboard default arguments](https://github.com/Xpra-org/xpra/commit/6337aec99e6e32b2c58e97ea5812274abfa2d012)
