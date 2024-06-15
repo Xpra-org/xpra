@@ -414,6 +414,8 @@ cdef class Encoder:
                 r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, buf_ptr, &length, NULL)
             errcheck(r, "nvjpegEncodeRetrieveBitstream")
             end = monotonic()
+            client_options["frame"] = self.frames
+            self.frames += 1
             log("nvjpeg: downloaded %i jpeg bytes in %.1fms", length, 1000*(end-start))
             if self.encoding=="jpeg":
                 free_buffers()
