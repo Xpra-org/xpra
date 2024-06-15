@@ -20,7 +20,7 @@ First, make sure that all the required [dependencies](./Dependencies.md) are ins
 ```shell
 git clone https://github.com/Xpra-org/xpra
 cd xpra
-python3 ./setup.py install --prefix=/usr
+python3 ./setup.py install --prefix=/usr --single-version-externally-managed --root=/
 ```
 
 ## Caveats
