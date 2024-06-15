@@ -596,8 +596,13 @@ cdef class Encoder:
                     PyBuffer_Release(&py_buf[i])
         if r:
             raise RuntimeError(f"openh264 failed to encode frame, error {r}")
+        client_options = {
+            "frame": self.frames,
+        }
+        self.frames += 1
         if frame_info.eFrameType==videoFrameTypeSkip:
-            return b"", {"skip" : True}
+            client_options["skip"] = True
+            return b"", client_options
         data = []
         cdef SLayerBSInfo* layer_info
         for layer in range(frame_info.iLayerNum):
@@ -617,10 +622,6 @@ cdef class Encoder:
             bdata = data[0]
         else:
             bdata = b"".join(data)
-        client_options = {
-            "frame": self.frames,
-        }
-        self.frames += 1
         log(f"openh264 compress_image: {len(bdata)} bytes for frame {self.frames}")
         return bdata, client_options
 
