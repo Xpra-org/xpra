@@ -1182,18 +1182,15 @@ class SocketProtocol:
                     return False
                 return not closed  # run until we manage to close (here or via the timeout)
 
-            def packet_queued(*_args):
-                # if we're here, we have the lock and the packet is in the write queue
-                log("flush_then_close: packet_queued() closed=%s", self._closed)
-                if wait_for_packet_sent():
-                    # check again every 100ms
-                    GLib.timeout_add(100, wait_for_packet_sent)
-
             if encoder:
                 chunks = encoder(last_packet)
                 self._add_chunks_to_queue(last_packet[0], chunks, synchronous=False, more=False)
             else:
                 self.raw_write((last_packet,), "flush-then-close")
+            log("flush_then_close: packet queued closed=%s", self._closed)
+            if wait_for_packet_sent():
+                # check again every 100ms
+                GLib.timeout_add(100, wait_for_packet_sent)
             # just in case wait_for_packet_sent never fires:
             GLib.timeout_add(5 * 1000, close_and_release)
 
