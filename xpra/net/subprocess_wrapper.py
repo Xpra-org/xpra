@@ -6,7 +6,7 @@
 import os
 import sys
 import subprocess
-from queue import SimpleQueue
+from queue import SimpleQueue, Empty
 from typing import Any
 
 from xpra.gtk.signals import register_os_signals
@@ -247,9 +247,11 @@ class subprocess_callee:
     def get_packet(self):
         try:
             item = self.send_queue.get(False)
-        except Exception:
+            more = self.send_queue.qsize() > 0
+        except Empty:
             item = None
-        return item, None, None, self.send_queue.qsize() > 0
+            more = False
+        return item, False, more, False
 
     def process_packet(self, proto, packet) -> None:
         command = str(packet[0])
@@ -427,12 +429,14 @@ class subprocess_caller:
         log.warn(" %s", repr_ellipsized(args[1], limit=80))
         self.stop()
 
-    def get_packet(self):
+    def get_packet(self) -> tuple:
         try:
             item = self.send_queue.get(False)
+            more = self.send_queue.qsize() > 0
         except Exception:
             item = None
-        return item, None, None, None, False, self.send_queue.qsize() > 0
+            more = False
+        return item, False, more, False
 
     def send(self, *packet_data) -> None:
         self.send_queue.put(packet_data)

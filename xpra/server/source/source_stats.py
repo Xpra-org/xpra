@@ -98,15 +98,12 @@ class GlobalPerformanceStatistics:
         self.avg_frame_total_latency = 0
 
     def record_latency(self, wid: int, damage_packet_sequence: int, decode_time: int,
-                       start_send_at, end_send_at,
-                       pixels: int, bytecount: int, latency: int) -> None:
+                       queued_at: float, pixels: int, bytecount: int, latency: int) -> None:
         now = monotonic()
-        send_time = end_send_at - start_send_at  # how long we spend calling socket.send
-        total = now - start_send_at  # from the moment we start sending until we process the ack here
+        total = now - queued_at  # from the moment we queue the packet until we process the ack here
         dt = decode_time / 1000.0 / 1000.0  # decode_time is given in microseconds, convert to seconds
-        net_diff = max(0, total - send_time - dt)
-        log("latency: %6.1fms for %9i pixels :      %6.1f send     + %6.1f network     + %6.1f decoding            %6iKB,  sequence %5i",
-            total * 1000, pixels, send_time * 1000, net_diff * 1000, dt * 1000,
+        log("latency: %6.1fms for %9i pixels :      %6.1f send     + %6.1f decoding            %6iKB,  sequence %5i",
+            total * 1000, pixels, queued_at * 1000, dt * 1000,
             bytecount // 1024, damage_packet_sequence)
         net_total_latency = max(0, total - dt)
         if self.min_client_latency is None or self.min_client_latency > net_total_latency:

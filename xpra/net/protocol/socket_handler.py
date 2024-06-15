@@ -384,8 +384,6 @@ class SocketProtocol:
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
     def _add_packet_to_queue(self, packet: PacketType,
-                             start_cb: Callable | None = None,
-                             end_cb: Callable | None = None,
                              synchronous=True, has_more=False, wait_for_more=False) -> None:
         if not has_more:
             shm = self._source_has_more
@@ -393,25 +391,21 @@ class SocketProtocol:
                 shm.clear()
         if packet is None:
             return
-        #log("add_packet_to_queue%s", (packet[0], start_cb, end_cb, synchronous, has_more, wait_for_more), remote=False)
+        #log("add_packet_to_queue%s", (packet[0], synchronous, has_more, wait_for_more), remote=False)
         packet_type: str | int = packet[0]
         chunks: tuple[NetPacketType, ...] = tuple(self.encode(packet))
         with self._write_lock:
             if self._closed:
                 return
             try:
-                self._add_chunks_to_queue(packet_type, chunks,
-                                          start_cb, end_cb,
-                                          synchronous, has_more or wait_for_more)
+                self._add_chunks_to_queue(packet_type, chunks, synchronous, has_more or wait_for_more)
             except Exception:
                 log.error("Error: failed to queue '%s' packet", packet[0])
-                log("add_chunks_to_queue%s", (chunks, start_cb, end_cb), exc_info=True)
+                log("add_chunks_to_queue%s", (chunks, ), exc_info=True)
                 raise
 
     def _add_chunks_to_queue(self, packet_type: str | int,
                              chunks: Iterable[NetPacketType],
-                             start_cb: Callable | None = None,
-                             end_cb: Callable | None = None,
                              synchronous=True, more=False) -> None:
         """ the write_lock must be held when calling this function """
         items = []
@@ -469,7 +463,7 @@ class SocketProtocol:
                 items[0] = frame_header + item0
             else:
                 items.insert(0, frame_header)
-        self.raw_write(items, packet_type, start_cb, end_cb, synchronous, more)
+        self.raw_write(items, packet_type, synchronous, more)
 
     @staticmethod
     def make_xpra_header(_packet_type: str | int,
@@ -485,15 +479,12 @@ class SocketProtocol:
             assert not self._write_thread, "write thread already started"
             self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
 
-    def raw_write(self, items, packet_type=None,
-                  start_cb: Callable | None = None,
-                  end_cb: Callable | None = None,
-                  synchronous=True, more=False) -> None:
+    def raw_write(self, items, packet_type=None, synchronous=True, more=False) -> None:
         """ Warning: this bypasses the compression and packet encoder! """
         if self._write_thread is None:
             log("raw_write for %s, starting write thread", packet_type)
             self.start_write_thread()
-        self._write_queue.put((items, packet_type, start_cb, end_cb, synchronous, more))
+        self._write_queue.put((items, packet_type, synchronous, more))
 
     def enable_default_encoder(self) -> None:
         opts = packet_encoding.get_enabled_encoders()
@@ -714,10 +705,7 @@ class SocketProtocol:
             return False
         return self.write_items(*items)
 
-    def write_items(self, buf_data, packet_type: str = "",
-                    start_cb: Callable | None = None,
-                    end_cb: Callable | None = None,
-                    synchronous: bool = True, more: bool = False):
+    def write_items(self, buf_data, packet_type: str = "", synchronous: bool = True, more: bool = False):
         conn = self._conn
         if not conn:
             return False
@@ -730,12 +718,6 @@ class SocketProtocol:
             log("write_items(..)", exc_info=True)
             if not self._closed:
                 raise
-        if start_cb:
-            try:
-                start_cb(conn.output_bytecount)
-            except Exception:
-                if not self._closed:
-                    log.error(f"Error on write start callback {start_cb}", exc_info=True)
         self.write_buffers(buf_data, packet_type, synchronous)
         try:
             if len(buf_data) > 1:
@@ -746,12 +728,6 @@ class SocketProtocol:
             log("write_items(..)", exc_info=True)
             if not self._closed:
                 raise
-        if end_cb:
-            try:
-                end_cb(self._conn.output_bytecount)
-            except Exception:
-                if not self._closed:
-                    log.error(f"Error on write end callback {end_cb}", exc_info=True)
         return True
 
     def write_buffers(self, buf_data, packet_type: str, _synchronous: bool):
@@ -1215,9 +1191,7 @@ class SocketProtocol:
 
             if encoder:
                 chunks = encoder(last_packet)
-                self._add_chunks_to_queue(last_packet[0], chunks,
-                                          start_cb=None, end_cb=packet_queued,
-                                          synchronous=False, more=False)
+                self._add_chunks_to_queue(last_packet[0], chunks, synchronous=False, more=False)
             else:
                 self.raw_write((last_packet,), "flush-then-close")
             # just in case wait_for_packet_sent never fires:

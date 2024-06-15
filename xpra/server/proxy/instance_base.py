@@ -309,7 +309,7 @@ class ProxyInstance:
         p = self.client_packets.get()
         s = self.client_packets.qsize()
         log("sending to client: %s (queue size=%i)", p[0], s)
-        return p, None, None, True, s > 0 or self.server_has_more
+        return p, True, s > 0 or self.server_has_more
 
     def process_client_packet(self, proto, packet: PacketType) -> None:
         packet_type = str(packet[0])

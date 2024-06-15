@@ -255,8 +255,6 @@ class ClientConnection(StubSourceMixin):
         self.queue_encode((optional, fn, args))
 
     def queue_packet(self, packet, wid=0, pixels=0,
-                     start_send_cb: Callable | None = None,
-                     end_send_cb: Callable | None = None,
                      wait_for_more=False) -> None:
         """
             Add a new 'draw' packet to the 'packet_queue'.
@@ -268,7 +266,7 @@ class ClientConnection(StubSourceMixin):
             self.statistics.damage_packet_qpixels.append(
                 (now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1] == wid))
             )
-        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, wait_for_more))
+        self.packet_queue.append((packet, wid, pixels, wait_for_more))
         p = self.protocol
         if p:
             p.source_has_more()
@@ -304,17 +302,17 @@ class ClientConnection(StubSourceMixin):
 
     ######################################################################
     # network:
-    def next_packet(self) -> tuple[PacketType, Callable, Callable, bool, bool, bool]:
+    def next_packet(self) -> tuple[PacketType, bool, bool, bool]:
         """ Called by protocol.py when it is ready to send the next packet """
-        packet, start_send_cb, end_send_cb = None, None, None
+        packet = None
         synchronous, have_more, will_have_more = True, False, False
         if not self.is_closed():
             if self.ordinary_packets:
                 packet, synchronous, will_have_more = self.ordinary_packets.pop(0)
             elif self.packet_queue:
-                packet, _, _, start_send_cb, end_send_cb, will_have_more = self.packet_queue.popleft()
+                packet, _, _, will_have_more = self.packet_queue.popleft()
             have_more = packet is not None and bool(self.ordinary_packets or self.packet_queue)
-        return packet, start_send_cb, end_send_cb, synchronous, have_more, will_have_more
+        return packet, synchronous, have_more, will_have_more
 
     def send(self, *parts: PacketElement, **kwargs) -> None:
         """ This method queues non-damage packets (higher priority) """

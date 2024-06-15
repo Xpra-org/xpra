@@ -134,7 +134,7 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
     # here we try to minimize damage-latency and client decoding speed
 
     # backlog factor:
-    _, pixels_backlog, _ = statistics.get_client_backlog()
+    _, pixels_backlog = statistics.get_client_backlog()
     pb_ratio = pixels_backlog / low_limit
     pixels_bl_s = 100 - int(100 * logp(pb_ratio / 4))  # 4 frames behind or more -> compress more
 
@@ -257,7 +257,7 @@ def get_target_quality(window_dimensions, batch,
     # the compression ratio tells us if we can increase the quality
 
     # backlog factor:
-    packets_backlog, pixels_backlog, _ = statistics.get_client_backlog()
+    packets_backlog, pixels_backlog = statistics.get_client_backlog()
     pb_ratio = pixels_backlog / low_limit
     pixels_bl_q = 1 - sqrt(pb_ratio / 8)  # 8 frames behind or more -> min quality
 

@@ -2319,7 +2319,7 @@ class WindowVideoSource(WindowSource):
         fallback_encodings = tuple(set(self.non_video_encodings).intersection(self.video_fallback_encodings.keys()))
         log("fallback encodings(%s, %s)=%s",
             self.non_video_encodings, self.video_fallback_encodings, fallback_encodings)
-        encoding = self.do_get_auto_encoding(w, h, options, "", fallback_encodings)
+        encoding = self.do_get_auto_encoding(w, h, dict(options), "", fallback_encodings)
         if not encoding:
             return ()
         encoder = self.video_fallback_encodings[encoding][0]

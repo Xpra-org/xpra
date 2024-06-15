@@ -1785,10 +1785,9 @@ class WindowSource(WindowIconSource):
             log_fn(" %i late responses:", len(dap))
             for seq in sorted(dap.keys()):
                 ack_data = dap[seq]
-                if ack_data[3] == 0:
-                    log_fn(" %6i %-5s: queued but not sent yet", seq, ack_data[1])
-                else:
-                    log_fn(" %6i %-5s: %3is", seq, ack_data[1], now-ack_data[3])
+                elapsed = now - ack_data[0]
+                coding = ack_data[1]
+                log_fn(" %6i %-5s: %3is", seq, coding, elapsed)
 
     def _may_send_delayed(self) -> None:
         # this method is called from the timer,
@@ -2432,9 +2431,7 @@ class WindowSource(WindowIconSource):
             "speed"         : self.refresh_speed,
         }
 
-    def queue_damage_packet(self, packet,
-                            damage_time, process_damage_time,
-                            options: typedict) -> None:
+    def queue_damage_packet(self, packet, damage_time: float, process_damage_time: float, options: typedict) -> None:
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
@@ -2447,40 +2444,19 @@ class WindowSource(WindowIconSource):
         width = int(packet[4])
         height = int(packet[5])
         coding, data, damage_packet_sequence, _, client_options = packet[6:11]
-        ldata = len(data)
         actual_batch_delay = process_damage_time-damage_time
-        ack_pending = [0, coding, 0, 0, 0, width*height, client_options, damage_time]
-        statistics = self.statistics
-        statistics.damage_ack_pending[damage_packet_sequence] = ack_pending
-
-        def start_send(bytecount: int) -> None:
-            ack_pending[0] = monotonic()
-            ack_pending[2] = bytecount
-
-        def damage_packet_sent(bytecount: int) -> None:
-            now = monotonic()
-            ack_pending[3] = now
-            ack_pending[4] = bytecount
-            if process_damage_time > 0:
-                statistics.damage_out_latency.append((now, width*height, actual_batch_delay, now-process_damage_time))
-            elapsed_ms = int((now-ack_pending[0])*1000)
-            # only record slow send as congestion events
-            # if the bandwidth limit is already below the threshold:
-            if ldata > 1024 and self.bandwidth_limit < SLOW_SEND_THRESHOLD:
-                # if this packet completed late, record congestion send speed:
-                max_send_delay = 5 + self.estimate_send_delay(ldata)
-                if elapsed_ms > max_send_delay:
-                    late_pct = round(elapsed_ms*100/max_send_delay)-100
-                    send_speed = int(ldata*8*1000/elapsed_ms)
-                    self.networksend_congestion_event("slow send", late_pct, send_speed)
-            self.schedule_auto_refresh(packet, options)
+        now = monotonic()
+        pixcount = width * height
+        bytecount = len(data)
+        stats = self.statistics
+        stats.damage_ack_pending[damage_packet_sequence] = (
+            now, coding, pixcount, bytecount, client_options, damage_time,
+        )
         if process_damage_time > 0:
-            now = monotonic()
             damage_in_latency = now-process_damage_time
-            statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
-        self.statistics.last_packet_time = monotonic()
-        self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent,
-                          client_options.get("flush", 0))
+            stats.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
+        stats.last_packet_time = monotonic()
+        self.queue_packet(packet, self.wid, pixcount, client_options.get("flush", 0) > 0)
 
     def networksend_congestion_event(self, source, late_pct: int, cur_send_speed: int = 0) -> None:
         gs = self.global_statistics
@@ -2565,48 +2541,44 @@ class WindowSource(WindowIconSource):
             log("cannot find sent time for sequence %s", damage_packet_sequence)
             return
         gs = self.global_statistics
-        start_send_at, _, start_bytes, end_send_at, end_bytes, pixels, client_options, damage_time = pending
-        bytecount = end_bytes-start_bytes
-        # it is possible though unlikely
-        # that we get the ack before we've had a chance to call
-        # damage_packet_sent, so we must validate the data:
-        if bytecount > 0 and end_send_at > 0:
-            now = monotonic()
-            if decode_time > 0:
-                latency = int(1000*(now-damage_time))
-                self.global_statistics.record_latency(self.wid, damage_packet_sequence, decode_time,
-                                                      start_send_at, end_send_at, pixels, bytecount, latency)
-            # we can ignore some packets:
-            # * the first frame (frame=0) of video encoders can take longer to decode
-            #   as we have to create a decoder context
-            frame_no = client_options.get("frame", None)
-            # when flushing a screen update as multiple packets (network layer aggregation),
-            # we could ignore all but the last one (flush=0):
-            # flush = client_options.get("flush", 0)
-            if frame_no != 0:
-                netlatency = int(1000*gs.min_client_latency*(100+ACK_JITTER)//100)
-                sendlatency = min(200, self.estimate_send_delay(bytecount))
-                # decode = pixels//100000         # 0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
-                live_time = int(1000*(now-self.statistics.init_time))
-                ack_tolerance = self.jitter + ACK_TOLERANCE + max(0, 200-live_time//10)
-                latency = netlatency + sendlatency + decode_time + ack_tolerance
-                # late_by and latency are in ms, timestamps are in seconds:
-                actual = int(1000*(now-start_send_at))
-                late_by = actual-latency
-                if late_by > 0 and (live_time >= 1000 or pixels >= 4096):
-                    actual_send_latency = actual-netlatency-decode_time
-                    late_pct = actual_send_latency*100//(1+sendlatency)
-                    if pixels <= 4096 or actual_send_latency <= 0:
-                        # small packets can really skew things, don't bother
-                        # (this also filters out scroll packets which are tiny)
-                        send_speed = 0
-                    else:
-                        send_speed = bytecount*8*1000//actual_send_latency
-                    # statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps",
-                    #    latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
-                    self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (
-                        damage_packet_sequence, late_by, latency, (netlatency, sendlatency, decode_time, ack_tolerance)),
-                        late_pct, send_speed)
+        # pending = (now, coding, pixcount, bytecount, client_options, damage_time)
+        queued_at, coding, pixels, bytecount, client_options, damage_time = pending
+        now = monotonic()
+        if decode_time > 0:
+            latency = int(1000 * (now - damage_time))
+            self.global_statistics.record_latency(self.wid, damage_packet_sequence, decode_time, queued_at,
+                                                  pixels, bytecount, latency)
+        # we can ignore some packets:
+        # * the first frame (frame=0) of video encoders can take longer to decode
+        #   as we have to create a decoder context
+        frame_no = client_options.get("frame", -1)
+        # when flushing a screen update as multiple packets (network layer aggregation),
+        # we could ignore all but the last one (flush=0):
+        # flush = client_options.get("flush", 0)
+        if frame_no != 0:
+            netlatency = int(1000 * gs.min_client_latency * (100 + ACK_JITTER) // 100)
+            sendlatency = min(200, self.estimate_send_delay(bytecount))
+            # decode = pixels//100000         # 0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
+            live_time = int(1000 * (now - self.statistics.init_time))
+            ack_tolerance = self.jitter + ACK_TOLERANCE + max(0, 200-live_time//10)
+            latency = netlatency + sendlatency + decode_time + ack_tolerance
+            # late_by and latency are in ms, timestamps are in seconds:
+            actual = int(1000 * (now - queued_at))
+            late_by = actual-latency
+            if late_by > 0 and (live_time >= 1000 or pixels >= 4096):
+                actual_send_latency = actual - netlatency-decode_time
+                late_pct = actual_send_latency * 100 // (1 + sendlatency)
+                if pixels <= 4096 or actual_send_latency <= 0:
+                    # small packets can really skew things, don't bother
+                    # (this also filters out scroll packets which are tiny)
+                    send_speed = 0
+                else:
+                    send_speed = bytecount * 8 * 1000 // actual_send_latency
+                # statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps",
+                #    latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
+                self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (
+                    damage_packet_sequence, late_by, latency, (netlatency, sendlatency, decode_time, ack_tolerance)),
+                    late_pct, send_speed)
         damage_delayed = self._damage_delayed
         if not damage_delayed:
             self.soft_expired = 0
@@ -2704,7 +2676,7 @@ class WindowSource(WindowIconSource):
         try:
             ret = encoder(coding, image, tdoptions)
         except (TypeError, RuntimeError) as e:
-            log.error(f"Error on {encoder}({coding}, {image}, {tdoptions})")
+            log.error(f"Error on {encoder}({coding}, {image}, {tdoptions})", exc_info=True)
             return nodata(str(e))
         if not ret:
             return nodata("no data from encoder %s for %s",

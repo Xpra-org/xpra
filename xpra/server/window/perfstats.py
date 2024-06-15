@@ -242,26 +242,23 @@ class WindowPerformanceStatistics:
         max_latency = min(avg_latency, 4.0 * min_latency + 0.100)
         return max(abs_min, min(max_latency, sqrt(min_latency * avg_latency))) + decoding_latency + jitter / 1000.0
 
-    def get_client_backlog(self) -> tuple[int, int, int]:
-        packets_backlog, pixels_backlog, bytes_backlog = 0, 0, 0
+    def get_client_backlog(self) -> tuple[int, int]:
+        packets_backlog, pixels_backlog = 0, 0
         if self.damage_ack_pending:
-            sent_before = monotonic() - (self.target_latency + TARGET_LATENCY_TOLERANCE)
+            queued_before = monotonic() - (self.target_latency + TARGET_LATENCY_TOLERANCE)
             dropped_acks_time = monotonic() - 60  # 1 minute
             drop_missing_acks = []
             for sequence, item in tuple(self.damage_ack_pending.items()):
-                start_send_at = item[0]
-                end_send_at = item[3]
-                if end_send_at == 0 or start_send_at > sent_before:
+                queued_at = item[0]
+                if queued_at > queued_before:
                     continue
-                if start_send_at < dropped_acks_time:
+                if queued_at < dropped_acks_time:
                     drop_missing_acks.append(sequence)
                 else:
-                    start_bytes = item[2]
-                    end_bytes = item[4]
-                    pixels = item[5]
+                    # ack_pending = (now, coding, pixcount, bytecount, client_options, damage_time)
+                    pixels = item[2]
                     packets_backlog += 1
                     pixels_backlog += pixels
-                    bytes_backlog += (end_bytes - start_bytes)
             log("get_client_backlog missing acks: %s", drop_missing_acks)
             # this should never happen...
             if drop_missing_acks:
@@ -270,7 +267,7 @@ class WindowPerformanceStatistics:
                 log.error(" sequence numbers missing: %s", csv(drop_missing_acks))
                 for sequence in drop_missing_acks:
                     self.damage_ack_pending.pop(sequence, None)
-        return packets_backlog, pixels_backlog, bytes_backlog
+        return packets_backlog, pixels_backlog
 
     def get_acks_pending(self) -> int:
         return sum(1 for x in self.damage_ack_pending.values() if x[0] != 0)
@@ -278,11 +275,8 @@ class WindowPerformanceStatistics:
     def get_late_acks(self, latency) -> int:
         now = monotonic()
         sent_before = now - latency
-        # start_send_at = item[0]
-        # end_send_at = item[3]
-        late = sum(1 for item in self.damage_ack_pending.values() if item[3] > 0 and item[0] <= sent_before)
-        log("get_late_acks(%i)=%i (%i in full pending list)",
-            1000 * latency, late, len(self.damage_ack_pending))
+        late = sum(1 for item in self.damage_ack_pending.values() if item[0] <= sent_before)
+        log("get_late_acks(%i)=%i (%i in full pending list)", 1000 * latency, late, len(self.damage_ack_pending))
         return late
 
     def get_pixels_encoding_backlog(self) -> tuple[int, int]:
