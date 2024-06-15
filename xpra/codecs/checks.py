@@ -355,7 +355,7 @@ def testdecoding(decoder_module, encoding: str, full: bool) -> None:
                     options = typedict({"junk": True})
                     try:
                         image = decoder.decompress_image(b"junk", options)
-                    except ValueError:
+                    except (RuntimeError, ValueError):
                         image = None
                     if image is not None:
                         raise RuntimeError(f"decoding junk with {decoder_module.get_type()} should have failed, got {image} instead")
