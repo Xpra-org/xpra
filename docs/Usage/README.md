@@ -6,7 +6,7 @@ These examples should work for the [current versions](https://github.com/Xpra-or
 Use `man xpra` to get the manual corresponding to the version you have installed. \
 On MS Windows, please see [windows command line](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Client.md#command-line). \
 
-## Simple [seamless](./Seamless.md) application forwarding
+## Simple [seamless](Seamless.md) application forwarding
 This is how xpra is most often used.\
 This command will start an `xterm` (or any graphical application of your choice) on `HOST` and display it to your local desktop through an [SSH](../Network/SSH.md) transport:
 ```shell
@@ -54,7 +54,7 @@ Then, assuming that the port you have chosen (`10000` in the example above) is a
 xpra attach tcp://SERVERHOST:10000/
 ```
 
-Beware: this TCP socket is insecure in this example, see [authentication](./Authentication.md).
+Beware: this TCP socket is insecure in this example, see [authentication](Authentication.md).
 </details>
 <details>
   <summary>Attach with a session file</summary>
@@ -72,8 +72,8 @@ speaker=off
 
 ***
 
-## Forwarding a [full desktop](./Desktop.md)
-Xpra can also forward a full desktop environment using the [start-desktop](./Desktop.md) mode:
+## Forwarding a [full desktop](Desktop.md)
+Xpra can also forward a full desktop environment using the [start-desktop](Desktop.md) mode:
 ```shell
 xpra start-desktop --start-child=fluxbox
 ```
@@ -81,7 +81,7 @@ Just like above, you can connect via SSH, TCP or any other [supported transport]
 
 ***
 
-## Cloning / [Shadowing](./Shadow.md) an existing display
+## Cloning / [Shadowing](Shadow.md) an existing display
 This mode allows you to access an existing display remotely.\
 Simply run:
 ```shell
@@ -106,14 +106,14 @@ xpra shadow --printing=yes --windows=no --speaker=no ssh://SERVERHOST/
 The local printers should be virtualized on the server.
 
 ## Other Documentation Links
-* [Client](./Client.md) - launching the xpra client
-* [Client OpenGL](./Client-OpenGL.md) - for better window rendering performance
-* [OpenGL](./OpenGL.md) - running accelerated OpenGL application on the server
-* [Configuration](./Configuration.md) - using configuration files
-* [Encodings](./Encodings.md) - advanced picture encoding configuration, ie: [NVENC](./NVENC.md)
-* [Logging](./Logging.md) - debugging
-* [Security](./Security.md) - hardening, options and using xpra for better security
-* [Proxy Server](./Proxy-Server.md) - using the proxy server as a single entry point
-* [Apache Proxy Server](./Apache-Proxy.md) - using the apache http server as a proxy
-* [WSL](./WSL.md) - Windows Subsystem for Linux
-* [Xdummy](./Xdummy.md) - the alternative virtual framebuffer
+* [Client](Client.md) - launching the xpra client
+* [Client OpenGL](Client-OpenGL.md) - for better window rendering performance
+* [OpenGL](OpenGL.md) - running accelerated OpenGL application on the server
+* [Configuration](Configuration.md) - using configuration files
+* [Encodings](Encodings.md) - advanced picture encoding configuration, ie: [NVENC](NVENC.md)
+* [Logging](Logging.md) - debugging
+* [Security](Security.md) - hardening, options and using xpra for better security
+* [Proxy Server](Proxy-Server.md) - using the proxy server as a single entry point
+* [Apache Proxy Server](Apache-Proxy.md) - using the apache http server as a proxy
+* [WSL](WSL.md) - Windows Subsystem for Linux
+* [Xdummy](Xdummy.md) - the alternative virtual framebuffer

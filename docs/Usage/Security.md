@@ -43,7 +43,7 @@ That said, `mp3` is now over 30 years old and the libraries parsing it are very 
 Other codecs have had a few issues in more recent times (ie: [faac and faad2 security issues](https://github.com/Xpra-org/xpra/issues/2474))
 xpra runs the audio processing in a separate process which does not have access to the display.
 
-### [Encodings](./Encodings.md)
+### [Encodings](Encodings.md)
 Xpra supports a large number of picture and video codecs as well as raw uncompressed pixel data.
 Each encoding option has different strengths and weaknesses. The raw options `rgb` and `mmap` are obviously the safest since they do not require any parsing, but they can require humongous amounts of bandwidth (ie: tens of Gbps for a 4K window).
 Older picture encodings like `png` and `jpeg` are probably the safests due to their maturity.
@@ -76,7 +76,7 @@ The `--dbus-control` channel should be turned off if unused.
 
 ### Hardware Access
 Any subsystem that accesses hardware directly is an inherent security risk.
-This includes: the [NVENC encoder](./NVENC.md) (see also _proxy server system integration_), hardware OpenGL [server](./OpenGL.md) and [client](./Client-OpenGL.md) acceleration, printer access and some authentication modules.
+This includes: the [NVENC encoder](NVENC.md) (see also _proxy server system integration_), hardware OpenGL [server](OpenGL.md) and [client](Client-OpenGL.md) acceleration, printer access and some authentication modules.
 
 </details>
 
@@ -88,18 +88,18 @@ This includes: the [NVENC encoder](./NVENC.md) (see also _proxy server system in
   <summary>Running mode, network connections and diagnostics, malicious peers, specific options</summary>
 
 ### Modes
-Some features are harder to implement correctly in [seamless mode](./Seamless.md) because of the inherent complexity of handling windows client side and synchronizing their state. (ie: [window resizing vs readonly mode](https://github.com/Xpra-org/xpra/issues/2137))
+Some features are harder to implement correctly in [seamless mode](Seamless.md) because of the inherent complexity of handling windows client side and synchronizing their state. (ie: [window resizing vs readonly mode](https://github.com/Xpra-org/xpra/issues/2137))
 By definition, shadow mode gives access to the full desktop, without any kind of restriction - for better or worse.
-For these reasons, it may be worth considering [desktop mode](./Desktop.md) instead.
+For these reasons, it may be worth considering [desktop mode](Desktop.md) instead.
 
-### [Network](../Network) and [Authentication](./Authentication.md)
+### [Network](../Network) and [Authentication](Authentication.md)
 Xpra supports natively many different types of network connections (`tcp`, `ssl`, `ws`, `wss`, `vnc`, `ssh`, `vsock`, `quic`, etc) and most of these can be [encrypted](../Network/Encryption.md) and multiplexed through a single port.
 The safest option will depend on the type of xpra client connecting - but generally speaking, `ssl`, `quic` and `ssh` are considered the safest as they provide host verification and encryption in one protocol.
 Each connection can also combine any number of [authentication modules](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Authentication.md#authentication-modules).
 
-### [Logging](./Logging.md) and diagnostics
+### [Logging](Logging.md) and diagnostics
 Debugging tools and diagnostics can sometimes be at odds with good security practices. When that happens, we usually [err on the side of caution](https://github.com/Xpra-org/xpra/issues/1939) but not always when it affects usability: [http scripts information disclosure](https://github.com/Xpra-org/xpra/pull/3156)
-The extensive [debug logging](./Logging.md) capabilities normally obfuscate sensitive information like passwords and keys,
+The extensive [debug logging](Logging.md) capabilities normally obfuscate sensitive information like passwords and keys,
 but it may still be possible to glean enough data to be present a real risk. A good preventative measure is to disable remote logging and turn off the server's control channel (#3573).
 The xpra shell is a very powerful debugging feature which allows full access to all the data structures held in the client and server. It is disabled by default.
 
@@ -173,10 +173,10 @@ its server process whilst still giving it access to the paths and sockets it nee
 ### System Integration
 The xpra server and client(s) can both be embedded with or integrated into other sotware components, this completely changes the security profile of the solution.
 For example:
-* By using an external websocket proxy (ie: [Apache HTTP Proxy](./Apache-Proxy.md)) one can shield the xpra server from potentially hostile external traffic and add a separately configured authentication layer with only minimal latency costs (when configured properly)
-* Xpra's own [proxy server](./Proxy-Server.md) can be used to provide hardware acceleration within a different context than the one that is executing user applications.
-* Running the [system-wide proxy server](./Service.md) provides tighter integration into the system's session service, which has both pros and cons: potentially better session accounting and control, at the cost of running a privileged service
-* OpenGL hardware acceleration via [WSL - Windows Subsystem for Linux](./WSL.md)
+* By using an external websocket proxy (ie: [Apache HTTP Proxy](Apache-Proxy.md)) one can shield the xpra server from potentially hostile external traffic and add a separately configured authentication layer with only minimal latency costs (when configured properly)
+* Xpra's own [proxy server](Proxy-Server.md) can be used to provide hardware acceleration within a different context than the one that is executing user applications.
+* Running the [system-wide proxy server](Service.md) provides tighter integration into the system's session service, which has both pros and cons: potentially better session accounting and control, at the cost of running a privileged service
+* OpenGL hardware acceleration via [WSL - Windows Subsystem for Linux](WSL.md)
 
 ### Containers - VM
 Using containers or virtual machines is a very popular way of deploying xpra, both offer a strong extra security layer which can also be used to restrict access to system resources - though this limited access to the underlying hardware also restricts hardware acceleration options.

@@ -18,16 +18,16 @@ Run `apt-get update --allow-releaseinfo-change`.
 ### Debian's Aptitude says *Some index files failed to download* when updating
 See above.
 ### I found a security issue
-Please [tell us](./SECURITY.md)
+Please [tell us](SECURITY.md)
 
 ***
 
 
 ## Usage questions
 ### Where is xpra's system tray icon?
-Some desktop environments [make it impossible to show a system tray icon](./Features/System-Tray.md#caveats).
+Some desktop environments [make it impossible to show a system tray icon](Features/System-Tray.md#caveats).
 ### Why does Xpra use any CPU when the session is idle?
-[Audio forwarding](./Features/Audio.md) will consume a fairly constant amount of CPU and bandwidth. Turn speaker forwarding off if you don't need it.\
+[Audio forwarding](Features/Audio.md) will consume a fairly constant amount of CPU and bandwidth. Turn speaker forwarding off if you don't need it.\
 Some applications will also repaint their windows unnecessarily. If you don't use them, try minimizing their windows.
 ### Why does the clipboard keep flashing? Why is clipboard synchronization unreliable?
 Make sure that no other tool is also doing clipboard synchronization. Avoid clipboard managers at all cost.
@@ -65,7 +65,7 @@ Always start your applications with `xpra start --start=APP` and not `DISPLAY=:N
 
 ## Network
 ### How can I allow multiple users to connect through a single port?
-Use the [proxy server](./Usage/Proxy-Server.md).
+Use the [proxy server](Usage/Proxy-Server.md).
 ### How can I use an SSH key with MS Windows clients?
 If your SSH key is not detected and used correctly by default, you may want to use `pageant`: [putty FAQ: How do I use public keys](http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#faq-options) and tell xpra to use putty: `--ssh=plink`.
 
@@ -89,11 +89,11 @@ Use `machinectl shell --uid=username` instead of `su` / `sudo`.
 * "`Failed to open the uinput device: Permission denied`" - you do not have the permissions required for opening the `/dev/uinput` device
 ### "`found an existing window manager on screen ...`"
 Xpra is a window manager, you cannot run two window managers on the same X11 display at the same time.\
-If you want to forward a whole desktop, including its window manager, see [desktop mode](./Usage/Desktop.md), otherwise stop the other window manager.
+If you want to forward a whole desktop, including its window manager, see [desktop mode](Usage/Desktop.md), otherwise stop the other window manager.
 ### "`cannot register our notification forwarder ...`"
 The xpra server was started from a GUI session which already had a dbus instance and a notification daemon, notifications forwarding cannot be enabled.
 ### "DPI set to NN x NN (wanted MM x MM), you may experience scaling problems, such as huge or small fonts, etc - to fix this issue, try the dpi switch, or use a patched Xorg dummy driver"
-The vfb command in use does not preserve DPI settings. You may want to switch to using a patched [Xdummy](./Usage/Xdummy.md).
+The vfb command in use does not preserve DPI settings. You may want to switch to using a patched [Xdummy](Usage/Xdummy.md).
 ### "`xpra [errno 2] no such file or directory`" when connecting via ssh.
 Xpra is not installed on the remote host.
 ### X11 keyboard warnings: `Unsupported high keycode XXX for name <INNN> ignored`

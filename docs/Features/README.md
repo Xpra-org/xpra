@@ -1,20 +1,20 @@
 # Features
 
 ## Device Forwarding
-* [Audio](./Audio.md) : speaker and microphone
-* [Printers](./Printing.md)
-* [Webcams](./Webcam.md)
-* [Keyboard](./Keyboard.md)
+* [Audio](Audio.md) : speaker and microphone
+* [Printers](Printing.md)
+* [Webcams](Webcam.md)
+* [Keyboard](Keyboard.md)
 
 ## Data Synchronization
-* [Clipboard](./Clipboard.md)
-* [File transfers](./File-Transfers.md)
-* [System tray](./System-Tray.md)
-* [Notifications](./Notifications.md)
+* [Clipboard](Clipboard.md)
+* [File transfers](File-Transfers.md)
+* [System tray](System-Tray.md)
+* [Notifications](Notifications.md)
 
-## [Display Characteristics](./Display.md)
-* [Image Depth](./Image-Depth.md)
-* [DPI](./DPI.md)
+## [Display Characteristics](Display.md)
+* [Image Depth](Image-Depth.md)
+* [DPI](DPI.md)
 
 
 ## See also

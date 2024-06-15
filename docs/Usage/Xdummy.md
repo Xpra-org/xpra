@@ -1,6 +1,6 @@
 # ![X11](../images/icons/X11.png) Xdummy
 
-`Xdummy` is used with [seamless](./Seamless.md) and [desktop](./Desktop.md) servers sessions on [posix platforms](https://github.com/Xpra-org/xpra/wiki/Platforms).
+`Xdummy` is used with [seamless](Seamless.md) and [desktop](Desktop.md) servers sessions on [posix platforms](https://github.com/Xpra-org/xpra/wiki/Platforms).
 
 `Xdummy` was originally developed by Karl Runge as a [script](http://www.karlrunge.com/x11vnc/Xdummy) to allow a standard X11 server to be used by non-root users with the [dummy video driver](https://github.com/Xpra-org/xf86-video-dummy)
 

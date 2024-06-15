@@ -1,6 +1,6 @@
 # Apache Proxy
 
-Instead of using xpra's builtin [proxy server](./Proxy-Server.md), the [apache http server](https://httpd.apache.org/) can be configured as a single point of entry, on a single port. \
+Instead of using xpra's builtin [proxy server](Proxy-Server.md), the [apache http server](https://httpd.apache.org/) can be configured as a single point of entry, on a single port. \
 Just like xpra's proxy, the apache proxy can provide multiple sessions, potentially on multiple remote backend servers.
 
 This works well with both the [html5 client](https://github.com/Xpra-org/xpra-html5) and the regular xpra client.
