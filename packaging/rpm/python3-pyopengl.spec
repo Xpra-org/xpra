@@ -19,7 +19,7 @@
 
 Name:           %{python3}-pyopengl
 Version:        3.1.7
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -34,7 +34,7 @@ BuildRequires:  %{python3}-numpy
 BuildRequires:  gcc
 Requires:       freeglut
 %if 0%{fedora}<40
-Recommends:     %{python3}-numpy
+Suggests:       %{python3}-numpy
 %endif
 Obsoletes:      %{python3}-PyOpenGL < 3.1.5
 Obsoletes:      %{python3}-PyOpenGL-accelerate < 3.1.5
@@ -122,6 +122,9 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Sat Jun 15 2024 Antoine Martin <antoine@xpra.org> - 3.1.7-6
+- lower `numpy` to a suggestion, because xpra doesn't use numpy with pyopengl
+
 * Sat Jun 15 2024 Antoine Martin <antoine@xpra.org> - 3.1.7-5
 - don't require numpy, only recommend it
 - apply no-numpy patch on Fedora 40+
