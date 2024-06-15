@@ -2576,8 +2576,8 @@ class WindowSource(WindowIconSource):
                     send_speed = bytecount * 8 * 1000 // actual_send_latency
                 # statslog("send latency: expected up to %3i, got %3i, %6iKB sent in %3i ms: %5iKbps",
                 #    latency, actual, bytecount//1024, actual_send_latency, send_speed//1024)
-                self.networksend_congestion_event("late-ack for sequence %6i: late by %3ims, target latency=%3i (%s)" % (
-                    damage_packet_sequence, late_by, latency, (netlatency, sendlatency, decode_time, ack_tolerance)),
+                self.networksend_congestion_event("late-ack for sequence %6i: %s frame late by %3ims, target latency=%3i (%s)" % (
+                    damage_packet_sequence, coding, late_by, latency, (netlatency, sendlatency, decode_time, ack_tolerance)),
                     late_pct, send_speed)
         damage_delayed = self._damage_delayed
         if not damage_delayed:
