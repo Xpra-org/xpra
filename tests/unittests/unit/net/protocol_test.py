@@ -252,7 +252,7 @@ class ProtocolTest(unittest.TestCase):
             #log.info("get_packet_cb")
             try:
                 packet = many.pop(0)
-                return (packet, None, None, None, False, True, False)
+                return (packet, False, True, False)
             except IndexError:
                 proto.close()
                 return (None, )
