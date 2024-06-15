@@ -984,7 +984,6 @@ cdef class Encoder:
         if self.need_reconfig:
             self.reconfig_tune()
         #info for client:
-        self.frames += 1
         client_options = {
             "frame"     : int(self.frames),
             "pts"       : int(pic_out.i_pts),
@@ -999,10 +998,11 @@ cdef class Encoder:
             client_options["delayed"] = self.delayed_frames
         if self.export_nals:
             client_options["nals"] = nal_indexes
-        if self.frames <= 1:
+        if self.frames == 0:
             client_options["profile"] = self.profile
         #accounting:
         cdef double end = monotonic()
+        self.frames += 1
         self.time += end-start
         self.last_frame_times.append((start, end))
         assert self.context!=NULL

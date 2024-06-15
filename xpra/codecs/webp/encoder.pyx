@@ -566,7 +566,9 @@ cdef class Encoder:
 
         client_options = {
             "rgb_format"  : pixel_format,
+            "frame" : self.frames,
         }
+        self.frames += 1
         cdef int subsample = self.quality < SUBSAMPLING_THRESHOLD
         if subsample:
             if self.alpha:

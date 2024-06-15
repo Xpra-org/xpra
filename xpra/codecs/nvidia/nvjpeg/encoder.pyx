@@ -411,7 +411,6 @@ cdef class Encoder:
             end = monotonic()
             log("nvjpeg: nvjpegEncodeImage took %.1fms using input format %s",
                 1000*(end-start), NVJPEG_INPUT_STR.get(input_format, input_format))
-            self.frames += 1
             #r = cudaStreamSynchronize(stream)
             #if not r:
             #    raise RuntimeError("nvjpeg failed to synchronize cuda stream: %i" % r)
@@ -425,6 +424,8 @@ cdef class Encoder:
                 r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, buf_ptr, &length, NULL)
             errcheck(r, "nvjpegEncodeRetrieveBitstream")
             end = monotonic()
+            client_options["frame"] = self.frames
+            self.frames += 1
             log("nvjpeg: downloaded %i jpeg bytes in %.1fms", length, 1000*(end-start))
             if self.encoding=="jpeg":
                 free_buffers()

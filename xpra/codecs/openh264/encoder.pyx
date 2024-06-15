@@ -617,11 +617,12 @@ cdef class Encoder:
             bdata = data[0]
         else:
             bdata = b"".join(data)
-        self.frames += 1
-        log(f"openh264 compress_image: {len(bdata)} bytes for frame {self.frames}")
-        return bdata, {
+        client_options = {
             "frame": self.frames,
         }
+        self.frames += 1
+        log(f"openh264 compress_image: {len(bdata)} bytes for frame {self.frames}")
+        return bdata, client_options
 
 
 def selftest(full=False) -> None:
