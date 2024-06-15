@@ -607,8 +607,10 @@ cdef class Encoder:
         param.i_keyint_max = X264_KEYINT_MAX_INFINITE
         #we don't want IDR frames either:
         param.i_keyint_min = X264_KEYINT_MAX_INFINITE
-        if param.i_frame_reference<2:
-            param.b_intra_refresh = 1   #intra refresh uses more bandwidth, but avoids IDR spikes
+        # we can't enable 'intra-refresh' here because this triggers a warning:
+        # 'intra-refresh is not compatible with open-gop'
+        # if param.i_frame_reference<2:
+        #    param.b_intra_refresh = 1   #intra refresh uses more bandwidth, but avoids IDR spikes
         param.b_open_gop = 1        #allow open gop
         #param.b_opencl = self.opencl
         param.i_bframe = self.b_frames
