@@ -19,7 +19,7 @@
 
 Name:           %{python3}-pyopengl
 Version:        3.1.7
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -33,7 +33,9 @@ BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-numpy
 BuildRequires:  gcc
 Requires:       freeglut
-Requires:       %{python3}-numpy
+%if 0%{fedora}<40
+Recommends:     %{python3}-numpy
+%endif
 Obsoletes:      %{python3}-PyOpenGL < 3.1.5
 Obsoletes:      %{python3}-PyOpenGL-accelerate < 3.1.5
 Provides:       %{python3}-PyOpenGL = %{version}-%{release}
@@ -54,9 +56,6 @@ Summary:        %{srcname} Python 3.x Tk widget
 BuildArch:      noarch
 Requires:       %{python3}-pyopengl = %{version}-%{release}
 Requires:       %{python3}-tkinter
-# These can be removed in Fedora 27
-Obsoletes:      %{python3}-PyOpenGL-Tk < 3.1.2
-Provides:       %{python3}-PyOpenGL-Tk = %{version}-%{release}
 
 %description -n %{python3}-pyopengl-tk
 %{srcname} Togl (Tk OpenGL widget) 1.6 support for Python 3.x.
@@ -76,7 +75,7 @@ fi
 pushd %{srcname}-%{version}
 %patch -p1 -P 0
 popd
-%if "%{python3}" == "python3.13"
+%if 0%{fedora}>39
 pushd %{srcname}-accelerate-%{version}
 %patch -p1 -P 1
 popd
@@ -123,6 +122,11 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Sat Jun 15 2024 Antoine Martin <antoine@xpra.org> - 3.1.7-5
+- don't require numpy, only recommend it
+- apply no-numpy patch on Fedora 40+
+- remove reference to outdated 'PyOpenGL-Tk'
+
 * Sat Oct 28 2023 Antoine Martin <antoine@xpra.org> - 3.1.7-4
 - bump release number to update the build from Fedora 39
 
