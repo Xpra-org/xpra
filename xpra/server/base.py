@@ -664,10 +664,9 @@ class ServerBase(ServerBaseClass):
             "unauthenticated": sum(1 for p in self._potential_protocols
                                    if ((p is not proto) and (p not in self._server_sources))),
         }
-        #FIXME:
-        log.info("unauthenticated protocols:")
+        log("unauthenticated protocols:")
         for i, p in enumerate(self._potential_protocols):
-            log.info(f"{i:3} : {p}={p.get_info()}")
+            log(f"{i:3} : {p}={p.get_info()}")
         # find the server source to report on:
         n = len(server_sources)
         if n == 1:

@@ -23,10 +23,9 @@ from xpra.log import Logger
 MAX_DELTA = 7
 
 log = Logger("video")
-log.enable_debug()
 
 
-def h2b(s):
+def h2b(s) -> bytes:
     return binascii.unhexlify(s)
 
 
@@ -41,7 +40,7 @@ def cmpp(p1, p2, tolerance=MAX_DELTA):
     return None
 
 
-def maxdelta(p1, p2):
+def maxdelta(p1, p2) -> int:
     #compare planes
     l = min(len(p1), len(p2))
     d = 0
