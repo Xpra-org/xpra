@@ -630,7 +630,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         has_more = packet is not None and (
             bool(self._priority_packets) or bool(self._ordinary_packets) or self._mouse_position is not None
         )
-        return packet, None, None, None, synchronous, has_more
+        return packet, None, None, synchronous, has_more
 
     def stop_progress_process(self, reason="closing") -> None:
         pp = self.progress_process

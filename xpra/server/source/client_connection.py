@@ -14,7 +14,7 @@ from collections import deque
 from queue import SimpleQueue
 
 from xpra.util.thread import start_thread
-from xpra.common import FULL_INFO, noop
+from xpra.common import FULL_INFO
 from xpra.util.objects import AtomicInteger, typedict, notypedict
 from xpra.util.env import envint, envbool
 from xpra.net.common import PacketType, PacketElement
@@ -257,7 +257,6 @@ class ClientConnection(StubSourceMixin):
     def queue_packet(self, packet, wid=0, pixels=0,
                      start_send_cb: Callable | None = None,
                      end_send_cb: Callable | None = None,
-                     fail_cb: Callable | None = None,
                      wait_for_more=False) -> None:
         """
             Add a new 'draw' packet to the 'packet_queue'.
@@ -269,7 +268,7 @@ class ClientConnection(StubSourceMixin):
             self.statistics.damage_packet_qpixels.append(
                 (now, wid, sum(x[2] for x in tuple(self.packet_queue) if x[1] == wid))
             )
-        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, fail_cb, wait_for_more))
+        self.packet_queue.append((packet, wid, pixels, start_send_cb, end_send_cb, wait_for_more))
         p = self.protocol
         if p:
             p.source_has_more()
@@ -305,26 +304,25 @@ class ClientConnection(StubSourceMixin):
 
     ######################################################################
     # network:
-    def next_packet(self) -> tuple[PacketType, Callable, Callable, Callable, bool, bool, bool]:
+    def next_packet(self) -> tuple[PacketType, Callable, Callable, bool, bool, bool]:
         """ Called by protocol.py when it is ready to send the next packet """
-        packet, start_send_cb, end_send_cb, fail_cb = None, None, None, None
+        packet, start_send_cb, end_send_cb = None, None, None
         synchronous, have_more, will_have_more = True, False, False
         if not self.is_closed():
             if self.ordinary_packets:
-                packet, synchronous, fail_cb, will_have_more = self.ordinary_packets.pop(0)
+                packet, synchronous, will_have_more = self.ordinary_packets.pop(0)
             elif self.packet_queue:
-                packet, _, _, start_send_cb, end_send_cb, fail_cb, will_have_more = self.packet_queue.popleft()
+                packet, _, _, start_send_cb, end_send_cb, will_have_more = self.packet_queue.popleft()
             have_more = packet is not None and bool(self.ordinary_packets or self.packet_queue)
-        return packet, start_send_cb, end_send_cb, fail_cb, synchronous, have_more, will_have_more
+        return packet, start_send_cb, end_send_cb, synchronous, have_more, will_have_more
 
     def send(self, *parts: PacketElement, **kwargs) -> None:
         """ This method queues non-damage packets (higher priority) """
         synchronous = bool(kwargs.get("synchronous", True))
         will_have_more = bool(kwargs.get("will_have_more", not synchronous))
-        fail_cb: Callable = kwargs.get("fail_cb", noop)
         p = self.protocol
         if p:
-            self.ordinary_packets.append((parts, synchronous, fail_cb, will_have_more))
+            self.ordinary_packets.append((parts, synchronous, will_have_more))
             p.source_has_more()
 
     def send_more(self, *parts, **kwargs) -> None:

@@ -2023,12 +2023,6 @@ class WindowVideoSource(WindowSource):
                     opts["b-frames"] = True
         return opts
 
-    def get_fail_cb(self, packet) -> Callable[[], None] | None:
-        coding = packet[6]
-        if coding in self.common_video_encodings:
-            return None
-        return super().get_fail_cb(packet)
-
     def make_draw_packet(self, x: int, y: int, w: int, h: int,
                          coding: str, data, outstride: int, client_options: dict, options: typedict) -> tuple:
         # overridden so we can invalidate the scroll data:

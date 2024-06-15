@@ -2478,10 +2478,9 @@ class WindowSource(WindowIconSource):
             now = monotonic()
             damage_in_latency = now-process_damage_time
             statistics.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
-        # log.info("queuing %s packet with fail_cb=%s", coding, fail_cb)
         self.statistics.last_packet_time = monotonic()
         self.queue_packet(packet, self.wid, width*height, start_send, damage_packet_sent,
-                          self.get_fail_cb(packet), client_options.get("flush", 0))
+                          client_options.get("flush", 0))
 
     def networksend_congestion_event(self, source, late_pct: int, cur_send_speed: int = 0) -> None:
         gs = self.global_statistics
@@ -2530,15 +2529,6 @@ class WindowSource(WindowIconSource):
             # a refresh now would really hurt us!
             self.refresh_target_time = max(rtt, now+2)
         self.record_congestion_event(source, late_pct, send_speed)
-
-    def get_fail_cb(self, packet: tuple) -> Callable[[], None]:
-        def resend() -> None:
-            log("paint packet failure, resending")
-            x, y, width, height = packet[2:6]
-            damage_packet_sequence: int = packet[8]
-            self.damage_packet_acked(damage_packet_sequence, width, height, 0, "")
-            GLib.idle_add(self.damage, x, y, width, height)
-        return resend
 
     def estimate_send_delay(self, bytecount: int) -> int:
         # how long it should take to send this packet (in milliseconds)

@@ -356,25 +356,15 @@ class AudioMixin(StubSourceMixin):
         if packet_metadata:
             # the packet metadata is compressed already:
             packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
-        # don't drop the first 10 buffers
-        can_drop_packet = (audio_source.info or {}).get("buffer_count", 0) > 10
-        self.send_audio_data(audio_source, data, metadata, packet_metadata, can_drop_packet)
+        self.send_audio_data(audio_source, data, metadata, packet_metadata)
 
     def send_audio_data(self, audio_source, data: bytes, metadata: dict,
-                        packet_metadata: Iterable = (), can_drop_packet=False) -> None:
+                        packet_metadata: Iterable = ()) -> None:
         packet_data = [audio_source.codec, Compressed(audio_source.codec, data), metadata, packet_metadata or ()]
         sequence = audio_source.sequence
         if sequence >= 0:
             metadata["sequence"] = sequence
-        fail_cb = None
-        if can_drop_packet:
-            def audio_data_fail_cb():
-                # ideally we would tell gstreamer to send an audio "key frame"
-                # or synchronization point to ensure the stream recovers
-                log("a audio data buffer was not received and will not be resent")
-
-            fail_cb = audio_data_fail_cb
-        self.send("sound-data", *packet_data, synchronous=False, fail_cb=fail_cb, will_have_more=True)
+        self.send("sound-data", *packet_data, synchronous=False, will_have_more=True)
 
     def stop_receiving_audio(self) -> None:
         ss = self.audio_sink
