@@ -770,15 +770,15 @@ class GLWindowBackingBase(WindowBackingBase):
         # viewport for clearing the whole window:
         ww, wh = self.render_size
         left, top, right, bottom = self.offsets
-        glViewport(0, 0, int((left + ww + right) * scale), int((top + wh + bottom) * scale))
         if left or top or right or bottom:
             alpha = 0.0 if self._alpha_enabled else 1.0
+            glViewport(0, 0, int((left + ww + right) * scale), int((top + wh + bottom) * scale))
             glClearColor(0.0, 0.0, 0.0, alpha)
             glClear(GL_COLOR_BUFFER_BIT)
 
         # from now on, take the offsets and scaling into account:
         viewport = int(left * scale), int(top * scale), int(ww * scale), int(wh * scale)
-        log(f"window viewport for {self.render_size=} and {self.offsets} with scale factor {scale}: {viewport}")
+        log(f"window viewport for render-size={self.render_size} and offsets={self.offsets} with {scale=}: {viewport}")
         glViewport(*viewport)
         target = GL_TEXTURE_RECTANGLE
         if ww != bw or wh != bh or scale != 1:
