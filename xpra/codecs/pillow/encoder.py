@@ -72,7 +72,7 @@ def get_info() -> dict[str, Any]:
     }
 
 
-def encode(coding: str, image, options=typedict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
+def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
     if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
         raise ValueError(f"unsupported encoding: {coding}")
     log("pillow.encode%s", (coding, image, options))

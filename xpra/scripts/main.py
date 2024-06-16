@@ -1710,7 +1710,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
                 create_sockets, add_listen_socket, accept_connection,
             )
             from xpra.log import Logger
-            sockets = create_sockets(opts, error_cb)
+            sockets = create_sockets(opts, error_cb, sd_listen=False, ssh_upgrades=False)
             # we don't have a display,
             # so we can't automatically create sockets:
             if "auto" in opts.bind:

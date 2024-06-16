@@ -348,7 +348,8 @@ def guess_packet_type(data: ByteString) -> str:
     return ""
 
 
-def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
+def create_sockets(opts, error_cb: Callable, retry: int = 0,
+                   sd_listen=POSIX and not OSX, ssh_upgrades=True) -> dict[Any, dict]:
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
     bind_ssh = parse_bind_ip(opts.bind_ssh, 22)
@@ -362,7 +363,6 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
     # Initialize the TCP sockets before the display,
     # That way, errors won't make us kill the Xvfb
     # (which may not be ours to kill at that point)
-    ssh_upgrades = opts.ssh_upgrade
     if ssh_upgrades:
         err = ""
         try:
@@ -431,7 +431,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0) -> dict[Any, dict]:
         sockets[sock] = options
 
     # systemd socket activation:
-    if POSIX and not OSX:
+    if sd_listen:
         try:
             from xpra.platform.posix.sd_listen import get_sd_listen_sockets
         except ImportError as e:

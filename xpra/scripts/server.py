@@ -1146,7 +1146,7 @@ def _do_run_server(script_file: str, cmdline,
     progress(30, "creating sockets")
     from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
     retry = 10 * int(mode.startswith("upgrade"))
-    sockets = create_sockets(opts, error_cb, retry=retry)
+    sockets = create_sockets(opts, error_cb, retry=retry, sd_listen=POSIX and not OSX, ssh_upgrades=opts.ssh_upgrade)
 
     from xpra.log import Logger
     log = Logger("server")

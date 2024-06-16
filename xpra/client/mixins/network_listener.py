@@ -55,7 +55,7 @@ class Networklistener(StubClientMixin):
         def err(msg):
             raise InitException(msg)
 
-        self.sockets = create_sockets(opts, err)
+        self.sockets = create_sockets(opts, err, sd_listen=False, ssh_upgrades=False)
         log(f"setup_local_sockets bind={opts.bind}, client_socket_dirs={opts.client_socket_dirs}")
         try:
             # don't use abstract sockets for clients:
