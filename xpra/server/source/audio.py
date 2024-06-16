@@ -410,7 +410,7 @@ class AudioMixin(StubSourceMixin):
         step = 1.0 / (delay / 100.0)
         log("audio_control fadein delay=%s, step=%1.f", delay, step)
 
-        def fadein():
+        def fadein() -> bool:
             ss = self.audio_source
             if not ss:
                 return False
@@ -447,7 +447,7 @@ class AudioMixin(StubSourceMixin):
         step = 1.0 / (delay / 100.0)
         log("audio_control fadeout delay=%s, step=%1.f", delay, step)
 
-        def fadeout():
+        def fadeout() -> bool:
             ss = self.audio_source
             if not ss:
                 return False
@@ -493,7 +493,7 @@ class AudioMixin(StubSourceMixin):
                 self.audio_sink = FakeSink(codec)
                 return
             try:
-                def audio_sink_error(*args):
+                def audio_sink_error(*args) -> None:
                     log("audio_sink_error%s", args)
                     log.warn("Warning: stopping audio input because of an error")
                     self.stop_receiving_audio()
@@ -543,7 +543,7 @@ class AudioMixin(StubSourceMixin):
         return {"audio": self.get_audio_info()}
 
     def get_audio_info(self) -> dict[str, Any]:
-        def audio_info(supported, subprocess_wrapper, codecs):
+        def audio_info(supported, subprocess_wrapper, codecs) -> dict[str, Any]:
             i = {"codecs": codecs}
             if not supported:
                 i["state"] = "disabled"

@@ -62,7 +62,7 @@ class AudioPipeline(Pipeline):
             self.file = open(filename, 'wb')
             log.info(f"saving {codec} stream to {filename!r}")
 
-    def update_bitrate(self, new_bitrate: int):
+    def update_bitrate(self, new_bitrate: int) -> None:
         if new_bitrate == self.bitrate:
             return
         self.bitrate = new_bitrate

@@ -14,7 +14,7 @@ from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.common import FULL_INFO, noop
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, OSX, POSIX
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv, bytestostr, memoryview_to_bytes
 from xpra.util.env import envint
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -551,9 +551,13 @@ class AudioClient(StubClientMixin):
     # packet handlers
 
     def _process_sound_data(self, packet: PacketType) -> None:
-        codec, data, metadata = packet[1:4]
-        codec = str(codec)
-        metadata = typedict(metadata)
+        codec = str(packet[1])
+        data = memoryview_to_bytes(packet[2])
+        metadata = typedict(packet[1:4])
+        # the server may send packet_metadata, which is pushed before the actual audio data:
+        packet_metadata = ()
+        if len(packet) > 4:
+            packet_metadata = packet[4]
         if data:
             self.audio_in_bytecount += len(data)
         # verify sequence number if present:
@@ -597,13 +601,9 @@ class AudioClient(StubClientMixin):
             log("audio data received, audio sink is stopped - telling server to stop")
             self.stop_receiving_audio()
             return
-        # the server may send packet_metadata, which is pushed before the actual audio data:
-        packet_metadata = ()
-        if len(packet) > 4:
-            packet_metadata = packet[4]
         # (some packets (ie: sos, eos) only contain metadata)
         if data or packet_metadata:
-            ss.add_data(data, metadata, packet_metadata)
+            ss.add_data(data, dict(metadata), packet_metadata)
         if self.av_sync and self.server_av_sync:
             qinfo = typedict(ss.get_info()).dictget("queue")
             queue_used = typedict(qinfo or {}).intget("cur", -1)

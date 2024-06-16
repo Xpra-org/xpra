@@ -364,10 +364,10 @@ class SinkSubprocessWrapper(AudioSubprocessWrapper):
         ]
         _add_debug_args(self.command)
 
-    def add_data(self, data, metadata=None, packet_metadata=()):
+    def add_data(self, data: bytes, metadata: dict, packet_metadata=()) -> None:
         if DEBUG_SOUND:
             log("add_data(%s bytes, %s, %s) forwarding to %s", len(data), metadata, len(packet_metadata), self.protocol)
-        self.send("add_data", data, dict(metadata or {}), packet_metadata)
+        self.send("add_data", data, metadata, packet_metadata)
 
     def __repr__(self):
         proc = self.process

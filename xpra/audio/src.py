@@ -171,7 +171,7 @@ class AudioSource(AudioPipeline):
                 self.set_time("latency-time", LATENCY_TIME)
         self.init_file(codec)
 
-    def set_time(self, attr, v):
+    def set_time(self, attr, v) -> None:
         try:
             cval = self.src.get_property(attr)
             gstlog("default: %s=%i", attr, cval // 1000)
@@ -387,12 +387,12 @@ def main() -> int:
 
         import signal
 
-        def deadly_signal(sig, _frame):
+        def deadly_signal(sig, _frame) -> None:
             log.warn("got deadly signal %s", SIGNAMES.get(sig, sig))
             GLib.idle_add(ss.stop)
             GLib.idle_add(glib_mainloop.quit)
 
-            def force_quit(_sig, _frame):
+            def force_quit(_sig, _frame) -> None:
                 sys.exit()
 
             signal.signal(signal.SIGINT, force_quit)

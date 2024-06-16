@@ -63,7 +63,7 @@ UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_SOUND_UNDERRUN_MIN_LEVEL", 150))
 CLOCK_SYNC = envbool("XPRA_CLOCK_SYNC", False)
 
 
-def uncompress_data(data, metadata):
+def uncompress_data(data, metadata: dict):
     if not data or not metadata:
         return data
     compress = metadata.get("compress")
@@ -396,7 +396,7 @@ class AudioSink(AudioPipeline):
             return False
         return True
 
-    def add_data(self, data, metadata=None, packet_metadata=()) -> None:
+    def add_data(self, data: bytes, metadata: dict, packet_metadata=()) -> None:
         if not self.can_push_buffer():
             return
         data = uncompress_data(data, metadata)

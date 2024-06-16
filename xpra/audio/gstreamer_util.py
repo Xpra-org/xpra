@@ -47,7 +47,7 @@ if QUEUE_LEAK not in (GST_QUEUE_NO_LEAK, GST_QUEUE_LEAK_UPSTREAM, GST_QUEUE_LEAK
     QUEUE_LEAK = GST_QUEUE_LEAK_DEFAULT
 
 
-def get_queue_time(default_value=450, prefix=""):
+def get_queue_time(default_value=450, prefix="") -> int:
     queue_time = int(os.environ.get(f"XPRA_SOUND_QUEUE_{prefix}TIME", default_value))*MS_TO_NS
     queue_time = max(0, queue_time)
     return queue_time
@@ -149,7 +149,7 @@ del emux
 
 # options we use to tune for low latency:
 OGG_DELAY = 20*MS_TO_NS
-ENCODER_DEFAULT_OPTIONS_COMMON : dict[str, dict[str, Any]] = {
+ENCODER_DEFAULT_OPTIONS_COMMON: dict[str, dict[str, Any]] = {
     "lamemp3enc": {
         "encoding-engine-quality" : 0,
     },   # "fast"
@@ -200,15 +200,15 @@ MUXER_DEFAULT_OPTIONS: dict[str, dict[str, Any]] = {
 
 # based on the encoder options above:
 RECORD_PIPELINE_LATENCY = 25
-ENCODER_LATENCY : dict[str, int] = {
-    VORBIS      : 0,
-    VORBIS_OGG  : 0,
-    VORBIS_MKA  : 0,
-    MP3         : 250,
-    FLAC        : 50,
-    WAV         : 0,
-    WAVPACK     : 600,
-    OPUS        : 0,
+ENCODER_LATENCY: dict[str, int] = {
+    VORBIS: 0,
+    VORBIS_OGG: 0,
+    VORBIS_MKA: 0,
+    MP3: 250,
+    FLAC: 50,
+    WAV: 0,
+    WAVPACK: 600,
+    OPUS: 0,
 }
 
 CODEC_ORDER = (
@@ -247,7 +247,7 @@ def get_decoders() -> CODEC_DEFS:
     return DECODERS
 
 
-def init_codecs():
+def init_codecs() -> dict[str, bool]:
     global CODECS
     if CODECS or import_gst() is None:
         return CODECS or {}
