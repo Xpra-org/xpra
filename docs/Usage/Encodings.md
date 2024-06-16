@@ -8,6 +8,7 @@ It will make this decision using the window's characteristics (size, state, meta
 
 Generally, if any tuning is needed, instead of trying to guess what should be used and overriding the `encodings` and `encoding` options, it is best to use the `min-speed` and `min-quality` options instead.
 
+The `xpra configure encodings` is designed to help you do exactly that. Use it first and only try other options later.
 
 ***
 
