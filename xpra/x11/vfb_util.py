@@ -19,7 +19,7 @@ import os.path
 from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
 from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool, shellsub, osexpand
+from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env
 from xpra.os_util import getuid, getgid, POSIX, OSX
 from xpra.server.util import setuidgid
 from xpra.util.io import is_writable, pollwait
@@ -292,6 +292,10 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth > 0:
         xvfb_cmd.append("-depth")
         xvfb_cmd.append(str(pixel_depth))
+    env = get_exec_env(keep=("SHELL", "HOSTNAME", "XMODIFIERS",
+                             "PWD", "HOME", "USERNAME", "LANG", "TERM", "USER",
+                             "XDG_RUNTIME_DIR", "XDG_DATA_DIR", "PATH"))
+    log(f"xvfb env={env}")
     xvfb = None
     try:
         if use_display_fd:
@@ -314,7 +318,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
                     # pylint: disable=consider-using-with
                     # pylint: disable=subprocess-popen-preexec-fn
                     xvfb = Popen(xvfb_cmd, executable=xvfb_executable,
-                                 preexec_fn=preexec, cwd=cwd, pass_fds=(w_pipe,))
+                                 preexec_fn=preexec, cwd=cwd, env=env, pass_fds=(w_pipe,))
                 except OSError as e:
                     log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
                     raise InitException(f"failed to execute xvfb command {xvfb_cmd}: {e}") from None
@@ -362,7 +366,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
             # pylint: disable=consider-using-with
             # pylint: disable=subprocess-popen-preexec-fn
             xvfb = Popen(xvfb_cmd, executable=xvfb_executable,
-                         stdin=PIPE, preexec_fn=preexec)
+                         stdin=PIPE, preexec_fn=preexec, env=env)
     except Exception:
         if xvfb and xvfb.poll() is None:
             log.error(" stopping vfb process with pid %i", xvfb.pid)

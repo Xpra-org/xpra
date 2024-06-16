@@ -3,10 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import os
 import sys
 import warnings
 from contextlib import AbstractContextManager, nullcontext
+from collections.abc import Sequence
 from threading import RLock
 from typing import Any
 
@@ -248,13 +250,18 @@ def get_saved_env_var(var, default=None):
     return _saved_env.get(var, default)
 
 
-def get_exec_env(remove=("LS_COLORS", "LESSOPEN", "HISTCONTROL", "HISTSIZE", )) -> dict[str, str]:
-    # let's make things more complicated than they should be:
-    # on win32, the environment can end up containing unicode, and subprocess chokes on it
+def get_exec_env(remove: Sequence[str] = ("LS_COLORS", "LESSOPEN", "HISTCONTROL", "HISTSIZE", ),
+                 keep: Sequence[str] = ()) -> dict[str, str]:
     env: dict[str, str] = {}
     for k, v in os.environ.items():
-        if k in remove:
+        # anything matching `remove` is dropped:
+        if any(re.match(pattern, k) for pattern in remove):
             continue
+        # if `keep` is empty, then we ignore it, otherwise we require a match:
+        if keep and not any(re.match(pattern, k) for pattern in keep):
+            continue
+        # let's make things more complicated than they should be:
+        # on win32, the environment can end up containing unicode, and subprocess chokes on it:
         try:
             env[k] = v.encode("utf8").decode("latin1")
         except UnicodeError:
