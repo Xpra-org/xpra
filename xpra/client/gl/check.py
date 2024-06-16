@@ -384,7 +384,11 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
             else:
                 log.info(msg)
         if missing_accelerators:
-            log.info("OpenGL accelerate missing: %s", csv(missing_accelerators))
+            if len(missing_accelerators) == 1 and missing_accelerators[0] == "numpy_formathandler":
+                log_fn = log.debug
+            else:
+                log_fn = log.info
+            log_fn("OpenGL accelerate missing: %s", csv(missing_accelerators))
 
         for msg in recs("plugins"):
             log(f"plugins msg={msg}")
