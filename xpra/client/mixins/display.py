@@ -68,6 +68,7 @@ class DisplayClient(StubClientMixin):
         self.server_opengl = None
         self.server_multi_monitors = False
         self.server_monitors = {}
+        self.log_screen_info = True
 
     def init(self, opts) -> None:
         self.desktop_fullscreen = opts.desktop_fullscreen
@@ -128,20 +129,22 @@ class DisplayClient(StubClientMixin):
         ss = self.get_screen_sizes()
         self._current_screen_sizes = ss
 
-        log.info(" desktop size is %sx%s:", u_root_w, u_root_h)
-        log_screen_sizes(u_root_w, u_root_h, ss)
+        if self.log_screen_info:
+            log.info(" desktop size is %sx%s:", u_root_w, u_root_h)
+            log_screen_sizes(u_root_w, u_root_h, ss)
         if self.xscale != 1 or self.yscale != 1:
             caps["screen_sizes.unscaled"] = ss
             caps["desktop_size.unscaled"] = u_root_w, u_root_h
-            root_w, root_h = self.cp(u_root_w, u_root_h)
-            if fequ(self.xscale, self.yscale):
-                sinfo = "%i%%" % round(self.xscale * 100)
-            else:
-                sinfo = "%i%% x %i%%" % (round(self.xscale * 100), round(self.yscale * 100))
-            scaled_up = u_root_w > root_w or u_root_h > root_h
-            log.info(" %sscaled to %s, virtual screen size: %ix%i",
-                     "up" if scaled_up else "down", sinfo, root_w, root_h)
-            log_screen_sizes(root_w, root_h, sss)
+            if self.log_screen_info:
+                root_w, root_h = self.cp(u_root_w, u_root_h)
+                if fequ(self.xscale, self.yscale):
+                    sinfo = "%i%%" % round(self.xscale * 100)
+                else:
+                    sinfo = "%i%% x %i%%" % (round(self.xscale * 100), round(self.yscale * 100))
+                scaled_up = u_root_w > root_w or u_root_h > root_h
+                log.info(" %sscaled to %s, virtual screen size: %ix%i",
+                         "up" if scaled_up else "down", sinfo, root_w, root_h)
+                log_screen_sizes(root_w, root_h, sss)
         else:
             sss = ss
         caps["screen_sizes"] = sss
@@ -150,6 +153,7 @@ class DisplayClient(StubClientMixin):
         caps.update(self.get_screen_caps())
         caps["dpi"] = self.get_dpi_caps()
         caps["screen-scaling"] = self.get_scaling_caps()
+        self.log_screen_info = False        # don't log it again
         return caps
 
     def get_dpi_caps(self) -> dict[str, Any]:
