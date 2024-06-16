@@ -553,7 +553,7 @@ class AudioClient(StubClientMixin):
     def _process_sound_data(self, packet: PacketType) -> None:
         codec = str(packet[1])
         data = memoryview_to_bytes(packet[2])
-        metadata = typedict(packet[1:4])
+        metadata = typedict(packet[3])
         # the server may send packet_metadata, which is pushed before the actual audio data:
         packet_metadata = ()
         if len(packet) > 4:
