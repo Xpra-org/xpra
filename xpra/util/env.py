@@ -246,7 +246,7 @@ def get_saved_env() -> dict[str, str]:
     return _saved_env.copy()
 
 
-def get_saved_env_var(var, default=None):
+def get_saved_env_var(var, default="") -> str:
     return _saved_env.get(var, default)
 
 

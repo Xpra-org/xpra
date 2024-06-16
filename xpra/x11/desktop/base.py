@@ -5,7 +5,6 @@
 
 import os
 from typing import Any
-from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.screen import log_screen_sizes
@@ -41,7 +40,7 @@ MODIFY_GSETTINGS: bool = envbool("XPRA_MODIFY_GSETTINGS", True)
 MULTI_MONITORS: bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
-def get_desktop_server_base_classes() -> Sequence[type]:
+def get_desktop_server_base_classes() -> tuple[type]:
     classes: list[type] = [GObject.GObject]
     if features.rfb:
         from xpra.server.rfb.server import RFBServer

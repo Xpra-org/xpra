@@ -41,7 +41,7 @@ gl_check_error = raise_error
 gl_fatal_error = raise_fatal_error
 
 
-def parse_pyopengl_version(vstr: str) -> tuple[int]:
+def parse_pyopengl_version(vstr: str) -> tuple[int, ...]:
     def numv(s):
         try:
             return int(s)
