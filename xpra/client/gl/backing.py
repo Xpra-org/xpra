@@ -754,7 +754,6 @@ class GLWindowBackingBase(WindowBackingBase):
         # (ie: the GTK backend renders to its own buffer…)
         bw, bh = self.size
         scale = context.get_scale_factor()
-        rect_count = len(self.pending_fbo_paint)
         if self.is_double_buffered() or self.size != self.render_size or scale != 1:
             # refresh the whole window:
             rectangles = [(0, 0, bw, bh), ]
@@ -762,6 +761,7 @@ class GLWindowBackingBase(WindowBackingBase):
             # paint just the rectangles we have accumulated:
             rectangles = self.pending_fbo_paint
         self.pending_fbo_paint = []
+        rect_count = len(rectangles)
         log(f"do_present_fbo({context}) will blit {rectangles}")
 
         if SAVE_BUFFERS:
