@@ -55,7 +55,8 @@ class GLAreaBacking(GLWindowBackingBase):
         glarea = GLArea(self._alpha_enabled)
         glarea.connect("realize", self.on_realize)
         glarea.connect("render", self.on_render)
-        glarea.set_size_request(*self.size)
+        w, h = self.size
+        glarea.set_size_request(w, h)
         add_events = Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK
         glarea.set_events(glarea.get_events() | add_events)
         glarea.show()
@@ -109,9 +110,14 @@ class GLAreaBacking(GLWindowBackingBase):
             return True
         glcontext.make_current()
 
-        def noscale():
-            return 1
+        def get_glarea_scale_factor() -> int:
+            backing = self._backing
+            scale_factor = 1
+            if backing:
+                scale_factor = backing.get_scale_factor()
+            log.info(f"get_glarea_scale_factor()={scale_factor} for {backing=}")
+            return scale_factor
 
-        glcontext.get_scale_factor = noscale
+        glcontext.get_scale_factor = get_glarea_scale_factor
         self.do_present_fbo(glcontext)
         return True
