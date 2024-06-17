@@ -115,7 +115,6 @@ class GLAreaBacking(GLWindowBackingBase):
             scale_factor = 1
             if backing:
                 scale_factor = backing.get_scale_factor()
-            log.info(f"get_glarea_scale_factor()={scale_factor} for {backing=}")
             return scale_factor
 
         glcontext.get_scale_factor = get_glarea_scale_factor
