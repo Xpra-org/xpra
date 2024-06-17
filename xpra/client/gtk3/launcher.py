@@ -941,10 +941,12 @@ class ApplicationWindow:
             sys.exit(0)
 
     def password_ok(self, *_args):
-        self.password_entry.modify_text(Gtk.StateType.NORMAL, black)
+        with IgnoreWarningsContext():
+            self.password_entry.modify_text(Gtk.StateType.NORMAL, black)
 
     def password_warning(self, *_args):
-        self.password_entry.modify_text(Gtk.StateType.NORMAL, red)
+        with IgnoreWarningsContext():
+            self.password_entry.modify_text(Gtk.StateType.NORMAL, red)
         self.password_entry.grab_focus()
 
     def set_widget_bg_color(self, widget, is_error=False):
