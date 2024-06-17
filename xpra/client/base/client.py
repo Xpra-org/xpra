@@ -613,7 +613,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             self._mouse_position_timer = 0
             GLib.source_remove(mpt)
 
-    def next_packet(self) -> tuple[PacketType, bool, bool, bool]:
+    def next_packet(self) -> tuple[PacketType, bool, bool]:
         netlog("next_packet() packets in queues: priority=%i, ordinary=%i, mouse=%s",
                len(self._priority_packets), len(self._ordinary_packets), bool(self._mouse_position))
         synchronous = True
@@ -630,7 +630,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         has_more = packet is not None and (
             bool(self._priority_packets) or bool(self._ordinary_packets) or self._mouse_position is not None
         )
-        return packet, synchronous, has_more, False
+        return packet, synchronous, has_more
 
     def stop_progress_process(self, reason="closing") -> None:
         pp = self.progress_process
