@@ -33,17 +33,20 @@ cdef extern from "memalign.h":
 cdef void free_buf(const void *p, size_t l, void *arg) noexcept nogil:
     free(<void *>p)
 
+
 cdef MemBuf getbuf(size_t l, int readonly=1):
     cdef const void *p = xmemalign(l)
     if p==NULL:
         raise RuntimeError(f"failed to allocate {l} bytes of memory")
     return MemBuf_init(p, l, &free_buf, NULL, readonly)
 
+
 cdef MemBuf padbuf(size_t l, size_t padding, int readonly=1):
     cdef const void *p = xmemalign(l+padding)
     if p==NULL:
         raise RuntimeError(f"failed to allocate {l} bytes of memory")
     return MemBuf_init(p, l, &free_buf, NULL, readonly)
+
 
 cdef MemBuf makebuf(void *p, size_t l, int readonly=1):
     if p==NULL:
@@ -80,7 +83,9 @@ cdef class MemBuf:
 
     def __dealloc__(self):
         if self.dealloc_cb_p != NULL:
-            self.dealloc_cb_p(self.p, self.l, self.dealloc_cb_arg)
+            self.dealloc_cb_p(self.p,
+             self.l, self.dealloc_cb_arg)
+
 
 # Call this instead of constructing a MemBuf directly.  The __cinit__
 # and __init__ methods can only take Python objects, so the real
@@ -102,44 +107,57 @@ cdef MemBuf MemBuf_init(const void *p, size_t l,
 cdef class BufferContext:
     cdef Py_buffer py_buf
     cdef object obj
+
     def __init__(self, obj):
         if not obj:
             raise ValueError(f"invalid buffer object {obj!r} evaluates to False ({type(obj)}")
         self.obj = obj
         memset(&self.py_buf, 0, sizeof(Py_buffer))
+
     def __enter__(self):
         if self.py_buf.buf!=NULL:
             raise RuntimeError("invalid state: buffer has already been obtained")
         if PyObject_GetBuffer(self.obj, &self.py_buf, PyBUF_ANY_CONTIGUOUS):
             raise RuntimeError(f"failed to access buffer of {type(self.obj)}")
         return self
+
     def __exit__(self, *_args):
         if self.py_buf.buf==NULL:
             raise RuntimeError("invalid state: no buffer")
         PyBuffer_Release(&self.py_buf)
+
     def __int__(self):
         if self.py_buf.buf==NULL:
             raise RuntimeError("invalid state: no buffer")
         return int(<uintptr_t> self.py_buf.buf)
+
     def __len__(self):
         return self.py_buf.len
+
     def __repr__(self):
         return "BufferContext(%s)" % self.obj
 
+
 cdef class MemBufContext:
     cdef MemBuf membuf
+
     def __init__(self, membuf):
         if not isinstance(membuf, MemBuf):
             raise ValueError(f"{membuf!r} is not a MemBuf instance: {type(membuf)}")
         self.membuf = membuf
+
     def __enter__(self):
         return self
+
     def __exit__(self, *_args):
         self.membuf = None
+
     def __int__(self):
         return self.membuf.get_mem_ptr()
+
     def __len__(self):
         return len(self.membuf)
+
     def __repr__(self):
         return "MemBufContext(%s)" % self.membuf
 

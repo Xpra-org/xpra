@@ -388,7 +388,6 @@ class SocketProtocol:
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
     def _add_packet_to_queue(self, packet: PacketType, synchronous=True, more=False) -> None:
-        log.warn("_add_packet_to_queue%s", (packet, synchronous, more))
         if not more:
             shm = self._source_has_more
             if shm:
