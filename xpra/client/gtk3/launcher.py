@@ -16,6 +16,8 @@ Then it morphed into something quite messy. Sorry.
 import os.path
 import sys
 import traceback
+from typing import Any
+from collections.abc import Callable
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.gtk.signals import register_os_signals
@@ -940,23 +942,23 @@ class ApplicationWindow:
         if self.exit_launcher:
             sys.exit(0)
 
-    def password_ok(self, *_args):
+    def password_ok(self, *_args) -> None:
         with IgnoreWarningsContext():
             self.password_entry.modify_text(Gtk.StateType.NORMAL, black)
 
-    def password_warning(self, *_args):
+    def password_warning(self, *_args) -> None:
         with IgnoreWarningsContext():
             self.password_entry.modify_text(Gtk.StateType.NORMAL, red)
         self.password_entry.grab_focus()
 
-    def set_widget_bg_color(self, widget, is_error=False):
+    def set_widget_bg_color(self, widget, is_error=False) -> None:
         with IgnoreWarningsContext():
             widget.modify_base(Gtk.StateType.NORMAL, red if is_error else white)
 
-    def set_widget_fg_color(self, widget, is_error=False):
+    def set_widget_fg_color(self, widget, is_error=False) -> None:
         modify_fg(widget, red if is_error else black)
 
-    def update_options_from_gui(self):
+    def update_options_from_gui(self) -> None:
         def pint(vstr):
             try:
                 return int(vstr)
@@ -1030,13 +1032,13 @@ class ApplicationWindow:
         self.password_entry.set_text(password)
         self.host_entry.set_text(self.config.host)
 
-    def close_window(self, *_args):
+    def close_window(self, *_args) -> None:
         w = self.window
         if w:
             self.window = None
             w.destroy()
 
-    def destroy(self, *args):
+    def destroy(self, *args) -> bool:
         log("destroy%s", args)
         self.exit_launcher = True
         self.clean_client()
@@ -1044,7 +1046,7 @@ class ApplicationWindow:
         Gtk.main_quit()
         return False
 
-    def update_options_from_URL(self, url):
+    def update_options_from_URL(self, url: str) -> None:
         from xpra.scripts.parsing import parse_URL
         address, props = parse_URL(url)
         pa = address.split("://")
@@ -1063,12 +1065,12 @@ class ApplicationWindow:
             props["host"] = host
         self._apply_props(props)
 
-    def update_options_from_file(self, filename):
+    def update_options_from_file(self, filename: str) -> None:
         log("update_options_from_file(%s)", filename)
         props = read_config(filename)
         self._apply_props(props)
 
-    def _apply_props(self, props):
+    def _apply_props(self, props: dict[str, Any]) -> None:
         # we rely on "ssh_port" being defined on the config object
         # so try to load it from file, and define it if not present:
         options = validate_config(props,
@@ -1081,16 +1083,16 @@ class ApplicationWindow:
         self.parse_ssh()
         log("_apply_props(%s) populated config with keys '%s', ssh=%s", props, options.keys(), self.config.ssh)
 
-    def choose_session_file(self, title, action, action_button, callback):
+    def choose_session_file(self, title: str, action, action_button, callback: Callable):
         file_filter = Gtk.FileFilter()
         file_filter.set_name("Xpra")
         file_filter.add_pattern("*.xpra")
         choose_file(self.window, title, action, action_button, callback, file_filter)
 
-    def save_clicked(self, *_args):
+    def save_clicked(self, *_args) -> None:
         self.update_options_from_gui()
 
-        def do_save(filename):
+        def do_save(filename) -> None:
             # make sure the file extension is .xpra
             if os.path.splitext(filename)[-1] != ".xpra":
                 filename += ".xpra"
@@ -1098,8 +1100,8 @@ class ApplicationWindow:
 
         self.choose_session_file("Save session settings to file", Gtk.FileChooserAction.SAVE, Gtk.STOCK_SAVE, do_save)
 
-    def load_clicked(self, *_args):
-        def do_load(filename):
+    def load_clicked(self, *_args) -> None:
+        def do_load(filename) -> None:
             self.update_options_from_file(filename)
             self.update_gui_from_config()
 
@@ -1108,7 +1110,7 @@ class ApplicationWindow:
 
 # on some platforms like win32, we don't have stdout
 # and this is a GUI application, so show a dialog with the error instead
-def exception_dialog(title):
+def exception_dialog(title: str) -> None:
     md = Gtk.MessageDialog(None, Gtk.DialogFlags.DESTROY_WITH_PARENT,
                            Gtk.MessageType.INFO, Gtk.ButtonsType.CLOSE, title)
     md.format_secondary_text(traceback.format_exc())
@@ -1123,7 +1125,7 @@ def exception_dialog(title):
     Gtk.main()
 
 
-def main(argv):
+def main(argv) -> int:
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Xpra-Launcher", "Xpra Connection Launcher"):
@@ -1131,7 +1133,7 @@ def main(argv):
         return do_main(argv)
 
 
-def do_main(argv):
+def do_main(argv) -> int:
     from xpra.util.system import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
     from xpra.platform.gui import init as gui_init, ready as gui_ready
