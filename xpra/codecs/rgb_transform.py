@@ -81,9 +81,15 @@ def rgb_reformat(image : ImageWrapper, rgb_formats, supports_transparency:bool) 
     start = monotonic()
     w = image.get_width()
     h = image.get_height()
-    #PIL cannot use the memoryview directly:
+    # older versions of PIL cannot use the memoryview directly:
     if isinstance(pixels, memoryview):
-        pixels = pixels.tobytes()
+        from PIL import __version__ as pil_version
+        try:
+            major = int(pil_version.split(".")[0])
+        except ValueError:
+            major = 0
+        if major < 10:
+            pixels = pixels.tobytes()
     img = Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
     rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
     data = img.tobytes("raw", target_format)
