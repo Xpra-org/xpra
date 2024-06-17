@@ -80,6 +80,7 @@ def _has_nvidia_hardware() -> bool | None:
             if count is not None:
                 nvmlShutdown()
     # try nvidia-smi for docker contexts
+    import subprocess
     try:
         output = subprocess.check_output(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"])
         output = output.decode("utf-8").strip()
