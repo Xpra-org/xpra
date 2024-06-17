@@ -71,8 +71,6 @@ KEY_STRETCHING: Sequence[str] = ()
 
 
 def crypto_backend_init():
-    import traceback
-    traceback.print_stack()
     global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
     log("crypto_backend_init() pycryptography=%s", cryptography)
     if cryptography:
