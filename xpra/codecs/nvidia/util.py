@@ -79,6 +79,15 @@ def _has_nvidia_hardware() -> bool | None:
         finally:
             if count is not None:
                 nvmlShutdown()
+    # try nvidia-smi for docker contexts
+    try:
+        output = subprocess.check_output(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"])
+        output = output.decode("utf-8").strip()
+        if output:
+            log(f"has_nvidia_hardware() found NVIDIA GPU(s) using nvidia-smi: {output}")
+            return True
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        log("has_nvidia_hardware() nvidia-smi command not found or failed")
     # hope for the best
     log("has_nvidia_hardware() unable to ascertain, returning None")
     return None
