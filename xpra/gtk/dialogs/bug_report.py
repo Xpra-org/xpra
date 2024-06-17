@@ -301,7 +301,7 @@ class BugReport:
         self.hide_window()
         Gtk.main_quit()
 
-    def get_data(self):
+    def get_data(self) -> list[tuple[str, str, str, str]]:
         log("get_data() collecting bug report data")
         data = []
         tb = self.description.get_buffer()

@@ -6,7 +6,7 @@
 import os
 import sys
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from xpra.platform.win32 import constants as win32con
 from xpra.util.objects import reverse_dict
@@ -207,7 +207,7 @@ def get_printers():
     return printers
 
 
-def print_files(printer, filenames, title, options):
+def print_files(printer: str, filenames: Iterable[str], title: str, options: dict):
     log("win32.print_files%s", (printer, filenames, title, options))
     global JOB_ID, PROCESSES
     processes = []

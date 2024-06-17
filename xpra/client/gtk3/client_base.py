@@ -683,8 +683,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         about()
 
     def show_docs(self, *_args) -> None:
-        from xpra.scripts.main import run_docs
-        run_docs()
+        from xpra.scripts.main import show_docs
+        show_docs()
 
     def show_shortcuts(self, *_args) -> None:
         if self.shortcuts_info and not self.shortcuts_info.is_closed:

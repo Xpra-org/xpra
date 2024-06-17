@@ -1,27 +1,30 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2019-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2019-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
 import time
 import unittest
-from gi.repository import GLib  # @UnresolvedImport
+from collections.abc import Buffer
 
+from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.common import noop
-from xpra.net.protocol import socket_handler
-from xpra.net.protocol import check
+from xpra.net.protocol import socket_handler, check
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
+from xpra.net.common import PacketType
 from xpra.log import Logger
 
 from unit.test_util import silence_error
 
 log = socket_handler.log
+
+GLib = gi_import("GLib")  # @UnresolvedImport
 
 TIMEOUT = envint("XPRA_PROTOCOL_TEST_TIMEOUT", 20)
 PROFILING = envbool("XPRA_PROTOCOL_PROFILING", False)
@@ -35,31 +38,27 @@ class FastMemoryConnection(Connection):
         self.write_data = []
         Connection.__init__(self, "local", socktype, {})
 
-    def read(self, n):
+    def read(self, n) -> Buffer:
         if self.read_buffers is None:
             while self.active:
                 time.sleep(0.1)
-            return None
+            return b""
         if not self.read_buffers:
             logger = Logger("network")
             logger("read(%i) EOF", n)
-            return None
+            return b""
         b = self.read_buffers[0]
-        if len(b)<=n:
+        if len(b) <= n:
             return self.read_buffers.pop(0)
         self.read_buffers[0] = b[n:]
         return b[:n]
 
-    def write(self, buf, packet_type: str = ""):
+    def write(self, buf, packet_type: str = "") -> int:
         self.write_data.append(buf)
         return len(buf)
 
     def __repr__(self):
         return "FastMemoryConnection"
-
-
-def nodata(*_args):
-    return None
 
 
 def make_profiling_protocol_class(protocol_class):
@@ -72,11 +71,11 @@ def make_profiling_protocol_class(protocol_class):
             graphviz = GraphvizOutput(output_file='%s-%i.png' % (basename, time.monotonic()))
             return PyCallGraph(output=graphviz, config=config)
 
-        def write_format_thread_loop(self):
+        def write_format_thread_loop(self) -> None:
             with self.profiling_context("%s-format-thread" % protocol_class.TYPE):
                 socket_handler.SocketProtocol.write_format_thread_loop(self)
 
-        def do_read_parse_thread_loop(self):
+        def do_read_parse_thread_loop(self) -> None:
             with self.profiling_context("%s-read-parse-thread" % protocol_class.TYPE):
                 socket_handler.SocketProtocol.do_read_parse_thread_loop(self)
 
@@ -94,8 +93,8 @@ class ProtocolTest(unittest.TestCase):
         from xpra.net import compression
         compression.init_all()
 
-    def make_memory_protocol(self, data=(b""), read_buffer_size=1, hangup_delay=0,
-                             process_packet_cb=noop, get_packet_cb=nodata):
+    def make_memory_protocol(self, data=(b"", ), read_buffer_size=1, hangup_delay=0,
+                             process_packet_cb=noop, get_packet_cb=socket_handler.no_packet):
         conn = FastMemoryConnection(data)
         if PROFILING:
             pc = make_profiling_protocol_class(self.protocol_class)
@@ -110,13 +109,13 @@ class ProtocolTest(unittest.TestCase):
         p.enable_default_encoder()
         return p
 
-    def test_verify_packet(self):
+    def test_verify_packet(self) -> None:
         verify_packet = check.verify_packet
 
-        def nok(packet):
+        def nok(packet) -> None:
             assert verify_packet(packet) is False, f"packet {packet} should fail verification"
 
-        def ok(packet):
+        def ok(packet) -> None:
             assert verify_packet(packet) is True, f"packet {packet} should not fail verification"
 
         # packets are iterable, so this should fail:
@@ -135,22 +134,23 @@ class ProtocolTest(unittest.TestCase):
             finally:
                 check.verify_error = saved_verify_error_fn
 
-    def test_invalid_data(self):
+    def test_invalid_data(self) -> None:
         self.do_test_invalid_data([b"\0"*1])
         self.do_test_invalid_data([b"P"*8])
 
-    def do_test_invalid_data(self, data):
+    def do_test_invalid_data(self, data: Buffer) -> None:
         errs = []
         proto = self.make_memory_protocol(data)
 
-        def check_failed():
+        def check_failed() -> None:
             if not proto.is_closed():
                 errs.append("protocol not closed")
-            if proto.input_packetcount>0:
+            if proto.input_packetcount > 0:
                 errs.append("processed %i packets" % proto.input_packetcount)
-            if proto.input_raw_packetcount==0:
+            if proto.input_raw_packetcount == 0:
                 errs.append("not read any raw packets")
             loop.quit()
+
         loop = GLib.MainLoop()
         GLib.timeout_add(500, check_failed)
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
@@ -158,7 +158,7 @@ class ProtocolTest(unittest.TestCase):
         loop.run()
         assert not errs, csv(errs)
 
-    def test_encoders_and_compressors(self):
+    def test_encoders_and_compressors(self) -> None:
         for encoder in ("rencodeplus", ):
             for compressor in ("lz4", ):
                 p = self.make_memory_protocol()
@@ -168,7 +168,7 @@ class ProtocolTest(unittest.TestCase):
                 items = p.encode(packet)
                 assert items
 
-    def test_read_speed(self):
+    def test_read_speed(self) -> None:
         if not SHOW_PERF:
             return
         total_size = 0
@@ -186,7 +186,7 @@ class ProtocolTest(unittest.TestCase):
             self.protocol_class.TYPE, n_packets/elapsed)
         )
 
-    def do_test_read_speed(self, pixel_data_size=2**18, N=100):
+    def do_test_read_speed(self, pixel_data_size=2**18, N=100) -> None:
         # prepare some packets to parse:
         p = self.make_memory_protocol()
         # use optimal setup:
@@ -195,9 +195,10 @@ class ProtocolTest(unittest.TestCase):
         # catch network packets before we write them:
         data = []
 
-        def raw_write(_packet_type, items, *_args):
+        def raw_write(_packet_type, items, *_args) -> None:
             for item in items:
                 data.append(item)
+
         p.raw_write = raw_write
         packets = self.make_test_packets(pixel_data_size)
         for packet in packets:
@@ -207,12 +208,13 @@ class ProtocolTest(unittest.TestCase):
         # catch parsed packets:
         parsed_packets = []
 
-        def process_packet_cb(proto, packet):
+        def process_packet_cb(proto, packet: PacketType) -> None:
             # log.info("process_packet_cb%s", packet[0])
-            if packet[0]==CONNECTION_LOST:
+            if packet[0] == CONNECTION_LOST:
                 loop.quit()
             else:
                 parsed_packets.append(packet[0])
+
         # run the protocol on this data:
         loop = GLib.MainLoop()
         GLib.timeout_add(TIMEOUT*1000, loop.quit)
@@ -226,7 +228,7 @@ class ProtocolTest(unittest.TestCase):
         log("do_test_read_speed(%i) %iMB in %ims", pixel_data_size, total_size, elapsed*1000)
         return N*len(packets), total_size, elapsed
 
-    def make_test_packets(self, pixel_data_size=2**18):
+    def make_test_packets(self, pixel_data_size=2**18) -> tuple:
         pixel_data = os.urandom(pixel_data_size)
         return (
             ("test", 1, 2, 3),
@@ -234,7 +236,7 @@ class ProtocolTest(unittest.TestCase):
             ("draw", 100, 100, 640, 480, Compressed("pixel-data", pixel_data), {}),
         )
 
-    def repeat_list(self, items, N=100):
+    def repeat_list(self, items, N=100) -> list:
         #repeat the same pattern N times:
         l = []
         for _ in range(N):
@@ -243,23 +245,23 @@ class ProtocolTest(unittest.TestCase):
                 l.append(item)
         return l
 
-    def test_format_thread(self):
+    def test_format_thread(self) -> None:
         packets = self.make_test_packets()
         N = 1000
         many = self.repeat_list(packets, N)
 
-        def get_packet_cb():
-            #log.info("get_packet_cb")
+        def get_packet_cb() -> tuple[PacketType, bool, bool]:
             try:
                 packet = many.pop(0)
-                return (packet, False, True, False)
+                return packet, False, True
             except IndexError:
                 proto.close()
-                return (None, )
+                return (), False, False
 
-        def process_packet_cb(proto, packet):
-            if packet[0]==CONNECTION_LOST:
+        def process_packet_cb(proto, packet: PacketType):
+            if packet[0] == CONNECTION_LOST:
                 GLib.timeout_add(1000, loop.quit)
+
         proto = self.make_memory_protocol(None, process_packet_cb=process_packet_cb, get_packet_cb=get_packet_cb)
         conn = proto._conn
         loop = GLib.MainLoop()

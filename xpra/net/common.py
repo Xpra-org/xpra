@@ -8,7 +8,7 @@ import socket
 import struct
 import threading
 from typing import Any, Union, TypeAlias, Final
-from collections.abc import Callable, ByteString, Sequence
+from collections.abc import Callable, Buffer, Sequence
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop
@@ -62,7 +62,7 @@ PacketHandlerType = Callable[[PacketType], None]
 # server packet handler:
 ServerPacketHandlerType = Callable[[Any, PacketType], None]
 
-NetPacketType: TypeAlias = tuple[int, int, int, ByteString]
+NetPacketType: TypeAlias = tuple[int, int, int, Buffer]
 
 
 class ConnectionClosedException(Exception):

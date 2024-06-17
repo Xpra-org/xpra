@@ -10,26 +10,26 @@ from queue import SimpleQueue
 from multiprocessing import Process
 
 from xpra.server.proxy.instance_base import ProxyInstance
+from xpra.server.proxy.queue_scheduler import QueueScheduler
+from xpra.server.util import setuidgid
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol.factory import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.socket_util import SOCKET_DIR_MODE
+from xpra.net.socket_util import SOCKET_DIR_MODE, create_unix_domain_socket, handle_socket_error
+from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
+from xpra.net.common import PacketType
 from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, gi_import
 from xpra.util.env import osexpand
 from xpra.scripts.config import str_to_bool
-from xpra.server.util import setuidgid
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
 from xpra.util.objects import typedict
 from xpra.util.str_fn import ellipsizer, bytestostr
-from xpra.common import ConnectionMessage, SocketState, noerr
-from xpra.server.proxy.queue_scheduler import QueueScheduler
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
 from xpra.util.version import full_version_str
-from xpra.net.socket_util import create_unix_domain_socket, handle_socket_error
+from xpra.common import ConnectionMessage, SocketState, noerr
 from xpra.platform.dotxpra import DotXpra
-from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -40,7 +40,7 @@ enclog = Logger("encoding")
 MAX_CONCURRENT_CONNECTIONS = 20
 
 
-def set_blocking(conn):
+def set_blocking(conn) -> None:
     # Note: importing set_socket_timeout from xpra.net.bytestreams
     # fails in mysterious ways, so we duplicate the code here instead
     log("set_blocking(%s)", conn)
@@ -277,14 +277,14 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             log.error("connection timedout: %s", protocol)
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
-    def process_control_packet(self, proto, packet) -> None:
+    def process_control_packet(self, proto, packet: PacketType) -> None:
         try:
             self.do_process_control_packet(proto, packet)
         except Exception as e:
             log.error("error processing control packet", exc_info=True)
             self.send_disconnect(proto, ConnectionMessage.CONTROL_COMMAND_ERROR, str(e))
 
-    def do_process_control_packet(self, proto, packet) -> None:
+    def do_process_control_packet(self, proto, packet: PacketType) -> None:
         log("process_control_packet(%s, %s)", proto, packet)
         packet_type = bytestostr(packet[0])
         if packet_type == CONNECTION_LOST:

@@ -44,7 +44,7 @@ class ProxyInstanceThread(ProxyInstance):
     def timeout_add(self, timeout, fn, *args, **kwargs) -> int:
         return GLib.timeout_add(timeout, fn, *args, **kwargs)
 
-    def source_remove(self, tid) -> None:
+    def source_remove(self, tid: int) -> None:
         GLib.source_remove(tid)
 
     def run(self) -> None:

@@ -12,7 +12,7 @@ import hashlib
 import binascii
 from subprocess import Popen, PIPE
 from threading import Event
-from collections.abc import ByteString, Callable
+from collections.abc import Buffer, Callable
 import paramiko
 
 from xpra.net.bytestreams import pretty_socket
@@ -216,7 +216,7 @@ class SSHServer(paramiko.ServerInterface):
         log(f"check_channel_shell_request({channel})")
         return False
 
-    def check_channel_exec_request(self, channel, command: ByteString) -> bool:
+    def check_channel_exec_request(self, channel, command: Buffer) -> bool:
         def fail(*messages) -> bool:
             for m in messages:
                 log.warn(m)
@@ -368,7 +368,7 @@ class SSHServer(paramiko.ServerInterface):
 
         getChildReaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
 
-        def proc_to_channel(read: Callable[[int], ByteString], send: Callable[[ByteString], int]) -> None:
+        def proc_to_channel(read: Callable[[int], Buffer], send: Callable[[Buffer], int]) -> None:
             while proc.poll() is None:
                 # log("proc_to_channel(%s, %s) waiting for data", read, send)
                 try:

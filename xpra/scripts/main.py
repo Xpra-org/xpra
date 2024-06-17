@@ -3262,6 +3262,17 @@ def run_session_info(error_cb, options, args, cmdline) -> ExitValue:
     return app.run()
 
 
+def show_docs() -> None:
+    def show_docs_thread():
+        try:
+            run_docs()
+        except InitExit as e:
+            stderr_print("Error: cannot show documentation")
+            stderr_print(f" {e}")
+    from xpra.util.thread import start_thread
+    start_thread(show_docs_thread, "open documentation", True)
+
+
 def run_docs() -> ExitValue:
     path = find_docs_path()
     if not path:

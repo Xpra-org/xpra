@@ -53,6 +53,13 @@ def number(k, v):
     return parse_number(int, k, v)
 
 
+SESSION_OPTION_WHITELIST: dict[str, Callable] = {
+    "compression_level": number,
+    "lz4": str_to_bool,
+    "rencodeplus": str_to_bool,
+}
+
+
 # noinspection PyMethodMayBeStatic
 class ProxyInstance:
 
@@ -244,14 +251,8 @@ class ProxyInstance:
 
     def sanitize_session_options(self, options) -> dict[str, Any]:
         d = {}
-
-        OPTION_WHITELIST: dict[str, Callable] = {
-            "compression_level": number,
-            "lz4": str_to_bool,
-            "rencodeplus": str_to_bool,
-        }
         for k, v in options.items():
-            parser = OPTION_WHITELIST.get(k)
+            parser = SESSION_OPTION_WHITELIST.get(k)
             if parser:
                 log("trying to add %s=%s using %s", k, v, parser)
                 try:
@@ -304,7 +305,7 @@ class ProxyInstance:
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
 
-    def get_client_packet(self):
+    def get_client_packet(self) -> tuple[PacketType, bool, bool]:
         # server wants a packet
         p = self.client_packets.get()
         s = self.client_packets.qsize()
@@ -608,8 +609,8 @@ class ProxyInstance:
                         self.delvideo(wid)
                 else:
                     enclog.warn("unexpected encode packet: %s", packet_type)
-            except Exception:
-                enclog.warn("error encoding packet", exc_info=True)
+            except (ValueError, RuntimeError):
+                enclog.warn(f"Warning: failed encoding packet {packet_type!r}", exc_info=True)
 
     def process_draw(self, packet: PacketType) -> None:
         wid, x, y, width, height, encoding, pixels, _, rowstride, client_options = packet[1:11]
@@ -648,6 +649,7 @@ class ProxyInstance:
             updated = packet
             if strip_alpha:
                 # passthrough as plain RGB:
+                # noinspection PyPep8Naming
                 Xindex = rgb_format.upper().find("X")
                 if Xindex >= 0 and len(rgb_format) == 4:
                     # force clear alpha (which may be garbage):

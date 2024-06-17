@@ -6,7 +6,7 @@
 import os
 import hmac
 import hashlib
-from collections.abc import Callable, ByteString, Sequence
+from collections.abc import Callable, Buffer, Sequence
 
 from xpra.util.str_fn import csv, strtobytes, hexstr, memoryview_to_bytes
 from xpra.util.env import envint
@@ -61,7 +61,7 @@ def choose_digest(options: Sequence[str]) -> str:
     raise ValueError(f"no known digest options found in '{csv(options)}'")
 
 
-def gendigest(digest: str, password_in, salt_in: ByteString) -> bytes:
+def gendigest(digest: str, password_in, salt_in: Buffer) -> bytes:
     assert password_in and salt_in
     salt: bytes = memoryview_to_bytes(salt_in)
     password: bytes = strtobytes(password_in)

@@ -9,7 +9,7 @@ from io import BytesIO
 import PIL
 from PIL import Image
 from typing import Any
-from collections.abc import Callable, ByteString, Sequence
+from collections.abc import Callable, Buffer, Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, strtobytes, hexstr
@@ -87,7 +87,7 @@ def get_image_type(data) -> str:
     return ""
 
 
-def open_only(data: ByteString, types=("png", "jpeg", "webp")) -> Image:
+def open_only(data: Buffer, types=("png", "jpeg", "webp")) -> Image:
     itype = get_image_type(data) or "unknown"
     if itype not in types:
         raise ValueError(f"invalid data: {itype}, not recognized as {csv(types)}, header: " + hexstr(data[:64]))

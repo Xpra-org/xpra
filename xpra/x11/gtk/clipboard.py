@@ -103,6 +103,39 @@ def strings_to_xatoms(data: Iterable[str]) -> bytes:
     return struct.pack(b"@" + b"L" * len(atom_array), *atom_array)
 
 
+def get_wintitle(xid) -> str:
+    with xswallow:
+        data = X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING")
+        if data:
+            return data.decode("latin1")
+    with xswallow:
+        data = X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "UTF8_STRING")
+        if data:
+            return data.decode("utf8")
+    return ""
+
+
+def get_wininfo(xid):
+    wininfo = [f"xid={xid:x}"]
+    if XRes:
+        with xswallow:
+            pid = XRes.get_pid(xid)
+            if pid:
+                wininfo.append(f"pid={pid}")
+    title = get_wintitle(xid)
+    if title:
+        wininfo.insert(0, repr(title))
+        return wininfo
+    while xid:
+        title = get_wintitle(xid)
+        if title:
+            wininfo.append(f"child of {title!r}")
+            return wininfo
+        with xswallow:
+            xid = X11Window.getParent(xid)
+    return wininfo
+
+
 class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     __gsignals__ = {
         "x11-client-message-event": one_arg_signal,
@@ -218,37 +251,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         log.info(f"Unexpected X11 message received by clipboard window {event.window:x}")
         log.info(f" {event}")
 
-    def get_wintitle(self, xid) -> str:
-        with xswallow:
-            data = X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING")
-            if data:
-                return data.decode("latin1")
-        with xswallow:
-            data = X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "UTF8_STRING")
-            if data:
-                return data.decode("utf8")
-        return ""
-
-    def get_wininfo(self, xid):
-        wininfo = [f"xid={xid:x}"]
-        if XRes:
-            with xswallow:
-                pid = XRes.get_pid(xid)
-                if pid:
-                    wininfo.append(f"pid={pid}")
-        title = self.get_wintitle(xid)
-        if title:
-            wininfo.insert(0, repr(title))
-            return wininfo
-        while xid:
-            title = self.get_wintitle(xid)
-            if title:
-                wininfo.append(f"child of {title!r}")
-                return wininfo
-            with xswallow:
-                xid = X11Window.getParent(xid)
-        return wininfo
-
     ############################################################################
     # forward local requests to the remote clipboard:
     ############################################################################
@@ -259,7 +261,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not requestor:
             log.warn("Warning: clipboard selection request without a window, dropped")
             return
-        wininfo = self.get_wininfo(requestor)
+        wininfo = get_wininfo(requestor)
         prop = event.property
         target = str(event.target)
         log("clipboard request for %s from window %s, target=%s, prop=%s",
@@ -362,7 +364,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         # answer the selection request:
         if not prop:
             log.warn("Warning: cannot set clipboard response")
-            log.warn(" property is unset for requestor %s", self.get_wininfo(requestor))
+            log.warn(" property is unset for requestor %s", get_wininfo(requestor))
             return
         try:
             with xsync:
@@ -376,7 +378,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         except XError as e:
             log("failed to set selection", exc_info=True)
             log.warn(f"Warning: failed to set selection for target {target!r}")
-            log.warn(" on requestor %s", self.get_wininfo(requestor))
+            log.warn(" on requestor %s", get_wininfo(requestor))
             log.warn(f" property {prop!r}")
             log.warn(f" {e}")
 
@@ -393,7 +395,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         for requestor, actual_target, prop, time in pending:
             if log.is_debug_enabled():
                 log("setting response %s: %s as '%s' on property '%s' of window %s as %s",
-                    type(data), ellipsizer(data), actual_target, prop, self.get_wininfo(requestor), dtype)
+                    type(data), ellipsizer(data), actual_target, prop, get_wininfo(requestor), dtype)
             if actual_target != target and dtype == target:
                 dtype = actual_target
             self.set_selection_response(requestor, actual_target, prop, dtype, dformat, data, time)
@@ -525,7 +527,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             self.local_request_counter += 1
             timer = GLib.timeout_add(CONVERT_TIMEOUT, self.timeout_get_contents, target, request_id)
             self.local_requests.setdefault(target, {})[request_id] = (timer, got_contents)
-            log("requesting local XConvertSelection from %s as '%s' into '%s'", self.get_wininfo(owner), target, prop)
+            log("requesting local XConvertSelection from %s as '%s' into '%s'", get_wininfo(owner), target, prop)
             X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=CurrentTime)
 
     def timeout_get_contents(self, target: str, request_id: int):

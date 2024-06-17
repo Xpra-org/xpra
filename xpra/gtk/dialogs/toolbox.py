@@ -9,7 +9,7 @@ import sys
 import glob
 import os.path
 import subprocess
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 from xpra.util.child_reaper import getChildReaper
 from xpra.gtk.signals import register_os_signals
@@ -27,7 +27,7 @@ Gio = gi_import("Gio")
 log = Logger("client", "util")
 
 
-def exec_command(cmd: Iterable[str]) -> subprocess.Popen:
+def exec_command(cmd: Sequence[str]) -> subprocess.Popen:
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     creationflags = 0
@@ -154,7 +154,7 @@ class ToolboxGUI(Gtk.Window):
         self.add(self.vbox)
 
         def addhbox(blabel: str, buttons: Iterable[tuple[str, str, str]]) -> None:
-            self.vbox.add(self.label(blabel))
+            self.vbox.add(label(blabel, font="sans 14"))
             hbox = Gtk.HBox(homogeneous=False, spacing=10)
             self.vbox.add(hbox)
             for button in buttons:
@@ -164,10 +164,6 @@ class ToolboxGUI(Gtk.Window):
         for category, button_defs in BUTTON_GROUPS.items():
             addhbox(f"{category}:", button_defs)
         self.vbox.show_all()
-
-    @staticmethod
-    def label(text) -> Gtk.Label:
-        return label(text, font="sans 14")
 
     @staticmethod
     def button(label_str, tooltip, modpath, enabled=True) -> Gtk.Button:

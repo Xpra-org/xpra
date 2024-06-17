@@ -28,7 +28,7 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 
-def get_server_base_classes() -> tuple[type]:
+def get_server_base_classes() -> tuple[type, ...]:
     classes: list[type] = [ServerCore]
     if features.control:
         from xpra.server.mixins.controlcommands import ServerBaseControlCommands

@@ -13,7 +13,7 @@ from xpra.gtk.signals import register_os_signals
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool, get_exec_env
 from xpra.net.bytestreams import TwoFileConnection
-from xpra.net.common import ConnectionClosedException, PACKET_TYPES
+from xpra.net.common import ConnectionClosedException, PACKET_TYPES, PacketType
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
 from xpra.os_util import gi_import, WIN32
@@ -62,14 +62,14 @@ INJECT_FAULT = nofault
 if FAULT_RATE > 0:
     _counter = 0
 
-    def DO_INJECT_FAULT(p):
+    def do_inject_fault(p):
         global _counter
         _counter += 1
         if (_counter % FAULT_RATE) == 0:
             log.warn("injecting fault in %s", p)
             p.raw_write("junk", "Wrapper JUNK! added by fault injection code")
 
-    INJECT_FAULT = DO_INJECT_FAULT
+    INJECT_FAULT = do_inject_fault
 
 
 def setup_fastencoder_nocompression(protocol):
@@ -87,7 +87,7 @@ def setup_fastencoder_nocompression(protocol):
     protocol.enable_compressor("none")
 
 
-class subprocess_callee:
+class SubprocessCallee:
     """
     This is the callee side, wrapping the gobject we want to interact with.
     All the input received will be converted to method calls on the wrapped object.
@@ -244,16 +244,16 @@ class subprocess_callee:
             p.source_has_more()
         INJECT_FAULT(p)
 
-    def get_packet(self):
+    def get_packet(self) -> tuple[PacketType, bool, bool]:
         try:
             item = self.send_queue.get(False)
             more = self.send_queue.qsize() > 0
         except Empty:
             item = None
             more = False
-        return item, False, more, False
+        return item, False, more
 
-    def process_packet(self, proto, packet) -> None:
+    def process_packet(self, proto, packet: PacketType) -> None:
         command = str(packet[0])
         if command == CONNECTION_LOST:
             log("connection-lost: %s, calling stop", packet[1:])
@@ -429,14 +429,14 @@ class subprocess_caller:
         log.warn(" %s", repr_ellipsized(args[1], limit=80))
         self.stop()
 
-    def get_packet(self) -> tuple:
+    def get_packet(self) -> tuple[PacketType, bool, bool]:
         try:
             item = self.send_queue.get(False)
             more = self.send_queue.qsize() > 0
         except Exception:
             item = None
             more = False
-        return item, False, more, False
+        return item, False, more
 
     def send(self, *packet_data) -> None:
         self.send_queue.put(packet_data)
@@ -449,7 +449,7 @@ class subprocess_caller:
                     conn.flush()
         INJECT_FAULT(p)
 
-    def process_packet(self, proto, packet) -> None:
+    def process_packet(self, proto, packet: PacketType) -> None:
         if DEBUG_WRAPPER:
             log("process_packet(%s, %s)", proto, [str(x)[:32] for x in packet])
         signal_name = str(packet[0])

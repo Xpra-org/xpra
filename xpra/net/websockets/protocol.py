@@ -5,7 +5,7 @@
 
 import os
 import struct
-from collections.abc import ByteString, Callable
+from collections.abc import Buffer, Callable
 
 from xpra.net.websockets.mask import hybi_mask
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi, close_packet
@@ -25,8 +25,8 @@ class WebSocketProtocol(SocketProtocol):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ws_data: ByteString = b""
-        self.ws_payload: list[ByteString] = []
+        self.ws_data: Buffer = b""
+        self.ws_payload: list[Buffer] = []
         self.ws_payload_opcode: int = 0
         self.ws_mask: bool = MASK
         self._process_read = self.parse_ws_frame
@@ -48,7 +48,7 @@ class WebSocketProtocol(SocketProtocol):
         data = close_packet(code, reason)
         self.flush_then_close(None, data)
 
-    def make_wsframe_header(self, packet_type, items) -> ByteString:
+    def make_wsframe_header(self, packet_type, items) -> Buffer:
         payload_len = sum(len(item) for item in items)
         header = encode_hybi_header(OPCODE.BINARY, payload_len, self.ws_mask)
         log("make_wsframe_header(%s, %i items) %i bytes, ws_mask=%s, header=0x%s (%i bytes)",
@@ -61,7 +61,7 @@ class WebSocketProtocol(SocketProtocol):
             return header + mask
         return header
 
-    def parse_ws_frame(self, buf: ByteString) -> None:
+    def parse_ws_frame(self, buf: Buffer) -> None:
         if not buf:
             self._read_queue_put(buf)
             return
@@ -127,17 +127,17 @@ class WebSocketProtocol(SocketProtocol):
                 log.warn("Warning unhandled websocket opcode '%s'", OPCODE_STR.get(opcode, f"{opcode:x}"))
                 log("payload=%r", payload)
 
-    def _process_ws_ping(self, payload: ByteString) -> None:
+    def _process_ws_ping(self, payload: Buffer) -> None:
         log("_process_ws_ping(%r)", payload)
         item = encode_hybi_header(OPCODE.PONG, len(payload)) + memoryview_to_bytes(payload)
         items = (item,)
         with self._write_lock:
             self.raw_write("ws-ping", items)
 
-    def _process_ws_pong(self, payload: ByteString) -> None:
+    def _process_ws_pong(self, payload: Buffer) -> None:
         log("_process_ws_pong(%r)", payload)
 
-    def _process_ws_close(self, payload: ByteString) -> None:
+    def _process_ws_close(self, payload: Buffer) -> None:
         log("_process_ws_close(%r)", payload)
         if len(payload) < 2:
             self._connection_lost("unknown reason")

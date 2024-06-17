@@ -7,8 +7,8 @@
 
 # pylint: disable=import-outside-toplevel
 
-from typing import Any, ByteString
-from collections.abc import Callable, Iterable, Sequence
+from typing import Any
+from collections.abc import Callable, Iterable, Sequence, Buffer
 from dataclasses import dataclass
 
 from xpra.log import Logger
@@ -29,8 +29,8 @@ class Encoding:
     name: str
     flag: int
     version: str
-    encode: Callable[[Any], tuple[ByteString, int]]
-    decode: Callable[[ByteString], Any]
+    encode: Callable[[Any], tuple[Buffer, int]]
+    decode: Callable[[Buffer], Any]
 
 
 ENCODERS: dict[str, Encoding] = {}
@@ -40,14 +40,14 @@ def init_rencodeplus() -> Encoding:
     from xpra.net.rencodeplus import rencodeplus  # type: ignore[attr-defined]
     rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
 
-    def do_rencodeplus(v) -> tuple[ByteString, int]:
+    def do_rencodeplus(v) -> tuple[Buffer, int]:
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
 
     return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
 
 
 def init_none() -> Encoding:
-    def none_encode(data: ByteString) -> tuple[bytes, int]:
+    def none_encode(data: Buffer) -> tuple[bytes, int]:
         # just send data as a byte string for clients that don't understand xpra packet format:
         import codecs
 
@@ -58,7 +58,7 @@ def init_none() -> Encoding:
 
         return b(": ".join(str(x) for x in data) + "\n"), FLAGS_NOHEADER
 
-    def none_decode(data: ByteString) -> ByteString:
+    def none_decode(data: Buffer) -> Buffer:
         return data
 
     return Encoding("none", FLAGS_NOHEADER, "0", none_encode, none_decode)

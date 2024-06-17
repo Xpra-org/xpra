@@ -17,7 +17,7 @@ from xpra.os_util import get_machine_id, gi_import, POSIX, OSX
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
-from xpra.net.common import is_request_allowed
+from xpra.net.common import is_request_allowed, PacketType
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import ExitCode
@@ -165,7 +165,7 @@ class Networklistener(StubClientMixin):
         protocol.start()
         # self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
 
-    def process_network_packet(self, proto, packet) -> None:
+    def process_network_packet(self, proto, packet: PacketType) -> None:
         log("process_network_packet: %s", packet)
         packet_type = str(packet[0])
 

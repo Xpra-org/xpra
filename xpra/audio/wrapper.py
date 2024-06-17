@@ -14,7 +14,7 @@ from xpra.audio.gstreamer_util import (
     parse_audio_source, get_source_plugins, get_sink_plugins, get_default_sink_plugin, get_default_source,
     can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names,
 )
-from xpra.net.subprocess_wrapper import subprocess_caller, subprocess_callee, exec_kwargs, exec_env
+from xpra.net.subprocess_wrapper import subprocess_caller, SubprocessCallee, exec_kwargs, exec_env
 from xpra.platform.paths import get_audio_command
 from xpra.common import FULL_INFO
 from xpra.os_util import WIN32, OSX, POSIX, BITS, gi_import
@@ -80,7 +80,7 @@ def get_audio_wrapper_env():
 # The output will be a regular xpra packet, containing serialized signals that we receive
 # The input can be a regular xpra packet, those are converted into method calls
 
-class AudioSubprocess(subprocess_callee):
+class AudioSubprocess(SubprocessCallee):
     """ Utility superclass for audio subprocess wrappers
         (see audio_record and audio_play below)
     """

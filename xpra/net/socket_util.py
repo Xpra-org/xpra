@@ -9,7 +9,7 @@ from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
 from typing import Any
 from importlib.util import find_spec
-from collections.abc import Callable, ByteString
+from collections.abc import Callable, Buffer
 
 from xpra.common import GROUP, SocketState, noerr
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
@@ -291,7 +291,7 @@ def get_sockopt_tcp_info(sock, sockopt_tcpinfo: int, attributes=POSIX_TCP_INFO) 
     return d
 
 
-def looks_like_xpra_packet(data: ByteString) -> bool:
+def looks_like_xpra_packet(data: Buffer) -> bool:
     if len(data) < 8:
         return False
     if data[0] != ord("P"):
@@ -329,7 +329,7 @@ def looks_like_xpra_packet(data: ByteString) -> bool:
     return True
 
 
-def guess_packet_type(data: ByteString) -> str:
+def guess_packet_type(data: Buffer) -> str:
     if not data:
         return ""
     if looks_like_xpra_packet(data):

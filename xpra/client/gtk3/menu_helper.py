@@ -515,11 +515,7 @@ class MenuHelper:
         return self.menuitem("Bug Report", "bugs.png", cb=self.show_bug_report)
 
     def make_docsmenuitem(self) -> Gtk.ImageMenuItem:
-        def show_docs():
-            from xpra.scripts.main import run_docs
-            from xpra.util.thread import start_thread
-            start_thread(run_docs, "open documentation", True)
-
+        from xpra.scripts.main import show_docs
         return self.menuitem("Documentation", "documentation.png", cb=show_docs)
 
     def make_html5menuitem(self) -> Gtk.ImageMenuItem:

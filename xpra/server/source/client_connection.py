@@ -75,7 +75,7 @@ class ClientConnection(StubSourceMixin):
         # these packets are picked off by the "protocol" via 'next_packet()'
         # format: packet, wid, pixels, start_send_cb, end_send_cb
         # (only packet is required - the rest can be 0/None for clipboard packets)
-        self.packet_queue = deque()
+        self.packet_queue = deque[PacketType, int, int, bool]()
         # the encode work queue is used by mixins that need to encode data before sending it,
         # ie: encodings and clipboard
         # this queue will hold functions to call to compress data (pixels, clipboard)
@@ -83,7 +83,7 @@ class ClientConnection(StubSourceMixin):
         # the functions should add the packets they generate to the 'packet_queue'
         self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, Sequence[Any]]] = SimpleQueue()
         self.encode_thread = None
-        self.ordinary_packets: list[tuple[PacketType, bool, Callable, bool]] = []
+        self.ordinary_packets: list[tuple[PacketType, bool, bool]] = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
@@ -254,7 +254,7 @@ class ClientConnection(StubSourceMixin):
         self.statistics.compression_work_qsizes.append((monotonic(), self.encode_queue_size()))
         self.queue_encode((optional, fn, args))
 
-    def queue_packet(self, packet, wid=0, pixels=0,
+    def queue_packet(self, packet: PacketType, wid=0, pixels=0,
                      wait_for_more=False) -> None:
         """
             Add a new 'draw' packet to the 'packet_queue'.
@@ -302,17 +302,21 @@ class ClientConnection(StubSourceMixin):
 
     ######################################################################
     # network:
-    def next_packet(self) -> tuple[PacketType, bool, bool, bool]:
+    def next_packet(self) -> tuple[PacketType, bool, bool]:
         """ Called by protocol.py when it is ready to send the next packet """
-        packet = None
-        synchronous, have_more, will_have_more = True, False, False
-        if not self.is_closed():
-            if self.ordinary_packets:
-                packet, synchronous, will_have_more = self.ordinary_packets.pop(0)
-            elif self.packet_queue:
-                packet, _, _, will_have_more = self.packet_queue.popleft()
-            have_more = packet is not None and bool(self.ordinary_packets or self.packet_queue)
-        return packet, synchronous, have_more, will_have_more
+        if self.is_closed():
+            return None, False, False
+        synchronous = True
+        more = False
+        if self.ordinary_packets:
+            packet, synchronous, more = self.ordinary_packets.pop(0)
+        elif self.packet_queue:
+            packet, _, _, more = self.packet_queue.popleft()
+        else:
+            packet = None
+        if not more:
+            more = packet is not None and bool(self.ordinary_packets or self.packet_queue)
+        return packet, synchronous, more
 
     def send(self, *parts: PacketElement, **kwargs) -> None:
         """ This method queues non-damage packets (higher priority) """

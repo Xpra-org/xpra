@@ -7,6 +7,7 @@
 import os
 import sys
 from typing import Any
+from collections.abc import Iterable
 
 # default implementation uses pycups
 from xpra.common import noop
@@ -32,7 +33,7 @@ def get_default_printer() -> str:
     return ""
 
 
-def print_files(printer: str, filenames, title: str, options):
+def print_files(printer: str, filenames: Iterable[str], title: str, options: dict):
     raise RuntimeError("no print implementation available")
 
 

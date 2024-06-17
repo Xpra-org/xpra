@@ -5,8 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any, ByteString
-from collections.abc import Callable, Sequence
+from typing import Any
+from collections.abc import Callable, Sequence, Buffer
 from dataclasses import dataclass
 
 from xpra.util.env import envbool
@@ -26,8 +26,8 @@ PERFORMANCE_COMPRESSION: Sequence[str] = ("lz4", "brotli")
 class Compression:
     name: str
     version: str
-    compress: Callable[[ByteString, int], tuple[int, ByteString]]
-    decompress: Callable[[ByteString], ByteString]
+    compress: Callable[[Buffer, int], tuple[int, Buffer]]
+    decompress: Callable[[Buffer], Buffer]
 
 
 COMPRESSION: dict[str, Compression] = {}
@@ -39,11 +39,11 @@ def init_lz4() -> Compression:
     from xpra.net.lz4.lz4 import compress, decompress, get_version  # @UnresolvedImport
     from xpra.net.protocol.header import LZ4_FLAG
 
-    def lz4_compress(packet: ByteString, level: int) -> tuple[int, memoryview]:
+    def lz4_compress(packet: Buffer, level: int) -> tuple[int, memoryview]:
         flag = min(15, level) | LZ4_FLAG
         return flag, compress(packet, acceleration=max(0, 5 - level // 3))
 
-    def lz4_decompress(data: ByteString) -> ByteString:
+    def lz4_decompress(data: Buffer) -> Buffer:
         return decompress(data, max_size=MAX_DECOMPRESSED_SIZE)
 
     return Compression("lz4", get_version(), lz4_compress, lz4_decompress)
@@ -59,7 +59,7 @@ def init_brotli() -> Compression:
     brotli_compress = compress
     brotli_version = get_version()
 
-    def brotli_compress_shim(packet: ByteString, level: int) -> tuple[int, memoryview]:
+    def brotli_compress_shim(packet: Buffer, level: int) -> tuple[int, memoryview]:
         if len(packet) > 1024 * 1024:
             level = min(9, level)
         else:
@@ -74,12 +74,12 @@ def init_brotli() -> Compression:
 def init_none() -> Compression:
     from xpra.util.str_fn import strtobytes
 
-    def nocompress(packet: ByteString, _level) -> tuple[int, ByteString]:
+    def nocompress(packet: Buffer, _level) -> tuple[int, Buffer]:
         if not isinstance(packet, bytes):
             packet = bytes(str(packet), 'UTF-8')
         return 0, strtobytes(packet)
 
-    def nodecompress(v: ByteString) -> ByteString:
+    def nodecompress(v: Buffer) -> Buffer:
         return v
 
     return Compression("none", "0", nocompress, nodecompress)

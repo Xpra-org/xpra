@@ -15,7 +15,7 @@ from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue, SimpleQueue, Empty, Full
 from typing import Any
-from collections.abc import ByteString, Callable, Iterable, Sequence, Mapping
+from collections.abc import Buffer, Callable, Iterable, Sequence, Mapping
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -74,14 +74,14 @@ ALIAS_INFO = envbool("XPRA_ALIAS_INFO", False)
 PACKET_HEADER_CHAR = ord("P")
 
 
-def exit_queue() -> SimpleQueue[tuple | None]:
-    queue: SimpleQueue[tuple | None] = SimpleQueue()
+def exit_queue() -> SimpleQueue[tuple[Sequence, str, bool, bool] | None]:
+    queue: SimpleQueue[tuple[Sequence, str, bool, bool] | None] = SimpleQueue()
     for _ in range(10):  # just 2 should be enough!
         queue.put(None)
     return queue
 
 
-def force_flush_queue(q: Queue):
+def force_flush_queue(q: Queue) -> None:
     # discard all elements in the old queue and push the None marker:
     try:
         while q.qsize() > 0:
@@ -94,6 +94,10 @@ def force_flush_queue(q: Queue):
         log("force_flush_queue(%s)", q, exc_info=True)
 
 
+def no_packet() -> [PacketType, bool, bool]:
+    return None, False, False
+
+
 class SocketProtocol:
     """
         This class handles sending and receiving packets,
@@ -103,7 +107,8 @@ class SocketProtocol:
 
     TYPE = "xpra"
 
-    def __init__(self, conn, process_packet_cb: Callable, get_packet_cb: Callable | None = None):
+    def __init__(self, conn, process_packet_cb: Callable[[Any, PacketType], None],
+                 get_packet_cb: Callable[[], tuple[PacketType, bool, bool]] = no_packet):
         """
             You must call this constructor and source_has_more() from the main thread.
         """
@@ -120,14 +125,13 @@ class SocketProtocol:
         self._conn = conn
         self._process_packet_cb: Callable[[PacketType], None] = process_packet_cb
         self.make_chunk_header: Callable = self.make_xpra_header
-        self.make_frame_header: Callable[[str | int, Iterable], ByteString] = self.noframe_header
-        self._write_queue: Queue[tuple | None] = Queue(1)
-        self._read_queue: Queue[ByteString] = Queue(20)
+        self.make_frame_header: Callable[[str | int, Iterable], Buffer] = self.noframe_header
+        self._write_queue: Queue[tuple[Sequence, str, bool, bool] | None] = Queue(1)
+        self._read_queue: Queue[Buffer] = Queue(20)
         self._pre_read = None
-        self._process_read: Callable = self.read_queue_put
-        self._read_queue_put: Callable = self.read_queue_put
-        # Invariant: if .source is None, then _source_has_more == False
-        self._get_packet_cb: Callable | None = get_packet_cb
+        self._process_read: Callable[[Buffer], None] = self.read_queue_put
+        self._read_queue_put: Callable[[Buffer], None] = self.read_queue_put
+        self._get_packet_cb: Callable[[], tuple[PacketType, bool, bool]] = get_packet_cb
         # counters:
         self.input_stats: dict[str, int] = {}
         self.input_packetcount = 0
@@ -219,7 +223,7 @@ class SocketProtocol:
                 exited = False
         return exited
 
-    def set_packet_source(self, get_packet_cb: Callable) -> None:
+    def set_packet_source(self, get_packet_cb: Callable[[], [PacketType, bool, bool]]) -> None:
         self._get_packet_cb = get_packet_cb
 
     def set_cipher_in(self, ciphername: str, iv, password, key_salt, key_hash, key_size: int, iterations: int, padding):
@@ -323,7 +327,7 @@ class SocketProtocol:
         return info
 
     def start(self) -> None:
-        def start_network_read_thread():
+        def start_network_read_thread() -> None:
             if not self._closed:
                 self._read_thread.start()
 
@@ -344,12 +348,12 @@ class SocketProtocol:
             raise RuntimeError(f"cannot use send_now when a packet source exists! (set to {self._get_packet_cb})")
         tmp_queue = [packet]
 
-        def packet_cb() -> tuple[PacketType]:
-            self._get_packet_cb = None
+        def packet_cb() -> tuple[PacketType, bool, bool]:
+            self._get_packet_cb = no_packet
             if not tmp_queue:
                 raise RuntimeError("packet callback used more than once!")
             qpacket = tmp_queue.pop()
-            return (qpacket, )
+            return qpacket, True, False
 
         self._get_packet_cb = packet_cb
         self.source_has_more()
@@ -383,22 +387,22 @@ class SocketProtocol:
                 return
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
-    def _add_packet_to_queue(self, packet: PacketType,
-                             synchronous=True, has_more=False, wait_for_more=False) -> None:
-        if not has_more:
+    def _add_packet_to_queue(self, packet: PacketType, synchronous=True, more=False) -> None:
+        log.warn("_add_packet_to_queue%s", (packet, synchronous, more))
+        if not more:
             shm = self._source_has_more
             if shm:
                 shm.clear()
-        if packet is None:
+        if not packet:
             return
-        #log("add_packet_to_queue%s", (packet[0], synchronous, has_more, wait_for_more), remote=False)
+        #log("add_packet_to_queue%s", (packet[0], synchronous, more), remote=False)
         packet_type: str | int = packet[0]
         chunks: tuple[NetPacketType, ...] = tuple(self.encode(packet))
         with self._write_lock:
             if self._closed:
                 return
             try:
-                self._add_chunks_to_queue(packet_type, chunks, synchronous, has_more or wait_for_more)
+                self._add_chunks_to_queue(packet_type, chunks, synchronous, more)
             except Exception:
                 log.error("Error: failed to queue '%s' packet", packet[0])
                 log("add_chunks_to_queue%s", (chunks, ), exc_info=True)
@@ -467,11 +471,11 @@ class SocketProtocol:
 
     @staticmethod
     def make_xpra_header(_packet_type: str | int,
-                         proto_flags: int, level: int, index: int, payload_size: int) -> ByteString:
+                         proto_flags: int, level: int, index: int, payload_size: int) -> Buffer:
         return pack_header(proto_flags, level, index, payload_size)
 
     @staticmethod
-    def noframe_header(_packet_type: str | int, _items) -> ByteString:
+    def noframe_header(_packet_type: str | int, _items) -> Buffer:
         return b""
 
     def start_write_thread(self) -> None:
@@ -479,7 +483,7 @@ class SocketProtocol:
             assert not self._write_thread, "write thread already started"
             self._write_thread = start_thread(self._write_thread_loop, "write", daemon=True)
 
-    def raw_write(self, items, packet_type=None, synchronous=True, more=False) -> None:
+    def raw_write(self, items: Sequence, packet_type="", synchronous=True, more=False) -> None:
         """ Warning: this bypasses the compression and packet encoder! """
         if self._write_thread is None:
             log("raw_write for %s, starting write thread", packet_type)
@@ -699,7 +703,7 @@ class SocketProtocol:
     def _write(self) -> bool:
         items = self._write_queue.get()
         # Used to signal that we should exit:
-        if items is None:
+        if not items:
             log("write thread: empty marker, exiting")
             self.close()
             return False
@@ -747,7 +751,7 @@ class SocketProtocol:
         self.output_packetcount += 1
 
     # noinspection PyMethodMayBeStatic
-    def con_write(self, con, buf: ByteString, packet_type: str):
+    def con_write(self, con, buf: Buffer, packet_type: str):
         return con.write(buf, packet_type)
 
     def _read_thread_loop(self) -> None:
@@ -767,7 +771,7 @@ class SocketProtocol:
         self.input_raw_packetcount += 1
         return True
 
-    def con_read(self) -> ByteString:
+    def con_read(self) -> Buffer:
         if self._pre_read:
             r = self._pre_read.pop(0)
             log("con_read() using pre_read value: %r", ellipsizer(r))
@@ -803,10 +807,10 @@ class SocketProtocol:
 
     # delegates to invalid_header()
     # (so this can more easily be intercepted and overridden)
-    def invalid_header(self, proto, data: ByteString, msg="invalid packet header") -> None:
+    def invalid_header(self, proto, data: Buffer, msg="invalid packet header") -> None:
         self._invalid_header(proto, data, msg)
 
-    def _invalid_header(self, proto, data: ByteString, msg="invalid packet header") -> None:
+    def _invalid_header(self, proto, data: Buffer, msg="invalid packet header") -> None:
         log("invalid_header(%s, %s bytes: '%s', %s)",
             proto, len(data or ""), msg, ellipsizer(data))
         guess = guess_packet_type(data)
@@ -818,10 +822,10 @@ class SocketProtocol:
                 err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
 
-    def process_read(self, data: ByteString) -> None:
+    def process_read(self, data: Buffer) -> None:
         self._read_queue_put(data)
 
-    def read_queue_put(self, data: ByteString) -> None:
+    def read_queue_put(self, data: Buffer) -> None:
         # start the parse thread if needed:
         if not self._read_parser_thread and not self._closed:
             if data is None:
@@ -860,14 +864,14 @@ class SocketProtocol:
             from the UI thread will need to use a callback (usually via 'idle_add')
         """
         header = b""
-        read_buffers = []
+        read_buffers: list[Buffer] = []
         payload_size = -1
         padding_size = 0
         packet_index = 0
         protocol_flags = 0
         data_size = 0
         compression_level = 0
-        raw_packets = {}
+        raw_packets: dict[int, Buffer] = {}
         while not self._closed:
             # log("parse thread: %i items in read queue", self._read_queue.qsize())
             buf = self._read_queue.get()
@@ -970,7 +974,7 @@ class SocketProtocol:
                     # incomplete packet, wait for the rest to arrive
                     break
 
-                data: ByteString
+                data: Buffer
                 buf = read_buffers[0]
                 if len(buf) == payload_size:
                     # exact match, consume it all:
@@ -1256,7 +1260,7 @@ class SocketProtocol:
             log_count("received", icount, getattr(self._conn, "input_bytecount", -1))
             log_count("sent", ocount, getattr(self._conn, "output_bytecount", -1))
 
-    def steal_connection(self, read_callback: Callable | None = None):
+    def steal_connection(self, read_callback: Callable[[Buffer], None] | None = None):
         # so we can re-use this connection somewhere else
         # (frees all protocol threads and resources)
         # Note: this method can only be used with non-blocking sockets,
@@ -1278,7 +1282,7 @@ class SocketProtocol:
 
     def clean(self) -> None:
         # clear all references to ensure we can get garbage collected quickly:
-        self._get_packet_cb = noop
+        self._get_packet_cb = no_packet
         self._encoder = noop
         self._write_thread = None
         self._read_thread = None
@@ -1295,7 +1299,7 @@ class SocketProtocol:
     def terminate_queue_threads(self) -> None:
         log("terminate_queue_threads()")
         # the format thread will exit:
-        self._get_packet_cb = noop
+        self._get_packet_cb = no_packet
         self._source_has_more.set()
         # make all the queue based threads exit by adding the empty marker:
         # write queue:
