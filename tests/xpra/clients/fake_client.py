@@ -93,7 +93,7 @@ class FakeClient(FileTransferHandler):
         for callback in cbs:
             callback()
 
-    def control_refresh(self, *args):
+    def control_refresh(self, *args, **_kwargs):
         self.log("control_refresh(%s)", args)
 
     def send_refresh(self, *args):
