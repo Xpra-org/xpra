@@ -344,7 +344,7 @@ class SocketProtocol:
             log("send_now(%s ...) connection is closed already, not sending", packet[0])
             return
         log("send_now(%s ...)", packet[0])
-        if self._get_packet_cb:
+        if self._get_packet_cb != no_packet:
             raise RuntimeError(f"cannot use send_now when a packet source exists! (set to {self._get_packet_cb})")
         tmp_queue = [packet]
 
@@ -353,7 +353,7 @@ class SocketProtocol:
             if not tmp_queue:
                 raise RuntimeError("packet callback used more than once!")
             qpacket = tmp_queue.pop()
-            return qpacket, True, False
+            return qpacket, True, self._source_has_more.is_set()
 
         self._get_packet_cb = packet_cb
         self.source_has_more()
@@ -394,7 +394,6 @@ class SocketProtocol:
                 shm.clear()
         if not packet:
             return
-        #log("add_packet_to_queue%s", (packet[0], synchronous, more), remote=False)
         packet_type: str | int = packet[0]
         chunks: tuple[NetPacketType, ...] = tuple(self.encode(packet))
         with self._write_lock:
