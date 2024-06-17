@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2023-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -78,3 +78,6 @@ class FakeClient(AdHocStruct):
 
     def window_close_event(self, *_args):
         log("window_close_event ignored")
+
+    def send_control_refresh(self, *_args):
+        log("send_control_refresh ignored")
