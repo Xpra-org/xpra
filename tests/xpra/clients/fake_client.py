@@ -80,6 +80,7 @@ class FakeClient(FileTransferHandler):
 
     def show_start_new_command(self):
         pass
+
     def show_file_upload(self):
         pass
 
@@ -91,6 +92,9 @@ class FakeClient(FileTransferHandler):
         self.handshake_callbacks = []
         for callback in cbs:
             callback()
+
+    def control_refresh(self, *args):
+        self.log("control_refresh(%s)", args)
 
     def send_refresh(self, *args):
         self.log("send_refresh(%s)", args)
@@ -137,26 +141,36 @@ class FakeClient(FileTransferHandler):
 
     def request_frame_extents(self, window):
         pass
+
     def get_window_frame_sizes(self):
         return None
 
     def fsx(self, v):
         return v
+
     def fsy(self, v):
         return v
+
     def sx(self, v):
         return v
+
     def sy(self, v):
         return v
+
     def srect(self, x, y, w, h):
         return x, y, w, h
+
     def sp(self, x, y):
         return x, y
+
     def cx(self, v):
         return v
+
     def cy(self, v):
         return v
+
     def crect(self, x, y, w, h):
         return x, y, w, h
+
     def cp(self, x, y):
         return x, y
