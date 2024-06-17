@@ -141,8 +141,8 @@ class SubprocessCallee:
             if str(e):
                 log.warn("%s", e)
             return 0
-        except Exception:
-            log.error("error in main loop", exc_info=True)
+        except RuntimeError:
+            log.error("Error in subprocess main loop", exc_info=True)
             return 1
         finally:
             log("run() ended, calling cleanup and protocol close")
@@ -433,7 +433,7 @@ class subprocess_caller:
         try:
             item = self.send_queue.get(False)
             more = self.send_queue.qsize() > 0
-        except Exception:
+        except Empty:
             item = None
             more = False
         return item, False, more

@@ -148,7 +148,7 @@ class Networklistener(StubClientMixin):
             return
         try:
             sockname = conn._socket.getsockname()
-        except Exception:
+        except (AttributeError, OSError):
             sockname = ""
         log("handle_new_connection%s sockname=%s", (socktype, listener, handle), sockname)
         socket_info = self.socket_info.get(listener)
