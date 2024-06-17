@@ -8,10 +8,10 @@ import socket
 import struct
 import threading
 from typing import Any, Union, TypeAlias, Final
-from collections.abc import Callable, Buffer, Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
-from xpra.common import noop
+from xpra.common import noop, Buffer
 from xpra.os_util import LINUX, FREEBSD, WIN32
 from xpra.scripts.config import str_to_bool
 from xpra.util.str_fn import repr_ellipsized

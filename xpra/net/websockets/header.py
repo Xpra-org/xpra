@@ -6,8 +6,8 @@
 # Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
 
 import struct
-from collections.abc import Buffer
 
+from xpra.common import Buffer
 from xpra.net.websockets.common import OPCODE
 from xpra.net.websockets.mask import hybi_unmask
 

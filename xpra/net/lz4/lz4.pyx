@@ -8,8 +8,8 @@
 
 import struct
 from typing import Tuple
-from collections.abc import Buffer
 
+from xpra.common import Buffer
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
 

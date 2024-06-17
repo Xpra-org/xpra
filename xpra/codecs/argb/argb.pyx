@@ -7,7 +7,7 @@
 #cython: boundscheck=False, wraparound=False
 
 from typing import List, Tuple
-from collections.abc import Buffer
+from xpra.common import Buffer
 
 from xpra.util.env import first_time
 from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context  # pylint: disable=syntax-error

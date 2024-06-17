@@ -7,12 +7,11 @@
 import os
 import time
 import unittest
-from collections.abc import Buffer
 
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
-from xpra.common import noop
+from xpra.common import noop, Buffer
 from xpra.net.protocol import socket_handler, check
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.bytestreams import Connection

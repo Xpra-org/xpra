@@ -8,7 +8,7 @@
 import binascii
 import os
 from enum import Enum, IntEnum
-from typing import Final
+from typing import TypeAlias, Final
 from collections.abc import Callable
 
 try:
@@ -16,6 +16,15 @@ try:
     from enum import StrEnum
 except ImportError:     # pragma: no cover
     StrEnum = Enum      # type: ignore
+
+try:
+    # Python 3.12 and later:
+    from collections.abc import Buffer as abc_Buffer
+    Buffer: TypeAlias = abc_Buffer
+except ImportError:
+    from typing import ByteString
+    Buffer: TypeAlias = ByteString
+
 
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import nicestr

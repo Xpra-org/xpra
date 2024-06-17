@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Buffer
+from xpra.common import Buffer
 #cython: wraparound=False, boundscheck=False
 
 from libc.stdint cimport uint32_t, uintptr_t   # pylint: disable=syntax-error

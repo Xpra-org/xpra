@@ -4,8 +4,8 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from collections.abc import Buffer
 
+from xpra.common import Buffer
 from xpra.util.env import envbool
 from xpra.log import Logger
 

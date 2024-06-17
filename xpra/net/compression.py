@@ -6,11 +6,11 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable, Sequence, Buffer
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from xpra.util.env import envbool
-from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE
+from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE, Buffer
 
 # all the compressors we know about:
 ALL_COMPRESSORS: Sequence[str] = ("lz4", "zlib", "brotli", "none")

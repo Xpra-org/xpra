@@ -6,8 +6,9 @@
 import os
 import hmac
 import hashlib
-from collections.abc import Callable, Buffer, Sequence
+from collections.abc import Callable, Sequence
 
+from xpra.common import Buffer
 from xpra.util.str_fn import csv, strtobytes, hexstr, memoryview_to_bytes
 from xpra.util.env import envint
 from xpra.log import Logger

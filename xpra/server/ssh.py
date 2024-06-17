@@ -12,7 +12,7 @@ import hashlib
 import binascii
 from subprocess import Popen, PIPE
 from threading import Event
-from collections.abc import Buffer, Callable
+from collections.abc import Callable
 import paramiko
 
 from xpra.net.bytestreams import pretty_socket
@@ -21,7 +21,7 @@ from xpra.util.env import envint, osexpand, first_time
 from xpra.os_util import getuid, WIN32, POSIX
 from xpra.util.thread import start_thread
 from xpra.scripts.config import str_to_bool
-from xpra.common import SSH_AGENT_DISPATCH
+from xpra.common import SSH_AGENT_DISPATCH, Buffer
 from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command
 from xpra.log import Logger
 

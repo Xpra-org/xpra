@@ -15,7 +15,7 @@ from socket import error as socket_error
 from threading import Lock, RLock, Event, Thread, current_thread
 from queue import Queue, SimpleQueue, Empty, Full
 from typing import Any
-from collections.abc import Buffer, Callable, Iterable, Sequence, Mapping
+from collections.abc import Callable, Iterable, Sequence, Mapping
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -25,7 +25,7 @@ from xpra.util.str_fn import (
 )
 from xpra.util.env import envint, envbool
 from xpra.util.thread import make_thread, start_thread
-from xpra.common import noop
+from xpra.common import noop, Buffer
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
     unpack_header, pack_header, find_xpra_header,

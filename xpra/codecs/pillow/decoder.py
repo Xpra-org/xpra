@@ -9,8 +9,9 @@ from io import BytesIO
 import PIL
 from PIL import Image
 from typing import Any
-from collections.abc import Callable, Buffer, Sequence
+from collections.abc import Callable, Sequence
 
+from xpra.common import Buffer
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, strtobytes, hexstr
 from xpra.codecs.debug import may_save_image

@@ -8,10 +8,11 @@
 # pylint: disable=import-outside-toplevel
 
 from typing import Any
-from collections.abc import Callable, Iterable, Sequence, Buffer
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 
 from xpra.log import Logger
+from xpra.common import Buffer
 from xpra.net.protocol.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_NOHEADER, pack_header
 from xpra.util.str_fn import strtobytes
 from xpra.util.env import envbool

@@ -9,9 +9,9 @@ from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
 from typing import Any
 from importlib.util import find_spec
-from collections.abc import Callable, Buffer
+from collections.abc import Callable
 
-from xpra.common import GROUP, SocketState, noerr
+from xpra.common import GROUP, SocketState, noerr, Buffer
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
