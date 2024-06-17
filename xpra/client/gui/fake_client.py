@@ -83,3 +83,6 @@ class FakeClient(AdHocStruct):
 
     def window_close_event(self, *_args):
         log("window_close_event ignored")
+
+    def control_refresh(self, *_args, **_kwargs):
+        log("send_control_refresh ignored")
