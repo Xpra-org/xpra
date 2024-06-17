@@ -424,7 +424,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def draw_widget(self, widget, context) -> bool:
         raise NotImplementedError()
 
-    def get_drawing_area_geometry(self):
+    def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:
         raise NotImplementedError()
 
     ######################################################################
@@ -1428,7 +1428,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         statelog("property_changed(%s, %s) : %s", widget, event, atom)
         if atom == "_NET_WM_DESKTOP":
             if self._been_mapped and not self._override_redirect and self._can_set_workspace:
-                self.do_workspace_changed(event)
+                self.do_workspace_changed(str(event))
             return
         # the remaining handlers need `prop_get`:
         if not prop_get:
@@ -1491,17 +1491,17 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     ######################################################################
     # workspace
-    def init_workspace(self):
+    def init_workspace(self) -> None:
         if not self._can_set_workspace:
             return
         if not POLL_WORKSPACE:
             return
         self.when_realized("workspace", self.init_workspace_timer)
 
-    def init_workspace_timer(self):
+    def init_workspace_timer(self) -> None:
         value = [-1]
 
-        def poll_workspace():
+        def poll_workspace() -> bool:
             ws = self.get_window_workspace()
             workspacelog(f"poll_workspace() {ws=}")
             if value[0] != ws:
@@ -1511,7 +1511,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
         self.workspace_timer = GLib.timeout_add(1000, poll_workspace)
 
-    def cancel_workspace_timer(self):
+    def cancel_workspace_timer(self) -> None:
         wt = self.workspace_timer
         if wt:
             self.workspace_timer = 0
@@ -1523,7 +1523,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._can_set_workspace:
             self.do_workspace_changed("desktop workspace changed")
 
-    def do_workspace_changed(self, info) -> None:
+    def do_workspace_changed(self, info: str) -> None:
         # call this method whenever something workspace related may have changed
         window_workspace = self.get_window_workspace()
         desktop_workspace = self.get_desktop_workspace()
@@ -1820,7 +1820,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         cursor_data = b.cursor_data
 
-        def abs_coords(x, y, size):
+        def abs_coords(x, y, size) -> tuple[int, int, int, int]:
             if self.window_offset:
                 x += self.window_offset[0]
                 y += self.window_offset[1]
@@ -2041,7 +2041,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def apply_transient_for(self, wid: int) -> None:
         if wid == -1:
-            def set_root_transient():
+            def set_root_transient() -> None:
                 # root is a gdk window, so we need to ensure we have one
                 # backing our gtk window to be able to call set_transient_for on it
                 log("%s.apply_transient_for(%s) gdkwindow=%s, mapped=%s",
