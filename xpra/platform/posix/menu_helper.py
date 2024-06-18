@@ -221,7 +221,7 @@ def find_theme_icon(*names):
                     return fn
             except TypeError as e:
                 log(f"find_theme_icon({names}) error on {name}, {size}", exc_info=True)
-                if first_time(f"xdg-icon-{names}"):
+                if first_time("xdg-icon-lookup"):
                     log.warn(f"Warning: icon loop failure for {name} in {theme}")
                     log.warn(f" {e}")
                     log.warn(" this is likely to be this bug in pyxdg:")
