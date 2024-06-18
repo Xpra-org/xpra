@@ -129,7 +129,7 @@ def newdictlook(d, parts, fallback=None):
                 if newv is None:
                     return fallback
             v = newv
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return fallback
     return v
 
@@ -246,6 +246,60 @@ def get_glbuffering_info(opengl_props: dict) -> str:
     else:
         info.append("without transparency")
     return " ".join(info)
+
+
+def set_graph_surface(graph, surface):
+    w = surface.get_width()
+    h = surface.get_height()
+    graph.set_size_request(w, h)
+    graph.surface = surface
+    graph.set_from_surface(surface)
+
+
+def save_graph(_ebox, btn, graph) -> None:
+    log("save_graph%s", (btn, graph))
+    title = "Save graph as a PNG image"
+    if FILE_CHOOSER_NATIVE:
+        chooser = Gtk.FileChooserNative(title=title, action=Gtk.FileChooserAction.SAVE)
+        chooser.set_accept_label("Save")
+    else:
+        chooser = Gtk.FileChooserDialog(title=title, action=Gtk.FileChooserAction.SAVE)
+        buttons = (
+            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_SAVE, Gtk.ResponseType.OK,
+        )
+        chooser.add_buttons(*buttons)
+        chooser.set_default_response(Gtk.ResponseType.OK)
+    file_filter = Gtk.FileFilter()
+    file_filter.set_name("PNG")
+    file_filter.add_pattern("*.png")
+    chooser.add_filter(file_filter)
+    response = chooser.run()
+    filenames = chooser.get_filenames()
+    chooser.hide()
+    if hasattr(chooser, "close"):
+        chooser.close()
+    if response == Gtk.ResponseType.OK:
+        if len(filenames) == 1:
+            filename = filenames[0]
+            if not filename.lower().endswith(".png"):
+                filename += ".png"
+            surface = graph.surface
+            log("saving surface %s to %s", surface, filename)
+            from io import BytesIO
+            b = BytesIO()
+            surface.write_to_png(b)
+
+            def save_file():
+                with open(filename, "wb") as f:
+                    f.write(b.getvalue())
+
+            from xpra.util.thread import start_thread
+            start_thread(save_file, "save-graph")
+    elif response in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.CLOSE, Gtk.ResponseType.DELETE_EVENT):
+        log("closed/cancelled")
+    else:
+        log.warn(f"Warning: unknown chooser response: {response}")
 
 
 class SessionInfo(Gtk.Window):
@@ -557,7 +611,7 @@ class SessionInfo(Gtk.Window):
 
     def add_software_tab(self):
         # Package Table:
-        self.grid_tab("package.png", "Software", self.populate_software)
+        self.grid_tab("package.png", "Software", noop)
         if self.show_client and self.show_server:
             self.add_row(title_box(""), title_box("Client"), title_box("Server"))
         self.csrow("Operating System", get_local_platform_name(), get_server_platform_name(self.client))
@@ -572,7 +626,7 @@ class SessionInfo(Gtk.Window):
         try:
             from xpra.audio.wrapper import query_audio
             props = query_audio()
-        except Exception:
+        except ImportError:
             log("cannot load audio information: %s", exc_info=True)
             props = typedict()
         gst_version = props.strtupleget("gst.version")
@@ -591,10 +645,6 @@ class SessionInfo(Gtk.Window):
         for prop in ("OpenGL", "Vendor", "PyOpenGL"):
             key = prop.lower()
             self.csrow(prop, clientgl(key), servergl(key))
-
-    def populate_software(self):
-        # called from the "fast" timer
-        return False
 
     def init_counters(self):
         self.avg_batch_delay = deque(maxlen=N_SAMPLES + 4)
@@ -1143,10 +1193,10 @@ class SessionInfo(Gtk.Window):
         bandwidth_label = "Bandwidth used"
         if SHOW_PIXEL_STATS:
             bandwidth_label += ",\nand number of pixels rendered"
-        self.bandwidth_graph = self.add_graph_button(bandwidth_label, self.save_graph)
-        self.latency_graph = self.add_graph_button("", self.save_graph)
+        self.bandwidth_graph = self.add_graph_button(bandwidth_label, save_graph)
+        self.latency_graph = self.add_graph_button("", save_graph)
         if SHOW_SOUND_STATS:
-            self.audio_queue_graph = self.add_graph_button("", self.save_graph)
+            self.audio_queue_graph = self.add_graph_button("", save_graph)
         else:
             self.audio_queue_graph = None
         self.connect("realize", self.populate_graphs)
@@ -1158,13 +1208,6 @@ class SessionInfo(Gtk.Window):
         self.audio_out_queue_min = deque(maxlen=N_SAMPLES * 10 + 4)
         self.audio_out_queue_max = deque(maxlen=N_SAMPLES * 10 + 4)
         self.audio_out_queue_cur = deque(maxlen=N_SAMPLES * 10 + 4)
-
-    def set_graph_surface(self, graph, surface):
-        w = surface.get_width()
-        h = surface.get_height()
-        graph.set_size_request(w, h)
-        graph.surface = surface
-        graph.set_from_surface(surface)
 
     def populate_graphs(self, *_args):
         # older servers have 'batch' at top level,
@@ -1229,7 +1272,7 @@ class SessionInfo(Gtk.Window):
                                               width=w, height=h,
                                               title="Bandwidth", min_y_scale=10, rounding=10,
                                               start_x_offset=start_x_offset)
-            self.set_graph_surface(self.bandwidth_graph, surface)
+            set_graph_surface(self.bandwidth_graph, surface)
 
         def norm_lists(items, size=N_SAMPLES):
             # ensures we always have exactly 20 values,
@@ -1265,7 +1308,7 @@ class SessionInfo(Gtk.Window):
                                           width=w, height=h,
                                           title="Latency (ms)", min_y_scale=10, rounding=25,
                                           start_x_offset=start_x_offset)
-        self.set_graph_surface(self.latency_graph, surface)
+        set_graph_surface(self.latency_graph, surface)
 
         if features.audio and SHOW_SOUND_STATS and self.client.audio_sink:
             # audio queue graph:
@@ -1281,53 +1324,8 @@ class SessionInfo(Gtk.Window):
                                               width=w, height=h,
                                               title="Audio Buffer (ms)", min_y_scale=10, rounding=25,
                                               start_x_offset=start_x_offset)
-            self.set_graph_surface(self.audio_queue_graph, surface)
+            set_graph_surface(self.audio_queue_graph, surface)
         return True
-
-    def save_graph(self, _ebox, btn, graph) -> None:
-        log("save_graph%s", (btn, graph))
-        title = "Save graph as a PNG image"
-        if FILE_CHOOSER_NATIVE:
-            chooser = Gtk.FileChooserNative(title=title, action=Gtk.FileChooserAction.SAVE)
-            chooser.set_accept_label("Save")
-        else:
-            chooser = Gtk.FileChooserDialog(title=title, action=Gtk.FileChooserAction.SAVE)
-            buttons = (
-                Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                Gtk.STOCK_SAVE, Gtk.ResponseType.OK,
-            )
-            chooser.add_buttons(*buttons)
-            chooser.set_default_response(Gtk.ResponseType.OK)
-        file_filter = Gtk.FileFilter()
-        file_filter.set_name("PNG")
-        file_filter.add_pattern("*.png")
-        chooser.add_filter(file_filter)
-        response = chooser.run()
-        filenames = chooser.get_filenames()
-        chooser.hide()
-        if hasattr(chooser, "close"):
-            chooser.close()
-        if response == Gtk.ResponseType.OK:
-            if len(filenames) == 1:
-                filename = filenames[0]
-                if not filename.lower().endswith(".png"):
-                    filename += ".png"
-                surface = graph.surface
-                log("saving surface %s to %s", surface, filename)
-                from io import BytesIO
-                b = BytesIO()
-                surface.write_to_png(b)
-
-                def save_file():
-                    with open(filename, "wb") as f:
-                        f.write(b.getvalue())
-
-                from xpra.util.thread import start_thread
-                start_thread(save_file, "save-graph")
-        elif response in (Gtk.ResponseType.CANCEL, Gtk.ResponseType.CLOSE, Gtk.ResponseType.DELETE_EVENT):
-            log("closed/cancelled")
-        else:
-            log.warn(f"Warning: unknown chooser response: {response}")
 
     def close(self, *args):
         log("SessionInfo.close(%s) is_closed=%s", args, self.is_closed)

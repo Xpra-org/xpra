@@ -19,6 +19,7 @@ from xpra.gtk.versions import get_gtk_version_info
 from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
 from xpra.util.str_fn import nonl, repr_ellipsized, hexstr
+from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.common import FULL_INFO
 from xpra.log import Logger
@@ -134,7 +135,7 @@ class BugReport:
         try:
             from xpra.audio.wrapper import query_audio
 
-            def get_audio_info():
+            def get_audio_info() -> typedict:
                 return query_audio()
         except ImportError:
             get_audio_info = None
@@ -374,6 +375,7 @@ class BugReport:
             zf = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED)
             for title, tooltip, dtype, s in data:
                 cfile = os.path.join(basenoext, title.replace(" ", "_") + "." + dtype)
+                # noinspection PyTypeChecker
                 info = zipfile.ZipInfo(cfile, date_time=tuple(time.localtime(time.time())))
                 info.compress_type = zipfile.ZIP_DEFLATED
                 # very poorly documented:

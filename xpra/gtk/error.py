@@ -131,6 +131,7 @@ class _ErrorManager:
         # on the way out.  However, if we are exiting because of an exception,
         # then probably that exception is more informative than any XError
         # that might also be raised, so suppress the XError in that case.
+        # noinspection PyUnusedLocal
         value = None
         try:
             self.Xenter()

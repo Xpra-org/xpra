@@ -87,7 +87,7 @@ def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict, 
     }, None
 
 
-def get_test_gl_icon():
+def get_test_gl_icon() -> tuple[str, int, int, int, bytes]:
     data = b""
     encoding = "png"
     w = 32
@@ -122,10 +122,6 @@ def get_test_gl_icon():
     return encoding, w, h, stride, data
 
 
-def no_idle_add(fn, *args, **kwargs):
-    fn(*args, **kwargs)
-
-
 def test_gl_client_window(gl_client_window_class: Callable,
                           max_window_size=(1024, 1024),
                           pixel_depth=24,
@@ -150,10 +146,10 @@ def test_gl_client_window(gl_client_window_class: Callable,
 
         class NoHeaderGLClientWindow(gl_client_window_class):
 
-            def add_header_bar(self):
+            def add_header_bar(self) -> None:
                 """ pretend to add the header bar """
 
-            def schedule_recheck_focus(self):
+            def schedule_recheck_focus(self) -> None:
                 """ pretend to handle focus checks """
 
         window = NoHeaderGLClientWindow(noclient, None, 0, 2 ** 32 - 1, x, y, ww, wh, ww, wh,
@@ -205,7 +201,7 @@ def test_gl_client_window(gl_client_window_class: Callable,
             Gtk = gi_import("Gtk")  # @UndefinedVariable
             GLib = gi_import("GLib")
 
-            def window_close_event(*_args):
+            def window_close_event(*_args) -> None:
                 Gtk.main_quit()
 
             from xpra.gtk.window import add_close_accel
