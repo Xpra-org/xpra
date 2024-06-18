@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.0.2] 2024-06-13
+## [6.0.2] 2024-06-18
 * Platforms, build and packaging:
     * [revision number not detected in RPM spec file](https://github.com/Xpra-org/xpra/commit/767a66a3509e10f2e20135b076b42c2bc5766b36)
     * [MacOS pixbuf crash on launch](https://github.com/Xpra-org/xpra/commit/6ca3172fa02b6059cd002400e65c69eb52ddbebd)
@@ -10,8 +10,11 @@
     * [missing QUIC transport in MS Windows builds](https://github.com/Xpra-org/xpra/commit/f8c9bea697accc7f9e4a685a803fc06413033e99)
     * [unnecessary DEB dependency on unused `python3-yaml`](https://github.com/Xpra-org/xpra/commit/6438759d23447ef8b7110c041616d526f9f1c755)
     * [`pyopengl` builds for Python 3.13](https://github.com/Xpra-org/xpra/commit/872ccd669b48e74737089806c53c0a257c9d6222)
+    * [`PyOpenGL` build error with `numpy` on Fedora 40](https://github.com/Xpra-org/xpra/commit/4467ef7fc6d8c62770c6729a3b04c435ce91d1d9)
 * Major:
     * [connection failures when server is still initializing](https://github.com/Xpra-org/xpra/commit/0e7bb07349721244c0cc6c00aa14b5293f27cd64)
+    * [`PyOpenGL` imported early, causing `numpy` initialization errors](https://github.com/Xpra-org/xpra/commit/d18977b7ff277c962ad07d5d4f1c05a496546792)
+    * [`OpenGL` acceleration self-test failures on MS Windows](https://github.com/Xpra-org/xpra/commit/e812974b394bc8c3df4e77d6cf983e59a12b9c73) [when executed from GUI tools](https://github.com/Xpra-org/xpra/commit/7fb75f642632760969bc3b677a2efe171ff67a87)
 * Minor:
     * [allow printing with more socket authenication modules](https://github.com/Xpra-org/xpra/commit/1083c27f46cdb196ed39c2d1e62d61d595f44af9)
     * [map Visual Studio Code to `text`](https://github.com/Xpra-org/xpra/commit/dbd90105e55dbdfdd8b71d1ebd34e4393de6f7b4) (partial fix)
@@ -19,7 +22,13 @@
     * [only reparent windows if needed](https://github.com/Xpra-org/xpra/commit/6463e46506ab702954f3b19397e653310c02580f) [but always send `ConfigureNotify`](https://github.com/Xpra-org/xpra/commit/0e62bffd736263eb73739a3c9a5a0f12fefd4991)
     * [full self-tests for `jpeg` decoder](https://github.com/Xpra-org/xpra/commit/e8274721943ca55bd0ddfa0f82d7f425878dcb5f)
     * [rendering of some toolbox test applications](https://github.com/Xpra-org/xpra/commit/4f1e8258a183214e971b945c9f3ab05c77341768)
+    * [openh264 decoder self test](https://github.com/Xpra-org/xpra/commit/a4609ff7c513be4bdde7d22d48aaf743c086d0da)
+    * [Pillow 10 supports memoryview buffers](https://github.com/Xpra-org/xpra/commit/9b02e7740d98a68334584e0032b2798b71c86cde)
 * Cosmetic / correctness:
+    * [don't spam the logs](https://github.com/Xpra-org/xpra/commit/2369df4cd77b94159869ab19d08114b06cff1122) [because of a `pyxdg` bug](https://github.com/Xpra-org/xpra/commit/645baa7bf3457d1cdcb8c80da79b8d91b806fd77)
+    * [missing documentation pages](https://github.com/Xpra-org/xpra/commit/1719aebc9714c8e3db20258d3017bebe0a59fcdb)
+    * [X264 warning `intra-refresh is not compatible with open-gop`](https://github.com/Xpra-org/xpra/commit/62652afb3c99d2da15b3d155d7add714d1e9f9d7)
+    * [first video frame should be number zero](https://github.com/Xpra-org/xpra/commit/30b09b5e15c4c82391c69d02125431656f7f4eda)
     * [correct type for clipboard default arguments](https://github.com/Xpra-org/xpra/commit/6337aec99e6e32b2c58e97ea5812274abfa2d012)
     * [decode pam authentication failure message](https://github.com/Xpra-org/xpra/commit/60aa4f0930369255a74fc412b553c90a19057d83) [and error](https://github.com/Xpra-org/xpra/commit/542d888e29e186eaf8a2d1326552c8b291ac807a)
     * [syntax error in `set_source_version` script](https://github.com/Xpra-org/xpra/commit/877cda8a01eff31c0756d80db6ffab93d0fea03d)
@@ -30,6 +39,7 @@
     * [bump openh264 bitstream level](https://github.com/Xpra-org/xpra/commit/f6b854f3e47efc63de92a5c85d9dae10aa417d17)
     * [openh264 encoder should set the frame number](https://github.com/Xpra-org/xpra/commit/c7fdf74002cd1204017728155d826c5ab5d866d4)
     * [avoid warning when running the tray test application](https://github.com/Xpra-org/xpra/commit/23be61b820049cafb2b87ff6c3e4daaf964b2c0c)
+    * [avoid warnings in the launcher](https://github.com/Xpra-org/xpra/commit/0a0090be05f4824f8013f383aa8d949828641454)
 
 ## [6.0.1] 2024-05-23
 * Platforms, build and packaging:

@@ -862,8 +862,48 @@ fi
 
 
 %changelog
-* Tue May 28 2024 Antoine Martin <antoine@xpra.org> 6.0.2-10
-- TODO
+* Tue Jun 18 2024 Antoine Martin <antoine@xpra.org> 6.0.2-10
+- Platforms, build and packaging:
+   revision number not detected in RPM spec file
+   MacOS pixbuf crash on launch
+   add security warning about downstream packages
+   new unavoidable clang build warning on MacOS
+   server built `--without-http` does not start
+   missing QUIC transport in MS Windows builds
+   unnecessary DEB dependency on unused `python3-yaml`
+   `pyopengl` builds for Python 3.13
+   `PyOpenGL` build error with `numpy` on Fedora 40
+- Major:
+   connection failures when server is still initializing
+   `PyOpenGL` imported early, causing `numpy` initialization errors
+   `OpenGL` acceleration self-test failures on MS Windows when executed from GUI tools
+- Minor:
+   allow printing with more socket authenication modules
+   map Visual Studio Code to `text`
+   isolate failures to show or hide a window
+   only reparent windows if needed but always send `ConfigureNotify`
+   full self-tests for `jpeg` decoder
+   rendering of some toolbox test applications
+   openh264 decoder self test
+   Pillow 10 supports memoryview buffers
+- Cosmetic / correctness:
+   don't spam the logs because of a `pyxdg` bug
+   missing documentation pages
+   X264 warning `intra-refresh is not compatible with open-gop`
+   first video frame should be number zero
+   correct type for clipboard default arguments
+   decode pam authentication failure message and error
+   syntax error in `set_source_version` script
+   log init thread failure details
+   blacklist the `llvmpipe` software renderer but probe server opengl properties anyway
+   no need to clear X11 damage of unmanaged windows
+   match function signature
+   bump openh264 bitstream level
+   openh264 encoder should set the frame number
+   avoid warning when running the tray test application
+   avoid warnings in the launcher
+
+
 * Thu May 23 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
 - Platforms, build and packaging:
    avoid timeout on slow build platforms, when running pandoc, raise the timeout on arm and riscv
