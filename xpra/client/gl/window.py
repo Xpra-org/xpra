@@ -219,10 +219,11 @@ def test_gl_client_window(gl_client_window_class: Callable,
             # when the main loop is not running:
             if hasattr(window_backing, "on_realize"):
                 window_backing.on_realize()
-        if window_backing.last_present_fbo_error:
+        last_error = window_backing.get_info().get("last-error", "")
+        if last_error:
             return {
                 "success": False,
-                "message": "failed to present FBO on screen: %s" % window_backing.last_present_fbo_error
+                "message": f"failed to present FBO on screen: {last_error!r}",
             }
     except Exception as e:
         log(f"test_gl_client_window({gl_client_window_class}, {max_window_size}, {pixel_depth}, {show})", exc_info=True)

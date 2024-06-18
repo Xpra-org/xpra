@@ -251,6 +251,9 @@ class GLWindowBackingBase(WindowBackingBase):
             "bit-depth": self.bit_depth,
             "internal-format": INTERNAL_FORMAT_TO_STR.get(tif) or str(tif),
         }
+        le = self.last_present_fbo_error
+        if le:
+            info["last-error"] = le
         return info
 
     def with_gfx_context(self, function: Callable, *args):
