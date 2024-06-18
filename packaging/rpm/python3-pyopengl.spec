@@ -33,7 +33,7 @@ BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-numpy
 BuildRequires:  gcc
 Requires:       freeglut
-%if 0%{fedora}<40
+%if 0%{?fedora}<40
 Suggests:       %{python3}-numpy
 %endif
 Obsoletes:      %{python3}-PyOpenGL < 3.1.5
@@ -75,7 +75,7 @@ fi
 pushd %{srcname}-%{version}
 %patch -p1 -P 0
 popd
-%if 0%{fedora}>39
+%if 0%{?fedora}>39
 pushd %{srcname}-accelerate-%{version}
 %patch -p1 -P 1
 popd
