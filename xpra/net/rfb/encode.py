@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,12 +8,13 @@ import struct
 from xpra.net.rfb.const import RFBEncoding
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.pillow.encoder import encode
+from xpra.util.objects import typedict
 from xpra.util.str_fn import hexstr
 from xpra.log import Logger
 
 log = Logger("rfb")
 
-PILLOW_OPTIONS = {"alpha": False}
+PILLOW_OPTIONS = typedict({"alpha": False})
 
 
 def pillow_encode(encoding, img):
