@@ -1831,6 +1831,7 @@ def make_progress_process(title="Xpra") -> Popen | None:
 
 def run_opengl_probe():
     from xpra.platform.paths import get_nodock_command
+    from xpra.net.subprocess_wrapper import exec_kwargs
     log = Logger("opengl")
     cmd = get_nodock_command() + ["opengl"]
     env = get_exec_env()
@@ -1841,9 +1842,10 @@ def run_opengl_probe():
     env["XPRA_HIDE_DOCK"] = "1"
     env["XPRA_REDIRECT_OUTPUT"] = "0"
     start = monotonic()
-    log(f"run_opengl_probe() using cmd={cmd} with env={env}")
+    kwargs = exec_kwargs(stderr=PIPE)
+    log(f"run_opengl_probe() using cmd={cmd} with env={env=} and {kwargs=}")
     try:
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env, universal_newlines=True)
+        proc = Popen(cmd, stdout=PIPE, env=env, universal_newlines=True, **kwargs)
     except Exception as e:
         log.warn("Warning: failed to execute OpenGL probe command")
         log.warn(" %s", e)
