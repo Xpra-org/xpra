@@ -784,6 +784,9 @@ fi
    drop alpha if requested and for video encoders
    `konsole` is a text application
    smarter auto refresh encoding selection
+   X264 warning `intra-refresh is not compatible with open-gop`
+   openh264 decoder self test
+   Pillow 10 supports memoryview buffers
 - Platforms, build and packaging:
    arm64 and riscv builds can timeout adding build info, and generating the documentation
    saner source information defaults
@@ -797,6 +800,7 @@ fi
    handle downscaled video correctly without OpenGL
    Gtk crashes on exit
    OpenGL check failures on X11
+   OpenGL check failures on MS Windows when executed from GUI tools
    sync-xvfb not honoured
    replace dead ssh agent symlinks
    validate http request hostname before sending it back
@@ -826,6 +830,7 @@ fi
    blacklist `llvmpipe` software OpenGL renderer
    allow printing with more socket authentication modules
 - Cosmetic:
+   don't spam the logs because of a `pyxdg` bug
    clearer audio error message
    clearer ssh error message
    use a consistent shebang

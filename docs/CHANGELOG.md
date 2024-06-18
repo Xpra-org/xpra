@@ -1,11 +1,14 @@
 # Changelog
 
-## [5.0.9] 2023-06-13
+## [5.0.9] 2023-06-18
 * Encodings:
     * [video encoding errors causing missed screen updates](https://github.com/Xpra-org/xpra/commit/188e9903754e1abc8cd86ecd65bf9427000e7012)
     * [drop alpha if requested](https://github.com/Xpra-org/xpra/commit/6e1934575cabc412782616704bb4ee24b5f36930) and [for video encoders](https://github.com/Xpra-org/xpra/commit/3cbdccbcdd9be7fdf6eabb67b322e612852f108c)
     * [`konsole` is a text application](https://github.com/Xpra-org/xpra/commit/6c46f648ed923615de08385aa4b7e900ad4357dc)
     * [smarter auto refresh encoding selection](https://github.com/Xpra-org/xpra/commit/6f138036414a404bf1782d5554009a038dd6feab)
+    * [X264 warning `intra-refresh is not compatible with open-gop`](https://github.com/Xpra-org/xpra/commit/0c8153330e081b1ea894a73529339e052ace5c70)
+    * [openh264 decoder self test](https://github.com/Xpra-org/xpra/commit/cd6104331b079714974fe42f50b59abcccb4bd89)
+    * [Pillow 10 supports memoryview buffers](https://github.com/Xpra-org/xpra/commit/534c674c920130036e23af8f3ccd029e443d572e)
 * Platforms, build and packaging:
     * [arm64 and riscv builds can timeout adding build info](https://github.com/Xpra-org/xpra/commit/85ee52e738a75ab63749c0b986bf7702cf135c5d), [and generating the documentation](https://github.com/Xpra-org/xpra/commit/a6c9c98665d9ad384729a0eb8f74d77a62ff4771)
     * [saner source information defaults](https://github.com/Xpra-org/xpra/commit/79b7484c6f50275f48a3195385d80be918e2aa18)
@@ -19,6 +22,7 @@
     * [handle downscaled video correctly without OpenGL](https://github.com/Xpra-org/xpra/commit/e59d1c5f28c06b295bd28eca1ccf728d4ce06a15)
     * [Gtk crashes on exit](https://github.com/Xpra-org/xpra/commit/5032b0144a68e6dadd6f18a095e48c0e8891c4ef)
     * [OpenGL check failures on X11](https://github.com/Xpra-org/xpra/commit/2cb40fa38a7be95431abbe55d784767e52f6ef60)
+    * [`OpenGL` check failures on MS Windows when executed from GUI tools](https://github.com/Xpra-org/xpra/commit/72096d0a4b89e9371751d7e07c7be311c8ebf241)
     * [sync-xvfb not honoured](https://github.com/Xpra-org/xpra/commit/fe6b7ea6e0c891ba37844b72bccd71cb48575356)
     * [replace dead ssh agent symlinks](https://github.com/Xpra-org/xpra/commit/37842c6b4d39185385a55df3f34cab4cfd444b0f)
     * [validate http request hostname before sending it back](https://github.com/Xpra-org/xpra/commit/2157a0d12aef852e08d3a75da19a54d510568ee6)
@@ -54,6 +58,7 @@
     * [full self-tests for `jpeg` decoder](https://github.com/Xpra-org/xpra/commit/df2c2e77f76d0924962b025c72269f97f3727664)
     * [openh264 encoder should set the frame number](https://github.com/Xpra-org/xpra/commit/96fdb7ca2252acd8023ddf0dfaea3c869c9a3aea)
 * Cosmetic:
+    * [don't spam the logs](https://github.com/Xpra-org/xpra/commit/8e7433178007a82d99eca047894c8a8e1d6bec8a) [because of a `pyxdg` bug](https://github.com/Xpra-org/xpra/commit/720c79b545fea021b5c063db485d9c496b715d5e)
     * [clearer audio error message](https://github.com/Xpra-org/xpra/commit/7adc99fa9143d60e0c8cd7886eb7bdc576373db1)
     * [clearer ssh error message](https://github.com/Xpra-org/xpra/commit/83750ca62606878a01303257b87119ac4dca62ab)
     * [use a consistent shebang](https://github.com/Xpra-org/xpra/commit/93ccf524ea43c3fa3cc2355a109e87e8eb4c35e1)
