@@ -7,6 +7,7 @@
 import os.path
 import sys
 import time
+from typing import Any
 from collections.abc import Callable
 
 from xpra.common import ScreenshotData, noop
@@ -73,7 +74,7 @@ class BugReport:
         self.includes = includes or {}
         self.setup_window()
 
-    def setup_window(self):
+    def setup_window(self) -> None:
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)
@@ -149,7 +150,7 @@ class BugReport:
         from xpra.platform.gui import get_info as get_gui_info
         from xpra.util.version import get_version_info, get_platform_info, get_host_info
 
-        def get_sys_info():
+        def get_sys_info() -> dict[str, Any]:
             from xpra.platform.info import get_user_info
             from xpra.scripts.config import read_xpra_defaults
             return {
@@ -232,7 +233,7 @@ class BugReport:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
 
-        def btn(text, tooltip_text, callback, icon_name=None):
+        def btn(text, tooltip_text, callback, icon_name=None) -> Gtk.Button:
             b = Gtk.Button(label=text)
             b.set_tooltip_text(tooltip_text)
             b.connect("clicked", callback)
@@ -247,7 +248,7 @@ class BugReport:
         btn("Save", "Save Bug Report", self.save_clicked, "download.png")
         btn("Cancel", "", self.close, "quit.png")
 
-        def accel_close(*_args):
+        def accel_close(*_args) -> None:
             self.close()
 
         add_close_accel(self.window, accel_close)
@@ -255,14 +256,14 @@ class BugReport:
         self.window.vbox = vbox
         self.window.add(vbox)
 
-    def set_server_log_data(self, filedata):
+    def set_server_log_data(self, filedata) -> None:
         self.server_log = filedata
         cb = self.checkboxes.get("server-log")
         log("set_server_log_data(%i bytes) cb=%s", len(filedata or b""), cb)
         if cb:
             cb.set_sensitive(bool(filedata))
 
-    def show(self):
+    def show(self) -> None:
         log("show()")
         if not self.window:
             self.setup_window()
@@ -270,7 +271,7 @@ class BugReport:
         self.window.show_all()
         self.window.present()
 
-    def hide(self):
+    def hide(self) -> None:
         log("hide()")
         if self.window:
             self.window.hide()
@@ -292,12 +293,12 @@ class BugReport:
             self.window = None
 
     @staticmethod
-    def run():
+    def run() -> None:
         log("run()")
         Gtk.main()
         log("run() Gtk.main done")
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
         self.hide_window()
         Gtk.main_quit()
@@ -343,10 +344,10 @@ class BugReport:
             time.sleep(STEP_DELAY)
         return data
 
-    def copy_clicked(self, *_args):
+    def copy_clicked(self, *_args) -> None:
         data = self.get_data()
 
-        def cdata(v):
+        def cdata(v) -> str:
             if isinstance(v, bytes):
                 return hexstr(v)
             return str(v)
@@ -357,13 +358,13 @@ class BugReport:
         clipboard.set_text(text, len(text))
         log.info("%s characters copied to clipboard", len(text))
 
-    def save_clicked(self, *_args):
+    def save_clicked(self, *_args) -> None:
         file_filter = Gtk.FileFilter()
         file_filter.set_name("ZIP")
         file_filter.add_pattern("*.zip")
         choose_file(self.window, "Save Bug Report Data", Gtk.FileChooserAction.SAVE, Gtk.STOCK_SAVE, self.do_save)
 
-    def do_save(self, filename: str):
+    def do_save(self, filename: str) -> None:
         log("do_save(%s)", filename)
         if not filename.lower().endswith(".zip"):
             filename = filename + ".zip"
@@ -407,7 +408,7 @@ class BugReport:
                                        Gtk.ButtonsType.CLOSE, "Failed to save ZIP file")
             dialog.format_secondary_text("%s" % e)
 
-            def close(*_args):
+            def close(*_args) -> None:
                 dialog.close()
 
             dialog.connect("response", close)
