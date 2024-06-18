@@ -290,21 +290,22 @@ class subprocess_callee:
         INJECT_FAULT(proto)
 
 
-def exec_kwargs() -> Dict[str,Any]:
-    kwargs = {}
+def exec_kwargs(**kwargs) -> Dict[str,Any]:
     stderr = sys.stderr.fileno()
     if WIN32:
         from xpra.platform.win32 import REDIRECT_OUTPUT
         if REDIRECT_OUTPUT:
             #stderr is not valid and would give us this error:
             # WindowsError: [Errno 6] The handle is invalid
-            stderr = open(os.devnull, 'w')
+            if "stderr" not in kwargs:
+                stderr = open(os.devnull, 'w')
         if not WIN32_SHOWWINDOW:
             startupinfo = subprocess.STARTUPINFO()  # @UndefinedVariable
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # @UndefinedVariable
             startupinfo.wShowWindow = 0     #aka win32.con.SW_HIDE
             kwargs["startupinfo"] = startupinfo
-    kwargs["stderr"] = stderr
+    if "stderr" not in kwargs and sys.stderr:
+        kwargs["stderr"] = stderr
     return kwargs
 
 def exec_env(blacklist=("LS_COLORS", )) -> Dict[str,str]:
