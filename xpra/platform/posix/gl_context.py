@@ -301,8 +301,6 @@ class GLXContext:
 
         self.props["vendor"] = getstr(GL_VENDOR)
         self.props["renderer"] = getstr(GL_RENDERER)
-        from xpra.client.gl.check import get_context_info
-        self.props.update(get_context_info())
         log("GLXContext(%s) context=%s, props=%s", alpha, self.context, self.props)
 
     def check_support(self, force_enable=False) -> dict[str, Any]:

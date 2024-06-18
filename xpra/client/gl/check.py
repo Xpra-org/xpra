@@ -319,12 +319,14 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         if TIMEOUT > 0:
             import time
             time.sleep(TIMEOUT)
+
         # log redirection:
         for name in ("formathandler", "extensions", "acceleratesupport", "arrays", "converters", "plugins"):
             logger = logging.getLogger(f"OpenGL.{name}")
             redirected_loggers[name] = (logger, list(logger.handlers), logger.propagate)
             logger.handlers = [CaptureHandler()]
             logger.propagate = False
+        log(f"{redirected_loggers=}")
 
         with numpy_import_context("OpenGL", True):
             return do_check_PyOpenGL_support(force_enable)
@@ -351,6 +353,7 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
         strip_log_message = "Unable to load registered array format handler "
         missing_handlers = []
         for msg in recs("formathandler"):
+            log.info(f"msg formathandler={msg}")
             p = msg.find(strip_log_message)
             if p < 0:
                 # unknown message, log it:
@@ -365,9 +368,10 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
             log.warn("PyOpenGL warning: missing array format handlers: %s", csv(missing_handlers))
 
         for msg in recs("extensions"):
-            # ignore extension messages:
-            p = msg.startswith("GL Extension ") and msg.endswith("available")
-            if not p:
+            # hide extension messages:
+            if msg.startswith("GL Extension ") or msg.endswith("available"):
+                log(msg)
+            else:
                 log.info(msg)
 
         missing_accelerators = []
@@ -496,6 +500,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     safe = check_lists(props, force_enable)
     if "safe" not in props:
         props["safe"] = safe
+    props.update(get_context_info())
     return props
 
 
@@ -532,7 +537,6 @@ def main() -> int:
         gl_fatal_error = log_error
         try:
             props = gl_context.check_support(force_enable)
-            props.update(get_context_info())
         except Exception as e:
             props = {}
             log("check_support", exc_info=True)
