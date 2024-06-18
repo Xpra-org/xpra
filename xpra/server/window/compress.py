@@ -2198,7 +2198,7 @@ class WindowSource(WindowIconSource):
         if not packet:
             return
         # queue packet for sending:
-        self.queue_damage_packet(packet, damage_time, process_damage_time, options)
+        self.queue_damage_packet(packet, damage_time, process_damage_time)
 
     def schedule_auto_refresh(self, packet: tuple, options: typedict) -> None:
         if not self.can_refresh():
@@ -2431,7 +2431,7 @@ class WindowSource(WindowIconSource):
             "speed"         : self.refresh_speed,
         }
 
-    def queue_damage_packet(self, packet, damage_time: float, process_damage_time: float, options: typedict) -> None:
+    def queue_damage_packet(self, packet, damage_time: float, process_damage_time: float) -> None:
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
@@ -2752,7 +2752,7 @@ class WindowSource(WindowIconSource):
                     w, h, x, y, self.wid, coding,
                     100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
                     self._damage_packet_sequence, client_info, options)
-        self.queue_damage_packet(packet, damage_time, process_damage_time, options)
+        self.queue_damage_packet(packet, damage_time, process_damage_time)
 
     def mmap_encode(self, coding: str, image: ImageWrapper, _options) -> tuple:
         assert coding == "mmap"

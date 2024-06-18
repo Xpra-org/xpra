@@ -62,7 +62,7 @@ class WindowPerformanceStatistics:
         # records when damage packets are sent,
         # so we can calculate the "client_latency" when the client sends
         # the corresponding ack ("damage-sequence" packet - see "client_ack_damage")
-        self.damage_ack_pending: dict[int, list] = {}
+        self.damage_ack_pending: dict[int, tuple[float, str, int, int, dict, float]] = {}
         # for each encoding, how many frames we sent and how many pixels in total
         self.encoding_totals: dict[str, list[int]] = {}
         # damage regions waiting to be picked up by the encoding thread:

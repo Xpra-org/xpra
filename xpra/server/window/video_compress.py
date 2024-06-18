@@ -2214,7 +2214,7 @@ class WindowVideoSource(WindowSource):
             end = monotonic()
             packet = self.make_draw_packet(x, y, w, h,
                                            coding, LargeStructure(coding, scrolls), 0, client_options, options)
-            self.queue_damage_packet(packet, 0, 0, options)
+            self.queue_damage_packet(packet, 0, 0)
             compresslog(COMPRESS_SCROLL_FMT,
                         (end-start)*1000.0, w, h, x, y, self.wid, coding,
                         len(scrolls), w*h*4/1024,
@@ -2262,7 +2262,7 @@ class WindowVideoSource(WindowSource):
                 #    log.info("saved scroll y=%i h=%i to %s", sy, sh, filename)
                 packet = self.make_draw_packet(sub.get_target_x(), sub.get_target_y(), outw, outh,
                                                coding, data, outstride, client_options, options)
-                self.queue_damage_packet(packet, 0, 0, options)
+                self.queue_damage_packet(packet, 0, 0)
                 psize = w*sh*4
                 csize = len(data)
                 compresslog(COMPRESS_FMT,
@@ -2613,7 +2613,7 @@ class WindowVideoSource(WindowSource):
         options = typedict()
         packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0,
                                        client_options, options)
-        self.queue_damage_packet(packet, 0, 0, options)
+        self.queue_damage_packet(packet, 0, 0)
         # check for more delayed frames since we want to support multiple b-frames:
         if not self.b_frame_flush_timer and client_options.get("delayed", 0) > 0:
             self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
