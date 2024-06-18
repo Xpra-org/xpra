@@ -305,7 +305,7 @@ class ClientConnection(StubSourceMixin):
     def next_packet(self) -> tuple[PacketType, bool, bool]:
         """ Called by protocol.py when it is ready to send the next packet """
         if self.is_closed():
-            return None, False, False
+            return (), False, False
         synchronous = True
         more = False
         if self.ordinary_packets:
@@ -315,7 +315,7 @@ class ClientConnection(StubSourceMixin):
         else:
             packet = None
         if not more:
-            more = packet is not None and bool(self.ordinary_packets or self.packet_queue)
+            more = bool(packet) and bool(self.ordinary_packets or self.packet_queue)
         return packet, synchronous, more
 
     def send(self, *parts: PacketElement, **kwargs) -> None:

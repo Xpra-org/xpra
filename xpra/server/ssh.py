@@ -12,7 +12,7 @@ import hashlib
 import binascii
 from subprocess import Popen, PIPE
 from threading import Event
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 import paramiko
 
 from xpra.net.bytestreams import pretty_socket
@@ -50,7 +50,7 @@ def get_keyclass(keytype: str):
     return getattr(paramiko, keytype[:1].upper() + keytype[1:] + "Key", None)
 
 
-def detect_ssh_stanza(cmd):
+def detect_ssh_stanza(cmd: list[str]) -> Sequence[str]:
     # plain 'ssh' clients execute a long command with if+else statements,
     # try to detect it and extract the actual command the client is trying to run.
     # ie:
@@ -68,10 +68,10 @@ def detect_ssh_stanza(cmd):
     elif len(cmd) == 3 and cmd[:2] == ["sh", "-c"]:  # ie: 'sh' '-c' 'thelongcommand'
         parse_cmd = cmd[2]
     else:
-        return None
+        return ()
     # for older clients, try to parse the long command
     # and identify the subcommands from there
-    subcommands = {}
+    subcommands: dict[str, list[str]] = {}
     ifparts = parse_cmd.split("if ")
     log(f"ifparts={ifparts}")
     for s in ifparts:
@@ -89,10 +89,10 @@ def detect_ssh_stanza(cmd):
                 if subcommand not in subcommands:
                     subcommands[subcommand] = parts
     log(f"subcommands={subcommands}")
-    return subcommands.get("_proxy")
+    return subcommands.get("_proxy", ())
 
 
-def find_fingerprint(filename: str, fingerprint):
+def find_fingerprint(filename: str, fingerprint) -> bool:
     hex_fingerprint = binascii.hexlify(fingerprint)
     log(f"looking for key fingerprint {hex_fingerprint!r} in {filename!r}")
     count = 0
@@ -124,6 +124,80 @@ def find_fingerprint(filename: str, fingerprint):
             count += 1
     log(f"no match in {count} keys from {filename!r}")
     return False
+
+
+def proxy_start(channel, subcommand: str, args: list[str]) -> None:
+    log(f"ssh proxy-start({channel}, {subcommand}, {args})")
+    if subcommand == "_proxy_shadow_start":
+        server_mode = "shadow"
+    else:
+        # ie: "_proxy_start_desktop" -> "start-desktop"
+        server_mode = subcommand.replace("_proxy_", "").replace("_", "-")
+    log.info(f"ssh channel starting proxy {server_mode} session")
+    cmd = get_xpra_command() + [subcommand] + args
+    try:
+        # pylint: disable=consider-using-with
+        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=0, close_fds=True)
+        proc.poll()
+    except OSError:
+        log.error(f"Error starting proxy subcommand `{subcommand}`", exc_info=True)
+        log.error(f" with args={args}")
+        return
+    # pylint: disable=import-outside-toplevel
+    from xpra.util.child_reaper import getChildReaper
+
+    def proxy_ended(*args) -> None:
+        log("proxy_ended(%s)", args)
+
+    def close() -> None:
+        if proc.poll() is None:
+            proc.terminate()
+
+    getChildReaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
+
+    def proc_to_channel(read: Callable[[int], Buffer], send: Callable[[Buffer], int]) -> None:
+        while proc.poll() is None:
+            # log("proc_to_channel(%s, %s) waiting for data", read, send)
+            try:
+                r = read(4096)
+            except paramiko.buffered_pipe.PipeTimeout:
+                log(f"proc_to_channel({read}, {send})", exc_info=True)
+                close()
+                return
+            # log("proc_to_channel(%s, %s) %i bytes: %s", read, send, len(r or b""), ellipsizer(r))
+            while r:
+                try:
+                    sent = send(r)
+                    r = r[sent:]
+                except OSError:
+                    log(f"proc_to_channel({read}, {send})", exc_info=True)
+                    close()
+                    return
+
+    # forward to/from the process and the channel:
+
+    def stderr_reader() -> None:
+        proc_to_channel(proc.stderr.read, channel.send_stderr)
+
+    def stdout_reader() -> None:
+        proc_to_channel(proc.stdout.read, channel.send)
+
+    def stdin_reader() -> None:
+        # read from channel, write to stdin
+        stdin = proc.stdin
+        while proc.poll() is None:
+            r = channel.recv(4096)
+            if not r:
+                close()
+                break
+            stdin.write(r)
+            stdin.flush()
+
+    tname = subcommand.replace("_proxy_", "proxy-").replace("_", "-")
+    start_thread(stderr_reader, f"{tname}-stderr", True)
+    start_thread(stdout_reader, f"{tname}-stdout", True)
+    start_thread(stdin_reader, f"{tname}-stdin", True)
+    channel.proxy_process = proc
 
 
 class SSHServer(paramiko.ServerInterface):
@@ -291,11 +365,11 @@ class SSHServer(paramiko.ServerInterface):
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log(f"ssh xpra subcommand: {subcommand}")
             if subcommand.startswith("_proxy_"):
-                proxy_start = str_to_bool(self.options.get("proxy-start"), False)
-                if not proxy_start:
+                proxy_start_enabled = str_to_bool(self.options.get("proxy-start"), False)
+                if not proxy_start_enabled:
                     return fail(f"Warning: received a {subcommand!r} session request",
                                 " this feature is not enabled with the builtin ssh server")
-                self.proxy_start(channel, subcommand, cmd[2:])
+                proxy_start(channel, subcommand, cmd[2:])
             elif subcommand == "_proxy":
                 display_name = getattr(self, "display_name", "")
                 # if specified, the display name must match this session:
@@ -338,79 +412,6 @@ class SSHServer(paramiko.ServerInterface):
     def enable_auth_gssapi(self) -> bool:
         log("enable_auth_gssapi()")
         return False
-
-    def proxy_start(self, channel, subcommand: str, args: list[str]) -> None:
-        log(f"ssh proxy-start({channel}, {subcommand}, {args})")
-        if subcommand == "_proxy_shadow_start":
-            server_mode = "shadow"
-        else:
-            # ie: "_proxy_start_desktop" -> "start-desktop"
-            server_mode = subcommand.replace("_proxy_", "").replace("_", "-")
-        log.info(f"ssh channel starting proxy {server_mode} session")
-        cmd = get_xpra_command() + [subcommand] + args
-        try:
-            # pylint: disable=consider-using-with
-            proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, bufsize=0, close_fds=True)
-            proc.poll()
-        except OSError:
-            log.error(f"Error starting proxy subcommand `{subcommand}`", exc_info=True)
-            log.error(f" with args={args}")
-            return
-        # pylint: disable=import-outside-toplevel
-        from xpra.util.child_reaper import getChildReaper
-
-        def proxy_ended(*args) -> None:
-            log("proxy_ended(%s)", args)
-
-        def close() -> None:
-            if proc.poll() is None:
-                proc.terminate()
-
-        getChildReaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
-
-        def proc_to_channel(read: Callable[[int], Buffer], send: Callable[[Buffer], int]) -> None:
-            while proc.poll() is None:
-                # log("proc_to_channel(%s, %s) waiting for data", read, send)
-                try:
-                    r = read(4096)
-                except paramiko.buffered_pipe.PipeTimeout:
-                    log(f"proc_to_channel({read}, {send})", exc_info=True)
-                    close()
-                    return
-                # log("proc_to_channel(%s, %s) %i bytes: %s", read, send, len(r or b""), ellipsizer(r))
-                while r:
-                    try:
-                        sent = send(r)
-                        r = r[sent:]
-                    except OSError:
-                        log(f"proc_to_channel({read}, {send})", exc_info=True)
-                        close()
-                        return
-
-        # forward to/from the process and the channel:
-
-        def stderr_reader() -> None:
-            proc_to_channel(proc.stderr.read, channel.send_stderr)
-
-        def stdout_reader() -> None:
-            proc_to_channel(proc.stdout.read, channel.send)
-
-        def stdin_reader() -> None:
-            # read from channel, write to stdin
-            stdin = proc.stdin
-            while proc.poll() is None:
-                r = channel.recv(4096)
-                if not r:
-                    close()
-                    break
-                stdin.write(r)
-                stdin.flush()
-
-        tname = subcommand.replace("_proxy_", "proxy-").replace("_", "-")
-        start_thread(stderr_reader, f"{tname}-stderr", True)
-        start_thread(stdout_reader, f"{tname}-stdout", True)
-        start_thread(stdin_reader, f"{tname}-stdin", True)
-        channel.proxy_process = proc
 
 
 def make_ssh_server_connection(conn, socket_options: dict,

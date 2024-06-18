@@ -7,15 +7,17 @@ import os
 import sys
 import subprocess
 from queue import SimpleQueue, Empty
+from collections.abc import Callable
 from typing import Any
 
 from xpra.gtk.signals import register_os_signals
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool, get_exec_env
 from xpra.net.bytestreams import TwoFileConnection
-from xpra.net.common import ConnectionClosedException, PACKET_TYPES, PacketType
+from xpra.net.common import ConnectionClosedException, PACKET_TYPES, PacketType, PacketElement
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
+from xpra.common import noop
 from xpra.os_util import gi_import, WIN32
 from xpra.util.io import setbinarymode
 from xpra.util.system import SIGNAMES
@@ -54,15 +56,11 @@ FLUSH = envbool("XPRA_SUBPROCESS_FLUSH", False)
 FAULT_RATE = envint("XPRA_WRAPPER_FAULT_INJECTION_RATE")
 
 
-def nofault(_p):
-    """ by default, don't inject any errors """
-
-
-INJECT_FAULT = nofault
+INJECT_FAULT = noop
 if FAULT_RATE > 0:
     _counter = 0
 
-    def do_inject_fault(p):
+    def do_inject_fault(p) -> None:
         global _counter
         _counter += 1
         if (_counter % FAULT_RATE) == 0:
@@ -72,7 +70,7 @@ if FAULT_RATE > 0:
     INJECT_FAULT = do_inject_fault
 
 
-def setup_fastencoder_nocompression(protocol):
+def setup_fastencoder_nocompression(protocol) -> None:
     from xpra.net.packet_encoding import get_enabled_encoders, PERFORMANCE_ORDER
     encoders = get_enabled_encoders(PERFORMANCE_ORDER)
     assert len(encoders) > 0, "no packet encoders available!?"
@@ -332,14 +330,14 @@ class subprocess_caller:
         self.protocol = None
         self.command = None
         self.description = description
-        self.send_queue = SimpleQueue()
-        self.signal_callbacks = {}
+        self.send_queue: SimpleQueue[PacketType] = SimpleQueue()
+        self.signal_callbacks: dict[str, list[Callable, list]] = {}
         self.large_packets = []
         # hook a default packet handlers:
         self.connect(CONNECTION_LOST, self.connection_lost)
         self.connect(GIBBERISH, self.gibberish)
 
-    def connect(self, signal: str, cb, *args) -> None:
+    def connect(self, signal: str, cb: Callable, *args) -> None:
         """ gobject style signal registration """
         self.signal_callbacks.setdefault(signal, []).append((cb, list(args)))
 
@@ -440,7 +438,7 @@ class subprocess_caller:
             more = False
         return item, False, more
 
-    def send(self, *packet_data) -> None:
+    def send(self, *packet_data: PacketElement) -> None:
         self.send_queue.put(packet_data)
         p = self.protocol
         if p:
@@ -458,11 +456,10 @@ class subprocess_caller:
         self._fire_callback(signal_name, packet[1:])
         INJECT_FAULT(proto)
 
-    def _fire_callback(self, signal_name, extra_args=()) -> None:
-        callbacks = self.signal_callbacks.get(signal_name)
+    def _fire_callback(self, signal_name: str, extra_args=()) -> None:
+        callbacks = self.signal_callbacks.get(signal_name, [])
         log("firing callback for '%s': %s", signal_name, callbacks)
-        if callbacks:
-            for cb, args in callbacks:
-                with log.trap_error(f"Error processing callback {cb} for {signal_name} packet"):
-                    all_args = list(args) + list(extra_args)
-                    GLib.idle_add(cb, self, *all_args)
+        for cb, args in callbacks:
+            with log.trap_error(f"Error processing callback {cb} for {signal_name} packet"):
+                all_args = list(args) + list(extra_args)
+                GLib.idle_add(cb, self, *all_args)

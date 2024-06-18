@@ -217,6 +217,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
             errs = []
             while child.poll() is None:
                 try:
+                    # noinspection PyTypeChecker
                     v: bytes = child.stderr.readline()
                 except OSError:
                     log("stderr_reader()", exc_info=True)

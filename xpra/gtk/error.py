@@ -72,6 +72,7 @@ class XError(Exception):
 xerror_to_name: dict[int, str] = {}
 
 
+# noinspection PyUnreachableCode
 def get_X_error(xerror) -> str:
     global xerror_to_name
     if not isinstance(xerror, int):

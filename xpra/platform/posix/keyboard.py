@@ -128,6 +128,7 @@ class Keyboard(KeyboardBase):
                 return meanings, [], mod_missing
         return {}, [], []
 
+    # noinspection PyUnreachableCode
     def get_x11_keymap(self) -> dict[int, list[str]]:
         if not self.keyboard_bindings:
             return {}

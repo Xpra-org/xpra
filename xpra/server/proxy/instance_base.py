@@ -96,7 +96,7 @@ class ProxyInstance:
         self.client_challenge_packet: tuple = ()
         self.exit = False
         self.lost_windows = set()
-        self.encode_queue = SimpleQueue()  # holds draw packets to encode
+        self.encode_queue: SimpleQueue[PacketType] = SimpleQueue()  # holds draw packets to encode
         self.encode_thread: Thread | None = None
         # setup protocol wrappers:
         self.server_packets: Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
@@ -570,9 +570,9 @@ class ProxyInstance:
         # empty the encode queue:
         q = self.encode_queue
         if q:
-            q.put_nowait(None)
+            q.put_nowait(())
             q = SimpleQueue()
-            q.put(None)
+            q.put(())
             self.encode_queue = q
 
     def delvideo(self, wid: int):
@@ -586,10 +586,10 @@ class ProxyInstance:
 
         while not self.exit:
             packet = self.encode_queue.get()
-            if packet is None:
+            if not packet:
                 return
+            packet_type = str(packet[0])
             try:
-                packet_type = str(packet[0])
                 if packet_type == "lost-window":
                     wid = packet[1]
                     self.lost_windows.remove(wid)
@@ -774,7 +774,7 @@ class ProxyInstance:
             idle_time = int(now - vetime)
             enclog("timeout_video_encoders() wid=%s, idle_time=%s", wid, idle_time)
             if idle_time and idle_time > VIDEO_TIMEOUT:
-                self.encode_queue.put(["check-video-timeout", wid])
+                self.encode_queue.put(("check-video-timeout", wid))
         return True  # run again
 
     def _find_video_encoder(self, video_encoding, rgb_format):
