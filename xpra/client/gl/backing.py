@@ -741,8 +741,9 @@ class GLWindowBackingBase(WindowBackingBase):
         # (ie: the GTK backend renders to its own buffer…)
         bw, bh = self.size
         scale = context.get_scale_factor()
+        scaling = self.size != self.render_size or scale != 1
         rect_count = len(self.pending_fbo_paint)
-        if self.is_double_buffered() or self.size != self.render_size or scale != 1:
+        if self.is_double_buffered() or scaling:
             # refresh the whole window:
             rectangles = [(0, 0, bw, bh), ]
         else:
@@ -773,6 +774,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
         # Draw FBO texture on screen
+        sampling = GL_LINEAR if scaling else GL_NEAREST
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
         glReadBuffer(GL_COLOR_ATTACHMENT0)
@@ -780,7 +782,7 @@ class GLWindowBackingBase(WindowBackingBase):
         for x, y, w, h in rectangles:
             glBlitFramebuffer(x, y, w, h,
                               round(x*scale), round(y*scale), round((x+w)*scale), round((y+h)*scale),
-                              GL_COLOR_BUFFER_BIT, GL_NEAREST)
+                              GL_COLOR_BUFFER_BIT, sampling)
 
         if self.pointer_overlay:
             self.draw_pointer()
