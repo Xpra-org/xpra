@@ -282,7 +282,7 @@ if [ "${DO_SERVICE}" == "1" ]; then
 fi
 
 if [ "${DO_CUDA}" == "1" ]; then
-	echo "* Building all the CUDA kernels"
+	echo "* Building the CUDA kernels"
 	BUILD_CUDA_KERNEL="packaging\\MSWindows\\BUILD_CUDA_KERNEL"
 	for cupath in `ls fs/share/xpra/cuda/*.cu`; do
 		cu=`basename $cupath`
@@ -296,7 +296,7 @@ else
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvenc --without-nvjpeg_encoder --without-nvjpeg_decoder --without-nvfbc"
 fi
 
-echo "* Building Python3 Cython modules"
+echo "* Building Cython modules"
 BUILD_LOG="packaging/MSWindows/Python3-build.log"
 NPROCS=${NPROCS:-`nproc`}
 ${PYTHON} ./setup.py build_ext ${BUILD_OPTIONS} --inplace -j ${NPROCS} >& ${BUILD_LOG}
