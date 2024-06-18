@@ -401,10 +401,12 @@ class subprocess_caller:
     def stop_process(self) -> None:
         log("%s.stop_process() sending stop request to %s", self, self.description)
         proc = self.process
-        if proc and proc.poll() is None:
+        if not proc:
+            return
+        self.process = None
+        if proc.poll() is None:
             try:
                 proc.terminate()
-                self.process = None
             except Exception as e:
                 log("stop_process() proc=%s", proc, exc_info=True)
                 log.warn("Warning: failed to stop the wrapped subprocess %s: %s", proc, e)
