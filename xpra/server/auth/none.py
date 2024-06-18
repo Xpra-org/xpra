@@ -18,8 +18,8 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return False
 
-    def get_challenge(self, _digests: Sequence[str]):
-        return None
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
+        return b"", ""
 
     def get_password(self) -> str:
         return ""

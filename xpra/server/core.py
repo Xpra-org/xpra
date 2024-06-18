@@ -1379,7 +1379,10 @@ class ServerCore:
                 try:
                     salt, digest = auth.get_challenge(digests)
                     salt_digest = auth.choose_salt_digest(digests)
-                    assert digest == "xor" and salt_digest == "xor"
+                    if digest != "xor":
+                        raise ValueError(f"unexpected digest {digest}")
+                    if salt_digest != "xor":
+                        raise ValueError(f"unexpected salt digest {salt_digest}")
                 except ValueError as e:
                     sshlog("authentication with %s", auth, exc_info=True)
                     sshlog.warn("Warning: ssh transport cannot use %r authentication:", auth)
@@ -2105,8 +2108,8 @@ class ServerCore:
                 # as the authentication module is free to take its time
                 self.cancel_verify_connection_accepted(proto)
                 # note: we may have received a challenge_response from a previous auth module's challenge
-                challenge = authenticator.get_challenge(digest_modes)
-                if challenge is None:
+                salt, digest = authenticator.get_challenge(digest_modes)
+                if not (salt or digest):
                     if authenticator.requires_challenge():
                         fail("invalid state, unexpected challenge response")
                         return
@@ -2115,7 +2118,6 @@ class ServerCore:
                     # fake challenge so the client will send the real hello:
                     send_fake_challenge()
                     return
-                salt, digest = challenge
                 actual_digest = digest.split(":", 1)[0]
                 authlog(f"get_challenge({digest_modes})={hexstr(salt)}, {digest}")
                 countinfo = ""

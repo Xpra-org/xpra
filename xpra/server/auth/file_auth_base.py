@@ -47,12 +47,12 @@ class FileAuthenticatorBase(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         if self.salt is not None:
             log.error("challenge already sent!")
             if self.salt is not False:
                 self.salt = False
-            return None
+            return b"", ""
         self.salt = get_salt()
         self.digest = choose_digest(digests)
         self.challenge_sent = True

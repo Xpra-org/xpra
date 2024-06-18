@@ -66,7 +66,7 @@ class Authenticator(SysAuthenticator):
     def __repr__(self):
         return "keycloak"
 
-    def get_challenge(self, digests: Sequence[str]):
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         assert not self.challenge_sent
         if "keycloak" not in digests:
             log.error("Error: client does not support keycloak authentication")

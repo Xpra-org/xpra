@@ -110,12 +110,12 @@ class SysAuthenticatorBase:
 
     def req_challenge(self, digests, required="xor") -> None:
         if required not in digests:
-            raise RuntimeError(f"{self!r} authenticator requires the {required!r} digest")
+            raise ValueError(f"{self!r} authenticator requires the {required!r} digest")
 
-    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
-            return None
+            return b"", ""
         return self.do_get_challenge(digests)
 
     def do_get_challenge(self, digests) -> tuple[bytes, str]:

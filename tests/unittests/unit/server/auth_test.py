@@ -86,17 +86,18 @@ class TestAuth(unittest.TestCase):
         assert str(a)
         assert repr(a)
         if a.requires_challenge():
-            challenge = a.get_challenge(get_digests())
-            assert challenge
+            salt, digest = a.get_challenge(get_digests())
+            assert salt and digest
         a = self._init_auth(module)
         assert a
         if a.requires_challenge():
+            salt = digest = ""
             try:
-                challenge = a.get_challenge(("invalid-digest", ))
-            except Exception:
+                salt, digest = a.get_challenge(("invalid-digest", ))
+            except ValueError:
                 pass
             else:
-                assert challenge is None
+                raise RuntimeError(f"invalid digest should raise a ValueError, but got ({salt}, {digest})")
 
     def capsauth(self, a, challenge_response=None, client_salt=None) -> bool:
         caps = typedict()
@@ -146,7 +147,8 @@ class TestAuth(unittest.TestCase):
     def test_none(self):
         a = self._init_auth("none")
         assert not a.requires_challenge()
-        assert a.get_challenge(get_digests()) is None
+        salt, digest = a.get_challenge(get_digests())
+        assert not (salt or digest)
         assert not a.get_password()
         for x in (None, "bar"):
             assert self.capsauth(a, x, "")
@@ -203,9 +205,12 @@ class TestAuth(unittest.TestCase):
         p = a.get_passwords()
         assert not p, "got passwords from %s: %s" % (a, p)
         #challenge twice is a fail
-        assert a.get_challenge(get_digests())
-        assert not a.get_challenge(get_digests())
-        assert not a.get_challenge(get_digests())
+        salt, digest = a.get_challenge(get_digests())
+        assert salt and digest
+        salt, digest = a.get_challenge(get_digests())
+        assert not (salt or digest)
+        salt, digest = a.get_challenge(get_digests())
+        assert not (salt or digest)
         #muck:
         # 0 - OK
         # 1 - bad: with warning about newline
@@ -270,6 +275,8 @@ class TestAuth(unittest.TestCase):
             a.get_challenge(("not-a-valid-digest", ))
         except ValueError:
             pass
+        else:
+            raise RuntimeError("invalid digest should raise a ValueError")
         a.password_filename = "./this-path-should-not-exist"
         assert a.load_password_file() is None
         assert a.stat_password_filetime() == 0
@@ -415,7 +422,8 @@ class TestAuth(unittest.TestCase):
             a = self._init_auth("keycloak", **kwargs)
             assert a.requires_challenge(), "%s should require a challenge" % a
             if digests is not None:
-                assert a.get_challenge(digests), "cannot get challenge for digests %s" % (digests,)
+                salt, digest = a.get_challenge(digests), "cannot get challenge for digests %s" % (digests,)
+                assert salt and digest
             if response is not None:
                 assert a.check(response), "check failed for response %s" % (response,)
             return a

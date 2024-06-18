@@ -5,6 +5,7 @@
 
 import os
 import sys
+from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.os_util import getuid
@@ -54,7 +55,7 @@ class Authenticator(SysAuthenticator):
             return False
         return check(self.username, password, self.service, self.check_account)
 
-    def get_challenge(self, digests) -> tuple[bytes, str]:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         self.req_xor(digests)
         return super().do_get_challenge(["xor"])
 

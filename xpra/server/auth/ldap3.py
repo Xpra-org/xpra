@@ -56,7 +56,7 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "ldap3"
 
-    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         self.req_xor(digests)
         return super().get_challenge(("xor", ))
 

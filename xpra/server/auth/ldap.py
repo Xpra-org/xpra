@@ -54,10 +54,10 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "ldap"
 
-    def get_challenge(self, digests: Sequence[str]):
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         if "xor" not in digests:
             log.error("Error: ldap authentication requires the 'xor' digest")
-            return None
+            return b"", ""
         return super().get_challenge(("xor", ))
 
     def check_password(self, password: str) -> bool:

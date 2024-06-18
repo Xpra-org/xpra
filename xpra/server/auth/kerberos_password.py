@@ -35,10 +35,10 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "kerberos-password"
 
-    def get_challenge(self, digests: Sequence[str]):
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         if "xor" not in digests:
             log.error("Error: kerberos authentication requires the 'xor' digest")
-            return None
+            return b"", ""
         return super().get_challenge(("xor", ))
 
     def check_password(self, password: str) -> bool:

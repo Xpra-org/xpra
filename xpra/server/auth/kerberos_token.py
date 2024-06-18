@@ -34,12 +34,12 @@ class Authenticator(SysAuthenticatorBase):
     def __repr__(self):
         return "kerberos-token"
 
-    def get_challenge(self, digests: Sequence[str]):
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         assert not self.challenge_sent
         self.req_challenge(digests, "kerberos")
         self.salt = get_salt()
         self.challenge_sent = True
-        return self.salt, "kerberos:%s" % self.service
+        return self.salt, f"kerberos:{self.service}"
 
     def check_password(self, token: str) -> bool:
         log("check(%r)", token)

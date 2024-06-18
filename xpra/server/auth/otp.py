@@ -54,13 +54,13 @@ class Authenticator(SysAuthenticator):
     def requires_challenge(self) -> bool:
         return True
 
-    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str] | None:
+    def get_challenge(self, digests: Sequence[str]) -> tuple[bytes, str]:
         if self.salt is not None:
             log.error("Error: authentication challenge already sent!")
-            return None
+            return b"", ""
         if "xor" not in digests:
             log.error("Error: xor is not supported by the client")
-            return None
+            return b"", ""
         self.salt = get_salt()
         self.digest = "xor"
         self.challenge_sent = True
