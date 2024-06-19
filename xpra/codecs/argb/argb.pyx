@@ -803,7 +803,7 @@ cdef bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len,
     return rectangles
 
 
-cdef show_plane_range(name, plane, int width, int stride, int height):
+cdef show_plane_range(name, plane: Buffer, int width, int stride, int height):
     cdef unsigned char minv = 255
     cdef unsigned char maxv = 0
     cdef unsigned char value

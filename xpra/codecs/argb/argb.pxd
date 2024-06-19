@@ -9,4 +9,4 @@ cdef argbdata_to_rgb(const unsigned int* argb, const int argb_len)
 cdef bgradata_to_rgb(const unsigned int* bgra, const int bgra_len)
 cdef bgradata_to_rgba(const unsigned int* bgra, const int bgra_len)
 
-cdef show_plane_range(name, plane, int width, int stride, int height)
+cdef show_plane_range(name, plane: Buffer, int width, int stride, int height)
