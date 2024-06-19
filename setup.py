@@ -1573,6 +1573,10 @@ if "install" in sys.argv or "build" in sys.argv:
         # ensure it is now included in the module list
         add_modules("xpra.src_info")
 
+if POSIX and gtk3_ENABLED and data_ENABLED:
+    ism_dir = "share/gnome-shell/extensions/input-source-manager@xpra_org"
+    data_files.append((ism_dir, glob(f"fs/{ism_dir}/*")))
+    data_files.append((ism_dir, ["COPYING"]))
 
 if "clean" in sys.argv or "sdist" in sys.argv:
     clean()

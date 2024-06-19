@@ -51,7 +51,7 @@ class Keyboard(KeyboardBase):
             self.__dbus_helper = None
             log.info(f"gnome input sources requires dbus: {e}")
         else:
-            self._dbus_gnome_shell_eval_ism(".inputSources", self._store_input_sources)
+            self._dbus_gnome_shell_ism("List", [], self._store_input_sources)
 
     def _store_input_sources(self, input_sources: Iterable) -> None:
         log("_store_input_sources(%s)", input_sources)
@@ -60,6 +60,40 @@ class Keyboard(KeyboardBase):
             layout_variant = str(layout_info["id"])
             layout = layout_variant.split("+", 1)[0]
             self.__input_sources[layout] = index
+
+    def _dbus_gnome_shell_ism(self, method, args, callback=None) -> None:
+        def ok_cb(success, res) -> None:
+            try:
+                if not dbus_to_native(success):
+                    log("_dbus_gnome_shell_ism(method=%s, args=%s): %s", method, args, success)
+                    return
+                if callback is not None:
+                    callback(json.loads(dbus_to_native(res)))
+            except Exception:
+                log("_dbus_gnome_shell_ism(method=%s, args=%s)", method, args, exc_info=True)
+
+        def err_cb(msg) -> None:
+            log("_dbus_gnome_shell_ism(method=%s, args=%s): %s", method, args, msg)
+            if method == "List":
+                self._dbus_gnome_shell_eval_ism(".inputSources", self._store_input_sources)
+            elif method == "Activate":
+                try:
+                    index = dbus_to_native(args[0])
+                except Exception:
+                    log("_dbus_gnome_shell_ism(method=%s, args=%s): the Eval fallback", method, args, exc_info=True)
+                else:
+                    self._dbus_gnome_shell_eval_ism(f".inputSources[{index}].activate()")
+
+        log("_dbus_gnome_shell_ism(method=%s, args=%s): before call_function", method, args)
+        self.__dbus_helper.call_function(
+            "org.gnome.Shell",
+            "/org/xpra/InputSourceManager",
+            "xpra_org.InputSourceManager",
+            method,
+            args,
+            ok_cb,
+            err_cb,
+        )
 
     def _dbus_gnome_shell_eval_ism(self, cmd, callback=None) -> None:
         ism = "imports.ui.status.keyboard.getInputSourceManager()"
@@ -93,7 +127,7 @@ class Keyboard(KeyboardBase):
         if index is None:
             log(f"asked layout ({layout}) has no corresponding registered input source")
             return
-        self._dbus_gnome_shell_eval_ism(f".inputSources[{index}].activate()")
+        self._dbus_gnome_shell_ism("Activate", [native_to_dbus(index)])
 
     def __repr__(self):
         return "posix.Keyboard"

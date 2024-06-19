@@ -1,0 +1,17 @@
+{
+  "description": "Provide D-Bus interface for listing/activating input sources",
+  "name": "Input Source Manager D-Bus interface",
+  "shell-version": [
+    "3.32",
+    "3.36",
+    "3.38",
+    "40",
+    "41",
+    "42",
+    "43",
+    "44"
+  ],
+  "url": "https://github.com/Xpra-org/xpra/",
+  "uuid": "input-source-manager@xpra_org",
+  "version": 1
+}
