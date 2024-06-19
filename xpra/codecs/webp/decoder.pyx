@@ -336,7 +336,6 @@ def decompress_to_yuv(data: bytes, options: typedict, has_alpha=False) -> WebpIm
             show_plane_range("YUV"[i], planes[i], w // xdiv, strides[i], h // ydiv)
 
     img = WebpImageWrapper(0, 0, w, h, planes, "YUV420P", (3+alpha)*8, strides, 3+alpha, ImageWrapper.PLANAR_3+alpha)
-    img.set_full_range(False)
     img.cython_buffer = <uintptr_t> buf
     return img
 
