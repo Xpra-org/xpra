@@ -725,39 +725,40 @@ class WindowBackingBase:
             fire_paint_callbacks(callbacks, False, "no lock - retry")
             return
         with dl:
+            vd = self._video_decoder
+
+            def restart(msg: str, *args) -> None:
+                if vd or self._csc_decoder:
+                    videolog("paint_with_video_decoder: "+msg, *args)
+                    self.do_clean_video_decoder()
+                    self.do_clean_csc_decoder()
+
             if self._backing is None:
+                restart("no backing")
                 message = f"window {self.wid} is already gone!"
                 log(message)
                 fire_paint_callbacks(callbacks, -1, message)
                 return
+
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             input_colorspace = options.strget("csc", "YUV420P")
-            vd = self._video_decoder
             if vd:
                 frame = options.intget("frame", -1)
                 # first frame should always be no 0
                 # (but some encoders start at 1..)
                 if frame == 0:
-                    videolog("paint_with_video_decoder: first frame of new stream")
-                    self.do_clean_video_decoder()
-                    self.do_clean_csc_decoder()
+                    restart("first frame of new stream")
                 elif vd.get_encoding() != coding:
-                    videolog("paint_with_video_decoder: encoding changed from %s to %s",
-                             vd.get_encoding(), coding)
-                    self.do_clean_video_decoder()
-                    self.do_clean_csc_decoder()
+                    restart("encoding changed from %s to %s", vd.get_encoding(), coding)
                 elif vd.get_width() != enc_width or vd.get_height() != enc_height:
-                    videolog("paint_with_video_decoder: video dimensions have changed from %s to %s",
-                             (vd.get_width(), vd.get_height()), (enc_width, enc_height))
-                    self.do_clean_video_decoder()
-                    self.do_clean_csc_decoder()
+                    restart("video dimensions have changed from %s to %s",
+                            (vd.get_width(), vd.get_height()), (enc_width, enc_height))
                 elif vd.get_colorspace() != input_colorspace:
                     # this should only happen on encoder restart, which means this should be the first frame:
                     videolog.warn("Warning: colorspace unexpectedly changed from %s to %s",
                                   vd.get_colorspace(), input_colorspace)
                     videolog.warn(f" decoding {coding} frame {frame} using {vd.get_type()}")
-                    self.do_clean_video_decoder()
-                    self.do_clean_csc_decoder()
+                    restart("colorspace mismatch")
             if self._video_decoder is None:
                 # find the best decoder type and instantiate it:
                 decoder_options: VdictEntry = VIDEO_DECODERS.get(coding, {})
