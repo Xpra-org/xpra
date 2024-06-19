@@ -95,8 +95,6 @@ class TestColorRange(unittest.TestCase):
                         "50": 4,
                         "10": 0xc if fmt in ("webp", ) else 4,
                     }.items():
-                        if enc_name == "enc_pillow" and fmt == "webp":
-                            tolerance *= 2  # not sure why, but we don't really care is it should not be used
                         enc_options = typedict({"quality": quality})
                         bdata = enc_mod.encode(fmt, image, options=enc_options)
                         # tuple[str, Compressed, dict[str, Any], int, int, int, int]
