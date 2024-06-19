@@ -578,8 +578,8 @@ class WindowBackingBase:
 
     def do_paint_image_wrapper(self, context, encoding: str, img, x: int, y: int, width: int, height: int,
                                options: typedict, callbacks: Iterable[Callable]) -> None:
-        rgb_format = img.get_pixel_format()
-        if rgb_format in ("NV12", "YUV420P"):
+        pixel_format = img.get_pixel_format()
+        if pixel_format in ("NV12", "YUV420P", "YUV422P", "YUV444P"):
             # jpeg may be decoded to these formats by nvjpeg / nvdec
             enc_width, enc_height = options.intpair("scaled_size", (width, height))
             self.do_video_paint(encoding, img, x, y, enc_width, enc_height, width, height, options, callbacks)
@@ -588,19 +588,19 @@ class WindowBackingBase:
             raise ValueError(f"cannot handle {img.get_planes()} in this backend")
         # if the backing can't handle this format,
         # ie: tray only supports RGBA
-        if rgb_format not in self.get_rgb_formats():
+        if pixel_format not in self.get_rgb_formats():
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.rgb_transform import rgb_reformat
-            has_alpha = rgb_format.find("A") >= 0 and self._alpha_enabled
+            has_alpha = pixel_format.find("A") >= 0 and self._alpha_enabled
             rgb_reformat(img, self.get_rgb_formats(), has_alpha)
-            rgb_format = img.get_pixel_format()
+            pixel_format = img.get_pixel_format()
         # replace with the actual rgb format we get from the decoder / rgb_reformat:
-        options["rgb_format"] = rgb_format
+        options["rgb_format"] = pixel_format
         w = img.get_width()
         h = img.get_height()
         pixels = img.get_pixels()
         stride = img.get_rowstride()
-        self.do_paint_rgb(context, encoding, rgb_format, pixels, x, y, w, h, width, height, stride, options, callbacks)
+        self.do_paint_rgb(context, encoding, pixel_format, pixels, x, y, w, h, width, height, stride, options, callbacks)
         img.free()
 
     def with_gfx_context(self, function: Callable, *args) -> None:
