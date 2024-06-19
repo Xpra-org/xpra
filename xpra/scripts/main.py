@@ -1089,7 +1089,12 @@ def retry_socket_connect(options):
         if monotonic() - start >= timeout:
             break
         if retry == 0:
-            werr(f"failed to connect to {host}:{port}, retrying for {timeout} seconds")
+            log = Logger("network")
+            dtype = options["type"]
+            log.info("")
+            log.info(f"failed to connect to {dtype}://{host}:{port}/")
+            log.info(f" retrying for {timeout} seconds")
+            log.info("")
         retry += 1
         time.sleep(1)
     dtype = options["type"]
