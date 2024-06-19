@@ -348,7 +348,7 @@ def selftest(full=False):
                     assert v is not None
                 except:
                     pass
-            else:
-                raise RuntimeError("should not be able to decompress incomplete data, but got %s" % v)
+                else:
+                    raise RuntimeError("should not be able to decompress incomplete data, but got %s" % v)
     finally:
         pass
