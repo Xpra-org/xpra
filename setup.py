@@ -282,6 +282,7 @@ uinput_ENABLED = x11_ENABLED
 dbus_ENABLED = DEFAULT and (x11_ENABLED or WIN32) and not OSX
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
+ism_ext_ENABLED = DEFAULT and gtk3_ENABLED and data_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
 has_pam_headers = has_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc")
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and LINUX and has_pam_headers
@@ -437,6 +438,7 @@ SWITCHES += [
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
     "gtk_x11", "service",
     "gtk3", "example",
+    "ism_ext",
     "pam", "xdg_open",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
@@ -1573,7 +1575,7 @@ if "install" in sys.argv or "build" in sys.argv:
         # ensure it is now included in the module list
         add_modules("xpra.src_info")
 
-if POSIX and gtk3_ENABLED and data_ENABLED:
+if POSIX and ism_ext_ENABLED:
     ism_dir = "share/gnome-shell/extensions/input-source-manager@xpra_org"
     data_files.append((ism_dir, glob(f"fs/{ism_dir}/*")))
     data_files.append((ism_dir, ["COPYING"]))
