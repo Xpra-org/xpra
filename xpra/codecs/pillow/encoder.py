@@ -221,10 +221,10 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
             # convert to simple on or off mask:
             # set all pixel values below 128 to 255, and the rest to 0
 
-            def mask_value(a):
-                if a <= 128:
-                    return 255
-                return 0
+            def mask_value(a) -> int:
+                # without branch, same as:
+                # return 255 if a <= 128 else 0
+                return int(a <= 128) * 255
 
             mask = Image.eval(alpha, mask_value)
         else:
