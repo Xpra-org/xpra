@@ -2373,7 +2373,14 @@ class WindowVideoSource(WindowSource):
             img_data = image.get_pixels()
             rgb_format = image.get_pixel_format()   # ie: BGRA
             rgba_format = rgb_format.replace("BGRX", "BGRA")
-            img = Image.frombuffer("RGBA", (w, h), memoryview_to_bytes(img_data), "raw", rgba_format, stride)
+            from PIL import __version__ as pil_version
+            try:
+                major = int(pil_version.split(".")[0])
+            except ValueError:
+                major = 0
+            if major < 10:
+                img_data = memoryview_to_bytes(img_data)
+            img = Image.frombuffer("RGBA", (w, h), img_data, "raw", rgba_format, stride)
             kwargs = {}
             if SAVE_VIDEO_FRAMES == "jpeg":
                 kwargs = {

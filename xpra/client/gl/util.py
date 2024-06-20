@@ -21,8 +21,13 @@ SAVE_BUFFERS = os.environ.get("XPRA_OPENGL_SAVE_BUFFERS", "")
 if SAVE_BUFFERS not in ("png", "jpeg", ""):
     log.warn("Warning: invalid value for XPRA_OPENGL_SAVE_BUFFERS: must be 'png' or 'jpeg'")
     SAVE_BUFFERS = ""
+pillow_major = 0
 if SAVE_BUFFERS:
-    from PIL import Image, ImageOps  # @UnresolvedImport
+    from PIL import Image, ImageOps, __version__ as pil_version
+    try:
+        pillow_major = int(pil_version.split(".")[0])
+    except ValueError:
+        pass
 
 zerocopy_upload = False
 if envbool("XPRA_OPENGL_ZEROCOPY_UPLOAD", True):
@@ -102,7 +107,10 @@ def save_fbo(wid: int, fbo, texture, width: int, height: int, alpha=False) -> No
     size = width * height * 4
     membuf = get_membuf(size)
     GL.glGetTexImage(target, 0, GL.GL_BGRA, GL.GL_UNSIGNED_BYTE, membuf.get_mem_ptr())
-    pixels = memoryview(membuf).tobytes()
+    if pillow_major < 10:
+        pixels = memoryview(membuf)
+    else:
+        pixels = memoryview(membuf).tobytes()
     img = Image.frombuffer("RGBA", (width, height), pixels, "raw", "BGRA", width * 4)
     img = ImageOps.flip(img)
     kwargs = {}
