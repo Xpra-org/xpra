@@ -8,9 +8,11 @@ import os
 import shlex
 from shutil import which
 from subprocess import PIPE, Popen
+from collections.abc import Callable
 
 from xpra.scripts.main import InitException, InitExit, shellquote, host_target_string
 from xpra.net.bytestreams import ConnectionClosedException
+from xpra.common import noop
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
@@ -27,7 +29,7 @@ if log.is_debug_enabled():
 MAGIC_QUOTES = envbool("XPRA_SSH_MAGIC_QUOTES", True)
 
 
-def connect_failed(_message):
+def connect_failed(_message) -> None:
     # by the time ssh fails, we may have entered the gtk main loop
     # (and more than once thanks to the clipboard code..)
     if "gi.repository.Gtk" in sys.modules:
@@ -35,9 +37,7 @@ def connect_failed(_message):
         gtk.main_quit()
 
 
-def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
-    if not ssh_fail_cb:
-        ssh_fail_cb = connect_failed
+def connect_to(display_desc, opts=None, debug_cb: Callable = noop, ssh_fail_cb=connect_failed):
     sshpass_command = None
     cmd = list(display_desc["full_ssh"])
     kwargs = {}
@@ -93,8 +93,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         else:
             remote_cmd = f"'{remote_cmd}'"
         cmd.append(f"sh -c {remote_cmd}")
-        if debug_cb:
-            debug_cb(f"starting {cmd[0]} tunnel")
+        debug_cb(f"starting {cmd[0]} tunnel")
         # non-string arguments can make Popen choke,
         # instead of lazily converting everything to a string, we validate the command:
         for x in cmd:
@@ -131,7 +130,7 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
         raise InitExit(ExitCode.SSH_FAILURE,
                        f"Error running ssh command {cmd_info!r}: {e}") from None
 
-    def abort_test(action):
+    def abort_test(action) -> None:
         """ if ssh dies, we don't need to try to read/write from its sockets """
         exitcode = child.poll()
         if exitcode is not None:
@@ -152,10 +151,8 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 }.get(exitcode)
                 if sshpass_error:
                     error_message += f": {sshpass_error}"
-            if debug_cb:
-                debug_cb(error_message)
-            if ssh_fail_cb:
-                ssh_fail_cb(error_message)
+            debug_cb(error_message)
+            ssh_fail_cb(error_message)
             if "ssh_abort" not in display_desc:
                 display_desc["ssh_abort"] = True
                 if not had_connected:
@@ -173,29 +170,17 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
                 log.error(f" {ssh_cmd_info}")
             raise ConnectionClosedException(error_message) from None
 
-    def stop_tunnel():
-        if POSIX:
-            # on posix, the tunnel may be shared with other processes
-            # so don't kill it... which may leave it behind after use.
-            # but at least make sure we close all the pipes:
-            for name, fd in {
-                "stdin": child.stdin,
-                "stdout": child.stdout,
-                "stderr": child.stderr,
-            }.items():
-                try:
-                    if fd:
-                        fd.close()
-                except Exception as fd_err:
-                    log.error(f"Error closing ssh tunnel {name}: {fd_err}")
-            if not display_desc.get("exit_ssh", False):
-                # leave it running
-                return
+    def stop_tunnel() -> None:
+        close_tunnel_pipes(child)
+        if not display_desc.get("exit_ssh", False):
+            # leave ssh running
+            return
         try:
             if child.poll() is None:
                 child.terminate()
         except OSError as term_err:
-            log.error(f"Error trying to stop ssh tunnel process: {term_err}")
+            log.error(f"Error trying to stop ssh tunnel process: {term_err}", exc_info=True)
+
     host: str = display_desc["host"]
     port: int = display_desc.get("port", 22)
     username: str = display_desc.get("username", "")
@@ -213,27 +198,46 @@ def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
     conn.process = (child, "ssh", cmd)
     if kwargs.get("stderr") == PIPE:
 
-        def stderr_reader():
-            errs = []
-            while child.poll() is None:
-                try:
-                    # noinspection PyTypeChecker
-                    v: bytes = child.stderr.readline()
-                except OSError:
-                    log("stderr_reader()", exc_info=True)
-                    break
-                if not v:
-                    log(f"SSH EOF on stderr of {cmd}")
-                    break
-                try:
-                    s = v.rstrip(b"\n\r").decode("utf8")
-                except UnicodeDecodeError:
-                    s = str(v.rstrip(b"\n\r"))
-                if s:
-                    errs.append(s)
-            if errs:
-                log.warn("SSH stderr:")
-                for err in errs:
-                    log.warn(f" {err}")
         start_thread(stderr_reader, "ssh-stderr-reader", daemon=True)
     return conn
+
+
+def close_tunnel_pipes(child: Popen) -> None:
+    if POSIX:
+        # on posix, the tunnel may be shared with other processes
+        # so don't kill it... which may leave it behind after use.
+        # but at least make sure we close all the pipes:
+        for name, fd in {
+            "stdin": child.stdin,
+            "stdout": child.stdout,
+            "stderr": child.stderr,
+        }.items():
+            try:
+                if fd:
+                    fd.close()
+            except Exception as fd_err:
+                log.error(f"Error closing ssh tunnel {name}: {fd_err}")
+
+
+def stderr_reader(child: Popen) -> None:
+    errs: list[str] = []
+    while child.poll() is None:
+        try:
+            # noinspection PyTypeChecker
+            v: bytes = child.stderr.readline()
+        except OSError:
+            log("stderr_reader()", exc_info=True)
+            break
+        if not v:
+            log("SSH EOF on stderr")
+            break
+        try:
+            s = v.rstrip(b"\n\r").decode("utf8")
+        except UnicodeDecodeError:
+            s = str(v.rstrip(b"\n\r"))
+        if s:
+            errs.append(s)
+    if errs:
+        log.warn("SSH stderr:")
+        for err in errs:
+            log.warn(f" {err}")
