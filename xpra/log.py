@@ -154,19 +154,13 @@ def setloghandler(lh) -> None:
 
 
 def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT) -> None:
-    if not hasattr(to, "fileno"):
+    if not hasattr(to, "fileno") or not hasattr(to, "buffer"):
         # on win32 sys.stdout can be a "Blackhole",
         # which does not have a fileno
         return
     # pylint: disable=import-outside-toplevel
-    # python3 stdout and stderr have a buffer attribute,
-    # which we must use if we want to be able to write bytes:
-    try:
-        import codecs
-        sbuf = getattr(to, "buffer", to)
-        to = codecs.getwriter("utf-8")(sbuf, "replace")
-    except Exception:   # pragma: no cover
-        pass
+    import codecs
+    to = codecs.getwriter("utf-8")(to.buffer, "replace")
     try:
         from xpra.util.colorstreamhandler import ColorStreamHandler
     except ImportError:
