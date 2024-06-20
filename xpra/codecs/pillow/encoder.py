@@ -5,10 +5,11 @@
 
 import os
 from io import BytesIO
-import PIL
-from PIL import Image, ImagePalette
 from typing import Any
 from collections.abc import Sequence
+
+import PIL
+from PIL import Image, ImagePalette, __version__ as pil_version
 
 from xpra.codecs.debug import may_save_image
 from xpra.util.objects import typedict
@@ -21,6 +22,12 @@ log = Logger("encoder", "pillow")
 ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,jpeg").split(",")
 
 Image.init()
+
+try:
+    pil_major = int(pil_version.split(".")[0])
+except ValueError:
+    pil_major = 0
+
 
 try:
     # pylint: disable=ungrouped-imports
@@ -141,7 +148,7 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
     pil_import_format = pixel_format.replace("A", "a")
     try:
         # PIL cannot use the memoryview directly:
-        if isinstance(pixels, memoryview):
+        if pil_major < 10 and isinstance(pixels, memoryview):
             pixels = pixels.tobytes()
         # it is safe to use frombuffer() here since the convert()
         # calls below will not convert and modify the data in place,
