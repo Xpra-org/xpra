@@ -26,9 +26,9 @@ def main(argv):
     for f in argv[1:]:
         img = Image.open(f)
         img.show()
-        if img.mode=="RGB":
+        if img.mode == "RGB":
             img = img.convert("RGBA")
-        if img.mode=="RGBA":
+        if img.mode == "RGBA":
             rgb_data = img.tobytes("raw")
             data = measure_fn(bgrx_to_rgb, rgb_data)
             w, h = img.size
@@ -36,6 +36,7 @@ def main(argv):
             reloaded.show()
         else:
             print("file '%s' is not RGBA" % f)
+
 
 if __name__ == '__main__':
     main(sys.argv)

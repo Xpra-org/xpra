@@ -115,7 +115,7 @@ setup_options = {
 
 
 if "pkg-info" in sys.argv:
-    def write_PKG_INFO():
+    def write_PKG_INFO() -> None:
         with open("PKG-INFO", "wb") as f:
             pkg_info_values = setup_options.copy()
             pkg_info_values |= {
@@ -142,7 +142,7 @@ print("Python version %s" % (".".join(str(v) for v in sys.version_info[:3])))
 #*******************************************************************************
 
 
-def check_cython3():
+def check_cython3() -> None:
     try:
         import cython
         print(f"found Cython version {cython.__version__}")
@@ -164,7 +164,7 @@ check_cython3()
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 
 
-def check_pkgconfig():
+def check_pkgconfig() -> None:
     v = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = v[0] == 0 and v[1]
     if has_pkg_config:
@@ -184,15 +184,15 @@ for arg in list(sys.argv):
         sys.argv.remove(arg)
 
 
-def no_pkgconfig(*_pkgs_options, **_ekw):
+def no_pkgconfig(*_pkgs_options, **_ekw) -> dict:
     return {}
 
 
-def pkg_config_ok(*args):
+def pkg_config_ok(*args) -> bool:
     return get_status_output([PKG_CONFIG] + [str(x) for x in args])[0] == 0
 
 
-def pkg_config_version(req_version, pkgname: str):
+def pkg_config_version(req_version: str, pkgname: str) -> bool:
     r, out, _ = get_status_output([PKG_CONFIG, "--modversion", pkgname])
     if r != 0 or not out:
         return False
@@ -204,10 +204,10 @@ def pkg_config_version(req_version, pkgname: str):
     # pylint: disable=import-outside-toplevel
     try:
         from packaging.version import parse
-        return parse(out)>=parse(req_version)
+        return parse(out) >= parse(req_version)
     except ImportError:
         from distutils.version import LooseVersion  # pylint: disable=deprecated-module
-        return LooseVersion(out)>=LooseVersion(req_version)
+        return LooseVersion(out) >= LooseVersion(req_version)
 
 
 DEFAULT = True
@@ -260,16 +260,16 @@ modules_ENABLED = DEFAULT
 data_ENABLED = DEFAULT
 
 
-def find_header_file(name: str, isdir=False):
+def find_header_file(name: str, isdir=False) -> str:
     matches = [v for v in
                [d+name for d in INCLUDE_DIRS]
                if os.path.exists(v) and os.path.isdir(v)==isdir]
     if not matches:
-        return None
+        return ""
     return matches[0]
 
 
-def has_header_file(name, isdir=False):
+def has_header_file(name, isdir=False) -> bool:
     return bool(find_header_file(name, isdir))
 
 
@@ -280,7 +280,7 @@ dbus_ENABLED = DEFAULT and (x11_ENABLED or WIN32) and not OSX
 gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-has_pam_headers = find_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc")
+has_pam_headers = has_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc")
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and LINUX and has_pam_headers
 
 proc_use_procps         = LINUX and has_header_file("/proc/procps.h")
@@ -447,7 +447,7 @@ SWITCHES += [
 SWITCHES = list(sorted(set(SWITCHES)))
 
 
-def show_help():
+def show_help() -> None:
     setup()
     print("Xpra specific build and install switches:")
     for x in SWITCHES:
@@ -478,7 +478,7 @@ dummy_driver_version = None
 filtered_args = []
 
 
-def filter_argv():
+def filter_argv() -> None:
     for arg in sys.argv:
         matched = False
         for x in ("rpath", "ssl-cert", "ssl-key", "install", "share-xpra", "dummy-driver-version"):
@@ -547,7 +547,7 @@ def should_rebuild(src_file: str, bin_file: str) -> str:
     return ""
 
 
-def convert_doc(fsrc: str, fdst: str, fmt="html", force=False):
+def convert_doc(fsrc: str, fdst: str, fmt="html", force=False) -> None:
     bsrc = os.path.basename(fsrc)
     bdst = os.path.basename(fdst)
     if not force and not should_rebuild(fsrc, fdst):
@@ -561,7 +561,7 @@ def convert_doc(fsrc: str, fdst: str, fmt="html", force=False):
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 
-def convert_doc_dir(src, dst, fmt="html", force=False):
+def convert_doc_dir(src, dst, fmt="html", force=False) -> None:
     print(f"* {src:<20} -> {dst}")
     if not os.path.exists(dst):
         os.makedirs(dst, mode=0o755)
@@ -585,7 +585,7 @@ def convert_doc_dir(src, dst, fmt="html", force=False):
             print(f"ignoring {fsrc!r}")
 
 
-def convert_docs(fmt="html"):
+def convert_docs(fmt="html") -> None:
     paths = [x for x in sys.argv[2:] if not x.startswith("--")]
     if len(paths)==1 and os.path.isdir(paths[0]):
         convert_doc_dir("docs", paths[0])
@@ -596,7 +596,7 @@ def convert_docs(fmt="html"):
         convert_doc_dir("docs", "build/docs", fmt=fmt)
 
 
-def install_dev_env():
+def install_dev_env() -> None:
     if not LINUX:
         print(f"'dev-env' subcommand is not supported on {sys.platform!r}")
         sys.exit(1)
@@ -682,7 +682,7 @@ def install_dev_env():
     os.execv(exe, cmd)
 
 
-def install_repo(repo_variant=""):
+def install_repo(repo_variant="") -> None:
     if not LINUX:
         print(f"'install{repo_variant}-repo' subcommand is not supported on {sys.platform!r}")
         sys.exit(1)
@@ -788,7 +788,7 @@ assert "unittests" not in sys.argv, sys.argv
 
 
 if "clean" not in sys.argv and "sdist" not in sys.argv:
-    def show_switch_info():
+    def show_switch_info() -> None:
         switches_info = {}
         for x in SWITCHES:
             switches_info[x] = globals()[f"{x}_ENABLED"]
@@ -798,7 +798,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
             print("* %s : %s" % (str(k).ljust(20), {None : "Auto", True : "Yes", False : "No"}.get(v, v)))
     show_switch_info()
 
-    def check_sane_defaults():
+    def check_sane_defaults() -> None:
         if x11_ENABLED and WIN32:
             print("Warning: enabling x11 on MS Windows is unlikely to work!")
         if gtk_x11_ENABLED and not x11_ENABLED:
@@ -855,7 +855,7 @@ if not dbus_ENABLED:
 # data in the global variables "packages", "modules" and "excludes"
 
 
-def remove_packages(*mods):
+def remove_packages(*mods: str) -> None:
     """ ensures that the given packages are not included:
         removes them from the "modules" and "packages" list and adds them to "excludes" list
     """
@@ -871,7 +871,7 @@ def remove_packages(*mods):
             excludes.append(x)
 
 
-def add_packages(*pkgs):
+def add_packages(*pkgs: str) -> None:
     """ adds the given packages to the packages list,
         and adds all the modules found in this package (including the package itself)
     """
@@ -881,14 +881,14 @@ def add_packages(*pkgs):
     add_modules(*pkgs)
 
 
-def add_modules(*mods):
+def add_modules(*mods: str) -> None:
     def add(v):
         if v not in modules:
             modules.append(v)
     do_add_modules(add, *mods)
 
 
-def do_add_modules(op, *mods):
+def do_add_modules(op, *mods: str) -> None:
     """ adds the packages and any .py module found in the packages to the "modules" list
     """
     for x in mods:
@@ -915,14 +915,14 @@ def do_add_modules(op, *mods):
                         op(modname)
 
 
-def toggle_packages(enabled, *module_names):
+def toggle_packages(enabled: bool, *module_names: str) -> None:
     if enabled:
         add_packages(*module_names)
     else:
         remove_packages(*module_names)
 
 
-def toggle_modules(enabled, *module_names):
+def toggle_modules(enabled: bool, *module_names: str) -> None:
     if enabled:
         def op(v):
             if v not in modules:
@@ -940,7 +940,7 @@ if modules_ENABLED:
 #*******************************************************************************
 # Utility methods for building with Cython
 
-def do_add_cython_ext(*args, **kwargs):
+def do_add_cython_ext(*args, **kwargs) -> None:
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
         return
     if not cython_ENABLED:
@@ -960,7 +960,7 @@ def do_add_cython_ext(*args, **kwargs):
 add_cython_ext = do_add_cython_ext
 
 
-def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **kwargs):
+def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **kwargs) -> None:
     src = modnames.split(",")
     modname = src[0]
     if not src[0].endswith(".pyx"):
@@ -997,24 +997,24 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
     add_cython_ext(modname, src, **pkgc)
 
 
-def tace(toggle, *args, **kwargs):
+def tace(toggle: bool, *args, **kwargs) -> None:
     if toggle:
         ace(*args, **kwargs)
 
 
-def insert_into_keywords(kw, key, *args):
+def insert_into_keywords(kw: dict, key: str, *args) -> None:
     values = kw.setdefault(key, [])
     for arg in args:
         values.insert(0, arg)
 
 
-def add_to_keywords(kw, key, *args):
+def add_to_keywords(kw: dict, key: str, *args) -> None:
     values = kw.setdefault(key, [])
     for arg in args:
         values.append(arg)
 
 
-def remove_from_keywords(kw, key, value):
+def remove_from_keywords(kw: dict, key: str, value) -> None:
     values = kw.get(key)
     i = 0
     while values and value in values:
@@ -1023,13 +1023,13 @@ def remove_from_keywords(kw, key, value):
     return i
 
 
-def checkdirs(*dirs):
+def checkdirs(*dirs: str) -> None:
     for d in dirs:
         if not os.path.exists(d) or not os.path.isdir(d):
             raise RuntimeError(f"cannot find a directory which is required for building: {d!r}")
 
 
-def CC_is_clang():
+def CC_is_clang() -> bool:
     if CC.find("clang")>=0:
         return True
     return get_clang_version()>(0, )
@@ -1038,7 +1038,7 @@ def CC_is_clang():
 clang_version = None
 
 
-def get_clang_version():
+def get_clang_version() -> tuple[int, ...]:
     global clang_version
     if clang_version is not None:
         return clang_version
@@ -1067,7 +1067,7 @@ def get_clang_version():
 _gcc_version = None
 
 
-def get_gcc_version():
+def get_gcc_version() -> tuple[int, ...]:
     global _gcc_version
     if _gcc_version is not None:
         return _gcc_version
@@ -1093,7 +1093,7 @@ def get_gcc_version():
     return _gcc_version
 
 
-def vernum(s):
+def vernum(s) -> tuple[int, ...]:
     return tuple(int(v) for v in s.split("-", 1)[0].split("."))
 
 
@@ -1124,7 +1124,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if OSX:
         add_to_keywords(kw, 'extra_compile_args', "-Wno-nullability-completeness")
 
-    def add_tokens(s, add_to="extra_link_args"):
+    def add_tokens(s: str, add_to="extra_link_args") -> None:
         if not s:
             return
         flag_map = {
@@ -1146,13 +1146,13 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             else:
                 add_to_keywords(kw, add_to, token)
 
-    def hascflag(s):
+    def hascflag(s: str) -> bool:
         return s in kw.get("extra_compile_args", [])
 
-    def addcflags(*s):
+    def addcflags(*s: str):
         add_to_keywords(kw, "extra_compile_args", *s)
 
-    def addldflags(*s):
+    def addldflags(*s: str):
         add_to_keywords(kw, "extra_link_args", *s)
 
     if pkgs_options:
@@ -1177,22 +1177,22 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         if sys.version_info >= (3, 12):
             addcflags("-Wno-deprecated-declarations")
     if strict_ENABLED:
-        if CC.find("clang")>=0:
+        if CC.find("clang") >= 0:
             # clang emits too many warnings with cython code,
             # so we can't enable Werror without turning off some warnings:
             # this list of flags should allow clang to build the whole source tree,
             # as of Cython 0.26 + clang 4.0. Other version combinations may require
-            #(un)commenting other switches.
+            # (un)commenting other switches.
             if not hascflag("-Wno-error"):
                 addcflags("-Werror")
             addcflags(
                 "-Wno-deprecated-register",
                 "-Wno-unused-command-line-argument",
-                #"-Wno-unneeded-internal-declaration",
-                #"-Wno-unknown-attributes",
-                #"-Wno-unused-function",
-                #"-Wno-self-assign",
-                #"-Wno-sometimes-uninitialized",
+                # "-Wno-unneeded-internal-declaration",
+                # "-Wno-unknown-attributes",
+                # "-Wno-unused-function",
+                # "-Wno-self-assign",
+                # "-Wno-sometimes-uninitialized",
                 # cython adds rpath to the compilation command??
                 # and the "-specs=/usr/lib/rpm/redhat/redhat-hardened-cc1" is also ignored by clang:
             )
@@ -1242,7 +1242,7 @@ def get_base_conf_dir(install_dir: str, stripbuildroot=True) -> Sequence[str]:
     # but in other cases we want the buildroot path (when writing out the config files)
     # and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)
     # this is a bit hackish, but I can't think of a better way of detecting it
-    #(ie: "$HOME/rpmbuild/BUILDROOT/xpra-0.15.0-0.fc21.x86_64/usr")
+    # (ie: "$HOME/rpmbuild/BUILDROOT/xpra-0.15.0-0.fc21.x86_64/usr")
     dirs = (install_dir or sys.prefix).split(os.path.sep)
     if install_dir and stripbuildroot:
         pkgdir = os.environ.get("pkgdir")
@@ -1261,7 +1261,7 @@ def get_base_conf_dir(install_dir: str, stripbuildroot=True) -> Sequence[str]:
                 i = dirs.index("debian")
         elif "BUILDROOT" in dirs:
             # strip rpm style build root:
-            #[$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
+            # [$HOME, "rpmbuild", "BUILDROOT", "xpra-$VERSION"] -> []
             dirs = dirs[dirs.index("BUILDROOT")+2:]
         elif "pkg" in dirs:
             # archlinux
@@ -1320,14 +1320,14 @@ def detect_xdummy_setup(install_dir="") -> Sequence:
     return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
 
-def build_xpra_conf(install_dir: str):
+def build_xpra_conf(install_dir: str) -> None:
     # pylint: disable=import-outside-toplevel
     # generates an actual config file from the template
     xvfb_command = detect_xorg_setup(install_dir)
     xdummy_command = detect_xdummy_setup(install_dir)
     from xpra.platform.features import DEFAULT_START_ENV, DEFAULT_ENV, SOURCE
 
-    def bstr(b):
+    def bstr(b) -> str:
         if b is None:
             return "auto"
         return "yes" if int(b) else "no"
@@ -1404,7 +1404,7 @@ def build_xpra_conf(install_dir: str):
         'headerbar'             : ["auto", "no"][OSX or WIN32],
     }
 
-    def convert_templates(subdirs: Sequence[str]=()):
+    def convert_templates(subdirs: Sequence[str] = ()) -> None:
         dirname = os.path.join("fs", "etc", "xpra", *subdirs)
         # get conf dir for install, without stripping the build root
         target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
@@ -1444,7 +1444,7 @@ def build_xpra_conf(install_dir: str):
 
 
 #*******************************************************************************
-def clean():
+def clean() -> None:
     # clean and sdist don't actually use cython,
     # so skip this (and avoid errors)
     global pkgconfig
@@ -1548,7 +1548,7 @@ def clean():
             os.unlink(filename)
 
 
-def add_build_info(*args):
+def add_build_info(*args) -> None:
     cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
     r = subprocess.Popen(cmd).wait(TIMEOUT)
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
@@ -1580,7 +1580,7 @@ if modules_ENABLED:
     add_modules("xpra.build_info")
 
 
-def glob_recurse(srcdir):
+def glob_recurse(srcdir: str) -> None:
     m = {}
     for root, _, files in os.walk(srcdir):
         for f in files:
@@ -1607,7 +1607,7 @@ if WIN32:
     # one item at a time (no lists)
     # all in its own structure called "include_files" instead of "data_files"...
 
-    def add_data_files(target_dir, files):
+    def add_data_files(target_dir, files) -> None:
         if verbose_ENABLED:
             print(f"add_data_files({target_dir}, {files})")
         assert isinstance(target_dir, str)
@@ -1629,7 +1629,7 @@ if WIN32:
 
         # pass a potentially nested dictionary representing the tree
         # of files and directories we do want to include
-        def add_dir(base, defs):
+        def add_dir(base: str, defs) -> None:
             if verbose_ENABLED:
                 print(f"add_dir({base}, {defs})")
             if isinstance(defs, (list, tuple)):
@@ -1650,22 +1650,22 @@ if WIN32:
                     # recurse down:
                     add_dir(os.path.join(base, d), sub)
 
-        def add_gi_typelib(*libs):
+        def add_gi_typelib(*libs: str) -> None:
             if verbose_ENABLED:
                 print(f"add_gi_typelib({libs})")
             add_dir('lib',      {"girepository-1.0":    [f"{x}.typelib" for x in libs]})
 
-        def add_gi_gir(*libs):
+        def add_gi_gir(*libs: str) -> None:
             if verbose_ENABLED:
                 print(f"add_gi_gir({libs})")
             add_dir('share',    {"gir-1.0" :            [f"{x}.gir" for x in libs]})
         # convenience method for adding GI libs and "typelib" and "gir":
 
-        def add_gi(*libs):
+        def add_gi(*libs: str) -> None:
             add_gi_typelib(*libs)
             add_gi_gir(*libs)
 
-        def add_DLLs(*dll_names):
+        def add_DLLs(*dll_names: str) -> None:
             try:
                 do_add_DLLs("lib", *dll_names)
             except Exception as e:
@@ -1673,7 +1673,7 @@ if WIN32:
                 print(f" {e}")
                 sys.exit(1)
 
-        def do_add_DLLs(prefix="lib", *dll_names):
+        def do_add_DLLs(prefix="lib", *dll_names: str) -> None:
             dll_names = list(dll_names)
             dll_files = []
             version_re = re.compile(r"-[0-9\.-]+$")
@@ -1882,7 +1882,7 @@ if WIN32:
         executables = []
         setup_options["executables"] = executables
 
-        def add_exe(script, icon, base_name, base="Console"):
+        def add_exe(script, icon, base_name, base="Console") -> None:
             executables.append(Executable(
                 script=script, init_script=None,
                 # targetDir               = "dist",
@@ -1891,13 +1891,13 @@ if WIN32:
                 base=base,
             ))
 
-        def add_console_exe(script, icon, base_name):
+        def add_console_exe(script, icon, base_name) -> None:
             add_exe(script, icon, base_name)
 
-        def add_gui_exe(script, icon, base_name):
+        def add_gui_exe(script, icon, base_name) -> None:
             add_exe(script, icon, base_name, base="Win32GUI")
 
-        def add_service_exe(script, icon, base_name):
+        def add_service_exe(script, icon, base_name) -> None:
             add_exe(script, icon, base_name, base="Win32Service")
 
         # UI applications (detached from shell: no text output if ran from cmd.exe)
@@ -2095,7 +2095,7 @@ else:
         if server_ENABLED:
             libexec_scripts.append("auth_dialog")
 
-    def add_data_files(target_dir, files):
+    def add_data_files(target_dir: str, files) -> None:
         assert isinstance(target_dir, str)
         assert isinstance(files, (list, tuple))
         data_files.append((target_dir, files))
@@ -2124,12 +2124,12 @@ else:
     # here, we override build and install so we can
     # generate /etc/xpra/conf.d/*.conf
     class build_override(build):
-        def run(self):
+        def run(self) -> None:
             build.run(self)
             self.run_command("build_conf")
 
     class build_conf(build):
-        def run(self):
+        def run(self) -> None:
             try:
                 build_base = self.distribution.command_obj['build'].build_base
             except (AttributeError, KeyError):
@@ -2138,11 +2138,11 @@ else:
 
     class install_data_override(install_data):
 
-        def finalize_options(self):
+        def finalize_options(self) -> None:
             self.install_base = self.install_platbase = None
             install_data.finalize_options(self)
 
-        def run(self):
+        def run(self) -> None:
             install_dir = self.install_dir
             if install_dir.endswith("egg"):
                 install_dir = install_dir.split("egg")[1] or sys.prefix
@@ -2165,7 +2165,7 @@ else:
             print(f"  root_prefix={root_prefix!r}")
             build_xpra_conf(root_prefix)
 
-            def copytodir(src, dst_dir, dst_name="", chmod=0o644, subs=None):
+            def copytodir(src: str, dst_dir: str, dst_name="", chmod=0o644, subs: dict | None=None) -> None:
                 # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
                 # convert absolute paths:
                 dst_prefix = root_prefix if dst_dir.startswith("/") else install_dir
@@ -2187,7 +2187,7 @@ else:
                     # print(f"  chmod({dst_file!r}, %s)" % oct(chmod))
                     os.chmod(dst_file, chmod)
 
-            def dirtodir(src_dir, dst_dir):
+            def dirtodir(src_dir: str, dst_dir: str) -> None:
                 print(f"{src_dir!r}:")
                 for f in os.listdir(src_dir):
                     copytodir(os.path.join(src_dir, f), dst_dir)
@@ -2201,7 +2201,7 @@ else:
 
             etc_xpra_files = {}
 
-            def addconf(name, dst_name=None):
+            def addconf(name, dst_name=None) -> None:
                 etc_xpra_files[name] = dst_name
 
             addconf("xpra.conf")
@@ -2481,12 +2481,12 @@ toggle_packages(tests_ENABLED, "unit")
 
 
 if bundle_tests_ENABLED:
-    def bundle_tests():
+    def bundle_tests() -> None:
         # bundle the tests directly (not in library.zip):
-        for k,v in glob_recurse("unit").items():
-            if k!="":
+        for k, v in glob_recurse("unit").items():
+            if k != "":
                 k = os.sep+k
-            add_data_files("unit"+k, v)
+            add_data_files("unit" + k, v)
     bundle_tests()
 
 
@@ -2539,8 +2539,8 @@ if pam_ENABLED:
         pam_kwargs = {"pkgconfig_names" : "pam,pam_misc"}
     else:
         pam_kwargs = {
-            "extra_compile_args" : "-I" + find_header_file("/security", isdir=True),
-            "extra_link_args"    : ("-lpam", "-lpam_misc"),
+            "extra_compile_args": "-I" + find_header_file("/security", isdir=True),
+            "extra_link_args": ("-lpam", "-lpam_misc"),
         }
     ace("xpra.server.pam", **pam_kwargs)
 
@@ -2779,8 +2779,8 @@ if ext_modules:
         Options.buffer_max_dims = 3
     if strict_ENABLED and verbose_ENABLED:
         compiler_directives |= {
-            #"warn.undeclared"       : True,
-            #"warn.maybe_uninitialized" : True,
+            # "warn.undeclared"       : True,
+            # "warn.maybe_uninitialized" : True,
             "warn.unused"           : True,
             "warn.unused_result"    : True,
         }
