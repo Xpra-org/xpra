@@ -315,7 +315,7 @@ def exec_env() -> dict[str, str]:
     return env
 
 
-class subprocess_caller:
+class SubprocessCaller:
     """
     This is the caller side, wrapping the subprocess.
     You can call send() to pass packets to it

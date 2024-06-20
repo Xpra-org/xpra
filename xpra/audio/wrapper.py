@@ -7,14 +7,14 @@ import os
 import sys
 from time import monotonic
 from collections import namedtuple
-from collections.abc import Iterable
+from collections.abc import Iterable, Callable
 
 from xpra.gstreamer.common import import_gst, format_element_options
 from xpra.audio.gstreamer_util import (
     parse_audio_source, get_source_plugins, get_sink_plugins, get_default_sink_plugin, get_default_source,
     can_decode, can_encode, get_muxers, get_demuxers, get_all_plugin_names,
 )
-from xpra.net.subprocess_wrapper import subprocess_caller, SubprocessCallee, exec_kwargs, exec_env
+from xpra.net.subprocess_wrapper import SubprocessCaller, SubprocessCallee, exec_kwargs, exec_env
 from xpra.platform.paths import get_audio_command
 from xpra.common import FULL_INFO
 from xpra.os_util import WIN32, OSX, POSIX, BITS, gi_import
@@ -38,11 +38,11 @@ SOUND_START_TIMEOUT = envint("XPRA_SOUND_START_TIMEOUT", 5000 * (1 + int(WIN32))
 DEFAULT_SOUND_COMMAND_ARGS = os.environ.get("XPRA_DEFAULT_SOUND_COMMAND_ARGS", "--windows=no").split(",")
 
 
-def get_full_audio_command():
+def get_full_audio_command() -> list[str]:
     return get_audio_command() + DEFAULT_SOUND_COMMAND_ARGS
 
 
-def get_audio_wrapper_env():
+def get_audio_wrapper_env() -> dict[str, str]:
     env = {
         "XPRA_LOG_SOCKET_STATS": os.environ.get("XPRA_LOG_SOCKET_STATS", "0"),
     }
@@ -93,26 +93,26 @@ class AudioSubprocess(SubprocessCallee):
         for x in exports:
             self.connect_export(x)
 
-    def start(self):
+    def start(self) -> None:
         if not FAKE_START_FAILURE:
             def wrap_start() -> bool:
                 self.wrapped_object.start()
                 return False
             GLib.idle_add(wrap_start)
         if FAKE_EXIT > 0:
-            def process_exit():
+            def process_exit() -> None:
                 self.cleanup()
                 GLib.timeout_add(250, self.stop)
 
             GLib.timeout_add(FAKE_EXIT * 1000, process_exit)
         if FAKE_CRASH > 0:
-            def force_exit():
+            def force_exit() -> None:
                 sys.exit(1)
 
             GLib.timeout_add(FAKE_CRASH * 1000, force_exit)
         super().start()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         wo = self.wrapped_object
         log("cleanup() wrapped object=%s", wo)
         if wo:
@@ -124,7 +124,7 @@ class AudioSubprocess(SubprocessCallee):
                 log("cleanup() failed to clean %s", wo, exc_info=True)
         GLib.timeout_add(1000, self.do_stop)
 
-    def export_info(self):
+    def export_info(self) -> bool:
         wo = self.wrapped_object
         if wo:
             self.send("info", wo.get_info())
@@ -150,7 +150,7 @@ class AudioPlay(AudioSubprocess):
         super().__init__(audio_pipeline, ["add_data"], [])
 
 
-def run_audio(mode, error_cb, options, args):
+def run_audio(mode: str, error_cb: Callable, options, args) -> int:
     """ this function just parses command line arguments to feed into the audio subprocess class,
         which in turn just feeds them into the audio pipeline class (sink.py or src.py)
     """
@@ -243,7 +243,7 @@ def _add_debug_args(command: list[str]):
         command.append(",".join(debug))
 
 
-class AudioSubprocessWrapper(subprocess_caller):
+class AudioSubprocessWrapper(SubprocessCaller):
     """ This utility superclass deals with the caller side of the audio subprocess wrapper:
         * starting the wrapper subprocess
         * handling state-changed signal, so we have a local copy of the current value ready

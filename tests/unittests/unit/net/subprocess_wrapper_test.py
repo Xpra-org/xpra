@@ -11,7 +11,7 @@ from collections.abc import Callable
 
 from xpra.gtk.gobject import one_arg_signal
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.subprocess_wrapper import subprocess_caller, SubprocessCallee
+from xpra.net.subprocess_wrapper import SubprocessCaller, SubprocessCallee
 from xpra.net.bytestreams import Connection
 from xpra.net.common import PacketType
 from xpra.os_util import gi_import
@@ -70,7 +70,7 @@ def loopback_protocol(process_packet_cb: Callable[[Any, PacketType], None],
     return protocol
 
 
-class LoopbackProcess(subprocess_caller):
+class LoopbackProcess(SubprocessCaller):
     """ a fake subprocess which uses the loopback connection """
     def exec_subprocess(self):
         return FakeSubprocess()
