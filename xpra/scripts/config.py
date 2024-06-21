@@ -822,6 +822,7 @@ CLIENT_OPTIONS: list[str] = [
     "compressors", "packet-encoders",
     "key-shortcut",
     "env",
+    "ssh",
 ]
 
 CLIENT_ONLY_OPTIONS: list[str] = [
