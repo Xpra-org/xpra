@@ -26,7 +26,7 @@ PREFERRED_ENCODING_ORDER : Tuple[str, ...] = (
     "grayscale",
     "stream",
     )
-PREFERRED_REFRESH_ENCODING_ORDER: tuple[str, ...] = (
+PREFERRED_REFRESH_ENCODING_ORDER: Tuple[str, ...] = (
     "webp", "avif", "png", "png/P", "png/L", "rgb", "rgb24", "rbg32", "jpeg", "jpega",
 )
 STREAM_ENCODINGS : Tuple[str,...] = (
