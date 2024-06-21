@@ -44,7 +44,7 @@ HttpConnection = Union[H0Connection, H3Connection]
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 
-WS_HEADERS = {
+WS_HEADERS: dict[str, str] = {
     ":method": "CONNECT",
     ":scheme": "https",
     ":protocol": "websocket",

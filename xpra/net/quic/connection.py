@@ -119,7 +119,7 @@ class XpraQuicConnection(Connection):
         log("quic.stream_write(%s, %s) using stream id %s",
             ellipsizer(buf), packet_type, stream_id)
 
-        def do_write():
+        def do_write() -> None:
             try:
                 self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
                 self.transmit()

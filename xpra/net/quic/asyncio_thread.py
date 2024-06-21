@@ -72,7 +72,7 @@ class ThreadedAsyncioLoop:
             raise RuntimeError("no main loop")
         if isinstance(f, (Coroutine, Generator)):
 
-            def tsafe():
+            def tsafe() -> None:
                 log(f"creating task for {f}")
                 assert self.loop
                 self.loop.create_task(f)
