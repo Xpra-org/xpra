@@ -1689,7 +1689,7 @@ def run_opengl_probe():
     env["XPRA_REDIRECT_OUTPUT"] = "0"
     start = monotonic()
     kwargs = exec_kwargs(stderr=PIPE)
-    log(f"run_opengl_probe() using cmd={cmd} with env={env=} and {kwargs=}")
+    log("run_opengl_probe() using cmd=%s with env=%s and kwargs=%s", cmd, env, kwargs)
     try:
         proc = Popen(cmd, stdout=PIPE, env=env, universal_newlines=True, **kwargs)
     except Exception as e:
