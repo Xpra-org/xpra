@@ -18,6 +18,7 @@ Group:          Development/Languages
 License:        MIT
 URL:            https://github.com/aiortc/aioquic
 Source0:        https://files.pythonhosted.org/packages/source/a/aioquic/aioquic-%{version}.tar.gz
+Patch0:         aioquic-pycrypto-tls-utc.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
@@ -47,6 +48,7 @@ if [ "${sha256}" != "a791c5798baeb42a12fa28fd327da04d08f18795e93889178b4b2f49fe8
 	exit 1
 fi
 %setup -q -n aioquic-%{version}
+%patch -P 0 -p1
 
 
 %build
