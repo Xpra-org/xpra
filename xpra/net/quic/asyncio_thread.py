@@ -50,7 +50,10 @@ class ThreadedAsyncioLoop:
                 log.warn("Warning: uvloop not found")
             else:
                 log("installing uvloop")
-                uvloop.install()
+                if hasattr(uvloop, "run"):
+                    uvloop.run()
+                else:
+                    uvloop.install()
                 log.info(f"uvloop {uvloop.__version__} installed")
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
