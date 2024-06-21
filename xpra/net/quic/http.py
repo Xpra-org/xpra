@@ -12,10 +12,11 @@ from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event
 
-from xpra.net.quic.common import SERVER_NAME, http_date
+from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
 from xpra.net.http.directory_listing import list_directory
 from xpra.net.http.handler import DIRECTORY_LISTING, translate_path, load_path, may_reload_headers
-from xpra.util.str_fn import ellipsizer, strtobytes
+from xpra.net.common import HttpResponse
+from xpra.util.str_fn import ellipsizer
 from xpra.log import Logger
 
 log = Logger("quic")
@@ -40,19 +41,20 @@ class HttpRequestHandler:
         self.stream_id = stream_id
         self.transmit = transmit
 
-    def send_http3_response(self, code, headers: dict = None, body: bytes = b"") -> None:
+    def send_http3_response(self, code, headers: dict, body: bytes = b"") -> None:
         self.send_response_header(code, headers)
         if body:
             self.send_response_body(body)
         self.transmit()
 
-    def send_response_header(self, status: int = 200, headers: dict = None) -> None:
-        headers = [
-            (b":status", str(status).encode()),
-            (b"server", SERVER_NAME.encode()),
-            (b"date", http_date().encode()),
-        ] + list((strtobytes(k).lower(), strtobytes(v)) for k, v in (headers or {}).items())
-        self.connection.send_headers(stream_id=self.stream_id, headers=headers)
+    def send_response_header(self, status: int, headers: dict) -> None:
+        full_headers = {
+            ":status": str(status),
+            "server": SERVER_NAME.encode(),
+            "date": http_date().encode(),
+        }
+        full_headers.update(headers)
+        self.connection.send_headers(stream_id=self.stream_id, headers=binary_headers(full_headers))
 
     def send_response_body(self, body: bytes = b"", more_body: bool = False) -> None:
         self.connection.send_data(stream_id=self.stream_id, data=body, end_stream=not more_body)
@@ -68,11 +70,13 @@ class HttpRequestHandler:
         req_path = self.scope.get("path", "")
         log.info(f"HTTP request {method} {req_path}")
         scripts = self.xpra_server.get_http_scripts()
+        # script is a: Callable[[str], HttpResponse]
         script = scripts.get(req_path)
         log(f"req_path={req_path}, scripts={scripts}")
         if script:
             log(f"request for {req_path} handled using {script}")
-            self.send_http3_response(*script(req_path))
+            script_response: HttpResponse = script(req_path)
+            self.send_http3_response(*script_response)
             return
         if method != "GET":
             log.warn(f"Warning: http {method} requests are not supported")
