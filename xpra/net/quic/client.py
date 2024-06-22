@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
+import os
 import socket
 import ipaddress
 from queue import SimpleQueue
@@ -43,6 +45,7 @@ HttpConnection = Union[H0Connection, H3Connection]
 
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
+HOSTS_PREFER_IPV4 = os.environ.get("XPRA_HOSTS_PREFER_IPV4", "localhost,127.0.0.1").split(",")
 
 WS_HEADERS: dict[str, str] = {
     ":method": "CONNECT",
@@ -180,7 +183,17 @@ async def get_address_options(host: str, port: int) -> tuple:
     except Exception as e:
         log(f"getaddrinfo({host}, {port}, {family}, SOCK_DGRAM)", exc_info=True)
         raise RuntimeError(f"cannot get address information for {pretty_socket((host, port))}: {e}") from None
-    if PREFER_IPV6 and not any(addr_info[0] == socket.AF_INET6 for addr_info in infos):
+    if IPV6:
+        # we have to filter the results ourselves:
+        infos = list(addr_info for addr_info in infos if addr_info[0] in family_options)
+    has_ipv6 = any(addr_info[0] == socket.AF_INET6 for addr_info in infos)
+    prefer_ipv4 = any(re.match(host_pattern, host) for host_pattern in HOSTS_PREFER_IPV4)
+    if prefer_ipv4 and has_ipv6:
+        # IPv6 is a waste of time on loopback,
+        # and it can cause problems on some addresses,
+        # so make sure it comes last in the list:
+        infos.sort(key=lambda info: int(info[0] == socket.AF_INET6))
+    elif PREFER_IPV6 and not has_ipv6:
         # no ipv6 returned, cook one up:
         ipv4_infos = tuple(addr_info for addr_info in infos if addr_info[0] == socket.AF_INET)
         # ie:( (<AddressFamily.AF_INET: 2>, <SocketKind.SOCK_DGRAM: 2>, 17, '', ('192.168.0.114', 10000)), )
@@ -193,7 +206,7 @@ async def get_address_options(host: str, port: int) -> tuple:
                 log(f"added IPv6 option: {infos[0]}")
     # ensure only the family_options we want are included,
     # (only really needed for AF_UNSPEC)
-    return tuple(addr_info for addr_info in infos if addr_info[0] in family_options)
+    return tuple(infos)
 
 
 def quic_connect(host: str, port: int, path: str,
