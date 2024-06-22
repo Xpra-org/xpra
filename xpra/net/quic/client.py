@@ -241,7 +241,9 @@ def quic_connect(host: str, port: int, path: str,
         return WebSocketClient(connection)
 
     tl = get_threaded_loop()
+    log(f"getting the list of address options for {host!r}:{port}")
     addresses = tl.sync(get_address_options, host, port)
+    log(f"quic_connect will try {addresses=}")
 
     async def connect(addr_info):
         # ie:(AF_INET, SOCK_DGRAM, 0, '', ('192.168.0.10', 10000)
@@ -254,8 +256,10 @@ def quic_connect(host: str, port: int, path: str,
         addr = addr_info[4]  # ie: ('192.168.0.10', 10000)
         log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)}")
         protocol.connect(addr)
+        log("awaiting connected state")
         try:
             await protocol.wait_connected()
+            log(f"{protocol}.open({host!r}, {port}, {path!r})")
             conn = protocol.open(host, port, path)
             log(f"websocket connection {conn}")
             return conn
