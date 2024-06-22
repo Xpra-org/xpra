@@ -149,7 +149,7 @@ def hosts(host_str: str) -> list[str]:
     return [host_str]
 
 
-def add_listen_socket(socktype: str, sock, info, server, new_connection_cb, options=None) -> Callable | None:
+def add_listen_socket(socktype: str, sock, info, server, new_connection_cb: Callable, options: dict) -> Callable | None:
     log = get_network_logger()
     log("add_listen_socket%s", (socktype, sock, info, server, new_connection_cb, options))
     try:

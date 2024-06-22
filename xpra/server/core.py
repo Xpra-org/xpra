@@ -187,9 +187,9 @@ class ServerCore:
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
         self._aliases: dict = {}
-        self.socket_info: dict = {}
-        self.socket_options: dict = {}
-        self.socket_cleanup: list = []
+        self.socket_info: dict[Any, dict] = {}
+        self.socket_options: dict[Any, dict] = {}
+        self.socket_cleanup: list[Callable] = []
         self.socket_verify_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
         self.socket_rfb_upgrade_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
         self._max_connections: int = MAX_CONCURRENT_CONNECTIONS
@@ -201,10 +201,10 @@ class ServerCore:
         self.dbus_env: dict[str, str] = {}
         self.dbus_control: bool = False
         self.dbus_server = None
-        self.unix_socket_paths = []
+        self.unix_socket_paths: list[str] = []
         self.touch_timer: int = 0
         self.exec_cwd = os.getcwd()
-        self.pidfile = None
+        self.pidfile = ""
         self.pidinode: int = 0
         self.session_files: list[str] = [
             "cmdline", "server.env", "config", "server.log*",
@@ -1092,7 +1092,7 @@ class ServerCore:
             else:
                 self.disconnect_protocol(protocol, reason)
 
-    def add_listen_socket(self, socktype: str, sock, options) -> None:
+    def add_listen_socket(self, socktype: str, sock, options: dict) -> None:
         info = self.socket_info.get(sock)
         netlog("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
         cleanup = add_listen_socket(socktype, sock, info, self, self._new_connection, options)
@@ -1109,7 +1109,6 @@ class ServerCore:
         if self._closing:
             netlog("ignoring new connection during shutdown")
             return False
-        socket_info = self.socket_info.get(listener)
         if not socktype:
             netlog.error(f"Error: cannot find socket type for {listener!r}")
             return True
@@ -1132,6 +1131,7 @@ class ServerCore:
             force_close_connection(conn)
             return True
         # from here on, we run in a thread, so we can poll (peek does)
+        socket_info = self.socket_info.get(listener)
         start_thread(self.handle_new_connection, f"new-{socktype}-connection", True,
                      args=(conn, socket_info, socket_options))
         return True

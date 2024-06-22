@@ -7,6 +7,7 @@
 import os
 import sys
 from typing import Any
+from collections.abc import Callable
 
 from xpra.util.version import version_str
 from xpra.util.objects import typedict
@@ -44,12 +45,12 @@ class Networklistener(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self.sockets = {}
-        self.socket_info = {}
-        self.socket_options = {}
-        self.socket_cleanup = []
+        self.sockets: dict[Any, dict] = {}
+        self.socket_info: dict[Any, dict] = {}
+        self.socket_options: dict[Any, dict] = {}
+        self.socket_cleanup: list[Callable] = []
         self._potential_protocols = []
-        self._close_timers = {}
+        self._close_timers: dict[Any, int] = {}
 
     def init(self, opts) -> None:
         def err(msg):
@@ -107,7 +108,7 @@ class Networklistener(StubClientMixin):
             self.socket_options[sock] = options
             GLib.idle_add(self.add_listen_socket, socktype, sock, options)
 
-    def add_listen_socket(self, socktype: str, sock, options) -> None:
+    def add_listen_socket(self, socktype: str, sock, options: dict) -> None:
         info = self.socket_info.get(sock)
         log("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
         cleanup = add_listen_socket(socktype, sock, info, None, self._new_connection, options)
@@ -170,7 +171,7 @@ class Networklistener(StubClientMixin):
         packet_type = str(packet[0])
 
         def close():
-            t = self._close_timers.pop(proto, None)
+            t = self._close_timers.pop(proto, 0)
             if t:
                 proto.close()
             try:
