@@ -720,7 +720,12 @@ class SocketProtocol:
             log("write_items(..)", exc_info=True)
             if not self._closed:
                 raise
-        self.write_buffers(buf_data, packet_type, synchronous)
+        try:
+            self.write_buffers(buf_data, packet_type, synchronous)
+        except TypeError:
+            log("%s%s", self.write_buffers, (buf_data, packet_type, synchronous), exc_info=True)
+            log.error(f"Error writing {packet_type!r} packet to {conn!r}")
+            log.error(" data=%s (%s)", ellipsizer(buf_data), type(buf_data))
         try:
             if len(buf_data) > 1:
                 conn.set_cork(False)
