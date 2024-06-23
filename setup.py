@@ -22,6 +22,9 @@ from collections.abc import Sequence
 if sys.version_info < (3, 10):
     raise RuntimeError("xpra no longer supports Python versions older than 3.10")
 
+# required for PEP 517
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
 try:
     from distutils.core import setup
     from distutils.command.build import build
