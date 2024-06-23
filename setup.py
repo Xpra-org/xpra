@@ -611,7 +611,7 @@ def install_dev_env() -> None:
                 "tar", "grep", "gawk", "gcc", "gcc-c++", "pkgconfig",
                 "which", "coreutils",
                 f"{py3}-cryptography", ),
-            "cython": (f"{py3}-devel", f"{py3}-Cython", f"{py3}-setuptools", "xxhash-devel", ),
+            "cython": (f"{py3}-devel", f"{py3}-cython", f"{py3}-setuptools", "xxhash-devel", ),
             "lz4": ("pkgconfig(liblz4)", ),
             "brotli": ("pkgconfig(libbrotlidec)", "pkgconfig(libbrotlienc)", ),
             "qrencode": ("pkgconfig(libqrencode)", ),
@@ -633,7 +633,11 @@ def install_dev_env() -> None:
             "nvidia": ("cuda", ),
             "docs": ("pandoc", ),
             "tests": ("gstreamer1", "gstreamer1-plugins-good", "pulseaudio", "pulseaudio-utils", "desktop-file-utils", "xclip", ),
-            "x11": ("pkgconfig(xkbfile)", "pkgconfig(xtst)", "pkgconfig(xcomposite)", "pkgconfig(xdamage)", "pkgconfig(xres)", "pkgconfig(xfixes)", "pkgconfig(xrandr)", ),
+            "x11": ("pkgconfig(xkbfile)", "pkgconfig(xtst)", "pkgconfig(xcomposite)",
+                    "pkgconfig(xdamage)", "pkgconfig(xres)", "pkgconfig(xfixes)", "pkgconfig(xrandr)",
+                    "xorg-x11-drv-dummy",
+                    ),
+            "Xdummy": ("xorg-x11-drv-dummy", ),
             "proc": ("procps-ng-devel" if is_Fedora() else "pkgconfig(libprocps)", ),
             "printing": (f"{py3}-cups", ),
             "sd_listen": ("pkgconfig(libsystemd)", ),
@@ -647,7 +651,10 @@ def install_dev_env() -> None:
                 "pkgconf", "xz-utils", "lsb-release",
             ),
             "cython": ("gcc", "cython3", "libxxhash-dev", ),
-            "x11": ("libx11-dev", "libxcomposite-dev", "libxdamage-dev", "libxtst-dev", "libxkbfile-dev", "libxres-dev"),
+            "x11": ("libx11-dev", "libxcomposite-dev", "libxdamage-dev",
+                    "libxtst-dev", "libxkbfile-dev", "libxres-dev",
+                    "Xvfb",
+                    ),
             "drm": ("libdrm-dev", ),
             "evdi": ("libevdi0-dev", ),
             "avif": ("libavif-dev", ),
@@ -679,7 +686,7 @@ def install_dev_env() -> None:
     for flag_str, pkg_names in flag_to_pkgs.items():
         flags = flag_str.split("|")
         if any(globals()[f"{flag}_ENABLED"] for flag in flags):
-            cmd += list(pkg_names)
+            cmd += list(set(pkg_names))
     from shutil import which
     exe = which(cmd[0])
     os.execv(exe, cmd)
