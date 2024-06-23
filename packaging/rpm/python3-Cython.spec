@@ -11,7 +11,7 @@
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
-Name:		%{python3}-Cython
+Name:		%{python3}-cython
 Version:	3.0.10
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
@@ -21,6 +21,8 @@ URL:		http://www.cython.org
 Source0:    https://github.com/cython/cython/archive/refs/tags/%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   %{python3}
+Provides:   %{python3}-Cython = %{version}-%{release}
+Obsoletes:  %{python3}-Cython < %{version}
 
 BuildRequires:	%{python3}-devel
 BuildRequires:	%{python3}-setuptools
