@@ -108,7 +108,7 @@ def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32
             if any(k.find(x) >= 0 for x in version_keys):
                 return nonl(pver(v)).lstrip("v")
             if any(k.find(x) >= 0 for x in hex_keys):
-                return binascii.hexlify(v)
+                return binascii.hexlify(v).decode()
         except Exception:
             pass
         return nonl(pver(v, ", ", ", "))
