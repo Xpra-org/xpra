@@ -11,9 +11,9 @@ from PIL import Image
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.common import Buffer
+from xpra.common import Buffer, SizedBuffer
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, strtobytes, hexstr
+from xpra.util.str_fn import csv, strtobytes, hexstr, memoryview_to_bytes
 from xpra.codecs.debug import may_save_image
 from xpra.log import Logger
 
@@ -26,7 +26,7 @@ DECODE_FORMATS = os.environ.get("XPRA_PILLOW_DECODE_FORMATS", "png,png/L,png/P,j
 PNG_HEADER = struct.pack("BBBBBBBB", 137, 80, 78, 71, 13, 10, 26, 10)
 
 
-def is_png(data) -> bool:
+def is_png(data: bytes) -> bool:
     return data.startswith(PNG_HEADER)
 
 
@@ -34,32 +34,32 @@ RIFF_HEADER = b"RIFF"
 WEBP_HEADER = b"WEBP"
 
 
-def is_webp(data) -> bool:
+def is_webp(data: bytes) -> bool:
     return data[:4] == RIFF_HEADER and data[8:12] == WEBP_HEADER
 
 
 JPEG_HEADER = struct.pack("BBB", 0xFF, 0xD8, 0xFF)
 
 
-def is_jpeg(data) -> bool:
+def is_jpeg(data: bytes) -> bool:
     # the jpeg header is actually more complicated than this,
     # but in practice all the data we receive from the server
     # will have this type of header
     return data[:3] == JPEG_HEADER
 
 
-def is_svg(data) -> bool:
+def is_svg(data: bytes) -> bool:
     return strtobytes(data[:5]) == b"<?xml" or strtobytes(data[:4]) == b"<svg"
 
 
 XPM_HEADER = b"/* XPM */"
 
 
-def is_xpm(data) -> bool:
+def is_xpm(data: bytes) -> bool:
     return data[:9] == XPM_HEADER
 
 
-def is_tiff(data) -> bool:
+def is_tiff(data: bytes) -> bool:
     if data[:2] == b"II":
         return data[2] == 42 and data[3] == 0
     if data[:2] == b"MM":
@@ -67,7 +67,7 @@ def is_tiff(data) -> bool:
     return False
 
 
-HEADERS: dict[Callable, str] = {
+HEADERS: dict[Callable[[bytes], bool], str] = {
     is_png: "png",
     is_webp: "webp",
     is_jpeg: "jpeg",
@@ -77,13 +77,14 @@ HEADERS: dict[Callable, str] = {
 }
 
 
-def get_image_type(data) -> str:
+def get_image_type(data: SizedBuffer) -> str:
     if not data:
         return ""
     if len(data) < 32:
         return ""
+    header = memoryview_to_bytes(data[:32])
     for fn, encoding in HEADERS.items():
-        if fn(data):
+        if fn(header):
             return encoding
     return ""
 

@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 
 from xpra.log import Logger
-from xpra.common import Buffer
+from xpra.common import SizedBuffer
 from xpra.net.protocol.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_NOHEADER, pack_header
 from xpra.util.str_fn import strtobytes
 from xpra.util.env import envbool
@@ -30,8 +30,8 @@ class Encoding:
     name: str
     flag: int
     version: str
-    encode: Callable[[Any], tuple[Buffer, int]]
-    decode: Callable[[Buffer], Any]
+    encode: Callable[[Any], tuple[SizedBuffer, int]]
+    decode: Callable[[SizedBuffer], Any]
 
 
 ENCODERS: dict[str, Encoding] = {}
@@ -41,13 +41,13 @@ def init_rencodeplus() -> Encoding:
     from xpra.net.rencodeplus import rencodeplus  # type: ignore[attr-defined]
     rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
 
-    def do_rencodeplus(v) -> tuple[Buffer, int]:
+    def do_rencodeplus(v) -> tuple[SizedBuffer, int]:
         return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
 
     return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
 
 
-def none_encode(data: Buffer) -> tuple[bytes, int]:
+def none_encode(data: SizedBuffer) -> tuple[bytes, int]:
     # just send data as a byte string for clients that don't understand xpra packet format:
     import codecs
 
@@ -59,7 +59,7 @@ def none_encode(data: Buffer) -> tuple[bytes, int]:
     return b(data) + b"\n", FLAGS_NOHEADER
 
 
-def none_decode(data: Buffer) -> Buffer:
+def none_decode(data: SizedBuffer) -> SizedBuffer:
     return data
 
 

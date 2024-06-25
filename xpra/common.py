@@ -8,8 +8,12 @@
 import binascii
 import os
 from enum import Enum, IntEnum
-from typing import TypeAlias, Final
-from collections.abc import Callable
+from typing import Final, Protocol
+from collections.abc import Callable, Sized
+
+from xpra.util.env import envint, envbool
+from xpra.util.str_fn import nicestr
+
 
 try:
     # Python 3.11 and later:
@@ -19,15 +23,14 @@ except ImportError:     # pragma: no cover
 
 try:
     # Python 3.12 and later:
-    from collections.abc import Buffer as abc_Buffer
-    Buffer: TypeAlias = abc_Buffer
+    from collections.abc import Buffer
 except ImportError:
-    from typing import ByteString
-    Buffer: TypeAlias = ByteString
+    from typing import ByteString as Buffer
 
 
-from xpra.util.env import envint, envbool
-from xpra.util.str_fn import nicestr
+class SizedBuffer(Buffer, Sized, Protocol):
+    pass
+
 
 # noinspection PyPep8
 RESOLUTION_ALIASES: dict[str, tuple[int, int]] = {

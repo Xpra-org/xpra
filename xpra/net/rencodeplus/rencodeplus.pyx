@@ -26,6 +26,8 @@
 import sys
 from collections.abc import Sequence, Mapping
 
+from xpra.common import SizedBuffer
+
 from cpython cimport bool
 from libc.stdlib cimport realloc, free
 from libc.string cimport memcpy
@@ -328,7 +330,7 @@ cdef encode(char **buf, unsigned int *pos, data):
         raise ValueError(f"type {t} not handled")
 
 
-def dumps(data):
+def dumps(data) -> SizedBuffer:
     """
     Encode the object data into a string.
 

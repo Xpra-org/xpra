@@ -11,7 +11,7 @@ import unittest
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
-from xpra.common import noop, Buffer
+from xpra.common import noop, SizedBuffer
 from xpra.net.protocol import socket_handler, check
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.bytestreams import Connection
@@ -37,7 +37,7 @@ class FastMemoryConnection(Connection):
         self.write_data = []
         Connection.__init__(self, "local", socktype, {})
 
-    def read(self, n) -> Buffer:
+    def read(self, n) -> SizedBuffer:
         if self.read_buffers is None:
             while self.active:
                 time.sleep(0.1)
@@ -137,7 +137,7 @@ class ProtocolTest(unittest.TestCase):
         self.do_test_invalid_data([b"\0"*1])
         self.do_test_invalid_data([b"P"*8])
 
-    def do_test_invalid_data(self, data: Buffer) -> None:
+    def do_test_invalid_data(self, data: SizedBuffer) -> None:
         errs = []
         proto = self.make_memory_protocol(data)
 

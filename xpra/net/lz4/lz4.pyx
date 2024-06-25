@@ -9,7 +9,7 @@
 import struct
 from typing import Tuple
 
-from xpra.common import Buffer
+from xpra.common import Buffer, SizedBuffer
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
 
@@ -52,7 +52,7 @@ cdef class compressor:
     def bound(self, int size) -> int:
         return LZ4_compressBound(size)
 
-    def compress(self, data: Buffer, int acceleration=1, int max_size=0, int store_size=True) -> Buffer:
+    def compress(self, data: Buffer, int acceleration=1, int max_size=0, int store_size=True) -> SizedBuffer:
         cdef Py_buffer in_buf
         if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
             raise ValueError("failed to read data from %s" % type(data))
@@ -81,11 +81,11 @@ cdef class compressor:
         PyBuffer_Release(&in_buf)
         return (mem[:(size_header+r)]).toreadonly()
 
-def compress(data: Buffer, acceleration=1) -> Buffer:
+def compress(data: Buffer, acceleration=1) -> SizedBuffer:
     c = compressor()
     return c.compress(data, acceleration)
 
-def decompress(data: Buffer, int max_size=0, int size=0) -> Buffer:
+def decompress(data: Buffer, int max_size=0, int size=0) -> SizedBuffer:
     cdef int size_header = 0
     if size==0:
         size = struct.unpack_from(b"@I", data[:4])[0]

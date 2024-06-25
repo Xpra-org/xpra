@@ -25,7 +25,7 @@ from xpra.util.str_fn import (
 )
 from xpra.util.env import envint, envbool
 from xpra.util.thread import make_thread, start_thread
-from xpra.common import noop, Buffer
+from xpra.common import noop, SizedBuffer
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
     unpack_header, pack_header, find_xpra_header,
@@ -125,12 +125,12 @@ class SocketProtocol:
         self._conn = conn
         self._process_packet_cb: Callable[[Any, PacketType], None] = process_packet_cb
         self.make_chunk_header: Callable = self.make_xpra_header
-        self.make_frame_header: Callable[[str | int, Iterable], Buffer] = self.noframe_header
+        self.make_frame_header: Callable[[str | int, Iterable], SizedBuffer] = self.noframe_header
         self._write_queue: Queue[tuple[Sequence, str, bool, bool] | None] = Queue(1)
-        self._read_queue: Queue[Buffer] = Queue(20)
+        self._read_queue: Queue[SizedBuffer] = Queue(20)
         self._pre_read = None
-        self._process_read: Callable[[Buffer], None] = self.read_queue_put
-        self._read_queue_put: Callable[[Buffer], None] = self.read_queue_put
+        self._process_read: Callable[[SizedBuffer], None] = self.read_queue_put
+        self._read_queue_put: Callable[[SizedBuffer], None] = self.read_queue_put
         self._get_packet_cb: Callable[[], tuple[PacketType, bool, bool]] = get_packet_cb
         # counters:
         self.input_stats: dict[str, int] = {}
@@ -469,11 +469,11 @@ class SocketProtocol:
 
     @staticmethod
     def make_xpra_header(_packet_type: str | int,
-                         proto_flags: int, level: int, index: int, payload_size: int) -> Buffer:
+                         proto_flags: int, level: int, index: int, payload_size: int) -> SizedBuffer:
         return pack_header(proto_flags, level, index, payload_size)
 
     @staticmethod
-    def noframe_header(_packet_type: str | int, _items) -> Buffer:
+    def noframe_header(_packet_type: str | int, _items) -> SizedBuffer:
         return b""
 
     def start_write_thread(self) -> None:
@@ -754,7 +754,7 @@ class SocketProtocol:
         self.output_packetcount += 1
 
     # noinspection PyMethodMayBeStatic
-    def con_write(self, con, buf: Buffer, packet_type: str):
+    def con_write(self, con, buf: SizedBuffer, packet_type: str):
         return con.write(buf, packet_type)
 
     def _read_thread_loop(self) -> None:
@@ -774,7 +774,7 @@ class SocketProtocol:
         self.input_raw_packetcount += 1
         return True
 
-    def con_read(self) -> Buffer:
+    def con_read(self) -> SizedBuffer:
         if self._pre_read:
             r = self._pre_read.pop(0)
             log("con_read() using pre_read value: %r", Ellipsizer(r))
@@ -798,22 +798,22 @@ class SocketProtocol:
         self.close(message)
         return False
 
-    def invalid(self, msg, data) -> None:
+    def invalid(self, msg: str, data: SizedBuffer) -> None:
         GLib.idle_add(self._process_packet_cb, self, [INVALID, msg, data])
         # Then hang up:
         GLib.timeout_add(1000, self._connection_lost, msg)
 
-    def gibberish(self, msg, data) -> None:
+    def gibberish(self, msg: str, data: SizedBuffer) -> None:
         GLib.idle_add(self._process_packet_cb, self, [GIBBERISH, msg, data])
         # Then hang up:
         GLib.timeout_add(self.hangup_delay, self._connection_lost, msg)
 
     # delegates to invalid_header()
     # (so this can more easily be intercepted and overridden)
-    def invalid_header(self, proto, data: Buffer, msg="invalid packet header") -> None:
+    def invalid_header(self, proto, data: SizedBuffer, msg="invalid packet header") -> None:
         self._invalid_header(proto, data, msg)
 
-    def _invalid_header(self, proto, data: Buffer, msg="invalid packet header") -> None:
+    def _invalid_header(self, proto, data: SizedBuffer, msg="invalid packet header") -> None:
         log("invalid_header(%s, %s bytes: '%s', %s)",
             proto, len(data or ""), msg, Ellipsizer(data))
         guess = guess_packet_type(data)
@@ -825,10 +825,10 @@ class SocketProtocol:
                 err += " read buffer=%s (%i bytes)" % (repr_ellipsized(data), len(data))
         self.gibberish(err, data)
 
-    def process_read(self, data: Buffer) -> None:
+    def process_read(self, data: SizedBuffer) -> None:
         self._read_queue_put(data)
 
-    def read_queue_put(self, data: Buffer) -> None:
+    def read_queue_put(self, data: SizedBuffer) -> None:
         # start the parse thread if needed:
         if not self._read_parser_thread and not self._closed:
             if data is None:
@@ -867,14 +867,14 @@ class SocketProtocol:
             from the UI thread will need to use a callback (usually via 'idle_add')
         """
         header = b""
-        read_buffers: list[Buffer] = []
+        read_buffers: list[SizedBuffer] = []
         payload_size = -1
         padding_size = 0
         packet_index = 0
         protocol_flags = 0
         data_size = 0
         compression_level = 0
-        raw_packets: dict[int, Buffer] = {}
+        raw_packets: dict[int, SizedBuffer] = {}
         while not self._closed:
             # log("parse thread: %i items in read queue", self._read_queue.qsize())
             buf = self._read_queue.get()
@@ -977,7 +977,7 @@ class SocketProtocol:
                     # incomplete packet, wait for the rest to arrive
                     break
 
-                data: Buffer
+                data: SizedBuffer
                 buf = read_buffers[0]
                 if len(buf) == payload_size:
                     # exact match, consume it all:
@@ -1263,7 +1263,7 @@ class SocketProtocol:
             log_count("received", icount, getattr(self._conn, "input_bytecount", -1))
             log_count("sent", ocount, getattr(self._conn, "output_bytecount", -1))
 
-    def steal_connection(self, read_callback: Callable[[Buffer], None] | None = None):
+    def steal_connection(self, read_callback: Callable[[SizedBuffer], None] | None = None):
         # so we can re-use this connection somewhere else
         # (frees all protocol threads and resources)
         # Note: this method can only be used with non-blocking sockets,

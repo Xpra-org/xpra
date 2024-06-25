@@ -7,7 +7,7 @@
 
 import struct
 
-from xpra.common import Buffer
+from xpra.common import SizedBuffer
 from xpra.net.websockets.common import OPCODE
 from xpra.net.websockets.mask import hybi_unmask
 
@@ -34,7 +34,7 @@ def encode_hybi_header(opcode, payload_len, has_mask=False, fin=True) -> bytes:
     return struct.pack('>BBQ', b1, 127 | mask_bit, payload_len)
 
 
-def decode_hybi(buf: Buffer) -> tuple[int, Buffer, int, int] | None:
+def decode_hybi(buf: SizedBuffer) -> tuple[int, SizedBuffer, int, int] | None:
     """ Decode HyBi style WebSocket packets """
     blen = len(buf)
     hlen = 2

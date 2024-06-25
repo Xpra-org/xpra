@@ -21,7 +21,7 @@ from xpra.util.env import envint, osexpand, first_time
 from xpra.os_util import getuid, WIN32, POSIX
 from xpra.util.thread import start_thread
 from xpra.scripts.config import str_to_bool
-from xpra.common import SSH_AGENT_DISPATCH, Buffer
+from xpra.common import SSH_AGENT_DISPATCH, SizedBuffer
 from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command
 from xpra.log import Logger
 
@@ -155,7 +155,7 @@ def proxy_start(channel, subcommand: str, args: list[str]) -> None:
 
     getChildReaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
 
-    def proc_to_channel(read: Callable[[int], Buffer], send: Callable[[Buffer], int]) -> None:
+    def proc_to_channel(read: Callable[[int], SizedBuffer], send: Callable[[SizedBuffer], int]) -> None:
         while proc.poll() is None:
             # log("proc_to_channel(%s, %s) waiting for data", read, send)
             try:
@@ -290,7 +290,7 @@ class SSHServer(paramiko.ServerInterface):
         log(f"check_channel_shell_request({channel})")
         return False
 
-    def check_channel_exec_request(self, channel, command: Buffer) -> bool:
+    def check_channel_exec_request(self, channel, command: str) -> bool:
         def fail(*messages) -> bool:
             for m in messages:
                 log.warn(m)

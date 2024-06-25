@@ -11,14 +11,14 @@ from typing import Any
 from importlib.util import find_spec
 from collections.abc import Callable
 
-from xpra.common import GROUP, SocketState, noerr, Buffer
+from xpra.common import GROUP, SocketState, noerr, SizedBuffer
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SocketConnection, SOCKET_TIMEOUT
 from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, gi_import, WIN32, OSX, POSIX
 from xpra.util.io import path_permission_info, umask_context
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envint, envbool, SilenceWarningsContext
 from xpra.util.thread import start_thread
@@ -291,7 +291,7 @@ def get_sockopt_tcp_info(sock, sockopt_tcpinfo: int, attributes=POSIX_TCP_INFO) 
     return d
 
 
-def looks_like_xpra_packet(data: Buffer) -> bool:
+def looks_like_xpra_packet(data: bytes) -> bool:
     if len(data) < 8:
         return False
     if data[0] != ord("P"):
@@ -329,9 +329,10 @@ def looks_like_xpra_packet(data: Buffer) -> bool:
     return True
 
 
-def guess_packet_type(data: Buffer) -> str:
-    if not data:
+def guess_packet_type(buf: SizedBuffer) -> str:
+    if not buf:
         return ""
+    data = memoryview_to_bytes(buf[:32])
     if looks_like_xpra_packet(data):
         return "xpra"
     if data[:4] == b"SSH-":
