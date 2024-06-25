@@ -562,6 +562,7 @@ class SocketProtocol:
         size_check = LARGE_PACKET_SIZE
         min_comp_size = MIN_COMPRESS_SIZE
         packet_type = str(packet[0])
+        log(f"encode({packet_type}, ...)")
         payload_size = 0
         for i in range(1, len(packet)):
             item = packet[i]
@@ -1177,7 +1178,6 @@ class SocketProtocol:
             if not last_packet:
                 close_and_release()
                 return
-            log("flush_then_close: queue is now empty, sending the last packet and closing")
 
             def wait_for_packet_sent():
                 closed = self._closed
@@ -1189,12 +1189,15 @@ class SocketProtocol:
                     return False
                 return not closed  # run until we manage to close (here or via the timeout)
 
+            log(f"flush_then_close: queue is now empty, sending the last packet using {encoder=} and closing")
             if encoder:
+                log("last packet: %s", last_packet)
                 chunks = encoder(last_packet)
+                log("last packet has %i chunks", len(chunks))
                 self._add_chunks_to_queue(last_packet[0], chunks, synchronous=False, more=False)
             else:
                 self.raw_write((last_packet,), "flush-then-close")
-            log("flush_then_close: packet queued closed=%s", self._closed)
+            log("flush_then_close: last packet queued, closed=%s", self._closed)
             if wait_for_packet_sent():
                 # check again every 100ms
                 GLib.timeout_add(100, wait_for_packet_sent)
