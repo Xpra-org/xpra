@@ -183,7 +183,7 @@ class Test_Roundtrip(unittest.TestCase):
         assert cdata
         #decode it:
         decoder = decoder_class()
-        decoder.init_context(encoding, width, height, in_csc)
+        decoder.init_context(encoding, width, height, out_csc)
         out_image = decoder.decompress_image(cdata, typedict(client_options))
         if not out_image:
             raise ValueError("no image")
