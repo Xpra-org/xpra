@@ -26,7 +26,7 @@ PERFORMANCE_ORDER: Sequence[str] = ("rencodeplus",)
 
 
 @dataclass
-class Encoding:
+class PacketEncoder:
     name: str
     flag: int
     version: str
@@ -34,30 +34,37 @@ class Encoding:
     decode: Callable[[SizedBuffer], Any]
 
 
-ENCODERS: dict[str, Encoding] = {}
+ENCODERS: dict[str, PacketEncoder] = {}
 
 
-def init_rencodeplus() -> Encoding:
+def init_rencodeplus() -> PacketEncoder:
     from xpra.net.rencodeplus import rencodeplus  # type: ignore[attr-defined]
     rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
 
-    def do_rencodeplus(v) -> tuple[SizedBuffer, int]:
-        return rencodeplus_dumps(v), FLAGS_RENCODEPLUS
+    def do_rencodeplus(value) -> tuple[SizedBuffer, int]:
+        return rencodeplus_dumps(value), FLAGS_RENCODEPLUS
 
-    return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
+    return PacketEncoder("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
 
 
-def none_encode(data: SizedBuffer) -> tuple[bytes, int]:
+def b(value) -> bytes:
+    if isinstance(value, Iterable) and not isinstance(value, (str, bytes, memoryview, bytearray)):
+        return b" ".join(b(item) for item in value)
+    return memoryview_to_bytes(value)
+
+
+def none_encode(value) -> tuple[bytes, int]:
     # just send data as a byte string for clients that don't understand xpra packet format:
-    return memoryview_to_bytes(data) + b"\n", FLAGS_NOHEADER
+    bdata = b(value) + b"\n"
+    return bdata, FLAGS_NOHEADER
 
 
 def none_decode(data: SizedBuffer) -> SizedBuffer:
     return data
 
 
-def init_none() -> Encoding:
-    return Encoding("none", FLAGS_NOHEADER, "0", none_encode, none_decode)
+def init_none() -> PacketEncoder:
+    return PacketEncoder("none", FLAGS_NOHEADER, "0", none_encode, none_decode)
 
 
 def init_encoders(*names) -> None:
