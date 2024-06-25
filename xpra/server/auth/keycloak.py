@@ -41,7 +41,7 @@ class Authenticator(SysAuthenticator):
         kwargs["prompt"] = kwargs.pop("prompt", "keycloak")
 
         if self.grant_type != "authorization_code":
-            raise NotImplementedError(f"grant type {self.grant_type!r} is not supported, only \"authorization_code\"")
+            raise ValueError(f"grant type {self.grant_type!r} is not supported, only \"authorization_code\"")
 
         super().__init__(**kwargs)
         log("keycloak auth: server_url=%s, client_id=%s, realm_name=%s, redirect_uri=%s, scope=%s, grant_type=%s",
