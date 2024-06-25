@@ -910,7 +910,7 @@ def handle_socket_error(sockpath: str, sperms: int, e) -> None:
             raise InitExit(ExitCode.SOCKET_CREATION_ERROR, f"failed to create socket {sockpath}")
 
 
-def socket_connect(host: str, port: int, timeout: float = SOCKET_TIMEOUT):
+def socket_connect(host: str, port: int, timeout: float = SOCKET_TIMEOUT) -> socket.socket | None:
     socktype = socket.SOCK_STREAM
     family = 0  # 0 means any
     try:
@@ -935,7 +935,7 @@ def socket_connect(host: str, port: int, timeout: float = SOCKET_TIMEOUT):
             sock.connect(sockaddr)
             sock.settimeout(None)
             return sock
-        except Exception:
+        except OSError:
             log("failed to connect using %s%s for %s", sock.connect, sockaddr, addr, exc_info=True)
             noerr(sock.close)
     return None

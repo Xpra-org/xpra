@@ -72,6 +72,7 @@ LIST_REPROBE_TIMEOUT: int = envint("XPRA_LIST_REPROBE_TIMEOUT", 10)
 
 
 # pylint: disable=import-outside-toplevel
+# noinspection PyBroadException
 
 
 def nox() -> str:
@@ -1044,10 +1045,11 @@ def connect_or_fail(display_desc, opts):
         raise InitExit(ExitCode.CONNECTION_FAILED, f"connection failed: {einfo}") from None
 
 
-def proxy_connect(options):
+def proxy_connect(options: dict):
     # if is_debug_enabled("proxy"):
     # log = logging.getLogger(__name__)
     try:
+        # noinspection PyPackageRequirements
         import socks
     except ImportError as e:
         raise ValueError(f"cannot connect via a proxy: {e}") from None
@@ -1063,17 +1065,17 @@ def proxy_connect(options):
     host = to.strget("proxy-host")
     port = to.intget("proxy-port", 1080)
     rdns = to.boolget("proxy-rdns", True)
-    username = options.get("proxy-username")
-    password = options.get("proxy-password")
-    timeout = options.get("timeout", 20)
+    username = to.strget("proxy-username")
+    password = to.strget("proxy-password")
+    timeout = to.intget("timeout", 20)
     sock = socks.socksocket()
     sock.set_proxy(proxy_type, host, port, rdns, username, password)
     sock.settimeout(timeout)
-    sock.connect((options["host"], options["port"]))
+    sock.connect((host, port))
     return sock
 
 
-def retry_socket_connect(options):
+def retry_socket_connect(options: dict):
     host = options["host"]
     port = options["port"]
     if "proxy-host" in options:
@@ -1101,9 +1103,9 @@ def retry_socket_connect(options):
     raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {dtype} socket {host}:{port}")
 
 
-def get_host_target_string(display_desc, port_key="port", prefix="") -> str:
+def get_host_target_string(display_desc: dict, port_key="port", prefix="") -> str:
     dtype = display_desc["type"]
-    username = display_desc.get(prefix + "username")
+    username = display_desc.get(prefix + "username", "")
     host = display_desc[prefix + "host"]
     try:
         port = int(display_desc.get(prefix + port_key))
@@ -1115,7 +1117,7 @@ def get_host_target_string(display_desc, port_key="port", prefix="") -> str:
     return host_target_string(dtype, username, host, port, display)
 
 
-def host_target_string(dtype, username, host, port, display) -> str:
+def host_target_string(dtype: str, username: str, host: str, port: int, display: str) -> str:
     target = f"{dtype}://"
     if username:
         target += f"{username}@"
@@ -1129,7 +1131,7 @@ def host_target_string(dtype, username, host, port, display) -> str:
     return target
 
 
-def connect_to(display_desc, opts=None, debug_cb=None, ssh_fail_cb=None):
+def connect_to(display_desc, opts=None, debug_cb=noop, ssh_fail_cb=noop):
     from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT, SocketConnection
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]

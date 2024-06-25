@@ -75,7 +75,7 @@ def ElementEncoderClass(element: str):
 
 
 def make_spec(element: str, encoding: str, cs_in: str, css_out: Sequence[str],
-              cpu_cost: int = 50, gpu_cost: int = 50):
+              cpu_cost: int = 50, gpu_cost: int = 50) -> VideoSpec:
     # use a metaclass so all encoders are gstreamer.encoder.Encoder subclasses,
     # each with different pipeline arguments based on the make_spec parameters:
     if cs_in in PACKED_RGB_FORMATS:
