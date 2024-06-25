@@ -113,7 +113,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
         roundtrip_pixels = memoryview(roundtrip_image.get_pixels())
         pixel_bytes = memoryview_to_bytes(roundtrip_pixels)
         cmpe(f"roundtrip {mod_out}-{mod_in} {info} mismatch, expected %s but got %s" % (pstr(in_pixels), pstr(pixel_bytes)),
-             in_pixels, pixel_bytes, tolerance=2 + 2*int("studio" in options.strtupleget("ranges")))
+             in_pixels, pixel_bytes, tolerance=2 + 2*int(not options.boolget("full-range")))
 
     def _test_RGB_to_YUV(self, mod_out, mod_in, in_csc="BGRX", out_csc="YUV420P", cs_range="full"):
         width = height = 32
