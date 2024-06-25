@@ -136,7 +136,8 @@ cdef class Decoder:
 
     def init_context(self, encoding, int width, int height, colorspace):
         log("openh264.init_context%s", (encoding, width, height, colorspace))
-        assert encoding=="h264", f"invalid encoding: {encoding}"
+        assert encoding == "h264", f"invalid encoding: {encoding}"
+        assert colorspace == "YUV420P", f"invalid colorspace: {colorspace}"
         self.width = width
         self.height = height
         self.colorspace = colorspace
