@@ -429,11 +429,8 @@ class TestAuth(unittest.TestCase):
             return a
 
         def f(digests=None, response=None, **kwargs):
-            try:
-                t(digests, response, **kwargs)
-            except Exception:
-                pass
-            else:
+            salt, digest = t(digests, response, **kwargs)
+            if salt or digest:
                 raise Exception("keycloak auth should have failed with arguments: %s" % (kwargs,))
 
         t()
