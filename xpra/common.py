@@ -24,12 +24,13 @@ except ImportError:     # pragma: no cover
 try:
     # Python 3.12 and later:
     from collections.abc import Buffer
+
+    class SizedBuffer(Buffer, Sized, Protocol):
+        pass
 except ImportError:
-    from typing import ByteString as Buffer
-
-
-class SizedBuffer(Buffer, Sized, Protocol):
-    pass
+    class SizedBuffer(Sized, Protocol):
+        def __buffer__(self):
+            raise NotImplementedError()
 
 
 # noinspection PyPep8
