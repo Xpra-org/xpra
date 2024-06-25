@@ -131,7 +131,7 @@ class XpraQuicConnection(Connection):
         get_threaded_loop().call(do_write)
         return len(buf)
 
-    def get_packet_stream_id(self, packet_type) -> int:
+    def get_packet_stream_id(self, packet_type: str) -> int:
         return self.stream_id
 
     def read(self, n: int) -> bytes:

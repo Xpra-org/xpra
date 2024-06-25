@@ -73,7 +73,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
             "sec-websocket-protocol": "xpra",
         })
 
-    def get_packet_stream_id(self, packet_type) -> int:
+    def get_packet_stream_id(self, packet_type: str) -> int:
         if self.closed or not self._use_substreams or not packet_type:
             return self.stream_id
         if not any(packet_type.startswith(x) for x in SUBSTREAM_PACKET_TYPES):
@@ -90,7 +90,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
         self._packet_type_streams[stream_type] = stream_id
         return stream_id
 
-    def allocate_new_stream_id(self, stream_type) -> int:
+    def allocate_new_stream_id(self, stream_type: str) -> int:
         log(f"allocate_new_stream_id({stream_type!r})")
         # should use more "correct" values here
         # (we don't need those headers,
