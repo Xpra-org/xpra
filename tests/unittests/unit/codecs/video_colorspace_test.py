@@ -29,8 +29,8 @@ def h2b(s) -> bytes:
     return binascii.unhexlify(s)
 
 
-def cmpp(p1, p2, tolerance=MAX_DELTA):
-    #compare planes, tolerate a rounding difference
+def cmpp(p1, p2, tolerance=MAX_DELTA) -> tuple[int, int, int] | None:
+    # compare planes, tolerate a rounding difference
     l = min(len(p1), len(p2))
     for i in range(l):
         v1 = p1[i]
@@ -41,7 +41,7 @@ def cmpp(p1, p2, tolerance=MAX_DELTA):
 
 
 def maxdelta(p1, p2) -> int:
-    #compare planes
+    # compare planes
     l = min(len(p1), len(p2))
     d = 0
     for i in range(l):
@@ -51,7 +51,7 @@ def maxdelta(p1, p2) -> int:
     return d
 
 
-def zeroout(data, i, bpp):
+def zeroout(data, i: int, bpp: int):
     if i < 0:
         return data
     d = bytearray(data)
@@ -66,13 +66,18 @@ TEST_IMAGES = {
     #    "codecs-image" : "/projects/xpra/docs/Build/graphs/codecs.png",
 }
 
-#samples as generated using the csc_colorspace_test:
-#(studio-swing)
+# samples as generated using the csc_colorspace_test:
+# (studio-swing)
 SAMPLE_YUV420P_IMAGES = {
-    #colour name : (Y, U, V),
+    # colour name : (Y, U, V),
     "black": (0x00, 0x80, 0x80),
     "white": (0xFF, 0x80, 0x80),
     "blue": (0x29, 0xEF, 0x6E),
+}
+SAMPLE_NV12_IMAGES = {
+    # colour name : (Y, UV),
+    "black": (0x00, 0x80),
+    "white": (0xFF, 0x80),
 }
 SAMPLE_RGBX_IMAGES = {
     "black": (0, 0, 0, 0xFF),
@@ -96,6 +101,7 @@ SAMPLE_IMAGES = {
     "YUV420P": SAMPLE_YUV420P_IMAGES,
     "YUV422P": SAMPLE_YUV420P_IMAGES,
     "YUV444P": SAMPLE_YUV420P_IMAGES,
+    "NV12": SAMPLE_NV12_IMAGES,
     "RGB": SAMPLE_RGBX_IMAGES,
     "RGBX": SAMPLE_RGBX_IMAGES,
     "BGRA": SAMPLE_BGRX_IMAGES,
@@ -116,7 +122,7 @@ class Test_Roundtrip(unittest.TestCase):
         vh = getVideoHelper()
         vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
         vh.init()
-        #info = vh.get_info()
+        # info = vh.get_info()
         encodings = vh.get_encodings()
         decodings = vh.get_decodings()
         common = [x for x in encodings if x in decodings]
@@ -191,33 +197,35 @@ class Test_Roundtrip(unittest.TestCase):
             raise RuntimeError(f"{encoder} failed to compress {in_image} with options {options}")
         cdata, client_options = out
         assert cdata
-        #decode it:
+        # decode it:
         decoder = decoder_class()
-        decoder.init_context(encoding, width, height, in_csc, options)
+        decoder.init_context(encoding, width, height, out_csc, options)
         out_image = decoder.decompress_image(cdata, typedict(client_options))
         if not out_image:
             raise ValueError("no image")
-        #print("%s %s : %s" % (encoding, decoder_module, out_image))
         out_pixels = out_image.get_pixels()
         out_csc = out_image.get_pixel_format()
         md = 0
-        if in_csc.startswith("YUV"):
-            if out_csc == "NV12":
-                log.info(f"NV12 cannot be compared with {in_csc} (not implemented)")
-                return
+        if in_csc.startswith("YUV") or in_csc == "NV12":
+            nplanes = out_image.get_planes()
             if in_csc != out_csc:
-                raise ValueError(f"YUV output colorspace {out_csc} differs from input colorspace {in_csc}")
+                if out_csc == "NV12" or in_csc == "NV12":
+                    log(f"only comparing Y plane for {in_csc} -> {out_csc} (not fully implemented)")
+                    nplanes = 1
+                else:
+                    raise ValueError(f"YUV output colorspace {out_csc} differs from input colorspace {in_csc}")
             divs = get_subsampling_divs(in_csc)
-            for i in range(out_image.get_planes()):
+            log(f"comparing {in_csc} and {out_csc}: {nplanes=}, {divs=} {out_image=} from {decoder=}")
+            for i in range(nplanes):
                 plane = get_plane_name(out_csc, i)
-                #extract plane to compare:
+                # extract plane to compare:
                 saved_pdata = saved_pixels[i]
                 in_pdata = in_pixels[i]
                 out_pdata = out_pixels[i]
                 xdiv, ydiv = divs[i]
                 in_stride = in_image.get_rowstride()[i]
                 out_stride = out_image.get_rowstride()[i]
-                #compare lines at a time since the rowstride may be different:
+                # compare lines at a time since the rowstride may be different:
                 for y in range(height // ydiv):
                     p1 = in_stride * y
                     p2 = p1 + width // xdiv
@@ -252,7 +260,7 @@ class Test_Roundtrip(unittest.TestCase):
                         raise Exception(msg)
                     md = max(md, maxdelta(in_rowdata, out_rowdata))
         elif in_image.get_planes() == ImageWrapper.PACKED:
-            #verify the encoder hasn't modified anything:
+            # verify the encoder hasn't modified anything:
             err = cmpp(saved_pixels, in_pixels)
             if err:
                 index, v1, v2 = err
@@ -281,7 +289,7 @@ class Test_Roundtrip(unittest.TestCase):
                     rgb_image = csc.convert_image(out_image)
                     compare[f"{i} : {csc_spec.codec_type}"] = rgb_image
                     assert rgb_image
-            #compare each output image with the input:
+            # compare each output image with the input:
             for out_source, out_image in compare.items():
                 out_csc = out_image.get_pixel_format()
                 log(f"comparing {in_csc} with {out_csc} ({out_source})")
@@ -313,7 +321,6 @@ class Test_Roundtrip(unittest.TestCase):
                     md = max(md, maxdelta(in_rowdata, out_rowdata))
         else:
             raise ValueError(f"don't know how to compare {in_image}")
-            #RGB!
         log(f" max delta={md}")
 
 
