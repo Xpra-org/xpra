@@ -8,7 +8,7 @@ import os.path
 from typing import Any
 
 from xpra.os_util import OSX, POSIX, gi_import
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.net.common import PacketType
 from xpra.util.thread import start_thread
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -117,7 +117,7 @@ class NotificationForwarder(StubServerMixin):
                 app_icon = ""
             log("notify_callback%s icon=%s",
                 (dbus_id, nid, app_name, replaces_nid, app_icon,
-                 summary, body, actions, hints, expire_timeout), ellipsizer(icon))
+                 summary, body, actions, hints, expire_timeout), Ellipsizer(icon))
             for ss in self._server_sources.values():
                 ss.notify(dbus_id, nid, app_name, replaces_nid, app_icon,
                           summary, body, actions, hints, expire_timeout, icon)

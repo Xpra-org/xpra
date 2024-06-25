@@ -9,7 +9,7 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.util.objects import typedict, reverse_dict
-from xpra.util.str_fn import ellipsizer, repr_ellipsized, bytestostr
+from xpra.util.str_fn import Ellipsizer, repr_ellipsized, bytestostr
 from xpra.util.env import envbool
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.common import RESOLUTION_ALIASES, ConnectionMessage
@@ -1621,7 +1621,7 @@ class GTKTrayMenu(MenuHelper):
     def build_start_menu(self) -> Gtk.Menu:
         menu = Gtk.Menu()
         execlog("build_start_menu() %i menu items", len(self.client.server_xdg_menu))
-        execlog("self.client.server_xdg_menu=%s", ellipsizer(self.client.server_xdg_menu))
+        execlog("self.client.server_xdg_menu=%s", Ellipsizer(self.client.server_xdg_menu))
         for category, category_props in sorted(self.client.server_xdg_menu.items()):
             execlog(" * category: %s", category)
             # log("category_props(%s)=%s", category, category_props)
@@ -1629,7 +1629,7 @@ class GTKTrayMenu(MenuHelper):
                 execlog("category properties is not a dict: %s", type(category_props))
                 continue
             cp = typedict(category_props)
-            execlog("  category_props(%s)=%s", category, ellipsizer(category_props))
+            execlog("  category_props(%s)=%s", category, Ellipsizer(category_props))
             entries = cp.dictget("Entries")
             if not entries:
                 execlog("  no entries for category '%s'", category)

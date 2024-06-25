@@ -24,7 +24,7 @@ from xpra.util.env import osexpand
 from xpra.scripts.config import str_to_bool
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
 from xpra.util.objects import typedict
-from xpra.util.str_fn import ellipsizer, bytestostr
+from xpra.util.str_fn import Ellipsizer, bytestostr
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
 from xpra.util.version import full_version_str
@@ -72,9 +72,9 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.client_state = client_state
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
                                video_encoder_modules,
-                               client_conn, disp_desc, ellipsizer(client_state),
+                               client_conn, disp_desc, Ellipsizer(client_state),
                                cipher, cipher_mode, encryption_key, server_conn,
-                               "%s: %s.." % (type(caps), ellipsizer(caps)), message_queue))
+                               "%s: %s.." % (type(caps), Ellipsizer(caps)), message_queue))
         self.message_queue = message_queue
         # for handling the local unix domain socket:
         self.control_socket_cleanup = None

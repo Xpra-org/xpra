@@ -331,7 +331,7 @@ class SubprocessCaller:
         self.command = None
         self.description = description
         self.send_queue: SimpleQueue[PacketType] = SimpleQueue()
-        self.signal_callbacks: dict[str, list[Callable, list[Any]]] = {}
+        self.signal_callbacks: dict[str, list[tuple[Callable, list[Any]]]] = {}
         self.large_packets = []
         # hook a default packet handlers:
         self.connect(CONNECTION_LOST, self.connection_lost)

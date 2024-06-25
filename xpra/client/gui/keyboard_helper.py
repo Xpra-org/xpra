@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
-from xpra.util.str_fn import std, csv, ellipsizer
+from xpra.util.str_fn import std, csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.log import Logger
 
@@ -288,8 +288,8 @@ class KeyboardHelper:
         self.update_hash()
         log(f"layout={self.layout}, layouts={self.layouts}, variant={self.variant}, variants={self.variants}")
         log(f"query-struct={self.query_struct}")
-        log("keycodes=%s", ellipsizer(self.keycodes))
-        log("x11 keycodes=%s", ellipsizer(self.x11_keycodes))
+        log("keycodes=%s", Ellipsizer(self.keycodes))
+        log("x11 keycodes=%s", Ellipsizer(self.x11_keycodes))
         log(f"mod managed: {self.mod_managed}")
         log(f"mod meanings: {self.mod_meanings}")
         log(f"mod pointermissing: {self.mod_pointermissing}")

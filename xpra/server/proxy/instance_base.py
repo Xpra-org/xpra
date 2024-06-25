@@ -23,7 +23,7 @@ from xpra.scripts.config import parse_number, str_to_bool
 from xpra.common import FULL_INFO, ConnectionMessage
 from xpra.os_util import get_hex_uuid, gi_import
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, ellipsizer, strtobytes, nicestr
+from xpra.util.str_fn import csv, Ellipsizer, strtobytes, nicestr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.version import XPRA_VERSION, vparts
 from xpra.util.thread import start_thread
@@ -78,7 +78,7 @@ class ProxyInstance:
             session_options,
             video_encoder_modules,
             disp_desc, cipher, cipher_mode, encryption_key,
-            "%s: %s.." % (type(caps), ellipsizer(caps))))
+            "%s: %s.." % (type(caps), Ellipsizer(caps))))
         self.uuid = get_hex_uuid()
         self.client_protocol = None
         self.client_has_more = False

@@ -17,7 +17,7 @@ from xpra.net.compression import Compressible
 from xpra.net.common import PacketType
 from xpra.os_util import POSIX, gi_import
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, bytestostr, hexstr
+from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
 from xpra.util.env import envint, envbool
 from xpra.platform.features import CLIPBOARDS as PLATFORM_CLIPBOARDS
 from xpra.log import Logger, is_debug_enabled
@@ -685,7 +685,7 @@ class ClipboardProtocolHelperCore:
         munged = self._munge_raw_selection_to_wire(target, dtype, dformat, data)
         if is_debug_enabled("clipboard"):
             log("clipboard raw -> wire: %r -> %r",
-                (dtype, dformat, ellipsizer(data)), ellipsizer(munged))
+                (dtype, dformat, Ellipsizer(data)), Ellipsizer(munged))
         wire_encoding, wire_data = munged
         if wire_encoding is None:
             no_contents()
@@ -719,7 +719,7 @@ class ClipboardProtocolHelperCore:
         log("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
         raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
         if log.is_debug_enabled():
-            r = ellipsizer
+            r = Ellipsizer
             log("clipboard wire -> raw: %s -> %s", (dtype, dformat, wire_encoding, r(wire_data)), r(raw_data))
         assert isinstance(request_id, int) and isinstance(dformat, int)
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)

@@ -16,7 +16,7 @@ from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
 from xpra.net.http.directory_listing import list_directory
 from xpra.net.http.handler import DIRECTORY_LISTING, translate_path, load_path, may_reload_headers
 from xpra.net.common import HttpResponse
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.log import Logger
 
 log = Logger("quic")
@@ -60,7 +60,7 @@ class HttpRequestHandler:
         self.connection.send_data(stream_id=self.stream_id, data=body, end_stream=not more_body)
 
     def http_event_received(self, event: H3Event) -> None:
-        log(f"http_event_received(%s) scope={self.scope}", ellipsizer(event))
+        log(f"http_event_received(%s) scope={self.scope}", Ellipsizer(event))
         http_version = self.scope.get("http_version", "0")
         if http_version != "3":
             log.error(f"Error: http version {http_version} is not supported")

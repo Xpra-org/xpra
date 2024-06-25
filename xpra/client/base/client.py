@@ -45,7 +45,7 @@ from xpra.util.io import filedata_nocrlf, stderr_print, use_gui_prompt
 from xpra.util.pysystem import dump_all_frames, detect_leaks
 from xpra.util.objects import typedict
 from xpra.util.str_fn import (
-    std, nonl, obsc, csv, ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
+    std, nonl, obsc, csv, Ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
     bytestostr, hexstr,
 )
 from xpra.util.parsing import parse_simple_dict, parse_encoded_bin_data
@@ -1059,7 +1059,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def get_encryption_key(self) -> bytes:
         conn = self._protocol._conn
         keydata = parse_encoded_bin_data(conn.options.get("keydata", ""))
-        cryptolog(f"get_encryption_key() connection options keydata={ellipsizer(keydata)}")
+        cryptolog(f"get_encryption_key() connection options keydata={Ellipsizer(keydata)}")
         if keydata:
             return keydata
         keyfile = conn.options.get("encryption-keyfile") or conn.options.get("keyfile") or self.encryption_keyfile
@@ -1095,7 +1095,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 return
         try:
             caps = typedict(packet[1])
-            netlog("processing hello from server: %s", ellipsizer(caps))
+            netlog("processing hello from server: %s", Ellipsizer(caps))
             if not self.server_connection_established(caps):
                 self.warn_and_quit(ExitCode.FAILURE, "failed to establish connection")
             else:
@@ -1160,7 +1160,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.completed_startup = packet
 
     def _process_gibberish(self, packet: PacketType) -> None:
-        log("process_gibberish(%s)", ellipsizer(packet))
+        log("process_gibberish(%s)", Ellipsizer(packet))
         message, data = packet[1:3]
         from xpra.net.socket_util import guess_packet_type  # pylint: disable=import-outside-toplevel
         packet_type = guess_packet_type(data)
@@ -1200,7 +1200,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def _process_invalid(self, packet: PacketType) -> None:
         message, data = packet[1:3]
         netlog.info(f"Received invalid packet: {message}")
-        netlog(" data: %s", ellipsizer(data))
+        netlog(" data: %s", Ellipsizer(data))
         p = self._protocol
         exit_code = ExitCode.PACKET_FAILURE
         if not p or p.input_packetcount <= 1:

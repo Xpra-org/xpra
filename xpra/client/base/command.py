@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 
 from xpra.util.objects import typedict
-from xpra.util.str_fn import nonl, csv, ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
+from xpra.util.str_fn import nonl, csv, Ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
 from xpra.common import ConnectionMessage, disconnect_is_an_error
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
@@ -87,7 +87,7 @@ class CommandConnectClient(GObjectXpraClient):
         # don't bother parsing the network caps:
         # * it could cause errors if the caps are missing
         # * we don't care about sending anything back after hello
-        log("server_capabilities: %s", ellipsizer(caps))
+        log("server_capabilities: %s", Ellipsizer(caps))
         log("protocol state: %s", self._protocol.save_state())
         self.cancel_command_timeout()
         self.do_command(caps)

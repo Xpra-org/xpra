@@ -16,7 +16,7 @@ from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
 from xpra.net.websockets.header import close_packet
 from xpra.net.quic.common import binary_headers, override_aioquic_logger
-from xpra.util.str_fn import ellipsizer, memoryview_to_bytes
+from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.env import envbool
 from xpra.log import Logger
 
@@ -24,7 +24,6 @@ log = Logger("quic")
 
 HttpConnection = Union[H0Connection, H3Connection]
 
-# DATAGRAM_PACKET_TYPES = os.environ.get("XPRA_QUIC_DATAGRAM_PACKET_TYPES", "pointer,pointer-button").split(",")
 DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_DATAGRAM_PACKET_TYPES",
     ""
@@ -72,7 +71,7 @@ class XpraQuicConnection(Connection):
         return info
 
     def http_event_received(self, event: H3Event) -> None:
-        log("quic:http_event_received(%s)", ellipsizer(event))
+        log("quic:http_event_received(%s)", Ellipsizer(event))
         if self.closed:
             return
         if isinstance(event, (DataReceived, DatagramReceived)):
@@ -104,10 +103,10 @@ class XpraQuicConnection(Connection):
             end_stream=self.closed)
 
     def write(self, buf, packet_type: str = "") -> int:
-        log("quic.write(%s, %s)", ellipsizer(buf), packet_type)
+        log("quic.write(%s, %s)", Ellipsizer(buf), packet_type)
         return self.stream_write(buf, packet_type)
 
-    def stream_write(self, buf, packet_type) -> int:
+    def stream_write(self, buf, packet_type: str) -> int:
         data = memoryview_to_bytes(buf)
         if not packet_type:
             log.warn(f"Warning: missing packet type for {data}")
@@ -117,7 +116,7 @@ class XpraQuicConnection(Connection):
             return len(buf)
         stream_id = self.get_packet_stream_id(packet_type)
         log("quic.stream_write(%s, %s) using stream id %s",
-            ellipsizer(buf), packet_type, stream_id)
+            Ellipsizer(buf), packet_type, stream_id)
 
         def do_write() -> None:
             try:

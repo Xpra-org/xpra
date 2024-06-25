@@ -11,7 +11,7 @@ from xpra.os_util import WIN32
 from xpra.scripts.config import InitExit, InitException, TRUE_OPTIONS
 from xpra.util.env import osexpand, envbool
 from xpra.util.parsing import parse_encoded_bin_data
-from xpra.util.str_fn import print_nested_dict, csv, ellipsizer, std
+from xpra.util.str_fn import print_nested_dict, csv, Ellipsizer, std
 
 SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
 
@@ -202,7 +202,7 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
     ssllog(" protocol=%#x", proto)
     # ca_data may be hex encoded:
     ca_data = parse_encoded_bin_data(ca_data or "")
-    ssllog(" cadata=%s", ellipsizer(ca_data))
+    ssllog(" cadata=%s", Ellipsizer(ca_data))
 
     kwargs = {
         "server_side": server_side,
@@ -286,7 +286,7 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
             # so we use a temporary file instead:
             import tempfile
             with tempfile.NamedTemporaryFile(prefix='cadata') as f:
-                ssllog(" loading cadata '%s'", ellipsizer(ca_data))
+                ssllog(" loading cadata '%s'", Ellipsizer(ca_data))
                 ssllog(" using temporary file '%s'", f.name)
                 f.file.write(ca_data)
                 f.file.flush()
@@ -378,7 +378,7 @@ def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any] | None:
         if not cert_data:
             ssllog.warn("Warning: failed to get server certificate from %s", addr)
             return None
-        ssllog("downloaded ssl cert data for %s: %s", addr, ellipsizer(cert_data))
+        ssllog("downloaded ssl cert data for %s: %s", addr, Ellipsizer(cert_data))
         # ask the user if he wants to accept this certificate:
         title = "SSL Certificate Verification Failure"
         prompt = "Do you want to accept this certificate?"
@@ -467,7 +467,7 @@ def save_ssl_config_file(server_hostname: str, port=443,
     host_dirname = std(server_hostname, extras="-.:#_") + f"_{port}"
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
     ssllog(f"save_ssl_config_file%s dirs={dirs}, host_dirname={host_dirname}, host_dirs={host_dirs}",
-           (server_hostname, port, filename, fileinfo, ellipsizer(filedata)), )
+           (server_hostname, port, filename, fileinfo, Ellipsizer(filedata)), )
     # if there is an existing host config dir, try to use it:
     for d in [x for x in host_dirs if os.path.exists(x)]:
         f = os.path.join(d, filename)

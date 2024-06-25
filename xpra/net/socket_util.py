@@ -182,7 +182,7 @@ def add_listen_socket(socktype: str, sock, info, server, new_connection_cb: Call
                 from xpra.net.upnp import upnp_add
                 upnp_cleanup.append(upnp_add(socktype, info, options))
 
-        def cleanup():
+        def cleanup() -> None:
             for source in tuple(sources):
                 GLib.source_remove(source)
                 sources.remove(source)
@@ -739,7 +739,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                 defs[("named-pipe", npl, sockpath, npl.stop)] = options
         else:
 
-            def checkstate(sockpath: str, state: SocketState | str):
+            def checkstate(sockpath: str, state: SocketState | str) -> None:
                 if state not in (SocketState.DEAD, SocketState.UNKNOWN):
                     if state == SocketState.INACCESSIBLE:
                         raise InitException(f"An xpra server is already running at {sockpath!r}\n")
@@ -786,7 +786,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                 # so we can do them in parallel:
                 threads = []
 
-                def timeout_probe(sockpath: str):
+                def timeout_probe(sockpath: str) -> None:
                     # we need a loop because "DEAD" sockets may return immediately
                     # (ie: when the server is starting up)
                     start = monotonic()
@@ -866,7 +866,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                 sock_str = f"{sock_def[0]} {sock_def[2]!r}"
                 cleanup_socket = sock_def[-1]
                 cleanup_socket()
-            except Exception:
+            except (IndexError, ValueError, OSError):
                 log(f"error cleaning up socket {sock_str}", exc_info=True)
                 log.error(f"Error cleaning up socket {sock_str}:", exc_info=True)
                 log.error(f" using {sock_def}")
@@ -914,7 +914,7 @@ def socket_connect(host: str, port: int, timeout: float = SOCKET_TIMEOUT):
     family = 0  # 0 means any
     try:
         addrinfo = socket.getaddrinfo(host, port, family, socktype)
-    except Exception as e:
+    except OSError as e:
         stypestr = {
             socket.AF_INET6: "IPv6",
             socket.AF_INET: "IPv4",

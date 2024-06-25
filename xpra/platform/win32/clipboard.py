@@ -35,7 +35,7 @@ from xpra.platform.win32 import win32con
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.core import ClipboardProxyCore, log, _filter_targets, TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE
 from xpra.common import roundup
-from xpra.util.str_fn import csv, ellipsizer, bytestostr
+from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.util.env import envint, envbool
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
 
@@ -236,7 +236,7 @@ def w_to_utf8(data):
         b = buf.raw[:length - 1]
     else:
         b = buf.raw[:length]
-    log("got %i UTF8 bytes: %s", len(b), ellipsizer(b))
+    log("got %i UTF8 bytes: %s", len(b), Ellipsizer(b))
     if CONVERT_LINE_ENDINGS:
         return b.decode("utf8").replace("\r\n", "\n").encode("utf8")
     return b
@@ -251,7 +251,7 @@ def rgb_to_bitmap(img_data) -> HBITMAP:
     rgb_data = img.tobytes("raw", "BGRA")
     w, h = img.size
     log("rgb_to_bitmap(%s) image size=%s, BGR buffer=%i bytes",
-        ellipsizer(rgb_data), img.size, len(rgb_data))
+        Ellipsizer(rgb_data), img.size, len(rgb_data))
     header = BITMAPINFOHEADER()
     memset(byref(header), 0, sizeof(BITMAPINFOHEADER))
     header.biSize = sizeof(BITMAPINFOHEADER)
@@ -486,7 +486,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             return
 
         def got_text(text):
-            log("got_text(%s)", ellipsizer(text))
+            log("got_text(%s)", Ellipsizer(text))
             got_contents(target, 8, text)
 
         def errback(error_text=""):
@@ -575,7 +575,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             return
         self._got_token_events += 1
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s",
-            self._selection, targets, ellipsizer(target_data), claim, self._can_receive)
+            self._selection, targets, Ellipsizer(target_data), claim, self._can_receive)
         if self._can_receive:
             self.targets = _filter_targets(targets or ())
             self.target_data = target_data or {}
@@ -610,7 +610,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 # request it:
                 self.send_clipboard_request_handler(self, self._selection, image_formats[0])
         elif dformat == 8 and dtype in TEXT_TARGETS:
-            log("we got a byte string: %s", ellipsizer(data))
+            log("we got a byte string: %s", Ellipsizer(data))
             if dtype.lower().find("utf8") >= 0:
                 text = data.decode("utf8")
             else:
@@ -621,7 +621,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             self.set_clipboard_image(img_format, data)
         else:
             log("no handling: target=%s, dtype=%s, dformat=%s, data=%s",
-                target, dtype, dformat, ellipsizer(data))
+                target, dtype, dformat, Ellipsizer(data))
 
     def set_clipboard_image(self, img_format, img_data):
         image_formats = {}
@@ -724,7 +724,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 if ulen > MAX_CLIPBOARD_PACKET_SIZE:
                     errback("text data is too large: %i characters" % ulen)
                     return True
-                log("got %i bytes of TEXT data: %s", len(b), ellipsizer(b))
+                log("got %i bytes of TEXT data: %s", len(b), Ellipsizer(b))
                 callback(b)
                 return True
             finally:

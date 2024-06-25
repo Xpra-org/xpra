@@ -8,7 +8,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.common import noop
 from xpra.os_util import gi_import
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.client.gl.backing import GLWindowBackingBase
 from xpra.log import Logger
 
@@ -68,11 +68,11 @@ class GLAreaBacking(GLWindowBackingBase):
         self.gl_init(gl_context)
         # fire the delayed realized callbacks:
         onrcb = self.on_realize_cb
-        log(f"GLAreaBacking.on_realize({args}) callbacks=%s", tuple(ellipsizer(x) for x in onrcb))
+        log(f"GLAreaBacking.on_realize({args}) callbacks=%s", tuple(Ellipsizer(x) for x in onrcb))
         gl_context.update_geometry = noop
         self.on_realize_cb = []
         for callback, xargs in onrcb:
-            with log.trap_error("Error calling realize callback %s", ellipsizer(callback)):
+            with log.trap_error("Error calling realize callback %s", Ellipsizer(callback)):
                 callback(gl_context, *xargs)
 
     def with_gl_context(self, cb: Callable, *args) -> None:
@@ -82,7 +82,7 @@ class GLAreaBacking(GLWindowBackingBase):
             gl_context.make_current()
             cb(gl_context, *args)
         else:
-            log("GLAreaBacking.with_gl_context delayed: %s%s", cb, ellipsizer(args))
+            log("GLAreaBacking.with_gl_context delayed: %s%s", cb, Ellipsizer(args))
             self.on_realize_cb.append((cb, args))
 
     def get_bit_depth(self, pixel_depth=0) -> int:

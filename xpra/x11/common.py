@@ -7,7 +7,7 @@ import struct
 from typing import Any, cast
 from collections.abc import Callable, Sequence
 
-from xpra.util.str_fn import ellipsizer, bytestostr, hexstr
+from xpra.util.str_fn import Ellipsizer, bytestostr, hexstr
 from xpra.log import Logger
 log = Logger("x11")
 
@@ -152,7 +152,7 @@ def get_workarea() -> tuple[int, int, int, int] | None:
         if not workarea:
             return None
         log("get_workarea() _NET_WORKAREA=%s (%s), len=%s",
-            ellipsizer(workarea), type(workarea), len(workarea))
+            Ellipsizer(workarea), type(workarea), len(workarea))
         # workarea comes as a list of 4 CARDINAL dimensions (x,y,w,h), one for each desktop
         sizeof_long = struct.calcsize(b"@L")
         if len(workarea) < (d+1)*4*sizeof_long:

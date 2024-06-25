@@ -9,14 +9,15 @@ import os
 import sys
 import unittest
 
-from xpra.util.str_fn import ellipsizer, memoryview_to_bytes as mtb
+from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes as mtb
 from xpra.log import add_debug_category, enable_debug_for, Logger
 
 log = Logger("brotli")
 
 
 def e(s):
-    return ellipsizer(mtb(s))
+    return Ellipsizer(mtb(s))
+
 
 INVALID_INPUTS = (None, True, 1, 1.2, [1, 2], (1, 2), object())
 
@@ -28,8 +29,8 @@ class TestLZ4(unittest.TestCase):
         assert get_version()>=(1, 8)
 
     def td(self, v, match_value=None, maxsize=512*1024):
-        log("tc%s", (ellipsizer(v), ellipsizer(match_value), maxsize))
-        from xpra.net.lz4.lz4 import decompress # @UnresolvedImport
+        log("tc%s", (Ellipsizer(v), Ellipsizer(match_value), maxsize))
+        from xpra.net.lz4.lz4 import decompress     # @UnresolvedImport
         value = decompress(v, maxsize)
         if match_value is not None:
             assert mtb(value)==mtb(match_value), "expected %s but got %s" % (e(match_value), e(value))
@@ -44,7 +45,7 @@ class TestLZ4(unittest.TestCase):
             raise ValueError("decompression should have failed for %r" % v)
 
     def tc(self, v, match_value=None, level=2, maxsize=512*1024):
-        log("tc%s", (ellipsizer(v), ellipsizer(match_value), level, maxsize))
+        log("tc%s", (Ellipsizer(v), Ellipsizer(match_value), level, maxsize))
         from xpra.net.lz4.lz4 import compress  # @UnresolvedImport
         value = compress(v, 10-level)
         if match_value is not None:
@@ -58,7 +59,6 @@ class TestLZ4(unittest.TestCase):
             pass
         else:
             raise ValueError("compression should have failed for %r" % v)
-
 
     def test_decompressinvalidinput(self):
         for v in INVALID_INPUTS:
@@ -79,7 +79,6 @@ class TestLZ4(unittest.TestCase):
         self.td(br, b"\0"*1024*1024, 1024*1024)
         self.fd(br, b"\0"*1024*1024, 1024*1024-1)
 
-
     def test_compress(self):
         for l in range(2, 11):
             self.tc(b"hello", b"\x05\x00\x00\x00Phello", l)
@@ -88,10 +87,10 @@ class TestLZ4(unittest.TestCase):
         for v in INVALID_INPUTS:
             self.fc(v)
 
-
     def test_roundtrip(self):
         TEST_INPUT = [b"hello", b"*"*1024, b"+"*64*1024]
         #find some real "text" files:
+
         def addf(path):
             if path and os.path.exists(path):
                 with open(path, "rb") as f:
@@ -123,6 +122,7 @@ def main():
         print("lz4 test skipped: %s" % e)
     else:
         unittest.main()
+
 
 if __name__ == '__main__':
     main()

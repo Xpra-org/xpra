@@ -11,7 +11,7 @@ from xpra.gtk.gobject import n_arg_signal, one_arg_signal
 from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.os_util import gi_import
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envint
 from xpra.log import Logger
 
@@ -66,7 +66,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         self._got_token_events += 1
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, synchronous_client=%s, can-receive=%s",
-            self._selection, targets, ellipsizer(target_data), claim, synchronous_client, self._can_receive)
+            self._selection, targets, Ellipsizer(target_data), claim, synchronous_client, self._can_receive)
         if claim:
             self._have_token = True
         if not self._can_receive:
@@ -90,7 +90,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                             text = data.decode("latin1")
                         except UnicodeDecodeError:
                             pass
-                log("setting text data %s / %s of size %i: %s", dtype, dformat, len(text), ellipsizer(text))
+                log("setting text data %s / %s of size %i: %s", dtype, dformat, len(text), Ellipsizer(text))
                 self._owner_change_embargo = monotonic()
                 self.clipboard.set_text(text, len(text))
                 return

@@ -47,21 +47,23 @@ def init_rencodeplus() -> Encoding:
     return Encoding("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
 
 
+def none_encode(data: Buffer) -> tuple[bytes, int]:
+    # just send data as a byte string for clients that don't understand xpra packet format:
+    import codecs
+
+    def b(x):
+        if isinstance(x, bytes):
+            return x
+        return codecs.latin_1_encode(x)[0]
+
+    return b(data) + b"\n", FLAGS_NOHEADER
+
+
+def none_decode(data: Buffer) -> Buffer:
+    return data
+
+
 def init_none() -> Encoding:
-    def none_encode(data: Buffer) -> tuple[bytes, int]:
-        # just send data as a byte string for clients that don't understand xpra packet format:
-        import codecs
-
-        def b(x):
-            if isinstance(x, bytes):
-                return x
-            return codecs.latin_1_encode(x)[0]
-
-        return b(": ".join(str(x) for x in data) + "\n"), FLAGS_NOHEADER
-
-    def none_decode(data: Buffer) -> Buffer:
-        return data
-
     return Encoding("none", FLAGS_NOHEADER, "0", none_encode, none_decode)
 
 

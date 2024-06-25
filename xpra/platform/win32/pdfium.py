@@ -13,7 +13,7 @@ from ctypes import (
     c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER,
 )
 
-from xpra.util.str_fn import ellipsizer, strtobytes
+from xpra.util.str_fn import Ellipsizer, strtobytes
 from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
 from xpra.platform.win32.ctypes_printing import GDIPrinterContext, DOCINFO, StartDocA, EndDoc, LPCSTR
@@ -103,7 +103,7 @@ def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
     log = Logger("printing", "win32")
     log("pdfium=%s", pdfium)
     buf = c_char_p(pdf_data)
-    log("pdf data buffer: %s", ellipsizer(pdf_data))
+    log("pdf data buffer: %s", Ellipsizer(pdf_data))
     log("FPDF_InitLibraryWithConfig=%s", FPDF_InitLibraryWithConfig)
     config = FPDF_LIBRARY_CONFIG()
     config.m_pUserFontPaths = None

@@ -83,6 +83,7 @@ themes: dict[str, Any] = {}
 IconLoadingContext: type = nullcontext
 if LOAD_FROM_THEME:
     try:
+        # noinspection PyPep8Naming
         from xdg import IconTheme as IT, Config as C
 
         IconTheme = IT
@@ -113,7 +114,7 @@ if LOAD_FROM_THEME:
             global themes
             themes = {}
 
-            def addtheme(name: str):
+            def addtheme(name: str) -> None:
                 if not name or name in themes or len(themes) >= MAX_THEMES:
                     return
                 for theme in get_themes(name):  # pylint: disable=not-callable
@@ -292,7 +293,7 @@ def load_xdg_entry(de) -> dict[str, Any]:
     if de.getTryExec():
         try:
             command = de.findTryExec()
-        except Exception:
+        except (AttributeError, OSError):
             command = de.getTryExec()
     else:
         command = de.getExec()
@@ -507,7 +508,7 @@ def load_applications(menu_data=None):
     if not LOAD_APPLICATIONS:
         return entries
 
-    def already_has_name(name: str):
+    def already_has_name(name: str) -> bool:
         if not menu_data or not name:
             return False
         for menu_category in menu_data.values():

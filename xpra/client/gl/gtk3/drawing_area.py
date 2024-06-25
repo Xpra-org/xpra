@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.client.gl.backing import GLWindowBackingBase
 from xpra.platform.gl_context import GLContext
 from xpra.log import Logger
@@ -50,12 +50,12 @@ class GLDrawingArea(GLWindowBackingBase):
 
     def on_realize(self, *args) -> None:
         onrcb = self.on_realize_cb
-        log("GLDrawingArea.on_realize%s callbacks=%s", args, tuple(ellipsizer(x) for x in onrcb))
+        log("GLDrawingArea.on_realize%s callbacks=%s", args, tuple(Ellipsizer(x) for x in onrcb))
         self.on_realize_cb = []
         gl_context = self.gl_context()
         with gl_context:
             for callback, args in onrcb:
-                with log.trap_error("Error calling realize callback %s", ellipsizer(callback)):
+                with log.trap_error("Error calling realize callback %s", Ellipsizer(callback)):
                     callback(gl_context, *args)
 
     def with_gl_context(self, cb: Callable, *args) -> None:
@@ -68,7 +68,7 @@ class GLDrawingArea(GLWindowBackingBase):
             else:
                 cb(None, *args)
         else:
-            log("GLDrawingArea.with_gl_context delayed: %s%s", cb, ellipsizer(args))
+            log("GLDrawingArea.with_gl_context delayed: %s%s", cb, Ellipsizer(args))
             self.on_realize_cb.append((cb, args))
 
     def get_bit_depth(self, pixel_depth=0) -> int:

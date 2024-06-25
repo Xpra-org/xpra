@@ -30,7 +30,7 @@ from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.websockets.protocol import WebSocketProtocol
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.log import Logger
 
 log = Logger("quic")
@@ -50,7 +50,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
         self._http: HttpConnection | None = None
 
     def quic_event_received(self, event: QuicEvent) -> None:
-        log("hsp:quic_event_received(%s)", ellipsizer(event))
+        log("hsp:quic_event_received(%s)", Ellipsizer(event))
         if isinstance(event, ProtocolNegotiated):
             if event.alpn_protocol in H3_ALPN:
                 self._http = H3Connection(self._quic, enable_webtransport=True)
@@ -67,7 +67,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
     def http_event_received(self, event: H3Event) -> None:
         hid = event.flow_id if isinstance(event, DatagramReceived) else event.stream_id
         handler = self._handlers.get(hid)
-        log(f"hsp:http_event_received(%s) handler {hid}: {handler}", ellipsizer(event))
+        log(f"hsp:http_event_received(%s) handler {hid}: {handler}", Ellipsizer(event))
         if isinstance(event, HeadersReceived) and not handler:
             handler = self.new_http_handler(event)
             handler.xpra_server = self._xpra_server

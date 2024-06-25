@@ -64,7 +64,7 @@ from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, ConnectionMess
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict, notypedict, merge_dicts
 from xpra.util.str_fn import (
-    csv, ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, bytestostr, hexstr,
+    csv, Ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, bytestostr, hexstr,
 )
 from xpra.util.env import envint, envbool, envfloat, osexpand, first_time, get_saved_env
 from xpra.log import Logger, get_info as get_log_info
@@ -495,7 +495,7 @@ class ServerCore:
             log("cleanup_sockets() calling %s for %s %s", cleanup, socktype, info)
             try:
                 cleanup()
-            except Exception:
+            except OSError:
                 log("cleanup error on %s", cleanup, exc_info=True)
 
     ######################################################################
@@ -579,10 +579,10 @@ class ServerCore:
         if (ssl and port != 443) or (not ssl and port != 80):
             url += f":{port}"
         url += "/"
+        from subprocess import Popen, SubprocessError
 
         def exec_open(*cmd):
             httplog(f"exec_open{cmd}")
-            from subprocess import Popen
             proc = Popen(args=cmd, env=get_saved_env())
             from xpra.util.child_reaper import getChildReaper
             getChildReaper().add_process(proc, "open-html5-client", " ".join(cmd), True, True)
@@ -599,7 +599,7 @@ class ServerCore:
                 # (which will run it against the correct X11 display!)
                 try:
                     exec_open(f"python{sys.version_info.major}", "-m", "webbrowser", "-t", url)
-                except Exception:
+                except SubprocessError:
                     log("failed exec_open:", exc_info=True)
                 else:
                     return
@@ -827,7 +827,7 @@ class ServerCore:
             pinfo = get_platform_info()
             osinfo = " on " + platform_name(sys.platform,
                                             pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
-        except Exception:
+        except OSError:
             log("platform name error:", exc_info=True)
             osinfo = ""
         if POSIX:
@@ -1048,7 +1048,9 @@ class ServerCore:
                 continue
             try:
                 os.utime(sockpath, None)
-            except Exception:
+            except OSError as e:
+                if first_time(f"touch-{sockpath}"):
+                    netlog.warn(f"Warning: unable to set modified time on {sockpath!r}: {e}")
                 netlog("touch_sockets() error on %s", sockpath, exc_info=True)
         return True
 
@@ -1196,9 +1198,9 @@ class ServerCore:
         if timeout > 0:
             peek_data = peek_connection(conn, timeout)
         line1 = peek_data.split(b"\n")[0]
-        netlog("socket peek=%s", ellipsizer(peek_data, limit=512))
+        netlog("socket peek=%s", Ellipsizer(peek_data, limit=512))
         netlog("socket peek hex=%s", hexstr(peek_data[:128]))
-        netlog("socket peek line1=%s", ellipsizer(line1))
+        netlog("socket peek line1=%s", Ellipsizer(line1))
         packet_type = guess_packet_type(peek_data)
         netlog("guess_packet_type(..)=%s", packet_type)
 
@@ -1281,7 +1283,7 @@ class ServerCore:
             # that we need to handle via a SSL wrapper or the websocket adapter:
             try:
                 cont, conn, peek_data = self.may_wrap_socket(conn, socktype, socket_info, socket_options, peek_data)
-                netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))
+                netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, Ellipsizer(peek_data))
                 if not cont:
                     return
                 packet_type = guess_packet_type(peek_data)
@@ -1309,7 +1311,7 @@ class ServerCore:
                     return
                 pre_read = [data, ]
                 netlog("pre_read data=%r", data)
-            except Exception:
+            except OSError:
                 netlog.error("Error reading from %s", conn, exc_info=True)
                 return
         sock.settimeout(self._socket_timeout)
@@ -1506,7 +1508,7 @@ class ServerCore:
             # xpra packet header, no need to wrap this connection
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
-        netlog("may_wrap_socket(..) peek_data=%s from %s", ellipsizer(peek_data), frominfo)
+        netlog("may_wrap_socket(..) peek_data=%s from %s", Ellipsizer(peek_data), frominfo)
         netlog("may_wrap_socket(..) packet_type=%s", packet_type)
 
         def can_upgrade_to(to_socktype: str) -> bool:
@@ -1568,7 +1570,7 @@ class ServerCore:
 
     def invalid_header(self, proto: SocketProtocol, data: bytes, msg="") -> None:
         netlog("invalid header: %s, input_packetcount=%s, websocket_upgrade=%s, ssl=%s",
-               ellipsizer(data), proto.input_packetcount, self.websocket_upgrade, bool(self._ssl_attributes))
+               Ellipsizer(data), proto.input_packetcount, self.websocket_upgrade, bool(self._ssl_attributes))
         if data == b"RFB " and self._rfb_upgrade > 0:
             netlog("RFB header, trying to upgrade protocol")
             self.cancel_upgrade_to_rfb_timer(proto)
@@ -1592,7 +1594,7 @@ class ServerCore:
                 conn.set_active(True)
                 cont, conn, peek_data = self.may_wrap_socket(conn, conn.socktype, conn.info, conn.options,
                                                              b"".join(bufs))
-                netlog("wrap : may_wrap_socket(..)=(%s, %s, %r)", cont, conn, ellipsizer(peek_data))
+                netlog("wrap : may_wrap_socket(..)=(%s, %s, %r)", cont, conn, Ellipsizer(peek_data))
                 if not cont:
                     return
             if conn:
@@ -1667,9 +1669,6 @@ class ServerCore:
             else:
                 log_fn(" request: %r", bytestostr(line1))
             log_fn(" %s", e)
-        except Exception:
-            wslog.error("Error: %s request failure for client %s:",
-                        req_info, pretty_socket(frominfo), exc_info=True)
         force_close_connection(conn)
 
     def get_http_scripts(self) -> dict[str, Callable[[str], HttpResponse]]:
@@ -1683,7 +1682,7 @@ class ServerCore:
         return self.http_response(json.dumps(data), "application/json")
 
     def send_icon(self, icon_type: str, icon_data: bytes) -> HttpResponse:
-        httplog("send_icon%s", (icon_type, ellipsizer(icon_data)))
+        httplog("send_icon%s", (icon_type, Ellipsizer(icon_data)))
         if not icon_data:
             icon_filename = get_icon_filename("noicon.png")
             icon_data = load_binary_file(icon_filename)
@@ -1822,7 +1821,7 @@ class ServerCore:
                 if conn.input_bytecount == 0:
                     try:
                         data = conn.peek(200)
-                    except Exception:
+                    except OSError:
                         data = b""
                     if data:
                         messages.append(f" read buffer={data!r}")
@@ -1922,13 +1921,13 @@ class ServerCore:
     def _process_gibberish(self, proto: SocketProtocol, packet: PacketType) -> None:
         message, data = packet[1:3]
         netlog("Received uninterpretable nonsense from %s: %s", proto, message)
-        netlog(" data: %s", ellipsizer(data))
+        netlog(" data: %s", Ellipsizer(data))
         self.disconnect_client(proto, message)
 
     def _process_invalid(self, protocol: SocketProtocol, packet: PacketType) -> None:
         message, data = packet[1:3]
         netlog(f"Received invalid packet: {message}")
-        netlog(" data: %s", ellipsizer(data))
+        netlog(" data: %s", Ellipsizer(data))
         self.disconnect_client(protocol, message)
 
     # #####################################################################
@@ -2287,7 +2286,7 @@ class ServerCore:
                 raise RuntimeError("Simulating a server error")
             self.hello_oked(proto, c, auth_caps)
         except ClientException as e:
-            log("call_hello_oked(%s, %s, %s)", proto, ellipsizer(c), auth_caps, exc_info=True)
+            log("call_hello_oked(%s, %s, %s)", proto, Ellipsizer(c), auth_caps, exc_info=True)
             log.error("Error setting up new connection for")
             log.error(" %s:", proto)
             log.estr(e)
@@ -2556,10 +2555,10 @@ class ServerCore:
     def get_socket_info(self) -> dict[str, Any]:
         si: dict[str, Any] = {}
 
-        def add_listener(socktype: str, info):
+        def add_listener(socktype: str, info) -> None:
             si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
 
-        def add_address(socktype: str, address, port: int):
+        def add_address(socktype: str, address, port: int) -> None:
             addresses = si.setdefault(socktype, {}).setdefault("addresses", [])
             if (address, port) not in addresses:
                 addresses.append((address, port))

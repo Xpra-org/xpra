@@ -23,7 +23,7 @@ from xpra.util.version import full_version_str, get_platform_info
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.str_fn import std, csv, ellipsizer, repr_ellipsized
+from xpra.util.str_fn import std, csv, Ellipsizer, repr_ellipsized
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool
 from xpra.exit_codes import ExitCode, ExitValue
@@ -80,7 +80,7 @@ if features.tray:
 
     CLIENT_BASES.append(TrayClient)
 
-CLIENT_BASES: tuple[type] = tuple(CLIENT_BASES)
+CLIENT_BASES: tuple[type, ...] = tuple(CLIENT_BASES)
 ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 GLib = gi_import("GLib")
@@ -127,7 +127,7 @@ class UIXpraClient(ClientBaseClass):
             log.info(f" running on {osinfo}")
             vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO + 1])
             log.info(f" {sys.implementation.name} {vinfo}")
-        except Exception:
+        except (OSError, TypeError, AttributeError):
             log("platform name error:", exc_info=True)
         wm = get_wm_name()  # pylint: disable=assignment-from-none
         if wm:
@@ -253,7 +253,7 @@ class UIXpraClient(ClientBaseClass):
                 v = max(60, self.get_vrefresh())
                 self._mouse_position_delay = max(5, 1000 // v // 2 - 5)
                 log(f"mouse position delay: {self._mouse_position_delay}")
-            except Exception:
+            except (AttributeError, OSError):
                 log("failed to calculate automatic delay", exc_info=True)
 
     def get_vrefresh(self) -> int:
@@ -572,7 +572,7 @@ class UIXpraClient(ClientBaseClass):
                 cb(*args)
 
     def after_handshake(self, cb: Callable, *args):
-        log("after_handshake(%s, %s) on_handshake=%s", cb, args, ellipsizer(self._on_handshake))
+        log("after_handshake(%s, %s) on_handshake=%s", cb, args, Ellipsizer(self._on_handshake))
         if self._on_handshake is None:
             # handshake has already occurred, just call it:
             GLib.idle_add(cb, *args)
@@ -616,11 +616,11 @@ class UIXpraClient(ClientBaseClass):
         self.server_setting_changed(setting, value)
 
     def server_setting_changed(self, setting, value):
-        log("setting_changed(%s, %s)", setting, ellipsizer(value, limit=200))
+        log("setting_changed(%s, %s)", setting, Ellipsizer(value, limit=200))
         cbs = self._on_server_setting_changed.get(setting)
         if cbs:
             for cb in cbs:
-                log("setting_changed(%s, %s) calling %s", setting, ellipsizer(value, limit=200), cb)
+                log("setting_changed(%s, %s) calling %s", setting, Ellipsizer(value, limit=200), cb)
                 cb(setting, value)
 
     # noinspection PyMethodMayBeStatic

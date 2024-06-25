@@ -21,7 +21,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import (
     csv, hexstr, nicestr,
-    ellipsizer, repr_ellipsized, strtobytes, memoryview_to_bytes,
+    Ellipsizer, repr_ellipsized, strtobytes, memoryview_to_bytes,
 )
 from xpra.util.env import envint, envbool
 from xpra.util.thread import make_thread, start_thread
@@ -123,7 +123,7 @@ class SocketProtocol:
         self.read_buffer_size: int = READ_BUFFER_SIZE
         self.hangup_delay: int = 1000
         self._conn = conn
-        self._process_packet_cb: Callable[[PacketType], None] = process_packet_cb
+        self._process_packet_cb: Callable[[Any, PacketType], None] = process_packet_cb
         self.make_chunk_header: Callable = self.make_xpra_header
         self.make_frame_header: Callable[[str | int, Iterable], Buffer] = self.noframe_header
         self._write_queue: Queue[tuple[Sequence, str, bool, bool] | None] = Queue(1)
@@ -725,7 +725,7 @@ class SocketProtocol:
         except TypeError:
             log("%s%s", self.write_buffers, (buf_data, packet_type, synchronous), exc_info=True)
             log.error(f"Error writing {packet_type!r} packet to {conn!r}")
-            log.error(" data=%s (%s)", ellipsizer(buf_data), type(buf_data))
+            log.error(" data=%s (%s)", Ellipsizer(buf_data), type(buf_data))
         try:
             if len(buf_data) > 1:
                 conn.set_cork(False)
@@ -777,7 +777,7 @@ class SocketProtocol:
     def con_read(self) -> Buffer:
         if self._pre_read:
             r = self._pre_read.pop(0)
-            log("con_read() using pre_read value: %r", ellipsizer(r))
+            log("con_read() using pre_read value: %r", Ellipsizer(r))
             return r
         return self._conn.read(self.read_buffer_size)
 
@@ -815,7 +815,7 @@ class SocketProtocol:
 
     def _invalid_header(self, proto, data: Buffer, msg="invalid packet header") -> None:
         log("invalid_header(%s, %s bytes: '%s', %s)",
-            proto, len(data or ""), msg, ellipsizer(data))
+            proto, len(data or ""), msg, Ellipsizer(data))
         guess = guess_packet_type(data)
         if guess:
             err = f"{msg}: {guess}"

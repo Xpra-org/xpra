@@ -21,6 +21,7 @@ def std(v, extras="-,./: ") -> str:
 
 def alnum(v: str | bytes) -> str:
     s = bytestostr(v)
+    # noinspection PyTypeChecker
     return "".join(filter(str.isalnum, s))
 
 
@@ -62,7 +63,7 @@ def sorted_nicely(items: Iterable) -> Iterable[str]:
 def csv(v: Iterable) -> str:
     try:
         return ", ".join(str(x) for x in v)
-    except Exception:
+    except TypeError:
         return str(v)
 
 
@@ -75,7 +76,7 @@ def is_valid_hostname(hostname: str) -> bool:
     return all(allowed.match(x) for x in hostname.split("."))
 
 
-class ellipsizer:
+class Ellipsizer:
     __slots__ = ("obj", "limit")
 
     def __init__(self, obj, limit=100):
@@ -101,7 +102,7 @@ def repr_ellipsized(obj, limit=100) -> str:
     if isinstance(obj, bytes):
         try:
             s = nonl(repr(obj))
-        except Exception:
+        except TypeError:
             s = binascii.hexlify(obj).decode()
         if len(s) > limit > 6:
             return nonl(s[:limit // 2 - 2] + " .. " + s[2 - limit // 2:])
@@ -113,26 +114,27 @@ def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32
                       vformat=None, print_fn: Callable | None = None,
                       version_keys=("version", "revision"), hex_keys=("data",)) -> None:
     # "smart" value formatting function:
-    def sprint(arg):
+    def sprint(arg) -> None:
         if print_fn:
             print_fn(arg)
         else:
             print(arg)
 
-    def vf(k, v):
+    def vf(k, v) -> str:
         if vformat:
             fmt = vformat
             if isinstance(vformat, dict):
                 fmt = vformat.get(k)
             if fmt is not None:
                 return nonl(fmt(v))
-        try:
-            if any(k.find(x) >= 0 for x in version_keys):
-                return nonl(pver(v)).lstrip("v")
-            if any(k.find(x) >= 0 for x in hex_keys):
-                return binascii.hexlify(v)
-        except Exception:
-            pass
+        if isinstance(k, str):
+            try:
+                if any(k.find(x) >= 0 for x in version_keys):
+                    return nonl(pver(v)).lstrip("v")
+                if any(k.find(x) >= 0 for x in hex_keys):
+                    return binascii.hexlify(v)
+            except TypeError:
+                pass
         return nonl(pver(v, ", ", ", "))
 
     indent = pad - len(prefix) - len(lchar)

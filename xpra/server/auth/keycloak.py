@@ -48,14 +48,16 @@ class Authenticator(SysAuthenticator):
             self.server_url, self.client_id, self.realm_name, self.redirect_uri, self.scope, self.grant_type)
 
         try:
+            # noinspection PyPackageRequirements
             from oauthlib.oauth2 import WebApplicationClient
             # Get authorization code
             client = WebApplicationClient(self.client_id)
             authorization_url = self.server_url + 'realms/' + self.realm_name + '/protocol/openid-connect/auth'
-            self.salt = client.prepare_request_uri(authorization_url,
-                                                   redirect_uri=self.redirect_uri,
-                                                   scope=[self.scope],
-                                                   )
+            client_uri = client.prepare_request_uri(authorization_url,
+                                                    redirect_uri=self.redirect_uri,
+                                                    scope=[self.scope],
+                                                    )
+            self.salt = client_uri.encode("utf8")
         except ImportError as e:  # pragma: no cover
             log("check(..)", exc_info=True)
             log.warn("Warning: cannot use keycloak authentication:")
@@ -70,7 +72,7 @@ class Authenticator(SysAuthenticator):
         assert not self.challenge_sent
         if "keycloak" not in digests:
             log.error("Error: client does not support keycloak authentication")
-            return None
+            return b"", ""
         self.challenge_sent = True
         return self.salt, "keycloak"
 

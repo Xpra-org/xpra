@@ -105,7 +105,7 @@ class GlobalPerformanceStatistics:
         log("latency: %6.1fms for %9i pixels :      %6.1f send     + %6.1f decoding            %6iKB,  sequence %5i",
             total * 1000, pixels, queued_at * 1000, dt * 1000,
             bytecount // 1024, damage_packet_sequence)
-        net_total_latency = max(0, total - dt)
+        net_total_latency = max(0.0, total - dt)
         if self.min_client_latency is None or self.min_client_latency > net_total_latency:
             self.min_client_latency = net_total_latency
         self.client_latency.append((wid, now, pixels, net_total_latency))

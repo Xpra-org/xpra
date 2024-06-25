@@ -1,9 +1,9 @@
 #!/bin/bash
 
 HOST="localhost"
-CERT="./tests/ssl_cert.pem"
-KEY="./tests/ssl_key.pem"
-HASH="./tests/ssl_cert-hash.b64"
+CERT="/home/antoine/projects/xpra/cert.pem"
+KEY="/home/antoine/projects/xpra/key.pem"
+HASH="/home/antoine/projects/xpra/cert-hash.b64"
 PORT=20000
 
 
@@ -14,12 +14,17 @@ cd aioquic
 
 if [ ! -e "${CERT}" ]; then
   echo "generating the SSL certificate"
-  openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 10 \
-    -out ${CERT} -keyout ${KEY} -subj '/CN=Test Certificate' -addext "subjectAltName = DNS:${HOST}"
+  #openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -sha256 -x509 -nodes -days 10 \
+  #  -out ${CERT} -keyout ${KEY} -subj '/CN=Test Certificate' -addext "subjectAltName = DNS:${HOST}"
+  openssl req -newkey rsa:2048 -sha256 -nodes -days 10 -keyout ${KEY} \
+    -x509 -out ${CERT} -subj '/CN=Test Certificate' -addext "subjectAltName = DNS:${HOST}"
 fi
 
 # generate the hash:
 openssl x509 -in "${CERT}" -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64 > ${HASH}
+# same as:
+# openssl x509 -in "${CERT}" -pubkey -noout | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64 > ${HASH}
+
 HASH_VALUE=`cat ${HASH}`
 
 python3 ./examples/http3_server.py --host ${HOST} --port ${PORT} -c ${CERT} -k ${KEY} -v &
@@ -64,6 +69,11 @@ cat > examples/index.html <<EOF
 </html>
 EOF
 
-google-chrome-beta --enable-experimental-web-platform-features --origin-to-force-quic-on=${HOST}:${PORT} --ignore-certificate-errors-spki-list=${HASH_VALUE} ./examples/index.html &
+rm -fr tmp
+mkdir tmp
+
+google-chrome-beta --allow-running-insecure-content  --disable-proxy-certificate-handler  --allow-insecure-localhost --user-data-dir tmp --enable-experimental-web-platform-features --origin-to-force-quic-on=${HOST}:${PORT} --ignore-certificate-errors-spki-list=${HASH_VALUE} ./examples/index.html &
 
 firefox ./examples/index.html &
+
+chromium ./examples/index.html &

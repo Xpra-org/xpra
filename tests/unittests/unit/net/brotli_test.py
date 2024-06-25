@@ -10,7 +10,7 @@ import sys
 import unittest
 import binascii
 
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.log import add_debug_category, enable_debug_for, Logger
 
 log = Logger("brotli")
@@ -19,13 +19,15 @@ log = Logger("brotli")
 def b(s):
     return binascii.unhexlify(s.replace(" ", ""))
 
+
 INVALID_INPUTS = (None, True, 1, 1.2, [1, 2], (1, 2), object())
 
 # pylint: disable=import-outside-toplevel
 
+
 class TestBrotli(unittest.TestCase):
 
-    def test_libversions(self):
+    def test_libversions(self) -> None:
         from xpra.net.brotli import decompressor, compressor  # @UnresolvedImport
         for m in (decompressor, compressor):
             v = m.get_version()
@@ -34,7 +36,7 @@ class TestBrotli(unittest.TestCase):
             assert v[0]>=1
 
     def td(self, v, match_value=None, maxsize=512*1024):
-        log("tc%s", (ellipsizer(v), ellipsizer(match_value), maxsize))
+        log("tc%s", (Ellipsizer(v), Ellipsizer(match_value), maxsize))
         from xpra.net.brotli.decompressor import decompress  # @UnresolvedImport
         value = decompress(v, maxsize)
         if match_value is not None:
@@ -50,7 +52,7 @@ class TestBrotli(unittest.TestCase):
             raise ValueError(f"decompression should have failed for {v!r}")
 
     def tc(self, v, match_value=None, level=2, maxsize=512*1024):
-        log("tc%s", (ellipsizer(v), ellipsizer(match_value), level, maxsize))
+        log("tc%s", (Ellipsizer(v), Ellipsizer(match_value), level, maxsize))
         from xpra.net.brotli.compressor import compress  # @UnresolvedImport
         value = compress(v, level)
         if match_value is not None:
@@ -64,7 +66,6 @@ class TestBrotli(unittest.TestCase):
             pass
         else:
             raise ValueError(f"compression should have failed for {v!r}")
-
 
     def test_decompressinvalidinput(self):
         for v in INVALID_INPUTS:
@@ -82,7 +83,6 @@ class TestBrotli(unittest.TestCase):
         self.td(br, b"0"*1024*1024, 1024*1024)
         self.fd(br, b"0"*1024*1024, 1024*1024-1)
 
-
     def test_compress(self):
         for l in range(2, 11):
             self.tc(b"hello", b'\x0b\x02\x80hello\x03', l)
@@ -91,11 +91,11 @@ class TestBrotli(unittest.TestCase):
         for v in INVALID_INPUTS:
             self.fc(v)
 
-
     def test_roundtrip(self):
         TEST_INPUT = [b"hello", b"*"*1024, b"+"*64*1024]
         #find some real "text" files:
-        def addf(path):
+
+        def addf(path) -> None:
             if path and os.path.exists(path):
                 with open(path, "rb") as f:
                     TEST_INPUT.append(f.read())
@@ -126,6 +126,7 @@ def main():
         print(f"brotli test skipped: {e}")
     else:
         unittest.main()
+
 
 if __name__ == '__main__':
     main()

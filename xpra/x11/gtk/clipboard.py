@@ -25,7 +25,7 @@ from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.x11.bindings.window import constants, PropertyError, X11WindowBindings
 from xpra.x11.bindings.res import ResBindings
 from xpra.util.env import first_time
-from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, bytestostr, memoryview_to_bytes
+from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, memoryview_to_bytes
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -196,7 +196,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         self._got_token_events += 1
         log("got token, selection=%s, targets=%s, target data=%s, claim=%s, can-receive=%s",
-            self._selection, targets, ellipsizer(target_data), claim, self._can_receive)
+            self._selection, targets, Ellipsizer(target_data), claim, self._can_receive)
         if claim:
             self._have_token = True
         if self._can_receive:
@@ -346,7 +346,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             dtype, dformat, data = target_data
             dtype = bytestostr(dtype)
             log("setting target data for '%s': %s, %s, %s (%s)",
-                target, dtype, dformat, ellipsizer(data), type(data))
+                target, dtype, dformat, Ellipsizer(data), type(data))
             self.set_selection_response(requestor, target, prop, dtype, dformat, data, event.time)
             return
 
@@ -360,7 +360,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def set_selection_response(self, requestor: int, target: str, prop: str, dtype: str, dformat: int,
                                data, time: int = 0) -> None:
         log("set_selection_response(%s, %s, %s, %s, %s, %r, %i)",
-            requestor, target, prop, dtype, dformat, ellipsizer(data), time)
+            requestor, target, prop, dtype, dformat, Ellipsizer(data), time)
         # answer the selection request:
         if not prop:
             log.warn("Warning: cannot set clipboard response")
@@ -391,11 +391,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         # and give them the response they are waiting for:
         pending = self.remote_requests.pop(target, [])
         log("got_contents%s pending=%s",
-            (target, dtype, dformat, ellipsizer(data)), csv(pending))
+            (target, dtype, dformat, Ellipsizer(data)), csv(pending))
         for requestor, actual_target, prop, time in pending:
             if log.is_debug_enabled():
                 log("setting response %s: %s as '%s' on property '%s' of window %s as %s",
-                    type(data), ellipsizer(data), actual_target, prop, get_wininfo(requestor), dtype)
+                    type(data), Ellipsizer(data), actual_target, prop, get_wininfo(requestor), dtype)
             if actual_target != target and dtype == target:
                 dtype = actual_target
             self.set_selection_response(requestor, actual_target, prop, dtype, dformat, data, time)
@@ -444,7 +444,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             target = targets[0]
 
             def got_chosen_target(dtype: str, dformat: int, data: Any) -> None:
-                log("got_chosen_target(%s, %s, %s)", dtype, dformat, ellipsizer(data))
+                log("got_chosen_target(%s, %s, %s)", dtype, dformat, Ellipsizer(data))
                 if not (dtype and dformat and data):
                     send_token_with_targets()
                     return
@@ -598,7 +598,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         except PropertyError:
             log("do_property_notify() property '%s' is gone?", event.atom, exc_info=True)
             return
-        log("%s=%s (%s : %s)", event.atom, ellipsizer(data), dtype, dformat)
+        log("%s=%s (%s : %s)", event.atom, Ellipsizer(data), dtype, dformat)
         if target == "TARGETS":
             self.targets = xatoms_to_strings(data or b"")
         self.got_local_contents(target, dtype, dformat, data)
@@ -609,7 +609,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         for timer, got_contents in target_requests.values():
             if log.is_debug_enabled():
                 log("got_local_contents: calling %s%s",
-                    got_contents, (dtype, dformat, ellipsizer(data)))
+                    got_contents, (dtype, dformat, Ellipsizer(data)))
             GLib.source_remove(timer)
             got_contents(dtype, dformat, data)
 

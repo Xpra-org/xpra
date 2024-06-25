@@ -12,7 +12,7 @@ import os
 import re
 from io import BytesIO
 
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envint, envbool, first_time, SilenceWarningsContext
 from xpra.os_util import gi_import
 from xpra.util.io import load_binary_file
@@ -136,5 +136,5 @@ def svg_to_png(filename: str, icondata, w: int = 128, h: int = 128) -> bytes:
         log.error("Error: failed to convert svg icon")
         if filename:
             log.error(" '%s':", filename)
-        log.error(" %i bytes, %s", len(icondata), ellipsizer(icondata))
+        log.error(" %i bytes, %s", len(icondata), Ellipsizer(icondata))
         return b""

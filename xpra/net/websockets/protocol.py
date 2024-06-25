@@ -134,7 +134,8 @@ class WebSocketProtocol(SocketProtocol):
         with self._write_lock:
             self.raw_write("ws-ping", items)
 
-    def _process_ws_pong(self, payload: Buffer) -> None:
+    @staticmethod
+    def _process_ws_pong(payload: Buffer) -> None:
         log("_process_ws_pong(%r)", payload)
 
     def _process_ws_close(self, payload: Buffer) -> None:

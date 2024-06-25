@@ -15,7 +15,7 @@ from typing import Any
 
 from xpra.common import noop
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, ellipsizer, repr_ellipsized, pver, strtobytes, bytestostr, hexstr, memoryview_to_bytes
+from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, strtobytes, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
 from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
@@ -973,7 +973,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if not display:
             return
         cursorlog("make_cursor(%s) has-name=%s, has-cursor-types=%s, xscale=%s, yscale=%s, USE_LOCAL_CURSORS=%s",
-                  ellipsizer(cursor_data),
+                  Ellipsizer(cursor_data),
                   len(cursor_data) >= 10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         pixbuf = None
         if len(cursor_data) >= 10 and cursor_types:

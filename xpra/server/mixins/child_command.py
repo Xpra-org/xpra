@@ -17,7 +17,7 @@ from xpra.util.child_reaper import getChildReaper, ProcInfo
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, ellipsizer, bytestostr
+from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.util.env import envint, restore_script_env
 from xpra.net.common import PacketType
 from xpra.util.thread import start_thread
@@ -169,7 +169,7 @@ class ChildCommandServer(StubServerMixin):
         log(f"{len(xdg_menu)} menu data entries sent to {ss}")
 
     def send_updated_menu(self, xdg_menu) -> None:
-        log("send_updated_menu(%s)", ellipsizer(xdg_menu))
+        log("send_updated_menu(%s)", Ellipsizer(xdg_menu))
         for source in tuple(self._server_sources.values()):
             # some sources don't have this attribute (ie: RFBSource does not):
             if getattr(source, "send_setting_change", False):

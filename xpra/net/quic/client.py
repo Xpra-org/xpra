@@ -35,7 +35,7 @@ from xpra.net.ssl_util import get_ssl_verify_mode
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers
-from xpra.util.str_fn import csv, ellipsizer
+from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.log import Logger
 
@@ -73,7 +73,7 @@ class ClientWebSocketConnection(XpraQuicConnection):
             self.write_buffer = None
 
     def write(self, buf, packet_type: str = "") -> int:
-        log(f"write(%s, %s) {len(buf)} bytes", ellipsizer(buf), packet_type)
+        log(f"write(%s, %s) {len(buf)} bytes", Ellipsizer(buf), packet_type)
         if self.write_buffer is not None:
             # buffer it until we are connected and call flush_writes()
             self.write_buffer.put((buf, packet_type))
@@ -81,7 +81,7 @@ class ClientWebSocketConnection(XpraQuicConnection):
         return super().write(buf, packet_type)
 
     def http_event_received(self, event: H3Event) -> None:
-        log("http_event_received(%s)", ellipsizer(event))
+        log("http_event_received(%s)", Ellipsizer(event))
         if isinstance(event, HeadersReceived):
             for header, value in event.headers:
                 if header == b"sec-websocket-protocol":
@@ -221,7 +221,10 @@ def quic_connect(host: str, port: int, path: str,
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:
-        configuration.load_cert_chain(ssl_cert, ssl_key or None, ssl_key_password or None)
+        from pathlib import Path
+        cert_path = Path(ssl_cert)
+        key_path = Path(ssl_key) if ssl_key else None
+        configuration.load_cert_chain(cert_path, key_path, ssl_key_password or None)
     if ssl_server_name:
         configuration.server_name = ssl_server_name
     else:

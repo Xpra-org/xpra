@@ -8,7 +8,7 @@ import os.path
 from typing import Any, TypeAlias
 from collections.abc import Callable, Iterable, Sequence
 
-from xpra.util.str_fn import ellipsizer
+from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import envbool
 from xpra.os_util import getuid, OSX, POSIX
 from xpra.util.io import get_proc_cmdline
@@ -47,7 +47,7 @@ def _load_dict_file(filename: str, parser: ConfParser) -> ConfDict:
             if line.startswith("#") or not line.strip():
                 continue
             lines.append(line)
-    log("_load_dict_file(%s)=%s", filename, ellipsizer(lines))
+    log("_load_dict_file(%s)=%s", filename, Ellipsizer(lines))
     return parser(lines)
 
 
@@ -215,7 +215,7 @@ def load_command_to_type() -> dict[str, str]:
     log("load_command_to_type() xdg_menu=%s, categories_to_type=%s", xdg_menu, categories_to_type)
     if xdg_menu and categories_to_type:
         for category, category_props in xdg_menu.items():
-            log("category %s: %s", category, ellipsizer(category_props))
+            log("category %s: %s", category, Ellipsizer(category_props))
             entries = category_props.get("Entries", {})
             for name, props in entries.items():
                 command = str(props.get("TryExec") or props.get("Exec") or "")

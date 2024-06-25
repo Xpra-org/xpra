@@ -17,7 +17,7 @@ from xpra.util.version import XPRA_VERSION, revision_str, make_revision_str, cap
 from xpra.util.system import get_linux_distribution, platform_name
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.util.screen import prettify_plug_name
-from xpra.util.str_fn import csv, strtobytes, bytestostr, ellipsizer
+from xpra.util.str_fn import csv, strtobytes, bytestostr, Ellipsizer
 from xpra.util.env import envint
 from xpra.common import noop
 from xpra.util.stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
@@ -1361,7 +1361,7 @@ class SessionInfoClient(InfoTimerClient):
 
     def update_screen(self):
         # this is called every time we get the server info back
-        log("update_screen() server_last_info=%s", ellipsizer(self.server_last_info))
+        log("update_screen() server_last_info=%s", Ellipsizer(self.server_last_info))
         if not self.server_last_info:
             return
         td = typedict(self.server_last_info)

@@ -7,7 +7,7 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.clipboard.core import ClipboardProtocolHelperCore, ClipboardProxyCore
-from xpra.util.str_fn import ellipsizer, repr_ellipsized
+from xpra.util.str_fn import Ellipsizer, repr_ellipsized
 from xpra.util.env import envint
 from xpra.log import Logger
 from xpra.platform.features import CLIPBOARD_GREEDY
@@ -118,7 +118,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         GLib.source_remove(timer)
         proxy = self._get_proxy(selection)
         log("clipboard got contents%s: proxy=%s for selection=%s",
-            (request_id, dtype, dformat, ellipsizer(data)), proxy, selection)
+            (request_id, dtype, dformat, Ellipsizer(data)), proxy, selection)
         if data and isinstance(data, memoryview):
             data = bytes(data)
         if proxy:

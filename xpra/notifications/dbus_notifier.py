@@ -7,7 +7,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.util.str_fn import csv, ellipsizer, bytestostr
+from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.os_util import gi_import
 from xpra.dbus.helper import native_to_dbus
 from xpra.notifications.notifier_base import NotifierBase, log, NID
@@ -79,7 +79,7 @@ class DBUS_Notifier(NotifierBase):
         self.may_retry = True
         with log.trap_error("Error: dbus notify failed"):
             icon_string = self.get_icon_string(nid, app_icon, icon)
-            log("get_icon_string%s=%s", (nid, app_icon, ellipsizer(icon)), icon_string)
+            log("get_icon_string%s=%s", (nid, app_icon, Ellipsizer(icon)), icon_string)
             if app_name == "Xpra":
                 # don't show "Xpra (via Xpra)"
                 app_str = "Xpra"

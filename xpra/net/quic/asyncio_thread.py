@@ -45,6 +45,7 @@ class ThreadedAsyncioLoop:
     def run_forever(self) -> None:
         if UVLOOP:
             try:
+                # noinspection PyPackageRequirements
                 import uvloop  # pylint: disable=import-outside-toplevel
             except ImportError:
                 log.warn("Warning: uvloop not found")
