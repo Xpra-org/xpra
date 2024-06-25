@@ -6,8 +6,10 @@
 from libc.stdint cimport uint32_t, uintptr_t   # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context
 
+from xpra.common import SizedBuffer
 
-def hybi_unmask(data, unsigned int offset, unsigned int datalen):
+
+def hybi_unmask(data, unsigned int offset, unsigned int datalen) -> SizedBuffer:
     cdef uintptr_t mp
     cdef unsigned int min_len = offset+4+datalen
     with buffer_context(data) as bc:
@@ -17,10 +19,10 @@ def hybi_unmask(data, unsigned int offset, unsigned int datalen):
         return do_hybi_mask(mp, mp+4, datalen)
 
 
-def hybi_mask(mask, data):
+def hybi_mask(mask: bytes, data: SizedBuffer) -> SizedBuffer:
+    if len(mask) != 4:
+        raise ValueError(f"invalid mask buffer size: {len(mask)} bytes")
     with buffer_context(mask) as mbc:
-        if len(mbc)<4:
-            raise ValueError(f"mask buffer too small: {len(mbc)} bytes")
         with buffer_context(data) as dbc:
             return do_hybi_mask(<uintptr_t> int(mbc), <uintptr_t> int(dbc), len(dbc))
 

@@ -124,8 +124,8 @@ class SocketProtocol:
         self.hangup_delay: int = 1000
         self._conn = conn
         self._process_packet_cb: Callable[[Any, PacketType], None] = process_packet_cb
-        self.make_chunk_header: Callable = self.make_xpra_header
-        self.make_frame_header: Callable[[str | int, Iterable], SizedBuffer] = self.noframe_header
+        self.make_chunk_header: Callable[[str | int, int, int, int, int], bytes] = self.make_xpra_header
+        self.make_frame_header: Callable[[str | int, list[SizedBuffer]], SizedBuffer] = self.noframe_header
         self._write_queue: Queue[tuple[Sequence, str, bool, bool] | None] = Queue(1)
         self._read_queue: Queue[SizedBuffer] = Queue(20)
         self._pre_read = None
@@ -469,11 +469,11 @@ class SocketProtocol:
 
     @staticmethod
     def make_xpra_header(_packet_type: str | int,
-                         proto_flags: int, level: int, index: int, payload_size: int) -> SizedBuffer:
+                         proto_flags: int, level: int, index: int, payload_size: int) -> bytes:
         return pack_header(proto_flags, level, index, payload_size)
 
     @staticmethod
-    def noframe_header(_packet_type: str | int, _items) -> SizedBuffer:
+    def noframe_header(_packet_type: str | int, _items) -> bytes:
         return b""
 
     def start_write_thread(self) -> None:

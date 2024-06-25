@@ -1024,7 +1024,7 @@ def add_to_keywords(kw: dict, key: str, *args) -> None:
         values.append(arg)
 
 
-def remove_from_keywords(kw: dict, key: str, value) -> None:
+def remove_from_keywords(kw: dict, key: str, value) -> int:
     values = kw.get(key)
     i = 0
     while values and value in values:
@@ -1590,7 +1590,7 @@ if modules_ENABLED:
     add_modules("xpra.build_info")
 
 
-def glob_recurse(srcdir: str) -> None:
+def glob_recurse(srcdir: str) -> dict[str, list[str]]:
     m = {}
     for root, _, files in os.walk(srcdir):
         for f in files:

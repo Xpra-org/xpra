@@ -1045,6 +1045,7 @@ def connect_or_fail(display_desc, opts):
         raise InitExit(ExitCode.CONNECTION_FAILED, f"connection failed: {einfo}") from None
 
 
+# noinspection PyPackageRequirements
 def proxy_connect(options: dict):
     # if is_debug_enabled("proxy"):
     # log = logging.getLogger(__name__)
@@ -1117,7 +1118,7 @@ def get_host_target_string(display_desc: dict, port_key="port", prefix="") -> st
     return host_target_string(dtype, username, host, port, display)
 
 
-def host_target_string(dtype: str, username: str, host: str, port: int, display: str) -> str:
+def host_target_string(dtype: str, username: str, host: str, port: int, display: str = "") -> str:
     target = f"{dtype}://"
     if username:
         target += f"{username}@"

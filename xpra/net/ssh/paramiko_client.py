@@ -311,7 +311,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
         conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
         to_str = host_target_string("ssh", username, host, port, display)
-        proxy_str = host_target_string("ssh", proxy_username, proxy_host, proxy_port, None)
+        proxy_str = host_target_string("ssh", proxy_username, proxy_host, proxy_port)
         conn.target = f"{to_str} via {proxy_str}"
         conn.timeout = SOCKET_TIMEOUT
         conn.start_stderr_reader()

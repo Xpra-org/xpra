@@ -5,7 +5,7 @@
 
 import os
 import struct
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 from xpra.common import SizedBuffer
 from xpra.net.websockets.mask import hybi_mask
@@ -49,7 +49,7 @@ class WebSocketProtocol(SocketProtocol):
         data = close_packet(code, reason)
         self.flush_then_close(None, data)
 
-    def make_wsframe_header(self, packet_type: str, items: Sequence) -> SizedBuffer:
+    def make_wsframe_header(self, packet_type: str, items: list[SizedBuffer]) -> bytes:
         payload_len = sum(len(item) for item in items)
         header = encode_hybi_header(OPCODE.BINARY, payload_len, self.ws_mask)
         log("make_wsframe_header(%s, %i items) %i bytes, ws_mask=%s, header=0x%s (%i bytes)",
