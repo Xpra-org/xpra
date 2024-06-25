@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from xpra.log import Logger
 from xpra.common import SizedBuffer
 from xpra.net.protocol.header import FLAGS_RENCODE, FLAGS_RENCODEPLUS, FLAGS_YAML, FLAGS_NOHEADER, pack_header
-from xpra.util.str_fn import strtobytes
+from xpra.util.str_fn import strtobytes, memoryview_to_bytes
 from xpra.util.env import envbool
 
 # all the encoders we know about:
@@ -49,14 +49,7 @@ def init_rencodeplus() -> Encoding:
 
 def none_encode(data: SizedBuffer) -> tuple[bytes, int]:
     # just send data as a byte string for clients that don't understand xpra packet format:
-    import codecs
-
-    def b(x):
-        if isinstance(x, bytes):
-            return x
-        return codecs.latin_1_encode(x)[0]
-
-    return b(data) + b"\n", FLAGS_NOHEADER
+    return memoryview_to_bytes(data) + b"\n", FLAGS_NOHEADER
 
 
 def none_decode(data: SizedBuffer) -> SizedBuffer:
