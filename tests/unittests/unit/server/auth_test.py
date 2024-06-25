@@ -429,7 +429,11 @@ class TestAuth(unittest.TestCase):
             return a
 
         def f(digests=None, response=None, **kwargs):
-            salt, digest = t(digests, response, **kwargs)
+            try:
+                salt, digest = t(digests, response, **kwargs)
+            except ValueError:
+                salt = b""
+                digest = ""
             if salt or digest:
                 raise Exception("keycloak auth should have failed with arguments: %s" % (kwargs,))
 
