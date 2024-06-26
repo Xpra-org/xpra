@@ -426,15 +426,13 @@ class TestAuth(unittest.TestCase):
                 assert salt and digest
             if response is not None:
                 assert a.check(response), "check failed for response %s" % (response,)
-            return a
 
         def f(digests=None, response=None, **kwargs):
             try:
-                salt, digest = t(digests, response, **kwargs)
+                t(digests, response, **kwargs)
             except ValueError:
-                salt = b""
-                digest = ""
-            if salt or digest:
+                pass
+            else:
                 raise Exception("keycloak auth should have failed with arguments: %s" % (kwargs,))
 
         t()
