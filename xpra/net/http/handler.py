@@ -7,6 +7,7 @@ import os
 import glob
 import posixpath
 import mimetypes
+import socket
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
 from typing import Any
@@ -333,7 +334,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if content:
             try:
                 self.wfile.write(content)
-            except (BrokenPipeError, ConnectionResetError) as e:
+            except (BrokenPipeError, ConnectionResetError, socket.error) as e:
+                # ssl.SSLEOFError is a socket.error
                 log("handle_request() %s", e)
             except TypeError:
                 self.close_connection = True
