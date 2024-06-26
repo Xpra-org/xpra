@@ -38,6 +38,8 @@ autoprov: no
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
 %endif
 
+%global gnome_shell_extension input-source-manager@xpra_org
+
 %{!?nthreads: %global nthreads %(nproc)}
 %{!?update_firewall: %define update_firewall 1}
 %{!?run_tests: %define run_tests 0}
@@ -343,8 +345,10 @@ Requires:			gnome-shell-extension-appindicator
 Requires(post):		gnome-shell-extension-common
 %endif
 %description -n%{package_prefix}-client-gnome
-This meta package installs the gnome shell extensions
+This package installs the GNOME Shell extensions
 that can help in restoring the system tray functionality.
+It also includes the %{gnome_shell_extension} extension which
+is required for querying and activating keyboard input sources.
 
 
 %package -n %{package_prefix}-x11
@@ -536,7 +540,10 @@ rm -rf $RPM_BUILD_ROOT
 #meta package
 
 %files -n %{package_prefix}-client-gnome
-#meta package without any files
+%{_datadir}/gnome-shell/extensions/%{gnome_shell_extension}/COPYING
+%{_datadir}/gnome-shell/extensions/%{gnome_shell_extension}/README.md
+%{_datadir}/gnome-shell/extensions/%{gnome_shell_extension}/extension.js
+%{_datadir}/gnome-shell/extensions/%{gnome_shell_extension}/metadata.json
 
 %files -n xpra-filesystem
 %defattr(-,root,root)
@@ -839,8 +846,10 @@ for uid in `ls /run/user/`; do
     if [ -S "${BUS}" ]; then
 %if 0%{?el8}
 sudo -i -u "#$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS" gnome-shell-extension-tool -e TopIcons@phocean.net  &>/dev/null || :
+sudo -i -u "#$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS" gnome-shell-extension-tool -e %{gnome_shell_extension}  &>/dev/null || :
 %else
 sudo -i -u "#$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS" gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com  &>/dev/null || :
+sudo -i -u "#$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=$BUS" gnome-extensions enable %{gnome_shell_extension}  &>/dev/null || :
 %endif
     fi
 done
