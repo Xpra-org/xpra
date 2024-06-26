@@ -24,10 +24,11 @@ from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicE
 from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
 from xpra.net.quic.http import HttpRequestHandler
 from xpra.net.quic.websocket import ServerWebSocketConnection
-from xpra.net.quic.webtransport import WebTransportHandler
+from xpra.net.quic.webtransport import ServerWebTransportConnection
 from xpra.net.quic.session_ticket_store import SessionTicketStore
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.websockets.protocol import WebSocketProtocol
+from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import Ellipsizer
@@ -38,7 +39,7 @@ log = Logger("quic")
 quic_logger = QuicLogger()
 
 HttpConnection = Union[H0Connection, H3Connection]
-Handler = Union[HttpRequestHandler, ServerWebSocketConnection, WebTransportHandler]
+Handler = Union[HttpRequestHandler, ServerWebSocketConnection, ServerWebTransportConnection]
 
 
 class HttpServerProtocol(QuicConnectionProtocol):
@@ -154,9 +155,12 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 "type": "webtransport",
             }
             log.info("WebTransport request at %s", path)
-            return WebTransportHandler(connection=self._http, scope=scope,
-                                       stream_id=event.stream_id,
-                                       transmit=self.transmit)
+            wtc = ServerWebTransportConnection(connection=self._http, scope=scope,
+                                               stream_id=event.stream_id,
+                                               transmit=self.transmit)
+            socket_options = {}
+            self._xpra_server.make_protocol("webtransport", wtc, socket_options, protocol_class=SocketProtocol)
+            return wtc
         # extensions: dict[str, dict] = {}
         # if isinstance(self._http, H3Connection):
         #    extensions["http.response.push"] = {}

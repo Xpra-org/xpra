@@ -13,6 +13,7 @@ from aioquic.h3.events import (
     H3Event,
     WebTransportStreamDataReceived,
 )
+from xpra.net.bytestreams import pretty_socket
 from xpra.net.quic.connection import XpraQuicConnection, HttpConnection
 from xpra.net.quic.common import SERVER_NAME, http_date
 from xpra.log import Logger
@@ -20,23 +21,39 @@ from xpra.log import Logger
 log = Logger("quic")
 
 
-class WebTransportHandler(XpraQuicConnection):
+class ServerWebTransportConnection(XpraQuicConnection):
     def __init__(self, connection: HttpConnection, scope: dict, stream_id: int, transmit: Callable[[], None]) -> None:
         super().__init__(connection, stream_id, transmit, "", 0, info=None, options=None)
         self.http_event_queue: SimpleQueue[DataReceived] = SimpleQueue()
-        self.read_datagram_queue = SimpleQueue()
+        # self.read_datagram_queue = SimpleQueue()
         self.scope = scope
 
+    def __repr__(self):
+        try:
+            return f"QuicConnection({pretty_socket(self.endpoint)}, {self.stream_id})"
+        except AttributeError:
+            return f"WebTransportHandler<{self.stream_id}>"
+
     def http_event_received(self, event: H3Event) -> None:
+        log.info(f"wt.http_event_received({event}) closed={self.closed}, accepted={self.accepted}")
         if self.closed:
             return
         if self.accepted:
             if isinstance(event, DatagramReceived):
-                self.read_datagram_queue.put(event.data)
+                # self.read_datagram_queue.put(event.data)
+                log("datagram ignored")
             elif isinstance(event, WebTransportStreamDataReceived):
-                self.read_queue.put((event.stream_id, event.data))
+                log(f"data for stream_id={event.stream_id}, our stream_id={self.stream_id}")
+                if event.stream_id != self.stream_id:
+                    self.stream_id = event.stream_id
+                    # ensure we can send data on this stream from now on:
+                    self.send_headers(self.stream_id, {})
+                self.read_queue.put(event.data)
         else:
-            self.http_event_queue.put(event)
+            self.accepted = True
+            self.send_accept()
+            # self.connection.create_webtransport_stream()
+            self.transmit()
 
     def send_accept(self) -> None:
         self.accepted = True
@@ -46,27 +63,21 @@ class WebTransportHandler(XpraQuicConnection):
             "date": http_date(),
             "sec-webtransport-http3-draft": "draft02",
         }
-        self.send_headers(0, headers)
+        assert self.stream_id == 0
+        self.send_headers(self.stream_id, headers)
         self.transmit()
 
-    def flush_http_event_queue(self) -> None:
-        while self.http_event_queue.qsize():
-            self.http_event_received(self.http_event_queue.get())
-
     def send_close(self, code: int = 403, reason: str = "") -> None:
+        log(f"send_close({code}, {reason!r})")
         if not self.accepted:
             self.closed = True
             self.send_headers(0, {":status": code})
             self.transmit()
 
-    def send_datagram(self, data) -> None:
+    def send_datagram(self, data: bytes) -> None:
+        log(f"send_datagram({len(data)} bytes)")
         self.connection.send_datagram(flow_id=self.stream_id, data=data)
         self.transmit()
-
-    def write(self, stream_id: int, data: bytes) -> int:
-        self.connection._quic.send_stream_data(stream_id=stream_id, data=data)
-        self.transmit()
-        return len(data)
 
     def read(self, n: int) -> bytes:
         log("WebTransportHandler.read(%s)", n)
