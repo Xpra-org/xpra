@@ -11,7 +11,7 @@ from typing import Any, Union, TypeAlias, Final
 from collections.abc import Callable, Sequence
 
 from xpra.net.compression import Compressed, Compressible, LargeStructure
-from xpra.common import noop, Buffer
+from xpra.common import noop, SizedBuffer
 from xpra.os_util import LINUX, FREEBSD, WIN32
 from xpra.scripts.config import str_to_bool
 from xpra.util.str_fn import repr_ellipsized
@@ -62,7 +62,7 @@ PacketHandlerType = Callable[[PacketType], None]
 # server packet handler:
 ServerPacketHandlerType = Callable[[Any, PacketType], None]
 
-NetPacketType: TypeAlias = tuple[int, int, int, Buffer]
+NetPacketType: TypeAlias = tuple[int, int, int, SizedBuffer]
 
 
 class ConnectionClosedException(Exception):

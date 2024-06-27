@@ -9,7 +9,7 @@
 import struct
 from typing import Tuple
 
-from xpra.common import Buffer, SizedBuffer
+from xpra.common import SizedBuffer
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
 
@@ -81,11 +81,11 @@ cdef class compressor:
         PyBuffer_Release(&in_buf)
         return (mem[:(size_header+r)]).toreadonly()
 
-def compress(data: Buffer, acceleration=1) -> SizedBuffer:
+def compress(data: SizedBuffer, acceleration=1) -> SizedBuffer:
     c = compressor()
     return c.compress(data, acceleration)
 
-def decompress(data: Buffer, int max_size=0, int size=0) -> SizedBuffer:
+def decompress(data: SizedBuffer, int max_size=0, int size=0) -> SizedBuffer:
     cdef int size_header = 0
     if size==0:
         size = struct.unpack_from(b"@I", data[:4])[0]
