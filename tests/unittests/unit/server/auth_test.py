@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=line-too-long
+# pylint: disable=line-too-long
 
 import os
 import sys
@@ -35,7 +35,7 @@ class TempFileContext:
 
     def __enter__(self):
         if WIN32:
-            #NamedTemporaryFile doesn't work for reading on win32...
+            # NamedTemporaryFile doesn't work for reading on win32...
             self.filename = temp_filename(self.prefix)
             self.file = open(self.filename, 'w')
         else:
@@ -69,10 +69,10 @@ class TestAuth(unittest.TestCase):
             c = module.Authenticator
         except AttributeError:
             raise Exception("module %s does not contain an Authenticator class!") from None
-        #some auth modules require this to function:
+        # some auth modules require this to function:
         if "connection" not in kwargs:
             kwargs["connection"] = "fake-connection-data"
-        #exec auth would fail during rpmbuild without a default command:
+        # exec auth would fail during rpmbuild without a default command:
         if "command" not in kwargs:
             kwargs["command"] = "/bin/true"
         kwargs["username"] = kwargs.get("username", "foo")
@@ -91,7 +91,7 @@ class TestAuth(unittest.TestCase):
         if a.requires_challenge():
             salt = digest = ""
             try:
-                salt, digest = a.get_challenge(("invalid-digest", ))
+                salt, digest = a.get_challenge(("invalid-digest",))
             except ValueError:
                 pass
             else:
@@ -105,7 +105,7 @@ class TestAuth(unittest.TestCase):
             caps["challenge_client_salt"] = client_salt
         return a.authenticate(caps)
 
-    def test_all(self):
+    def test_all(self) -> None:
         test_modules = ["reject", "allow", "none", "file", "multifile", "env", "password"]
         try:
             self.a("pam")
@@ -120,14 +120,14 @@ class TestAuth(unittest.TestCase):
         for module in test_modules:
             self._test_module(module)
 
-    def test_fail(self):
+    def test_fail(self) -> None:
         try:
             fa = self._init_auth("fail")
         except Exception:
             fa = None
         assert fa is None, "'fail_auth' did not fail!"
 
-    def test_reject(self):
+    def test_reject(self) -> None:
         a = self._init_auth("reject")
         assert a.requires_challenge()
         c, mac = a.get_challenge(get_digests())
@@ -142,7 +142,7 @@ class TestAuth(unittest.TestCase):
             assert not self.capsauth(a, x, c)
             assert not self.capsauth(a, x, x)
 
-    def test_none(self):
+    def test_none(self) -> None:
         a = self._init_auth("none")
         assert not a.requires_challenge()
         salt, digest = a.get_challenge(get_digests())
@@ -152,7 +152,7 @@ class TestAuth(unittest.TestCase):
             assert self.capsauth(a, x, "")
             assert self.capsauth(a, "", x)
 
-    def test_allow(self):
+    def test_allow(self) -> None:
         a = self._init_auth("allow")
         assert a.requires_challenge()
         assert a.get_challenge(get_digests())
@@ -161,7 +161,7 @@ class TestAuth(unittest.TestCase):
             assert self.capsauth(a, x, "")
             assert self.capsauth(a, "", x)
 
-    def _test_hmac_auth(self, mod_name, password, **kwargs):
+    def _test_hmac_auth(self, mod_name: str, password: str, **kwargs) -> None:
         for test_password in (password, "somethingelse"):
             a = self._init_auth(mod_name, **kwargs)
             assert a.requires_challenge()
@@ -180,7 +180,7 @@ class TestAuth(unittest.TestCase):
             assert not self.capsauth(a, verify,
                                      client_salt), "should not be able to athenticate again with the same values"
 
-    def test_env(self):
+    def test_env(self) -> None:
         for var_name in ("XPRA_PASSWORD", "SOME_OTHER_VAR_NAME"):
             password = strtobytes(uuid.uuid4().hex)
             os.environ[var_name] = bytestostr(password)
@@ -192,24 +192,24 @@ class TestAuth(unittest.TestCase):
             finally:
                 del os.environ[var_name]
 
-    def test_password(self):
+    def test_password(self) -> None:
         password = strtobytes(uuid.uuid4().hex)
         self._test_hmac_auth("password", password, value=password)
 
     def _test_file_auth(self, mod_name: str, genauthdata: Callable, display_count: int = 0):
-        #no file, no go:
+        # no file, no go:
         a = self._init_auth(mod_name)
         assert a.requires_challenge()
         p = a.get_passwords()
         assert not p, "got passwords from %s: %s" % (a, p)
-        #challenge twice is a fail
+        # challenge twice is a fail
         salt, digest = a.get_challenge(get_digests())
         assert salt and digest
         salt, digest = a.get_challenge(get_digests())
         assert not (salt or digest)
         salt, digest = a.get_challenge(get_digests())
         assert not (salt or digest)
-        #muck:
+        # muck:
         # 0 - OK
         # 1 - bad: with warning about newline
         # 2 - verify bad passwords
@@ -221,7 +221,6 @@ class TestAuth(unittest.TestCase):
                 with f:
                     a = self._init_auth(mod_name, filename=filename)
                     password, filedata = genauthdata(a)
-                    #print("saving password file data='%s' to '%s'" % (filedata, filename))
                     if muck != 3:
                         f.write(filedata)
                     if muck == 1:
@@ -233,8 +232,8 @@ class TestAuth(unittest.TestCase):
                     assert server_salt
                     assert digest in get_digests()
                     assert digest != "xor"
-                    #this is what a client does,
-                    #see send_challenge_reply in client_base
+                    # this is what a client does,
+                    # see send_challenge_reply in client_base
                     client_salt = get_salt(len(server_salt))
                     salt_digest = a.choose_salt_digest(get_digests())
                     assert salt_digest and isinstance(salt_digest, str)
@@ -260,17 +259,18 @@ class TestAuth(unittest.TestCase):
                             assert not self.capsauth(a, verify, client_salt)
         return a
 
-    def test_file(self):
-        def genfiledata(_a):
+    def test_file(self) -> None:
+
+        def genfiledata(_a) -> tuple[str, str]:
             password = uuid.uuid4().hex
             return password, password
 
         self._test_file_auth("file", genfiledata)
-        #no digest -> no challenge
+        # no digest -> no challenge
         a = self._init_auth("file", filename="foo")
         assert a.requires_challenge()
         try:
-            a.get_challenge(("not-a-valid-digest", ))
+            a.get_challenge(("not-a-valid-digest",))
         except ValueError:
             pass
         else:
@@ -278,7 +278,7 @@ class TestAuth(unittest.TestCase):
         a.password_filename = "./this-path-should-not-exist"
         assert a.load_password_file() is None
         assert a.stat_password_filetime() == 0
-        #inaccessible:
+        # inaccessible:
         if POSIX:
             filename = "./test-file-auth-%s-%s" % (get_hex_uuid(), os.getpid())
             with open(filename, 'wb') as f:
@@ -338,16 +338,16 @@ class TestAuth(unittest.TestCase):
         assert sqlite_main(["main", filename, "add", "foo", "wrongpassword"]) == 0
         vf("the password should not match")
 
-    def test_peercred(self):
+    def test_peercred(self) -> None:
         if not POSIX or OSX:
-            #can't be used!
+            # can't be used!
             return
-        #no connection supplied:
+        # no connection supplied:
         pc = self._init_auth("peercred")
         assert not pc.requires_challenge()
         assert not self.capsauth(pc)
         assert pc.get_uid() == -1 and pc.get_gid() == -1
-        #now with a connection object:
+        # now with a connection object:
         from xpra.util.thread import start_thread
         sockpath = "./socket-test"
         try:
@@ -363,7 +363,7 @@ class TestAuth(unittest.TestCase):
         verified = []
         to_close: list[Callable] = [sock.close]
 
-        def wait_for_connection():
+        def wait_for_connection() -> None:
             conn, addr = sock.accept()
             s = SocketConnection(conn, sockpath, addr, sockpath, "unix")
             pc = self._init_auth("peercred", connection=s)
@@ -373,12 +373,12 @@ class TestAuth(unittest.TestCase):
             to_close.append(s.close)
 
         t = start_thread(wait_for_connection, "socket listener", daemon=True)
-        #connect a client:
+        # connect a client:
         client = socket.socket(socket.AF_UNIX)
         client.settimeout(5)
         client.connect(sockpath)
         to_close.append(client.close)
-        #wait for it to trigger auth:
+        # wait for it to trigger auth:
         t.join(5)
         for close in to_close:
             try:
@@ -387,15 +387,15 @@ class TestAuth(unittest.TestCase):
                 pass
         assert verified
 
-    def test_hosts(self):
-        #cannot be tested (would require root to edit the hosts.deny file)
+    def test_hosts(self) -> None:
+        # cannot be tested (would require root to edit the hosts.deny file)
         pass
 
-    def test_exec(self):
+    def test_exec(self) -> None:
         if not POSIX:
             return
 
-        def exec_cmd(cmd, success=True):
+        def exec_cmd(cmd: str, success=True) -> None:
             kwargs = {
                 "command": cmd,
                 "timeout": 2,
@@ -408,7 +408,7 @@ class TestAuth(unittest.TestCase):
         exec_cmd("/bin/true", True)
         exec_cmd("/bin/false", False)
 
-    def test_keycloak(self):
+    def test_keycloak(self) -> None:
         try:
             self._init_auth("keycloak")
             import oauthlib
@@ -435,27 +435,28 @@ class TestAuth(unittest.TestCase):
                 raise Exception("keycloak auth should have failed with arguments: %s" % (kwargs,))
 
         t()
-        #only 'authorization_code' is supported:
+        # only 'authorization_code' is supported:
         f(grant_type="foo")
         t(grant_type="authorization_code")
-        #only 'keycloak' digest is supported:
+        # only 'keycloak' digest is supported:
         f(digests=("xor",))
         t(digests=("xor", "keycloak",))
         t(digests=("keycloak",))
-        #we can't provide a valid response:
-        #these are not valid json strings:
+        # we can't provide a valid response:
+        # these are not valid json strings:
         for invalid in (True, False, 10, 1.1, [1, 2, 3], (4, 5, 6)):
             f(digests=("keycloak",), response=invalid)
-        #these are valid json strings, but not valid reponses (not dicts for a start):
+        # these are valid json strings, but not valid reponses (not dicts for a start):
         for invalid in (b"\"hello\"", "\"foo\"", "\"foobar\""):
             f(digests=("keycloak",), response=invalid)
-        #these are valid json strings that return a dict, but no valid authorization code:
+        # these are valid json strings that return a dict, but no valid authorization code:
         f(digests=("keycloak",), response="{\"foo\":\"bar\"}")
         f(digests=("keycloak",), response="{\"error\": 404, \"code\":\"authorization_code\"}")
         f(digests=("keycloak",), response="{\"code\":\"authorization_code\"}")
-        #non-https URL should fail:
+        # non-https URL should fail:
         f(server_url="http://localhost:8080/")
         with OSEnvContext(OAUTHLIB_INSECURE_TRANSPORT="1"):
+            # and succeed with insecure override:
             t(server_url="http://localhost:8080/")
 
 
