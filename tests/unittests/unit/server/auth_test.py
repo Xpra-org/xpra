@@ -15,10 +15,8 @@ import hmac
 from time import monotonic
 from typing import Callable
 
-from xpra.os_util import (
-    WIN32, OSX, POSIX,
-    get_hex_uuid,
-)
+from xpra.os_util import WIN32, OSX, POSIX, get_hex_uuid
+from xpra.util.env import OSEnvContext
 from xpra.util.str_fn import strtobytes, bytestostr
 from xpra.util.objects import typedict
 from xpra.net.digest import get_digests, get_digest_module, gendigest, get_salt
@@ -413,6 +411,7 @@ class TestAuth(unittest.TestCase):
     def test_keycloak(self):
         try:
             self._init_auth("keycloak")
+            import oauthlib
         except ImportError as e:
             print("Warning: keycloak auth test skipped")
             print(f" {e}")
@@ -422,15 +421,15 @@ class TestAuth(unittest.TestCase):
             a = self._init_auth("keycloak", **kwargs)
             assert a.requires_challenge(), "%s should require a challenge" % a
             if digests is not None:
-                salt, digest = a.get_challenge(digests), "cannot get challenge for digests %s" % (digests,)
-                assert salt and digest
+                salt, digest = a.get_challenge(digests)
+                assert salt and digest, "cannot get challenge for digests %s" % (digests,)
             if response is not None:
                 assert a.check(response), "check failed for response %s" % (response,)
 
         def f(digests=None, response=None, **kwargs):
             try:
                 t(digests, response, **kwargs)
-            except ValueError:
+            except (AssertionError, ValueError, oauthlib.oauth2.rfc6749.errors.OAuth2Error):
                 pass
             else:
                 raise Exception("keycloak auth should have failed with arguments: %s" % (kwargs,))
@@ -456,6 +455,8 @@ class TestAuth(unittest.TestCase):
         f(digests=("keycloak",), response="{\"code\":\"authorization_code\"}")
         #non-https URL should fail:
         f(server_url="http://localhost:8080/")
+        with OSEnvContext(OAUTHLIB_INSECURE_TRANSPORT="1"):
+            t(server_url="http://localhost:8080/")
 
 
 def main():
