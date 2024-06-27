@@ -13,7 +13,7 @@
 
 Name:		%{python3}-cython
 Version:	3.0.10
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
@@ -22,7 +22,8 @@ Source0:    https://github.com/cython/cython/archive/refs/tags/%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   %{python3}
 Provides:   %{python3}-Cython = %{version}-%{release}
-Obsoletes:  %{python3}-Cython < %{version}
+Obsoletes:  %{python3}-Cython < %{version}-%{release}
+Conflicts:  %{python3}-Cython < %{version}-%{release}
 
 BuildRequires:	%{python3}-devel
 BuildRequires:	%{python3}-setuptools
@@ -69,6 +70,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Thu Jun 27 2024 Antoine Martin <antoine@xpra.org> 3.0.10-2
+- conflict with old package name to upgrade it
+
 * Sun Mar 31 2024 Antoine Martin <antoine@xpra.org> 3.0.10-1
 - new upstream release
 
