@@ -2561,7 +2561,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             key_event.string = event.string or ""
         except UnicodeDecodeError as e:
             keylog("parse_key_event(%s, %s)", event, pressed, exc_info=True)
-            if first_time("key_event.string"):
+            if first_time(f"key-{keycode}-{keyname}"):
                 keylog.warn("Warning: failed to parse string for key")
                 keylog.warn(" keyname=%s, keycode=%s", keyname, keycode)
                 keylog.warn(" %s", e)
