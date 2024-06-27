@@ -52,7 +52,7 @@ cdef class compressor:
     def bound(self, int size) -> int:
         return LZ4_compressBound(size)
 
-    def compress(self, data: Buffer, int acceleration=1, int max_size=0, int store_size=True) -> SizedBuffer:
+    def compress(self, data: SizedBuffer, int acceleration=1, int max_size=0, int store_size=True) -> SizedBuffer:
         cdef Py_buffer in_buf
         if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
             raise ValueError("failed to read data from %s" % type(data))
@@ -81,9 +81,11 @@ cdef class compressor:
         PyBuffer_Release(&in_buf)
         return (mem[:(size_header+r)]).toreadonly()
 
+
 def compress(data: SizedBuffer, acceleration=1) -> SizedBuffer:
     c = compressor()
     return c.compress(data, acceleration)
+
 
 def decompress(data: SizedBuffer, int max_size=0, int size=0) -> SizedBuffer:
     cdef int size_header = 0
