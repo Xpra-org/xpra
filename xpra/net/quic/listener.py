@@ -14,7 +14,6 @@ from aioquic.h0.connection import H0_ALPN, H0Connection
 from aioquic.h3.connection import H3_ALPN, H3Connection
 from aioquic.h3.events import (
     DatagramReceived,
-    DataReceived,
     H3Event,
     HeadersReceived,
     WebTransportStreamDataReceived,
@@ -71,19 +70,13 @@ class HttpServerProtocol(QuicConnectionProtocol):
         log(f"hsp:http_event_received(%s) handler {hid}: {handler}", Ellipsizer(event))
         if isinstance(event, HeadersReceived) and not handler:
             handler = self.new_http_handler(event)
-            handler.xpra_server = self._xpra_server
             self._handlers[event.stream_id] = handler
-            # asyncio.ensure_future(handler.run_asgi(self.app))
-            # return
-        if isinstance(event, (DataReceived, HeadersReceived)) and handler:
-            handler.http_event_received(event)
-            return
-        if isinstance(event, DatagramReceived):
+        elif isinstance(event, DatagramReceived):
             handler = self._handlers[event.flow_id]
-            handler.http_event_received(event)
-            return
-        if isinstance(event, WebTransportStreamDataReceived):
+        elif isinstance(event, WebTransportStreamDataReceived):
             handler = self._handlers[event.session_id]
+        log(f"handler for {event} = {handler}")
+        if handler:
             handler.http_event_received(event)
 
     def new_http_handler(self, event) -> Handler:
@@ -115,6 +108,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
 
         # FIXME: add a public API to retrieve peer address
         client_addr = self._http._quic._network_paths[0].addr
+        client = (client_addr[0], client_addr[1])
 
         einfo = {}
         for k in ("peername", "sockname", "compression", "cipher", "peercert", "sslcontext"):
@@ -123,7 +117,7 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 einfo[k] = v
 
         scope = {
-            "client": (client_addr[0], client_addr[1]),
+            "client": client,
             "headers": headers,
             "http_version": "0.9" if isinstance(self._http, H0Connection) else "3",
             "method": method,
