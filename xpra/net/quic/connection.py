@@ -103,7 +103,7 @@ class XpraQuicConnection(Connection):
             end_stream=self.closed)
 
     def write(self, buf, packet_type: str = "") -> int:
-        log("quic.write(%s, %s)", Ellipsizer(buf), packet_type)
+        log("quic.write(%s, %r)", Ellipsizer(buf), packet_type)
         return self.stream_write(buf, packet_type)
 
     def stream_write(self, buf, packet_type: str) -> int:
@@ -112,11 +112,10 @@ class XpraQuicConnection(Connection):
             log.warn(f"Warning: missing packet type for {data}")
         if packet_type in DATAGRAM_PACKET_TYPES:
             self.connection.send_datagram(flow_id=self.stream_id, data=data)
-            log(f"sending {packet_type} using datagram")
+            log(f"sending {packet_type!r} using datagram")
             return len(buf)
         stream_id = self.get_packet_stream_id(packet_type)
-        log("quic.stream_write(%s, %s) using stream id %s",
-            Ellipsizer(buf), packet_type, stream_id)
+        log("quic.stream_write(%s, %s) using stream id %s", Ellipsizer(buf), packet_type, stream_id)
 
         def do_write() -> None:
             try:
