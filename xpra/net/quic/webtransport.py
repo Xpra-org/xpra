@@ -56,7 +56,6 @@ class ServerWebTransportConnection(XpraQuicConnection):
             self.transmit()
 
     def send_accept(self) -> None:
-        self.accepted = True
         headers: dict[str, Any] = {
             ":status": "200",
             "server": SERVER_NAME,
