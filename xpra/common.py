@@ -184,10 +184,10 @@ MOVERESIZE_DIRECTION_STRING = {
     MoveResize.MOVE_KEYBOARD     : "MOVE_KEYBOARD",
     MoveResize.CANCEL            : "CANCEL",
 }
-SOURCE_INDICATION_UNSET: Final = 0
-SOURCE_INDICATION_NORMAL: Final = 1
-SOURCE_INDICATION_PAGER: Final = 2
-SOURCE_INDICATION_STRING: Final = {
+SOURCE_INDICATION_UNSET: Final[int] = 0
+SOURCE_INDICATION_NORMAL: Final[int] = 1
+SOURCE_INDICATION_PAGER: Final[int] = 2
+SOURCE_INDICATION_STRING: Final[dict[int, str]] = {
     SOURCE_INDICATION_UNSET      : "UNSET",
     SOURCE_INDICATION_NORMAL     : "NORMAL",
     SOURCE_INDICATION_PAGER      : "PAGER",
@@ -195,8 +195,8 @@ SOURCE_INDICATION_STRING: Final = {
 
 
 # magic value for "workspace" window property, means unset
-WORKSPACE_UNSET: Final = 65535
-WORKSPACE_ALL: Final = 0xffffffff
+WORKSPACE_UNSET: Final[int] = 65535
+WORKSPACE_ALL: Final[int] = 0xffffffff
 WORKSPACE_NAMES = {
     WORKSPACE_UNSET  : "unset",
     WORKSPACE_ALL    : "all",
@@ -256,7 +256,7 @@ WINDOW_NOT_FOUND: Final[int] = -2
 ScreenshotData = tuple[int, int, str, int, bytes]
 
 
-def get_refresh_rate_for_value(refresh_rate_str, invalue: int) -> int:
+def get_refresh_rate_for_value(refresh_rate_str: str, invalue: int) -> int:
     def i(value) -> int:
         try:
             return int(value)
@@ -282,7 +282,7 @@ def get_refresh_rate_for_value(refresh_rate_str, invalue: int) -> int:
     return i(invalue)
 
 
-def adjust_monitor_refresh_rate(refresh_rate_str, mdef) -> dict[int,dict]:
+def adjust_monitor_refresh_rate(refresh_rate_str, mdef) -> dict[int, dict]:
     adjusted = {}
     for i, monitor in mdef.items():
         # make a copy, don't modify in place!
