@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.common import Buffer
+from xpra.common import SizedBuffer
 #cython: wraparound=False, boundscheck=False
 
 from libc.stdint cimport uint32_t, uintptr_t   # pylint: disable=syntax-error
@@ -17,7 +17,7 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
 
 
-def xor_str(a: Buffer, b: Buffer) -> Buffer:
+def xor_str(a: SizedBuffer, b: SizedBuffer) -> SizedBuffer:
     if len(a)!=len(b):
         raise ValueError("cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b)))
     cdef Py_buffer py_bufa

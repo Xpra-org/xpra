@@ -7,7 +7,7 @@
 #cython: boundscheck=False, wraparound=False
 
 from typing import List, Tuple
-from xpra.common import Buffer
+from xpra.common import SizedBuffer
 
 from xpra.util.env import first_time
 from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
@@ -29,7 +29,7 @@ cdef inline unsigned char clamp(int v) nogil:
     return <unsigned char> v
 
 
-def bgr565_to_rgbx(buf) -> Buffer:
+def bgr565_to_rgbx(buf) -> SizedBuffer:
     assert len(buf) % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % len(buf)
     cdef const uint16_t *rgb565
     with buffer_context(buf) as bc:
@@ -51,7 +51,7 @@ cdef bgr565data_to_rgbx(const uint16_t* rgb565, const int rgb565_len):
             rgbx[i] = (<uint32_t> 0xff000000) | (((v & 0xF800) >> 8) | ((v & 0x07E0) << 5) | ((v & 0x001F) << 19))
     return memoryview(output_buf)
 
-def bgr565_to_rgb(buf) -> Buffer:
+def bgr565_to_rgb(buf) -> SizedBuffer:
     assert len(buf) % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % len(buf)
     cdef const uint16_t* rgb565
     with buffer_context(buf) as bc:
@@ -79,7 +79,7 @@ cdef bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
 
 def r210_to_rgba(buf,
                  const unsigned int w, const unsigned int h,
-                 const unsigned int src_stride, const unsigned int dst_stride) -> Buffer:
+                 const unsigned int src_stride, const unsigned int dst_stride) -> SizedBuffer:
     assert w*4<=src_stride, "invalid source stride %i for width %i" % (src_stride, w)
     assert w*4<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
     cdef unsigned int* r210
@@ -138,7 +138,7 @@ cdef r210data_to_rgbx(unsigned int* r210,
 
 def r210_to_rgb(buf,
                 const unsigned int w, const unsigned int h,
-                const unsigned int src_stride, const unsigned int dst_stride) -> Buffer:
+                const unsigned int src_stride, const unsigned int dst_stride) -> SizedBuffer:
     assert buf, "no buffer"
     assert w*4<=src_stride, "invalid source stride %i for width %i" % (src_stride, w)
     assert w*3<=dst_stride, "invalid destination stride %i for width %i" % (dst_stride, w)
@@ -174,7 +174,7 @@ cdef r210data_to_rgb(unsigned int* r210,
     return memoryview(output_buf)
 
 
-def bgrx_to_rgb(buf) -> Buffer:
+def bgrx_to_rgb(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned int* bgrx
     with buffer_context(buf) as bc:
@@ -204,7 +204,7 @@ cdef bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
     return memoryview(output_buf)
 
 
-def rgb_to_bgrx(buf) -> Buffer:
+def rgb_to_bgrx(buf) -> SizedBuffer:
     assert len(buf) % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % len(buf)
     cdef const unsigned char* rgb
     with buffer_context(buf) as bc:
@@ -231,7 +231,7 @@ cdef rgbdata_to_bgrx(const unsigned char *rgb, const int rgb_len):
     return memoryview(output_buf)
 
 
-def bgrx_to_l(buf) -> Buffer:
+def bgrx_to_l(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned int* bgrx
     with buffer_context(buf) as bc:
@@ -262,7 +262,7 @@ cdef bgrxdata_to_l(const unsigned int *bgrx, const int bgrx_len):
     return memoryview(output_buf)
 
 
-def bgr_to_l(buf) -> Buffer:
+def bgr_to_l(buf) -> SizedBuffer:
     assert len(buf) % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % len(buf)
     cdef const unsigned char* bgr
     with buffer_context(buf) as bc:
@@ -270,7 +270,7 @@ def bgr_to_l(buf) -> Buffer:
         return rgbdata_to_l(bgr, len(bc), 2, 1, 0)
 
 
-def rgb_to_l(buf) -> Buffer:
+def rgb_to_l(buf) -> SizedBuffer:
     assert len(buf) % 3 == 0, "invalid buffer size: %s is not a multiple of 3" % len(buf)
     cdef const unsigned char* rgb
     with buffer_context(buf) as bc:
@@ -300,7 +300,7 @@ cdef rgbdata_to_l(const unsigned char *rgb, const int rgb_len,
     return memoryview(output_buf)
 
 
-def bgra_to_la(buf) -> Buffer:
+def bgra_to_la(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned int* bgra
     with buffer_context(buf) as bc:
@@ -334,7 +334,7 @@ cdef bgradata_to_la(const unsigned int *bgra, const int bgra_len):
     return memoryview(output_buf)
 
 
-def argb_to_rgba(buf) -> Buffer:
+def argb_to_rgba(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned int* argb
     with buffer_context(buf) as bc:
@@ -359,7 +359,7 @@ cdef argbdata_to_rgba(const unsigned int* argb, const int argb_len):
     return memoryview(output_buf)
 
 
-def argb_to_rgb(buf) -> Buffer:
+def argb_to_rgb(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned int* argb
     with buffer_context(buf) as bc:
@@ -389,7 +389,7 @@ cdef argbdata_to_rgb(const unsigned int* argb, const int argb_len):
     return memoryview(output_buf)
 
 
-def bgra_to_rgb222(buf) -> Buffer:
+def bgra_to_rgb222(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned char* bgra
     with buffer_context(buf) as bc:
@@ -415,7 +415,7 @@ cdef bgradata_to_rgb222(const unsigned char* bgra, const int bgra_len):
     return memoryview(output_buf)
 
 
-def bgra_to_rgb(buf) -> Buffer:
+def bgra_to_rgb(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned int* bgra
     with buffer_context(buf) as bc:
@@ -445,7 +445,7 @@ cdef bgradata_to_rgb(const unsigned int* bgra, const int bgra_len):
     return memoryview(output_buf)
 
 
-def bgra_to_rgba(buf) -> Buffer:
+def bgra_to_rgba(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned int* bgra
     with buffer_context(buf) as bc:
@@ -470,12 +470,12 @@ cdef bgradata_to_rgba(const unsigned int* bgra, const int bgra_len):
     return memoryview(output_buf)
 
 
-def rgba_to_bgra(buf) -> Buffer:
+def rgba_to_bgra(buf) -> SizedBuffer:
     #same: just a swap
     return bgra_to_rgba(buf)
 
 
-def bgra_to_rgbx(buf) -> Buffer:
+def bgra_to_rgbx(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef const unsigned char* bgra
     with buffer_context(buf) as bc:
@@ -501,7 +501,7 @@ cdef bgradata_to_rgbx(const unsigned char* bgra, const int bgra_len):
     return memoryview(output_buf)
 
 
-def premultiply_argb(buf) -> Buffer:
+def premultiply_argb(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     # b is a Python buffer object
     cdef unsigned int *argb
@@ -533,7 +533,7 @@ cdef do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
     return memoryview(output_buf)
 
 
-def unpremultiply_argb(buf) -> Buffer:
+def unpremultiply_argb(buf) -> SizedBuffer:
     assert len(buf) % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % len(buf)
     cdef unsigned int *argb
     with buffer_context(buf) as bc:
@@ -585,7 +585,7 @@ cdef do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     return memoryview(output_buf)
 
 
-def alpha(image) -> Buffer:
+def alpha(image) -> SizedBuffer:
     pixel_format = image.get_pixel_format()
     cdef char i = pixel_format.find("A")
     if i<0 or i>=4:
@@ -803,7 +803,7 @@ cdef bitdata_to_rectangles(const unsigned char* bitdata, const int bitdata_len,
     return rectangles
 
 
-cdef show_plane_range(name, plane: Buffer, int width, int stride, int height):
+cdef show_plane_range(name, plane: SizedBuffer, int width, int stride, int height):
     cdef unsigned char minv = 255
     cdef unsigned char maxv = 0
     cdef unsigned char value

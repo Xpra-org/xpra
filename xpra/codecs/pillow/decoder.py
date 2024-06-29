@@ -11,7 +11,7 @@ from PIL import Image
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.common import Buffer, SizedBuffer
+from xpra.common import SizedBuffer
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, strtobytes, hexstr, memoryview_to_bytes
 from xpra.codecs.debug import may_save_image
@@ -89,7 +89,7 @@ def get_image_type(data: SizedBuffer) -> str:
     return ""
 
 
-def open_only(data: Buffer, types=("png", "jpeg", "webp")) -> Image:
+def open_only(data: SizedBuffer, types=("png", "jpeg", "webp")) -> Image:
     itype = get_image_type(data) or "unknown"
     if itype not in types:
         raise ValueError(f"invalid data: {itype}, not recognized as {csv(types)}, header: " + hexstr(data[:64]))
