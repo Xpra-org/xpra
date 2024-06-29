@@ -35,7 +35,7 @@ class ServerWebTransportConnection(XpraQuicConnection):
             return f"WebTransportHandler<{self.stream_id}>"
 
     def http_event_received(self, event: H3Event) -> None:
-        log(f"wt.http_event_received({event}) closed={self.closed}, accepted={self.accepted}")
+        log("wt.http_event_received(%s) closed=%s, accepted=%s", event, self.closed, self.accepted)
         if self.closed:
             return
         if self.accepted:
@@ -50,7 +50,6 @@ class ServerWebTransportConnection(XpraQuicConnection):
         else:
             self.accepted = True
             self.send_accept()
-            # self.connection.create_webtransport_stream()
             self.transmit()
 
     def send_accept(self) -> None:
@@ -72,11 +71,11 @@ class ServerWebTransportConnection(XpraQuicConnection):
             self.transmit()
 
     def do_write(self, stream_id: int, data: bytes) -> None:
-        log(f"wt.do_write({stream_id}, {len(data)} bytes)")
+        log("wt.do_write(%i, %i bytes)", stream_id, len(data))
         self.connection._quic.send_stream_data(stream_id=stream_id, data=data, end_stream=self.closed)
 
     def send_datagram(self, data: bytes) -> None:
-        log(f"send_datagram({len(data)} bytes)")
+        log("send_datagram(%i bytes)", len(data))
         self.connection.send_datagram(flow_id=self.stream_id, data=data)
         self.transmit()
 
