@@ -35,7 +35,7 @@ class ServerWebTransportConnection(XpraQuicConnection):
             return f"WebTransportHandler<{self.stream_id}>"
 
     def http_event_received(self, event: H3Event) -> None:
-        log.info(f"wt.http_event_received({event}) closed={self.closed}, accepted={self.accepted}")
+        log(f"wt.http_event_received({event}) closed={self.closed}, accepted={self.accepted}")
         if self.closed:
             return
         if self.accepted:
@@ -43,11 +43,9 @@ class ServerWebTransportConnection(XpraQuicConnection):
                 # self.read_datagram_queue.put(event.data)
                 log("datagram ignored")
             elif isinstance(event, WebTransportStreamDataReceived):
-                log(f"data for stream_id={event.stream_id}, our stream_id={self.stream_id}")
                 if event.stream_id != self.stream_id:
+                    log(f"switching to stream_id={event.stream_id}")
                     self.stream_id = event.stream_id
-                    # ensure we can send data on this stream from now on:
-                    self.send_headers(self.stream_id, {})
                 self.read_queue.put(event.data)
         else:
             self.accepted = True
@@ -72,6 +70,10 @@ class ServerWebTransportConnection(XpraQuicConnection):
             self.closed = True
             self.send_headers(0, {":status": code})
             self.transmit()
+
+    def do_write(self, stream_id: int, data: bytes) -> None:
+        log(f"wt.do_write({stream_id}, {len(data)} bytes)")
+        self.connection._quic.send_stream_data(stream_id=stream_id, data=data, end_stream=self.closed)
 
     def send_datagram(self, data: bytes) -> None:
         log(f"send_datagram({len(data)} bytes)")

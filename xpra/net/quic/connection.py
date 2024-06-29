@@ -118,17 +118,23 @@ class XpraQuicConnection(Connection):
         log("quic.stream_write(%s, %s) using stream id %s", Ellipsizer(buf), packet_type, stream_id)
 
         def do_write() -> None:
+            if self.closed:
+                log(f"connection is already closed, packet {packet_type} dropped")
+                return
             try:
-                self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
+                self.do_write(stream_id, data)
                 self.transmit()
             except AssertionError:
                 if self.closed:
-                    log("connection is already closed, packet {packet_type} dropped")
+                    log(f"connection is already closed, packet {packet_type} dropped")
                     return
                 raise
 
         get_threaded_loop().call(do_write)
         return len(buf)
+
+    def do_write(self, stream_id: int, data: bytes) -> None:
+        self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
 
     def get_packet_stream_id(self, packet_type: str) -> int:
         return self.stream_id
