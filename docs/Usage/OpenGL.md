@@ -13,10 +13,11 @@ To take advantage of GPU [OpenGL](https://www.opengl.org/) acceleration, here ar
 ```shell
 xpra start --start="vglrun glxgears"
 ```
-Or even:
+Or even better:
 ```shell
 xpra start --exec-wrapper="vglrun" --start="glxgears"
 ```
+That way, xpra will be able to detect the GPU actually used by `start` sub commands.
 
 * ## via WSL - Windows Subsystem for Linux
 See [WSL - Windows Subsystem for Linux](WSL.md) OpenGL acceleration.
