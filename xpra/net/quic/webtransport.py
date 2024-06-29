@@ -23,7 +23,7 @@ log = Logger("quic")
 
 class ServerWebTransportConnection(XpraQuicConnection):
     def __init__(self, connection: HttpConnection, scope: dict, stream_id: int, transmit: Callable[[], None]) -> None:
-        super().__init__(connection, stream_id, transmit, "", 0, info=None, options=None)
+        super().__init__(connection, stream_id, transmit, "", 0, "webtransport")
         self.http_event_queue: SimpleQueue[DataReceived] = SimpleQueue()
         # self.read_datagram_queue = SimpleQueue()
         self.scope = scope

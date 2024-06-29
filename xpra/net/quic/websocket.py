@@ -32,7 +32,7 @@ SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
 class ServerWebSocketConnection(XpraQuicConnection):
     def __init__(self, connection, scope: dict,
                  stream_id: int, transmit: Callable[[], None]) -> None:
-        super().__init__(connection, stream_id, transmit, "", 0, info=None, options=None)
+        super().__init__(connection, stream_id, transmit, "", 0, "wss", info=None, options=None)
         self.scope: dict = scope
         self._packet_type_streams: dict[str, int] = {}
         self._use_substreams = bool(SUBSTREAM_PACKET_TYPES)

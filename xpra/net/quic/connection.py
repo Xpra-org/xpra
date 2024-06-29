@@ -35,8 +35,8 @@ if envbool("XPRA_QUIC_LOGGER", True):
 
 class XpraQuicConnection(Connection):
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
-                 host: str, port: int, info=None, options=None) -> None:
-        Connection.__init__(self, (host, port), "wss", info=info, options=options)
+                 host: str, port: int, socktype="wss", info=None, options=None) -> None:
+        Connection.__init__(self, (host, port), socktype, info=info, options=options)
         self.socktype_wrapped = "quic"
         self.connection: HttpConnection = connection
         self.read_queue: SimpleQueue[bytes] = SimpleQueue()
@@ -46,7 +46,7 @@ class XpraQuicConnection(Connection):
         self.closed: bool = False
 
     def __repr__(self):
-        return f"XpraQuicConnection<{self.stream_id}>"
+        return f"XpraQuicConnection<{self.socktype}:{self.stream_id}>"
 
     def get_info(self) -> dict[str, Any]:
         info = super().get_info()
