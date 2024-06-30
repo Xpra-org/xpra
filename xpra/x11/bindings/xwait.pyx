@@ -28,7 +28,7 @@ def err(s) -> None:
         pass
 
 
-cdef end(msg, int code = exit_code):
+cdef void end(msg, int code = exit_code):
     global exit_code, exit_event
     err(msg)
     exit_code = code

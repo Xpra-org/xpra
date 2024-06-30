@@ -71,12 +71,12 @@ def isxwayland(display_name: str=os.environ.get("DISPLAY", "")) -> bool:
         XCloseDisplay(d)
 
 
-cdef Atom get_XAtom(Display *display, name: str):
+cdef Atom intern_atom(Display *display, name: str):
     b = name.encode()
     return XInternAtom(display, b, True)
 
 
-cdef get_xstring(Display *display, name="XPRA_SERVER_UUID", prop_type="STRING"):
+cdef str get_xstring(Display *display, name="XPRA_SERVER_UUID", prop_type="STRING"):
     cdef Atom xactual_type = <Atom> 0
     cdef int actual_format = 0
     cdef unsigned long nitems = 0, bytes_after = 0
@@ -85,13 +85,13 @@ cdef get_xstring(Display *display, name="XPRA_SERVER_UUID", prop_type="STRING"):
 
     def fail(message):
         #print(message)
-        return None
+        return ""
 
-    xtype = get_XAtom(display, prop_type)
+    xtype = intern_atom(display, prop_type)
     if xtype==0:
         #the property cannot exist if the type is not defined
         return fail(f"Atom {prop_type} does not exist")
-    prop = get_XAtom(display, name)
+    prop = intern_atom(display, name)
     if prop==0:
         #the atom for the name does not exist so the property cannot exist:
         return fail(f"Atom {name} does not exist")
@@ -123,4 +123,4 @@ cdef get_xstring(Display *display, name="XPRA_SERVER_UUID", prop_type="STRING"):
         raise RuntimeError(f"unexpected format value: {actual_format}")
     cdef int nbytes = bytes_per_item * nitems
     data = (<char *> prop_data)[:nbytes]
-    return data
+    return data.decode("latin1")

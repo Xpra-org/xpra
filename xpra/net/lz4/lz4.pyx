@@ -56,16 +56,16 @@ cdef class compressor:
         cdef Py_buffer in_buf
         if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
             raise ValueError("failed to read data from %s" % type(data))
-        if in_buf.len>LZ4_MAX_INPUT_SIZE:
+        if in_buf.len > LZ4_MAX_INPUT_SIZE:
             PyBuffer_Release(&in_buf)
             log("input is too large")
             raise ValueError("input is too large")
-        if max_size<=0:
+        if max_size <= 0:
             max_size = LZ4_compressBound(in_buf.len)
         cdef int size_header = 0
         if store_size:
             size_header = 4
-        cdef MemBuf out_buf = getbuf(size_header+max_size, False)
+        cdef MemBuf out_buf = getbuf(size_header + max_size, False)
         mem = memoryview(out_buf)
         if store_size:
             struct.pack_into(b"@I", mem, 0, in_buf.len)
@@ -74,7 +74,7 @@ cdef class compressor:
         cdef int r
         with nogil:
             r = LZ4_compress_fast_continue(&self.state, in_ptr, out_ptr, in_buf.len, max_size-size_header, acceleration)
-        if r<=0:
+        if r <= 0:
             msg = f"LZ4_compress_fast_continue failed for input size {in_buf.len} and output buffer size {max_size}"
             log(msg)
             raise ValueError(msg)
@@ -89,12 +89,12 @@ def compress(data: SizedBuffer, acceleration=1) -> SizedBuffer:
 
 def decompress(data: SizedBuffer, int max_size=0, int size=0) -> SizedBuffer:
     cdef int size_header = 0
-    if size==0:
+    if size == 0:
         size = struct.unpack_from(b"@I", data[:4])[0]
         size_header = 4
-    if max_size>0 and size>max_size:
+    if max_size > 0 and size > max_size:
         raise ValueError("data would overflow max-size %i" % max_size)
-    if size>LZ4_MAX_INPUT_SIZE:
+    if size > LZ4_MAX_INPUT_SIZE:
         raise ValueError("data would overflow lz4 max input size %i" % LZ4_MAX_INPUT_SIZE)
     cdef Py_buffer in_buf
     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
@@ -107,7 +107,7 @@ def decompress(data: SizedBuffer, int max_size=0, int size=0) -> SizedBuffer:
     with nogil:
         r = LZ4_decompress_safe(in_ptr, out_ptr, l-size_header, size)
     PyBuffer_Release(&in_buf)
-    if r<=0:
+    if r <= 0:
         msg = f"LZ4_decompress_safe failed for input size {in_buf.len}"
         log(msg)
         raise ValueError(msg)

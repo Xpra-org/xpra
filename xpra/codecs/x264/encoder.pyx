@@ -598,7 +598,7 @@ cdef class Encoder:
             tunes.append(b"fastdecode")
         return b",".join(tunes)
 
-    cdef init_encoder(self, options: typedict):
+    cdef void init_encoder(self, options: typedict):
         cdef x264_param_t param
         cdef const char *preset = get_preset_names()[self.preset]
         self.tune = self.get_tune()
@@ -614,7 +614,7 @@ cdef class Encoder:
         log("x264 params: %s", self.get_param_info(&param))
         assert self.context!=NULL,  "context initialization failed for format %s" % self.src_format
 
-    cdef tune_param(self, x264_param_t *param, options: typedict):
+    cdef void tune_param(self, x264_param_t *param, options: typedict):
         param.i_lookahead_threads = 0
         if MIN_SLICED_THREADS_SPEED>0 and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
             param.b_sliced_threads = 1
@@ -850,7 +850,7 @@ cdef class Encoder:
     def get_src_format(self) -> str:
         return self.src_format
 
-    def compress_image(self, image: ImageWrapper, options=None):
+    def compress_image(self, image: ImageWrapper, options=None) -> Tuple[bytes, Dict]:
         cdef x264_picture_t pic_in
         cdef int i
 
@@ -934,7 +934,7 @@ cdef class Encoder:
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
 
-    cdef do_compress_image(self, x264_picture_t *pic_in, int quality=-1, int speed=-1):
+    cdef object do_compress_image(self, x264_picture_t *pic_in, int quality=-1, int speed=-1):
         cdef x264_nal_t *nals = NULL
         cdef int i_nals = 0
         cdef x264_picture_t pic_out

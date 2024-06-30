@@ -5,7 +5,7 @@
 
 from libc.stdint cimport uint8_t, uint32_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
-from typing import Tuple
+from typing import Tuple, Dict
 
 from xpra.common import MAX_DECOMPRESSED_SIZE
 from xpra.log import Logger
@@ -55,12 +55,14 @@ cdef extern from "brotli/decode.h":
     int BrotliDecoderIsUsed(const BrotliDecoderState* state)
     int BrotliDecoderIsFinished(const BrotliDecoderState* state)
 
-RESULT_STR = {
+
+RESULT_STR : Dict[BrotliDecoderResult, str] = {
     BROTLI_DECODER_RESULT_ERROR : "error",
     BROTLI_DECODER_RESULT_SUCCESS   : "success",
     BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT : "needs-more-input",
     BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT : "needs-more-output",
-    }
+}
+
 
 def get_version() -> Tuple[int, int, int]:
     cdef uint32_t bv = BrotliDecoderVersion()
@@ -68,6 +70,7 @@ def get_version() -> Tuple[int, int, int]:
     cdef unsigned int minor = (bv >> 12) & 0xFFF
     cdef unsigned int patch = bv & 0xFFF
     return (major, minor, patch)
+
 
 def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE) -> bytes:
     cdef const uint8_t *in_ptr = NULL
@@ -121,4 +124,6 @@ def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE) -> bytes:
         if state:
             BrotliDecoderDestroyInstance(state)
     del out_buf
+    if len(chunks) == 1:
+        return chunks[0]
     return b"".join(chunks)

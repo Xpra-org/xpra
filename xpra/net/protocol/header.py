@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -32,7 +32,7 @@ HEADER_SIZE = _header_unpack_struct.size
 assert HEADER_SIZE == 8
 
 
-def unpack_header(buf):
+def unpack_header(buf) -> tuple:
     return _header_unpack_struct.unpack_from(buf)
 
 
@@ -45,7 +45,7 @@ def pack_header(proto_flags: int, level: int, index: int, payload_size: int) -> 
     return _header_pack_struct.pack(80, proto_flags, level, index, payload_size)
 
 
-def find_xpra_header(data, index: int = 0, max_data_size: int = 2 ** 16):
+def find_xpra_header(data, index: int = 0, max_data_size: int = 2 ** 16) -> int:
     pos = data.find(b"P")
     while pos >= 0:
         if len(data) < pos + 8:

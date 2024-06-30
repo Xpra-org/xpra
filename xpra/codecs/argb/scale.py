@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.log import Logger
+from xpra.codecs.image import ImageWrapper
 
 log = Logger("encoding")
 
@@ -13,7 +14,7 @@ log = Logger("encoding")
 RGB_SCALE_FORMATS = ("BGRX", "BGRA", "RGBA", "RGBX",)
 
 
-def scale_image(image, width: int, height: int):
+def scale_image(image: ImageWrapper, width: int, height: int) -> ImageWrapper:
     rgb_format = image.get_pixel_format()
     if rgb_format in RGB_SCALE_FORMATS:
         try:

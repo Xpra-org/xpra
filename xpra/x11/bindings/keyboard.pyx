@@ -219,13 +219,13 @@ cdef extern from "X11/extensions/xfixeswire.h":
     void XFixesSelectCursorInput(Display *, Window w, long mask)
 
 
-cdef NS(char *v):
+cdef object NS(char *v):
     if v==NULL:
         return "NULL"
     b = v
     return b.decode("latin1")
 
-cdef s(const char *v):
+cdef object s(const char *v):
     pytmp = v[:]
     try:
         return pytmp.decode()

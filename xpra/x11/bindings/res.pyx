@@ -58,7 +58,7 @@ cdef extern from "X11/extensions/XRes.h":
     Status XResQueryVersion(Display *dpy, int *major_version_return, int *minor_version_return)
 
 
-cdef get_pid(Display *display, Window xid):
+cdef unsigned int get_pid(Display *display, Window xid):
     cdef XResClientIdSpec client_spec
     client_spec.client = xid
     client_spec.mask = XRES_CLIENT_ID_PID_MASK

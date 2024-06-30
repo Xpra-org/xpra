@@ -182,7 +182,7 @@ def get_pyatom(xatom) -> str:
     display = Gdk.get_default_root_window().get_display()
     return _get_pyatom(display, xatom)
 
-cdef _get_pyatom(display, int xatom):
+cdef object _get_pyatom(display, int xatom):
     if int(xatom) > 2**32:
         raise ValueError(f"weirdly huge purported xatom: {xatom}")
     if xatom==0:
@@ -324,7 +324,7 @@ def remove_fallback_receiver(signal, handler) -> None:
     log("remove_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
 
 
-cdef _maybe_send_event(unsigned int DEBUG, handlers, signal, event, hinfo="window"):
+cdef void _maybe_send_event(unsigned int DEBUG, handlers, signal, event, hinfo="window"):
     if not handlers:
         if DEBUG:
             log.info("  no handler registered for %s (%s)", hinfo, handlers)
@@ -343,7 +343,7 @@ cdef _maybe_send_event(unsigned int DEBUG, handlers, signal, event, hinfo="windo
             log.info("  not forwarding to %s handler, it has no %r signal", type(handler).__name__, signal)
             log.info("     only: %s", csv(f"{s!r}" for s in signals))
 
-cdef _route_event(int etype, event, signal, parent_signal):
+cdef void _route_event(int etype, event, signal, parent_signal):
     # Sometimes we get GDK events with event.window == None, because they are
     # for windows we have never created a GdkWindow object for, and GDK
     # doesn't do so just for this event.  As far as I can tell this only

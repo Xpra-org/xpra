@@ -74,6 +74,7 @@ def get_version() -> Tuple[int, int, int]:
     cdef unsigned int patch = bv & 0xFFF
     return (major, minor, patch)
 
+
 DEF BROTLI_MIN_QUALITY = 0
 DEF BROTLI_MAX_QUALITY = 11
 DEF BROTLI_DEFAULT_WINDOW = 22

@@ -352,7 +352,7 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
             log.error(" %s", get_error_str())
 
 
-cdef TJSAMP get_subsamp(int quality):
+cdef inline TJSAMP get_subsamp(int quality):
     if quality<60:
         return TJSAMP_420
     elif quality<80:
@@ -360,7 +360,7 @@ cdef TJSAMP get_subsamp(int quality):
     return TJSAMP_444
 
 
-cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
+cdef object encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
     pfstr = image.get_pixel_format()
     pf = TJPF_VAL.get(pfstr)
     if pf is None:
@@ -380,7 +380,7 @@ cdef encode_rgb(tjhandle compressor, image, int quality, int grayscale=0):
                          quality, tjpf, subsamp)
 
 
-cdef do_encode_rgb(tjhandle compressor, pfstr, pixels,
+cdef object do_encode_rgb(tjhandle compressor, pfstr, pixels,
                    int width, int height, int stride,
                    int quality, TJPF tjpf, TJSAMP subsamp):
     cdef int flags = 0
@@ -411,7 +411,7 @@ cdef do_encode_rgb(tjhandle compressor, pfstr, pixels,
     return makebuf(out, out_size)
 
 
-cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
+cdef object encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
     pfstr = image.get_pixel_format()
     assert pfstr in ("YUV420P", "YUV422P"), "invalid yuv pixel format %s" % pfstr
     cdef TJSAMP subsamp
@@ -434,7 +434,7 @@ cdef encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
                          quality, subsamp)
 
 
-cdef do_encode_yuv(tjhandle compressor, pfstr, planes,
+cdef object do_encode_yuv(tjhandle compressor, pfstr, planes,
                    int width, int height, rowstrides,
                    int quality, TJSAMP subsamp):
     cdef int flags = 0

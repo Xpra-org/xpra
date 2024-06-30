@@ -183,7 +183,7 @@ def get_info() -> Dict[str, Any]:
     return info
 
 
-cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
+cdef inline const vpx_codec_iface_t  *make_codec_dx(encoding):
     if encoding=="vp8":
         return vpx_codec_vp8_dx()
     if encoding=="vp9":
@@ -191,7 +191,7 @@ cdef const vpx_codec_iface_t  *make_codec_dx(encoding):
     raise ValueError(f"unsupported encoding: {encoding!r}")
 
 
-cdef vpx_img_fmt_t get_vpx_colorspace(colorspace):
+cdef inline vpx_img_fmt_t get_vpx_colorspace(colorspace):
     if colorspace == "YUV444P":
         return VPX_IMG_FMT_I444
     return VPX_IMG_FMT_I420

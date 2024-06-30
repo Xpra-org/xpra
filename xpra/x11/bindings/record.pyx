@@ -495,7 +495,7 @@ cdef dict parse_GrabKeyboard(xGrabKeyboardReq *rec):
         "keyboard-mode": rec.keyboardMode,
     }
 
-cdef parse_GrabKey(xGrabKeyReq *rec):
+cdef dict parse_GrabKey(xGrabKeyReq *rec):
     return {
         "window": rec.grabWindow,
         "owner-events": rec.ownerEvents,
@@ -505,7 +505,7 @@ cdef parse_GrabKey(xGrabKeyReq *rec):
     }
 
 
-cdef parse_UngrabKey(xUngrabKeyReq *rec):
+cdef dict parse_UngrabKey(xUngrabKeyReq *rec):
     return {
         "window": rec.grabWindow,
         "key": rec.key,

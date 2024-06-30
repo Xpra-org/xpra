@@ -303,7 +303,7 @@ PRESETS: Dict[int, str] = {
     WEBP_PRESET_ICON         : "icon",
     WEBP_PRESET_TEXT         : "text",
 }
-PRESET_NAME_TO_CONSTANT = {}
+PRESET_NAME_TO_CONSTANT: Dict[str, int] = {}
 for k,v in PRESETS.items():
     PRESET_NAME_TO_CONSTANT[v] = k
 
@@ -325,7 +325,7 @@ IMAGE_HINT: Dict[int, str] = {
     WEBP_HINT_PHOTO       : "photo",
     WEBP_HINT_GRAPH       : "graph",
 }
-HINT_NAME_TO_CONSTANT = {}
+HINT_NAME_TO_CONSTANT: Dict[str, int] = {}
 for k,v in IMAGE_HINT.items():
     HINT_NAME_TO_CONSTANT[v] = k
 
@@ -592,7 +592,7 @@ cdef class Encoder:
         return cdata, client_options
 
 
-cdef WebPPreset get_preset(unsigned int width, unsigned int height, content_type: str):
+cdef inline WebPPreset get_preset(unsigned int width, unsigned int height, content_type: str):
     cdef WebPPreset preset = DEFAULT_PRESET
     #only use icon for small squarish rectangles
     if width*height<=2304 and abs(width-height)<=16:
@@ -600,7 +600,7 @@ cdef WebPPreset get_preset(unsigned int width, unsigned int height, content_type
     return CONTENT_TYPE_PRESET.get(content_type, preset)
 
 
-cdef config_init(WebPConfig *config):
+cdef inline void config_init(WebPConfig *config):
     cdef int ret = WebPConfigInit(config)
     if not ret:
         raise RuntimeError("failed to initialize webp config")
@@ -645,20 +645,20 @@ cdef configure_encoder(WebPConfig *config,
         config.alpha_compression, config.alpha_filtering, config.alpha_quality)
 
 
-cdef configure_preset(WebPConfig *config, WebPPreset preset, int quality):
+cdef void configure_preset(WebPConfig *config, WebPPreset preset, int quality):
     ret = WebPConfigPreset(config, preset, fclamp(quality))
     if not ret:
         raise ValueError(f"failed to set webp preset {preset} and quality {quality}")
     log("webp config: preset=%-8s", PRESETS.get(preset, preset))
 
 
-cdef configure_image_hint(WebPConfig *config, content_type: str):
+cdef void configure_image_hint(WebPConfig *config, content_type: str):
     cdef WebPImageHint image_hint = CONTENT_TYPE_HINT.get(content_type, DEFAULT_IMAGE_HINT)
     config.image_hint = image_hint
     log("webp config: image hint=%s", IMAGE_HINT.get(image_hint, image_hint))
 
 
-cdef validate_config(WebPConfig *config):
+cdef void validate_config(WebPConfig *config):
     ret = WebPValidateConfig(config)
     if not ret:
         info = get_config_info(config)
@@ -732,7 +732,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> Tuple:
     return "webp", Compressed("webp", cdata), client_options, width, height, 0, len(pixel_format.replace("A", ""))*8
 
 
-cdef import_picture(WebPPicture *pic,
+cdef void import_picture(WebPPicture *pic,
                   unsigned int width, unsigned int height,
                   unsigned int stride,
                   unsigned char supports_alpha,
@@ -781,7 +781,7 @@ cdef import_picture(WebPPicture *pic,
     log("webp %s import took %.1fms", pixel_format, 1000*(end-start))
 
 
-cdef scale_picture(WebPPicture *pic, unsigned scaled_width, unsigned int scaled_height):
+cdef void scale_picture(WebPPicture *pic, unsigned scaled_width, unsigned int scaled_height):
     cdef double start = monotonic()
     with nogil:
         ret = WebPPictureRescale(pic, scaled_width, scaled_height)
@@ -792,7 +792,7 @@ cdef scale_picture(WebPPicture *pic, unsigned scaled_width, unsigned int scaled_
     log("webp %s resizing took %.1fms", 1000*(end-start))
 
 
-cdef to_yuv(WebPPicture *pic, WebPEncCSP csp=WEBP_YUV420):
+cdef void to_yuv(WebPPicture *pic, WebPEncCSP csp=WEBP_YUV420):
     cdef double start = monotonic()
     with nogil:
         ret = WebPPictureARGBToYUVA(pic, csp)
@@ -802,7 +802,7 @@ cdef to_yuv(WebPPicture *pic, WebPEncCSP csp=WEBP_YUV420):
     log("webp subsampling ARGB to %s took %.1fms", CSP_NAMES.get(csp, csp), 1000*(end-start))
 
 
-cdef webp_encode(WebPConfig *config, WebPPicture *pic):
+cdef object webp_encode(WebPConfig *config, WebPPicture *pic):
     cdef double start = monotonic()
     cdef WebPMemoryWriter memory_writer
     memset(&memory_writer, 0, sizeof(WebPMemoryWriter))

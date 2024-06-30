@@ -214,7 +214,7 @@ cdef int get_XShape_event_base(Display *xdisplay):
     return event_base
 
 
-cdef init_x11_events(Display *display):
+cdef void init_x11_events(Display *display):
     add_x_event_signals({
         MapRequest          : (None, "x11-child-map-request-event"),
         ConfigureRequest    : (None, "x11-child-configure-request-event"),
@@ -379,7 +379,7 @@ def add_x_event_parser(extension_opcode: int, parser : Callable) -> None:
     x_event_parsers[extension_opcode] = parser
 
 
-cdef atom_str(Display *display, Atom atom):
+cdef str atom_str(Display *display, Atom atom):
     if not atom:
         return ""
     cdef char* atom_name = NULL
@@ -396,7 +396,7 @@ cdef atom_str(Display *display, Atom atom):
     return r
 
 
-cdef parse_xevent(Display *d, XEvent *e):
+cdef object parse_xevent(Display *d, XEvent *e):
     cdef XDamageNotifyEvent * damage_e
     cdef XFixesCursorNotifyEvent * cursor_e
     cdef XkbAnyEvent * xkb_e

@@ -298,6 +298,7 @@ DEF MIN_SIGNED_INT = -MAX_SIGNED_INT
 cdef object MAX_SIGNED_LONGLONG = int(2**63)
 cdef object MIN_SIGNED_LONGLONG = -MAX_SIGNED_LONGLONG
 
+
 cdef void encode(char **buf, unsigned int *pos, data):
     t = type(data)
     if t == int:

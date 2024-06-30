@@ -261,7 +261,7 @@ def get_info() -> Dict[str,Any]:
     return info
 
 
-cdef const vpx_codec_iface_t  *make_codec_cx(encoding):
+cdef inline const vpx_codec_iface_t  *make_codec_cx(encoding):
     if encoding=="vp8":
         return vpx_codec_vp8_cx()
     if encoding=="vp9":
@@ -304,7 +304,7 @@ def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
         )
 
 
-cdef vpx_img_fmt_t get_vpx_colorspace(colorspace: str) except -1:
+cdef inline vpx_img_fmt_t get_vpx_colorspace(colorspace: str) except -1:
     if colorspace == "YUV420P":
         return VPX_IMG_FMT_I420
     if colorspace == "YUV444P":

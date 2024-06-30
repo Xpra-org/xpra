@@ -18,7 +18,7 @@ cdef extern from "Python.h":
 
 
 def xor_str(a: SizedBuffer, b: SizedBuffer) -> SizedBuffer:
-    if len(a)!=len(b):
+    if len(a) != len(b):
         raise ValueError("cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b)))
     cdef Py_buffer py_bufa
     memset(&py_bufa, 0, sizeof(Py_buffer))
@@ -31,7 +31,7 @@ def xor_str(a: SizedBuffer, b: SizedBuffer) -> SizedBuffer:
         raise ValueError(f"failed to read pixel data from {type(b)}")
     cdef Py_ssize_t alen = py_bufa.len
     cdef Py_ssize_t blen = py_bufb.len
-    if alen!=blen:
+    if alen != blen:
         PyBuffer_Release(&py_bufa)
         PyBuffer_Release(&py_bufb)
         raise RuntimeError(f"python or cython bug? buffers don't have the same length?")

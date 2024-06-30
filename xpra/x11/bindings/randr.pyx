@@ -292,7 +292,7 @@ cdef extern from "X11/extensions/Xrandr.h":
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 
-cdef get_mode_info(XRRModeInfo *mi, with_sync: bool):
+cdef dict get_mode_info(XRRModeInfo *mi, with_sync: bool):
     info = {
         "id"            : mi.id,
         "width"         : mi.width,
@@ -315,7 +315,7 @@ cdef get_mode_info(XRRModeInfo *mi, with_sync: bool):
     return info
 
 
-cdef get_output_info(Display *display, XRRScreenResources *rsc, RROutput output):
+cdef dict get_output_info(Display *display, XRRScreenResources *rsc, RROutput output):
     cdef XRROutputInfo *oi = XRRGetOutputInfo(display, rsc, output)
     if oi==NULL:
         return {}
@@ -343,15 +343,16 @@ cdef get_output_info(Display *display, XRRScreenResources *rsc, RROutput output)
     return info
 
 
-cdef get_XAtom(Display *display, Atom atom):
+cdef str get_XAtom(Display *display, Atom atom):
     cdef char *v = XGetAtomName(display, atom)
-    if v==NULL:
-        return None
+    if v == NULL:
+        return ""
     r = v[:]
     XFree(v)
     return r.decode()
 
-cdef get_output_properties(Display *display, RROutput output):
+
+cdef dict get_output_properties(Display *display, RROutput output):
     cdef int nprop
     cdef Atom *atoms = XRRListOutputProperties(display, output, &nprop)
     cdef Atom prop, actual_type
@@ -433,7 +434,7 @@ cdef get_output_properties(Display *display, RROutput output):
     return properties
 
 
-cdef get_all_screen_properties(Display *display):
+cdef dict get_all_screen_properties(Display *display):
     cdef Window window = XDefaultRootWindow(display)
     cdef XRRScreenResources *rsc = XRRGetScreenResourcesCurrent(display, window)
     cdef RROutput primary = XRRGetOutputPrimary(display, window)
@@ -464,7 +465,7 @@ cdef get_all_screen_properties(Display *display):
     return props
 
 
-cdef get_crtc_info(Display *display, XRRScreenResources *rsc, RRCrtc crtc):
+cdef dict get_crtc_info(Display *display, XRRScreenResources *rsc, RRCrtc crtc):
     cdef XRRCrtcInfo *ci = XRRGetCrtcInfo(display, rsc, crtc)
     if ci==NULL:
         return {}
@@ -501,7 +502,8 @@ cdef get_crtc_info(Display *display, XRRScreenResources *rsc, RRCrtc crtc):
     XRRFreeCrtcInfo(ci)
     return info
 
-cdef get_monitor_properties(Display *display):
+
+cdef dict get_monitor_properties(Display *display):
     cdef int nmonitors
     cdef Window window = XDefaultRootWindow(display)
     cdef XRRMonitorInfo *monitors = XRRGetMonitors(display, window, True, &nmonitors)

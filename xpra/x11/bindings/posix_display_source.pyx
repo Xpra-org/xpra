@@ -21,7 +21,7 @@ def init_posix_display_source() -> None:
     return do_init_posix_display_source(display_name)
 
 
-cdef do_init_posix_display_source(display_name):
+cdef uintptr_t do_init_posix_display_source(display_name):
     if not display_name:
         raise ValueError("display name not provided")
     cdef Display * display = XOpenDisplay(strtobytes(display_name))

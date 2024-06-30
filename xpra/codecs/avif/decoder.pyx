@@ -67,7 +67,7 @@ def get_encodings() -> Sequence[str]:
     return ("avif", )
 
 
-cdef check(avifResult r, message: str):
+cdef inline void check(avifResult r, message: str):
     if r != AVIF_RESULT_OK:
         err = avifResultToString(r).decode("latin1") or AVIF_RESULT.get(r, r)
         raise RuntimeError("%s : %s" % (message, err))

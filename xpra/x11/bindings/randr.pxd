@@ -5,10 +5,10 @@
 
 from xpra.x11.bindings.xlib cimport Display
 
-cdef get_monitor_properties(Display *display)
+cdef dict get_monitor_properties(Display *display)
 #cdef get_crtc_info(Display *display, XRRScreenResources *rsc, RRCrtc crtc)
 #cdef get_output_properties(Display *display, RROutput output)
 #cdef get_output_info(Display *display, XRRScreenResources *rsc, RROutput output)
 #cdef get_mode_info(XRRModeInfo *mi, with_sync : bool)
 
-cdef get_all_screen_properties(Display *display)
+cdef dict get_all_screen_properties(Display *display)

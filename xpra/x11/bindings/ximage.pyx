@@ -813,7 +813,7 @@ cdef class PixmapWrapper:
 
 
 
-cdef get_image(Display * display, Drawable drawable, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
+cdef XImageWrapper get_image(Display * display, Drawable drawable, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
     cdef XImage* ximage = XGetImage(display, drawable, x, y, width, height, AllPlanes, ZPixmap)
     #log.info("get_pixels(..) ximage==NULL : %s", ximage==NULL)
     if ximage==NULL:
@@ -826,7 +826,7 @@ cdef get_image(Display * display, Drawable drawable, unsigned int x, unsigned in
     return xi
 
 
-cdef xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
+cdef object xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
     cdef Window root_window
     cdef int x, y
     cdef unsigned int width, height, border, depth
@@ -844,7 +844,7 @@ cdef xcomposite_name_window_pixmap(Display * xdisplay, Window xwindow):
     return pw
 
 
-cdef window_pixmap_wrapper(Display *xdisplay, Window xwindow):
+cdef object window_pixmap_wrapper(Display *xdisplay, Window xwindow):
     cdef Window root_window
     cdef int x, y
     cdef unsigned width, height, border, depth
