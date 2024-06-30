@@ -6,7 +6,7 @@
 
 from collections.abc import Sequence
 
-from cairo import ImageSurface, FORMAT_ARGB32  # pylint: disable=no-name-in-module
+from cairo import FORMAT_ARGB32  # pylint: disable=no-name-in-module
 
 from xpra.common import noop
 from xpra.os_util import gi_import
@@ -21,12 +21,12 @@ GLib = gi_import("GLib")
 GdkPixbuf = gi_import("GdkPixbuf")
 
 CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
-set_image_surface_data = noop
+make_image_surface = noop
 CAIRO_FORMATS: dict[int, Sequence[str]] = {}
 try:
     from xpra.client.gtk3 import cairo_workaround
 
-    set_image_surface_data = cairo_workaround.set_image_surface_data
+    make_image_surface = cairo_workaround.make_image_surface
     CAIRO_FORMATS.update(cairo_workaround.CAIRO_FORMATS)
 except ImportError as e:
     log.warn("Warning: failed to load the bindings cairo workaround:")
@@ -56,16 +56,16 @@ class CairoBacking(CairoBackingBase):
                       x: int, y: int, width: int, height: int, render_width: int, render_height: int,
                       rowstride: int, options: typedict) -> None:
         """ must be called from UI thread """
-        log("cairo._do_paint_rgb%s set_image_surface_data=%s, use pixbuf=%s",
+        log("cairo._do_paint_rgb%s make_image_surface=%s, use pixbuf=%s",
             (FORMATS.get(cairo_format, cairo_format), has_alpha, len(img_data),
              type(img_data), x, y, width, height, render_width, render_height,
-             rowstride, options), set_image_surface_data, CAIRO_USE_PIXBUF)
+             rowstride, options), make_image_surface, CAIRO_USE_PIXBUF)
         rgb_format = options.strget("rgb_format", "RGB")
+        log.info(f"{rgb_format=}, {CAIRO_USE_PIXBUF}")
         if not CAIRO_USE_PIXBUF:
             rgb_formats = CAIRO_FORMATS.get(cairo_format, ())
             if rgb_format in rgb_formats:
-                img_surface = ImageSurface(cairo_format, width, height)
-                set_image_surface_data(img_surface, rgb_format, img_data, width, height, rowstride)
+                img_surface = make_image_surface(cairo_format, rgb_format, img_data, width, height, rowstride)
                 self.cairo_paint_surface(img_surface, x, y, render_width, render_height, options)
                 return
             log("cannot set image surface data for cairo format %s and rgb_format %s (rgb formats supported: %s)",
@@ -91,5 +91,4 @@ class CairoBacking(CairoBackingBase):
         raise ValueError(f"failed to paint {cairo_format}")
 
     def update_fps_buffer(self, width: int, height: int, pixels) -> None:
-        self.fps_image = ImageSurface(FORMAT_ARGB32, width, height)
-        set_image_surface_data(self.fps_image, "RGBA", pixels, width, height, width * 4)
+        self.fps_image = make_image_surface(FORMAT_ARGB32, "RGBA", pixels, width, height, width * 4)

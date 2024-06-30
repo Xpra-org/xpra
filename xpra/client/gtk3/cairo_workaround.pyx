@@ -27,7 +27,8 @@
 from typing import Dict
 from collections.abc import Sequence
 
-import cairo
+from cairo import ImageSurface
+
 from libc.stdint cimport uintptr_t
 from libc.string cimport memcpy
 from xpra.buffers.membuf cimport buffer_context
@@ -105,12 +106,10 @@ CAIRO_FORMATS: Dict[cairo_format_t, Sequence[str]] = {
 }
 
 
-def set_image_surface_data(object image_surface, rgb_format: str, object pixels,
-                           int width, int height, int stride) -> None:
-    #convert pixel_data to a C buffer:
-    #convert cairo.ImageSurface python object to a cairo_surface_t
-    if not isinstance(image_surface, cairo.ImageSurface):
-        raise TypeError("object %r is not a %r" % (image_surface, cairo.ImageSurface))
+def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int stride) -> ImageSurface:
+    image_surface = ImageSurface(fmt, width, height)
+    # convert pixel_data to a C buffer:
+    # convert cairo.ImageSurface python object to a cairo_surface_t
     cdef cairo_surface_t * surface = (<PycairoImageSurface *> image_surface).surface
     cairo_surface_flush(surface)
     cdef unsigned char *cdata = cairo_image_surface_get_data(surface)
@@ -119,10 +118,10 @@ def set_image_surface_data(object image_surface, rgb_format: str, object pixels,
     cdef int istride    = cairo_image_surface_get_stride(surface)
     cdef int iwidth     = cairo_image_surface_get_width(surface)
     cdef int iheight    = cairo_image_surface_get_height(surface)
-    if iwidth<width or iheight<height:
-        raise ValueError(f"invalid image surface: expected at least {width}x{height} but got {iwidth}x{iheight}")
+    if iwidth != width or iheight != height:
+        raise ValueError(f"invalid image surface: expected {width}x{height} but got {iwidth}x{iheight}")
     BPP = 2 if cairo_format==CAIRO_FORMAT_RGB16_565 else 4
-    if istride<iwidth*BPP:
+    if istride < iwidth*BPP:
         raise ValueError(f"invalid image stride: expected at least {iwidth*4} but got {istride}")
     cdef int x, y
     cdef int srci, dsti
@@ -138,8 +137,8 @@ def set_image_surface_data(object image_surface, rgb_format: str, object pixels,
             #cairo's RGB24 format is actually stored as BGR on little endian
             if rgb_format=="BGR":
                 with nogil:
-                    for y in range(height):
-                        for x in range(width):
+                    for y in range(iheight):
+                        for x in range(iwidth):
                             srci = x*3 + y*stride
                             dsti = x*4 + y*istride
                             cdata[dsti + 0] = cbuf[srci + 0]     #B
@@ -218,6 +217,7 @@ def set_image_surface_data(object image_surface, rgb_format: str, object pixels,
         else:
             raise ValueError(f"unhandled cairo format {cairo_format!r}")
     cairo_surface_mark_dirty(surface)
+    return image_surface
 
 
 cdef Pycairo_CAPI_t * Pycairo_CAPI
