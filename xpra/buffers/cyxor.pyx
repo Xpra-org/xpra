@@ -44,7 +44,7 @@ def xor_str(a: SizedBuffer, b: SizedBuffer) -> SizedBuffer:
     cdef uint32_t *abuf = <uint32_t*> py_bufa.buf
     cdef uint32_t *bbuf = <uint32_t*> py_bufb.buf
     cdef unsigned int i, j, steps, char_steps
-    if (alen % 4)!=0 or (blen % 4)!=0:
+    if (alen % 4) != 0:
         #unaligned access, use byte at a time slow path:
         char_steps = alen
         for 0 <= i < char_steps:
