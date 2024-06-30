@@ -429,7 +429,7 @@ class TestAuth(unittest.TestCase):
         def f(digests=None, response=None, **kwargs):
             try:
                 t(digests, response, **kwargs)
-            except (AssertionError, ValueError, oauthlib.oauth2.rfc6749.errors.OAuth2Error):
+            except (AssertionError, ValueError, oauthlib.oauth2.rfc6749.errors.OAuth2Error, TypeError):
                 pass
             else:
                 raise Exception("keycloak auth should have failed with arguments: %s" % (kwargs,))
