@@ -129,7 +129,7 @@ def decompress(data) -> Tuple[memoryview, str, int, int]:
         close()
         return None
 
-    cdef MemBuf membuf = getbuf(out_size)
+    cdef MemBuf membuf = getbuf(out_size, 0)
     cdef uintptr_t ptr = <uintptr_t> membuf.get_mem()
     with nogil:
         r = spng_decode_image(ctx, <void *> ptr, out_size, fmt, flags)

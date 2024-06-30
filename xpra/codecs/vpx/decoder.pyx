@@ -347,7 +347,7 @@ cdef class Decoder:
 
             plane_len = height * stride
             #add one extra line of padding:
-            output_buf = padbuf(plane_len, stride)
+            output_buf = padbuf(plane_len, stride, 0)
             output = <void *>output_buf.get_mem()
             memcpy(output, <void *>img.planes[i], plane_len)
             memset(<void *>((<char *>output)+plane_len), 0, stride)

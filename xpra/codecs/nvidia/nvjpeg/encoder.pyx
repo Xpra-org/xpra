@@ -418,7 +418,7 @@ cdef class Encoder:
             start = monotonic()
             r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, NULL, &length, self.stream)
             errcheck(r, "nvjpegEncodeRetrieveBitstream")
-            output_buf = getbuf(length)
+            output_buf = getbuf(length, 0)
             buf_ptr = <unsigned char*> output_buf.get_mem()
             with nogil:
                 r = nvjpegEncodeRetrieveBitstream(self.nv_handle, self.nv_enc_state, buf_ptr, &length, NULL)

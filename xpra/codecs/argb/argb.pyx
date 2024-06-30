@@ -41,7 +41,7 @@ cdef object bgr565data_to_rgbx(const uint16_t* rgb565, const int rgb565_len):
     if rgb565_len <= 0:
         return b""
     assert rgb565_len>0 and rgb565_len % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % rgb565_len
-    cdef MemBuf output_buf = getbuf(rgb565_len*2)
+    cdef MemBuf output_buf = getbuf(rgb565_len*2, 0)
     cdef uint32_t *rgbx = <uint32_t*> output_buf.get_mem()
     cdef uint16_t v
     cdef unsigned int l = rgb565_len//2
@@ -64,7 +64,7 @@ cdef object bgr565data_to_rgb(const uint16_t* rgb565, const int rgb565_len):
     if rgb565_len <= 0:
         return b""
     assert rgb565_len>0 and rgb565_len % 2 == 0, "invalid buffer size: %s is not a multiple of 2" % rgb565_len
-    cdef MemBuf output_buf = getbuf(rgb565_len*3//2)
+    cdef MemBuf output_buf = getbuf(rgb565_len*3//2, 0)
     cdef uint8_t *rgb = <uint8_t*> output_buf.get_mem()
     cdef uint32_t v, i
     cdef unsigned int l = rgb565_len//2
@@ -93,7 +93,7 @@ def r210_to_rgba(buf: SizedBuffer,
 cdef object r210data_to_rgba(unsigned int* r210,
                       const unsigned int w, const unsigned int h,
                       const unsigned int src_stride, const unsigned int dst_stride):
-    cdef MemBuf output_buf = getbuf(h*dst_stride)
+    cdef MemBuf output_buf = getbuf(h*dst_stride, 0)
     cdef unsigned int* rgba = <unsigned int*> output_buf.get_mem()
     cdef unsigned int v, x, y = 0
     with nogil:
@@ -123,7 +123,7 @@ def r210_to_rgbx(buf: SizedBuffer,
 cdef object r210data_to_rgbx(unsigned int* r210,
                       const unsigned int w, const unsigned int h,
                       const unsigned int src_stride, const unsigned int dst_stride):
-    cdef MemBuf output_buf = getbuf(h*dst_stride)
+    cdef MemBuf output_buf = getbuf(h*dst_stride, 0)
     cdef unsigned int* rgbx = <unsigned int*> output_buf.get_mem()
     cdef unsigned int v, x, y = 0
     with nogil:
@@ -158,7 +158,7 @@ def r210_to_rgb(buf: SizedBuffer,
 cdef object r210data_to_rgb(unsigned int* r210,
                      const unsigned int w, const unsigned int h,
                      const unsigned int src_stride, const unsigned int dst_stride):
-    cdef MemBuf output_buf = getbuf(h*dst_stride)
+    cdef MemBuf output_buf = getbuf(h*dst_stride, 0)
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
     cdef unsigned int i, v, y = 0
     with nogil:
@@ -190,7 +190,7 @@ cdef object bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
     #number of pixels:
     cdef int mi = bgrx_len//4
     #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi*3)
+    cdef MemBuf output_buf = getbuf(mi*3, 0)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int si = 0, di = 0
     cdef unsigned int p
@@ -220,7 +220,7 @@ cdef object rgbdata_to_bgrx(const unsigned char *rgb, const int rgb_len):
     #number of pixels:
     cdef int mi = rgb_len//3
     #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi*4)
+    cdef MemBuf output_buf = getbuf(mi*4, 0)
     cdef unsigned int* bgrx = <unsigned int*> output_buf.get_mem()
     cdef int si = 0, di = 0
     cdef unsigned int p
@@ -247,7 +247,7 @@ cdef object bgrxdata_to_l(const unsigned int *bgrx, const int bgrx_len):
     #number of pixels:
     cdef int mi = bgrx_len//4
     #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi)
+    cdef MemBuf output_buf = getbuf(mi, 0)
     cdef unsigned char* l = <unsigned char*> output_buf.get_mem()
     cdef int i = 0
     cdef unsigned int p
@@ -287,7 +287,7 @@ cdef object rgbdata_to_l(const unsigned char *rgb, const int rgb_len,
     #number of pixels:
     cdef int mi = rgb_len//3
     #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi)
+    cdef MemBuf output_buf = getbuf(mi, 0)
     cdef unsigned char* l = <unsigned char*> output_buf.get_mem()
     cdef int i = 0
     cdef unsigned char r, g, b
@@ -316,7 +316,7 @@ cdef object bgradata_to_la(const unsigned int *bgra, const int bgra_len):
     #number of pixels:
     cdef int mi = bgra_len//4
     #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi*2)
+    cdef MemBuf output_buf = getbuf(mi*2, 0)
     cdef unsigned char* la = <unsigned char*> output_buf.get_mem()
     cdef int si = 0, di = 0
     cdef unsigned int p
@@ -348,7 +348,7 @@ cdef object argbdata_to_rgba(const unsigned int* argb, const int argb_len):
         return b""
     assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
     cdef int mi = argb_len//4
-    cdef MemBuf output_buf = getbuf(argb_len)
+    cdef MemBuf output_buf = getbuf(argb_len, 0)
     cdef unsigned int* rgba = <unsigned int*> output_buf.get_mem()
     cdef int i = 0
     cdef unsigned int p
@@ -375,7 +375,7 @@ cdef object argbdata_to_rgb(const unsigned int* argb, const int argb_len):
     #number of pixels:
     cdef int mi = argb_len//4
     #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi*3)
+    cdef MemBuf output_buf = getbuf(mi*3, 0)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int si = 0, di = 0
     cdef unsigned int p
@@ -405,7 +405,7 @@ cdef object bgradata_to_rgb222(const unsigned char* bgra, const int bgra_len):
     #number of pixels:
     cdef int mi = bgra_len//4                #@DuplicateSignature
     #1 byte per pixel:
-    cdef MemBuf output_buf = getbuf(mi)
+    cdef MemBuf output_buf = getbuf(mi, 0)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = 0                  #@DuplicateSignature
     with nogil:
@@ -431,7 +431,7 @@ cdef object bgradata_to_rgb(const unsigned int* bgra, const int bgra_len):
     #number of pixels:
     cdef int mi = bgra_len//4
     #3 bytes per pixel:
-    cdef MemBuf output_buf = getbuf(mi*3)
+    cdef MemBuf output_buf = getbuf(mi*3, 0)
     cdef unsigned char* rgb = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = 0
     cdef unsigned int p
@@ -459,7 +459,7 @@ cdef object bgradata_to_rgba(const unsigned int* bgra, const int bgra_len):
         return b""
     assert bgra_len>0 and bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
     cdef int mi = bgra_len//4
-    cdef MemBuf output_buf = getbuf(bgra_len)
+    cdef MemBuf output_buf = getbuf(bgra_len, 0)
     cdef unsigned int* rgba = <unsigned int*> output_buf.get_mem()
     cdef int i = 0
     cdef unsigned int p
@@ -489,7 +489,7 @@ cdef object bgradata_to_rgbx(const unsigned char* bgra, const int bgra_len):
         return b""
     assert bgra_len>0 and bgra_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % bgra_len
     #same number of bytes:
-    cdef MemBuf output_buf = getbuf(bgra_len)
+    cdef MemBuf output_buf = getbuf(bgra_len, 0)
     cdef unsigned char* rgbx = <unsigned char*> output_buf.get_mem()
     cdef int i = 0                      #@DuplicateSignature
     with nogil:
@@ -517,7 +517,7 @@ cdef do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
     cdef unsigned char a, r, g, b                #@DuplicateSignature
     cdef unsigned int argb                      #@DuplicateSignature
     assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
-    cdef MemBuf output_buf = getbuf(argb_len)
+    cdef MemBuf output_buf = getbuf(argb_len, 0)
     cdef unsigned int* argb_out = <unsigned int*> output_buf.get_mem()
     cdef int i                                  #@DuplicateSignature
     with nogil:
@@ -558,7 +558,7 @@ cdef object do_unpremultiply_argb(unsigned int * argb_in, Py_ssize_t argb_len):
     cdef unsigned char a, r, g, b                #@DuplicateSignature
     cdef unsigned int argb                      #@DuplicateSignature
     assert argb_len>0 and argb_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % argb_len
-    cdef MemBuf output_buf = getbuf(argb_len)
+    cdef MemBuf output_buf = getbuf(argb_len, 0)
     cdef unsigned char* argb_out = <unsigned char*> output_buf.get_mem()
     cdef int i                                  #@DuplicateSignature
     with nogil:
@@ -604,7 +604,7 @@ cdef object alpha_data(const unsigned char* rgba, const int rgba_len, const char
     if rgba_len <= 0:
         return None
     assert rgba_len>0 and rgba_len % 4 == 0, "invalid buffer size: %s is not a multiple of 4" % rgba_len
-    cdef MemBuf output_buf = getbuf(rgba_len//4)
+    cdef MemBuf output_buf = getbuf(rgba_len//4, 0)
     cdef unsigned char* alpha = <unsigned char*> output_buf.get_mem()
     cdef int di = 0, si = index
     cdef unsigned int p

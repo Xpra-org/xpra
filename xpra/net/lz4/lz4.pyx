@@ -99,7 +99,7 @@ def decompress(data: SizedBuffer, int max_size=0, int size=0) -> SizedBuffer:
     cdef Py_buffer in_buf
     if PyObject_GetBuffer(data, &in_buf, PyBUF_ANY_CONTIGUOUS):
         raise ValueError("failed to read data from %s" % type(data))
-    cdef MemBuf out_buf = getbuf(size)
+    cdef MemBuf out_buf = getbuf(size, 0)
     cdef char *in_ptr = <char*> ((<uintptr_t> in_buf.buf) + size_header)
     cdef char *out_ptr = <char *> out_buf.get_mem()
     cdef int l = <int> in_buf.len
@@ -111,4 +111,4 @@ def decompress(data: SizedBuffer, int max_size=0, int size=0) -> SizedBuffer:
         msg = f"LZ4_decompress_safe failed for input size {in_buf.len}"
         log(msg)
         raise ValueError(msg)
-    return (memoryview(out_buf)[:r]).toreadonly()
+    return memoryview(out_buf)[:r]

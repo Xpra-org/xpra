@@ -408,7 +408,7 @@ cdef object do_encode_rgb(tjhandle compressor, pfstr, pixels,
         log.error(" pixel format=%s", pfstr)
         return None
     assert out_size>0 and out!=NULL, "jpeg compression produced no data"
-    return makebuf(out, out_size)
+    return makebuf(out, out_size, 0)
 
 
 cdef object encode_yuv(tjhandle compressor, image, int quality, int grayscale=0):
@@ -483,7 +483,7 @@ cdef object do_encode_yuv(tjhandle compressor, pfstr, planes,
         for bc in contexts:
             bc.__exit__()
     assert out_size>0 and out!=NULL, "jpeg compression produced no data"
-    return makebuf(out, out_size)
+    return makebuf(out, out_size, 0)
 
 
 def selftest(full=False) -> None:

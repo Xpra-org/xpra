@@ -197,7 +197,7 @@ def decompress_to_yuv(data: bytes, options: typedict, unsigned char nplanes=3) -
                 plane_size = stride * roundup(h, 2)//2
                 if i==1:
                     #allocate empty U and V planes:
-                    empty = getbuf(plane_size)
+                    empty = getbuf(plane_size, 0)
                     memset(<void *> empty.get_mem(), 128, plane_size)
                     pixel_format = "YUV420P"
                 membuf = empty
@@ -205,7 +205,7 @@ def decompress_to_yuv(data: bytes, options: typedict, unsigned char nplanes=3) -
                 stride = roundup(stride, ALIGN)
                 strides[i] = stride
                 plane_size = tjPlaneSizeYUV(i, w, stride, h, subsamp)
-                membuf = getbuf(plane_size)     #add padding?
+                membuf = getbuf(plane_size, 0)     #add padding?
                 planes[i] = <unsigned char*> membuf.get_mem()
             total_size += plane_size
             #python objects for each plane:
@@ -271,7 +271,7 @@ def decompress_to_rgb(rgb_format: str, data: bytes, unsigned long alpha_offset=0
     cdef double start = monotonic()
     cdef int stride = w*4
     cdef unsigned long size = stride*h
-    cdef MemBuf membuf = getbuf(size)
+    cdef MemBuf membuf = getbuf(size, 0)
     cdef unsigned char *dst_buf = <unsigned char*> membuf.get_mem()
     with nogil:
         r = tjDecompress2(decompressor,
@@ -312,7 +312,7 @@ def decompress_to_rgb(rgb_format: str, data: bytes, unsigned long alpha_offset=0
         alpha_stride = tjPlaneWidth(0, w, subsamp)
         strides[0] = alpha_stride
         alpha_size = tjPlaneSizeYUV(0, w, alpha_stride, h, subsamp)
-        alpha = getbuf(alpha_size)
+        alpha = getbuf(alpha_size, 0)
         alpha_plane = <unsigned char*> alpha.get_mem()
         planes[0] = alpha_plane
         with nogil:

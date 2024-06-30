@@ -281,7 +281,7 @@ def argb_to_gray(image: ImageWrapper) -> ImageWrapper:
     assert pixels, "failed to get pixels from %s" % image
     #allocate output buffer:
     cdef int dst_stride = width*4
-    cdef MemBuf output_buffer = getbuf(dst_stride*height)
+    cdef MemBuf output_buffer = getbuf(dst_stride*height, 0)
     if not output_buffer:
         raise RuntimeError("failed to allocate %i bytes for output buffer" % (dst_stride*height))
     cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()
@@ -312,7 +312,7 @@ def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilt
     assert pixels, "failed to get pixels from %s" % image
     #allocate output buffer:
     cdef int dst_stride = dst_width*4
-    cdef MemBuf output_buffer = getbuf(dst_stride*dst_height)
+    cdef MemBuf output_buffer = getbuf(dst_stride*dst_height, 0)
     if not output_buffer:
         raise RuntimeError("failed to allocate %i bytes for output buffer" % (dst_stride*height))
     cdef uint8_t* buf = <uint8_t*> output_buffer.get_mem()
@@ -568,11 +568,11 @@ cdef class Converter:
         cdef int uv_stride = strides[1]
         cdef int Bpp = len(self.dst_format)
         cdef int rowstride = self.dst_width*Bpp
-        cdef MemBuf rgb_buffer = getbuf(rowstride*height)
+        cdef MemBuf rgb_buffer = getbuf(rowstride*height, 0)
         cdef uintptr_t y, uv
         cdef uint8_t *rgb
         cdef int r = 0
-        rgb_buffer = getbuf(self.out_buffer_size)
+        rgb_buffer = getbuf(self.out_buffer_size, 0)
         if not rgb_buffer:
             raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
         log("convert_nv12_image(%s) to %s", image, self.dst_format)
@@ -690,12 +690,12 @@ cdef class Converter:
         cdef int v_stride = strides[2]
         cdef int Bpp = len(self.dst_format)
         cdef int rowstride = self.dst_width*Bpp
-        cdef MemBuf rgb_buffer = getbuf(rowstride*height)
+        cdef MemBuf rgb_buffer = getbuf(rowstride*height, 0)
         cdef uintptr_t y, u, v
         cdef uint8_t *rgb
         cdef int r = 0
         cdef int matched = 0
-        rgb_buffer = getbuf(self.out_buffer_size)
+        rgb_buffer = getbuf(self.out_buffer_size, 0)
         if not rgb_buffer:
             raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
         log("convert_yuv_image(%s) to %s", image, self.dst_format)
