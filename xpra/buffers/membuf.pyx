@@ -126,6 +126,11 @@ cdef class BufferContext:
             raise RuntimeError("invalid state: no buffer")
         PyBuffer_Release(&self.py_buf)
 
+    def is_readonly(self):
+        if self.py_buf.buf == NULL:
+            raise RuntimeError("invalid state: no buffer")
+        return bool(self.py_buf.readonly)
+
     def __int__(self):
         if self.py_buf.buf == NULL:
             raise RuntimeError("invalid state: no buffer")
@@ -145,6 +150,9 @@ cdef class MemBufContext:
         if not isinstance(membuf, MemBuf):
             raise ValueError(f"{membuf!r} is not a MemBuf instance: {type(membuf)}")
         self.membuf = membuf
+
+    def is_readonly(self):
+        return self.membuf.readonly
 
     def __enter__(self):
         return self

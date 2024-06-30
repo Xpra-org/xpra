@@ -62,6 +62,7 @@ cdef extern from "cairo/cairo.h":
 
     void cairo_surface_flush (cairo_surface_t *surface)
     void cairo_surface_mark_dirty (cairo_surface_t *surface)
+    int cairo_format_stride_for_width(cairo_format_t format, int width)
 
 cdef extern from "pycairo/py3cairo.h":
     ctypedef struct Pycairo_CAPI_t:
@@ -107,31 +108,46 @@ CAIRO_FORMATS: Dict[cairo_format_t, Sequence[str]] = {
 
 
 def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int stride) -> ImageSurface:
-    image_surface = ImageSurface(fmt, width, height)
-    # convert pixel_data to a C buffer:
-    # convert cairo.ImageSurface python object to a cairo_surface_t
-    cdef cairo_surface_t * surface = (<PycairoImageSurface *> image_surface).surface
-    cairo_surface_flush(surface)
-    cdef unsigned char *cdata = cairo_image_surface_get_data(surface)
-    #get surface attributes:
-    cdef cairo_format_t cairo_format = cairo_image_surface_get_format(surface)
-    cdef int istride    = cairo_image_surface_get_stride(surface)
-    cdef int iwidth     = cairo_image_surface_get_width(surface)
-    cdef int iheight    = cairo_image_surface_get_height(surface)
-    if iwidth != width or iheight != height:
-        raise ValueError(f"invalid image surface: expected {width}x{height} but got {iwidth}x{iheight}")
-    BPP = 2 if cairo_format==CAIRO_FORMAT_RGB16_565 else 4
-    if istride < iwidth*BPP:
-        raise ValueError(f"invalid image stride: expected at least {iwidth*4} but got {istride}")
+    if len(pixels)<height*stride:
+        raise ValueError(f"pixel buffer is too small for {width}x{height} with stride={stride}:"+
+                         f" only {len(pixels)} bytes, expected {height*stride}")
+
     cdef int x, y
     cdef int srci, dsti
-
     cdef const unsigned char * cbuf
+    cdef cairo_surface_t * surface
+    cdef unsigned char * cdata
+    cdef cairo_format_t cairo_format
+    cdef int istride
+    cdef int iwidth
+    cdef int iheight
+    cdef cstride
+
     with buffer_context(pixels) as bc:
+        if not bc.is_readonly():
+            # maybe we can just create an ImageSurface directly:
+            cstride = cairo_format_stride_for_width(fmt, width)
+            if cstride == stride:
+                return ImageSurface.create_for_data(pixels, fmt, width, height, stride)
+
+        image_surface = ImageSurface(fmt, width, height)
+        # convert pixel_data to a C buffer:
+        # convert cairo.ImageSurface python object to a cairo_surface_t
+        surface = (<PycairoImageSurface *> image_surface).surface
+        cairo_surface_flush(surface)
+        cdata = cairo_image_surface_get_data(surface)
+        #get surface attributes:
+        cairo_format = cairo_image_surface_get_format(surface)
+        istride    = cairo_image_surface_get_stride(surface)
+        iwidth     = cairo_image_surface_get_width(surface)
+        iheight    = cairo_image_surface_get_height(surface)
+        if iwidth != width or iheight != height:
+            raise ValueError(f"invalid image surface: expected {width}x{height} but got {iwidth}x{iheight}")
+        BPP = 2 if cairo_format == CAIRO_FORMAT_RGB16_565 else 4
+        if istride < iwidth * BPP:
+            raise ValueError(f"invalid image stride: expected at least {iwidth*4} but got {istride}")
+
         cbuf = <const unsigned char *> (<uintptr_t> int(bc))
-        if len(bc)<height*stride:
-            raise ValueError(f"pixel buffer is too small for {width}x{height} with stride={stride}:"+
-                             f" only {len(bc)} bytes, expected {height*stride}")
         #only deal with the formats we care about:
         if cairo_format==CAIRO_FORMAT_RGB24:
             #cairo's RGB24 format is actually stored as BGR on little endian
