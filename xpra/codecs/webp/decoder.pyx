@@ -179,6 +179,8 @@ cdef inline int roundup(int n, int m):
 
 
 def decompress_to_rgb(rgb_format: str, data: bytes, has_alpha: bool=True, rgb_formats: Sequence[str] = ()) -> ImageWrapper:
+    if rgb_format not in ("RGBX", "RGBA", "BGRA", "BGRX", "RGB", "BGR"):
+        raise ValueError(f"unsupported rgb format {rgb_format}")
     cdef WebPDecoderConfig config
     config.options.use_threads = 1
     WebPInitDecoderConfig(&config)
@@ -187,28 +189,7 @@ def decompress_to_rgb(rgb_format: str, data: bytes, has_alpha: bool=True, rgb_fo
         config.input.width, config.input.height, bool(config.input.has_alpha), rgb_format)
 
     config.output.colorspace = MODE_BGRA
-    if has_alpha:
-        if len(rgb_format)!=4:
-            # use default if the format given is not valid:
-            out_format = "BGRA"
-        else:
-            out_format = rgb_format
-    else:
-        noalpha_format = (rgb_format or "").replace("A", "").replace("X", "")
-        # the webp encoder takes BGRA input,
-        # so we have to swap the colours in the output to match:
-        if noalpha_format == "RGB":
-            out_format = "BGR"
-        else:
-            out_format = "RGB"
-        if out_format in rgb_formats:
-            # we can use 3 bytes per pixel output:
-            config.output.colorspace = MODE_RGB
-        elif rgb_format in ("RGBX", "RGBA"):
-            out_format = "RGBX"
-        else:
-            out_format = "BGRX"
-    cdef int stride = len(out_format) * config.input.width
+    cdef int stride = 4 * config.input.width
     cdef size_t size = stride * config.input.height
     #allocate the buffer:
     cdef uint8_t *buf = <uint8_t*> memalign(size + stride)      #add one line of padding
@@ -229,10 +210,11 @@ def decompress_to_rgb(rgb_format: str, data: bytes, has_alpha: bool=True, rgb_fo
     #we use external memory, so this is not needed:
     #WebPFreeDecBuffer(&config.output)
     may_save_image("webp", data)
-    cdef int alpha = 1 if (config.input.has_alpha and has_alpha) else 0
-    if alpha:
-        out_format = out_format.replace("X", "A")
-    else:
+    out_format = rgb_format
+    if len(rgb_format) == 3:    # ie: "RGB", "BGR"
+        out_format = out_format + "X"
+    assert len(out_format) == 4
+    if not has_alpha or not config.input.has_alpha:
         out_format = out_format.replace("A", "X")
     pixels = PyMemoryView_FromMemory(<char *> buf, size, PyBUF_WRITE)
     img = WebpImageWrapper(
