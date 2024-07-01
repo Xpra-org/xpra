@@ -524,7 +524,6 @@ cdef class Encoder:
         return info
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple:
-        options = options or {}
         reconfigure = False
         quality = options.get("quality", -1)
         speed = options.get("speed", -1)
@@ -736,7 +735,7 @@ cdef void import_picture(WebPPicture *pic,
                   unsigned int width, unsigned int height,
                   unsigned int stride,
                   unsigned char supports_alpha,
-                  pixel_format, pixels):
+                  pixel_format: str, pixels):
     memset(pic, 0, sizeof(WebPPicture))
     ret = WebPPictureInit(pic)
     if not ret:
