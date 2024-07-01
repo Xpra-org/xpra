@@ -3016,7 +3016,8 @@ def run_stopexit(mode:str, error_cb, opts, extra_args, cmdline) -> int:
 
 
 def may_cleanup_socket(state, display, sockpath, clean_states=(DotXpra.DEAD,)) -> None:
-    sys.stdout.write(f"\t{state} session at {display}")
+    state_str = getattr(state, "value", str(state))
+    sys.stdout.write(f"\t{state_str} session at {display}")
     if state in clean_states:
         try:
             stat_info = os.stat(sockpath)
