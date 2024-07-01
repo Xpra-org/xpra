@@ -9,7 +9,7 @@ import binascii
 import os
 from enum import Enum, IntEnum
 from typing import Final, Protocol, TypeAlias
-from collections.abc import Callable, Sized
+from collections.abc import Callable, Sized, MutableSequence
 
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import nicestr
@@ -34,6 +34,7 @@ except ImportError:
 
 
 PaintCallback: TypeAlias = Callable[[int | bool, str], None]
+PaintCallbacks: TypeAlias = MutableSequence[PaintCallback]
 
 
 # noinspection PyPep8

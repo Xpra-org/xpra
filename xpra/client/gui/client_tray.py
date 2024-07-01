@@ -5,10 +5,10 @@
 
 from time import time
 from typing import Any
-from collections.abc import Sequence, MutableSequence, Iterable, Callable
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.common import PaintCallback
+from xpra.common import PaintCallbacks
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks
 from xpra.util.objects import typedict
@@ -161,7 +161,7 @@ class ClientTray(ClientWidgetBase):
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int, options: typedict,
-                    callbacks: MutableSequence[PaintCallback]):
+                    callbacks: PaintCallbacks):
         log("%s.draw_region%s", self,
             (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, options, callbacks))
 
@@ -234,7 +234,7 @@ class TrayBacking(WindowBackingBase):
 
     def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
-                     options: typedict, callbacks: Iterable[Callable]) -> None:
+                     options: typedict, callbacks: PaintCallbacks) -> None:
         if width != render_width or height != render_height:
             fire_paint_callbacks(callbacks, False, "tray paint must not use scaling")
             return

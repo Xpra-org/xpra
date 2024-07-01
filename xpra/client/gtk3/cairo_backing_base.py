@@ -6,7 +6,7 @@
 
 from time import monotonic
 from typing import Any
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 import cairo
 from cairo import (  # pylint: disable=no-name-in-module
     Context, ImageSurface,  # @UnresolvedImport
@@ -15,7 +15,7 @@ from cairo import (  # pylint: disable=no-name-in-module
 )
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks
-from xpra.common import roundup
+from xpra.common import roundup, PaintCallbacks
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -188,7 +188,7 @@ class CairoBackingBase(WindowBackingBase):
 
     def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
-                     options: typedict, callbacks: Iterable[Callable]) -> None:
+                     options: typedict, callbacks: PaintCallbacks) -> None:
         """ must be called from the UI thread
             this method is only here to ensure that we always fire the callbacks,
             the actual paint code is in _do_paint_rgb[16|24|30|32]
@@ -234,10 +234,10 @@ class CairoBackingBase(WindowBackingBase):
         # see CairoBacking
         raise NotImplementedError()
 
-    def paint_scroll(self, img_data, options: typedict, callbacks: Iterable[Callable]) -> None:
+    def paint_scroll(self, img_data, options: typedict, callbacks: PaintCallbacks) -> None:
         GLib.idle_add(self.do_paint_scroll, img_data, callbacks)
 
-    def do_paint_scroll(self, scrolls, callbacks: Iterable[Callable]) -> None:
+    def do_paint_scroll(self, scrolls, callbacks: PaintCallbacks) -> None:
         old_backing = self._backing
         if not old_backing:
             fire_paint_callbacks(callbacks, False, message="no backing")

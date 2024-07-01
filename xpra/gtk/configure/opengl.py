@@ -7,7 +7,7 @@ import os.path
 import struct
 from typing import Any
 
-from xpra.common import noop, PaintCallback
+from xpra.common import noop, PaintCallbacks
 from xpra.os_util import gi_import, WIN32
 from xpra.codecs.loader import load_codec
 from xpra.util.objects import typedict
@@ -248,7 +248,7 @@ class ConfigureGUI(BaseGUIWindow):
 
     def paint_twin_windows(self, description: str, paint_data: tuple):
         log("paint_twin_windows() %r", description)
-        callbacks: list[PaintCallback] = []
+        callbacks: PaintCallbacks = []
         for x, y, w, h, encoding, img_data, rowstride, options in paint_data:
             for window in self.windows:
                 window.draw_region(x, y, w, h, encoding, img_data, rowstride, typedict(options), callbacks)

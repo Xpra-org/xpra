@@ -57,7 +57,7 @@ from xpra.util.str_fn import repr_ellipsized, nonl, hexstr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.objects import typedict
 from xpra.util.system import is_Wayland
-from xpra.common import roundup
+from xpra.common import roundup, PaintCallbacks
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color
@@ -612,11 +612,11 @@ class GLWindowBackingBase(WindowBackingBase):
             b.destroy()
         self.close_gl_config()
 
-    def paint_scroll(self, scroll_data, options: typedict, callbacks: Iterable[Callable]) -> None:
+    def paint_scroll(self, scroll_data, options: typedict, callbacks: PaintCallbacks) -> None:
         flush = options.intget("flush", 0)
         self.with_gfx_context(self.do_scroll_paints, scroll_data, flush, callbacks)
 
-    def do_scroll_paints(self, context, scrolls, flush=0, callbacks: Iterable[Callable] = ()) -> None:
+    def do_scroll_paints(self, context, scrolls, flush: int, callbacks: PaintCallbacks) -> None:
         log("do_scroll_paints%s", (context, scrolls, flush))
         if not context:
             log("%s.do_scroll_paints(..) no context!", self)
