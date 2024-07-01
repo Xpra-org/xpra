@@ -17,7 +17,7 @@ from xpra.net.device_info import (
 )
 from xpra.os_util import gi_import, POSIX
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import PacketType
@@ -197,7 +197,7 @@ class NetworkState(StubClientMixin):
     def _process_info_response(self, packet: PacketType) -> None:
         self.info_request_pending = False
         self.server_last_info = packet[1]
-        log("info-response: %s", self.server_last_info)
+        log("info-response: %s", Ellipsizer(self.server_last_info))
         if LOG_INFO_RESPONSE:
             items = LOG_INFO_RESPONSE.split(",")
             logres = [re.compile(v) for v in items]

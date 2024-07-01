@@ -93,7 +93,7 @@ def get_icc_data() -> dict[str, Any]:
             log("_ICC_PROFILE=%s (%s)", type(data), len(data))
             version = get_X11_root_property("_ICC_PROFILE_IN_X_VERSION", "CARDINAL")
             log("get_icc_info() found _ICC_PROFILE_IN_X_VERSION=%s, _ICC_PROFILE=%s",
-                hexstr(version or ""), hexstr(data))
+                hexstr(version or ""), Ellipsizer(hexstr(data)))
             icc |= {
                 "source": "_ICC_PROFILE",
                 "data": data,
@@ -108,7 +108,7 @@ def get_icc_data() -> dict[str, Any]:
         log.error("Error: cannot access `_ICC_PROFILE` X11 window property")
         log.estr(e)
         log("get_icc_info()", exc_info=True)
-    log("get_x11_icc_data()=%s", icc)
+    log("get_x11_icc_data()=%s", Ellipsizer(icc))
     return icc
 
 

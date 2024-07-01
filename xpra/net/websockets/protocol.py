@@ -13,7 +13,7 @@ from xpra.net.websockets.header import encode_hybi_header, decode_hybi, close_pa
 from xpra.net.websockets.common import OPCODE, OPCODE_STR
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.util.env import envbool, first_time
-from xpra.util.str_fn import hexstr, memoryview_to_bytes
+from xpra.util.str_fn import hexstr, memoryview_to_bytes, Ellipsizer
 from xpra.log import Logger
 
 log = Logger("websocket")
@@ -77,7 +77,7 @@ class WebSocketProtocol(SocketProtocol):
         while ws_data and not self._closed:
             parsed = decode_hybi(ws_data)
             if parsed is None:
-                log("parse_ws_frame(%i bytes) not enough data: %r", len(ws_data), ws_data)
+                log("parse_ws_frame(%i bytes) not enough data: %r", len(ws_data), Ellipsizer(ws_data))
                 # not enough data to get a full websocket frame,
                 # save it for later:
                 self.ws_data = ws_data
