@@ -638,11 +638,15 @@ class WindowBackingBase:
             if not specs:
                 continue
             for spec in specs:
-                score = - (spec.quality + spec.speed + spec.score_boost)
                 v = self.validate_csc_size(spec, src_width, src_height, dst_width, dst_height)
                 if v:
                     # not suitable
                     continue
+                score = - (spec.quality + spec.speed + spec.score_boost)
+                # see issue #4270
+                # the cairo backend can only do zero-copy paints from BGRX / BGRA pixel formats
+                if dst_format not in ("BGRA", "BGRX"):
+                    score += 50
                 if need_scaling and not spec.can_scale and PREFER_CSC_SCALING:
                     # keep it, but not a good score:
                     score += 100
