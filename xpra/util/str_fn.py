@@ -7,7 +7,7 @@ import binascii
 import re
 from enum import Enum
 from typing import Iterable
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 from xpra.util.env import envbool
 
@@ -110,7 +110,7 @@ def repr_ellipsized(obj, limit=100) -> str:
     return repr_ellipsized(repr(obj), limit)
 
 
-def print_nested_dict(d: dict, prefix: str = "", lchar: str = "*", pad: int = 32,
+def print_nested_dict(d: Mapping, prefix: str = "", lchar: str = "*", pad: int = 32,
                       vformat=None, print_fn: Callable | None = None,
                       version_keys=("version", "revision"), hex_keys=("data",)) -> None:
     # "smart" value formatting function:
