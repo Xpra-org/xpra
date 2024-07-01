@@ -66,6 +66,7 @@ class CairoBacking(CairoBackingBase):
             if rgb_format in rgb_formats:
                 img_surface = make_image_surface(cairo_format, rgb_format, img_data, width, height, rowstride)
                 self.cairo_paint_surface(img_surface, x, y, render_width, render_height, options)
+                img_surface.finish()
                 return
             log("cannot set image surface data for cairo format %s and rgb_format %s (rgb formats supported: %s)",
                 FORMATS.get(cairo_format, cairo_format), rgb_format, rgb_formats)

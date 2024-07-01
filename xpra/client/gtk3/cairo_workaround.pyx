@@ -30,8 +30,12 @@ from collections.abc import Sequence
 from cairo import ImageSurface
 
 from libc.stdint cimport uintptr_t
-from libc.string cimport memcpy
+from libc.string cimport memcpy, memset
 from xpra.buffers.membuf cimport buffer_context
+
+from xpra.util.env import envbool
+
+RGB24_RESET_ALPHA = envbool("XPRA_RGB24_RESET_ALPHA", False)
 
 
 cdef extern from "Python.h":
@@ -85,23 +89,30 @@ CAIRO_FORMAT: Dict[cairo_format_t, str] = {
 }
 
 
-cdef void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stride, int height):
+cdef inline void simple_copy(uintptr_t dst, uintptr_t src, int dst_stride, int src_stride, int height) noexcept nogil:
     cdef int stride = src_stride
+    cdef int pad = 0
     with nogil:
-        if src_stride==dst_stride:
+        if src_stride == dst_stride:
             memcpy(<void*> dst, <void*> src, stride*height)
         else:
-            if dst_stride<src_stride:
+            if dst_stride < src_stride:
+                # cropping:
                 stride = dst_stride
+            else:
+                # padding:
+                pad = dst_stride - src_stride
             for _ in range(height):
                 memcpy(<void*> dst, <void*> src, stride)
+                if pad > 0:
+                    memset(<void*> (dst + src_stride), 0, pad)
                 src += src_stride
                 dst += dst_stride
 
 
 CAIRO_FORMATS: Dict[cairo_format_t, Sequence[str]] = {
-    CAIRO_FORMAT_RGB24  : ("RGB", "RGBX", "BGR", "BGRX"),
-    CAIRO_FORMAT_ARGB32 : ("BGRX", "BGRA"),
+    CAIRO_FORMAT_RGB24  : ("RGB", "RGBX", "BGR", "BGRX", "RGBA", "BGRA"),
+    CAIRO_FORMAT_ARGB32 : ("BGRX", "BGRA", "RGBA", "RGBX"),
     CAIRO_FORMAT_RGB16_565  : ("BGR565", ),
     CAIRO_FORMAT_RGB30  : ("r210", ),
 }
@@ -175,17 +186,21 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
                             cdata[dsti + 1] = cbuf[srci + 1]     #G
                             cdata[dsti + 2] = cbuf[srci + 0]     #R
                             cdata[dsti + 3] = 0xff               #X
-            elif rgb_format=="BGRX":
-                with nogil:
-                    for y in range(height):
-                        for x in range(width):
-                            srci = x*4 + y*stride
-                            dsti = x*4 + y*istride
-                            cdata[dsti + 0] = cbuf[srci + 0]     #B
-                            cdata[dsti + 1] = cbuf[srci + 1]     #G
-                            cdata[dsti + 2] = cbuf[srci + 2]     #R
-                            cdata[dsti + 3] = 0xff               #X
-            elif rgb_format=="RGBX":
+            elif rgb_format in ("BGRX", "BGRA"):
+                if not RGB24_RESET_ALPHA:
+                    with nogil:
+                        simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
+                else:
+                    with nogil:
+                        for y in range(height):
+                            for x in range(width):
+                                srci = x*4 + y*stride
+                                dsti = x*4 + y*istride
+                                cdata[dsti + 0] = cbuf[srci + 0]     #B
+                                cdata[dsti + 1] = cbuf[srci + 1]     #G
+                                cdata[dsti + 2] = cbuf[srci + 2]     #R
+                                cdata[dsti + 3] = 0xff               #X
+            elif rgb_format in ("RGBX", "RGBA"):
                 with nogil:
                     for y in range(height):
                         for x in range(width):
@@ -198,21 +213,39 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
             else:
                 raise ValueError(f"unhandled pixel format for RGB24: {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_ARGB32:
-            if rgb_format in ("RGBA", "RGBX"):
+            if rgb_format == "BGRA":
+                with nogil:
+                    simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
+            elif rgb_format == "RGBA":
                 with nogil:
                     for y in range(height):
                         for x in range(width):
-                            cdata[x*4 + 0 + y*istride] = cbuf[x*4 + 2 + y*stride]    #A
-                            cdata[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #R
-                            cdata[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #G
-                            cdata[x*4 + 3 + y*istride] = cbuf[x*4 + 3 + y*stride]    #B
-            elif rgb_format in ("BGRA", "BGRX"):
-                simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
+                            cdata[x*4 + 0 + y*istride] = cbuf[x*4 + 2 + y*stride]    #B
+                            cdata[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #G
+                            cdata[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #R
+                            cdata[x*4 + 3 + y*istride] = cbuf[x*4 + 3 + y*stride]    #A
+            elif rgb_format == "RGBX":
+                with nogil:
+                    for y in range(height):
+                        for x in range(width):
+                            cdata[x*4 + 0 + y*istride] = cbuf[x*4 + 2 + y*stride]    #B
+                            cdata[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #G
+                            cdata[x*4 + 2 + y*istride] = cbuf[x*4 + 0 + y*stride]    #R
+                            cdata[x*4 + 3 + y*istride] = 0xff                        #A
+            elif rgb_format == "BGRX":
+                with nogil:
+                    for y in range(height):
+                        for x in range(width):
+                            cdata[x*4 + 0 + y*istride] = cbuf[x*4 + 0 + y*stride]    #B
+                            cdata[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #G
+                            cdata[x*4 + 2 + y*istride] = cbuf[x*4 + 2 + y*stride]    #R
+                            cdata[x*4 + 3 + y*istride] = 0xff                        #A
             else:
                 raise ValueError(f"unhandled pixel format for ARGB32: {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_RGB30:
             if rgb_format in ("r210"):
-                simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
+                with nogil:
+                    simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
             #UNTESTED!
             #elif rgb_format in ("BGR48"):
             #access 16-bit per pixel at a time:
@@ -231,7 +264,8 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
                 raise ValueError(f"unhandled pixel format for RGB30 {rgb_format!r}")
         elif cairo_format==CAIRO_FORMAT_RGB16_565:
             if rgb_format in ("BGR565"):
-                simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
+                with nogil:
+                    simple_copy(<uintptr_t> cdata, <uintptr_t> cbuf, istride, stride, height)
             else:
                 raise ValueError(f"unhandled pixel format for RGB16_565 {rgb_format!r}")
         else:
