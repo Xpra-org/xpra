@@ -142,7 +142,7 @@ cdef inline float swap_byte_order_float(char *c) noexcept:
     return f
 
 
-cdef inline swap_byte_order_double(char *c) noexcept:
+cdef inline double swap_byte_order_double(char *c) noexcept:
     cdef double d
     cdef char *p = <char *>&d
     p[0] = c[7]
