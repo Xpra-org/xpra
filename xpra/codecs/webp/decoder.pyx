@@ -231,9 +231,9 @@ def decompress_to_rgb(rgb_format: str, data: bytes, has_alpha: bool=True, rgb_fo
     may_save_image("webp", data)
     cdef int alpha = 1 if (config.input.has_alpha and has_alpha) else 0
     if alpha:
-        rgb_format = rgb_format.replace("X", "A")
+        out_format = out_format.replace("X", "A")
     else:
-        rgb_format = rgb_format.replace("A", "X")
+        out_format = out_format.replace("A", "X")
     pixels = PyMemoryView_FromMemory(<char *> buf, size, PyBUF_WRITE)
     img = WebpImageWrapper(
         0, 0, config.input.width, config.input.height, pixels, out_format,
