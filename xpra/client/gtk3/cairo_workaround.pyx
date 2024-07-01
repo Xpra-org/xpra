@@ -142,7 +142,7 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
         if not bc.is_readonly() and rgb_format in ("BGRA", "BGRX") and fmt in (CAIRO_FORMAT_ARGB32, CAIRO_FORMAT_RGB24):
             # maybe we can just create an ImageSurface directly:
             cstride = cairo_format_stride_for_width(fmt, width)
-            if cstride == stride:
+            if cstride == stride: # or (stride % 4) ==0
                 return ImageSurface.create_for_data(pixels, fmt, width, height, stride)
 
         image_surface = ImageSurface(fmt, width, height)
@@ -239,6 +239,22 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
                             cdata[x*4 + 0 + y*istride] = cbuf[x*4 + 0 + y*stride]    #B
                             cdata[x*4 + 1 + y*istride] = cbuf[x*4 + 1 + y*stride]    #G
                             cdata[x*4 + 2 + y*istride] = cbuf[x*4 + 2 + y*stride]    #R
+                            cdata[x*4 + 3 + y*istride] = 0xff                        #A
+            elif rgb_format == "RGB":
+                with nogil:
+                    for y in range(height):
+                        for x in range(width):
+                            cdata[x*4 + 0 + y*istride] = cbuf[x*3 + 2 + y*stride]    #B
+                            cdata[x*4 + 1 + y*istride] = cbuf[x*3 + 1 + y*stride]    #G
+                            cdata[x*4 + 2 + y*istride] = cbuf[x*3 + 0 + y*stride]    #R
+                            cdata[x*4 + 3 + y*istride] = 0xff                        #A
+            elif rgb_format == "BGR":
+                with nogil:
+                    for y in range(height):
+                        for x in range(width):
+                            cdata[x*4 + 0 + y*istride] = cbuf[x*3 + 0 + y*stride]    #B
+                            cdata[x*4 + 1 + y*istride] = cbuf[x*3 + 1 + y*stride]    #G
+                            cdata[x*4 + 2 + y*istride] = cbuf[x*3 + 2 + y*stride]    #R
                             cdata[x*4 + 3 + y*istride] = 0xff                        #A
             else:
                 raise ValueError(f"unhandled pixel format for ARGB32: {rgb_format!r}")
