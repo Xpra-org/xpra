@@ -847,7 +847,8 @@ class WindowBackingBase:
     def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
                    options: typedict, callbacks: Iterable[Callable]) -> None:
         assert self.mmap_enabled
-        data = mmap_read(self.mmap, *img_data)
+        data, free_cb = mmap_read(self.mmap, *img_data)
+        callbacks.append(free_cb)
         rgb_format = options.strget("rgb_format", "RGB")
         # Note: BGR(A) is only handled by gl.backing
         x, y = self.gravity_adjust(x, y, options)

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import sys
 from ctypes import c_ubyte, c_uint32
 from typing import Any
 
-from xpra.common import roundup
+from xpra.common import roundup, noop
 from xpra.util.env import envbool, shellsub
 from xpra.os_util import get_group_id, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS
@@ -275,16 +275,26 @@ def mmap_read(mmap_area, *descr_data) -> bytes | memoryview:
     data_start: c_uint32 = int_from_buffer(mmap_area, 0)
     mv = memoryview(mmap_area)
     if len(descr_data) == 1:
-        # construct an array directly from the mmap zone:
+        # construct a zero copy buffer directly from the mmap zone
+        # we can only move the `data_start` shared pointer after the buffer has been used
         offset, length = descr_data[0]
-        data_start.value = offset + length
-        return mv[offset:offset + length]
-    # re-construct the buffer from discontiguous chunks:
+        end = offset + length
+
+        def free_mem(*_args):
+            data_start.value = end
+
+        return mv[offset:end], free_mem
+    # re-construct the buffer from discontiguous chunks
+    # and concatenate them into a byte buffer
     data = []
+    end = data_start.value
     for offset, length in descr_data:
-        data.append(mv[offset:offset + length])
-        data_start.value = offset + length
-    return b"".join(data)
+        end = offset + length
+        data.append(mv[offset:end])
+    bdata = b"".join(data)
+    # we can not update the shared pointer:
+    data_start.value = end
+    return bdata, noop
 
 
 def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], int]:
