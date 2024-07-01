@@ -124,7 +124,11 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
     cdef cstride
 
     with buffer_context(pixels) as bc:
-        if not bc.is_readonly():
+        # create_for_data uses the pixel data in-place, so we have to ensure that:
+        # * the number of bytes per pixel is 4 (CAIRO_FORMAT_RGB24 uses 32 bits, 8 bits are unused)
+        # * the pixel order is the same (whereas the slow path can do byte swapping)
+        # * the rowstride matches
+        if not bc.is_readonly() and rgb_format in ("BGRA", "BGRX") and fmt in (CAIRO_FORMAT_ARGB32, CAIRO_FORMAT_RGB24):
             # maybe we can just create an ImageSurface directly:
             cstride = cairo_format_stride_for_width(fmt, width)
             if cstride == stride:
