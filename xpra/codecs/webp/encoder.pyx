@@ -588,6 +588,7 @@ cdef class Encoder:
             100*len(cdata)//(self.width*self.height*self.Bpp), client_options)
         if LOG_CONFIG>0:
             log("webp.compress used config: %s", get_config_info(&self.config))
+        may_save_image("webp", cdata)
         return cdata, client_options
 
 
