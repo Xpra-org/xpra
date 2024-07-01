@@ -171,7 +171,7 @@ cdef int ShapeNotify = -1
 cdef int XFSelectionNotify = -1
 
 
-cdef int get_XKB_event_base(Display *xdisplay):
+cdef int get_XKB_event_base(Display *xdisplay) noexcept:
     cdef int opcode = 0
     cdef int event_base = 0
     cdef int error_base = 0
@@ -184,7 +184,7 @@ cdef int get_XKB_event_base(Display *xdisplay):
     return event_base
 
 
-cdef int get_XFixes_event_base(Display *xdisplay):
+cdef int get_XFixes_event_base(Display *xdisplay) noexcept:
     cdef int event_base = 0
     cdef int error_base = 0
     if not XFixesQueryExtension(xdisplay, &event_base, &error_base):
@@ -195,7 +195,7 @@ cdef int get_XFixes_event_base(Display *xdisplay):
     return event_base
 
 
-cdef int get_XDamage_event_base(Display *xdisplay):
+cdef int get_XDamage_event_base(Display *xdisplay) noexcept:
     cdef int event_base = 0
     cdef int error_base = 0
     if not XDamageQueryExtension(xdisplay, &event_base, &error_base):
@@ -206,7 +206,7 @@ cdef int get_XDamage_event_base(Display *xdisplay):
     return event_base
 
 
-cdef int get_XShape_event_base(Display *xdisplay):
+cdef int get_XShape_event_base(Display *xdisplay) noexcept:
     cdef int event_base = 0, ignored = 0
     if not XShapeQueryExtension(xdisplay, &event_base, &ignored):
         log.warn("Warning: XShape extension is not available")

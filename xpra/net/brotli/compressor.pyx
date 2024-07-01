@@ -7,6 +7,7 @@ from libc.stdint cimport uint8_t, uint32_t
 from xpra.buffers.membuf cimport MemBuf, getbuf
 from typing import Tuple
 
+from xpra.common import SizedBuffer
 from xpra.log import Logger
 log = Logger("brotli")
 
@@ -80,7 +81,7 @@ DEF BROTLI_MAX_QUALITY = 11
 DEF BROTLI_DEFAULT_WINDOW = 22
 
 
-def compress(data, int quality=1):
+def compress(data, int quality=1) -> SizedBuffer:
     #clamp to >2 so that we can use BrotliEncoderMaxCompressedSize:
     quality = max(2, min(BROTLI_MAX_QUALITY, quality))
     cdef size_t max_size = BrotliEncoderMaxCompressedSize(len(data))

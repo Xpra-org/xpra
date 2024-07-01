@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 # cython code for manipulating GdkAtoms
+from typing import List
 
 from xpra.os_util import gi_import
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
@@ -28,7 +29,7 @@ cdef extern from "gtk-3.0/gdk/gdkproperty.h":
     GdkAtom gdk_atom_intern(const gchar *atom_name, gboolean only_if_exists)
 
 
-def gdk_atom_objects_from_gdk_atom_array(atom_string):
+def gdk_atom_objects_from_gdk_atom_array(atom_string) -> List[Gdk.Atom]:
     cdef Py_buffer py_buf
     if PyObject_GetBuffer(atom_string, &py_buf, PyBUF_ANY_CONTIGUOUS):
         raise ValueError(f"failed to read atom buffer of {type(atom_string)}")
@@ -52,7 +53,8 @@ def gdk_atom_objects_from_gdk_atom_array(atom_string):
     PyBuffer_Release(&py_buf)
     return objects
 
-def gdk_atom_array_from_atoms(atoms):
+
+def gdk_atom_array_from_atoms(atoms) -> List[int]:
     cdef GdkAtom gdk_atom
     cdef uintptr_t gdk_atom_value
     atom_array = []

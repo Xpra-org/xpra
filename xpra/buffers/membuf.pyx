@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2015-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2015-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -19,6 +19,7 @@ from cpython.buffer cimport PyBuffer_FillInfo    # pylint: disable=syntax-error
 from libc.stdlib cimport free
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uintptr_t
+
 
 cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
@@ -58,7 +59,7 @@ cdef void *memalign(size_t size) noexcept nogil:
     return xmemalign(size)
 
 
-def get_membuf(size_t l, int readonly=1):
+def get_membuf(size_t l, int readonly=1) -> MemBuf:
     return getbuf(l, readonly)
 
 
@@ -83,8 +84,7 @@ cdef class MemBuf:
 
     def __dealloc__(self):
         if self.dealloc_cb_p != NULL:
-            self.dealloc_cb_p(self.p,
-             self.l, self.dealloc_cb_arg)
+            self.dealloc_cb_p(self.p, self.l, self.dealloc_cb_arg)
 
 
 # Call this instead of constructing a MemBuf directly.  The __cinit__
@@ -126,7 +126,7 @@ cdef class BufferContext:
             raise RuntimeError("invalid state: no buffer")
         PyBuffer_Release(&self.py_buf)
 
-    def is_readonly(self):
+    def is_readonly(self) -> bool:
         if self.py_buf.buf == NULL:
             raise RuntimeError("invalid state: no buffer")
         return bool(self.py_buf.readonly)
@@ -151,7 +151,7 @@ cdef class MemBufContext:
             raise ValueError(f"{membuf!r} is not a MemBuf instance: {type(membuf)}")
         self.membuf = membuf
 
-    def is_readonly(self):
+    def is_readonly(self) -> bool:
         return self.membuf.readonly
 
     def __enter__(self):
@@ -170,7 +170,7 @@ cdef class MemBufContext:
         return "MemBufContext(%s)" % self.membuf
 
 
-cdef buffer_context(object obj):
+cdef object buffer_context(object obj):
     if obj is None:
         raise ValueError(f"no buffer")
     if len(obj)==0:

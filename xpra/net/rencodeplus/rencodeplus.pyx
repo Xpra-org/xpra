@@ -81,11 +81,11 @@ cdef enum:
 #assert LIST_FIXED_START + LIST_FIXED_COUNT == 256
 
 
-cdef void swap_byte_order_ushort(unsigned short *s):
+cdef inline void swap_byte_order_ushort(unsigned short *s) noexcept:
     s[0] = (s[0] >> 8) | (s[0] << 8)
 
 
-cdef short swap_byte_order_short(char *c):
+cdef inline short swap_byte_order_short(char *c) noexcept:
     cdef short s
     cdef char *p = <char *>&s
     p[0] = c[1]
@@ -93,11 +93,11 @@ cdef short swap_byte_order_short(char *c):
     return s
 
 
-cdef void swap_byte_order_uint(int *i):
+cdef inline void swap_byte_order_uint(int *i) noexcept:
     i[0] = (i[0] >> 24) | ((i[0] << 8) & 0x00FF0000) | ((i[0] >> 8) & 0x0000FF00) | (i[0] << 24)
 
 
-cdef int swap_byte_order_int(char *c):
+cdef inline int swap_byte_order_int(char *c) noexcept:
     cdef int i
     cdef char *p = <char *>&i
     p[0] = c[3]
@@ -107,7 +107,7 @@ cdef int swap_byte_order_int(char *c):
     return i
 
 
-cdef void swap_byte_order_ulong_long(long long *l):
+cdef inline void swap_byte_order_ulong_long(long long *l) noexcept:
     l[0] = (l[0] >> 56) | \
            ((l[0] << 40) & 0x00FF000000000000) | \
            ((l[0] << 24) & 0x0000FF0000000000) | \
@@ -118,7 +118,7 @@ cdef void swap_byte_order_ulong_long(long long *l):
            (l[0] << 56)
 
 
-cdef long long swap_byte_order_long_long(char *c):
+cdef inline long long swap_byte_order_long_long(char *c) noexcept:
     cdef long long l
     cdef char *p = <char *>&l
     p[0] = c[7]
@@ -132,7 +132,7 @@ cdef long long swap_byte_order_long_long(char *c):
     return l
 
 
-cdef float swap_byte_order_float(char *c):
+cdef inline float swap_byte_order_float(char *c) noexcept:
     cdef float f
     cdef char *p = <char *>&f
     p[0] = c[3]
@@ -142,7 +142,7 @@ cdef float swap_byte_order_float(char *c):
     return f
 
 
-cdef swap_byte_order_double(char *c):
+cdef inline swap_byte_order_double(char *c) noexcept:
     cdef double d
     cdef char *p = <char *>&d
     p[0] = c[7]
@@ -211,10 +211,12 @@ cdef inline void encode_long_long(char **buf, unsigned int *pos, long long x):
             x = swap_byte_order_long_long(<char*>&x)
     write_buffer(buf, pos, &x, sizeof(x))
 
+
 cdef inline void encode_big_number(char **buf, unsigned int *pos, char *x):
     write_buffer_char(buf, pos, CHR_INT)
     write_buffer(buf, pos, x, len(x))
     write_buffer_char(buf, pos, CHR_TERM)
+
 
 #cdef encode_float32(char **buf, unsigned int *pos, float x):
 #    write_buffer_char(buf, pos, CHR_FLOAT32)
@@ -222,11 +224,13 @@ cdef inline void encode_big_number(char **buf, unsigned int *pos, char *x):
 #        x = swap_byte_order_float(<char *>&x)
 #    write_buffer(buf, pos, &x, sizeof(x))
 
+
 cdef inline void encode_float64(char **buf, unsigned int *pos, double x):
     write_buffer_char(buf, pos, CHR_FLOAT64)
     if not big_endian:
         x = swap_byte_order_double(<char *>&x)
     write_buffer(buf, pos, &x, sizeof(x))
+
 
 cdef inline void encode_memoryview(char **buf, unsigned int *pos, mem):
     cdef Py_buffer mv
@@ -240,6 +244,7 @@ cdef inline void encode_memoryview(char **buf, unsigned int *pos, mem):
     write_buffer(buf, pos, <char *>p, lx)
     PyBuffer_Release(&mv)
 
+
 cdef inline void encode_bytes(char **buf, unsigned int *pos, bytes x):
     cdef char *p
     cdef int lx = len(x)
@@ -247,6 +252,7 @@ cdef inline void encode_bytes(char **buf, unsigned int *pos, bytes x):
     p = s
     write_buffer(buf, pos, p, len(s))
     write_buffer(buf, pos, <char *>x, lx)
+
 
 cdef inline void encode_str(char **buf, unsigned int *pos, bytes x):
     cdef char *p
@@ -260,11 +266,14 @@ cdef inline void encode_str(char **buf, unsigned int *pos, bytes x):
         write_buffer(buf, pos, p, len(s))
         write_buffer(buf, pos, <char *>x, lx)
 
+
 cdef inline void encode_none(char **buf, unsigned int *pos):
     write_buffer_char(buf, pos, CHR_NONE)
 
+
 cdef inline void encode_bool(char **buf, unsigned int *pos, bool x):
     write_buffer_char(buf, pos, CHR_TRUE if x else CHR_FALSE)
+
 
 cdef inline void encode_list(char **buf, unsigned int *pos, x):
     if len(x) < LIST_FIXED_COUNT:
@@ -276,6 +285,7 @@ cdef inline void encode_list(char **buf, unsigned int *pos, x):
         for i in x:
             encode(buf, pos, i)
         write_buffer_char(buf, pos, CHR_TERM)
+
 
 cdef inline void encode_dict(char **buf, unsigned int *pos, x):
     if len(x) < DICT_FIXED_COUNT:

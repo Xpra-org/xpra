@@ -31,11 +31,11 @@ xshmdebug = Logger("x11", "bindings", "ximage", "xshm", "verbose")
 ximagedebug = Logger("x11", "bindings", "ximage", "verbose")
 
 
-cdef inline unsigned int roundup(unsigned int n, unsigned int m):
+cdef inline unsigned int roundup(unsigned int n, unsigned int m) noexcept:
     return (n + m - 1) & ~(m - 1)
 
 
-cdef inline unsigned char BYTESPERPIXEL(unsigned int depth):
+cdef inline unsigned char BYTESPERPIXEL(unsigned int depth) noexcept:
     if depth>=24 and depth<=32:
         return 4
     elif depth==16:
@@ -46,7 +46,7 @@ cdef inline unsigned char BYTESPERPIXEL(unsigned int depth):
     return roundup(depth, 8)//8
 
 
-cdef inline unsigned int MIN(unsigned int a, unsigned int b):
+cdef inline unsigned int MIN(unsigned int a, unsigned int b) noexcept:
     if a<=b:
         return a
     return b
@@ -224,7 +224,7 @@ cdef class XImageWrapper:
         self.palette = palette
         self.full_range = int(full_range)
 
-    cdef set_image(self, XImage* image):
+    cdef void set_image(self, XImage* image):
         assert not self.sub
         assert image!=NULL
         global ximage_counter
@@ -348,7 +348,7 @@ cdef class XImageWrapper:
         image.set_target_y(self.target_y+y)
         return image
 
-    cdef void *get_pixels_ptr(self):
+    cdef void* get_pixels_ptr(self):
         if self.pixels!=NULL:
             return self.pixels
         cdef XImage *image = self.image
@@ -429,7 +429,7 @@ cdef class XImageWrapper:
         self.free_image()
         self.free_pixels()
 
-    cdef free_image(self):
+    cdef void free_image(self):
         ximagedebug("%s.free_image() image=%#x", self, <uintptr_t> self.image)
         if self.image!=NULL:
             call_context_check("XImageWrapper.free_image()")
@@ -438,7 +438,7 @@ cdef class XImageWrapper:
             global ximage_counter
             ximage_counter -= 1
 
-    cdef free_pixels(self):
+    cdef void free_pixels(self):
         ximagedebug("%s.free_pixels() pixels=%#x", self, <uintptr_t> self.pixels)
         if self.pixels!=NULL:
             if not self.sub:
@@ -686,7 +686,7 @@ cdef class XShmWrapper:
         if self.closed and self.ref_count==0:
             self.free()
 
-    cdef free(self):
+    cdef void free(self):
         assert self.ref_count==0, "XShmWrapper %s cannot be freed: still has a ref count of %i" % (self, self.ref_count)
         assert self.closed, "XShmWrapper %s cannot be freed: it is not closed yet" % self
         has_shm = self.shminfo.shmaddr!=<char *> -1
@@ -747,7 +747,7 @@ cdef class XShmImageWrapper(XImageWrapper):
             cb()
         xshmdebug("XShmImageWrapper.free() done for %s, callback fired=%s", self, bool(cb))
 
-    cdef set_free_callback(self, object callback):
+    cdef void set_free_callback(self, object callback):
         self.free_callback = callback
 
 
@@ -761,7 +761,7 @@ cdef class PixmapWrapper:
     cdef unsigned int height
 
     "Reference count an X Pixmap that needs explicit cleanup."
-    cdef init(self, Display *display, Pixmap pixmap, unsigned int width, unsigned int height):
+    cdef void init(self, Display *display, Pixmap pixmap, unsigned int width, unsigned int height):
         self.display = display
         self.pixmap = pixmap
         self.width = width
@@ -800,7 +800,7 @@ cdef class PixmapWrapper:
     def __dealloc__(self):
         self.do_cleanup()
 
-    cdef do_cleanup(self):
+    cdef void do_cleanup(self):
         if self.pixmap!=0:
             XFreePixmap(self.display, self.pixmap)
             self.pixmap = 0
