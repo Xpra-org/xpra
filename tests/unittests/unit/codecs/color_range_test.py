@@ -11,20 +11,7 @@ from xpra.util.str_fn import memoryview_to_bytes, hexstr, sorted_nicely
 from xpra.util.objects import typedict
 from xpra.codecs import loader
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.checks import make_test_image
-
-
-# pixel in RGBX order:
-TEST_DATA = {
-    "black": "000000ff",
-    "white": "ffffffff",
-    "green": "00ff00ff",
-    "red": "ff0000ff",
-    "blue": "0000ffff",
-    "cyan": "00ffffff",
-    "magenta": "ff00ffff",
-    "yellow": "ffff00ff",
-}
+from xpra.codecs.checks import make_test_image, TEST_COLORS
 
 
 def cmp_bytes(b1: bytes, b2: bytes, tolerance=1) -> bool:
@@ -84,7 +71,7 @@ class TestColorRange(unittest.TestCase):
                 continue
             formats = enc_mod.get_encodings()
             for fmt in formats:
-                for color, pixel in TEST_DATA.items():
+                for color, pixel in TEST_COLORS.items():
                     rgb_format = "BGRX"
                     image = make_test_image(rgb_format, width, height, pixel)
                     pixels = image.get_pixels()

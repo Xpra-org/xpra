@@ -27,6 +27,18 @@ def unhex(s: str) -> bytes:
 
 DEFAULT_TEST_SIZE = 128, 128
 
+TEST_COLORS: dict[str, str] = {
+    "black": "000000ff",
+    "white": "ffffffff",
+    "green": "00ff00ff",
+    "red": "ff0000ff",
+    "blue": "0000ffff",
+    "cyan": "00ffffff",
+    "magenta": "ff00ffff",
+    "yellow": "ffff00ff",
+}
+
+
 # this test data was generated using a 24x16 blank image as input
 TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int], Sequence[bytes]]]] = {
     "h264": {
