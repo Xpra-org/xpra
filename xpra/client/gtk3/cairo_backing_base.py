@@ -7,12 +7,8 @@
 from time import monotonic
 from typing import Any
 from collections.abc import Callable
-import cairo
-from cairo import (  # pylint: disable=no-name-in-module
-    Context, ImageSurface,  # @UnresolvedImport
-    FORMAT_INVALID, FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,  # @UnresolvedImport
-    OPERATOR_SOURCE, OPERATOR_CLEAR, OPERATOR_OVER,  # @UnresolvedImport
-)
+from cairo import Context, ImageSurface, Format, Operator
+
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks
 from xpra.common import roundup, PaintCallbacks
@@ -30,9 +26,9 @@ log = Logger("paint", "cairo")
 COPY_OLD_BACKING = envbool("XPRA_CAIRO_COPY_OLD_BACKING", True)
 
 FORMATS = {-1: "INVALID"}
-for attr in dir(cairo):
-    if attr.startswith("FORMAT_"):
-        FORMATS[getattr(cairo, attr)] = attr.replace("FORMAT_", "")
+for attr in dir(Format):
+    if attr.isupper():
+        FORMATS[getattr(Format, attr)] = attr
 
 
 def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_time) -> None:
@@ -59,7 +55,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     argb = unpremultiply_argb(pixels)
     img_data = memoryview_to_bytes(argb)
     pixbuf = get_pixbuf_from_data(img_data, True, cw, ch, cw * 4)
-    context.set_operator(OPERATOR_OVER)
+    context.set_operator(Operator.OVER)
     Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
     context.paint_with_alpha(alpha)
 
@@ -96,14 +92,14 @@ class CairoBackingBase(WindowBackingBase):
         if bw == 0 or bh == 0:
             # this can happen during cleanup
             return None
-        backing = ImageSurface(FORMAT_ARGB32, bw, bh)
+        backing = ImageSurface(Format.ARGB32, bw, bh)
         self._backing = backing
         cr = Context(backing)
         if self._alpha_enabled:
-            cr.set_operator(OPERATOR_CLEAR)
+            cr.set_operator(Operator.CLEAR)
             cr.set_source_rgba(1, 1, 1, 0)
         else:
-            cr.set_operator(OPERATOR_SOURCE)
+            cr.set_operator(Operator.SOURCE)
             cr.set_source_rgba(1, 1, 1, 1)
         cr.rectangle(0, 0, bw, bh)
         cr.fill()
@@ -113,7 +109,7 @@ class CairoBackingBase(WindowBackingBase):
             cr.translate(dx - sx, dy - sy)
             cr.rectangle(sx, sy, w, h)
             cr.clip()
-            cr.set_operator(OPERATOR_SOURCE)
+            cr.set_operator(Operator.SOURCE)
             cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
             backing.flush()
@@ -158,11 +154,11 @@ class CairoBackingBase(WindowBackingBase):
         gc.rectangle(x, y, width, height)
         gc.clip()
 
-        gc.set_operator(OPERATOR_CLEAR)
+        gc.set_operator(Operator.CLEAR)
         gc.rectangle(x, y, width, height)
         gc.fill()
 
-        gc.set_operator(OPERATOR_SOURCE)
+        gc.set_operator(Operator.SOURCE)
         gc.translate(x, y)
         if iw != width or ih != height:
             gc.scale(width / iw, height / ih)
@@ -210,12 +206,12 @@ class CairoBackingBase(WindowBackingBase):
             rowstride = width * roundup(bpp, 8) // 8
         try:
             fmt = {
-                16: FORMAT_RGB16_565,
-                24: FORMAT_RGB24,
-                30: FORMAT_RGB30,
-                32: FORMAT_ARGB32 if self._alpha_enabled else FORMAT_RGB24,
-            }.get(bpp, FORMAT_INVALID)
-            if fmt == FORMAT_INVALID:
+                16: Format.RGB16_565,
+                24: Format.RGB24,
+                30: Format.RGB30,
+                32: Format.ARGB32 if self._alpha_enabled else Format.RGB24,
+            }.get(bpp, Format.INVALID)
+            if fmt == Format.INVALID:
                 raise ValueError(f"invalid rgb format {rgb_format!r} with bit depth {bpp}")
             options["rgb_format"] = rgb_format
             alpha = bpp == 32 and self._alpha_enabled
@@ -246,7 +242,7 @@ class CairoBackingBase(WindowBackingBase):
         if not gc:
             fire_paint_callbacks(callbacks, False, message="no context")
             return
-        gc.set_operator(OPERATOR_SOURCE)
+        gc.set_operator(Operator.SOURCE)
         for sx, sy, sw, sh, xdelta, ydelta in scrolls:
             gc.set_source_surface(old_backing, xdelta, ydelta)
             x = sx + xdelta
@@ -278,7 +274,7 @@ class CairoBackingBase(WindowBackingBase):
         x, y = self.offsets[:2]
         if x != 0 or y != 0:
             context.translate(x, y)
-        context.set_operator(OPERATOR_SOURCE)
+        context.set_operator(Operator.SOURCE)
         context.set_source_surface(backing, 0, 0)
         context.paint()
         if self.pointer_overlay and self.cursor_data:
@@ -289,7 +285,7 @@ class CairoBackingBase(WindowBackingBase):
         if self.is_show_fps() and self.fps_image:
             x, y = 10, 10
             context.translate(x, y)
-            context.set_operator(OPERATOR_OVER)
+            context.set_operator(Operator.OVER)
             context.set_source_surface(self.fps_image, 0, 0)
             context.paint()
             self.cancel_fps_refresh()

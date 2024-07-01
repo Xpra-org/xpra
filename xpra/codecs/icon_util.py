@@ -98,8 +98,8 @@ def svg_to_png(filename: str, icondata, w: int = 128, h: int = 128) -> bytes:
         return b""
     try:
         # pylint: disable=no-name-in-module, import-outside-toplevel
-        from cairo import ImageSurface, Context, FORMAT_ARGB32
-        img = ImageSurface(FORMAT_ARGB32, w, h)
+        from cairo import ImageSurface, Context, Format
+        img = ImageSurface(Format.ARGB32, w, h)
         ctx = Context(img)
         handle = rsvg.Handle.new_from_data(data=icondata)
         if hasattr(handle, "render_document"):

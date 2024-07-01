@@ -6,7 +6,7 @@
 
 from collections.abc import Sequence
 
-from cairo import FORMAT_ARGB32  # pylint: disable=no-name-in-module
+from cairo import Format
 
 from xpra.common import noop
 from xpra.os_util import gi_import
@@ -25,7 +25,6 @@ make_image_surface = noop
 CAIRO_FORMATS: dict[int, Sequence[str]] = {}
 try:
     from xpra.client.gtk3 import cairo_workaround
-
     make_image_surface = cairo_workaround.make_image_surface
     CAIRO_FORMATS.update(cairo_workaround.CAIRO_FORMATS)
 except ImportError as e:
@@ -91,4 +90,4 @@ class CairoBacking(CairoBackingBase):
         raise ValueError(f"failed to paint {cairo_format}")
 
     def update_fps_buffer(self, width: int, height: int, pixels) -> None:
-        self.fps_image = make_image_surface(FORMAT_ARGB32, "RGBA", pixels, width, height, width * 4)
+        self.fps_image = make_image_surface(Format.ARGB32, "RGBA", pixels, width, height, width * 4)
