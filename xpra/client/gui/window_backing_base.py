@@ -515,7 +515,7 @@ class WindowBackingBase:
         img = self.nv_decode(encoding, img_data, x, y, width, height, options)
         if img is None:
             if encoding == "jpeg":
-                rgb_format = "RGBX"
+                rgb_format = "BGRX"
             elif encoding == "jpega":
                 rgb_format = "BGRA"
             else:
