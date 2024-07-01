@@ -1068,7 +1068,7 @@ def proxy_connect(options: dict):
     rdns = to.boolget("proxy-rdns", True)
     username = to.strget("proxy-username")
     password = to.strget("proxy-password")
-    timeout = to.intget("timeout", 20)
+    timeout = to.intget("timeout", CONNECT_TIMEOUT)
     sock = socks.socksocket()
     sock.set_proxy(proxy_type, host, port, rdns, username, password)
     sock.settimeout(timeout)
@@ -1084,7 +1084,7 @@ def retry_socket_connect(options: dict):
     from xpra.net.socket_util import socket_connect
     start = monotonic()
     retry = 0
-    timeout = options.get("timeout", 20)
+    timeout = options.get("timeout", CONNECT_TIMEOUT)
     while True:
         sock = socket_connect(host, port, timeout=timeout)
         if sock:
