@@ -5,12 +5,12 @@
 
 from time import time
 from typing import Any
-from collections.abc import Sequence, MutableSequence
+from collections.abc import Sequence, MutableSequence, Iterable, Callable
 
 from xpra.os_util import gi_import
 from xpra.common import PaintCallback
 from xpra.client.gui.widget_base import ClientWidgetBase
-from xpra.client.gui.window_backing_base import WindowBackingBase
+from xpra.client.gui.window_backing_base import WindowBackingBase, fire_paint_callbacks
 from xpra.util.objects import typedict
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.env import envbool
@@ -153,7 +153,7 @@ class ClientTray(ClientWidgetBase):
     def update_metadata(self, metadata) -> None:
         log("%s.update_metadata(%s)", self, metadata)
 
-    def update_icon(self, img):
+    def update_icon(self, img) -> None:
         """
         this is the window icon... not the tray icon!
         ignore it as it is never shown anywhere
@@ -169,24 +169,24 @@ class ClientTray(ClientWidgetBase):
         # and the time we get the callback (as the draw may use idle_add)
         backing = self._backing
 
-        def after_draw_update_tray(success, message=None):
+        def after_draw_update_tray(success: bool | int, message: str = "") -> None:
             log("%s.after_draw_update_tray(%s, %s)", self, success, message)
             if not success:
-                log.warn("after_draw_update_tray(%s, %s) options=%s", success, message, options)
+                log.warn(f"Warning: tray paint update failed: {message!r}")
+                log.warn(f" for {width}x{height} {coding} update with {options=}")
                 return
             tray_data = backing.data
             log("tray backing=%s, data: %s", backing, tray_data is not None)
             if tray_data is None:
                 log.warn("Warning: no pixel data in tray backing for window %i", backing.wid)
                 return
-            GLib.idle_add(self.set_tray_icon, tray_data)
+            GLib.idle_add(self.set_tray_icon, *tray_data)
             GLib.idle_add(self.reconfigure)
 
         callbacks.append(after_draw_update_tray)
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
-    def set_tray_icon(self, tray_data) -> None:
-        enc, w, h, rowstride, pixels, options = tray_data
+    def set_tray_icon(self, enc: str, w: int, h: int, rowstride: int, pixels, options: typedict) -> None:
         log("%s.set_tray_icon(%s, %s, %s, %s, %s bytes)", self, enc, w, h, rowstride, len(pixels))
         has_alpha = enc == "rgb32"
         tw = self.tray_widget
@@ -232,34 +232,36 @@ class TrayBacking(WindowBackingBase):
     def paint_scroll(self, img_data, options, callbacks) -> None:
         raise RuntimeError("scroll should not be used with tray icons")
 
-    def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> None:
-        assert width == render_width and height == render_height, "tray rgb must not use scaling"
-        self.data = ("rgb24", width, height, rowstride, img_data[:], options)
+    def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
+                     x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
+                     options: typedict, callbacks: Iterable[Callable]) -> None:
+        if width != render_width or height != render_height:
+            fire_paint_callbacks(callbacks, False, "tray paint must not use scaling")
+            return
+        if encoding not in ("rgb24", "rgb32"):
+            fire_paint_callbacks(callbacks, False, f"invalid encoding for tray: {encoding!r}")
+            return
+        self.data = (encoding, width, height, rowstride, img_data[:], options)
         if SAVE:
             self.save_tray_png()
-
-    def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> None:
-        assert width == render_width and height == render_height, "tray rgb must not use scaling"
-        self.data = ("rgb32", width, height, rowstride, img_data[:], options)
-        if SAVE:
-            self.save_tray_png()
+        fire_paint_callbacks(callbacks, True)
 
     def save_tray_png(self) -> None:
         log("save_tray_png()")
-        rgb_mode, width, height, _, img_data = self.data[:5]
+        rgb_mode, width, height, stride, img_data = self.data[:5]
         mode = "RGB"
         data_mode = "RGB"
         if rgb_mode == "rgb32":
             mode += "A"
             data_mode += "A"
+        if not stride:
+            stride = width * len(data_mode)
         try:
             from PIL import Image  # pylint: disable=import-outside-toplevel
         except ImportError as e:
             log(f"cannot save tray: {e}")
             return
-        img = Image.frombytes(mode, (width, height), img_data, "raw", data_mode, width * len(data_mode), 1)
+        img = Image.frombytes(mode, (width, height), img_data, "raw", data_mode, stride, 1)
         filename = f"./tray-{rgb_mode}-{time()}.png"
         img.save(filename, "PNG")
         log.info("tray %s update saved to %s", rgb_mode, filename)

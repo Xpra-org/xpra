@@ -10,7 +10,7 @@ from collections.abc import Callable, Iterable
 import cairo
 from cairo import (  # pylint: disable=no-name-in-module
     Context, ImageSurface,  # @UnresolvedImport
-    FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,  # @UnresolvedImport
+    FORMAT_INVALID, FORMAT_ARGB32, FORMAT_RGB30, FORMAT_RGB24, FORMAT_RGB16_565,  # @UnresolvedImport
     OPERATOR_SOURCE, OPERATOR_CLEAR, OPERATOR_OVER,  # @UnresolvedImport
 )
 from xpra.client.gui.paint_colors import get_paint_box_color
@@ -142,7 +142,7 @@ class CairoBackingBase(WindowBackingBase):
 
         self.cairo_paint_from_source(set_source_surface, img_surface, x, y, iw, ih, width, height, options)
 
-    def cairo_paint_from_source(self, set_source_fn: Callable, source,
+    def cairo_paint_from_source(self, set_source_fn: Callable[[Any, Any, int, int], None], source,
                                 x: int, y: int, iw: int, ih: int, width: int, height: int, options) -> None:
         """ must be called from UI thread """
         backing = self._backing
@@ -193,6 +193,12 @@ class CairoBackingBase(WindowBackingBase):
             this method is only here to ensure that we always fire the callbacks,
             the actual paint code is in _do_paint_rgb[16|24|30|32]
         """
+        if not options.boolget("paint", True):
+            fire_paint_callbacks(callbacks)
+            return
+        if self._backing is None:
+            fire_paint_callbacks(callbacks, -1, "no backing")
+            return
         x, y = self.gravity_adjust(x, y, options)
         if rgb_format == "r210":
             bpp = 30
@@ -203,24 +209,18 @@ class CairoBackingBase(WindowBackingBase):
         if rowstride == 0:
             rowstride = width * roundup(bpp, 8) // 8
         try:
-            if not options.boolget("paint", True):
-                fire_paint_callbacks(callbacks)
-                return
-            if self._backing is None:
-                fire_paint_callbacks(callbacks, -1, "no backing")
-                return
-            if bpp == 16:
-                paint_fn = self._do_paint_rgb16
-            elif bpp == 24:
-                paint_fn = self._do_paint_rgb24
-            elif bpp == 30:
-                paint_fn = self._do_paint_rgb30
-            elif bpp == 32:
-                paint_fn = self._do_paint_rgb32
-            else:
-                raise ValueError(f"invalid rgb format {rgb_format!r}")
+            fmt = {
+                16: FORMAT_RGB16_565,
+                24: FORMAT_RGB24,
+                30: FORMAT_RGB30,
+                32: FORMAT_ARGB32 if self._alpha_enabled else FORMAT_RGB24,
+            }.get(bpp, FORMAT_INVALID)
+            if fmt == FORMAT_INVALID:
+                raise ValueError(f"invalid rgb format {rgb_format!r} with bit depth {bpp}")
             options["rgb_format"] = rgb_format
-            paint_fn(img_data, x, y, width, height, render_width, render_height, rowstride, options)
+            alpha = bpp == 32 and self._alpha_enabled
+            self._do_paint_rgb(fmt, alpha, img_data,
+                               x, y, width, height, render_width, render_height, rowstride, options)
             fire_paint_callbacks(callbacks, True)
         except Exception as e:
             if not self._backing:
@@ -229,27 +229,6 @@ class CairoBackingBase(WindowBackingBase):
                 log.error("Error painting rgb%s", bpp, exc_info=True)
                 message = f"paint rgb{bpp} error: {e}"
                 fire_paint_callbacks(callbacks, False, message)
-
-    def _do_paint_rgb16(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> None:
-        self._do_paint_rgb(FORMAT_RGB16_565, False, img_data,
-                           x, y, width, height, render_width, render_height, rowstride, options)
-
-    def _do_paint_rgb24(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> None:
-        self._do_paint_rgb(FORMAT_RGB24, False, img_data,
-                           x, y, width, height, render_width, render_height, rowstride, options)
-
-    def _do_paint_rgb30(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> None:
-        self._do_paint_rgb(FORMAT_RGB30, True, img_data,
-                           x, y, width, height, render_width, render_height, rowstride, options)
-
-    def _do_paint_rgb32(self, img_data, x: int, y: int, width: int, height: int,
-                        render_width: int, render_height: int, rowstride: int, options) -> None:
-        cformat = FORMAT_ARGB32 if self._alpha_enabled else FORMAT_RGB24
-        self._do_paint_rgb(cformat, True, img_data,
-                           x, y, width, height, render_width, render_height, rowstride, options)
 
     def _do_paint_rgb(self, *args) -> None:
         # see CairoBacking
@@ -325,4 +304,5 @@ class CairoBackingBase(WindowBackingBase):
                     rw, rh = self.render_size
                     self.repaint(0, 0, rw, rh)
 
+            self.cancel_fps_refresh()
             self.fps_refresh_timer = GLib.timeout_add(1000, refresh_screen)
