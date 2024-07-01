@@ -7,9 +7,9 @@ import os
 import sys
 from ctypes import c_ubyte, c_uint32
 from typing import Any
-from collections.abc import ByteString
+from collections.abc import ByteString, Callable
 
-from xpra.common import roundup
+from xpra.common import roundup, noop
 from xpra.util.env import envbool, shellsub
 from xpra.os_util import get_group_id, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS
@@ -268,7 +268,7 @@ def int_from_buffer(mmap_area, pos: int) -> c_uint32:
 
 # descr_data is a list of (offset, length)
 # areas from the mmap region
-def mmap_read(mmap_area, *descr_data) -> ByteString:
+def mmap_read(mmap_area, *descr_data) -> tuple[ByteString, Callable]:
     """
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.
@@ -278,14 +278,15 @@ def mmap_read(mmap_area, *descr_data) -> ByteString:
     if len(descr_data) == 1:
         # construct an array directly from the mmap zone:
         offset, length = descr_data[0]
-        data_start.value = offset + length
-        return (mv[offset:offset + length]).toreadonly()
+        def free_mem(*_args):
+            data_start.value = offset + length
+        return (mv[offset:offset + length]).toreadonly(), free_mem
     # re-construct the buffer from discontiguous chunks:
     data = []
     for offset, length in descr_data:
         data.append(mv[offset:offset + length])
         data_start.value = offset + length
-    return b"".join(data)
+    return b"".join(data), noop
 
 
 def mmap_write(mmap_area, mmap_size: int, data):

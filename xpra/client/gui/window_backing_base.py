@@ -911,7 +911,8 @@ class WindowBackingBase:
         """ must be called from UI thread
             see _mmap_send() in seamless.py for details """
         assert self.mmap_enabled
-        data = mmap_read(self.mmap, *img_data)
+        data, free_cb = mmap_read(self.mmap, *img_data)
+        callbacks.append(free_cb)
         rgb_format = options.strget("rgb_format", "RGB")
         # Note: BGR(A) is only handled by gl.backing
         x, y = self.gravity_adjust(x, y, options)
