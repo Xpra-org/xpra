@@ -8,7 +8,7 @@
 import binascii
 import os
 from enum import Enum, IntEnum
-from typing import Final, Protocol
+from typing import Final, Protocol, TypeAlias
 from collections.abc import Callable, Sized
 
 from xpra.util.env import envint, envbool
@@ -31,6 +31,9 @@ except ImportError:
     class SizedBuffer(Sized, Protocol):
         def __buffer__(self):
             raise NotImplementedError()
+
+
+PaintCallback: TypeAlias = Callable[[int | bool, str], None]
 
 
 # noinspection PyPep8

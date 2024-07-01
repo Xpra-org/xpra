@@ -9,7 +9,7 @@ from time import monotonic
 from threading import Lock
 from collections import deque
 from typing import Any
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence, MutableSequence
 
 from xpra.net.mmap import mmap_read
 from xpra.net import compression
@@ -19,7 +19,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
-from xpra.common import Gravity
+from xpra.common import Gravity, PaintCallback
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -77,7 +77,7 @@ def load_video() -> None:
     log("video decoders: %s", VIDEO_DECODERS)
 
 
-def fire_paint_callbacks(callbacks: Iterable[Callable], success: int | bool = True, message="") -> None:
+def fire_paint_callbacks(callbacks: Iterable[PaintCallback], success: int | bool = True, message="") -> None:
     for callback in callbacks:
         with log.trap_error("Error calling %s with %s", callback, (success, message)):
             callback(success, message)
@@ -468,11 +468,11 @@ class WindowBackingBase:
         self.cursor_data = cursor_data
 
     def paint_jpeg(self, img_data, x: int, y: int, width: int, height: int,
-                   options: typedict, callbacks: Iterable[Callable]) -> None:
+                   options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         self.do_paint_jpeg("jpeg", img_data, x, y, width, height, options, callbacks)
 
     def paint_jpega(self, img_data, x: int, y: int, width: int, height: int,
-                    options: typedict, callbacks: Iterable[Callable]) -> None:
+                    options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
     def nvdec_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options: typedict):
@@ -510,7 +510,7 @@ class WindowBackingBase:
             self.nvdec_decode(encoding, img_data, x, y, width, height, options)
 
     def do_paint_jpeg(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
-                      options: typedict, callbacks: Iterable[Callable]) -> None:
+                      options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         alpha_offset = options.intget("alpha-offset", 0)
         img = self.nv_decode(encoding, img_data, x, y, width, height, options)
         if img is None:
@@ -525,26 +525,26 @@ class WindowBackingBase:
         self.paint_image_wrapper(encoding, img, x, y, width, height, options, callbacks)
 
     def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
-                   options: typedict, callbacks: Iterable[Callable]):
+                   options: typedict, callbacks: Iterable[PaintCallback]):
         img = self.avif_decoder.decompress(img_data, options)
         self.paint_image_wrapper("avif", img, x, y, width, height, options, callbacks)
 
     def paint_pillow(self, coding: str, img_data, x: int, y: int, width: int, height: int,
-                     options: typedict, callbacks: Iterable[Callable]) -> None:
+                     options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         # can be called from any thread
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
         self.ui_paint_rgb(coding, rgb_format, img_data,
                           x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def paint_spng(self, img_data, x: int, y: int, width: int, height: int,
-                   options: typedict, callbacks: Iterable[Callable]) -> None:
+                   options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data)
         rowstride = iwidth * len(rgb_format)
         self.ui_paint_rgb("png", rgb_format, rgba,
                           x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
 
     def paint_webp(self, img_data, x: int, y: int, width: int, height: int,
-                   options: typedict, callbacks: Iterable[Callable]) -> None:
+                   options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         if not self.webp_decoder or WEBP_PILLOW:
             # if webp is enabled, then Pillow should be able to take care of it:
             self.paint_pillow("webp", img_data, x, y, width, height, options, callbacks)
@@ -555,7 +555,7 @@ class WindowBackingBase:
         self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
 
     def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,
-                  options, callbacks: Iterable[Callable]) -> None:
+                  options, callbacks: Iterable[PaintCallback]) -> None:
         """ can be called from a non-UI thread """
         # was a compressor used?
         comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
@@ -573,11 +573,11 @@ class WindowBackingBase:
         self.with_gfx_context(self.do_paint_rgb, *args)
 
     def paint_image_wrapper(self, encoding: str, img, x: int, y: int, width: int, height: int,
-                            options: typedict, callbacks: Iterable[Callable]) -> None:
+                            options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         self.with_gfx_context(self.do_paint_image_wrapper, encoding, img, x, y, width, height, options, callbacks)
 
     def do_paint_image_wrapper(self, context, encoding: str, img, x: int, y: int, width: int, height: int,
-                               options: typedict, callbacks: Iterable[Callable]) -> None:
+                               options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         pixel_format = img.get_pixel_format()
         if pixel_format in ("NV12", "YUV420P", "YUV422P", "YUV444P"):
             # jpeg may be decoded to these formats by nvjpeg / nvdec
@@ -610,7 +610,7 @@ class WindowBackingBase:
 
     def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
-                     options: typedict, callbacks: Iterable[Callable]) -> None:
+                     options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         # see subclasses `GLWindowBackingBase` and `CairoBacking`
         raise NotImplementedError()
 
@@ -719,7 +719,7 @@ class WindowBackingBase:
         return ""
 
     def paint_with_video_decoder(self, coding: str, img_data, x: int, y: int, width: int, height: int,
-                                 options: typedict, callbacks: Iterable[Callable]) -> None:
+                                 options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         dl = self._decoder_lock
         if dl is None:
             fire_paint_callbacks(callbacks, False, "no lock - retry")
@@ -802,7 +802,7 @@ class WindowBackingBase:
             self.close_decoder(True)
 
     def do_video_paint(self, coding: str, img, x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
-                       options: typedict, callbacks: Iterable[Callable]) -> None:
+                       options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         target_rgb_formats = self.get_rgb_formats()
         # as some video formats like vpx can forward transparency
         # also we could skip the csc step in some cases:
@@ -845,7 +845,7 @@ class WindowBackingBase:
         self.paint_image_wrapper(coding, rgb, x, y, width, height, options, callbacks)
 
     def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
-                   options: typedict, callbacks: Iterable[Callable]) -> None:
+                   options: typedict, callbacks: MutableSequence[PaintCallback]) -> None:
         assert self.mmap_enabled
         data, free_cb = mmap_read(self.mmap, *img_data)
         callbacks.append(free_cb)
@@ -855,12 +855,12 @@ class WindowBackingBase:
         self.ui_paint_rgb("mmap", rgb_format, data, x, y, width, height, width, height, rowstride,
                           options, callbacks)
 
-    def paint_scroll(self, img_data, options: typedict, callbacks: Iterable[Callable]) -> None:
+    def paint_scroll(self, img_data, options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         log("paint_scroll%s", (img_data, options, callbacks))
         raise NotImplementedError(f"no paint scroll on {type(self)}")
 
     def draw_region(self, x: int, y: int, width: int, height: int, coding: str, img_data, rowstride: int,
-                    options: typedict, callbacks: Iterable[Callable]) -> None:
+                    options: typedict, callbacks: MutableSequence[PaintCallback]) -> None:
         """ dispatches the paint to one of the paint_XXXX methods """
         self.recpaint(coding)
         try:
@@ -905,7 +905,7 @@ class WindowBackingBase:
     # noinspection PyMethodMayBeStatic
     def do_draw_region(self, _x: int, _y: int, _width: int, _height: int, coding: str,
                        _img_data, _rowstride: int,
-                       _options: typedict, callbacks: Iterable[Callable]) -> None:
+                       _options: typedict, callbacks: Iterable[PaintCallback]) -> None:
         msg = f"invalid encoding: {coding!r}"
         log.error("Error: %s", msg)
         fire_paint_callbacks(callbacks, False, msg)

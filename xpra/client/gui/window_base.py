@@ -8,7 +8,7 @@
 import os
 import re
 from typing import Any
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, MutableSequence
 
 from xpra.os_util import gi_import
 from xpra.client.gui.widget_base import ClientWidgetBase
@@ -828,7 +828,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int,
-                    options: typedict, callbacks: Sequence[Callable]):
+                    options: typedict, callbacks: MutableSequence[Callable]):
         """ Note: this runs from the draw thread (not UI thread) """
         backing = self._backing
         if not backing:

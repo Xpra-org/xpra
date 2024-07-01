@@ -128,7 +128,6 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
             # maybe we can just create an ImageSurface directly:
             cstride = cairo_format_stride_for_width(fmt, width)
             if cstride == stride:
-                print("happy path!")
                 return ImageSurface.create_for_data(pixels, fmt, width, height, stride)
 
         image_surface = ImageSurface(fmt, width, height)

@@ -1563,7 +1563,7 @@ class WindowClient(StubClientMixin):
         drawlog(DRAW_LOG_FMT, len(data), dtype, wid, packet_sequence, width, height, x, y, coding, options)
         start = monotonic()
 
-        def record_decode_time(success, message="") -> None:
+        def record_decode_time(success: bool | int, message="") -> None:
             if success > 0:
                 end = monotonic()
                 decode_time = round(end * 1000 * 1000 - start * 1000 * 1000)

@@ -5,9 +5,10 @@
 
 from time import time
 from typing import Any
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence, MutableSequence
 
 from xpra.os_util import gi_import
+from xpra.common import PaintCallback
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import WindowBackingBase
 from xpra.util.objects import typedict
@@ -160,7 +161,7 @@ class ClientTray(ClientWidgetBase):
 
     def draw_region(self, x: int, y: int, width: int, height: int,
                     coding: str, img_data, rowstride: int, options: typedict,
-                    callbacks: Sequence[Callable]):
+                    callbacks: MutableSequence[PaintCallback]):
         log("%s.draw_region%s", self,
             (x, y, width, height, coding, "%s bytes" % len(img_data), rowstride, options, callbacks))
 

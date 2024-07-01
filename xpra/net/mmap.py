@@ -8,7 +8,7 @@ import sys
 from ctypes import c_ubyte, c_uint32
 from typing import Any
 
-from xpra.common import roundup, noop
+from xpra.common import roundup, noop, PaintCallback
 from xpra.util.env import envbool, shellsub
 from xpra.os_util import get_group_id, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS
@@ -267,7 +267,7 @@ def int_from_buffer(mmap_area, pos: int) -> c_uint32:
 
 # descr_data is a list of (offset, length)
 # areas from the mmap region
-def mmap_read(mmap_area, *descr_data) -> bytes | memoryview:
+def mmap_read(mmap_area, *descr_data: tuple[int, int]) -> tuple[bytes | memoryview, PaintCallback]:
     """
         Reads data from the mmap_area as written by 'mmap_write'.
         The descr_data is the list of mmap chunks used.
