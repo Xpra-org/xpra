@@ -2489,7 +2489,7 @@ if gtk_x11_ENABLED:
     ace("xpra.x11.gtk.bindings,xpra/x11/gtk/gdk_x11_macros.c", "gdk-3.0,xdamage,xfixes")
 
 tace(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.cairo_workaround", "py3cairo",
-     extra_compile_args=["-Wno-error=parentheses-equality"] if CC_is_clang() else [])
+     extra_compile_args=["-Wno-error=parentheses-equality"] if CC_is_clang() else [], optimize=3)
 
 
 # build tests, but don't install them:
