@@ -1357,13 +1357,14 @@ class ServerCore:
             ssllog("SSL error", exc_info=True)
             ssl_paths = [socket_options.get(x, kwargs.get(x)) for x in ("ssl-cert", "ssl-key")]
             cpaths = csv(f"{x!r}" for x in ssl_paths if x)
-            log.error("Error: failed to create SSL socket")
-            log.error(" from %s socket: %s", socktype, sock)
+            log_fn = log.error if first_time(f"ssl-wrap-{socktype}-{socket_options}") else log.debug
+            log_fn("Error: failed to create SSL socket")
+            log_fn(" from %s socket: %s", socktype, sock)
             if not cpaths:
-                log.error(" no certificate paths specified")
+                log_fn(" no certificate paths specified")
             else:
-                log.error(" check your certificate paths: %s", cpaths)
-            log.estr(e)
+                log_fn(" check your certificate paths: %s", cpaths)
+            log_fn(" %s", e)
             noerr(sock.close)
             return None
 
