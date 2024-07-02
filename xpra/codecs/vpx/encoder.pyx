@@ -561,7 +561,7 @@ cdef class Encoder:
             self.file = None
             f.close()
 
-    def compress_image(self, image: ImageWrapper, options=None) -> Tuple[bytes, Dict]:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
         cdef uint8_t *pic_in[3]
         cdef int strides[3]
         assert self.context!=NULL
@@ -578,17 +578,16 @@ cdef class Encoder:
         assert len(istrides)==3, "image strides does not have 3 values! (found %s)" % len(istrides)
         cdef unsigned int Bpp = 1 + int(self.src_format.endswith("P10"))
         divs = get_subsampling_divs(self.src_format)
-        cdef unsigned long bandwidth_limit = typedict(options or {}).intget("bandwidth-limit", self.bandwidth_limit)
+        cdef unsigned long bandwidth_limit = options.intget("bandwidth-limit", self.bandwidth_limit)
 
         if bandwidth_limit!=self.bandwidth_limit:
             self.bandwidth_limit = bandwidth_limit
             self.update_cfg()
 
-        options = options or {}
-        cdef int speed = options.get("speed", 50)
+        cdef int speed = options.intget("speed", 50)
         if speed>=0:
             self.set_encoding_speed(speed)
-        cdef int quality = options.get("quality", 50)
+        cdef int quality = options.intget("quality", 50)
         if quality>=0:
             self.set_encoding_quality(quality)
 
