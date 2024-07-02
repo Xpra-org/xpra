@@ -56,7 +56,7 @@ http_headers_cache: dict[str, str] = {}
 http_headers_time: dict[str, float] = {}
 
 
-def may_reload_headers(http_headers_dirs):
+def may_reload_headers(http_headers_dirs) -> dict[str, str]:
     mtimes: dict[str, float] = {}
     global http_headers_cache
     if http_headers_cache:
@@ -277,7 +277,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 self.send_header(k, v)
         super().end_headers()
 
-    def get_headers(self):
+    def get_headers(self) -> dict[str, str]:
         return may_reload_headers(self.http_headers_dirs)
 
     def do_POST(self) -> None:
@@ -367,7 +367,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             log(f"failed to send {code} error - maybe some of the headers were already sent?", exc_info=True)
 
     # code taken from MIT licensed code in GzipSimpleHTTPServer.py
-    def send_head(self):
+    def send_head(self) -> None:
         path = self.path.split("?", 1)[0].split("#", 1)[0]
         # strip path after second slash:
         script_path = path
