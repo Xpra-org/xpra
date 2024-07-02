@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-# duplicated form SimpleHTTPRequestHandler
+# duplicated from SimpleHTTPRequestHandler
 # so that we can re-use it from the quic handler
 # and also so that we can customize it more easily
 
@@ -52,8 +52,9 @@ def list_directory(path: str):
     encoded = '\n'.join(r).encode(enc, 'surrogateescape')
     f = BytesIO()
     f.write(encoded)
-    f.seek(0)
+    contents = f.getvalue()
+    f.close()
     return 200, {
-        "Content-type", f"text/html; charset={enc}",
-        "Content-Length", str(len(encoded)),
-    }, f
+        "Content-type": f"text/html; charset={enc}",
+        "Content-Length": str(len(encoded)),
+    }, contents
