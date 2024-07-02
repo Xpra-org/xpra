@@ -10,7 +10,7 @@ from typing import Any
 from ctypes.wintypes import HDC
 from ctypes import (
     WinDLL,  # @UnresolvedImport
-    c_void_p, Structure, c_int, c_uint, c_ulong, c_char_p, cast, pointer, POINTER,
+    c_void_p, Structure, c_int, c_uint, c_ulong, c_char, c_char_p, cast, pointer, POINTER,
 )
 
 from xpra.util.str_fn import ellipsizer, strtobytes
@@ -27,9 +27,9 @@ except OSError as e:  # @UndefinedVariable
 
 class FPDF_LIBRARY_CONFIG(Structure):
     _fields_ = [
-        ("m_pUserFontPaths", c_void_p),
         ("version", c_int),
-        ("m_pIsolate", c_void_p),
+        ("m_pUserFontPaths", POINTER(POINTER(c_char))),
+        ("m_pIsolate", POINTER(None)),
         ("m_v8EmbedderSlot", c_uint),
     ]
 
@@ -47,6 +47,7 @@ FPDF_GetPageCount.argtypes = [FPDF_DOCUMENT]
 FPDF_GetPageCount.restype = c_int
 FPDF_LoadPage = pdfium.FPDF_LoadPage
 FPDF_LoadPage.argtypes = [FPDF_DOCUMENT, c_int]
+FPDF_LoadPage.restype = FPDF_PAGE
 FPDF_RenderPage = pdfium.FPDF_RenderPage
 FPDF_RenderPage.argtypes = [HDC, FPDF_PAGE, c_int, c_int, c_int, c_int, c_int, c_int]
 FPDF_LoadMemDocument = pdfium.FPDF_LoadMemDocument
