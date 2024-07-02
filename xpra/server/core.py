@@ -692,14 +692,14 @@ class ServerCore:
                     self._www_dir = www_dir
                     httplog("found html5 client in '%s'", www_dir)
                     break
-        if not os.path.exists(self._www_dir) and self._html:
+        if not os.path.exists(self._www_dir) and self._html is not False:
             httplog.error("Error: cannot find the html web root")
             httplog.error(f" {self._www_dir!r} does not exist")
             httplog.error(" install the `xpra-html5` package")
             httplog.error(" or turn off the builtin web server using `html=no`")
             self._www_dir = "/usr/share/xpra/www/"
             self._html = False
-        if self._html:
+        if self._html is not False:
             httplog.info(f"serving html content from {self._www_dir!r}")
             self._http_headers_dirs = []
             for d in get_system_conf_dirs():
@@ -708,6 +708,7 @@ class ServerCore:
                 for d in get_user_conf_dirs():
                     self._http_headers_dirs.append(os.path.join(d, "http-headers"))
             self._http_headers_dirs.append(os.path.abspath(os.path.join(self._www_dir, "../http-headers")))
+            self._html = True
 
     def init_http_scripts(self, http_scripts: str):
         if http_scripts.lower() not in FALSE_OPTIONS:
