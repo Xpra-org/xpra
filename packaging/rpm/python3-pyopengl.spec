@@ -19,7 +19,7 @@
 
 Name:           %{python3}-pyopengl
 Version:        3.1.7
-Release:        5%{?dist}
+Release:        7%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -27,14 +27,15 @@ Source0:        https://files.pythonhosted.org/packages/source/P/%{srcname}/%{sr
 Source1:        https://files.pythonhosted.org/packages/source/P/%{srcname}-accelerate/%{srcname}-accelerate-%{version}.tar.gz
 Patch0:         pyopengl-egl-open-warning.patch
 Patch1:         pyopengl-py3.13-nonumpy.patch
+Patch2:         pyopengl-py3.12-ctypes.patch
 
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-numpy
 BuildRequires:  gcc
 Requires:       freeglut
-%if 0%{fedora}<40
-Recommends:     %{python3}-numpy
+%if 0%{?fedora}<40
+Suggests:       %{python3}-numpy
 %endif
 Obsoletes:      %{python3}-PyOpenGL < 3.1.5
 Obsoletes:      %{python3}-PyOpenGL-accelerate < 3.1.5
@@ -74,8 +75,10 @@ fi
 %setup -q -c -n %{srcname}-%{version} -T -a0 -a1
 pushd %{srcname}-%{version}
 %patch -p1 -P 0
+# doesn't hurt to apply in all cases:
+%patch -p1 -P 2
 popd
-%if 0%{fedora}>39
+%if 0%{?fedora}>39
 pushd %{srcname}-accelerate-%{version}
 %patch -p1 -P 1
 popd
@@ -122,6 +125,12 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Tue Jul 02 2024 Antoine Martin <antoine@xpra.org> - 3.1.7-7
+- add Python 3.12 patch for ctypes change
+
+* Sat Jun 15 2024 Antoine Martin <antoine@xpra.org> - 3.1.7-6
+- lower `numpy` to a suggestion, because xpra doesn't use numpy with pyopengl
+
 * Sat Jun 15 2024 Antoine Martin <antoine@xpra.org> - 3.1.7-5
 - don't require numpy, only recommend it
 - apply no-numpy patch on Fedora 40+
