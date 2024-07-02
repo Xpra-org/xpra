@@ -1,0 +1,25 @@
+From b49af26c615236ebc29cf125a8315091482a4a2a Mon Sep 17 00:00:00 2001
+From: Scott Talbert <swt@techie.net>
+Date: Tue, 18 Jul 2023 10:12:29 -0400
+Subject: [PATCH] Fix ctypes FormatHandler for Python 3.12+
+
+In Python 3.12, CArgObject moved from builtins to _ctypes it seems.
+
+Fixes #99.
+---
+ OpenGL/__init__.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/OpenGL/__init__.py b/OpenGL/__init__.py
+index f9cc6bfc..77dc8c0b 100644
+--- a/OpenGL/__init__.py
++++ b/OpenGL/__init__.py
+@@ -308,7 +308,7 @@ def setPlatform(key):
+     "ctypesparameter",
+     "OpenGL.arrays.ctypesparameters.CtypesParameterHandler",
+     [
+-        _bi + ".CArgObject",
++        ("_ctypes" if sys.version_info[:2] >= (3,12) else _bi) + ".CArgObject",
+         "ctypes.c_uint",
+         "ctypes.c_int",
+         "ctypes.c_float",
