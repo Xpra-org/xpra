@@ -14,7 +14,7 @@ from io import BytesIO
 from urllib.parse import quote, unquote
 
 
-def list_directory(path: str):
+def list_directory(path: str) -> tuple[int, dict[str, str], bytes]:
     try:
         dirlist = os.listdir(path)
     except OSError:
@@ -52,8 +52,9 @@ def list_directory(path: str):
     encoded = '\n'.join(r).encode(enc, 'surrogateescape')
     f = BytesIO()
     f.write(encoded)
-    f.seek(0)
+    contents = f.getvalue()
+    f.close()
     return 200, {
-        "Content-type", f"text/html; charset={enc}",
-        "Content-Length", str(len(encoded)),
-    }, f
+        "Content-type": f"text/html; charset={enc}",
+        "Content-Length": str(len(encoded)),
+    }, contents

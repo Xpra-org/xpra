@@ -39,7 +39,7 @@ http_headers_cache: dict[str, str] = {}
 http_headers_time: dict[str, float] = {}
 
 
-def may_reload_headers(http_headers_dirs) -> dict[str, str]:
+def may_reload_headers(http_headers_dirs: Iterable[str]) -> dict[str, str]:
     mtimes: dict[str, float] = {}
     global http_headers_cache
     if http_headers_cache:
@@ -390,8 +390,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 if not self.directory_listing:
                     self.send_error(403, "Directory listing forbidden")
                     return None
-                return list_directory(path).read()
-
+                code, headers, body = list_directory(path)
+                self.send_response(code)
+                self.extra_headers.update(headers)
+                self.end_headers()
+                return body
         try:
             accept_encoding = self.headers.get("accept-encoding", "").split(",")
             code, extra_headers, content = load_path(accept_encoding, path)
