@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import glob
 import posixpath
 import mimetypes
@@ -13,7 +14,7 @@ from http.server import BaseHTTPRequestHandler
 from typing import Any
 from collections.abc import Iterable, Callable
 
-from xpra.common import DEFAULT_XDG_DATA_DIRS
+from xpra.common import DEFAULT_XDG_DATA_DIRS, FULL_INFO
 from xpra.net.common import HttpResponse
 from xpra.net.http.common import EXTENSION_TO_MIMETYPE
 from xpra.net.http.directory_listing import list_directory
@@ -226,6 +227,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     wbufsize = 0  # we flush explicitly when needed
     server_version = "Xpra-HTTP-Server"
+    sys_version = "Python/" + ".".join(str(vnum) for vnum in sys.version_info[:FULL_INFO+1])
 
     def __init__(self, sock, addr,
                  web_root: str = "/usr/share/xpra/www/",
