@@ -35,23 +35,6 @@ AUTH_USERNAME = os.environ.get("XPRA_HTTP_AUTH_USERNAME", "")
 AUTH_PASSWORD = os.environ.get("XPRA_HTTP_AUTH_PASSWORD", "")
 
 
-# should be converted to use standard library
-def parse_url(handler) -> dict[str, str]:
-    try:
-        args_str = handler.path.split("?", 1)[1]
-    except IndexError:
-        return {}
-    # parse args:
-    args = {}
-    for x in args_str.split("&"):
-        v = x.split("=", 1)
-        if len(v) == 1:
-            args[v[0]] = ""
-        else:
-            args[v[0]] = v[1]
-    return args
-
-
 http_headers_cache: dict[str, str] = {}
 http_headers_time: dict[str, float] = {}
 
