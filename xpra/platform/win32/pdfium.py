@@ -29,7 +29,7 @@ class FPDF_LIBRARY_CONFIG(Structure):
     _fields_ = [
         ("version", c_int),
         ("m_pUserFontPaths", POINTER(POINTER(c_char))),
-        ("m_pIsolate", POINTER(None)),
+        ("m_pIsolate", c_void_p),
         ("m_v8EmbedderSlot", c_uint),
     ]
 
