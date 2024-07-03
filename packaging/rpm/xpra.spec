@@ -862,46 +862,65 @@ fi
 
 
 %changelog
-* Tue Jun 18 2024 Antoine Martin <antoine@xpra.org> 6.0.2-10
+* Wed Jul 03 2024 Antoine Martin <antoine@xpra.org> 6.0.2-10
 - Platforms, build and packaging:
    revision number not detected in RPM spec file
-   MacOS pixbuf crash on launch
    add security warning about downstream packages
    new unavoidable clang build warning on MacOS
-   server built `--without-http` does not start
    missing QUIC transport in MS Windows builds
    unnecessary DEB dependency on unused `python3-yaml`
+   fix PEP 517 builds
+   MS Windows setup script typo
+- OpenGL:
+   `OpenGL` acceleration self-test failures on MS Windows
+   blacklist the `llvmpipe` software renderer
+   `PyOpenGL` imported early, causing `numpy` initialization errors
+   `PyOpenGL` ctypes patch for Python 3.12 and later, don't recommend `numpy`
    `pyopengl` builds for Python 3.13
    `PyOpenGL` build error with `numpy` on Fedora 40
 - Major:
+   MacOS pixbuf crash on launch
    connection failures when server is still initializing
    `PyOpenGL` imported early, causing `numpy` initialization errors
    `OpenGL` acceleration self-test failures on MS Windows when executed from GUI tools
+   server built `--without-http` does not start
+- Encodings:
+   `mmap` race condition
+   full self-tests for `jpeg` decoder
+   Pillow 10 supports faster memoryview buffers
+   avoid `webp` colorspace issue with Pillow
+   bump openh264 bitstream level
+   validate openh264 colorspace
+   openh264 decoder self test
+   openh264 encoder should set the frame number
+   X264 warning `intra-refresh is not compatible with open-gop`
+   test used potentially invalid colorspace
 - Minor:
    allow printing with more socket authenication modules
    map Visual Studio Code to `text`
    isolate failures to show or hide a window
    only reparent windows if needed but always send `ConfigureNotify`
-   full self-tests for `jpeg` decoder
    rendering of some toolbox test applications
-   openh264 decoder self test
-   Pillow 10 supports memoryview buffers
+   prefer IPv4 for localhost
+   remove enum prefix with older Python versions
+   http directory listing
 - Cosmetic / correctness:
+   log `ssl` error just once per socket
    don't spam the logs because of a `pyxdg` bug
    missing documentation pages
-   X264 warning `intra-refresh is not compatible with open-gop`
+   OpenSSH documentation misplaced
+   we do have tests
    first video frame should be number zero
    correct type for clipboard default arguments
    decode pam authentication failure message and error
    syntax error in `set_source_version` script
    log init thread failure details
-   blacklist the `llvmpipe` software renderer but probe server opengl properties anyway
    no need to clear X11 damage of unmanaged windows
    match function signature
-   bump openh264 bitstream level
-   openh264 encoder should set the frame number
    avoid warning when running the tray test application
    avoid warnings in the launcher
+   hex strings
+   don't show the full Pyton version in http server string
 
 
 * Thu May 23 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
