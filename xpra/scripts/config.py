@@ -728,7 +728,9 @@ CLIENT_OPTIONS = ["title", "username", "password", "session-name",
                   "video-encoders", "csc-modules", "video-decoders",
                   "compressors", "packet-encoders",
                   "key-shortcut",
-                  "env"]
+                  "env",
+                  "ssh",
+                  ]
 
 CLIENT_ONLY_OPTIONS = ["username", "swap-keys", "dock-icon",
                        "tray", "delay-tray", "tray-icon",
