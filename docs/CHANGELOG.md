@@ -1,5 +1,25 @@
 # Changelog
 
+## [5.0.10] 2024-07-03
+* Encodings:
+    * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
+    * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
+    * [test used potentially invalid colorspace](https://github.com/Xpra-org/xpra/commit/d4883187a0c1497b0ece3330a6864f1b67d1a217)
+* Platforms, build and packaging:
+    * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
+* Major:
+    * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
+    * [honour `ssh` option when re-connecting](https://github.com/Xpra-org/xpra/commit/45bad59e6255f03087b8dbd51dfd2380472f6f20)
+    * [missing http headers caused html5 client caching](https://github.com/Xpra-org/xpra/commit/bb8db97afcbd79ca8924728a674736026201d80f)
+* Minor:
+    * [remove enum prefix with older Python versions](https://github.com/Xpra-org/xpra/commit/8eabd33b578aed9670c1cef62a24e2dc73370b79)
+    * [http directory listing](https://github.com/Xpra-org/xpra/commit/3aa22cfa636f21ba079e352b81448d675174d59a)
+* Cosmetic:
+    * [log `ssl` error just once per socket](https://github.com/Xpra-org/xpra/commit/a409b1bbebece4d86dfe04fdd54c9b7f385fc1a9)
+    * [OpenSSH documentation misplaced](https://github.com/Xpra-org/xpra/commit/b074848ada873561dd975238cfeb1ed5cf81ba93)
+    * [we do have tests](https://github.com/Xpra-org/xpra/commit/8af9bb37c22f0b696b312c76801ec1b5dc597a74)
+
+
 ## [5.0.9] 2023-06-18
 * Encodings:
     * [video encoding errors causing missed screen updates](https://github.com/Xpra-org/xpra/commit/188e9903754e1abc8cd86ecd65bf9427000e7012)
