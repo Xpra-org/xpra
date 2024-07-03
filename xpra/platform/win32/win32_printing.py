@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from ctypes import (
-	cdll, c_void_p, Structure, cast, c_char, c_int, pointer, POINTER,
+	cdll, c_size_t, c_void_p, Structure, cast, c_char, c_int, pointer, POINTER,
 	WinDLL,  # @UnresolvedImport
 	)
 from ctypes.wintypes import HDC, HANDLE, BOOL, BYTE, LPCSTR, DWORD, WORD
@@ -23,6 +23,12 @@ LPPRINTER_DEFAULTS = c_void_p
 PSECURITY_DESCRIPTOR = HANDLE
 
 msvcrt = cdll.msvcrt
+malloc = malloc
+malloc.argtypes = [c_size_t]
+malloc.restype = c_void_p
+free = free
+free.argtypes = [c_void_p]
+free.restype = None
 winspool = WinDLL('winspool.drv', use_last_error=True)
 OpenPrinterA = winspool.OpenPrinterA
 OpenPrinterA.restype = BOOL
@@ -135,7 +141,7 @@ class GDIPrinterContext:
 		if size.value==0:
 			raise RuntimeError("GetPrinterA PRINTER_INFO_1 failed for '%s'" % self.printer_name)
 		log("GetPrinter: PRINTER_INFO_1 size=%#x", size.value)
-		self.info1 = msvcrt.malloc(size.value)
+		self.info1 = malloc(size.value)
 		if not GetPrinterA(self.handle, 1, self.info1, size.value, pointer(size)):
 			raise RuntimeError("GetPrinterA PRINTER_INFO_1 failed for '%s'" % self.printer_name)
 		info = cast(self.info1, POINTER(PRINTER_INFO_1))
@@ -149,7 +155,7 @@ class GDIPrinterContext:
 		if size.value==0:
 			raise RuntimeError("GetPrinterA PRINTER_INFO_2 failed for '%s'" % self.printer_name)
 		log("GetPrinter: PRINTER_INFO_2 size=%#x", size.value)
-		self.info2 = msvcrt.malloc(size.value)
+		self.info2 = malloc(size.value)
 		if GetPrinterA(self.handle, 2, self.info2, size.value, pointer(size)):
 			info = cast(self.info2, POINTER(PRINTER_INFO_2))
 			log(" driver=%#s" % info[0].pDriverName)
@@ -159,7 +165,7 @@ class GDIPrinterContext:
 		GetPrinterA(self.handle, 8, None, 0, pointer(size))
 		if size.value==0:
 			raise RuntimeError("GetPrinter: PRINTER_INFO_8 failed for '%s'" % self.printer_name)
-		self.info8 = msvcrt.malloc(size.value)
+		self.info8 = malloc(size.value)
 		if GetPrinterA(self.handle, 8, self.info8, size.value, pointer(size)):
 			info = cast(self.info8, POINTER(PRINTER_INFO_8))
 			if info[0] and info[0].pDevMode:
@@ -172,7 +178,7 @@ class GDIPrinterContext:
 		if size.value==0:
 			raise RuntimeError("GetPrinter: PRINTER_INFO_9 failed for '%s'" % self.printer_name)
 		log("GetPrinter: PRINTER_INFO_9 size=%#x" % size.value)
-		self.info9 = msvcrt.malloc(size.value)
+		self.info9 = malloc(size.value)
 		if GetPrinterA(self.handle, 9, self.info9, size.value, pointer(size)):
 			info = cast(self.info9, POINTER(PRINTER_INFO_9))
 			if info[0] and info[0].pDevMode:
@@ -191,16 +197,16 @@ class GDIPrinterContext:
 			DeleteDC(self.hdc)
 			self.hdc = None
 		if self.info1:
-			msvcrt.free(self.info1)
+			free(self.info1)
 			self.info1 = None
 		if self.info2:
-			msvcrt.free(self.info2)
+			free(self.info2)
 			self.info2 = None
 		if self.info8:
-			msvcrt.free(self.info8)
+			free(self.info8)
 			self.info8 = None
 		if self.info9:
-			msvcrt.free(self.info9)
+			free(self.info9)
 			self.info9 = None
 		if self.handle:
 			ClosePrinter(self.handle)
