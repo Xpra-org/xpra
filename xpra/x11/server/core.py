@@ -136,11 +136,15 @@ class X11ServerCore(GTKServerBase):
         super().server_init()
 
     def do_init(self, opts) -> None:
+        onoff = sizes = opts.resize_display
+        if opts.resize_display.find(":") > 0:
+            #ie: "off:1080p"
+            onoff, sizes = opts.resize_display.split(":", 1)
         try:
-            self.initial_resolutions = parse_resolutions(opts.resize_display, opts.refresh_rate) or ()
+            self.initial_resolutions = parse_resolutions(sizes, opts.refresh_rate) or ()
         except ValueError:
             self.initial_resolutions = ()
-        self.randr = opts.resize_display not in FALSE_OPTIONS
+        self.randr = onoff.lower() not in FALSE_OPTIONS
         self.randr_exact_size = False
         # x11 keyboard bits:
         self.current_keyboard_group = 0

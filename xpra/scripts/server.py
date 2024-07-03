@@ -1296,7 +1296,10 @@ def _do_run_server(script_file: str, cmdline,
                 write_session_file("uinput-uuid", uinput_uuid)
             vfb_geom: tuple | None = ()
             if opts.resize_display.lower() not in ALL_BOOLEAN_OPTIONS:
-                vfb_geom = parse_resolutions(opts.resize_display, opts.refresh_rate)[0]
+                # "off:1080p" -> "1080p"
+                # "4k" -> "4k"
+                sizes = opts.resize_display.split(":", 1)[-1]
+                vfb_geom = parse_resolutions(sizes, opts.refresh_rate)[0]
 
             xvfb, display_name = start_Xvfb(opts.xvfb, vfb_geom, pixel_depth, display_name, cwd,
                                             uid, gid, username, uinput_uuid)
