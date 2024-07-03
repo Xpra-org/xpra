@@ -726,12 +726,12 @@ class ServerCore:
                 if os.path.exists(self._www_dir):
                     httplog("found html5 client in '%s'", self._www_dir)
                     break
-        if not os.path.exists(self._www_dir) and self._html:
+        if not os.path.exists(self._www_dir) and self._html is not False:
             httplog.error("Error: cannot find the html web root")
             httplog.error(f" {self._www_dir!r} does not exist")
             httplog.error(" install the `xpra-html5` package")
             self._html = False
-        if self._html:
+        if self._html is not False:
             httplog.info(f"serving html content from {self._www_dir!r}")
             self._http_headers_dirs = []
             for d in get_system_conf_dirs():
@@ -740,6 +740,7 @@ class ServerCore:
                 for d in get_user_conf_dirs():
                     self._http_headers_dirs.append(os.path.join(d, "http-headers"))
             self._http_headers_dirs.append(os.path.abspath(os.path.join(self._www_dir, "../http-headers")))
+            self._html = True
         if opts.http_scripts.lower() not in FALSE_OPTIONS:
             script_options : Dict[str,Callable] = {
                 "/Status"           : self.http_status_request,
