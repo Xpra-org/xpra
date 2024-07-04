@@ -8,7 +8,7 @@ import sys
 from time import monotonic
 from collections import deque
 from threading import Lock
-from typing import Any, Literal
+from typing import Any, Literal, NoReturn
 
 from xpra.audio.audio_pipeline import AudioPipeline
 from xpra.gstreamer.common import (
@@ -521,11 +521,11 @@ def main() -> int:
 
         import signal
 
-        def deadly_signal(*_args):
+        def deadly_signal(*_args) -> None:
             GLib.idle_add(ss.stop)
             GLib.idle_add(glib_mainloop.quit)
 
-            def force_quit(_sig, _frame):
+            def force_quit(_sig, _frame) -> NoReturn:
                 sys.exit()
 
             signal.signal(signal.SIGINT, force_quit)

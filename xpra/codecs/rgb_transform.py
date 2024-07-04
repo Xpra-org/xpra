@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
+from typing import NoReturn
 from collections.abc import Sequence
 
 from xpra.util.env import first_time
@@ -14,7 +15,7 @@ from xpra.log import Logger
 log = Logger("encoding")
 
 
-def noswap(image, rgb_formats, _supports_transparency) -> None:
+def noswap(image, rgb_formats, _supports_transparency) -> NoReturn:
     pixel_format = image.get_pixel_format()
     raise RuntimeError(f"cannot convert from {pixel_format} to {csv(rgb_formats)} without the argb module")
 

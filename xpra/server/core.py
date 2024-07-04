@@ -17,7 +17,7 @@ from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Lock
 from types import FrameType
-from typing import Any
+from typing import Any, NoReturn
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.util.version import (
@@ -325,7 +325,7 @@ class ServerCore:
         self.cleanup()
         self.quit_worker()
 
-    def force_quit(self, exit_code: ExitValue = ExitCode.FAILURE) -> None:
+    def force_quit(self, exit_code: ExitValue = ExitCode.FAILURE) -> NoReturn:
         log("force_quit()")
         force_quit(int(exit_code))
 

@@ -6,6 +6,7 @@
 import os
 import sys
 from time import monotonic
+from typing import NoReturn
 from collections import namedtuple
 from collections.abc import Iterable, Callable
 
@@ -106,7 +107,7 @@ class AudioSubprocess(SubprocessCallee):
 
             GLib.timeout_add(FAKE_EXIT * 1000, process_exit)
         if FAKE_CRASH > 0:
-            def force_exit() -> None:
+            def force_exit() -> NoReturn:
                 sys.exit(1)
 
             GLib.timeout_add(FAKE_CRASH * 1000, force_exit)

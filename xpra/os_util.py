@@ -9,6 +9,7 @@ import sys
 import uuid
 import struct
 from types import ModuleType
+from typing import NoReturn
 
 # only minimal imports go at the top
 # so that this file can be included everywhere
@@ -162,6 +163,6 @@ def get_user_uuid() -> str:
 
 
 # here so we can override it when needed
-def force_quit(status=1) -> None:
+def force_quit(status=1) -> NoReturn:
     # noinspection PyProtectedMember
     os._exit(int(status))  # pylint: disable=protected-access

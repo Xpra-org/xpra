@@ -11,7 +11,7 @@ import signal
 import socket
 import string
 from time import monotonic
-from typing import Any
+from typing import Any, NoReturn
 from types import FrameType
 from collections.abc import Callable
 
@@ -255,8 +255,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 notifylog.info(" %s", x)
         self.show_progress(100, f"notification: {summary}")
 
-    def force_quit(self, exit_code: ExitValue = ExitCode.FAILURE) -> None:
-        import os_util
+    def force_quit(self, exit_code: ExitValue = ExitCode.FAILURE) -> NoReturn:
+        from xpra import os_util
         log(f"force_quit() calling {os_util.force_quit}")
         os_util.force_quit(int(exit_code))
 
@@ -329,7 +329,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             p.send_disconnect([str(reason)], done_callback=protocol_closed)
         GLib.timeout_add(1000, self.quit, exit_code)
 
-    def exit(self) -> None:
+    def exit(self) -> NoReturn:
         log("XpraClientBase.exit() calling %s", sys.exit)
         sys.exit()
 

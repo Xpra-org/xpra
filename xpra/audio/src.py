@@ -7,7 +7,7 @@
 import sys
 import os.path
 from time import monotonic
-from typing import Any
+from typing import Any, NoReturn
 
 from xpra.os_util import gi_import
 from xpra.util.system import SIGNAMES
@@ -392,7 +392,7 @@ def main() -> int:
             GLib.idle_add(ss.stop)
             GLib.idle_add(glib_mainloop.quit)
 
-            def force_quit(_sig, _frame) -> None:
+            def force_quit(_sig, _frame) -> NoReturn:
                 sys.exit()
 
             signal.signal(signal.SIGINT, force_quit)

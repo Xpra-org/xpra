@@ -13,7 +13,7 @@ Functions for converting to and from X11 properties.
 import struct
 from io import BytesIO
 from collections.abc import Callable
-from typing import Any
+from typing import Any, NoReturn
 
 from xpra.util.str_fn import hexstr
 from xpra.x11.bindings.window import constants
@@ -37,7 +37,7 @@ IconicState     = constants["IconicState"]
 InputHint       = constants["InputHint"]
 
 
-def unsupported(*_args):
+def unsupported(*_args) -> NoReturn:
     raise RuntimeError("unsupported")
 
 
