@@ -91,7 +91,7 @@ BuildRequires:		gcc
 BuildRequires:		clang
 %endif
 BuildRequires:		gcc-c++
-BuildRequires:		%{python3}-Cython
+BuildRequires:		%{python3}-cython
 BuildRequires:		pkgconfig
 BuildRequires:		%{python3}-setuptools
 BuildRequires:		coreutils
