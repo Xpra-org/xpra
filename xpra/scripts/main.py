@@ -35,10 +35,7 @@ from xpra.os_util import (
     WIN32, OSX, POSIX
 )
 from xpra.util.io import is_socket, stderr_print, use_tty, info, warn, error
-from xpra.util.system import (
-    is_Wayland, is_Ubuntu, SIGNAMES,
-    set_proc_title, is_systemd_pid1, get_distribution_version_id,
-)
+from xpra.util.system import is_Wayland, SIGNAMES, set_proc_title, is_systemd_pid1
 from xpra.scripts.parsing import (
     get_usage,
     parse_display_name, parse_env,
@@ -382,16 +379,6 @@ def use_systemd_run(s) -> bool:
     if os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT"):  # pragma: no cover
         # would fail
         return False
-    if is_Ubuntu():
-        try:
-            # Ubuntu was broken up until 21.10:
-            # https://github.com/systemd/systemd/issues/3388
-            rel = float(get_distribution_version_id())
-            if rel < 22:
-                return False
-        except ValueError:
-            pass
-        # would fail
     if not is_systemd_pid1():
         return False  # pragma: no cover
     # test it:
