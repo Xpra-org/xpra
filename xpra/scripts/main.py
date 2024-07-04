@@ -441,7 +441,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
     if mode in (
             "seamless", "desktop", "shadow", "shadow-screen", "expand",
             "upgrade", "upgrade-seamless", "upgrade-desktop",
-    ) and not display_is_remote and use_systemd_run(options.systemd_run):
+    ) and not display_is_remote and options.daemon and use_systemd_run(options.systemd_run):
         # make sure we run via the same interpreter,
         # inject it into the command line if we have to:
         argv = list(cmdline)
