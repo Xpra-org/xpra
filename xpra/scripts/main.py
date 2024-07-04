@@ -16,6 +16,7 @@ import time
 import logging
 from math import ceil
 from time import monotonic
+from shutil import rmtree, which
 from subprocess import Popen, PIPE, TimeoutExpired
 import signal
 import shlex
@@ -446,7 +447,9 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
         # inject it into the command line if we have to:
         argv = list(cmdline)
         if argv[0].find("python") < 0:
-            argv.insert(0, "python%i.%i" % (sys.version_info.major, sys.version_info.minor))
+            major, minor = sys.version_info.major, sys.version_info.minor
+            python = which("python%i.%i" % (major, minor)) or which("python%i" % major) or which("python") or "python"
+            argv.insert(0, python)
         return systemd_run_wrap(mode, argv, options.systemd_run_args, user=getuid() != 0)
     configure_env(options.env)
     configure_logging(options, mode)
@@ -3557,8 +3560,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
                     os.unlink(pathname)
                 else:
                     assert x in KNOWN_SERVER_DIRS
-                    import shutil
-                    shutil.rmtree(pathname)
+                    rmtree(pathname)
             except OSError as e:
                 error(f"Error removing {pathname!r}: {e}")
         try:
