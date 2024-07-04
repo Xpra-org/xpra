@@ -344,7 +344,10 @@ def run_mode(script_file, error_cb, options, args, mode, defaults):
                 #inject it into the command line if we have to:
                 argv = list(sys.argv)
                 if argv[0].find("python")<0:
-                    argv.insert(0, "python%i" % sys.version_info[0])
+                    from xpra.os_util import which
+                    major, minor = sys.version_info.major, sys.version_info.minor
+                    python = which("python%i.%i" % (major, minor)) or which("python%i" % major) or which("python") or "python"
+                    argv.insert(0, python)
                 return systemd_run_wrap(mode, argv, options.systemd_run_args)
 
     configure_env(options.env)
