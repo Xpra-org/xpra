@@ -63,7 +63,29 @@ def get_nvcc():
     return nvcc, nvcc_version
 
 
-def get_nvcc_args(nvcc: str, nvcc_version=(0, 0)):
+def get_gcc_version() -> tuple[int, ...]:
+    CC = os.environ.get("CC", "gcc")
+    if CC.find("clang") >= 0:
+        return (0, )
+    exit_code, _, err = get_status_output([CC, "-v"])
+    if exit_code != 0:
+        return (0, )
+    V_LINE = "gcc version "
+    gcc_version = []
+    for line in err.splitlines():
+        if not line.startswith(V_LINE):
+            continue
+        v_str = line[len(V_LINE):].strip().split(" ")[0]
+        for p in v_str.split("."):
+            try:
+                gcc_version.append(int(p))
+            except ValueError:
+                break
+        break
+    return tuple(gcc_version)
+
+
+def get_nvcc_args(nvcc: str, nvcc_version=(0, 0)) -> list[str]:
     if nvcc_version < (11, 6):
         raise RuntimeError(f"nvcc version {nvcc_version} is too old, minimum is 11.6")
     nvcc_cmd = [
@@ -76,6 +98,9 @@ def get_nvcc_args(nvcc: str, nvcc_version=(0, 0)):
         "-ignore-host-info",
         "--allow-unsupported-compiler",
     ]
+    if get_gcc_version() >= (14, 0):
+        clangpp = shutil.which("clang++")
+        nvcc_cmd.append(f"-ccbin={clangpp}")
     return nvcc_cmd
 
 
