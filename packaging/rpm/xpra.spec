@@ -37,6 +37,10 @@ autoprov: no
 %else
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
 %endif
+%if %{?el10}
+%global debug_package %{nil}
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild --without-docs
+%endif
 
 %global gnome_shell_extension input-source-manager@xpra_org
 
@@ -144,7 +148,9 @@ Requires(pre):		shadow-utils
 Conflicts:			xpra < 6
 Obsoletes:			xpra-common-client < 6
 Obsoletes:			xpra-common-server < 6
+%if !%{?el10}
 BuildRequires:		pandoc
+%endif
 BuildRequires:		which
 Requires:			%{python3}
 Requires:			%{python3}-gobject
@@ -176,7 +182,9 @@ Requires:			xxhash-libs
 BuildRequires:		pkgconfig(libbrotlidec)
 BuildRequires:		pkgconfig(libbrotlienc)
 Recommends:			brotli
+%if !%{?el10}
 BuildRequires:		pkgconfig(libqrencode)
+%endif
 Recommends:			qrencode
 BuildRequires:		%{python3}-gobject
 BuildRequires:		pkgconfig(pygobject-3.0)
@@ -229,11 +237,13 @@ This package contains extra picture and video codecs used by xpra clients and se
 %package -n %{package_prefix}-codecs-extras
 Summary:			Extra picture and video codecs for xpra clients and servers.
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
+%if ! %{?el10}
 %ifnarch riscv64
 Recommends:			x264
 BuildRequires:		pkgconfig(x264)
 Requires:			libavif
 BuildRequires:		pkgconfig(libavif)
+%endif
 %endif
 #for gstreamer video encoder and decoder:
 Recommends:			gstreamer1
@@ -413,7 +423,7 @@ Suggests:			tcp_wrappers-libs
 Suggests:			%{python3}-ldap3
 Suggests:			%{python3}-ldap
 Suggests:			%{python3}-oauthlib
-%if 0%{?fedora}
+%if 0%{?fedora}%{?el10}
 # looks like they forgot to expose the pkgconfig?
 BuildRequires:		procps-ng-devel
 %else
@@ -554,7 +564,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/xpra_launcher
 %{_bindir}/run_scaled*
 %{_prefix}/lib/cups/backend/xpraforwarder
+%if ! %{?el10}
 %{_docdir}/xpra
+%endif
 %{_datadir}/xpra/README.md
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
@@ -652,8 +664,12 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %files -n %{package_prefix}-codecs-extras
+%ifnarch %{riscv}
+%if !%{?el10}
 %{python3_sitearch}/xpra/codecs/x26?
 %{python3_sitearch}/xpra/codecs/avif
+%endif
+%endif
 %{python3_sitearch}/xpra/codecs/gstreamer
 
 %if 0%{?nvidia_codecs}

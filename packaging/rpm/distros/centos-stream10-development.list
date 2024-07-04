@@ -6,6 +6,7 @@ openh264
 
 
 # default python:
+python3-cython
 python3-pycuda
 python3-pynvml
 python3-pyu2f
