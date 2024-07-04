@@ -522,7 +522,7 @@ cdef class Encoder:
         self.fast_decode = options.boolget("h264.fast-decode", False)
         self.max_delayed = options.intget("max-delayed", MAX_DELAYED_FRAMES) * int(not self.fast_decode) * int(self.b_frames)
         self.preset = self.get_preset_for_speed(speed)
-        self.src_format = src_format
+        self.src_format = src_format.replace("A", "X")
         self.colorspace = cs_info[0]
         self.frames = 0
         self.frame_types = {}
