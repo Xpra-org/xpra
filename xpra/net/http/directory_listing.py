@@ -18,7 +18,7 @@ def list_directory(path: str) -> tuple[int, dict[str, str], bytes]:
     try:
         dirlist = os.listdir(path)
     except OSError:
-        return 404, None, b"No permission to list directory"
+        return 404, {}, b"No permission to list directory"
     dirlist.sort(key=lambda a: a.lower())
     r = []
     try:

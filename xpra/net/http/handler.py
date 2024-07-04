@@ -350,7 +350,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             log(f"failed to send {code} error - maybe some of the headers were already sent?", exc_info=True)
 
     # code taken from MIT licensed code in GzipSimpleHTTPServer.py
-    def send_head(self) -> None:
+    def send_head(self) -> bytes:
         path = self.path.split("?", 1)[0].split("#", 1)[0]
         # strip path after second slash:
         script_path = path
@@ -365,7 +365,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             except Exception:
                 log.error(f"Error calling script {script}", exc_info=True)
                 self.send_error(500, "Server error")
-                return None
+                return b""
             self.send_response(code)
             self.extra_headers.update(headers or {})
             self.end_headers()
@@ -373,14 +373,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         path = translate_path(self.path, self.web_root)
         if not path or not os.path.exists(path):
             self.send_error(404, "Path not found")
-            return None
+            return b""
         if os.path.isdir(path):
             if not path.endswith('/'):
                 # redirect browser - doing basically what apache does
                 self.send_response(301)
                 self.send_header("Location", path + "/")
                 self.end_headers()
-                return None
+                return b""
             for index in "index.html", "index.htm":
                 index = os.path.join(path, index)
                 if os.path.exists(index):
@@ -389,7 +389,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 if not self.directory_listing:
                     self.send_error(403, "Directory listing forbidden")
-                    return None
+                    return b""
                 code, headers, body = list_directory(path)
                 self.send_response(code)
                 self.extra_headers.update(headers)
@@ -404,6 +404,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_response(code)
             self.extra_headers.update(extra_headers)
             self.end_headers()
+            return content
         except OSError as e:
             self.close_connection = True
             log("send_head()", exc_info=True)
@@ -414,5 +415,4 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             else:
                 log.estr(e)
             self.send_error(404, "File not found")
-            return None
-        return content
+            return b""

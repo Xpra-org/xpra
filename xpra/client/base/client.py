@@ -329,7 +329,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             p.send_disconnect([str(reason)], done_callback=protocol_closed)
         GLib.timeout_add(1000, self.quit, exit_code)
 
-    def exit(self) -> NoReturn:
+    def exit(self) -> None:
         log("XpraClientBase.exit() calling %s", sys.exit)
         sys.exit()
 
