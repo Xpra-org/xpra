@@ -2276,6 +2276,8 @@ if (nvenc_ENABLED and cuda_kernels_ENABLED) or nvjpeg_ENABLED:
                 cmd.append("-std=c++11")
             if gcc_version>=[12, 0] or os.environ.get("CC", "").find("clang")>=0:
                 cmd.append("--allow-unsupported-compiler")
+            if gcc_version>=[14, 0] and os.environ.get("CC", "").find("clang")<0:
+                cmd.append("-ccbin=clang++")
             CL_VERSION = os.environ.get("CL_VERSION")
             if CL_VERSION:
                 cmd += ["--use-local-env", "--cl-version", CL_VERSION]

@@ -112,6 +112,9 @@ Requires:			python2-xpra-server = %{version}-%{release}
 BuildRequires:		pam-devel
 BuildRequires:		pkgconfig
 BuildRequires:		gcc
+%if 0%{?fedora}>=40
+BuildRequires:		clang
+%endif
 BuildRequires:		gcc-c++
 BuildRequires:		libxkbfile-devel
 BuildRequires:		libXtst-devel
