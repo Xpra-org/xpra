@@ -37,7 +37,7 @@ autoprov: no
 %else
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
 %endif
-%if %{?el10}
+%if 0%{?el10}
 %global debug_package %{nil}
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild --without-docs
 %endif
@@ -148,7 +148,7 @@ Requires(pre):		shadow-utils
 Conflicts:			xpra < 6
 Obsoletes:			xpra-common-client < 6
 Obsoletes:			xpra-common-server < 6
-%if !%{?el10}
+%if ! 0%{?el10}
 BuildRequires:		pandoc
 %endif
 BuildRequires:		which
@@ -182,7 +182,7 @@ Requires:			xxhash-libs
 BuildRequires:		pkgconfig(libbrotlidec)
 BuildRequires:		pkgconfig(libbrotlienc)
 Recommends:			brotli
-%if !%{?el10}
+%if ! 0%{?el10}
 BuildRequires:		pkgconfig(libqrencode)
 %endif
 Recommends:			qrencode
@@ -237,7 +237,7 @@ This package contains extra picture and video codecs used by xpra clients and se
 %package -n %{package_prefix}-codecs-extras
 Summary:			Extra picture and video codecs for xpra clients and servers.
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
-%if ! %{?el10}
+%if ! 0%{?el10}
 %ifnarch riscv64
 Recommends:			x264
 BuildRequires:		pkgconfig(x264)
@@ -564,7 +564,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/xpra_launcher
 %{_bindir}/run_scaled*
 %{_prefix}/lib/cups/backend/xpraforwarder
-%if ! %{?el10}
+%if ! 0%{?el10}
 %{_docdir}/xpra
 %endif
 %{_datadir}/xpra/README.md
@@ -665,7 +665,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n %{package_prefix}-codecs-extras
 %ifnarch %{riscv}
-%if !%{?el10}
+%if ! 0%{?el10}
 %{python3_sitearch}/xpra/codecs/x26?
 %{python3_sitearch}/xpra/codecs/avif
 %endif
