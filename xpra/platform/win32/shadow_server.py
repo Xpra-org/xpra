@@ -14,6 +14,7 @@ from ctypes.wintypes import RECT, POINT, BYTE
 from xpra.util.screen import prettify_plug_name
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
+from xpra.util.system import is_VirtualBox
 from xpra.common import XPRA_APP_ID, NotificationID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server import GTKServerBase
@@ -53,7 +54,37 @@ NVFBC = envbool("XPRA_SHADOW_NVFBC", True)
 GDI = envbool("XPRA_SHADOW_GDI", True)
 GSTREAMER = envbool("XPRA_SHADOW_GSTREAMER", True)
 
-GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = ("d3d11screencapturesrc", "dx9screencapsrc", "gdiscreencapsrc")
+
+def check_gstreamer_d3d11() -> bool:
+    return not is_VirtualBox()
+
+
+def check_gstreamer_dx9() -> bool:
+    return True
+
+
+def check_gstreamer_gdi() -> bool:
+    # we don't want to be using GStreamer for GDI capture
+    return False
+
+
+def get_gstreamer_capture_elements() -> Sequence[str]:
+    if "XPRA_GSTREAMER_CAPTURE_ELEMENTS" in os.environ:
+        elements = os.environ.get("XPRA_GSTREAMER_CAPTURE_ELEMENTS", "").split(",")
+    else:
+        elements = []
+        for element, check in {
+            "d3d11screencapturesrc" : check_gstreamer_d3d11,
+            "dx9screencapsrc": check_gstreamer_dx9,
+            "gdiscreencapsrc": check_gstreamer_gdi,
+        }.items():
+            if envbool("XPRA_GSTREAMER_CAPTURE_"+element.upper(), False) or check():
+                elements.append(element)
+    log(f"get_gstreamer_capture_elements()={elements}")
+    return elements
+
+
+GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = get_gstreamer_capture_elements()
 
 
 def check_gstreamer() -> bool:
@@ -159,12 +190,7 @@ def init_capture(w: int, h: int, pixel_depth=32):
         except ImportError:
             log("no GStreamer capture", exc_info=True)
         else:
-            capture_elements = [
-                "d3d11screencapturesrc",
-                "dx9screencapsrc",
-                # "gdiscreencapsrc",
-            ]
-            for el in capture_elements:
+            for el in GSTREAMER_CAPTURE_ELEMENTS:
                 log(f"testing gstreamer capture using {el}")
                 try:
                     capture = Capture(el, pixel_format="BGRX", width=w, height=h)

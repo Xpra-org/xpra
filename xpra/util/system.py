@@ -60,6 +60,37 @@ def register_SIGUSR_signals(idle_add=no_idle) -> None:
     signal.signal(signal.SIGUSR2, sigusr2)
 
 
+def is_VirtualBox() -> bool:
+    if os.name != "nt":
+        # detection not supported yet
+        return False
+    # try to detect VirtualBox:
+    # based on the code found here:
+    # http://spth.virii.lu/eof2/articles/WarGame/vboxdetect.html
+    try:
+        from ctypes import cdll
+        if cdll.LoadLibrary("VBoxHook.dll"):
+            # "VirtualBox is present (VBoxHook.dll)
+            return True
+    except (ImportError, OSError):
+        pass
+    try:
+        try:
+            f = None
+            f = open("\\\\.\\VBoxMiniRdrDN", "r")
+            # "VirtualBox is present (VBoxMiniRdrDN)"
+            return True
+        finally:
+            if f:
+                f.close()
+    except Exception as e:
+        import errno
+        if e.args[0]==errno.EACCES:
+            # "VirtualBox is present (VBoxMiniRdrDN)"
+            return True
+    return False
+
+
 def is_Wayland() -> bool:
     return _is_Wayland(_saved_env)
 
