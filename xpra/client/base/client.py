@@ -289,6 +289,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         signal.signal(signal.SIGTERM, os_signal)
         register_SIGUSR_signals(GLib.idle_add)
 
+    # noinspection PyUnreachableCode
     def signal_disconnect_and_quit(self, exit_code: ExitValue, reason: str) -> None:
         log("signal_disconnect_and_quit(%s, %s) exit_on_signal=%s", exit_code, reason, self.exit_on_signal)
         if not self.exit_on_signal:

@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 from math import sin, cos, pi
 from ctypes import c_float, c_void_p
-from collections.abc import Callable, Sequence, Iterable
+from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager, nullcontext
 
 from OpenGL.error import GLError
@@ -1054,15 +1054,15 @@ class GLWindowBackingBase(WindowBackingBase):
         self.with_gl_context(upload_cursor)
 
     def paint_jpeg(self, img_data, x: int, y: int, width: int, height: int,
-                   options: typedict, callbacks: Iterable[Callable]) -> None:
+                   options: typedict, callbacks: PaintCallbacks) -> None:
         self.do_paint_jpeg("jpeg", img_data, x, y, width, height, options, callbacks)
 
     def paint_jpega(self, img_data, x: int, y: int, width: int, height: int,
-                    options: typedict, callbacks: Iterable[Callable]) -> None:
+                    options: typedict, callbacks: PaintCallbacks) -> None:
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
     def do_paint_jpeg(self, encoding, img_data, x: int, y: int, width: int, height: int,
-                      options: typedict, callbacks: Iterable[Callable]) -> None:
+                      options: typedict, callbacks: PaintCallbacks) -> None:
         if width >= 16 and height >= 16:
             if self.nvjpeg_decoder and NVJPEG:
                 def paint_nvjpeg(gl_context) -> None:
@@ -1120,7 +1120,7 @@ class GLWindowBackingBase(WindowBackingBase):
         return pbo
 
     def paint_nvdec(self, context, encoding, img_data, x: int, y: int, width: int, height: int,
-                    options: typedict, callbacks: Iterable[Callable]) -> None:
+                    options: typedict, callbacks: PaintCallbacks) -> None:
         with self.assign_cuda_context(True):
             # we can import pycuda safely here,
             # because `self.assign_cuda_context` will have imported it with the lock:
@@ -1157,7 +1157,7 @@ class GLWindowBackingBase(WindowBackingBase):
                           options, callbacks)
 
     def paint_nvjpeg(self, gl_context, encoding: str, img_data, x: int, y: int, width: int, height: int,
-                     options: typedict, callbacks: Iterable[Callable]) -> None:
+                     options: typedict, callbacks: PaintCallbacks) -> None:
         with self.assign_cuda_context(True):
             # we can import pycuda safely here,
             # because `self.assign_cuda_context` will have imported it with the lock:
@@ -1210,7 +1210,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glDeleteBuffers(1, [pbo])
 
     def paint_webp(self, img_data, x: int, y: int, width: int, height: int,
-                   options: typedict, callbacks: Iterable[Callable]) -> None:
+                   options: typedict, callbacks: PaintCallbacks) -> None:
         subsampling = options.strget("subsampling")
         has_alpha = options.boolget("has_alpha")
         webp_decoder = self.webp_decoder
@@ -1224,13 +1224,13 @@ class GLWindowBackingBase(WindowBackingBase):
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
 
     def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
-                   options: typedict, callbacks: Iterable[Callable]) -> None:
+                   options: typedict, callbacks: PaintCallbacks) -> None:
         alpha = options.boolget("alpha")
         image = self.avif_decoder.decompress(img_data, options, yuv=not alpha)
         self.paint_image_wrapper("avif", image, x, y, width, height, options, callbacks)
 
     def do_paint_image_wrapper(self, context, encoding: str, img, x: int, y: int, width: int, height: int,
-                               options: typedict, callbacks: Iterable[Callable]) -> None:
+                               options: typedict, callbacks: PaintCallbacks) -> None:
         # overridden to handle YUV using shaders:
         pixel_format = img.get_pixel_format()
         if pixel_format.startswith("YUV"):
@@ -1245,7 +1245,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
                      x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
-                     options: typedict, callbacks: Iterable[Callable]) -> None:
+                     options: typedict, callbacks: PaintCallbacks) -> None:
         log("%s.do_paint_rgb(%s, %s, %s bytes, x=%d, y=%d, width=%d, height=%d, rowstride=%d, options=%s)",
             self, encoding, rgb_format, len(img_data), x, y, width, height, rowstride, options)
         x, y = self.gravity_adjust(x, y, options)
@@ -1321,7 +1321,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def do_video_paint(self, coding: str, img,
                        x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
-                       options: typedict, callbacks: Iterable[Callable]):
+                       options: typedict, callbacks: PaintCallbacks):
         log("do_video_paint%s", (coding, img, x, y, enc_width, enc_height, width, height, options, callbacks))
         if not zerocopy_upload or FORCE_CLONE:
             # copy so the data will be usable (usually a str)
@@ -1350,7 +1350,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def paint_planar(self, context, shader: str, encoding: str, img,
                      x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
-                     options: typedict, callbacks: Iterable[Callable]) -> None:
+                     options: typedict, callbacks: PaintCallbacks) -> None:
         pixel_format = img.get_pixel_format()
         if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
             img.free()

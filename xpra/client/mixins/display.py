@@ -283,7 +283,7 @@ class DisplayClient(StubClientMixin):
             message = "invalid maximum desktop size: %ix%i" % (maxw, maxh)
             log(message)
             self.quit(ExitCode.INTERNAL_ERROR)
-            raise SystemExit(message)
+            return
         if maxw >= 16384 or maxh >= 16384:
             log.warn("Warning: the desktop size is extremely large: %ix%i", maxw, maxh)
         # max packet size to accommodate

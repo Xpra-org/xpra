@@ -59,6 +59,7 @@ class MmapClient(StubClientMixin):
         # subclasses should provide real values
         return 1024, 1024
 
+    # noinspection PyUnreachableCode
     def parse_server_capabilities(self, c: typedict) -> bool:
         mmap_caps = c.dictget("mmap")
         # new format with namespace

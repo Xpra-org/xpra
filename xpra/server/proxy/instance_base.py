@@ -99,8 +99,8 @@ class ProxyInstance:
         self.encode_queue: SimpleQueue[PacketType] = SimpleQueue()  # holds draw packets to encode
         self.encode_thread: Thread | None = None
         # setup protocol wrappers:
-        self.server_packets: Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
-        self.client_packets: Queue[tuple] = Queue(PROXY_QUEUE_SIZE)
+        self.server_packets: Queue[PacketType] = Queue(PROXY_QUEUE_SIZE)
+        self.client_packets: Queue[PacketType] = Queue(PROXY_QUEUE_SIZE)
         self.video_encoding_defs: dict[str, dict[str, list]] = {}
         self.video_encoders: dict[int, Any] = {}
         self.video_encoders_dst_formats = ()

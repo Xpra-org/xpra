@@ -1238,6 +1238,7 @@ class WindowClient(StubClientMixin):
         if window:
             window.move_resize(ax, ay, aw, ah, -1)
 
+    # noinspection PyUnreachableCode
     def window_close_event(self, wid: int) -> None:
         log("window_close_event(%s) close window action=%s", wid, self.window_close_action)
         if self.window_close_action == "forward":
