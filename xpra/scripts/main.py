@@ -184,7 +184,7 @@ def configure_logging(options, mode) -> None:
     if mode in (
             "attach", "listen", "launcher",
             "sessions", "mdns-gui",
-            "bug-report", "session-info", "docs", "documentation", "about",
+            "bug-report", "session-info", "docs", "documentation", "about", "license",
             "recover",
             "splash", "qrcode",
             "opengl-test",
@@ -528,6 +528,11 @@ def is_connection_arg(mode, arg):
     return False
 
 
+def is_terminal() -> bool:
+    from xpra.platform import is_terminal as ist
+    return ist()
+
+
 def DotXpra(*args, **kwargs):
     from xpra.platform import dotxpra
     return dotxpra.DotXpra(*args, **kwargs)
@@ -661,7 +666,17 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         from xpra.client.gtk3.launcher import main as launcher_main
         return launcher_main(["xpra"] + args)
     if mode == "gui":
-        check_gtk_client()
+        try:
+            check_gtk_client()
+        except InitExit as e:
+            # the user likely called `xpra` from a non GUI session
+            if is_terminal():
+                stderr_print("Error: cannot show the xpra gui")
+                stderr_print(f" {e}")
+                stderr_print(" you must use this subcommand from a desktop environment")
+                stderr_print(" from a terminal session you can try `xpra list`, `xpra showconfig`, etc")
+                return 1
+            raise
         from xpra.gtk.dialogs import gui
         return gui.main(cmdline)
     if mode == "start-gui":
@@ -677,8 +692,35 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode in ("docs", "documentation"):
         return run_docs()
     if mode == "about":
+        try:
+            check_gtk_client()
+        except InitExit:
+            if is_terminal():
+                from xpra.util.version import XPRA_VERSION
+                from xpra.gtk.dialogs import about
+                from xpra.scripts.config import get_build_info
+                stderr_print(f"Xpra {XPRA_VERSION}")
+                stderr_print()
+                for line in get_build_info():
+                    stderr_print(line)
+                stderr_print()
+                stderr_print("Main authors:")
+                for author in about.MAIN_AUTHORS:
+                    stderr_print(f"- {author}")
+                stderr_print()
+                stderr_print("License: GPL2+")
+                stderr_print("run `xpra license` to see the full license")
+                stderr_print()
+                stderr_print("For more information, see:")
+                stderr_print(f"{about.SITE_URL}")
+                return 0
+            raise
         from xpra.gtk.dialogs import about
         return about.main()
+    if mode == "license":
+        from xpra.gtk.dialogs.about import load_license
+        stderr_print(load_license())
+        return 0
     if mode == "html5":
         return run_html5()
     if mode == "_proxy" or mode.startswith("_proxy_"):

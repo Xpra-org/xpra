@@ -297,7 +297,8 @@ def get_build_info() -> list[str]:
         warn(f"Error: could not find the source information: {e}")
     try:
         from xpra.build_info import BUILD_TYPE
-        info.append(f"{BUILD_TYPE} build")
+        if BUILD_TYPE:
+            info.append(f"{BUILD_TYPE} build")
     except ImportError:
         pass
     try:

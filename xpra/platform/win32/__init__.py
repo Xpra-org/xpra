@@ -122,8 +122,11 @@ class CONSOLE_SCREEN_BUFFER_INFO(ctypes.Structure):
     ]
 
 
-def get_console_position(handle) -> tuple[int, int]:
+def get_console_position() -> tuple[int, int]:
     try:
+        handle = GetStdHandle(STD_OUTPUT_HANDLE)
+        if not_a_console(handle):
+            return -1, -1
         # handle.SetConsoleTextAttribute(FOREGROUND_BLUE)
         csbi = CONSOLE_SCREEN_BUFFER_INFO()
         GetConsoleScreenBufferInfo(handle, byref(csbi))
@@ -153,12 +156,8 @@ def get_console_position(handle) -> tuple[int, int]:
         return -1, -1
 
 
+initial_console_position = get_console_position()
 _wait_for_input = False
-
-
-def set_wait_for_input() -> None:
-    global _wait_for_input
-    _wait_for_input = should_wait_for_input()
 
 
 def should_wait_for_input() -> bool:
@@ -177,7 +176,17 @@ def should_wait_for_input() -> bool:
     if not_a_console(handle):
         return False
     # wait for input if this is a brand-new console:
-    return get_console_position(handle) == (0, 0)
+    return initial_console_position == (0, 0)
+
+
+def is_terminal() -> bool:
+    if os.environ.get("TERM", "") == "xterm":
+        return True
+    handle = GetStdHandle(STD_OUTPUT_HANDLE)
+    if not_a_console(handle):
+        return False
+    # wait for input if this is a brand-new console:
+    return initial_console_position != (-1, -1)
 
 
 def setup_console_event_listener(handler, enable: bool) -> bool:
@@ -202,7 +211,8 @@ def setup_console_event_listener(handler, enable: bool) -> bool:
 def do_init() -> None:
     if not REDIRECT_OUTPUT:
         # figure out if we want to wait for input at the end:
-        set_wait_for_input()
+        global _wait_for_input
+        _wait_for_input = should_wait_for_input()
         return
     if envbool("XPRA_LOG_TO_FILE", True):
         log_filename = os.environ.get("XPRA_LOG_FILENAME")

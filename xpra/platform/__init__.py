@@ -175,6 +175,10 @@ def get_application_name() -> str:
     return _appname
 
 
+def is_terminal() -> bool:
+    return bool(os.environ.get("TERM", ""))
+
+
 def platform_import(where: dict, pm="", required=False, *imports) -> None:
     from xpra.os_util import OSX, POSIX
     if os.name == "nt":     # pragma: no cover
@@ -214,4 +218,5 @@ platform_import(globals(), "", False,
                 "threaded_server_init",
                 "set_prgname", "set_application_name", "program_context",
                 "command_error", "command_info",
+                "is_terminal",
                 )

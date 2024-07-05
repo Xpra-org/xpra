@@ -20,12 +20,18 @@ APPLICATION_NAME = "Xpra"
 SITE_DOMAIN = "xpra.org"
 SITE_URL = f"https://{SITE_DOMAIN}/"
 
-GPL2 = None
+GPL2 = ""
+
+MAIN_AUTHORS = (
+    'Antoine Martin <antoine@xpra.org>',
+    'Nathaniel Smith <njs@pobox.com>',
+    'Serviware - Arthur Huillet <ahuillet@serviware.com>',
+)
 
 
 def load_license():
     global GPL2
-    if GPL2 is None:
+    if not GPL2:
         from xpra.platform.paths import get_resources_dir  # pylint: disable=import-outside-toplevel
         gpl2_file = os.path.join(get_resources_dir(), "COPYING")
         if os.path.exists(gpl2_file):
@@ -58,9 +64,7 @@ def about(on_close=close_about, parent: Gtk.Window | None = None):
     if parent:
         dialog.set_parent(parent)
         dialog.set_destroy_with_parent(True)
-    dialog.set_authors(('Antoine Martin <antoine@xpra.org>',
-                        'Nathaniel Smith <njs@pobox.com>',
-                        'Serviware - Arthur Huillet <ahuillet@serviware.com>'))
+    dialog.set_authors(MAIN_AUTHORS)
     _license = load_license()
     dialog.set_license(_license)
     dialog.set_comments("\n".join(get_build_info()))
