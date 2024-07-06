@@ -30,7 +30,7 @@ class Authenticator(SysAuthenticator):
         self.req_xor(digests)
         return super().do_get_challenge(["xor"])
 
-    def check(self, password: bytes) -> bool:
+    def check_password(self, password: str) -> bool:
         domain = ""  # os.environ.get('COMPUTERNAME')
         if check(domain, self.username, password):
             self.password = password
