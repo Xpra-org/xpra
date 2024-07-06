@@ -26,10 +26,12 @@ LOGON32_PROVIDER_DEFAULT = 0
 def check(domain="", username: str = "", password: bytes = b"") -> bool:
     token = HANDLE()
     # domain = os.environ.get('COMPUTERNAME')
+    pstr = password.decode("utf8")
     if LOG_CREDENTIALS:
         log("LogonUser(%s, %s, %s, CLEARTEXT, DEFAULT, %#x)",
-            username, domain, password, addressof(token))
-    status = LogonUser(username, domain, password,
+            username, domain, pstr, addressof(token))
+    #LogonUser.argtypes = [LPCWSTR, LPCWSTR, LPCWSTR, DWORD, DWORD, POINTER(HANDLE)]
+    status = LogonUser(username, domain, pstr,
                        LOGON32_LOGON_NETWORK_CLEARTEXT,
                        LOGON32_PROVIDER_DEFAULT,
                        byref(token))
