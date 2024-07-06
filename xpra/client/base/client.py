@@ -895,7 +895,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             log("Error: failed to show GUI for password prompt", exc_info=True)
             return None
 
-    def auth_error(self, code: int,
+    def auth_error(self, code: ExitValue,
                    message: str,
                    server_message: str | ConnectionMessage = ConnectionMessage.AUTHENTICATION_FAILED) -> None:
         authlog.error("Error: authentication failed:")
