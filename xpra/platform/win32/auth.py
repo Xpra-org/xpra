@@ -23,7 +23,7 @@ LOGON32_LOGON_NETWORK_CLEARTEXT = 8
 LOGON32_PROVIDER_DEFAULT = 0
 
 
-def check(domain="", username: str = "", password: bytes = b"") -> bool:
+def check(domain="", username: str = "", password: str = "") -> bool:
     token = HANDLE()
     # domain = os.environ.get('COMPUTERNAME')
     if LOG_CREDENTIALS:
