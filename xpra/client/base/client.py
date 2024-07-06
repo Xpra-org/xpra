@@ -723,7 +723,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         log.warn("Warning: server connection failure:")
         log.warn(f" {reason}")
         for x in extra_info:
-            log.warn(f" {x}")
+            if str(x).lower() != str(reason).lower():
+                log.warn(f" {x}")
         if ConnectionMessage.AUTHENTICATION_FAILED.value in extra_info:
             self.quit(ExitCode.AUTHENTICATION_FAILED)
         elif ConnectionMessage.CONNECTION_ERROR.value in extra_info or not self.completed_startup:
