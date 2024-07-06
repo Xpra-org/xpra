@@ -847,7 +847,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 # the handler is telling us to give up
                 # (ie: pinentry was cancelled by the user)
                 authlog(f"{handler.handle}({packet}) raised {e!r}")
-                log.info(f"exiting: {e!r}")
+                log.info(f"exiting: {e}")
                 GLib.idle_add(self.disconnect_and_quit, e.status, str(e))
                 return
             except Exception as e:
