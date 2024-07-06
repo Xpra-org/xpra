@@ -7,6 +7,7 @@ import re
 import os
 import sys
 import warnings
+import traceback
 from contextlib import AbstractContextManager, nullcontext
 from collections.abc import Sequence
 from threading import RLock
@@ -205,10 +206,24 @@ class NumpyImportContext(AbstractContextManager):
     def __init__(self, info: str, blocking=False):
         self.blocking = blocking
         self.info = info
+        self.backtrace: list[str] = traceback.format_stack()
 
     def __enter__(self):
         if not numpy_import_lock.acquire(blocking=self.blocking):
-            raise RuntimeError(f"the numpy import lock is already held by {self.info}!")
+            from xpra.log import Logger
+            log = Logger("util")
+
+            def log_backtrace(backtrace):
+                for bt in backtrace:
+                    for line in bt.split("\n"):
+                        if line.strip():
+                            log.warn(line)
+
+            log.warn("numpy lock was already acquired from:")
+            log_backtrace(self.backtrace)
+            log.warn("failed to acquire it again from:")
+            log_backtrace(traceback.format_stack())
+            raise RuntimeError(f"the numpy import lock is already held by {self.info!r}!")
         os.environ["XPRA_NUMPY_IMPORT"] = "1"
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -223,13 +238,17 @@ class NumpyImportContext(AbstractContextManager):
 
 
 def numpy_import_context(subsystem: str, blocking=False) -> AbstractContextManager:
-    env_name = "XPRA_"+(subsystem.upper())+"_NUMPY"
+    # ie: subsystem = "OpenGL: glx context"
+    key = subsystem.split(" ", 1)[0].split(":", 1)[0]
+    # ie key = "OpenGL"
+    env_name = "XPRA_"+(key.upper())+"_NUMPY"
     if env_name not in os.environ:
         env_name = "XPRA_NUMPY"
     allow_numpy = envbool(env_name, True)
     if allow_numpy:
         import threading
-        info = subsystem+" in thread "+str(threading.current_thread().ident)
+        thread = threading.current_thread()
+        info = subsystem + f" in thread {thread.ident}: {thread.name!r}"
         return NumpyImportContext(info=info, blocking=blocking)
     return nomodule_context("numpy")
 

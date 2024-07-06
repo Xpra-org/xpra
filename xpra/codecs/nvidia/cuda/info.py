@@ -19,7 +19,7 @@ def main(argv) -> int:
         log = Logger("cuda")
         if "-v" in argv or "--verbose" in argv:
             log.enable_debug()
-        with numpy_import_context("CUDA"):
+        with numpy_import_context("CUDA: info"):
             for component in (
                 "xpra.codecs",
                 "xpra.codecs.nvidia",

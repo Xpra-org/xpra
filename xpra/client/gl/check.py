@@ -180,7 +180,7 @@ def get_GLU_info() -> dict[str, str]:
 
 
 def get_context_info() -> dict[str, Any]:
-    with numpy_import_context("OpenGL", True):
+    with numpy_import_context("OpenGL: context info", True):
         from OpenGL.GL import glGetIntegerv
         from OpenGL.GL import (
             GL_CONTEXT_PROFILE_MASK, GL_CONTEXT_CORE_PROFILE_BIT,
@@ -328,7 +328,7 @@ def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
             logger.propagate = False
         log(f"{redirected_loggers=}")
 
-        with numpy_import_context("OpenGL", True):
+        with numpy_import_context("OpenGL: check", True):
             return do_check_PyOpenGL_support(force_enable)
 
     finally:

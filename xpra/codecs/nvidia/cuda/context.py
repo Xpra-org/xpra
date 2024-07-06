@@ -35,7 +35,7 @@ if WIN32 and not os.environ.get("CUDA_PATH") and getattr(sys, "frozen", None) in
 if is_WSL() and not envbool("XPRA_PYCUDA_WSL", False):
     raise ImportError("refusing to import pycuda on WSL, use `XPRA_PYCUDA_WSL=1` to override")
 
-with numpy_import_context("CUDA"):
+with numpy_import_context("CUDA context import"):
     import pycuda
     log(f"loaded pycuda successfully: {pycuda}")
     from pycuda.driver import (
@@ -531,7 +531,7 @@ class cuda_device_context:
     def make_context(self) -> None:
         start = monotonic()
         if self.opengl:
-            with numpy_import_context("CUDA"):
+            with numpy_import_context("CUDA make context"):
                 from pycuda import gl  # @UnresolvedImport pylint: disable=import-outside-toplevel
                 self.context = gl.make_context(self.device)
         else:

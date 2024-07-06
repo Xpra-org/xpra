@@ -465,7 +465,7 @@ def main(args) -> int:
                 return 1
             list_codecs = ALL_CODECS
             # not really a codec, but gets used by codecs, so include version info:
-            with numpy_import_context("loader"):
+            with numpy_import_context("codec loader"):
                 add_codec_version("numpy", "numpy")
 
         # use another logger for printing the results,

@@ -13,7 +13,7 @@ log = Logger("cuda")
 
 # this module is only imported by nvfbc.capture_*
 # and it may wait for CUDA initialization to complete here:
-with numpy_import_context("CUDA", True):
+with numpy_import_context("CUDA image wrapper import", True):
     from numpy import byte  # @UnresolvedImport
     from pycuda.driver import (
         pagelocked_empty,
