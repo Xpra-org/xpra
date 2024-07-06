@@ -185,7 +185,7 @@ begin
   cert := ExpandConstant('{commonappdata}\Xpra\ssl-cert.pem');
   if (NOT FileExists(cert)) then
   begin
-    config := ExpandConstant('{app}\openssl.cfg');
+    config := ExpandConstant('{app}\etc\ssl\openssl.cnf');
     args := 'req -new -newkey rsa:4096 -days 365 -nodes -x509 -config "'+config+'" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -out "'+cert+'" -keyout "'+cert+'"';
     openssl := ExpandConstant('{app}\OpenSSL.exe');
     if (FileExists(openssl)) then
