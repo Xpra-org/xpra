@@ -49,10 +49,10 @@ log = Logger("x11", "util")
 elog = Logger("x11", "util", "error")
 
 if not VERIFY_MAIN_THREAD:
-    def verify_main_thread():
+    def verify_main_thread() -> None:
         return
 else:
-    def verify_main_thread():
+    def verify_main_thread() -> None:
         if not is_main_thread():
             import threading
             log.error("Error: invalid access from thread %s", threading.current_thread(), backtrace=True)
