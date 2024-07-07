@@ -17,7 +17,7 @@ from typing import Callable
 
 from xpra.os_util import WIN32, OSX, POSIX, get_hex_uuid
 from xpra.util.env import OSEnvContext
-from xpra.util.str_fn import strtobytes, bytestostr
+from xpra.util.str_fn import strtobytes
 from xpra.util.objects import typedict
 from xpra.net.digest import get_digests, get_digest_module, gendigest, get_salt
 
@@ -182,8 +182,8 @@ class TestAuth(unittest.TestCase):
 
     def test_env(self) -> None:
         for var_name in ("XPRA_PASSWORD", "SOME_OTHER_VAR_NAME"):
-            password = strtobytes(uuid.uuid4().hex)
-            os.environ[var_name] = bytestostr(password)
+            password = uuid.uuid4().hex
+            os.environ[var_name] = password
             try:
                 kwargs = {}
                 if var_name != "XPRA_PASSWORD":
