@@ -243,4 +243,4 @@ def verify_sync(*args) -> None:
     if trap.depth <= 0:
         log.error("Error: unmanaged X11 context", backtrace=True)
         if args:
-            log.error(" %s" % args[0], *(args[1:]))
+            log.error(" " + str(args[0]) + "%s", args[1:])
