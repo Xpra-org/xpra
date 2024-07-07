@@ -144,8 +144,8 @@ class SysAuthenticatorBase:
             password = bytestostr(value)
         return self.check_password(password)
 
-    def check_password(self, _password: str) -> bool:
-        return False
+    def check_password(self, password: str) -> bool:
+        return password and self.get_password() == password
 
     def authenticate(self, caps: typedict) -> bool:
         r = self.do_authenticate(caps)
