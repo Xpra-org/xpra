@@ -551,7 +551,9 @@ def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[
     ip_sockets: dict[tuple[str, int], dict] = {}
     if bind_ip:
         for spec in bind_ip:
+            # ie: "127.0.0.1:10000,someoption=somevalue"
             parts = spec.split(",", 1)
+            # ie: "127.0.0.1:10000"
             ip_port = parts[0]
             if ":" not in spec:
                 raise InitException("port must be specified as [HOST]:PORT")
