@@ -398,7 +398,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def has_password(self) -> bool:
         return self.password or self.password_file or os.environ.get('XPRA_PASSWORD')
 
-    def send_hello(self, challenge_response=None, client_salt=None) -> None:
+    def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
         if not self._protocol:
             log("send_hello(..) skipped, no protocol (listen mode?)")
             return

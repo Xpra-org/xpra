@@ -118,7 +118,7 @@ def get_client_connection_class(caps: typedict):
                     log.estr(e)
                     raise RuntimeError(f"failed to close {bc}: {e}") from None
 
-        def send_hello(self, server_capabilities):
+        def send_hello(self, server_capabilities: dict):
             capabilities = server_capabilities.copy()
             for bc in CC_BASES:
                 log("%s.get_caps()", bc)

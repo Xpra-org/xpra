@@ -404,7 +404,7 @@ class ServerBase(ServerBaseClass):
         GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
     @staticmethod
-    def get_client_connection_class(caps) -> type:
+    def get_client_connection_class(caps: typedict) -> type:
         # pylint: disable=import-outside-toplevel
         from xpra.server.source.client_connection_factory import get_client_connection_class
         return get_client_connection_class(caps)
@@ -419,7 +419,7 @@ class ServerBase(ServerBaseClass):
         if sockpath and os.path.exists(sockpath) and is_socket(sockpath):
             set_ssh_agent(uuid)
 
-    def process_hello_ui(self, ss, c, auth_caps, send_ui: bool, share_count: int) -> None:
+    def process_hello_ui(self, ss, c: typedict, auth_caps: dict, send_ui: bool, share_count: int) -> None:
         def reject(message="server is shutting down") -> None:
             p = ss.protocol
             if p:

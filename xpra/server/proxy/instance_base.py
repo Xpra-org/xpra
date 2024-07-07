@@ -239,7 +239,7 @@ class ProxyInstance:
 
     ################################################################################
 
-    def send_hello(self, challenge_response=None, client_salt=None) -> None:
+    def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
         hello = self.filter_client_caps(self.caps)
         if challenge_response:
             hello.update({
