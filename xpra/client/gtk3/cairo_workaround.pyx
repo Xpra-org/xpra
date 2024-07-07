@@ -126,7 +126,7 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
     cdef int x, y
     cdef int srci, dsti
     cdef const unsigned char * cbuf
-    cdef cairo_surface_t * surface
+    cdef cairo_surface_t * surface = NULL
     cdef unsigned char * cdata
     cdef cairo_format_t cairo_format
     cdef int istride
