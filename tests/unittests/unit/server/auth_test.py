@@ -193,7 +193,7 @@ class TestAuth(unittest.TestCase):
                 del os.environ[var_name]
 
     def test_password(self) -> None:
-        password = strtobytes(uuid.uuid4().hex)
+        password = uuid.uuid4().hex
         self._test_hmac_auth("password", password, value=password)
 
     def _test_file_auth(self, mod_name: str, genauthdata: Callable, display_count: int = 0):
