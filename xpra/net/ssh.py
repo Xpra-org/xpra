@@ -248,6 +248,8 @@ def safe_lookup(config_obj, host):
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
         log.info("paramiko ssh config lookup error for host %r:", host)
         log.info(" %s: %s", type(e), e)
+        log.info(" the paramiko project looks unmaintained:")
+        log.info(" https://github.com/paramiko/paramiko/pull/2338")
     return {}
 
 def ssh_paramiko_connect_to(display_desc):
