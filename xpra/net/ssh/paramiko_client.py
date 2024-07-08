@@ -168,6 +168,8 @@ def safe_lookup(config_obj, host:str) -> Dict[Any,Any]:
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
         log.info(f"paramiko ssh config lookup error for host {host!r}:")
         log.info(" %s: %s", type(e), e)
+        log.info(" the paramiko project looks unmaintained:")
+        log.info(" https://github.com/paramiko/paramiko/pull/2338")
     return {}
 
 
