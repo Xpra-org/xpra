@@ -1572,7 +1572,7 @@ class ServerCore:
         packet_type = guess_packet_type(data)
         netlog("packet-type=%s", packet_type)
         # RFBServerProtocol doesn't support `steal_connection`:
-        if packet_type == "http" and hasattr(proto, "steal_connection")::
+        if packet_type == "http" and hasattr(proto, "steal_connection"):
             # try again to wrap this socket:
             bufs = [data]
 
