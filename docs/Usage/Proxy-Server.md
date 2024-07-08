@@ -88,7 +88,7 @@ xpra start :201 --bind-tcp=0.0.0.0:10101 --start=xterm
 ```
 Start a proxy server on port 14501 using the "`sqlite`" authentication module (we will call this server `PROXYHOST`):
 ```shell
-xpra proxy :100 --bind-tcp=0.0.0.0:14501,auth=sqlite:filename=./xpra-auth.sdb --socket-dir=/tmp
+xpra proxy :100 --bind-tcp=0.0.0.0:14501,auth=sqlite,filename=./xpra-auth.sdb --socket-dir=/tmp
 ```
 and add user entries (ie: `foo` with password `bar`), pointing to the `TARGETHOST` sessions (ie: `192.168.1.200` is the `TARGETHOST`'s IP in this example):
 ```shell
