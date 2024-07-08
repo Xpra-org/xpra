@@ -40,6 +40,7 @@ xpra (6.0.2-1) UNRELEASED; urgency=low
     - prefer IPv4 for localhost
     - remove enum prefix with older Python versions
     - http directory listing
+    - look for the SSL certificate file specified
   * Cosmetic / correctness:
     - log `ssl` error just once per socket
     - don't spam the logs because of a `pyxdg` bug
@@ -57,9 +58,11 @@ xpra (6.0.2-1) UNRELEASED; urgency=low
     - avoid warnings in the launcher
     - hex strings
     - don't show the full Pyton version in http server string
+    - authentication modules check passwords as strings
+    - Gtk X11 context checker error messages invalid format
+    - warn about `paramiko` being unmaintained
 
-
- -- Antoine Martin <antoine@xpra.org>  Wed, 03 Jul 2024 15:17:23 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 08 Jul 2024 20:15:05 +0700
 
 xpra (6.0.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.0.2] 2024-07-03
+## [6.0.2] 2024-07-08
 * Platforms, build and packaging:
     * [revision number not detected in RPM spec file](https://github.com/Xpra-org/xpra/commit/767a66a3509e10f2e20135b076b42c2bc5766b36)
     * [add security warning about downstream packages](https://github.com/Xpra-org/xpra/commit/7ff4ff3152e7b8e9a376a2298c2637be2b539e30)
@@ -43,6 +43,7 @@
     * [prefer IPv4 for localhost](https://github.com/Xpra-org/xpra/commit/801e1aabb0eb8be1738fd1c8b9d17c15da3705a0)
     * [remove enum prefix with older Python versions](https://github.com/Xpra-org/xpra/commit/744eac38c879469f7044eed6b31fa33d7f9afc57)
     * [http directory listing](https://github.com/Xpra-org/xpra/commit/d698a7244d803614cb4754b3e50978f2019ac621)
+    * [look for the SSL certificate file specified](https://github.com/Xpra-org/xpra/commit/966c6f7650a1055c017d6d2fab9228759b04c878)
 * Cosmetic / correctness:
     * [log `ssl` error just once per socket](https://github.com/Xpra-org/xpra/commit/12cfa6eccb0d3bbe5bbc23199d2fedfbe4246505)
     * [don't spam the logs](https://github.com/Xpra-org/xpra/commit/2369df4cd77b94159869ab19d08114b06cff1122) [because of a `pyxdg` bug](https://github.com/Xpra-org/xpra/commit/645baa7bf3457d1cdcb8c80da79b8d91b806fd77)
@@ -59,6 +60,9 @@
     * [avoid warnings in the launcher](https://github.com/Xpra-org/xpra/commit/0a0090be05f4824f8013f383aa8d949828641454)
     * [hex strings](https://github.com/Xpra-org/xpra/commit/8aea0ce34e69277f46e3405e8e50ea9eb5db5686)
     * [don't show the full Pyton version in http server string](https://github.com/Xpra-org/xpra/commit/11e69b6242ae8849ea2a663a8a2ca995125e5176)
+    * [authentication modules check passwords as strings](https://github.com/Xpra-org/xpra/commit/dc05fa059f28e9a021eb9d94ddd3adfcc2228d26)
+    * [Gtk X11 context checker error messages invalid format](https://github.com/Xpra-org/xpra/commit/58e06f2f306aad893a18ceedb17d8f9d5e460cd6)
+    * [warn about `paramiko` being unmaintained](https://github.com/Xpra-org/xpra/commit/b3bccae882796c3b52094fe6a98c426cf044e545)
 
 ## [6.0.1] 2024-05-23
 * Platforms, build and packaging:

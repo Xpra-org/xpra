@@ -862,7 +862,7 @@ fi
 
 
 %changelog
-* Wed Jul 03 2024 Antoine Martin <antoine@xpra.org> 6.0.2-10
+* Mon Jul 08 2024 Antoine Martin <antoine@xpra.org> 6.0.2-10
 - Platforms, build and packaging:
    revision number not detected in RPM spec file
    add security warning about downstream packages
@@ -904,6 +904,7 @@ fi
    prefer IPv4 for localhost
    remove enum prefix with older Python versions
    http directory listing
+   look for the SSL certificate file specified
 - Cosmetic / correctness:
    log `ssl` error just once per socket
    don't spam the logs because of a `pyxdg` bug
@@ -921,6 +922,9 @@ fi
    avoid warnings in the launcher
    hex strings
    don't show the full Pyton version in http server string
+   authentication modules check passwords as strings
+   Gtk X11 context checker error messages invalid format
+   warn about `paramiko` being unmaintained
 
 
 * Thu May 23 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
