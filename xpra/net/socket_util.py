@@ -942,7 +942,7 @@ def find_ssl_cert(filename:str="ssl-cert.pem"):
         if not os.path.exists(p):
             ssllog(f"ssl cert dir {p!r} does not exist")
             continue
-        f = os.path.join(p, "ssl-cert.pem")
+        f = os.path.join(p, filename)
         if not os.path.exists(f):
             ssllog(f"ssl cert {f!r} does not exist")
             continue
