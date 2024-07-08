@@ -187,7 +187,7 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
     ssllog(" verify_mode for server_side=%s : %s", server_side, ssl_cert_reqs)
     # ca-certs:
     if ca_certs == "default":
-        ca_certs = None
+        ca_certs = ""
     elif ca_certs == "auto":
         ca_certs = find_ssl_cert("ca-cert.pem")
     ssllog(" ca-certs=%s", ca_certs)
@@ -323,13 +323,13 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
     return ssl_sock
 
 
-def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any] | None:
+def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any]:
     ssllog = get_ssl_logger()
     ssllog("ssl_retry(%s, %s) SSL_RETRY=%s", e, ssl_ca_certs, SSL_RETRY)
     if not SSL_RETRY:
-        return None
+        return {}
     if not isinstance(e, SSLVerifyFailure):
-        return None
+        return {}
     # we may be able to ask the user if he wants to accept this certificate
     verify_code = e.verify_code
     ssl_sock = e.ssl_sock
@@ -344,10 +344,10 @@ def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any] | None:
             SSL_VERIFY_IP_MISMATCH, SSL_VERIFY_HOSTNAME_MISMATCH,
     ):
         ssllog("ssl_retry: %s not handled here", SSL_VERIFY_CODES.get(verify_code, verify_code))
-        return None
+        return {}
     if not server_hostname:
         ssllog("ssl_retry: no server hostname")
-        return None
+        return {}
     ssllog("ssl_retry: server_hostname=%s, ssl verify_code=%s (%i)",
            server_hostname, SSL_VERIFY_CODES.get(verify_code, verify_code), verify_code)
 
@@ -362,7 +362,7 @@ def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any] | None:
     if verify_code == SSL_VERIFY_SELF_SIGNED:
         if ssl_ca_certs not in ("", "default"):
             ssllog("self-signed cert does not match %r", ssl_ca_certs)
-            return None
+            return {}
         # perhaps we already have the certificate for this hostname
         cert_file = find_ssl_config_file(server_hostname, port, CERT_FILENAME)
         if cert_file:
@@ -377,18 +377,18 @@ def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any] | None:
             cert_data = None
         if not cert_data:
             ssllog.warn("Warning: failed to get server certificate from %s", addr)
-            return None
+            return {}
         ssllog("downloaded ssl cert data for %s: %s", addr, Ellipsizer(cert_data))
         # ask the user if he wants to accept this certificate:
         title = "SSL Certificate Verification Failure"
         prompt = "Do you want to accept this certificate?"
         if not confirm((msg,), title, prompt):
-            return None
+            return {}
         filename = save_ssl_config_file(server_hostname, port,
                                         CERT_FILENAME, "certificate", cert_data.encode("latin1"))
         if not filename:
             ssllog.warn("Warning: failed to save certificate data")
-            return None
+            return {}
         options["ca-certs"] = filename
         save_ssl_options(server_hostname, port, options)
         return options
@@ -405,7 +405,7 @@ def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any] | None:
             options["check-hostname"] = False
             save_ssl_options(server_hostname, port, options)
             return options
-    return None
+    return {}
 
 
 def load_ssl_options(server_hostname: str, port: int) -> dict[str, Any]:
@@ -444,7 +444,7 @@ def save_ssl_options(server_hostname: str, port, options: dict) -> str:
     return f
 
 
-def find_ssl_config_file(server_hostname: str, port=443, filename="cert.pem"):
+def find_ssl_config_file(server_hostname: str, port=443, filename="cert.pem") -> str:
     ssllog = get_ssl_logger()
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     dirs = get_ssl_hosts_config_dirs()
@@ -456,7 +456,7 @@ def find_ssl_config_file(server_hostname: str, port=443, filename="cert.pem"):
         if os.path.exists(f):
             ssllog(f"found {f}")
             return f
-    return None
+    return ""
 
 
 def save_ssl_config_file(server_hostname: str, port=443,
