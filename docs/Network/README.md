@@ -45,7 +45,7 @@ xdg-open http://localhost:10000/
 
 ```shell
 echo -n thepassword > password.txt
-xpra start --start=xterm --bind-ssh=0.0.0.0:10000,auth=file:filename=password.txt
+xpra start --start=xterm --bind-ssh=0.0.0.0:10000,auth=file,filename=password.txt
 ```
 ```shell
 xpra attach ssh://localhost:10000/

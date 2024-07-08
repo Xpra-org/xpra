@@ -18,12 +18,12 @@ Starting with version 4.0, the preferred way of specifying authentication is wit
 ie for starting a [seamless](./Seamless.md) server with a `TCP` socket protected by a password stored in a `file`:
 ```shell
 xpra start --start=xterm -d auth
-     --bind-tcp=0.0.0.0:10000,auth=file:filename=password.txt
+     --bind-tcp=0.0.0.0:10000,auth=file,filename=password.txt
 ```
 So that multiple sockets can use different authentication modules, and those modules can more easily be chained:
 ```shell
 xpra start --start=xterm -d auth \
-     --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=password.txt \
+     --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file,filename=password.txt \
      --bind-tcp=0.0.0.0:10001,auth=sys
 ```
 
@@ -40,7 +40,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [fail](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/fail.py)                           | always fails authentication, no password required                                       | useful for testing                                                                  |
 | [reject](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/reject.py)                       | always fails authentication, pretends to ask for a password                             | useful for testing                                                                  |
 | [env](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/env.py)                             | matches against an environment variable (`XPRA_PASSWORD` by default)                    | alternative to file module                                                          |
-| [password](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/password.py)                   | matches against a password given as a module option, ie: `auth=password:value=mysecret` | alternative to file module                                                          |
+| [password](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/password.py)                   | matches against a password given as a module option, ie: `auth=password,value=mysecret` | alternative to file module                                                          |
 | [multifile](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/multifile.py)                 | matches usernames and passwords against an authentication file                          | proxy: see password-file below                                                      |
 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/file.py)                           | compares the password against the contents of a password file, see password-file below  | simple password authentication                                                      |
 | [pam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/auth/pam.py)                             | linux PAM authentication                                                                | Linux system authentication                                                         |
@@ -64,10 +64,10 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
   <summary>more examples</summary>
 
 * `XPRA_PASSWORD=mysecret xpra start --bind-tcp=0.0.0.0:10000,auth=env`
-* `SOME_OTHER_ENV_VAR_NAME=mysecret xpra start --bind-tcp=0.0.0.0:10000,auth=env:name=SOME_OTHER_ENV_VAR_NAME`
-* `xpra start --bind-tcp=0.0.0.0:10000,auth=password:value=mysecret`
-* `xpra start --bind-tcp=0.0.0.0:10000,auth=file:filename=/path/to/mypasswordfile.txt`
-* `xpra start --bind-tcp=0.0.0.0:10000,auth=sqlite:filename=/path/to/userlist.sdb`
+* `SOME_OTHER_ENV_VAR_NAME=mysecret xpra start --bind-tcp=0.0.0.0:10000,auth=env,name=SOME_OTHER_ENV_VAR_NAME`
+* `xpra start --bind-tcp=0.0.0.0:10000,auth=password,value=mysecret`
+* `xpra start --bind-tcp=0.0.0.0:10000,auth=file,filename=/path/to/mypasswordfile.txt`
+* `xpra start --bind-tcp=0.0.0.0:10000,auth=sqlite,filename=/path/to/userlist.sdb`
 
 Beware when mixing environment variables and password files as the latter may contain a trailing newline character whereas the former often do not.
 </details>
