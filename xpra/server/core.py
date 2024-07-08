@@ -2065,7 +2065,7 @@ class ServerCore:
             options = conn.options
             if options.get("ssl-upgrade", "yes").lower() in TRUE_OPTIONS:
                 ssl_options = self.get_ssl_socket_options(options)
-                cert = ssl_options.get("cert")
+                cert = ssl_options.get("cert", "")
                 if cert:
                     log.info(f"sending ssl upgrade for {conn}")
                     cert_data = load_binary_file(cert)
