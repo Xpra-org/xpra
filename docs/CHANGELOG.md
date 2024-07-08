@@ -9,6 +9,7 @@
     * [unnecessary DEB dependency on unused `python3-yaml`](https://github.com/Xpra-org/xpra/commit/6438759d23447ef8b7110c041616d526f9f1c755)
     * [fix PEP 517 builds](https://github.com/Xpra-org/xpra/commit/5aa0284d12f34e8e715ce8da3559049c5606cbec)
     * [MS Windows setup script typo](https://github.com/Xpra-org/xpra/commit/14c3cccae5c28704fe7609593c3a10479ad799f5)
+    * [`openssl.cnf` had gone missing on MS Windows](https://github.com/Xpra-org/xpra/commit/326e0dda65b16eefa46809756739cbcbd3bcad52)
 * OpenGL:
     * [`OpenGL` acceleration self-test failures on MS Windows](https://github.com/Xpra-org/xpra/commit/e812974b394bc8c3df4e77d6cf983e59a12b9c73) [when executed from GUI tools](https://github.com/Xpra-org/xpra/commit/7fb75f642632760969bc3b677a2efe171ff67a87)
     * [blacklist the `llvmpipe` software renderer](https://github.com/Xpra-org/xpra/commit/da73d5c99e5f8ce654968ce7ee6a766502f8c257) [but probe server opengl properties anyway](https://github.com/Xpra-org/xpra/commit/971b3da820a25ff080a9faae3bde3eafd180ade8)
@@ -44,6 +45,7 @@
     * [remove enum prefix with older Python versions](https://github.com/Xpra-org/xpra/commit/744eac38c879469f7044eed6b31fa33d7f9afc57)
     * [http directory listing](https://github.com/Xpra-org/xpra/commit/d698a7244d803614cb4754b3e50978f2019ac621)
     * [look for the SSL certificate file specified](https://github.com/Xpra-org/xpra/commit/966c6f7650a1055c017d6d2fab9228759b04c878)
+    * [RFB connection errors trying to upgrade to `http` or `WebSockets`](https://github.com/Xpra-org/xpra/commit/7cc5e496b931f0bf2caf78b76b14d51717b4bc92)
 * Cosmetic / correctness:
     * [log `ssl` error just once per socket](https://github.com/Xpra-org/xpra/commit/12cfa6eccb0d3bbe5bbc23199d2fedfbe4246505)
     * [don't spam the logs](https://github.com/Xpra-org/xpra/commit/2369df4cd77b94159869ab19d08114b06cff1122) [because of a `pyxdg` bug](https://github.com/Xpra-org/xpra/commit/645baa7bf3457d1cdcb8c80da79b8d91b806fd77)
@@ -63,6 +65,8 @@
     * [authentication modules check passwords as strings](https://github.com/Xpra-org/xpra/commit/dc05fa059f28e9a021eb9d94ddd3adfcc2228d26)
     * [Gtk X11 context checker error messages invalid format](https://github.com/Xpra-org/xpra/commit/58e06f2f306aad893a18ceedb17d8f9d5e460cd6)
     * [warn about `paramiko` being unmaintained](https://github.com/Xpra-org/xpra/commit/b3bccae882796c3b52094fe6a98c426cf044e545)
+    * [authentication module documentation updates](https://github.com/Xpra-org/xpra/commit/f14dd4ca6e6f1b202035a79cabf12bbe438c23a4)
+    * [AES modes documentation](https://github.com/Xpra-org/xpra/commit/7b6982dc02a682d5f3920a1d686d7f6ffd98a86c)
 
 ## [6.0.1] 2024-05-23
 * Platforms, build and packaging:

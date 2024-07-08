@@ -7,6 +7,7 @@ xpra (6.0.2-1) UNRELEASED; urgency=low
     - unnecessary DEB dependency on unused `python3-yaml`
     - fix PEP 517 builds
     - MS Windows setup script typo
+    - `openssl.cnf` had gone missing on MS Windows
   * OpenGL:
     - `OpenGL` acceleration self-test failures on MS Windows
     - blacklist the `llvmpipe` software renderer
@@ -41,6 +42,7 @@ xpra (6.0.2-1) UNRELEASED; urgency=low
     - remove enum prefix with older Python versions
     - http directory listing
     - look for the SSL certificate file specified
+    - RFB connection errors trying to upgrade to `http` or `WebSockets`
   * Cosmetic / correctness:
     - log `ssl` error just once per socket
     - don't spam the logs because of a `pyxdg` bug
@@ -61,8 +63,10 @@ xpra (6.0.2-1) UNRELEASED; urgency=low
     - authentication modules check passwords as strings
     - Gtk X11 context checker error messages invalid format
     - warn about `paramiko` being unmaintained
+    - authentication module documentation updates
+    - AES modes documentation
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 08 Jul 2024 20:15:05 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 08 Jul 2024 23:01:24 +0700
 
 xpra (6.0.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

@@ -871,6 +871,7 @@ fi
    unnecessary DEB dependency on unused `python3-yaml`
    fix PEP 517 builds
    MS Windows setup script typo
+   `openssl.cnf` had gone missing on MS Windows
 - OpenGL:
    `OpenGL` acceleration self-test failures on MS Windows
    blacklist the `llvmpipe` software renderer
@@ -905,6 +906,7 @@ fi
    remove enum prefix with older Python versions
    http directory listing
    look for the SSL certificate file specified
+   RFB connection errors trying to upgrade to `http` or `WebSockets`
 - Cosmetic / correctness:
    log `ssl` error just once per socket
    don't spam the logs because of a `pyxdg` bug
@@ -925,6 +927,8 @@ fi
    authentication modules check passwords as strings
    Gtk X11 context checker error messages invalid format
    warn about `paramiko` being unmaintained
+   authentication module documentation updates
+   AES modes documentation
 
 
 * Thu May 23 2024 Antoine Martin <antoine@xpra.org> 6.0.1-10
