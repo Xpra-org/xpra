@@ -10,7 +10,6 @@ The salts used are generated using Python's [os.urandom()](https://docs.python.o
 Caveats:
 * it is also possible to run in `AES-128` or `AES-192` mode but this is not recommended
 * the HTML5 client currently does not support GCM mode: https://github.com/Xpra-org/xpra-html5/issues/94
-* older servers and clients only support `CBC` mode
 
 For step-by-step instructions on setting up AES, expand:
 <details>
@@ -31,31 +30,24 @@ xpra attach "tcp://localhost:10000/?encryption=AES&keyfile=./key.txt"
 ```
 
 ## Modes
-Starting with version 4.3, the client can specify the exact AES encryption mode to use: `encryption=AES-GCM`.
+AES encryption supports 3 different [modes of operation](https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation): `CBC`, `GCM` ,`CFB` and `CTR`.
 
-## Older syntax
-Prior to version 4.1, the encryption is configured globally, for all TCP sockets, using the following syntax:
-```
-xpra start --start=xterm \
-     --bind-tcp=0.0.0.0:10000 \
-     --tcp-encryption=AES --tcp-encryption-keyfile=key.txt
-```
-```
-xpra attach tcp://$HOST:10000 --tcp-encryption=AES --tcp-encryption-keyfile=./key.txt
-```
+The client can specify the exact mode using: `encryption=AES-GCM`.
+
 </details>
 
 <details>
   <summary>Specifying the key data</summary>
 
 ## keydata
-With newer versions, instead of using the `keyfile` option, it is also possible to inline the `keydata` value in the bind and attach strings:
+Instead of storing the encryption key in a file, it is also possible to inline the `keydata` value in the bind and attach strings:
 * `keydata=0x...` for hexadecimal encoded keys
 * `keydata=base64:...` for base64 encoded keys
 * `keydata=...` for plain text keys
 
 One major disadvantage is that the key data may be leaked in the process list.\
 However, it may be easier in some cases to generate commands that do not require extra files to run.
+This can also be used with `.xpra` session files, and those do not leak the data.
 </details>
 
 <details>
