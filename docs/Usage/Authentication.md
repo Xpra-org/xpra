@@ -136,6 +136,7 @@ xpra attach tcp://username:password@host:port/
 </details>
 
 When an authentication module is used to secure a single session, many modules will completely ignore the username part, and it can be omitted from the connection string.
+This [can be overriden for some modules](https://github.com/Xpra-org/xpra/issues/4294).
 <details>
   <summary>example: specifying the password only</summary>
 
