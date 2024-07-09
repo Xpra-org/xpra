@@ -66,11 +66,10 @@ def main() -> int:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     import sys
     from xpra.platform import program_context
-    from xpra.log import enable_color
+    from xpra.log import enable_color, consume_verbose_argv
     with program_context("Keymap-Tool", "Keymap Information Tool"):
         enable_color()
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            log.enable_debug()
+        consume_verbose_argv(sys.argv, "keyboard")
         gtk_keymap = get_gtk_keymap()
         sizes = [16, 28, 8, 8, 8]
 

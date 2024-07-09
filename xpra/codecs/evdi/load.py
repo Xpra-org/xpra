@@ -41,12 +41,11 @@ def load_evdi_module(device_count=1):
 
 def main():
     # pylint: disable=import-outside-toplevel
-    from xpra.log import enable_color
+    from xpra.log import enable_color, consume_verbose_argv
     from xpra.platform import program_context
     with program_context("evdi loader"):
         enable_color()
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            log.enable_debug()
+        consume_verbose_argv(sys.argv, "evdi")
         print(f"module loaded: {load_evdi_module()}")
 
 

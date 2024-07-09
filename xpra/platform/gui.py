@@ -418,15 +418,11 @@ def main() -> int:
     from xpra.platform import program_context
     from xpra.util.str_fn import print_nested_dict
     from xpra.os_util import OSX, POSIX
-    from xpra.log import enable_color
+    from xpra.log import enable_color, consume_verbose_argv
     with program_context("GUI-Properties"):
         enable_color()
+        consume_verbose_argv(sys.argv, "all")
         init()
-        verbose = "-v" in sys.argv or "--verbose" in sys.argv
-        if verbose:
-            from xpra.log import get_all_loggers
-            for x in get_all_loggers():
-                x.enable_debug()
 
         # naughty, but how else can I hook this up?
         if POSIX and not OSX:

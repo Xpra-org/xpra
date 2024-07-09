@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2012-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2012-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -18,7 +18,7 @@ import struct
 from enum import IntEnum
 from typing import Any
 
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 from xpra.util.env import envbool
 from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 
@@ -185,11 +185,7 @@ def main() -> int:  # pragma: no cover
     from xpra.gtk.error import xsync
     with program_context("XSettings"):
         gui_init()
-        verbose = "-v" in sys.argv or "--verbose" in sys.argv
-        if verbose:
-            from xpra.log import get_all_loggers
-            for x in get_all_loggers():
-                x.enable_debug()
+        consume_verbose_argv(sys.argv, "all")
 
         # naughty, but how else can I hook this up?
         if not POSIX:

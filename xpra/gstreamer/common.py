@@ -13,7 +13,7 @@ from collections.abc import Callable, Sequence
 from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("audio", "gstreamer")
 # pylint: disable=import-outside-toplevel
@@ -175,8 +175,7 @@ def main():
     from xpra.log import enable_color
     with program_context("GStreamer-Info", "GStreamer Information"):
         enable_color()
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            log.enable_debug()
+        consume_verbose_argv(sys.argv, "gstreamer")
         import_gst()
         v = get_gst_version()
         if not v:

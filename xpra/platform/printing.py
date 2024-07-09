@@ -14,7 +14,7 @@ from xpra.common import noop
 from xpra.platform import platform_import
 from xpra.util.str_fn import print_nested_dict, pver
 from xpra.util.env import envbool
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("printing")
 
@@ -103,19 +103,7 @@ platform_import(globals(), "printing", False,
 
 def main(argv) -> int:
     # pylint: disable=import-outside-toplevel
-    if "-v" in argv or "--verbose" in argv:
-        from xpra.log import add_debug_category, enable_debug_for
-        add_debug_category("printing")
-        enable_debug_for("printing")
-        try:
-            argv.remove("-v")
-        except ValueError:
-            pass
-        try:
-            argv.remove("--verbose")
-        except ValueError:
-            pass
-
+    consume_verbose_argv(argv, "printing")
     from xpra.util.str_fn import nonl
 
     def dump_dict(d):

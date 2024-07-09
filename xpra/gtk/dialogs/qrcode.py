@@ -6,7 +6,7 @@
 from xpra.os_util import gi_import
 from xpra.net.qrcode import qrencode
 from xpra.gtk.window import add_close_accel
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
@@ -69,15 +69,13 @@ def qr_pixbuf(uri: str, width: int = 640, height: int = 640):
     return pixbuf
 
 
-def main():
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        log.enable_debug()
+def main(args: list[str]) -> int:
+    consume_verbose_argv(args, "menu")
     uri = sys.argv[1]
     show_qr(uri)
+    return 0
 
 
 if __name__ == "__main__":
     import sys
-
-    main()
-    sys.exit(0)
+    sys.exit(main(sys.argv))

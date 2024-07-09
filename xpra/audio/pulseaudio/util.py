@@ -8,7 +8,7 @@ import sys
 import os.path
 
 from xpra.os_util import WIN32, OSX
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("audio")
 
@@ -70,8 +70,7 @@ def main():
     from xpra.util.str_fn import print_nested_dict
     with program_context("Pulseaudio-Info"):
         enable_color()
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            log.enable_debug()
+        consume_verbose_argv(sys.argv, "audio")
         i = get_info()
         print_nested_dict(i)
 

@@ -14,11 +14,10 @@ def main(argv) -> int:
     from xpra.util.env import numpy_import_context
     from xpra.platform import program_context
     with program_context("CUDA-Info", "CUDA Info"):
-        from xpra.log import Logger, enable_color
+        from xpra.log import Logger, enable_color, consume_verbose_argv
         enable_color()
+        consume_verbose_argv(argv, "cuda")
         log = Logger("cuda")
-        if "-v" in argv or "--verbose" in argv:
-            log.enable_debug()
         with numpy_import_context("CUDA: info"):
             for component in (
                 "xpra.codecs",

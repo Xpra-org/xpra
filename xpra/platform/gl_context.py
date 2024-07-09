@@ -30,14 +30,12 @@ def main():
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
     from xpra.util.str_fn import print_nested_dict
-    from xpra.log import enable_color, Logger
+    from xpra.log import enable_color, Logger, consume_verbose_argv
     with program_context("OpenGL Native Context Check"):
         gui_init()
         enable_color()
+        consume_verbose_argv(sys.argv, "opengl")
         log = Logger("opengl")
-        verbose = "-v" in sys.argv or "--verbose" in sys.argv
-        if verbose:
-            log.enable_debug()
         if not GLContext:
             log.error("Error: no GLContext available on %s", sys.platform)
             return 1

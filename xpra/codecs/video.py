@@ -491,14 +491,12 @@ def getVideoHelper() -> VideoHelper:
 
 def main():
     # pylint: disable=import-outside-toplevel
-    from xpra.codecs.loader import log as loader_log, load_codecs, show_codecs
-    from xpra.log import enable_color
+    from xpra.codecs.loader import load_codecs, show_codecs
+    from xpra.log import enable_color, consume_verbose_argv
     from xpra.platform import program_context
     with program_context("Video Helper"):
         enable_color()
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            loader_log.enable_debug()
-            log.enable_debug()
+        consume_verbose_argv(sys.argv, "video", "encoding")
         load_codecs()
         show_codecs()
         vh = getVideoHelper()

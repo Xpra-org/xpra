@@ -13,7 +13,7 @@ from xpra.util.env import envbool
 from xpra.os_util import POSIX
 from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("encoder", "util")
 
@@ -397,12 +397,10 @@ def get_license_keys(version=0, basefilename="nvenc"):
 
 
 def main():
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        log.enable_debug()
-
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Nvidia-Info", "Nvidia Info"):
+        consume_verbose_argv("encoding", sys.argv)
         # this will log the version number:
         get_nvidia_module_version()
         if is_blacklisted():

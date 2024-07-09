@@ -11,7 +11,7 @@ from threading import Thread
 from collections.abc import Callable
 
 from xpra.common import noop
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 from xpra.util.env import envbool
 from xpra.util.str_fn import strtobytes
 from xpra.platform.win32.common import (
@@ -302,9 +302,7 @@ class NamedPipeListener(Thread):
 
 def main():
     import sys
-    for verbose in ("-v", "--verbose"):
-        if verbose in sys.argv:
-            log.enable_debug()
+    consume_verbose_argv(sys.argv, "win32")
     pipe_name = "Xpra\\Test"
     if len(sys.argv) > 1:
         pipe_name = sys.argv[1]

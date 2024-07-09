@@ -514,18 +514,11 @@ def get_info() -> dict[str, Any]:
 
 
 def main() -> None:
-    # pylint: disable=import-outside-toplevel
-    for arg in list(sys.argv):
-        if arg in ("-v", "--verbose"):
-            from xpra.log import add_debug_category, enable_debug_for
-            add_debug_category("printing")
-            enable_debug_for("printing")
-            sys.argv.remove(arg)
-
     from xpra.platform import program_context
-    from xpra.log import enable_color
+    from xpra.log import enable_color, consume_verbose_argv
     with program_context("PyCUPS Printing"):
         enable_color()
+        consume_verbose_argv(sys.argv, "printing")
         defs = get_printer_definitions()
         log.info("validation: %s", bool(defs))
         log.info("")

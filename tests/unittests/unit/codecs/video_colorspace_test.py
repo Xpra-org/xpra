@@ -18,7 +18,7 @@ from xpra.codecs.video import (
     getVideoHelper,
     ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS,
 )
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 MAX_DELTA = 7
 
@@ -325,8 +325,7 @@ class Test_Roundtrip(unittest.TestCase):
 
 
 def main():
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        log.enable_debug()
+    consume_verbose_argv(sys.argv, "video")
     unittest.main()
 
 

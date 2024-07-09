@@ -24,7 +24,7 @@ from xpra.util.objects import reverse_dict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envint, envbool
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("audio", "gstreamer")
 
@@ -825,8 +825,7 @@ def main():
     from xpra.log import enable_color
     with program_context("GStreamer-Info", "GStreamer Information"):
         enable_color()
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            log.enable_debug()
+        consume_verbose_argv(sys.argv, "gstreamer")
         import_gst()
         v = get_gst_version()
         if not v:

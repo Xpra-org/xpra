@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("network", "util", "win32")
 
@@ -72,11 +72,9 @@ def get_tcp_info(_sock):  # pylint: disable=unused-argument
 
 def main():
     import sys
-    for x in sys.argv[1:]:
-        if x in ("--verbose", "-v"):
-            log.enable_debug()
     from xpra.platform import program_context
     with program_context("Network-Speed", "Network Speed Query Tool"):
+        consume_verbose_argv(sys.argv, "win32")
         from xpra.net.net_util import get_interfaces
         from xpra.util.stats import std_unit
         interfaces = get_interfaces()

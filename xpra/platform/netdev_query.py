@@ -68,16 +68,10 @@ def main():
     from xpra.net.net_util import get_interfaces
     from socket import if_nametoindex
     from xpra.platform import program_context
-    from xpra.log import Logger, enable_color, add_debug_category, enable_debug_for
-    log = Logger("network")
+    from xpra.log import enable_color, consume_verbose_argv
     with program_context("Network-Device-Info", "Network Device Info"):
         enable_color()
-        verbose = "-v" in sys.argv or "--verbose" in sys.argv
-        if verbose:
-            enable_debug_for("network")
-            add_debug_category("network")
-            log.enable_debug()
-
+        consume_verbose_argv(sys.argv, "network")
         print("Network interfaces found:")
         for iface in get_interfaces():
             try:

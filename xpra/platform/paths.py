@@ -464,14 +464,11 @@ def get_info():
 
 
 def main():
-    # pylint: disable=import-outside-toplevel
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        from xpra.log import add_debug_category
-        add_debug_category("util")
-
+    from xpra.log import consume_verbose_argv
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Path-Info", "Path Info"):
+        consume_verbose_argv(sys.argv, "util")
         print_nested_dict(get_info())
 
 

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -79,12 +79,10 @@ class Authenticator(SysAuthenticator):
 
 def main(argv) -> int:
     # pylint: disable=import-outside-toplevel
+    from xpra.log import consume_verbose_argv
     from xpra.platform import program_context
     with program_context("Host Check", "Host Check"):
-        for x in ("-v", "--verbose"):
-            while x in argv:
-                argv.remove(x)
-                log.enable_debug()
+        consume_verbose_argv(argv, "auth")
         if len(argv) < 3:
             print("usage: %s peername1 hostname1 [peername2 hostname2] [..]" % sys.argv[0])
             return 1

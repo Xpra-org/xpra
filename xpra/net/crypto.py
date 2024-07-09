@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -15,7 +15,7 @@ from xpra.util.str_fn import csv, print_nested_dict, strtobytes, hexstr
 from xpra.util.env import envint, envbool
 from xpra.util.version import parse_version
 from xpra.net.digest import get_salt
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("network", "crypto")
 
@@ -298,9 +298,8 @@ def _get_cipher(key, iv: str, mode: str = DEFAULT_MODE):
 
 def main():
     from xpra.platform import program_context
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        log.enable_debug()
     with program_context("Encryption Properties"):
+        consume_verbose_argv(sys.argv, "crypto")
         crypto_backend_init()
         print_nested_dict(get_crypto_caps())
 

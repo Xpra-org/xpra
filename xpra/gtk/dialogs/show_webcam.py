@@ -12,14 +12,9 @@ def main():
     from xpra.platform import program_context, command_error
     from xpra.platform.gui import init, set_default_icon
     with program_context("Webcam", "Webcam"):
-        from xpra.log import Logger, add_debug_category
+        from xpra.log import Logger, consume_verbose_argv
+        consume_verbose_argv(sys.argv, "webcam")
         log = Logger("webcam")
-        for x in list(sys.argv):
-            if x in ("-v", "--verbose"):
-                sys.argv.remove(x)
-                add_debug_category("webcam")
-                log.enable_debug()
-
         set_default_icon("webcam.png")
         init()
 

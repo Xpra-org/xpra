@@ -10,7 +10,7 @@ import os.path
 from xpra.util.env import envbool
 from xpra.os_util import WIN32, LINUX
 from xpra.util.str_fn import memoryview_to_bytes
-from xpra.log import Logger, add_debug_category
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("encoder", "nvfbc")
 
@@ -38,12 +38,9 @@ def get_capture_instance(cuda=USE_NVFBC_CUDA):
 
 
 def main(argv):
-    if "-v" in argv or "--verbose" in argv:
-        log.enable_debug()
-        add_debug_category("nvfbc")
-
     from xpra.platform import program_context
     with program_context("NvFBC-Capture", "NvFBC Capture"):
+        consume_verbose_argv("nvfbc", argv)
         from xpra.platform.paths import get_download_dir
         from xpra.util.str_fn import print_nested_dict
         fbc_capture = get_capture_module()

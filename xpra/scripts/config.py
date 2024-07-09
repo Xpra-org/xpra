@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -1677,7 +1677,7 @@ def fixup_options(options) -> None:
         options.remote_xpra = [options.remote_xpra]
 
 
-def main():
+def main(argv):
     from xpra.util.str_fn import nonl
 
     def print_options(o):
@@ -1689,20 +1689,18 @@ def main():
                 v = csv(str(x) for x in v)
             print("* %-32s : %s" % (k, nonl(v)))
     from xpra.platform import program_context
-    from xpra.log import enable_color
+    from xpra.log import enable_color, consume_verbose_argv
     with program_context("Config-Info", "Config Info"):
         enable_color()
-        args = list(sys.argv[1:])
-        if "-v" in args or "--verbose" in sys.argv:
+        if consume_verbose_argv(argv, "all"):
             global debug
 
             def print_debug(*args):
                 print(args[0] % args[1:])
             debug = print_debug
-            args.remove("-v")
 
-        if args:
-            for filename in args:
+        if len(argv) > 1:
+            for filename in argv[1:]:
                 print("")
                 print(f"Configuration file {filename!r}")
                 if not os.path.exists(filename):
@@ -1717,4 +1715,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

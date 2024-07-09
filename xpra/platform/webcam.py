@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.platform import platform_import
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("webcam")
 
@@ -54,15 +54,11 @@ platform_import(globals(), "webcam", False,
 
 
 def main(argv) -> int:
-    # pylint: disable=import-outside-toplevel
-    if "-v" in argv or "--verbose" in argv:
-        from xpra.log import add_debug_category, enable_debug_for
-        enable_debug_for("webcam")
-        add_debug_category("webcam")
     run = "-r" in argv or "--run" in argv
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Webcam Info", "Webcam Info"):
+        consume_verbose_argv(argv, "webcam")
         devices = get_virtual_video_devices() or {}
         log.info("Found %i virtual video devices:", len(devices))
         print_nested_dict(devices)

@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import time
 from ctypes import (
     get_last_error, windll,  # @UnresolvedImport
@@ -12,7 +13,7 @@ from io import BytesIO
 from typing import Any
 from PIL import Image
 
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 from xpra.common import roundup
 from xpra.util.env import envbool
 from xpra.platform.win32 import constants as win32con
@@ -259,13 +260,9 @@ class GDICapture:
 
 
 def main(argv) -> int:
-    # pylint: disable=import-outside-toplevel
-    import os.path
-    if "-v" in argv or "--verbose" in argv:
-        log.enable_debug()
-
     from xpra.platform import program_context
     with program_context("Screen-Capture", "Screen Capture"):
+        consume_verbose_argv(argv, "win32")
         capture = GDICapture()
         image = capture.take_screenshot()
         assert image, "failed to capture screenshot"

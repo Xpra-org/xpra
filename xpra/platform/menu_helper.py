@@ -31,15 +31,10 @@ platform_import(globals(), "menu_helper", False,
 def main():
     import os
     from xpra.util.str_fn import print_nested_dict
-    from xpra.log import Logger, add_debug_category
-    log = Logger("exec", "menu")
+    from xpra.log import consume_verbose_argv
     from xpra.platform import program_context  # pylint: disable=import-outside-toplevel
     with program_context("Menu-Helper", "Menu Helper"):
-        for x in list(sys.argv):
-            if x in ("-v", "--verbose"):
-                sys.argv.remove(x)
-                add_debug_category("menu")
-                log.enable_debug()
+        consume_verbose_argv(sys.argv, "menu")
 
         def icon_fmt(icondata):
             return "%i bytes" % len(icondata)

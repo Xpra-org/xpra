@@ -659,15 +659,12 @@ def logon_kerb_s4u(name, realm=None, local_groups=None,
 
 def main():
     from xpra.platform import program_context
-    from xpra.log import enable_color, Logger, enable_debug_for
+    from xpra.log import enable_color, Logger, consume_verbose_argv
     log = Logger("win32")
     with program_context("LSA-Logon-Test", "LSA Logon Test"):
         enable_color()
-        for x in ("-v", "--verbose"):
-            if x in list(sys.argv):
-                enable_debug_for("win32")
-                sys.argv.remove(x)
-        if len(sys.argv)!=2:
+        consume_verbose_argv(sys.argv, "win32")
+        if len(sys.argv) != 2:
             log.warn("invalid number of arguments")
             log.warn("usage: %s [--verbose] username", sys.argv[0])
             return 1

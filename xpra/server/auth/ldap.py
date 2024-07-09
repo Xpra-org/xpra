@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2018-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2018-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -14,7 +14,7 @@ from xpra.util.str_fn import obsc, strtobytes
 from xpra.util.env import envint
 from xpra.util.io import stderr_print
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
-from xpra.log import is_debug_enabled, enable_debug_for
+from xpra.log import is_debug_enabled, consume_verbose_argv
 
 LDAP_REFERRALS = envint("XPRA_LDAP_REFERRALS", 0)
 LDAP_PROTOCOL_VERSION = envint("XPRA_LDAP_PROTOCOL_VERSION", 3)
@@ -129,10 +129,7 @@ def main(argv) -> int:
     from xpra.net.digest import get_salt, get_digests, gendigest
     from xpra.platform import program_context
     with program_context("LDAP-Password-Auth", "LDAP-Password-Authentication"):
-        for x in list(argv):
-            if x in ("-v", "--verbose"):
-                enable_debug_for("auth")
-                argv.remove(x)
+        consume_verbose_argv(argv, "auth")
         if len(argv) not in (3, 4, 5, 6, 7):
             stderr_print("%s invalid arguments" % argv[0])
             stderr_print("usage: %s username password [host] [port] [tls] [username_format]" % argv[0])

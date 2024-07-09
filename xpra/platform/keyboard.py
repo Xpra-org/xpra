@@ -16,19 +16,16 @@ platform_import(globals(), "keyboard", True,
 
 def main():
     import sys
-    from xpra.os_util import WIN32, OSX, POSIX
+    from xpra.os_util import OSX, POSIX
     from xpra.util.str_fn import bytestostr
     from xpra.util.str_fn import print_nested_dict
     from xpra.util.str_fn import csv
     from xpra.platform import program_context
-    from xpra.log import enable_color, enable_debug_for
+    from xpra.log import enable_color, consume_verbose_argv
     with program_context("Keyboard-Tool", "Keyboard Tool"):
         # use the logger for the platform module we import from
         enable_color()
-        verbose = "-v" in sys.argv or "--verbose" in sys.argv or \
-                  (WIN32 and not ("-q" in sys.argv or "--quiet"))
-        if verbose:
-            enable_debug_for("keyboard")
+        verbose = consume_verbose_argv(sys.argv, "keyboard")
 
         # naughty, but how else can I hook this up?
         if POSIX and not OSX:

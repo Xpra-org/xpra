@@ -17,7 +17,7 @@ from xpra.net.bytestreams import get_socket_config
 from xpra.util.version import parse_version
 from xpra.net.common import FLUSH_HEADER
 from xpra.common import FULL_INFO
-from xpra.log import Logger
+from xpra.log import Logger, enable_color, consume_verbose_argv
 
 log = Logger("network", "util")
 
@@ -436,15 +436,9 @@ def main():  # pragma: no cover
     from xpra.net.device_info import get_NM_adapter_type
     from xpra.platform import program_context
     from xpra.platform.netdev_query import get_interface_info
-    from xpra.log import enable_color, add_debug_category, enable_debug_for
     with program_context("Network-Info", "Network Info"):
         enable_color()
-        verbose = "-v" in sys.argv or "--verbose" in sys.argv
-        if verbose:
-            enable_debug_for("network")
-            add_debug_category("network")
-            log.enable_debug()
-
+        consume_verbose_argv(sys.argv, "network")
         print("Network interfaces found:")
         netifaces = import_netifaces()
         for iface in get_interfaces():

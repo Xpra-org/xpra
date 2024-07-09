@@ -108,19 +108,17 @@ def show_confirm_dialog(argv) -> int:
     return app.run()
 
 
-def main():
+def main(args):
+    from xpra.log import consume_verbose_argv
     from xpra.platform import program_context
     with program_context("Confirm-Dialog", "Confirm Dialog"):
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            from xpra.log import enable_debug_for
-            enable_debug_for("util")
-
+        consume_verbose_argv("util", args)
         try:
-            return show_confirm_dialog(sys.argv[1:])
+            return show_confirm_dialog(args[1:])
         except KeyboardInterrupt:
             return 1
 
 
 if __name__ == "__main__":
-    v = main()
+    v = main(sys.argv)
     sys.exit(v)

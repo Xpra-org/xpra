@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -44,13 +44,10 @@ class Authenticator(SysAuthenticator):
 def main(argv) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
-    from xpra.log import enable_color
+    from xpra.log import enable_color, consume_verbose_argv
     with program_context("Auth-Test", "Auth-Test"):
         enable_color()
-        for x in ("-v", "--verbose"):
-            if x in tuple(argv):
-                log.enable_debug()
-                argv.remove(x)
+        consume_verbose_argv(argv, "auth")
         if len(argv) != 3:
             log.warn("invalid number of arguments")
             log.warn("usage: %s [--verbose] username password", argv[0])

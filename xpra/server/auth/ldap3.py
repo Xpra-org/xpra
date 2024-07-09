@@ -12,7 +12,7 @@ from xpra.util.io import stderr_print
 from xpra.util.objects import typedict
 from xpra.util.str_fn import obsc
 from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
-from xpra.log import enable_debug_for, is_debug_enabled
+from xpra.log import is_debug_enabled
 
 assert log  # tests will disable logging from here
 
@@ -106,13 +106,11 @@ class Authenticator(SysAuthenticatorBase):
 
 def main(argv) -> int:
     # pylint: disable=import-outside-toplevel
+    from xpra.log import consume_verbose_argv
     from xpra.net.digest import get_salt, get_digests, gendigest
     from xpra.platform import program_context
     with program_context("LDAP3-Password-Auth", "LDAP3-Password-Authentication"):
-        for x in list(argv):
-            if x in ("-v", "--verbose"):
-                enable_debug_for("auth")
-                argv.remove(x)
+        consume_verbose_argv(argv, "auth")
         if len(argv) not in (3, 4, 5, 6):
             stderr_print("%s invalid arguments" % argv[0])
             stderr_print("usage: %s username password [host] [port] [tls]" % argv[0])

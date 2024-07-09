@@ -49,7 +49,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.util.io import get_util_logger
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("win32")
 grablog = Logger("win32", "grab")
@@ -1390,11 +1390,7 @@ class ClientExtras:
 def main():
     from xpra.platform import program_context
     with program_context("Platform-Events", "Platform Events Test"):
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            from xpra.platform.win32.events import log as win32_event_logger
-            log.enable_debug()
-            win32_event_logger.enable_debug()
-
+        consume_verbose_argv(sys.argv, "win32")
         log.info("Event loop is running")
         loop = GLib.MainLoop()
 

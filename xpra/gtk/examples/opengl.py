@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2013-2020 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2013-2024 Antoine Martin <antoine@xpra.org>
 
 
 def main(argv=()):
-    from xpra.log import Logger
-    log = Logger("opengl")
+    from xpra.log import Logger, consume_verbose_argv
     from xpra.platform import program_context
     with program_context("opengl", "OpenGL"):
+        consume_verbose_argv(argv, "opengl")
         try:
             from xpra.util.system import is_X11
             from xpra.client.gl.window import get_gl_client_window_module, test_gl_client_window
             if is_X11():
                 from xpra.x11.gtk.display_source import init_gdk_display_source
                 init_gdk_display_source()
-            if "-v" in argv or "--verbose" in argv:
-                log.enable_debug()
             opengl_props, gl_client_window_module = get_gl_client_window_module("force")
+            log = Logger("opengl")
             log("do_run_glcheck() opengl_props=%s, gl_client_window_module=%s", opengl_props, gl_client_window_module)
             gl_client_window_class = gl_client_window_module.GLClientWindow
             pixel_depth = 0

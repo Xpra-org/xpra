@@ -249,10 +249,9 @@ def main():
     from xpra.platform import program_context
     with program_context("Codec-Constants", "Codec Constants Info"):
         import sys
-        from xpra.log import Logger
+        from xpra.log import Logger, consume_verbose_argv
+        consume_verbose_argv(sys.argv, "encoding")
         log = Logger("encoding")
-        if "-v" in sys.argv or "--verbose" in sys.argv:
-            log.enable_debug()
         log.info("LOSSY_PIXEL_FORMATS=%s", LOSSY_PIXEL_FORMATS)
         log.info("PIXEL_SUBSAMPLING=%s", PIXEL_SUBSAMPLING)
         log.info("RGB_FORMATS=%s", RGB_FORMATS)

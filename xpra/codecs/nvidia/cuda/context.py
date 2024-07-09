@@ -25,7 +25,7 @@ from xpra.platform.paths import (
 from xpra.os_util import WIN32
 from xpra.util.system import is_WSL
 from xpra.util.io import load_binary_file
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 log = Logger("cuda")
 
@@ -634,11 +634,9 @@ def get_CUDA_function(function_name):
 
 def main():
     # pylint: disable=import-outside-toplevel
-    if "-v" in sys.argv or "--verbose" in sys.argv:
-        log.enable_debug()
-
     from xpra.platform import program_context
     with program_context("CUDA-Info", "CUDA Info"):
+        consume_verbose_argv(sys.argv, "cuda")
         pycuda_info = get_pycuda_info()
         log.info("pycuda_info")
         print_nested_dict(pycuda_info, print_fn=log.info)

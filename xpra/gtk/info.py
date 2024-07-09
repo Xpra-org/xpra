@@ -13,7 +13,7 @@ from xpra.common import noop
 from xpra.gtk.util import get_root_size, get_default_root_window
 from xpra.os_util import WIN32, gi_import
 from xpra.util.env import envint, envbool, IgnoreWarningsContext
-from xpra.log import Logger
+from xpra.log import Logger, consume_verbose_argv
 
 Gdk = gi_import("Gdk")
 GObject = gi_import("GObject")
@@ -454,7 +454,7 @@ def main() -> int:
         from xpra.platform.gui import init as gui_init, ready
         gui_init()
         ready()
-        if "-v" in sys.argv or "--verbose" in sys.argv:
+        if consume_verbose_argv(sys.argv, "gtk"):
             global SHOW_ALL_VISUALS
             SHOW_ALL_VISUALS = True
         print("GTK Version:")

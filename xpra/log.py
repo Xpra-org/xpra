@@ -178,6 +178,18 @@ def enable_format(format_string: str) -> None:
         pass
 
 
+def consume_verbose_argv(argv: list[str], *categories) -> bool:
+    verbose = False
+    for x in list(argv):
+        if x in ("-v", "--verbose"):
+            verbose = True
+            argv.remove(x)
+            for category in categories:
+                add_debug_category(category)
+                enable_debug_for(category)
+    return verbose
+
+
 # noinspection PyPep8
 STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
     "Client": {
