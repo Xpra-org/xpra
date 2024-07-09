@@ -17,7 +17,7 @@ from xpra.util.str_fn import std, obsc, bytestostr, hexstr
 from xpra.util.env import envint
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, is_admin
 from xpra.log import Logger
 
 log = Logger("auth")
@@ -72,10 +72,19 @@ class SysAuthenticatorBase:
     USED_SALT: Deque[bytes] = deque(maxlen=USED_SALT_CACHE_SIZE)
     DEFAULT_PROMPT = "password for user '{username}'"
     CLIENT_USERNAME = False
+    VERIFY_USERNAME = is_admin()
 
     def __init__(self, **kwargs):
         self.username = kwargs.get("username", get_username())
-        if str(kwargs.get("client-username", self.CLIENT_USERNAME)).lower() in TRUE_OPTIONS:
+        remote_props = typedict(kwargs.get("remote", {}))
+        remote_username = remote_props.strget("username", "")
+        verify_username = str(kwargs.get("verify-username", self.VERIFY_USERNAME)).lower() in TRUE_OPTIONS
+        client_username = str(kwargs.get("client-username", self.CLIENT_USERNAME)).lower() in TRUE_OPTIONS
+        log(f"{self!r}: {verify_username=}, {client_username=}")
+        if verify_username:
+            if remote_username != self.username:
+                raise ValueError("invalid username %r" % (std(remote_username)))
+        elif client_username:
             # allow the client to specify the username to authenticate with:
             self.username = kwargs.get("remote", {}).get("username", self.username)
         self.salt = None

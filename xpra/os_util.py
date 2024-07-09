@@ -54,6 +54,13 @@ def gi_import(mod="Gtk", version="") -> ModuleType:
         return importlib.import_module(f"gi.repository.{mod}")
 
 
+def is_admin() -> bool:
+    if WIN32:
+        from ctypes import windll
+        return windll.shell32.IsUserAnAdmin() != 0
+    return os.geteuid() == 0
+
+
 def getuid() -> int:
     if POSIX:
         return os.getuid()
@@ -150,7 +157,7 @@ def get_user_uuid() -> str:
     import hashlib
     u = hashlib.sha256()
 
-    def uupdate(ustr):
+    def uupdate(ustr) -> None:
         u.update(ustr.encode("utf-8"))
     uupdate(get_machine_id())
     if POSIX:

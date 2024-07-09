@@ -1972,7 +1972,7 @@ class ServerCore:
         # in which case we'll end up here parsing the hello again
         start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
 
-    def make_authenticators(self, socktype: str, remote, conn) -> Sequence[Any]:
+    def make_authenticators(self, socktype: str, remote: dict[str, Any], conn) -> Sequence[Any]:
         authlog("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
         sock_options = conn.options
         sock_auth = sock_options.get("auth", "")
@@ -2045,6 +2045,10 @@ class ServerCore:
             socktype = conn.socktype_wrapped
             try:
                 proto.authenticators = self.make_authenticators(socktype, remote, conn)
+            except ValueError as e:
+                authlog(f"instantiating authenticator for {socktype}", exc_info=True)
+                self.auth_failed(proto, str(e))
+                return
             except Exception as e:
                 authlog(f"instantiating authenticator for {socktype}", exc_info=True)
                 authlog.error(f"Error instantiating authenticators for {proto.socket_type} connection:")
