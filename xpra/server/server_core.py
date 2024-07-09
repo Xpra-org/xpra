@@ -1324,7 +1324,8 @@ class ServerCore(object):
         netlog(" input_packetcount=%s, tcp_proxy=%s, html=%s, ssl=%s",
                proto.input_packetcount, self._tcp_proxy, self._html, bool(self._ssl_wrap_socket))
         packet_type, info = self.guess_header_protocol(data)
-        if packet_type == "HTTP":
+        # RFBServerProtocol doesn't support `steal_connection`:
+        if packet_type == "http" and hasattr(proto, "steal_connection"):
            # try again to wrap this socket:
             bufs = [data]
 
