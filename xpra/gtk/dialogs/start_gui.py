@@ -738,7 +738,7 @@ class SessionOptions(Gtk.Window):
     def get_widget_options(self, fn):
         return getattr(self, "%s_options" % fn)
 
-    def bool_cb(self, text, option_name, tooltip_text="", link="") -> Gtk.Switch:
+    def bool_cb(self, text: str, option_name: str, tooltip_text="", link="") -> Gtk.Switch:
         self.attach_label(text, tooltip_text, link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
@@ -791,7 +791,7 @@ class SessionOptions(Gtk.Window):
         self.row.increase()
         return btns
 
-    def combo(self, text: str, option_name: str, options, link="") -> Gtk.ComboBoxText:
+    def combo(self, text: str, option_name: str, options: dict, link="") -> Gtk.ComboBoxText:
         self.attach_label(text, "", link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
@@ -1097,7 +1097,14 @@ class KeyboardWindow(SessionOptions):
         layouts = {
             "": "auto",
         }
-        layouts.update(kbd.get_all_x11_layouts())
+        x11_layouts = kbd.get_all_x11_layouts()
+        # many layouts can have the same name (ie: "English"),
+        # only keep the first one that provides it:
+        names = set()
+        for x11_layout, name in x11_layouts.items():
+            if name not in names:
+                layouts[x11_layout] = name
+                names.add(name)
         self.combo("Keyboard Layout", "keyboard-layout", layouts)
         self.bool_cb("State Synchronization", "keyboard-sync")
         self.bool_cb("Raw Mode", "keyboard-raw")
