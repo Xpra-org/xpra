@@ -68,40 +68,40 @@ def nearest_icon_size(size: int) -> Gtk.IconSize:
     return best
 
 
-def load_hb_icon(icon_name: str, size=32):
+def load_hb_image(icon_name: str, size=32) -> Gtk.Image | None:
     from xpra.gtk.pixbuf import get_icon_pixbuf
     pixbuf = get_icon_pixbuf(f"{icon_name}.png")
     if pixbuf:
-        GdkPixbuf = gi_import("GdkPixbuf")
-        return pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.HYPER)
-    theme = Gtk.IconTheme.get_default()
+        if pixbuf.get_width() != size or pixbuf.get_height() != size:
+            GdkPixbuf = gi_import("GdkPixbuf")
+            pixbuf = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.HYPER)
+        return Gtk.Image.new_from_pixbuf(pixbuf)
+    # try from the theme:
+    icon = Gio.ThemedIcon(name=icon_name)
+    if not icon:
+        return None
     icon_size = nearest_icon_size(size)
-    try:
-        pixbuf = theme.load_icon(icon_name, icon_size, Gtk.IconLookupFlags.USE_BUILTIN)
-    except Exception:
-        pixbuf = None
-    return pixbuf
+    return Gtk.Image.new_from_gicon(icon, icon_size)
 
 
 def hb_button(tooltip: str, icon_name: str, callback: Callable) -> Gtk.Button:
     btn = Gtk.Button()
-    pixbuf = load_hb_icon(icon_name)
-    if pixbuf:
-        image = Gtk.Image.new_from_pixbuf(pixbuf)
+    size = 32
+    image = load_hb_image(icon_name, size)
+    if image:
         btn.add(image)
         btn.set_tooltip_text(tooltip)
-        current_size = [pixbuf.get_width(), pixbuf.get_height()]
+        current_size = [size, size]
 
-    # keep image square:
+        # keep image square:
         def alloc(_btn, rect) -> None:
-            log.warn(f"alloc: {current_size=}, [{rect.width}, {rect.height}]")
             if current_size != [rect.width, rect.height]:
-                size = max(rect.width, rect.height)
-                btn.set_size_request(size, size)
-                scaled = load_hb_icon(icon_name, size)
-                scaled_image = Gtk.Image.new_from_pixbuf(scaled)
-                btn.set_image(scaled_image)
-                current_size[0] = current_size[1] = size
+                new_size = max(rect.width, rect.height)
+                btn.set_size_request(new_size, new_size)
+                scaled_image = load_hb_image(icon_name, new_size)
+                if image:
+                    btn.set_image(scaled_image)
+                    current_size[0] = current_size[1] = new_size
 
         image.connect("size-allocate", alloc)
 
