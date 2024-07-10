@@ -383,6 +383,8 @@ for ccode, country, language, codepage, layout, variants in WIN32_LAYOUTS.values
 LAYOUT_VARIANTS : Dict[str, List[str]] = {}
 for win32layout in WIN32_LAYOUTS.values():
     layout, variants = win32layout[-2:]
+    if not layout:
+        continue
     l = LAYOUT_VARIANTS.setdefault(layout, [])
     for variant in variants:
         if variant not in l:

@@ -1113,7 +1113,7 @@ class KeyboardWindow(SessionOptions):
         # only keep the first one that provides it:
         names = set()
         for x11_layout, name in x11_layouts.items():
-            if name not in names:
+            if x11_layout and name not in names:
                 layouts[x11_layout] = name
                 names.add(name)
         self.combo(tb, "Keyboard Layout", "keyboard-layout", layouts)

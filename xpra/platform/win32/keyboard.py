@@ -62,8 +62,8 @@ def x11_layouts_to_win32_hkl() -> Dict[str,int]:
                     code, _, _, _, _layout, _variants = WIN32_LAYOUTS.get(kbid)
                     log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%#x",
                         _layout, kbid, _variants, code, hkli)
-                    if _layout not in layout_to_hkl:
-                        layout_to_hkl[_layout] = hkl
+                    if _layout and _layout not in layout_to_hkl:
+                        layout_to_hkl[_layout] = hkli
                         break
     except Exception:
         log("x11_layouts_to_win32_hkl()", exc_info=True)
@@ -169,6 +169,8 @@ class Keyboard(KeyboardBase):
         for win32_layout in WIN32_LAYOUTS.values():
             #("ARA", "Saudi Arabia",   "Arabic",                   1356,   "ar", []),
             x11_layout = win32_layout[4]
+            if not x11_layout:
+                continue
             if x11_layout in x11_layouts:
                 continue
             name = win32_layout[2]
@@ -202,7 +204,7 @@ class Keyboard(KeyboardBase):
                         code, _, _, _, _layout, _variants = WIN32_LAYOUTS.get(kbid)
                         log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%#x",
                             _layout, kbid, _variants, code, hkl)
-                        if _layout not in layouts_defs:
+                        if _layout and _layout not in layouts_defs:
                             layouts_defs[_layout] = hkl
                             break
         except Exception as e:
