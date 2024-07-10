@@ -271,8 +271,10 @@ class ApplicationWindow:
                     self.mdns_gui = mdns_sessions(self.config)
 
                     def close_mdns():
-                        self.mdns_gui.close()
-                        self.mdns_gui = None
+                        mdns_gui = self.mdns_gui
+                        if mdns_gui:
+                            self.mdns_gui = None
+                            mdns_gui.close()
 
                     self.mdns_gui.do_quit = close_mdns
                 else:
