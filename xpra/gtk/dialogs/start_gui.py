@@ -796,12 +796,12 @@ class SessionOptions(Gtk.Window):
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
         c = Gtk.ComboBoxText()
-        index = None
+        index = -1
         for i, (v, vlabel) in enumerate(options.items()):
             c.append_text(str(vlabel))
-            if index is None or v == value:
+            if index < 0 or v == value:
                 index = i
-        if index is not None:
+        if index >= 0:
             c.set_active(index)
         al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=1.0)
         al.add(c)
