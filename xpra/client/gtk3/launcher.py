@@ -30,6 +30,7 @@ from xpra.util.env import IgnoreWarningsContext
 from xpra.net.common import DEFAULT_PORT
 from xpra.util.thread import start_thread
 from xpra.gtk.dialogs.about import about
+from xpra.gtk.dialogs.util import hb_button
 from xpra.scripts.main import (
     connect_to, make_client,
     configure_network, configure_env, configure_logging,
@@ -250,23 +251,23 @@ class ApplicationWindow:
         def show_about(*args):
             about(parent=self.window)
 
-        hb.add(button("About", "help-about", show_about))
+        hb.add(hb_button("About", "help-about", show_about))
         self.bug_tool = None
 
         def bug(*_args):
             if self.bug_tool is None:
-                from xpra.client.gtk3.bug_report import BugReport
+                from xpra.gtk.dialogs.bug_report import BugReport
                 self.bug_tool = BugReport()
                 self.bug_tool.init(show_about=False)
             self.bug_tool.show()
 
-        hb.add(button("Bug Report", "bugs", bug))
+        hb.add(hb_button("Bug Report", "bugs", bug))
         if has_mdns():
             self.mdns_gui = None
 
             def mdns(*_args):
                 if self.mdns_gui is None:
-                    from xpra.client.gtk3.mdns_gui import mdns_sessions
+                    from xpra.gtk.dialogs.mdns_gui import mdns_sessions
                     self.mdns_gui = mdns_sessions(self.config)
 
                     def close_mdns():
@@ -277,7 +278,7 @@ class ApplicationWindow:
                 else:
                     self.mdns_gui.present()
 
-            hb.add(button("Browse Sessions", "mdns", mdns))
+            hb.add(hb_button("Browse Sessions", "mdns", mdns))
         hb.show_all()
 
         vbox = Gtk.VBox(homogeneous=False, spacing=0)

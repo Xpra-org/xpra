@@ -12,6 +12,7 @@ from collections.abc import Callable
 from xpra.gtk.window import add_close_accel, add_window_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.dialogs.util import hb_button
 from xpra.os_util import gi_import, WIN32
 from xpra.util.env import IgnoreWarningsContext
 from xpra.exit_codes import exit_str
@@ -27,56 +28,12 @@ Gio = gi_import("Gio")
 log = Logger("util")
 
 
-ICON_SIZES = {}
-for size_name in ("MENU", "SMALL_TOOLBAR", "LARGE_TOOLBAR", "BUTTON", "DND", "DIALOG"):
-    value = getattr(Gtk.IconSize, size_name, -1)
-    if value >= 0:
-        valid, width, height = Gtk.IconSize.lookup(value)
-        if valid:
-            ICON_SIZES[max(width, height)] = value
-
-
-def nearest_icon_size(size) -> int:
-    # try to find a size smaller or equal:
-    best = 0
-    for icon_size, enum_value in ICON_SIZES.items():
-        if icon_size <= size:
-            best = enum_value
-    return best
-
-
 def exec_command(cmd: list[str]) -> subprocess.Popen:
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     proc = subprocess.Popen(cmd, env=env)
     log("exec_command(%s)=%s", cmd, proc)
     return proc
-
-
-def button(tooltip: str, icon_name: str, callback: Callable) -> Gtk.Button:
-    btn = Gtk.Button()
-    icon = Gio.ThemedIcon(name=icon_name)
-    image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-    btn.add(image)
-    btn.set_tooltip_text(tooltip)
-
-    def clicked(*_args) -> None:
-        callback(btn)
-
-    btn.connect("clicked", clicked)
-
-    # keep them square:
-    def alloc(_btn, rect) -> None:
-        if rect.width != rect.height:
-            size = max(rect.width, rect.height)
-            btn.set_size_request(size, size)
-            # find an icon size:
-            icon_size = nearest_icon_size(size)
-            scaled_image = Gtk.Image.new_from_gicon(icon, icon_size)
-            btn.set_image(scaled_image)
-
-    btn.connect("size-allocate", alloc)
-    return btn
 
 
 class BaseGUIWindow(Gtk.Window):
@@ -168,7 +125,7 @@ class BaseGUIWindow(Gtk.Window):
         hb.set_show_close_button(True)
         hb.props.title = "Xpra"
         if about:
-            hb.add(button("About", "help-about", self.show_about))
+            hb.add(hb_button("About", "help-about", self.show_about))
 
         def add_gui(text: str, icon_name: str, gui_class) -> None:
 
@@ -181,7 +138,7 @@ class BaseGUIWindow(Gtk.Window):
                 gui_class.quit = hide
                 w = gui_class()
                 w.show()
-            hb.add(button(text, icon_name, show_gui))
+            hb.add(hb_button(text, icon_name, show_gui))
 
         if toolbox:
             try:

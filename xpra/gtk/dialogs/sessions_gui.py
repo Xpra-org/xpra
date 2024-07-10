@@ -20,6 +20,7 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, imagebutton, label, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals
+from xpra.gtk.dialogs.util import hb_button
 from xpra.net.common import DEFAULT_PORTS
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import, WIN32
@@ -140,13 +141,7 @@ class SessionsGUI(Gtk.Window):
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
         hb.props.title = "Xpra"
-        button = Gtk.Button()
-        icon = Gio.ThemedIcon(name="help-about")
-        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        button.add(image)
-        button.set_tooltip_text("About")
-        button.connect("clicked", self.show_about)
-        hb.add(button)
+        hb.add(hb_button("About", "help-about", self.show_about))
         hb.show_all()
         self.set_titlebar(hb)
 
