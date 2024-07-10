@@ -59,13 +59,19 @@ for size_name in ("MENU", "SMALL_TOOLBAR", "LARGE_TOOLBAR", "BUTTON", "DND", "DI
             ICON_SIZES[max(width, height)] = value
 
 
-def nearest_icon_size(size: int) -> Gtk.IconSize:
+def nearest_icon_size(size: int) -> int:
     # try to find a size smaller or equal:
-    best = Gtk.IconSize.MENU
-    for icon_size, enum_value in ICON_SIZES.items():
-        if icon_size <= size:
-            best = enum_value
+    best = 0
+    for icon_size in ICON_SIZES.keys():
+        if best < icon_size <= size:
+            best = icon_size
     return best
+
+
+def nearest_icon_enum(size: int) -> Gtk.IconSize:
+    # try to find a size smaller or equal:
+    best_size = nearest_icon_size(size)
+    return ICON_SIZES.get(best_size, Gtk.IconSize.MENU)
 
 
 def load_hb_image(icon_name: str, size=32) -> Gtk.Image | None:
@@ -80,7 +86,7 @@ def load_hb_image(icon_name: str, size=32) -> Gtk.Image | None:
     icon = Gio.ThemedIcon(name=icon_name)
     if not icon:
         return None
-    icon_size = nearest_icon_size(size)
+    icon_size = nearest_icon_enum(size)
     return Gtk.Image.new_from_gicon(icon, icon_size)
 
 

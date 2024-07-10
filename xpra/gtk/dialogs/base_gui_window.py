@@ -12,7 +12,7 @@ from collections.abc import Callable
 from xpra.gtk.window import add_close_accel, add_window_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.gtk.dialogs.util import hb_button
+from xpra.gtk.dialogs.util import hb_button, nearest_icon_size
 from xpra.os_util import gi_import, WIN32
 from xpra.util.env import IgnoreWarningsContext
 from xpra.exit_codes import exit_str
@@ -128,7 +128,6 @@ class BaseGUIWindow(Gtk.Window):
             hb.add(hb_button("About", "help-about", self.show_about))
 
         def add_gui(text: str, icon_name: str, gui_class) -> None:
-
             def show_gui(*_args) -> None:
                 w = None
 
@@ -156,6 +155,41 @@ class BaseGUIWindow(Gtk.Window):
                 add_gui("Configure", "applications-system", ConfigureGUI)
         hb.show_all()
         self.set_titlebar(hb)
+
+        def rs(rect) -> tuple[int, int]:
+            return (rect.width, rect.height)
+
+        # fixup the icon size when the window headerbar is bigger than expected:
+        fixed_size = [0]
+
+        def fix_default_icon_sizes(_hb, rect):
+            log("fix_default_icon_sizes header bar size: %s", rs(rect))
+            changed = []
+
+            def with_child(child) -> None:
+                if not isinstance(child, Gtk.Box):
+                    return
+                for g_child in child.get_children():
+                    if not isinstance(g_child, Gtk.Button):
+                        continue
+                    btn_size = rs(g_child.get_allocated_size()[0])
+                    for bg_child in g_child.get_children():
+                        if not isinstance(bg_child, Gtk.Image):
+                            continue
+                        size = nearest_icon_size(max(24, btn_size[1]-4))
+                        g_child.set_size_request(size, size)
+                        bg_child.set_size_request(size, size)
+                        if fixed_size[0] != size:
+                            changed.append(bg_child)
+                        fixed_size[0] = size
+                        continue
+            hb.forall(with_child)
+            if changed:
+                # run allocate again since we've changed something
+                # (and no, we can't just queue_allocate on the Gtk.Image - no idea why)
+                GLib.timeout_add(100, hb.queue_allocate)
+
+        hb.connect("size-allocate", fix_default_icon_sizes)
 
     def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable = noop, sensitive=True) -> Gtk.Button:
         label_font = "sans 16"
