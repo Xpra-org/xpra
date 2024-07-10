@@ -145,14 +145,14 @@ class BaseGUIWindow(Gtk.Window):
             except ImportError:
                 pass
             else:
-                add_gui("Toolbox", "applications-utilities", ToolboxGUI)
+                add_gui("Toolbox", "toolbox", ToolboxGUI)
         if configure:
             try:
                 from xpra.gtk.configure.main import ConfigureGUI
             except ImportError:
                 pass
             else:
-                add_gui("Configure", "applications-system", ConfigureGUI)
+                add_gui("Configure", "features", ConfigureGUI)
         hb.show_all()
         self.set_titlebar(hb)
 
