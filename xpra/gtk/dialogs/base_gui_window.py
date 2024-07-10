@@ -27,6 +27,24 @@ Gio = gi_import("Gio")
 log = Logger("util")
 
 
+ICON_SIZES = {}
+for size_name in ("MENU", "SMALL_TOOLBAR", "LARGE_TOOLBAR", "BUTTON", "DND", "DIALOG"):
+    value = getattr(Gtk.IconSize, size_name, -1)
+    if value >= 0:
+        valid, width, height = Gtk.IconSize.lookup(value)
+        if valid:
+            ICON_SIZES[max(width, height)] = value
+
+
+def nearest_icon_size(size) -> int:
+    # try to find a size smaller or equal:
+    best = 0
+    for icon_size, enum_value in ICON_SIZES.items():
+        if icon_size <= size:
+            best = enum_value
+    return best
+
+
 def exec_command(cmd: list[str]) -> subprocess.Popen:
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
@@ -52,6 +70,10 @@ def button(tooltip: str, icon_name: str, callback: Callable) -> Gtk.Button:
         if rect.width != rect.height:
             size = max(rect.width, rect.height)
             btn.set_size_request(size, size)
+            # find an icon size:
+            icon_size = nearest_icon_size(size)
+            scaled_image = Gtk.Image.new_from_gicon(icon, icon_size)
+            btn.set_image(scaled_image)
 
     btn.connect("size-allocate", alloc)
     return btn
