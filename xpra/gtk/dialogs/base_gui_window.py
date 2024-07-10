@@ -46,6 +46,14 @@ def button(tooltip: str, icon_name: str, callback: Callable) -> Gtk.Button:
         callback(btn)
 
     btn.connect("clicked", clicked)
+
+    # keep them square:
+    def alloc(_btn, rect) -> None:
+        if rect.width != rect.height:
+            size = max(rect.width, rect.height)
+            btn.set_size_request(size, size)
+
+    btn.connect("size-allocate", alloc)
     return btn
 
 
@@ -151,7 +159,6 @@ class BaseGUIWindow(Gtk.Window):
                 gui_class.quit = hide
                 w = gui_class()
                 w.show()
-
             hb.add(button(text, icon_name, show_gui))
 
         if toolbox:
