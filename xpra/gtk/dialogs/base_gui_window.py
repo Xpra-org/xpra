@@ -182,7 +182,6 @@ class BaseGUIWindow(Gtk.Window):
                         if fixed_size[0] != size:
                             changed.append(bg_child)
                         fixed_size[0] = size
-                        continue
             hb.forall(with_child)
             if changed:
                 # run allocate again since we've changed something
