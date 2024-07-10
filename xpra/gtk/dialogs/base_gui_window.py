@@ -27,7 +27,7 @@ Gio = gi_import("Gio")
 log = Logger("util")
 
 
-def exec_command(cmd) -> subprocess.Popen:
+def exec_command(cmd: list[str]) -> subprocess.Popen:
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     proc = subprocess.Popen(cmd, env=env)
@@ -42,7 +42,7 @@ def button(tooltip: str, icon_name: str, callback: Callable) -> Gtk.Button:
     btn.add(image)
     btn.set_tooltip_text(tooltip)
 
-    def clicked(*_args):
+    def clicked(*_args) -> None:
         callback(btn)
 
     btn.connect("clicked", clicked)
@@ -140,9 +140,9 @@ class BaseGUIWindow(Gtk.Window):
         if about:
             hb.add(button("About", "help-about", self.show_about))
 
-        def add_gui(text: str, icon_name: str, gui_class):
+        def add_gui(text: str, icon_name: str, gui_class) -> None:
 
-            def show_gui(*_args):
+            def show_gui(*_args) -> None:
                 w = None
 
                 def hide(*_args):
