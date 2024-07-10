@@ -187,7 +187,7 @@ class BaseGUIWindow(Gtk.Window):
             if changed:
                 # run allocate again since we've changed something
                 # (and no, we can't just queue_allocate on the Gtk.Image - no idea why)
-                GLib.timeout_add(100, hb.queue_allocate)
+                GLib.timeout_add(500, hb.queue_allocate)
 
         hb.connect("size-allocate", fix_default_icon_sizes)
 
