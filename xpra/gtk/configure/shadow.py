@@ -30,12 +30,12 @@ SHADOW_BACKENDS: dict[str, Sequence[str]] = {
         "X11 screen capture",
         "copies the X11 server's pixel data, preferably using XShm,",
         "this option only requires the X11 bindings",
-        "Wayland displays with XWayland will look blank"
+        "incompatible with Wayland sessions, the displays with XWayland will look blank",
     ),
     "gtk": (
         "GTK screen capture",
         "performance may vary,",
-        "this option is not compatible with Wayland displays"
+        "this option is not compatible with Wayland displays",
     ),
     "nvfbc": (
         "NVIDIA® Frame Buffer Capture",
@@ -45,11 +45,15 @@ SHADOW_BACKENDS: dict[str, Sequence[str]] = {
         "this option is only available for shadowing existing X11 sessions",
     ),
     "gstreamer": (
-        "GStreamer X11 image capture",
-        "GStreamer will capture the session's contents using 'ximagesrc'",
+        "GStreamer screen capture",
+        "GStreamer will capture the session's contents using an operating system specific source element",
         "the pixel data will be compressed using a stream encoder",
         "eg: h264, hevc, av1, etc",
-        "this option is only available for shadowing existing X11 sessions",
+    ),
+    "gdi": (
+        "GDI screen capture",
+        "Legacy screen capture for MS Windows,",
+        "the xpra server can use mixed encodings with this capture option",
     ),
     "pipewire": (
         "GStreamer Pipewire capture",
@@ -134,8 +138,8 @@ class ConfigureGUI(BaseGUIWindow):
 
         # only enable the confirm button once an option has been chosen,
         # and ensure that there is always one option selected
-        def option_toggled(toggled_btn, *_args):
-            if toggled_btn.get_active():
+        def option_toggled(toggled_btn=None, *_args):
+            if toggled_btn and toggled_btn.get_active():
                 for button in self.buttons:
                     if button != toggled_btn:
                         button.set_active(False)
@@ -146,6 +150,7 @@ class ConfigureGUI(BaseGUIWindow):
 
         for btn in self.buttons:
             btn.connect("toggled", option_toggled)
+        option_toggled()
         self.vbox.show_all()
 
     def save_shadow(self, *_args):
