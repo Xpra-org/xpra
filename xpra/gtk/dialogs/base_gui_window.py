@@ -162,7 +162,7 @@ class BaseGUIWindow(Gtk.Window):
         # fixup the icon size when the window headerbar is bigger than expected:
         fixed_size = [0]
 
-        def fix_default_icon_sizes(_hb, rect):
+        def fix_default_icon_sizes(_hb, rect) -> None:
             log("fix_default_icon_sizes header bar size: %s", rs(rect))
             changed = []
 

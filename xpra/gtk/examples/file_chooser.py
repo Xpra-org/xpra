@@ -19,7 +19,7 @@ def main():
         window = None
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("file chooser test window")
-        choose_file(window, "test", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, None)
+        choose_file(window, "test", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN)
         return 0
 
 

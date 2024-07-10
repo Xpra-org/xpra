@@ -22,7 +22,7 @@ CSS_OVERRIDES = envbool("XPRA_CSS_OVERRIDES", True)
 _done = False
 
 
-def inject_css_overrides():
+def inject_css_overrides() -> None:
     global _done
     if _done or not CSS_OVERRIDES:
         return
@@ -53,11 +53,11 @@ def get_style_provider():
     return _style_provider
 
 
-def load_css(provider):
+def load_css(provider) -> None:
     css_dir = os.path.join(get_resources_dir(), "css")
     if not os.path.exists(css_dir) or not os.path.isdir(css_dir):
         log.error("Error: cannot find directory '%s'", css_dir)
-        return None
+        return
     filename = None
 
     def parsing_error(_css_provider, _section, error):

@@ -5,6 +5,7 @@
 
 from collections.abc import Callable
 
+from xpra.common import noop
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.env import IgnoreWarningsContext, ignorewarnings, envint
 from xpra.log import Logger
@@ -59,7 +60,7 @@ def imagebutton(title, icon=None, tooltip="", clicked_callback: Callable | None 
     return button
 
 
-def modify_fg(widget, color, state=Gtk.StateType.NORMAL):
+def modify_fg(widget, color, state=Gtk.StateType.NORMAL) -> None:
     if hasattr(widget, "modify_fg"):
         with IgnoreWarningsContext():
             widget.modify_fg(state, color)
@@ -101,7 +102,7 @@ def setfont(widget, font=""):
 
 
 def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
-                 callback=None, file_filter=None, multiple=True):
+                 callback=None, file_filter=None, multiple=True) -> list[str]:
     log("choose_files%s", (parent_window, title, action, action_button, callback, file_filter))
     chooser = Gtk.FileChooserDialog(title=title, parent=parent_window, action=action)
     chooser.add_buttons(
@@ -117,18 +118,17 @@ def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action
     chooser.hide()
     chooser.destroy()
     if response != Gtk.ResponseType.OK:
-        return None
+        return []
     return filenames
 
 
 def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
-                callback=None, file_filter=None):
+                callback=noop, file_filter=None) -> None:
     filenames = choose_files(parent_window, title, action, action_button, callback, file_filter, False)
     if not filenames or len(filenames) != 1:
         return
     filename = filenames[0]
-    if callback:
-        callback(filename)
+    callback(filename)
 
 
 orig_pack_start = Gtk.Box.pack_start

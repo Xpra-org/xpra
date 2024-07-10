@@ -9,7 +9,7 @@ import cairo
 DEFAULT_COLOURS = ((0.8, 0, 0), (0, 0, 0.8), (0.1, 0.65, 0.1), (0, 0.6, 0.6), (0.1, 0.1, 0.1))
 
 
-def round_up_unit(i, rounding=10):
+def round_up_unit(i: int, rounding=10) -> int:
     v = 1
     while v * rounding < i:
         v = v * rounding
@@ -23,7 +23,7 @@ def make_graph_imagesurface(data, labels=None, width=320, height=200, title=None
                             show_y_scale=True, show_x_scale=False,
                             min_y_scale=None, rounding=10,
                             start_x_offset=0.0,
-                            colours=DEFAULT_COLOURS, dots=False, curves=True):
+                            colours=DEFAULT_COLOURS, dots=False, curves=True) -> cairo.ImageSurface:
     # print("make_graph_pixmap(%s, %s, %s, %s, %s, %s, %s, %s, %s)" % (data, labels, width, height, title,
     #                  show_y_scale, show_x_scale, min_y_scale, colours))
     surface = cairo.ImageSurface(cairo.Format.RGB24, width, height)  # pylint: disable=no-member

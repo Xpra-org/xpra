@@ -13,10 +13,10 @@ from xpra.util.io import stderr_print, get_util_logger
 _glib_unix_signals: dict[int, int] = {}
 
 
-def quit_on_signals(commandtype: str = ""):
+def quit_on_signals(commandtype: str = "") -> None:
     Gtk = gi_import("Gtk")
 
-    def signal_handler(_signum: int):
+    def signal_handler(_signum: int) -> None:
         Gtk.main_quit()
 
     register_os_signals(signal_handler, commandtype)
@@ -24,14 +24,14 @@ def quit_on_signals(commandtype: str = ""):
 
 def register_os_signals(callback: Callable[[int], None],
                         commandtype: str = "",
-                        signals=(signal.SIGINT, signal.SIGTERM)):
+                        signals=(signal.SIGINT, signal.SIGTERM)) -> None:
     for signum in signals:
         register_os_signal(callback, commandtype, signum)
 
 
 def register_os_signal(callback: Callable[[int], None],
                        commandtype: str = "",
-                       signum: signal.Signals = signal.SIGINT):
+                       signum: signal.Signals = signal.SIGINT) -> None:
     GLib = gi_import("GLib")
     signame = SIGNAMES.get(signum, str(signum))
     i_signum = int(signum)
@@ -72,7 +72,7 @@ def register_os_signal(callback: Callable[[int], None],
         signal.signal(signum, os_signal)
 
 
-def register_SIGUSR_signals(commandtype: str = "Server"):
+def register_SIGUSR_signals(commandtype: str = "Server") -> None:
     if not POSIX:
         return
     from xpra.util.pysystem import dump_all_frames, dump_gc_frames
@@ -90,11 +90,11 @@ def register_SIGUSR_signals(commandtype: str = "Server"):
     register_os_signals(sigusr2, commandtype, (signal.SIGUSR2,))
 
 
-def install_signal_handlers(sstr: str, signal_handler: Callable[[int], None]):
+def install_signal_handlers(sstr: str, signal_handler: Callable[[int], None]) -> None:
     # only register the glib signal handler
     # once the main loop is running,
     # before that we just trigger a KeyboardInterrupt
-    def do_install_signal_handlers():
+    def do_install_signal_handlers() -> None:
         register_os_signals(signal_handler, sstr)
         register_SIGUSR_signals(sstr)
 

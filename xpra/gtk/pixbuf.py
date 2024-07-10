@@ -13,7 +13,7 @@ GdkPixbuf = gi_import("GdkPixbuf")
 log = Logger("gtk", "util")
 
 
-def get_icon_from_file(filename):
+def get_icon_from_file(filename) -> GdkPixbuf.Pixbuf | None:
     if not filename:
         log("get_icon_from_file(%s)=None", filename)
         return None
@@ -35,7 +35,7 @@ def get_icon_from_file(filename):
     return pixbuf
 
 
-def get_icon_pixbuf(icon_name: str):
+def get_icon_pixbuf(icon_name: str) -> GdkPixbuf.Pixbuf | None:
     if not icon_name:
         log("get_icon_pixbuf(%s)=None", icon_name)
         return None

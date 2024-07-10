@@ -11,7 +11,7 @@ cursor_names = {}
 cursor_types = {}
 
 
-def _init_map():
+def _init_map() -> None:
     for x in dir(Gdk.CursorType):
         if not x.isupper():
             # probably a method
