@@ -1108,7 +1108,14 @@ class KeyboardWindow(SessionOptions):
         layouts = {
             ""  : "auto",
             }
-        layouts.update(kbd.get_all_x11_layouts())
+        x11_layouts = kbd.get_all_x11_layouts()
+        # many layouts can have the same name (ie: "English"),
+        # only keep the first one that provides it:
+        names = set()
+        for x11_layout, name in x11_layouts.items():
+            if name not in names:
+                layouts[x11_layout] = name
+                names.add(name)
         self.combo(tb, "Keyboard Layout", "keyboard-layout", layouts)
         self.bool_cb(tb, "State Synchronization", "keyboard-sync")
         self.bool_cb(tb, "Raw Mode", "keyboard-raw")
