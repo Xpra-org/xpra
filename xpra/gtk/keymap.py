@@ -73,7 +73,7 @@ def main() -> int:  # pragma: no cover
         gtk_keymap = get_gtk_keymap()
         sizes = [16, 28, 8, 8, 8]
 
-        def pkey(*entries):
+        def pkey(*entries) -> None:
             print(("".join([str(x).ljust(sizes[i]) for i, x in enumerate(entries)])).strip())
 
         pkey("keyval", "name", "keycode", "group", "level")

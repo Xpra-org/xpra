@@ -16,7 +16,7 @@ Gdk = gi_import("Gdk")
 def add_close_accel(window, callback: Callable) -> list[Gtk.AccelGroup]:
     accel_groups = []
 
-    def wa(s, cb):
+    def wa(s, cb) -> None:
         accel_groups.append(add_window_accel(window, s, cb))
 
     wa('<control>F4', callback)
@@ -26,7 +26,7 @@ def add_close_accel(window, callback: Callable) -> list[Gtk.AccelGroup]:
 
 
 def add_window_accel(window, accel, callback: Callable) -> Gtk.AccelGroup:
-    def connect(ag, *args):
+    def connect(ag, *args) -> None:
         ag.connect(*args)
 
     accel_group = Gtk.AccelGroup()
