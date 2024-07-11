@@ -21,7 +21,7 @@ from subprocess import Popen, PIPE, TimeoutExpired
 import signal
 import shlex
 import traceback
-from typing import Any
+from typing import Any, NoReturn
 from collections.abc import Callable, Iterable
 
 from xpra.common import SocketState, noerr, noop
@@ -31,7 +31,7 @@ from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, OSE
 from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
-    getuid, getgid, get_username_for_uid,
+    getuid, getgid, get_username_for_uid, force_quit,
     gi_import,
     WIN32, OSX, POSIX
 )
@@ -2661,8 +2661,8 @@ def run_glprobe(opts, show=False) -> ExitValue:
         init()
     import signal
 
-    def signal_handler(signum, frame):
-        os._exit(128 - signum)
+    def signal_handler(signum, frame) -> NoReturn:
+        force_quit(128 - signum)
 
     for name in ("ABRT", "BUS", "FPE", "HUP", "ILL", "INT", "PIPE", "SEGV", "TERM"):
         value = getattr(signal, f"SIG{name}", 0)

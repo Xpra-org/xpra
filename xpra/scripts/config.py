@@ -68,10 +68,10 @@ def remove_dupes(seq: Iterable[Any]) -> list[Any]:
     return [x for x in seq if not (x in seen or seen_add(x))]
 
 
-_has_audio_support = None
+_has_audio_support: bool | None = None
 
 
-def has_audio_support():
+def has_audio_support() -> bool:
     global _has_audio_support
     if _has_audio_support is None:
         try:
@@ -79,7 +79,7 @@ def has_audio_support():
             _has_audio_support = bool(xpra.audio)
         except ImportError:
             _has_audio_support = False
-    return _has_audio_support
+    return bool(_has_audio_support)
 
 
 def find_html5_path() -> str:
@@ -143,7 +143,7 @@ def get_xorg_bin() -> str:
     return ""
 
 
-def get_Xdummy_confdir():
+def get_Xdummy_confdir() -> str:
     from xpra.platform.posix.paths import get_runtime_dir
     xrd = get_runtime_dir()
     if xrd:
@@ -335,7 +335,7 @@ def name_to_field(name: str) -> str:
     return name.replace("-", "_")
 
 
-def save_config(conf_file: str, config, keys, extras_types=None):
+def save_config(conf_file: str, config, keys, extras_types=None) -> None:
     with open(conf_file, "w", encoding="utf8") as f:
         option_types = OPTION_TYPES.copy()
         if extras_types:
@@ -461,7 +461,7 @@ def read_xpra_conf(conf_dir: str) -> dict[str, Any]:
     return d
 
 
-def read_xpra_defaults(username: str | None = None, uid=None, gid=None):
+def read_xpra_defaults(username: str | None = None, uid=None, gid=None) -> dict[str, Any]:
     """
         Reads the global <xpra_conf_filename> from the <conf_dir>
         and then the user-specific one.
@@ -470,7 +470,7 @@ def read_xpra_defaults(username: str | None = None, uid=None, gid=None):
         If the <conf_dir> is not specified, we figure out its location.
     """
     dirs = get_xpra_defaults_dirs(username, uid, gid)
-    defaults = {}
+    defaults: dict[str, Any] = {}
     for d in dirs:
         conf_data = read_xpra_conf(d)
         defaults.update(conf_data)
@@ -479,7 +479,7 @@ def read_xpra_defaults(username: str | None = None, uid=None, gid=None):
     return defaults
 
 
-def get_xpra_defaults_dirs(username: str | None = None, uid=None, gid=None):
+def get_xpra_defaults_dirs(username: str | None = None, uid=None, gid=None) -> list[str]:
     from xpra.platform.paths import get_default_conf_dirs, get_system_conf_dirs, get_user_conf_dirs
     # load config files in this order (the later ones override earlier ones):
     # * application defaults, ie:
@@ -506,27 +506,21 @@ def get_xpra_defaults_dirs(username: str | None = None, uid=None, gid=None):
     return defaults_dirs
 
 
-def may_create_user_config(xpra_conf_filename: str = DEFAULT_XPRA_CONF_FILENAME):
+def may_create_user_config(xpra_conf_filename: str = DEFAULT_XPRA_CONF_FILENAME) -> None:
     from xpra.platform.paths import get_user_conf_dirs
     # save a user config template:
     udirs = get_user_conf_dirs()
-    if udirs:
-        has_user_conf = None
-        for d in udirs:
-            ad = osexpand(d)
-            if os.path.exists(ad):
-                has_user_conf = d
-                break
-        if not has_user_conf:
-            debug("no user configuration file found, trying to create one")
-            for d in udirs:
-                ad = os.path.expanduser(d)
-                conf_file = os.path.join(ad, xpra_conf_filename)
-                try:
-                    if not os.path.exists(ad):
-                        os.makedirs(ad, int('700', 8))
-                    with open(conf_file, 'w', encoding="utf8") as f:
-                        f.write("""# xpra user configuration file
+    if any(os.path.exists(osexpand(d)) for d in udirs):
+        return
+    debug("no user configuration file found, trying to create one")
+    for d in udirs:
+        ad = os.path.expanduser(d)
+        conf_file = os.path.join(ad, xpra_conf_filename)
+        try:
+            if not os.path.exists(ad):
+                os.makedirs(ad, int('700', 8))
+            with open(conf_file, 'w', encoding="utf8") as f:
+                f.write("""# xpra user configuration file
 # place your custom settings in this file
 # they will take precedence over the system default ones.
 
@@ -538,16 +532,16 @@ def may_create_user_config(xpra_conf_filename: str = DEFAULT_XPRA_CONF_FILENAME)
 # see the xpra manual at:
 # https://github.com/Xpra-org/xpra/tree/master/docs/
 """)
-                        f.flush()
-                    debug(f"created default config in {d!r}")
-                    break
-                except Exception as e:
-                    debug(f"failed to create default config in {conf_file!r}: {e}")
+                f.flush()
+            debug(f"created default config in {d!r}")
+            return
+        except Exception as e:
+            debug(f"failed to create default config in {conf_file!r}: {e}")
 
 
 OPTIONS_VALIDATION: dict[str, Callable] = {}
 
-OPTION_TYPES = {
+OPTION_TYPES: dict[str, Any] = {
     # string options:
     "encoding"          : str,
     "opengl"            : str,
@@ -979,7 +973,7 @@ def unexpand_all(paths: list[str]) -> list[str]:
     return [unexpand(x) for x in paths]
 
 
-GLOBAL_DEFAULTS = None
+GLOBAL_DEFAULTS: dict[str, Any] | None = None
 # lowest common denominator here
 # (the xpra.conf file shipped is generally better tuned than this - especially for 'xvfb')
 
@@ -1480,7 +1474,7 @@ def csvstrl(value) -> str:
     return csvstr(value).lower()
 
 
-def nodupes(s):
+def nodupes(s) -> list[str]:
     return remove_dupes(x.strip().lower() for x in s.split(","))
 
 
