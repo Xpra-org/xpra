@@ -10,6 +10,7 @@ from xpra.gtk_common.gobject_compat import import_gtk, import_glib
 from xpra.client.gtk_base.sessions_gui import SessionsGUI
 from xpra.gtk_common.gtk_util import gtk_main
 from xpra.net.mdns import XPRA_MDNS_TYPE, get_listener_class
+from xpra.os_util import bytestostr
 from xpra.util import envbool
 from xpra.log import Logger
 
@@ -55,7 +56,11 @@ class mdns_sessions(SessionsGUI):
         log("mdns_add%s", (interface, protocol, name, stype, domain, host, address, port, text))
         if HIDE_IPV6 and address.find(":")>=0:
             return
-        text = text or {}
+        # text record may be received as byte strings...
+        text_rec = {}
+        if text:
+            for key, value in text.items():
+                text_rec[bytestostr(key)] = bytestostr(value)
         #strip service from hostname:
         #(win32 servers add it? why!?)
         if host:
@@ -63,10 +68,9 @@ class mdns_sessions(SessionsGUI):
                 host = host[:-len(stype)]
             elif stype and domain and host.endswith(stype+"."+domain):
                 host = host[:-len(stype+"."+domain)]
-            if text:
-                mode = text.get("mode")
-                if mode and host.endswith(mode+"."):
-                    host = host[:-len(mode+".")]
+            mode = text.get("mode")
+            if mode and host.endswith(mode+"."):
+                host = host[:-len(mode+".")]
             if host.endswith(".local."):
                 host = host[:-len(".local.")]
         self.records.append((interface, protocol, name, stype, domain, host, address, port, text))
