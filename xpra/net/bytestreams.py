@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2011-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008, 2009, 2010 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -80,7 +80,7 @@ def can_retry(e) -> bool | str:
     return False
 
 
-def untilConcludes(is_active_cb: Callable, can_retry_cb: Callable, f: Callable, *a, **kw):
+def untilConcludes(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[Any], bool], f: Callable, *a, **kw):
     while is_active_cb():
         try:
             return f(*a, **kw)

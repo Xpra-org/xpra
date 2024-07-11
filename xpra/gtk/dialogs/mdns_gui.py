@@ -5,6 +5,7 @@
 
 import sys
 
+from xpra.exit_codes import ExitValue
 from xpra.gtk.dialogs.sessions_gui import SessionsGUI
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
 from xpra.util.env import envbool
@@ -27,7 +28,7 @@ class mdns_sessions(SessionsGUI):
         assert listener_class
         self.listeners = []
 
-        def add(service_type):
+        def add(service_type: str) -> None:
             instance = listener_class(service_type,
                                       mdns_found=None,
                                       mdns_add=self.mdns_add,
@@ -40,15 +41,15 @@ class mdns_sessions(SessionsGUI):
         add(XPRA_TCP_MDNS_TYPE)
         add(XPRA_UDP_MDNS_TYPE)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         for listener in self.listeners:
             listener.stop()
         super().cleanup()
 
-    def mdns_update(self, r_name, r_type):
+    def mdns_update(self, r_name, r_type) -> None:
         log("mdns_update%s", (r_name, r_type))
 
-    def mdns_remove(self, r_interface, r_protocol, r_name, r_stype, r_domain, r_flags):
+    def mdns_remove(self, r_interface, r_protocol, r_name, r_stype, r_domain, r_flags) -> None:
         log("mdns_remove%s", (r_interface, r_protocol, r_name, r_stype, r_domain, r_flags))
         cmp = (r_interface, r_protocol, r_name, r_stype, r_domain)
         updated_recs = [rec for rec in self.records if rec[:5] != cmp]
@@ -56,7 +57,7 @@ class mdns_sessions(SessionsGUI):
             self.records = updated_recs
             GLib.idle_add(self.populate_table)
 
-    def mdns_add(self, interface, protocol, name, stype, domain, host, address, port, text):
+    def mdns_add(self, interface, protocol, name, stype, domain, host, address, port, text) -> None:
         log("mdns_add%s", (interface, protocol, name, stype, domain, host, address, port, text))
         if HIDE_IPV6 and address.find(":") >= 0:
             return
@@ -78,7 +79,7 @@ class mdns_sessions(SessionsGUI):
         GLib.idle_add(self.populate_table)
 
 
-def do_main(opts):
+def do_main(opts) -> ExitValue:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context, command_error
     from xpra.log import enable_color
@@ -101,7 +102,7 @@ def do_main(opts):
         return gui.exit_code
 
 
-def main():
+def main() -> ExitValue:
     # pylint: disable=import-outside-toplevel
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()

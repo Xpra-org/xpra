@@ -22,6 +22,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals
 from xpra.gtk.dialogs.util import hb_button
 from xpra.net.common import DEFAULT_PORTS
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import, WIN32
 from xpra.util.env import IgnoreWarningsContext
@@ -39,7 +40,7 @@ except OSError:
     local_host_name = "localhost"
 
 
-def get_session_info(sockpath):
+def get_session_info(sockpath: str) -> dict[str, str]:
     # the lazy way using a subprocess
     if WIN32:
         socktype = "named-pipe"
@@ -51,7 +52,7 @@ def get_session_info(sockpath):
     log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
     if p.returncode != 0:
         return None
-    info = {}
+    info: dict[str, str] = {}
     for line in stdout.splitlines():
         parts = line.split("=", 1)
         if len(parts) == 2:
@@ -60,7 +61,7 @@ def get_session_info(sockpath):
     return info
 
 
-def get_uri(password, interface, protocol, name: str, stype: str, domain, host: str, address, port: int, text) -> str:
+def get_uri(password: str, interface, protocol, name: str, stype: str, domain, host: str, address, port: int, text) -> str:
     log("get_uri%s", (password, interface, protocol, name, stype, domain, host, address, port, text))
     dstr = ""
     tt = typedict(text)
@@ -105,7 +106,7 @@ def get_uri(password, interface, protocol, name: str, stype: str, domain, host: 
     return uri
 
 
-def get_platform_icon_name(platform):
+def get_platform_icon_name(platform: str) -> str:
     for p, i in {
         "win32": "win32",
         "darwin": "osx",
@@ -114,7 +115,7 @@ def get_platform_icon_name(platform):
     }.items():
         if platform.startswith(p):
             return i
-    return None
+    return ""
 
 
 class SessionsGUI(Gtk.Window):
@@ -122,7 +123,7 @@ class SessionsGUI(Gtk.Window):
     def __init__(self, options, title="Xpra Session Browser"):
         super().__init__()
         self.options = options
-        self.exit_code = 0
+        self.exit_code = ExitCode.OK
         self.set_title(title)
         self.set_border_width(20)
         self.set_resizable(True)
@@ -192,45 +193,45 @@ class SessionsGUI(Gtk.Window):
         self.vbox.show()
         self.show()
 
-    def show(self):  # pylint: disable=arguments-differ
+    def show(self) -> None:  # pylint: disable=arguments-differ
         super().show()
 
-        def show():
+        def show() -> None:
             force_focus()
             self.present()
 
         GLib.idle_add(show)
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
         GLib.idle_add(self.do_quit)
 
-    def do_quit(self):
+    def do_quit(self) -> None:
         log("do_quit()")
         self.cleanup()
         Gtk.main_quit()
 
-    def app_signal(self, signum):
+    def app_signal(self, signum) -> None:
         self.exit_code = 128 + signum
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.do_quit()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.close()
 
-    def show_about(self, *_args):
+    def show_about(self, *_args) -> None:
         from xpra.gtk.dialogs.about import about
         about(parent=self)
 
-    def update(self):
+    def update(self) -> bool:
         if self.poll_local_sessions():
             self.populate()
         return True
 
-    def populate(self):
+    def populate(self) -> None:
         self.populate_table()
 
-    def poll_local_sessions(self):
+    def poll_local_sessions(self) -> bool:
         # TODO: run in a thread so we don't block the UI thread!
         d = self.dotxpra.socket_details(matching_state=SocketState.LIVE)
         log("poll_local_sessions() socket_details=%s", d)
@@ -264,7 +265,7 @@ class SessionsGUI(Gtk.Window):
         else:
             socktype = "socket"
 
-        def make_text(info):
+        def make_text(info: dict) -> dict:
             text = {"mode": socktype}
             for k, name in {
                 "platform": "platform",
@@ -295,7 +296,7 @@ class SessionsGUI(Gtk.Window):
         self.local_info_cache = info_cache
         return changed
 
-    def populate_table(self):
+    def populate_table(self) -> None:
         log("populate_table: %i records", len(self.records))
         if self.contents:
             self.vbox.remove(self.contents)
@@ -311,7 +312,7 @@ class SessionsGUI(Gtk.Window):
         self.set_size_request(-1, -1)
         grid = Gtk.Grid()
 
-        def l(s=""):  # noqa: E743
+        def l(s="") -> Gtk.Label:  # noqa: E743
             widget = label(s)
             widget.set_margin_start(5)
             widget.set_margin_end(5)
@@ -390,7 +391,7 @@ class SessionsGUI(Gtk.Window):
         self.contents = grid
         self.vbox.add(grid)
 
-    def attach(self, key, uri):
+    def attach(self, key, uri: str) -> None:
         self.warning.set_text("")
         # preserve ssl command line arguments
         option_types = {k: v for k, v in OPTION_TYPES.items() if k.startswith("ssl")}
@@ -404,7 +405,7 @@ class SessionsGUI(Gtk.Window):
         proc = subprocess.Popen(cmd, env=env)
         log("attach() Popen(%s)=%s", cmd, proc)
 
-        def proc_exit(*args):
+        def proc_exit(*args) -> None:
             log("proc_exit%s", args)
             c = proc.poll()
             if key in self.clients_disconnecting:
@@ -413,7 +414,7 @@ class SessionsGUI(Gtk.Window):
                 self.warning.set_text(exit_str(c).replace("_", " "))
             client_proc = self.clients.pop(key, None)
             if client_proc:
-                def update():
+                def update() -> None:
                     self.update()
                     self.populate()
 
@@ -423,7 +424,7 @@ class SessionsGUI(Gtk.Window):
         self.clients[key] = proc
         self.populate()
 
-    def browser_open(self, rec):
+    def browser_open(self, rec) -> None:
         import webbrowser
         password = self.password_entry.get_text()
         url = get_uri(password, *rec)
@@ -437,13 +438,13 @@ class SessionsGUI(Gtk.Window):
         url = url[:url.rfind("/")]
         webbrowser.open_new_tab(url)
 
-    def make_connect_widgets(self, key, recs, address, port: int, display):
+    def make_connect_widgets(self, key, recs, address, port: int, display) -> tuple:
         d = {}
         proc = self.clients.get(key)
         if proc and proc.poll() is None:
             icon = get_icon_pixbuf("disconnected.png")
 
-            def disconnect_client(btn):
+            def disconnect_client(btn) -> None:
                 log("disconnect_client(%s) proc=%s", btn, proc)
                 self.clients_disconnecting.add(key)
                 proc.terminate()
@@ -459,16 +460,16 @@ class SessionsGUI(Gtk.Window):
         if len(recs) == 1:
             # single record, single uri:
             rec = recs[0]
-            uri = get_uri(None, *rec)
+            uri = get_uri("", *rec)
             bopen.set_sensitive(uri.startswith("ws"))
 
-            def browser_open(*_args):
+            def browser_open(*_args) -> None:
                 self.browser_open(rec)
 
             bopen.connect("clicked", browser_open)
             d[uri] = rec
 
-            def clicked(*_args):
+            def clicked(*_args) -> None:
                 password = self.password_entry.get_text()
                 uri = get_uri(password, *rec)
                 self.attach(key, uri)
@@ -486,7 +487,7 @@ class SessionsGUI(Gtk.Window):
             # and entering the password:
             order["ssh"] = 0
 
-        def cmp_key(v):
+        def cmp_key(v) -> str:
             text = v[-1]  # the text record
             mode = (text or {}).get("mode", "")
             host = v[6]
@@ -498,13 +499,13 @@ class SessionsGUI(Gtk.Window):
         srecs = sorted(recs, key=cmp_key)
         has_ws = False
         for rec in srecs:
-            uri = get_uri(None, *rec)
+            uri = get_uri("", *rec)
             uri_menu.append_text(uri)
             d[uri] = rec
             if uri.startswith("ws"):
                 has_ws = True
 
-        def connect(*_args):
+        def connect(*_args) -> None:
             uri = uri_menu.get_active_text()
             rec = d[uri]
             password = self.password_entry.get_text()
@@ -514,7 +515,7 @@ class SessionsGUI(Gtk.Window):
         uri_menu.set_active(0)
         btn = imagebutton("Connect", icon, clicked_callback=connect)
 
-        def uri_changed(*_args):
+        def uri_changed(*_args) -> None:
             uri = uri_menu.get_active_text()
             ws = uri.startswith("ws")
             bopen.set_sensitive(ws)
@@ -528,7 +529,7 @@ class SessionsGUI(Gtk.Window):
         uri_menu.connect("changed", uri_changed)
         uri_changed()
 
-        def browser_open_option(*_args):
+        def browser_open_option(*_args) -> None:
             uri = uri_menu.get_active_text()
             rec = d[uri]
             self.browser_open(rec)
@@ -537,7 +538,7 @@ class SessionsGUI(Gtk.Window):
         return uri_menu, btn, bopen
 
 
-def do_main(opts):
+def do_main(opts) -> ExitValue:
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("Xpra-Session-Browser", "Xpra Session Browser"):
@@ -549,7 +550,7 @@ def do_main(opts):
         return gui.exit_code
 
 
-def main():  # pragma: no cover
+def main() -> ExitValue:  # pragma: no cover
     from xpra.scripts.config import make_defaults_struct
     opts = make_defaults_struct()
     return do_main(opts)

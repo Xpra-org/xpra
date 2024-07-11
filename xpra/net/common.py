@@ -74,7 +74,7 @@ FLUSH_HEADER: bool = envbool("XPRA_FLUSH_HEADER", True)
 SSL_UPGRADE: bool = envbool("XPRA_SSL_UPGRADE", False)
 
 AUTO_ABSTRACT_SOCKET = envbool("XPRA_AUTO_ABSTRACT_SOCKET", LINUX)
-ABSTRACT_SOCKET_PREFIX = "xpra/"
+ABSTRACT_SOCKET_PREFIX: Final[str] = "xpra/"
 
 SOCKET_TYPES: Sequence[str] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
 

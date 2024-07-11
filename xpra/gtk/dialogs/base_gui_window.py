@@ -279,7 +279,7 @@ class BaseGUIWindow(Gtk.Window):
         if proc.poll() is None:
             self.hide()
 
-            def may_exit():
+            def may_exit() -> None:
                 if proc.poll() is None:
                     self.quit()
                 else:
