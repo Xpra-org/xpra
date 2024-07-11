@@ -379,6 +379,8 @@ for _, country, language, _, layout, variants in WIN32_LAYOUTS.values():
     X11_LAYOUTS[key] = value
 LAYOUT_VARIANTS = {}
 for _, _, _, _, layout, variants in WIN32_LAYOUTS.values():
+    if not layout:
+        continue
     l = LAYOUT_VARIANTS.get(layout)
     if not l:
         l = []

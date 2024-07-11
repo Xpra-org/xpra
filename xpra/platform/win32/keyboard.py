@@ -135,7 +135,7 @@ class Keyboard(KeyboardBase):
                         code, _, _, _, _layout, _variants = WIN32_LAYOUTS.get(kbid)
                         log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%i (%#x)",
                             _layout, kbid, _variants, code, kbid, hkl)
-                        if _layout not in layouts:
+                        if _layout and _layout not in layouts:
                             layouts.append(_layout)
                             if not layout_code:
                                 layout_code = kbid
@@ -157,7 +157,7 @@ class Keyboard(KeyboardBase):
                 code, _, _, _, layout0, variants = WIN32_LAYOUTS.get(kbid)
                 log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%i (%#x)",
                     layout0, kbid, variants, code, kbid, hkl)
-                if layout0 not in layouts:
+                if layout0 and layout0 not in layouts:
                     layouts.append(layout0)
                 #only override "layout" if unset:
                 if not layout and layout0:
