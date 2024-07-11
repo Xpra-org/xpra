@@ -513,7 +513,8 @@ def may_create_user_config(xpra_conf_filename: str = DEFAULT_XPRA_CONF_FILENAME)
     if udirs:
         has_user_conf = None
         for d in udirs:
-            if os.path.exists(d):
+            ad = osexpand(d)
+            if os.path.exists(ad):
                 has_user_conf = d
                 break
         if not has_user_conf:
