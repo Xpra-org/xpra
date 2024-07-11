@@ -69,7 +69,7 @@ def save_user_config_file(options: dict) -> None:
 def update_config_attribute(attribute: str, value) -> None:
     log(f"update config: {attribute}={value}")
     config = parse_user_config_file()
-    config[attribute] = str(value)
+    config[attribute] = "yes" if bool(value) else "no"
     save_user_config_file(config)
 
 
