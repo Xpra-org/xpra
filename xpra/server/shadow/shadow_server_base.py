@@ -64,7 +64,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         batch_config.ALWAYS = True  # always batch
 
     def init(self, opts) -> None:
-        if SHADOWSERVER_BASE_CLASS != object:
+        if SHADOWSERVER_BASE_CLASS is not object:
             # RFBServer:
             SHADOWSERVER_BASE_CLASS.init(self, opts)
         self.notifications = bool(opts.notifications)

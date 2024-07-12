@@ -1252,7 +1252,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         handler = None
         try:
             packet_type = packet[0]
-            if packet_type != int:
+            if packet_type is not int:
                 packet_type = str(packet_type)
 
             def call_handler():
