@@ -1,12 +1,13 @@
 %define _disable_source_fetch 0
-%define COMMIT b2528b0be934de1918e20c85fc170d809eeb49ab
+%define COMMIT 331c361581896292fb46c8c6905e41262b7ca95f
 %define __cmake_in_source_build 1
 %global _default_patch_fuzz 2
 
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.1857.20230123gitb2528b0b.1%{?dist}
+# found in ./README.chromium :
+Release:	0.1878.20231004git331c3615.1%{?dist}
 License:	BSD
 URL:		https://chromium.googlesource.com/libyuv/libyuv
 #VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
@@ -27,7 +28,7 @@ BuildRequires:	gcc-c++
 #CentOS 8 ships cmake with broken dependencies, fix it:
 BuildRequires:	libarchive
 %endif
-%if !0%{?el7}%{?el8}%{?el9}
+%if !0%{?el8}%{?el9}%{?el10}
 BuildRequires:	gtest-devel
 %endif
 
@@ -51,7 +52,7 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "c330f4b86dac5b377fe6caaab78a0bfaedae73410605305944523420d93cc3b5" ]; then
+if [ "${sha256}" != "9444dc22674dbdfaec7266df826cb5f66fd2ece1f935c0eb1f6d27417986237e" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
