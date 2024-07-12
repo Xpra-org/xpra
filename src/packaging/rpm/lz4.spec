@@ -2,7 +2,7 @@
 %global _hardened_build 1
 
 Name:           lz4
-Version:        1.9.2
+Version:        1.9.4
 Release:        1%{?dist}
 Summary:        Extremely fast compression algorithm
 
@@ -43,7 +43,7 @@ contains static libraries for static linking of applications.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "658ba6191fa44c92280d4aa2c271b0f4fbc0e34d249578dd05e50e76d0e5efcc" ]; then
+if [ "${sha256}" != "0b0e3aa07c8c063ddf40b082bdf7e37a1562bda40a0ff5272957f3e987e0e54b" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -96,6 +96,9 @@ chmod -x %{buildroot}%{_includedir}/*.h
 
 
 %changelog
+* Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> - 1.9.4-1
+- new upstream release
+
 * Wed Aug 21 2019 Antoine Martin <antoine@xpra.org> - 1.9.2-1
 - new upstream release
 
