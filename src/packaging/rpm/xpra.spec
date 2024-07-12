@@ -926,20 +926,53 @@ fi
 
 
 %changelog
-* Fri Mar 29 2024 Antoine Martin <antoine@xpra.org> 3.1.8-10.1xpra1
+* Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> 3.1.8-10.1xpra1
 - major:
      better compatibility with python2 servers
+     missed clipboard synchronization events
+     try to cleanup OpenGL context more correctly
+     content type guess mismatch due to types
+     crashes on clipboard backend cleanup
+     bug report hangs when closing
+     missing cairo dependency for non-OpenGL renderer
+     honour `ssh` switch when re-connecting
+     MS Windows pdfium compatibility
+     preserve the same interpreter with systemd-run wrapping
+     ignore keyboard layouts without a valid X11 name
+     mDNS sessions not grouped in mdns sessions gui tool
 - build and packaging:
-     centos 7 uses a vendored name for lsb_release
-     centos 7 build fix
-     Cython 3.x warnings
+     CentOS 7 uses a vendored name for lsb_release
+     CentOS 7 build fix
+     libvpx 1.14.1, libwebp 1.4.0
+     Cython 3.x warnings, exception value warnings
      Debian build scripts need `wget` for the outdated python packages workarounds
+     missing crypto libraries in MacOS builds
+     build CUDA kernels with clang instead of gcc 14+
+     bundle openssh.cnf with MS Windows builds
 - encodings:
      ensure NV12 encoded streams are decoded the same as YUV420P
+     ignore alpha channel when requested
+     tolerate video dimensions rounded down to nearest multiple of 2
+     smarter auto refresh encoding selection
+     include color range metadata in h264 stream
+     handle full range colorspace conversion
+     mmap overwrite race condition
 - minor and cosmetic fixes:
+     connection errors with RFB mode and http socket upgrades
+     support scaling specifed as a percentage
      shadow servers: missing attributes should raise a AttributeError
      vpx: set the correct (unused) pixel format constant
-     unused import
+     unused import, typos
+     build `modifications` attribute is a number
+     case insensitive window role matching
+     `konsole` is a text application
+     missing constant
+     downgrade unavoidable Wayland keyboard warning
+     stricter default and return types
+     decode usernames on MS Windows
+     don't enable `sync-xvfb` without cairo
+     we have a test suite
+     warn that paramiko is unmaintained
 
 * Sun Mar 17 2024 Antoine Martin <antoine@xpra.org> 3.1.7-10.1xpra1
 - major fixes:
