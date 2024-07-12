@@ -245,7 +245,7 @@ class BugReport(object):
         self.hide_window()
         return True
 
-    def hide_window(self) -> None:
+    def hide_window(self):
         log("hide_window()")
         if self.window:
             self.hide()
