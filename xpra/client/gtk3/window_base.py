@@ -2564,7 +2564,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if first_time(f"key-{keycode}-{keyname}"):
                 keylog("parse_key_event(%s, %s)", event, pressed, exc_info=True)
                 keylog.warn("Warning: failed to parse string for key")
-                keylog.warn(" keyname=%s, keycode=%s", keyname, keycode)
+                keylog.warn(f" {keyname=}, {keycode=}")
+                keylog.warn(f" {keyval=}, group={event.group}")
+                keylog.warn(" modifiers=%s", csv(key_event.modifiers))
                 keylog.warn(" %s", e)
             try:
                 codepoint = Gdk.keyval_to_unicode(keyval)
