@@ -3,7 +3,7 @@
 %define bin_prefix %{nil}
 
 Name:		python3-Cython
-Version:	3.0.9
+Version:	3.0.10
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
@@ -23,7 +23,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ca7758a3a87340a93f5bde4747e4a5ff1708cf2df407dee533b63ef6cc845777" ]; then
+if [ "${sha256}" != "00f97476cef9fcd9a89f9d2a49be3b518e1a74b91f377fe08c97fcb44bc0f7d7" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -53,6 +53,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> 3.0.10-1
+- new upstream release
+
 * Wed Mar 06 2024 Antoine Martin <antoine@xpra.org> 3.0.9-1
 - new upstream release
 
