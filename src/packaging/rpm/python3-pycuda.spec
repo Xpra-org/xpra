@@ -16,8 +16,8 @@
 %endif
 
 Name:           python3-pycuda
-%if !0%{?el8}
-Version:        2023.1
+%if !0%{?el8}%{?el7}
+Version:        2024.1
 %else
 Version:        2022.1
 %endif
@@ -26,13 +26,12 @@ URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-%if !0%{?el8}
-Source0:        https://files.pythonhosted.org/packages/dd/b2/e30282f3286ddad05ef44548fa5c306a179ed3baceefa699af078e49ce6e/pycuda-%{version}.tar.gz
+%if !0%{?el8}%{?el7}
 Patch0:         pycuda-oldcompute.patch
 %else
-Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
 Patch1:		pycuda-compute2x.patch
 %endif
+Source0:        https://files.pythonhosted.org/packages/source/p/pycuda/pycuda-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -57,8 +56,8 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-%if !0%{?el8}
-if [ "${sha256}" != "175ff675f0cf10e38e9adc03ed5df3ed8d8abf7da5134c8dccec752e8a0a3e91" ]; then
+%if !0%{?el8}%{?el7}
+if [ "${sha256}" != "d50d23ff6371482cff7d4b953ef40ab81c9df038ecb614484f9fd5347327327e" ]; then
 %else
 if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f313a3" ]; then
 %endif
