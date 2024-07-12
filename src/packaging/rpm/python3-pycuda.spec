@@ -16,7 +16,7 @@
 %endif
 
 Name:           python3-pycuda
-%if !0%{?el8}%{?el7}
+%if !0%{?el8}
 Version:        2024.1
 %else
 Version:        2022.1
@@ -26,7 +26,7 @@ URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-%if !0%{?el8}%{?el7}
+%if !0%{?el8}
 Patch0:         pycuda-oldcompute.patch
 %else
 Patch1:		pycuda-compute2x.patch
@@ -56,7 +56,7 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-%if !0%{?el8}%{?el7}
+%if !0%{?el8}
 if [ "${sha256}" != "d50d23ff6371482cff7d4b953ef40ab81c9df038ecb614484f9fd5347327327e" ]; then
 %else
 if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f313a3" ]; then
