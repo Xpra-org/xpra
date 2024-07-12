@@ -6,6 +6,7 @@ Please ensure that you are using a [supported version](https://github.com/Xpra-o
 
 Distribution packages are usually [outdated and full of vulnerabilities](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
 
+For a general overview, please first read [security considerations](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Security.md) as it pervades the architecture of the software.
 
 ## Reporting a Vulnerability
 
