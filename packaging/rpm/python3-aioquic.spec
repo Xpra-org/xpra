@@ -11,7 +11,7 @@ Autoreq: 0
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
 
 Name:           %{python3}-aioquic
-Version:        1.1.0
+Version:        1.2.0
 Release:        1%{?dist}
 Summary:        aioquic is a library for the QUIC network protocol in Python
 Group:          Development/Languages
@@ -43,7 +43,7 @@ to read or write HTTP/3 headers compressed with QPACK.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "a791c5798baeb42a12fa28fd327da04d08f18795e93889178b4b2f49fe8bbf43" ]; then
+if [ "${sha256}" != "f91263bb3f71948c5c8915b4d50ee370004f20a416f67fab3dcc90556c7e7199" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -73,6 +73,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> - 1.2.0-1
+- new upstream release
+
 * Fri Jun 21 2024 Antoine Martin <antoine@xpra.org> - 1.1.0-1
 - new upstream release
 
