@@ -311,7 +311,7 @@ cdef object MIN_SIGNED_LONGLONG = -MAX_SIGNED_LONGLONG
 
 cdef void encode(char **buf, unsigned int *pos, data):
     t = type(data)
-    if t == int:
+    if t is int:
         if -128 <= data < 128:
             encode_char(buf, pos, data)
         elif -32768 <= data < 32768:
@@ -326,24 +326,24 @@ cdef void encode(char **buf, unsigned int *pos, data):
                 raise ValueError(f"Number is longer than {MAX_INT_LENGTH} characters")
             encode_big_number(buf, pos, s)
 
-    elif t == float:
+    elif t is float:
         #if _float_bits == 32:
         #    encode_float32(buf, pos, data)
         encode_float64(buf, pos, data)
 
-    elif t == bytes:
+    elif t is bytes:
         encode_bytes(buf, pos, data)
 
-    elif t == memoryview:
+    elif t is memoryview:
         encode_memoryview(buf, pos, data)
 
-    elif t == str:
+    elif t is str:
         encode_str(buf, pos, data.encode("utf8"))
 
-    elif t == type(None):
+    elif t is type(None):
         encode_none(buf, pos)
 
-    elif t == bool:
+    elif t is bool:
         encode_bool(buf, pos, data)
 
     elif isinstance(data, Sequence):

@@ -223,10 +223,10 @@ class typedict(dict):
         aslist = list(v)
         if item_type:
             for i, x in enumerate(aslist):
-                if isinstance(x, bytes) and item_type == str:
+                if isinstance(x, bytes) and item_type is str:
                     x = bytestostr(x)
                     aslist[i] = x
-                elif isinstance(x, str) and item_type == str:
+                elif isinstance(x, str) and item_type is str:
                     x = str(x)
                     aslist[i] = x
                 if not isinstance(x, item_type):

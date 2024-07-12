@@ -594,13 +594,13 @@ class ProxyServer(ServerCore):
                 continue
             vt = OPTION_TYPES[k]
             try:
-                if vt == str:
+                if vt is str:
                     v = bytestostr(v)
-                elif vt == bool:
+                elif vt is bool:
                     v = str_to_bool(v)
-                elif vt == int:
+                elif vt is int:
                     v = int(v)
-                elif vt == list:
+                elif vt is list:
                     v = list(bytestostr(x) for x in v)
             except ValueError:
                 log("start_new_session: override option %s", k, exc_info=True)

@@ -2992,7 +2992,7 @@ def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES
         incmdline = (f"--{x}" in cmdline or f"--no-{x}" in cmdline or any(c.startswith(f"--{x}=") for c in cmdline))
         if not incmdline:
             # we may skip this option if the value is the same as the default:
-            if ftype == list:
+            if ftype is list:
                 # compare lists using their csv representation:
                 if csv(ov) == csv(dv) or csv(ov) == csv(fv):
                     continue
@@ -3002,7 +3002,7 @@ def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES
         if compat:
             argname = OPTIONS_COMPAT_NAMES.get(argname, argname)
         # lists are special cased depending on how OptionParse will be parsing them:
-        if ftype == list:
+        if ftype is list:
             # warn("%s: %s vs %s\n" % (x, ov, dv))
             if x in START_COMMAND_OPTIONS + BIND_OPTIONS + [
                 "pulseaudio-configure-commands",
@@ -3016,7 +3016,7 @@ def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES
             else:
                 # those can be specified as CSV: (ie: "--encodings=png,jpeg,rgb")
                 args.append(f"{argname}" + ",".join(str(v) for v in ov))
-        elif ftype == bool:
+        elif ftype is bool:
             args.append(f"{argname}" + ["no", "yes"][int(ov)])
         elif ftype in (int, float, str):
             args.append(f"{argname}{ov}")
@@ -4317,7 +4317,7 @@ def run_showconfig(options, args) -> ExitValue:
 def vstr(otype: type, v) -> str:
     # just used to quote all string values
     if v is None:
-        if otype == bool:
+        if otype is bool:
             return "auto"
         return ""
     if isinstance(v, str):

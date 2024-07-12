@@ -44,7 +44,7 @@ class WindowPropertyIn(WindowPropertyFilter):
 
     def evaluate(self, window_value):
         vtypes = set([type(x) for x in self.value])
-        if len(vtypes) == 1 and list(vtypes)[0] == str:
+        if len(vtypes) == 1 and list(vtypes)[0] is str:
             # coerce value to match:
             window_value = str(window_value)
         return window_value in self.value

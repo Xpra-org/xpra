@@ -1935,7 +1935,7 @@ def parse_command_line(cmdline, defaults):
 
     # deal with boolean fields by converting them to a boolean value:
     for k, t in OPTION_TYPES.items():
-        if t == bool:
+        if t is bool:
             fieldname = name_to_field(k)
             if not hasattr(options, fieldname):
                 # some fields may be missing if they're platform specific

@@ -196,11 +196,11 @@ def pver(v, numsep: str = ".", strsep: str = ", ") -> str:
     if isinstance(v, (list, tuple)):
         types = list(set(type(x) for x in v))
         if len(types) == 1:
-            if types[0] == int:
+            if types[0] is int:
                 return numsep.join(str(x) for x in v)
-            if types[0] == str:
+            if types[0] is str:
                 return strsep.join(str(x) for x in v)
-            if types[0] == bytes:
+            if types[0] is bytes:
                 def s(x):
                     try:
                         return x.decode("utf8")

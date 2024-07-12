@@ -789,7 +789,7 @@ CLIENT_OPTIONS: list[str] = [
     "dock-icon", "tray-icon", "window-icon",
     "clipboard", "clipboard-direction", "clipboard-filter-file",
     "remote-clipboard", "local-clipboard",
-    "tcp-encryption", "tcp-encryption-keyfile", "encryption",  "encryption-keyfile",
+    "tcp-encryption", "tcp-encryption-keyfile", "encryption", "encryption-keyfile",
     "systemd-run", "systemd-run-args",
     "socket-dir", "socket-dirs", "client-socket-dirs",
     "border", "window-close", "min-size", "max-size", "desktop-scaling",
@@ -875,35 +875,35 @@ del tmp
 
 def get_default_key_shortcuts() -> list[str]:
     return [shortcut for e, shortcut in (
-        (True,   "Control+Menu:toggle_keyboard_grab"),
-        (True,   "Shift+Menu:toggle_pointer_grab"),
+        (True, "Control+Menu:toggle_keyboard_grab"),
+        (True, "Shift+Menu:toggle_pointer_grab"),
         (not OSX, "Shift+F11:toggle_fullscreen"),
-        (OSX,    "Control+F11:toggle_fullscreen"),
-        (True,   "#+F1:show_menu"),
-        (True,   "#+F2:show_start_new_command"),
-        (True,   "#+F3:show_bug_report"),
-        (True,   "#+F4:quit"),
-        (True,   "#+F5:show_window_info"),
-        (True,   "#+F6:show_shortcuts"),
-        (True,   "#+F7:show_docs"),
-        (True,   "#+F8:toggle_keyboard_grab"),
-        (True,   "#+F9:toggle_pointer_grab"),
-        (True,   "#+F10:magic_key"),
-        (True,   "#+F11:show_session_info"),
-        (True,   "#+F12:toggle_debug"),
-        (True,   "#+plus:scaleup"),
-        (OSX,    "#+plusminus:scaleup"),
-        (True,   "#+minus:scaledown"),
-        (True,   "#+underscore:scaledown"),
-        (OSX,    "#+emdash:scaledown"),
-        (True,   "#+KP_Add:scaleup"),
-        (True,   "#+KP_Subtract:scaledown"),
-        (True,   "#+KP_Multiply:scalereset"),
-        (True,   "#+bar:scalereset"),
-        (True,   "#+question:scalingoff"),
-        (OSX,    "#+degree:scalereset"),
-        (OSX,    "meta+grave:void"),
-        (OSX,    "meta+shift+asciitilde:void"),
+        (OSX, "Control+F11:toggle_fullscreen"),
+        (True, "#+F1:show_menu"),
+        (True, "#+F2:show_start_new_command"),
+        (True, "#+F3:show_bug_report"),
+        (True, "#+F4:quit"),
+        (True, "#+F5:show_window_info"),
+        (True, "#+F6:show_shortcuts"),
+        (True, "#+F7:show_docs"),
+        (True, "#+F8:toggle_keyboard_grab"),
+        (True, "#+F9:toggle_pointer_grab"),
+        (True, "#+F10:magic_key"),
+        (True, "#+F11:show_session_info"),
+        (True, "#+F12:toggle_debug"),
+        (True, "#+plus:scaleup"),
+        (OSX, "#+plusminus:scaleup"),
+        (True, "#+minus:scaledown"),
+        (True, "#+underscore:scaledown"),
+        (OSX, "#+emdash:scaledown"),
+        (True, "#+KP_Add:scaleup"),
+        (True, "#+KP_Subtract:scaledown"),
+        (True, "#+KP_Multiply:scalereset"),
+        (True, "#+bar:scalereset"),
+        (True, "#+question:scalingoff"),
+        (OSX, "#+degree:scalereset"),
+        (OSX, "meta+grave:void"),
+        (OSX, "meta+shift+asciitilde:void"),
     )
         if e]
 
@@ -1366,23 +1366,23 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
                 continue
             warn(f"Warning: invalid option: {k!r}")
             continue
-        if vt == str:
+        if vt is str:
             if not isinstance(v, str):
                 warn(f"invalid value for {k!r}: {type(v)} (string required)")
                 continue
-        elif vt == int:
+        elif vt is int:
             v = parse_bool_or_number(int, k, v)
             if v is None:
                 continue
-        elif vt == float:
+        elif vt is float:
             v = parse_number(float, k, v)
             if v is None:
                 continue
-        elif vt == bool:
+        elif vt is bool:
             v = parse_bool_or(k, v)
             if v is None:
                 continue
-        elif vt == list:
+        elif vt is list:
             if isinstance(v, str):
                 # could just be that we specified it only once..
                 v = [v]
@@ -1678,7 +1678,7 @@ def main(argv):
     def print_options(o):
         for k, ot in sorted(OPTION_TYPES.items()):
             v = getattr(o, name_to_field(k), "")
-            if ot == bool and v is None:
+            if ot is bool and v is None:
                 v = "Auto"
             if isinstance(v, list):
                 v = csv(str(x) for x in v)

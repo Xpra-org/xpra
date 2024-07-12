@@ -1638,7 +1638,7 @@ def attach_client(options, defaults):
             warn(f"error on {f}: {e}")
             continue
         if c != d:
-            if OPTION_TYPES.get(x) == list:
+            if OPTION_TYPES.get(x) is list:
                 v = ",".join(str(i) for i in c)
             else:
                 v = str(c)
