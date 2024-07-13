@@ -280,17 +280,8 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
             if not os.path.isfile(ca_certs):
                 raise InitException(f"{ca_certs!r} is not a valid ca file")
             context.load_verify_locations(cafile=ca_certs)
-        # handle cadata:
         if ca_data:
-            # PITA: because of a bug in the ssl module, we can't pass cadata,
-            # so we use a temporary file instead:
-            import tempfile
-            with tempfile.NamedTemporaryFile(prefix='cadata') as f:
-                ssllog(" loading cadata '%s'", Ellipsizer(ca_data))
-                ssllog(" using temporary file '%s'", f.name)
-                f.file.write(ca_data)
-                f.file.flush()
-                context.load_verify_locations(cafile=f.name)
+            context.load_verify_locations(cadata=ca_data)
     elif check_hostname and not server_side:
         ssllog("cannot check hostname client side with verify mode %s", ssl_cert_reqs)
     return context, kwargs
