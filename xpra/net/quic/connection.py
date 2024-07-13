@@ -8,6 +8,7 @@ from queue import SimpleQueue
 from typing import Union, Any
 from collections.abc import Callable
 
+from aioquic import __version__ as aioquic_version
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
@@ -17,6 +18,7 @@ from xpra.net.bytestreams import Connection
 from xpra.net.websockets.header import close_packet
 from xpra.net.quic.common import binary_headers, override_aioquic_logger
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
+from xpra.util.version import parse_version, vtrim
 from xpra.util.env import envbool
 from xpra.log import Logger
 
@@ -55,6 +57,7 @@ class XpraQuicConnection(Connection):
             "stream-id": self.stream_id,
             "accepted": self.accepted,
             "closed": self.closed,
+            "aioquic": vtrim(parse_version(aioquic_version)),
         }
         quic = getattr(self.connection, "_quic", None)
         if quic:
