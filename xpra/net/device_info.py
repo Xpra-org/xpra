@@ -9,10 +9,12 @@ import sys
 from typing import Callable, Any
 
 from xpra.os_util import gi_import
-from xpra.util.env import envint
+from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 log = Logger("network")
+
+NM_API = envbool("XPRA_NM_API", True)
 
 ETHERNET_JITTER: int = envint("XPRA_LOCAL_JITTER", 0)
 WAN_JITTER: int = envint("XPRA_WAN_JITTER", 20)
@@ -24,6 +26,8 @@ ADSL_LIMIT: int = envint("XPRA_WIFI_LIMIT", 1000 * 1000)
 
 
 def get_NM_adapter_type(device_name, ignore_inactive=True) -> str:
+    if not NM_API:
+        return ""
     if not any(sys.modules.get(f"gi.repository.{mod}") for mod in ("GLib", "Gtk")):
         log("get_NM_adapter_type() no main loop")
         return ""
