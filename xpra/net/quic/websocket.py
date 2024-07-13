@@ -9,6 +9,7 @@ from collections.abc import Callable
 
 from aioquic.h3.events import HeadersReceived, H3Event
 from aioquic.h3.exceptions import NoAvailablePushIDError
+from aioquic.quic.packet import QuicErrorCode
 
 from xpra.net.bytestreams import pretty_socket
 from xpra.net.quic.connection import XpraQuicConnection
@@ -56,8 +57,9 @@ class ServerWebSocketConnection(XpraQuicConnection):
         if isinstance(event, HeadersReceived):
             subprotocols = self.scope.get("subprotocols", ())
             if "xpra" not in subprotocols:
-                log.warn(f"Warning: unsupported websocket subprotocols {subprotocols}")
-                self.close()
+                message = f"unsupported websocket subprotocols {subprotocols}"
+                log.warn(f"Warning: {message}")
+                self.close(QuicErrorCode.APPLICATION_ERROR, message)
                 return
             log.info("websocket request at %s", self.scope.get("path", "/"))
             self.accepted = True
@@ -74,12 +76,18 @@ class ServerWebSocketConnection(XpraQuicConnection):
             "sec-websocket-protocol": "xpra",
         })
 
-    def send_close(self, code: int = 1000, reason: str = "") -> None:
+    def send_close(self, code=QuicErrorCode.NO_ERROR, reason="") -> None:
+        wscode = 1000 if code == QuicErrorCode.NO_ERROR else 4000 + int(code)
+        self.send_ws_close(wscode, reason)
+        super().send_close(code, reason)
+
+    def send_ws_close(self, code: int = 1000, reason: str = "") -> None:
         if self.accepted:
             data = close_packet(code, reason)
             self.write(data, "close")
-            return
-        super.send_close(code, reason)
+        else:
+            self.send_headers(self.stream_id, headers={":status": code})
+            self.transmit()
 
     def get_packet_stream_id(self, packet_type: str) -> int:
         if self.closed or not self._use_substreams or not packet_type:

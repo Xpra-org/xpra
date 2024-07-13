@@ -12,6 +12,7 @@ from aioquic import __version__ as aioquic_version
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
+from aioquic.quic.packet import QuicErrorCode
 
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
@@ -84,19 +85,27 @@ class XpraQuicConnection(Connection):
         else:
             log.warn(f"Warning: unhandled websocket http event {event}")
 
-    def close(self) -> None:
+    def close(self, code=QuicErrorCode.NO_ERROR, reason="closing") -> None:
         log("quic.close()")
         if not self.closed:
             try:
-                self.send_close()
+                self.send_close(code, reason)
             finally:
                 self.closed = True
         Connection.close(self)
 
-    def send_close(self, code: int = 1000, reason: str = "") -> None:
-        if not self.accepted:
-            self.send_headers(self.stream_id, headers={":status": code})
-            self.transmit()
+    def send_close(self, code=QuicErrorCode.NO_ERROR, reason="") -> None:
+        # we just close the quic connection here
+        # subclasses may also override this method to send close messages specific to the protocol
+        # ie: WebSocket and WebTransport 'close' frames
+        quic = getattr(self.connection, "_quic", None)
+        if not quic:
+            return
+        if aioquic_version_info >= (1, 2):
+            # we can send the error code and message
+            quic.close(code, reason)
+        else:
+            quic.close()
 
     def send_headers(self, stream_id: int, headers: dict) -> None:
         self.connection.send_headers(

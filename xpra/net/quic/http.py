@@ -11,6 +11,7 @@ from aioquic.asyncio import QuicConnectionProtocol
 from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event
+from aioquic.quic.packet import QuicErrorCode
 
 from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
 from xpra.net.http.directory_listing import list_directory
@@ -63,8 +64,9 @@ class HttpRequestHandler:
         log(f"http_event_received(%s) scope={self.scope}", Ellipsizer(event))
         http_version = self.scope.get("http_version", "0")
         if http_version != "3":
-            log.error(f"Error: http version {http_version} is not supported")
-            self.protocol.close()
+            message = "http version {http_version} is not supported"
+            log.error(f"Error: {message}")
+            self.protocol.close(QuicErrorCode.APPLICATION_ERROR, message)
             return
         method = self.scope.get("method", "")
         req_path = self.scope.get("path", "")
@@ -79,8 +81,9 @@ class HttpRequestHandler:
             self.send_http3_response(*script_response)
             return
         if method != "GET":
-            log.warn(f"Warning: http {method} requests are not supported")
-            self.protocol.close()
+            message = f"http {method} requests are not supported"
+            log.warn(f"Warning: {message}")
+            self.protocol.close(QuicErrorCode.APPLICATION_ERROR, message)
             return
         self.handle_get_request(req_path)
 

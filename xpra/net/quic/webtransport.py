@@ -13,6 +13,8 @@ from aioquic.h3.events import (
     H3Event,
     WebTransportStreamDataReceived,
 )
+from aioquic.quic.packet import QuicErrorCode
+
 from xpra.net.bytestreams import pretty_socket
 from xpra.net.quic.connection import XpraQuicConnection, HttpConnection
 from xpra.net.quic.common import SERVER_NAME, http_date
@@ -63,12 +65,16 @@ class ServerWebTransportConnection(XpraQuicConnection):
         self.send_headers(self.stream_id, headers)
         self.transmit()
 
-    def send_close(self, code: int = 403, reason: str = "") -> None:
-        log(f"send_close({code}, {reason!r})")
+    def send_close(self, code=QuicErrorCode.NO_ERROR, reason="") -> None:
         if not self.accepted:
-            self.closed = True
-            self.send_headers(0, {":status": code})
-            self.transmit()
+            httpcode = 200 if code == QuicErrorCode.NO_ERROR else 500
+            self.send_http_close(httpcode, reason)
+        super().send_close(code, reason)
+
+    def send_http_close(self, code: int = 500, reason: str = "") -> None:
+        log(f"send_http_close({code}, {reason!r})")
+        self.send_headers(0, {":status": code})
+        self.transmit()
 
     def do_write(self, stream_id: int, data: bytes) -> None:
         log("wt.do_write(%i, %i bytes)", stream_id, len(data))

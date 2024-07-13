@@ -88,8 +88,12 @@ class ClientWebSocketConnection(XpraQuicConnection):
                 if header == b"sec-websocket-protocol":
                     subprotocols = value.decode().split(",")
                     if "xpra" not in subprotocols:
-                        log.warn(f"Warning: unsupported websocket subprotocols {subprotocols}")
-                        self.close()
+                        message = f"unsupported websocket subprotocols {subprotocols}"
+                        log.warn(f"Warning: {message}")
+                        if not self.accepted:
+                            self.send_headers(self.stream_id, headers={":status": 501})
+                            self.transmit()
+                        self.close(QuicErrorCode.APPLICATION_ERROR, message)
                         return
                     self.accepted = True
                     self.flush_writes()
