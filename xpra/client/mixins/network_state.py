@@ -24,6 +24,8 @@ from xpra.log import Logger
 log = Logger("network")
 bandwidthlog = Logger("bandwidth")
 
+NM_API = envbool("XPRA_NM_API", True)
+
 SSH_AGENT : bool = envbool("XPRA_SSH_AGENT", True)
 FAKE_BROKEN_CONNECTION : int = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT : int = envint("XPRA_PING_TIMEOUT", 60)
@@ -45,6 +47,8 @@ ADSL_LIMIT : int = envint("XPRA_WIFI_LIMIT", 1000*1000)
 
 
 def get_NM_adapter_type(device_name) -> str:
+    if not NM_API:
+        return ""
     if not any (sys.modules.get(f"gi.repository.{mod}") for mod in ("GLib", "Gtk")):
         log("get_NM_adapter_type() no main loop")
         return ""
