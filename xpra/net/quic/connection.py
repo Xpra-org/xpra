@@ -15,7 +15,6 @@ from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
 
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
-from xpra.net.websockets.header import close_packet
 from xpra.net.quic.common import binary_headers, override_aioquic_logger
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.version import parse_version, vtrim
@@ -95,10 +94,7 @@ class XpraQuicConnection(Connection):
         Connection.close(self)
 
     def send_close(self, code: int = 1000, reason: str = "") -> None:
-        if self.accepted:
-            data = close_packet(code, reason)
-            self.write(data, "close")
-        else:
+        if not self.accepted:
             self.send_headers(self.stream_id, headers={":status": code})
             self.transmit()
 

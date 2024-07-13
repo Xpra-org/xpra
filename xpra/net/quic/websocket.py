@@ -13,6 +13,7 @@ from aioquic.h3.exceptions import NoAvailablePushIDError
 from xpra.net.bytestreams import pretty_socket
 from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
+from xpra.net.websockets.header import close_packet
 from xpra.util.env import first_time
 from xpra.util.str_fn import Ellipsizer
 from xpra.log import Logger
@@ -72,6 +73,13 @@ class ServerWebSocketConnection(XpraQuicConnection):
             "date": http_date(),
             "sec-websocket-protocol": "xpra",
         })
+
+    def send_close(self, code: int = 1000, reason: str = "") -> None:
+        if self.accepted:
+            data = close_packet(code, reason)
+            self.write(data, "close")
+            return
+        super.send_close(code, reason)
 
     def get_packet_stream_id(self, packet_type: str) -> int:
         if self.closed or not self._use_substreams or not packet_type:
