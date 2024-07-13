@@ -1,5 +1,14 @@
 xpra (6.0.3-1) UNRELEASED; urgency=low
-  * TODO
+  * Major:
+    - missing screen updates
+    - bug report and mdns GUI links broken from launcher
+    - existing config overwritten
+    - mDNS records duplicated
+    - Network Manager API breakage, make it possible to skip it
+  * Keyboard:
+    - try harder to find the key event string
+    - don't show duplicate keyboard layout names
+    - ignore MS Windows keyboard layouts we can't map to X11 keyboard layouts
 
  -- Antoine Martin <antoine@xpra.org>  Sat, 13 Jul 2024 11:44:07 +0700
 

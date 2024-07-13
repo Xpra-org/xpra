@@ -863,7 +863,17 @@ fi
 
 %changelog
 * Sat Jul 13 2024 Antoine Martin <antoine@xpra.org> 6.0.3-10
-- TODO
+- Major:
+   missing screen updates
+   bug report and mdns GUI links broken from launcher
+   existing config overwritten
+   mDNS records duplicated
+   Network Manager API breakage, make it possible to skip it
+- Keyboard:
+   try harder to find the key event string
+   don't show duplicate keyboard layout names
+   ignore MS Windows keyboard layouts we can't map to X11 keyboard layouts
+
 * Mon Jul 08 2024 Antoine Martin <antoine@xpra.org> 6.0.2-10
 - Platforms, build and packaging:
    revision number not detected in RPM spec file
