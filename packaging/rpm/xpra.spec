@@ -50,7 +50,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.0.2
+Version:			6.0.3
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -862,6 +862,8 @@ fi
 
 
 %changelog
+* Sat Jul 13 2024 Antoine Martin <antoine@xpra.org> 6.0.3-10
+- TODO
 * Mon Jul 08 2024 Antoine Martin <antoine@xpra.org> 6.0.2-10
 - Platforms, build and packaging:
    revision number not detected in RPM spec file

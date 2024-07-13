@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.0.3] 2024-07-13
+* TODO
+
 ## [6.0.2] 2024-07-08
 * Platforms, build and packaging:
     * [revision number not detected in RPM spec file](https://github.com/Xpra-org/xpra/commit/767a66a3509e10f2e20135b076b42c2bc5766b36)
