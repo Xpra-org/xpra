@@ -35,6 +35,9 @@ if envbool("XPRA_QUIC_LOGGER", True):
     override_aioquic_logger()
 
 
+aioquic_version_info = parse_version(aioquic_version)
+
+
 class XpraQuicConnection(Connection):
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
                  host: str, port: int, socktype="wss", info=None, options=None) -> None:
@@ -57,7 +60,7 @@ class XpraQuicConnection(Connection):
             "stream-id": self.stream_id,
             "accepted": self.accepted,
             "closed": self.closed,
-            "aioquic": vtrim(parse_version(aioquic_version)),
+            "aioquic": vtrim(aioquic_version_info),
         }
         quic = getattr(self.connection, "_quic", None)
         if quic:

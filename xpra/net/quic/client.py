@@ -32,7 +32,7 @@ from xpra.exit_codes import ExitCode
 from xpra.net.bytestreams import pretty_socket
 from xpra.net.socket_util import create_udp_socket
 from xpra.net.ssl_util import get_ssl_verify_mode
-from xpra.net.quic.connection import XpraQuicConnection
+from xpra.net.quic.connection import XpraQuicConnection, aioquic_version_info
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers
 from xpra.util.str_fn import csv, Ellipsizer
@@ -46,6 +46,7 @@ HttpConnection = Union[H0Connection, H3Connection]
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 HOSTS_PREFER_IPV4 = os.environ.get("XPRA_HOSTS_PREFER_IPV4", "localhost,127.0.0.1").split(",")
+FAST_OPEN = envbool("XPRA_QUIC_FAST_OPEN", aioquic_version_info>=(1, 2))
 
 WS_HEADERS: dict[str, str] = {
     ":method": "CONNECT",
@@ -257,11 +258,15 @@ def quic_connect(host: str, port: int, path: str,
         log(f"{transport=}, {protocol=}")
         protocol = cast(QuicConnectionProtocol, protocol)
         addr = addr_info[4]  # ie: ('192.168.0.10', 10000)
-        log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)}")
-        protocol.connect(addr)
+        log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)} with {FAST_OPEN=}")
+        if FAST_OPEN:
+            protocol.connect(addr, transmit=False)
+        else:
+            protocol.connect(addr)
         log("awaiting connected state")
         try:
-            await protocol.wait_connected()
+            if not FAST_OPEN:
+                await protocol.wait_connected()
             log(f"{protocol}.open({host!r}, {port}, {path!r})")
             conn = protocol.open(host, port, path)
             log(f"websocket connection {conn}")
