@@ -1434,7 +1434,7 @@ class ServerCore(object):
                 l = httplog.error
             l("Error: %s request failure", req_info)
             l(" for client %s:", pretty_socket(frominfo))
-            l(" request: '%s'", nonl(bytestostr(line1)))
+            l(" request: '%s'", repr(bytestostr(line1)))
             l(" %s", e)
         except Exception:
             wslog.error("Error: %s request failure for client %s:", req_info, pretty_socket(frominfo), exc_info=True)
