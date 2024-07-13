@@ -1,12 +1,7 @@
-xpra (5.0.11-1) UNRELEASED; urgency=low
-  * TODO
-
- -- Antoine Martin <antoine@xpra.org>  Tue, 09 Jul 2024 01:03:38 +0700
-
 xpra (5.0.10-1) UNRELEASED; urgency=low
   * TODO
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 03 Jul 2024 15:20:53 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 13 Jul 2024 11:46:24 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:

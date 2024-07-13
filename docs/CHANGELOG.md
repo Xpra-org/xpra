@@ -1,9 +1,6 @@
 # Changelog
 
-## [5.0.11] 2024-07-09
-* TODO
-
-## [5.0.10] 2024-07-03
+## [5.0.10] 2024-07-13
 * Encodings:
     * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
     * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
