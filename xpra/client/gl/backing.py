@@ -220,6 +220,7 @@ class GLWindowBackingBase(WindowBackingBase):
         self.last_present_fbo_error = ""
         self.bit_depth = pixel_depth
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
+        self.idle_add = glib.idle_add
         self.opengl_init()
         self.paint_context_manager: AbstractContextManager = nullcontext()
         if POSIX and not OSX and not is_Wayland():
