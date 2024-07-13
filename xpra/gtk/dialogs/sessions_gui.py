@@ -51,7 +51,7 @@ def get_session_info(sockpath: str) -> dict[str, str]:
     stdout = p.communicate()[0]
     log("get_sessions_info(%s) returncode(%s)=%s", sockpath, cmd, p.returncode)
     if p.returncode != 0:
-        return None
+        return {}
     info: dict[str, str] = {}
     for line in stdout.splitlines():
         parts = line.split("=", 1)
