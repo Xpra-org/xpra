@@ -261,7 +261,11 @@ class WindowsMixin(StubSourceMixin):
             #convert bytearray to string:
             cpixels = strtobytes(pixels)
             if "png" in self.cursor_encodings:
-                from PIL import Image
+                try:
+                    from PIL import Image
+                except ImportError:
+                    cursorlog.warn("Warning: pillow not found")
+                    return
                 cursorlog("do_send_cursor() loading %i bytes of cursor pixel data for %ix%i cursor named '%s'",
                           len(cpixels), w, h, bytestostr(name))
                 img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w*4, 1)

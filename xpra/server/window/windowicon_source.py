@@ -9,7 +9,6 @@
 import os
 import threading
 from io import BytesIO
-from PIL import Image
 
 from xpra.os_util import monotonic_time, load_binary_file, memoryview_to_bytes
 from xpra.net import compression
@@ -96,6 +95,7 @@ class WindowIconSource(object):
                 icon_filename = get_icon_filename("xpra.png")
                 log("get_fallback_window_icon() icon filename=%s", icon_filename)
                 assert os.path.exists(icon_filename), "xpra icon not found: %s" % icon_filename
+                from PIL import Image
                 img = Image.open(icon_filename)
                 icon_data = load_binary_file(icon_filename)
                 icon = (img.size[0], img.size[1], "png", icon_data)
@@ -206,7 +206,11 @@ class WindowIconSource(object):
         image = None
         if must_scale or must_convert or SAVE_WINDOW_ICONS:
             #we're going to need a PIL Image:
-            from PIL import Image
+            try:
+                from PIL import Image
+            except ImportError:
+                log.warn("Warning: python pillow not found")
+                return
             if pixel_format=="png":
                 image = Image.open(BytesIO(pixel_data))
             else:
@@ -222,7 +226,6 @@ class WindowIconSource(object):
                     rw = min(max_w, w*icon_h//h)
                     rh = icon_h
                 log("scaling window icon down to %sx%s", rw, rh)
-                from PIL import Image
                 try:
                     from PIL.Image.Resampling import LANCZOS
                 except ImportError:

@@ -5,8 +5,6 @@
 # later version. See the file COPYING for details.
 
 
-from PIL import Image
-
 from xpra.os_util import bytestostr, monotonic_time
 from xpra.util import first_time
 from xpra.log import Logger
@@ -71,6 +69,10 @@ def rgb_reformat(image, rgb_formats, supports_transparency):
     #PIL cannot use the memoryview directly:
     if isinstance(pixels, memoryview):
         pixels = pixels.tobytes()
+    try:
+        from PIL import Image
+    except ImportError:
+        return False
     img = Image.frombuffer(target_format, (w, h), pixels, "raw", input_format, image.get_rowstride())
     rowstride = w*len(target_format)    #number of characters is number of bytes per pixel!
     data = img.tobytes("raw", target_format)
