@@ -2087,16 +2087,20 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         key_event.keyval = keyval or 0
         key_event.keycode = keycode
         key_event.group = event.group
+        key_event.string = ""
+        key_event.pressed = pressed
         try:
             key_event.string = event.string or ""
         except UnicodeDecodeError as e:
             keylog("parse_key_event(%s, %s)", event, pressed, exc_info=True)
-            if first_time("key-%s-%s" % (keycode, keyname)):
-                keylog.warn("Warning: failed to parse string for key")
-                keylog.warn(" keyname=%s, keycode=%s", keyname, keycode)
-                keylog.warn(" %s", e)
-            key_event.string = ""
-        key_event.pressed = pressed
+            try:
+                codepoint = Gdk.keyval_to_unicode(keyval)
+                key_event.string = chr(codepoint)
+            except ValueError as e:
+                if first_time("key-%s-%s" % (keycode, keyname)):
+                    keylog.warn("Warning: failed to parse string for key")
+                    keylog.warn(" keyname=%s, keycode=%s", keyname, keycode)
+                    keylog.warn(" %s", e)
         keylog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
         return key_event
 
