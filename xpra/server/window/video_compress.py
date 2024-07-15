@@ -1479,6 +1479,7 @@ class WindowVideoSource(WindowSource):
             vmw, vmh = self.video_max_size
         ffps = self.get_video_fps(width, height)
         scores = []
+        all_no_match = {}
         for encoding in encodings:
             # these are the CSC modes the client can handle for this encoding:
             # we must check that the output csc mode for each encoder is one of those
@@ -1551,7 +1552,9 @@ class WindowVideoSource(WindowSource):
                     if not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE == out_csc:
                         for csc_spec in l:
                             add_scores(f"via {out_csc}", csc_spec, out_csc)
-            scorelog("no matching colorspace specs for %s: %s", encoding, no_match)
+            all_no_match[encoding] = no_match
+        if all_no_match:
+            scorelog("no matching colorspace specs for %s", all_no_match)
         s = tuple(sorted(scores, key=lambda x: -x[0]))
         scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
         if self.is_cancelled():
