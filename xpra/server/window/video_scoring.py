@@ -66,10 +66,10 @@ def get_speed_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: Vid
         "YUV422P": 80,
     }.get(csc_format, 60)
     # score based on speed:
-    speed = int(encoder_spec.speed * mult // 100)
+    speed = round(encoder_spec.speed * mult // 100)
     # the encoder speed matters less
     # when the target speed is low:
-    ts = min(100, max(1, target_speed))
+    ts = clamp(target_speed)
     sscore = (50 - ts // 2) + speed * 100 // (100 + ts)
     if csc_spec:
         # if there is a csc step,
@@ -84,7 +84,7 @@ def get_speed_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: Vid
         # then it isn't very suitable, discount its score:
         mss = (min_speed - speed) // 2
         sscore = max(0, sscore - mss)
-    return max(0, min(100, round(sscore)))
+    return round(sscore)
 
 
 def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spec: VideoSpec,
@@ -162,7 +162,7 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
 
             if is_csc_changed():
                 # if we have to change csc, account for new csc setup cost:
-                ecsc_score = max(0, 80 - int(csc_spec.setup_cost * setup_cost_mult * 80 // 100))
+                ecsc_score = max(0, 80 - round(csc_spec.setup_cost * setup_cost_mult * 80 // 100))
         ecsc_score += csc_spec.score_boost
         runtime_score *= csc_spec.get_runtime_factor()
 
@@ -206,14 +206,14 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
             current_ve.get_src_format() != enc_in_format or \
             current_ve.get_width() != enc_width or current_ve.get_height() != enc_height:
         # account for new encoder setup cost:
-        ee_score = 100 - int(encoder_spec.setup_cost * setup_cost_mult)
+        ee_score = 100 - round(encoder_spec.setup_cost * setup_cost_mult)
         ee_score += encoder_spec.score_boost
     # edge resistance score: average of csc and encoder score:
     er_score = (ecsc_score + ee_score) // 2
     # gpu vs cpu
     gpu_score = max(0, GPU_BIAS - 50) * encoder_spec.gpu_cost // 50
     cpu_score = max(0, 50 - GPU_BIAS) * encoder_spec.cpu_cost // 50
-    score = int(
+    score = round(
         (qscore + sscore + er_score + sizescore + score_delta + gpu_score + cpu_score) * runtime_score // 100 // 5)
     scorelog(
         "get_pipeline_score(%-7s, %-24r, %-28r, %5i, %5i) quality: %3i, speed: %3i, setup: %4i - %4i runtime: %3i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, cpu score=%3i, gpu score=%3i, score=%3i",
