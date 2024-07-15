@@ -1606,7 +1606,7 @@ class WindowVideoSource(WindowSource):
                     #high bit depth is normally used for high quality
                     target *= 10
                 #high quality means less scaling:
-                target = target * (10+max(0, q-video*30))**2 // 50**2
+                target = target * (100+max(0, q-video*30))**2 // 200**2
                 #high speed means more scaling:
                 target = target * 60**2 // (s+20)**2
                 sscaling = {}

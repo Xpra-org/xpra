@@ -64,7 +64,7 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
     #the encoder speed matters less
     #when the target speed is low:
     ts = min(100, max(1, target_speed))
-    sscore = (50-ts//2) + speed*100//(100+ts)
+    sscore = (50-ts//2) + speed*100//(200 + ts)
     if csc_spec:
         #if there is a csc step,
         #then we lose some performance,
