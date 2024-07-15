@@ -108,7 +108,7 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
     """
 
     qscore = clamp(get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling, target_quality, min_quality))
-    sscore = clamp(get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed, min_speed))
+    sscore = get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed, min_speed)
 
     # multiplier for setup_cost:
     # (lose points if we have less than N fps)
