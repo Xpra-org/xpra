@@ -1477,7 +1477,10 @@ class WindowVideoSource(WindowSource):
             vmw = vmh = 16384
         else:
             vmw, vmh = self.video_max_size
+
         ffps = self.get_video_fps(width, height)
+        cached_w = cached_h = 4096
+        cached_scaling = [cached_w, cached_h, self.calculate_scaling(width, height, cached_w, cached_h)]
         scores = []
         all_no_match = {}
         for encoding in encodings:
@@ -1517,7 +1520,10 @@ class WindowVideoSource(WindowSource):
                     max_w = min(encoder_spec.max_w, vmw)
                     max_h = min(encoder_spec.max_h, vmh)
                     if (csc_spec and csc_spec.can_scale) or encoder_spec.can_scale:
-                        scaling = self.calculate_scaling(width, height, max_w, max_h)
+                        if cached_scaling[0] >= width and cached_scaling[1] >= height:
+                            scaling = cached_scaling[2]
+                        else:
+                            scaling = self.calculate_scaling(width, height, max_w, max_h)
                     else:
                         scaling = (1, 1)
                     score_delta = encoding_score_delta
@@ -1688,7 +1694,7 @@ class WindowVideoSource(WindowSource):
                     # high bit depth is normally used for high quality
                     target *= 10
                 # high quality means less scaling:
-                target = target * (10+max(0, q-video*30))**2 // 50**2
+                target = target * (100+max(0, q-video*30))**2 // 200**2
                 # high speed means more scaling:
                 target = target * 60**2 // (s+20)**2
                 sscaling = {}
@@ -1716,18 +1722,18 @@ class WindowVideoSource(WindowSource):
                     ratio = target/spps
                     # ideal ratio is 1, measure distance from 1:
                     score = round(abs(1-ratio)*100)
-                    if self.actual_scaling and self.actual_scaling == (num, denom) and (num != 1 or denom != 1):
+                    if self.actual_scaling == (num, denom) and (num != 1 or denom != 1):
                         # if we are already downscaling,
                         # try to stick to the same value longer:
                         # give it a score boost (lowest score wins):
-                        score = round(score/1.5)
+                        score = round(score/2)
                     if num/denom > min_ratio:
                         # higher than minimum, should not be used unless we have no choice:
                         score = round(score*100)
                     sscaling[score] = (num, denom)
-                scalinglog("calculate_scaling%s wid=%i, current=%s, pps=%s, target=%s, denom_mult=%s, scores=%s",
+                scalinglog("scaling scores%s wid=%i, current=%s, pps=%s, target=%s, fps=%s, denom_mult=%s, scores=%s",
                            (width, height, max_w, max_h),
-                           self.wid, self.actual_scaling, pps, target, denom_mult, sscaling)
+                           self.wid, self.actual_scaling, pps, target, ffps, denom_mult, sscaling)
                 if sscaling:
                     highscore = sorted(sscaling.keys())[0]
                     scaling = sscaling[highscore]
