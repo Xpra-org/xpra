@@ -1681,7 +1681,7 @@ class WindowVideoSource(WindowSource):
                     # high bit depth is normally used for high quality
                     target *= 10
                 # high quality means less scaling:
-                target = target * (10+max(0, q-video*30))**2 // 50**2
+                target = target * (100+max(0, q-video*30))**2 // 200**2
                 # high speed means more scaling:
                 target = target * 60**2 // (s+20)**2
                 sscaling = {}
@@ -1713,7 +1713,7 @@ class WindowVideoSource(WindowSource):
                         # if we are already downscaling,
                         # try to stick to the same value longer:
                         # give it a score boost (lowest score wins):
-                        score = int(score/1.5)
+                        score = int(score/2)
                     if num/denom > min_ratio:
                         # higher than minimum, should not be used unless we have no choice:
                         score = int(score*100)
