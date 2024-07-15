@@ -7,7 +7,7 @@ from xpra.util.env import envint
 from xpra.codecs.constants import LOSSY_PIXEL_FORMATS, CSCSpec, VideoSpec
 from xpra.log import Logger
 
-scorelog = Logger("score")
+log = Logger("score")
 
 GPU_BIAS = envint("XPRA_GPU_BIAS", 100)
 MIN_FPS_COST = envint("XPRA_MIN_FPS_COST", 4)
@@ -189,16 +189,16 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
 
     if encoder_scaling != (1, 1) and not encoder_spec.can_scale:
         # we need the encoder to scale but it cannot do it, fail it:
-        scorelog("scaling (%s) not supported by %s", encoder_scaling, encoder_spec)
+        log("scaling (%s) not supported by %s", encoder_scaling, encoder_spec)
         return None
 
     if enc_width < encoder_spec.min_w or enc_height < encoder_spec.min_h:
-        scorelog("video size %ix%i out of range for %s, min %ix%i",
-                 enc_width, enc_height, encoder_spec.codec_type, encoder_spec.min_w, encoder_spec.min_h)
+        log("video size %ix%i out of range for %s, min %ix%i",
+            enc_width, enc_height, encoder_spec.codec_type, encoder_spec.min_w, encoder_spec.min_h)
         return None
     elif enc_width > encoder_spec.max_w or enc_height > encoder_spec.max_h:
-        scorelog("video size %ix%i out of range for %s, max %ix%i",
-                 enc_width, enc_height, encoder_spec.codec_type, encoder_spec.max_w, encoder_spec.max_h)
+        log("video size %ix%i out of range for %s, max %ix%i",
+            enc_width, enc_height, encoder_spec.codec_type, encoder_spec.max_w, encoder_spec.max_h)
         return None
 
     ee_score = 100
@@ -215,8 +215,8 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
     cpu_score = max(0, 50 - GPU_BIAS) * encoder_spec.cpu_cost // 50
     score = round(
         (qscore + sscore + er_score + sizescore + score_delta + gpu_score + cpu_score) * runtime_score // 100 // 5)
-    scorelog(
-        "get_pipeline_score(%-7s, %-24r, %-28r, %5i, %5i) quality: %3i, speed: %3i, setup: %4i - %4i runtime: %3i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, cpu score=%3i, gpu score=%3i, score=%3i",
+    log(
+        "get_pipeline_score(%-7s, %-24r, %-42r, %5i, %5i) quality: %3i, speed: %3i, setup: %4i - %4i runtime: %3i scaling: %s / %s, encoder dimensions=%sx%s, sizescore=%3i, client score delta=%3i, cpu score=%3i, gpu score=%3i, score=%3i",
         # noqa: E501
         enc_in_format, csc_spec, encoder_spec, width, height,
         qscore, sscore, ecsc_score, ee_score, runtime_score, scaling,
