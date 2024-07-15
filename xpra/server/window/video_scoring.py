@@ -70,7 +70,7 @@ def get_speed_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: Vid
     # the encoder speed matters less
     # when the target speed is low:
     ts = clamp(target_speed)
-    sscore = speed * 100 // (100 + ts)
+    sscore = speed * 100 // (200 - ts)
     if csc_spec:
         # if there is a csc step,
         # then we lose some performance,
