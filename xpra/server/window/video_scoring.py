@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.util.env import envint
-from xpra.codecs.constants import LOSSY_PIXEL_FORMATS
+from xpra.codecs.constants import LOSSY_PIXEL_FORMATS, CSCSpec, VideoSpec
 from xpra.log import Logger
 
 scorelog = Logger("score")
@@ -24,7 +24,11 @@ SUBSAMPLING_QUALITY_LOSS = {
 LOSSY_CSC = ("NV12", "YUV420P", "YUV422P")
 
 
-def get_quality_score(csc_format, csc_spec, encoder_spec, scaling,
+def clamp(value: int) -> int:
+    return max(0, min(100, value))
+
+
+def get_quality_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: VideoSpec, scaling: tuple[int, int],
                       target_quality: int = 100, min_quality: int = 0) -> int:
     quality = encoder_spec.quality
     div = SUBSAMPLING_QUALITY_LOSS.get(csc_format, 100)
@@ -49,10 +53,10 @@ def get_quality_score(csc_format, csc_spec, encoder_spec, scaling,
         # when downscaling, YUV420P should always win:
         if csc_format in ("YUV420P", "NV12") and scaling != (1, 1):
             qscore *= 2.0
-    return int(qscore)
+    return round(qscore)
 
 
-def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
+def get_speed_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: VideoSpec, scaling: tuple[int, int],
                     target_speed: int = 100, min_speed: int = 0) -> int:
     # when subsampling, add the speed gains to the video encoder
     # which now has less work to do:
@@ -80,15 +84,15 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
         # then it isn't very suitable, discount its score:
         mss = (min_speed - speed) // 2
         sscore = max(0, sscore - mss)
-    return max(0, min(100, sscore))
+    return max(0, min(100, round(sscore)))
 
 
-def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
+def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spec: VideoSpec,
                        width: int, height: int, scaling,
                        target_quality: int, min_quality: int,
                        target_speed: int, min_speed: int,
                        current_csce, current_ve,
-                       score_delta: int, ffps: int, detection=True):
+                       score_delta: int, ffps: int, detection=True) -> tuple | None:
     """
         Given an optional csc step (csc_format and csc_spec),
         and a required encoding step (encoder_spec and width/height),
@@ -102,9 +106,6 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
 
         Can be called from any thread.
     """
-
-    def clamp(v):
-        return max(0, min(100, v))
 
     qscore = clamp(get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling, target_quality, min_quality))
     sscore = clamp(get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed, min_speed))
@@ -227,7 +228,7 @@ def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
     )
 
 
-def get_encoder_dimensions(encoder_spec, width: int, height: int, scaling=(1, 1)):
+def get_encoder_dimensions(encoder_spec: VideoSpec, width: int, height: int, scaling=(1, 1)) -> tuple[int, int]:
     """
         Given a csc and encoder specs and dimensions, we calculate
         the dimensions that we would use as output.
