@@ -88,7 +88,7 @@ def get_speed_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: Vid
 
 
 def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spec: VideoSpec,
-                       width: int, height: int, scaling,
+                       width: int, height: int, scaling: tuple[int, int],
                        target_quality: int, min_quality: int,
                        target_speed: int, min_speed: int,
                        current_csce, current_ve,

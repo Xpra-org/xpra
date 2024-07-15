@@ -1715,18 +1715,19 @@ class WindowVideoSource(WindowSource):
                     spps = pps*(num**2)/(denom**2)
                     ratio = target/spps
                     # ideal ratio is 1, measure distance from 1:
-                    score = int(abs(1-ratio)*100)
+                    score = round(abs(1-ratio)*100)
                     if self.actual_scaling and self.actual_scaling == (num, denom) and (num != 1 or denom != 1):
                         # if we are already downscaling,
                         # try to stick to the same value longer:
                         # give it a score boost (lowest score wins):
-                        score = int(score/1.5)
+                        score = round(score/1.5)
                     if num/denom > min_ratio:
                         # higher than minimum, should not be used unless we have no choice:
-                        score = int(score*100)
+                        score = round(score*100)
                     sscaling[score] = (num, denom)
-                scalinglog("calculate_scaling%s wid=%i, pps=%s, target=%s, denom_mult=%s, scores=%s",
-                           (width, height, max_w, max_h), self.wid, pps, target, denom_mult, sscaling)
+                scalinglog("calculate_scaling%s wid=%i, current=%s, pps=%s, target=%s, denom_mult=%s, scores=%s",
+                           (width, height, max_w, max_h),
+                           self.wid, self.actual_scaling, pps, target, denom_mult, sscaling)
                 if sscaling:
                     highscore = sorted(sscaling.keys())[0]
                     scaling = sscaling[highscore]
