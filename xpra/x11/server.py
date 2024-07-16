@@ -1245,7 +1245,8 @@ class XpraServer(gobject.GObject, X11ServerBase):
         cairo_set_source_pixbuf(cr, pixbuf, wx+x, wy+y)
         cr.set_operator(operator)
         cr.paint()
-        image.free()
+        with xlog:
+            image.free()
 
     def repaint_root_overlay(self):
         if not self.root_overlay:
