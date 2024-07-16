@@ -77,8 +77,8 @@ def get_speed_score(csc_format, csc_spec, encoder_spec, scaling,
         #if this encoder's speed is lower than the min_speed
         #then it isn't very suitable, discount its score:
         mss = (min_speed - speed) // 2
-        sscore = max(0, sscore - mss)
-    return max(0, min(100, sscore))
+        sscore -= mss
+    return sscore
 
 def get_pipeline_score(enc_in_format, csc_spec, encoder_spec,
                        width : int, height : int, scaling,
