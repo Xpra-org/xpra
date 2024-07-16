@@ -83,7 +83,7 @@ def get_speed_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: Vid
         # if this encoder's speed is lower than the min_speed
         # then it isn't very suitable, discount its score:
         mss = (min_speed - speed) // 2
-        sscore = max(0, sscore - mss)
+        sscore -= mss
     return round(sscore)
 
 
