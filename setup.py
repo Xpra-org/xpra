@@ -452,27 +452,6 @@ SWITCHES += [
 SWITCHES = list(sorted(set(SWITCHES)))
 
 
-def show_help() -> None:
-    setup()
-    print("Xpra specific build and install switches:")
-    for x in SWITCHES:
-        d = globals()[f"{x}_ENABLED"]
-        with_str = f"  --with-{x}"
-        without_str = f"  --without-{x}"
-        if d is True or d is False:
-            default_str = str(d)
-        else:
-            default_str = "auto-detect"
-        print("%s or %s (default: %s)" % (with_str.ljust(25), without_str.ljust(30), default_str))
-    print("  --pkg-config-path=PATH")
-    print("  --rpath=PATH")
-
-
-HELP = "-h" in sys.argv or "--help" in sys.argv
-if HELP:
-    show_help()
-    sys.exit(0)
-
 install = None
 rpath = None
 ssl_cert = None
@@ -753,6 +732,27 @@ def install_repo(repo_variant="") -> None:
             cmd.insert(0, "sudo")
         subprocess.run(cmd)
 
+
+def show_help() -> None:
+    setup()
+    print("Xpra specific build and install switches:")
+    for x in SWITCHES:
+        d = globals()[f"{x}_ENABLED"]
+        with_str = f"  --with-{x}"
+        without_str = f"  --without-{x}"
+        if d is True or d is False:
+            default_str = str(d)
+        else:
+            default_str = "auto-detect"
+        print("%s or %s (default: %s)" % (with_str.ljust(25), without_str.ljust(30), default_str))
+    print("  --pkg-config-path=PATH")
+    print("  --rpath=PATH")
+
+
+HELP = "-h" in sys.argv or "--help" in sys.argv
+if HELP:
+    show_help()
+    sys.exit(0)
 
 if "doc" in sys.argv:
     convert_docs("html")
