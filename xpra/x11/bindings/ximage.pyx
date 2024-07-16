@@ -432,7 +432,7 @@ cdef class XImageWrapper:
     cdef void free_image(self):
         ximagedebug("%s.free_image() image=%#x", self, <uintptr_t> self.image)
         if self.image!=NULL:
-            call_context_check("XImageWrapper.free_image()")
+            call_context_check("XImageWrapper.free_image")
             XDestroyImage(self.image)
             self.image = NULL
             global ximage_counter
@@ -703,7 +703,7 @@ cdef class XShmWrapper:
             self.shminfo.shmaddr = <char *> -1
             self.shminfo.shmid = -1
         if has_shm or has_image:
-            call_context_check("XShmWrapper.free()")
+            call_context_check("XShmWrapper.free")
 
 
 cdef class XShmImageWrapper(XImageWrapper):
