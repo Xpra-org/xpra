@@ -31,11 +31,9 @@ autoprov: no
 %endif
 
 %define CFLAGS -O2
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
 %if 0%{?fedora}>=39
 %global debug_package %{nil}
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild --without-pandoc_lua
-%else
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
 %endif
 
 %{!?nthreads: %global nthreads %(nproc)}
