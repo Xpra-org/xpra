@@ -2328,6 +2328,10 @@ class ServerCore:
         if request == "info":
             self.send_hello_info(proto)
             return True
+        if request == "screenshot" and hasattr(self, "make_screenshot_packet"):
+            packet = self.make_screenshot_packet()
+            proto.send_now(packet)
+            return True
         return False
 
     def accept_client(self, proto: SocketProtocol, c: typedict) -> None:

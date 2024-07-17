@@ -146,7 +146,7 @@ class HelloRequestClient(SendCommandConnectClient):
             self.server_disconnect(*info)
 
 
-class ScreenshotXpraClient(CommandConnectClient):
+class ScreenshotXpraClient(HelloRequestClient):
     """ This client does one thing only:
         it sends the hello packet with a screenshot request
         and exits when the resulting image is received (or timedout)
@@ -155,7 +155,11 @@ class ScreenshotXpraClient(CommandConnectClient):
     def __init__(self, opts, screenshot_filename):
         self.screenshot_filename = screenshot_filename
         super().__init__(opts)
-        self.hello_extra["request"] = "screenshot"
+
+    def hello_request(self) -> dict[str, Any]:
+        return {
+            "request": "screenshot",
+        }
 
     def do_command(self, caps: typedict) -> None:
         self.send("screenshot")
