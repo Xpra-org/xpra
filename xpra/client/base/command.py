@@ -94,7 +94,7 @@ class CommandConnectClient(GObjectXpraClient):
         return True
 
     def do_command(self, caps: typedict) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError(f"no do_command method in {self!r}")
 
 
 class SendCommandConnectClient(CommandConnectClient):
@@ -120,15 +120,13 @@ class HelloRequestClient(SendCommandConnectClient):
     """
 
     def make_hello_base(self) -> dict[str, Any]:
-        caps = super().make_hello_base()
-        caps.update(self.hello_request())
-        return caps
+        return super().make_hello_base() | self.hello_request()
 
     def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not disconnect us")
 
     def hello_request(self):  # pragma: no cover
-        raise NotImplementedError()
+        raise NotImplementedError(f"`hello_request` not implemented in {self!r}")
 
     def do_command(self, caps: typedict) -> None:
         self.quit(ExitCode.OK)
