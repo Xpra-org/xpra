@@ -12,7 +12,7 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.util.str_fn import nonl, csv, ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
-from xpra.common import ConnectionMessage, disconnect_is_an_error
+from xpra.common import ConnectionMessage, disconnect_is_an_error, noop
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print
 from xpra.net.common import PacketType
@@ -56,6 +56,7 @@ class CommandConnectClient(GObjectXpraClient):
         protocol = super().setup_connection(conn)
         if conn.timeout > 0:
             self.command_timeout = GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
+        self._packet_handlers["setting-change"] = noop
         return protocol
 
     def timeout(self, *_args) -> None:
