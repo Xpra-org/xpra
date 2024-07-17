@@ -158,6 +158,9 @@ class ScreenshotXpraClient(CommandConnectClient):
         super().__init__(opts)
         self.hello_extra["request"] = "screenshot"
 
+    def do_command(self, caps: typedict) -> None:
+        self.send("screenshot")
+
     def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the screenshot")
 
