@@ -279,15 +279,16 @@ class ProxyServer(ServerCore):
         request = c.strget("request")
 
         if request:
-            self.handle_hello_request(proto, request)
+            if not self.handle_hello_request(request, proto, c):
+                self.send_disconnect(proto, f"error: invalid request, {request!r} is not supported by the proxy server")
             return
         self.proxy_auth(proto, c, auth_caps)
 
-    def handle_hello_request(self, proto, request):
+    def handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
         if request == "stop":
             self.handle_stop_request(proto)
-        else:
-            self.send_disconnect(proto, f"error: invalid request, {request!r} is not supported by the proxy server")
+            return True
+        return False
 
     def handle_stop_request(self, proto):
         default_can_stop = CAN_STOP_PROXY and get_socktype(proto) in STOP_PROXY_SOCKET_TYPES and proto.authenticators

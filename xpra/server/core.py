@@ -1936,7 +1936,7 @@ class ServerCore:
     # #####################################################################
     # hello / authentication:
     def send_version_info(self, proto: SocketProtocol, full: bool = False) -> None:
-        version = version_str() if full else XPRA_VERSION.split(".", 1)[0]
+        version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
         proto.send_now(("hello", {"version": version}))
         # client is meant to close the connection itself, but just in case:
         GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
@@ -1957,7 +1957,7 @@ class ServerCore:
             return
 
         log("process_hello: capabilities=%s", capabilities)
-        if c.strget("request") == "version" or c.boolget("version_request"):
+        if c.strget("request") == "version":
             self.send_version_info(proto, c.boolget("full-version-request"))
             return
         # verify version:
@@ -2304,26 +2304,30 @@ class ServerCore:
             self.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
 
     def hello_oked(self, proto: SocketProtocol, c: typedict, _auth_caps: dict) -> bool:
+        if self._closing:
+            self.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
+            return True
         request = c.strget("request")
-        if request:
-            if not is_request_allowed(proto, request):
-                msg = f"`{request}` requests are not enabled for this connection"
-                self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
-                return True
-            if request == "connect_test":
-                ctr = c.strget("connect_test_request")
-                response = {"connect_test_response": ctr}
-                proto.send_now(("hello", response))
-                return True
-            if request == "id":
-                self.send_id_info(proto)
-                return True
-            if self._closing:
-                self.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
-                return True
-            if request == "info":
-                self.send_hello_info(proto)
-                return True
+        if request and self.handle_hello_request(request, proto, c):
+            return True
+        return False
+
+    def handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
+        if not is_request_allowed(proto, request):
+            msg = f"`{request}` requests are not enabled for this connection"
+            self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
+            return True
+        if request == "connect_test":
+            ctr = caps.strget("connect_test_request")
+            response = {"connect_test_response": ctr}
+            proto.send_now(("hello", response))
+            return True
+        if request == "id":
+            self.send_id_info(proto)
+            return True
+        if request == "info":
+            self.send_hello_info(proto)
+            return True
         return False
 
     def accept_client(self, proto: SocketProtocol, c: typedict) -> None:

@@ -299,7 +299,6 @@ class ServerBase(ServerBaseClass):
         if c.boolget("screenshot_request"):
             self.send_screenshot(proto)
             return
-        # added in 2.2:
         request = c.strget("request")
         if not request:
             # "normal" connection, so log welcome message:

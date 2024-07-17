@@ -28,7 +28,7 @@ from xpra.util.str_fn import Ellipsizer, bytestostr
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
 from xpra.util.version import full_version_str
-from xpra.common import ConnectionMessage, SocketState, noerr
+from xpra.common import ConnectionMessage, SocketState, noerr, FULL_INFO
 from xpra.platform.dotxpra import DotXpra
 from xpra.log import Logger
 
@@ -298,42 +298,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 self.send_disconnect(proto, ConnectionMessage.AUTHENTICATION_ERROR,
                                      "this socket does not use authentication")
                 return
-            generic_request = caps.strget("request")
-
-            def is_req_allowed(mode) -> bool:
-                try:
-                    options = proto._conn.options
-                    req_option = options.get(mode, "yes")
-                except AttributeError:
-                    req_option = "yes"
-                return str_to_bool(req_option)
-
-            def is_req(mode) -> bool:
-                return generic_request == mode or caps.boolget(f"{mode}_request")
-
-            if is_req("info"):
-                if is_req_allowed("info"):
-                    info = self.get_proxy_info(proto)
-                    info.setdefault("connection", {}).update(self.get_connection_info())
-                else:
-                    info = {"error": "`info` requests are not enabled for this connection"}
-                proto.send_now(("hello", info))
-                GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
-                                 "info sent")
-                return
-            if is_req("stop"):
-                if is_req_allowed("stop"):
-                    self.stop(None, "socket request")
-                else:
-                    log.warn("Warning: `stop` requests are not allowed for this connection")
-                return
-            if is_req("version"):
-                version = XPRA_VERSION
-                if caps.boolget("full-version-request"):
-                    version = full_version_str()
-                proto.send_now(("hello", {"version": version}))
-                GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
-                                 "version sent")
+            request = caps.strget("request")
+            if request and self.handle_hello_request(request, proto, caps):
                 return
             log.warn("Warning: invalid hello packet,")
             log.warn(" not a supported control channel request")
@@ -342,6 +308,41 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             log.warn(" '%s' is not supported, only 'hello' is", packet_type)
         self.send_disconnect(proto, ConnectionMessage.CONTROL_COMMAND_ERROR,
                              "this socket only handles 'info', 'version' and 'stop' requests")
+
+    def handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
+        def is_req_allowed(mode) -> bool:
+            try:
+                options = proto._conn.options
+                req_option = options.get(mode, "yes")
+            except AttributeError:
+                req_option = "yes"
+            return str_to_bool(req_option)
+
+        if request == "info":
+            if is_req_allowed("info"):
+                info = self.get_proxy_info(proto)
+                info.setdefault("connection", {}).update(self.get_connection_info())
+            else:
+                info = {"error": "`info` requests are not enabled for this connection"}
+            proto.send_now(("hello", info))
+            GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+                             "info sent")
+            return True
+        if request == "stop":
+            if is_req_allowed("stop"):
+                self.stop(None, "socket request")
+            else:
+                log.warn("Warning: `stop` requests are not allowed for this connection")
+            return True
+        if request == "version":
+            version = XPRA_VERSION
+            if caps.boolget("full-version-request") and FULL_INFO:
+                version = full_version_str()
+            proto.send_now(("hello", {"version": version}))
+            GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+                             "version sent")
+            return True
+        return False
 
     ################################################################################
 

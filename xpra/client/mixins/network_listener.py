@@ -186,7 +186,10 @@ class Networklistener(StubClientMixin):
             proto.enable_encoder_from_caps(caps)
             request = caps.strget("request")
             if request:
-                self.handle_hello_request(proto, request, caps)
+                if not self.handle_hello_request(proto, request, caps):
+                    log.info(f"{request!r} requests are not handled by this client")
+                    proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
+                return
         elif packet_type in (CONNECTION_LOST, GIBBERISH):
             close()
             return
@@ -197,7 +200,7 @@ class Networklistener(StubClientMixin):
         tid = GLib.timeout_add(REQUEST_TIMEOUT * 1000, close)
         self._close_timers[proto] = tid
 
-    def handle_hello_request(self, proto, request: str, caps: typedict) -> None:
+    def handle_hello_request(self, proto, request: str, caps: typedict) -> bool:
         def hello_reply(data) -> None:
             proto.send_now(["hello", data])
 
@@ -220,19 +223,19 @@ class Networklistener(StubClientMixin):
 
             # run in UI thread:
             GLib.idle_add(send_info)
-            return
+            return True
         if request == "id":
             hello_reply(self.get_id_info())
-            return
+            return True
         if request == "detach":
             def protocol_closed() -> None:
                 self.disconnect_and_quit(ExitCode.OK, "network request")
 
             proto.send_disconnect([ConnectionMessage.DETACH_REQUEST], done_callback=protocol_closed)
-            return
+            return True
         if request == "version":
             hello_reply({"version": version_str()})
-            return
+            return True
         if request in ("show-menu", "show-about", "show-session-info"):
             fn = getattr(self, request.replace("-", "_"), None)
             if not fn:
@@ -241,10 +244,10 @@ class Networklistener(StubClientMixin):
                 log.info(f"calling {fn}")
                 GLib.idle_add(fn)
                 hello_reply({})
-            return
+            return True
         if request == "connect_test":
             hello_reply({})
-            return
+            return True
         if request == "command":
             command = caps.strtupleget("command_request")
             log("command request: %s", command)
@@ -260,9 +263,8 @@ class Networklistener(StubClientMixin):
                 hello_reply({"command_response": (int(code), response)})
 
             GLib.idle_add(process_control)
-            return
-        log.info(f"`{request}` requests are not handled by this client")
-        proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
+            return True
+        return False
 
     def get_id_info(self) -> dict[str, Any]:
         # minimal information for identifying the session
