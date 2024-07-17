@@ -207,7 +207,7 @@ class Networklistener(StubClientMixin):
         if not is_request_allowed(proto, request):
             log.info("request '%s' is not handled by this client", request)
             proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])
-            return
+            return True
 
         if request == "info":
             def send_info() -> None:
