@@ -1722,11 +1722,13 @@ class WindowVideoSource(WindowSource):
                     ratio = target/spps
                     # ideal ratio is 1, measure distance from 1:
                     score = round(abs(1-ratio)*100)
-                    if self.actual_scaling == (num, denom) and (num != 1 or denom != 1):
-                        # if we are already downscaling,
-                        # try to stick to the same value longer:
+                    if self.actual_scaling == (num, denom):
+                        # try to stick to the same settings longer:
                         # give it a score boost (lowest score wins):
-                        score = round(score/2)
+                        elapsed = min(16, max(0, now - self.last_pipeline_time))
+                        # gain will range from 4 (after 0 seconds) to 1 (after 9 seconds)
+                        gain = sqrt(17 - elapsed)
+                        score = round(score / gain)
                     if num/denom > min_ratio:
                         # higher than minimum, should not be used unless we have no choice:
                         score = round(score*100)
