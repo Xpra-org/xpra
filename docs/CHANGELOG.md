@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.2.0] 2024-07-18
+* TODO
+
 ## [6.1] 2024-07-18
 * Platforms, build and packaging:
     * [RHEL 10 builds](https://github.com/Xpra-org/xpra/issues/4282)
