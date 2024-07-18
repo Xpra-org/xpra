@@ -812,6 +812,8 @@ class WindowBackingBase:
         # also we could skip the csc step in some cases:
         pixel_format = img.get_pixel_format()
         cd = self._csc_decoder
+        csc_width = width if PREFER_CSC_SCALING else enc_width
+        csc_height = height if PREFER_CSC_SCALING else enc_height
         if cd is not None:
             if cd.get_src_format() != pixel_format:
                 videolog("do_video_paint csc: switching src format from %s to %s",
@@ -821,21 +823,20 @@ class WindowBackingBase:
                 videolog("do_video_paint csc: switching dst format from %s to %s",
                          cd.get_dst_format(), target_rgb_formats)
                 self.do_clean_csc_decoder()
-            elif PREFER_CSC_SCALING:
-                if cd.get_src_width() != enc_width or cd.get_src_height() != enc_height:
-                    videolog("do_video_paint csc: switching src size from %sx%s to %sx%s",
-                             enc_width, enc_height, cd.get_src_width(), cd.get_src_height())
-                    self.do_clean_csc_decoder()
-                elif cd.get_dst_width() != width or cd.get_dst_height() != height:
-                    videolog("do_video_paint csc: switching dst size from %sx%s to %sx%s",
-                             width, height, cd.get_dst_width(), cd.get_dst_height())
-                    self.do_clean_csc_decoder()
+            elif cd.get_src_width() != enc_width or cd.get_src_height() != enc_height:
+                videolog("do_video_paint csc: switching src size from %sx%s to %sx%s",
+                         enc_width, enc_height, cd.get_src_width(), cd.get_src_height())
+                self.do_clean_csc_decoder()
+            elif cd.get_dst_width() != csc_width or cd.get_dst_height() != csc_height:
+                videolog("do_video_paint csc: switching dst size from %sx%s to %sx%s",
+                         cd.get_dst_width(), cd.get_dst_height(), csc_width, csc_height)
+                self.do_clean_csc_decoder()
         if self._csc_decoder is None:
             # use higher quality csc to compensate for lower quality source
             # (which generally means that we downscaled via YUV422P or lower)
             # or when upscaling the video:
             cd = self.make_csc(enc_width, enc_height, pixel_format,
-                               width, height, target_rgb_formats, options)
+                               csc_width, csc_height, target_rgb_formats, options)
             videolog("do_video_paint new csc decoder: %s", cd)
             self._csc_decoder = cd
         rgb_format = cd.get_dst_format()
