@@ -1,6 +1,8 @@
 %define _disable_source_fetch 0
 %global debug_package %{nil}
 
+%define el8_10 %(grep -q " release 8.10 " /etc/redhat-release && echo 1)
+
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %define package_prefix %{nil}
@@ -108,7 +110,7 @@ fi
 
 %files -n %{python3}-gobject-base
 %dir %{python3_sitearch}/gi/
-%if 0%{?fedora}%{?el9}
+%if 0%{?fedora}%{?el9}%{?el8_10}
 %pycached %{python3_sitearch}/gi/*.py
 %else
 %{python3_sitearch}/gi/*.py
