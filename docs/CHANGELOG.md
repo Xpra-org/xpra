@@ -1,13 +1,26 @@
 # Changelog
 
-## [6.1] 2024-05-24
+## [6.1] 2024-07-18
 * Platforms, build and packaging:
-    * None so far!
+    * [RHEL 10 builds](https://github.com/Xpra-org/xpra/issues/4282)
+    * make it easier to [setup a development environment](https://github.com/Xpra-org/xpra/issues/4244) and [to install the repositories](https://github.com/Xpra-org/xpra/issues/4245)
+* Encodings:
+    * [faster scaling of subsampled images without OpenGL](https://github.com/Xpra-org/xpra/issues/4209)
+    * [zero-copy drawing without OpenGL](https://github.com/Xpra-org/xpra/issues/4270)
+    * [scale YUV before converting to RGB](https://github.com/Xpra-org/xpra/issues/4209)
+    * [full range video compression](https://github.com/Xpra-org/xpra/issues/3837)
+    * [GPU checks from a containerized environment](https://github.com/Xpra-org/xpra/pull/4257)
+    * [colorspace fixes](https://github.com/Xpra-org/xpra/issues/3837)
+* Network:
+    * [WebTransport server](https://github.com/Xpra-org/xpra/issues/3376#issuecomment-2198059166)
+    * [QUIC fast-open](https://github.com/Xpra-org/xpra/commit/475531d9d4433fa8ac89d5d0ce96744d8519e56d)
 * Features:
+    * [handle display scaling correctly on more platforms](https://github.com/Xpra-org/xpra/issues/4205)
     * [use native file chooser on some platforms](https://github.com/Xpra-org/xpra/issues/4222)
     * [support custom window grouping](https://github.com/Xpra-org/xpra/issues/4208)
-    * [full range video compression](https://github.com/Xpra-org/xpra/issues/3837)
-    * [scale YUV before converting to RGB](https://github.com/Xpra-org/xpra/issues/4209)
+    * [optional username verification for authentication modules](https://github.com/Xpra-org/xpra/issues/4294)
+    * [resize virtual display to a specific resolution only](https://github.com/Xpra-org/xpra/issues/4279)
+    * [filter environment exposed to xvfb subcommand](https://github.com/Xpra-org/xpra/issues/4252)
 * Cosmetic:
     * many type hints added
     * linter warnings fixed

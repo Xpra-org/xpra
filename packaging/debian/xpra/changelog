@@ -1,7 +1,29 @@
 xpra (6.1-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+    RHEL 10 builds
+    make it easier to setup a development environment and to install the repositories
+  * Encodings:
+    faster scaling of subsampled images without OpenGL
+    zero-copy drawing without OpenGL
+    scale YUV before converting to RGB
+    full range video compression
+    GPU checks from a containerized environment
+    colorspace fixes
+  * Network:
+    WebTransport server
+    QUIC fast-open
+  * Features:
+    handle display scaling correctly on more platforms
+    use native file chooser on some platforms
+    support custom window grouping
+    optional username verification for authentication modules
+    resize virtual display to a specific resolution only
+    filter environment exposed to xvfb subcommand
+  * Cosmetic:
+    many type hints added
+    linter warnings fixed
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 25 Apr 2024 16:21:39 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 18 Jul 2024 18:04:31 +0700
 
 xpra (6.0-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

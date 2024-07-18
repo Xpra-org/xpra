@@ -883,8 +883,32 @@ fi
 
 
 %changelog
-* Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> 6.1-10
-- TODO
+* Thu Jul 18 2024 Antoine Martin <antoine@xpra.org> 6.1-10
+- Platforms, build and packaging:
+   RHEL 10 builds
+   make it easier to setup a development environment and to install the repositories
+- Encodings:
+   faster scaling of subsampled images without OpenGL
+   zero-copy drawing without OpenGL
+   scale YUV before converting to RGB
+   full range video compression
+   GPU checks from a containerized environment
+   colorspace fixes
+- Network:
+   WebTransport server
+   QUIC fast-open
+- Features:
+   handle display scaling correctly on more platforms
+   use native file chooser on some platforms
+   support custom window grouping
+   optional username verification for authentication modules
+   resize virtual display to a specific resolution only
+   filter environment exposed to xvfb subcommand
+- Cosmetic:
+   many type hints added
+   linter warnings fixed
+
+
 * Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> 6.0-10
 - Platforms, build and packaging:
    require and take advantage of Python 3.10+
