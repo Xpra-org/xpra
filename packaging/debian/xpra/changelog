@@ -1,16 +1,24 @@
 xpra (6.0.3-1) UNRELEASED; urgency=low
+  * Packaging:
+    - restore links in html documentation on Fedora
   * Major:
     - missing screen updates
     - bug report and mdns GUI links broken from launcher
     - existing config overwritten
     - mDNS records duplicated
     - Network Manager API breakage, make it possible to skip it
+    - missing error context with `sync-xvfb`
+    - broken `screenshot` command and avoid `setting-change` packet warnings
+  * Encodings:
+    - avoid slow encoders and slow colorspace conversion
+    - less drastic scaling changes when quality changes
+    - video scaling flip-flops
   * Keyboard:
     - try harder to find the key event string
     - don't show duplicate keyboard layout names
     - ignore MS Windows keyboard layouts we can't map to X11 keyboard layouts
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 13 Jul 2024 11:44:07 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 18 Jul 2024 14:12:57 +0700
 
 xpra (6.0.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

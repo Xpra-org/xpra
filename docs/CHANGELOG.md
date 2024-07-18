@@ -1,16 +1,26 @@
 # Changelog
 
-## [6.0.3] 2024-07-13
+## [6.0.3] 2024-07-18
+* Packaging:
+    * [restore links in html documentation on Fedora](https://github.com/Xpra-org/xpra/commit/aee4fb2f6a99443cc91749656555b3d09bf250bb)
 * Major:
     * [missing screen updates](https://github.com/Xpra-org/xpra/commit/5930e2994d6d2ecbdeba37dd4587aa24e850fb65)
     * [bug report and mdns GUI links broken from launcher](https://github.com/Xpra-org/xpra/commit/ebbde62c41d13fa29445fd37dc1e37fd1ad68cf5)
     * [existing config overwritten](https://github.com/Xpra-org/xpra/commit/60aa5a9fac3cb3424e4d99f76abd9af4c8309818)
     * [mDNS records duplicated](https://github.com/Xpra-org/xpra/commit/1eeb7fd752cf3e01b419746146c45b9b240ade82)
     * [Network Manager API breakage](https://github.com/Xpra-org/xpra/commit/03958237d9372a6a5f24cca6ac2256fc001fb7fe), [make it possible to skip it](https://github.com/Xpra-org/xpra/commit/8325f78120cd7a79960fe6fc3f863e7b49b17426)
+    * [missing error context with `sync-xvfb`](https://github.com/Xpra-org/xpra/commit/308d7fb0a19e6477a624f7e81345d556a925407a)
+    * [broken `screenshot` command](https://github.com/Xpra-org/xpra/commit/aee4fb2f6a99443cc91749656555b3d09bf250bb) and [avoid `setting-change` packet warnings](https://github.com/Xpra-org/xpra/commit/dc4698082a25d767a5f43fdef62a0fbe39c192b9)
+* Encodings:
+    * [avoid](https://github.com/Xpra-org/xpra/commit/76f77a8aa85c95e1593b9c3b7c47ed0ee3cfb1d2) [slow encoders](https://github.com/Xpra-org/xpra/commit/53e49549d32c127a31a3a9b254369f388c144c21) and [slow colorspace conversion](https://github.com/Xpra-org/xpra/commit/47adf2c4c8dade8548eab998f1f821e6aac28904)
+    * [less drastic scaling changes when quality changes](https://github.com/Xpra-org/xpra/commit/2db9c34543ccd03b57b36da22e18e9d265403faf)
+    * [video scaling flip-flops](https://github.com/Xpra-org/xpra/commit/b2fa0c928bce8dc969255760e9184251c4dd1f69)
 * Keyboard:
     * [try harder to find the key event string](https://github.com/Xpra-org/xpra/commit/99eaf0514724d6d367a4b39637e1ba3f6c24fdb0)
     * [don't show duplicate keyboard layout names](https://github.com/Xpra-org/xpra/commit/da736cab43798a4f2346a16b6d7355c25c9830bd)
     * [ignore MS Windows keyboard layouts we can't map to X11 keyboard layouts](https://github.com/Xpra-org/xpra/commit/c803ac9f2ca7645cccd0172024212e85f22e27de)
+* Cosmetic:
+    * [missing quote](https://github.com/Xpra-org/xpra/commit/e309e30cab40c806c19a5875e844d96cf601a100)
 
 ## [6.0.2] 2024-07-08
 * Platforms, build and packaging:

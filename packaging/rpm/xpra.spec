@@ -860,13 +860,21 @@ fi
 
 
 %changelog
-* Sat Jul 13 2024 Antoine Martin <antoine@xpra.org> 6.0.3-10
+* Thu Jul 18 2024 Antoine Martin <antoine@xpra.org> 6.0.3-10
+- Packaging:
+   restore links in html documentation on Fedora
 - Major:
    missing screen updates
    bug report and mdns GUI links broken from launcher
    existing config overwritten
    mDNS records duplicated
    Network Manager API breakage, make it possible to skip it
+   missing error context with `sync-xvfb`
+   broken `screenshot` command and avoid `setting-change` packet warnings
+- Encodings:
+   avoid slow encoders and slow colorspace conversion
+   less drastic scaling changes when quality changes
+   video scaling flip-flops
 - Keyboard:
    try harder to find the key event string
    don't show duplicate keyboard layout names
