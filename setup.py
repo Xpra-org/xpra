@@ -145,24 +145,6 @@ print("Python version %s" % (".".join(str(v) for v in sys.version_info[:3])))
 #*******************************************************************************
 
 
-def check_cython3() -> None:
-    try:
-        import cython
-        print(f"found Cython version {cython.__version__}")
-        version = int(cython.__version__.split('.')[0])
-    except (ValueError, ImportError):
-        print("WARNING: unable to detect Cython version")
-    else:
-        if version < 3:
-            print("*******************************************")
-            print("please switch to Cython 3.x")
-            print(f" version {version} is not supported")
-            print("*******************************************")
-            sys.exit(1)
-
-
-check_cython3()
-
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 
@@ -827,6 +809,25 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
             print(" you should enable at least one of these two video encodings")
 
     check_sane_defaults()
+
+
+def check_cython3() -> None:
+    try:
+        import cython
+        print(f"found Cython version {cython.__version__}")
+        version = int(cython.__version__.split('.')[0])
+    except (ValueError, ImportError):
+        print("WARNING: unable to detect Cython version")
+    else:
+        if version < 3:
+            print("*******************************************")
+            print("please switch to Cython 3.x")
+            print(f" version {version} is not supported")
+            print("*******************************************")
+            sys.exit(1)
+
+
+check_cython3()
 
 
 #*******************************************************************************
