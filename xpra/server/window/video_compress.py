@@ -71,6 +71,8 @@ SCALING_PPS_TARGET = envint("XPRA_SCALING_PPS_TARGET", 25*1920*1080)
 SCALING_MIN_PPS = envint("XPRA_SCALING_MIN_PPS", 25*320*240)
 DEFAULT_SCALING_OPTIONS = (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1)
 
+ALWAYS_FREEZE = envbool("XPRA_IMAGE_ALWAYS_FREEZE", False)
+
 
 def parse_scaling_options_str(scaling_options_str: str) -> tuple:
     if not scaling_options_str:
@@ -1050,7 +1052,7 @@ class WindowVideoSource(WindowSource):
         av_delay = eoptions.intget("av-delay", 0)
         cve = self.common_video_encodings
         video_mode = coding in cve or (coding in ("auto", "stream") and cve)
-        must_freeze = av_delay > 0 or (video_mode and not image.is_thread_safe())
+        must_freeze = ALWAYS_FREEZE or av_delay > 0 or (video_mode and not image.is_thread_safe())
         log("process_damage_region: av_delay=%s, must_freeze=%s, size=%s, encoding=%s",
             av_delay, must_freeze, (w, h), coding)
         if must_freeze:
