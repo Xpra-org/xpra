@@ -16,7 +16,6 @@ from typing import ContextManager, Any
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.os_util import POSIX, OSX, gi_import
-from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
@@ -128,7 +127,7 @@ COMPRESS_FMT_DIRECT : str = (
 )
 
 ui_context: ContextManager = nullcontext()
-if POSIX and not OSX and not is_Wayland() and not envbool("XPRA_NOX11", False):
+if POSIX and not OSX and not envbool("XPRA_NOX11", False) and os.environ.get("GDK_BACKEND", "x11") == "x11":
     from xpra.gtk.error import xlog
     ui_context = xlog
 
