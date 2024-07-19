@@ -455,9 +455,12 @@ def has_uinput() -> bool:
     except Exception as e:
         log = get_logger()
         log("has_uinput()", exc_info=True)
-        log.info("cannot use uinput for virtual devices,")
-        log.info(" this is usually a permission issue:")
-        log.info(" %s", e)
+        if isinstance(e, OSError) and e.errno == 19:
+            log("no uinput: is the kernel module installed?")
+        else:
+            log.info("cannot use uinput for virtual devices,")
+            log.info(" this is usually a permission issue:")
+            log.info(" %s", e)
         return False
     return True
 
