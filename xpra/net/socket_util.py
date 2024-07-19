@@ -357,7 +357,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0,
     bind_ws = parse_bind_ip(opts.bind_ws, 80)
     bind_wss = parse_bind_ip(opts.bind_wss, 443)
     bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
-    bind_quic = parse_bind_ip(opts.bind_quic, 20000)
+    bind_quic = parse_bind_ip(opts.bind_quic, 14500)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
     min_port = int(opts.min_port)
