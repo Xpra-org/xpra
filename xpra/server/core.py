@@ -959,6 +959,8 @@ class ServerCore:
         if socktype in ("vsock", "named-pipe"):
             # cannot be accessed remotely
             return ()
+        if socktype == "quic":
+            return ("quic", "webtransport")
         socktypes = [socktype]
         if socktype == "tcp":
             for tosocktype in ("ssl", "ws", "wss", "ssh", "rfb"):
