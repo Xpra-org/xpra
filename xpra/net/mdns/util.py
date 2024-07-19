@@ -74,6 +74,7 @@ def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
     service_type = {
         "rfb": RFB_MDNS_TYPE,
         "quic": XPRA_UDP_MDNS_TYPE,
+        "webtransport": XPRA_UDP_MDNS_TYPE,
     }.get(mode, XPRA_TCP_MDNS_TYPE)
     index = 0
     aps = []
