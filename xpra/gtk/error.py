@@ -108,7 +108,7 @@ class _ErrorManager:
             log("Xenter", backtrace=True)
         self.depth += 1
 
-    def Xexit(self, need_sync=True) -> None:
+    def Xexit(self, need_sync=True):
         assert self.depth >= 0
         self.depth -= 1
         if XPRA_LOG_SYNC:
@@ -116,15 +116,12 @@ class _ErrorManager:
         if self.depth == 0 and need_sync:
             Gdk.flush()
         # This is a Xlib error constant (Success == 0)
-        error = Gdk.error_trap_pop()
-        if error:
-            raise XError(error)
+        return Gdk.error_trap_pop()
 
     def safe_x_exit(self) -> None:
-        try:
-            self.Xexit()
-        except XError as e:
-            log(f"Warning: '{e}' detected while already in unwind; discarding")
+        err = self.Xexit()
+        if err:
+            log(f"Warning: '{err}' detected while already in unwind; discarding")
 
     def _call(self, need_sync: bool, fun: Callable, args: tuple, kwargs: dict) -> Any:
         # Goal: call the function.  In all conditions, call _exit exactly once
@@ -139,12 +136,13 @@ class _ErrorManager:
         except Exception as e:
             elog("_call%s", (need_sync, fun, args, kwargs), exc_info=True)
             log("_call%s %s", (need_sync, fun, args, kwargs), e)
-            try:
-                self.Xexit(need_sync)
-            except XError as ee:
-                log(f"XError '{ee}' detected while already in unwind; discarding")
+            err = self.Xexit(need_sync)
+            if err:
+                log(f"XError '{err}' detected while already in unwind; discarding")
             raise
-        self.Xexit(need_sync)
+        err = self.Xexit(need_sync)
+        if err:
+            raise XError(err)
         return value
 
     def call_unsynced(self, fun: Callable, *args, **kwargs) -> Any:
@@ -192,13 +190,12 @@ class XSyncContext:
         trap.Xenter()
 
     def __exit__(self, e_typ, _e_val, trcbak):
-        try:
-            trap.Xexit()
-        except XError as e:
+        err = trap.Xexit()
+        if err:
             if e_typ is None:
                 # we are not handling an exception yet, so raise this one:
-                raise
-            log(f"Ignoring {e_typ} during Xexit, {e_typ} will be raised instead", exc_info=e)
+                raise XError(err)
+            log(f"Ignoring {err} during Xexit, {e_typ} will be raised instead")
         # raise the original exception:
         return False
 
