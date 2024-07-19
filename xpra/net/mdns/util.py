@@ -2,18 +2,21 @@
 # Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 import socket
+from typing import Callable, Any
+from collections.abc import Sequence
 
 from xpra.os_util import OSX, WIN32
 from xpra.util.env import envbool
 
 
-def import_zeroconf():
+def import_zeroconf() -> tuple[Any, Callable]:
     from xpra.net.mdns.zeroconf_publisher import ZeroconfPublishers, get_interface_index
     return ZeroconfPublishers, get_interface_index
 
 
-def import_avahi():
+def import_avahi() -> tuple[Any, Callable]:
     from xpra.net.mdns.avahi_publisher import AvahiPublishers, get_interface_index
     return AvahiPublishers, get_interface_index
 
@@ -21,7 +24,7 @@ def import_avahi():
 MDNS_WARNING = False
 
 
-def mdns_publish(display_name: str, listen_on, text_dict=None):
+def mdns_publish(display_name: str, listen_on, text_dict=None) -> Sequence:
     global MDNS_WARNING
     if MDNS_WARNING is True:
         return ()

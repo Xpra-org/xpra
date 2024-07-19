@@ -25,7 +25,7 @@ LOOPBACK_AFAM = {
 }
 
 
-def get_interface_index(host):
+def get_interface_index(host: str) -> str:
     # we don't use interface numbers with zeroconf,
     # so just return the interface name,
     # which is also unique
