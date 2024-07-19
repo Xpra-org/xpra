@@ -2477,6 +2477,8 @@ def find_x11_display_sockets(max_display_no: int = 0) -> dict[str, str]:
 
 def stat_display_socket(socket_path: str, timeout=VERIFY_SOCKET_TIMEOUT) -> dict[str, Any]:
     try:
+        if not os.path.exists(socket_path):
+            return {}
         # check that this is a socket
         sstat = os.stat(socket_path)
         if not stat.S_ISSOCK(sstat.st_mode):
@@ -2498,9 +2500,7 @@ def stat_display_socket(socket_path: str, timeout=VERIFY_SOCKET_TIMEOUT) -> dict
             "uid": sstat.st_uid,
             "gid": sstat.st_gid,
         }
-    except FileNotFoundError:
-        warn(f"Socket path {socket_path!r} not found")
-    except Exception as e:
+    except OSError as e:
         warn(f"Warning: unexpected failure on {socket_path!r}: {e}")
     return {}
 
