@@ -17,7 +17,7 @@ import logging
 from math import ceil
 from time import monotonic
 from shutil import rmtree, which
-from subprocess import Popen, PIPE, TimeoutExpired
+from subprocess import Popen, PIPE, TimeoutExpired, run
 import signal
 import shlex
 import traceback
@@ -192,6 +192,7 @@ def configure_logging(options, mode) -> None:
             "show-menu", "show-about", "show-session-info",
             "webcam",
             "showconfig",
+            "root-size",
     ):
         to = sys.stdout
     else:
@@ -454,7 +455,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
     configure_env(options.env)
     configure_logging(options, mode)
     if mode not in (
-            "showconfig", "splash",
+            "showconfig", "splash", "root-size",
             "list", "list-windows", "list-mdns", "mdns-gui",
             "list-clients",
             "list-sessions", "sessions", "displays",
@@ -792,6 +793,10 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode == "keyboard":
         from xpra.platform import keyboard
         return keyboard.main()
+    if mode == "root-size":
+        from xpra.gtk.util import get_root_size
+        sys.stdout.write("%ix%i\n" % get_root_size((0, 0)))
+        return ExitCode.OK
     if mode == "gtk-info":
         check_gtk()
         from xpra.gtk import info
@@ -2105,43 +2110,34 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
                 raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use `{mode}")
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
-    if mode in (
-            "seamless",
-            "desktop",
-            "monitor",
-            "expand",
-    ) and str_to_bool(options.attach, False):
-        if args and not display_is_remote:
-            # maybe the server is already running for the display specified
-            # then we don't even need to bother trying to start it:
-            try:
-                display = pick_display(error_cb, options, args, cmdline)
-            except Exception:
-                pass
-            else:
-                dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
-                display_name = display.get("display_name")
-                if display_name:
-                    state = dotxpra.get_display_state(display_name)
-                    if state == SocketState.LIVE:
-                        get_logger().info(f"existing live display found on {display_name}, attaching")
-                        # we're connecting locally, so no need for these:
-                        options.csc_modules = ["none"]
-                        options.video_decoders = ["none"]
-                        return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
-        # we can't load gtk on posix if the server is local,
-        # (as we would need to unload the initial display to attach to the new one)
-        if options.resize_display.lower() in TRUE_OPTIONS and (display_is_remote or OSX or not POSIX):
-            check_gtk_client()
-            bypass_no_gtk()
-            # we can tell the server what size to resize to:
-            from xpra.gtk.util import get_root_size
-            root_w, root_h = get_root_size()
+    with_display = mode in ("seamless", "desktop", "monitor", "expand")
+    if with_display and str_to_bool(options.attach, False) and args and not display_is_remote:
+        # maybe the server is already running for the display specified
+        # then we don't even need to bother trying to start it:
+        try:
+            display = pick_display(error_cb, options, args, cmdline)
+        except (ValueError, InitException):
+            pass
+        else:
+            dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+            display_name = display.get("display_name")
+            if display_name:
+                state = dotxpra.get_display_state(display_name)
+                if state == SocketState.LIVE:
+                    get_logger().info(f"existing live display found on {display_name}, attaching")
+                    # we're connecting locally, so no need for these:
+                    options.csc_modules = ["none"]
+                    options.video_decoders = ["none"]
+                    return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
+    if mode == "seamless" and not display_is_remote and options.resize_display.lower() in TRUE_OPTIONS:
+        # if possible, use the current display size as initial vfb size
+        root_w, root_h = get_current_root_size(display_is_remote)
+        if root_w and root_h:
             from xpra.util.parsing import parse_scaling
-            scaling = parse_scaling(options.desktop_scaling, root_w, root_h)
-            # but don't bother if scaling is involved:
-            if scaling == (1, 1):
-                options.resize_display = f"{root_w}x{root_h}"
+            scaling_x, scaling_y = parse_scaling(options.desktop_scaling, root_w, root_h)
+            scaled_w = round(root_w / scaling_x)
+            scaled_h = round(root_h / scaling_y)
+            options.resize_display = f"{scaled_w}x{scaled_h}"
 
     r = start_server_via_proxy(script_file, cmdline, error_cb, options, args, full_mode)
     if isinstance(r, int):
@@ -2155,6 +2151,33 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
         error_cb("`xpra-server` is not installed")
         sys.exit(1)
     return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, str(display or ""), defaults)
+
+
+def get_current_root_size(display_is_remote: bool):
+    root_w = root_h = 0
+    if display_is_remote or OSX or not POSIX:
+        # easy path, just load gtk early:
+        check_gtk_client()
+        bypass_no_gtk()
+        # we should be able to get the root window size:
+        from xpra.gtk.util import get_root_size
+        return get_root_size((0, 0))
+    # we can't load gtk on posix if the server is local,
+    # (as we would need to unload the initial display to attach to the new one)
+    # so use a subprocess as a temporary context and parse the output..
+    try:
+        # ie: ["/usr/bin/python3", "-c"] + ...
+        from xpra.platform.paths import get_xpra_command
+        cmd = get_xpra_command() + ["root-size"]
+        proc = run(cmd, capture_output=True, text=True)
+        if proc.returncode == 0 and proc.stdout:
+            # ie: "3840x2160\n"
+            pair = proc.stdout.rstrip("\n").split("x")
+            if len(pair) == 2:
+                root_w, root_h = int(pair[0]), int(pair[1])
+    except (OSError, ValueError):
+        pass
+    return root_w, root_h
 
 
 def start_server_via_proxy(script_file: str, cmdline, error_cb, options, args, mode: str) -> int | ExitCode | None:
