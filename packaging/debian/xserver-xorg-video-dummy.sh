@@ -5,7 +5,7 @@ if [ -z "${REPO_ARCH_PATH}" ]; then
 fi
 
 DUMMY_TAR_XZ=`ls ../pkgs/xf86-video-dummy-*.tar.xz`
-dirname=`echo ${DUMMY_TAR_XZ} | sed 's+../pkgs/++g' | sed 's/.tar.xz//'`
+dirname=`echo ${DUMMY_TAR_XZ} | sed 's+../pkgs/++g' | sed 's/.tar.xz//' | sort -V | tail -n 1`
 rm -fr "./${dirname}"
 tar -Jxf ${DUMMY_TAR_XZ}
 pushd "./${dirname}"
