@@ -22,6 +22,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool, parse_with_unit
+from xpra.common import SizedBuffer
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
@@ -280,8 +281,8 @@ class FileTransferHandler(FileTransferAttributes):
         for x in tuple(self.file_descriptors):
             try:
                 os.close(x)
-            except OSError:
-                pass
+            except OSError as e:
+                filelog(f"os.close({x}) {e}")
         self.file_descriptors = set()
         self.init_attributes()
 
@@ -364,7 +365,7 @@ class FileTransferHandler(FileTransferAttributes):
             # remove this transfer after a little while,
             # so in-flight packets won't cause errors
 
-            def clean_receive_state():
+            def clean_receive_state() -> None:
                 self.receive_chunks_in_progress.pop(chunk_id, None)
                 return False
 
@@ -381,7 +382,7 @@ class FileTransferHandler(FileTransferAttributes):
     def _process_send_file_chunk(self, packet: PacketType) -> None:
         chunk_id = str(packet[1])
         chunk = int(packet[2])
-        file_data: bytes = packet[3]
+        file_data: SizedBuffer = packet[3]
         has_more = bool(packet[4])
         # if len(file_data)<1024:
         #    from xpra.util.str_fn import hexstr
@@ -465,7 +466,8 @@ class FileTransferHandler(FileTransferAttributes):
         self.process_downloaded_file(filename, chunk_state.mimetype,
                                      chunk_state.printit, chunk_state.openit, chunk_state.filesize, options)
 
-    def accept_data(self, send_id: str, dtype, basefilename: str, printit: bool, openit: bool) -> tuple[bool, bool]:
+    def accept_data(self, send_id: str, dtype, basefilename: str,
+                    printit: bool, openit: bool) -> tuple[bool, bool, bool]:
         # subclasses should check the flags,
         # and if ask is True, verify they have accepted this specific send_id
         filelog("accept_data%s", (send_id, dtype, basefilename, printit, openit))
@@ -478,17 +480,17 @@ class FileTransferHandler(FileTransferAttributes):
         req = self.files_accepted.pop(send_id, None)
         filelog("accept_data: files_accepted[%s]=%s", send_id, req)
         if req is not None:
-            return False, req
+            return True, False, req
         if printit:
             if not self.printing or self.printing_ask:
                 printit = False
         elif not self.file_transfer or self.file_transfer_ask:
-            return None
+            return False, False, False
         if openit and (not self.open_files or self.open_files_ask):
             # we can't ask in this implementation,
             # so deny the request to open it:
             openit = False
-        return printit, openit
+        return True, printit, openit
 
     def _process_send_file(self, packet: PacketType) -> None:
         # the remote end is sending us a file
@@ -498,7 +500,7 @@ class FileTransferHandler(FileTransferAttributes):
         printit = bool(packet[3])
         openit = bool(packet[4])
         filesize = int(packet[5])
-        file_data: bytes = packet[6]
+        file_data: SizedBuffer = packet[6]
         options: typedict = typedict(packet[7])
         send_id = ""
         if len(packet) >= 9:
@@ -508,15 +510,14 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error(" file transfer aborted for %r", basefilename)
             return
         args = (send_id, "file", basefilename, printit, openit)
-        r = self.accept_data(*args)
-        filelog("%s%s=%s", self.accept_data, args, r)
-        if r is None:
+        acceptit, printit, openit = self.accept_data(*args)
+        filelog("%s%s=%s", self.accept_data, args, (acceptit, printit, openit))
+        if not acceptit:
             filelog.warn("Warning: %s rejected for file '%s'",
                          ("transfer", "printing")[bool(printit)],
                          basefilename)
             return
         # accept_data can override the flags:
-        printit, openit = r
         if printit:
             log = printlog
             assert self.printing
@@ -602,7 +603,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog("started process-download thread: %s", t)
 
     def do_process_downloaded_file(self, filename: str, mimetype: str, printit: bool, openit: bool, filesize: int,
-                                   options):
+                                   options: typedict):
         filelog("do_process_downloaded_file%s", (filename, mimetype, printit, openit, filesize, options))
         if printit:
             self._print_file(filename, mimetype, options)
@@ -615,7 +616,7 @@ class FileTransferHandler(FileTransferAttributes):
                 return
             self._open_file(filename)
 
-    def _print_file(self, filename: str, mimetype: str, options: typedict):
+    def _print_file(self, filename: str, mimetype: str, options: typedict) -> None:
         printlog("print_file%s", (filename, mimetype, options))
         printer = options.strget("printer")
         title = options.strget("title")
@@ -627,7 +628,7 @@ class FileTransferHandler(FileTransferAttributes):
         from xpra.platform.printing import print_files, printing_finished, get_printers
         printers = get_printers()
 
-        def delfile():
+        def delfile() -> None:
             if DELETE_PRINTER_FILE:
                 try:
                     os.unlink(filename)
@@ -661,7 +662,7 @@ class FileTransferHandler(FileTransferAttributes):
             return
         start = monotonic()
 
-        def check_printing_finished():
+        def check_printing_finished() -> bool:
             done = printing_finished(job)
             printlog("printing_finished(%s)=%s", job, done)
             if done:
@@ -710,7 +711,7 @@ class FileTransferHandler(FileTransferAttributes):
             return
         filelog("exec_open_command(%s) Popen(%s)=%s", url, command, proc)
 
-        def open_done(*_args):
+        def open_done(*_args) -> None:
             returncode = proc.poll()
             filelog("open_file: command %s has ended, returncode=%s", command, returncode)
             if returncode != 0:
@@ -746,10 +747,12 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
             return
-        if not self.open_url_ask or self.accept_data(send_id, "url", url, False, True):
-            self._open_url(url)
-        else:
-            filelog("url '%s' not accepted", url)
+        if self.open_url_ask:
+            acceptit, _printit, openit = self.accept_data(send_id, "url", url, False, True)
+            if not acceptit:
+                filelog("url '%s' not accepted", url)
+                return
+        self._open_url(url)
 
     def send_open_url(self, url: str) -> bool:
         if not self.remote_open_url:
@@ -764,7 +767,7 @@ class FileTransferHandler(FileTransferAttributes):
     def do_send_open_url(self, url: str, send_id: str = ""):
         self.send("open-url", url, send_id)
 
-    def send_file(self, filename, mimetype, data, filesize=0,
+    def send_file(self, filename: str, mimetype: str, data: SizedBuffer, filesize=0,
                   printit=False, openit=False, options=None):
         if printit:
             if not self.printing:
@@ -808,7 +811,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
 
-    def send_data_request(self, action, dtype, url, mimetype="", data=b"", filesize=0,
+    def send_data_request(self, action, dtype: str, url: str, mimetype="", data=b"", filesize=0,
                           printit=False, openit=True, options=None) -> str:
         send_id = uuid.uuid4().hex
         if len(self.pending_send_data) >= MAX_CONCURRENT_FILES:
@@ -831,10 +834,11 @@ class FileTransferHandler(FileTransferAttributes):
         # filenames and url are always sent encoded as utf8:
         self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
 
-    def do_process_send_data_request(self, dtype, send_id, url, _, filesize, printit, openit, options) -> None:
+    def do_process_send_data_request(self, dtype: str, send_id: str, url: str, _, filesize: int,
+                                     printit: bool, openit: bool, options: typedict) -> None:
         filelog(f"do_process_send_data_request: {send_id=}, {url=}, {printit=}, {openit=}, {options=}")
 
-        def cb_answer(accept):
+        def cb_answer(accept: bool):
             filelog("accept%s=%s", (url, printit, openit), accept)
             self.send("send-data-response", send_id, accept)
 
@@ -874,15 +878,16 @@ class FileTransferHandler(FileTransferAttributes):
             # fail it because if we responded with True,
             # it would fail later when we don't find this send_id in our accepted list
             cb_answer(False)
-        else:
-            self.ask_data_request(cb_answer, send_id, dtype, url, filesize, printit, openit)
+            return
+        self.ask_data_request(cb_answer, send_id, dtype, url, filesize, printit, openit)
 
-    def ask_data_request(self, cb_answer: Callable, send_id: str, dtype: str, url: str, filesize: int,
+    def ask_data_request(self, cb_answer: Callable[[bool], None],
+                         send_id: str, dtype: str, url: str, filesize: int,
                          printit: bool, openit: bool) -> None:
         # subclasses may prompt the user here instead
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit))
         v = self.accept_data(send_id, dtype, url, printit, openit)
-        cb_answer(v)
+        cb_answer(v[0])
 
     def _process_send_data_response(self, packet: PacketType) -> None:
         send_id = str(packet[1])

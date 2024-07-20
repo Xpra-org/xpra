@@ -558,7 +558,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         if fad:
             GLib.idle_add(fad.transfer_progress_update, send, transfer_id, elapsed, position, total, error)
 
-    def accept_data(self, send_id, dtype: str, url: str, printit: bool, openit: bool) -> tuple:
+    def accept_data(self, send_id, dtype: str, url: str, printit: bool, openit: bool) -> tuple[bool, bool, bool]:
         # check if we have accepted this file via the GUI:
         r = self.data_send_requests.pop(send_id, None)
         if not r:
@@ -576,9 +576,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if eurl != url:
                 filelog.warn(" expected url '%s',", s(eurl))
                 filelog.warn("  but got url '%s'", s(url))
-            return None
+            return False, False, False
         # return the printit and openit flag we got from the UI:
-        return r[2], r[3]
+        ui_printit = bool(r[2])
+        ui_openit = bool(r[3])
+        return True, ui_printit, ui_openit
 
     def file_size_warning(self, action: str, location: str, basefilename: str, filesize: int, limit: int) -> None:
         if self.file_size_dialog:
