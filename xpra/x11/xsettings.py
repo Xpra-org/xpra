@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Final
+
 from xpra.os_util import gi_import
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.error import xlog, XError
@@ -20,9 +22,9 @@ Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 
 # the X11 atom name for the XSETTINGS property:
-XSETTINGS = "_XSETTINGS_SETTINGS"
+XSETTINGS: Final[str] = "_XSETTINGS_SETTINGS"
 # constant type in prop.py:
-XSETTINGS_TYPE = "xsettings-settings"
+XSETTINGS_TYPE: Final[str] = "xsettings-settings"
 
 XNone = 0
 

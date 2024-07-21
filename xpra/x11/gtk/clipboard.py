@@ -5,7 +5,7 @@
 
 import os
 import struct
-from typing import Any
+from typing import Any, Final
 from collections.abc import Iterable, Callable, Sequence
 
 from xpra.os_util import gi_import
@@ -39,8 +39,8 @@ if not XRes.check_xres():
 
 log = Logger("x11", "clipboard")
 
-CurrentTime: int = constants["CurrentTime"]
-StructureNotifyMask: int = constants["StructureNotifyMask"]
+CurrentTime: Final[int] = constants["CurrentTime"]
+StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 
 sizeof_long = struct.calcsize(b'@L')
 

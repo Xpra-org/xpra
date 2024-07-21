@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Final
 from math import ceil, floor
 
 from xpra.os_util import gi_import
@@ -37,14 +38,14 @@ GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
 
-CWX: int = constants["CWX"]
-CWY: int = constants["CWY"]
-CWWidth: int = constants["CWWidth"]
-CWHeight: int = constants["CWHeight"]
-CWBorderWidth: int = constants["CWBorderWidth"]
-CWSibling: int = constants["CWSibling"]
-CWStackMode: int = constants["CWStackMode"]
-CONFIGURE_GEOMETRY_MASK: int = CWX | CWY | CWWidth | CWHeight
+CWX: Final[int] = constants["CWX"]
+CWY: Final[int] = constants["CWY"]
+CWWidth: Final[int] = constants["CWWidth"]
+CWHeight: Final[int] = constants["CWHeight"]
+CWBorderWidth: Final[int] = constants["CWBorderWidth"]
+CWSibling: Final[int] = constants["CWSibling"]
+CWStackMode: Final[int] = constants["CWStackMode"]
+CONFIGURE_GEOMETRY_MASK: Final[int] = CWX | CWY | CWWidth | CWHeight
 CW_MASK_TO_NAME: dict[int, str] = {
     CWX: "X",
     CWY: "Y",

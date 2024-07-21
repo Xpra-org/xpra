@@ -13,7 +13,7 @@ Functions for converting to and from X11 properties.
 import struct
 from io import BytesIO
 from collections.abc import Callable
-from typing import Any, NoReturn
+from typing import Any, NoReturn, Final
 
 from xpra.util.str_fn import hexstr
 from xpra.x11.bindings.window import constants
@@ -22,19 +22,19 @@ from xpra.log import Logger
 log = Logger("x11", "window")
 
 
-USPosition      = constants["USPosition"]
-PPosition       = constants["PPosition"]
-PMaxSize        = constants["PMaxSize"]
-PMinSize        = constants["PMinSize"]
-PBaseSize       = constants["PBaseSize"]
-PResizeInc      = constants["PResizeInc"]
-PAspect         = constants["PAspect"]
-PWinGravity     = constants["PWinGravity"]
-XUrgencyHint    = constants["XUrgencyHint"]
-WindowGroupHint = constants["WindowGroupHint"]
-StateHint       = constants["StateHint"]
-IconicState     = constants["IconicState"]
-InputHint       = constants["InputHint"]
+USPosition: Final[int] = constants["USPosition"]
+PPosition: Final[int] = constants["PPosition"]
+PMaxSize: Final[int] = constants["PMaxSize"]
+PMinSize: Final[int] = constants["PMinSize"]
+PBaseSize: Final[int] = constants["PBaseSize"]
+PResizeInc: Final[int] = constants["PResizeInc"]
+PAspect: Final[int] = constants["PAspect"]
+PWinGravity: Final[int] = constants["PWinGravity"]
+XUrgencyHint: Final[int] = constants["XUrgencyHint"]
+WindowGroupHint: Final[int] = constants["WindowGroupHint"]
+StateHint: Final[int] = constants["StateHint"]
+IconicState: Final[int] = constants["IconicState"]
+InputHint: Final[int] = constants["InputHint"]
 
 
 def unsupported(*_args) -> NoReturn:

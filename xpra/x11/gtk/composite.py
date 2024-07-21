@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Final
+
 from xpra.os_util import gi_import
 from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.error import xlog
@@ -23,7 +25,7 @@ XImage = XImageBindings()
 X11Window = X11WindowBindings()
 X11Window.ensure_XComposite_support()
 
-StructureNotifyMask = constants["StructureNotifyMask"]
+StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 
 
 class CompositeHelper(WindowDamageHandler, GObject.GObject):

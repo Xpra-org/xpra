@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Final
 from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
@@ -37,9 +38,9 @@ STATE_STRING: dict[int, str] = {
     _NET_WM_STATE_ADD: "ADD",
     _NET_WM_STATE_TOGGLE: "TOGGLE",
 }
-WithdrawnState: int = constants["WithdrawnState"]
-IconicState: int = constants["IconicState"]
-NormalState: int = constants["NormalState"]
+WithdrawnState: Final[int] = constants["WithdrawnState"]
+IconicState: Final[int] = constants["IconicState"]
+NormalState: Final[int] = constants["NormalState"]
 WM_STATE_NAME: dict[int, str] = {
     IconicState: "Iconic",
     NormalState: "Normal",

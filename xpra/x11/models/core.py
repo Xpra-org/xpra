@@ -7,7 +7,7 @@
 import os
 import signal
 from socket import gethostname
-from typing import Any
+from typing import Any, Final
 from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
@@ -55,7 +55,7 @@ DELETE_DESTROY = envbool("XPRA_DELETE_DESTROY", False)
 DELETE_KILL_PID = envbool("XPRA_DELETE_KILL_PID", True)
 DELETE_XKILL = envbool("XPRA_DELETE_XKILL", True)
 
-CurrentTime = constants["CurrentTime"]
+CurrentTime: Final[int] = constants["CurrentTime"]
 
 # Re-stacking:
 Above = 0
@@ -72,11 +72,11 @@ RESTACKING_STR: dict[int, str] = {
 }
 
 # grab stuff:
-NotifyNormal = constants["NotifyNormal"]
-NotifyGrab = constants["NotifyGrab"]
-NotifyUngrab = constants["NotifyUngrab"]
-NotifyWhileGrabbed = constants["NotifyWhileGrabbed"]
-NotifyNonlinearVirtual = constants["NotifyNonlinearVirtual"]
+NotifyNormal: Final[int] = constants["NotifyNormal"]
+NotifyGrab: Final[int] = constants["NotifyGrab"]
+NotifyUngrab: Final[int] = constants["NotifyUngrab"]
+NotifyWhileGrabbed: Final[int] = constants["NotifyWhileGrabbed"]
+NotifyNonlinearVirtual: Final[int] = constants["NotifyNonlinearVirtual"]
 GRAB_CONSTANTS: dict[int, str] = {
     NotifyNormal: "NotifyNormal",
     NotifyGrab: "NotifyGrab",

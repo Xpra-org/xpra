@@ -10,6 +10,7 @@
 # else steals it, then we should exit.
 
 import sys
+from typing import Final
 from struct import unpack, calcsize
 
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
@@ -29,8 +30,8 @@ log = Logger("x11", "util")
 
 SELECTION_EXIT_TIMEOUT = envint("XPRA_SELECTION_EXIT_TIMEOUT", 20)
 
-StructureNotifyMask = constants["StructureNotifyMask"]
-XNone = constants["XNone"]
+StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
+XNone: Final[int] = constants["XNone"]
 
 
 class AlreadyOwned(Exception):

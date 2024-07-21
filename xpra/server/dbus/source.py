@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Final
+
 import dbus.service  # @UnresolvedImport
 from dbus import PROPERTIES_IFACE  # @UnresolvedImport
 from dbus.exceptions import DBusException  # @UnresolvedImport
@@ -16,9 +18,9 @@ from xpra.log import Logger
 
 log = Logger("dbus", "server")
 
-BUS_NAME = "org.xpra.Server"
-INTERFACE = "org.xpra.Client"
-PATH = "/org/xpra/Client"
+BUS_NAME: Final[str] = "org.xpra.Server"
+INTERFACE: Final[str] = "org.xpra.Client"
+PATH: Final[str] = "/org/xpra/Client"
 
 
 def n(*args):

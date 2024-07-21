@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Final
+
 from xpra.os_util import gi_import
 from xpra.gtk.error import xlog
 from xpra.util.env import IgnoreWarningsContext, ignorewarnings
@@ -19,8 +21,8 @@ Gtk = gi_import("Gtk")
 log = Logger("x11", "window")
 focuslog = Logger("x11", "window", "focus")
 
-XNone = constants["XNone"]
-CurrentTime = constants["CurrentTime"]
+XNone: Final[int] = constants["XNone"]
+CurrentTime: Final[int] = constants["CurrentTime"]
 
 
 # This file defines Xpra's top-level widget.  It is a magic window that

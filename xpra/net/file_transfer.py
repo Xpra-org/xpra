@@ -10,7 +10,7 @@ import os
 import subprocess
 import hashlib
 import uuid
-from typing import Any
+from typing import Any, Final
 from time import monotonic
 from dataclasses import dataclass
 from collections.abc import Callable
@@ -40,15 +40,15 @@ PRINT_JOB_TIMEOUT = max(60, envint("XPRA_PRINT_JOB_TIMEOUT", 3600))
 SEND_REQUEST_TIMEOUT = max(300, envint("XPRA_SEND_REQUEST_TIMEOUT", 3600))
 CHUNK_TIMEOUT = 10 * 1000
 
-MIMETYPE_EXTS = {
+MIMETYPE_EXTS: dict[str, str] = {
     "application/postscript": "ps",
     "application/pdf": "pdf",
     "raw": "raw",
 }
 
-DENY = 0
-ACCEPT = 1  # the file / URL will be sent
-OPEN = 2  # don't send, open on sender
+DENY: Final[int] = 0
+ACCEPT: Final[int] = 1  # the file / URL will be sent
+OPEN: Final[int] = 2  # don't send, open on sender
 
 
 def osclose(fd: int) -> None:
@@ -399,7 +399,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog("got chunk for a cancelled file transfer, ignoring it")
             return
 
-        def progress(position, error=None):
+        def progress(position: int, error="") -> None:
             s_elapsed = monotonic() - chunk_state.start
             self.transfer_progress_update(False, chunk_state.send_id, s_elapsed, position, chunk_state.filesize, error)
 
@@ -603,7 +603,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog("started process-download thread: %s", t)
 
     def do_process_downloaded_file(self, filename: str, mimetype: str, printit: bool, openit: bool, filesize: int,
-                                   options: typedict):
+                                   options: typedict) -> None:
         filelog("do_process_downloaded_file%s", (filename, mimetype, printit, openit, filesize, options))
         if printit:
             self._print_file(filename, mimetype, options)
@@ -740,7 +740,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("request-file", filename, openit)
         self.files_requested[filename] = openit
 
-    def _process_open_url(self, packet: PacketType):
+    def _process_open_url(self, packet: PacketType) -> None:
         send_id = str(packet[2])
         url = str(packet[1])
         if not self.open_url:
@@ -764,11 +764,11 @@ class FileTransferHandler(FileTransferAttributes):
         self.do_send_open_url(url)
         return True
 
-    def do_send_open_url(self, url: str, send_id: str = ""):
+    def do_send_open_url(self, url: str, send_id: str = "") -> None:
         self.send("open-url", url, send_id)
 
     def send_file(self, filename: str, mimetype: str, data: SizedBuffer, filesize=0,
-                  printit=False, openit=False, options=None):
+                  printit=False, openit=False, options=None) -> bool:
         if printit:
             if not self.printing:
                 printlog.warn("Warning: printing is not enabled for %s", self)
@@ -838,7 +838,7 @@ class FileTransferHandler(FileTransferAttributes):
                                      printit: bool, openit: bool, options: typedict) -> None:
         filelog(f"do_process_send_data_request: {send_id=}, {url=}, {printit=}, {openit=}, {options=}")
 
-        def cb_answer(accept: bool):
+        def cb_answer(accept: bool) -> bool:
             filelog("accept%s=%s", (url, printit, openit), accept)
             self.send("send-data-response", send_id, accept)
 

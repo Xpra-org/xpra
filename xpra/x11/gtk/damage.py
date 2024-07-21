@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Final
 
 from xpra.util.env import envbool
 from xpra.gtk.gobject import one_arg_signal
@@ -21,7 +22,7 @@ XImage = XImageBindings()
 X11Window = X11WindowBindings()
 X11Window.ensure_XDamage_support()
 
-StructureNotifyMask = constants["StructureNotifyMask"]
+StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 USE_XSHM = envbool("XPRA_XSHM", True)
 
 

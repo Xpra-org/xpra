@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Final
+
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.log import Logger
 
@@ -11,9 +13,9 @@ log = Logger("x11", "focus")
 
 X11Window = X11WindowBindings()
 
-CurrentTime = constants["CurrentTime"]
-SubstructureNotifyMask = constants["SubstructureNotifyMask"]
-SubstructureRedirectMask = constants["SubstructureRedirectMask"]
+CurrentTime: Final[int] = constants["CurrentTime"]
+SubstructureNotifyMask: Final[int] = constants["SubstructureNotifyMask"]
+SubstructureRedirectMask: Final[int] = constants["SubstructureRedirectMask"]
 
 
 def send_wm_take_focus(xid: int, timestamp: int = CurrentTime) -> None:

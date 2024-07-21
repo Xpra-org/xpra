@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Any
+from typing import Any, Final
 
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
@@ -37,13 +37,13 @@ focuslog = Logger("x11", "window", "focus")
 screenlog = Logger("x11", "window", "screen")
 framelog = Logger("x11", "window", "frame")
 
-CWX = constants["CWX"]
-CWY = constants["CWY"]
-CWWidth = constants["CWWidth"]
-CWHeight = constants["CWHeight"]
+CWX: Final[int] = constants["CWX"]
+CWY: Final[int] = constants["CWY"]
+CWWidth: Final[int] = constants["CWWidth"]
+CWHeight: Final[int] = constants["CWHeight"]
 
-NotifyPointerRoot = constants["NotifyPointerRoot"]
-NotifyDetailNone = constants["NotifyDetailNone"]
+NotifyPointerRoot: Final[int] = constants["NotifyPointerRoot"]
+NotifyDetailNone: Final[int] = constants["NotifyDetailNone"]
 
 LOG_MANAGE_FAILURES = envbool("XPRA_LOG_MANAGE_FAILURES", False)
 

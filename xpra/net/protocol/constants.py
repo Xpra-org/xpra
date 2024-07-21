@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-CONNECTION_LOST = "connection-lost"
-GIBBERISH = "gibberish"
-INVALID = "invalid"
+from typing import Final
+
+CONNECTION_LOST: Final[str] = "connection-lost"
+GIBBERISH: Final[str] = "gibberish"
+INVALID: Final[str] = "invalid"

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import struct
+from typing import Final
 from enum import IntEnum
 
 from xpra.util.env import envint
@@ -25,8 +26,8 @@ X11Window = X11WindowBindings()
 
 log = Logger("x11", "tray")
 
-XNone = constants["XNone"]
-StructureNotifyMask = constants["StructureNotifyMask"]
+XNone: Final[int] = constants["XNone"]
+StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 
 XEMBED_VERSION = 0
 
@@ -59,9 +60,9 @@ class XEMBED_FOCUS(IntEnum):
     LAST = 2
 
 
-SELECTION = "_NET_SYSTEM_TRAY_S0"
-SYSTRAY_VISUAL = "_NET_SYSTEM_TRAY_VISUAL"
-SYSTRAY_ORIENTATION = "_NET_SYSTEM_TRAY_ORIENTATION"
+SELECTION: Final[str] = "_NET_SYSTEM_TRAY_S0"
+SYSTRAY_VISUAL: Final[str] = "_NET_SYSTEM_TRAY_VISUAL"
+SYSTRAY_ORIENTATION: Final[str] = "_NET_SYSTEM_TRAY_ORIENTATION"
 
 
 class TRAY_ORIENTATION(IntEnum):
