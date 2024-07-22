@@ -1,3 +1,19 @@
+xpra (6.1.1-1) UNRELEASED; urgency=low
+  * Platforms, build and packaging:
+    RHEL 8.10 pygobject3 packaging update
+    always build the latest X11 dummy driver version
+    only build xpra from the 6.1.x branch
+  * Encodings:
+    disable `scroll` encoding
+  * Major:
+    missing context manager when X11 session started from a Wayland desktop
+  * Network:
+    expose quic / webtransport sockets via mdns
+  * Cosmetic:
+    incorrect exception debug message
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 22 Jul 2024 22:23:11 +0700
+
 xpra (6.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     RHEL 10 builds

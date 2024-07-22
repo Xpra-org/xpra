@@ -54,7 +54,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.1
+Version:			6.1.1
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -883,6 +883,20 @@ fi
 
 
 %changelog
+* Mon Jul 22 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
+- Platforms, build and packaging:
+   RHEL 8.10 pygobject3 packaging update
+   always build the latest X11 dummy driver version
+   only build xpra from the 6.1.x branch
+- Encodings:
+   disable `scroll` encoding
+- Major:
+   missing context manager when X11 session started from a Wayland desktop
+- Network:
+   expose quic / webtransport sockets via mdns
+- Cosmetic:
+   incorrect exception debug message
+
 * Thu Jul 18 2024 Antoine Martin <antoine@xpra.org> 6.1-10
 - Platforms, build and packaging:
    RHEL 10 builds

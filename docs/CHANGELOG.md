@@ -1,5 +1,19 @@
 # Changelog
 
+## [6.1.1] 2024-07-22
+* Platforms, build and packaging:
+    * [RHEL 8.10 pygobject3 packaging update](https://github.com/Xpra-org/xpra/commit/75fe7ad62f1a176f62e82529b1f9a5aad3273eae)
+    * [always build the latest X11 dummy driver version](https://github.com/Xpra-org/xpra/commit/c8118c75f592866d2161ff37e6993002c5a0288e)
+    * [only build xpra from the 6.1.x branch](https://github.com/Xpra-org/xpra/commit/00919772d0813b0d2e514598c7263dfa9fe4b7e5)
+* Encodings:
+    * [disable `scroll` encoding](https://github.com/Xpra-org/xpra/commit/8c05f445d6bb9f220adb3bed3ee4b13a652e3676)
+* Major:
+    * [missing context manager when X11 session started from a Wayland desktop](https://github.com/Xpra-org/xpra/commit/9d980f569f746414af9eb8f975c2e2b32be3f94e)
+* Network:
+    * [expose quic / webtransport sockets via mdns](https://github.com/Xpra-org/xpra/commit/8e86a3ee07d4f19e91a8ba635dae561942430d7a)
+* Cosmetic:
+    * [incorrect exception debug message](https://github.com/Xpra-org/xpra/commit/d8457b97b877aa68160655f8e33ec88d59e80658)
+
 ## [6.1] 2024-07-18
 * Platforms, build and packaging:
     * [RHEL 10 builds](https://github.com/Xpra-org/xpra/issues/4282)
