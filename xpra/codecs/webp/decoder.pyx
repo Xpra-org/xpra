@@ -86,11 +86,8 @@ cdef extern from "webp/decode.h":
         int has_alpha                   #True if the bitstream contains an alpha channel.
         int has_animation               #True if the bitstream is an animation.
         #Unused for now:
-        int bitstream_version           #should be 0 for now. TODO(later)
-        int no_incremental_decoding     #if true, using incremental decoding is not recommended.
-        int rotate                      #TODO(later)
-        int uv_sampling                 #should be 0 for now. TODO(later)
-        uint32_t pad[2]                 #padding for later use
+        int format
+        uint32_t pad[5]                 #padding for later use
 
     ctypedef struct WebPRGBABuffer:     #view as RGBA
         uint8_t* rgba                   #pointer to RGBA samples
