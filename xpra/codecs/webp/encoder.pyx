@@ -402,7 +402,7 @@ def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
         )
 
 
-def webp_check(int ret) -> None:
+cdef inline webp_check(int ret):
     if ret==0:
         return
     err = ERROR_TO_NAME.get(ret, ret)
