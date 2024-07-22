@@ -616,10 +616,6 @@ cdef configure_encoder(WebPConfig *config,
         config.quality = 0
         config.autofilter = 1
     else:
-        #normalize quality: webp quality is much higher than jpeg's
-        #so we can go lower,
-        #[0,10,...,90,100] maps to:
-        #[0, 1, 3, 5, 9, 14, 23, 34, 50, 71, 99]
         config.quality = fclamp(quality)
         config.segments = 1
         config.sns_strength = 0
