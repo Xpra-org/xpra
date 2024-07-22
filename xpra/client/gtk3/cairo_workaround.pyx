@@ -142,7 +142,7 @@ def make_image_surface(fmt, rgb_format: str, pixels, int width, int height, int 
         if not bc.is_readonly() and rgb_format in ("BGRA", "BGRX") and fmt in (CAIRO_FORMAT_ARGB32, CAIRO_FORMAT_RGB24):
             # maybe we can just create an ImageSurface directly:
             cstride = cairo_format_stride_for_width(fmt, width)
-            if cstride == stride: # or (stride % 4) ==0
+            if stride >= cstride and (stride % 4) == 0:
                 return ImageSurface.create_for_data(pixels, fmt, width, height, stride)
 
         image_surface = ImageSurface(fmt, width, height)
