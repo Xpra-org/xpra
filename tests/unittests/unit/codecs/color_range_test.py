@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import unittest
 from collections.abc import Sequence
 
@@ -56,7 +57,10 @@ def cmp_images(image1: ImageWrapper, image2: ImageWrapper, tolerance=1) -> bool:
 class TestColorRange(unittest.TestCase):
 
     def test_encode_decode_range(self) -> None:
-        self.do_test_encode_decode_range(loader.ENCODER_CODECS, loader.DECODER_CODECS, loader.CSC_CODECS)
+        encoders = os.environ.get("XPRA_TEST_ENCODERS", ",".join(loader.ENCODER_CODECS)).split(",")
+        decoders = os.environ.get("XPRA_TEST_DECODERS", ",".join(loader.DECODER_CODECS)).split(",")
+        csc = os.environ.get("XPRA_TEST_CSC", ",".join(loader.CSC_CODECS)).split(",")
+        self.do_test_encode_decode_range(encoders, decoders, csc)
 
     def do_test_encode_decode_range(self,
                                     encoders: Sequence[str],
