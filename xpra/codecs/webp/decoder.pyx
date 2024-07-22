@@ -163,7 +163,7 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-def webp_check(int ret) -> None:
+cdef inline void webp_check(int ret):
     if ret==0:
         return
     err = ERROR_TO_NAME.get(ret, ret)
@@ -178,7 +178,7 @@ cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 
-def decompress_to_rgb(rgb_format: str, data: bytes, has_alpha: bool=True, rgb_formats: Sequence[str] = ()) -> ImageWrapper:
+def decompress_to_rgb(rgb_format: str, data: bytes, has_alpha: bool=True) -> ImageWrapper:
     if rgb_format not in ("RGBX", "RGBA", "BGRA", "BGRX", "RGB", "BGR"):
         raise ValueError(f"unsupported rgb format {rgb_format}")
     cdef WebPDecoderConfig config

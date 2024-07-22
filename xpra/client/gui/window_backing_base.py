@@ -551,7 +551,7 @@ class WindowBackingBase:
             return
         rgb_format = options.strget("rgb_format", "BGRX")
         has_alpha = options.boolget("has_alpha", False)
-        img = self.webp_decoder.decompress_to_rgb(rgb_format, img_data, has_alpha, self.get_rgb_formats())
+        img = self.webp_decoder.decompress_to_rgb(rgb_format, img_data, has_alpha)
         self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
 
     def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,
