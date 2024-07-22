@@ -365,7 +365,7 @@ class FileTransferHandler(FileTransferAttributes):
             # remove this transfer after a little while,
             # so in-flight packets won't cause errors
 
-            def clean_receive_state() -> None:
+            def clean_receive_state() -> bool:
                 self.receive_chunks_in_progress.pop(chunk_id, None)
                 return False
 
@@ -748,7 +748,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.warn(" but opening of URLs is disabled")
             return
         if self.open_url_ask:
-            acceptit, _printit, openit = self.accept_data(send_id, "url", url, False, True)
+            acceptit, _printit, _openit = self.accept_data(send_id, "url", url, False, True)
             if not acceptit:
                 filelog("url '%s' not accepted", url)
                 return
