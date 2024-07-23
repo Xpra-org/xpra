@@ -6,7 +6,6 @@
 
 import os
 import unittest
-from collections.abc import Sequence
 
 from xpra.util.str_fn import memoryview_to_bytes, hexstr, sorted_nicely
 from xpra.util.objects import typedict
@@ -56,113 +55,140 @@ def cmp_images(image1: ImageWrapper, image2: ImageWrapper, tolerance=1) -> bool:
 
 class TestColorRange(unittest.TestCase):
 
+    def get_tolerance(self, encoding: str, quality: int) -> int:
+        return {
+            100: 1 if encoding in ("jpeg",) else 0,
+            90: 2 if encoding in ("webp",) else 1,
+            50: 4,
+            10: 0xc if encoding in ("webp",) else 4,
+        }.get(quality, 0)
+
     def test_encode_decode_range(self) -> None:
         encoders = os.environ.get("XPRA_TEST_ENCODERS", ",".join(loader.ENCODER_CODECS)).split(",")
-        decoders = os.environ.get("XPRA_TEST_DECODERS", ",".join(loader.DECODER_CODECS)).split(",")
-        csc = os.environ.get("XPRA_TEST_CSC", ",".join(loader.CSC_CODECS)).split(",")
-        self.do_test_encode_decode_range(encoders, decoders, csc)
-
-    def do_test_encode_decode_range(self,
-                                    encoders: Sequence[str],
-                                    decoders: Sequence[str],
-                                    csc_modules=Sequence[str]) -> None:
-        test_info: set[str] = set()
-        width = 48
-        height = 32
+        self.width = 48
+        self.height = 32
+        self.rgb_format = "BGRX"
+        self.test_info: set[str] = set()
         for enc_name in encoders:
             enc_mod = loader.load_codec(enc_name)
             if not enc_mod:
                 continue
             formats = enc_mod.get_encodings()
-            for fmt in formats:
+            for encoding in formats:
                 for color, pixel in TEST_COLORS.items():
-                    rgb_format = "BGRX"
-                    image = make_test_image(rgb_format, width, height, pixel)
-                    pixels = image.get_pixels()
-
-                    for quality, tolerance in {
-                        "100": 1 if fmt in ("jpeg", ) else 0,
-                        "90": 2 if fmt in ("webp", ) else 1,
-                        "50": 4,
-                        "10": 0xc if fmt in ("webp", ) else 4,
-                    }.items():
-                        enc_options = typedict({"quality": quality})
-                        bdata = enc_mod.encode(fmt, image, options=enc_options)
+                    image = make_test_image(self.rgb_format, self.width, self.height, pixel)
+                    # the encoder may modify the pixels value,
+                    # (the spng encoder does)
+                    self.pixels = image.get_pixels()
+                    for quality in (100, 90, 50, 10):
+                        tolerance = self.get_tolerance(encoding, quality)
+                        enc_options = typedict({
+                            "quality": quality,
+                            "color": color,
+                            "tolerance": tolerance,
+                        })
+                        bdata = enc_mod.encode(encoding, image, options=enc_options)
                         # tuple[str, Compressed, dict[str, Any], int, int, int, int]
                         if not bdata:
                             raise RuntimeError(f"failed to encode {image} using {enc_mod.encode}")
                         file_data = memoryview_to_bytes(bdata[1].data)
-                        ext = fmt.replace("/", "")  # ie: "png/L" -> "pngL"
-                        filename = f"./{enc_name}-{color}.{ext}"
-                        if ext in ("png", "webp", "jpeg"):
-                            # verify first 16 bytes when compressed image with Pillow:
-                            from io import BytesIO
-                            from PIL import Image
-                            img = Image.open(BytesIO(file_data))
-                            img = img.convert("RGBA")
-                            rdata = img.tobytes("raw", rgb_format.replace("X", "A"))
-                            if not cmp_bytes(pixels[:16], rdata[:16], tolerance):
-                                raise RuntimeError(f"pixels reloaded from {filename} do not match:"
-                                                   f"expected {hexstr(pixels[:16])} but got {hexstr(rdata[:16])} "
-                                                   f"with {enc_options=}")
-                            test_info.add(f"{enc_name:12}  {fmt:12}  pillow                                    {rgb_format}")
+                        client_options = bdata[2]
+                        self.verify_PIL(enc_name, encoding, image, enc_options, file_data)
+                        self.verify_rgb(enc_name, encoding, image, enc_options, file_data)
+                        self.verify_yuv(enc_name, encoding, image, enc_options, file_data, client_options)
 
-                        # try to decompress to rgb:
-                        for dec_name in decoders:
-                            dec_mod = loader.load_codec(dec_name)
-                            if not dec_mod:
-                                continue
-                            if fmt not in dec_mod.get_encodings():
-                                continue
-                            decompress_to_rgb = getattr(dec_mod, "decompress_to_rgb", None)
-                            # print(f"testing {fmt} rgb decoding using {decompress_to_rgb}")
-                            if not decompress_to_rgb:
-                                continue
-                            rimage = decompress_to_rgb(rgb_format, file_data)
-                            dec_tolerance = tolerance
-                            if dec_name == "dec_jpeg":
-                                dec_tolerance += 1
-                            if not cmp_images(image, rimage, dec_tolerance):
-                                raise RuntimeError(f"decoder {dec_name} from {enc_name} produced an image that differs with {enc_options=}")
-                            test_info.add(f"{enc_name:12}  {fmt:12}  {dec_name:12}                              {rgb_format}")
-
-                        # try to decompress to yuv
-                        for dec_name in decoders:
-                            dec_mod = loader.load_codec(dec_name)
-                            if not dec_mod:
-                                continue
-                            if fmt not in dec_mod.get_encodings():
-                                continue
-                            decompress_to_yuv = getattr(dec_mod, "decompress_to_yuv", None)
-                            if not decompress_to_yuv:
-                                continue
-                            dec_tolerance = tolerance + 2
-                            dec_options = typedict()
-                            yuv_image = decompress_to_yuv(file_data, dec_options)
-                            assert yuv_image
-                            yuv_format = yuv_image.get_pixel_format()
-                            # find a csc module to convert this back to rgb:
-                            for csc_name in csc_modules:
-                                csc_mod = loader.load_codec(csc_name)
-                                if not csc_mod:
-                                    continue
-                                if yuv_format not in csc_mod.get_input_colorspaces():
-                                    continue
-                                if rgb_format not in csc_mod.get_output_colorspaces(yuv_format):
-                                    continue
-                                csc_options = typedict({"full-range": yuv_image.get_full_range()})
-                                converter = csc_mod.Converter()
-                                converter.init_context(width, height, yuv_format,
-                                                       width, height, rgb_format, csc_options)
-                                rgb_image = converter.convert_image(yuv_image)
-                                assert rgb_image
-                                if not cmp_images(image, rgb_image, dec_tolerance):
-                                    raise RuntimeError(f"decoder {dec_name} from {enc_name} produced a YUV image that differs with {enc_options=}"
-                                                       f" (converted to {rgb_format} from {yuv_format} using {csc_name})")
-                                test_info.add(f"{enc_name:12}  {fmt:12}  {dec_name:12}  {yuv_format:12}  {csc_name:12}  {rgb_format:12}")
-        print(f"successfully tested {rgb_format} input with:")
-        for s in sorted_nicely(test_info):
+        print(f"successfully tested {self.rgb_format} input with:")
+        for s in sorted_nicely(self.test_info):
             print(f"{s}")
+
+    def verify_PIL(self, enc_name: str, encoding: str, image: ImageWrapper, enc_options: dict, file_data: bytes) -> None:
+        ext = encoding.replace("/", "")  # ie: "png/L" -> "pngL"
+        if ext not in ("png", "webp", "jpeg"):
+            return
+        # verify first 16 bytes when compressed image with Pillow:
+        from io import BytesIO
+        from PIL import Image
+        img = Image.open(BytesIO(file_data))
+        img = img.convert("RGBA")
+        rdata = img.tobytes("raw", self.rgb_format.replace("X", "A"))
+        tolerance = enc_options["tolerance"]
+        bpp = len(self.rgb_format)
+        # one pixel at a time:
+        for pix_x in range(self.width):
+            # test each component individually: 'R', 'G' and 'B'
+            for i, component in enumerate(self.rgb_format):
+                if component in ("X", "A"):
+                    continue
+                index = pix_x * bpp + i
+                v1 = self.pixels[index]
+                v2 = rdata[index]
+                if abs(v1 - v2) > tolerance:
+                    raise RuntimeError(f"pixels reloaded do not match: "
+                                       f"expected {hexstr(self.pixels[:16])} but got {hexstr(rdata[:16])} "
+                                       f"from {enc_name} using {encoding} and pixel format {self.rgb_format} "
+                                       f"with {enc_options=} "
+                                       f"mismatch at pixel {pix_x} for component {i}: {component}: {v1:x} vs {v2:x} "
+                                       f"tolerance={tolerance}")
+        self.test_info.add(f"{enc_name:12}  {encoding:12}  pillow                                    {self.rgb_format}")
+
+    def verify_rgb(self, enc_name: str, encoding: str, image: ImageWrapper, enc_options: dict, file_data: bytes) -> None:
+        # try to decompress to rgb:
+        decoders = os.environ.get("XPRA_TEST_DECODERS", ",".join(loader.DECODER_CODECS)).split(",")
+        for dec_name in decoders:
+            dec_mod = loader.load_codec(dec_name)
+            if not dec_mod:
+                continue
+            if encoding not in dec_mod.get_encodings():
+                continue
+            decompress_to_rgb = getattr(dec_mod, "decompress_to_rgb", None)
+            # print(f"testing {fmt} rgb decoding using {decompress_to_rgb}")
+            if not decompress_to_rgb:
+                continue
+            rimage = decompress_to_rgb(self.rgb_format, file_data)
+            tolerance = enc_options["tolerance"]
+            if dec_name == "dec_jpeg":
+                tolerance += 1
+            if not cmp_images(image, rimage, tolerance):
+                raise RuntimeError(f"decoder {dec_name} from {enc_name} produced an image that differs with {enc_options=}")
+            self.test_info.add(f"{enc_name:12}  {encoding:12}  {dec_name:12}                              {self.rgb_format}")
+
+    def verify_yuv(self, enc_name: str, encoding: str, image: ImageWrapper, enc_options: dict, file_data, client_options: dict) -> None:
+        decoders = os.environ.get("XPRA_TEST_DECODERS", ",".join(loader.DECODER_CODECS)).split(",")
+        csc_modules = os.environ.get("XPRA_TEST_CSC", ",".join(loader.CSC_CODECS)).split(",")
+        # try to decompress to yuv
+        for dec_name in decoders:
+            dec_mod = loader.load_codec(dec_name)
+            if not dec_mod:
+                continue
+            if encoding not in dec_mod.get_encodings():
+                continue
+            decompress_to_yuv = getattr(dec_mod, "decompress_to_yuv", None)
+            if not decompress_to_yuv:
+                continue
+            dec_options = typedict(client_options)
+            yuv_image = decompress_to_yuv(file_data, dec_options)
+            assert yuv_image
+            yuv_format = yuv_image.get_pixel_format()
+            # find a csc module to convert this back to rgb:
+            for csc_name in csc_modules:
+                csc_mod = loader.load_codec(csc_name)
+                if not csc_mod:
+                    continue
+                if yuv_format not in csc_mod.get_input_colorspaces():
+                    continue
+                if self.rgb_format not in csc_mod.get_output_colorspaces(yuv_format):
+                    continue
+                csc_options = typedict({"full-range": yuv_image.get_full_range()})
+                converter = csc_mod.Converter()
+                converter.init_context(self.width, self.height, yuv_format,
+                                       self.width, self.height, self.rgb_format, csc_options)
+                rgb_image = converter.convert_image(yuv_image)
+                assert rgb_image
+                tolerance = enc_options["tolerance"]
+                if not cmp_images(image, rgb_image, tolerance + 2):
+                    raise RuntimeError(f"decoder {dec_name} from {enc_name} produced a YUV image that differs with {enc_options=}"
+                                       f" (converted to {self.rgb_format} from {yuv_format} using {csc_name})")
+                self.test_info.add(f"{enc_name:12}  {encoding:12}  {dec_name:12}  {yuv_format:12}  {csc_name:12}  {self.rgb_format:12}")
 
 
 def main():
