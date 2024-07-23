@@ -6,7 +6,6 @@
 import os
 from typing import Any
 from io import BytesIO
-from collections.abc import Callable
 from ctypes import (
     get_last_error, WinError, FormatError,  # @UnresolvedImport
     sizeof, byref, cast, memset, memmove, create_string_buffer, c_char, c_void_p,
@@ -33,7 +32,9 @@ from xpra.platform.win32.common import (
 )
 from xpra.platform.win32 import win32con
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
-from xpra.clipboard.core import ClipboardProxyCore, log, _filter_targets, TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE
+from xpra.clipboard.core import (
+    ClipboardProxyCore, log, _filter_targets, TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE, ClipboardCallback,
+)
 from xpra.common import roundup
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.util.env import envint, envbool
@@ -441,7 +442,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
-    def get_contents(self, target, got_contents: Callable[[str, int, Any], None]):
+    def get_contents(self, target, got_contents: ClipboardCallback):
         log("get_contents%s", (target, got_contents))
         if target == "TARGETS":
             def got_clipboard_lock():

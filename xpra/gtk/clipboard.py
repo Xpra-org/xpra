@@ -3,12 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any
 from time import monotonic
-from collections.abc import Callable
 
 from xpra.gtk.gobject import n_arg_signal, one_arg_signal
-from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS
+from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, ClipboardCallback
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.os_util import gi_import
 from xpra.util.str_fn import Ellipsizer
@@ -139,7 +137,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         self.schedule_emit_token()
 
-    def get_contents(self, target: str, got_contents: Callable[[str, int, Any], None], time=0):
+    def get_contents(self, target: str, got_contents: ClipboardCallback, time=0):
         log("get_contents(%s, %s, %i) have-token=%s",
             target, got_contents, time, self._have_token)
         if target == "TARGETS":

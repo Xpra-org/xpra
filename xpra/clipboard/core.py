@@ -9,7 +9,7 @@ import struct
 import re
 from time import monotonic
 from io import BytesIO
-from typing import Any
+from typing import Any, TypeAlias
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
@@ -25,6 +25,8 @@ from xpra.log import Logger, is_debug_enabled
 GLib = gi_import("GLib")
 
 log = Logger("clipboard")
+
+ClipboardCallback: TypeAlias = Callable[[str, int, Any], None]
 
 MIN_CLIPBOARD_COMPRESS_SIZE: int = envint("XPRA_MIN_CLIPBOARD_COMPRESS_SIZE", 512)
 MAX_CLIPBOARD_PACKET_SIZE: int = 16 * 1024 * 1024
@@ -265,7 +267,7 @@ class ClipboardProxyCore:
 
     # This function is called by the xpra core when the peer has requested the
     # contents of this clipboard:
-    def get_contents(self, target: str, got_contents: Callable[[str, int, Any], None]) -> None:
+    def get_contents(self, target: str, got_contents: ClipboardCallback) -> None:
         pass
 
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:

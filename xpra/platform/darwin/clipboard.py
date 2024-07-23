@@ -4,8 +4,7 @@
 # later version. See the file COPYING for details.
 
 from io import BytesIO
-from typing import Any
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 
 from AppKit import (
     NSStringPboardType, NSTIFFPboardType, NSPasteboardTypePNG, NSPasteboardTypeURL,
@@ -14,7 +13,7 @@ from AppKit import (
 from CoreFoundation import NSData, CFDataGetBytes, CFDataGetLength
 
 from xpra.clipboard.timeout import ClipboardTimeoutHelper
-from xpra.clipboard.core import _filter_targets, ClipboardProxyCore, TEXT_TARGETS
+from xpra.clipboard.core import _filter_targets, ClipboardProxyCore, TEXT_TARGETS, ClipboardCallback
 from xpra.platform.ui_thread_watcher import get_UI_watcher
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.os_util import gi_import
@@ -99,7 +98,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
         log("get_targets() targets(%s)=%s", types, targets)
         return targets
 
-    def get_contents(self, target: str, got_contents: Callable[[str, int, Any], None]) -> None:
+    def get_contents(self, target: str, got_contents: ClipboardCallback) -> None:
         log("get_contents%s", (target, got_contents))
         if target == "TARGETS":
             got_contents("ATOM", 32, self.get_targets())

@@ -147,16 +147,16 @@ class X11ServerBase(X11ServerCore):
             # now we can save values on the display
             # (we cannot access bindings until dbus has started up)
 
-            def _save_int(prop_name, intval):
+            def _save_int(prop_name, intval) -> None:
                 root_prop_set(prop_name, "u32", intval)
 
-            def _save_str(prop_name, strval):
+            def _save_str(prop_name, strval) -> None:
                 root_prop_set(prop_name, "latin1", strval)
 
             # DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
             # DBUS_SESSION_BUS_PID=11406
             # DBUS_SESSION_BUS_WINDOWID=50331649
-            attributes: list[tuple[str, type, Callable[[str, int | str]]]] = [
+            attributes: list[tuple[str, type, Callable[[str, int | str], None]]] = [
                 ("ADDRESS", str, _save_str),
                 ("PID", int, _save_int),
                 ("WINDOW_ID", int, _save_int),

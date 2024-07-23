@@ -6,7 +6,7 @@
 import os
 import struct
 from typing import Any, Final
-from collections.abc import Iterable, Callable, Sequence
+from collections.abc import Iterable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.gtk.error import xsync, xswallow
@@ -20,7 +20,7 @@ from xpra.x11.gtk.bindings import (
     cleanup_x11_filter,
 )
 from xpra.gtk.error import XError
-from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra
+from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
 from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.x11.bindings.window import constants, PropertyError, X11WindowBindings
 from xpra.x11.bindings.res import ResBindings
@@ -154,8 +154,8 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.xid: int = xid
         self.owned: bool = False
         self._want_targets: bool = False
-        self.remote_requests: dict[str, list[tuple]] = {}
-        self.local_requests: dict[str, dict[int, tuple[int, Callable]]] = {}
+        self.remote_requests: dict[str, list[tuple[int, str, str, float]]] = {}
+        self.local_requests: dict[str, dict[int, tuple[int, ClipboardCallback]]] = {}
         self.local_request_counter: int = 0
         self.targets: Sequence[str] = ()
         self.target_data: dict[str, tuple[str, int, Any]] = {}
@@ -500,7 +500,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         self.target_data = {}
         self.targets = ()
 
-    def get_contents(self, target: str, got_contents: Callable[[str, int, Any], None]) -> None:
+    def get_contents(self, target: str, got_contents: ClipboardCallback) -> None:
         log("get_contents(%s, %s) owned=%s, have-token=%s",
             target, got_contents, self.owned, self._have_token)
         if target == "TARGETS":
