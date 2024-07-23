@@ -63,12 +63,43 @@ class TestColorRange(unittest.TestCase):
             10: 0xc if encoding in ("webp",) else 4,
         }.get(quality, 0)
 
-    def test_encode_decode_range(self) -> None:
-        encoders = os.environ.get("XPRA_TEST_ENCODERS", ",".join(loader.ENCODER_CODECS)).split(",")
+    def setUp(self) -> None:
         self.width = 48
         self.height = 32
         self.rgb_format = "BGRX"
         self.test_info: set[str] = set()
+
+    def tearDown(self) -> None:
+        print(f"successfully tested {self.rgb_format} input with:")
+        for s in sorted_nicely(self.test_info):
+            print(f"{s}")
+
+    def test_pseudo_video(self) -> None:
+        self.do_test_pseudo_video("enc_webp", "webp")
+        self.do_test_pseudo_video("enc_jpeg", "jpeg")
+
+    def do_test_pseudo_video(self, enc_name: str, encoding: str) -> None:
+        enc_mod = loader.load_codec(enc_name)
+        for color, pixel in TEST_COLORS.items():
+            image = make_test_image(self.rgb_format, self.width, self.height, pixel)
+            self.pixels = image.get_pixels()
+            for quality in (100, 90, 50, 10):
+                tolerance = self.get_tolerance(encoding, quality)
+                options = typedict({
+                    "quality": quality,
+                    "color": color,
+                    "tolerance": tolerance,
+                })
+                encoder = enc_mod.Encoder()
+                encoder.init_context(encoding, self.width, self.height, self.rgb_format, typedict())
+                data, client_options = encoder.compress_image(image, options=options)
+                bdata = memoryview_to_bytes(data)
+                self.verify_PIL(enc_name, encoding, image, options, bdata)
+                self.verify_rgb(enc_name, encoding, image, options, bdata)
+                self.verify_yuv(enc_name, encoding, image, options, bdata, client_options)
+
+    def test_encode_decode_range(self) -> None:
+        encoders = os.environ.get("XPRA_TEST_ENCODERS", ",".join(loader.ENCODER_CODECS)).split(",")
         for enc_name in encoders:
             enc_mod = loader.load_codec(enc_name)
             if not enc_mod:
@@ -82,33 +113,29 @@ class TestColorRange(unittest.TestCase):
                     self.pixels = image.get_pixels()
                     for quality in (100, 90, 50, 10):
                         tolerance = self.get_tolerance(encoding, quality)
-                        enc_options = typedict({
+                        options = typedict({
                             "quality": quality,
                             "color": color,
                             "tolerance": tolerance,
                         })
-                        bdata = enc_mod.encode(encoding, image, options=enc_options)
+                        output = enc_mod.encode(encoding, image, options=options)
                         # tuple[str, Compressed, dict[str, Any], int, int, int, int]
-                        if not bdata:
+                        if not output:
                             raise RuntimeError(f"failed to encode {image} using {enc_mod.encode}")
-                        file_data = memoryview_to_bytes(bdata[1].data)
-                        client_options = bdata[2]
-                        self.verify_PIL(enc_name, encoding, image, enc_options, file_data)
-                        self.verify_rgb(enc_name, encoding, image, enc_options, file_data)
-                        self.verify_yuv(enc_name, encoding, image, enc_options, file_data, client_options)
+                        bdata = memoryview_to_bytes(output[1].data)
+                        client_options = output[2]
+                        self.verify_PIL(enc_name, encoding, image, options, bdata)
+                        self.verify_rgb(enc_name, encoding, image, options, bdata)
+                        self.verify_yuv(enc_name, encoding, image, options, bdata, client_options)
 
-        print(f"successfully tested {self.rgb_format} input with:")
-        for s in sorted_nicely(self.test_info):
-            print(f"{s}")
-
-    def verify_PIL(self, enc_name: str, encoding: str, image: ImageWrapper, enc_options: dict, file_data: bytes) -> None:
+    def verify_PIL(self, enc_name: str, encoding: str, image: ImageWrapper, enc_options: dict, data: bytes) -> None:
         ext = encoding.replace("/", "")  # ie: "png/L" -> "pngL"
         if ext not in ("png", "webp", "jpeg"):
             return
         # verify first 16 bytes when compressed image with Pillow:
         from io import BytesIO
         from PIL import Image
-        img = Image.open(BytesIO(file_data))
+        img = Image.open(BytesIO(data))
         img = img.convert("RGBA")
         rdata = img.tobytes("raw", self.rgb_format.replace("X", "A"))
         tolerance = enc_options["tolerance"]
@@ -131,7 +158,7 @@ class TestColorRange(unittest.TestCase):
                                        f"tolerance={tolerance}")
         self.test_info.add(f"{enc_name:12}  {encoding:12}  pillow                                    {self.rgb_format}")
 
-    def verify_rgb(self, enc_name: str, encoding: str, image: ImageWrapper, enc_options: dict, file_data: bytes) -> None:
+    def verify_rgb(self, enc_name: str, encoding: str, image: ImageWrapper, enc_options: dict, data: bytes) -> None:
         # try to decompress to rgb:
         decoders = os.environ.get("XPRA_TEST_DECODERS", ",".join(loader.DECODER_CODECS)).split(",")
         for dec_name in decoders:
@@ -144,7 +171,7 @@ class TestColorRange(unittest.TestCase):
             # print(f"testing {fmt} rgb decoding using {decompress_to_rgb}")
             if not decompress_to_rgb:
                 continue
-            rimage = decompress_to_rgb(self.rgb_format, file_data)
+            rimage = decompress_to_rgb(self.rgb_format, data)
             tolerance = enc_options["tolerance"]
             if dec_name == "dec_jpeg":
                 tolerance += 1
@@ -152,7 +179,7 @@ class TestColorRange(unittest.TestCase):
                 raise RuntimeError(f"decoder {dec_name} from {enc_name} produced an image that differs with {enc_options=}")
             self.test_info.add(f"{enc_name:12}  {encoding:12}  {dec_name:12}                              {self.rgb_format}")
 
-    def verify_yuv(self, enc_name: str, encoding: str, image: ImageWrapper, enc_options: dict, file_data, client_options: dict) -> None:
+    def verify_yuv(self, enc_name: str, encoding: str, image: ImageWrapper, enc_options: dict, data: bytes, client_options: dict) -> None:
         decoders = os.environ.get("XPRA_TEST_DECODERS", ",".join(loader.DECODER_CODECS)).split(",")
         csc_modules = os.environ.get("XPRA_TEST_CSC", ",".join(loader.CSC_CODECS)).split(",")
         # try to decompress to yuv
@@ -166,7 +193,7 @@ class TestColorRange(unittest.TestCase):
             if not decompress_to_yuv:
                 continue
             dec_options = typedict(client_options)
-            yuv_image = decompress_to_yuv(file_data, dec_options)
+            yuv_image = decompress_to_yuv(data, dec_options)
             assert yuv_image
             yuv_format = yuv_image.get_pixel_format()
             # find a csc module to convert this back to rgb:
