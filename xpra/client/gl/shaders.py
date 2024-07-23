@@ -28,8 +28,6 @@
 # G = Y - (a * e / b) * Cr - (c * d / b) * Cb
 # B = Y + d * Cb
 
-from typing import Iterable
-
 from xpra.codecs.constants import get_subsampling_divs
 
 GLSL_VERSION = "330 core"
@@ -41,9 +39,10 @@ CS_MULTIPLIERS: dict[str, tuple[float, float, float, float, float]] = {
 }
 
 
-def gen_YUV_to_RGB(divs: Iterable[tuple[int, int]], cs="bt601", full_range=True) -> str:
+def gen_YUV_to_RGB(fmt="YUV420P", cs="bt601", full_range=True) -> str:
     if cs not in CS_MULTIPLIERS:
         raise ValueError(f"unsupported colorspace {cs}")
+
     a, b, c, d, e = CS_MULTIPLIERS[cs]
     f = - c * d / b
     g = - a * e / b
@@ -64,6 +63,7 @@ def gen_YUV_to_RGB(divs: Iterable[tuple[int, int]], cs="bt601", full_range=True)
             value = f"vec2({xdiv}, {ydiv})"
         defines.append(f"{name}div {value}")
 
+    divs = get_subsampling_divs(fmt)
     for i, div in enumerate(divs):
         add_div("YUV"[i], *div)
 
@@ -177,8 +177,7 @@ for full in (False, True):
     SOURCE[f"NV12_to_RGB{suffix}"] = gen_NV12_to_RGB(full_range=full)
 
     for fmt in ("YUV420P", "YUV422P", "YUV444P"):
-        divs = get_subsampling_divs(fmt)
-        SOURCE[f"{fmt}_to_RGB{suffix}"] = gen_YUV_to_RGB(divs, full_range=full)
+        SOURCE[f"{fmt}_to_RGB{suffix}"] = gen_YUV_to_RGB(fmt, full_range=full)
 
 
 def main():
