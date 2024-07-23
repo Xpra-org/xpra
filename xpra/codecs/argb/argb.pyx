@@ -97,13 +97,12 @@ cdef object r210data_to_rgba(unsigned int* r210,
     cdef unsigned int* rgba = <unsigned int*> output_buf.get_mem()
     cdef unsigned int v, x, y = 0
     with nogil:
-        while y<h:
+        for y in range(h):
             for x in range(w):
                 v = r210[x]
                 rgba[x] = (v&0x3fc00000) >> 22 | (v&0x000ff000) >> 4 | (v&0x000003fc) << 14 | ((v>>30)*85)<<24
             r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
             rgba = <unsigned int*> ((<uintptr_t> rgba) + dst_stride)
-            y += 1
     return memoryview(output_buf)
 
 
@@ -127,13 +126,12 @@ cdef object r210data_to_rgbx(unsigned int* r210,
     cdef unsigned int* rgbx = <unsigned int*> output_buf.get_mem()
     cdef unsigned int v, x, y = 0
     with nogil:
-        while y<h:
+        for y in range(h):
             for x in range(w):
                 v = r210[x]
                 rgbx[x] = (v&0x3fc00000) >> 22 | (v&0x000ff000) >> 4 | (v&0x000003fc) << 14 | <unsigned int> 0xff000000
             r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
             rgbx = <unsigned int*> ((<uintptr_t> rgbx) + dst_stride)
-            y += 1
     return memoryview(output_buf)
 
 
@@ -162,7 +160,7 @@ cdef object r210data_to_rgb(unsigned int* r210,
     cdef unsigned char* rgba = <unsigned char*> output_buf.get_mem()
     cdef unsigned int i, v, y = 0
     with nogil:
-        while y<h:
+        for y in range(h):
             i = y*dst_stride
             for x in range(w):
                 v = r210[x]
@@ -171,7 +169,6 @@ cdef object r210data_to_rgb(unsigned int* r210,
                 rgba[i]   = (v&0x3ff00000) >> 22
                 i += 3
             r210 = <unsigned int*> ((<uintptr_t> r210) + src_stride)
-            y += 1
     return memoryview(output_buf)
 
 
@@ -195,13 +192,12 @@ cdef object bgrxdata_to_rgb(const unsigned int *bgrx, const int bgrx_len):
     cdef int si = 0, di = 0
     cdef unsigned int p
     with nogil:
-        while si < mi:
+        for si in range(mi):
             p = bgrx[si]
             rgb[di]   = p & 0xFF                #R
             rgb[di+1] = (p>>8) & 0xFF           #G
             rgb[di+2] = (p>>16) & 0xFF          #B
             di += 3
-            si += 1
     return memoryview(output_buf)
 
 
@@ -253,13 +249,12 @@ cdef object bgrxdata_to_l(const unsigned int *bgrx, const int bgrx_len):
     cdef unsigned int p
     cdef unsigned char r, g, b
     with nogil:
-        while i < mi:
+        for i in range(mi):
             p = bgrx[i]
             r = p & 0xFF                #R
             g = (p>>8) & 0xFF           #G
             b = (p>>16) & 0xFF          #B
             l[i] = (r*3+b+g*4)>>3
-            i += 1
     return memoryview(output_buf)
 
 
@@ -322,7 +317,7 @@ cdef object bgradata_to_la(const unsigned int *bgra, const int bgra_len):
     cdef unsigned int p
     cdef unsigned char r, g, b, a
     with nogil:
-        while si < mi:
+        for si in range(mi):
             p = bgra[si]
             r = p & 0xFF
             g = (p>>8) & 0xFF
@@ -331,7 +326,6 @@ cdef object bgradata_to_la(const unsigned int *bgra, const int bgra_len):
             la[di] = (r*3+b+g*4)>>3
             la[di+1] = a
             di += 2
-            si += 1
     return memoryview(output_buf)
 
 
@@ -353,10 +347,9 @@ cdef object argbdata_to_rgba(const unsigned int* argb, const int argb_len):
     cdef int i = 0
     cdef unsigned int p
     with nogil:
-        while i < mi:
+        for i in range(mi):
             p = argb[i]
             rgba[i] = p>>8 | (p&0xff)<<24
-            i += 1
     return memoryview(output_buf)
 
 
@@ -380,13 +373,12 @@ cdef object argbdata_to_rgb(const unsigned int* argb, const int argb_len):
     cdef int si = 0, di = 0
     cdef unsigned int p
     with nogil:
-        while si < mi:
+        for si in range(mi):
             p = argb[si]
             rgb[di]   = (p>>8)&0xFF             #R
             rgb[di+1] = (p>>16)&0xFF            #G
             rgb[di+2] = (p>>24)&0xFF            #B
             di += 3
-            si += 1
     return memoryview(output_buf)
 
 
@@ -436,13 +428,12 @@ cdef object bgradata_to_rgb(const unsigned int* bgra, const int bgra_len):
     cdef int di = 0, si = 0
     cdef unsigned int p
     with nogil:
-        while si < mi:
+        for si in range(mi):
             p = bgra[si]
             rgb[di]   = (p>>16) & 0xFF          #R
             rgb[di+1] = (p>>8) & 0xFF           #G
             rgb[di+2] = p & 0xFF                #B
             di += 3
-            si += 1
     return memoryview(output_buf)
 
 
@@ -464,10 +455,9 @@ cdef object bgradata_to_rgba(const unsigned int* bgra, const int bgra_len):
     cdef int i = 0
     cdef unsigned int p
     with nogil:
-        while i < mi:
+        for i in range(mi):
             p = bgra[i]
             rgba[i] = (p>>16) & 0xff | p & 0xff00 | (p & 0xff)<<16 | p&(<unsigned int>0xff000000)
-            i += 1
     return memoryview(output_buf)
 
 
