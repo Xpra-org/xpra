@@ -29,6 +29,7 @@ videolog = Logger("video", "paint")
 
 PAINT_BOX = envint("XPRA_PAINT_BOX", 0)
 WEBP_PILLOW = envbool("XPRA_WEBP_PILLOW", False)
+WEBP_YUV = envbool("XPRA_WEBP_YUV", False)
 REPAINT_ALL = envbool("XPRA_REPAINT_ALL", False)
 SHOW_FPS = envbool("XPRA_SHOW_FPS", False)
 # prefer csc scaling to cairo's own scaling:
@@ -548,6 +549,11 @@ class WindowBackingBase:
         if not self.webp_decoder or WEBP_PILLOW:
             # if webp is enabled, then Pillow should be able to take care of it:
             self.paint_pillow("webp", img_data, x, y, width, height, options, callbacks)
+            return
+        if WEBP_YUV:
+            has_alpha = options.boolget("has_alpha")
+            img = self.webp_decoder.decompress_to_yuv(img_data, options, has_alpha)
+            self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
             return
         rgb_format = options.strget("rgb_format", "BGRX")
         has_alpha = options.boolget("has_alpha", False)
