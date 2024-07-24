@@ -49,7 +49,6 @@ def gen_YUV_to_RGB(fmt="YUV420P", cs="bt601", full_range=True) -> str:
     ymult = "" if full_range else " * 1.1643835616438356"
     uvmult = "" if full_range else " * 1.1383928571428572"
     yoffset = "" if full_range else " - 0.062745098"
-    uvoffset = " - 0.5" if full_range else " - 0.562745098"
     defines = []
 
     def add_div(name: str, xdiv=1, ydiv=1):
@@ -83,8 +82,8 @@ void main()
 {{
     vec2 pos = (gl_FragCoord.xy-viewport_pos.xy)/scaling;
     highp float y = (texture(Y, pos/Ydiv).r{yoffset}){ymult};
-    highp float u = (texture(U, pos/Udiv).r{uvoffset}){uvmult};
-    highp float v = (texture(V, pos/Vdiv).r{uvoffset}){uvmult};
+    highp float u = (texture(U, pos/Udiv).r - 0.5){uvmult};
+    highp float v = (texture(V, pos/Vdiv).r - 0.5){uvmult};
 
     highp float r = y +           {e} * v;
     highp float g = y + {f} * u + {g} * v;
