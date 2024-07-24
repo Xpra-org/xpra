@@ -78,7 +78,7 @@ GLib = gi_import("GLib")
 OPENGL_DEBUG = envbool("XPRA_OPENGL_DEBUG", False)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 JPEG_YUV = envbool("XPRA_JPEG_YUV", True)
-WEBP_YUV = envbool("XPRA_WEBP_YUV", True)
+WEBP_YUV = envint("XPRA_WEBP_YUV", 1)
 FORCE_CLONE = envbool("XPRA_OPENGL_FORCE_CLONE", False)
 FORCE_VIDEO_PIXEL_FORMAT = os.environ.get("XPRA_FORCE_VIDEO_PIXEL_FORMAT", "")
 DRAW_REFRESH = envbool("XPRA_OPENGL_DRAW_REFRESH", True)
@@ -1211,13 +1211,12 @@ class GLWindowBackingBase(WindowBackingBase):
 
     def paint_webp(self, img_data, x: int, y: int, width: int, height: int,
                    options: typedict, callbacks: PaintCallbacks) -> None:
-        subsampling = options.strget("subsampling")
+        subsampling = options.strget("subsampling", "none")
         has_alpha = options.boolget("has_alpha")
         webp_decoder = self.webp_decoder
-        # webp only uses 'YUV420P' at present, but we can support all of these YUV formats:
-        if subsampling in ("YUV420P", "YUV422P", "YUV444P") and WEBP_YUV and webp_decoder and not WEBP_PILLOW:
-            # validate dimensions:
-            if not has_alpha and width >= 2 and height >= 2:
+        if WEBP_YUV > 0 and webp_decoder and not WEBP_PILLOW and not has_alpha and width >= 2 and height >= 2:
+            # webp only uses 'YUV420P' at present, but we can support all of these YUV formats:
+            if WEBP_YUV > 1 or subsampling in ("YUV420P", "YUV422P", "YUV444P"):
                 img = webp_decoder.decompress_to_yuv(img_data, options, has_alpha)
                 self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
                 return
