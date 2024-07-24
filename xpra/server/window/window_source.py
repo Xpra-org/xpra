@@ -116,7 +116,7 @@ COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX+" with ratio %5.1f%%  (%5iKB to 
 
 
 ui_context : ContextManager = DummyContextManager()
-if POSIX and not OSX:
+if POSIX and not OSX and not envbool("XPRA_NOX11", False) and os.environ.get("GDK_BACKEND", "x11") == "x11":
     from xpra.gtk_common.error import xlog
     ui_context = xlog
 
