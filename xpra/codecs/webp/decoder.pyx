@@ -216,7 +216,7 @@ def decompress_to_rgb(rgb_format: str, data: bytes, has_alpha: bool=True, rgb_fo
     pixels = PyMemoryView_FromMemory(<char *> buf, size, PyBUF_WRITE)
     img = WebpImageWrapper(
         0, 0, config.input.width, config.input.height, pixels, out_format,
-        len(out_format) * 8, stride, full_range=False,
+        len(out_format) * 8, stride,
     )
     img.cython_buffer = <uintptr_t> buf
     return img
