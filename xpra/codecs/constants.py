@@ -30,6 +30,11 @@ PREFERRED_ENCODING_ORDER: Sequence[str] = (
     "grayscale",
     "stream",
 )
+
+PSEUDO_LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jpeg", "jpega")
+
+TRUE_LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "webp", "avif")
+
 PREFERRED_REFRESH_ENCODING_ORDER: Sequence[str] = (
     "webp", "avif", "png", "png/P", "png/L", "rgb", "rgb24", "rbg32", "jpeg", "jpega",
 )

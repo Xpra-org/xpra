@@ -30,7 +30,11 @@ from xpra.util.stats import get_list_stats
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.constants import preforder, LOSSY_PIXEL_FORMATS, PREFERRED_REFRESH_ENCODING_ORDER
+from xpra.codecs.constants import (
+    preforder,
+    LOSSY_PIXEL_FORMATS, PREFERRED_REFRESH_ENCODING_ORDER,
+    PSEUDO_LOSSLESS_ENCODINGS, TRUE_LOSSLESS_ENCODINGS,
+)
 from xpra.net.compression import use, Compressed
 from xpra.log import Logger
 
@@ -106,9 +110,9 @@ def get_env_encodings(etype: str, valid_options: Iterable[str] = ()) -> Sequence
 
 
 TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32", "jpega"))
-LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jpeg", "jpega")
+LOSSLESS_ENCODINGS = PSEUDO_LOSSLESS_ENCODINGS
 if TRUE_LOSSLESS:
-    LOSSLESS_ENCODINGS = ("rgb", "png", "png/P", "png/L", "webp", "avif")
+    LOSSLESS_ENCODINGS = TRUE_LOSSLESS_ENCODINGS
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", LOSSLESS_ENCODINGS)
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", LOSSLESS_ENCODINGS)
 
