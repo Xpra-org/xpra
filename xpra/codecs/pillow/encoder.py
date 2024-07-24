@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from math import sqrt
 from io import BytesIO
 from typing import Any
 from collections.abc import Sequence
@@ -207,7 +208,7 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
         kwargs["quality"] = q
         if coding == "webp":
             kwargs["method"] = int(speed < 10)
-            client_options["quality"] = q
+            client_options["quality"] = min(100, max(0, 10 + round(sqrt(sqrt(q * 100) * 100))))
         else:
             client_options["quality"] = min(99, q)
         if coding == "jpeg" and speed < 50:

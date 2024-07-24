@@ -61,7 +61,7 @@ def get_tolerance(enc_name: str, encoding: str, quality: int) -> int:
         10: 0xc if encoding in ("webp",) else 4,
     }.get(quality, 0)
     if enc_name == "enc_pillow" and encoding == "webp":
-        tolerance += 4
+        tolerance += 3
     return tolerance
 
 
