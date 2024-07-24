@@ -883,19 +883,24 @@ fi
 
 
 %changelog
-* Mon Jul 22 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
+* Wed Jul 24 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
 - Platforms, build and packaging:
    RHEL 8.10 pygobject3 packaging update
    always build the latest X11 dummy driver version
    only build xpra from the 6.1.x branch
+   pycuda 2024.1.1
 - Encodings:
    disable `scroll` encoding
+   greenish tint with subsampled webp screen updates
 - Major:
    missing context manager when X11 session started from a Wayland desktop
+   keyboard support should not require `dbus`
 - Network:
    expose quic / webtransport sockets via mdns
 - Cosmetic:
    incorrect exception debug message
+   unused invalid headers
+   outdated comment
 
 * Thu Jul 18 2024 Antoine Martin <antoine@xpra.org> 6.1-10
 - Platforms, build and packaging:

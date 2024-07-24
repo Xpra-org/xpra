@@ -5,14 +5,19 @@
     * [RHEL 8.10 pygobject3 packaging update](https://github.com/Xpra-org/xpra/commit/75fe7ad62f1a176f62e82529b1f9a5aad3273eae)
     * [always build the latest X11 dummy driver version](https://github.com/Xpra-org/xpra/commit/c8118c75f592866d2161ff37e6993002c5a0288e)
     * [only build xpra from the 6.1.x branch](https://github.com/Xpra-org/xpra/commit/00919772d0813b0d2e514598c7263dfa9fe4b7e5)
+    * [pycuda 2024.1.1](https://github.com/Xpra-org/xpra/commit/7aee40a1d298f6468829564f23bf777bce10376a)
 * Encodings:
     * [disable `scroll` encoding](https://github.com/Xpra-org/xpra/commit/8c05f445d6bb9f220adb3bed3ee4b13a652e3676)
+    * [greenish tint with subsampled webp screen updates](https://github.com/Xpra-org/xpra/commit/0d2b7d452a3b6f89c21db3b74f453cfad37bd12f)
 * Major:
     * [missing context manager when X11 session started from a Wayland desktop](https://github.com/Xpra-org/xpra/commit/9d980f569f746414af9eb8f975c2e2b32be3f94e)
+    * [keyboard support should not require `dbus`](https://github.com/Xpra-org/xpra/commit/9099fee25d28b97045a65e4fb838d3e69d94eb56)
 * Network:
     * [expose quic / webtransport sockets via mdns](https://github.com/Xpra-org/xpra/commit/8e86a3ee07d4f19e91a8ba635dae561942430d7a)
 * Cosmetic:
     * [incorrect exception debug message](https://github.com/Xpra-org/xpra/commit/d8457b97b877aa68160655f8e33ec88d59e80658)
+    * [unused invalid headers](https://github.com/Xpra-org/xpra/commit/03f96c686dae9bc634f8cac87debd53704078b21)
+    * [outdated comment](https://github.com/Xpra-org/xpra/commit/540a614ad599d9162490ed5ba876fe0a74a8863f)
 
 ## [6.1] 2024-07-18
 * Platforms, build and packaging:
