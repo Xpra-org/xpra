@@ -943,6 +943,8 @@ class ServerCore:
         if socktype in ("vsock", "named-pipe"):
             #cannot be accessed remotely
             return ()
+        if socktype == "quic":
+            return ("quic", )
         ssh_access = get_ssh_port()>0   #and opts.ssh.lower().strip() not in FALSE_OPTIONS
         ssl = bool(self._ssl_attributes)
         #only available with the RFBServer
