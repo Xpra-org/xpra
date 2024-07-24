@@ -9,7 +9,6 @@ import json
 from collections.abc import Iterable, Sequence
 
 from xpra.platform.keyboard_base import KeyboardBase
-from xpra.dbus.helper import DBusHelper, native_to_dbus, dbus_to_native
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.log import Logger
 from xpra.util.env import first_time
@@ -45,6 +44,7 @@ class Keyboard(KeyboardBase):
         self.keyboard_bindings = None
         self.__input_sources: dict[str, int] = {}
         try:
+            from xpra.dbus.helper import DBusHelper
             self.__dbus_helper = DBusHelper()
             # we really want to catch `dbus.exceptions.DBusException` here instead:
         except Exception as e:
@@ -62,6 +62,8 @@ class Keyboard(KeyboardBase):
             self.__input_sources[layout] = index
 
     def _dbus_gnome_shell_ism(self, method, args, callback=None) -> None:
+        from xpra.dbus.helper import dbus_to_native
+
         def ok_cb(success, res) -> None:
             try:
                 if not dbus_to_native(success):
@@ -96,6 +98,7 @@ class Keyboard(KeyboardBase):
         )
 
     def _dbus_gnome_shell_eval_ism(self, cmd, callback=None) -> None:
+        from xpra.dbus.helper import dbus_to_native, native_to_dbus
         ism = "imports.ui.status.keyboard.getInputSourceManager()"
 
         def ok_cb(success, res) -> None:
@@ -127,7 +130,9 @@ class Keyboard(KeyboardBase):
         if index is None:
             log(f"asked layout ({layout}) has no corresponding registered input source")
             return
-        self._dbus_gnome_shell_ism("Activate", [native_to_dbus(index)])
+        if self.__dbus_helper:
+            from xpra.dbus.helper import native_to_dbus
+            self._dbus_gnome_shell_ism("Activate", [native_to_dbus(index)])
 
     def __repr__(self):
         return "posix.Keyboard"
