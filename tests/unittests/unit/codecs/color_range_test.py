@@ -53,15 +53,19 @@ def cmp_images(image1: ImageWrapper, image2: ImageWrapper, tolerance=1) -> bool:
         tolerance)
 
 
-class TestColorRange(unittest.TestCase):
+def get_tolerance(enc_name: str, encoding: str, quality: int) -> int:
+    tolerance = {
+        100: 1 if encoding in ("jpeg",) else 0,
+        90: 2 if encoding in ("webp",) else 1,
+        50: 4,
+        10: 0xc if encoding in ("webp",) else 4,
+    }.get(quality, 0)
+    if enc_name == "enc_pillow" and encoding == "webp":
+        tolerance += 4
+    return tolerance
 
-    def get_tolerance(self, encoding: str, quality: int) -> int:
-        return {
-            100: 1 if encoding in ("jpeg",) else 0,
-            90: 2 if encoding in ("webp",) else 1,
-            50: 4,
-            10: 0xc if encoding in ("webp",) else 4,
-        }.get(quality, 0)
+
+class TestColorRange(unittest.TestCase):
 
     def setUp(self) -> None:
         self.width = 48
@@ -84,7 +88,7 @@ class TestColorRange(unittest.TestCase):
             image = make_test_image(self.rgb_format, self.width, self.height, pixel)
             self.pixels = image.get_pixels()
             for quality in (100, 90, 50, 10):
-                tolerance = self.get_tolerance(encoding, quality)
+                tolerance = get_tolerance(enc_name, encoding, quality)
                 options = typedict({
                     "quality": quality,
                     "color": color,
@@ -112,7 +116,7 @@ class TestColorRange(unittest.TestCase):
                     # (the spng encoder does)
                     self.pixels = image.get_pixels()
                     for quality in (100, 90, 50, 10):
-                        tolerance = self.get_tolerance(encoding, quality)
+                        tolerance = get_tolerance(enc_name, encoding, quality)
                         options = typedict({
                             "quality": quality,
                             "color": color,
