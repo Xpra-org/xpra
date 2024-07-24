@@ -775,8 +775,45 @@ fi
 
 
 %changelog
-* Sat Jul 13 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
-- TODO
+* Wed Jul 24 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+- Encodings:
+   `mmap` race condition
+   validate openh264 colorspace
+   test used potentially invalid colorspace
+- Platforms, build and packaging:
+   syntax compatibility fixes
+   `openssl.cnf` location in MS Windows builds
+   force rebuild of dummy driver RPMs
+   Fedora can build html documentation again
+- Major:
+   MS Windows PDF printing crash, library mismatch
+   honour `ssh` option when re-connecting
+   missing http headers caused html5 client caching
+   mDNS browser handling for binary `text` records from zeroconf
+   `sync-xvfb`: always free images with an error context
+- Encodings:
+   avoid slow modules and slow encoders
+   reduce how often quality swings cause scaling changes
+   stick to the same video scaling value longer
+- Keyboard:
+   ignore MS Windows keyboard layouts without a valid X11 layout name
+   try harder to identify the key event string
+   don't show duplicate keyboard layout names
+- Minor:
+   remove enum prefix with older Python versions
+   http directory listing
+   ssl path checks
+   RFB connections cannot be upgraded to `http` or `ws`
+   make it possible to skip NM api
+- Cosmetic:
+   log `ssl` error just once per socket
+   OpenSSH documentation misplaced
+   we do have tests
+   incorrect exception debug message
+   paramiko looks unmaintained
+   AES modes and keydata safety documentation
+   missing line continuation backslash in example
+   missing quote
 
 * Fri May 31 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
 - Encodings:

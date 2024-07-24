@@ -1,23 +1,47 @@
 # Changelog
 
-## [5.0.10] 2024-07-13
+## [5.0.10] 2024-07-24
 * Encodings:
     * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
     * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
     * [test used potentially invalid colorspace](https://github.com/Xpra-org/xpra/commit/d4883187a0c1497b0ece3330a6864f1b67d1a217)
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
+    * [`openssl.cnf` location in MS Windows builds](https://github.com/Xpra-org/xpra/commit/3ad6c8e44438912c5dd9dcba427b17d6b20a463f)
+    * [force rebuild of dummy driver RPMs](https://github.com/Xpra-org/xpra/commit/528816af936c95ea9a238507bd6a9f371b3baa84)
+    * [Fedora can build html documentation again](https://github.com/Xpra-org/xpra/commit/4533efa1ffe7cc0d52cc4063b9b1da3a3478308a)
+    * [always build the latest dummy DEB](https://github.com/Xpra-org/xpra/commit/1f7f9e3a8b3418e87b89e5c863a92b058f2a6baf)
 * Major:
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
     * [honour `ssh` option when re-connecting](https://github.com/Xpra-org/xpra/commit/45bad59e6255f03087b8dbd51dfd2380472f6f20)
     * [missing http headers caused html5 client caching](https://github.com/Xpra-org/xpra/commit/bb8db97afcbd79ca8924728a674736026201d80f)
+    * [mDNS browser handling for binary `text` records from zeroconf](https://github.com/Xpra-org/xpra/commit/14bd95980ce63e08aa6f2532b0a495f541caa01b)
+    * [`sync-xvfb`: always free images with an error context](https://github.com/Xpra-org/xpra/commit/85547dac5f0d7fabd361db6d84964c27cba5b6bc)
+* Encodings:
+    * avoid [slow modules](https://github.com/Xpra-org/xpra/commit/7a16475b73ebd8398e3c1b44561647a9d7877933) and [slow encoders](https://github.com/Xpra-org/xpra/commit/38a7b3daaa6b908d7faf93ab2fa31eed3cabc104)
+    * [reduce how often quality swings cause scaling changes](https://github.com/Xpra-org/xpra/commit/7951a696e3afb79cd8b60394561eebaf379453b4)
+    * [stick to the same video scaling value longer](https://github.com/Xpra-org/xpra/commit/aaf22afec492240dae512230aa5fe88c73546c51)
+* Keyboard:
+    * [ignore MS Windows keyboard layouts without a valid X11 layout name](https://github.com/Xpra-org/xpra/commit/3eca141e0027e93ea1150a5a5939fc63425d9aaf)
+    * [try harder to identify the key event string](https://github.com/Xpra-org/xpra/commit/01b36a92c1d2113c3897166c12bfc1177e4bdc55)
+    * [don't show duplicate keyboard layout names](https://github.com/Xpra-org/xpra/commit/07d51f73ea08188b728633da745ea29b5285bb77)
 * Minor:
     * [remove enum prefix with older Python versions](https://github.com/Xpra-org/xpra/commit/8eabd33b578aed9670c1cef62a24e2dc73370b79)
     * [http directory listing](https://github.com/Xpra-org/xpra/commit/3aa22cfa636f21ba079e352b81448d675174d59a)
+    * [ssl path checks](https://github.com/Xpra-org/xpra/commit/e29d360cf5d09d1909c7556eca6bdaeadbb5d48a)
+    * [RFB connections cannot be upgraded to `http` or `ws`](https://github.com/Xpra-org/xpra/commit/d91d34fb8b1303bbebbfbff733e35fed1ec6fb0a)
+    * [make it possible to skip NM api](https://github.com/Xpra-org/xpra/commit/560e25100dafdf4c18caef559539db4510f4b997)
+    * [expose QUIC sockets via mDNS](https://github.com/Xpra-org/xpra/commit/c58425cd5512a669da487414483f045943876f27)
+    * [only enable gtk error context with x11 Gdk backend](https://github.com/Xpra-org/xpra/commit/161acb245b65e71dae6f179bcbfe0ef8ced230d2)
 * Cosmetic:
     * [log `ssl` error just once per socket](https://github.com/Xpra-org/xpra/commit/a409b1bbebece4d86dfe04fdd54c9b7f385fc1a9)
     * [OpenSSH documentation misplaced](https://github.com/Xpra-org/xpra/commit/b074848ada873561dd975238cfeb1ed5cf81ba93)
     * [we do have tests](https://github.com/Xpra-org/xpra/commit/8af9bb37c22f0b696b312c76801ec1b5dc597a74)
+    * [incorrect exception debug message](https://github.com/Xpra-org/xpra/commit/8802efbbe28c1a445202f98a904d7210ac853c7c) and [format](https://github.com/Xpra-org/xpra/commit/544a11020a7e345b5eb08fdd5ec627cadba8fc44)
+    * [paramiko looks unmaintained](https://github.com/Xpra-org/xpra/commit/253433ddc4e902dbb3b99d49b34148bba70975bd)
+    * [AES modes and keydata safety documentation](https://github.com/Xpra-org/xpra/commit/c299b0100865b763284403dce83d496eb76bbeb6)
+    * [missing line continuation backslash in example](https://github.com/Xpra-org/xpra/commit/e95b0c8d551ffe85c7644b3d1055d0410086fbfe)
+    * [missing quote](https://github.com/Xpra-org/xpra/commit/b88e1667033398ebad55639b10e448a22b08648e)
 
 
 ## [5.0.9] 2023-06-18
