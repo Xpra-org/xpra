@@ -19,7 +19,7 @@ from xpra.log import Logger
 
 log = Logger("encoder", "pillow")
 
-ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,jpeg").split(",")
+ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,jpeg,webp").split(",")
 
 Image.init()
 
