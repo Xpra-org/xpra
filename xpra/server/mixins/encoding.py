@@ -13,8 +13,8 @@ from xpra.os_util import OSX
 from xpra.util.str_fn import bytestostr
 from xpra.net.common import PacketType
 from xpra.util.version import vtrim
-from xpra.codecs.constants import preforder, STREAM_ENCODINGS
-from xpra.codecs.loader import get_codec, has_codec, codec_versions, load_codec
+from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENCODINGS
+from xpra.codecs.loader import get_codec, codec_versions, load_codec
 from xpra.codecs.video import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.server.source.windows import WindowsMixin
@@ -145,6 +145,7 @@ class EncodingServer(StubServerMixin):
 
     def init_encodings(self) -> None:
         encs, core_encs = [], []
+        lossless = []
         log("init_encodings() allowed_encodings=%s", self.allowed_encodings)
 
         def add_encoding(encoding):
@@ -158,6 +159,8 @@ class EncodingServer(StubServerMixin):
                 encs.append(enc)
             if encoding not in core_encs:
                 core_encs.append(encoding)
+            if encoding in TRUE_LOSSLESS_ENCODINGS and encoding not in lossless:
+                lossless.append(encoding)
 
         def add_encodings(*encodings):
             log("add_encodings%s", encodings)
@@ -172,11 +175,7 @@ class EncodingServer(StubServerMixin):
         except (ImportError, TypeError) as e:
             log.error("Error: 'scroll' encoding is not available")
             log.estr(e)
-        lossless = []
-        if "scroll" in self.allowed_encodings and "scroll" not in self.lossless_mode_encodings:
-            # scroll is lossless, but it also uses other picture codecs
-            # and those allow changes in quality
-            lossless.append("scroll")
+        add_encoding("scroll")
 
         # video encoders (empty when first called - see threaded_init)
         ve = getVideoHelper().get_encodings()
@@ -185,18 +184,12 @@ class EncodingServer(StubServerMixin):
         # Pithon Imaging Library:
         enc_pillow = get_codec("enc_pillow")
         log("enc_pillow=%s", enc_pillow)
+        pil_encs = ()
         if enc_pillow:
             pil_encs = enc_pillow.get_encodings()
             log("pillow encodings: %s", pil_encs)
             for encoding in pil_encs:
-                if encoding != "webp":
-                    add_encoding(encoding)
-            # Note: webp will only be enabled if we have a Python-PIL fallback
-            # (either "webp" or "png")
-            if has_codec("enc_webp") and ("webp" in pil_encs or "png" in pil_encs):
-                add_encodings("webp")
-                if "webp" not in lossless:
-                    lossless.append("webp")
+                add_encoding(encoding)
         for codec_name in ("enc_avif", "enc_jpeg", "enc_nvjpeg"):
             codec = get_codec(codec_name)
             if codec:
@@ -216,7 +209,7 @@ class EncodingServer(StubServerMixin):
         self.encodings = preforder(encs)
         self.core_encodings = preforder(core_encs)
         self.lossless_mode_encodings = preforder(lossless)
-        self.lossless_encodings = preforder(enc for enc in self.core_encodings
+        self.lossless_encodings = preforder(enc for enc in core_encs
                                             if (enc.startswith("png") or enc.startswith("rgb") or enc == "webp"))
         log("allowed encodings=%s, encodings=%s, core encodings=%s, lossless encodings=%s",
             self.allowed_encodings, encs, core_encs, self.lossless_encodings)
