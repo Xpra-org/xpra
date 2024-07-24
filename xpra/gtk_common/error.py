@@ -200,7 +200,7 @@ class XSyncContext:
             if e_typ is None:
                 #we are not handling an exception yet, so raise this one:
                 raise
-            log(f"Ignoring {e_typ} during Xexit, {e_typ} will be raised instead", exc_info=e)
+            log(f"Ignoring {e} during Xexit, {e_typ} will be raised instead", exc_info=e)
         #raise the original exception:
         return False
 
