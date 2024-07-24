@@ -169,7 +169,7 @@ class ClipboardServer(StubServerMixin):
             ch.set_preferred_targets(ss.clipboard_preferred_targets)
             ch.send_tokens(ss.clipboard_selections)
         else:
-            ch.enable_selections(None)
+            ch.enable_selections()
 
     def last_client_exited(self) -> None:
         ch = self._clipboard_helper
@@ -231,7 +231,7 @@ class ClipboardServer(StubServerMixin):
             log(" owner is %s", self._clipboard_client)
             return
         if not clipboard_enabled:
-            ch.enable_selections(None)
+            ch.enable_selections()
 
     def clipboard_progress(self, local_requests, _remote_requests) -> None:
         assert self.clipboard

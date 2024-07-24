@@ -9,7 +9,7 @@ import struct
 import re
 from time import monotonic
 from io import BytesIO
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, Final
 from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
@@ -28,10 +28,10 @@ log = Logger("clipboard")
 
 ClipboardCallback: TypeAlias = Callable[[str, int, Any], None]
 
-MIN_CLIPBOARD_COMPRESS_SIZE: int = envint("XPRA_MIN_CLIPBOARD_COMPRESS_SIZE", 512)
-MAX_CLIPBOARD_PACKET_SIZE: int = 16 * 1024 * 1024
-MAX_CLIPBOARD_RECEIVE_SIZE: int = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
-MAX_CLIPBOARD_SEND_SIZE: int = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
+MIN_CLIPBOARD_COMPRESS_SIZE: Final[int] = envint("XPRA_MIN_CLIPBOARD_COMPRESS_SIZE", 512)
+MAX_CLIPBOARD_PACKET_SIZE: Final[int] = 16 * 1024 * 1024
+MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
+MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
 ALL_CLIPBOARDS: Sequence[str] = tuple(PLATFORM_CLIPBOARDS)
 CLIPBOARDS: list[str] = list(PLATFORM_CLIPBOARDS)
@@ -40,7 +40,7 @@ if CLIPBOARDS_ENV is not None:
     CLIPBOARDS = [x.upper().strip() for x in CLIPBOARDS_ENV.split(",")]
 del CLIPBOARDS_ENV
 
-TEXT_TARGETS: Iterable[str] = tuple(
+TEXT_TARGETS: Sequence[str] = tuple(
     os.environ.get("XPRA_CLIPBOARD_TEXT_TARGETS",
                    "UTF8_STRING,TEXT,STRING,text/plain,text/html").split(",")
 )
@@ -85,10 +85,12 @@ TRANSLATED_TARGETS: dict[str, str] = {
     "application/x-moz-nativehtml": "UTF8_STRING",
 }
 
-sizeof_long: int = struct.calcsize(b'@L')
+sizeof_long: Final[int] = struct.calcsize(b'@L')
 assert sizeof_long in (4, 8), "struct.calcsize('@L')=%s" % sizeof_long
-sizeof_short: int = struct.calcsize(b'=H')
+sizeof_short: Final[int] = struct.calcsize(b'=H')
 assert sizeof_short == 2, "struct.calcsize('=H')=%s" % sizeof_short
+# CARD32 can actually be 64-bits...
+CARD32_SIZE: Final[int] = sizeof_long * 8
 
 
 def must_discard(target: str) -> bool:
@@ -104,10 +106,6 @@ def _filter_targets(targets: Iterable[str]) -> Sequence[str]:
     f = tuple(target for target in targets_strs if not must_discard(target))
     log("_filter_targets(%s)=%s", csv(targets_strs), f)
     return f
-
-
-# CARD32 can actually be 64-bits...
-CARD32_SIZE: int = sizeof_long * 8
 
 
 def get_format_size(dformat: int) -> int:
@@ -273,7 +271,7 @@ class ClipboardProxyCore:
     def got_token(self, targets, target_data=None, claim=True, _synchronous_client=False) -> None:
         raise NotImplementedError()
 
-    def filter_data(self, dtype: str = "", dformat: int = 0, data=b"", trusted: bool = False, output_dtype=None):
+    def filter_data(self, dtype: str = "", dformat: int = 0, data=b"", trusted: bool = False, output_dtype="") -> bytes:
         log("filter_data(%s, %s, %i %s, %s, %s)",
             dtype, dformat, len(data), type(data), trusted, output_dtype)
         if not data:
@@ -285,7 +283,7 @@ class ClipboardProxyCore:
         SANITIZE_IMAGES = envbool("XPRA_SANITIZE_IMAGES", True)
         isimage = dtype in ("image/png", "image/jpeg", "image/tiff")
         modimage = IMAGE_STAMP or IMAGE_OVERLAY or (SANITIZE_IMAGES and not trusted)
-        if isimage and ((output_dtype is not None and dtype != output_dtype) or modimage):
+        if isimage and ((output_dtype and dtype != output_dtype) or modimage):
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.pillow.decoder import open_only
             img_type = dtype.split("/")[-1]
@@ -362,13 +360,13 @@ class ClipboardProtocolHelperCore:
             self._clipboard_proxies[selection] = proxy
         log("%s.init_proxies : %s", self, self._clipboard_proxies)
 
-    def init_translation(self, kwargs) -> None:
-        def getselection(name) -> str | None:
+    def init_translation(self, kwargs: dict) -> None:
+        def getselection(name) -> str:
             v = kwargs.get(f"clipboard.{name}")  # ie: clipboard.remote
             env_value = os.environ.get(f"XPRA_TRANSLATEDCLIPBOARD_{name.upper()}_SELECTION")
             selections = kwargs.get(f"clipboards.{name}")  # ie: clipboards.remote
             if not selections:
-                return None
+                return ""
             for x in (env_value, v):
                 if x and x in selections:
                     return x
@@ -414,10 +412,8 @@ class ClipboardProtocolHelperCore:
         return info
 
     def cleanup(self) -> None:
-        def nosend(*_args):
-            """ during cleanup, stop sending packets """
-
-        self.send = nosend
+        """ during cleanup, stop sending packets """
+        self.send = noop
         for x in self._clipboard_proxies.values():
             x.cleanup()
         self._clipboard_proxies = {}
@@ -439,13 +435,13 @@ class ClipboardProtocolHelperCore:
         if max_receive_size is not None:
             self.max_clipboard_receive_size = max_receive_size
 
-    def enable_selections(self, selections=None) -> None:
+    def enable_selections(self, selections: Iterable[str] = ()) -> None:
         # when clients first connect or later through the "clipboard-enable-selections" packet,
         # they can tell us which clipboard selections they want enabled
         # (ie: OSX and win32 only use "CLIPBOARD" by default, and not "PRIMARY" or "SECONDARY")
         log("enabling selections: %s", csv(selections))
         for selection, proxy in self._clipboard_proxies.items():
-            proxy.set_enabled(selections and bytestostr(selection) in selections)
+            proxy.set_enabled(selection in selections)
 
     def set_greedy_client(self, greedy: bool) -> None:
         for proxy in self._clipboard_proxies.values():
@@ -743,7 +739,7 @@ class ClipboardProtocolHelperCore:
         self.progress_cb(None, pending)
 
     def _process_clipboard_enable_selections(self, packet: PacketType) -> None:
-        selections = tuple(bytestostr(x) for x in packet[1])
+        selections = tuple(packet[1])
         self.enable_selections(selections)
 
     def process_clipboard_packet(self, packet: PacketType) -> None:
