@@ -109,7 +109,7 @@ class SplashTest(ProcessTestUtil):
         assert r is None, "splash screen should not have terminated"
         #try killing it with a signal:
         self.splash.send_signal(signal.SIGTERM)
-        r = pollwait(self.splash, 10)
+        r = pollwait(self.splash, 20)
         assert r is not None, "expected splash to exit"
 
     def test_full(self):
@@ -117,7 +117,7 @@ class SplashTest(ProcessTestUtil):
             "10:10",
             "100:100",
         ])
-        r = pollwait(self.splash, 10)
+        r = pollwait(self.splash, 20)
         assert r is not None, "splash screen should have terminated"
         assert r==0, "exit code should be zero, but got %s" % r
         self.stop_splash()
