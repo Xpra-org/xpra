@@ -12,7 +12,6 @@ from collections import deque
 from typing import Dict, Any, Tuple, Callable, Union, Iterable
 from gi.repository import GLib  # @UnresolvedImport
 
-from xpra.net.mmap_pipe import mmap_read
 from xpra.net import compression
 from xpra.util import typedict, csv, envint, envbool, first_time
 from xpra.codecs.loader import get_codec
@@ -883,6 +882,7 @@ class WindowBackingBase:
         """ must be called from UI thread
             see _mmap_send() in server.py for details """
         assert self.mmap_enabled
+        from xpra.net.mmap import mmap_read
         data, free_cb = mmap_read(self.mmap, *img_data)
         callbacks.append(free_cb)
         rgb_format = options.strget("rgb_format", "RGB")
