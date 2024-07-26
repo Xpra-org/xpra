@@ -1947,9 +1947,17 @@ class WindowVideoSource(WindowSource):
         max_w = 16384
         max_h = 16384
         if csc_spec:
-            # TODO: no need to OR encoder mask if we are scaling...
-            width_mask = csc_spec.width_mask & encoder_spec.width_mask
-            height_mask = csc_spec.height_mask & encoder_spec.height_mask
+            if encoder_scaling != (1, 1):
+                # only the csc mask is relevant as input:
+                width_mask = csc_spec.width_mask
+                height_mask = csc_spec.height_mask
+                # the csc output must satisfy the encoder mask:
+                enc_width = enc_width & encoder_spec.width_mask
+                enc_height = enc_height & encoder_spec.height_mask
+            else:
+                # we have to ensure that the video size matches both masks:
+                width_mask = csc_spec.width_mask & encoder_spec.width_mask
+                height_mask = csc_spec.height_mask & encoder_spec.height_mask
             min_w = max(min_w, csc_spec.min_w)
             min_h = max(min_h, csc_spec.min_h)
             max_w = min(max_w, csc_spec.max_w)
