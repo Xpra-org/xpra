@@ -1454,7 +1454,7 @@ def _do_run_server(script_file: str, cmdline,
 
     dbus_pid = 0
     dbus_env: dict[str, str] = {}
-    if not shadowing and POSIX and not OSX:
+    if opts.dbus and (not shadowing and POSIX and not OSX):
         dbuslog = Logger("dbus")
         dbus_pid, dbus_env = reload_dbus_attributes(display_name)
         if not (dbus_pid and dbus_env):
