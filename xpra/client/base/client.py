@@ -832,7 +832,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         while self.challenge_handlers:
             handler = self.pop_challenge_handler(digest)
             try:
-                challenge = packet[1]
+                challenge = strtobytes(packet[1])
                 prompt = "password"
                 if len(packet) >= 6:
                     prompt = std(str(packet[5]), extras="-,./: '")

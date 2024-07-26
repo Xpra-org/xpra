@@ -25,7 +25,7 @@ class Handler:
     def get_digest() -> str:
         return "gss"
 
-    def handle(self, challenge: str, digest, prompt: str):  # pylint: disable=unused-argument
+    def handle(self, challenge: bytes, digest: str, prompt: str):  # pylint: disable=unused-argument
         if not digest.startswith("gss:"):
             # not a gss challenge
             log("%s is not a gss challenge", digest)
