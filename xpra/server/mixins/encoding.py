@@ -17,7 +17,6 @@ from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENC
 from xpra.codecs.loader import get_codec, codec_versions, load_codec
 from xpra.codecs.video import getVideoHelper
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
-from xpra.server.source.windows import WindowsMixin
 from xpra.log import Logger
 from xpra.common import FULL_INFO
 
@@ -98,6 +97,10 @@ class EncodingServer(StubServerMixin):
         # any window mapped before the threaded init completed
         # may need to re-initialize its list of encodings:
         log("reinit_encodings()")
+        try:
+            from xpra.server.source.windows import WindowsMixin
+        except ImportError:
+            return
         for ss in self._server_sources.values():
             if isinstance(ss, WindowsMixin):
                 ss.reinit_encodings(self)
