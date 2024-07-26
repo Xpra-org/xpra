@@ -157,13 +157,13 @@ class BaseGUIWindow(Gtk.Window):
         self.set_titlebar(hb)
 
         def rs(rect) -> tuple[int, int]:
-            return (rect.width, rect.height)
+            return rect.width, rect.height
 
         # fixup the icon size when the window headerbar is bigger than expected:
         fixed_size = [0]
 
-        def fix_default_icon_sizes(_hb, rect) -> None:
-            log("fix_default_icon_sizes header bar size: %s", rs(rect))
+        def fix_default_icon_sizes(*args) -> None:
+            log("fix_default_icon_sizes%s", args)
             changed = []
 
             def with_child(child) -> None:
@@ -179,16 +179,14 @@ class BaseGUIWindow(Gtk.Window):
                         size = nearest_icon_size(max(24, btn_size[1]-4))
                         g_child.set_size_request(size, size)
                         bg_child.set_size_request(size, size)
-                        if fixed_size[0] != size:
-                            changed.append(bg_child)
+                        if abs(fixed_size[0] - size) >= 8:
+                            changed.append((fixed_size[0], size, bg_child))
                         fixed_size[0] = size
             hb.forall(with_child)
-            if changed:
-                # run allocate again since we've changed something
-                # (and no, we can't just queue_allocate on the Gtk.Image - no idea why)
-                GLib.timeout_add(500, hb.queue_allocate)
 
-        hb.connect("size-allocate", fix_default_icon_sizes)
+        def map_event(*_args):
+            GLib.timeout_add(100, fix_default_icon_sizes)
+        self.connect("map-event", map_event)
 
     def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable = noop, sensitive=True) -> Gtk.Button:
         label_font = "sans 16"
