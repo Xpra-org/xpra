@@ -571,7 +571,8 @@ class ControlXpraClient(CommandConnectClient):
 
 
 class PrintClient(SendCommandConnectClient):
-    """ Allows us to send a file to the server for printing.
+    """
+    Allows us to send a file to the server for printing.
     """
 
     def set_command_args(self, command) -> None:
@@ -580,8 +581,6 @@ class PrintClient(SendCommandConnectClient):
         # print command arguments:
         # filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]
         self.command = command[1:]
-
-        # TODO: load as needed...
 
         if self.filename == "-":
             # replace with filename proposed
