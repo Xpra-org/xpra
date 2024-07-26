@@ -6,7 +6,7 @@
 import os
 from xpra.util import envfloat
 from xpra.log import Logger
-from xpra.scripts.config import TRUE_OPTIONS
+from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from typing import List, Tuple
 
 log = Logger("scaling")
@@ -30,7 +30,7 @@ def scaledown_value(scaling):
 
 def parse_scaling(desktop_scaling, root_w, root_h, min_scaling=MIN_SCALING, max_scaling=MAX_SCALING) -> Tuple[float,float]:
     log("parse_scaling(%s)", (desktop_scaling, root_w, root_h, min_scaling, max_scaling))
-    if desktop_scaling in TRUE_OPTIONS:
+    if desktop_scaling in TRUE_OPTIONS or desktop_scaling in FALSE_OPTIONS:
         return 1, 1
     if desktop_scaling.startswith("auto"):
         #figure out if the command line includes settings to use for auto mode:
