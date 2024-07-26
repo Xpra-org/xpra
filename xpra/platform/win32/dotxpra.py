@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections.abc import Sequence
 
 from xpra.util.env import osexpand
 from xpra.util.io import get_util_logger
@@ -28,33 +29,33 @@ class DotXpra:
     def __repr__(self):
         return f"DotXpra({self.username})"
 
-    def osexpand(self, v):
+    def osexpand(self, v: str) -> str:
         return osexpand(v, self.username)
 
-    def mksockdir(self, d):
+    def mksockdir(self, d: str) -> None:
         # socket-dir is not used by the win32 shadow server
         pass
 
-    def displays(self, check_uid=0, matching_state=None):
+    def displays(self, check_uid=0, matching_state=None) -> Sequence[str]:
         return tuple(self.get_all_namedpipes().keys())
 
-    def norm_socket_paths(self, local_display_name: str):
+    def norm_socket_paths(self, local_display_name: str) -> list[str]:
         return [self.socket_path(local_display_name)]
 
-    def socket_path(self, local_display_name: str):
+    def socket_path(self, local_display_name: str) -> str:
         return norm_makepath("", local_display_name)
 
-    def get_display_state(self, display: str):
+    def get_display_state(self, display: str) -> SocketState:
         return self.get_server_state(PIPE_PREFIX + display)
 
-    def get_server_state(self, sockpath: str, _timeout=5):
+    def get_server_state(self, sockpath: str, _timeout=5) -> SocketState:
         full_path = PIPE_PATH + sockpath
         if os.path.exists(full_path):
             return SocketState.LIVE
         return SocketState.DEAD
 
-    def socket_paths(self, check_uid=0, matching_state=None, matching_display=None):
-        return self.get_all_namedpipes().values()
+    def socket_paths(self, check_uid=0, matching_state=None, matching_display=None) -> list[str]:
+        return list(self.get_all_namedpipes().values())
 
     def sockets(self, check_uid=0, matching_state=None):
         # flatten the dictionary into a list:
@@ -62,7 +63,7 @@ class DotXpra:
 
     # find the matching sockets, and return:
     # (state, local_display, sockpath)
-    def socket_details(self, check_uid=None, matching_state=None, matching_display=None):
+    def socket_details(self, check_uid=None, matching_state=None, matching_display=None) -> dict[str, list]:
         np = self.get_all_namedpipes()
         if not np:
             return {}
@@ -74,10 +75,10 @@ class DotXpra:
             ]
         }
 
-    def get_all_namedpipes(self):
+    def get_all_namedpipes(self) -> dict[str, str]:
         log = get_util_logger()
-        xpra_pipes = {}
-        non_xpra = []
+        xpra_pipes: dict[str, str] = {}
+        non_xpra: list[str] = []
         for pipe_name in os.listdir(PIPE_PATH):
             if not pipe_name.startswith(PIPE_PREFIX):
                 non_xpra.append(pipe_name)
