@@ -1528,7 +1528,18 @@ def fixup_encodings(options) -> None:
             encodings = encodings[:i]+list(PREFERRED_ENCODING_ORDER)+encodings[i+1:]
     # if the list only has items to exclude (ie: '-scroll,-jpeg')
     # then 'all' is implied:
-    if not any(True for e in encodings if not e.startswith("-")):
+
+    def isneg(enc: str) -> bool:
+        return enc.startswith("-") or enc.startswith("no-")
+
+    def stripneg(enc) -> str:
+        if enc.startswith("-"):
+            return enc[1:]
+        if enc.startswith("no-"):
+            return enc[3:]
+        return enc
+
+    if not any(True for e in encodings if not isneg(e)):
         encodings = list(PREFERRED_ENCODING_ORDER)+encodings
     if "rgb" in encodings:
         if "rgb24" not in encodings:
@@ -1536,20 +1547,15 @@ def fixup_encodings(options) -> None:
         if "rgb32" not in encodings:
             encodings.append("rgb32")
     encodings = remove_dupes(encodings)
-    invalid = tuple(e.lstrip("-") for e in encodings if e.lstrip("-") not in PREFERRED_ENCODING_ORDER)
+    invalid = [stripneg(e) for e in encodings if stripneg(e) not in PREFERRED_ENCODING_ORDER]
     if invalid:
         from xpra.exit_codes import ExitCode
         raise InitExit(ExitCode.UNSUPPORTED, "invalid encodings specified: " + csv(invalid))
-    # now we have a list of encodings, but some of them may be prefixed with "-"
-    for rm in tuple(e for e in encodings if e.startswith("-")):
+    # remove the negated encodings:
+    for rm in tuple(stripneg(e) for e in encodings if isneg(e)):
         while True:
             try:
                 encodings.remove(rm)
-            except ValueError:
-                break
-        while True:
-            try:
-                encodings.remove(rm[1:])
             except ValueError:
                 break
     options.encodings = encodings
