@@ -201,7 +201,7 @@ def decompress(coding: str, img_data: bytes, options: typedict) -> tuple[str, by
     else:
         raise ValueError(f"invalid image mode: {img.mode}")
     raw_data = img.tobytes("raw", img.mode)
-    log("pillow decoded %i bytes of %s data to %i bytes of %s", len(img_data), coding, len(raw_data), rgb_format)
+    log("pillow decoded %7i bytes of %5s data to %8i bytes of %s", len(img_data), coding, len(raw_data), rgb_format)
     may_save_image(coding, img_data)
     return rgb_format, raw_data, width, height, rowstride
 
