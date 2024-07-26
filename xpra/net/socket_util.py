@@ -543,7 +543,7 @@ def setup_udp_socket(host: str, iport: int, socktype: str) -> tuple[str, socket.
         iport = udp_socket.getsockname()[1]
         log.info(f"allocated {socktype} port {iport} on {host}")
     log(f"{socktype}: {host}:{iport} : {socket}")
-    log.info(f"created {socktype} socket {host}:{iport}")
+    log.info(f"created {socktype} socket '{host}:{iport}'")
     return socktype, udp_socket, (host, iport), cleanup_udp_socket
 
 
