@@ -871,6 +871,7 @@ def do_parse_cmdline(cmdline, defaults):
         defaults.compression_level = 0
         defaults.forward_xdg_open = False
         defaults.file_transfer = defaults.open_files = defaults.open_url = defaults.printing = "no"
+        defaults.dbus = False
         defaults.dbus_control = "no"
         defaults.bandwidth_limit = 0
         defaults.bandwidth_detection = False
@@ -1114,10 +1115,21 @@ def parse_command_line(cmdline, defaults):
                      dest="proxy_start_sessions", default=defaults.proxy_start_sessions,
                      help="Allows proxy servers to start new sessions on demand."
                           " Default: %s." % enabled_str(defaults.proxy_start_sessions))
+    legacy_bool_parse("dbus")
+    group.add_option("--dbus", action="store",
+                     dest="dbus", default=defaults.dbus,
+                     help="Enable or disable all dbus related functionality,"
+                          " `dbus-launch`, `dbus-control` and any feature that might use dbus."
+                          " Default: %s." % nonedefault(defaults.dbus))
     group.add_option("--dbus-launch", action="store",
                      dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,
                      help="Start the session within a dbus-launch context,"
                           " leave empty to turn off. Default: %s." % nonedefault(defaults.dbus_launch))
+    legacy_bool_parse("dbus-control")
+    group.add_option("--dbus-control", action="store", metavar="yes|no",
+                     dest="dbus_control", default=defaults.dbus_control,
+                     help="Allows the server to be controlled via its dbus interface."
+                          " Default: %s." % enabled_str(defaults.dbus_control))
     group.add_option("--source", action="append",
                      dest="source", default=[],
                      help="Script to source into the server environment. Default: %s." % csv(
@@ -1302,11 +1314,6 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--mdns", action="store", metavar="yes|no",
                      dest="mdns", default=defaults.mdns,
                      help="Publish the session information via mDNS. Default: %s." % enabled_str(defaults.mdns))
-    legacy_bool_parse("dbus-control")
-    group.add_option("--dbus-control", action="store", metavar="yes|no",
-                     dest="dbus_control", default=defaults.dbus_control,
-                     help="Allows the server to be controlled via its dbus interface."
-                          " Default: %s." % enabled_str(defaults.dbus_control))
     group = optparse.OptionGroup(parser, "Server Controlled Features",
                                  "These options be specified on the client or on the server, "
                                  "but the server's settings will have precedence over the client's.")

@@ -1999,7 +1999,7 @@ def make_client(error_cb: Callable, opts):
         features.webcam = bo(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.notifications = opts.notifications and impcheck("notifications")
-        features.dbus = not (WIN32 or OSX) and impcheck("dbus")
+        features.dbus = b(opts.dbus) and impcheck("dbus")
         features.mmap = b(opts.mmap)
         features.logging = b(opts.remote_logging)
         features.tray = b(opts.tray)

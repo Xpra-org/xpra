@@ -611,6 +611,7 @@ OPTION_TYPES: dict[str, Any] = {
     "http-scripts"      : str,
     "socket-permissions": str,
     "exec-wrapper"      : str,
+    "dbus"              : bool,
     "dbus-launch"       : str,
     "webcam"            : str,
     "mousewheel"        : str,
@@ -779,7 +780,7 @@ BIND_OPTIONS : list[str] = [
 # keep track of the options added since v5,
 # so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V5: list[str] = [
-    "minimal",
+    "minimal", "dbus",
 ]
 OPTIONS_COMPAT_NAMES: dict[str, str] = {
     "--compression_level=": "-z"
@@ -1083,6 +1084,7 @@ def get_defaults() -> dict[str, Any]:
         "http-scripts"      : "all",
         "socket-permissions": "600",
         "exec-wrapper"      : "",
+        "dbus"              : POSIX and not OSX,
         "dbus-launch"       : "dbus-launch --sh-syntax --close-stderr",
         "webcam"            : ["auto", "no"][OSX or WIN32],
         "mousewheel"        : ["on", "invert-x"][OSX],
