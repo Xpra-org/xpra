@@ -3041,9 +3041,9 @@ def init_module() -> None:
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
     log("nvenc.init_module()")
-    #TODO: this should be a build time check:
-    if NVENCAPI_MAJOR_VERSION<0x9:
-        raise RuntimeError("unsupported version of NVENC: %#x" % NVENCAPI_VERSION)
+    min_version = 10
+    if NVENCAPI_MAJOR_VERSION < min_version:
+        raise RuntimeError("unsupported version of NVENC: %i, minimum version is %i" % (NVENCAPI_VERSION, min_version))
     log("NVENC encoder API version %s", ".".join([str(x) for x in PRETTY_VERSION]))
 
     cdef Encoder test_encoder
