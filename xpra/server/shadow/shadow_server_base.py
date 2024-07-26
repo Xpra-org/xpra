@@ -504,5 +504,5 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         raise NotImplementedError()
 
     def make_dbus_server(self):
-        from xpra.server.shadow.shadow_dbus_server import Shadow_DBUS_Server
+        from xpra.server.dbus.shadow_server import Shadow_DBUS_Server
         return Shadow_DBUS_Server(self, os.environ.get("DISPLAY", "").lstrip(":"))
