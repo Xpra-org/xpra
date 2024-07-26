@@ -628,7 +628,6 @@ cdef class XShmWrapper:
         return imageWrapper
 
     def read_palette(self) -> List[Tuple[int, int, int]]:
-        #FIXME: we assume screen is zero
         cdef XWindowAttributes attrs
         cdef XVisualInfo vinfo_template
         cdef int count
