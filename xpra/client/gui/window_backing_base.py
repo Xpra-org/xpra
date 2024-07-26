@@ -11,7 +11,6 @@ from collections import deque
 from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
-from xpra.net.mmap import mmap_read
 from xpra.net import compression
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
@@ -852,6 +851,7 @@ class WindowBackingBase:
     def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
                    options: typedict, callbacks: PaintCallbacks) -> None:
         assert self.mmap_enabled
+        from xpra.net.mmap import mmap_read
         data, free_cb = mmap_read(self.mmap, *img_data)
         callbacks.append(free_cb)
         rgb_format = options.strget("rgb_format", "RGB")
