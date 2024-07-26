@@ -2697,7 +2697,7 @@ if cythonize_more_ENABLED:
                 ace(mod)
     if client_ENABLED:
         ax("xpra.client.base")
-    if client_ENABLED:
+        ax("xpra.client.auth")
         if opengl_ENABLED:
             ax("xpra.client.gl")
             if gtk3_ENABLED:
