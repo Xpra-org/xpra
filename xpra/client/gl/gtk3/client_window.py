@@ -97,8 +97,6 @@ class GLClientWindowBase(ClientWindow):
             rgb_formats.append("BGRA")
         if "RGB" in rgb_formats:
             rgb_formats.append("BGR")
-        # TODO: we could handle BGRX as BGRA too...
-        # rgb_formats.append("BGRX")
 
     def do_configure_event(self, event) -> None:
         log("GL do_configure_event(%s)", event)

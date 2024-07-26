@@ -112,19 +112,19 @@ if use_x11_bindings():
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]
         SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
-        def can_set_workspace():
+        def can_set_workspace() -> bool:
             SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)
             if not SET_WORKSPACE:
                 return False
             try:
-                # TODO: in theory this is not a proper check, meh - that will do
+                # in theory this is not a proper check, meh - that will do
                 root = get_default_root_window()
-                supported = prop_get(root.get_xid(), "_NET_SUPPORTED", ["atom"], ignore_errors=True)
-                return bool(supported) and "_NET_WM_DESKTOP" in supported
-            except Exception as e:
+                supported = prop_get(root.get_xid(), "_NET_SUPPORTED", ["atom"], ignore_errors=True) or ()
+                return "_NET_WM_DESKTOP" in supported
+            except Exception as we:
                 workspacelog("x11 workspace bindings error", exc_info=True)
                 workspacelog.error("Error: failed to setup workspace hooks:")
-                workspacelog.estr(e)
+                workspacelog.estr(we)
 
         CAN_SET_WORKSPACE = can_set_workspace()
 elif WIN32 and WIN32_WORKSPACE:
