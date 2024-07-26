@@ -232,7 +232,7 @@ cdef extern from "wels/codec_app_def.h":
         int               iNumRefFrame      # number of reference frame used
         # EParameterSetStrategy eSpsPpsIdStrategy     # different stategy in adjust ID in SPS/PPS: 0- constant ID, 1-additional ID, 6-mapping and additional
         bool_t    bPrefixNalAddingCtrl        # false:not use Prefix NAL; true: use Prefix NAL
-        bool_t    bEnableSSEI                 # false:not use SSEI; true: use SSEI -- TODO: planning to remove the interface of SSEI
+        bool_t    bEnableSSEI                 # false:not use SSEI; true: use SSEI
         bool_t    bSimulcastAVC               # (when encoding more than 1 spatial layer) false: use SVC syntax for higher layers; true: use Simulcast AVC
         int     iPaddingFlag                # 0:disable padding;1:padding
         int     iEntropyCodingModeFlag      # 0:CAVLC  1:CABAC.
@@ -246,7 +246,7 @@ cdef extern from "wels/codec_app_def.h":
 
         # LTR settings
         bool_t     bEnableLongTermReference   # 1: on, 0: off
-        int      iLTRRefNum                 # the number of LTR(long term reference),TODO: not supported to set it arbitrary yet
+        int      iLTRRefNum                 # the number of LTR(long term reference)
         unsigned int      iLtrMarkPeriod    # the LTR marked period that is used in feedback.
         # multi-thread settings
         unsigned short iMultipleThreadIdc   # 1 # 0: auto(dynamic imp. internal encoder); 1: multiple threads imp. disabled; lager than 1: count number of threads;
