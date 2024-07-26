@@ -9,7 +9,6 @@ from typing import List, Type, Dict, Tuple, Any
 
 from xpra.server.window import batch_config
 from xpra.server.shadow.root_window_model import RootWindowModel
-from xpra.notifications.common import parse_image_path
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import server_features
@@ -220,6 +219,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             actions : List = []
             hints : Dict[str,Any] = {}
             icon_filename = os.path.join(get_icon_dir(), "user.png")
+            from xpra.notifications.common import parse_image_path
             icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, nid, "Xpra", 0, "", title, body, actions, hints, 10*1000, icon)
 
@@ -238,6 +238,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             actions = []
             hints = {}
             icon_filename = os.path.join(get_icon_dir(), "server-connected.png")
+            from xpra.notifications.common import parse_image_path
             icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, NotificationID.STARTUP, "Xpra", replaces_nid, "",
                                       title, body, actions, hints, 10*1000, icon)
