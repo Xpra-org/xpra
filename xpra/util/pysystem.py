@@ -96,8 +96,7 @@ def enforce_features(features, feature_map: dict[str, str]) -> None:
     debug_features = envbool("XPRA_FEATURES_DEBUG", False)
     for feature, modules in feature_map.items():
         enabled: bool = getattr(features, feature)
-        for xpra_module in modules.split(","):
-            module = f"xpra.{xpra_module}"
+        for module in modules.split(","):
             value = sys.modules.get(module)
             if debug_features:
                 from importlib.util import find_spec
