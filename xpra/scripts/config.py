@@ -75,8 +75,8 @@ def has_audio_support() -> bool:
     global _has_audio_support
     if _has_audio_support is None:
         try:
-            import xpra.audio
-            _has_audio_support = bool(xpra.audio)
+            from importlib.util import find_spec
+            _has_audio_support = bool(find_spec("xpra.audio"))
         except ImportError:
             _has_audio_support = False
     return bool(_has_audio_support)

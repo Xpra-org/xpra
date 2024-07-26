@@ -834,15 +834,11 @@ def get_usage() -> list[str]:
     if find_docs_path():
         command_options += ["docs"]
 
-    try:
-        from xpra.net import mdns
-        assert mdns
+    if find_spec("xpra.net.mdns"):
         command_options += [
             "list-mdns",
             "mdns-gui",
         ]
-    except ImportError:
-        pass
     return command_options
 
 

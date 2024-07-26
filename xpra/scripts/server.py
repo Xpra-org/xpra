@@ -286,24 +286,24 @@ def set_server_features(opts) -> None:
     def b(v):
         return str(v).lower() not in FALSE_OPTIONS
 
-    # turn off some server mixins:
-    from xpra.server import features
-    impwarned = []
+    impwarned: set[str] = set()
+    from importlib.util import find_spec
 
-    def impcheck(*modules):
+    def impcheck(*modules) -> bool:
         for mod in modules:
-            try:
-                __import__(f"xpra.{mod}", {}, {}, [])
-            except ImportError:
-                if mod not in impwarned:
-                    impwarned.append(mod)
-                    log = get_logger()
-                    log(f"impcheck{modules}", exc_info=True)
-                    log.warn(f"Warning: missing {mod} module")
-                    log.warn(f" for Python {sys.version}")
-                return False
+            if find_spec(f"xpra.{mod}"):
+                continue
+            if mod not in impwarned:
+                impwarned.add(mod)
+                log = get_logger()
+                log(f"impcheck{modules}", exc_info=True)
+                log.warn(f"Warning: missing {mod!r} module")
+                log.warn(f" for Python {sys.version}")
+            return False
         return True
 
+    # turn off some server mixins:
+    from xpra.server import features
     features.control = impcheck("server.control_command") and envbool("XPRA_CONTROL_CHANNEL", True)
     features.notifications = opts.notifications and impcheck("notifications")
     features.webcam = b(opts.webcam) and impcheck("codecs")

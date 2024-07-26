@@ -16,6 +16,8 @@ import time
 import logging
 from math import ceil
 from time import monotonic
+from importlib.util import find_spec
+
 from shutil import rmtree, which
 from subprocess import Popen, PIPE, TimeoutExpired, run
 import signal
@@ -347,10 +349,8 @@ def check_gtk_client() -> None:
         set_pyopengl_platform()
 
     check_gtk()
-    try:
-        from xpra.client import gui, gtk3
-        assert gui, gtk3
-    except ImportError:
+
+    if not (find_spec("xpra.client.gui") and find_spec("xpra.client.gtk3")):
         raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
 
 
@@ -1584,10 +1584,7 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode: str):
     if mode.startswith("request-"):
         request_mode = mode.replace("request-", "")
 
-    try:
-        from xpra import client
-        assert client
-    except ImportError:
+    if not find_spec("xpra.client"):
         error_cb("`xpra-client` is not installed")
 
     if opts.compression_level < 0 or opts.compression_level > 9:
@@ -1968,19 +1965,19 @@ def set_client_features(opts) -> None:
     def bo(v) -> bool:
         return str(v).lower() not in FALSE_OPTIONS or str(v).lower() in OFF_OPTIONS
 
-    impwarned = []
+    impwarned: set[str] = set()
 
-    def impcheck(*modules):
+    def impcheck(*modules) -> bool:
         for mod in modules:
-            try:
-                __import__("xpra.%s" % mod, {}, {}, [])
-            except ImportError:
-                if mod not in impwarned:
-                    impwarned.append(mod)
-                    log = get_logger()
-                    log("impcheck%s", modules, exc_info=True)
-                    log.warn("Warning: missing %s module", mod)
-                return False
+            if find_spec("xpra.%s" % mod):
+                continue
+            if mod not in impwarned:
+                impwarned.add(mod)
+                log = get_logger()
+                log("impcheck%s", modules, exc_info=True)
+                log.warn(f"Warning: missing {mod!r} module")
+                log.warn(f" for Python {sys.version}")
+            return False
         return True
 
     from xpra.client.gui import features
@@ -2130,10 +2127,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
         if OSX or WIN32:
             raise InitException(f"{mode} is not supported on this platform")
         if mode != "expand":
-            try:
-                from xpra import x11
-                assert x11
-            except ImportError:
+            if not find_spec("xpra.x11"):
                 raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use `{mode}")
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
@@ -2589,12 +2583,7 @@ def find_displays(max_display_no=0, uid: int = getuid(), gid: int = getgid()) ->
     if OSX or WIN32:
         return {"Main": {}}
     displays = {}
-    try:
-        from xpra import x11
-        assert x11
-    except ImportError:
-        pass
-    else:
+    if find_spec("xpra.x11"):
         displays = find_x11_display_sockets(max_display_no=max_display_no)
     # add wayland displays:
     displays.update(find_wayland_display_sockets(uid, gid))
@@ -3396,12 +3385,8 @@ def run_desktop_greeter() -> ExitValue:
 
 def run_sessions_gui(options) -> ExitValue:
     mdns = options.mdns
-    if mdns:
-        try:
-            from xpra.net import mdns as mdns_module
-            assert mdns_module
-        except ImportError:
-            mdns = False
+    if mdns and not find_spec("xpra.net.mdns"):
+        mdns = False
     if mdns:
         from xpra.net.mdns import get_listener_class
         listener = get_listener_class()
