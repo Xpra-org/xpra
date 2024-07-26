@@ -1992,7 +1992,7 @@ def set_client_features(opts) -> None:
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
     features.network_state = True
-    features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True)
+    features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
     features.encoding = opts.windows
 
 
