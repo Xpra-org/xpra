@@ -106,7 +106,8 @@ class HttpServerProtocol(QuicConnectionProtocol):
         log(f"new_http_handler({event}) {path=}, {query_string=}")
         log(f" {protocol=}, {method=}, {authority=}, {headers=}")
 
-        # FIXME: add a public API to retrieve peer address
+        # this was copied from the aioquic example,
+        # let's hope this does not break!
         client_addr = self._http._quic._network_paths[0].addr
         client = (client_addr[0], client_addr[1])
 
