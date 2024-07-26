@@ -122,14 +122,6 @@ class WorldWindow(Gtk.Window):
         self.set_resizable(False)
         ignorewarnings(self.set_opacity, 0)
 
-        # FIXME: This would better be a default handler, but there is a bug in
-        # the superclass's default handler that means we can't call it
-        # properly[0], so as a workaround we let the real default handler run,
-        # and then come in afterward to do what we need to.  (See also
-        # Viewport._after_set_focus_child.)
-        #   [0] http://bugzilla.gnome.org/show_bug.cgi?id=462368
-        self.connect_after("set-focus", self._after_set_focus)
-
         # Make sure that we are always the same size as the screen
         self.set_resizable(False)
         self.move(0, 0)
@@ -222,10 +214,9 @@ class WorldWindow(Gtk.Window):
         with xlog:
             do_reset_x_focus()
 
-    def _after_set_focus(self, *_args) -> None:
-        focuslog("after_set_focus")
-        # GTK focus has changed.  See comment in __init__ for why this isn't a
-        # default handler.
+    def do_set_focus(self, *args) -> None:
+        focuslog("do_set_focus%s", args)
+        Gtk.Window.do_set_focus(*args)
         if self.get_focus() is not None:
             self.reset_x_focus()
 
