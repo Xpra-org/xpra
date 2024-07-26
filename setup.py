@@ -2711,6 +2711,12 @@ if cythonize_more_ENABLED:
         ax("xpra.clipboard")
     if codecs_ENABLED:
         ax("xpra.codecs")
+        if pillow_encoder_ENABLED or pillow_decoder_ENABLED:
+            ax("xpra.codecs.pillow")
+            if pillow_encoder_ENABLED:
+                ax("xpra.codecs.pillow.encoder")
+            if pillow_decoder_ENABLED:
+                ax("xpra.codecs.pillow.decoder")
     if gstreamer_ENABLED:
         ax("xpra.gstreamer")
     if gtk3_ENABLED:
