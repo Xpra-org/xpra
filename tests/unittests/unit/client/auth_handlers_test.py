@@ -92,7 +92,7 @@ class AuthHandlersTest(unittest.TestCase):
 
     def test_uri_handler(self):
         from xpra.client.auth.uri import Handler
-        password = b"password"
+        password = "password"
         client = FakeClient()
         client.password = password
         self.do_test_handler(client, True, password, Handler)
