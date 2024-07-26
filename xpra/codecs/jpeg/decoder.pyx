@@ -267,7 +267,6 @@ def decompress_to_rgb(rgb_format: str, data: bytes, unsigned long alpha_offset=0
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
     cdef int flags = 0      #TJFLAG_BOTTOMUP
     cdef double elapsed
-    #TODO: add padding and rounding?
     cdef double start = monotonic()
     cdef int stride = w*4
     cdef unsigned long size = stride*h
