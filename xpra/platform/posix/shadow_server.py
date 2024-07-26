@@ -25,11 +25,17 @@ def warn(*messages) -> None:
         log.warn(m)
 
 
+def debug_error(message: str) -> None:
+    log = Logger("server", "shadow")
+    log(message, exc_info=True)
+
+
 def load_screencast(display: str = "") -> type | None:
     try:
         from xpra.platform.posix import screencast
         return screencast.ScreenCast
     except ImportError as e:
+        debug_error(f"load_screencast({display})")
         warn("Warning: unable to load the screencast backend", f" {e}")
     return None
 
@@ -39,6 +45,7 @@ def load_remotedesktop(display: str = "") -> type | None:
         from xpra.platform.posix import remotedesktop
         return remotedesktop.RemoteDesktop
     except ImportError as e:
+        debug_error(f"load_remotedesktop({display})")
         warn("Warning: unable to load the remotedesktop backend", f" {e}")
     return None
 
@@ -65,6 +72,7 @@ def load_x11(display: str = "") -> type | None:
         from xpra.x11.server import shadow
         return shadow.ShadowX11Server
     except ImportError as e:
+        debug_error(f"load_x11({display})")
         if gdkb:
             os.environ["GDK_BACKEND"] = gdkb
         warn("Warning: unable to load x11 shadow server", f" {e}")
