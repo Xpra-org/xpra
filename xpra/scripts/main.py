@@ -1961,6 +1961,64 @@ def run_opengl_probe() -> tuple[str, dict]:
     return message, props
 
 
+def set_client_features(opts) -> None:
+    def b(v) -> bool:
+        return str(v).lower() not in FALSE_OPTIONS
+
+    def bo(v) -> bool:
+        return str(v).lower() not in FALSE_OPTIONS or str(v).lower() in OFF_OPTIONS
+
+    impwarned = []
+
+    def impcheck(*modules):
+        for mod in modules:
+            try:
+                __import__("xpra.%s" % mod, {}, {}, [])
+            except ImportError:
+                if mod not in impwarned:
+                    impwarned.append(mod)
+                    log = get_logger()
+                    log("impcheck%s", modules, exc_info=True)
+                    log.warn("Warning: missing %s module", mod)
+                return False
+        return True
+
+    from xpra.client.gui import features
+    features.display = opts.windows
+    features.windows = opts.windows
+    features.audio = b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("audio")
+    features.webcam = bo(opts.webcam) and impcheck("codecs")
+    features.clipboard = b(opts.clipboard) and impcheck("clipboard")
+    features.notifications = opts.notifications and impcheck("notifications")
+    features.dbus = b(opts.dbus) and impcheck("dbus")
+    features.mmap = b(opts.mmap)
+    features.logging = b(opts.remote_logging)
+    features.tray = b(opts.tray)
+    features.network_state = True
+    features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True)
+    features.encoding = opts.windows
+
+
+def enforce_client_features() -> None:
+    from xpra.util.pysystem import enforce_features
+    from xpra.client.gui import features
+    enforce_features(features, {
+        "display": "client.mixins.display",
+        "windows": "client.mixins.windows",
+        "webcam": "client.mixins.webcam",
+        "audio": "audio,client.mixins.audio",
+        "clipboard": "clipboard,xpra.client.mixins.clipboard",
+        "notifications": "notifications,xpra.client.mixins.notification",
+        "dbus": "dbus",
+        "mmap": "net.mmap,client.mixins.mmap",
+        "logging": "client.mixins.logging",
+        "tray": "client.mixins.tray",
+        "network_state": "client.mixins.network_state",
+        "network_listener": "client.mixins.network_listener",
+        "encoding": "client.mixins.encodings",
+    })
+
+
 def make_client(error_cb: Callable, opts):
     progress_process = None
     if opts.splash is not False:

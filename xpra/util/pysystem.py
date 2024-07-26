@@ -86,3 +86,33 @@ def log_mem_info(prefix="memory usage: ", pid=os.getpid()) -> None:
     process = psutil.Process(pid)
     mem = process.memory_full_info()
     print("%i %s%s" % (pid, prefix, mem))
+
+
+def enforce_features(features, feature_map: dict[str, str]) -> None:
+    """
+    Prevent the modules from being imported later
+    """
+    from xpra.util.env import envbool
+    debug_features = envbool("XPRA_FEATURES_DEBUG", False)
+    for feature, modules in feature_map.items():
+        enabled: bool = getattr(features, feature)
+        for xpra_module in modules.split(","):
+            module = f"xpra.{xpra_module}"
+            value = sys.modules.get(module)
+            if debug_features:
+                from importlib.util import find_spec
+                try:
+                    exists = find_spec(module)
+                except ModuleNotFoundError:
+                    exists = False
+                from xpra.util.io import get_util_logger
+                log = get_util_logger()
+                log.info(f"feature {feature!r:20}: {module!r:40} {enabled=}, found={exists}, value={value}")
+            if not enabled:
+                if value is not None:
+                    from xpra.util.io import get_util_logger
+                    log = get_util_logger()
+                    log.warn(f"Warning: cannot disable {feature!r} feature")
+                    log.warn(f" the module {module!r} is already loaded")
+                else:
+                    sys.modules[module] = None

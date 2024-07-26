@@ -324,6 +324,34 @@ def set_server_features(opts) -> None:
     features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
 
 
+def enforce_server_features() -> None:
+    """
+    Prevent the modules from being imported later
+    """
+    from xpra.util.pysystem import enforce_features
+    from xpra.server import features
+    enforce_features(features, {
+        "control": "server.control_command,server.mixins.controlcommands",
+        "notifications": "notifications,server.mixins.notification,server.source.notification",
+        "webcam": "server.mixins.webcam,server.source.webcam",
+        "clipboard": "clipboard,server.mixins.clipboard,server.source.clipboard",
+        "audio": "audio,server.mixins.audio,server.source.audio",
+        # "av_sync": "??",
+        "fileprint": "server.mixins.fileprint,server.source.fileprint",
+        "mmap": "net.mmap,server.mixins.mmap,server.source.mmap",
+        "input_devices": "server.mixins.input,server.source.input",
+        "commands": "server.control_command",
+        "dbus": "dbus,server.dbus,server.source.dbus",
+        "encoding": "server.mixins.encoding,server.source.encodings",
+        "logging": "server.mixins.logging",
+        "network_state": "server.mixins.networkstate,server.source.networkstate",
+        "shell": "server.mixins.shell,server.source.shell",
+        "display": "server.mixins.display,server.source.display",
+        "windows": "server.mixins.window,server.source.windows",
+        "rfb": "net.rfb,server.rfb",
+    })
+
+
 def make_monitor_server():
     from xpra.x11.desktop.monitor_server import XpraMonitorServer
     return XpraMonitorServer()
@@ -1501,6 +1529,8 @@ def _do_run_server(script_file: str, cmdline,
                 log.warn(" non-embedded ssh connections will not be available")
 
     set_server_features(opts)
+    if envbool("XPRA_ENFORCE_FEATURES", True):
+        enforce_server_features()
 
     if not (proxying or shadowing) and POSIX and not OSX:
         if not check_xvfb():
