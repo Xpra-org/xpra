@@ -7,8 +7,6 @@ import os
 import sys
 from collections.abc import Callable
 
-from xpra.util.io import get_util_logger
-
 
 def dump_all_frames(logger=None) -> None:
     try:
@@ -29,6 +27,7 @@ def dump_gc_frames(logger=None) -> None:
 
 def dump_frames(frames, logger=None) -> None:
     if not logger:
+        from xpra.util.io import get_util_logger
         logger = get_util_logger()
     logger("found %s frames:", len(frames))
     for i, (fid, frame) in enumerate(frames):
@@ -74,9 +73,11 @@ def mem_watcher(ms, pid: int = os.getpid()) -> None:
     import time
     import psutil
     process = psutil.Process(pid)
+    from xpra.util.io import get_util_logger
+    logger = get_util_logger()
     while True:
         mem = process.memory_full_info()
-        get_util_logger().info("memory usage for %s: %s", pid, mem)
+        logger.info("memory usage for %s: %s", pid, mem)
         time.sleep(ms / 1000.0)
 
 
