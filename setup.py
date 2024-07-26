@@ -122,9 +122,9 @@ if "pkg-info" in sys.argv:
         with open("PKG-INFO", "wb") as f:
             pkg_info_values = setup_options.copy()
             pkg_info_values |= {
-                "metadata_version"  : "1.1",
-                "summary"           :  description,
-                "home_page"         : url,
+                "metadata_version": "1.1",
+                "summary": description,
+                "home_page": url,
             }
             for k in (
                 "Metadata-Version", "Name", "Version", "Summary", "Home-page",
@@ -143,7 +143,6 @@ print("Python version %s" % (".".join(str(v) for v in sys.version_info[:3])))
 # using --with-OPTION or --without-OPTION
 # only the default values are specified here:
 #*******************************************************************************
-
 
 
 PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
