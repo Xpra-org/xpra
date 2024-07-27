@@ -11,6 +11,7 @@
     * [force rebuild of dummy driver RPMs](https://github.com/Xpra-org/xpra/commit/528816af936c95ea9a238507bd6a9f371b3baa84)
     * [Fedora can build html documentation again](https://github.com/Xpra-org/xpra/commit/4533efa1ffe7cc0d52cc4063b9b1da3a3478308a)
     * [always build the latest dummy DEB](https://github.com/Xpra-org/xpra/commit/1f7f9e3a8b3418e87b89e5c863a92b058f2a6baf)
+    * [MS Windows multi-page printing](https://github.com/Xpra-org/xpra/commit/f3c0e92d3b5b85b7c05d898ad51ed7d24af6ece3)
 * Major:
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
     * [honour `ssh` option when re-connecting](https://github.com/Xpra-org/xpra/commit/45bad59e6255f03087b8dbd51dfd2380472f6f20)
@@ -34,6 +35,9 @@
     * [expose QUIC sockets via mDNS](https://github.com/Xpra-org/xpra/commit/c58425cd5512a669da487414483f045943876f27)
     * [only enable gtk error context with x11 Gdk backend](https://github.com/Xpra-org/xpra/commit/161acb245b65e71dae6f179bcbfe0ef8ced230d2)
 * Cosmetic:
+    * [slow CI test times out](https://github.com/Xpra-org/xpra/commit/6dff61f8dba6a1b5f9a59c0cd761cfe9674d5f14), [ignore it](https://github.com/Xpra-org/xpra/commit/0e0c24e679a21f0a63cf727fab6175ab6f5b1cc3)
+    * only import modules actually needed: [notifications](https://github.com/Xpra-org/xpra/commit/ac5c314750104b879c5d088dd837ce21d14f1b73), [windows](https://github.com/Xpra-org/xpra/commit/7cb5f913131ccf8ac35d1dc42da5b4498060ebfe), [mmap](https://github.com/Xpra-org/xpra/commit/e0a873ccddcc519196d842f44c70dc4908e1f8d2)
+    * [`desktop-scaling=no` parsing warnings](https://github.com/Xpra-org/xpra/commit/fb2f05cf9fba4919ede17831f125612b963474bb)
     * [log `ssl` error just once per socket](https://github.com/Xpra-org/xpra/commit/a409b1bbebece4d86dfe04fdd54c9b7f385fc1a9)
     * [OpenSSH documentation misplaced](https://github.com/Xpra-org/xpra/commit/b074848ada873561dd975238cfeb1ed5cf81ba93)
     * [we do have tests](https://github.com/Xpra-org/xpra/commit/8af9bb37c22f0b696b312c76801ec1b5dc597a74)

@@ -8,6 +8,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - `openssl.cnf` location in MS Windows builds
    - force rebuild of dummy driver RPMs
    - Fedora can build html documentation again
+   - MS Windows multi-page printing
   * Major:
    - MS Windows PDF printing crash, library mismatch
    - honour `ssh` option when re-connecting
@@ -29,6 +30,9 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - RFB connections cannot be upgraded to `http` or `ws`
    - make it possible to skip NM api
   * Cosmetic:
+   - slow CI test times out, ignore it
+   - only import modules actually needed: notifications, windows, mmap
+   - `desktop-scaling=no` parsing warnings
    - log `ssl` error just once per socket
    - OpenSSH documentation misplaced
    - we do have tests
@@ -38,7 +42,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - missing line continuation backslash in example
    - missing quote
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 24 Jul 2024 16:51:00 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 27 Jul 2024 19:47:27 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:

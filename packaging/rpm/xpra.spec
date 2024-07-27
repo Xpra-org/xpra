@@ -775,7 +775,7 @@ fi
 
 
 %changelog
-* Wed Jul 24 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Sat Jul 27 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Encodings:
    `mmap` race condition
    validate openh264 colorspace
@@ -785,6 +785,7 @@ fi
    `openssl.cnf` location in MS Windows builds
    force rebuild of dummy driver RPMs
    Fedora can build html documentation again
+   MS Windows multi-page printing
 - Major:
    MS Windows PDF printing crash, library mismatch
    honour `ssh` option when re-connecting
@@ -806,6 +807,9 @@ fi
    RFB connections cannot be upgraded to `http` or `ws`
    make it possible to skip NM api
 - Cosmetic:
+   slow CI test times out, ignore it
+   only import modules actually needed: notifications, windows, mmap
+   `desktop-scaling=no` parsing warnings
    log `ssl` error just once per socket
    OpenSSH documentation misplaced
    we do have tests
