@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.os_util import OSX
 from xpra.log import Logger
 
@@ -43,7 +43,7 @@ class Handler:
             log.warn("Warning: cannot use gss authentication handler")
             log.warn(" %s", e)
             return None
-        service = bytestostr(digest.split(b":", 1)[1])
+        service = digest.split(":", 1)[1]
         if service not in self.services and "*" not in self.services:
             log.warn("Warning: invalid GSS request for service '%s'", service)
             log.warn(" services supported: %s", csv(self.services))
