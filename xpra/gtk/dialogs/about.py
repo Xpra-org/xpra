@@ -62,7 +62,7 @@ def about(on_close=close_about, parent: Gtk.Window | None = None):
     dialog.set_name("Xpra")
     dialog.set_version(XPRA_VERSION)
     if parent:
-        dialog.set_parent(parent)
+        dialog.set_transient_for(parent)
         dialog.set_destroy_with_parent(True)
     dialog.set_authors(MAIN_AUTHORS)
     _license = load_license()
