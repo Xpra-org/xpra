@@ -358,7 +358,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         waiting.append((requestor, target, prop, event.time))
 
     def set_selection_response(self, requestor: int, target: str, prop: str, dtype: str, dformat: int,
-                               data, time: int = 0) -> None:
+                               data, time: float = 0.0) -> None:
         log("set_selection_response(%s, %s, %s, %s, %s, %r, %i)",
             requestor, target, prop, dtype, dformat, Ellipsizer(data), time)
         # answer the selection request:

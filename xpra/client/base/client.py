@@ -141,8 +141,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.server_packet_types = ()
         self.connection_established = False
         self.completed_startup = False
-        self.uuid = get_user_uuid()
-        self.session_id = uuid.uuid4().hex
+        self.uuid: str = get_user_uuid()
+        self.session_id: str = uuid.uuid4().hex
         self.init_packet_handlers()
         self.have_more = noop
 

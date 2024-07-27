@@ -806,7 +806,8 @@ class FileTransferHandler(FileTransferAttributes):
         if not self.check_file_size(action, filename, filesize):
             return False
         if ask:
-            return self.send_data_request(action, "file", filename, mimetype, data, filesize, printit, openit, options)
+            return bool(self.send_data_request(action, "file", filename, mimetype, data, filesize,
+                                               printit, openit, options))
         send_id = uuid.uuid4().hex
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
@@ -838,7 +839,7 @@ class FileTransferHandler(FileTransferAttributes):
                                      printit: bool, openit: bool, options: typedict) -> None:
         filelog(f"do_process_send_data_request: {send_id=}, {url=}, {printit=}, {openit=}, {options=}")
 
-        def cb_answer(accept: bool) -> bool:
+        def cb_answer(accept: bool) -> None:
             filelog("accept%s=%s", (url, printit, openit), accept)
             self.send("send-data-response", send_id, accept)
 

@@ -79,7 +79,7 @@ class ProxyInstance:
             video_encoder_modules,
             disp_desc, cipher, cipher_mode, encryption_key,
             "%s: %s.." % (type(caps), Ellipsizer(caps))))
-        self.uuid = get_hex_uuid()
+        self.uuid: str = get_hex_uuid()
         self.client_protocol = None
         self.client_has_more = False
         self.server_protocol = None

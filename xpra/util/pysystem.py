@@ -114,4 +114,5 @@ def enforce_features(features, feature_map: dict[str, str]) -> None:
                     log.warn(f"Warning: cannot disable {feature!r} feature")
                     log.warn(f" the module {module!r} is already loaded")
                 else:
+                    # noinspection PyTypeChecker
                     sys.modules[module] = None
