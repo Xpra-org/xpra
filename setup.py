@@ -1464,101 +1464,49 @@ def clean() -> None:
     pkgconfig = no_pkgconfig
     # always include everything in this case:
     add_packages("xpra")
+    # these files would match the pattern of generated files, but they are not, so protect them:
+    PROTECTED = [
+        "xpra/buffers/memalign.c",
+        "xpra/platform/win32/setappid.cpp",
+        "xpra/x11/gtk/gdk_x11_macros.c",
+    ]
     # ensure we remove the files we generate:
     CLEAN_FILES = [
         "xpra/build_info.py",
-        "xpra/gtk/bindings/atoms.c",
-        "xpra/gtk/bindings/gobject.c",
-        "xpra/x11/bindings/display_source.c",
-        "xpra/x11/bindings/xwait.c",
-        "xpra/x11/bindings/wait_for_x_server.c",
-        "xpra/x11/bindings/keyboard.c",
-        "xpra/x11/bindings/events.c",
-        "xpra/x11/bindings/window.c",
-        "xpra/x11/bindings/randr.c",
-        "xpra/x11/bindings/res.c",
-        "xpra/x11/bindings/core.c",
-        "xpra/x11/bindings/posix_display_source.c",
-        "xpra/x11/bindings/xwayland.c",
-        "xpra/x11/bindings/ximage.c",
-        "xpra/x11/bindings/xi2.c",
-        "xpra/x11/gtk/bindings.c",
-        "xpra/x11/gtk/display_source.c",
-        "xpra/platform/win32/propsys.cpp",
-        "xpra/platform/darwin/gdk3_bindings.c",
-        "xpra/platform/posix/sd_listen.c",
-        "xpra/platform/posix/netdev_query.c",
-        "xpra/platform/posix/proc_libproc.c",
-        "xpra/platform/posix/proc_procps.c",
-        "xpra/net/rencodeplus/rencodeplus.c",
-        "xpra/net/brotli/compressor.c",
-        "xpra/net/brotli/decompressor.c",
-        "xpra/net/qrcode/qrencode.c",
-        "xpra/net/websockets/mask.c",
-        "xpra/net/vsock/vsock.c",
-        "xpra/net/lz4/lz4.c",
-        "xpra/buffers/membuf.c",
-        "xpra/buffers/xxh.c",
-        "xpra/buffers/cyxor.c",
-        "xpra/codecs/vpx/encoder.c",
-        "xpra/codecs/vpx/decoder.c",
-        "xpra/codecs/nvidia/nvenc/encoder.c",
-        "xpra/codecs/nvidia/nvdec/decoder.c",
-        "xpra/codecs/nvidia/nvfbc/capture_linux.cpp",
-        "xpra/codecs/nvidia/nvfbc/capture_win.cpp",
-        "xpra/codecs/nvidia/nvjpeg/common.c",
-        "xpra/codecs/nvidia/nvjpeg/encoder.c",
-        "xpra/codecs/nvidia/nvjpeg/decoder.c",
-        "xpra/codecs/avif/encoder.c",
-        "xpra/codecs/avif/decoder.c",
-        "xpra/codecs/x264/encoder.c",
-        "xpra/codecs/spng/encoder.c",
-        "xpra/codecs/spng/decoder.c",
-        "xpra/codecs/jpeg/encoder.c",
-        "xpra/codecs/jpeg/decoder.c",
-        "xpra/codecs/openh264/encoder.c",
-        "xpra/codecs/openh264/decoder.c",
-        "xpra/codecs/v4l2/virtual.c",
         "xpra/codecs/v4l2/constants.pxi",
-        "xpra/codecs/evdi/capture.cpp",
-        "xpra/codecs/drm/drm.c",
-        "xpra/codecs/webp/encoder.c",
-        "xpra/codecs/webp/decoder.c",
-        "xpra/codecs/libyuv/converter.cpp",
-        "xpra/codecs/csc_cython/converter.c",
-        "xpra/codecs/argb/argb.c",
-        "xpra/codecs/nvapi_version.c",
-        "xpra/gtk/bindings/atoms.c",
-        "xpra/client/gtk3/cairo_workaround.c",
-        "xpra/server/cystats.c",
-        "xpra/util/rectangle.c",
-        "xpra/server/window/motion.c",
-        "xpra/server/pam.c",
         # special case for the generated xpra conf files in build (see # 891):
         "build/etc/xpra/xpra.conf",
     ] + glob("build/etc/xpra/conf.d/*.conf")
     if cuda_rebuild_ENABLED:
         CLEAN_FILES += glob("fs/share/xpra/cuda/*.fatbin")
-    for x in CLEAN_FILES:
-        p, ext = os.path.splitext(x)
-        if ext in (".c", ".cpp", ".pxi"):
-            # clean the Cython annotated html files:
-            CLEAN_FILES.append(p+".html")
-            if WIN32:
-                # on win32, the build creates ".pyd" files, clean those too:
-                CLEAN_FILES.append(p+".pyd")
-                # when building with python3, we need to clean files named like:
-                #"xpra/codecs/csc_libyuv/converter-cpython-36m.dll"
-                filename = os.path.join(os.getcwd(), p.replace("/", os.path.sep)+"*.dll")
-                CLEAN_FILES += glob(filename)
-    if 'clean' in sys.argv:
-        CLEAN_FILES.append("xpra/build_info.py")
+    CLEAN_DIRS = []
+    for path, dirs, filenames in os.walk("xpra"):
+        for dirname in dirs:
+            dirpath = os.path.join(path, dirname)
+            if dirname == "__pycache__":
+                CLEAN_DIRS.append(dirpath)
+        for filename in filenames:
+            ext = os.path.splitext(filename)[-1]
+            fpath = os.path.join(path, filename)
+            if fpath in PROTECTED:
+                continue
+            if ext in (".py", ".pyx", ".pxd", ".h", ".pxi", ".fatbin", ".txt", ".m"):
+                # never delete source files
+                continue
+            if ext in (".c", ".cpp", ".pyc", ".pyd", ".html"):
+                if fpath not in CLEAN_FILES:
+                    CLEAN_FILES.append(fpath)
+                continue
+            print(f"warning unexpected file in source tree: {fpath} with {ext=}")
     for x in CLEAN_FILES:
         filename = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
         if os.path.exists(filename):
             if verbose_ENABLED:
-                print(f"removing Cython/build generated file: {x}")
+                print(f"cleaning: {x!r}")
             os.unlink(filename)
+    for x in CLEAN_DIRS:
+        dirname = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
+        os.rmdir(dirname)
 
 
 def add_build_info(*args) -> None:
