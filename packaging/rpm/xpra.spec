@@ -883,21 +883,28 @@ fi
 
 
 %changelog
-* Wed Jul 24 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
+* Sat Jul 27 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
 - Platforms, build and packaging:
    RHEL 8.10 pygobject3 packaging update
    always build the latest X11 dummy driver version
    only build xpra from the 6.1.x branch
    pycuda 2024.1.1
+   MS Windows multi-page printing
 - Encodings:
    disable `scroll` encoding
    greenish tint with subsampled webp screen updates
+   rgb colors are always full range
+   Pillow encoder quality is lower
 - Major:
    missing context manager when X11 session started from a Wayland desktop
    keyboard support should not require `dbus`
 - Network:
    expose quic / webtransport sockets via mdns
-- Cosmetic:
+- Cosmetic / preventive:
+   slow CI test times out
+   only import modules actually needed: notifications, windows, logger, mmap
+   `desktop-scaling=no` parsing warnings
+   window headerbar widget sizes
    incorrect exception debug message
    unused invalid headers
    outdated comment

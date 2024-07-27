@@ -4,20 +4,27 @@ xpra (6.1.1-1) UNRELEASED; urgency=low
     always build the latest X11 dummy driver version
     only build xpra from the 6.1.x branch
     pycuda 2024.1.1
+    MS Windows multi-page printing
   * Encodings:
     disable `scroll` encoding
     greenish tint with subsampled webp screen updates
+    rgb colors are always full range
+    Pillow encoder quality is lower
   * Major:
     missing context manager when X11 session started from a Wayland desktop
     keyboard support should not require `dbus`
   * Network:
     expose quic / webtransport sockets via mdns
-  * Cosmetic:
+  * Cosmetic / preventive:
+    slow CI test times out
+    only import modules actually needed: notifications, windows, logger, mmap
+    `desktop-scaling=no` parsing warnings
+    window headerbar widget sizes
     incorrect exception debug message
     unused invalid headers
     outdated comment
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 24 Jul 2024 19:06:03 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sat, 27 Jul 2024 15:57:46 +0700
 
 xpra (6.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
