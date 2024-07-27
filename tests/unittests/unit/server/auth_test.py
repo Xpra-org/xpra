@@ -276,7 +276,7 @@ class TestAuth(unittest.TestCase):
         else:
             raise RuntimeError("invalid digest should raise a ValueError")
         a.password_filename = "./this-path-should-not-exist"
-        assert a.load_password_file() is None
+        assert not a.load_password_file()
         assert a.stat_password_filetime() == 0
         # inaccessible:
         if POSIX:
