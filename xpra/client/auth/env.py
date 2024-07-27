@@ -5,11 +5,13 @@
 
 import os
 
+from xpra.client.auth.handler import AuthenticationHandler
 
-class Handler:
+
+class Handler(AuthenticationHandler):
 
     def __init__(self, client, **kwargs):
-        self.client = client
+        super().__init__(client, **kwargs)
         self.var_name = kwargs.pop("name", "XPRA_PASSWORD")
 
     def __repr__(self):

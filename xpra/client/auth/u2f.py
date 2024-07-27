@@ -7,6 +7,7 @@ import os
 import logging
 import binascii
 
+from xpra.client.auth.handler import AuthenticationHandler
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
 from xpra.util.str_fn import strtobytes
@@ -15,10 +16,10 @@ from xpra.log import Logger, is_debug_enabled
 log = Logger("auth")
 
 
-class Handler:
+class Handler(AuthenticationHandler):
 
     def __init__(self, client, **kwargs):
-        self.client = client
+        super().__init__(client, **kwargs)
         self.app_id = kwargs.get("APP_ID", "") or os.environ.get("XPRA_U2F_APP_ID", "") or "Xpra"
 
     def __repr__(self):

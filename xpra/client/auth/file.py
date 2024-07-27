@@ -5,16 +5,17 @@
 
 import os
 
+from xpra.client.auth.handler import AuthenticationHandler
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
 
 log = Logger("auth")
 
 
-class Handler:
+class Handler(AuthenticationHandler):
 
     def __init__(self, client, **kwargs):
-        self.client = client
+        super().__init__(client, **kwargs)
         self.password_file: str = kwargs.get("filename", "")
         if not self.password_file and client.password_file:
             self.password_file = client.password_file[0]

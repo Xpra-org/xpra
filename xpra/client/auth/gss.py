@@ -5,6 +5,7 @@
 
 import os
 
+from xpra.client.auth.handler import AuthenticationHandler
 from xpra.util.str_fn import csv
 from xpra.os_util import OSX
 from xpra.log import Logger
@@ -12,10 +13,10 @@ from xpra.log import Logger
 log = Logger("auth")
 
 
-class Handler:
+class Handler(AuthenticationHandler):
 
     def __init__(self, client, **kwargs):
-        self.client = client
+        super().__init__(client)
         self.services = (kwargs.pop("gss-services", "") or os.environ.get("XPRA_GSS_SERVICES", "") or "*").split(",")
 
     def __repr__(self):
@@ -56,11 +57,8 @@ class Handler:
         except Exception as e:
             log("gssapi failure", exc_info=True)
             log.error("Error: gssapi client authentication failure:")
-            try:
-                for x in str(e).split(":", 2):
-                    log.error(" %s", x.lstrip(" "))
-            except Exception:
-                log.estr(e)
+            for x in str(e).split(":", 2):
+                log.error(" %s", x.lstrip(" "))
             return None
         log("gss token=%s", repr(token))
         return token

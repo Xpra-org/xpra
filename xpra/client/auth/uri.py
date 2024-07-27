@@ -4,10 +4,10 @@
 # later version. See the file COPYING for details.
 
 
-class Handler:
+from xpra.client.auth.handler import AuthenticationHandler
 
-    def __init__(self, client, **_kwargs):
-        self.client = client
+
+class Handler(AuthenticationHandler):
 
     def __repr__(self):
         return "uri"
