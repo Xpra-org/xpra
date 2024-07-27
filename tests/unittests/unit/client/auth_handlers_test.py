@@ -30,7 +30,7 @@ class AuthHandlersTest(unittest.TestCase):
     def do_test_handler(self, client, success, password, handler_class, **kwargs):
         h = handler_class(client, **kwargs)
         assert repr(h)
-        server_salt = kwargs.pop("server-salt", "0"*32)
+        server_salt = kwargs.pop("server-salt", b"0"*32)
         digest = kwargs.pop("digest", "xor")
         kwargs = {
             "challenge" : server_salt,
