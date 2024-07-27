@@ -278,6 +278,7 @@ vsock_ENABLED           = LINUX and has_header_file("/linux/vm_sockets.h")
 lz4_ENABLED             = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
 brotli_ENABLED          = DEFAULT and has_header_file("/brotli/decode.h") and has_header_file("/brotli/encode.h")
+cityhash_ENABLED        = DEFAULT and has_header_file("/city.h")
 qrencode_ENABLED        = DEFAULT and has_header_file("/qrencode.h")
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  # None means auto-detect
@@ -394,7 +395,7 @@ SWITCH_ALIAS = {
     "cython": (
         "cython", "codecs",
         "server", "client", "shadow",
-        "rencodeplus", "brotli", "qrencode", "websockets", "netdev", "vsock",
+        "rencodeplus", "brotli", "cityhash", "qrencode", "websockets", "netdev", "vsock",
         "lz4",
         "x11", "gtk_x11",
         "pam", "sd_listen", "proc",
@@ -412,7 +413,7 @@ for sw in CODEC_SWITCHES:
 SWITCHES += [
     "cython_tracing", "cythonize_more",
     "modules", "data",
-    "brotli", "qrencode",
+    "brotli", "cityhash", "qrencode",
     "vsock", "netdev", "proc", "mdns", "lz4",
     "clipboard",
     "scripts",
@@ -2432,14 +2433,17 @@ if data_ENABLED:
 #*******************************************************************************
 if cython_ENABLED:
     add_packages("xpra.buffers")
-    buffers_pkgconfig = pkgconfig(optimize=3)
     import platform
     # this may well be suboptimal:
-    extra_compile_args = "-mfpmath=387" if platform.machine() == "i386" else None
+    extra_compile_args = "-mfpmath=387" if platform.machine() == "i386" else {}
     tace(cython_ENABLED, "xpra.buffers.membuf,xpra/buffers/memalign.c", optimize=3,
          extra_compile_args=extra_compile_args)
     tace(cython_ENABLED, "xpra.buffers.xxh", "libxxhash", optimize=3,
          extra_compile_args=extra_compile_args)
+    if cityhash_ENABLED:
+        ace("xpra.buffers.cityhash", optimize=3,
+            language="c++",
+            extra_link_args="-lcityhash")
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.auth")

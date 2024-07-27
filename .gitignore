@@ -110,6 +110,7 @@ tests/unittests/test-file*
 /xpra/buffers/new_buffers.c
 /xpra/buffers/membuf.c
 /xpra/buffers/xxh.c
+/xpra/buffers/cityhash.c
 /xpra/buffers/cyxor.c
 /xpra/client/*/*.c
 /xpra/client/*.c
