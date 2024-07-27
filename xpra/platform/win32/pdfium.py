@@ -11,7 +11,7 @@ from xpra.util import ellipsizer
 from xpra.os_util import strtobytes
 from xpra.platform.win32.common import GetDeviceCaps
 from xpra.platform.win32 import win32con
-from xpra.platform.win32.win32_printing import GDIPrinterContext, DOCINFO, StartDocA, EndDoc, LPCSTR
+from xpra.platform.win32.win32_printing import GDIPrinterContext, DOCINFO, StartDocA, EndDoc, StartPage, EndPage, LPCSTR
 from ctypes.wintypes import HDC
 from ctypes import WinDLL, c_void_p, Structure, c_int, c_uint, c_ulong, c_char, c_char_p, cast, pointer, POINTER
 
@@ -50,6 +50,8 @@ FPDF_LoadMemDocument.restype = FPDF_DOCUMENT
 FPDF_LoadMemDocument.argtypes = [c_void_p, c_int, c_void_p]
 FPDF_CloseDocument = pdfium.FPDF_CloseDocument
 FPDF_CloseDocument.argtypes = [FPDF_DOCUMENT]
+FPDF_ClosePage = pdfium.FPDF_ClosePage
+FPDF_ClosePage.argtypes = [FPDF_PAGE]
 
 FPDF_ERR_SUCCESS = 0	# No error.
 FPDF_ERR_UNKNOWN = 1    # Unknown error.
@@ -135,8 +137,11 @@ def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
 					log.error("Error: FPDF_LoadPage failed for page %i, error: %s", i, get_error())
 					return -2
 				log("FPDF_LoadPage()=%s page %i loaded", page, i)
+				StartPage(hdc)
 				FPDF_RenderPage(hdc, page, x, y, w, h, rotate, flags)
 				log("FPDF_RenderPage page %i rendered", i)
+				FPDF_ClosePage(hdc)
+				EndPage(hdc)
 		finally:
 			EndDoc(hdc)
 	finally:
