@@ -31,13 +31,13 @@ autoprov: no
 %endif
 
 %define CFLAGS -O2
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild
 %if 0%{?fedora}>=39
 %global debug_package %{nil}
 %endif
 %if 0%{?el10}
 %global debug_package %{nil}
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild --without-docs
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --without-docs
 %endif
 
 %global gnome_shell_extension input-source-manager@xpra_org
@@ -647,6 +647,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/x11/
 
 %files -n %{package_prefix}-codecs
+%{python3_sitearch}/xpra/codecs/csc_cython
 %{python3_sitearch}/xpra/codecs/drm
 #/xpra/codecs/evdi
 %{python3_sitearch}/xpra/codecs/jpeg
