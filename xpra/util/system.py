@@ -75,17 +75,12 @@ def is_VirtualBox() -> bool:
     except (ImportError, OSError):
         pass
     try:
-        try:
-            f = None
-            f = open("\\\\.\\VBoxMiniRdrDN", "r")
+        with open("\\\\.\\VBoxMiniRdrDN", "r"):
             # "VirtualBox is present (VBoxMiniRdrDN)"
             return True
-        finally:
-            if f:
-                f.close()
     except Exception as e:
         import errno
-        if e.args[0]==errno.EACCES:
+        if e.args[0] == errno.EACCES:
             # "VirtualBox is present (VBoxMiniRdrDN)"
             return True
     return False

@@ -127,8 +127,7 @@ if LOAD_FROM_THEME:
             if len(themes) < MAX_THEMES:
                 for x in glob.glob(f"{sys.prefix}/share/icons/*/index.theme"):
                     parts = x.split(os.path.sep)
-                    name = parts[-2]
-                    addtheme(name)
+                    addtheme(parts[-2])
                     if len(themes) > MAX_THEMES:
                         break
             log(f"icon themes={themes}")
@@ -517,6 +516,7 @@ def load_applications(menu_data=None):
         return False
 
     from xdg.Menu import MenuEntry  # pylint: disable=import-outside-toplevel
+    from xdg.Exceptions import ParsingError
     for d in LOAD_APPLICATIONS:
         if not os.path.exists(d):
             continue
@@ -525,15 +525,15 @@ def load_applications(menu_data=None):
                 continue
             try:
                 me = MenuEntry(f, d)
-            except Exception:
+            except ParsingError:
                 log(f"failed to load {f!r} from {d!r}", f, d, exc_info=True)
             else:
                 ed = load_xdg_entry(me.DesktopEntry)
                 if not ed:
                     continue
-                name = ed.get("Name") or ""
-                if name and not already_has_name(name):
-                    entries[name] = ed
+                app_name = ed.get("Name") or ""
+                if app_name and not already_has_name(app_name):
+                    entries[app_name] = ed
     log("entries(%s)=%s", LOAD_APPLICATIONS, remove_icons(entries))
     return entries
 

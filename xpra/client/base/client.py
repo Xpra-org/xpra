@@ -281,7 +281,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 try:
                     stderr_print()
                     log.info("client got signal %s", SIGNAMES.get(signum, signum))
-                except Exception:
+                except IOError:
                     pass
             self.handle_app_signal(int(signum))
 
@@ -649,7 +649,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             pass
         try:
             pp.terminate()
-        except Exception:
+        except OSError:
             pass
 
     def cleanup(self) -> None:
@@ -892,7 +892,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             authlog("err(%s)=%s", cmd, err)
             password = out.decode()
             return password
-        except Exception:
+        except OSError:
             log("Error: failed to show GUI for password prompt", exc_info=True)
             return None
 
@@ -934,7 +934,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             from xpra.net.bytestreams import pretty_socket  # pylint: disable=import-outside-toplevel
             conn = self._protocol._conn
             text += f",\n connecting to {conn.socktype} server {pretty_socket(conn.remote)}"
-        except Exception:
+        except (AttributeError, TypeError):
             pass
         return text
 
@@ -1250,6 +1250,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def process_packet(self, _proto, packet) -> None:
         packet_type = ""
         handler = None
+        # noinspection PyBroadException
         try:
             packet_type = packet[0]
             if packet_type is not int:

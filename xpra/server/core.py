@@ -960,7 +960,7 @@ class ServerCore:
             # cannot be accessed remotely
             return ()
         if socktype == "quic":
-            return ("quic", "webtransport")
+            return "quic", "webtransport"
         socktypes = [socktype]
         if socktype == "tcp":
             for tosocktype in ("ssl", "ws", "wss", "ssh", "rfb"):
