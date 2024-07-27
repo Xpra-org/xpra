@@ -67,28 +67,28 @@ class FileAuthenticatorBase(SysAuthenticator):
     def parse_filedata(self, data: str):  # pragma: no cover
         raise NotImplementedError()
 
-    def load_password_file(self) -> bytes | None:
+    def load_password_file(self):
         if not self.password_filename:
-            return None
+            return ""
         full_path = os.path.abspath(self.password_filename)
         if not os.path.exists(self.password_filename):
             log.error("Error: password file '%s' is missing", full_path)
-            self.password_filedata = None
+            self.password_filedata = ""
         else:
             ptime = self.stat_password_filetime()
-            if self.password_filedata is None or ptime != self.password_filetime:
+            if not self.password_filedata or ptime != self.password_filetime:
                 self.password_filetime = 0
-                self.password_filedata = b""
+                self.password_filedata = ""
                 try:
-                    with open(self.password_filename) as f:
+                    with open(self.password_filename, encoding="utf8") as f:
                         data = f.read()
-                    log(f"loaded {len(data)} bytes from {self.password_filename!r}")
+                    log(f"loaded {len(data)} characters from {self.password_filename!r}")
                     self.password_filedata = self.parse_filedata(data)
                     self.password_filetime = ptime
                 except Exception as e:
                     log.error("Error reading password data from '%s':", self.password_filename, exc_info=True)
                     log.estr(e)
-                    self.password_filedata = None
+                    self.password_filedata = self.parse_filedata("")
         return self.password_filedata
 
     def stat_password_filetime(self) -> float:
