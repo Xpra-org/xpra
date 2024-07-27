@@ -154,7 +154,7 @@ def use_stdin() -> bool:
         hstdin = GetStdHandle(STD_INPUT_HANDLE)
         if not_a_console(hstdin):
             return False
-        return get_console_position(hstdin) != (-1, -1)
+        return get_console_position() != (-1, -1)
     except Exception:
         pass
     return True
