@@ -160,7 +160,7 @@ def validate_backend() -> None:
             ev = enc.encrypt(m)
             evs = hexstr(ev)
             log(" encrypted(%s)=%s", m, evs)
-            dv = dec.decrypt(ev)
+            dv = dec.update(ev)
             log(" decrypted(%s)=%s", evs, dv)
             if dv!=m:
                 raise RuntimeError(f"expected {m!r} but got {dv!r}")
@@ -251,9 +251,7 @@ def get_encryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, 
     return get_cipher_encryptor(key, iv, mode), get_block_size(mode)
 
 def get_cipher_encryptor(key, iv:str, mode:str):
-    encryptor = _get_cipher(key, iv, mode).encryptor()
-    encryptor.encrypt = encryptor.update
-    return encryptor
+    return _get_cipher(key, iv, mode).encryptor()
 
 def get_decryptor(ciphername : str, iv:str, password, key_salt, key_hash : str, key_size : int, iterations : int):
     log("get_decryptor%s", (ciphername, iv, password, hexstr(key_salt), key_hash, key_size, iterations))
@@ -279,18 +277,17 @@ def get_cipher_decryptor(key, iv:str, mode:str):
     supports_memoryviews = tuple(i(s) for s in version.split("."))>=(2, 5)
     log("get_decryptor(..) python-cryptography supports_memoryviews(%s)=%s",
         version, supports_memoryviews)
-    if supports_memoryviews:
-        decryptor.decrypt = decryptor.update
-    else:
+    if not supports_memoryviews:
         _patch_decryptor(decryptor)
     return decryptor
 
 def _patch_decryptor(decryptor):
     #with older versions of python-cryptography,
     #we have to copy the memoryview to a bytearray:
-    def decrypt(v):
-        return decryptor.update(memoryview_to_bytes(v))
-    decryptor.decrypt = decrypt
+    _update = decryptor.update
+    def update(v):
+        return _update(memoryview_to_bytes(v))
+    decryptor.update = update
 
 def get_block_size(mode:str) -> int:
     if mode=="CBC":

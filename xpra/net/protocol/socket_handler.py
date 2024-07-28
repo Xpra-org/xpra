@@ -414,7 +414,7 @@ class SocketProtocol:
                     actual_size += padding_size
                 if len(padded)!=actual_size:
                     raise RuntimeError(f"expected padded size to be {actual_size}, but got {len(padded)}")
-                data = self.cipher_out.encrypt(padded)
+                data = self.cipher_out.update(padded)
                 if len(data)!=actual_size:
                     raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
                 cryptolog("sending %s bytes %s encrypted with %s bytes of padding",
@@ -1004,7 +1004,7 @@ class SocketProtocol:
                         return
                     cryptolog("received %i %s encrypted bytes with %i padding",
                               payload_size, self.cipher_in_name, padding_size)
-                    data = self.cipher_in.decrypt(data)
+                    data = self.cipher_in.update(data)
                     if padding_size > 0:
                         def debug_str(s):
                             try:
