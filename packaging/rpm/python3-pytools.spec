@@ -10,7 +10,7 @@
 %endif
 
 Name:           %{python3}-pytools
-Version:        2024.1.2
+Version:        2024.1.11
 Release:        1%{?dist}
 Summary:        A collection of tools for python
 Group:          Development/Languages
@@ -22,6 +22,7 @@ Provides:		%{python3}-pytools = %{version}-%{release}
 BuildArch:      noarch
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
+BuildRequires:  pyproject-rpm-macros
 
 %description
 Pytools are a few interesting things that are missing from the Python Standard
@@ -43,7 +44,7 @@ Small tool functions such as ::
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "081871e451505c4b986ebafa68aeeabfdc7beb3faa1baa50f726aebe21e1d057" ]; then
+if [ "${sha256}" != "fa966e09857bcd9299f961d58fc128e8333e4ac5fcea52473af5aae88f814e38" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -51,14 +52,13 @@ fi
 
 
 %build
-%{python3} setup.py build
+# %pyproject_wheel
+%{python3} -m pip wheel . --no-deps
 
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%{python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
-# RHEL stream setuptools bug?
-rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
+%{python3} -m pip install . --no-deps --root $RPM_BUILD_ROOT
 
 
 %clean
@@ -72,6 +72,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Jul 28 2024 Antoine Martin <antoine@xpra.org> - 2024.1.11-1
+- new upstream release
+
 * Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-1
 - new upstream release
 
