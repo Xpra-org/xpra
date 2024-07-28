@@ -63,7 +63,7 @@ class TestCrypto(unittest.TestCase):
         #test encoding of a message:
         encrypted = []
         for i in range(encrypt_count):
-            v = enc.encrypt(message)
+            v = enc.update(message)
             #print("%s%s=%s" % (enc.encrypt, (message,), hexstr(v)))
             assert v is not None
             if i==0:
@@ -72,8 +72,8 @@ class TestCrypto(unittest.TestCase):
         #test decoding of the message:
         decrypted = []
         for i in range(decrypt_count):
-            v = dec.decrypt(encrypted[0])
-            log("%s%s=%s" % (dec.decrypt, (encrypted[0],), hexstr(v)))
+            v = dec.update(encrypted[0])
+            log("%s%s=%s" % (dec.update, (encrypted[0],), hexstr(v)))
             assert v is not None
             if i==0:
                 decrypted.append(v)

@@ -142,10 +142,10 @@ def validate_backend() -> None:
         else:
             test_messages.append(message[:block_size])
         for m in test_messages:
-            ev = enc.encrypt(m)
+            ev = enc.update(m)
             evs = hexstr(ev)
             log(" encrypted(%s)=%s", m, evs)
-            dv = dec.decrypt(ev)
+            dv = dec.update(ev)
             log(" decrypted(%s)=%s", evs, dv)
             if dv != m:
                 raise RuntimeError(f"expected {m!r} but got {dv!r}")
@@ -235,9 +235,7 @@ def get_encryptor(ciphername: str, iv: str, password, key_salt, key_hash: str, k
 
 
 def get_cipher_encryptor(key, iv: str, mode: str):
-    encryptor = _get_cipher(key, iv, mode).encryptor()
-    encryptor.encrypt = encryptor.update
-    return encryptor
+    return _get_cipher(key, iv, mode).encryptor()
 
 
 def get_decryptor(ciphername: str, iv: str, password, key_salt, key_hash: str, key_size: int, iterations: int):
@@ -255,10 +253,7 @@ def get_decryptor(ciphername: str, iv: str, password, key_salt, key_hash: str, k
 
 
 def get_cipher_decryptor(key, iv: str, mode: str):
-    decryptor = _get_cipher(key, iv, mode).decryptor()
-    # the function we expect to call is named 'decrypt':
-    decryptor.decrypt = decryptor.update
-    return decryptor
+    return _get_cipher(key, iv, mode).decryptor()
 
 
 def get_block_size(mode: str) -> int:
