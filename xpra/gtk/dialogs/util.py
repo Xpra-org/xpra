@@ -90,9 +90,8 @@ def load_hb_image(icon_name: str, size=32) -> Gtk.Image | None:
     return Gtk.Image.new_from_gicon(icon, icon_size)
 
 
-def hb_button(tooltip: str, icon_name: str, callback: Callable) -> Gtk.Button:
+def hb_button(tooltip: str, icon_name: str, callback: Callable, size=32) -> Gtk.Button:
     btn = Gtk.Button()
-    size = 32
     image = load_hb_image(icon_name, size)
     if image:
         btn.add(image)

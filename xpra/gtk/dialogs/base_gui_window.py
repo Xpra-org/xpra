@@ -124,8 +124,16 @@ class BaseGUIWindow(Gtk.Window):
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
         hb.props.title = "Xpra"
-        if about:
-            hb.add(hb_button("About", "help-about", self.show_about))
+
+        # fixup the icon size when the window headerbar is bigger than expected:
+        fixed_size = [0]
+        hb_buttons = []
+
+        def add_hb_button(*args) -> None:
+            size = fixed_size[0] or 32
+            btn = hb_button(*args, size=size)
+            hb_buttons.append(btn)
+            hb.add(btn)
 
         def add_gui(text: str, icon_name: str, gui_class) -> None:
             def show_gui(*_args) -> None:
@@ -137,56 +145,60 @@ class BaseGUIWindow(Gtk.Window):
                 gui_class.quit = hide
                 w = gui_class()
                 w.show()
-            hb.add(hb_button(text, icon_name, show_gui))
+            add_hb_button(text, icon_name, show_gui)
 
-        if toolbox:
-            try:
-                from xpra.gtk.dialogs.toolbox import ToolboxGUI
-            except ImportError:
-                pass
-            else:
-                add_gui("Toolbox", "toolbox", ToolboxGUI)
-        if configure:
-            try:
-                from xpra.gtk.configure.main import ConfigureGUI
-            except ImportError:
-                pass
-            else:
-                add_gui("Configure", "features", ConfigureGUI)
-        hb.show_all()
-        self.set_titlebar(hb)
+        def add_buttons():
+            if about:
+                add_hb_button("About", "help-about", self.show_about)
+            if toolbox:
+                try:
+                    from xpra.gtk.dialogs.toolbox import ToolboxGUI
+                except ImportError:
+                    pass
+                else:
+                    add_gui("Toolbox", "toolbox", ToolboxGUI)
+            if configure:
+                try:
+                    from xpra.gtk.configure.main import ConfigureGUI
+                except ImportError:
+                    pass
+                else:
+                    add_gui("Configure", "features", ConfigureGUI)
+            hb.show_all()
 
         def rs(rect) -> tuple[int, int]:
             return rect.width, rect.height
-
-        # fixup the icon size when the window headerbar is bigger than expected:
-        fixed_size = [0]
 
         def fix_default_icon_sizes(*args) -> None:
             log("fix_default_icon_sizes%s", args)
             changed = []
 
+            def fix_button_size(btn: Gtk.Button) -> None:
+                btn_size = rs(btn.get_allocated_size()[0])
+                for child in btn.get_children():
+                    if not isinstance(child, Gtk.Image):
+                        continue
+                    size = nearest_icon_size(max(24, btn_size[1] - 4))
+                    child.set_size_request(size, size)
+                    btn.set_size_request(size, size)
+                    if abs(fixed_size[0] - size) >= 8:
+                        changed.append((fixed_size[0], size, btn, child))
+                    fixed_size[0] = size
+
             def with_child(child) -> None:
                 if not isinstance(child, Gtk.Box):
                     return
                 for g_child in child.get_children():
-                    if not isinstance(g_child, Gtk.Button):
-                        continue
-                    btn_size = rs(g_child.get_allocated_size()[0])
-                    for bg_child in g_child.get_children():
-                        if not isinstance(bg_child, Gtk.Image):
-                            continue
-                        size = nearest_icon_size(max(24, btn_size[1]-4))
-                        g_child.set_size_request(size, size)
-                        bg_child.set_size_request(size, size)
-                        if abs(fixed_size[0] - size) >= 8:
-                            changed.append((fixed_size[0], size, bg_child))
-                        fixed_size[0] = size
+                    if isinstance(g_child, Gtk.Button):
+                        fix_button_size(g_child)
             hb.forall(with_child)
 
         def map_event(*_args):
             GLib.timeout_add(100, fix_default_icon_sizes)
         self.connect("map-event", map_event)
+
+        add_buttons()
+        self.set_titlebar(hb)
 
     def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable = noop, sensitive=True) -> Gtk.Button:
         label_font = "sans 16"
