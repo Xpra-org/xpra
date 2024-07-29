@@ -21,8 +21,7 @@ from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envbool
 from xpra.net.bytestreams import set_socket_timeout
-from xpra.server import features
-from xpra.server import EXITING_CODE
+from xpra.server import features, ServerExitMode
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -208,7 +207,7 @@ class ServerBase(ServerBaseClass):
             message += ": " + reason
         log.info(message)
         self.cleanup_all_protocols(reason=reason)
-        GLib.timeout_add(500, self.clean_quit, EXITING_CODE)
+        GLib.timeout_add(500, self.clean_quit, ServerExitMode.EXIT)
 
     def _process_shutdown_server(self, _proto, _packet: PacketType = ("shutdown-server", )) -> None:
         if not self.client_shutdown:

@@ -21,7 +21,7 @@ from xpra.util.str_fn import strtobytes, memoryview_to_bytes
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
 from xpra.net.common import PacketType
 from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
-from xpra.server import features, EXITING_CODE
+from xpra.server import features, ServerExitMode
 from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_pixbuf_from_data
@@ -196,7 +196,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 log("Error: cannot create our window manager", exc_info=True)
                 display = os.environ.get("DISPLAY", "")
                 # make sure we don't kill the vfb since we don't own it:
-                self._upgrading = EXITING_CODE
+                self._exit_mode = ServerExitMode.EXIT
                 wm_name = "another window manager"
                 with xsync:
                     wm_name = f"{get_wm_name()!r}"

@@ -195,7 +195,7 @@ class WindowVideoSource(WindowSource):
 
         self.last_pipeline_params : tuple = ()
         self.last_pipeline_scores : tuple = ()
-        self.last_pipeline_time: int = 0
+        self.last_pipeline_time: float = 0.0
 
         self.video_subregion = VideoSubregion(self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
         self.video_subregion.supported = VIDEO_SUBREGION

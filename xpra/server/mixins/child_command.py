@@ -24,7 +24,7 @@ from xpra.util.thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.util import source_env, write_pid
 from xpra.server.menu_provider import get_menu_provider
-from xpra.server import EXITING_CODE
+from xpra.server import ServerExitMode
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -66,8 +66,8 @@ class ChildCommandServer(StubServerMixin):
         self.child_reaper = None
         self.reaper_exit: Callable = self.reaper_exit_check
         # does not belong here...
-        if not hasattr(self, "_upgrading"):
-            self._upgrading = None
+        if not hasattr(self, "_exit_mode"):
+            self._exit_mode = None
         if not hasattr(self, "session_name"):
             self.session_name: str = ""
         self.menu_provider = None
@@ -120,7 +120,7 @@ class ChildCommandServer(StubServerMixin):
         GLib.idle_add(set_reaper_callback)
 
     def cleanup(self) -> None:
-        if self.terminate_children and self._upgrading != EXITING_CODE:
+        if self.terminate_children and self._exit_mode not in (ServerExitMode.UPGRADE, ServerExitMode.EXIT):
             self.terminate_children_processes()
         # during cleanup, just ignore the reaper exit callback:
         self.reaper_exit = noop

@@ -15,7 +15,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.gtk.error import xswallow, xsync, xlog
 from xpra.scripts.config import str_to_bool
-from xpra.server import EXITING_CODE
+from xpra.server import ServerExitMode
 from xpra.common import SYNC_ICC
 from xpra.x11.server.core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -111,8 +111,8 @@ class X11ServerBase(X11ServerCore):
 
     def kill_display(self) -> None:
         if self.display_pid:
-            if self._upgrading:
-                action = "exiting" if self._upgrading == EXITING_CODE else "upgrading"
+            if self._exit_mode in (ServerExitMode.UPGRADE, ServerExitMode.EXIT):
+                action = "exiting" if self._exit_mode == ServerExitMode.EXIT else "upgrading"
                 log.info(f"{action}: not cleaning up Xvfb")
                 return
             from xpra.x11.vfb_util import kill_xvfb

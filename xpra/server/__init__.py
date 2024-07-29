@@ -3,6 +3,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#magic value to distinguish exit code for upgrading (True==1)
-#and exiting:
-EXITING_CODE = 2
+
+from enum import IntEnum
+
+
+class ServerExitMode(IntEnum):
+    UNSET = -1
+    NORMAL = 0
+    UPGRADE = 1
+    EXIT = 2

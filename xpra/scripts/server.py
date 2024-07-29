@@ -1581,8 +1581,8 @@ def _do_run_server(script_file: str, cmdline,
         if mode.startswith("upgrade") or use_display:
             # something abnormal occurred,
             # don't kill the vfb on exit:
-            from xpra.server import EXITING_CODE
-            app._upgrading = EXITING_CODE
+            from xpra.server import ServerExitMode
+            app._exit_mode = ServerExitMode.EXIT
         app.cleanup()
 
     try:

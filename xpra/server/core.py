@@ -26,6 +26,7 @@ from xpra.util.version import (
 )
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.exit_codes import ExitValue, ExitCode
+from xpra.server import ServerExitMode
 from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
@@ -171,7 +172,7 @@ class ServerCore:
         self.dotxpra = None
 
         self._closing: bool = False
-        self._upgrading = None
+        self._exit_mode = ServerExitMode.UNSET
         # networking bits:
         self._socket_info: dict = {}
         self._potential_protocols: list[SocketProtocol] = []
@@ -316,10 +317,10 @@ class ServerCore:
         GLib.idle_add(self.clean_quit)
         GLib.idle_add(sys.exit, 128 + signum)
 
-    def clean_quit(self, upgrading=False) -> None:
-        log("clean_quit(%s)", upgrading)
-        if self._upgrading is None:
-            self._upgrading = upgrading
+    def clean_quit(self, exit_mode=ServerExitMode.NORMAL) -> None:
+        log("clean_quit(%s)", exit_mode)
+        if self._exit_mode == ServerExitMode.UNSET:
+            self._exit_mode = exit_mode
         GLib.timeout_add(5000, self.force_quit)
         self.closing()
         self.cleanup()
@@ -332,18 +333,18 @@ class ServerCore:
     def quit_worker(self) -> None:
         quit_worker(self.quit)
 
-    def quit(self, upgrading=False) -> None:
-        log("quit(%s)", upgrading)
-        if self._upgrading is None:
-            self._upgrading = upgrading
+    def quit(self, exit_mode=ServerExitMode.NORMAL) -> None:
+        log("quit(%s)", exit_mode)
+        if self._exit_mode == ServerExitMode.UNSET:
+            self._exit_mode = exit_mode
         self.closing()
         noerr(sys.stdout.flush)
         self.late_cleanup()
-        if not self._upgrading:
+        if self._exit_mode not in (ServerExitMode.EXIT, ServerExitMode.UPGRADE):
             self.clean_session_files()
             rm_session_dir()
         self.do_quit()
-        log("quit(%s) do_quit done!", upgrading)
+        log("quit(%s) do_quit done!", exit_mode)
         dump_all_frames()
 
     def closing(self) -> None:
@@ -352,7 +353,8 @@ class ServerCore:
             self.log_closing_message()
 
     def log_closing_message(self) -> None:
-        log.info("%s server is %s", self.get_server_mode(), ["terminating", "exiting"][bool(self._upgrading)])
+        exiting = self._exit_mode in (ServerExitMode.EXIT, ServerExitMode.UPGRADE)
+        log.info("%s server is %s", self.get_server_mode(), ["terminating", "exiting"][exiting])
 
     def do_quit(self) -> None:
         raise NotImplementedError()
@@ -450,7 +452,7 @@ class ServerCore:
         sleep(0.1)
 
     def late_cleanup(self) -> None:
-        if not self._upgrading:
+        if self._exit_mode not in (ServerExitMode.EXIT, ServerExitMode.UPGRADE):
             self.stop_dbus_server()
         self.cleanup_all_protocols(force=True)
         self._potential_protocols = []
@@ -1086,10 +1088,10 @@ class ServerCore:
 
     def cleanup_protocols(self, protocols, reason: str | ConnectionMessage = "", force=False) -> None:
         if not reason:
-            if self._upgrading:
-                reason = ConnectionMessage.SERVER_UPGRADE
-            else:
-                reason = ConnectionMessage.SERVER_SHUTDOWN
+            reason = {
+                ServerExitMode.EXIT: ConnectionMessage.SERVER_EXIT,
+                ServerExitMode.UPGRADE: ConnectionMessage.SERVER_UPGRADE,
+            }.get(self._exit_mode, ConnectionMessage.SERVER_SHUTDOWN)
         netlog("cleanup_protocols(%s, %s, %s)", protocols, reason, force)
         for protocol in protocols:
             if force:
