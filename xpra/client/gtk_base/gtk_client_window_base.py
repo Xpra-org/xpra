@@ -2074,11 +2074,15 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         if keyname.startswith("U+") and not UNICODE_KEYNAMES:
             #workaround for MS Windows, try harder to find a valid key
             #see ticket #3417
-            keymap = Gdk.Keymap.get_default()
+            if hasattr(gdk, keymap_get_default):
+                # pygtk
+                keymap = gdk.keymap_get_default()
+            else:
+                keymap = gdk.Keymap.get_default()
             r = keymap.get_entries_for_keycode(event.hardware_keycode)
             if r[0]:
                 for kc in r[2]:
-                    keyname = Gdk.keyval_name(kc)
+                    keyname = gdk.keyval_name(kc)
                     if not keyname.startswith("U+"):
                         break
         key_event = GTKKeyEvent()
@@ -2094,7 +2098,7 @@ class GTKClientWindowBase(ClientWindowBase, gtk.Window):
         except UnicodeDecodeError as e:
             keylog("parse_key_event(%s, %s)", event, pressed, exc_info=True)
             try:
-                codepoint = Gdk.keyval_to_unicode(keyval)
+                codepoint = gdk.keyval_to_unicode(keyval)
                 key_event.string = chr(codepoint)
             except ValueError as e:
                 if first_time("key-%s-%s" % (keycode, keyname)):
