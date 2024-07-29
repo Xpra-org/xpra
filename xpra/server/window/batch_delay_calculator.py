@@ -16,7 +16,7 @@ from xpra.log import Logger
 log = Logger("server", "stats")
 
 
-def get_low_limit(mmap_enabled, window_dimensions):
+def get_low_limit(mmap_enabled: bool, window_dimensions: tuple[int, int]) -> int:
     # the number of pixels which can be considered 'low' in terms of backlog.
     # Generally, just one full frame, (more with mmap because it is so fast)
     low_limit = 1024 * 1024
@@ -29,9 +29,10 @@ def get_low_limit(mmap_enabled, window_dimensions):
     return low_limit
 
 
-def calculate_batch_delay(wid, window_dimensions,
-                          has_focus, other_is_fullscreen, other_is_maximized, is_OR,
-                          soft_expired, batch, global_statistics, statistics, bandwidth_limit, jitter):
+def calculate_batch_delay(wid: int, window_dimensions: tuple[int, int],
+                          has_focus: bool, other_is_fullscreen: bool, other_is_maximized: bool, is_OR: bool,
+                          soft_expired: int, batch, global_statistics, statistics,
+                          bandwidth_limit: int, jitter: int) -> None:
     """
         Calculates a new batch delay.
         We first gather some statistics,
@@ -49,7 +50,7 @@ def calculate_batch_delay(wid, window_dimensions,
     # damage pixels waiting in the packet queue: (extract data for our window id only)
     time_values = global_statistics.get_damage_pixels(wid)
 
-    def mayaddfac(metric, info, factor, weight):
+    def mayaddfac(metric: str, info: dict, factor: float, weight: float) -> None:
         if weight > 0.01:
             factors.append((metric, info, factor, weight))
 
@@ -75,7 +76,7 @@ def calculate_batch_delay(wid, window_dimensions,
     update_batch_delay(batch, factors, min_delay)
 
 
-def update_batch_delay(batch, factors, min_delay=0):
+def update_batch_delay(batch, factors: list[tuple[str, dict, float, float]], min_delay=0) -> None:
     """
         Given a list of factors of the form:
         [(description, factor, weight)]
@@ -125,7 +126,9 @@ def update_batch_delay(batch, factors, min_delay=0):
     batch.factors = valid_factors
 
 
-def get_target_speed(window_dimensions, batch, global_statistics, statistics, bandwidth_limit, min_speed, speed_data):
+def get_target_speed(window_dimensions: tuple[int, int], batch,
+                     global_statistics, statistics, bandwidth_limit: int,
+                     min_speed: int, speed_data) -> tuple[dict[str, Any], int, int]:
     low_limit = get_low_limit(global_statistics.mmap_size > 0, window_dimensions)
     # ***********************************************************
     # encoding speed:
@@ -242,12 +245,12 @@ def get_target_speed(window_dimensions, batch, global_statistics, statistics, ba
             "congestion": congestion_s,
         },
     }
-    return info, int(speed), max_speed
+    return info, round(speed), round(max_speed)
 
 
-def get_target_quality(window_dimensions, batch,
+def get_target_quality(window_dimensions: tuple[int, int], batch,
                        global_statistics, statistics, bandwidth_limit,
-                       min_quality, min_speed):
+                       min_quality: int, min_speed: int) -> tuple[dict[str, Any], int]:
     low_limit = get_low_limit(global_statistics.mmap_size > 0, window_dimensions)
     # ***********************************************************
     # quality:
