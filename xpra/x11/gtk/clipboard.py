@@ -557,8 +557,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         assert len(parts) == 2
         # selection = parts[0]        # ie: PRIMARY
         target = parts[1]  # ie: VALUE
-        dtype = ""
-        dformat = 8
         try:
             with xsync:
                 dtype, dformat = X11Window.GetWindowPropertyType(self.xid, event.atom, True)

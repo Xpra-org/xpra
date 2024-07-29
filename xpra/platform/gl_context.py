@@ -10,7 +10,7 @@ from xpra.platform import platform_import
 
 
 class NOGLContext:
-    def __init__(self, alpha=False):
+    def __init__(self, _alpha=False):
         raise NotImplementedError()
 
 

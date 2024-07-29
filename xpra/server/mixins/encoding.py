@@ -187,7 +187,6 @@ class EncodingServer(StubServerMixin):
         # Pithon Imaging Library:
         enc_pillow = get_codec("enc_pillow")
         log("enc_pillow=%s", enc_pillow)
-        pil_encs = ()
         if enc_pillow:
             pil_encs = enc_pillow.get_encodings()
             log("pillow encodings: %s", pil_encs)

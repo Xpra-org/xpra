@@ -279,6 +279,7 @@ class DisplayClient(StubClientMixin):
             maxh = max(root_h, server_h)
         except (TypeError, ValueError):
             pass
+        # noinspection PyUnreachableCode
         if maxw <= 0 or maxh <= 0 or maxw >= 32768 or maxh >= 32768:
             message = "invalid maximum desktop size: %ix%i" % (maxw, maxh)
             log(message)
