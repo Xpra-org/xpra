@@ -22,6 +22,7 @@ Provides:		%{python3}-pytools = %{version}-%{release}
 BuildArch:      noarch
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
+BuildRequires:  %{python3}-pip
 BuildRequires:  pyproject-rpm-macros
 
 %description
