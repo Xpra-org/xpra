@@ -157,7 +157,7 @@ def validate_backend() -> None:
         else:
             test_messages.append(message[:block_size])
         for m in test_messages:
-            ev = enc.encrypt(m)
+            ev = enc.update(m)
             evs = hexstr(ev)
             log(" encrypted(%s)=%s", m, evs)
             dv = dec.update(ev)
