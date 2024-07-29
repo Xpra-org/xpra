@@ -96,6 +96,7 @@ cdef inline void check(avifResult r, message: str):
 
 
 def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
+    assert coding == "avif"
     options = typedict(options or {})
     pixel_format = image.get_pixel_format()
     if pixel_format not in INPUT_PIXEL_FORMATS:
@@ -197,10 +198,13 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
 
 def selftest(full=False) -> None:
     #fake empty buffer:
+    from xpra.util.str_fn import hexstr
     from xpra.codecs.checks import make_test_image
-    w, h = (24, 16)
+    w, h = (32, 32)
     for has_alpha in (True, False):
-        img = make_test_image("BGR%s" % ["X", "A"][has_alpha], w, h)
+        rgb_format = "BGR%s" % ["X", "A"][has_alpha]
+        img = make_test_image(rgb_format, w, h)
         for q in (10, 50, 90):
-            r = encode("webp", img, {"quality" : q, "speed" : 50, "alpha" : has_alpha})
+            r = encode("avif", img, {"quality" : q, "speed" : 50, "alpha" : has_alpha})
             assert len(r)>0
+            log(f"avif {rgb_format} @ {q}%%: " + hexstr(r[1].data))

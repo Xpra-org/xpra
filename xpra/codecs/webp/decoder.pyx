@@ -321,22 +321,19 @@ def decompress_to_yuv(data: bytes, options: typedict, has_alpha=False) -> WebpIm
 
 
 def selftest(full=False) -> None:
-    w, h = (24, 16)       #hard coded size of test data
-    for has_alpha, hexdata in (
-        (True, "52494646c001000057454250565038580a000000100000001700000f0000414c504881010000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000056503820180000003401009d012a1800100000004c00000f040000fef81f8000"),
-        (False, "52494646c001000057454250565038580a000000100000001700000f0000414c50488101000010ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000056503820180000003401009d012a1800100000004c00000f040000fef81f8000"),
-    ):
-        import binascii
-        bdata = binascii.unhexlify(hexdata)
+    from xpra.codecs.checks import TEST_PICTURES   # pylint: disable=import-outside-toplevel
+    for size, samples in TEST_PICTURES["webp"].items():
+        w, h = size
+        for bdata in samples:
+            for alpha in (True, False):
+                rgb_format = "BGRA" if alpha else "BGRX"
+                img = decompress_to_rgb(rgb_format, bdata, alpha)
+                assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format().find("A")>=0) == alpha
+                assert len(img.get_pixels())>0
+                img.free()
 
-        img = decompress_to_rgb("BGRA" if has_alpha else "BGRX", bdata, has_alpha)
-        assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format().find("A")>=0) == has_alpha
-        assert len(img.get_pixels())>0
-        img.free()
-        #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))
-
-        img = decompress_to_yuv(bdata, typedict(), False)
-        assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format() == "YUV420P")
-        assert len(img.get_pixels())>0
-        img.free()
-        #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))
+            img = decompress_to_yuv(bdata, typedict(), False)
+            assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format() == "YUV420P")
+            assert len(img.get_pixels())>0
+            img.free()
+            #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

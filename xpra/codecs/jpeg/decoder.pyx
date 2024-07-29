@@ -335,20 +335,25 @@ def decompress_to_rgb(rgb_format: str, data: bytes, unsigned long alpha_offset=0
 
 def selftest(full=False) -> None:
     log("jpeg selftest")
-    import binascii
-    data = binascii.unhexlify("ffd8ffe000104a46494600010101004800480000fffe00134372656174656420776974682047494d50ffdb0043000302020302020303030304030304050805050404050a070706080c0a0c0c0b0a0b0b0d0e12100d0e110e0b0b1016101113141515150c0f171816141812141514ffdb00430103040405040509050509140d0b0d1414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414141414ffc20011080010001003011100021101031101ffc4001500010100000000000000000000000000000008ffc40014010100000000000000000000000000000000ffda000c03010002100310000001aa4007ffc40014100100000000000000000000000000000020ffda00080101000105021fffc40014110100000000000000000000000000000020ffda0008010301013f011fffc40014110100000000000000000000000000000020ffda0008010201013f011fffc40014100100000000000000000000000000000020ffda0008010100063f021fffc40014100100000000000000000000000000000020ffda0008010100013f211fffda000c03010002000300000010924fffc40014110100000000000000000000000000000020ffda0008010301013f101fffc40014110100000000000000000000000000000020ffda0008010201013f101fffc40014100100000000000000000000000000000020ffda0008010100013f101fffd9")
+
     def test_rgbx(bdata):
         return decompress_to_rgb("RGBX", bdata)
+
     def test_yuv(bdata):
         return decompress_to_yuv(bdata, typedict())
-    for fn in (test_yuv, test_rgbx):
-        img = fn(data)
-        log("%s(%i bytes)=%s", fn, len(data), img)
-        if full:
-            try:
-                v = fn(data[:len(data)//2])
-                assert v is not None
-            except:
-                pass
-            else:
-                raise RuntimeError("should not be able to decompress incomplete data, but got %s" % v)
+
+    from xpra.codecs.checks import TEST_PICTURES
+    for size, samples in TEST_PICTURES["jpeg"].items():
+        w, h = size
+        for data in samples:
+            for fn in (test_yuv, test_rgbx):
+                img = fn(data)
+                log("%s(%i bytes)=%s", fn, len(data), img)
+                if full:
+                    try:
+                        v = fn(data[:len(data)//2])
+                        assert v is not None
+                    except:
+                        pass
+                    else:
+                        raise RuntimeError("should not be able to decompress incomplete data, but got %s" % v)
