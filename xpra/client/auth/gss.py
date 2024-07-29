@@ -22,8 +22,7 @@ class Handler(AuthenticationHandler):
     def __repr__(self):
         return "gss"
 
-    @staticmethod
-    def get_digest() -> str:
+    def get_digest(self) -> str:
         return "gss"
 
     def handle(self, challenge: bytes, digest: str, prompt: str):  # pylint: disable=unused-argument

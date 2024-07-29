@@ -25,8 +25,7 @@ class Handler(AuthenticationHandler):
     def __repr__(self):
         return "u2f"
 
-    @staticmethod
-    def get_digest() -> str:
+    def get_digest(self) -> str:
         return "u2f"
 
     def handle(self, challenge: bytes, digest: str, prompt: str) -> (

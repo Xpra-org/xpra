@@ -12,8 +12,7 @@ class Handler(AuthenticationHandler):
     def __repr__(self):
         return "uri"
 
-    @staticmethod
-    def get_digest() -> str:
+    def get_digest(self) -> str:
         return ""
 
     def handle(self, challenge: bytes, digest: str, prompt: str) -> str:  # pylint: disable=unused-argument
