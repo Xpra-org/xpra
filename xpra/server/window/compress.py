@@ -35,7 +35,7 @@ from xpra.codecs.constants import (
     LOSSY_PIXEL_FORMATS, PREFERRED_REFRESH_ENCODING_ORDER,
     PSEUDO_LOSSLESS_ENCODINGS, TRUE_LOSSLESS_ENCODINGS,
 )
-from xpra.net.compression import use, Compressed
+from xpra.net.compression import use, Compressed, LevelCompressed
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -96,6 +96,8 @@ SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
 FORCE_PILLOW = envbool("XPRA_FORCE_PILLOW", False)
 HARDCODED_ENCODING: str = os.environ.get("XPRA_HARDCODED_ENCODING", "")
 
+SCREEN_UPDATES_DIRECTORY = os.environ.get("SCREEN_UPDATES_DIRECTORY", "")
+
 MAX_SEQUENCE = 2**64
 
 
@@ -134,6 +136,12 @@ ui_context: ContextManager = nullcontext()
 if POSIX and not OSX and not envbool("XPRA_NOX11", False) and os.environ.get("GDK_BACKEND", "x11") == "x11":
     from xpra.gtk.error import xlog
     ui_context = xlog
+
+
+if SCREEN_UPDATES_DIRECTORY:
+    SCREEN_UPDATES_DIRECTORY = os.path.abspath(SCREEN_UPDATES_DIRECTORY)
+    if not os.path.exists(SCREEN_UPDATES_DIRECTORY):
+        os.mkdir(SCREEN_UPDATES_DIRECTORY)
 
 
 @dataclass
@@ -245,6 +253,8 @@ class WindowSource(WindowIconSource):
         self.last_auto_refresh_message = None
         self.video_helper = video_helper
         self.cuda_device_context = cuda_device_context
+        self.screen_updates_directory = ""
+        self.screen_updates_index = 0
 
         self.is_idle: bool = False
         self.is_OR: bool = window.is_OR()
@@ -2459,7 +2469,54 @@ class WindowSource(WindowIconSource):
             damage_in_latency = now-process_damage_time
             stats.damage_in_latency.append((now, width*height, actual_batch_delay, damage_in_latency))
         stats.last_packet_time = monotonic()
+        if SCREEN_UPDATES_DIRECTORY:
+            self.save_update(packet, damage_time)
         self.queue_packet(packet, self.wid, pixcount, client_options.get("flush", 0) > 0)
+
+    def save_update(self, packet: tuple, damage_time: float) -> None:
+        import json
+        from xpra.util.str_fn import memoryview_to_bytes
+        x, y, w, h, coding, data, damage_packet_sequence, stride, client_options = packet[2:11]
+        if damage_time == 0:
+            compresslog.warn(f"not saving packet for {damage_time=}: {coding}, {client_options}")
+            return
+        wid_dir = os.path.join(SCREEN_UPDATES_DIRECTORY, str(self.wid))
+        if not os.path.exists(wid_dir):
+            os.mkdir(wid_dir)
+        dirname = os.path.join(wid_dir, str(round(damage_time*1000)))
+        if self.screen_updates_directory != dirname:
+            os.mkdir(dirname)
+            self.screen_updates_directory = dirname
+            self.screen_updates_index = 0
+            compresslog(f"saving updates to {dirname!r}")
+        index_info = {
+            "encoding": coding,
+            "x": x,
+            "y": y,
+            "w": w,
+            "h": h,
+            "sequence": damage_packet_sequence,
+            "stride": stride,
+            "options": client_options,
+        }
+        if coding == "scroll":
+            # special case because scroll data is not binary!
+            data = json.dumps(data.data).encode("latin1")
+        elif isinstance(data, Compressed):
+            if isinstance(data, LevelCompressed):
+                index_info["level"] = data.level
+                index_info["compressed"] = data.algorithm
+            data = memoryview_to_bytes(data.data)
+
+        index = self.screen_updates_index
+        index_file = os.path.join(self.screen_updates_directory, f"{index}.info")
+        with open(index_file, "w") as f:
+            f.write(json.dumps(index_info))
+        update_file = os.path.join(self.screen_updates_directory, f"{index}.{coding}")
+        with open(update_file, "wb") as f:
+            f.write(data)
+        compresslog.warn(f"saved {coding}: {len(data)} bytes to {update_file}")
+        self.screen_updates_index += 1
 
     def networksend_congestion_event(self, source, late_pct: int, cur_send_speed: int = 0) -> None:
         gs = self.global_statistics
