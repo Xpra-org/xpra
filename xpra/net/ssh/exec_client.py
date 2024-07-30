@@ -198,7 +198,7 @@ def connect_to(display_desc, opts=None, debug_cb: Callable = noop, ssh_fail_cb=c
     conn.process = (child, "ssh", cmd)
     if kwargs.get("stderr") == PIPE:
 
-        start_thread(stderr_reader, "ssh-stderr-reader", daemon=True)
+        start_thread(stderr_reader, "ssh-stderr-reader", args=(child,), daemon=True)
     return conn
 
 
