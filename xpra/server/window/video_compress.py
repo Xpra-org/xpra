@@ -2065,7 +2065,7 @@ class WindowVideoSource(WindowSource):
 
     def may_use_scrolling(self, image: ImageWrapper, options: typedict) -> bool:
         scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_type=%s, non-video=%s",
-                  image, options, self.supports_scrolling, image.has_pixels,
+                  image, options, self.supports_scrolling, image.has_pixels(),
                   self.content_type, self.non_video_encodings)
         if self._mmap_size > 0 and self.encoding != "scroll":
             scrolllog("no scrolling: using mmap")
