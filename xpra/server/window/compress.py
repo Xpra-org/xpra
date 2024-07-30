@@ -2646,7 +2646,8 @@ class WindowSource(WindowIconSource):
         if self.suspended:
             return nodata("suspended")
         start = monotonic()
-        if SCROLL_ALL and self.may_use_scrolling(image, options):
+        tdoptions = typedict(options)
+        if SCROLL_ALL and self.may_use_scrolling(image, tdoptions):
             return nodata("used scrolling instead")
         end = monotonic()
         log("scroll detection took %ims", 1000*(end-start))
@@ -2671,7 +2672,6 @@ class WindowSource(WindowIconSource):
             if self.is_cancelled(sequence):
                 return nodata("cancelled")
             raise RuntimeError(f"BUG: no encoder found for {coding!r} with options={options}")
-        tdoptions = typedict(options)
         try:
             ret = encoder(coding, image, tdoptions)
         except (TypeError, RuntimeError) as e:
