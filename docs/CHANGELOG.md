@@ -12,12 +12,14 @@
     * [Fedora can build html documentation again](https://github.com/Xpra-org/xpra/commit/4533efa1ffe7cc0d52cc4063b9b1da3a3478308a)
     * [always build the latest dummy DEB](https://github.com/Xpra-org/xpra/commit/1f7f9e3a8b3418e87b89e5c863a92b058f2a6baf)
     * [MS Windows multi-page printing](https://github.com/Xpra-org/xpra/commit/f3c0e92d3b5b85b7c05d898ad51ed7d24af6ece3)
+    * [run CI builds with Python 3.6 and 3.12](https://github.com/Xpra-org/xpra/commit/4af53ffc9c20d5afd90e3bc8e4e14f0be4bbbe8b), [this requires Ubuntu 20.04](https://github.com/Xpra-org/xpra/commit/6ed0f4fce7833fb4a45c0960ce3c24bfe8d84385)
 * Major:
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
     * [honour `ssh` option when re-connecting](https://github.com/Xpra-org/xpra/commit/45bad59e6255f03087b8dbd51dfd2380472f6f20)
     * [missing http headers caused html5 client caching](https://github.com/Xpra-org/xpra/commit/bb8db97afcbd79ca8924728a674736026201d80f)
     * [mDNS browser handling for binary `text` records from zeroconf](https://github.com/Xpra-org/xpra/commit/14bd95980ce63e08aa6f2532b0a495f541caa01b)
     * [`sync-xvfb`: always free images with an error context](https://github.com/Xpra-org/xpra/commit/85547dac5f0d7fabd361db6d84964c27cba5b6bc)
+    * [better compatibility with all builds of python cryptography](https://github.com/Xpra-org/xpra/commit/c91372a566ce46b82e1f406eba5a10ce0b092fb5)
 * Encodings:
     * avoid [slow modules](https://github.com/Xpra-org/xpra/commit/7a16475b73ebd8398e3c1b44561647a9d7877933) and [slow encoders](https://github.com/Xpra-org/xpra/commit/38a7b3daaa6b908d7faf93ab2fa31eed3cabc104)
     * [reduce how often quality swings cause scaling changes](https://github.com/Xpra-org/xpra/commit/7951a696e3afb79cd8b60394561eebaf379453b4)
@@ -35,6 +37,7 @@
     * [expose QUIC sockets via mDNS](https://github.com/Xpra-org/xpra/commit/c58425cd5512a669da487414483f045943876f27)
     * [only enable gtk error context with x11 Gdk backend](https://github.com/Xpra-org/xpra/commit/161acb245b65e71dae6f179bcbfe0ef8ced230d2)
 * Cosmetic:
+    * [validate application's opaque-region](https://github.com/Xpra-org/xpra/commit/6749cc91f8853ee03e406d6c0cec763c61d13274)
     * [slow CI test times out](https://github.com/Xpra-org/xpra/commit/6dff61f8dba6a1b5f9a59c0cd761cfe9674d5f14), [ignore it](https://github.com/Xpra-org/xpra/commit/0e0c24e679a21f0a63cf727fab6175ab6f5b1cc3)
     * only import modules actually needed: [notifications](https://github.com/Xpra-org/xpra/commit/ac5c314750104b879c5d088dd837ce21d14f1b73), [windows](https://github.com/Xpra-org/xpra/commit/7cb5f913131ccf8ac35d1dc42da5b4498060ebfe), [mmap](https://github.com/Xpra-org/xpra/commit/e0a873ccddcc519196d842f44c70dc4908e1f8d2)
     * [`desktop-scaling=no` parsing warnings](https://github.com/Xpra-org/xpra/commit/fb2f05cf9fba4919ede17831f125612b963474bb)

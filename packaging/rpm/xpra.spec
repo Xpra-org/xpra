@@ -775,7 +775,7 @@ fi
 
 
 %changelog
-* Sat Jul 27 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Tue Jul 30 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Encodings:
    `mmap` race condition
    validate openh264 colorspace
@@ -786,12 +786,14 @@ fi
    force rebuild of dummy driver RPMs
    Fedora can build html documentation again
    MS Windows multi-page printing
+   run CI builds with Python 3.6 and 3.12, this requires Ubuntu 20.04
 - Major:
    MS Windows PDF printing crash, library mismatch
    honour `ssh` option when re-connecting
    missing http headers caused html5 client caching
    mDNS browser handling for binary `text` records from zeroconf
    `sync-xvfb`: always free images with an error context
+   better compatibility with all builds of python cryptography
 - Encodings:
    avoid slow modules and slow encoders
    reduce how often quality swings cause scaling changes
@@ -807,6 +809,7 @@ fi
    RFB connections cannot be upgraded to `http` or `ws`
    make it possible to skip NM api
 - Cosmetic:
+   validate application's opaque-region
    slow CI test times out, ignore it
    only import modules actually needed: notifications, windows, mmap
    `desktop-scaling=no` parsing warnings
