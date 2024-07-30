@@ -5,8 +5,9 @@ xpra (6.1.1-1) UNRELEASED; urgency=low
     only build xpra from the 6.1.x branch
     pycuda 2024.1.1
     MS Windows multi-page printing
+    MS Windows console detection
   * Encodings:
-    disable `scroll` encoding
+    fix `scroll` encoding
     greenish tint with subsampled webp screen updates
     rgb colors are always full range
     Pillow encoder quality is lower
@@ -15,8 +16,13 @@ xpra (6.1.1-1) UNRELEASED; urgency=low
     keyboard support should not require `dbus`
   * Network:
     expose quic / webtransport sockets via mdns
+    `gss` authentication module parsing error
+    better compatibility with all builds of python cryptography
   * Cosmetic / preventive:
-    slow CI test times out
+    validate application's opaque-region property
+    slow CI test times out, ignore failures
+    don't run sonarqube on this branch
+    tag correct branch in build github workflow
     only import modules actually needed: notifications, windows, logger, mmap
     `desktop-scaling=no` parsing warnings
     window headerbar widget sizes
@@ -24,7 +30,7 @@ xpra (6.1.1-1) UNRELEASED; urgency=low
     unused invalid headers
     outdated comment
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 27 Jul 2024 15:57:46 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 30 Jul 2024 18:38:45 +0700
 
 xpra (6.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

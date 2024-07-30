@@ -883,15 +883,16 @@ fi
 
 
 %changelog
-* Sat Jul 27 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
+* Tue Jul 30 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
 - Platforms, build and packaging:
    RHEL 8.10 pygobject3 packaging update
    always build the latest X11 dummy driver version
    only build xpra from the 6.1.x branch
    pycuda 2024.1.1
    MS Windows multi-page printing
+   MS Windows console detection
 - Encodings:
-   disable `scroll` encoding
+   fix `scroll` encoding
    greenish tint with subsampled webp screen updates
    rgb colors are always full range
    Pillow encoder quality is lower
@@ -900,8 +901,13 @@ fi
    keyboard support should not require `dbus`
 - Network:
    expose quic / webtransport sockets via mdns
+   `gss` authentication module parsing error
+   better compatibility with all builds of python cryptography
 - Cosmetic / preventive:
-   slow CI test times out
+   validate application's opaque-region property
+   slow CI test times out, ignore failures
+   don't run sonarqube on this branch
+   tag correct branch in build github workflow
    only import modules actually needed: notifications, windows, logger, mmap
    `desktop-scaling=no` parsing warnings
    window headerbar widget sizes
