@@ -694,7 +694,8 @@ class CoreX11WindowModel(WindowModelStub):
         v: Sequence[int] = tuple(self.prop_get("_NET_WM_OPAQUE_REGION", ["u32"]) or [])
         if OPAQUE_REGION and len(v) % 4 == 0:
             while v:
-                rectangles.append(v[:4])
+                rvalues = tuple((coord if coord < 2 ** 32 else -1) for coord in v[:4])
+                rectangles.append(rvalues)
                 v = v[4:]
         metalog("_NET_WM_OPAQUE_REGION(%s)=%s (OPAQUE_REGION=%s)", v, rectangles, OPAQUE_REGION)
         self._updateprop("opaque-region", tuple(rectangles))
