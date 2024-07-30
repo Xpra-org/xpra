@@ -147,7 +147,7 @@ class Compressed:
 
     def __init__(self, datatype: str, data: SizedBuffer, can_inline=False):
         if not data:
-            raise ValueError("missing compressed data")
+            raise ValueError(f"missing compressed data, got {data!r} ({type(data)})")
         self.datatype = datatype
         self.data = data
         self.can_inline = can_inline
