@@ -888,7 +888,7 @@ fi
    RHEL 8.10 pygobject3 packaging update
    always build the latest X11 dummy driver version
    only build xpra from the 6.1.x branch
-   pycuda 2024.1.1
+   pycuda 2024.1.2
    MS Windows multi-page printing
    MS Windows console detection
 - Encodings:
@@ -903,6 +903,7 @@ fi
    expose quic / webtransport sockets via mdns
    `gss` authentication module parsing error
    better compatibility with all builds of python cryptography
+   read ssh subcommand's stderr
 - Cosmetic / preventive:
    validate application's opaque-region property
    slow CI test times out, ignore failures
@@ -914,6 +915,7 @@ fi
    incorrect exception debug message
    unused invalid headers
    outdated comment
+   debug logging shows function
 
 * Thu Jul 18 2024 Antoine Martin <antoine@xpra.org> 6.1-10
 - Platforms, build and packaging:

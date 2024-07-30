@@ -5,7 +5,7 @@
     * [RHEL 8.10 pygobject3 packaging update](https://github.com/Xpra-org/xpra/commit/75fe7ad62f1a176f62e82529b1f9a5aad3273eae)
     * [always build the latest X11 dummy driver version](https://github.com/Xpra-org/xpra/commit/c8118c75f592866d2161ff37e6993002c5a0288e)
     * [only build xpra from the 6.1.x branch](https://github.com/Xpra-org/xpra/commit/00919772d0813b0d2e514598c7263dfa9fe4b7e5)
-    * [pycuda 2024.1.1](https://github.com/Xpra-org/xpra/commit/7aee40a1d298f6468829564f23bf777bce10376a)
+    * [pycuda 2024.1.2](https://github.com/Xpra-org/xpra/commit/640948b2edd7e61dddaaca4cb15899c719153a80)
     * [MS Windows multi-page printing](https://github.com/Xpra-org/xpra/commit/a34c5df6caa3ab64ebb21cf19c18cea6c188dc81)
     * [MS Windows console detection](https://github.com/Xpra-org/xpra/commit/e7d02983117eabd2c13f6402ce8af845c0af4183)
 * Encodings:
@@ -20,6 +20,7 @@
     * [expose quic / webtransport sockets via mdns](https://github.com/Xpra-org/xpra/commit/8e86a3ee07d4f19e91a8ba635dae561942430d7a)
     * [`gss` authentication module parsing error](https://github.com/Xpra-org/xpra/commit/f7b9859a2b5701a0bf2f214caade026c21c80727)
     * [better compatibility with all builds of python cryptography](https://github.com/Xpra-org/xpra/commit/daba177e8c842c52bce91057f53d869180e6c603)
+    * [read ssh subcommand's stderr](https://github.com/Xpra-org/xpra/commit/0c5524de1f1c7d855905f2d888000cfb226b1b77)
 * Cosmetic / preventive:
     * [validate application's opaque-region property](https://github.com/Xpra-org/xpra/commit/d625380dbeee833b99ba7c0d1968367b77d2d6cd)
     * [slow CI test times out](https://github.com/Xpra-org/xpra/commit/0109886175f029017974db9a74b0aec025cdd373), [ignore failures](https://github.com/Xpra-org/xpra/commit/c87d6bbbded21cb45ccac2207fdf6a442d4dce19)
@@ -31,6 +32,7 @@
     * [incorrect exception debug message](https://github.com/Xpra-org/xpra/commit/d8457b97b877aa68160655f8e33ec88d59e80658)
     * [unused invalid headers](https://github.com/Xpra-org/xpra/commit/03f96c686dae9bc634f8cac87debd53704078b21)
     * [outdated comment](https://github.com/Xpra-org/xpra/commit/540a614ad599d9162490ed5ba876fe0a74a8863f)
+    * [debug logging shows function](https://github.com/Xpra-org/xpra/commit/4a3fa9fa6626f1ad7103bfb2bdf0cdd2bebabb1e)
 
 ## [6.1] 2024-07-18
 * Platforms, build and packaging:
