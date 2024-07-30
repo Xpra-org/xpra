@@ -1390,8 +1390,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # noinspection PyArgumentList
         r = Region()
         for rect in rectangles:
-            rect = RectangleInt(*self.srect(*rect))
-            r.union(Region(rect))
+            # "opaque-region", aka "_NET_WM_OPAQUE_REGION" is meant to use unsigned values
+            # but some applications use 0xffffffff, so we have to validate it:
+            rvalues = tuple((int(v) if v < 2**32 else -1) for v in rect)
+            rectint = RectangleInt(*self.srect(*rvalues))
+            r.union(Region(rectint))
 
         def do_set_region():
             log("set_opaque_region(%s)", r)
