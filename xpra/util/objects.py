@@ -172,6 +172,9 @@ class typedict(dict):
     def intget(self, k: str, default: int = 0) -> int:
         return self.conv_get(k, default, int)
 
+    def floatget(self, k: str, default: float = 0.0) -> float:
+        return self.conv_get(k, default, float)
+
     def boolget(self, k: str, default: bool = False) -> bool:
         return self.conv_get(k, default, bool)
 

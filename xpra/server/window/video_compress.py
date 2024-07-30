@@ -2228,6 +2228,8 @@ class WindowVideoSource(WindowSource):
                                        f"by {scroll} lines from {y}+{line} (window height is {wh})")
                 scrolls.append((x, y+line, w, count, 0, scroll))
         del raw_scroll
+        damage_time = options.floatget("damage-time")
+        process_damage_time = options.floatget("process-damage-time")
         # send the scrolls if we have any
         # (zero change scrolls have been removed - so maybe there are none)
         if scrolls:
@@ -2236,7 +2238,7 @@ class WindowVideoSource(WindowSource):
             end = monotonic()
             packet = self.make_draw_packet(x, y, w, h,
                                            coding, LargeStructure(coding, scrolls), 0, client_options, options)
-            self.queue_damage_packet(packet, 0, 0)
+            self.queue_damage_packet(packet, damage_time, process_damage_time)
             compresslog(COMPRESS_SCROLL_FMT,
                         (end-start)*1000.0, w, h, x, y, self.wid, coding,
                         len(scrolls), w*h*4/1024,
@@ -2284,7 +2286,7 @@ class WindowVideoSource(WindowSource):
                 #    log.info("saved scroll y=%i h=%i to %s", sy, sh, filename)
                 packet = self.make_draw_packet(sub.get_target_x(), sub.get_target_y(), outw, outh,
                                                coding, data, outstride, client_options, options)
-                self.queue_damage_packet(packet, 0, 0)
+                self.queue_damage_packet(packet, damage_time, process_damage_time)
                 psize = w*sh*4
                 csize = len(data)
                 compresslog(COMPRESS_FMT,
@@ -2637,12 +2639,13 @@ class WindowVideoSource(WindowSource):
         client_options["flush-encoder"] = True
         videolog("do_flush_video_encoder %s : (%s %s bytes, %s)",
                  flush_data, len(data or ()), type(data), client_options)
+        now = monotonic()
         # warning: 'options' will be missing the "window-size",
         # so we may end up not honouring gravity during window resizing:
         options = typedict()
         packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0,
                                        client_options, options)
-        self.queue_damage_packet(packet, 0, 0)
+        self.queue_damage_packet(packet, now, now)
         # check for more delayed frames since we want to support multiple b-frames:
         if not self.b_frame_flush_timer and client_options.get("delayed", 0) > 0:
             self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)

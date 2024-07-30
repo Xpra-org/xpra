@@ -2676,6 +2676,8 @@ class WindowSource(WindowIconSource):
                 return nodata("cancelled")
             raise RuntimeError(f"BUG: no encoder found for {coding!r} with options={options}")
         tdoptions = typedict(options)
+        tdoptions["damage-time"] = damage_time
+        tdoptions["process-damage-time"] = process_damage_time
         try:
             ret = encoder(coding, image, tdoptions)
         except (TypeError, RuntimeError) as e:
@@ -2703,10 +2705,6 @@ class WindowSource(WindowIconSource):
         if self.send_timetamps:
             client_options["ts"] = image.get_timestamp()
         end = monotonic()
-        if DAMAGE_STATISTICS:
-            client_options['damage_time'] = int(damage_time * 1000)
-            client_options['process_damage_time'] = int(process_damage_time * 1000)
-            client_options['damage_packet_time'] = int(end * 1000)
         compresslog(COMPRESS_FMT,
                     (end-start)*1000.0, outw, outh, x, y, self.wid, coding,
                     100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
