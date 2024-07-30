@@ -23,7 +23,7 @@ class TestCompression(unittest.TestCase):
         for data in (b"hello", memoryview(b"foo")):
             x = clazz("datatype", data)
             assert repr(x)
-            assert len(x)==len(data)
+            assert len(x) == len(data)
         x = clazz("fake", b"foo")
         assert repr(x)
         return x
@@ -43,7 +43,6 @@ class TestCompression(unittest.TestCase):
         else:
             raise Exception("compressible.compress must be overriden")
 
-
     def test_decompress_by_name(self):
         for x in ("foo", "lz4XX", "zli"):
             try:
@@ -54,22 +53,22 @@ class TestCompression(unittest.TestCase):
                 raise Exception(f"{x} is not a valid compression")
 
     def test_compressed_wrapper(self):
-        r = compression.compressed_wrapper("test", b"a"*(compression.MIN_COMPRESS_SIZE+1))
+        r = compression.compressed_wrapper("test", b"a" * max(1, (compression.MIN_COMPRESS_SIZE + 1)))
         if not r.datatype.startswith("raw"):
             raise Exception(f"should not be able to use the wrapper without enabling a compressor, but got {r!r}")
         for x in ("lz4", "brotli", "none"):
             if not compression.use(x):
                 continue
-            kwargs = {x : True}
+            kwargs = {x: True}
             for level in (0, 1, 5, 10):
                 for data in (
-                    b"0"*1024,
-                    b"0"*16,
-                    b"\0",
-                    memoryview(b"hello"),
-                    bytearray(b"hello"),
-                    b"1"*1024*1024*16,
-                    ):
+                        b"0" * 1024,
+                        b"0" * 16,
+                        b"\0",
+                        memoryview(b"hello"),
+                        bytearray(b"hello"),
+                        b"1" * 1024 * 1024 * 16,
+                ):
                     v = compression.compressed_wrapper("test", data, level=level, **kwargs)
                     assert v
                     assert repr(v)
@@ -78,7 +77,7 @@ class TestCompression(unittest.TestCase):
                     try:
                         d = compression.decompress_by_name(v.data, v.algorithm)
                         assert d
-                        if x!="none":
+                        if x != "none":
                             #we can't do none,
                             #because it would be mistaken for "zlib"
                             #(for historical reasons - 'zlib' uses level=0, and 'none' has no level)
@@ -96,23 +95,24 @@ class TestCompression(unittest.TestCase):
             print(f"lz4 test skipped: {e}")
             return
         for t in (
-            b"abc", b"foobar",
-            b"\0"*1000000,
-            ):
+                b"abc", b"foobar",
+                b"\0" * 1000000,
+        ):
             for accel in (0, 1, 5, 9):
                 N = 1
                 for _ in range(N):
                     c1 = compress(t, acceleration=accel)
                 for _ in range(N):
                     c2 = block.compress(t, mode="fast", acceleration=accel)
-                assert c1==c2
+                assert c1 == c2
                 d1 = decompress(c1)
                 d2 = block.decompress(c2)
-                assert d1==d2==t
+                assert d1 == d2 == t
 
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
