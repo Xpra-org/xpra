@@ -1292,8 +1292,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         #gtk can only set a single region!
         r = Region()
         for rect in rectangles:
-            rect = RectangleInt(*self.srect(*rect))
-            r.union(Region(rect))
+            rvalues = tuple((int(v) if v < 2**32 else -1) for v in rect)
+            rectint = RectangleInt(*self.srect(*rvalues))
+            r.union(Region(rectint))
         def do_set_region():
             log("set_opaque_region(%s)", r)
             self.get_window().set_opaque_region(r)
