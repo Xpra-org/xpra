@@ -2124,19 +2124,19 @@ class WindowVideoSource(WindowSource):
         return None
 
     def do_scroll_encode(self, image: ImageWrapper, options: typedict, min_percent: int = 0) -> bool:
-        x = image.get_target_x()
-        y = image.get_target_y()
-        w = image.get_width()
-        h = image.get_height()
-        scroll_data = self.scroll_data
         if options.boolget("scroll"):
             scrolllog("no scrolling: detection has already been used on this image")
             return False
+        w = image.get_width()
+        h = image.get_height()
         if w >= 32000 or h >= 32000:
             scrolllog("no scrolling: the image is too large, %ix%i", w, h)
             return False
+        start = monotonic()
+        x = image.get_target_x()
+        y = image.get_target_y()
+        scroll_data = self.scroll_data
         try:
-            start = monotonic()
             if not scroll_data:
                 from xpra.server.window.motion import ScrollData
                 scroll_data = ScrollData()
