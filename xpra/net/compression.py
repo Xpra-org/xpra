@@ -6,7 +6,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Sized
 from dataclasses import dataclass
 
 from xpra.util.env import envbool
@@ -145,8 +145,9 @@ def get_compressor(name) -> Callable:
 class Compressed:
     __slots__ = ("datatype", "data", "can_inline")
 
-    def __init__(self, datatype, data, can_inline=False):
-        assert data is not None, "compressed data cannot be set to None"
+    def __init__(self, datatype: str, data: SizedBuffer, can_inline=False):
+        if not data:
+            raise ValueError("missing compressed data")
         self.datatype = datatype
         self.data = data
         self.can_inline = can_inline
@@ -161,7 +162,7 @@ class Compressed:
 class LevelCompressed(Compressed):
     __slots__ = ("level", "algorithm")
 
-    def __init__(self, datatype, data, level, algo, can_inline):
+    def __init__(self, datatype: str, data: SizedBuffer, level: int, algo: str, can_inline: bool):
         super().__init__(datatype, data, can_inline)
         self.level = level
         self.algorithm = algo
@@ -173,7 +174,7 @@ class LevelCompressed(Compressed):
 class LargeStructure:
     __slots__ = ("datatype", "data")
 
-    def __init__(self, datatype, data):
+    def __init__(self, datatype: str, data: Sized):
         self.datatype = datatype
         self.data = data
 

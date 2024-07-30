@@ -226,7 +226,7 @@ class WindowVideoSource(WindowSource):
         self._video_encoder = None
         self._last_pipeline_check = 0
 
-        def add(enc, encode_fn):
+        def add(enc, encode_fn) -> None:
             self.insert_encoder(enc, enc, encode_fn)
         if has_codec("csc_libyuv"):
             # need libyuv to be able to handle 'grayscale' video:
@@ -304,7 +304,7 @@ class WindowVideoSource(WindowSource):
         info["video-max-size"] = self.video_max_size
         info["stream-mode"] = self.stream_mode
 
-        def addcinfo(prefix, x):
+        def addcinfo(prefix, x) -> None:
             if not x:
                 return
             with log.trap_error(f"Error collecting codec information from {x}"):
@@ -506,7 +506,7 @@ class WindowVideoSource(WindowSource):
             self.full_csc_modes, self.video_subregion.supported,
             self.non_video_encodings, self.edge_encoding, self.scaling_control)
 
-    def get_best_encoding_impl_default(self) -> Callable:
+    def get_best_encoding_impl_default(self) -> Callable[..., str]:
         log("get_best_encoding_impl_default() window_type=%s, encoding=%s", self.window_type, self.encoding)
         if self.is_tray:
             log("using default for tray")
@@ -524,12 +524,12 @@ class WindowVideoSource(WindowSource):
         log("using default best encoding")
         return super().get_best_encoding_impl_default()
 
-    def get_best_encoding_video(self, w: int, h: int, options, current_encoding : str) -> str:
+    def get_best_encoding_video(self, w: int, h: int, options, current_encoding: str) -> str:
         """
             decide whether we send a full window update using the video encoder,
             or if a separate small region(s) is a better choice
         """
-        def nonvideo(qdiff=0, info=""):
+        def nonvideo(qdiff=0, info="") -> str:
             if qdiff:
                 quality = options.get("quality", self._current_quality) + qdiff
                 options["quality"] = max(self._fixed_min_quality, min(self._fixed_max_quality, quality))
@@ -728,7 +728,7 @@ class WindowVideoSource(WindowSource):
         super().update_window_dimensions(ww, wh)
         self.stop_gstreamer_pipeline()
 
-    def cancel_damage(self, limit: int = 0):
+    def cancel_damage(self, limit: int = 0) -> None:
         self.cancel_encode_from_queue()
         self.free_encode_queue_images()
         vsr = self.video_subregion
@@ -846,7 +846,7 @@ class WindowVideoSource(WindowSource):
         # (if any: keep track if we actually added anything)
         return sum(sarr(r) for r in region.subtract_rect(vr))
 
-    def matches_video_subregion(self, width: int, height: int):
+    def matches_video_subregion(self, width: int, height: int) -> rectangle | None:
         vr = self.video_subregion.rectangle
         if not vr:
             return None
@@ -875,7 +875,7 @@ class WindowVideoSource(WindowSource):
             return False
         return True
 
-    def send_regions(self, damage_time: float, regions: Sequence[rectangle], coding: str, options: dict):
+    def send_regions(self, damage_time: float, regions: Sequence[rectangle], coding: str, options: dict) -> None:
         """
             Overridden here so that we can try to intercept the `video_subregion` if one exists.
         """
@@ -883,7 +883,7 @@ class WindowVideoSource(WindowSource):
         # overrides the default method for finding the encoding of a region,
         # so we can ensure we don't use the video encoder when we don't want to:
         def send_nonvideo(regions=regions, encoding: str = coding, exclude_region=None,
-                          get_best_encoding=self.get_best_nonvideo_encoding):
+                          get_best_encoding=self.get_best_nonvideo_encoding) -> None:
             if self.b_frame_flush_timer and exclude_region is None:
                 # a b-frame is already due, don't clobber it!
                 exclude_region = vr
@@ -1012,7 +1012,7 @@ class WindowVideoSource(WindowSource):
         return r
 
     def process_damage_region(self, damage_time, x: int, y: int, w: int, h: int,
-                              coding: str, options: dict, flush=0):
+                              coding: str, options: dict, flush=0) -> bool:
         """
             Called by 'damage' or 'send_delayed_regions' to process a damage region.
 
@@ -1506,7 +1506,7 @@ class WindowVideoSource(WindowSource):
             encoding_score_delta = self.encoding_options.get(f"{encoding}.score-delta", encoding_score_delta)
             no_match = []
 
-            def add_scores(info, csc_spec: CSCSpec | None, enc_in_format):
+            def add_scores(info, csc_spec: CSCSpec | None, enc_in_format) -> None:
                 # find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
                 if not colorspace_specs:
@@ -1630,7 +1630,7 @@ class WindowVideoSource(WindowSource):
                     return num, den
             raise ValueError(f"BUG: failed to find a scaling value for window size {width}x{height}")
 
-        def mrs(v=(1, 1), info="using minimum required scaling"):
+        def mrs(v=(1, 1), info="using minimum required scaling") -> tuple[int, int]:
             sv = get_min_required_scaling(v)
             if info:
                 scalinglog("%s: %s", info, sv)

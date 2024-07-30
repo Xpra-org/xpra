@@ -988,7 +988,7 @@ class WindowSource(WindowIconSource):
     def assign_encoding_getter(self) -> None:
         self.get_best_encoding = self.get_best_encoding_impl()
 
-    def get_best_encoding_impl(self) -> Callable:
+    def get_best_encoding_impl(self) -> Callable[..., str]:
         log("get_best_encoding_impl() hint=%r, encoding=%r, depth=%s, alpha=%s",
             self._encoding_hint, self.encoding, self.image_depth, self._want_alpha)
         if HARDCODED_ENCODING:
@@ -1675,7 +1675,7 @@ class WindowSource(WindowIconSource):
             self.update_window_dimensions(ww, wh)
         return ww, wh
 
-    def update_window_dimensions(self, ww: int, wh: int):
+    def update_window_dimensions(self, ww: int, wh: int) -> None:
         now = monotonic()
         self.statistics.last_resized = now
         self.statistics.resize_events.append(now)
@@ -2501,7 +2501,7 @@ class WindowSource(WindowIconSource):
         }
         if coding == "scroll":
             # special case because scroll data is not binary!
-            data = json.dumps(data.data).encode("latin1")
+            data = json.dumps(data.data, indent="\t").encode("latin1")
         elif isinstance(data, Compressed):
             if isinstance(data, LevelCompressed):
                 index_info["level"] = data.level
@@ -2511,7 +2511,7 @@ class WindowSource(WindowIconSource):
         index = self.screen_updates_index
         index_file = os.path.join(self.screen_updates_directory, f"{index}.info")
         with open(index_file, "w") as f:
-            f.write(json.dumps(index_info))
+            f.write(json.dumps(index_info, indent="\t"))
         update_file = os.path.join(self.screen_updates_directory, f"{index}.{coding}")
         with open(update_file, "wb") as f:
             f.write(data)
@@ -2698,7 +2698,7 @@ class WindowSource(WindowIconSource):
             * 'rgb24' and 'rgb32' use 'rgb_encode'
             * etc..
         """
-        def nodata(msg, *args) -> None:
+        def nodata(msg: str, *args) -> None:
             log("make_data_packet: no data for window %s with sequence=%s: "+msg, self.wid, sequence, *args)
             self.free_image_wrapper(image)
             return None
