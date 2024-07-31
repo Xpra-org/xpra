@@ -369,7 +369,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if FBO_RESIZE_DELAY >= 0:
             del context
 
-            def redraw(glcontext):
+            def redraw(glcontext) -> None:
                 if not glcontext:
                     return
                 self.pending_fbo_paint = ((0, 0, bw, bh),)
@@ -623,12 +623,16 @@ class GLWindowBackingBase(WindowBackingBase):
             fire_paint_callbacks(callbacks, False, "no opengl context")
             return
 
-        def fail(msg):
+        def fail(msg: str) -> None:
             log.error("Error: %s", msg)
             fire_paint_callbacks(callbacks, False, msg)
 
         bw, bh = self.size
         self.copy_fbo(bw, bh)
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+        glFlush()
 
         for x, y, w, h, xdelta, ydelta in scrolls:
             if abs(xdelta) >= bw:
@@ -671,9 +675,8 @@ class GLWindowBackingBase(WindowBackingBase):
                               x + xdelta, bh - (y + ydelta), x + w + xdelta, bh - (y + h + ydelta),
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
             self.paint_box("scroll", x + xdelta, y + ydelta, x + w + xdelta, y + h + ydelta)
-            glFlush()
 
-        self.swap_fbos()
+        glFlush()
 
         target = GL_TEXTURE_RECTANGLE
         # restore normal paint state:
