@@ -686,9 +686,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
 
         glBindTexture(target, 0)
+        self.painted(context, 0, 0, bw, bh, flush)
         fire_paint_callbacks(callbacks, True)
-        if not self.draw_needs_refresh:
-            self.present_fbo(context, 0, 0, bw, bh, flush)
 
     def copy_fbo(self, w: int, h: int, sx=0, sy=0, dx=0, dy=0) -> None:
         log("copy_fbo%s", (w, h, sx, sy, dx, dy))
@@ -717,6 +716,13 @@ class GLWindowBackingBase(WindowBackingBase):
         tmp = self.textures[TEX_FBO]
         self.textures[TEX_FBO] = self.textures[TEX_TMP_FBO]
         self.textures[TEX_TMP_FBO] = tmp
+
+    def painted(self, context, x: int, y: int, w: int, h: int, flush=0) -> None:
+        if self.draw_needs_refresh:
+            # `after_draw_refresh` will end up queuing a draw request,
+            # which will call `present_fbo` from `gl_expose_rect`
+            return
+        self.present_fbo(context, x, y, w, h, flush)
 
     def present_fbo(self, context, x: int, y: int, w: int, h: int, flush=0) -> None:
         log("present_fbo: adding %s to pending paint list (size=%i), flush=%s, paint_screen=%s",
@@ -1205,10 +1211,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindTexture(target, 0)
 
         self.paint_box(encoding, x, y, width, height)
-        # Present update to screen
-        if not self.draw_needs_refresh:
-            self.present_fbo(gl_context, x, y, width, height, options.intget("flush", 0))
-        # present_fbo has reset state already
+        self.painted(gl_context, x, y, width, height, options.intget("flush", 0))
         fire_paint_callbacks(callbacks)
         glDeleteBuffers(1, [pbo])
 
@@ -1307,10 +1310,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
 
             self.paint_box(encoding, x, y, render_width, render_height)
-            # Present update to screen
-            if not self.draw_needs_refresh:
-                self.present_fbo(context, x, y, render_width, render_height, options.intget("flush", 0))
-            # present_fbo has reset state already
+            self.painted(context, x, y, render_width, render_height, options.intget("flush", 0))
             fire_paint_callbacks(callbacks)
             return
         except GLError as e:
@@ -1370,11 +1370,10 @@ class GLWindowBackingBase(WindowBackingBase):
             scaling = enc_width != width or enc_height != height
             self.update_planar_textures(enc_width, enc_height, img, pixel_format, scaling=scaling, pbo=pbo)
             self.render_planar_update(x, y, enc_width, enc_height, width, height, shader)
+
             self.paint_box(encoding, x, y, width, height)
+            self.painted(context, x, y, width, height, flush)
             fire_paint_callbacks(callbacks, True)
-            # Present it on screen
-            if not self.draw_needs_refresh:
-                self.present_fbo(context, x, y, width, height, flush)
             return
         except GLError as e:
             message = f"OpenGL {encoding} paint failed: {e!r}"
