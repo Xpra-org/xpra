@@ -16,11 +16,18 @@ Pango = gi_import("Pango")
 winfo = "window.info"
 
 
-def load_window_dir(dirpath: str) -> list[dict]:
+def read_json(filename: str):
+    with open(filename, "rb") as f:
+        serialized = f.read()
+    return json.loads(serialized)
+
+
+def load_window_dir(dirpath: str) -> tuple[dict, list[dict]]:
     data = {}
     windowinfo_file = os.path.join(dirpath, winfo)
     if not os.path.exists(windowinfo_file):
         raise ValueError(f"directory {dirpath!r} does not look like a replay directory, {winfo!r} not found")
+    windowinfo = read_json(windowinfo_file)
 
     for dirname in os.listdir(dirpath):
         if dirname == winfo:
@@ -37,7 +44,7 @@ def load_window_dir(dirpath: str) -> list[dict]:
     updates = []
     for ts in sorted(data.keys()):
         updates.append(data[ts])
-    return updates
+    return windowinfo, updates
 
 
 def load_update_dir(dirpath: str) -> dict:
@@ -47,9 +54,7 @@ def load_update_dir(dirpath: str) -> dict:
             continue
         flush = int(entry.split(".", 1)[0])
         filename = os.path.join(dirpath, entry)
-        with open(filename, "rb") as f:
-            serialized = f.read()
-        update_data = json.loads(serialized)
+        update_data = read_json(filename)
         update_data["directory"] = dirpath
         data[flush] = update_data
     return dict(reversed(sorted(data.items())))
@@ -57,12 +62,14 @@ def load_update_dir(dirpath: str) -> dict:
 
 class ReplayApp:
 
-    def __init__(self, replay_data: list[dict]):
+    def __init__(self, window_info: dict, replay_data: list[dict]):
         self.replay_data = replay_data
         self.frame = 0
         self.update = 0
         self.frame_data = {}
         self.backing = None
+        self.window_info = window_info
+        self.window_size = window_info.get("dimensions", (200, 200))
         self.drawing_area = Gtk.DrawingArea()
         self.drawing_area.connect("draw", self.draw_cb)
         self.replay_window = self.init_replay_window()
@@ -71,7 +78,7 @@ class ReplayApp:
 
     def init_replay_window(self) -> Gtk.Window:
         replay_window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
-        replay_window.set_size_request(200, 200)
+        replay_window.set_size_request(*self.window_size)
         replay_window.add(self.drawing_area)
         replay_window.connect("delete_event", Gtk.main_quit)
         replay_window.show_all()
@@ -156,12 +163,10 @@ class ReplayApp:
         options = update.get("options", {})
         if not options.get("paint", True):
             return
-        window_size = options.get("window-size")
-        if window_size:
-            ww, wh = window_size
-            self.replay_window.resize(*window_size)
-            if self.backing is None:
-                self.backing = cairo.ImageSurface(cairo.Format.ARGB32, ww, wh)
+
+        ww, wh = self.window_size
+        if self.backing is None:
+            self.backing = cairo.ImageSurface(cairo.Format.ARGB32, ww, wh)
 
         encoding = update.get("encoding")
         filename = update.get("file", f"{self.update}.{encoding}")
@@ -193,7 +198,8 @@ class ReplayApp:
                 if options.get("lz4"):
                     from xpra.net.lz4.lz4 import decompress
                     rgb_data = decompress(file_data)
-                if encoding == "rgb24":
+                rgb_format = options.get("rgb_format", "BGRX")
+                if len(rgb_format) == 3:
                     from xpra.codecs.argb.argb import rgb_to_bgrx
                     rgb_data = rgb_to_bgrx(rgb_data)
             else:
@@ -202,7 +208,8 @@ class ReplayApp:
                 img = img.convert("RGBA")
                 rgb_data = img.tobytes("raw", img.mode)
             ba = bytearray(rgb_data)
-            surface = cairo.ImageSurface.create_for_data(ba, cairo.FORMAT_ARGB32, w, h, stride or w*4)
+            cfmt = cairo.FORMAT_ARGB32 if encoding != "rgb24" else cairo.FORMAT_RGB24
+            surface = cairo.ImageSurface.create_for_data(ba, cfmt, w, h, stride or w*4)
             # paint in on the backing:
             ctx = cairo.Context(self.backing)
             ctx.set_source_surface(surface, x, y)
@@ -239,7 +246,7 @@ def main(argv: list[str]) -> int:
         print("usage: %s directory" % (argv[0]))
         return 1
     dirpath = argv[1]
-    app = ReplayApp(load_window_dir(dirpath))
+    app = ReplayApp(*load_window_dir(dirpath))
     app.run()
     return 0
 

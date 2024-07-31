@@ -96,7 +96,7 @@ SCROLL_ALL = envbool("XPRA_SCROLL_ALL", True)
 FORCE_PILLOW = envbool("XPRA_FORCE_PILLOW", False)
 HARDCODED_ENCODING: str = os.environ.get("XPRA_HARDCODED_ENCODING", "")
 
-SCREEN_UPDATES_DIRECTORY = os.environ.get("SCREEN_UPDATES_DIRECTORY", "")
+SCREEN_UPDATES_DIRECTORY = os.environ.get("XPRA_SCREEN_UPDATES_DIRECTORY", "")
 
 MAX_SEQUENCE = 2**64
 
@@ -2484,7 +2484,7 @@ class WindowSource(WindowIconSource):
         if not os.path.exists(wid_dir):
             os.mkdir(wid_dir)
             windowinfo_file = os.path.join(wid_dir, "window.info")
-            with open(windowinfo_file, "wb") as f:
+            with open(windowinfo_file, "w") as f:
                 f.write(json.dumps(self.get_info(), indent="\t"))
         dirname = os.path.join(wid_dir, str(round(damage_time*1000)))
         if self.screen_updates_directory != dirname:
@@ -2516,7 +2516,7 @@ class WindowSource(WindowIconSource):
         update_file = os.path.join(self.screen_updates_directory, update_filename)
         with open(update_file, "wb") as f:
             f.write(data)
-        compresslog.warn(f"saved {coding}: {len(data)} bytes to {update_file}")
+        compresslog.warn(f"saved {coding:6}: {len(data):8} bytes to {update_file!r}")
         index_info["file"] = update_filename
 
         index_file = os.path.join(self.screen_updates_directory, f"{index}.info")
