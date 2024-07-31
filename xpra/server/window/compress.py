@@ -2483,6 +2483,9 @@ class WindowSource(WindowIconSource):
         wid_dir = os.path.join(SCREEN_UPDATES_DIRECTORY, str(self.wid))
         if not os.path.exists(wid_dir):
             os.mkdir(wid_dir)
+            windowinfo_file = os.path.join(wid_dir, "window.info")
+            with open(windowinfo_file, "wb") as f:
+                f.write(json.dumps(self.get_info(), indent="\t"))
         dirname = os.path.join(wid_dir, str(round(damage_time*1000)))
         if self.screen_updates_directory != dirname:
             os.mkdir(dirname)
@@ -2507,16 +2510,32 @@ class WindowSource(WindowIconSource):
                 index_info["level"] = data.level
                 index_info["compressed"] = data.algorithm
             data = memoryview_to_bytes(data.data)
-
         index = self.screen_updates_index
-        index_file = os.path.join(self.screen_updates_directory, f"{index}.info")
-        with open(index_file, "w") as f:
-            f.write(json.dumps(index_info, indent="\t"))
-        update_file = os.path.join(self.screen_updates_directory, f"{index}.{coding}")
+
+        update_filename = f"{index}.{coding}"
+        update_file = os.path.join(self.screen_updates_directory, update_filename)
         with open(update_file, "wb") as f:
             f.write(data)
         compresslog.warn(f"saved {coding}: {len(data)} bytes to {update_file}")
+        index_info["file"] = update_filename
+
+        index_file = os.path.join(self.screen_updates_directory, f"{index}.info")
+        with open(index_file, "w") as f:
+            f.write(json.dumps(index_info, indent="\t"))
+
         self.screen_updates_index += 1
+        if client_options.get("flush", 0) == 0:
+            screenshort_file = os.path.join(self.screen_updates_directory, "screenshot.webp")
+
+            def save_screenshot() -> None:
+                w, h = self.window_dimensions
+                image = self.window.get_image(0, 0, w, h)
+                rgb_format = image.get_pixel_format()
+                if image and rgb_format in ("BGRX", "BGRA"):
+                    from PIL import Image
+                    img = Image.frombuffer("RGB", (w, h), image.get_pixels(), "raw", rgb_format, 0, 1)
+                    img.save(screenshort_file, format="PNG")
+            GLib.idle_add(save_screenshot)
 
     def networksend_congestion_event(self, source, late_pct: int, cur_send_speed: int = 0) -> None:
         gs = self.global_statistics
@@ -2707,10 +2726,9 @@ class WindowSource(WindowIconSource):
         if self.suspended:
             return nodata("suspended")
         start = monotonic()
-        tdoptions = typedict(options)
-        tdoptions["damage-time"] = damage_time
-        tdoptions["process-damage-time"] = process_damage_time
-        if SCROLL_ALL and self.may_use_scrolling(image, tdoptions):
+        options["damage-time"] = damage_time
+        options["process-damage-time"] = process_damage_time
+        if SCROLL_ALL and self.may_use_scrolling(image, options):
             return nodata("used scrolling instead")
         end = monotonic()
         log("scroll detection took %ims", 1000*(end-start))
@@ -2736,9 +2754,9 @@ class WindowSource(WindowIconSource):
                 return nodata("cancelled")
             raise RuntimeError(f"BUG: no encoder found for {coding!r} with options={options}")
         try:
-            ret = encoder(coding, image, tdoptions)
+            ret = encoder(coding, image, options)
         except (TypeError, RuntimeError) as e:
-            log.error(f"Error on {encoder}({coding}, {image}, {tdoptions})", exc_info=True)
+            log.error(f"Error on {encoder}({coding}, {image}, {options})", exc_info=True)
             return nodata(str(e))
         if not ret:
             return nodata("no data from encoder %s for %s",
