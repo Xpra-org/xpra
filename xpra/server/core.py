@@ -2366,7 +2366,7 @@ class ServerCore:
 
     def server_idle_timedout(self) -> None:
         timeoutlog.info("No valid client connections for %s seconds, exiting the server", self.server_idle_timeout)
-        self.clean_quit(False)
+        self.clean_quit(ServerExitMode.NORMAL)
 
     def make_hello(self, source) -> dict[str, Any]:
         now = time()
