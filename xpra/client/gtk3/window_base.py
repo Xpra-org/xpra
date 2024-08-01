@@ -27,7 +27,7 @@ from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.keymap import KEY_TRANSLATIONS
 from xpra.common import (
-    MoveResize,
+    MoveResize, force_size_constraint,
     MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, WORKSPACE_UNSET,
     WORKSPACE_ALL, WORKSPACE_NAMES,
 )
@@ -1983,7 +1983,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if self._client.readonly:
                 # change size-constraints first,
                 # so the resize can be honoured:
-                sc = typedict(self._force_size_constraint(w, h))
+                sc = typedict(force_size_constraint(w, h))
                 self._metadata.update(sc)
                 self.set_metadata(sc)
         if move and resize:

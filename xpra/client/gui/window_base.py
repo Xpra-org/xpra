@@ -14,7 +14,7 @@ from xpra.os_util import OSX, WIN32, gi_import
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.net.common import PacketElement
-from xpra.common import GravityStr, WORKSPACE_UNSET, WORKSPACE_NAMES
+from xpra.common import GravityStr, WORKSPACE_UNSET, WORKSPACE_NAMES, force_size_constraint
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
@@ -290,21 +290,12 @@ class ClientWindowBase(ClientWidgetBase):
     def update_metadata(self, metadata: typedict) -> None:
         metalog("update_metadata(%s)", metadata)
         if self._client.readonly:
-            metadata.update(self._force_size_constraint(*self._size))
+            metadata.update(force_size_constraint(*self._size))
         self._metadata.update(metadata)
         try:
             self.set_metadata(metadata)
         except Exception:
             metalog.warn("failed to set window metadata to '%s'", metadata, exc_info=True)
-
-    def _force_size_constraint(self, *size) -> dict[str, dict[str, Any]]:
-        return {
-            "size-constraints": {
-                "maximum-size": size,
-                "minimum-size": size,
-                "base-size": size,
-            },
-        }
 
     def _get_window_title(self, metadata) -> str:
         try:
@@ -610,30 +601,32 @@ class ClientWindowBase(ClientWidgetBase):
         ):
             v = size_constraints.intpair(a)
             geomlog("intpair(%s)=%s", a, v)
-            if v:
-                v1, v2 = v
-                if a == "maximum-size" and v1 >= 16384 and v2 >= 16384 and WIN32:
-                    # causes problems, see #2714, #3533
+            if not v:
+                continue
+            v1, v2 = v
+            if a == "maximum-size" and v1 >= 16384 and v2 >= 16384 and WIN32:
+                # causes problems, see #2714, #3533
+                continue
+            sv1 = client.sx(v1)
+            sv2 = client.sy(v2)
+            if a in ("base-size", "increment"):
+                # rounding is not allowed for these values
+                fsv1 = client.fsx(v1)
+                fsv2 = client.fsy(v2)
+
+                def closetoint(value):
+                    # tolerate some rounding error:
+                    # (ie: 2:3 scaling may not give an integer without a tiny bit of rounding)
+                    return abs(round(value) - value) < 0.00001
+
+                if not closetoint(fsv1) or not closetoint(fsv2):
+                    # the scaled value is not close to an int,
+                    # so we can't honour it:
+                    geomlog("cannot honour '%s' due to scaling, scaled values are not both integers: %s, %s",
+                            a, fsv1, fsv2)
                     continue
-                sv1 = client.sx(v1)
-                sv2 = client.sy(v2)
-                if a in ("base-size", "increment"):
-                    # rounding is not allowed for these values
-                    fsv1 = client.fsx(v1)
-                    fsv2 = client.fsy(v2)
-
-                    def closetoint(value):
-                        # tolerate some rounding error:
-                        # (ie: 2:3 scaling may not give an integer without a tiny bit of rounding)
-                        return abs(round(value) - value) < 0.00001
-
-                    if not closetoint(fsv1) or not closetoint(fsv2):
-                        # the scaled value is not close to an int,
-                        # so we can't honour it:
-                        geomlog("cannot honour '%s' due to scaling, scaled values are not both integers: %s, %s",
-                                a, fsv1, fsv2)
-                        continue
-                hints[h1], hints[h2] = sv1, sv2
+            hints[h1] = sv1
+            hints[h2] = sv2
         if not OSX:
             for (a, h) in (
                     ("minimum-aspect-ratio", "min_aspect"),

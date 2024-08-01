@@ -5,10 +5,10 @@
 
 # noinspection PyPep8
 
-import binascii
 import os
+import binascii
 from enum import Enum, IntEnum
-from typing import Final, Protocol, TypeAlias
+from typing import Final, Protocol, TypeAlias, Any
 from collections.abc import Callable, Sized, MutableSequence
 
 from xpra.util.env import envint, envbool
@@ -60,6 +60,17 @@ def get_default_video_max_size() -> tuple[int, int]:
         except (TypeError, ValueError):
             pass
     return 4096, 4096
+
+
+def force_size_constraint(width: int, height: int) -> dict[str, dict[str, Any]]:
+    size = width, height
+    return {
+        "size-constraints": {
+            "maximum-size": size,
+            "minimum-size": size,
+            "base-size": size,
+        },
+    }
 
 
 VIDEO_MAX_SIZE = get_default_video_max_size()
