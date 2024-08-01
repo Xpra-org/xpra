@@ -550,7 +550,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         log("parse_xi_event: no handler for %s", event_name)
         return None
 
-    def get_devices(self, show_all=True, show_disabled=False) -> Dict:
+    def get_devices(self, show_all=True, show_disabled=False) -> Dict[int, Dict[str, Any]]:
         log("get_devices(%s, %s)", show_all, show_disabled)
         self.context_check("get_devices")
         global XI_USE

@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+
 from xpra.os_util import gi_import
 from xpra.client.gl.gtk3.client_window import GLClientWindowBase
 from xpra.log import Logger
@@ -29,7 +31,7 @@ class GLClientWindow(GLClientWindowBase):
 GObject.type_register(GLClientWindow)
 
 
-def check_support(force_enable=False):
+def check_support(force_enable=False) -> dict[str, Any]:
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_default_size(400, 400)
     window.resize(400, 400)

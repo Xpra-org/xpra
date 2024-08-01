@@ -232,11 +232,12 @@ class SubprocessCallee:
         log("signal_stop(%s) calling stop", signame)
         self.stop()
 
-    def send(self, *args) -> None:
+    def send(self, packet_type: str, *args: PacketElement) -> None:
         if HEXLIFY_PACKETS:
-            args = list(args[:1]) + [hexstr(str(x)[:32]) for x in args[1:]]
+            args = [packet_type] + [hexstr(str(x)[:32]) for x in args]
         log("send: adding '%s' message (%s items already in queue)", args[0], self.send_queue.qsize())
-        self.send_queue.put(args)
+        packet = (packet_type, *args)
+        self.send_queue.put(packet)
         p = self.protocol
         if p:
             p.source_has_more()
@@ -438,8 +439,9 @@ class SubprocessCaller:
             more = False
         return item, False, more
 
-    def send(self, *packet_data: PacketElement) -> None:
-        self.send_queue.put(packet_data)
+    def send(self, packet_type: str, *packet_data: PacketElement) -> None:
+        packet = (packet_type, *packet_data)
+        self.send_queue.put(packet)
         p = self.protocol
         if p:
             p.source_has_more()

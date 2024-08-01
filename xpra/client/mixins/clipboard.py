@@ -261,7 +261,7 @@ class ClipboardClient(StubClientMixin):
                 self.send_clipboard_selections(ch.get_remote_selections())
                 ch.send_all_tokens()
 
-    def send_clipboard_selections(self, selections) -> None:
+    def send_clipboard_selections(self, selections: Sequence[str]) -> None:
         log("send_clipboard_selections(%s)", selections)
         self.send_now("clipboard-enable-selections", selections)
 

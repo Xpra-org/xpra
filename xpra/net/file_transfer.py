@@ -23,7 +23,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool, parse_with_unit
 from xpra.common import SizedBuffer
-from xpra.net.common import PacketType
+from xpra.net.common import PacketType, PacketElement
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
 from xpra.log import Logger
@@ -812,7 +812,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
 
-    def send_data_request(self, action, dtype: str, url: str, mimetype="", data=b"", filesize=0,
+    def send_data_request(self, action: str, dtype: str, url: str, mimetype="", data=b"", filesize=0,
                           printit=False, openit=True, options=None) -> str:
         send_id = uuid.uuid4().hex
         if len(self.pending_send_data) >= MAX_CONCURRENT_FILES:
@@ -1038,7 +1038,7 @@ class FileTransferHandler(FileTransferAttributes):
         chunk_state.timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_sending, chunk_id, chunk)
         self.send("send-file-chunk", chunk_id, chunk, cdata, bool(chunk_state.data))
 
-    def send(self, *parts) -> None:
+    def send(self, packet_type: str, *parts: PacketElement) -> None:
         raise NotImplementedError()
 
     def compressed_wrapper(self, datatype, data, level=5):

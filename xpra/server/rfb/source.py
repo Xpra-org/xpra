@@ -10,6 +10,7 @@ from typing import Any
 from xpra.net.rfb.const import RFBEncoding
 from xpra.net.rfb.encode import raw_encode, tight_encode, tight_png, rgb222_encode
 from xpra.net.protocol.socket_handler import PACKET_JOIN_SIZE
+from xpra.net.common import PacketElement
 from xpra.util.objects import AtomicInteger
 from xpra.util.str_fn import csv, strtobytes, memoryview_to_bytes
 from xpra.log import Logger
@@ -96,7 +97,7 @@ class RFBSource:
         kc.set_keymap(True)
         kc.owner = self.uuid
 
-    def send_server_event(self, *_args) -> None:
+    def send_server_event(self, _event_type: str, *_args: PacketElement) -> None:
         """ ignore as there are no equivalent messages in RFB """
 
     def send_cursor(self) -> None:

@@ -19,7 +19,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import strtobytes, memoryview_to_bytes
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
-from xpra.net.common import PacketType
+from xpra.net.common import PacketType, PacketElement
 from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
 from xpra.server import features, ServerExitMode
 from xpra.gtk.gobject import one_arg_signal
@@ -108,7 +108,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self._exit_with_windows = opts.exit_with_windows
         super().init(opts)
 
-        def log_server_event(_, event):
+        def log_server_event(_, event, *_args):
             eventlog("server-event: %s", event)
 
         self.connect("server-event", log_server_event)
@@ -265,8 +265,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def get_server_mode(self) -> str:
         return "X11 seamless"
 
-    def server_event(self, *args) -> None:
-        super().server_event(*args)
+    def server_event(self, event_type: str, *args: PacketElement) -> None:
+        super().server_event(event_type, *args)
         self.emit("server-event", args)
 
     def make_hello(self, source) -> dict[str, Any]:

@@ -318,23 +318,24 @@ class ClientConnection(StubSourceMixin):
             more = bool(packet) and bool(self.ordinary_packets or self.packet_queue)
         return packet, synchronous, more
 
-    def send(self, *parts: PacketElement, **kwargs) -> None:
+    def send(self, packet_type: str, *parts: PacketElement, **kwargs) -> None:
         """ This method queues non-damage packets (higher priority) """
         synchronous = bool(kwargs.get("synchronous", True))
         will_have_more = bool(kwargs.get("will_have_more", not synchronous))
         p = self.protocol
         if p:
-            self.ordinary_packets.append((parts, synchronous, will_have_more))
+            packet = (packet_type, *parts)
+            self.ordinary_packets.append((packet, synchronous, will_have_more))
             p.source_has_more()
 
-    def send_more(self, *parts, **kwargs) -> None:
+    def send_more(self, packet_type: str, *parts: PacketElement, **kwargs) -> None:
         kwargs["will_have_more"] = True
-        self.send(*parts, **kwargs)
+        self.send(packet_type, *parts, **kwargs)
 
-    def send_async(self, *parts, **kwargs) -> None:
+    def send_async(self, packet_type: str, *parts: PacketElement, **kwargs) -> None:
         kwargs["synchronous"] = False
         kwargs["will_have_more"] = False
-        self.send(*parts, **kwargs)
+        self.send(packet_type, *parts, **kwargs)
 
     ######################################################################
     # info:
@@ -370,16 +371,16 @@ class ClientConnection(StubSourceMixin):
         }
         return info
 
-    def send_info_response(self, info) -> None:
+    def send_info_response(self, info: dict) -> None:
         self.send_async("info-response", notypedict(info))
 
-    def send_setting_change(self, setting: str, value) -> None:
+    def send_setting_change(self, setting: str, value: PacketElement) -> None:
         self.send_more("setting-change", setting, value)
 
-    def send_server_event(self, *args) -> None:
+    def send_server_event(self, event_type: str, *args: PacketElement) -> None:
         if "events" in self.wants:
-            self.send_more("server-event", *args)
+            self.send_more("server-event", event_type, *args)
 
-    def send_client_command(self, *args) -> None:
+    def send_client_command(self, command: str, *args: PacketElement) -> None:
         if self.hello_sent:
-            self.send_more("control", *args)
+            self.send_more("control", command, *args)

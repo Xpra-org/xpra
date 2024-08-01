@@ -544,7 +544,7 @@ class AudioClient(StubClientMixin):
         packet_data = [codec, Compressed(codec, data), metadata, packet_metadata]
         self.send("sound-data", *packet_data)
 
-    def send_audio_sync(self, v) -> None:
+    def send_audio_sync(self, v: int) -> None:
         self.send("sound-control", "sync", v)
 
     ######################################################################

@@ -13,7 +13,10 @@ from collections.abc import Callable
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
-from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType, is_request_allowed, HttpResponse
+from xpra.net.common import (
+    may_log_packet, is_request_allowed,
+    ServerPacketHandlerType, PacketType, PacketElement, HttpResponse,
+)
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
 from xpra.util.io import is_socket
@@ -133,11 +136,11 @@ class ServerBase(ServerBaseClass):
         self.init_packet_handlers()
         self.init_aliases()
 
-    def server_event(self, *args) -> None:
+    def server_event(self, event_type: str, *args: PacketElement) -> None:
         for s in self._server_sources.values():
-            s.send_server_event(*args)
+            s.send_server_event(event_type, *args)
         if self.dbus_server:
-            self.dbus_server.Event(str(args[0]), [str(x) for x in args[1:]])
+            self.dbus_server.Event(event_type, [str(x) for x in args[1:]])
 
     def get_server_source(self, proto):
         return self._server_sources.get(proto)

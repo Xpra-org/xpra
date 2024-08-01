@@ -479,7 +479,7 @@ class WindowClient(StubClientMixin):
                           button, idist,
                           pointer, modifiers, buttons] + list((props or {}).values())
                 mouselog("send_wheel_delta(..) %s", packet)
-                self.send_positional(packet)
+                self.send_positional(*packet)
             return 0
         # server cannot handle precise wheel,
         # so we have to use discrete events,
@@ -515,7 +515,8 @@ class WindowClient(StubClientMixin):
         mouselog("wheel_event%s new deltas=%s,%s",
                  (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
 
-    def send_button(self, device_id, wid, button, pressed, pointer, modifiers, buttons, props) -> None:
+    def send_button(self, device_id: int, wid: int, button: int, pressed: bool,
+                    pointer, modifiers, buttons, props) -> None:
         pressed_state = self._button_state.get(button, False)
         if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state == pressed:
             mouselog("button action: unchanged state, ignoring event")
@@ -551,14 +552,14 @@ class WindowClient(StubClientMixin):
             if props:
                 packet += list(props.values())
         mouselog("button packet: %s", packet)
-        self.send_positional(packet)
+        self.send_positional(*packet)
 
     def scale_pointer(self, pointer) -> tuple[int, int]:
         # subclass may scale this:
         # return int(pointer[0]/self.xscale), int(pointer[1]/self.yscale)
         return round(pointer[0]), round(pointer[1])
 
-    def send_input_devices(self, fmt, input_devices) -> None:
+    def send_input_devices(self, fmt: str, input_devices: dict[int, dict[str, Any]]) -> None:
         assert self.server_input_devices
         self.send("input-devices", fmt, input_devices)
 
@@ -653,7 +654,7 @@ class WindowClient(StubClientMixin):
                 modifiers = self.get_current_modifiers()
                 button_packet = ["button-action", wid, button, pressed, (x, y), modifiers]
                 traylog("button_packet=%s", button_packet)
-                self.send_positional(button_packet)
+                self.send_positional(*button_packet)
                 tray.reconfigure()
 
         def tray_mouseover(x, y):
@@ -1510,7 +1511,7 @@ class WindowClient(StubClientMixin):
         self._draw_queue.put(packet)
 
     def send_damage_sequence(self, wid: int, packet_sequence: int, width: int, height: int,
-                             decode_time, message="") -> None:
+                             decode_time: int, message="") -> None:
         packet = "damage-sequence", packet_sequence, wid, width, height, decode_time, message
         drawlog("sending ack: %s", packet)
         self.send_now(*packet)

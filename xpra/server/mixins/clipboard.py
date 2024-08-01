@@ -14,7 +14,7 @@ from xpra.platform.features import (
 )
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
-from xpra.net.common import PacketType
+from xpra.net.common import PacketType, PacketElement
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -238,10 +238,11 @@ class ClipboardServer(StubServerMixin):
         if self._clipboard_client:
             self._clipboard_client.send_clipboard_progress(local_requests)
 
-    def send_clipboard_packet(self, *parts) -> None:
+    def send_clipboard_packet(self, packet_type, *parts: PacketElement) -> None:
         assert self.clipboard
         if self._clipboard_client:
-            self._clipboard_client.send_clipboard(parts)
+            packet = (packet_type, *parts)
+            self._clipboard_client.send_clipboard(packet)
 
     def init_packet_handlers(self) -> None:
         if self.clipboard:

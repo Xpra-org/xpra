@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+
 from xpra.os_util import gi_import
 from xpra.client.gl.gtk3.client_window import GLClientWindowBase
 from xpra.platform.gl_context import GLContext
@@ -10,7 +12,7 @@ from xpra.platform.gl_context import GLContext
 GObject = gi_import("GObject")
 
 
-def check_support(force_enable=False):
+def check_support(force_enable=False) -> dict[str, Any]:
     import warnings  # pylint: disable=import-outside-toplevel
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*g_object_get_qdata:")

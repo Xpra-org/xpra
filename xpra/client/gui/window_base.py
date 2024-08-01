@@ -10,13 +10,13 @@ import re
 from typing import Any
 from collections.abc import Callable, MutableSequence
 
-from xpra.os_util import gi_import
+from xpra.os_util import OSX, WIN32, gi_import
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
-from xpra.util.parsing import scaleup_value, scaledown_value
-from xpra.os_util import OSX, WIN32
-from xpra.util.system import is_Wayland
+from xpra.net.common import PacketElement
 from xpra.common import GravityStr, WORKSPACE_UNSET, WORKSPACE_NAMES
+from xpra.util.parsing import scaleup_value, scaledown_value
+from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std
 from xpra.util.env import envint, envbool, ignorewarnings
@@ -260,8 +260,8 @@ class ClientWindowBase(ClientWidgetBase):
                 del backing_props[k]
         self._client_properties.update(backing_props)
 
-    def send(self, *args) -> None:
-        self._client.send(*args)
+    def send(self, packet_type: str, *args: PacketElement) -> None:
+        self._client.send(packet_type, *args)
 
     def reset_icon(self) -> None:
         current_icon = self._current_icon

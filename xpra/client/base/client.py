@@ -22,7 +22,7 @@ from xpra.common import (
 )
 from xpra.util.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
-from xpra.net.common import may_log_packet, PacketHandlerType, PacketType, PACKET_TYPES, SSL_UPGRADE
+from xpra.net.common import may_log_packet, PacketHandlerType, PacketType, PacketElement, PACKET_TYPES, SSL_UPGRADE
 from xpra.util.thread import start_thread
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
@@ -548,17 +548,20 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         # we can't compress, so at least avoid warnings in the protocol layer:
         return compression.Compressed(f"raw {datatype}", data, can_inline=True)
 
-    def send(self, *parts) -> None:
-        self._ordinary_packets.append(parts)
+    def send(self, packet_type: str, *parts: PacketElement) -> None:
+        packet = (packet_type, *parts)
+        self._ordinary_packets.append(packet)
         self.have_more()
 
-    def send_now(self, *parts) -> None:
-        self._priority_packets.append(parts)
+    def send_now(self, packet_type: str, *parts: PacketElement) -> None:
+        packet = (packet_type, *parts)
+        self._priority_packets.append(packet)
         self.have_more()
 
-    def send_positional(self, packet) -> None:
+    def send_positional(self, packet_type: str, *parts: PacketElement) -> None:
         # packets that include the mouse position data
         # we can cancel the pending position packets
+        packet = (packet_type, *parts)
         self._ordinary_packets.append(packet)
         self._mouse_position = None
         self._mouse_position_pending = None
@@ -573,7 +576,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._pointer_sequence[device_id] = seq
         return seq
 
-    def send_mouse_position(self, device_id, wid, pos, modifiers=None, buttons=None, props=None) -> None:
+    def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
         if "pointer" in self.server_packet_types:
             # v5 packet type, most attributes are optional:
             attrs = props or {}
@@ -938,7 +941,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             pass
         return text
 
-    def send_challenge_reply(self, packet, value) -> None:
+    def send_challenge_reply(self, packet: PacketType, value) -> None:
         if not value:
             self.auth_error(ExitCode.PASSWORD_REQUIRED,
                             "this server requires authentication and no password is available")
@@ -1001,7 +1004,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     ########################################
     # Encryption
-    def set_server_encryption(self, caps, key) -> bool:
+    def set_server_encryption(self, caps: typedict, key: bytes) -> bool:
         caps = typedict(caps.dictget("encryption") or {})
         cipher = caps.strget("cipher")
         cipher_mode = caps.strget("mode", DEFAULT_MODE)
@@ -1018,7 +1021,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         # either from hello response or from challenge packet:
         self.server_padding_options = caps.strtupleget("padding.options", (DEFAULT_PADDING,))
 
-        def fail(msg):
+        def fail(msg) -> bool:
             self.warn_and_quit(ExitCode.ENCRYPTION, msg)
             return False
 

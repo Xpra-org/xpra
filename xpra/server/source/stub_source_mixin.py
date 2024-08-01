@@ -6,6 +6,7 @@
 from typing import Any
 from collections.abc import Callable
 from xpra.util.objects import typedict
+from xpra.net.common import PacketElement
 
 
 class StubSourceMixin:
@@ -84,13 +85,13 @@ class StubSourceMixin:
         Used by the window source to send data to be processed in the encode thread
         """
 
-    def send_more(self, *parts, **kwargs):
+    def send_more(self, packet_type: str, *parts: PacketElement, **kwargs) -> None:
         """
         Send a packet to the client,
         the `will_have_more` argument will be set to `True`
         """
 
-    def send_async(self, *parts, **kwargs):
+    def send_async(self, packet_type: str, *parts: PacketElement, **kwargs):
         """
         Send a packet to the client,
         the `synchronous` and `will_have_more` arguments will be set to `False`

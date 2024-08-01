@@ -376,7 +376,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.send_info_request()
         GLib.timeout_add(self.REFRESH_RATE * 1000, self.send_info_request)
 
-    def send_info_request(self, *categories) -> bool:
+    def send_info_request(self, *categories: str) -> bool:
         self.log("send_info_request%s" % (categories,))
         if not self.info_request_pending:
             self.info_request_pending = True

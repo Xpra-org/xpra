@@ -6,6 +6,7 @@
 import os
 from typing import Any
 from io import BytesIO
+from collections.abc import Sequence, Callable
 from ctypes import (
     get_last_error, WinError, FormatError,  # @UnresolvedImport
     sizeof, byref, cast, memset, memmove, create_string_buffer, c_char, c_void_p,
@@ -122,7 +123,7 @@ log("win32 clipboard: RETRY=%i, DELAY=%i, CONVERT_LINE_ENDINGS=%s",
 # ie: VBoxTray.exe
 
 
-def get_clients(envvar, default=""):
+def get_clients(envvar, default="") -> Sequence[str]:
     return tuple(x for x in os.environ.get("XPRA_%s_CLIPBOARD_CLIENTS" % envvar, default).split(",") if x)
 
 
@@ -135,18 +136,18 @@ COMPRESSED_IMAGES = envbool("XPRA_CLIPBOARD_COMPRESSED_IMAGES", True)
 CLIPBOARD_WINDOW_CLASS_NAME = "XpraWin32Clipboard"
 
 
-def is_blacklisted(owner_info):
+def is_blacklisted(owner_info) -> bool:
     return any(owner_info.find(x) >= 0 for x in BLACKLISTED_CLIPBOARD_CLIENTS)
 
 
-def is_syncdelay(owner_info):
+def is_syncdelay(owner_info) -> bool:
     return any(owner_info.find(x) >= 0 for x in SYNCDELAY_CLIPBOARD_CLIENTS)
 
 
 # initialize the window we will use
 # for communicating with the OS clipboard API:
 
-def get_owner_info(owner, our_window):
+def get_owner_info(owner, our_window) -> str:
     if not owner:
         return "unknown"
     if owner == our_window:
@@ -169,7 +170,7 @@ def get_owner_info(owner, our_window):
         CloseHandle(proc_handle)
 
 
-def with_clipboard_lock(window, success_callback, failure_callback, retries=RETRY, delay=DELAY):
+def with_clipboard_lock(window, success_callback: Callable, failure_callback: Callable, retries=RETRY, delay=DELAY):
     log("with_clipboard_lock%s", (window, success_callback, failure_callback, retries, delay))
     r = OpenClipboard(window)
     if r:
@@ -193,7 +194,7 @@ def with_clipboard_lock(window, success_callback, failure_callback, retries=RETR
                      window, success_callback, failure_callback, retries - 1, delay + 5)
 
 
-def format_name(fmt):
+def format_name(fmt: int) -> str:
     name = CLIPBOARD_FORMATS.get(fmt)
     if name:
         return name
@@ -206,11 +207,11 @@ def format_name(fmt):
     return value[:r].decode("latin1")
 
 
-def format_names(fmts):
+def format_names(fmts) -> Sequence[str]:
     return tuple(format_name(x) for x in fmts)
 
 
-def get_clipboard_formats():
+def get_clipboard_formats() -> Sequence[int]:
     formats = []
     fmt = 0
     while True:
@@ -282,109 +283,6 @@ def rgb_to_bitmap(img_data) -> HBITMAP:
     return bitmap
 
 
-class Win32Clipboard(ClipboardTimeoutHelper):
-    """
-        Use Native win32 API to access the clipboard
-    """
-
-    def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
-        self.init_window()
-        super().__init__(send_packet_cb, progress_cb, **kwargs)
-
-    def init_window(self):
-        log("Win32Clipboard.init_window() creating clipboard window class and instance")
-        self.wndclass = WNDCLASSEX()
-        self.wndclass.cbSize = sizeof(WNDCLASSEX)
-        self.wndclass.lpfnWndProc = WNDPROC(self.wnd_proc)
-        self.wndclass.style = win32con.CS_GLOBALCLASS
-        self.wndclass.hInstance = GetModuleHandleA(0)
-        self.wndclass.lpszClassName = CLIPBOARD_WINDOW_CLASS_NAME
-        self.wndclass_handle = RegisterClassExW(byref(self.wndclass))
-        log("RegisterClassExA(%s)=%#x", self.wndclass.lpszClassName, self.wndclass_handle)
-        if self.wndclass_handle == 0:
-            raise WinError()
-        style = win32con.WS_CAPTION  # win32con.WS_OVERLAPPED
-        self.window = CreateWindowExW(0, self.wndclass_handle, "Clipboard", style,
-                                      0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
-                                      win32con.HWND_MESSAGE, 0, self.wndclass.hInstance, None)
-        log("clipboard window=%#x", self.window)
-        if not self.window:
-            raise WinError()
-        if not AddClipboardFormatListener(self.window):
-            log.warn("Warning: failed to setup clipboard format listener")
-            log.warn(" %s", get_last_error())
-
-    def wnd_proc(self, hwnd, msg, wparam, lparam):
-        r = DefWindowProcW(hwnd, msg, wparam, lparam)
-        if msg not in CLIPBOARD_EVENTS:
-            return r
-        owner = GetClipboardOwner()
-        log("clipboard event: %s, current owner: %s",
-            CLIPBOARD_EVENTS.get(msg), get_owner_info(owner, self.window))
-        if msg == WM_CLIPBOARDUPDATE and owner != self.window:
-            owner = GetClipboardOwner()
-            owner_info = get_owner_info(owner, self.window)
-            if is_blacklisted(owner_info):
-                # ie: don't try to sync from VirtualBox
-                log("CLIPBOARDUPDATE coming from '%s' ignored", owner_info)
-                return r
-            min_delay = 500 * int(is_syncdelay(owner_info))
-            log("CLIPBOARDUPDATE coming from '%s', min_delay=%i", owner_info, min_delay)
-            for proxy in self._clipboard_proxies.values():
-                if not proxy._block_owner_change:
-                    proxy.schedule_emit_token(min_delay)
-        return r
-
-    def cleanup(self):
-        super().cleanup()
-        self.cleanup_window()
-
-    def cleanup_window(self):
-        w = self.window
-        if w:
-            self.window = None
-            RemoveClipboardFormatListener(w)
-            DestroyWindow(w)
-        wch = self.wndclass_handle
-        if wch:
-            self.wndclass = None
-            self.wndclass_handle = None
-            UnregisterClassW(CLIPBOARD_WINDOW_CLASS_NAME, GetModuleHandleA(0))
-
-    def make_proxy(self, selection):
-        proxy = Win32ClipboardProxy(self.window, selection,
-                                    self._send_clipboard_request_handler, self._send_clipboard_token_handler)
-        proxy.set_want_targets(self._want_targets)
-        proxy.set_direction(self.can_send, self.can_receive)
-        return proxy
-
-    ############################################################################
-    # just pass ATOM targets through
-    # (we use them internally as strings)
-    ############################################################################
-    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data):
-        if encoding == "atoms":
-            return _filter_targets(data)
-        return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
-
-    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data):
-        if dtype == "ATOM":
-            assert isinstance(data, (tuple, list))
-            return "atoms", _filter_targets(data)
-        return super()._munge_raw_selection_to_wire(target, dtype, dformat, data)
-
-
-def set_err(msg: str):
-    log.warn("Warning: cannot set clipboard value")
-    log.warn(" %s", msg)
-
-
-def clear_error(error_text=""):
-    log.warn("Warning: failed to clear the clipboard")
-    if error_text:
-        log.warn(" %s", error_text)
-
-
 class Win32ClipboardProxy(ClipboardProxyCore):
     def __init__(self, window, selection, send_clipboard_request_handler, send_clipboard_token_handler):
         self.window = window
@@ -412,7 +310,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         # greedy clients want data with the token,
         # so we have to get the clipboard lock
 
-        def send_token(formats) -> None:
+        def send_token(formats: Sequence[int]) -> None:
             # default target:
             target = "UTF8_STRING"
             if formats:
@@ -442,10 +340,10 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         self.with_clipboard_lock(got_clipboard_lock, errback)
 
-    def get_contents(self, target, got_contents: ClipboardCallback):
+    def get_contents(self, target: str, got_contents: ClipboardCallback):
         log("get_contents%s", (target, got_contents))
         if target == "TARGETS":
-            def got_clipboard_lock():
+            def got_clipboard_lock() -> bool:
                 formats = get_clipboard_formats()
                 fnames = format_names(formats)
                 targets = []
@@ -460,14 +358,14 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 got_contents("ATOM", 32, targets)
                 return True
 
-            def lockerror(_message):
+            def lockerror(_message) -> None:
                 # assume text:
                 got_contents("ATOM", 32, ["TEXT", "STRING", "text/plain", "text/plain;charset=utf-8", "UTF8_STRING"])
 
             self.with_clipboard_lock(got_clipboard_lock, lockerror)
             return
 
-        def nodata(*args):
+        def nodata(*args) -> None:
             log("nodata%s", args)
             got_contents(target, 8, b"")
 
@@ -486,7 +384,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             nodata()
             return
 
-        def got_text(text):
+        def got_text(text) -> None:
             log("got_text(%s)", Ellipsizer(text))
             got_contents(target, 8, text)
 
@@ -501,7 +399,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.get_clipboard_text(utf8, got_text, errback)
 
     def get_clipboard_image(self, img_format, got_image, errback):
-        def got_clipboard_lock():
+        def got_clipboard_lock() -> bool:
             if COMPRESSED_IMAGES:
                 fmt_name = LPCSTR(img_format.upper().encode("latin1") + b"\0")  # ie: "PNG"
                 fmt = RegisterClipboardFormatA(fmt_name)
@@ -676,7 +574,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.with_clipboard_lock(got_clipboard_lock, nolock)
 
     def get_clipboard_text(self, utf8, callback, errback):
-        def get_text():
+        def get_text() -> bool:
             formats = get_clipboard_formats()
             matching = []
             for u in (utf8, not utf8):
@@ -733,7 +631,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         self.with_clipboard_lock(get_text, errback)
 
-    def set_clipboard_text(self, text):
+    def set_clipboard_text(self, text: str):
         # convert to wide char
         # get the length in wide chars:
         if CONVERT_LINE_ENDINGS:
@@ -770,13 +668,13 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         long_timeout = GLib.timeout_add(2000, self.remove_block)
         self._block_owner_change = long_timeout
 
-        def cleanup():
+        def cleanup() -> None:
             if self._block_owner_change == long_timeout:
                 # now safe to re-schedule and run now in the UI thread:
                 self.cancel_unblock()
                 self._block_owner_change = GLib.idle_add(self.remove_block)
 
-        def set_clipboard_data():
+        def set_clipboard_data() -> bool:
             r = EmptyClipboard()
             log("EmptyClipboard()=%s", r)
             if not r:
@@ -791,7 +689,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             cleanup()
             return True
 
-        def set_clipboard_error(error_text=""):
+        def set_clipboard_error(error_text="") -> None:
             log("set_clipboard_error(%s)", error_text)
             if error_text:
                 log.warn("Warning: failed to set clipboard data")
@@ -802,3 +700,106 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
     def __repr__(self):
         return "Win32ClipboardProxy"
+
+
+class Win32Clipboard(ClipboardTimeoutHelper):
+    """
+        Use Native win32 API to access the clipboard
+    """
+
+    def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
+        self.init_window()
+        super().__init__(send_packet_cb, progress_cb, **kwargs)
+
+    def init_window(self) -> None:
+        log("Win32Clipboard.init_window() creating clipboard window class and instance")
+        self.wndclass = WNDCLASSEX()
+        self.wndclass.cbSize = sizeof(WNDCLASSEX)
+        self.wndclass.lpfnWndProc = WNDPROC(self.wnd_proc)
+        self.wndclass.style = win32con.CS_GLOBALCLASS
+        self.wndclass.hInstance = GetModuleHandleA(0)
+        self.wndclass.lpszClassName = CLIPBOARD_WINDOW_CLASS_NAME
+        self.wndclass_handle = RegisterClassExW(byref(self.wndclass))
+        log("RegisterClassExA(%s)=%#x", self.wndclass.lpszClassName, self.wndclass_handle)
+        if self.wndclass_handle == 0:
+            raise WinError()
+        style = win32con.WS_CAPTION  # win32con.WS_OVERLAPPED
+        self.window = CreateWindowExW(0, self.wndclass_handle, "Clipboard", style,
+                                      0, 0, win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT,
+                                      win32con.HWND_MESSAGE, 0, self.wndclass.hInstance, None)
+        log("clipboard window=%#x", self.window)
+        if not self.window:
+            raise WinError()
+        if not AddClipboardFormatListener(self.window):
+            log.warn("Warning: failed to setup clipboard format listener")
+            log.warn(" %s", get_last_error())
+
+    def wnd_proc(self, hwnd: int, msg: int, wparam: int, lparam: int) -> int:
+        r = DefWindowProcW(hwnd, msg, wparam, lparam)
+        if msg not in CLIPBOARD_EVENTS:
+            return r
+        owner = GetClipboardOwner()
+        log("clipboard event: %s, current owner: %s",
+            CLIPBOARD_EVENTS.get(msg), get_owner_info(owner, self.window))
+        if msg == WM_CLIPBOARDUPDATE and owner != self.window:
+            owner = GetClipboardOwner()
+            owner_info = get_owner_info(owner, self.window)
+            if is_blacklisted(owner_info):
+                # ie: don't try to sync from VirtualBox
+                log("CLIPBOARDUPDATE coming from '%s' ignored", owner_info)
+                return r
+            min_delay = 500 * int(is_syncdelay(owner_info))
+            log("CLIPBOARDUPDATE coming from '%s', min_delay=%i", owner_info, min_delay)
+            for proxy in self._clipboard_proxies.values():
+                if not proxy._block_owner_change:
+                    proxy.schedule_emit_token(min_delay)
+        return r
+
+    def cleanup(self) -> None:
+        super().cleanup()
+        self.cleanup_window()
+
+    def cleanup_window(self) -> None:
+        w = self.window
+        if w:
+            self.window = None
+            RemoveClipboardFormatListener(w)
+            DestroyWindow(w)
+        wch = self.wndclass_handle
+        if wch:
+            self.wndclass = None
+            self.wndclass_handle = None
+            UnregisterClassW(CLIPBOARD_WINDOW_CLASS_NAME, GetModuleHandleA(0))
+
+    def make_proxy(self, selection: str) -> Win32ClipboardProxy:
+        proxy = Win32ClipboardProxy(self.window, selection,
+                                    self._send_clipboard_request_handler, self._send_clipboard_token_handler)
+        proxy.set_want_targets(self._want_targets)
+        proxy.set_direction(self.can_send, self.can_receive)
+        return proxy
+
+    ############################################################################
+    # just pass ATOM targets through
+    # (we use them internally as strings)
+    ############################################################################
+    def _munge_wire_selection_to_raw(self, encoding, dtype, dformat, data) -> bytes | str:
+        if encoding == "atoms":
+            return _filter_targets(data)
+        return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
+
+    def _munge_raw_selection_to_wire(self, target, dtype, dformat, data) -> tuple[Any, Any]:
+        if dtype == "ATOM":
+            assert isinstance(data, (tuple, list))
+            return "atoms", _filter_targets(data)
+        return super()._munge_raw_selection_to_wire(target, dtype, dformat, data)
+
+
+def set_err(msg: str) -> None:
+    log.warn("Warning: cannot set clipboard value")
+    log.warn(" %s", msg)
+
+
+def clear_error(error_text="") -> None:
+    log.warn("Warning: failed to clear the clipboard")
+    if error_text:
+        log.warn(" %s", error_text)

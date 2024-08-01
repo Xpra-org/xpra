@@ -206,7 +206,7 @@ class NetworkState(StubClientMixin):
                 if LOG_INFO_RESPONSE == "all" or any(lr.match(k) for lr in logres):
                     log.info(" %s=%s", k, self.server_last_info[k])
 
-    def send_info_request(self, *categories) -> None:
+    def send_info_request(self, *categories: str) -> None:
         if not self.info_request_pending:
             self.info_request_pending = True
             window_ids = ()  # no longer used or supported by servers
