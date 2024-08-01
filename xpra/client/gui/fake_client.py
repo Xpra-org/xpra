@@ -47,6 +47,8 @@ class FakeClient(AdHocStruct):
         return None
 
     def no_scaling(self, *args):
+        if len(args) == 1:
+            return args[0]
         return args
 
     def signal_disconnect_and_quit(self, *_args):
@@ -81,3 +83,15 @@ class FakeClient(AdHocStruct):
 
     def control_refresh(self, *_args, **_kwargs):
         log("send_control_refresh ignored")
+
+    def fsx(self, v):
+        return v
+
+    def fsy(self, v):
+        return v
+
+    def sx(self, v):
+        return v
+
+    def sy(self, v):
+        return v
