@@ -1238,7 +1238,7 @@ class GLWindowBackingBase(WindowBackingBase):
                                options: typedict, callbacks: PaintCallbacks) -> None:
         # overridden to handle YUV using shaders:
         pixel_format = img.get_pixel_format()
-        if pixel_format.startswith("YUV"):
+        if pixel_format.startswith("YUV") or pixel_format=="NV12":
             w = img.get_width()
             h = img.get_height()
             shader = f"{pixel_format}_to_RGB"
