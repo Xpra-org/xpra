@@ -12,7 +12,7 @@ Functions for converting to and from X11 properties.
 
 import struct
 from io import BytesIO
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any, NoReturn, Final
 
 from xpra.util.str_fn import hexstr
@@ -44,7 +44,7 @@ def unsupported(*_args) -> NoReturn:
 sizeof_long = struct.calcsize(b"@L")
 
 
-def _force_length(name: str, data, length: int, noerror_length: int = -1):
+def _force_length(name: str, data: bytes, length: int, noerror_length: int = -1) -> bytes:
     if len(data) == length:
         return data
     if len(data) != noerror_length:
@@ -56,7 +56,7 @@ def _force_length(name: str, data, length: int, noerror_length: int = -1):
 
 
 class NetWMStrut:
-    def __init__(self, data):
+    def __init__(self, data: bytes):
         # This eats both _NET_WM_STRUT and _NET_WM_STRUT_PARTIAL.  If we are
         # given a _NET_WM_STRUT instead of a _NET_WM_STRUT_PARTIAL, then it
         # will be only length 4 instead of 12, we just don't define the other values
@@ -83,7 +83,7 @@ class NetWMStrut:
 class MotifWMHints:
     __slots__ = ("flags", "functions", "decorations", "input_mode", "status")
 
-    def __init__(self, data):
+    def __init__(self, data: bytes):
         # some applications use the wrong size (ie: blender uses 16) so pad it:
         pdata = _force_length("_MOTIF_WM_HINTS", data, sizeof_long*5, sizeof_long*4)
         self.flags, self.functions, self.decorations, self.input_mode, self.status = \
@@ -170,33 +170,33 @@ class MotifWMHints:
         TEAROFF_WINDOW : "tearoff",
     }
 
-    def bits_to_strs(self, int_val: int, flag_bit: int, dict_str: dict):
+    def bits_to_strs(self, int_val: int, flag_bit: int, dict_str: dict) -> Sequence[str]:
         if flag_bit and not self.flags & (2**flag_bit):
             # the bit is not set, ignore this attribute
             return ()
         return tuple(v for k, v in dict_str.items() if int_val & (2**k))
 
-    def flags_strs(self):
+    def flags_strs(self) -> Sequence[str]:
         return self.bits_to_strs(self.flags,
                                  0,
                                  MotifWMHints.FLAGS_STR)
 
-    def functions_strs(self):
+    def functions_strs(self) -> Sequence[str]:
         return self.bits_to_strs(self.functions,
                                  MotifWMHints.FUNCTIONS_BIT,
                                  MotifWMHints.FUNCTIONS_STR)
 
-    def decorations_strs(self):
+    def decorations_strs(self) -> Sequence[str]:
         return self.bits_to_strs(self.decorations,
                                  MotifWMHints.DECORATIONS_BIT,
                                  MotifWMHints.DECORATIONS_STR)
 
-    def input_strs(self):
+    def input_strs(self) -> str:
         if self.flags & (2**MotifWMHints.INPUT_MODE_BIT):
             return MotifWMHints.INPUT_STR.get(self.input_mode, "unknown mode: %i" % self.input_mode)
         return "modeless"
 
-    def status_strs(self):
+    def status_strs(self) -> Sequence[str]:
         return self.bits_to_strs(self.input_mode,
                                  MotifWMHints.STATUS_BIT,
                                  MotifWMHints.STATUS_STR)
@@ -212,7 +212,7 @@ class MotifWMHints:
         return f"MotifWMHints({attrs})"
 
 
-def _read_image(stream):
+def _read_image(stream) -> tuple[int, int, str, bytes] | None:
     try:
         int_size = struct.calcsize(b"@I")
         long_size = struct.calcsize(b"@L")
@@ -240,7 +240,7 @@ def _read_image(stream):
 # (width, height, fmt, data)
 
 
-def NetWMIcons(data):
+def NetWMIcons(data) -> list | None:
     icons = []
     stream = BytesIO(data)
     while True:
@@ -308,19 +308,19 @@ PROP_SIZES = {
 }
 
 
-def prop_encode(etype, value):
+def prop_encode(etype : list | tuple | str, value):
     if isinstance(etype, (list, tuple)):
         return _prop_encode_list(etype[0], value)
     return _prop_encode_scalar(etype, value)
 
 
-def _prop_encode_scalar(etype: str, value):
+def _prop_encode_scalar(etype: str, value) -> tuple[str, int, bytes]:
     pytype, atom, formatbits, serialize = PROP_TYPES[etype][:4]
     assert isinstance(value, pytype), "value for atom %s is not a %s: %s" % (atom, pytype, type(value))
     return atom, formatbits, serialize(value)
 
 
-def _prop_encode_list(etype: str, value):
+def _prop_encode_list(etype: str, value) -> tuple[str, int, bytes]:
     _, atom, formatbits, _, _, terminator = PROP_TYPES[etype]
     if terminator is None:
         raise ValueError(f"cannot encode lists of {etype!r}")
@@ -331,20 +331,20 @@ def _prop_encode_list(etype: str, value):
     return atom, formatbits, terminator.join(x for x in serialized if x is not None)
 
 
-def prop_decode(etype: str | list | tuple, data):
+def prop_decode(etype: str | list | tuple, data: bytes):
     if isinstance(etype, (list, tuple)):
         return _prop_decode_list(etype[0], data)
     return _prop_decode_scalar(etype, data)
 
 
-def _prop_decode_scalar(etype: str, data):
+def _prop_decode_scalar(etype: str, data: bytes):
     pytype, _, _, _, deserialize, _ = PROP_TYPES[etype]
     value = deserialize(data)
     assert value is None or isinstance(value, pytype), "expected a %s but value is a %s" % (pytype, type(value))
     return value
 
 
-def _prop_decode_list(etype: str, data):
+def _prop_decode_list(etype: str, data) -> list:
     _, _, formatbits, _, _, terminator = PROP_TYPES[etype]
     if terminator:
         datums = data.split(terminator)

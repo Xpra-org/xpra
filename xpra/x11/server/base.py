@@ -35,7 +35,7 @@ X11Keyboard = X11KeyboardBindings()
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 
 
-def root_prop_set(prop_name: str, prop_type, value) -> None:
+def root_prop_set(prop_name: str, prop_type: list | tuple | str, value) -> None:
     # pylint: disable=import-outside-toplevel
     prop_set(X11Keyboard.get_root_xid(), prop_name, prop_type, value)
 

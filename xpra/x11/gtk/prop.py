@@ -70,12 +70,12 @@ def _to_atom(a) -> bytes:
 PROP_TYPES["atom"] = (str, "ATOM", 32, _to_atom, _get_atom, b"")
 
 
-def prop_set(xid: int, key: str, etype, value) -> None:
+def prop_set(xid: int, key: str, etype: list | tuple | str, value) -> None:
     dtype, dformat, data = prop_encode(etype, value)
     raw_prop_set(xid, key, dtype, dformat, data)
 
 
-def raw_prop_set(xid: int, key: str, dtype, dformat, data) -> None:
+def raw_prop_set(xid: int, key: str, dtype: str, dformat: int, data) -> None:
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     with xsync:
