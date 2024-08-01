@@ -1727,7 +1727,7 @@ class WindowVideoSource(WindowSource):
                     if self.actual_scaling == (num, denom):
                         # try to stick to the same settings longer:
                         # give it a score boost (lowest score wins):
-                        elapsed = min(16, max(0, now - self.last_pipeline_time))
+                        elapsed = min(16.0, max(0.0, now - self.last_pipeline_time))
                         # gain will range from 4 (after 0 seconds) to 1 (after 9 seconds)
                         gain = sqrt(17 - elapsed)
                         score = round(score / gain)
