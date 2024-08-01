@@ -175,14 +175,18 @@ def get_xauthority_path(display_name: str) -> str:
     assert POSIX
     # pylint: disable=import-outside-toplevel
     from xpra.platform.posix.paths import _get_xpra_runtime_dir
-    if PRIVATE_XAUTH:
+    has_home = os.path.exists(os.path.expanduser("~"))
+    if PRIVATE_XAUTH or (not has_home and os.environ.get("XDG_RUNTIME_DIR")):
         d = _get_xpra_runtime_dir()
         if XAUTH_PER_DISPLAY:
             filename = "Xauthority-" + display_name.lstrip(":")
         else:
             filename = "Xauthority"
     else:
-        d = "~/"
+        if has_home:
+            d = "~/"
+        else:
+            d = os.environ.get("TMPDIR", "/tmp")
         filename = ".Xauthority"
     return os.path.join(d, filename)
 
@@ -322,7 +326,8 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
                 except OSError as e:
                     log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
                     raise InitException(f"failed to execute xvfb command {xvfb_cmd}: {e}") from None
-                assert xvfb.poll() is None, "xvfb command failed"
+                if xvfb.poll() is not None:
+                    raise InitException(f"xvfb command has terminated: {xvfb_cmd}")
                 # Read the display number from the pipe we gave to Xvfb
                 try:
                     buf = read_displayfd(r_pipe)
