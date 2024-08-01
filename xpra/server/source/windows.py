@@ -23,7 +23,7 @@ from xpra.net.compression import Compressed
 from xpra.util.str_fn import bytestostr, memoryview_to_bytes
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED, force_size_constraints
+from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED, force_size_constraint
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -397,7 +397,7 @@ class WindowsMixin(StubSourceMixin):
         if self.readonly:
             metalog("overriding size-constraints for readonly mode")
             size = window.get_dimensions()
-            metadata["size-constraints"] = force_size_constraints(*size)
+            metadata["size-constraints"] = force_size_constraint(*size)
         return metadata
 
     def new_tray(self, wid: int, window, w: int, h: int) -> None:
