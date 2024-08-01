@@ -118,6 +118,8 @@ def filt(prefix: str, name: str, inlist, all_fn: Callable, all_options: Iterable
     def ap(v: str) -> str:
         if v.startswith("-"):
             return "-"+autoprefix(prefix, v[1:])
+        if v.startswith("no-"):
+            return "-"+autoprefix(prefix, v[3:])
         return autoprefix(prefix, v)
 
     def apl(items: Iterable[str]) -> list[str]:
