@@ -9,21 +9,20 @@ import unittest
 
 from xpra.util.objects import AdHocStruct
 from xpra.codecs.image import ImageWrapper
+from xpra.common import noop
 from xpra.server.rfb.source import RFBSource
-
-def noop(*_args):
-    pass
 
 
 class TestRFB(unittest.TestCase):
 
     def test_rfb_source(self):
-        #fake protocol:
+        # fake protocol:
         p = AdHocStruct()
         p.send = noop
         p.queue_size = lambda : 1
-        #fake window:
+        # fake window:
         window = AdHocStruct()
+
         def get_image(x, y, w, h):
             stride = (w+8)*4
             pixels = b"0"*stride*h
@@ -38,7 +37,7 @@ class TestRFB(unittest.TestCase):
             s.keys_changed()
             s.set_default_keymap()
             s.send_cursor()
-            s.send_server_event()
+            s.send_server_event("fake-event")
             s.update_mouse()
             s.damage(1, window, 0, 0, 1024, 768, {"polling" : protocol is None})
             s.damage(1, window, 0, 0, 2, 2, {"polling" : protocol is None})
@@ -46,13 +45,14 @@ class TestRFB(unittest.TestCase):
             s.bell()
             assert not s.is_closed()
             s.close()
-            #noop:
+            # noop:
             s.damage(1, window, 0, 0, 2, 2, {"polling" : protocol is None})
             assert s.is_closed()
 
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
