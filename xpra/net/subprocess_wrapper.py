@@ -259,7 +259,7 @@ class SubprocessCallee:
             self.net_stop()
             return
         if command == GIBBERISH:
-            log.warn("gibberish received:")
+            log.warn("Warning: gibberish received:")
             log.warn(" %s", repr_ellipsized(packet[1], limit=80))
             log.warn(" stopping")
             self.net_stop()
