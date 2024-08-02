@@ -235,7 +235,7 @@ class SubprocessCallee:
     def send(self, packet_type: str, *args: PacketElement) -> None:
         if HEXLIFY_PACKETS:
             args = [packet_type] + [hexstr(str(x)[:32]) for x in args]
-        log("send: adding '%s' message (%s items already in queue)", args[0], self.send_queue.qsize())
+        log("send: adding '%s' message (%s items already in queue)", packet_type, self.send_queue.qsize())
         packet = (packet_type, *args)
         self.send_queue.put(packet)
         p = self.protocol
