@@ -780,7 +780,7 @@ class ServerBase(ServerBaseClass):
     def cleanup_source(self, source) -> None:
         ptype = "xpra"
         if FULL_INFO > 0:
-            ptype = getattr(source, "client_type", "xpra")
+            ptype = getattr(source, "client_type", "") or "xpra"
         self.server_event("connection-lost", source.uuid)
         remaining_sources = tuple(self._server_sources.values())
         if self.ui_driver == source.uuid:
