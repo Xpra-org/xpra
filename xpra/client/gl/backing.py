@@ -664,11 +664,11 @@ class GLWindowBackingBase(WindowBackingBase):
                     continue  # nothing left!
             if x + xdelta < 0:
                 rect = (x, y, w, h)
-                fail(f"horizontal scroll by {xdelta} rectangle {rect} overflows the backing buffer size {self.size}")
+                fail(f"horizontal scroll {x} by {xdelta} rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
             if y + ydelta < 0:
                 rect = (x, y, w, h)
-                fail(f"vertical scroll by {ydelta} rectangle {rect} overflows the backing buffer size {self.size}")
+                fail(f"vertical scroll {y} by {ydelta} rectangle {rect} overflows the backing buffer size {self.size}")
                 continue
             # opengl buffer is upside down, so we must invert Y coordinates: bh-(..)
             glBlitFramebuffer(x, bh - y, x + w, bh - (y + h),
@@ -922,7 +922,6 @@ class GLWindowBackingBase(WindowBackingBase):
     def draw_border(self) -> None:
         bw, bh = self.size
         rgba = tuple(round(v * 256) for v in (self.border.red, self.border.green, self.border.blue, self.border.alpha))
-
         self.draw_rectangle(0, 0, bw, bh, self.border.size, *rgba)
 
     def paint_box(self, encoding: str, x: int, y: int, w: int, h: int) -> None:
@@ -1246,6 +1245,7 @@ class GLWindowBackingBase(WindowBackingBase):
                 shader += "_FULL"
             self.paint_planar(context, shader, encoding, img, x, y, w, h, width, height, options, callbacks)
             return
+        # this will call do_paint_rgb
         super().do_paint_image_wrapper(context, encoding, img, x, y, width, height, options, callbacks)
 
     def do_paint_rgb(self, context, encoding: str, rgb_format: str, img_data,
