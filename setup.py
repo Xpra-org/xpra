@@ -236,6 +236,7 @@ service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
 proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
+qt6_client_ENABLED = False
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
 cythonize_more_ENABLED = False
@@ -419,7 +420,7 @@ SWITCHES += [
     "scripts",
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
     "gtk_x11", "service",
-    "gtk3", "example",
+    "gtk3", "example", "qt6_client",
     "ism_ext",
     "pam", "xdg_open",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
@@ -2464,6 +2465,8 @@ if client_ENABLED:
     add_packages("xpra.client.base")
     add_packages("xpra.client.mixins", "xpra.client.auth")
     add_modules("xpra.scripts.pinentry")
+    if qt6_client_ENABLED:
+        add_modules("xpra.client.qt6")
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
@@ -2658,6 +2661,8 @@ if cythonize_more_ENABLED:
             ax("xpra.client.gtk3")
         ax("xpra.client.gui")
         ax("xpra.client.mixins")
+        if qt6_client_ENABLED:
+            ax("xpra.client.qt6")
     if clipboard_ENABLED:
         ax("xpra.clipboard")
     if codecs_ENABLED:
