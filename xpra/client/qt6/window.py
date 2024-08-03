@@ -203,10 +203,23 @@ class ClientWindow(QMainWindow):
         self.send("key-action", self.wid, name, pressed, modifiers, keyval, string, keycode, group)
 
     def draw(self, x, y, w, h, coding, data, stride):
+        if coding in ("png", "jpg", "webp"):
+            from PIL import Image
+            from io import BytesIO
+            img = Image.open(BytesIO(data))
+            if img.mode == "RGBA":
+                coding = "rgb32"
+                stride = w * 4
+            else:
+                assert img.mode == "RGB"
+                coding = "rgb24"
+                stride = w * 3
+            data = img.tobytes("raw", img.mode)
         assert coding in ("rgb24", "rgb32")
+        fmt = QImage.Format.Format_RGB888 if coding == "rgb24" else QImage.Format.Format_ARGB32_Premultiplied
+        image = QImage(data, w, h, stride, fmt)
         canvas = self.label.pixmap()
         painter = QPainter(canvas)
-        image = QImage(data, w, h, stride, QImage.Format.Format_BGR888)
         point = QPoint(x, y)
         painter.drawImage(point, image)
         painter.end()

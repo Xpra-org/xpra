@@ -76,7 +76,7 @@ class Qt6Client:
             "windows": True,
             "keyboard": True,
             "mouse": True,
-            "encodings": ("rgb32", "rgb24", ),
+            "encodings": ("rgb32", "rgb24", "png", "jpg", "webp"),
         }
         self.send("hello", hello)
 
