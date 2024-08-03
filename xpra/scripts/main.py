@@ -1460,9 +1460,7 @@ def get_sockpath(display_desc: dict[str, Any], error_cb, timeout=CONNECT_TIMEOUT
 
 
 def run_client(script_file, cmdline, error_cb, opts, extra_args, mode: str) -> ExitValue:
-    if mode == "attach":
-        check_gtk_client()
-    else:
+    if mode != "attach":
         opts.reconnect = False
     if mode in ("attach", "detach") and len(extra_args) == 1 and extra_args[0] == "all":
         # run this command for each display:
@@ -1522,12 +1520,28 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode: str) -> E
 
 
 def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
-    # on win32, we must run the main loop
-    # before we can call connect()
-    # because connect() may run a subprocess,
-    # and Gdk locks up the system if the main loop is not running by then!
-    GLib = gi_import("GLib")
     log = Logger("network")
+    backend = os.environ.get("XPRA_GUI_BACKEND", "gtk")
+    if backend == "qt":
+
+        def call(fn, *args):
+            fn(*args)
+
+        def setup_connection():
+            do_setup_connection()
+
+    else:
+        # on win32, we must run the main loop
+        # before we can call connect()
+        # because connect() may run a subprocess,
+        # and Gdk locks up the system if the main loop is not running by then!
+        def setup_connection():
+            log("setup_connection() starting setup-connection thread")
+            from xpra.util.thread import start_thread
+            start_thread(do_setup_connection, "setup-connection", True)
+
+        GLib = gi_import("GLib")
+        call = GLib.idle_add
 
     def do_setup_connection():
         try:
@@ -1547,7 +1561,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
         except InitInfo as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("failed to connect:", f" {e}")
-            GLib.idle_add(app.quit, ExitCode.OK)
+            call(app.quit, ExitCode.OK)
         except InitExit as e:
             from xpra.net.ssl_util import ssl_retry
             ssllog = Logger("ssl")
@@ -1559,22 +1573,17 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
                 return
             ssllog("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("Warning: failed to connect:", f" {e}")
-            GLib.idle_add(app.quit, e.status)
+            call(app.quit, e.status)
         except InitException as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("Warning: failed to connect:", f" {e}")
-            GLib.idle_add(app.quit, ExitCode.CONNECTION_FAILED)
+            call(app.quit, ExitCode.CONNECTION_FAILED)
         except Exception as e:
             log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
             werr("Error: failed to connect:", f" {e}")
-            GLib.idle_add(app.quit, ExitCode.CONNECTION_FAILED)
+            call(app.quit, ExitCode.CONNECTION_FAILED)
 
-    def setup_connection():
-        log("setup_connection() starting setup-connection thread")
-        from xpra.util.thread import start_thread
-        start_thread(do_setup_connection, "setup-connection", True)
-
-    GLib.idle_add(setup_connection)
+    call(setup_connection)
 
 
 def get_client_app(cmdline, error_cb, opts, extra_args, mode: str):
@@ -2017,12 +2026,21 @@ def enforce_client_features() -> None:
 
 
 def make_client(error_cb: Callable, opts):
+    backend = os.environ.get("XPRA_GUI_BACKEND", "gtk")
+    if backend == "qt":
+        from xpra.client.qt6.client import make_client
+        return make_client()
+    elif backend != "gtk":
+        raise ValueError(f"invalid gui backend {backend!r}")
+
     progress_process = None
     if opts.splash is not False:
         from xpra import __version__
         progress_process = make_progress_process("Xpra Client v%s" % __version__)
 
     try:
+        check_gtk_client()
+
         from xpra.platform.gui import init as gui_init
         gui_init()
 

@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import uuid
+import signal
 from time import monotonic
 from typing import Any
 
@@ -42,6 +43,7 @@ class Qt6Client:
         return socket
 
     def connect(self, host: str, port: int):
+        log.warn(f"connect({host}, {port})")
         self.socket.connectToHost(host, port)
         self.socket.connected.connect(self.socket_connected)
 
@@ -56,7 +58,10 @@ class Qt6Client:
 
     def socket_disconnected(self, *args):
         netlog(f"socket_disconnected{args}")
-        QApplication.exit(int(ExitCode.CONNECTION_LOST))
+        self.quit(ExitCode.CONNECTION_LOST)
+
+    def quit(self, exit_code):
+        QApplication.exit(int(exit_code))
 
     def socket_connected(self, *args):
         netlog(f"socket_connected{args}")
@@ -187,3 +192,52 @@ class Qt6Client:
         if state == Qt.ApplicationState.ApplicationInactive:
             self.focused = 0
             self.send("focus", 0, ())
+
+
+class XpraQt6Client(Qt6Client):
+
+    def show_progress(self, pct: int, msg):
+        log(f"show_progress({pct}, {msg})")
+
+    def init(self, opts):
+        pass
+
+    def init_ui(self, opts):
+        pass
+
+    def cleanup(self):
+        pass
+
+    def setup_connection(self, conn):
+        from xpra.net.bytestreams import SocketConnection
+        if not isinstance(conn, SocketConnection) or conn.socktype != "tcp":
+            raise ValueError("only tcp socket connections are supported!")
+        log.warn(f"conn={conn}, {conn.remote}")
+
+        def connect():
+            # self.socket.setSocketDescriptor(conn._socket.fileno())
+            log.warn("wrap")
+            log.warn(f"wrap: {conn.remote}")
+            self.connect(*conn.remote)
+
+        QTimer.singleShot(0, connect)
+
+        class FakeProtocol:
+            def start(self):
+                log.warn("start()")
+        return FakeProtocol()
+
+
+def make_client() -> QApplication:
+    app = QApplication([])
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    client = XpraQt6Client()
+    app.applicationStateChanged.connect(client.state_changed)
+    client.run = app.exec
+    return client
+
+
+def run_client(host: str, port: int) -> int:
+    client = make_client()
+    client.connect(host, port)
+    return client.run()

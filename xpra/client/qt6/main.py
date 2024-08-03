@@ -5,25 +5,17 @@
 # later version. See the file COPYING for details.
 
 import sys
-import signal
 
 
 def main(args) -> int:
-    from PyQt6.QtWidgets import QApplication
     if len(args) != 3:
         print("usage: %s host port" % (args[0], ))
         from xpra.exit_codes import ExitCode
         sys.exit(ExitCode.UNSUPPORTED)
-    app = QApplication([])
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
     host = args[1]
     port = int(args[2])
-    from xpra.client.qt6.client import Qt6Client
-    client = Qt6Client()
-    client.connect(host, port)
-    app.applicationStateChanged.connect(client.state_changed)
-    #app.focusChanged.connect
-    return app.exec()
+    from xpra.client.qt6.client import run_client
+    return run_client(host, port)
 
 
 if __name__ == "__main__":
