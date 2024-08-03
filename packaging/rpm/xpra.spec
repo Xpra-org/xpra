@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -30,10 +30,15 @@ autoprov: no
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
+%define qt6 0
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild
 %if 0%{?fedora}>=39
 %global debug_package %{nil}
+%endif
+%if 0%{?fedora}%{?el9}
+%define qt6 1
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client
 %endif
 %if 0%{?el10}
 %global debug_package %{nil}
@@ -108,6 +113,7 @@ Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
+Suggests:           %{package_prefix}-client-qt6 = %{version}-%{release}
 Conflicts:			python3-xpra < 6
 Obsoletes:			python3-xpra < 6
 %if "%{package_prefix}"!="xpra"
@@ -342,6 +348,16 @@ BuildRequires:		xclip
 %endif
 %description -n%{package_prefix}-client-gtk3
 This package contains the GTK3 xpra client.
+
+
+%if %{qt6}
+%package -n %{package_prefix}-client-qt6
+Summary:			Experimental xpra Qt6 client
+Requires:			%{package_prefix}-client = %{version}-%{release}
+Requires:			%{python3}-pyqt6
+%description -n%{package_prefix}-client-qt6
+This package contains an experimental client using the Qt6 toolkit.
+%endif
 
 
 %package -n %{package_prefix}-client-gnome
@@ -684,6 +700,11 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/client/auth/
 %{python3_sitearch}/xpra/client/base/
 %pycached %{python3_sitearch}/xpra/client/__init__.py
+
+%if %{qt6}
+%files -n %{package_prefix}-client-qt6
+%{python3_sitearch}/xpra/client/qt6/
+%endif
 
 %files -n %{package_prefix}-client-gtk3
 %{python3_sitearch}/xpra/client/gui/
