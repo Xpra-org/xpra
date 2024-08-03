@@ -165,7 +165,8 @@ class ChildCommandServer(StubServerMixin):
         if ss.is_closed():
             return
         xdg_menu = self._get_xdg_menu_data() or {}
-        ss.send_setting_change("xdg-menu", xdg_menu)
+        if ss.xdg_menu:
+            ss.send_setting_change("xdg-menu", xdg_menu)
         log(f"{len(xdg_menu)} menu data entries sent to {ss}")
 
     def send_updated_menu(self, xdg_menu) -> None:

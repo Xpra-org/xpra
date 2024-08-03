@@ -195,7 +195,7 @@ class ClientConnection(StubSourceMixin):
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.control_commands = c.strtupleget("control_commands")
-        self.xdg_menu = c.boolget("xdg-menu", True)
+        self.xdg_menu = c.boolget("xdg-menu", False)
         bandwidth_limit = c.intget("bandwidth-limit", 0)
         server_bandwidth_limit = self.server_bandwidth_limit
         if self.server_bandwidth_limit is None:
