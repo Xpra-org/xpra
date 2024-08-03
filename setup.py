@@ -1836,7 +1836,7 @@ if WIN32:
                 "pycuda",
                 "pynvml",
             ]
-            add_packages("numpy.core._methods", "numpy.lib.format")
+            add_packages("numpy.lib.format")
         else:
             remove_packages(
                 "numpy",
