@@ -37,7 +37,7 @@ def dump_frames(frames, logger=None) -> None:
                 fidstr = hex(fid)
             except TypeError:
                 fidstr = str(fid)
-        logger("%i: %s %s:", i, fidstr, frame, backtrace=True)
+        logger("%i: %s", i, fidstr, frame=frame)
 
 
 def detect_leaks() -> Callable[[], bool]:
