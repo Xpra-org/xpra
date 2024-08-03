@@ -43,7 +43,7 @@ class Qt6Client:
         return socket
 
     def connect(self, host: str, port: int):
-        log.warn(f"connect({host}, {port})")
+        log(f"connect({host}, {port})")
         self.socket.connectToHost(host, port)
         self.socket.connected.connect(self.socket_connected)
 
@@ -195,6 +195,10 @@ class Qt6Client:
 
 
 class XpraQt6Client(Qt6Client):
+    """
+    This class is just here to add the methods expected by the xpra.scripts.main script
+    as these exist in the GTK3 client class.
+    """
 
     def show_progress(self, pct: int, msg):
         log(f"show_progress({pct}, {msg})")
@@ -209,22 +213,27 @@ class XpraQt6Client(Qt6Client):
         pass
 
     def setup_connection(self, conn):
+        """
+        Warnings:
+            * this only works for plain `tcp` sockets
+            * I couldn't figure out how to pass the existing socket file descriptor to QTcpSocket,
+            so we re-open the connection instead...
+        """
         from xpra.net.bytestreams import SocketConnection
         if not isinstance(conn, SocketConnection) or conn.socktype != "tcp":
             raise ValueError("only tcp socket connections are supported!")
-        log.warn(f"conn={conn}, {conn.remote}")
 
         def connect():
             # self.socket.setSocketDescriptor(conn._socket.fileno())
-            log.warn("wrap")
-            log.warn(f"wrap: {conn.remote}")
             self.connect(*conn.remote)
 
         QTimer.singleShot(0, connect)
 
         class FakeProtocol:
+
             def start(self):
-                log.warn("start()")
+                log("FakeProtocol.start()")
+                conn.close()
         return FakeProtocol()
 
 
