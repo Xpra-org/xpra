@@ -332,6 +332,7 @@ class KeyboardConfig(KeyboardConfigBase):
         if translate_only:
             self.keycode_translation = set_keycode_translation(self.x11_keycodes, self.keycodes)
             self.add_gtk_keynames()
+            self.add_loose_matches()
             self.compute_modifiers()
             self.compute_modifier_keynames()
             self.compute_client_modifier_keycodes()
@@ -382,6 +383,7 @@ class KeyboardConfig(KeyboardConfigBase):
             log("keyname_for_mod=%s", self.keynames_for_mod)
             clean_keyboard_state()
             self.update_keycode_mappings()
+            self.add_loose_matches()
 
 
     def add_gtk_keynames(self) -> None:
@@ -394,6 +396,12 @@ class KeyboardConfig(KeyboardConfigBase):
                 self.keycode_translation[keyname] = keycode
                 if keyname in DEBUG_KEYSYMS:
                     log.info("add_gtk_keynames: %s=%s", keyname, keycode)
+
+    def add_loose_matches(self) -> None:
+        # add lowercase versions of all keynames
+        for keyname, keycode in tuple(self.keycode_translation.items()):
+            if not keyname.islower():
+                self.keycode_translation[keyname.lower()] = keycode
 
     def set_default_keymap(self) -> None:
         """
