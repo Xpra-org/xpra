@@ -45,6 +45,7 @@ if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-webcam"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-win32_tools"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-docs"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-qt6_client"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --with-Os"
 	shift
 else

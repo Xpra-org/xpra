@@ -116,7 +116,7 @@ class ClientWindow(QMainWindow):
             self.client.update_focus(0)
         if event.type() == QEvent.Type.WindowActivate:
             self.client.update_focus(self.wid)
-        log(f"{object}: {event} {event.type().name}")
+        log.info(f"{object}: {event} {event.type().name}")
         return False
 
     def keyPressEvent(self, event: QKeyEvent):

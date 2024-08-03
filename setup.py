@@ -861,6 +861,8 @@ if not client_ENABLED and not server_ENABLED:
     excludes += ["PIL"]
 if not dbus_ENABLED:
     excludes += ["dbus"]
+if not qt6_client_ENABLED:
+    excludes += ["PyQt6"]
 
 
 # because of differences in how we specify packages and modules
