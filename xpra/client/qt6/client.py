@@ -149,7 +149,6 @@ class Qt6Client:
         window = ClientWindow(self, wid, x, y, w, h, metadata)
         self.windows[wid] = window
         window.show()
-        self.send("map-window", wid, x, y, w, h)
 
     def _process_lost_window(self, packet):
         wid = int(packet[1])

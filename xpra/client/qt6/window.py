@@ -8,7 +8,7 @@ import sys
 
 from PyQt6.QtCore import Qt, QPoint, QEvent
 from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeyEvent
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QSizePolicy
 
 from xpra.client.qt6.keys import key_names
 from xpra.log import Logger
@@ -20,6 +20,11 @@ def get_pointer_position(event) -> tuple[int, int, int, int]:
     glo_pos = event.globalPosition()
     pos = event.position()
     return tuple(round(v) for v in (glo_pos.x(), glo_pos.y(), pos.x(), pos.y()))
+
+
+def get_event_pos(event) -> tuple[int, int]:
+    pos = event.pos()
+    return round(pos.x()), round(pos.y())
 
 
 def get_modifiers(event: QKeyEvent) -> list[str]:
@@ -102,21 +107,76 @@ class ClientWindow(QMainWindow):
         self.wid = wid
         self.setWindowTitle(metadata.get("title", ""))
         self.label = DrawingArea(client, wid)
+        self.label.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
+        self.label.setMinimumSize(1, 1)
         self.canvas = QPixmap(w, h)
         self.canvas.fill(Qt.GlobalColor.white)
         self.label.setPixmap(self.canvas)
         self.setCentralWidget(self.label)
+        self.move(x, y)
         self.resize(w, h)
         self.label.setMouseTracking(True)
         # self.setFixedSize(w, h)
         self.installEventFilter(self)
 
+    def get_canvas_size(self) -> tuple[int, int]:
+        size = self.label.size()
+        return size.width(), size.height()
+
     def eventFilter(self, object, event):
-        if event.type().name == QEvent.Type.WindowDeactivate:
+        etype = event.type()
+        if etype == QEvent.Type.WindowDeactivate:
             self.client.update_focus(0)
-        if event.type() == QEvent.Type.WindowActivate:
+        elif etype == QEvent.Type.WindowActivate:
             self.client.update_focus(self.wid)
-        log.info(f"{object}: {event} {event.type().name}")
+        elif etype == QEvent.Type.Show:
+            x = self.pos().x() + self.label.pos().x()
+            y = self.pos().y() + self.label.pos().y()
+            w, h = self.get_canvas_size()
+            self.send("map-window", self.wid, x, y, w, h)
+        elif etype == QEvent.Type.Hide:
+            log("hidden - iconified?")
+        elif etype == QEvent.Type.Move:
+            x, y = get_event_pos(event)
+            x += self.label.pos().x()
+            y += self.label.pos().y()
+            w, h = self.get_canvas_size()
+            state = {}
+            props = {}
+            self.send("configure-window", self.wid, x, y, w, h, props, 0, state, False)
+        elif etype == QEvent.Type.WindowStateChange:
+            new_state = self.windowState()
+            old_state = event.oldState()
+            changes = {}
+            for mask, name in {
+                Qt.WindowState.WindowMinimized: "iconified",
+                Qt.WindowState.WindowMaximized: "maximized",
+                Qt.WindowState.WindowFullScreen: "fullscreen",
+                Qt.WindowState.WindowActive: "focused",
+            }.items():
+                if new_state & mask != old_state & mask:
+                    changes[name] = bool(new_state & mask)
+            log(f"state changes: {changes}")
+            if changes:
+                props = {}
+                self.send("configure-window", self.wid, 0, 0, 0, 0, props, 0, changes, True)
+        elif etype == QEvent.Type.Resize:
+            size = event.size()
+            x = self.pos().x() + self.label.pos().x()
+            y = self.pos().y() + self.label.pos().y()
+            w = size.width()
+            h = size.height()
+            state = {}
+            props = {}
+            self.send("configure-window", self.wid, x, y, w, h, props, 0, state, False)
+            old_pixmap = self.canvas
+            self.canvas = QPixmap(w, h)
+            self.canvas.fill(Qt.GlobalColor.white)
+            painter = QPainter(self.canvas)
+            painter.drawPixmap(0, 0, old_pixmap)
+            painter.end()
+            self.label.setPixmap(self.canvas)
+        log(f"{object}: {event} {event.type().name}")
         return False
 
     def keyPressEvent(self, event: QKeyEvent):
