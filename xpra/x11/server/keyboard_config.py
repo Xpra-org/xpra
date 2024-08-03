@@ -486,7 +486,7 @@ class KeyboardConfig(KeyboardConfigBase):
         the second with Shift, the third when the Mode_switch key is used with this key and
         the fourth when both the Mode_switch and Shift keys are used.
         """
-        keycode = None
+        keycode = -1
         rgroup = group
 
         def klog(msg, *args):
@@ -526,8 +526,8 @@ class KeyboardConfig(KeyboardConfigBase):
                     levels.append(level)
         kml("will try levels: %s", levels)
         for level in levels:
-            keycode = self.keycode_translation.get((keyname, level))
-            if keycode:
+            keycode = self.keycode_translation.get((keyname, level), -1)
+            if keycode >= 0:
                 keysyms = self.keycode_mappings.get(keycode)
                 klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
                 level0 = levels[0]
@@ -572,10 +572,10 @@ class KeyboardConfig(KeyboardConfigBase):
                     kml("switching group from %i to %i", group, rgroup)
                 break
         # this should not find anything new?:
-        if keycode is None:
+        if keycode < 0:
             keycode = self.keycode_translation.get(keyname, -1)
             klog("=%i, %i (keyname translation)", keycode, rgroup)
-        if keycode is None:
+        if keycode < 0:
             # last resort, find using the keyval:
             display = Gdk.Display.get_default()
             keymap = Gdk.Keymap.get_for_display(display)
@@ -584,7 +584,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 for entry in entries:
                     if entry.group == group:
                         return entry.keycode, entry.group
-        return keycode or 0, rgroup or 0
+        return keycode, rgroup
 
     def get_current_mask(self) -> list:
         # this is only called from an existing xsync context in this module
