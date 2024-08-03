@@ -36,14 +36,14 @@ looks like when attached from an MS Windows 11 desktop client:
 # Installation
 ## Official stable downloads
 * Microsoft Windows: [EXE](https://xpra.org/dists/windows/Xpra-x86_64_Setup.exe), [ZIP](https://xpra.org/dists/windows/Xpra.zip), [MSI](https://xpra.org/dists/windows/Xpra-x86_64.msi)
-* MacOS `x86_64` [DMG](https://xpra.org/dists/MacOS/x86_64/Xpra.dmg) / [PKG](https://xpra.org/dists/MacOS>/x86_64/Xpra.pkg), `arm64` [DMG](https://xpra.org/dists/MacOS/arm64/Xpra.dmg) / [PKG](https://xpra.org/dists/MacOS/arm64/Xpra.pkg)
+* MacOS `x86_64` [DMG](https://xpra.org/dists/MacOS/x86_64/Xpra.dmg) / [PKG](https://xpra.org/dists/MacOS/x86_64/Xpra.pkg), `arm64` [DMG](https://xpra.org/dists/MacOS/arm64/Xpra.dmg) / [PKG](https://xpra.org/dists/MacOS/arm64/Xpra.pkg)
 * Linux: [RPM](https://github.com/Xpra-org/xpra/wiki/Download#-for-rpm-distributions), [DEB](https://github.com/Xpra-org/xpra/wiki/Download#-for-debian-based-distributions)
 
 All the packages are signed. There are also [beta builds](https://xpra.org/beta) available.
 For more information, see [xpra downloads](https://github.com/Xpra-org/xpra/wiki/Download)
 
 ## Build from source
-```
+```sh
 git clone https://github.com/Xpra-org/xpra; cd xpra
 python3 ./setup.py install
 ```
@@ -62,7 +62,7 @@ You can use the [html5 client](https://github.com/Xpra-org/xpra-html5) in which 
 
 ## Seamless Mode
 Run `xterm` on a remote host, display and iteract with it locally (from the client machine):
-```
+```sh
 xpra start ssh://USER@HOST/ --start=xterm
 # hint: xterm must be installed on the HOST.
 ```
@@ -70,7 +70,7 @@ For more examples, see [usage](docs/Usage/README.md).
 
 ## Shadow
 View an existing desktop session running on a remote host:
-```
+```sh
 xpra shadow ssh://USER@HOST/
 ```
 
