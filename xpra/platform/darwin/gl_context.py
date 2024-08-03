@@ -15,7 +15,7 @@ from Cocoa import (
     NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
 )
 from xpra.gtk.window import GDKWindow
-from xpra.client.gl.check import check_PyOpenGL_support
+from xpra.opengl.check import check_PyOpenGL_support
 from xpra.platform.darwin.gdk3_bindings import get_nsview_ptr, enable_transparency, get_backing_scale_factor
 from xpra.util.env import envbool
 from xpra.os_util import gi_import

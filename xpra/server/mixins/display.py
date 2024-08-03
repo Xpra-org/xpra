@@ -78,7 +78,7 @@ class DisplayManager(StubServerMixin):
         try:
             with OSEnvContext():
                 os.environ["XPRA_VERIFY_MAIN_THREAD"] = "0"
-                from xpra.client.gl import backing
+                from xpra.opengl import backing
             assert backing
         except ImportError:
             return {

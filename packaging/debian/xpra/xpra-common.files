@@ -24,6 +24,7 @@ usr/lib/python3*/*/xpra/dbus/
 usr/lib/python3*/*/xpra/gstreamer/
 usr/lib/python3*/*/xpra/gtk/
 usr/lib/python3*/*/xpra/keyboard/
+usr/lib/python3*/*/xpra/opengl/
 usr/lib/python3*/*/xpra/net/
 usr/lib/python3*/*/xpra/platform/
 usr/lib/python3*/*/xpra/scripts/

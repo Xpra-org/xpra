@@ -120,7 +120,7 @@ def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[G
     from xpra.gtk.window import add_close_accel
     from xpra.client.gui.fake_client import FakeClient
     from xpra.client.gui.window_border import WindowBorder
-    from xpra.client.gl.window import get_gl_client_window_module
+    from xpra.opengl.window import get_gl_client_window_module
     from xpra.client.gtk3.window import ClientWindow
     opengl_props, gl_client_window_module = get_gl_client_window_module("force")
     if not gl_client_window_module:

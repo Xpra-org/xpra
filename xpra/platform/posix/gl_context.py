@@ -10,7 +10,7 @@ from ctypes import c_int, c_void_p, byref, cast, POINTER
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool, envfloat, numpy_import_context
-from xpra.client.gl.check import check_PyOpenGL_support
+from xpra.opengl.check import check_PyOpenGL_support
 from xpra.x11.bindings.display_source import get_display_ptr
 from xpra.gtk.error import xsync
 from xpra.gtk.window import set_visual

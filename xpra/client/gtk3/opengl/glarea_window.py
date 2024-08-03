@@ -6,7 +6,7 @@
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.client.gl.gtk3.client_window import GLClientWindowBase
+from xpra.client.gtk3.opengl.client_window import GLClientWindowBase
 from xpra.log import Logger
 
 log = Logger("opengl", "paint")
@@ -18,7 +18,7 @@ GObject = gi_import("GObject")
 class GLClientWindow(GLClientWindowBase):
 
     def get_backing_class(self):
-        from xpra.client.gl.gtk3.glarea_backing import GLAreaBacking
+        from xpra.client.gtk3.opengl.glarea_backing import GLAreaBacking
         return GLAreaBacking
 
     def repaint(self, x: int, y: int, w: int, h: int) -> None:
@@ -37,7 +37,7 @@ def check_support(force_enable=False) -> dict[str, Any]:
     window.resize(400, 400)
     window.set_decorated(False)
     window.realize()
-    from xpra.client.gl.gtk3.glarea_backing import GLArea
+    from xpra.client.gtk3.opengl.glarea_backing import GLArea
     glarea = GLArea(True)
     from xpra.gtk.window import set_visual
     set_visual(glarea, True)
@@ -46,7 +46,7 @@ def check_support(force_enable=False) -> dict[str, Any]:
     gl_context = glarea.get_context()
     gl_context.make_current()
     try:
-        from xpra.client.gl.check import check_PyOpenGL_support
+        from xpra.opengl.check import check_PyOpenGL_support
         return check_PyOpenGL_support(force_enable)
     finally:
         window.destroy()

@@ -655,6 +655,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/gtk/
 %{python3_sitearch}/xpra/keyboard/
 %{python3_sitearch}/xpra/net/
+%{python3_sitearch}/xpra/opengl/
 %{python3_sitearch}/xpra/platform/
 %{python3_sitearch}/xpra/scripts/
 %{python3_sitearch}/xpra-*.egg-info
@@ -709,7 +710,6 @@ rm -rf $RPM_BUILD_ROOT
 %files -n %{package_prefix}-client-gtk3
 %{python3_sitearch}/xpra/client/gui/
 %{python3_sitearch}/xpra/client/gtk3/
-%{python3_sitearch}/xpra/client/gl/
 %{python3_sitearch}/xpra/client/mixins/
 %{_libexecdir}/xpra/xpra_signal_listener
 %{_datadir}/applications/xpra-launcher.desktop

@@ -1265,9 +1265,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 opengllog.warn(" %s", warning)
             self.opengl_props["info"] = "enabled despite: %s" % csv(warnings)
         try:
-            opengllog("init_opengl: going to import xpra.client.gl")
-            __import__("xpra.client.gl", {}, {}, [])
-            from xpra.client.gl.window import get_gl_client_window_module, test_gl_client_window
+            opengllog("init_opengl: going to import xpra.opengl")
+            __import__("xpra.opengl", {}, {}, [])
+            from xpra.opengl.window import get_gl_client_window_module, test_gl_client_window
             self.opengl_props, gl_client_window_module = get_gl_client_window_module(enable_opengl)
             if not gl_client_window_module:
                 opengllog.warn("Warning: no OpenGL backend module found")
@@ -1295,7 +1295,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     opengllog.warn("Warning: OpenGL is disabled:")
                 opengllog.warn(" %s", warning)
 
-            from xpra.client.gl.check import MIN_SIZE
+            from xpra.opengl.check import MIN_SIZE
             if min(self.gl_max_viewport_dims) < MIN_SIZE:
                 glwarn("the maximum viewport size is too low: %s" % (self.gl_max_viewport_dims,))
             if self.gl_texture_size_limit < MIN_SIZE:

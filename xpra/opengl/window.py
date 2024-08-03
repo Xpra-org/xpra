@@ -67,7 +67,7 @@ def get_gl_client_window_module(opengl="on") -> tuple[dict[str, Any], Any]:
 def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict, Any]:
     from importlib import import_module
     try:
-        mod = import_module(f"xpra.client.gl.gtk3.{module_name}_window")
+        mod = import_module(f"xpra.client.gtk3.opengl.{module_name}_window")
         log(f"gl client window module {module_name!r}={mod}")
     except (AttributeError, ImportError) as e:
         log(f"cannot import opengl window module {module_name}", exc_info=True)

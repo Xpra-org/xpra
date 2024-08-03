@@ -17,7 +17,7 @@ from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.signals import install_signal_handlers
-from xpra.client.gl.window import get_gl_client_window_module
+from xpra.opengl.window import get_gl_client_window_module
 from xpra.common import force_size_constraint
 from xpra.client.gui.fake_client import FakeClient
 from xpra.client.gui.window_border import WindowBorder

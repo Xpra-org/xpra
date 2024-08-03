@@ -6,7 +6,7 @@
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.client.gl.gtk3.client_window import GLClientWindowBase
+from xpra.client.gtk3.opengl.client_window import GLClientWindowBase
 from xpra.platform.gl_context import GLContext
 
 GObject = gi_import("GObject")
@@ -26,7 +26,7 @@ class GLClientWindow(GLClientWindowBase):
     def get_backing_class(self):
         # delay the import so we can trap warnings in gl.check
         # and use the numpy import context:
-        from xpra.client.gl.gtk3.drawing_area import GLDrawingArea
+        from xpra.client.gtk3.opengl.drawing_area import GLDrawingArea
         return GLDrawingArea
 
 

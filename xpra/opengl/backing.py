@@ -62,9 +62,9 @@ from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.gui.paint_colors import get_paint_box_color
 from xpra.client.gui.window_backing_base import fire_paint_callbacks, WindowBackingBase, WEBP_PILLOW
-from xpra.client.gl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
-from xpra.client.gl.debug import context_init_debug, gl_marker, gl_frame_terminator
-from xpra.client.gl.util import (
+from xpra.opengl.check import GL_ALPHA_SUPPORTED, get_max_texture_size
+from xpra.opengl.debug import context_init_debug, gl_marker, gl_frame_terminator
+from xpra.opengl.util import (
     save_fbo, SAVE_BUFFERS,
     zerocopy_upload, pixels_for_upload, set_alignment, upload_rgba_texture,
 )
@@ -393,7 +393,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # Create and assign fragment programs
         from OpenGL.GL import GL_FRAGMENT_SHADER, GL_VERTEX_SHADER
         vertex_shader = self.init_shader("vertex", GL_VERTEX_SHADER)
-        from xpra.client.gl.shaders import SOURCE
+        from xpra.opengl.shaders import SOURCE
         for name, source in SOURCE.items():
             if name in ("overlay", "vertex", "fixed-color"):
                 continue
@@ -474,7 +474,7 @@ class GLWindowBackingBase(WindowBackingBase):
             GL_COMPILE_STATUS, GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_FALSE,
         )
         assert shader_type in (GL_VERTEX_SHADER, GL_FRAGMENT_SHADER)
-        from xpra.client.gl.shaders import SOURCE
+        from xpra.opengl.shaders import SOURCE
         progstr = SOURCE[name]
         shader = glCreateShader(shader_type)
         self.shaders[name] = shader

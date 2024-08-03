@@ -1930,7 +1930,7 @@ if WIN32:
                 # add_console_exe("xpra/audio/src.py",                "microphone.ico",   "Audio_Record")
                 # add_console_exe("xpra/audio/sink.py",               "speaker.ico",      "Audio_Play")
             if opengl_ENABLED:
-                add_console_exe("xpra/client/gl/check.py",   "opengl.ico",       "OpenGL_check")
+                add_console_exe("xpra/opengl/check.py",   "opengl.ico",       "OpenGL_check")
             if webcam_ENABLED:
                 add_console_exe("xpra/platform/webcam.py",          "webcam.ico",    "Webcam_info")
                 add_console_exe("xpra/scripts/show_webcam.py",          "webcam.ico",    "Webcam_Test")
@@ -2490,8 +2490,8 @@ if server_ENABLED or proxy_ENABLED:
     add_modules("xpra.scripts.server")
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
-toggle_packages(client_ENABLED and opengl_ENABLED, "xpra.client.gl")
-toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gl.gtk3")
+toggle_packages(opengl_ENABLED, "xpra.opengl")
+toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.opengl")
 
 toggle_modules(audio_ENABLED, "xpra.audio")
 toggle_modules(audio_ENABLED and not (OSX or WIN32), "xpra.audio.pulseaudio")
@@ -2650,15 +2650,16 @@ if cythonize_more_ENABLED:
             if not x.endswith("__init__.py"):
                 mod = x[:-3].replace(os.path.sep, ".")
                 ace(mod)
+
+    if opengl_ENABLED:
+        ax("xpra.opengl")
     if client_ENABLED:
         ax("xpra.client.base")
         ax("xpra.client.auth")
-        if opengl_ENABLED:
-            ax("xpra.client.gl")
-            if gtk3_ENABLED:
-                ax("xpra.client.gl.gtk3")
         if gtk3_ENABLED:
             ax("xpra.client.gtk3")
+            if opengl_ENABLED:
+                ax("xpra.client.gtk3.opengl")
         ax("xpra.client.gui")
         ax("xpra.client.mixins")
         if qt6_client_ENABLED:

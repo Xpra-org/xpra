@@ -9,7 +9,7 @@ from collections.abc import Callable, Sequence
 from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.str_fn import Ellipsizer
-from xpra.client.gl.backing import GLWindowBackingBase
+from xpra.opengl.backing import GLWindowBackingBase
 from xpra.log import Logger
 
 log = Logger("opengl", "paint")

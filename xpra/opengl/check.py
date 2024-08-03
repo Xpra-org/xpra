@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.util.env import envint, envbool, numpy_import_context
 from xpra.log import Logger, CaptureHandler, consume_verbose_argv
-from xpra.client.gl.drivers import GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST, OpenGLFatalError
+from xpra.opengl.drivers import GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST, OpenGLFatalError
 
 log = Logger("opengl")
 
