@@ -49,6 +49,7 @@ if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --with-Os"
 	shift
 else
+	BUILD_OPTIONS="${BUILD_OPTIONS} --with-qt6_client"
   BUILD_TYPE="Full"
 fi
 if [ "${DO_CUDA}" == "0" ]; then

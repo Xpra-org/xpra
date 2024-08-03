@@ -2006,6 +2006,9 @@ if WIN32:
     if client_ENABLED:
         external_includes.append("pyvda")
 
+    if qt6_client_ENABLED:
+        external_includes.append("PyQt6")
+
     external_includes.append("cairo")
     external_includes.append("certifi")
 
