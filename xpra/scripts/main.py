@@ -2028,8 +2028,11 @@ def enforce_client_features() -> None:
 def make_client(error_cb: Callable, opts):
     backend = os.environ.get("XPRA_GUI_BACKEND", "gtk")
     if backend == "qt":
-        from xpra.client.qt6.client import make_client
-        return make_client()
+        try:
+            from xpra.client.qt6.client import make_client
+            return make_client()
+        except ImportError as e:
+            raise InitExit(ExitCode.COMPONENT_MISSING, f"the qt6 client component is missing: {e}")
     elif backend != "gtk":
         raise ValueError(f"invalid gui backend {backend!r}")
 
