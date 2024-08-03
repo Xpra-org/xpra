@@ -475,13 +475,14 @@ class Logger:
                 kwargs["exc_info"] = ei
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
-        backtrace = kwargs.pop("backtrace", level >= BACKTRACE_LEVEL)
+        frame = kwargs.pop("frame", None)
+        backtrace = kwargs.pop("backtrace", level >= BACKTRACE_LEVEL) or frame
         global_logging_handler(self._logger.log, self.level_override or level, msg, *args, **kwargs)
         if exc_info:
             return
         if backtrace or any(exp.match(msg) for exp in backtrace_expressions):
             import traceback
-            tb = traceback.extract_stack()
+            tb = traceback.extract_stack(frame)
             count = len(tb)
             for i, frame in enumerate(tb):
                 if frame.filename.endswith(MODULE_FILE) and i >= (count - 3):
