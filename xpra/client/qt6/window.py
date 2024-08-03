@@ -7,18 +7,35 @@
 import sys
 
 from PyQt6.QtCore import Qt, QPoint, QEvent
-from PyQt6.QtGui import QImage, QPixmap, QPainter
+from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeyEvent
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel
 
+from xpra.client.qt6.keys import key_names
 from xpra.log import Logger
 
 log = Logger()
 
 
-def get_pointer_position(event):
+def get_pointer_position(event) -> tuple[int, int, int, int]:
     glo_pos = event.globalPosition()
     pos = event.position()
-    return glo_pos.x(), glo_pos.y(), pos.x(), pos.y()
+    return tuple(round(v) for v in (glo_pos.x(), glo_pos.y(), pos.x(), pos.y()))
+
+
+def get_modifiers(event: QKeyEvent) -> list[str]:
+    modifiers = []
+    mods = event.modifiers()
+    for value, name in {
+        Qt.KeyboardModifier.ShiftModifier: "shift",
+        Qt.KeyboardModifier.ControlModifier: "control",
+        Qt.KeyboardModifier.AltModifier: "alt",
+        Qt.KeyboardModifier.MetaModifier: "meta",
+        # Qt.KeyboardModifier.KeypadModifier: "numlock",
+        # Qt.KeyboardModifier.KeypadModifier: "group",
+    }.items():
+        if mods & value:
+            modifiers.append(name)
+    return modifiers
 
 
 class DrawingArea(QLabel):
@@ -102,6 +119,29 @@ class ClientWindow(QMainWindow):
         log(f"{object}: {event} {event.type().name}")
         return False
 
+    def keyPressEvent(self, event: QKeyEvent):
+        self.send_key_event(event, True)
+
+    def keyReleaseEvent(self, event: QKeyEvent):
+        self.send_key_event(event, False)
+
+    def closeEvent(self, event):
+        log(f"close: {event}")
+        self.send("close-window", self.wid)
+        event.ignore()
+
+    def send_key_event(self, event, pressed=True):
+        keyval = event.key()
+        name = key_names.get(keyval, event.text())
+        keycode = event.nativeScanCode()
+        string = event.text()
+        group = 0
+        modifiers = get_modifiers(event)
+        native_modifiers = event.nativeModifiers()
+        vk = event.nativeVirtualKey()
+        log(f"key: {name!r}, {keyval=}, {keycode=}, {modifiers=} {native_modifiers=}, {vk=}")
+        self.send("key-action", self.wid, name, pressed, modifiers, keyval, string, keycode, group)
+
     def draw(self, x, y, w, h, coding, data, stride):
         assert coding in ("rgb24", "rgb32")
         canvas = self.label.pixmap()
@@ -111,12 +151,6 @@ class ClientWindow(QMainWindow):
         painter.drawImage(point, image)
         painter.end()
         self.label.setPixmap(canvas)
-
-    def focusInEvent(self, event):
-        log.info(f"focus in: {event}")
-
-    def focusOutEvent(self, event):
-        log.info(f"focus out: {event}")
 
 
 def main(args) -> int:

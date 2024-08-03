@@ -8,10 +8,12 @@ import uuid
 from time import monotonic
 from typing import Any
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtNetwork import QTcpSocket
+from PyQt6.QtWidgets import QApplication
 
 from xpra import __version__
+from xpra.exit_codes import ExitCode
 from xpra.net.rencodeplus.rencodeplus import dumps, loads
 from xpra.net.protocol.header import pack_header, unpack_header, FLAGS_RENCODEPLUS
 
@@ -39,9 +41,8 @@ class Qt6Client:
         socket.readyRead.connect(self.socket_read)
         return socket
 
-    def connect(self, host, port: int):
+    def connect(self, host: str, port: int):
         self.socket.connectToHost(host, port)
-        # self.socket.connectToHost(QHostAddress.SpecialAddress.LocalHost, 10000)
         self.socket.connected.connect(self.socket_connected)
 
     def socket_error(self, *args):
@@ -54,7 +55,8 @@ class Qt6Client:
         netlog(f"socket_statechanged{args}")
 
     def socket_disconnected(self, *args):
-        netlog.warn(f"socket_disconnected{args}")
+        netlog(f"socket_disconnected{args}")
+        QApplication.exit(int(ExitCode.CONNECTION_LOST))
 
     def socket_connected(self, *args):
         netlog(f"socket_connected{args}")
@@ -67,6 +69,8 @@ class Qt6Client:
             "rencodeplus": True,
             "session-id": uuid.uuid4().hex,
             "windows": True,
+            "keyboard": True,
+            "mouse": True,
             "encodings": ("rgb32", "rgb24", ),
         }
         self.send("hello", hello)
@@ -142,6 +146,13 @@ class Qt6Client:
         window.show()
         self.send("map-window", wid, x, y, w, h)
 
+    def _process_lost_window(self, packet):
+        wid = int(packet[1])
+        window = self.windows.get(wid)
+        if window:
+            window.close()
+            del self.windows[wid]
+
     def _process_draw(self, packet):
         wid, x, y, width, height, coding, data, packet_sequence, rowstride = packet[1:10]
         window = self.windows.get(wid)
@@ -156,6 +167,11 @@ class Qt6Client:
             decode_time = -1
         self.send("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
 
+    def _process_window_metadata(self, packet):
+        wid = packet[1]
+        metadata = packet[2]
+        log.info(f"window {wid}: {metadata}")
+
     def update_focus(self, wid=0):
         if self.focused == wid:
             return
@@ -165,3 +181,9 @@ class Qt6Client:
             if self.focused == wid:
                 self.send("focus", wid, ())
         QTimer.singleShot(10, recheck_focus)
+
+    def state_changed(self, state):
+        log(f"state changed: {state}")
+        if state == Qt.ApplicationState.ApplicationInactive:
+            self.focused = 0
+            self.send("focus", 0, ())

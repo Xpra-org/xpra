@@ -21,7 +21,7 @@ def main(args) -> int:
     from xpra.client.qt6.client import Qt6Client
     client = Qt6Client()
     client.connect(host, port)
-    #app.applicationStateChanged.connect
+    app.applicationStateChanged.connect(client.state_changed)
     #app.focusChanged.connect
     return app.exec()
 
