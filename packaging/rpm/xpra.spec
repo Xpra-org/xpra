@@ -775,7 +775,7 @@ fi
 
 
 %changelog
-* Tue Jul 30 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Sun Aug 04 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Encodings:
    `mmap` race condition
    validate openh264 colorspace
@@ -787,6 +787,7 @@ fi
    Fedora can build html documentation again
    MS Windows multi-page printing
    run CI builds with Python 3.6 and 3.12, this requires Ubuntu 20.04
+   remove outdated numpy workaround
 - Major:
    MS Windows PDF printing crash, library mismatch
    honour `ssh` option when re-connecting
@@ -802,13 +803,17 @@ fi
    ignore MS Windows keyboard layouts without a valid X11 layout name
    try harder to identify the key event string
    don't show duplicate keyboard layout names
+   try harder to find a matching key by name
 - Minor:
    remove enum prefix with older Python versions
    http directory listing
    ssl path checks
    RFB connections cannot be upgraded to `http` or `ws`
    make it possible to skip NM api
+   handle empty ibus daemon command
+   handle invalid dbus-launch command
 - Cosmetic:
+   try to prevent ATK warnings
    validate application's opaque-region
    slow CI test times out, ignore it
    only import modules actually needed: notifications, windows, mmap
@@ -821,6 +826,7 @@ fi
    AES modes and keydata safety documentation
    missing line continuation backslash in example
    missing quote
+   log opengl probe command
 
 * Fri May 31 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
 - Encodings:

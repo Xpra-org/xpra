@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.10] 2024-07-24
+## [5.0.10] 2024-08-04
 * Encodings:
     * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
     * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
@@ -13,6 +13,7 @@
     * [always build the latest dummy DEB](https://github.com/Xpra-org/xpra/commit/1f7f9e3a8b3418e87b89e5c863a92b058f2a6baf)
     * [MS Windows multi-page printing](https://github.com/Xpra-org/xpra/commit/f3c0e92d3b5b85b7c05d898ad51ed7d24af6ece3)
     * [run CI builds with Python 3.6 and 3.12](https://github.com/Xpra-org/xpra/commit/4af53ffc9c20d5afd90e3bc8e4e14f0be4bbbe8b), [this requires Ubuntu 20.04](https://github.com/Xpra-org/xpra/commit/6ed0f4fce7833fb4a45c0960ce3c24bfe8d84385)
+    * [remove outdated numpy workaround](https://github.com/Xpra-org/xpra/commit/a2940534da564578ed7a53fb7e4af92b06ca1978)
 * Major:
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
     * [honour `ssh` option when re-connecting](https://github.com/Xpra-org/xpra/commit/45bad59e6255f03087b8dbd51dfd2380472f6f20)
@@ -28,6 +29,7 @@
     * [ignore MS Windows keyboard layouts without a valid X11 layout name](https://github.com/Xpra-org/xpra/commit/3eca141e0027e93ea1150a5a5939fc63425d9aaf)
     * [try harder to identify the key event string](https://github.com/Xpra-org/xpra/commit/01b36a92c1d2113c3897166c12bfc1177e4bdc55)
     * [don't show duplicate keyboard layout names](https://github.com/Xpra-org/xpra/commit/07d51f73ea08188b728633da745ea29b5285bb77)
+    * [try harder to find a matching key by name](https://github.com/Xpra-org/xpra/commit/f5b83a7d8b19d50f161ecb5d51d44d1e8a4babfc), [use default modifiers if that's all we've got](https://github.com/Xpra-org/xpra/commit/ef9e2839f494de28353b5aeb6fa01dd63703b582)
 * Minor:
     * [remove enum prefix with older Python versions](https://github.com/Xpra-org/xpra/commit/8eabd33b578aed9670c1cef62a24e2dc73370b79)
     * [http directory listing](https://github.com/Xpra-org/xpra/commit/3aa22cfa636f21ba079e352b81448d675174d59a)
@@ -36,7 +38,10 @@
     * [make it possible to skip NM api](https://github.com/Xpra-org/xpra/commit/560e25100dafdf4c18caef559539db4510f4b997)
     * [expose QUIC sockets via mDNS](https://github.com/Xpra-org/xpra/commit/c58425cd5512a669da487414483f045943876f27)
     * [only enable gtk error context with x11 Gdk backend](https://github.com/Xpra-org/xpra/commit/161acb245b65e71dae6f179bcbfe0ef8ced230d2)
+    * [handle empty ibus daemon command](https://github.com/Xpra-org/xpra/commit/12289c125af7caa58acac01a6b484a6be6fdac0c)
+    * [handle invalid dbus-launch command](https://github.com/Xpra-org/xpra/commit/1c7433556d05175d5e43b85dfdcfb88501aab4ca)
 * Cosmetic:
+    * [try to prevent ATK warnings](https://github.com/Xpra-org/xpra/commit/440a182dbaaf1db0af81ab1b33d05bc454a726a0)
     * [validate application's opaque-region](https://github.com/Xpra-org/xpra/commit/6749cc91f8853ee03e406d6c0cec763c61d13274)
     * [slow CI test times out](https://github.com/Xpra-org/xpra/commit/6dff61f8dba6a1b5f9a59c0cd761cfe9674d5f14), [ignore it](https://github.com/Xpra-org/xpra/commit/0e0c24e679a21f0a63cf727fab6175ab6f5b1cc3)
     * only import modules actually needed: [notifications](https://github.com/Xpra-org/xpra/commit/ac5c314750104b879c5d088dd837ce21d14f1b73), [windows](https://github.com/Xpra-org/xpra/commit/7cb5f913131ccf8ac35d1dc42da5b4498060ebfe), [mmap](https://github.com/Xpra-org/xpra/commit/e0a873ccddcc519196d842f44c70dc4908e1f8d2)
@@ -49,6 +54,7 @@
     * [AES modes and keydata safety documentation](https://github.com/Xpra-org/xpra/commit/c299b0100865b763284403dce83d496eb76bbeb6)
     * [missing line continuation backslash in example](https://github.com/Xpra-org/xpra/commit/e95b0c8d551ffe85c7644b3d1055d0410086fbfe)
     * [missing quote](https://github.com/Xpra-org/xpra/commit/b88e1667033398ebad55639b10e448a22b08648e)
+    * [log opengl probe command](https://github.com/Xpra-org/xpra/commit/675bf35b7f25ac3ec4d5ccd83c0920bba4c9d935)
 
 
 ## [5.0.9] 2023-06-18

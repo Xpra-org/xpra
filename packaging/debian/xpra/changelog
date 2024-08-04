@@ -10,6 +10,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - Fedora can build html documentation again
    - MS Windows multi-page printing
    - run CI builds with Python 3.6 and 3.12, this requires Ubuntu 20.04
+   - remove outdated numpy workaround
   * Major:
    - MS Windows PDF printing crash, library mismatch
    - honour `ssh` option when re-connecting
@@ -25,13 +26,17 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - ignore MS Windows keyboard layouts without a valid X11 layout name
    - try harder to identify the key event string
    - don't show duplicate keyboard layout names
+   - try harder to find a matching key by name
   * Minor:
    - remove enum prefix with older Python versions
    - http directory listing
    - ssl path checks
    - RFB connections cannot be upgraded to `http` or `ws`
    - make it possible to skip NM api
+   - handle empty ibus daemon command
+   - handle invalid dbus-launch command
   * Cosmetic:
+   - try to prevent ATK warnings
    - validate application's opaque-region
    - slow CI test times out, ignore it
    - only import modules actually needed: notifications, windows, mmap
@@ -44,8 +49,9 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - AES modes and keydata safety documentation
    - missing line continuation backslash in example
    - missing quote
+   - log opengl probe command
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 30 Jul 2024 19:07:51 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 04 Aug 2024 18:04:29 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:
