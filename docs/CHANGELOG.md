@@ -24,7 +24,7 @@
     * [only send menus to clients that request them](https://github.com/Xpra-org/xpra/commit/46c1ba848b1e28ebfcc1d275fbcc44cae932df97)
     * [handle empty ibus daemon command](https://github.com/Xpra-org/xpra/commit/c79f3d2e0a8a9826ff69d7994a6a013e6c758199)
     * [handle invalid dbus-launch command](https://github.com/Xpra-org/xpra/commit/7b934a2a828e639028974dc15cc44fa92f24a69d)
-    * [broken download links](https://github.com/Xpra-org/xpra/commit/0f9c0ab009aba2fb3a39c34fcd8f18e5681ab10f)
+    * [broken download links](https://github.com/Xpra-org/xpra/commit/c8b57bd6454840ff074db5331b6de555a8f6f368)
 * Network:
     * [expose quic / webtransport sockets via mdns](https://github.com/Xpra-org/xpra/commit/8e86a3ee07d4f19e91a8ba635dae561942430d7a)
     * [`gss` authentication module parsing error](https://github.com/Xpra-org/xpra/commit/f7b9859a2b5701a0bf2f214caade026c21c80727)
