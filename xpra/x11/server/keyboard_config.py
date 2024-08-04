@@ -14,7 +14,9 @@ from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.gtk.keymap import get_gtk_keymap
 from xpra.gtk.error import xsync, xlog
-from xpra.keyboard.mask import DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names
+from xpra.keyboard.mask import (
+    DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names,
+)
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.x11.gtk.keys import grok_modifier_map
 from xpra.x11.xkbhelper import (
@@ -234,8 +236,8 @@ class KeyboardConfig(KeyboardConfigBase):
                 if MAP_MISSING_MODIFIERS:
                     map_missing_modifiers(self.keynames_for_mod)
             else:
-                log.info("client did not supply any modifier definitions")
-                self.keynames_for_mod = {}
+                log.info("client did not supply any modifier definitions, using defaults")
+                self.keynames_for_mod = get_modifiers_from_meanings(DEFAULT_MODIFIER_MEANINGS)
         log("compute_modifiers() keynames_for_mod=%s", self.keynames_for_mod)
         log("compute_modifiers() keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
         log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
