@@ -77,6 +77,7 @@ class Qt6Client:
             "keyboard": True,
             "mouse": True,
             "encodings": ("rgb32", "rgb24", "png", "jpg", "webp"),
+            "network-state": False,  # tell older server that we don't have "ping"
         }
         self.send("hello", hello)
 
@@ -143,9 +144,17 @@ class Qt6Client:
         log(f"server encodings: {packet[1]}")
 
     def _process_new_window(self, packet):
+        self.new_window(packet)
+
+    def _process_new_override_redirect(self, packet):
+        self.new_window(packet, True)
+
+    def new_window(self, packet, is_or=False):
         from xpra.client.qt6.window import ClientWindow
         wid, x, y, w, h = (int(item) for item in packet[1:6])
         metadata = packet[6]
+        if is_or:
+            metadata["override-redirect"] = is_or
         window = ClientWindow(self, wid, x, y, w, h, metadata)
         self.windows[wid] = window
         window.show()
@@ -156,6 +165,12 @@ class Qt6Client:
         if window:
             window.close()
             del self.windows[wid]
+
+    def _process_raise_window(self, packet):
+        wid = int(packet[1])
+        window = self.windows.get(wid)
+        if window:
+            window.raise_()
 
     def _process_draw(self, packet):
         wid, x, y, width, height, coding, data, packet_sequence, rowstride = packet[1:10]

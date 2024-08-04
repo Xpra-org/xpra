@@ -70,7 +70,7 @@ class DrawingArea(QLabel):
         if button < 0:
             return
         pos = get_pointer_position(event)
-        self.send("pointer-button", -1, self.seq, self.wid, button, True, pos, props)
+        self.send("pointer-button", -1, self.seq, self.wid, button, pressed, pos, props)
         self.seq += 1
 
     def mousePressEvent(self, event):
@@ -105,6 +105,9 @@ class ClientWindow(QMainWindow):
         self.client = client
         self.send = client.send
         self.wid = wid
+        self.metadata = metadata
+        if metadata.get("override-redirect"):
+            self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window | Qt.WindowType.X11BypassWindowManagerHint)
         self.setWindowTitle(metadata.get("title", ""))
         self.label = DrawingArea(client, wid)
         self.label.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
@@ -133,7 +136,8 @@ class ClientWindow(QMainWindow):
             x = self.pos().x() + self.label.pos().x()
             y = self.pos().y() + self.label.pos().y()
             w, h = self.get_canvas_size()
-            self.send("map-window", self.wid, x, y, w, h)
+            if not self.metadata.get("override-redirect"):
+                self.send("map-window", self.wid, x, y, w, h)
         elif etype == QEvent.Type.Hide:
             log("hidden - iconified?")
         elif etype == QEvent.Type.Move:
