@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.1.1] 2024-07-30
+## [6.1.1] 2024-08-04
 * Platforms, build and packaging:
     * [RHEL 8.10 pygobject3 packaging update](https://github.com/Xpra-org/xpra/commit/75fe7ad62f1a176f62e82529b1f9a5aad3273eae)
     * [always build the latest X11 dummy driver version](https://github.com/Xpra-org/xpra/commit/c8118c75f592866d2161ff37e6993002c5a0288e)
@@ -8,6 +8,7 @@
     * [pycuda 2024.1.2](https://github.com/Xpra-org/xpra/commit/640948b2edd7e61dddaaca4cb15899c719153a80)
     * [MS Windows multi-page printing](https://github.com/Xpra-org/xpra/commit/a34c5df6caa3ab64ebb21cf19c18cea6c188dc81)
     * [MS Windows console detection](https://github.com/Xpra-org/xpra/commit/e7d02983117eabd2c13f6402ce8af845c0af4183)
+    * [remove outdated numpy workaround](https://github.com/Xpra-org/xpra/commit/edfbdf4165db67f1b56ff41c49703bcfca83711c)
 * Encodings:
     * [fix `scroll` encoding](https://github.com/Xpra-org/xpra/commit/a358f22346070481a26cf59b031f1b0a408b5ca3)
     * [greenish tint with subsampled webp screen updates](https://github.com/Xpra-org/xpra/commit/0d2b7d452a3b6f89c21db3b74f453cfad37bd12f)
@@ -16,14 +17,22 @@
 * Major:
     * [missing context manager when X11 session started from a Wayland desktop](https://github.com/Xpra-org/xpra/commit/9d980f569f746414af9eb8f975c2e2b32be3f94e)
     * [keyboard support should not require `dbus`](https://github.com/Xpra-org/xpra/commit/9099fee25d28b97045a65e4fb838d3e69d94eb56)
+    * [validate application's opaque-region property](https://github.com/Xpra-org/xpra/commit/d625380dbeee833b99ba7c0d1968367b77d2d6cd)
+* Minor:
+    * [try to handle homeless user accounts more gracefully](https://github.com/Xpra-org/xpra/commit/e8cb51b76c1a78c1b74b3c920232c5c8da3802ba)
+    * [try harder to find a matching key by name](https://github.com/Xpra-org/xpra/commit/a472331a3237f5d5f753869ec822b35794a69f10), [use default modifiers if that's all we've got](https://github.com/Xpra-org/xpra/commit/8e88cda570dddc05c0b1d395d58deca8d8178810)
+    * [only send menus to clients that request them](https://github.com/Xpra-org/xpra/commit/46c1ba848b1e28ebfcc1d275fbcc44cae932df97)
+    * [handle empty ibus daemon command](https://github.com/Xpra-org/xpra/commit/c79f3d2e0a8a9826ff69d7994a6a013e6c758199)
+    * [handle invalid dbus-launch command](https://github.com/Xpra-org/xpra/commit/7b934a2a828e639028974dc15cc44fa92f24a69d)
+    * [broken download links](https://github.com/Xpra-org/xpra/commit/0f9c0ab009aba2fb3a39c34fcd8f18e5681ab10f)
 * Network:
     * [expose quic / webtransport sockets via mdns](https://github.com/Xpra-org/xpra/commit/8e86a3ee07d4f19e91a8ba635dae561942430d7a)
     * [`gss` authentication module parsing error](https://github.com/Xpra-org/xpra/commit/f7b9859a2b5701a0bf2f214caade026c21c80727)
     * [better compatibility with all builds of python cryptography](https://github.com/Xpra-org/xpra/commit/daba177e8c842c52bce91057f53d869180e6c603)
     * [read ssh subcommand's stderr](https://github.com/Xpra-org/xpra/commit/0c5524de1f1c7d855905f2d888000cfb226b1b77)
 * Cosmetic / preventive:
-    * [validate application's opaque-region property](https://github.com/Xpra-org/xpra/commit/d625380dbeee833b99ba7c0d1968367b77d2d6cd)
     * [slow CI test times out](https://github.com/Xpra-org/xpra/commit/0109886175f029017974db9a74b0aec025cdd373), [ignore failures](https://github.com/Xpra-org/xpra/commit/c87d6bbbded21cb45ccac2207fdf6a442d4dce19)
+    * [CI only test oldest and newest python versions](https://github.com/Xpra-org/xpra/commit/f9a051985299ac56c46bc5df9fa02d3314edb7d7)
     * [don't run sonarqube on this branch](https://github.com/Xpra-org/xpra/commit/2188b075da16a1e2daf4c17bb7b2e268aa4d3ca6)
     * [tag correct branch in build github workflow](https://github.com/Xpra-org/xpra/commit/0b7724172ea8d42941dc0d672ade4ec2f02a5667)
     * only import modules actually needed: [notifications](https://github.com/Xpra-org/xpra/commit/bd66d3671b45003730d1644de3aa66b3cea7ad16), [windows](https://github.com/Xpra-org/xpra/commit/4f882ee435e902c0e691bf0e1c212c8d4633eb5b), [logger](https://github.com/Xpra-org/xpra/commit/0165c0cdef69dad78fa2e083106d06540e11cc09), [mmap](https://github.com/Xpra-org/xpra/commit/8be5abbf4b526c859c32be07c1e96b20044445f6)
@@ -33,6 +42,10 @@
     * [unused invalid headers](https://github.com/Xpra-org/xpra/commit/03f96c686dae9bc634f8cac87debd53704078b21)
     * [outdated comment](https://github.com/Xpra-org/xpra/commit/540a614ad599d9162490ed5ba876fe0a74a8863f)
     * [debug logging shows function](https://github.com/Xpra-org/xpra/commit/4a3fa9fa6626f1ad7103bfb2bdf0cdd2bebabb1e)
+    * [fake client module correctness](https://github.com/Xpra-org/xpra/commit/c6337dbacb04dbee7e1a1260c24c5ea482204312)
+    * [debug logging of stack frames](https://github.com/Xpra-org/xpra/commit/b0998d14bfdd4bdcbb9d0ba41427c87374966304)
+    * [try to prevent ATK warnings](https://github.com/Xpra-org/xpra/commit/11b37b3b849fda99abe9f7cbcba06f9d8962d675)
+    * [log opengl probe command](https://github.com/Xpra-org/xpra/commit/0c1068f6f74e30fa5704ca5a2c924842181c605f)
 
 ## [6.1] 2024-07-18
 * Platforms, build and packaging:

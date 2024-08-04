@@ -883,7 +883,7 @@ fi
 
 
 %changelog
-* Tue Jul 30 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
+* Sun Aug 04 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
 - Platforms, build and packaging:
    RHEL 8.10 pygobject3 packaging update
    always build the latest X11 dummy driver version
@@ -891,6 +891,7 @@ fi
    pycuda 2024.1.2
    MS Windows multi-page printing
    MS Windows console detection
+   remove outdated numpy workaround
 - Encodings:
    fix `scroll` encoding
    greenish tint with subsampled webp screen updates
@@ -899,13 +900,20 @@ fi
 - Major:
    missing context manager when X11 session started from a Wayland desktop
    keyboard support should not require `dbus`
+   validate application's opaque-region property
+- Minor:
+   try to handle homeless user accounts more gracefully
+   try harder to find a matching key by name, use default modifiers if that's all we've got
+   only send menus to clients that request them
+   handle empty ibus daemon command
+   handle invalid dbus-launch command
+   broken download links
 - Network:
    expose quic / webtransport sockets via mdns
    `gss` authentication module parsing error
    better compatibility with all builds of python cryptography
    read ssh subcommand's stderr
 - Cosmetic / preventive:
-   validate application's opaque-region property
    slow CI test times out, ignore failures
    don't run sonarqube on this branch
    tag correct branch in build github workflow

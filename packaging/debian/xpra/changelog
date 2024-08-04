@@ -14,14 +14,22 @@ xpra (6.1.1-1) UNRELEASED; urgency=low
   * Major:
     missing context manager when X11 session started from a Wayland desktop
     keyboard support should not require `dbus`
+    validate application's opaque-region property
+  * Minor:
+    try to handle homeless user accounts more gracefully
+    try harder to find a matching key by name, use default modifiers if that's all we've got
+    only send menus to clients that request them
+    handle empty ibus daemon command
+    handle invalid dbus-launch command
+    broken download links
   * Network:
     expose quic / webtransport sockets via mdns
     `gss` authentication module parsing error
     better compatibility with all builds of python cryptography
     read ssh subcommand's stderr
   * Cosmetic / preventive:
-    validate application's opaque-region property
     slow CI test times out, ignore failures
+    CI only test oldest and newest python versions
     don't run sonarqube on this branch
     tag correct branch in build github workflow
     only import modules actually needed: notifications, windows, logger, mmap
@@ -31,8 +39,12 @@ xpra (6.1.1-1) UNRELEASED; urgency=low
     unused invalid headers
     outdated comment
     debug logging shows function
+    fake client module correctness
+    debug logging of stack frames
+    try to prevent ATK warnings
+    log opengl probe command
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 30 Jul 2024 22:02:26 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 04 Aug 2024 13:07:01 +0700
 
 xpra (6.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
