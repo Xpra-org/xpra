@@ -36,6 +36,7 @@ def start_dbus(dbus_launch):
             "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR",
             "SHELL", "LANG", "USER", "LOGNAME", "HOME",
             "DISPLAY", "XAUTHORITY", "CKCON_X11_DISPLAY",
+            "NO_AT_BRIDGE",
             ))
         import shlex
         cmd = shlex.split(dbus_launch)
