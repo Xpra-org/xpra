@@ -97,7 +97,7 @@ def upload_rgba_texture(texture: int, width: int, height: int, pixels) -> None:
     GL.glBindTexture(target, 0)
 
 
-def save_fbo(wid: int, fbo, texture, width: int, height: int, alpha=False) -> None:
+def save_fbo(wid: int, fbo, texture, width: int, height: int, alpha=False, prefix="W", suffix="") -> None:
     target = GL.GL_TEXTURE_RECTANGLE
     GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, fbo)
     GL.glBindTexture(target, texture)
@@ -118,13 +118,14 @@ def save_fbo(wid: int, fbo, texture, width: int, height: int, alpha=False) -> No
         img = img.convert("RGB")
     if SAVE_BUFFERS == "jpeg":
         kwargs = {
-            "quality": 0,
+            "quality": 20,
             "optimize": False,
         }
     t = time.time()
     tstr = time.strftime("%H-%M-%S", time.localtime(t))
-    filename = "./W%i-FBO-%s.%03i.%s" % (wid, tstr, (t * 1000) % 1000, SAVE_BUFFERS)
-    log("do_present_fbo: saving %4ix%-4i pixels, %7i bytes to %s", width, height, size, filename)
+    millis = (t * 1000) % 1000
+    filename = f"./{prefix}{wid}-FBO-{tstr}.{millis:03}{suffix}.{SAVE_BUFFERS}"
+    log("save_fbo: saving %4ix%-4i pixels, %7i bytes to %s", width, height, size, filename)
     img.save(filename, SAVE_BUFFERS, **kwargs)
     GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, 0)
     GL.glBindTexture(target, 0)
