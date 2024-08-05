@@ -23,6 +23,8 @@
 #     Boston, MA  02110-1301, USA.
 #
 
+#cython: boundscheck=False, wraparound=False, initializedcheck=False, always_allow_keywords=False
+
 import sys
 from collections.abc import Sequence, Mapping
 
