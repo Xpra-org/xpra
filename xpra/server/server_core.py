@@ -2026,6 +2026,9 @@ class ServerCore:
             if v:
                 remote[key] = v
         conn = proto._conn
+        if not conn or proto.is_closed():
+            authlog(f"connection {proto} is already closed")
+            return
         #authenticator:
         if not proto.authenticators:
             socktype = conn.socktype_wrapped
