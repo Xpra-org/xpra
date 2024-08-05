@@ -44,7 +44,7 @@ cdef extern from "gdk_x11_macros.h":
     int is_x11_display(void *)
 
 
-def get_display_for(obj) -> Gdk.Display:
+cdef get_display_for(obj):
     if obj is None:
         raise TypeError("Cannot get a display: instance is None!")
     if isinstance(obj, Gdk.Display):
@@ -59,8 +59,8 @@ def get_display_for(obj) -> Gdk.Display:
         raise TypeError("Don't know how to get a display from %r" % (obj,))
 
 
-cdef GdkDisplay * get_raw_display_for(obj) except? NULL:
-    return <GdkDisplay*> unwrap(get_display_for(obj), Gdk.Display)
+cdef GdkDisplay * get_raw_display(display) except? NULL:
+    return <GdkDisplay*> unwrap(display, Gdk.Display)
 
 
 def is_X11_Display(display=None) -> bool:
@@ -72,7 +72,7 @@ def is_X11_Display(display=None) -> bool:
         log("no default display!")
         return False
     try:
-        gdk_display = get_raw_display_for(display)
+        gdk_display = get_raw_display(display)
     except TypeError:
         return False
     return bool(is_x11_display(gdk_display))
@@ -142,9 +142,8 @@ def get_pywindow(Window xwindow) -> GdkX11.X11Window | None:
     if xwindow==0:
         return None
     display = Gdk.get_default_root_window().get_display()
-    disp = get_display_for(display)
     try:
-        return GdkX11.X11Window.foreign_new_for_display(disp, xwindow)
+        return GdkX11.X11Window.foreign_new_for_display(display, xwindow)
     except TypeError as e:
         log("cannot get gdk window for %s : %#x, %s", display, xwindow, e)
     return None
@@ -159,8 +158,9 @@ cdef Visual *_get_xvisual(pyvisual):
     return GDK_VISUAL_XVISUAL(<cGdkVisual*>unwrap(pyvisual, Gdk.Visual))
 
 
-cdef Display * get_xdisplay_for(obj) except? NULL:
-    return GDK_DISPLAY_XDISPLAY(get_raw_display_for(obj))
+cdef Display * get_xdisplay() except? NULL:
+    gdk_display = Gdk.get_default_root_window().get_display()
+    return GDK_DISPLAY_XDISPLAY(get_raw_display(gdk_display))
 
 
 def get_xatom(str_or_xatom) -> Atom:
@@ -179,15 +179,15 @@ def get_xatom(str_or_xatom) -> Atom:
     return gdk_x11_get_xatom_by_name(b)
 
 def get_pyatom(xatom) -> str:
-    display = Gdk.get_default_root_window().get_display()
-    return _get_pyatom(display, xatom)
+    return _get_pyatom(xatom)
 
-cdef object _get_pyatom(display, int xatom):
+cdef object _get_pyatom(int xatom):
     if int(xatom) > 2**32:
         raise ValueError(f"weirdly huge purported xatom: {xatom}")
     if xatom==0:
         return ""
-    cdef GdkDisplay *disp = get_raw_display_for(display)
+    display = Gdk.get_default_root_window().get_display()
+    cdef GdkDisplay *disp = get_raw_display(display)
     cdef Display *xdisplay = GDK_DISPLAY_XDISPLAY(disp)
     cdef char *name = XGetAtomName(xdisplay, xatom)
     if name==NULL:
@@ -286,8 +286,7 @@ debug_route_events : List[int] = []
 def get_error_text(code) -> str:
     if type(code)!=int:
         return str(code)
-    display = Gdk.get_default_root_window().get_display()
-    cdef Display *xdisplay = get_xdisplay_for(display)
+    cdef Display *xdisplay = get_xdisplay()
     cdef char[128] buffer
     XGetErrorText(xdisplay, code, buffer, 128)
     return str(buffer[:128])
@@ -404,8 +403,7 @@ cdef GdkFilterReturn x_event_filter(GdkXEvent * e_gdk,
     cdef double start = monotonic()
     cdef int etype
 
-    gdk_display = Gdk.get_default_root_window().get_display()
-    cdef Display *display = get_xdisplay_for(gdk_display)
+    cdef Display *display = get_xdisplay()
     cdef XEvent * e = <XEvent*>e_gdk
     try:
         pyev = parse_xevent(display, e)
@@ -439,8 +437,7 @@ def init_x11_filter() -> bool:
     global _INIT_X11_FILTER_DONE
     cdef Display *display
     if _INIT_X11_FILTER_DONE==0:
-        gdk_display = Gdk.get_default_root_window().get_display()
-        display = get_xdisplay_for(gdk_display)
+        display = get_xdisplay()
         init_x11_events(display)
         gdk_window_add_filter(<GdkWindow*>0, x_event_filter, NULL)
     _INIT_X11_FILTER_DONE += 1

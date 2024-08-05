@@ -754,9 +754,9 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         # rect.y = y
         # rect.width = width
         # rect.height = height
-        # repair = XFixesCreateRegion(get_xdisplay_for(display_source), &rect, 1)
-        # XDamageSubtract(get_xdisplay_for(display_source), handle, repair, XNone)
-        # XFixesDestroyRegion(get_xdisplay_for(display_source), repair)
+        # repair = XFixesCreateRegion(display, &rect, 1)
+        # XDamageSubtract(display, handle, repair, XNone)
+        # XFixesDestroyRegion(display, repair)
 
         # DeltaRectangles mode + XDamageSubtract is broken, because repair
         # operations trigger a flood of re-reported events (see freedesktop.org bug
