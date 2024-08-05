@@ -399,9 +399,9 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def add_loose_matches(self) -> None:
         # add lowercase versions of all keynames
-        for keyname, keycode in tuple(self.keycode_translation.items()):
-            if not keyname.islower():
-                self.keycode_translation[keyname.lower()] = keycode
+        for key, keycode in tuple(self.keycode_translation.items()):
+            if isinstance(key, str) and not key.islower():
+                self.keycode_translation[key.lower()] = keycode
 
     def set_default_keymap(self) -> None:
         """
