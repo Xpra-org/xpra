@@ -44,21 +44,6 @@ cdef extern from "gdk_x11_macros.h":
     int is_x11_display(void *)
 
 
-cdef get_display_for(obj):
-    if obj is None:
-        raise TypeError("Cannot get a display: instance is None!")
-    if isinstance(obj, Gdk.Display):
-        return obj
-    elif isinstance(obj, (Gdk.Window,
-                          Gtk.Widget,
-                          Gtk.Clipboard,
-                          Gtk.SelectionData,
-                          )):
-        return obj.get_display()
-    else:
-        raise TypeError("Don't know how to get a display from %r" % (obj,))
-
-
 cdef GdkDisplay * get_raw_display(display) except? NULL:
     return <GdkDisplay*> unwrap(display, Gdk.Display)
 
