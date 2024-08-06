@@ -357,10 +357,17 @@ class GLWindowBackingBase(WindowBackingBase):
         # re-init our OpenGL context with the new size,
         # but leave offscreen fbo with the old size
         self.gl_init(context, True)
+        self.draw_to_tmp()
+        if self._alpha_enabled:
+            glClearColor(0, 0, 0, 1)
+        else:
+            glClearColor(1, 1, 1, 0)
+        glClear(GL_COLOR_BUFFER_BIT)
         # copy offscreen to new tmp:
         self.copy_fbo(w, h, sx, sy, dx, dy)
         # make tmp the new offscreen:
         self.swap_fbos()
+        self.draw_to_offscreen()
         # now we don't need the old tmp fbo contents anymore,
         # and we can re-initialize it with the correct size:
         mag_filter = self.get_init_magfilter()
@@ -920,12 +927,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # show region being painted if debug paint box is enabled only:
         if self.paint_box_line_width <= 0:
             return
-        # render to offscreen fbo:
-        target = GL_TEXTURE_RECTANGLE
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
-        glBindTexture(target, self.textures[TEX_FBO])
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
-        glDrawBuffer(GL_COLOR_ATTACHMENT1)
+        self.draw_to_offscreen()
 
         bw, bh = self.size
         glViewport(0, 0, bw, bh)
@@ -933,6 +935,21 @@ class GLWindowBackingBase(WindowBackingBase):
         color = get_paint_box_color(encoding)
         rgba = tuple(round(v * 256) for v in color)
         self.draw_rectangle(x, y, w, h, self.paint_box_line_width, *rgba)
+
+    def draw_to_tmp(self):
+        target = GL_TEXTURE_RECTANGLE
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
+        glBindTexture(target, self.textures[TEX_TMP_FBO])
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT0)
+
+    def draw_to_offscreen(self):
+        # render to offscreen fbo:
+        target = GL_TEXTURE_RECTANGLE
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+        glBindTexture(target, self.textures[TEX_FBO])
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT0)
 
     def draw_rectangle(self, x: int, y: int, w: int, h: int, size=1, red=0, green=0, blue=0, alpha=0) -> None:
         log("draw_rectangle%s", (x, y, w, h, size, red, green, blue, alpha))
