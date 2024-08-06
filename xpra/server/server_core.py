@@ -1714,7 +1714,7 @@ class ServerCore(object):
             username = getpass.getuser()
         conn = proto._conn
         if not conn or proto.is_closed():
-            authlog(f"connection {proto} is already closed")
+            authlog("connection %s is already closed", proto)
             return
         #authenticator:
         if not proto.authenticators:

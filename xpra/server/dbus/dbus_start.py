@@ -21,7 +21,7 @@ def start_dbus(dbus_launch):
         log("start_dbus(%s) disabled", dbus_launch)
         return 0, {}
     if dbus_launch.lower() in TRUE_OPTIONS:
-        log.warn(f"Warning: invalid dbus-launch command {dbus_launch!r}")
+        log.warn("Warning: invalid dbus-launch command %r", dbus_launch)
         return 0, {}
     bus_address = os.environ.get("DBUS_SESSION_BUS_ADDRESS")
     log("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", dbus_launch, bus_address)
