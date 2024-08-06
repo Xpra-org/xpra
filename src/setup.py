@@ -1355,7 +1355,7 @@ if WIN32:
                             }
         #cx_Freeze v5 workarounds:
         if nvenc_ENABLED or nvfbc_ENABLED:
-            add_packages("numpy.core._methods", "numpy.lib.format")
+            add_packages("numpy.lib.format")
 
         setup_options["options"] = {"build_exe" : cx_freeze_options}
         executables = []
