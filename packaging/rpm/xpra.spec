@@ -36,13 +36,13 @@ autoprov: no
 %if 0%{?fedora}>=39
 %global debug_package %{nil}
 %endif
-%if 0%{?fedora}%{?el9}
+%if 0%{?fedora}
 %define qt6 1
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client
 %endif
 %if 0%{?el10}
 %global debug_package %{nil}
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --without-docs
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --without-docs
 %endif
 
 %global gnome_shell_extension input-source-manager@xpra_org
