@@ -212,6 +212,7 @@ class X11ServerCore(GTKServerBase):
                 from xpra.platform.paths import get_xpra_command
                 cmd = self.get_full_child_command(get_xpra_command()+["opengl", "--opengl=yes"])
                 env = self.get_child_env()
+                gllog(f"query_opengl() using cmd=%s, env=%s", cmd, env)
                 proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env, shell=False, close_fds=True)
                 out,err = proc.communicate()
                 gllog("out(%s)=%s", cmd, out)
