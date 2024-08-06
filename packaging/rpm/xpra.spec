@@ -883,7 +883,7 @@ fi
 
 
 %changelog
-* Sun Aug 04 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
+* Tue Aug 06 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
 - Platforms, build and packaging:
    RHEL 8.10 pygobject3 packaging update
    always build the latest X11 dummy driver version
@@ -894,9 +894,12 @@ fi
    remove outdated numpy workaround
 - Encodings:
    fix `scroll` encoding
-   greenish tint with subsampled webp screen updates
    rgb colors are always full range
    Pillow encoder quality is lower
+- OpenGL:
+   greenish tint with subsampled webp screen updates
+   uninitialized pixels when resizing windows
+   visual corruption with pointer overlay
 - Major:
    missing context manager when X11 session started from a Wayland desktop
    keyboard support should not require `dbus`
@@ -914,6 +917,10 @@ fi
    better compatibility with all builds of python cryptography
    read ssh subcommand's stderr
 - Cosmetic / preventive:
+   missing debug paint color for 'avif'
+   AT-SPI warnings
+   uninitialized pixels when resizing OpenGL windows
+   AT-SPI warnings
    slow CI test times out, ignore failures
    don't run sonarqube on this branch
    tag correct branch in build github workflow

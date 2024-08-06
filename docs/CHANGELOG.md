@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.1.1] 2024-08-04
+## [6.1.1] 2024-08-06
 * Platforms, build and packaging:
     * [RHEL 8.10 pygobject3 packaging update](https://github.com/Xpra-org/xpra/commit/75fe7ad62f1a176f62e82529b1f9a5aad3273eae)
     * [always build the latest X11 dummy driver version](https://github.com/Xpra-org/xpra/commit/c8118c75f592866d2161ff37e6993002c5a0288e)
@@ -11,9 +11,12 @@
     * [remove outdated numpy workaround](https://github.com/Xpra-org/xpra/commit/edfbdf4165db67f1b56ff41c49703bcfca83711c)
 * Encodings:
     * [fix `scroll` encoding](https://github.com/Xpra-org/xpra/commit/a358f22346070481a26cf59b031f1b0a408b5ca3)
-    * [greenish tint with subsampled webp screen updates](https://github.com/Xpra-org/xpra/commit/0d2b7d452a3b6f89c21db3b74f453cfad37bd12f)
     * [rgb colors are always full range](https://github.com/Xpra-org/xpra/commit/f091a72f1bf7c60f7db549400861c4f3fac669cb)
     * [Pillow encoder quality is lower](https://github.com/Xpra-org/xpra/commit/0630f83763710c51d41591575dd408d6f2e7bb93), [normalize it](https://github.com/Xpra-org/xpra/commit/f9a1668c771c31a7a19f34e7a56725027ffcf1d3)
+* OpenGL:
+    * [greenish tint with subsampled webp screen updates](https://github.com/Xpra-org/xpra/commit/0d2b7d452a3b6f89c21db3b74f453cfad37bd12f)
+    * [uninitialized pixels when resizing windows](https://github.com/Xpra-org/xpra/commit/96a28d75dee29339c65a24fe737f7297e0f69167)
+    * [visual corruption with pointer overlay](https://github.com/Xpra-org/xpra/commit/c617f13426964f6383d67094a1f42d4bb1161dfa)
 * Major:
     * [missing context manager when X11 session started from a Wayland desktop](https://github.com/Xpra-org/xpra/commit/9d980f569f746414af9eb8f975c2e2b32be3f94e)
     * [keyboard support should not require `dbus`](https://github.com/Xpra-org/xpra/commit/9099fee25d28b97045a65e4fb838d3e69d94eb56)
@@ -31,6 +34,8 @@
     * [better compatibility with all builds of python cryptography](https://github.com/Xpra-org/xpra/commit/daba177e8c842c52bce91057f53d869180e6c603)
     * [read ssh subcommand's stderr](https://github.com/Xpra-org/xpra/commit/0c5524de1f1c7d855905f2d888000cfb226b1b77)
 * Cosmetic / preventive:
+    * [missing debug paint color for 'avif'](https://github.com/Xpra-org/xpra/commit/0b43a7da535a78f7e3f84a8355304a97c9b62814)
+    * [AT-SPI warnings](https://github.com/Xpra-org/xpra/commit/6e10dd488a30ae1cee0cf3e64d04213b7ca58851)
     * [slow CI test times out](https://github.com/Xpra-org/xpra/commit/0109886175f029017974db9a74b0aec025cdd373), [ignore failures](https://github.com/Xpra-org/xpra/commit/c87d6bbbded21cb45ccac2207fdf6a442d4dce19)
     * [CI only test oldest and newest python versions](https://github.com/Xpra-org/xpra/commit/f9a051985299ac56c46bc5df9fa02d3314edb7d7)
     * [don't run sonarqube on this branch](https://github.com/Xpra-org/xpra/commit/2188b075da16a1e2daf4c17bb7b2e268aa4d3ca6)
