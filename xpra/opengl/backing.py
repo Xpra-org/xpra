@@ -357,17 +357,11 @@ class GLWindowBackingBase(WindowBackingBase):
         # re-init our OpenGL context with the new size,
         # but leave offscreen fbo with the old size
         self.gl_init(context, True)
-        self.draw_to_tmp()
-        if self._alpha_enabled:
-            glClearColor(0, 0, 0, 1)
-        else:
-            glClearColor(1, 1, 1, 0)
-        glClear(GL_COLOR_BUFFER_BIT)
         # copy offscreen to new tmp:
         self.copy_fbo(w, h, sx, sy, dx, dy)
         # make tmp the new offscreen:
         self.swap_fbos()
-        self.draw_to_offscreen()
+        self.draw_to_fbo(self.offscreen_fbo, TEX_FBO)
         if bw > oldw:
             self.paint_box("padding", oldw, 0, bw - oldw, bh)
         if bh > oldh:
@@ -376,6 +370,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # and we can re-initialize it with the correct size:
         mag_filter = self.get_init_magfilter()
         self.init_fbo(TEX_TMP_FBO, self.tmp_fbo, bw, bh, mag_filter)
+        self.draw_to_fbo(self.offscreen_fbo, TEX_FBO)
         self._backing.queue_draw_area(0, 0, bw, bh)
         if FBO_RESIZE_DELAY >= 0:
             del context
@@ -559,8 +554,11 @@ class GLWindowBackingBase(WindowBackingBase):
         glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
         glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexImage2D(target, 0, self.internal_format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[texture_index], 0)
+        self.draw_to_fbo(fbo, texture_index)
+        if self._alpha_enabled:
+            glClearColor(0, 0, 0, 1)
+        else:
+            glClearColor(1, 1, 1, 0)
 
     def close_gl_config(self) -> None:
         """
@@ -641,8 +639,13 @@ class GLWindowBackingBase(WindowBackingBase):
         bw, bh = self.size
         self.copy_fbo(bw, bh)
 
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+        if SAVE_BUFFERS:
+            save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], bw, bh, self._alpha_enabled, prefix="scroll", suffix="-pre")
+            save_fbo(self.wid, self.tmp_fbo, self.textures[TEX_TMP_FBO], bw, bh, self._alpha_enabled, prefix="scroll", suffix="-tmp-fbo")
+
+        self.read_from_fbo(self.tmp_fbo, TEX_TMP_FBO)
+        self.draw_to_fbo(self.offscreen_fbo, TEX_FBO)
+
         glFlush()
 
         for x, y, w, h, xdelta, ydelta in scrolls:
@@ -695,6 +698,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
         glBindFramebuffer(GL_FRAMEBUFFER, self.offscreen_fbo)
+        if SAVE_BUFFERS:
+            save_fbo(self.wid, self.offscreen_fbo, self.textures[TEX_FBO], bw, bh, self._alpha_enabled, prefix="scroll", suffix="-post")
 
         glBindTexture(target, 0)
         self.painted(context, 0, 0, bw, bh, flush)
@@ -703,16 +708,13 @@ class GLWindowBackingBase(WindowBackingBase):
     def copy_fbo(self, w: int, h: int, sx=0, sy=0, dx=0, dy=0) -> None:
         log("copy_fbo%s", (w, h, sx, sy, dx, dy))
         # copy from offscreen to tmp:
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.offscreen_fbo)
-        target = GL_TEXTURE_RECTANGLE
-        glBindTexture(target, self.textures[TEX_FBO])
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
-        glReadBuffer(GL_COLOR_ATTACHMENT0)
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
-        glBindTexture(target, self.textures[TEX_TMP_FBO])
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_TMP_FBO], 0)
-        glDrawBuffer(GL_COLOR_ATTACHMENT1)
+        self.read_from_fbo(self.offscreen_fbo, TEX_FBO)
+        self.draw_to_fbo(self.tmp_fbo, TEX_TMP_FBO)
+        if self._alpha_enabled:
+            glClearColor(0, 0, 0, 1)
+        else:
+            glClearColor(1, 1, 1, 0)
+        glClear(GL_COLOR_BUFFER_BIT)
 
         glBlitFramebuffer(sx, sy, sx + w, sy + h,
                           dx, dy, dx + w, dy + h,
@@ -941,8 +943,6 @@ class GLWindowBackingBase(WindowBackingBase):
         # show region being painted if debug paint box is enabled only:
         if self.paint_box_line_width <= 0:
             return
-        self.draw_to_offscreen()
-
         bw, bh = self.size
         glViewport(0, 0, bw, bh)
 
@@ -950,20 +950,22 @@ class GLWindowBackingBase(WindowBackingBase):
         rgba = tuple(round(v * 256) for v in color)
         self.draw_rectangle(x, y, w, h, self.paint_box_line_width, *rgba)
 
-    def draw_to_tmp(self):
+    def read_from_fbo(self, fbo=0, texture=TEX_TMP_FBO):
+        tex = self.textures[texture]
         target = GL_TEXTURE_RECTANGLE
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
-        glBindTexture(target, self.textures[TEX_TMP_FBO])
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
-        glDrawBuffer(GL_COLOR_ATTACHMENT0)
+        attach = GL_COLOR_ATTACHMENT0
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo or self.tmp_fbo)
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, attach, target, tex, 0)
+        glReadBuffer(attach)
 
-    def draw_to_offscreen(self):
-        # render to offscreen fbo:
+    def draw_to_fbo(self, fbo=0, texture=TEX_FBO):
+        tex = self.textures[texture]
         target = GL_TEXTURE_RECTANGLE
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
-        glBindTexture(target, self.textures[TEX_FBO])
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
-        glDrawBuffer(GL_COLOR_ATTACHMENT0)
+        attach = GL_COLOR_ATTACHMENT1
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo or self.offscreen_fbo)
+        glBindTexture(target, tex)
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, attach, target, tex, 0)
+        glDrawBuffer(attach)
 
     def draw_rectangle(self, x: int, y: int, w: int, h: int, size=1, red=0, green=0, blue=0, alpha=0) -> None:
         log("draw_rectangle%s", (x, y, w, h, size, red, green, blue, alpha))
@@ -974,10 +976,7 @@ class GLWindowBackingBase(WindowBackingBase):
         upload_rgba_texture(texture, 1, 1, pixel)
 
         # set fbo with rgb texture as framebuffer source:
-        target = GL_TEXTURE_RECTANGLE
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texture, 0)
-        glReadBuffer(GL_COLOR_ATTACHMENT0)
+        self.read_from_fbo(self.tmp_fbo, TEX_RGB)
 
         # invert y screen coordinates:
         bh = self.size[1]
@@ -1216,14 +1215,8 @@ class GLWindowBackingBase(WindowBackingBase):
 
         set_alignment(width, width * len(rgb_format), rgb_format)
 
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_RGB], 0)
-        glReadBuffer(GL_COLOR_ATTACHMENT0)
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
-        glBindTexture(target, self.textures[TEX_FBO])
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
-        glDrawBuffer(GL_COLOR_ATTACHMENT1)
+        self.read_from_fbo(self.tmp_fbo, TEX_RGB)
+        self.draw_to_fbo(self.offscreen_fbo, TEX_FBO)
 
         rh = self.render_size[1]
         glBlitFramebuffer(0, 0, width, height,
@@ -1316,14 +1309,8 @@ class GLWindowBackingBase(WindowBackingBase):
             glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
             glTexImage2D(target, 0, self.internal_format, width, height, 0, pformat, ptype, img_data)
 
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, self.tmp_fbo)
-            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_RGB], 0)
-            glReadBuffer(GL_COLOR_ATTACHMENT0)
-
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
-            glBindTexture(target, self.textures[TEX_FBO])
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
-            glDrawBuffer(GL_COLOR_ATTACHMENT1)
+            self.read_from_fbo(self.tmp_fbo, TEX_RGB)
+            self.draw_to_fbo(self.offscreen_fbo, TEX_FBO)
 
             rh = self.render_size[1]
             glBlitFramebuffer(0, 0, width, height,
@@ -1514,11 +1501,7 @@ class GLWindowBackingBase(WindowBackingBase):
         )[:len(divs)]
         gl_marker("painting planar update, format %s", self.planar_pixel_format)
 
-        target = GL_TEXTURE_RECTANGLE
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
-        glBindTexture(target, self.textures[TEX_FBO])
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
-        glDrawBuffer(GL_COLOR_ATTACHMENT0)
+        self.draw_to_fbo(self.offscreen_fbo, TEX_FBO)
 
         ww, wh = self.render_size
 
@@ -1538,6 +1521,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if not program:
             raise RuntimeError(f"no {shader} found!")
         glUseProgram(program)
+        target = GL_TEXTURE_RECTANGLE
         for texture, tex_index in textures:
             glActiveTexture(texture)
             glBindTexture(target, self.textures[tex_index])
