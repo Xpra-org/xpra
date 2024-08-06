@@ -422,10 +422,17 @@ class GLWindowBackingBase(WindowBackingBase):
         #re-init our OpenGL context with the new size,
         #but leave offscreen fbo with the old size
         self.gl_init(True)
+        self.draw_to_tmp()
+        if self._alpha_enabled:
+            glClearColor(0, 0, 0, 1)
+        else:
+            glClearColor(1, 1, 1, 0)
+        glClear(GL_COLOR_BUFFER_BIT)
         #copy offscreen to new tmp:
         self.copy_fbo(w, h, sx, sy, dx, dy)
         #make tmp the new offscreen:
         self.swap_fbos()
+        self.draw_to_offscreen()
         # now we don't need the old tmp fbo contents anymore,
         # and we can re-initialize it with the correct size:
         mag_filter = self.get_init_magfilter()
@@ -439,6 +446,20 @@ class GLWindowBackingBase(WindowBackingBase):
                 self.do_present_fbo()
             GLib.timeout_add(FBO_RESIZE_DELAY, self.with_gl_context, redraw)
 
+    def draw_to_tmp(self):
+        target = GL_TEXTURE_RECTANGLE_ARB
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
+        glBindTexture(target, self.textures[TEX_TMP_FBO])
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT0)
+
+    def draw_to_offscreen(self):
+        # render to offscreen fbo:
+        target = GL_TEXTURE_RECTANGLE_ARB
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)
+        glBindTexture(target, self.textures[TEX_FBO])
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT0)
 
     def gl_marker(self, *msg) -> None:
         log(*msg)
