@@ -775,11 +775,7 @@ fi
 
 
 %changelog
-* Sun Aug 04 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
-- Encodings:
-   `mmap` race condition
-   validate openh264 colorspace
-   test used potentially invalid colorspace
+* Tue Aug 06 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:
    syntax compatibility fixes
    `openssl.cnf` location in MS Windows builds
@@ -795,7 +791,12 @@ fi
    mDNS browser handling for binary `text` records from zeroconf
    `sync-xvfb`: always free images with an error context
    better compatibility with all builds of python cryptography
+   uninitialized pixels when resizing windows
+   window border offset with non-opengl renderer
 - Encodings:
+   `mmap` race condition
+   validate openh264 colorspace
+   test used potentially invalid colorspace
    avoid slow modules and slow encoders
    reduce how often quality swings cause scaling changes
    stick to the same video scaling value longer
@@ -803,7 +804,7 @@ fi
    ignore MS Windows keyboard layouts without a valid X11 layout name
    try harder to identify the key event string
    don't show duplicate keyboard layout names
-   try harder to find a matching key by name
+   try harder to find a matching key by name, try lowercase if needed, use default modifiers if that's all we've got
 - Minor:
    remove enum prefix with older Python versions
    http directory listing
@@ -813,6 +814,7 @@ fi
    handle empty ibus daemon command
    handle invalid dbus-launch command
 - Cosmetic:
+   errors when connections are closed as we process them
    try to prevent ATK warnings
    validate application's opaque-region
    slow CI test times out, ignore it

@@ -1,10 +1,6 @@
 # Changelog
 
-## [5.0.10] 2024-08-04
-* Encodings:
-    * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
-    * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
-    * [test used potentially invalid colorspace](https://github.com/Xpra-org/xpra/commit/d4883187a0c1497b0ece3330a6864f1b67d1a217)
+## [5.0.10] 2024-08-06
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
     * [`openssl.cnf` location in MS Windows builds](https://github.com/Xpra-org/xpra/commit/3ad6c8e44438912c5dd9dcba427b17d6b20a463f)
@@ -21,7 +17,12 @@
     * [mDNS browser handling for binary `text` records from zeroconf](https://github.com/Xpra-org/xpra/commit/14bd95980ce63e08aa6f2532b0a495f541caa01b)
     * [`sync-xvfb`: always free images with an error context](https://github.com/Xpra-org/xpra/commit/85547dac5f0d7fabd361db6d84964c27cba5b6bc)
     * [better compatibility with all builds of python cryptography](https://github.com/Xpra-org/xpra/commit/c91372a566ce46b82e1f406eba5a10ce0b092fb5)
+    * [uninitialized pixels when resizing windows](https://github.com/Xpra-org/xpra/commit/c90eee5e235e5b8e288d3ecef5169319e0c28dde)
+    * [window border offset with non-opengl renderer](https://github.com/Xpra-org/xpra/commit/bfb21a569858b849b7d752cdeef677c81326c817)
 * Encodings:
+    * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
+    * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
+    * [test used potentially invalid colorspace](https://github.com/Xpra-org/xpra/commit/d4883187a0c1497b0ece3330a6864f1b67d1a217)
     * avoid [slow modules](https://github.com/Xpra-org/xpra/commit/7a16475b73ebd8398e3c1b44561647a9d7877933) and [slow encoders](https://github.com/Xpra-org/xpra/commit/38a7b3daaa6b908d7faf93ab2fa31eed3cabc104)
     * [reduce how often quality swings cause scaling changes](https://github.com/Xpra-org/xpra/commit/7951a696e3afb79cd8b60394561eebaf379453b4)
     * [stick to the same video scaling value longer](https://github.com/Xpra-org/xpra/commit/aaf22afec492240dae512230aa5fe88c73546c51)
@@ -29,7 +30,7 @@
     * [ignore MS Windows keyboard layouts without a valid X11 layout name](https://github.com/Xpra-org/xpra/commit/3eca141e0027e93ea1150a5a5939fc63425d9aaf)
     * [try harder to identify the key event string](https://github.com/Xpra-org/xpra/commit/01b36a92c1d2113c3897166c12bfc1177e4bdc55)
     * [don't show duplicate keyboard layout names](https://github.com/Xpra-org/xpra/commit/07d51f73ea08188b728633da745ea29b5285bb77)
-    * [try harder to find a matching key by name](https://github.com/Xpra-org/xpra/commit/f5b83a7d8b19d50f161ecb5d51d44d1e8a4babfc), [use default modifiers if that's all we've got](https://github.com/Xpra-org/xpra/commit/ef9e2839f494de28353b5aeb6fa01dd63703b582)
+    * [try harder to find a matching key by name](https://github.com/Xpra-org/xpra/commit/f5b83a7d8b19d50f161ecb5d51d44d1e8a4babfc) [try lowercase if needed](https://github.com/Xpra-org/xpra/commit/7c9be1a19755a96c476db74c8b176accf554caa5), [use default modifiers if that's all we've got](https://github.com/Xpra-org/xpra/commit/ef9e2839f494de28353b5aeb6fa01dd63703b582)
 * Minor:
     * [remove enum prefix with older Python versions](https://github.com/Xpra-org/xpra/commit/8eabd33b578aed9670c1cef62a24e2dc73370b79)
     * [http directory listing](https://github.com/Xpra-org/xpra/commit/3aa22cfa636f21ba079e352b81448d675174d59a)
@@ -41,6 +42,7 @@
     * [handle empty ibus daemon command](https://github.com/Xpra-org/xpra/commit/12289c125af7caa58acac01a6b484a6be6fdac0c)
     * [handle invalid dbus-launch command](https://github.com/Xpra-org/xpra/commit/1c7433556d05175d5e43b85dfdcfb88501aab4ca)
 * Cosmetic:
+    * [errors when connections are closed as we process them](https://github.com/Xpra-org/xpra/commit/4d4ba9a078e91af86cd61b12b5021504a5e75ac2)
     * [try to prevent ATK warnings](https://github.com/Xpra-org/xpra/commit/440a182dbaaf1db0af81ab1b33d05bc454a726a0)
     * [validate application's opaque-region](https://github.com/Xpra-org/xpra/commit/6749cc91f8853ee03e406d6c0cec763c61d13274)
     * [slow CI test times out](https://github.com/Xpra-org/xpra/commit/6dff61f8dba6a1b5f9a59c0cd761cfe9674d5f14), [ignore it](https://github.com/Xpra-org/xpra/commit/0e0c24e679a21f0a63cf727fab6175ab6f5b1cc3)
