@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE
 from xpra.util import nonl
 from xpra.os_util import POSIX, bytestostr, close_fds
 from xpra.scripts.server import _get_int, _get_str, _save_int, _save_str
-from xpra.scripts.config import FALSE_OPTIONS
+from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.log import Logger
 
 log = Logger("dbus")
@@ -19,6 +19,9 @@ log = Logger("dbus")
 def start_dbus(dbus_launch):
     if not dbus_launch or dbus_launch.lower() in FALSE_OPTIONS:
         log("start_dbus(%s) disabled", dbus_launch)
+        return 0, {}
+    if dbus_launch.lower() in TRUE_OPTIONS:
+        log.warn(f"Warning: invalid dbus-launch command {dbus_launch!r}")
         return 0, {}
     bus_address = os.environ.get("DBUS_SESSION_BUS_ADDRESS")
     log("dbus_launch=%s, current DBUS_SESSION_BUS_ADDRESS=%s", dbus_launch, bus_address)
