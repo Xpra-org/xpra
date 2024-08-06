@@ -212,9 +212,11 @@ class GTK3ClientWindow(GTKClientWindowBase):
         backing = self._backing
         if not backing:
             return False
+        context.save()
         self.paint_backing_offset_border(backing, context)
         self.clip_to_backing(backing, context)
         backing.cairo_draw(context)
+        context.restore()
         self.cairo_paint_border(context, None)
         if not self._client.server_ok():
             self.paint_spinner(context)
