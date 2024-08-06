@@ -904,6 +904,7 @@ fi
    missing context manager when X11 session started from a Wayland desktop
    keyboard support should not require `dbus`
    validate application's opaque-region property
+   window border offset with non-opengl renderer
 - Minor:
    try to handle homeless user accounts more gracefully
    try harder to find a matching key by name, use default modifiers if that's all we've got

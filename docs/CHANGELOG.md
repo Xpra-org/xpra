@@ -21,6 +21,7 @@
     * [missing context manager when X11 session started from a Wayland desktop](https://github.com/Xpra-org/xpra/commit/9d980f569f746414af9eb8f975c2e2b32be3f94e)
     * [keyboard support should not require `dbus`](https://github.com/Xpra-org/xpra/commit/9099fee25d28b97045a65e4fb838d3e69d94eb56)
     * [validate application's opaque-region property](https://github.com/Xpra-org/xpra/commit/d625380dbeee833b99ba7c0d1968367b77d2d6cd)
+    * [window border offset with non-opengl renderer](https://github.com/Xpra-org/xpra/commit/b31d3b4f35fe8e372e9c975c8b5da8ce2ca99761)
 * Minor:
     * [try to handle homeless user accounts more gracefully](https://github.com/Xpra-org/xpra/commit/e8cb51b76c1a78c1b74b3c920232c5c8da3802ba)
     * [try harder to find a matching key by name](https://github.com/Xpra-org/xpra/commit/a472331a3237f5d5f753869ec822b35794a69f10), [use default modifiers if that's all we've got](https://github.com/Xpra-org/xpra/commit/8e88cda570dddc05c0b1d395d58deca8d8178810)

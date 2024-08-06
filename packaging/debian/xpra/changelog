@@ -25,6 +25,7 @@ xpra (6.1.1-1) UNRELEASED; urgency=low
     handle empty ibus daemon command
     handle invalid dbus-launch command
     broken download links
+    window border offset with non-opengl renderer
   * Network:
     expose quic / webtransport sockets via mdns
     `gss` authentication module parsing error
