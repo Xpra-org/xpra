@@ -22,10 +22,11 @@ DEFAULT_BOX_COLORS = {
     "mpeg4"     : "black",
     "scroll"    : "brown",
     "avif"      : "cyan",
+    "padding"   : "lime",
 }
 
 ALPHA = 0.6
-# converted from gtk lookups:
+# converted from gtk lookups using `Gdk.Color.parse`:
 # noinspection PyPep8
 BOX_COLORS = {
     "h264"      : (0.0,                 0.0,                    0.9999847412109375, ALPHA),
@@ -43,6 +44,7 @@ BOX_COLORS = {
     "vp8"       : (0.0,                 0.501953125,            0.0,                ALPHA),
     "vp9"       : (0.901947021484375,   0.901947021484375,      0.980377197265625,  ALPHA),
     "avif"      : (0,                   1.0,                    1.0,                ALPHA),
+    "padding"   : (0,                   1.0,                    0,                  ALPHA),
 }
 
 BLACK = 0, 0, 0, 0

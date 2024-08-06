@@ -368,6 +368,10 @@ class GLWindowBackingBase(WindowBackingBase):
         # make tmp the new offscreen:
         self.swap_fbos()
         self.draw_to_offscreen()
+        if bw > oldw:
+            self.paint_box("padding", oldw, 0, bw - oldw, bh)
+        if bh > oldh:
+            self.paint_box("padding",0, oldh, bw, bh - oldh)
         # now we don't need the old tmp fbo contents anymore,
         # and we can re-initialize it with the correct size:
         mag_filter = self.get_init_magfilter()

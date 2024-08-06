@@ -104,6 +104,7 @@ class CairoBackingBase(WindowBackingBase):
         cr.rectangle(0, 0, bw, bh)
         cr.fill()
         if COPY_OLD_BACKING and old_backing is not None:
+            cr.save()
             oldw, oldh = old_backing.get_width(), old_backing.get_height()
             sx, sy, dx, dy, w, h = self.gravity_copy_coords(oldw, oldh, bw, bh)
             cr.translate(dx - sx, dy - sy)
@@ -112,6 +113,12 @@ class CairoBackingBase(WindowBackingBase):
             cr.set_operator(Operator.SOURCE)
             cr.set_source_surface(old_backing, 0, 0)
             cr.paint()
+            cr.restore()
+            if self.paint_box_line_width > 0 and (oldw != bw or oldh != bh):
+                if bw > oldw:
+                    self.cairo_paint_box(cr, "padding", oldw, 0, bw - oldw, bh)
+                if bh > oldh:
+                    self.cairo_paint_box(cr, "padding", 0, oldh, bw, bh - oldh)
             backing.flush()
         return cr
 
