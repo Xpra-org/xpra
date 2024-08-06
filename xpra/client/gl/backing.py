@@ -805,6 +805,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         if self.pointer_overlay:
             self.draw_pointer()
+            glViewport(*viewport)
 
         if self.paint_spinner or FORCE_SPINNER:
             self.draw_spinner()
@@ -814,6 +815,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         if self.is_show_fps():
             self.draw_fps()
+            glViewport(*viewport)
 
         # Show the backbuffer on screen
         glFlush()
