@@ -39,7 +39,6 @@ from xpra.client.gui.ui_client_base import UIXpraClient
 from xpra.client.gui.window_border import WindowBorder
 from xpra.client.base.gobject import GObjectXpraClient
 from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
-from xpra.client.mixins.windows import WindowClient
 from xpra.platform.gui import force_focus
 from xpra.platform.gui import (
     get_window_frame_sizes, get_window_frame_size,
@@ -840,6 +839,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return self._add_statusicon_tray(TrayClient.get_tray_classes(self))
 
     def get_system_tray_classes(self) -> list[type]:
+        from xpra.client.mixins.windows import WindowClient
         return self._add_statusicon_tray(WindowClient.get_system_tray_classes(self))
 
     def supports_system_tray(self) -> bool:
@@ -1472,6 +1472,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def destroy_window(self, wid: int, window) -> None:
         # override so we can cleanup the group-leader if needed,
+        from xpra.client.mixins.windows import WindowClient
         WindowClient.destroy_window(self, wid, window)
         group_leader = window.group_leader
         if group_leader is None or not self._group_leader_wids:
