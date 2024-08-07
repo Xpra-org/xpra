@@ -153,6 +153,8 @@ class DisplayClient(StubClientMixin):
         caps.update(self.get_screen_caps())
         caps["dpi"] = self.get_dpi_caps()
         caps["screen-scaling"] = self.get_scaling_caps()
+        if self.desktop_fullscreen:
+            caps["desktop-fullscreen"] = True
         self.log_screen_info = False        # don't log it again
         return caps
 

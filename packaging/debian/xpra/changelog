@@ -18,6 +18,7 @@ xpra (6.1.1-1) UNRELEASED; urgency=low
     missing context manager when X11 session started from a Wayland desktop
     keyboard support should not require `dbus`
     validate application's opaque-region property
+    client fails without window forwarding
   * Minor:
     try to handle homeless user accounts more gracefully
     try harder to find a matching key by name, use default modifiers if that's all we've got

@@ -905,6 +905,7 @@ fi
    keyboard support should not require `dbus`
    validate application's opaque-region property
    window border offset with non-opengl renderer
+   client fails without window forwarding
 - Minor:
    try to handle homeless user accounts more gracefully
    try harder to find a matching key by name, use default modifiers if that's all we've got

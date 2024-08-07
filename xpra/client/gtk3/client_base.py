@@ -179,9 +179,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
         # call this once early:
-        ignorewarnings(self.get_mouse_position)
-        if HAS_X11_BINDINGS:
-            self.setup_frame_request_windows()
+        from xpra.client.gui import features
+        if features.windows:
+            ignorewarnings(self.get_mouse_position)
+            if HAS_X11_BINDINGS:
+                self.setup_frame_request_windows()
         UIXpraClient.run(self)
         self.gtk_main()
         log(f"GTKXpraClient.run_main_loop() main loop ended, returning exit_code={self.exit_code}", )
