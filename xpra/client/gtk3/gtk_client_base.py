@@ -114,6 +114,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.gl_max_viewport_dims = 0, 0
         self.gl_texture_size_limit = 0
         self._cursors = weakref.WeakKeyDictionary()
+        self.border_str = "no"
         #frame request hidden window:
         self.frame_request_window = None
         #group leader bits:
@@ -133,6 +134,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def init(self, opts) -> None:
         GObjectXpraClient.init(self, opts)
         UIXpraClient.init(self, opts)
+        self.border_str = opts.border
 
 
     def setup_frame_request_windows(self) -> None:
