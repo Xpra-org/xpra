@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-%define version 3.1.8
+%define version 3.1.9
 
 %{!?with_python2: %define with_python2 1}
 %{!?with_python3: %define with_python3 1}
@@ -926,6 +926,28 @@ fi
 
 
 %changelog
+* Wed Aug 07 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
+- build and packaging:
+     libyuv 0.1878.20231004
+     packaging updates for CentOS7: libyuv, skip pycuda
+     python-netifaces missing gcc build dependency
+     remove outdated numpy packaging workaround on MS Windows
+- encodings:
+     avoid slow modules (ie: csc_cython)
+     stick to the same video scaling setting longer, avoid big swings
+- major:
+     try harder to find the matching key, using the keyval, key name - lowercase if needed, use default modifiers if that's all we have
+     context errors with sync-xvfb switch
+     print all pages on MS Windows
+     errors when the connection is closed whilst we process it
+- minor and cosmetic fixes:
+     handle invalid dbus-launch command options
+     try to prevent all ATK warnings
+     prevent ssl header from messing up the log
+     try to handle missing python pillow slightly more gracefully
+     log opengl probe command
+
+
 * Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> 3.1.8-10.1xpra1
 - major:
      better compatibility with python2 servers
