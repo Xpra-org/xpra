@@ -148,6 +148,8 @@ class DisplayClient(StubClientMixin):
         monitors = self.get_monitors_info()
         caps["monitors"] = adjust_monitor_refresh_rate(self.refresh_rate, monitors)
         caps.update(self.get_screen_caps())
+        if self.desktop_fullscreen:
+            caps["desktop-fullscreen"] = True
         caps.update(flatten_dict({
             "dpi"               : self.get_dpi_caps(),
             "screen-scaling"    : self.get_scaling_caps(),

@@ -153,8 +153,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def run(self) -> int:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
-        if HAS_X11_BINDINGS:
-            self.setup_frame_request_windows()
+        from xpra.client.gui import mixin_features
+        if mixin_features.windows:
+            if HAS_X11_BINDINGS:
+                self.setup_frame_request_windows()
         UIXpraClient.run(self)
         self.gtk_main()
         log(f"GTKXpraClient.run_main_loop() main loop ended, returning exit_code={self.exit_code}", )
