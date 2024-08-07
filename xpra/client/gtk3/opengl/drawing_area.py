@@ -89,7 +89,7 @@ class GLDrawingArea(GLWindowBackingBase):
     def do_gl_show(self, rect_count) -> None:
         if self.is_double_buffered():
             # Show the backbuffer on screen
-            log.warn("%s.do_gl_show(%s) swapping buffers now", rect_count, self)
+            log("%s.do_gl_show(%s) swapping buffers now", rect_count, self)
             self.window_context.swap_buffers()
         else:
             # glFlush was enough
@@ -104,7 +104,7 @@ class GLDrawingArea(GLWindowBackingBase):
     def draw_fbo(self, _context) -> bool:
         w, h = self.size
         with self.gl_context() as ctx:
-            log.warn("drawing_area.draw_fbo(%s) ctx=%s, size=%s", _context, ctx, (w, h))
+            log("drawing_area.draw_fbo(%s) ctx=%s, size=%s", _context, ctx, (w, h))
             self.gl_init(ctx)
             self.present_fbo(ctx, 0, 0, w, h)
         return True
