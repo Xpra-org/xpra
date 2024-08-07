@@ -15,7 +15,7 @@ from typing import Any
 
 from xpra.common import noop
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, strtobytes, bytestostr, hexstr, memoryview_to_bytes
+from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
 from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
@@ -29,14 +29,13 @@ from xpra.gtk.cursors import cursor_types, get_default_cursor
 from xpra.gtk.util import get_default_root_window, get_root_size, GRAB_STATUS_STRING, init_display_source
 from xpra.gtk.window import GDKWindow
 from xpra.gtk.info import get_monitors_info, get_screen_sizes
-from xpra.gtk.widget import scaled_image, label, color_parse, FILE_CHOOSER_NATIVE
+from xpra.gtk.widget import scaled_image, label, FILE_CHOOSER_NATIVE
 from xpra.gtk.pixbuf import get_icon_pixbuf, get_pixbuf_from_data
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.gtk.gobject import no_arg_signal
 from xpra.gtk.css_overrides import inject_css_overrides
 from xpra.client.gui.ui_client_base import UIXpraClient
-from xpra.client.gui.window_border import WindowBorder
 from xpra.client.base.gobject import GObjectXpraClient
 from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
 from xpra.platform.gui import force_focus
@@ -93,17 +92,6 @@ def get_group_ref(metadata: typedict) -> str:
     return ""
 
 
-# pylint: disable=import-outside-toplevel
-def show_border_help() -> None:
-    if not first_time("border-help"):
-        return
-    log.info(" border format: color[,size][:off]")
-    log.info("  eg: red,10")
-    log.info("  eg: ,5")
-    log.info("  eg: auto,5")
-    log.info("  eg: blue")
-
-
 # noinspection PyMethodMayBeStatic
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     __gsignals__ = {}
@@ -127,7 +115,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.start_new_command = None
         self.server_commands = None
         self.keyboard_helper_class = GTKKeyboardHelper
-        self.border: WindowBorder | None = None
         self.data_send_requests = {}
         # clipboard bits:
         self.clipboard_notification_timer = 0
@@ -140,7 +127,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.gl_max_viewport_dims = 0, 0
         self.gl_texture_size_limit = 0
         self._cursors = weakref.WeakKeyDictionary()
-        self.border_str = "no"
         # frame request hidden window:
         self.frame_request_window = None
         # group leader bits:
@@ -159,7 +145,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def init(self, opts) -> None:
         GObjectXpraClient.init(self, opts)
         UIXpraClient.init(self, opts)
-        self.border_str = opts.border
 
     def setup_frame_request_windows(self) -> None:
         # query the window manager to get the frame size:
@@ -177,10 +162,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
-        # call this once early:
-        ignorewarnings(self.get_mouse_position)
-        if HAS_X11_BINDINGS:
-            self.setup_frame_request_windows()
+        from xpra.client.gui import features
+        if features.windows:
+            # call this once early:
+            ignorewarnings(self.get_mouse_position)
+            if HAS_X11_BINDINGS:
+                self.setup_frame_request_windows()
         UIXpraClient.run(self)
         self.gtk_main()
         log(f"GTKXpraClient.run_main_loop() main loop ended, returning exit_code={self.exit_code}", )
@@ -428,61 +415,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             enable_focus_workaround()
         authlog("showing challenge prompt dialog")
         dialog.show()
-
-    def setup_connection(self, conn):
-        conn = super().setup_connection(conn)
-        # now that we have display_desc, parse the border again:
-        self.parse_border(False)
-        return conn
-
-    def parse_border(self, warn=True) -> None:
-        enabled = not self.border_str.endswith(":off")
-        parts = [x.strip() for x in self.border_str.replace(":off", "").split(",")]
-        color_str = parts[0]
-        if color_str.lower() in ("none", "no", "off", "0"):
-            return
-        if color_str.lower() == "help":
-            show_border_help()
-            return
-        color_str = color_str.replace(":off", "")
-        if color_str in ("auto", ""):
-            from hashlib import sha256
-            m = sha256()
-            endpoint = self.display_desc.get("display_name")
-            if endpoint:
-                m.update(strtobytes(endpoint))
-            color_str = "#%s" % m.hexdigest()[:6]
-            log(f"border color derived from {endpoint}: {color_str}")
-        try:
-            color = color_parse(color_str)
-            assert color is not None
-        except Exception as e:
-            if warn:
-                log.warn(f"Warning: invalid border color specified '{color_str!r}'")
-                if str(e):
-                    log.warn(" %s", e)
-                show_border_help()
-            color = color_parse("red")
-        alpha = 0.6
-        size = 4
-        if len(parts) == 2:
-            size_str = parts[1]
-            try:
-                size = int(size_str)
-            except Exception as e:
-                if warn:
-                    log.warn(f"Warning: invalid border size specified {size_str!r}")
-                    log.warn(f" {e}")
-                    show_border_help()
-            if size <= 0:
-                log(f"border size is {size}, disabling it")
-                return
-            if size >= 45:
-                log.warn(f"Warning: border size is too large: {size}, clipping it")
-                size = 45
-        self.border = WindowBorder(enabled, color.red / 65536.0, color.green / 65536.0, color.blue / 65536.0, alpha,
-                                   size)
-        log("parse_border(%s)=%s", self.border_str, self.border)
 
     def show_server_commands(self, *_args) -> None:
         if not self.server_commands_info:

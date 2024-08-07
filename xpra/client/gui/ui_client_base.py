@@ -421,8 +421,6 @@ class UIXpraClient(ClientBaseClass):
             caps["platform"] = pi
             caps["opengl"] = op
             caps["session-type"] = get_session_type()
-        if self.desktop_fullscreen:
-            caps["desktop-fullscreen"] = True
         return caps
 
     ######################################################################

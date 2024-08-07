@@ -29,8 +29,9 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr
 from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_execfile_command
 from xpra.scripts.config import FALSE_OPTIONS
+from xpra.client.gui.window_border import WindowBorder
 from xpra.util.thread import start_thread
-from xpra.util.str_fn import std, bytestostr, memoryview_to_bytes
+from xpra.util.str_fn import std, bytestostr, strtobytes, memoryview_to_bytes
 from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.system import is_Ubuntu, is_Wayland
 from xpra.util.objects import typedict, make_instance
@@ -168,6 +169,67 @@ def parse_window_size(v, attribute="max-size"):
     return None
 
 
+def show_border_help() -> None:
+    if not first_time("border-help"):
+        return
+    log.info(" border format: color[,size][:off]")
+    log.info("  eg: red,10")
+    log.info("  eg: ,5")
+    log.info("  eg: auto,5")
+    log.info("  eg: blue")
+
+
+def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
+    from xpra.gtk.widget import color_parse
+    enabled = not border_str.endswith(":off")
+    parts = [x.strip() for x in border_str.replace(":off", "").split(",")]
+    color_str = parts[0]
+    if color_str.lower() in ("none", "no", "off", "0"):
+        return WindowBorder(False)
+    if color_str.lower() == "help":
+        show_border_help()
+        return WindowBorder(False)
+    color_str = color_str.replace(":off", "")
+    if color_str in ("auto", ""):
+        from hashlib import sha256
+        m = sha256()
+        if display_name:
+            m.update(strtobytes(display_name))
+        color_str = "#%s" % m.hexdigest()[:6]
+        log(f"border color derived from {display_name}: {color_str}")
+    try:
+        color = color_parse(color_str)
+        assert color is not None
+    except Exception as e:
+        if warn:
+            log.warn(f"Warning: invalid border color specified '{color_str!r}'")
+            if str(e):
+                log.warn(" %s", e)
+            show_border_help()
+        color = color_parse("red")
+    alpha = 0.6
+    size = 4
+    if len(parts) == 2:
+        size_str = parts[1]
+        try:
+            size = int(size_str)
+        except Exception as e:
+            if warn:
+                log.warn(f"Warning: invalid border size specified {size_str!r}")
+                log.warn(f" {e}")
+                show_border_help()
+        if size <= 0:
+            log(f"border size is {size}, disabling it")
+            enabled = False
+            size = 0
+        if size >= 45:
+            log.warn(f"Warning: border size is too large: {size}, clipping it")
+            size = 45
+    border = WindowBorder(enabled, color.red / 65536.0, color.green / 65536.0, color.blue / 65536.0, alpha, size)
+    log("parse_border(%s)=%s", border_str, border)
+    return border
+
+
 class WindowClient(StubClientMixin):
     """
     Utility superclass for clients that handle windows:
@@ -204,6 +266,7 @@ class WindowClient(StubClientMixin):
         self.server_precise_wheel: bool = False
 
         self.input_devices = "auto"
+        self.border = WindowBorder(False)
         self.border_str = "no"
 
         self.overlay_image = None
@@ -269,7 +332,7 @@ class WindowClient(StubClientMixin):
 
         self.border_str = opts.border
         if opts.border:
-            self.parse_border()
+            self.border = parse_border(self.border_str)
 
         # mouse wheel:
         mw = (opts.mousewheel or "").lower().replace("-", "").split(",")
@@ -318,9 +381,13 @@ class WindowClient(StubClientMixin):
                         self.overlay_image = Image.open(icon_filename)
         traylog("overlay_image=%s", self.overlay_image)
 
-    def parse_border(self) -> None:
-        # not implemented here (see bindings client)
-        pass
+    def setup_connection(self, conn):
+        conn = super().setup_connection(conn)
+        display_name = getattr(self, "display_desc", {}).get("display_name", "")
+        if display_name:
+            # now that we have display_desc, parse the border again:
+            self.border = parse_border(self.border_str, display_name)
+        return conn
 
     def run(self) -> ExitValue:
         # we decode pixel data in this thread
