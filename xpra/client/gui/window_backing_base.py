@@ -882,7 +882,7 @@ class WindowBackingBase:
         """ must be called from UI thread
             see _mmap_send() in server.py for details """
         assert self.mmap_enabled
-        from xpra.net.mmap import mmap_read
+        from xpra.net.mmap_pipe import mmap_read
         data, free_cb = mmap_read(self.mmap, *img_data)
         callbacks.append(free_cb)
         rgb_format = options.strget("rgb_format", "RGB")
