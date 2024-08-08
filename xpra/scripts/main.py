@@ -1946,7 +1946,7 @@ def run_opengl_probe() -> tuple[str, dict]:
             return "failed:%s" % SIGNAMES.get(0 - r, 0 - r)
         if not tdprops.boolget("success", False):
             return "error:%s" % (err or msg or warning)
-        if tdprops.boolget("safe", False):
+        if not tdprops.boolget("safe", False):
             return "warning:%s" % (err or msg)
         return "success"
 
