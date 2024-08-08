@@ -1959,8 +1959,10 @@ def run_opengl_probe() -> tuple[str, dict]:
             return "failed:%s" % SIGNAMES.get(0 - r, 0 - r)
         if not tdprops.boolget("success", False):
             return "error:%s" % (err or msg or warning)
-        if tdprops.boolget("safe", False):
+        if not tdprops.boolget("safe", False):
             return "warning:%s" % (err or msg)
+        if not tdprops.boolget("enable", True):
+            return f"disabled:{msg}"
         return "success"
 
     # log.warn("Warning: OpenGL probe failed: %s", msg)
@@ -2079,10 +2081,9 @@ def make_client(error_cb: Callable, opts):
                         renderer = renderer.split(";", 1)[0]
                     r += f" ({renderer})"
             app.show_progress(20, f"validating OpenGL: {r}")
-            if probe == "error":
-                message = glinfo.strget("message")
-                if message:
-                    app.show_progress(21, f" {message}")
+            message = glinfo.strget("message")
+            if message:
+                app.show_progress(21, f" {message}")
     except Exception:
         if progress_process:
             try:

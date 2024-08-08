@@ -19,6 +19,12 @@ WHITELIST: GL_MATCH_LIST = {
 # Chipsets from these vendors will trigger warnings,
 # but OpenGL will still be enabled:
 GREYLIST: GL_MATCH_LIST = {
+    "renderer":
+        (
+            "Software Rasterizer",
+            "llvmpipe",
+            # "NV134",
+        ),
 }
 
 # These chipsets will be disabled by default:
@@ -26,8 +32,6 @@ BLACKLIST: GL_MATCH_LIST = {
     "renderer":
         (
             "SVGA3D",
-            "Software Rasterizer",
-            "llvmpipe",
         ),
     "vendor":
         (

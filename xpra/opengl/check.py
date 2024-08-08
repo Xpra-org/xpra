@@ -281,31 +281,32 @@ def check_texture_functions() -> str:
     return check_available(glInitTextureRectangleARB)
 
 
-def check_lists(props: dict[str, Any], force_enable=False) -> bool:
-    def match_list(thelist: GL_MATCH_LIST, listname: str):
-        for k, values in thelist.items():
-            prop = str(props.get(k))
-            if prop and any(True for x in values if prop.find(x) >= 0):
-                log("%s '%s' found in %s: %s", k, prop, listname, values)
-                return k, prop
-            log("%s '%s' not found in %s: %s", k, prop, listname, values)
-        return None
+def match_list(props: dict[str, Any], thelist: GL_MATCH_LIST, listname: str) -> tuple[str, str] | None:
+    for k, values in thelist.items():
+        prop = str(props.get(k))
+        if prop and any(True for x in values if prop.find(x) >= 0):
+            log("%s '%s' found in %s: %s", k, prop, listname, values)
+            return k, prop
+        log("%s '%s' not found in %s: %s", k, prop, listname, values)
+    return None
 
-    blacklisted = match_list(BLACKLIST, "blacklist")
-    greylisted = match_list(GREYLIST, "greylist")
-    whitelisted = match_list(WHITELIST, "whitelist")
+
+def check_lists(props: dict[str, Any], force_enable=False) -> bool:
+    blacklisted = match_list(props, BLACKLIST, "blacklist")
+    greylisted = match_list(props, GREYLIST, "greylist")
+    whitelisted = match_list(props, WHITELIST, "whitelist")
     if blacklisted:
         if whitelisted:
             log.info("%s '%s' enabled (found in both blacklist and whitelist)", *whitelisted)
         elif force_enable:
-            log.warn("Warning: %s '%s' is blacklisted!", *blacklisted)
-            log.warn(" force enabled by option")
+            log.info("OpenGL %s '%s' is blacklisted!", *blacklisted)
+            log.info(" force enabled by option")
         else:
-            log.warn("%s '%s' is blacklisted!", *blacklisted)
+            log.info("OpenGL %s '%s' is blacklisted!", *blacklisted)
             raise_fatal_error("%s '%s' is blacklisted!" % blacklisted)
     if greylisted and not whitelisted:
-        log.warn("Warning: %s '%s' is greylisted,", *greylisted)
-        log.warn(" you may want to turn off OpenGL if you encounter bugs")
+        log.info("OpenGL %s '%s' is greylisted,", *greylisted)
+        log.info(" you may want to turn off OpenGL if you encounter bugs")
     return bool(whitelisted) or not bool(blacklisted)
 
 
@@ -500,6 +501,9 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     safe = check_lists(props, force_enable)
     if "safe" not in props:
         props["safe"] = safe
+    if safe and match_list(props, GREYLIST, "greylist"):
+        props["enable"] = False
+        props["message"] = "driver found in greylist"
     props.update(get_context_info())
     return props
 
