@@ -4,7 +4,7 @@
 Autoreq: 0
 
 Name:		python3-Cython
-Version:	3.0.9
+Version:	3.0.11
 Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
@@ -24,7 +24,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ca7758a3a87340a93f5bde4747e4a5ff1708cf2df407dee533b63ef6cc845777" ]; then
+if [ "${sha256}" != "2ec7d66d23d6da2328fb24f5c1bec6c63a59ec2e91027766ab904f417e1078aa" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -56,6 +56,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Mon Aug 05 2024 Antoine Martin <antoine@xpra.org> 3.0.11-1
+- new upstream release
+
 * Wed Mar 06 2024 Antoine Martin <antoine@xpra.org> 3.0.9-1
 - new upstream release
 
