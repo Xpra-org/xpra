@@ -911,6 +911,7 @@ def do_parse_cmdline(cmdline, defaults):
         defaults.dpi = 96
         defaults.pixel_depth = 24
         defaults.sync_xvfb = 0
+        defaults.opengl = "no"
         if args and args[0] == "attach" and csv(defaults.bind) == "auto":
             defaults.bind = "none"
         options, args = parse_command_line(cmdline[1:], defaults)
