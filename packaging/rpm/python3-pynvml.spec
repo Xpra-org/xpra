@@ -11,13 +11,13 @@ Autoreq: 0
 %define debug_package %{nil}
 
 Name:           python3-pynvml
-Version:        12.535.133
+Version:        12.555.43
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
 License:        BSD
 Group:          Development/Libraries/Python
-Source0:        https://files.pythonhosted.org/packages/c9/f5/35d8002a4a9532c58fa304046de2d9b8be18183c341c517ac48f2bce907a/nvidia-ml-py-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/n/nvidia-ml-py/nvidia-ml-py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 BuildRequires:  python3-devel
@@ -27,7 +27,7 @@ Python Bindings for the NVIDIA Management Library
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "b1559af0d57dd20955bf58d05afff7b166ddd44947eb3051c9905638799eb1dc" ]; then
+if [ "${sha256}" != "e9e7f12ef1ec234bb0dc22d2bdc762ffafab394bdc472a07a4377c95bbf93afe" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -40,7 +40,6 @@ fi
 %{__python3} ./setup.py install --prefix=%{_prefix} --root=%{buildroot}
 rm -f %{buildroot}/%{python3_sitelib}/__pycache__/example.*
 rm -f %{buildroot}/%{python3_sitelib}/example.py
-# RHEL stream setuptools bug?
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %clean
@@ -53,6 +52,9 @@ rm -rf %{buildroot}
 %{python3_sitelib}/nvidia_ml_py-%{version}*-py*.egg-info
 
 %changelog
+* Mon Jun 03 2024 Antoine Martin <antoine@xpra.org> - 12.555.43-1
+- new upstream release
+
 * Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> - 12.535.133-1
 - new upstream release
 
