@@ -22,19 +22,15 @@ Name:           python3-pycuda
 %if 0%{?el8}
 Version:        2022.1
 %else
-Version:        2024.1
+Version:        2024.1.2
 %endif
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
-%if 0%{?el8}
-Source0:        https://files.pythonhosted.org/packages/2d/1f/48a3a5b2c715345e7af1e09361100bd98c3d72b4025371692ab233f523d3/pycuda-%{version}.tar.gz
+Source0:        https://files.pythonhosted.org/packages/source/p/pycuda/pycuda-%{version}.tar.gz
 Patch0:         pycuda-oldcompute.patch
-%else
-Source0:        https://files.pythonhosted.org/packages/3f/50/dd356c8afe228baecaf0259b9579121dd869c5ace07a296158c39ac5065a/pycuda-%{version}.tar.gz
-%endif
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -62,7 +58,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 %if 0%{?el8}
 if [ "${sha256}" != "acd9030d93e76e60b122e33ad16bcf01bb1344f4c304dedff1cd2bffb0f313a3" ]; then
 %else
-if [ "${sha256}" != "d50d23ff6371482cff7d4b953ef40ab81c9df038ecb614484f9fd5347327327e" ]; then
+if [ "${sha256}" != "d110b727cbea859da4b63e91b6fa1e9fc32c5bade02d89ff449975996e9ccfab" ]; then
 %endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
@@ -102,6 +98,9 @@ rm -rf %{buildroot}
 
 %changelog
 %if !0%{?el8}
+* Tue Jul 30 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-1
+- new upstream release
+
 * Wed Jan 03 2024 Antoine Martin <antoine@xpra.org> - 2024.1-1
 - new upstream release
 
