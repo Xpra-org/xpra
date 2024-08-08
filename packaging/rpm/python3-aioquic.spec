@@ -4,13 +4,14 @@
 Autoreq: 0
 
 Name:           python3-aioquic
-Version:        1.0.0
+Version:        1.2.0
 Release:        1%{?dist}
 Summary:        aioquic is a library for the QUIC network protocol in Python
 Group:          Development/Languages
 License:        MIT
 URL:            https://github.com/aiortc/aioquic
 Source0:        https://files.pythonhosted.org/packages/source/a/aioquic/aioquic-%{version}.tar.gz
+Patch0:         aioquic-pycrypto-tls-utc.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
@@ -35,11 +36,12 @@ to read or write HTTP/3 headers compressed with QPACK.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ed31c2b5afa98c5b6cafa4f36149deaf1dff6c5a69701eadd27167415f9f1660" ]; then
+if [ "${sha256}" != "f91263bb3f71948c5c8915b4d50ee370004f20a416f67fab3dcc90556c7e7199" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n aioquic-%{version}
+%patch -P 0 -p1
 
 
 %build
@@ -64,6 +66,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> - 1.2.0-1
+- new upstream release
+
 * Thu Mar 14 2024 Antoine Martin <antoine@xpra.org> - 1.0.0-1
 - new upstream release
 
