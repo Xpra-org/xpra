@@ -1014,17 +1014,18 @@ class GTKTrayMenu(MenuHelper):
             c.connect("toggled", activate_cb, menu)
             return c
 
-        menu.append(syncitem("Off", None))
-        menu.append(Gtk.SeparatorMenuItem())
-        menu.append(syncitem("-200", -200))
-        menu.append(syncitem("-100", -100))
-        menu.append(syncitem(" -50", -50))
-        menu.append(syncitem("Auto", 0))
-        menu.append(syncitem(" +50", 50))
-        menu.append(syncitem(" +100", 100))
-        menu.append(syncitem(" +200", 200))
-        sync.set_submenu(menu)
-        sync.show_all()
+        def add_sync_options() -> None:
+            menu.append(syncitem("Off", None))
+            menu.append(Gtk.SeparatorMenuItem())
+            menu.append(syncitem("-200", -200))
+            menu.append(syncitem("-100", -100))
+            menu.append(syncitem(" -50", -50))
+            menu.append(syncitem("Auto", 0))
+            menu.append(syncitem(" +50", 50))
+            menu.append(syncitem(" +100", 100))
+            menu.append(syncitem(" +200", 200))
+            sync.set_submenu(menu)
+            sync.show_all()
 
         def set_avsyncmenu(*_args) -> None:
             if not self.client.server_av_sync:
@@ -1035,9 +1036,11 @@ class GTKTrayMenu(MenuHelper):
                 set_sensitive(sync, False)
                 sync.set_tooltip_text("video-sync requires speaker forwarding")
                 return
+            add_sync_options()
             set_sensitive(sync, True)
 
         self.after_handshake(set_avsyncmenu)
+        sync.show_all()
         return sync
 
     def make_webcammenuitem(self) -> Gtk.ImageMenuItem:
