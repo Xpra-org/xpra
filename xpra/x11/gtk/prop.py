@@ -126,6 +126,7 @@ def raw_prop_get(xid: int, key: str, type_atom: str, buffer_size: int = 65536,
         log("raw_prop_get%s", (xid, key, type_atom, ignore_errors, raise_xerrors), exc_info=True)
         if not ignore_errors:
             log.info(f"Missing property or wrong property type {key} ({type_atom})")
+            log.info(f" on window {xid:x}")
             log.info(" %s", str(e) or type(e))
         return None
     return data
