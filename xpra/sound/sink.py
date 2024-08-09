@@ -31,9 +31,12 @@ glib = import_glib()
 
 
 SINK_SHARED_DEFAULT_ATTRIBUTES = {"sync"    : False,
-                                  "async"   : True,
-                                  "qos"     : True
                                   }
+NON_AUTO_SINK_ATTRIBUTES = {
+    "async": True,
+    "qos": True,
+}
+
 
 SINK_DEFAULT_ATTRIBUTES = {
                            "pulsesink"  : {"client-name" : "Xpra"},
@@ -139,6 +142,8 @@ class SoundSink(SoundPipeline):
             sink_attributes.update(v)
         if sink_options:
             sink_attributes.update(sink_options)
+        if sink_type != "autoaudiosink":
+            sink_attributes.update(NON_AUTO_SINK_ATTRIBUTES)
         sink_str = plugin_str(sink_type, sink_attributes)
         pipeline_els.append(sink_str)
         if not self.setup_pipeline_and_bus(pipeline_els):
