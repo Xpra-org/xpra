@@ -574,7 +574,7 @@ class CoreX11WindowModel(WindowModelStub):
     # X11 properties synced to Python objects
     #########################################
 
-    def prop_get(self, key, ptype, ignore_errors=None, raise_xerrors=False) -> object:
+    def prop_get(self, key, ptype, ignore_errors: bool | None = None, raise_xerrors=False) -> object:
         """
             Get an X11 property from the client window,
             using the automatic type conversion code from prop.py
@@ -601,7 +601,7 @@ class CoreX11WindowModel(WindowModelStub):
         assert event.window == self.xid
         self._handle_property_change(str(event.atom))
 
-    def _handle_property_change(self, name) -> None:
+    def _handle_property_change(self, name: str) -> None:
         # ie: _handle_property_change("_NET_WM_NAME")
         metalog("Property changed on %#x: %s", self.xid, name)
         x11proptype = X11_PROPERTIES_DEBUG.get(name)
