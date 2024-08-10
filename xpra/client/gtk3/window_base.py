@@ -1249,7 +1249,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                         x_off = self.sx(x_off)
                         y_off = self.sy(y_off)
                         rectangles = self.scale_shape_rectangles(name, rectangles)
-                    if name == "Bounding" and self.border.shown and self.border.size > 0:
+                    if name == "Bounding" and self.border and self.border.shown and self.border.size > 0:
                         ww, wh = self._size
                         rectangles = add_border_rectangles(rectangles, ww, wh, self.border.size)
                     # too expensive to log with actual rectangles:
