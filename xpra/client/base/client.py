@@ -1237,11 +1237,11 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def init_authenticated_packet_handlers(self) -> None:
         FilePrintMixin.init_authenticated_packet_handlers(self)
 
-    def add_packet_handlers(self, defs, main_thread: bool = True) -> None:
+    def add_packet_handlers(self, defs: dict[str, PacketHandlerType], main_thread: bool = True) -> None:
         for packet_type, handler in defs.items():
             self.add_packet_handler(packet_type, handler, main_thread)
 
-    def add_packet_handler(self, packet_type: str, handler: Callable, main_thread: bool = True) -> None:
+    def add_packet_handler(self, packet_type: str, handler: PacketHandlerType, main_thread: bool = True) -> None:
         netlog("add_packet_handler%s", (packet_type, handler, main_thread))
         self.remove_packet_handlers(packet_type)
         if main_thread:
@@ -1259,7 +1259,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             if packet_type is not int:
                 packet_type = str(packet_type)
 
-            def call_handler():
+            def call_handler() -> None:
                 may_log_packet(False, packet_type, packet)
                 handler(packet)
 

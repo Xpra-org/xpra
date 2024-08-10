@@ -13,6 +13,7 @@ from collections.abc import Callable, MutableSequence
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
+from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
 from xpra.common import GravityStr, WORKSPACE_UNSET, WORKSPACE_NAMES, force_size_constraint
 from xpra.util.parsing import scaleup_value, scaledown_value
@@ -55,7 +56,7 @@ class ClientWindowBase(ClientWidgetBase):
     def __init__(self, client, group_leader, watcher_pid: int, wid: int,
                  wx: int, wy: int, ww: int, wh: int, bw: int, bh: int,
                  metadata: typedict, override_redirect: bool, client_properties,
-                 border, max_window_size, default_cursor_data, pixel_depth: int,
+                 border: WindowBorder, max_window_size, default_cursor_data, pixel_depth: int,
                  headerbar="no"):
         log("%s%s", type(self),
             (client, group_leader, watcher_pid, wid,

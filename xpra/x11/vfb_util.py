@@ -426,7 +426,7 @@ def set_initial_resolution(resolutions, dpi: int = 0) -> None:
                     else:
                         mdpi = 96
 
-                def rdpi(v):
+                def rdpi(v: int) -> int:
                     return round(v * 25.4 / mdpi)
                 monitors[i] = {
                     "name": f"VFB-{i}",

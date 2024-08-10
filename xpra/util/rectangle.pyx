@@ -9,11 +9,11 @@
 
 #cython: boundscheck=False, wraparound=False, overflowcheck=False
 
-#what I want is a real macro!
 cdef inline int MIN(int a, int b):   # pylint: disable=syntax-error
     if a<=b:
         return a
     return b
+
 cdef inline int MAX(int a, int b):
     if a>=b:
         return a
@@ -62,7 +62,7 @@ cdef class rectangle:
         else:
             raise ValueError("invalid richcmp operator: %s" % op)
 
-    def intersects(self, const int x, const int y, const int w, const int h):
+    def intersects(self, const int x, const int y, const int w, const int h) -> bool:
         cdef int  ix = MAX(self.x, x)
         cdef int  iw = MIN(self.x+self.width, x+w) - ix
         if iw<=0:
@@ -71,7 +71,7 @@ cdef class rectangle:
         cdef int  ih = MIN(self.y+self.height, y+h) - iy
         return ih>0
 
-    def intersects_rect(self, rectangle rect):
+    def intersects_rect(self, rectangle rect) -> bool:
         return self.intersects(rect.x, rect.y, rect.width, rect.height)
 
     def intersection(self, const int x, const int y, const int w, const int h):
@@ -91,17 +91,16 @@ cdef class rectangle:
     def intersection_rect(self, rectangle rect):
         return self.intersection(rect.x, rect.y, rect.width, rect.height)
 
-
-    def contains(self, const int x, const int y, const int w, const int h):
+    def contains(self, const int x, const int y, const int w, const int h) -> bool:
         return self.x<=x and self.y<=y and self.x+self.width>=x+w and self.y+self.height>=y+h
 
-    def contains_rect(self, rectangle rect):
+    def contains_rect(self, rectangle rect) -> bool:
         return self.contains(rect.x, rect.y, rect.width, rect.height)
 
-
-    def subtract(self, const int x, const int y, const int w, const int h):
-        """ returns the rectangle(s) remaining when
-            one subtracts the given rectangle from it, or None if nothing remains
+    def subtract(self, const int x, const int y, const int w, const int h) -> list:
+        """
+        returns the rectangle(s) remaining when
+        one subtracts the given rectangle from it
         """
         if w==0 or h==0 or self.width==0 or self.height==0:
             #no rectangle, no change:
@@ -138,17 +137,17 @@ cdef class rectangle:
             rects.append(rectangle(self.x, y+h, self.width, self.y+self.height-(y+h)))
         return rects
 
-    def subtract_rect(self, rectangle rect):
+    def subtract_rect(self, rectangle rect) -> list:
         return self.subtract(rect.x, rect.y, rect.width, rect.height)
 
-    def get_geometry(self):
+    def get_geometry(self) -> tuple[int, int, int, int]:
         return (self.x, self.y, self.width, self.height)
 
     def clone(self):
         return rectangle(self.x, self.y, self.width, self.height)
 
 
-def contains(object regions, const int x, const int y, const int w, const int h):
+def contains(object regions, const int x, const int y, const int w, const int h) -> bool:
     cdef int x2 = x+w
     cdef int y2 = y+h
     for r in regions:
@@ -157,11 +156,11 @@ def contains(object regions, const int x, const int y, const int w, const int h)
     return False
 
 
-def contains_rect(object regions, rectangle region):
+def contains_rect(object regions, rectangle region) -> bool:
     return contains(regions, region.x, region.y, region.width, region.height)
 
 
-def add_rectangle(object regions, rectangle region):
+def add_rectangle(object regions, rectangle region) -> int:
     #returns the number of pixels actually added
     cdef int x = region.x
     cdef int y = region.y
@@ -187,7 +186,8 @@ def add_rectangle(object regions, rectangle region):
     regions.append(region)
     return w*h
 
-def remove_rectangle(object regions, rectangle region):
+
+def remove_rectangle(object regions, rectangle region) -> None:
     copy = regions[:]
     cdef int x = region.x               #
     cdef int y = region.y               #
@@ -199,7 +199,8 @@ def remove_rectangle(object regions, rectangle region):
         new_regions += r.subtract(x, y, w, h)
     regions[:] = new_regions
 
-def merge_all(rectangles):
+
+def merge_all(rectangles) -> rectangle:
     if not rectangles:
         raise ValueError("no rectangles to merge")
     cdef rectangle r = rectangles[0]
