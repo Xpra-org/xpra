@@ -1228,7 +1228,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if rectangles:
                     # adjust for scaling:
                     if self._xscale != 1 or self._yscale != 1:
-                        x_off, y_off = self._sp(x_off, y_off)
+                        x_off = self.sx(x_off)
+                        y_off = self.sy(y_off)
                         rectangles = self.scale_shape_rectangles(name, rectangles)
                     # too expensive to log with actual rectangles:
                     shapelog("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)",
