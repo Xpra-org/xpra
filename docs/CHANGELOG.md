@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.1.2] 2024-08-10
+* TODO
+
 ## [6.1.1] 2024-08-06
 * Platforms, build and packaging:
     * [RHEL 8.10 pygobject3 packaging update](https://github.com/Xpra-org/xpra/commit/75fe7ad62f1a176f62e82529b1f9a5aad3273eae)

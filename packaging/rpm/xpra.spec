@@ -54,7 +54,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.1.1
+Version:			6.1.2
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -883,6 +883,8 @@ fi
 
 
 %changelog
+* Sat Aug 10 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
+- TODO
 * Tue Aug 06 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
 - Platforms, build and packaging:
    RHEL 8.10 pygobject3 packaging update
