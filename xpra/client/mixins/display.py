@@ -405,7 +405,7 @@ class DisplayClient(StubClientMixin):
         """ convert rectangle coordinates from server to client """
         return self.sx(x), self.sy(y), self.sx(w), self.sy(h)
 
-    def sp(self, x, y) -> tuple[float, float]:
+    def sp(self, x, y) -> tuple[int, int]:
         """ convert X,Y coordinates from server to client """
         return self.sx(x), self.sy(y)
 
