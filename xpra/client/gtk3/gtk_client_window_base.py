@@ -238,6 +238,23 @@ def wn(w) -> str:
     return WORKSPACE_NAMES.get(w, str(w))
 
 
+def add_border_rectangles(rectangles, ww, wh, border_size):
+    from xpra.rectangle import add_rectangle, rectangle
+    # convert to rectangle objects:
+    rects = list(rectangle(*rect) for rect in rectangles)
+    # add border rectangles:
+    bsize = border_size
+    for rect in (
+            (0, 0, ww, bsize),  # top
+            (0, wh - bsize, ww, bsize),  # bottom
+            (ww - bsize, bsize, bsize, wh-bsize*2),  # right
+            (0, bsize, bsize, wh-bsize*2),  # left
+    ):
+        add_rectangle(rects, rectangle(*rect))
+    # convert rectangles back to tuples:
+    return tuple((rect.x, rect.y, rect.width, rect.height) for rect in rects)
+
+
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     __common_gsignals__ = {
@@ -1140,6 +1157,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                         x_off = self.sx(x_off)
                         y_off = self.sy(y_off)
                         rectangles = self.scale_shape_rectangles(name, rectangles)
+                        if name == "Bounding" and self.border and self.border.shown and self.border.size > 0:
+                            ww, wh = self._size
+                            rectangles = add_border_rectangles(rectangles, ww, wh, self.border.size)
                     #too expensive to log with actual rectangles:
                     shapelog("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)",
                              xid, name, x_off, y_off, len(rectangles))
