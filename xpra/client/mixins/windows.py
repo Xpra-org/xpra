@@ -281,7 +281,6 @@ class WindowClient(StubClientMixin):
         self.server_bell: bool = False
         self.bell_enabled: bool = False
 
-        self.border = None
         self.window_close_action: str = "forward"
         self.modal_windows: bool = True
 
