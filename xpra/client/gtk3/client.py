@@ -92,7 +92,7 @@ class XpraClient(GTKXpraClient):
         if not root:
             return -1, -1
         p = root.get_pointer()[-3:-1]
-        return self.sp(p[0] or 0, p[1] or 0)
+        return self.cp(p[0] or 0, p[1] or 0)
 
 
 GObject.type_register(XpraClient)
