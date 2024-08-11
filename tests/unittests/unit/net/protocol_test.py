@@ -246,7 +246,7 @@ class ProtocolTest(unittest.TestCase):
 
     def test_format_thread(self) -> None:
         packets = self.make_test_packets()
-        N = 1000
+        N = 10 if not SHOW_PERF else 1000
         many = self.repeat_list(packets, N)
 
         def get_packet_cb() -> tuple[PacketType, bool, bool]:
