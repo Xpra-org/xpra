@@ -571,6 +571,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     self.incr_data_type = ""
                     log("incremental clipboard data of size %s", self.incr_data_size)
                     self.reschedule_incr_data_timer()
+                    X11Window.XDeleteProperty(self.xid, event.atom)
                     return
                 if self.incr_data_size > 0:
                     # incremental is now in progress:
@@ -586,6 +587,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                         log("got incremental data: %i bytes", len(data))
                         self.incr_data_chunks.append(data)
                         self.reschedule_incr_data_timer()
+                        X11Window.XDeleteProperty(self.xid, event.atom)
                         return
                     self.cancel_incr_data_timer()
                     data = b"".join(self.incr_data_chunks)
