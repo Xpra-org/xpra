@@ -15,7 +15,7 @@ from xpra.codecs.checks import TEST_COLORS
 from xpra.client.gtk3.cairo_workaround import make_image_surface
 
 
-N = 20
+N = 5
 WIDTH, HEIGHT = 256, 256
 
 

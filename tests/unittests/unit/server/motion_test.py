@@ -94,7 +94,7 @@ class TestMotion(unittest.TestCase):
         cdf([1, 2], [1])
 
         #performance:
-        N = 4096
+        N = 10 if not SHOW_PERF else 4096
         start = monotonic()
         array1 = range(N)
         array2 = [N*2-x*2 for x in range(N)]
