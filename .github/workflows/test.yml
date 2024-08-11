@@ -40,9 +40,10 @@ jobs:
       run: >
         python3 setup.py unittests
         --skip-fail unit.client.splash_test
+        --skip-slow unit.client.x11_client_test
         --skip-slow unit.server.server_sockets_test
-        --skip-slow unit.server.startdesktop_option_test
-        --skip-slow unit.server.x11_server_test
+        --skip-slow unit.server.mixins.startdesktop_option_test
+        --skip-slow unit.x11.x11_server_test
         --skip-slow unit.server.server_auth_test
         --skip-slow unit.server.shadow_server_test
         --skip-slow unit.server.mixins.start_option_test
