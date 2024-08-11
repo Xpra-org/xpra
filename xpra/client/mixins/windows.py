@@ -301,11 +301,6 @@ class WindowClient(StubClientMixin):
         self._button_state = {}
         self.poll_pointer_timer = 0
         self.poll_pointer_position = -1, -1
-        if POLL_POINTER:
-            if is_Wayland():
-                log.warn("Warning: pointer polling is unlikely to work under Wayland")
-                log.warn(" and may cause problems")
-            self.poll_pointer_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
 
     def init(self, opts) -> None:
         if opts.system_tray:
@@ -402,6 +397,11 @@ class WindowClient(StubClientMixin):
         if FAKE_SUSPEND_RESUME:
             GLib.timeout_add(FAKE_SUSPEND_RESUME * 1000, self.suspend)
             GLib.timeout_add(FAKE_SUSPEND_RESUME * 1000 * 2, self.resume)
+        if POLL_POINTER:
+            if is_Wayland():
+                log.warn("Warning: pointer polling is unlikely to work under Wayland")
+                log.warn(" and may cause problems")
+            self.poll_pointer_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
         return ExitCode.OK
 
     def cleanup(self) -> None:
