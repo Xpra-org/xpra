@@ -933,9 +933,10 @@ class GLWindowBackingBase(WindowBackingBase):
         glBindTexture(target, 0)
 
     def draw_border(self) -> None:
-        bw, bh = self.size
-        rgba = tuple(round(v * 256) for v in (self.border.red, self.border.green, self.border.blue, self.border.alpha))
-        self.draw_rectangle(0, 0, bw, bh, self.border.size, *rgba)
+        # use the render size as we are updating the "screen" directly:
+        w, h = self.render_size
+        r, g, b, a = tuple(round(v * 256) for v in (self.border.red, self.border.green, self.border.blue, self.border.alpha))
+        self.draw_rectangle(0, 0, w, h, self.border.size, r, g, b, a, h)
 
     def paint_box(self, encoding: str, x: int, y: int, w: int, h: int) -> None:
         # show region being painted if debug paint box is enabled only:
@@ -947,8 +948,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glViewport(0, 0, bw, bh)
 
         color = get_paint_box_color(encoding)
-        rgba = tuple(round(v * 256) for v in color)
-        self.draw_rectangle(x, y, w, h, self.paint_box_line_width, *rgba)
+        r, g, b, a = tuple(round(v * 256) for v in color)
+        self.draw_rectangle(x, y, w, h, self.paint_box_line_width, r, g, b, a, bh)
 
     def draw_to_tmp(self):
         target = GL_TEXTURE_RECTANGLE
@@ -965,8 +966,8 @@ class GLWindowBackingBase(WindowBackingBase):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT0)
 
-    def draw_rectangle(self, x: int, y: int, w: int, h: int, size=1, red=0, green=0, blue=0, alpha=0) -> None:
-        log("draw_rectangle%s", (x, y, w, h, size, red, green, blue, alpha))
+    def draw_rectangle(self, x: int, y: int, w: int, h: int, size=1, red=0, green=0, blue=0, alpha=0, bh=0) -> None:
+        log("draw_rectangle%s", (x, y, w, h, size, red, green, blue, alpha, bh))
         rgba = tuple(max(0, min(255, v)) for v in (red, green, blue, alpha))
         pixel = struct.pack(b"!BBBB", *rgba)
         texture = int(self.textures[TEX_RGB])
@@ -980,7 +981,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glReadBuffer(GL_COLOR_ATTACHMENT0)
 
         # invert y screen coordinates:
-        bh = self.size[1]
+        bh = bh or self.size[1]
 
         for rx, ry, rw, rh in (
                 (x, y, size, h),
