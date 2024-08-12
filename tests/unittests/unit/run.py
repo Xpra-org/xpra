@@ -9,13 +9,13 @@ import time
 import shutil
 import os.path
 import subprocess
+from argparse import ArgumentParser
 
 TEST_COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1") == "1"
 COVERAGE = os.environ.get("COVERAGE", shutil.which("coverage") or shutil.which("python3-coverage"))
 
 
-def getargs():
-    from argparse import ArgumentParser
+def getargs() -> ArgumentParser:
     P = ArgumentParser()
     P.add_argument('--skip-fail', action='append', default=[])
     P.add_argument('--skip-slow', action='append', default=[])
@@ -24,7 +24,7 @@ def getargs():
     return P
 
 
-def main(args):
+def main(args) -> int:
     if TEST_COVERAGE:
         # pylint: disable=import-outside-toplevel
         #only include xpra in the report,
@@ -50,11 +50,11 @@ def main(args):
     sys.path.append(unittests_dir)
 
     #now look for tests to run
-    def write(msg):
+    def write(msg) -> None:
         sys.stdout.write(f"{msg}\n")
         sys.stdout.flush()
 
-    def run_file(p):
+    def run_file(p: str) -> int:
         #ie: "~/projects/Xpra/trunk/src/tests/unit/version_util_test.py"
         tfile = os.path.join(unittests_dir, p)
         if not (os.path.isfile(tfile) and tfile.startswith(unittests_dir) and tfile.endswith("test.py")):
@@ -84,7 +84,7 @@ def main(args):
         write(f"ran {name} in {T1 - T0:.2f} seconds\n")
         return v
 
-    def add_recursive(d):
+    def add_recursive(d: str) -> int:
         paths = os.listdir(d)
         ret = 0
         for path in paths:
