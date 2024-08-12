@@ -8,6 +8,9 @@ from collections.abc import Sequence
 
 from xpra.log import Logger
 from xpra.util.env import envbool
+from xpra.util.str_fn import csv
+from xpra.exit_codes import ExitCode
+from xpra.scripts.config import InitExit
 
 
 GSTREAMER_CAPTURE_ELEMENTS: Sequence[str] = ("ximagesrc", "pipewiresrc")
@@ -79,7 +82,10 @@ def load_x11(display: str = "") -> type | None:
     return None
 
 
+# the ShadowX11Server supports multiple sub-backends:
 load_nvfbc = load_x11
+load_xshm = load_x11
+load_gtk = load_x11
 
 
 def load_auto(display: str = "") -> type | None:
@@ -96,7 +102,7 @@ def ShadowServer(display: str, attrs: dict[str, str]):
     setting = (attrs.get("backend", os.environ.get("XPRA_SHADOW_BACKEND", "auto"))).lower()
     log(f"ShadowServer({display}, {attrs}) {setting=}")
     if setting not in SHADOW_OPTIONS:
-        raise ValueError(f"invalid shadow backend {setting!r}, use: {SHADOW_OPTIONS.keys()}")
+        raise InitExit(ExitCode.UNSUPPORTED, f"invalid shadow backend {setting!r}, use: {csv(SHADOW_OPTIONS.keys())}")
     load_fn = globals().get(f"load_{setting}")
     if not load_fn:
         raise RuntimeError(f"missing shadow loader for {setting!r}")
@@ -133,6 +139,12 @@ def check_x11() -> bool:
     return True
 
 
+def check_xshm() -> bool:
+    from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
+    assert XImageBindings
+    return XImageBindings().has_XShm()
+
+
 def nocheck() -> bool:
     return True
 
@@ -143,5 +155,6 @@ SHADOW_OPTIONS = {
     "gstreamer": check_gstreamer,
     "pipewire": check_pipewire,
     "x11": check_x11,
-    "gtk": nocheck,
+    "xshm": check_xshm,
+    "gtk": check_x11,
 }

@@ -6,6 +6,7 @@
 
 import re
 from time import monotonic_ns
+from collections.abc import Callable
 from typing import Any
 
 from xpra.x11.server.core import X11ServerCore
@@ -17,7 +18,7 @@ from xpra.common import NotificationID
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
-from xpra.server.shadow.shadow_server_base import ShadowServerBase
+from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_capture
 from xpra.x11.server.server_uuid import del_mode, del_uuid
 from xpra.x11.gtk.prop import prop_get
 from xpra.x11.bindings.window import X11WindowBindings
@@ -249,50 +250,66 @@ class XImageCapture:
                 width * height, (width * height / (end - start)), ["GTK", "XSHM"][XSHM])
 
 
-def setup_capture(window):
+def setup_nvfbc_capture(window):
+    if not NVFBC:
+        return None
     ww, wh = window.get_geometry()[2:4]
-    if NVFBC:
-        try:
-            capture = get_capture_instance()
-            capture.init_context(ww, wh)
-            capture.refresh()
-            image = capture.get_image(0, 0, ww, wh)
-            assert image, "test capture failed"
-            return capture
-        except Exception as e:
-            log("get_image() NvFBC test failed", exc_info=True)
-            log(f"not using NvFBC capture: {e}")
-    if GSTREAMER:
-        try:
-            from xpra.codecs.gstreamer.capture import Capture
-            xid = window.get_xid()
-            el = "ximagesrc"
-            if xid >= 0:
-                el += f" xid={xid} startx=0 starty=0"
-            if ww > 0:
-                el += f" endx={ww}"
-            if wh > 0:
-                el += f" endy={wh}"
-            capture = Capture(el, width=ww, height=wh)
-            capture.start()
-            image = capture.get_image(0, 0, ww, wh)
-            if image:
-                return capture
-            log("gstreamer capture failed to return an image")
-        except ImportError as e:
-            log(f"not using X11 capture using gstreamer: {e}")
-        except Exception:
-            log("not using X11 capture using gstreamer", exc_info=True)
-    if XSHM:
-        try:
-            from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
-            XImage = XImageBindings()
-        except ImportError as e:
-            log(f"not using X11 capture using bindings: {e}")
-        else:
-            if XImage.has_XShm():
-                return XImageCapture(window.get_xid())
+    capture = get_capture_instance()
+    capture.init_context(ww, wh)
+    capture.refresh()
+    image = capture.get_image(0, 0, ww, wh)
+    assert image, "test capture failed"
+    return capture
+
+
+def setup_gstreamer_capture(window):
+    if not GSTREAMER:
+        return None
+    xid = window.get_xid()
+    ww, wh = window.get_geometry()[2:4]
+    from xpra.codecs.gstreamer.capture import Capture
+    el = "ximagesrc"
+    if xid >= 0:
+        el += f" xid={xid} startx=0 starty=0"
+    if ww > 0:
+        el += f" endx={ww}"
+    if wh > 0:
+        el += f" endy={wh}"
+    capture = Capture(el, width=ww, height=wh)
+    capture.start()
+    image = capture.get_image(0, 0, ww, wh)
+    if not image:
+        log("gstreamer capture failed to return an image")
+        return None
+    return capture
+
+
+def setup_xshm_capture(window):
+    if not XSHM:
+        return None
+    xid = window.get_xid()
+    try:
+        from xpra.x11.bindings.ximage import XImageBindings  # pylint: disable=import-outside-toplevel
+        XImage = XImageBindings()
+    except ImportError as e:
+        log(f"not using X11 capture using bindings: {e}")
+        return None
+    if XImage.has_XShm():
+        return XImageCapture(xid)
+    return None
+
+
+def setup_gtk_capture(window):
     return GTKImageCapture(window)
+
+
+CAPTURE_BACKENDS: dict[str, Callable] = {
+    "nvfbc": setup_nvfbc_capture,
+    "gstreamer": setup_gstreamer_capture,
+    "xshm": setup_xshm_capture,
+    "x11": setup_xshm_capture,
+    "gtk": setup_gtk_capture,
+}
 
 
 class X11ShadowModel(RootWindowModel):
@@ -329,6 +346,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.__init__(self)
         self.session_type = "X11"
         self.modify_keymap = False
+        self.backend = attrs.get("backend", "x11")
 
     def get_server_mode(self) -> str:
         return "X11 shadow"
@@ -359,8 +377,8 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         self.do_clean_session_files("xauthority")
 
     def setup_capture(self):
-        capture = setup_capture(self.root)
-        log(f"setup_capture({self.root})={capture}")
+        capture = try_setup_capture(CAPTURE_BACKENDS, self.backend, self.root)
+        log(f"setup_capture() {self.backend} - {self.root}: {capture}")
         return capture
 
     def get_root_window_model_class(self) -> type:
@@ -449,7 +467,7 @@ def snapshot(filename) -> int:
     from io import BytesIO
     from xpra.util.str_fn import memoryview_to_bytes
     root = get_default_root_window()
-    capture = setup_capture(root)
+    capture = try_setup_capture(CAPTURE_BACKENDS, "auto", root)
     capture.refresh()
     w, h = get_root_size()
     image = capture.get_image(0, 0, w, h)

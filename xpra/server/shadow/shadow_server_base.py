@@ -5,17 +5,20 @@
 
 import os
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.server.window import batch_config
 from xpra.server.shadow.root_window_model import RootWindowModel
+from xpra.scripts.config import InitExit
 from xpra.platform.gui import get_native_notifier_classes, get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import features
+from xpra.exit_codes import ExitCode
 from xpra.net.common import PacketType
 from xpra.util.system import is_Wayland
 from xpra.util.env import envint, envbool
+from xpra.util.str_fn import csv
 from xpra.common import NotificationID, ConnectionMessage
 from xpra.log import Logger
 
@@ -36,6 +39,31 @@ SHADOWSERVER_BASE_CLASS: type = object
 if features.rfb:
     from xpra.server.rfb.server import RFBServer
     SHADOWSERVER_BASE_CLASS = RFBServer
+
+
+def try_setup_capture(backends: dict[str, Callable], backend: str, *args):
+    backend = backend.lower()
+    if backend != "auto":
+        if backend not in backends:
+            raise InitExit(ExitCode.UNSUPPORTED,
+                           f"invalid capture backend {backend!r}, should be one of: %s" % csv(backends.keys()))
+        backends = {backend: backends[backend]}
+    log(f"setup_capture() will try {backends.keys()}")
+    for backend, setup_fn in backends.items():
+        try:
+            log(f"{backend!r}: {setup_fn}{args}")
+            capture = setup_fn(*args)
+            if not capture:
+                log(f"backend {backend!r} is unable to capture")
+                continue
+            return capture
+        except ImportError as e:
+            log(f"backend {backend!r} is not installed: {e}")
+        except Exception as e:
+            log(f"{setup_fn}{args}", exc_info=True)
+            log.warn(f"Warning: {backend!r} failed to setup screen capture:")
+            log.warn(" %s", e)
+    raise InitExit(ExitCode.UNSUPPORTED, f"failed to setup screen capture backend {backend!r}")
 
 
 class ShadowServerBase(SHADOWSERVER_BASE_CLASS):

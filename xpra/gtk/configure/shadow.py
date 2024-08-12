@@ -28,9 +28,13 @@ SHADOW_BACKENDS: dict[str, Sequence[str]] = {
     ),
     "x11": (
         "X11 screen capture",
-        "copies the X11 server's pixel data, preferably using XShm,",
+        "copies the X11 server's pixel data,",
         "this option only requires the X11 bindings",
         "incompatible with Wayland sessions, the displays with XWayland will look blank",
+    ),
+    "xshm": (
+        "X11 screen capture via shared memory",
+        "identical to `x11` but faster thanks to the XShm extension",
     ),
     "gtk": (
         "GTK screen capture",

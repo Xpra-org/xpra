@@ -1521,7 +1521,7 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode: str) -> E
 
 def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
     log = Logger("network")
-    backend = os.environ.get("XPRA_GUI_BACKEND", "gtk")
+    backend = opts.backend or "gtk"
     if backend == "qt":
 
         def call(fn, *args):
@@ -2030,14 +2030,14 @@ def enforce_client_features() -> None:
 
 
 def make_client(error_cb: Callable, opts):
-    backend = os.environ.get("XPRA_GUI_BACKEND", "gtk")
+    backend = opts.backend or "gtk"
     if backend == "qt":
         try:
             from xpra.client.qt6.client import make_client
             return make_client()
         except ImportError as e:
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the qt6 client component is missing: {e}")
-    elif backend != "gtk":
+    elif backend not in ("gtk", "auto"):
         raise ValueError(f"invalid gui backend {backend!r}")
 
     progress_process = None

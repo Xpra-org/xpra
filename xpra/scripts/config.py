@@ -633,6 +633,7 @@ OPTION_TYPES: dict[str, Any] = {
     "ssl-check-hostname": bool,
     "ssl-server-hostname" : str,
     "ssl-options"       : str,
+    "backend"           : str,
     # int options:
     "displayfd"         : int,
     "pings"             : int,
@@ -1106,6 +1107,7 @@ def get_defaults() -> dict[str, Any]:
         "ssl-check-hostname": True,
         "ssl-server-hostname": "",
         "ssl-options"       : "ALL,NO_COMPRESSION",
+        "backend"           : "auto",
         "quality"           : 0,
         "min-quality"       : 1,
         "speed"             : 0,

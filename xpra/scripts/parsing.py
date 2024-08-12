@@ -1742,6 +1742,10 @@ def parse_command_line(cmdline, defaults):
                      dest="minimal", default=defaults.minimal,
                      help="Disable most non-essential subsystems."
                           " Default: '%default'.")
+    group.add_option("--backend", action="store",
+                     dest="backend", default=defaults.backend,
+                     help="Which backend to use for accessing the display."
+                          " Default: '%default'.")
     group.add_option("--env", action="append",
                      dest="env", default=list(defaults.env or []),
                      help="Define environment variables which will apply to this process and all subprocesses,"

@@ -7,7 +7,7 @@ import os
 import re
 from time import monotonic
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 from ctypes import create_unicode_buffer, sizeof, byref, c_ulong
 from ctypes.wintypes import RECT, POINT, BYTE
 
@@ -18,6 +18,7 @@ from xpra.util.system import is_VirtualBox
 from xpra.common import XPRA_APP_ID, NotificationID
 from xpra.scripts.config import InitException
 from xpra.server.gtk_server import GTKServerBase
+from xpra.server.shadow.shadow_server_base import try_setup_capture
 from xpra.server.shadow.gtk_root_window_model import GTKImageCapture
 from xpra.server.shadow.gtk_shadow_server_base import GTKShadowServerBase
 from xpra.server.shadow.root_window_model import RootWindowModel
@@ -160,50 +161,60 @@ def get_monitors() -> list[dict[str, Any]]:
     return monitors
 
 
-def init_capture(w: int, h: int, pixel_depth=32):
-    if NVFBC:
+def setup_nvfbc_capture(w: int, h: int, pixel_depth=32):
+    if not NVFBC:
+        return None
+    from xpra.codecs.nvidia.nvfbc.capture import get_capture_instance
+    capture = get_capture_instance()
+    try:
+        pixel_format = {
+            24: "RGB",
+            32: "BGRX",
+            30: "r210",
+        }[pixel_depth]
+        capture.init_context(w, h, pixel_format)
+        # this will test the capture and ensure we can call get_image()
+        capture.refresh()
+        return capture
+    except Exception as e:
+        log("NvFBC_Capture", exc_info=True)
+        log.warn("Warning: NvFBC screen capture initialization failed:")
+        for x in str(e).replace(". ", ":").split(":"):
+            if x.strip() and x != "nvfbc":
+                log.warn(" %s", x.strip())
+        return None
+
+
+def setup_gstreamer_capture(w: int, h: int, pixel_depth=32):
+    from xpra.codecs.gstreamer.capture import Capture
+    for el in GSTREAMER_CAPTURE_ELEMENTS:
+        log(f"testing gstreamer capture using {el}")
         try:
-            from xpra.codecs.nvidia.nvfbc.capture import get_capture_instance
-            capture = get_capture_instance()
-        except ImportError:
-            log("NvFBC capture is not available", exc_info=True)
-        else:
-            try:
-                pixel_format = {
-                    24: "RGB",
-                    32: "BGRX",
-                    30: "r210",
-                }[pixel_depth]
-                capture.init_context(w, h, pixel_format)
-                # this will test the capture and ensure we can call get_image()
-                capture.refresh()
+            capture = Capture(el, pixel_format="BGRX", width=w, height=h)
+            capture.start()
+            image = capture.get_image(0, 0, w, h)
+            if image:
+                log(f"using gstreamer element {el}")
                 return capture
-            except Exception as e:
-                log("NvFBC_Capture", exc_info=True)
-                log.warn("Warning: NvFBC screen capture initialization failed:")
-                for x in str(e).replace(". ", ":").split(":"):
-                    if x.strip() and x != "nvfbc":
-                        log.warn(" %s", x.strip())
-    if GSTREAMER:
-        try:
-            from xpra.codecs.gstreamer.capture import Capture
-        except ImportError:
-            log("no GStreamer capture", exc_info=True)
-        else:
-            for el in GSTREAMER_CAPTURE_ELEMENTS:
-                log(f"testing gstreamer capture using {el}")
-                try:
-                    capture = Capture(el, pixel_format="BGRX", width=w, height=h)
-                    capture.start()
-                    image = capture.get_image(0, 0, w, h)
-                    if image:
-                        log(f"using gstreamer element {el}")
-                        return capture
-                except Exception:
-                    log(f"gstreamer failed to capture the screen using {el}", exc_info=True)
-    if GDI:
-        return GDICapture()
+        except Exception:
+            log(f"gstreamer failed to capture the screen using {el}", exc_info=True)
+    return None
+
+
+def setup_gdi_capture(w: int, h: int, pixel_depth=32):
+    return GDICapture()
+
+
+def setup_gtk_capture(w: int, h: int, pixel_depth=32):
     return GTKImageCapture(None)
+
+
+CAPTURE_BACKENDS: dict[str, Callable] = {
+    "nvfbc": setup_nvfbc_capture,
+    "gstreamer": setup_gstreamer_capture,
+    "gdi": setup_gdi_capture,
+    "gtk": setup_gtk_capture,
+}
 
 
 class SeamlessRootWindowModel(RootWindowModel):
@@ -234,7 +245,7 @@ class SeamlessRootWindowModel(RootWindowModel):
         log_fn("our pid=%i", ourpid)
         rectangles = []
 
-        def enum_windows_cb(hwnd, lparam):
+        def enum_windows_cb(hwnd: int, lparam: int) -> bool:
             if not IsWindowVisible(hwnd):
                 log_fn("skipped invisible window %#x", hwnd)
                 return True
@@ -306,7 +317,7 @@ class SeamlessRootWindowModel(RootWindowModel):
         log_fn("get_shape_rectangles()=%s", rectangles)
         return sorted(rectangles)
 
-    def get_property(self, prop):
+    def get_property(self, prop: str):
         if prop == "shape":
             shape = {"Bounding.rectangles": self.rectangles}
             # provide clip rectangle? (based on workspace area?)
@@ -339,6 +350,7 @@ class ShadowServer(GTKShadowServerBase):
         self.cursor_handle = None
         self.cursor_data = None
         self.cursor_errors = [0.0, 0]
+        self.backend = attrs.get("backend", "auto")
         if GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT) == 0:
             raise InitException("all the monitors must use the same display format")
         el = get_win32_event_listener()
@@ -360,7 +372,7 @@ class ShadowServer(GTKShadowServerBase):
             raise InitException("unsupported pixel depth: %s" % self.pixel_depth)
         super().init(opts)
 
-    def power_broadcast_event(self, wParam, lParam) -> None:
+    def power_broadcast_event(self, wParam: int, lParam: int) -> None:
         log("WM_POWERBROADCAST: %s/%s", POWER_EVENTS.get(wParam, wParam), lParam)
         if wParam == win32con.PBT_APMSUSPEND:
             log.info("WM_POWERBROADCAST: PBT_APMSUSPEND")
@@ -396,7 +408,9 @@ class ShadowServer(GTKShadowServerBase):
 
     def setup_capture(self):
         w, h = get_root_window_size()
-        return init_capture(w, h, self.pixel_depth)
+        capture = try_setup_capture(CAPTURE_BACKENDS, self.backend, w, h, self.pixel_depth)
+        log(f"setup_capture() {self.backend} - {self.root}: {capture}")
+        return capture
 
     def get_root_window_model_class(self) -> type:
         if SEAMLESS:

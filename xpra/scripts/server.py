@@ -1555,6 +1555,8 @@ def _do_run_server(script_file: str, cmdline,
             xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID") or 0
 
     progress(80, "initializing server")
+    if "backend" not in mode_attrs:
+        mode_attrs["backend"] = opts.backend
     if shadowing:
         # "shadow" -> multi-window=True, "shadow-screen" -> multi-window=False
         mode_attrs["multi-window"] = str(mode == "shadow")
