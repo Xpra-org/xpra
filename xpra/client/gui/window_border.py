@@ -15,7 +15,7 @@ class WindowBorder:
         self.alpha: float = alpha
         self.size: int = size
 
-    def toggle(self):
+    def toggle(self) -> None:
         self.shown = not self.shown
 
     def clone(self):

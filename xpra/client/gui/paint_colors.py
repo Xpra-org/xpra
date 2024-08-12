@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2017,2018 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017 - 2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 
 # noinspection PyPep8
-DEFAULT_BOX_COLORS = {
+DEFAULT_BOX_COLORS: dict[str, str] = {
     "png"       : "yellow",
     "h264"      : "blue",
     "vp8"       : "green",
@@ -28,7 +28,7 @@ DEFAULT_BOX_COLORS = {
 ALPHA = 0.6
 # converted from gtk lookups using `Gdk.Color.parse`:
 # noinspection PyPep8
-BOX_COLORS = {
+BOX_COLORS: dict[str, tuple[float, float, float, float]] = {
     "h264"      : (0.0,                 0.0,                    0.9999847412109375, ALPHA),
     "h265"      : (0.941162109375,      0.901947021484375,      0.54901123046875,   ALPHA),
     "jpeg"      : (0.501953125,         0.0,                    0.501953125,        ALPHA),
@@ -50,9 +50,9 @@ BOX_COLORS = {
 BLACK = 0, 0, 0, 0
 
 
-def get_default_paint_box_color():
+def get_default_paint_box_color() -> tuple[float, float, float, float]:
     return BLACK
 
 
-def get_paint_box_color(encoding):
+def get_paint_box_color(encoding) -> tuple[float, float, float, float]:
     return BOX_COLORS.get(encoding, BLACK)

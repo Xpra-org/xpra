@@ -89,7 +89,7 @@ class KeyboardHelper:
     def cleanup(self) -> None:
         self.reset_state()
 
-        def nosend(*_args):
+        def nosend(*_args) -> None:
             """ make sure we don't send keyboard updates during cleanup """
 
         self.send = nosend
@@ -231,7 +231,7 @@ class KeyboardHelper:
         layout, layouts, variant, variants, options = self.keyboard.get_layout_spec()
         log("%s.get_layout_spec()=%s", self.keyboard, (layout, layouts, variant, variants, options))
 
-        def inl(v, l):
+        def inl(v, l) -> list:
             try:
                 if v in l or v is None:
                     return l
@@ -295,16 +295,16 @@ class KeyboardHelper:
         log(f"mod pointermissing: {self.mod_pointermissing}")
         log(f"hash={self.hash}")
 
-    def update(self):
+    def update(self) -> None:
         if not self.locked:
             self.query_xkbmap()
             self.parse_shortcuts()
 
-    def layout_str(self):
+    def layout_str(self) -> str:
         return " / ".join(str(x) for x in (
             self.layout_option or self.layout, self.variant_option or self.variant) if bool(x))
 
-    def send_layout(self):
+    def send_layout(self) -> None:
         log("send_layout() layout_option=%s, layout=%s, variant_option=%s, variant=%s, options=%s",
             self.layout_option, self.layout, self.variant_option, self.variant, self.options)
         self.send("layout-changed",
@@ -312,12 +312,12 @@ class KeyboardHelper:
                   self.variant_option or self.variant or "",
                   self.options or "")
 
-    def send_keymap(self):
+    def send_keymap(self) -> None:
         log("send_keymap()")
         props = {"keymap": self.get_keymap_properties()}
         self.send("keymap-changed", props)
 
-    def update_hash(self):
+    def update_hash(self) -> None:
         import hashlib
         h = hashlib.sha256()
 
@@ -335,7 +335,7 @@ class KeyboardHelper:
     def get_full_keymap(self) -> Sequence[tuple[int, str, int, int, int]]:
         return ()
 
-    def get_keymap_properties(self, skip=()):
+    def get_keymap_properties(self, skip=()) -> dict[str, Any]:
         props = {}
         for x in (
                 "layout", "layouts", "variant", "variants",
@@ -350,7 +350,7 @@ class KeyboardHelper:
                 props[x] = v
         return props
 
-    def log_keyboard_info(self):
+    def log_keyboard_info(self) -> None:
         # show the user a summary of what we have detected:
         kb_info = {}
         if self.query_struct:

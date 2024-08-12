@@ -37,7 +37,7 @@ class ClientWindow(GTKClientWindowBase):
     GTK3 version of the ClientWindow class
     """
 
-    def init_window(self, metadata: typedict):
+    def init_window(self, metadata: typedict) -> None:
         super().init_window(metadata)
         self.header_bar_image = None
         if self.can_use_header_bar(metadata):

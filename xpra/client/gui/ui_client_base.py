@@ -201,7 +201,7 @@ class UIXpraClient(ClientBaseClass):
     def client_toolkit(self) -> str:
         raise NotImplementedError()
 
-    def init_ui(self, opts):
+    def init_ui(self, opts) -> None:
         """ initialize user interface """
 
         def noauto(val):
@@ -379,7 +379,7 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # hello:
-    def make_hello(self):
+    def make_hello(self) -> dict[str, Any]:
         caps = XpraClientBase.make_hello(self)
         # don't try to find the server uuid if this platform cannot run servers..
         # (doing so causes lockups on win32 and startup errors on osx)
@@ -432,7 +432,7 @@ class UIXpraClient(ClientBaseClass):
                 c.setup_connection(self, conn)
         return protocol
 
-    def server_connection_established(self, caps: typedict):
+    def server_connection_established(self, caps: typedict) -> bool:
         if not XpraClientBase.server_connection_established(self, caps):
             return False
         # process the rest from the UI thread:
@@ -517,7 +517,7 @@ class UIXpraClient(ClientBaseClass):
             log.info(msg)
         return True
 
-    def process_ui_capabilities(self, caps: typedict):
+    def process_ui_capabilities(self, caps: typedict) -> None:
         for c in CLIENT_BASES:
             if c != XpraClientBase:
                 c.process_ui_capabilities(self, caps)
@@ -529,7 +529,7 @@ class UIXpraClient(ClientBaseClass):
         self.key_repeat_delay, self.key_repeat_interval = caps.intpair("key_repeat", (-1, -1))
         self.handshake_complete()
 
-    def _process_startup_complete(self, packet: PacketType):
+    def _process_startup_complete(self, packet: PacketType) -> None:
         log("all the existing windows and system trays have been received")
         super()._process_startup_complete(packet)
         gui_ready()
@@ -562,14 +562,14 @@ class UIXpraClient(ClientBaseClass):
             log("fullscreen_on_monitor: %i", monitor)
         return window
 
-    def handshake_complete(self):
+    def handshake_complete(self) -> None:
         oh = self._on_handshake
         self._on_handshake = None
         for cb, args in oh:
             with log.trap_error("Error processing handshake callback %s", cb):
                 cb(*args)
 
-    def after_handshake(self, cb: Callable, *args):
+    def after_handshake(self, cb: Callable, *args) -> None:
         log("after_handshake(%s, %s) on_handshake=%s", cb, args, Ellipsizer(self._on_handshake))
         if self._on_handshake is None:
             # handshake has already occurred, just call it:
@@ -580,13 +580,13 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # server messages:
     # noinspection PyMethodMayBeStatic
-    def _process_server_event(self, packet: PacketType):
+    def _process_server_event(self, packet: PacketType) -> None:
         log(": ".join(str(x) for x in packet[1:]))
 
-    def on_server_setting_changed(self, setting: str, cb: Callable):
+    def on_server_setting_changed(self, setting: str, cb: Callable) -> None:
         self._on_server_setting_changed.setdefault(setting, []).append(cb)
 
-    def _process_setting_change(self, packet: PacketType):
+    def _process_setting_change(self, packet: PacketType) -> None:
         setting = str(packet[1])
         value = packet[2]
         # convert "hello" / "setting" variable names to client variables:
@@ -613,7 +613,7 @@ class UIXpraClient(ClientBaseClass):
             log.info("server setting changed: %s=%s", setting, repr_ellipsized(value))
         self.server_setting_changed(setting, value)
 
-    def server_setting_changed(self, setting, value):
+    def server_setting_changed(self, setting: str, value) -> None:
         log("setting_changed(%s, %s)", setting, Ellipsizer(value, limit=200))
         cbs = self._on_server_setting_changed.get(setting)
         if cbs:
@@ -631,7 +631,7 @@ class UIXpraClient(ClientBaseClass):
         log("get_control_commands()=%s", commands)
         return commands
 
-    def _process_control(self, packet: PacketType):
+    def _process_control(self, packet: PacketType) -> None:
         command = str(packet[1])
         args = packet[2:]
         log("_process_control(%s)", packet)
@@ -711,42 +711,42 @@ class UIXpraClient(ClientBaseClass):
         else:
             log.warn("received invalid control command from server: %s", command)
 
-    def may_notify_audio(self, summary, body):
+    def may_notify_audio(self, summary: str, body: str) -> None:
         self.may_notify(NotificationID.AUDIO, summary, body, icon_name="audio")
 
     ######################################################################
     # features:
-    def send_sharing_enabled(self):
+    def send_sharing_enabled(self) -> None:
         assert self.server_sharing and self.server_sharing_toggle
         self.send("sharing-toggle", self.client_supports_sharing)
 
-    def send_lock_enabled(self):
+    def send_lock_enabled(self) -> None:
         assert self.server_lock_toggle
         self.send("lock-toggle", self.client_lock)
 
-    def send_notify_enabled(self):
+    def send_notify_enabled(self) -> None:
         assert self.client_supports_notifications, "cannot toggle notifications: the feature is disabled by the client"
         self.send("set-notify", self.notifications_enabled)
 
-    def send_bell_enabled(self):
+    def send_bell_enabled(self) -> None:
         assert self.client_supports_bell, "cannot toggle bell: the feature is disabled by the client"
         assert self.server_bell, "cannot toggle bell: the feature is disabled by the server"
         self.send("set-bell", self.bell_enabled)
 
-    def send_cursors_enabled(self):
+    def send_cursors_enabled(self) -> None:
         assert self.client_supports_cursors, "cannot toggle cursors: the feature is disabled by the client"
         assert self.server_cursors, "cannot toggle cursors: the feature is disabled by the server"
         self.send("set-cursors", self.cursors_enabled)
 
-    def send_force_ungrab(self, wid):
+    def send_force_ungrab(self, wid: int) -> None:
         self.send("force-ungrab", wid)
 
-    def send_keyboard_sync_enabled_status(self, *_args):
+    def send_keyboard_sync_enabled_status(self, *_args) -> None:
         self.send("set-keyboard-sync-enabled", self.keyboard_sync)
 
     ######################################################################
     # keyboard:
-    def get_keyboard_caps(self):
+    def get_keyboard_caps(self) -> dict[str, Any]:
         caps = {}
         kh = self.keyboard_helper
         if self.readonly or not kh:
@@ -770,11 +770,11 @@ class UIXpraClient(ClientBaseClass):
         log("keyboard capabilities: %s", caps)
         return caps
 
-    def next_keyboard_layout(self, update_platform_layout):
+    def next_keyboard_layout(self, update_platform_layout) -> None:
         if self.keyboard_helper:
             self.keyboard_helper.next_layout(update_platform_layout)
 
-    def window_keyboard_layout_changed(self, window=None):
+    def window_keyboard_layout_changed(self, window=None) -> None:
         # win32 can change the keyboard mapping per window...
         keylog("window_keyboard_layout_changed(%s)", window)
         if self.keyboard_helper:
@@ -818,7 +818,7 @@ class UIXpraClient(ClientBaseClass):
         if not self._server_ok and hasattr(self, "redraw_spinners"):
             log.info("server is not responding, drawing spinners over the windows")
 
-            def timer_redraw():
+            def timer_redraw() -> bool:
                 if self._protocol is None:
                     # no longer connected!
                     return False
