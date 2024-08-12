@@ -7,6 +7,7 @@
 import uuid
 import signal
 from time import monotonic
+from collections.abc import Sequence
 from typing import Any
 
 from PyQt6.QtCore import QTimer, Qt
@@ -66,6 +67,9 @@ class Qt6Client:
     def socket_connected(self, *args):
         netlog(f"socket_connected{args}")
         self.send_hello()
+
+    def get_encodings(self) -> Sequence[str]:
+        return ("rgb", "png", "jpg", "webp")
 
     def send_hello(self):
         hello = {
