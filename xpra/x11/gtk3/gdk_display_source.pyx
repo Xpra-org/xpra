@@ -50,7 +50,7 @@ def init_gdk_display_source() -> None:
     from gi.repository import Gdk
     cdef GdkDisplay* gdk_display = gdk_display_get_default()
     if not gdk_display:
-        raise InitException("cannot access the default display '%s'" % os.environ.get("DISPLAY", ""))
+        raise InitException("cannot access display '%s'" % os.environ.get("DISPLAY", ""))
     #this next line actually ensures Gdk is initialized, somehow
     root = Gdk.get_default_root_window()
     if root is None:
