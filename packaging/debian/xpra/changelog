@@ -1,7 +1,21 @@
 xpra (6.1.2-1) UNRELEASED; urgency=low
-  * TODO
+  * Major:
+    client errors out with window forwarding disabled, remove more assumptions
+    OpenGL probe results were being ignored
+    shape client errors with desktop scaling
+    xshape windows should still honour the window border
+    pointer positions with desktop scaling: initial position and some window events
+    clipboard `INCR` transfers get stuck
+  * OpenGL:
+    desktop scaling miscalculations and corruption
+    `scroll` encoding corruption
+  * Cosmetic:
+    faster CI
+    confusing display message
+    don't populate av-sync menu if the feature is disabled
+    correct type hint
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 10 Aug 2024 23:07:11 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 13 Aug 2024 22:19:19 +0700
 
 xpra (6.1.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

@@ -883,8 +883,23 @@ fi
 
 
 %changelog
-* Sat Aug 10 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
-- TODO
+* Sat Aug 13 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
+- Major:
+   client errors out with window forwarding disabled, remove more assumptions
+   OpenGL probe results were being ignored
+   shape client errors with desktop scaling
+   xshape windows should still honour the window border
+   pointer positions with desktop scaling: initial position and some window events
+   clipboard `INCR` transfers get stuck
+- OpenGL:
+   desktop scaling miscalculations and corruption
+   `scroll` encoding corruption
+- Cosmetic:
+   faster CI
+   confusing display message
+   don't populate av-sync menu if the feature is disabled
+   correct type hint
+
 * Tue Aug 06 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
 - Platforms, build and packaging:
    RHEL 8.10 pygobject3 packaging update
