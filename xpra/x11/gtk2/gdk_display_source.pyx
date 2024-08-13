@@ -79,7 +79,7 @@ def init_gdk_display_source():
     if not gdk.display_get_default():
         import os
         from xpra.scripts.config import InitException
-        raise InitException("cannot access the default display '%s'" % os.environ.get("DISPLAY", ""))
+        raise InitException("cannot access display '%s'" % os.environ.get("DISPLAY", ""))
     root_window = gdk.get_default_root_window()
     assert root_window, "cannot get the root window"
     display = root_window.get_display()
