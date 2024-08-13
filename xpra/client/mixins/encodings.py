@@ -27,7 +27,7 @@ B_FRAMES = envbool("XPRA_B_FRAMES", True)
 PAINT_FLUSH = envbool("XPRA_PAINT_FLUSH", True)
 MAX_SOFT_EXPIRED = envint("XPRA_MAX_SOFT_EXPIRED", 5)
 SEND_TIMESTAMPS = envbool("XPRA_SEND_TIMESTAMPS", False)
-SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", False)
+SCROLL_ENCODING = envbool("XPRA_SCROLL_ENCODING", True)
 
 # we assume that any server will support at least those:
 DEFAULT_ENCODINGS = os.environ.get("XPRA_DEFAULT_ENCODINGS", "rgb32,rgb24,jpeg,png").split(",")
