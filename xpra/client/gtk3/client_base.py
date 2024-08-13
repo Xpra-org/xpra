@@ -1275,7 +1275,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     return
                 opengllog(f"OpenGL test rendering succeeded: {draw_result}")
             if self.opengl_enabled:
-                opengllog.info(f"OpenGL enabled on {driver_info!r}")
+                glvstr = ".".join(str(v) for v in self.opengl_props.get("opengl", ()))
+                opengllog.info(f"OpenGL {glvstr} enabled on {driver_info!r}")
+                module = self.opengl_props.get("module", "unknown")
+                backend = self.opengl_props.get("backend", "unknown")
+                opengllog.info(f" using {module} {backend} backend")
+                opengllog.info(" zerocopy is %s", ["not available", "available"][self.opengl_props.get("zerocopy", 0)])
                 # don't try to handle video dimensions bigger than this:
                 mvs = min(8192, self.gl_texture_size_limit)
                 self.video_max_size = (mvs, mvs)

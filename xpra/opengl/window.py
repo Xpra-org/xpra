@@ -80,6 +80,7 @@ def test_window_module(module_name="glarea", force_enable=False) -> tuple[dict, 
     opengl_props = mod.check_support(force_enable)
     log(f"{mod}.check_support({force_enable})={opengl_props}")
     if opengl_props:
+        opengl_props["module"] = module_name
         return opengl_props, mod
     return {
         "success": False,
