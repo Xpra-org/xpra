@@ -736,8 +736,13 @@ class GLWindowBackingBase(WindowBackingBase):
 
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
         glBindTexture(target, self.textures[TEX_TMP_FBO])
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_TMP_FBO], 0)
-        glDrawBuffer(GL_COLOR_ATTACHMENT1)
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT0)
+        if self._alpha_enabled:
+            glClearColor(0, 0, 0, 1)
+        else:
+            glClearColor(1, 1, 1, 0)
+        glClear(GL_COLOR_BUFFER_BIT)
 
         glBlitFramebuffer(sx, sy, sx + w, sy + h,
                           dx, dy, dx + w, dy + h,
