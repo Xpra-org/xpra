@@ -886,7 +886,7 @@ class GLWindowBackingBase(WindowBackingBase):
             self.pointer_overlay, elapsed, CURSOR_IDLE_TIMEOUT, (self.cursor_data or [])[:7])
         if elapsed >= CURSOR_IDLE_TIMEOUT:
             # timeout - stop showing it:
-            self.pointer_overlay = None
+            self.pointer_overlay = ()
             return
         if not self.cursor_data:
             return

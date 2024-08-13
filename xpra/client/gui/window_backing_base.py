@@ -141,7 +141,7 @@ class WindowBackingBase:
         self._PIL_encodings = []
         self.default_paint_box_line_width = PAINT_BOX or 1
         self.paint_box_line_width = PAINT_BOX
-        self.pointer_overlay = None
+        self.pointer_overlay = ()
         self.cursor_data = None
         self.default_cursor_data = None
         self.jpeg_decoder = None

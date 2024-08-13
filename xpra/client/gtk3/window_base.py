@@ -1822,7 +1822,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         prev = b.pointer_overlay
         if pos is None:
-            if prev is None:
+            if not prev:
                 return
             value = None
         else:
