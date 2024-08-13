@@ -114,7 +114,7 @@ tests/unittests/test-file*
 /xpra/buffers/cyxor.c
 /xpra/client/*/*.c
 /xpra/client/*.c
-/xpra/client/gl/gtk3/*.c
+/xpra/client/gtk3/opengl/*.c
 /xpra/clipboard/*.c
 /xpra/codecs/nvidia/*/*.c
 /xpra/codecs/nvidia/*/*.cpp
@@ -132,6 +132,7 @@ tests/unittests/test-file*
 /xpra/net/*/*.c
 /xpra/net/*.c
 /xpra/notifications/*.c
+/xpra/opengl/*.c
 /xpra/platform/*/*.c
 /xpra/platform/*/*.cpp
 /xpra/platform/*.c
