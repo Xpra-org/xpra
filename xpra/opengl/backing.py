@@ -832,7 +832,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         for x, y, w, h in rectangles:
             glBlitFramebuffer(x, y, w, h,
-                              round(x*scale), round(y*scale), round((x+w)*scale), round((y+h)*scale),
+                              round(x*scale), round(y*scale), round((x+ww)*scale), round((y+wh)*scale),
                               GL_COLOR_BUFFER_BIT, sampling)
 
         if self.pointer_overlay:
@@ -1241,7 +1241,7 @@ class GLWindowBackingBase(WindowBackingBase):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
-        rh = self.render_size[1]
+        rh = self.size[1]
         glBlitFramebuffer(0, 0, width, height,
                           x, rh - y, x + width, rh - y - height,
                           GL_COLOR_BUFFER_BIT, GL_NEAREST)
@@ -1341,7 +1341,7 @@ class GLWindowBackingBase(WindowBackingBase):
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, target, self.textures[TEX_FBO], 0)
             glDrawBuffer(GL_COLOR_ATTACHMENT1)
 
-            rh = self.render_size[1]
+            rh = self.size[1]
             glBlitFramebuffer(0, 0, width, height,
                               x, rh - y, x + render_width, rh - y - render_height,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST)
@@ -1536,19 +1536,19 @@ class GLWindowBackingBase(WindowBackingBase):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT0)
 
-        ww, wh = self.render_size
+        w, h = self.size
 
         # the region we're updating:
 
         def clampx(v: int) -> int:
-            return min(ww, max(0, v))
+            return min(w, max(0, v))
 
         def clampy(v: int) -> int:
-            return min(wh, max(0, v))
+            return min(h, max(0, v))
 
-        viewport = clampx(rx), clampy(wh - ry - height), clampx(width), clampy(height)
+        viewport = clampx(rx), clampy(h - ry - height), clampx(width), clampy(height)
         glViewport(*viewport)
-        log("viewport: %s for size=%s render_size=%s", viewport, self.size, self.render_size)
+        log("viewport: %s for backing size=%s", viewport, self.size)
 
         program = self.programs.get(shader)
         if not program:
