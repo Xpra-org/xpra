@@ -580,6 +580,12 @@ class GLWindowBackingBase(WindowBackingBase):
         glTexImage2D(target, 0, self.internal_format, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
         glBindFramebuffer(GL_FRAMEBUFFER, fbo)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[texture_index], 0)
+        glDrawBuffer(GL_COLOR_ATTACHMENT0)
+        if self._alpha_enabled:
+            glClearColor(0, 0, 0, 1)
+        else:
+            glClearColor(1, 1, 1, 0)
+        glClear(GL_COLOR_BUFFER_BIT)
 
     def close_gl_config(self) -> None:
         """
