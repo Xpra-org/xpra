@@ -775,7 +775,7 @@ fi
 
 
 %changelog
-* Tue Aug 06 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Tue Aug 13 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:
    syntax compatibility fixes
    `openssl.cnf` location in MS Windows builds
@@ -784,6 +784,12 @@ fi
    MS Windows multi-page printing
    run CI builds with Python 3.6 and 3.12, this requires Ubuntu 20.04
    remove outdated numpy workaround
+   libyuv 0.1878
+   nasm 2.16.03
+   cython 3.0.11
+   aioquic 1.2.0
+   pynvml 12.555.43
+   pycuda 2024.1.2
 - Major:
    MS Windows PDF printing crash, library mismatch
    honour `ssh` option when re-connecting
@@ -793,6 +799,11 @@ fi
    better compatibility with all builds of python cryptography
    uninitialized pixels when resizing windows
    window border offset with non-opengl renderer
+   client errors out with window forwarding disabled, remove more assumptions
+   xshape client errors with desktop scaling
+   xshape windows should still honour the window border
+   clipboard `INCR` transfers get stuck
+   `scroll` paint corruption
 - Encodings:
    `mmap` race condition
    validate openh264 colorspace
@@ -829,6 +840,7 @@ fi
    missing line continuation backslash in example
    missing quote
    log opengl probe command
+   clarify display name message
 
 * Fri May 31 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
 - Encodings:

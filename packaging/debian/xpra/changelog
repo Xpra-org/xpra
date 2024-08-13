@@ -7,6 +7,12 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - MS Windows multi-page printing
    - run CI builds with Python 3.6 and 3.12, this requires Ubuntu 20.04
    - remove outdated numpy workaround
+   - libyuv 0.1878
+   - nasm 2.16.03
+   - cython 3.0.11
+   - aioquic 1.2.0
+   - pynvml 12.555.43
+   - pycuda 2024.1.2
   * Major:
    - MS Windows PDF printing crash, library mismatch
    - honour `ssh` option when re-connecting
@@ -16,6 +22,11 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - better compatibility with all builds of python cryptography
    - uninitialized pixels when resizing windows
    - window border offset with non-opengl renderer
+   - client errors out with window forwarding disabled, remove more assumptions
+   - xshape client errors with desktop scaling
+   - xshape windows should still honour the window border
+   - clipboard `INCR` transfers get stuck
+   - `scroll` paint corruption
   * Encodings:
    - `mmap` race condition
    - validate openh264 colorspace
@@ -52,8 +63,9 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - missing line continuation backslash in example
    - missing quote
    - log opengl probe command
+   - clarify display name message
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 06 Aug 2024 22:53:27 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 13 Aug 2024 22:03:09 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:

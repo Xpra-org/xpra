@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.10] 2024-08-06
+## [5.0.10] 2024-08-13
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
     * [`openssl.cnf` location in MS Windows builds](https://github.com/Xpra-org/xpra/commit/3ad6c8e44438912c5dd9dcba427b17d6b20a463f)
@@ -10,6 +10,12 @@
     * [MS Windows multi-page printing](https://github.com/Xpra-org/xpra/commit/f3c0e92d3b5b85b7c05d898ad51ed7d24af6ece3)
     * [run CI builds with Python 3.6 and 3.12](https://github.com/Xpra-org/xpra/commit/4af53ffc9c20d5afd90e3bc8e4e14f0be4bbbe8b), [this requires Ubuntu 20.04](https://github.com/Xpra-org/xpra/commit/6ed0f4fce7833fb4a45c0960ce3c24bfe8d84385)
     * [remove outdated numpy workaround](https://github.com/Xpra-org/xpra/commit/a2940534da564578ed7a53fb7e4af92b06ca1978)
+    * [libyuv 0.1878](https://github.com/Xpra-org/xpra/commit/eedb55fdcd0d88cccdc30970b9287b090fe82bef)
+    * [nasm 2.16.03](https://github.com/Xpra-org/xpra/commit/73ef29ca1077697d7dca47a22d4eb547c5db95fb)
+    * [cython 3.0.11](https://github.com/Xpra-org/xpra/commit/468018ed39989fdfc6c87263681c1bb6dfd30051)
+    * [aioquic 1.2.0](https://github.com/Xpra-org/xpra/commit/8142aee9b2d6ed713f0b003b21334bab0e8bf802)
+    * [pynvml 12.555.43](https://github.com/Xpra-org/xpra/commit/e3115ed747986edbcea4f26300b65854ebacefe5)
+    * [pycuda 2024.1.2](https://github.com/Xpra-org/xpra/commit/73767cd45819f621f6e0308ae5bde67191d7cd93)
 * Major:
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
     * [honour `ssh` option when re-connecting](https://github.com/Xpra-org/xpra/commit/45bad59e6255f03087b8dbd51dfd2380472f6f20)
@@ -19,6 +25,11 @@
     * [better compatibility with all builds of python cryptography](https://github.com/Xpra-org/xpra/commit/c91372a566ce46b82e1f406eba5a10ce0b092fb5)
     * [uninitialized pixels when resizing windows](https://github.com/Xpra-org/xpra/commit/c90eee5e235e5b8e288d3ecef5169319e0c28dde)
     * [window border offset with non-opengl renderer](https://github.com/Xpra-org/xpra/commit/bfb21a569858b849b7d752cdeef677c81326c817)
+    * [client errors out with window forwarding disabled](https://github.com/Xpra-org/xpra/commit/c62bddc5ad170ca4a2bc7de121c969dce5e65349), [remove more assumptions](https://github.com/Xpra-org/xpra/commit/0541065690c0b52fcc41617d33469bf85a95224e)
+    * [xshape client errors with desktop scaling](https://github.com/Xpra-org/xpra/commit/674103206ed64eeae92d8d232358472776647c9b)
+    * [xshape windows should still honour the window border](https://github.com/Xpra-org/xpra/commit/e3c659fdf4e06190bc0c97126044a9c1d7cc8ddd)
+    * [clipboard `INCR` transfers get stuck](https://github.com/Xpra-org/xpra/commit/f51f86a747690fe68f628b7cd72a1513f835607a)
+    * [`scroll` paint corruption](https://github.com/Xpra-org/xpra/commit/ae957f2ff9808c9d5570a6b56e21b6e29483e610)
 * Encodings:
     * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
     * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
@@ -57,6 +68,7 @@
     * [missing line continuation backslash in example](https://github.com/Xpra-org/xpra/commit/e95b0c8d551ffe85c7644b3d1055d0410086fbfe)
     * [missing quote](https://github.com/Xpra-org/xpra/commit/b88e1667033398ebad55639b10e448a22b08648e)
     * [log opengl probe command](https://github.com/Xpra-org/xpra/commit/675bf35b7f25ac3ec4d5ccd83c0920bba4c9d935)
+    * [clarify display name message](https://github.com/Xpra-org/xpra/commit/28f3c30cb10528a91e14b0961b98b1ac2eb47851)
 
 
 ## [5.0.9] 2023-06-18
