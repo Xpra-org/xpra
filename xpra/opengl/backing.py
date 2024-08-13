@@ -16,7 +16,8 @@ from contextlib import AbstractContextManager, nullcontext
 from OpenGL.error import GLError
 from OpenGL.constant import IntConstant
 from OpenGL.GL import (
-    GLuint,
+    GLuint, glGetIntegerv,
+    GL_VIEWPORT,
     GL_PIXEL_UNPACK_BUFFER, GL_STREAM_DRAW,
     GL_UNPACK_ROW_LENGTH, GL_UNPACK_ALIGNMENT,
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
@@ -176,6 +177,24 @@ TEX_TMP_FBO = 5
 TEX_CURSOR = 6
 TEX_FPS = 7
 N_TEXTURES = 8
+
+
+class TemporaryViewport:
+    __slots__ = ("viewport", "tmp_viewport")
+
+    def __init__(self, *viewport: int):
+        self.viewport = ()
+        self.tmp_viewport = viewport
+
+    def __enter__(self):
+        self.viewport = glGetIntegerv(GL_VIEWPORT)
+        glViewport(*self.tmp_viewport)
+
+    def __exit__(self, *_args):
+        glViewport(*self.viewport)
+
+    def __repr__(self):
+        return "TemporaryViewport"
 
 
 class GLWindowBackingBase(WindowBackingBase):
@@ -818,7 +837,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
         if self.pointer_overlay:
             self.draw_pointer()
-            glViewport(*viewport)
 
         if self.paint_spinner or FORCE_SPINNER:
             self.draw_spinner()
@@ -828,7 +846,6 @@ class GLWindowBackingBase(WindowBackingBase):
 
         if self.is_show_fps():
             self.draw_fps()
-            glViewport(*viewport)
 
         # Show the backbuffer on screen
         glFlush()
@@ -908,29 +925,28 @@ class GLWindowBackingBase(WindowBackingBase):
 
         wh = self.render_size[1]
         # the region we're updating (reversed):
-        glViewport(x, wh - y - h, w, h)
+        with TemporaryViewport(x, wh - y - h, w, h):
+            program = self.programs["overlay"]
+            glUseProgram(program)
+            glActiveTexture(GL_TEXTURE0)
+            glBindTexture(target, texture)
+            tex_loc = glGetUniformLocation(program, "rgba")
+            glUniform1i(tex_loc, 0)  # 0 -> TEXTURE_0
 
-        program = self.programs["overlay"]
-        glUseProgram(program)
-        glActiveTexture(GL_TEXTURE0)
-        glBindTexture(target, texture)
-        tex_loc = glGetUniformLocation(program, "rgba")
-        glUniform1i(tex_loc, 0)  # 0 -> TEXTURE_0
+            viewport_pos = glGetUniformLocation(program, "viewport_pos")
+            glUniform2f(viewport_pos, x, y)
 
-        viewport_pos = glGetUniformLocation(program, "viewport_pos")
-        glUniform2f(viewport_pos, x, y)
+            position = 0
+            pos_buffer = self.set_vao(position)
 
-        position = 0
-        pos_buffer = self.set_vao(position)
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+            glBindVertexArray(0)
+            glUseProgram(0)
+            glDeleteBuffers(1, [pos_buffer])
+            glDisableVertexAttribArray(position)
 
-        glBindVertexArray(0)
-        glUseProgram(0)
-        glDeleteBuffers(1, [pos_buffer])
-        glDisableVertexAttribArray(position)
-
-        glBindTexture(target, 0)
+            glBindTexture(target, 0)
 
     def draw_border(self) -> None:
         # use the render size as we are updating the "screen" directly:
@@ -945,11 +961,10 @@ class GLWindowBackingBase(WindowBackingBase):
         self.draw_to_offscreen()
 
         bw, bh = self.size
-        glViewport(0, 0, bw, bh)
-
         color = get_paint_box_color(encoding)
         r, g, b, a = tuple(round(v * 256) for v in color)
-        self.draw_rectangle(x, y, w, h, self.paint_box_line_width, r, g, b, a, bh)
+        with TemporaryViewport(0, 0, bw, bh):
+            self.draw_rectangle(x, y, w, h, self.paint_box_line_width, r, g, b, a, bh)
 
     def draw_to_tmp(self):
         target = GL_TEXTURE_RECTANGLE
