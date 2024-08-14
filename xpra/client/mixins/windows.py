@@ -182,15 +182,13 @@ def show_border_help() -> None:
 
 def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
     from xpra.gtk.widget import color_parse
-    enabled = not border_str.endswith(":off")
-    parts = [x.strip() for x in border_str.replace(":off", "").split(",")]
+    parts = [x.strip() for x in border_str.replace(",", ":").split(":", 1)]
     color_str = parts[0]
     if color_str.lower() in ("none", "no", "off", "0"):
         return WindowBorder(False)
     if color_str.lower() == "help":
         show_border_help()
         return WindowBorder(False)
-    color_str = color_str.replace(":off", "")
     if color_str in ("auto", ""):
         from hashlib import sha256
         m = sha256()
@@ -210,7 +208,8 @@ def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
         color = color_parse("red")
     alpha = 0.6
     size = 4
-    if len(parts) == 2:
+    enabled = parts[-1] != "off"
+    if enabled and len(parts) == 2:
         size_str = parts[1]
         try:
             size = int(size_str)
