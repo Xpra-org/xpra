@@ -166,15 +166,6 @@ class GLXContext:
         self.xdisplay: int = 0
         self.context = None
         self.bit_depth: int = 0
-        Gdk = gi_import("Gdk")
-        display = Gdk.Display.get_default()
-        if not display:
-            log.warn("Warning: GLXContext: no default display")
-            return
-        screen = display.get_default_screen()
-        if not screen:
-            log.warn("Warning: GLXContext: no default screen")
-            return
         self.xdisplay = get_xdisplay()
 
         # query version
