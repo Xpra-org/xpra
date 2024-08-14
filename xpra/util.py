@@ -294,6 +294,10 @@ class MutableInteger(object):
 
 class typedict(dict):
 
+    def __contains__(self, key):
+        from xpra.os_util import bytestostr
+        return dict.__contains__(self, key) or dict.__contains__(self, bytestostr(key))
+
     def _warn(self, msg, *args, **kwargs):
         get_util_logger().warn(msg, *args, **kwargs)
 
