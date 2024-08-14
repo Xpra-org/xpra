@@ -118,10 +118,13 @@ cdef get_fiter_mode_str(FilterMode fm):
         return  "Box"
     return "invalid"
 
-cdef inline FilterMode get_filtermode(int speed):
+
+cdef inline FilterMode get_filtermode(int speed, int downscaling):
+    if downscaling:
+        return kFilterBilinear
     if speed>66:
         return kFilterNone
-    elif speed>33:
+    if speed>33:
         return kFilterBilinear
     return kFilterBox
 
@@ -306,7 +309,8 @@ cdef class ColorspaceConverter:
         self.src_format = src_format
         self.dst_format = dst_format
         cdef int speed = typedict(options or {}).intget("speed", 100)
-        self.filtermode = get_filtermode(speed)
+        cdef int downscaling = dst_width < src_width or dst_height < src_height
+        self.filtermode = get_filtermode(speed, downscaling)
         self.src_width = src_width
         self.src_height = src_height
         self.dst_width = dst_width
