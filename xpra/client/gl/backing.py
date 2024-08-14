@@ -774,8 +774,10 @@ class GLWindowBackingBase(WindowBackingBase):
         # some backends render to the screen (0), otherws may render elsewhere
         # (ie: the GTK backend renders to its own buffer…)
         bw, bh = self.size
-        scale = context.get_scale_factor()
-        scaling = self.size != self.render_size or scale != 1
+        ww, wh = self.render_size
+        xscale = ww / bw * context.get_scale_factor()
+        yscale = wh / bh * context.get_scale_factor()
+        scaling = xscale != 1 or yscale != 1
         if self.is_double_buffered() or scaling:
             # refresh the whole window:
             rectangles = [(0, 0, bw, bh), ]
@@ -790,17 +792,16 @@ class GLWindowBackingBase(WindowBackingBase):
             self.save_fbo()
 
         # viewport for clearing the whole window:
-        ww, wh = self.render_size
         left, top, right, bottom = self.offsets
-        if left or top or right or bottom:
+        if left or top or right or bottom or xscale or yscale:
             alpha = 0.0 if self._alpha_enabled else 1.0
-            glViewport(0, 0, int((left + ww + right) * scale), int((top + wh + bottom) * scale))
+            glViewport(0, 0, int((left + ww + right) * xscale), int((top + wh + bottom) * yscale))
             glClearColor(0.0, 0.0, 0.0, alpha)
             glClear(GL_COLOR_BUFFER_BIT)
 
         # from now on, take the offsets and scaling into account:
-        viewport = int(left * scale), int(top * scale), int(ww * scale), int(wh * scale)
-        log(f"window viewport for render-size={self.render_size} and offsets={self.offsets} with {scale=}: {viewport}")
+        viewport = int(left * xscale), int(top * yscale), int(ww * xscale), int(wh * yscale)
+        log(f"viewport for render-size={self.render_size} and offsets={self.offsets} with {xscale=} / {yscale=}: {viewport}")
         glViewport(*viewport)
 
         # Draw FBO texture on screen
@@ -811,7 +812,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         for x, y, w, h in rectangles:
             glBlitFramebuffer(x, y, w, h,
-                              round(x*scale), round(y*scale), round((x+ww)*scale), round((y+wh)*scale),
+                              round(x*xscale), round(y*yscale), round((x+w)*xscale), round((y+h)*yscale),
                               GL_COLOR_BUFFER_BIT, sampling)
 
         if self.pointer_overlay:
