@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.1.2] 2024-08-13
+## [6.1.2] 2024-08-14
 * Major:
     * [client errors out with window forwarding disabled](https://github.com/Xpra-org/xpra/commit/dea2c6557c87c40ce36367aa7c5fabcd56ba657f), [remove more assumptions](https://github.com/Xpra-org/xpra/commit/02d32cac6f3efdf4d62882e73bcd573d83c78f12)
     * [OpenGL probe results were being ignored](https://github.com/Xpra-org/xpra/commit/7e55d3e98f4c0fef0f3ef09be8b620c5ae3e3dad)
@@ -8,7 +8,11 @@
     * [xshape windows should still honour the window border](https://github.com/Xpra-org/xpra/commit/97ef0d5ab065109bd77e1d6e4c614da5cc27fdbd)
     * [pointer positions with desktop scaling: initial position and some window events](https://github.com/Xpra-org/xpra/commit/e70e886032198c46a2706394c4dace1af6022a34)
     * [clipboard `INCR` transfers get stuck](https://github.com/Xpra-org/xpra/commit/b30c5d96f20d1a63a1b9a542e9699fa062150daf)
+* Encodings:
+    * [sub-optimal non-scroll areas](https://github.com/Xpra-org/xpra/commit/9f7e41d4edf833f72c9ff4542371acf72693ed60)
+    * [prettier sampling filter when downscaling](https://github.com/Xpra-org/xpra/commit/b2b3c504ac00949c918bedfe1f75f69e8888b668)
 * OpenGL:
+    * [window scaling corruption](https://github.com/Xpra-org/xpra/commit/a6bd39570daa208e0f71a8e3a156a973aef8c237)
     * [desktop scaling miscalculations](https://github.com/Xpra-org/xpra/commit/b75808edb96d833e4d0498e365689ab6d251405b) [and corruption](https://github.com/Xpra-org/xpra/commit/58f772d62dede891770d572af70d924a44972aa0)
     * [`scroll` encoding corruption](https://github.com/Xpra-org/xpra/commit/9e3843275bf39c3853b3b37ccf9986736199538b)
 * Cosmetic:

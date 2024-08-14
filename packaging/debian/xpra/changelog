@@ -6,7 +6,11 @@ xpra (6.1.2-1) UNRELEASED; urgency=low
     xshape windows should still honour the window border
     pointer positions with desktop scaling: initial position and some window events
     clipboard `INCR` transfers get stuck
+  * Encodings:
+    sub-optimal non-scroll areas
+    prettier sampling filter when downscaling
   * OpenGL:
+    window scaling corruption
     desktop scaling miscalculations and corruption
     `scroll` encoding corruption
   * Cosmetic:
@@ -15,7 +19,7 @@ xpra (6.1.2-1) UNRELEASED; urgency=low
     don't populate av-sync menu if the feature is disabled
     correct type hint
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 13 Aug 2024 22:19:19 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 14 Aug 2024 18:22:25 +0700
 
 xpra (6.1.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

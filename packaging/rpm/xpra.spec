@@ -883,7 +883,7 @@ fi
 
 
 %changelog
-* Sat Aug 13 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
+* Wed Aug 14 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
 - Major:
    client errors out with window forwarding disabled, remove more assumptions
    OpenGL probe results were being ignored
@@ -891,7 +891,11 @@ fi
    xshape windows should still honour the window border
    pointer positions with desktop scaling: initial position and some window events
    clipboard `INCR` transfers get stuck
+- Encodings:
+   sub-optimal non-scroll areas
+   prettier sampling filter when downscaling
 - OpenGL:
+   window scaling corruption
    desktop scaling miscalculations and corruption
    `scroll` encoding corruption
 - Cosmetic:
