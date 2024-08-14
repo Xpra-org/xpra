@@ -253,7 +253,7 @@ class WindowVideoSource(WindowSource):
         # these are used for non-video areas, ensure "jpeg" is used if available
         # as we may be dealing with large areas still, and we want speed:
         enc_options = set(self.server_core_encodings) & set(self._encoders.keys())
-        nv_common = (enc_options & set(self.core_encodings)) - set(self.video_encodings)
+        nv_common = enc_options & set(self.core_encodings) & set(self.picture_encodings)
         self.non_video_encodings = preforder(nv_common)
         log("do_init_encoders()")
         log(f" server core encodings={self.server_core_encodings}")
