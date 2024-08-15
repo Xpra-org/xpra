@@ -597,7 +597,7 @@ def install_dev_env() -> None:
             "cython": ("gcc", "cython3", "libxxhash-dev", ),
             "x11": ("libx11-dev", "libxcomposite-dev", "libxdamage-dev",
                     "libxtst-dev", "libxkbfile-dev", "libxres-dev",
-                    "Xvfb",
+                    "xvfb",
                     ),
             "drm": ("libdrm-dev", ),
             "evdi": ("libevdi0-dev", ),
@@ -608,7 +608,7 @@ def install_dev_env() -> None:
             "openh264": ("libopenh264-dev", ),
             "webp": ("libwebp-dev", ),
             "jpeg_decoder|jpeg_encoder": ("libturbojpeg-dev", ),
-            "spng_decode|spng_encoder": ("libspng-dev", ),
+            "spng_decoder|spng_encoder": ("libspng-dev", ),
             "gtk3": ("libgtk-3-dev", "python3-cairo-dev", "python-gi-dev"),
             "sd_listen": ("python-gi-dev", ),
             "pam": ("libpam0g-dev", ),
@@ -616,7 +616,7 @@ def install_dev_env() -> None:
             "lz4": ("liblz4-dev", ),
             "brotli": ("libbrotli-dev", ),
             "qrencode": ("libqrencode-dev", ),
-            "doc": ("pandoc", ),
+            "docs": ("pandoc", ),
         }
         cmd = ["apt", "install"]
     else:
