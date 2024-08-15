@@ -275,7 +275,7 @@ class GLWindowBackingBase(WindowBackingBase):
             info["last-error"] = le
         return info
 
-    def with_gfx_context(self, function: Callable, *args):
+    def with_gfx_context(self, function: Callable, *args) -> None:
         # first make the call from the main thread via `idle_add`
         # then run the function from a GL context:
         GLib.idle_add(self.with_gl_context, function, *args)
@@ -978,14 +978,14 @@ class GLWindowBackingBase(WindowBackingBase):
         with TemporaryViewport(0, 0, bw, bh):
             self.draw_rectangle(x, y, w, h, self.paint_box_line_width, r, g, b, a, bh)
 
-    def draw_to_tmp(self):
+    def draw_to_tmp(self) -> None:
         target = GL_TEXTURE_RECTANGLE
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.tmp_fbo)
         glBindTexture(target, self.textures[TEX_TMP_FBO])
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, self.textures[TEX_TMP_FBO], 0)
         glDrawBuffer(GL_COLOR_ATTACHMENT0)
 
-    def draw_to_offscreen(self):
+    def draw_to_offscreen(self) -> None:
         # render to offscreen fbo:
         target = GL_TEXTURE_RECTANGLE
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, self.offscreen_fbo)

@@ -16,7 +16,6 @@ log = Logger("opengl", "paint")
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
-GLib = gi_import("GLib")
 
 
 class GLDrawingArea(GLWindowBackingBase):
@@ -86,7 +85,7 @@ class GLDrawingArea(GLWindowBackingBase):
             raise RuntimeError(f"failed to get an OpenGL window context for {gdk_window} from {self.context}")
         return self.window_context
 
-    def do_gl_show(self, rect_count) -> None:
+    def do_gl_show(self, rect_count: int) -> None:
         if self.is_double_buffered():
             # Show the backbuffer on screen
             log("%s.do_gl_show(%s) swapping buffers now", rect_count, self)
