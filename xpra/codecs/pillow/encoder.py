@@ -198,7 +198,7 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
         else:
             resample = LANCZOS
         im = im.resize((scaled_width, scaled_height), resample=resample)
-        client_options["resample"] = resample
+        client_options["resample"] = getattr(resample, "name", str(resample))
     if coding in ("jpeg", "webp"):
         # newer versions of pillow require explicit conversion to non-alpha:
         if pixel_format.find("A") >= 0 and coding == "jpeg":
