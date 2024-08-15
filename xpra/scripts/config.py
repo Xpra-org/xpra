@@ -695,6 +695,7 @@ OPTION_TYPES: dict[str, Any] = {
     "websocket-upgrade" : bool,
     "ssh-upgrade"       : bool,
     "splash"            : bool,
+    "gstreamer"         : bool,
     # arrays of strings:
     "pulseaudio-configure-commands" : list,
     "socket-dirs"       : list,
@@ -776,7 +777,7 @@ BIND_OPTIONS : list[str] = [
 # keep track of the options added since v5,
 # so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V5: list[str] = [
-    "minimal", "dbus",
+    "minimal", "dbus", "gstreamer",
 ]
 OPTIONS_COMPAT_NAMES: dict[str, str] = {
     "--compression_level=": "-z"
@@ -852,6 +853,7 @@ PROXY_START_OVERRIDABLE_OPTIONS: list[str] = [
     "forward-xdg-open", "modal-windows", "bandwidth-detection",
     "ssh-upgrade",
     "splash",
+    "gstreamer",
     "printing", "file-transfer", "open-command", "open-files", "open-url", "start-new-commands",
     "mmap", "mmap-group", "mdns",
     "auth", "vsock-auth", "tcp-auth", "ws-auth", "wss-auth", "ssl-auth", "ssh-auth", "rfb-auth", "quic-auth",
@@ -1173,6 +1175,7 @@ def get_defaults() -> dict[str, Any]:
         "websocket-upgrade" : True,
         "ssh-upgrade"       : True,
         "splash"            : None,
+        "gstreamer"         : True,
         "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
         "socket-dirs"       : unexpand_all(get_socket_dirs()),
         "client-socket-dirs" : unexpand_all(get_client_socket_dirs()),

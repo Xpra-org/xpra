@@ -1996,7 +1996,8 @@ def set_client_features(opts) -> None:
     from xpra.client.gui import features
     features.display = opts.windows
     features.windows = opts.windows
-    features.audio = b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("audio")
+    features.gstreamer = opts.gstreamer
+    features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("audio")
     features.webcam = bo(opts.webcam) and impcheck("codecs")
     features.clipboard = b(opts.clipboard) and impcheck("clipboard")
     features.notifications = opts.notifications and impcheck("notifications")
@@ -2015,6 +2016,7 @@ def enforce_client_features() -> None:
     enforce_features(features, {
         "display": "xpra.client.mixins.display",
         "windows": "xpra.client.mixins.windows",
+        "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "webcam": "xpra.client.mixins.webcam",
         "audio": "xpra.audio,xpra.client.mixins.audio",
         "clipboard": "xpra.clipboard,xpra.client.mixins.clipboard",

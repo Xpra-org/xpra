@@ -308,7 +308,8 @@ def set_server_features(opts) -> None:
     features.notifications = opts.notifications and impcheck("notifications")
     features.webcam = b(opts.webcam) and impcheck("codecs")
     features.clipboard = b(opts.clipboard) and impcheck("clipboard")
-    features.audio = b(opts.audio) and impcheck("audio")
+    features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
+    features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
     features.av_sync = features.audio and b(opts.av_sync)
     features.fileprint = b(opts.printing) or b(opts.file_transfer)
     features.mmap = b(opts.mmap)
@@ -341,6 +342,7 @@ def enforce_server_features() -> None:
         "mmap": "xpra.net.mmap,xpra.server.mixins.mmap,xpra.server.source.mmap",
         "input_devices": "xpra.server.mixins.input,xpra.server.source.input",
         "commands": "xpra.server.control_command",
+        "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "dbus": "xpra.dbus,xpra.server.dbus,xpra.server.source.dbus",
         "encoding": "xpra.server.mixins.encoding,xpra.server.source.encodings",
         "logging": "xpra.server.mixins.logging",

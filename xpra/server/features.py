@@ -13,6 +13,7 @@ fileprint       = True
 mmap            = True
 input_devices   = True
 commands        = True
+gstreamer       = True
 dbus            = True
 encoding        = True
 logging         = True

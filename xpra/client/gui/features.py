@@ -5,6 +5,7 @@
 
 display = True
 windows = True
+gstreamer = True
 webcam = True
 audio = True
 clipboard = True

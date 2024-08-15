@@ -867,6 +867,7 @@ def do_parse_cmdline(cmdline, defaults):
         defaults.compression_level = 0
         defaults.forward_xdg_open = False
         defaults.file_transfer = defaults.open_files = defaults.open_url = defaults.printing = "no"
+        defaults.gstreamer = False
         defaults.dbus = False
         defaults.dbus_control = "no"
         defaults.bandwidth_limit = 0
@@ -1745,6 +1746,11 @@ def parse_command_line(cmdline, defaults):
     group.add_option("--backend", action="store",
                      dest="backend", default=defaults.backend,
                      help="Which backend to use for accessing the display."
+                          " Default: '%default'.")
+    legacy_bool_parse("gstreamer")
+    group.add_option("--gstreamer", action="store",
+                     dest="gstreamer", default=defaults.gstreamer,
+                     help="Enable GStreamer audio and video support."
                           " Default: '%default'.")
     group.add_option("--env", action="append",
                      dest="env", default=list(defaults.env or []),
