@@ -2035,6 +2035,11 @@ def make_client(error_cb: Callable, opts):
     backend = opts.backend or "gtk"
     if backend == "qt":
         try:
+            for mod in ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication"):
+                mod_path = f"gi.repository.{mod}"
+                if sys.modules.get(mod_path):
+                    raise RuntimeError(f"Gtk module {mod!r} is already loaded!")
+                sys.modules[mod_path] = None
             from xpra.client.qt6.client import make_client
             return make_client()
         except ImportError as e:
