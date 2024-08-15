@@ -17,7 +17,7 @@ from xpra.util.str_fn import csv
 from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
-from xpra.util.system import is_Ubuntu, is_Debian, is_LinuxMint
+from xpra.util.system import is_DEB
 
 
 def warn(msg: str) -> None:
@@ -123,7 +123,7 @@ def get_xorg_bin() -> str:
     if xorg:
         return xorg
     # Detect Xorg Binary
-    if is_arm() and is_Debian() and os.path.exists("/usr/bin/Xorg"):
+    if is_arm() and is_DEB() and os.path.exists("/usr/bin/Xorg"):
         # Raspbian breaks if we use a different binary..
         return "/usr/bin/Xorg"
     for p in (
@@ -205,7 +205,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
     if sys.platform.find("bsd") >= 0 and Xdummy_ENABLED is None:  # pragma: no cover
         warn_fn(f"Warning: sorry, no support for Xdummy on {sys.platform}")
         return get_Xvfb_command()
-    if is_Ubuntu() or is_Debian() or is_LinuxMint():
+    if is_DEB():
         # These distros do weird things and this can cause the real X11 server to crash
         # see ticket #2834
         return get_Xvfb_command()

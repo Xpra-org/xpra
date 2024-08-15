@@ -10,7 +10,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.util.env import envbool
-from xpra.util.system import is_Ubuntu, is_Debian, is_LinuxMint
+from xpra.util.system import is_DEB
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -18,7 +18,7 @@ log = Logger("webcam")
 # on Debian and Ubuntu, the v4l2loopback device is created with exclusive_caps=1,
 # so we cannot check the devices caps for the "VIDEO_CAPTURE" flag.
 # https://github.com/Xpra-org/xpra/issues/1596
-CHECK_VIRTUAL_CAPTURE = envbool("XPRA_CHECK_VIRTUAL_CAPTURE", not (is_Ubuntu() or is_Debian() or is_LinuxMint()))
+CHECK_VIRTUAL_CAPTURE = envbool("XPRA_CHECK_VIRTUAL_CAPTURE", not is_DEB())
 
 
 def _can_capture_video(dev_file, dev_info) -> bool:

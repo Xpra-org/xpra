@@ -157,6 +157,16 @@ def is_Debian() -> bool:
     return is_distribution_variant("Debian")
 
 
+def is_DEB() -> bool:
+    return is_Debian() or is_Ubuntu() or is_LinuxMint()
+
+
+def is_RPM() -> bool:
+    return any(is_distribution_variant(x) for x in (
+        "Fedora", "RedHat", "AlmaLinux", "Rocky Linux", "CentOS", "openSUSE", "Oracle Linux",
+    ))
+
+
 _linux_distribution = ("", "", "")
 
 

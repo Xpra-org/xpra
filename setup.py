@@ -37,7 +37,7 @@ except ImportError as e:
 
 import xpra
 from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
-from xpra.util.system import is_distribution_variant, get_linux_distribution, is_Ubuntu, is_Debian, is_LinuxMint
+from xpra.util.system import is_distribution_variant, get_linux_distribution, is_DEB, is_RPM
 from xpra.util.io import load_binary_file, get_status_output
 
 if BITS != 64:
@@ -51,28 +51,8 @@ def is_Fedora() -> bool:
     return is_distribution_variant("Fedora")
 
 
-def is_RedHat() -> bool:
-    return is_distribution_variant("RedHat")
-
-
-def is_AlmaLinux() -> bool:
-    return is_distribution_variant("AlmaLinux")
-
-
-def is_RockyLinux() -> bool:
-    return is_distribution_variant("Rocky Linux")
-
-
-def is_CentOS() -> bool:
-    return is_distribution_variant("CentOS")
-
-
 def is_openSUSE() -> bool:
     return is_distribution_variant("openSUSE")
-
-
-def is_OracleLinux() -> bool:
-    return is_distribution_variant("Oracle Linux")
 
 
 #*******************************************************************************
@@ -567,7 +547,7 @@ def install_dev_env() -> None:
     if not LINUX:
         print(f"'dev-env' subcommand is not supported on {sys.platform!r}")
         sys.exit(1)
-    elif is_Fedora() or is_CentOS() or is_AlmaLinux() or is_RockyLinux() or is_RedHat() or is_OracleLinux():
+    elif is_RPM() and not is_openSUSE():
         py3 = os.environ.get("PYTHON3", "python3")
         flag_to_pkgs = {
             "modules": (
@@ -608,7 +588,7 @@ def install_dev_env() -> None:
             "pam": ("pam-devel", ),
         }
         cmd = ["dnf", "install"]
-    elif is_Debian() or is_Ubuntu() or is_LinuxMint():
+    elif is_DEB():
         flag_to_pkgs = {
             "modules": (
                 "python3-dev",
@@ -691,16 +671,16 @@ def install_repo(repo_variant="") -> None:
             setup_cmds.append(["dnf", "install", f"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{release_name}.noarch.rpm"])
             # setup_cmds.append(["dnf", "install", f"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-nonfree-release-{release_name}.noarch.rpm"])
             setup_cmds.append(["dnf", "config-manager", "--set-enabled", "fedora-cisco-openh264"])
-        elif is_RedHat() or is_AlmaLinux():
+        elif is_distribution_variant("RedHat") or is_distribution_variant("AlmaLinux"):
             variant = "almalinux"
             add_epel()
-        elif is_RockyLinux():
+        elif is_distribution_variant("Rocky Linux"):
             variant = "rockylinux"
             add_epel()
-        elif is_OracleLinux():
+        elif is_distribution_variant("Oracle Linux"):
             variant = "oraclelinux"
             add_epel()
-        elif is_CentOS():
+        elif is_distribution_variant("CentOS"):
             variant = "CentOS-Stream"
             add_epel()
         else:
@@ -1131,7 +1111,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
 
     # for distros that don't patch distutils,
     # we have to add the python cflags:
-    if not (is_Fedora() or is_Debian() or is_CentOS() or is_RedHat() or is_AlmaLinux() or is_RockyLinux() or is_OracleLinux() or is_openSUSE()):    # noqa: E501
+    if not (is_RPM() or is_DEB()):    # noqa: E501
         # pylint: disable=import-outside-toplevel
         import sysconfig
         for cflag in shlex.split(sysconfig.get_config_var('CFLAGS') or ''):
@@ -1386,7 +1366,7 @@ def build_xpra_conf(install_dir: str) -> None:
     # OSX doesn't have webcam support yet (no opencv builds on 10.5.x)
     webcam = webcam_ENABLED and not (OSX or WIN32)
     # no python-avahi on RH / CentOS, need dbus module on *nix:
-    is_RH = is_RedHat() or is_CentOS() or is_OracleLinux() or is_AlmaLinux() or is_RockyLinux()
+    is_RH = is_RPM() and not is_openSUSE()
     mdns = mdns_ENABLED and (OSX or WIN32 or (not is_RH and dbus_ENABLED))
     SUBS = {
         'xvfb_command'          : wrap_cmd_str(xvfb_command),
@@ -2206,9 +2186,9 @@ else:
             if service_ENABLED:
                 # Linux init service:
                 subs = {}
-                if is_RedHat() or is_CentOS() or is_AlmaLinux() or is_RockyLinux() or is_OracleLinux() or is_Fedora():
+                if is_RPM():
                     cdir = "/etc/sysconfig"
-                elif is_Debian() or is_Ubuntu() or is_LinuxMint():
+                elif is_DEB():
                     cdir = "/etc/default"
                 elif os.path.exists("/etc/sysconfig"):
                     cdir = "/etc/sysconfig"
@@ -2566,7 +2546,7 @@ if cuda_kernels_ENABLED:
         # add_data_files("", glob(f"{CUDA_BIN_DIR}/curand64*dll"))
         if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
             add_data_files("", glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
-if cuda_kernels_ENABLED or is_Debian() or is_Ubuntu() or is_LinuxMint():
+if cuda_kernels_ENABLED or is_DEB():
     add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
