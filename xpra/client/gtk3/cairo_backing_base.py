@@ -59,7 +59,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     context.translate(x, y)
     context.set_source_surface(img, 0, 0)
     context.set_operator(Operator.OVER)
-    context.paint()
+    context.paint_with_alpha(alpha)
 
 
 class CairoBackingBase(WindowBackingBase):
