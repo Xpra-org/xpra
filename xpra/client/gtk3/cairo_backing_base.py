@@ -292,7 +292,6 @@ class CairoBackingBase(WindowBackingBase):
             spx = round(w * px / ww)
             spy = round(h * py / wh)
             cairo_paint_pointer_overlay(context, self.cursor_data, x + spx, y + spy, start_time)
-            self.cancel_fps_refresh()
 
         if self.is_show_fps() and self.fps_image:
             x, y = 10, 10
