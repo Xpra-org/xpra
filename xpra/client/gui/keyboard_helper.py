@@ -30,7 +30,7 @@ class KeyboardHelper:
         self.reset_state()
         self.send = net_send
         self.locked = False
-        self.keyboard_sync = keyboard_sync
+        self.sync = keyboard_sync
         self.shortcuts_enabled = True
         self.shortcut_modifiers_str = shortcut_modifiers
         self.shortcut_modifiers: list[str] = []
@@ -83,7 +83,7 @@ class KeyboardHelper:
 
         self.key_repeat_delay = -1
         self.key_repeat_interval = -1
-        self.keyboard_sync = False
+        self.sync = False
         self.key_shortcuts = {}
 
     def cleanup(self) -> None:
@@ -340,6 +340,7 @@ class KeyboardHelper:
         for x in (
                 "layout", "layouts", "variant", "variants",
                 "raw", "layout_groups",
+                "sync",
                 "query_struct", "mod_meanings",
                 "mod_managed", "mod_pointermissing", "keycodes", "x11_keycodes",
         ):
@@ -348,7 +349,6 @@ class KeyboardHelper:
             v = getattr(self, x)
             if v:
                 props[x] = v
-        props["sync"] = self.keyboard_sync
         return props
 
     def log_keyboard_info(self) -> None:
