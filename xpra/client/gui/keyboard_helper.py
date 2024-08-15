@@ -352,6 +352,7 @@ class KeyboardHelper:
             v = getattr(self, x)
             if v:
                 props[x] = v
+        props["sync"] = self.keyboard_sync
         return props
 
 
