@@ -1335,9 +1335,7 @@ class GLWindowBackingBase(WindowBackingBase):
             target = GL_TEXTURE_RECTANGLE
             glBindTexture(target, self.textures[TEX_RGB])
             set_alignment(width, rowstride, rgb_format)
-            mag_filter = GL_NEAREST
-            if scaling:
-                mag_filter = GL_LINEAR
+            mag_filter = GL_LINEAR if scaling else GL_NEAREST
             glTexParameteri(target, GL_TEXTURE_MAG_FILTER, mag_filter)
             glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
