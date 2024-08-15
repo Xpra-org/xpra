@@ -38,8 +38,11 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     if elapsed > 6:
         return
     # pylint: disable=import-outside-toplevel
-    from xpra.gtk.pixbuf import get_pixbuf_from_data
-    from xpra.codecs.argb.argb import unpremultiply_argb
+    try:
+        from xpra.client.gtk3.cairo_workaround import make_image_surface
+    except ImportError:
+        return
+
     cw = cursor_data[3]
     ch = cursor_data[4]
     xhot = cursor_data[5]
@@ -47,17 +50,16 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     pixels = cursor_data[8]
     x = px - xhot
     y = py - yhot
+
     alpha = max(0.0, (5.0 - elapsed) / 5.0)
     log("cairo_paint_pointer_overlay%s drawing pointer with cairo, alpha=%s",
         (context, x, y, start_time), alpha)
+    bgra = memoryview_to_bytes(pixels)
+    img = make_image_surface(Format.ARGB32, "BGRA", bgra, cw, ch, cw * 4)
     context.translate(x, y)
-    context.rectangle(0, 0, cw, ch)
-    argb = unpremultiply_argb(pixels)
-    img_data = memoryview_to_bytes(argb)
-    pixbuf = get_pixbuf_from_data(img_data, True, cw, ch, cw * 4)
+    context.set_source_surface(img, 0, 0)
     context.set_operator(Operator.OVER)
-    Gdk.cairo_set_source_pixbuf(context, pixbuf, 0, 0)
-    context.paint_with_alpha(alpha)
+    context.paint()
 
 
 class CairoBackingBase(WindowBackingBase):
@@ -284,11 +286,14 @@ class CairoBackingBase(WindowBackingBase):
         context.set_operator(Operator.SOURCE)
         context.set_source_surface(backing, 0, 0)
         context.paint()
+
         if self.pointer_overlay and self.cursor_data:
             px, py, _size, start_time = self.pointer_overlay[2:]
             spx = round(w * px / ww)
             spy = round(h * py / wh)
             cairo_paint_pointer_overlay(context, self.cursor_data, x + spx, y + spy, start_time)
+            self.cancel_fps_refresh()
+
         if self.is_show_fps() and self.fps_image:
             x, y = 10, 10
             context.translate(x, y)
@@ -296,8 +301,6 @@ class CairoBackingBase(WindowBackingBase):
             context.set_source_surface(self.fps_image, 0, 0)
             context.paint()
             self.cancel_fps_refresh()
-
-            # width, height = self.fps_buffer_size
 
             def refresh_screen() -> None:
                 self.fps_refresh_timer = 0

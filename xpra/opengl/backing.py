@@ -848,7 +848,7 @@ class GLWindowBackingBase(WindowBackingBase):
                               GL_COLOR_BUFFER_BIT, sampling)
 
         if self.pointer_overlay:
-            self.draw_pointer()
+            self.draw_pointer(xscale, yscale)
 
         if self.paint_spinner or FORCE_SPINNER:
             self.draw_spinner()
@@ -908,7 +908,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         glBindVertexArray(0)
 
-    def draw_pointer(self) -> None:
+    def draw_pointer(self, xscale=1.0, yscale=1.0) -> None:
         px, py, _, _, _, start_time = self.pointer_overlay
         elapsed = monotonic() - start_time
         log("pointer_overlay=%s, elapsed=%.1f, timeout=%s, cursor-data=%s",
@@ -919,12 +919,12 @@ class GLWindowBackingBase(WindowBackingBase):
             return
         if not self.cursor_data:
             return
-        w = self.cursor_data[3]
-        h = self.cursor_data[4]
+        w = round(self.cursor_data[3] * xscale)
+        h = round(self.cursor_data[4] * yscale)
         xhot = self.cursor_data[5]
         yhot = self.cursor_data[6]
-        x = px - xhot
-        y = py - yhot
+        x = round((px - xhot) * xscale)
+        y = round((py - yhot) * yscale)
         texture = int(self.textures[TEX_CURSOR])
         self.overlay_texture(texture, x, y, w, h)
 
