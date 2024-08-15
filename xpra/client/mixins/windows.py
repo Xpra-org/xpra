@@ -181,8 +181,9 @@ def show_border_help() -> None:
 
 
 def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
+    # ie: "auto,5:off"
     from xpra.gtk.widget import color_parse
-    parts = [x.strip() for x in border_str.replace(",", ":").split(":", 1)]
+    parts = [x.strip() for x in border_str.replace(",", ":").split(":", 2)]
     color_str = parts[0]
     if color_str.lower() in ("none", "no", "off", "0"):
         return WindowBorder(False)
@@ -209,7 +210,7 @@ def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
     alpha = 0.6
     size = 4
     enabled = parts[-1] != "off"
-    if enabled and len(parts) == 2:
+    if enabled and len(parts) >= 2:
         size_str = parts[1]
         try:
             size = int(size_str)
