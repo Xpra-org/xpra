@@ -39,7 +39,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
         return
     # pylint: disable=import-outside-toplevel
     try:
-        from xpra.client.gtk3.cairo_workaround import make_image_surface
+        from xpra.client.gtk3.cairo_image import make_image_surface
     except ImportError:
         return
 

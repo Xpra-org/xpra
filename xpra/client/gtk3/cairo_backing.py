@@ -24,9 +24,9 @@ CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
 make_image_surface = noop
 CAIRO_FORMATS: dict[int, Sequence[str]] = {}
 try:
-    from xpra.client.gtk3 import cairo_workaround
-    make_image_surface = cairo_workaround.make_image_surface
-    CAIRO_FORMATS.update(cairo_workaround.CAIRO_FORMATS)
+    from xpra.gtk import cairo_image
+    make_image_surface = cairo_image.make_image_surface
+    CAIRO_FORMATS.update(cairo_image.CAIRO_FORMATS)
 except ImportError as e:
     log.warn("Warning: failed to load the bindings cairo workaround:")
     log.warn(" %s", e)

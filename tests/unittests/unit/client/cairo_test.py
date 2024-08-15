@@ -12,7 +12,7 @@ from io import BytesIO
 from PIL import Image
 
 from xpra.codecs.checks import TEST_COLORS
-from xpra.client.gtk3.cairo_workaround import make_image_surface
+from xpra.gtk.cairo_image import make_image_surface
 
 
 N = 5
