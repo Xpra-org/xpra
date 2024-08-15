@@ -766,7 +766,7 @@ class UIXpraClient(ClientBaseClass):
                 # cannot do keyboard_sync without a key repeat value!
                 # (maybe we could just choose one?)
                 kh.keyboard_sync = False
-            caps["keyboard_sync"] = kh.keyboard_sync
+            caps["keyboard_sync"] = kh.sync
         log("keyboard capabilities: %s", caps)
         return caps
 

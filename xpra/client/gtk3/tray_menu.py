@@ -475,7 +475,7 @@ class GTKTrayMenu(MenuHelper):
             kh = self.client.keyboard_helper
             if not kh:
                 text = "Keyboard support is not loaded"
-            elif kh.keyboard_sync:
+            elif kh.sync:
                 text = "Disable keyboard synchronization " + \
                        "(prevents spurious key repeats on high latency connections)"
             else:
@@ -500,8 +500,8 @@ class GTKTrayMenu(MenuHelper):
             if can_set_sync:
                 self.keyboard_sync_menuitem.connect("toggled", keyboard_sync_toggled)
             if kh:
-                log("set_keyboard_sync_menuitem%s enabled=%s", args, kh.keyboard_sync)
-            self.keyboard_sync_menuitem.set_active(kh and bool(kh.keyboard_sync))
+                log("set_keyboard_sync_menuitem%s enabled=%s", args, kh.sync)
+            self.keyboard_sync_menuitem.set_active(kh and bool(kh.sync))
             set_keyboard_sync_tooltip()
 
         self.after_handshake(set_keyboard_sync_menuitem)
