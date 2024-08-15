@@ -110,33 +110,38 @@ class AudioClient(StubClientMixin):
 
         audio_option_fn: Callable = nooptions
         if self.speaker_allowed or self.microphone_allowed:
+            def noaudio(title: str, message: str) -> None:
+                self.may_notify_audio(title, message)
+                self.speaker_allowed = False
+                self.microphone_allowed = False
             try:
                 from xpra.audio import common
                 assert common
             except ImportError:
-                self.may_notify_audio("No Audio",
-                                      "`xpra-audio` subsystem is not installed\n"
-                                      " speaker and microphone forwarding are disabled")
-                self.speaker_allowed = False
-                self.microphone_allowed = False
-            else:
-                try:
-                    from xpra.audio.common import audio_option_or_all
-                    audio_option_fn = audio_option_or_all
-                    from xpra.audio.wrapper import query_audio
-                    self.audio_properties = query_audio()
-                    assert self.audio_properties, "query did not return any data"
-                    gstv = self.audio_properties.strtupleget("gst.version")
-                    if gstv:
-                        log.info("GStreamer version %s", ".".join(gstv[:3]))
-                    else:
-                        log.info("GStreamer loaded")
-                except Exception as e:
-                    log("failed to query audio", exc_info=True)
-                    log.error("Error: failed to query audio subsystem:")
-                    log.estr(e)
-                    self.speaker_allowed = False
-                    self.microphone_allowed = False
+                noaudio("No Audio",
+                        "`xpra-audio` subsystem is not installed\n"
+                        " speaker and microphone forwarding are disabled")
+                return
+            try:
+                from xpra.audio.common import audio_option_or_all
+                audio_option_fn = audio_option_or_all
+                from xpra.audio.wrapper import query_audio
+                self.audio_properties = query_audio()
+                if not self.audio_properties:
+                    noaudio("No Audio",
+                            "Audio subsystem query failed, is GStreamer installed?")
+                    return
+                gstv = self.audio_properties.strtupleget("gst.version")
+                if gstv:
+                    log.info("GStreamer version %s", ".".join(gstv[:3]))
+                else:
+                    log.info("GStreamer loaded")
+            except Exception as e:
+                log("failed to query audio", exc_info=True)
+                noaudio("No Audio",
+                        "Error querying the audio subsystem:\n"
+                        f"{e}")
+                return
         encoders = self.audio_properties.strtupleget("encoders")
         decoders = self.audio_properties.strtupleget("decoders")
         self.speaker_codecs = audio_option_fn("speaker-codec", opts.speaker_codec, decoders)
