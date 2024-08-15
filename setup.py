@@ -37,7 +37,7 @@ except ImportError as e:
 
 import xpra
 from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
-from xpra.util.system import is_distribution_variant, get_linux_distribution, is_Ubuntu, is_Debian
+from xpra.util.system import is_distribution_variant, get_linux_distribution, is_Ubuntu, is_Debian, is_LinuxMint
 from xpra.util.io import load_binary_file, get_status_output
 
 if BITS != 64:
@@ -608,7 +608,7 @@ def install_dev_env() -> None:
             "pam": ("pam-devel", ),
         }
         cmd = ["dnf", "install"]
-    elif is_Debian() or is_Ubuntu():
+    elif is_Debian() or is_Ubuntu() or is_LinuxMint():
         flag_to_pkgs = {
             "modules": (
                 "python3-dev",
@@ -2208,7 +2208,7 @@ else:
                 subs = {}
                 if is_RedHat() or is_CentOS() or is_AlmaLinux() or is_RockyLinux() or is_OracleLinux() or is_Fedora():
                     cdir = "/etc/sysconfig"
-                elif is_Debian() or is_Ubuntu():
+                elif is_Debian() or is_Ubuntu() or is_LinuxMint():
                     cdir = "/etc/default"
                 elif os.path.exists("/etc/sysconfig"):
                     cdir = "/etc/sysconfig"
@@ -2566,7 +2566,7 @@ if cuda_kernels_ENABLED:
         # add_data_files("", glob(f"{CUDA_BIN_DIR}/curand64*dll"))
         if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
             add_data_files("", glob(f"{CUDA_BIN_DIR}/nvjpeg64*dll"))
-if cuda_kernels_ENABLED or is_Debian() or is_Ubuntu():
+if cuda_kernels_ENABLED or is_Debian() or is_Ubuntu() or is_LinuxMint():
     add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")

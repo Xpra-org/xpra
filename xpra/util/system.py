@@ -149,6 +149,10 @@ def is_Ubuntu() -> bool:
     return is_distribution_variant("Ubuntu")
 
 
+def is_LinuxMint() -> bool:
+    return is_distribution_variant("Linux Mint")
+
+
 def is_Debian() -> bool:
     return is_distribution_variant("Debian")
 
