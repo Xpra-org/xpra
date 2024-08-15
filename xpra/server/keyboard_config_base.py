@@ -29,7 +29,7 @@ class KeyboardConfigBase:
 
     def parse_options(self, props) -> int:
         oldsync = self.sync
-        self.sync = props.boolget("keyboard_sync", True)
+        self.sync = props.boolget("sync", True)
         return int(oldsync != self.sync)
 
     def get_hash(self) -> str:
