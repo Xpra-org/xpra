@@ -530,9 +530,12 @@ class SocketProtocol:
                 self.enable_compressor(c)
                 return
             log(f"client does not support {c}")
-        log.warn("Warning: compression disabled, no matching compressor found")
-        log.warn(f" capabilities: {csv(compressors)}")
-        log.warn(f" enabled compressors: {csv(opts)}")
+        if not compressors:
+            log.info("peer does not support packet compression")
+        else:
+            log.info("compression disabled, no matching compressor found")
+            log.info(f" peer capabilities: {csv(compressors)}")
+            log.info(f" enabled compressors: {csv(opts)}")
         self.enable_compressor("none")
 
     def enable_compressor(self, compressor: str) -> None:
