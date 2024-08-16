@@ -92,7 +92,7 @@ class MonitorDesktopModel(DesktopModelBase):
                                             monitor_damaged_area.width, monitor_damaged_area.height)
             self.emit("client-contents-changed", mod_event)
 
-    def get_image(self, x, y, width, height):
+    def get_image(self, x: int, y: int, width: int, height: int):
         # adjust the coordinates with the monitor's position:
         mx, my = self.monitor_geometry[:2]
         image = super().get_image(mx + x, my + y, width, height)

@@ -198,7 +198,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def do_x11_motion_event(self, event) -> None:
         self.emit("motion", event)
 
-    def resize(self, w: int, h: int):
+    def resize(self, w: int, h: int) -> None:
         geomlog("resize(%i, %i)", w, h)
         if not RandR.has_randr():
             geomlog.error("Error: cannot honour resize request,")
@@ -210,7 +210,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         if not self.resize_timer:
             self.resize_timer = GLib.timeout_add(250, self.do_resize)
 
-    def do_resize(self):
+    def do_resize(self) -> None:
         raise NotImplementedError
 
     def cancel_resize_timer(self):

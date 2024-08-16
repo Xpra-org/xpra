@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+
 from xpra.os_util import gi_import
 from xpra.util.env import IgnoreWarningsContext
 from xpra.gtk.error import XError, xsync
@@ -24,6 +26,41 @@ screenlog = Logger("screen")
 INC_VALUES = (16, 32, 64, 128, 256)
 
 
+def get_legacy_size_hints(screen_sizes) -> dict[str, tuple[int, int]]:
+    size_hints = {}
+    # find the maximum size supported:
+    max_size: dict[int, tuple[int, int]] = {}
+    for tw, th in screen_sizes:
+        max_size[tw * th] = (tw, th)
+    max_pixels = sorted(max_size.keys())[-1]
+    size_hints["maximum-size"] = max_size[max_pixels]
+    # find the best increment we can use:
+    inc_hits = {}
+    for inc in INC_VALUES:
+        hits = 0
+        for tsize in screen_sizes:
+            tw, th = tsize
+            if (tw + inc, th + inc) in screen_sizes:
+                hits += 1
+        inc_hits[inc] = hits
+    screenlog("size increment hits: %s", inc_hits)
+    max_hits = max(inc_hits.values())
+    if max_hits > 16:
+        # find the first increment value matching the max hits
+        for inc in INC_VALUES:
+            if inc_hits[inc] == max_hits:
+                break
+        # TODO: also get these values from the screen sizes:
+        size_hints |= {
+            "base-size": (640, 640),
+            "minimum-size": (640, 640),
+            "increment": (128, 128),
+            "minimum-aspect-ratio": (1, 3),
+            "maximum-aspect-ratio": (3, 1),
+        }
+    return size_hints
+
+
 class ScreenDesktopModel(DesktopModelBase):
     """
     A desktop model covering the entire screen as a single window.
@@ -40,25 +77,25 @@ class ScreenDesktopModel(DesktopModelBase):
     def __repr__(self):
         return f"ScreenDesktopModel({self.xid:x})"
 
-    def setup(self):
+    def setup(self) -> None:
         super().setup()
         self.screen.connect("size-changed", self._screen_size_changed)
         self.update_size_hints()
 
-    def get_geometry(self):
+    def get_geometry(self) -> tuple[int, int, int, int]:
         w, h = self.get_dimensions()
         return 0, 0, w, h
 
-    def get_dimensions(self):
+    def get_dimensions(self) -> tuple[int, int]:
         with IgnoreWarningsContext():
             return self.screen.get_width(), self.screen.get_height()
 
-    def get_property(self, prop):
+    def get_property(self, prop: str) -> Any:
         if prop == "xid":
             return self.xid
         return super().get_property(prop)
 
-    def do_resize(self):
+    def do_resize(self) -> None:
         self.resize_timer = 0
         rw, rh = self.resize_value
         try:
@@ -73,6 +110,7 @@ class ScreenDesktopModel(DesktopModelBase):
                     return
             with xsync:
                 w, h = RandR.get_screen_size()
+            self._screen_size_changed(self.screen)
             if (ow, oh) == (w, h):
                 # this is already the resolution we have,
                 # but the client has other ideas,
@@ -83,7 +121,7 @@ class ScreenDesktopModel(DesktopModelBase):
             geomlog.error("Error: failed to resize desktop display to %ix%i:", rw, rh)
             geomlog.error(" %s", str(e) or type(e))
 
-    def _screen_size_changed(self, _screen):
+    def _screen_size_changed(self, _screen) -> None:
         w, h = self.get_dimensions()
         screenlog("screen size changed: new size %ix%i", w, h)
         root = self.screen.get_root_window()
@@ -92,12 +130,12 @@ class ScreenDesktopModel(DesktopModelBase):
         self.update_size_hints()
         self.emit("resized")
 
-    def update_size_hints(self):
+    def update_size_hints(self) -> None:
         w, h = self.get_dimensions()
         screenlog("screen dimensions: %ix%i", w, h)
-        size_hints = {}
+        size_hints: dict[str, tuple[int, int]] = {}
 
-        def use_fixed_size():
+        def use_fixed_size() -> None:
             size = w, h
             size_hints.update({
                 "maximum-size": size,
@@ -120,36 +158,7 @@ class ScreenDesktopModel(DesktopModelBase):
                     if not screen_sizes:
                         use_fixed_size()
                     else:
-                        # find the maximum size supported:
-                        max_size = {}
-                        for tw, th in screen_sizes:
-                            max_size[tw * th] = (tw, th)
-                        max_pixels = sorted(max_size.keys())[-1]
-                        size_hints["maximum-size"] = max_size[max_pixels]
-                        # find the best increment we can use:
-                        inc_hits = {}
-                        for inc in INC_VALUES:
-                            hits = 0
-                            for tsize in screen_sizes:
-                                tw, th = tsize
-                                if (tw + inc, th + inc) in screen_sizes:
-                                    hits += 1
-                            inc_hits[inc] = hits
-                        screenlog("size increment hits: %s", inc_hits)
-                        max_hits = max(inc_hits.values())
-                        if max_hits > 16:
-                            # find the first increment value matching the max hits
-                            for inc in INC_VALUES:
-                                if inc_hits[inc] == max_hits:
-                                    break
-                            # TODO: also get these values from the screen sizes:
-                            size_hints |= {
-                                "base-size": (640, 640),
-                                "minimum-size": (640, 640),
-                                "increment": (128, 128),
-                                "minimum-aspect-ratio": (1, 3),
-                                "maximum-aspect-ratio": (3, 1),
-                            }
+                        size_hints |= get_legacy_size_hints(screen_sizes)
         else:
             use_fixed_size()
         screenlog("size-hints=%s", size_hints)
