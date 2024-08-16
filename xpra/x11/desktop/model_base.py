@@ -28,7 +28,6 @@ geomlog = Logger("server", "window", "geometry")
 iconlog = Logger("icon")
 
 GObject = gi_import("GObject")
-Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
 
@@ -88,9 +87,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
     def __init__(self):
-        screen = Gdk.Screen.get_default()
-        root = screen.get_root_window()
-        WindowDamageHandler.__init__(self, root.get_xid())
+        root_xid = X11Window.get_root_xid()
+        WindowDamageHandler.__init__(self, root_xid)
         WindowModelStub.__init__(self)
         self.update_wm_name()
         self.update_icon()
@@ -213,7 +211,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     def do_resize(self) -> None:
         raise NotImplementedError
 
-    def cancel_resize_timer(self):
+    def cancel_resize_timer(self) -> None:
         rt = self.resize_timer
         if rt:
             self.resize_timer = 0
