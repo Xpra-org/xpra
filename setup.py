@@ -548,7 +548,22 @@ def install_dev_env() -> None:
         print(f"'dev-env' subcommand is not supported on {sys.platform!r}")
         sys.exit(1)
     elif is_RPM() and not is_openSUSE():
-        py3 = os.environ.get("PYTHON3", "python3")
+        py3 = os.environ.get("PYTHON3", "")
+        if not py3:
+            py3 = "python3"
+            # is this default python?
+            exit_code, out, err = get_status_output(["python3", "--version"])
+            if exit_code == 0:
+                # ie: out = "Python 3.12.4"
+                try:
+                    default_python_version = tuple(int(nstr) for nstr in out.split(" ", 1)[-1].split(".", 2))
+                except ValueError:
+                    pass
+                else:
+                    if len(default_python_version) >= 2 and sys.version_info[:2] != default_python_version[:2]:
+                        # this is not the default python interpreter!
+                        py3 = "python%i.%i" % sys.version_info[:2]
+
         flag_to_pkgs = {
             "modules": (
                 # generic build requirements:
@@ -583,10 +598,12 @@ def install_dev_env() -> None:
                     ),
             "Xdummy": ("xorg-x11-drv-dummy", ),
             "proc": ("procps-ng-devel" if is_Fedora() else "pkgconfig(libprocps)", ),
-            "printing": (f"{py3}-cups", ),
             "sd_listen": ("pkgconfig(libsystemd)", ),
             "pam": ("pam-devel", ),
         }
+        if py3 == "python3":
+            # we don't have a spec file for this one, can only install the default python3 package:
+            flag_to_pkgs["printing"] = (f"{py3}-cups", )
         cmd = ["dnf", "install"]
     elif is_DEB():
         flag_to_pkgs = {
