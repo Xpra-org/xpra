@@ -320,6 +320,11 @@ class AudioServer(StubServerMixin):
         def audio_missing(*_args):
             return []
 
+        def noaudio():
+            self.supports_speaker = self.supports_microphone = False
+            self.speaker_allowed = self.microphone_allowed = False
+            return
+
         parse_codecs: Callable = audio_missing
         if self.supports_speaker or self.supports_microphone:
             try:
@@ -327,7 +332,10 @@ class AudioServer(StubServerMixin):
                 parse_codecs = audio_option_or_all
                 from xpra.audio.wrapper import query_audio
                 self.audio_properties = query_audio()
-                assert self.audio_properties, "query did not return any data"
+                if not self.audio_properties:
+                    audiolog.info("Audio subsystem query failed, is GStreamer installed?")
+                    noaudio()
+                    return
                 gstv = self.audio_properties.strtupleget("gst.version")
                 if gstv:
                     log.info("GStreamer version %s", ".".join(gstv[:3]))
@@ -337,8 +345,8 @@ class AudioServer(StubServerMixin):
                 audiolog("failed to query audio", exc_info=True)
                 audiolog.error("Error: failed to query audio subsystem:")
                 audiolog.estr(e)
-                self.speaker_allowed = False
-                self.microphone_allowed = False
+                noaudio()
+                return
         encoders = self.audio_properties.strtupleget("encoders")
         decoders = self.audio_properties.strtupleget("decoders")
         self.speaker_codecs = parse_codecs("speaker-codec", self.speaker_codecs, encoders)
