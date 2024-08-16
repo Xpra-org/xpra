@@ -171,7 +171,7 @@ WIN32_LAYOUTS: dict[int, tuple[str, str, str, int, str, Sequence[str]]] = {
 # map win32 keyboard codes to x11 names:
 # based on
 # https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-language-pack-default-values
-WIN32_KEYBOARDS : dict[int, tuple[str, str]] = {
+WIN32_KEYBOARDS: dict[int, tuple[str, str]] = {
     0x0000041c: ("al", "Albania"),
     0x00000401: ("ar", "Arabic (101)"),
     0x00010401: ("ar", "Arabic (102)"),
@@ -382,15 +382,15 @@ WIN32_KEYBOARDS : dict[int, tuple[str, str]] = {
 X11_LAYOUTS: dict[tuple[str, str], tuple[str, Sequence[str]]] = {}
 for ccode, country, language, codepage, layout, variants in WIN32_LAYOUTS.values():
     X11_LAYOUTS[(country, language)] = (layout, variants)
-LAYOUT_VARIANTS : dict[str, list[str]] = {}
+LAYOUT_VARIANTS: dict[str, list[str]] = {}
 for win32layout in WIN32_LAYOUTS.values():
     layout, variants = win32layout[-2:]
     if not layout:
         continue
-    l = LAYOUT_VARIANTS.setdefault(layout, [])
+    layout_variants = LAYOUT_VARIANTS.setdefault(layout, [])
     for variant in variants:
-        if variant not in l:
-            l.append(variant)
+        if variant not in layout_variants:
+            layout_variants.append(variant)
 
 
 def parse_xkbmap_query(xkbmap_query: str) -> dict[str, str]:
@@ -405,13 +405,3 @@ def parse_xkbmap_query(xkbmap_query: str) -> dict[str, str]:
             if v.strip(","):
                 settings[m.group(1)] = v
     return settings
-
-
-def xkbmap_query_tostring(query_dict: dict) -> str:
-    """ converts an xkb query dict back into a string """
-    s = ""
-    for k in ("rules", "model", "layout", "variant", "options"):
-        if k in query_dict:
-            v = query_dict.get(k)
-            s += (str(k)+":").ljust(12)+str(v)+"\n"
-    return s

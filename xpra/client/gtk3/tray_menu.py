@@ -6,7 +6,7 @@
 import os
 import re
 from typing import Any
-from collections.abc import Sequence, Callable
+from collections.abc import Sequence, Callable, Iterable
 
 from xpra.util.objects import typedict, reverse_dict
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized, bytestostr
@@ -1175,7 +1175,7 @@ class GTKTrayMenu(MenuHelper):
         self.layout_submenu = Gtk.Menu()
         keyboard.set_submenu(self.layout_submenu)
 
-        def kbitem(title, layout, variant, active=False) -> Gtk.CheckMenuItem:
+        def kbitem(title: str, layout: str, variant: str, active=False) -> Gtk.CheckMenuItem:
             def set_layout(item) -> None:
                 """ this callback updates the client (and server) if needed """
                 ensure_item_selected(self.layout_submenu, item)
@@ -1203,16 +1203,16 @@ class GTKTrayMenu(MenuHelper):
             l.keyboard_variant = variant
             return l
 
-        def keysort(key):
+        def keysort(key) -> str:
             c, l = key
             return c.lower() + l.lower()
 
-        def variants_submenu(layout, variants) -> None:
+        def variants_submenu(layout: str, variants: Iterable[str]) -> None:
             # just show all the variants to choose from this layout
             default_layout = kbitem(f"{layout} - Default", layout, "", True)
             self.layout_submenu.append(default_layout)
-            for v in variants:
-                self.layout_submenu.append(kbitem(f"{layout} - {v}", layout, v))
+            for variant in variants:
+                self.layout_submenu.append(kbitem(f"{layout} - {variant}", layout, variant))
 
         kh = self.client.keyboard_helper
         layout, layouts, variant, variants, _ = kh.get_layout_spec()
@@ -1226,7 +1226,7 @@ class GTKTrayMenu(MenuHelper):
 
             # log after removing dupes:
 
-            def uniq(seq):
+            def uniq(seq: Iterable) -> list:
                 seen = set()
                 return [x for x in seq if not (x in seen or seen.add(x))]
 
