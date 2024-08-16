@@ -182,7 +182,7 @@ skip_build = "--skip-build" in sys.argv
 ARCH = get_status_output(["uname", "-m"])[1].strip("\n\r")
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 RISCV = ARCH.startswith("riscv")
-print(f"{ARCH=}")
+print(f"ARCH={ARCH}")
 TIMEOUT = 60
 if ARM or RISCV:
     # arm64 and riscv builds run on emulated CPU, very slowly
@@ -203,8 +203,8 @@ print("using INCLUDE_DIRS=%s" % (INCLUDE_DIRS, ))
 
 CPP = os.environ.get("CPP", "cpp")
 CC = os.environ.get("CC", "gcc")
-print(f"{CC=}")
-print(f"{CPP=}")
+print(f"CC={CC}")
+print(f"CPP={CPP}")
 
 shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
@@ -1175,7 +1175,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         }.items():
             pkg_config_cmd = ["pkg-config", pc_arg] + list(pkgs_options)
             if verbose_ENABLED:
-                print(f"{pkg_config_cmd=}")
+                print(f"pkg_config_cmd={pkg_config_cmd}")
             r, pkg_config_out, err = get_status_output(pkg_config_cmd)
             if r!=0:
                 sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(pkg_config_cmd), err))
@@ -1183,7 +1183,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 print(f"pkg-config output: {pkg_config_out}")
             add_tokens(pkg_config_out, add_to)
             if verbose_ENABLED:
-                print(f"pkg-config {kw=}")
+                print(f"pkg-config kw={kw}")
     if warn_ENABLED:
         addcflags("-Wall")
         addldflags("-Wall")
@@ -1232,8 +1232,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     LDFLAGS = os.environ.get("LDFLAGS")
     # win32 remove double "-march=x86-64 -mtune=generic -O2 -pipe -O3"?
     if verbose_ENABLED:
-        print(f"adding {CFLAGS=}")
-        print(f"adding {LDFLAGS=}")
+        print(f"adding CFLAGS={CFLAGS}")
+        print(f"adding LDFLAGS={LDFLAGS}")
     add_tokens(CFLAGS, "extra_compile_args")
     add_tokens(LDFLAGS, "extra_link_args")
     # add_to_keywords(kw, 'include_dirs', '.')
@@ -1374,7 +1374,7 @@ def build_xpra_conf(install_dir: str) -> None:
             print("probing cups printer definitions")
             pdf = get_printer_definition("pdf")
             postscript = get_printer_definition("postscript") or DEFAULT_POSTSCRIPT_PRINTER
-            print(f"{pdf=}, {postscript=}")
+            print(f"pdf={pdf}, postscript={postscript}")
         except Exception as e:
             print(f"could not probe for pdf/postscript printers: {e}")
 
@@ -1497,7 +1497,7 @@ def clean() -> None:
                 if fpath not in CLEAN_FILES:
                     CLEAN_FILES.append(fpath)
                 continue
-            print(f"warning unexpected file in source tree: {fpath} with {ext=}")
+            print(f"warning unexpected file in source tree: {fpath} with ext={ext}")
     for x in CLEAN_FILES:
         filename = os.path.join(os.getcwd(), x.replace("/", os.path.sep))
         if os.path.exists(filename):
@@ -2542,7 +2542,8 @@ if cuda_kernels_ENABLED:
             cu_src = f"fs/share/xpra/cuda/{kernel}.cu"
             fatbin = f"fs/share/xpra/cuda/{kernel}.fatbin"
             assert os.path.exists(cu_src)
-            if reason := should_rebuild(cu_src, fatbin):
+            reason = should_rebuild(cu_src, fatbin)
+            if reason:
                 print(f"* rebuilding {kernel}: {reason}")
                 rebuild.append(kernel)
     if rebuild:
