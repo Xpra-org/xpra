@@ -462,7 +462,7 @@ cdef class Encoder:
         log(" undershoot_pct=%s", self.cfg.rc_undershoot_pct)
         log(" overshoot_pct=%s", self.cfg.rc_overshoot_pct)
 
-    cdef update_cfg(self):
+    cdef void update_cfg(self):
         self.cfg.rc_undershoot_pct = 100
         self.cfg.rc_overshoot_pct = 100
         bitrate_kbps = int(self.width * self.height * self.initial_bitrate_per_pixel)
@@ -616,7 +616,7 @@ cdef class Encoder:
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
 
-    cdef do_compress_image(self, uint8_t *pic_in[3], int strides[3], int full_range):
+    cdef bytes do_compress_image(self, uint8_t *pic_in[3], int strides[3], int full_range):
         #actual compression (no gil):
         cdef vpx_codec_iter_t iter = NULL
         cdef int flags = 0
@@ -670,7 +670,7 @@ cdef class Encoder:
             free(image)
             log.error("Error: %s encoder failure", self.encoding)
             log.error(" %r (%i)", get_error_string(ret), ret)
-            return None
+            return b""
         cdef double end = monotonic()
         log("vpx_codec_encode for %s took %ims (deadline=%16s for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline_str, self.speed, self.quality)
         cdef const vpx_codec_cx_pkt_t *pkt
@@ -701,7 +701,7 @@ cdef class Encoder:
         self.speed = pct
         self.do_set_encoding_speed(pct)
 
-    cdef do_set_encoding_speed(self, int speed):
+    cdef void do_set_encoding_speed(self, int speed):
         #Valid range for VP8: -16..16
         #Valid range for VP9: -8..8
         #But we only use positive values, negative values are just too slow
@@ -721,7 +721,7 @@ cdef class Encoder:
         self.quality = pct
         self.do_set_encoding_quality(pct)
 
-    cdef do_set_encoding_quality(self, int pct):
+    cdef void do_set_encoding_quality(self, int pct):
         self.update_cfg()
         cdef int lossless = 0
         if self.encoding=="vp9":

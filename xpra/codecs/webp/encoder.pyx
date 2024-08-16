@@ -417,7 +417,7 @@ cdef inline float fclamp(int v):
     return <float> v
 
 
-cdef get_config_info(WebPConfig *config):
+cdef dict get_config_info(WebPConfig *config):
     return {
         "lossless"          : config.lossless,
         "method"            : config.method,
@@ -475,7 +475,7 @@ cdef class Encoder:
         self.content_type = options.get("content-type", None)
         self.configure_encoder()
 
-    cdef configure_encoder(self):
+    cdef void configure_encoder(self):
         cdef int ret = WebPConfigInit(&self.config)
         if not ret:
             raise RuntimeError("failed to initialize webp config")

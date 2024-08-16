@@ -1845,7 +1845,7 @@ cdef class Encoder:
             log("init_cuda %s", e)
             raise TransientCodecException("could not initialize cuda: %s" % e) from None
 
-    cdef init_cuda_kernel(self, cuda_context):
+    cdef void init_cuda_kernel(self, cuda_context):
         log("init_cuda_kernel(..)")
         global YUV420_ENABLED, YUV444_ENABLED, YUV444_CODEC_SUPPORT, NATIVE_RGB
         cdef unsigned int plane_size_div, wmult, hmult, max_input_stride
@@ -1962,7 +1962,7 @@ cdef class Encoder:
                 caps[descr] = v
         log("caps(%s)=%s", codec_name, caps)
 
-    cdef init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params):
+    cdef void init_params(self, GUID codec, NV_ENC_INITIALIZE_PARAMS *params):
         #caller must free the config!
         assert self.context, "context is not initialized"
         cdef GUID preset = self.get_preset(self.codec)

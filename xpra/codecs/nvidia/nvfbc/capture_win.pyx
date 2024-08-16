@@ -520,7 +520,7 @@ def create_context(int width=-1, int height=-1, interface_type=NVFBC_TO_SYS):
     log("NvFBC_CreateEx: %s", info)
     return info
 
-cdef get_frame_grab_info(NvFBCFrameGrabInfo *grab_info):
+cdef dict get_frame_grab_info(NvFBCFrameGrabInfo *grab_info):
     return {
         "width"             : int(grab_info.dwWidth),
         "height"            : int(grab_info.dwHeight),

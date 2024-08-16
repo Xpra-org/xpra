@@ -773,7 +773,7 @@ cdef class Encoder:
             }
         return info
 
-    cdef get_param_info(self, x264_param_t *param):
+    cdef dict get_param_info(self, x264_param_t *param):
         return {
             "me"                : self.get_analyse_info(param),
             "rc"                : self.get_rc_info(param),
@@ -791,13 +791,13 @@ cdef class Encoder:
             "sliced-threads"    : bool(param.b_sliced_threads),
         }
 
-    cdef get_vui_info(self, x264_param_t *param):
+    cdef dict get_vui_info(self, x264_param_t *param):
         return {
             # "overscan": bool(param.vui.i_overscan),
             "fullrange" : bool(param.vui.b_fullrange),
         }
 
-    cdef get_analyse_info(self, x264_param_t *param):
+    cdef dict get_analyse_info(self, x264_param_t *param):
         return {
             "type"              : ME_TYPES.get(param.analyse.i_me_method, param.analyse.i_me_method),
             "me-range"          : param.analyse.i_me_range,
@@ -807,7 +807,7 @@ cdef class Encoder:
             "weighted-pred"     : param.analyse.i_weighted_pred,
         }
 
-    cdef get_rc_info(self, x264_param_t *param):
+    cdef dict get_rc_info(self, x264_param_t *param):
         return {
             "rc-method"         : RC_TYPES.get(param.rc.i_rc_method, param.rc.i_rc_method),
             "qp_constant"       : param.rc.i_qp_constant,

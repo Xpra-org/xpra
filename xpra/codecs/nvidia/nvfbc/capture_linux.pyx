@@ -389,7 +389,7 @@ def get_context_status(NVFBC_SESSION_HANDLE context):
     log("get_context_status()=%s", info)
     return info
 
-cdef get_frame_grab_info(NVFBC_FRAME_GRAB_INFO *grab_info):
+cdef dict get_frame_grab_info(NVFBC_FRAME_GRAB_INFO *grab_info):
     return {
         "width"             : int(grab_info.dwWidth),
         "height"            : int(grab_info.dwHeight),

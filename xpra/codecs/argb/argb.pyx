@@ -501,7 +501,7 @@ def premultiply_argb(buf: SizedBuffer) -> SizedBuffer:
         return do_premultiply_argb(argb, len(bc))
 
 
-cdef do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
+cdef object do_premultiply_argb(unsigned int *buf, Py_ssize_t argb_len):
     # cbuf contains non-premultiplied ARGB32 data in native-endian.
     # We convert to premultiplied ARGB32 data
     cdef unsigned char a, r, g, b                #@DuplicateSignature

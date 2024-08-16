@@ -519,7 +519,7 @@ cdef class XShmWrapper:
     cdef Bool got_image
     cdef Bool closed
 
-    cdef init(self, Display *display, Window xwindow, Visual *visual, unsigned int width, unsigned int height, unsigned int depth):
+    cdef void init(self, Display *display, Window xwindow, Visual *visual, unsigned int width, unsigned int height, unsigned int depth):
         self.display = display
         self.window = xwindow
         self.visual = visual

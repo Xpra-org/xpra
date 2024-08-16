@@ -661,7 +661,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
             return value
         return data
 
-    cdef get_class_info(self, XIAnyClassInfo *class_info):
+    cdef dict get_class_info(self, XIAnyClassInfo *class_info):
         cdef int i
         cdef XIButtonClassInfo *button
         cdef XIKeyClassInfo *key

@@ -300,7 +300,7 @@ cdef class VirtualWebcam:
         self.frames = 0
         self.init_device(device)
 
-    cdef init_device(self, device):
+    cdef void init_device(self, device):
         cdef v4l2_capability vid_caps
         cdef v4l2_format vid_format
         self.device_name = device or os.environ.get("XPRA_VIDEO_DEVICE", "/dev/video1")

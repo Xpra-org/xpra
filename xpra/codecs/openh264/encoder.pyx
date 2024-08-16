@@ -462,7 +462,7 @@ cdef class Encoder:
     def is_ready(self) -> bool:
         return bool(self.ready)
 
-    cdef init_encoder(self, options:typedict):
+    cdef void init_encoder(self, options:typedict):
         cdef int r = 0
         with nogil:
             r = WelsCreateSVCEncoder(&self.context)
