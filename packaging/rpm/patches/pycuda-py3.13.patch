@@ -1,0 +1,118 @@
+--- a/src/wrapper/wrap_cudadrv.cpp	2024-08-16 23:34:22.488898877 +0700
++++ b/src/wrapper/wrap_cudadrv.cpp	2024-08-16 23:57:36.164373451 +0700
+@@ -355,9 +355,9 @@
+   module *module_from_buffer(py::object buffer, py::object py_options,
+       py::object message_handler)
+   {
+-    const char *mod_buf;
+     PYCUDA_BUFFER_SIZE_T len;
+-    if (PyObject_AsCharBuffer(buffer.ptr(), &mod_buf, &len))
++    Py_buffer py_buf;
++    if (PyObject_GetBuffer(buffer.ptr(), &py_buf, PyBUF_ANY_CONTIGUOUS))
+       throw py::error_already_set();
+     CUmodule mod;
+
+@@ -387,10 +387,12 @@
+
+     CUDAPP_PRINT_CALL_TRACE("cuModuleLoadDataEx");
+     CUresult cu_status_code; \
+-    cu_status_code = cuModuleLoadDataEx(&mod, mod_buf, (unsigned int) options.size(),
++    cu_status_code = cuModuleLoadDataEx(&mod, py_buf.buf, (unsigned int) options.size(),
+          const_cast<CUjit_option *>(&*options.begin()),
+          const_cast<void **>(&*option_values.begin()));
+
++    PyBuffer_Release(&py_buf);
++
+     size_t info_buf_size = size_t(option_values[1]);
+     size_t error_buf_size = size_t(option_values[3]);
+
+@@ -407,7 +409,8 @@
+       throw pycuda::error("module_from_buffer", CUDA_ERROR_INVALID_VALUE,
+           "non-empty options argument only supported on CUDA 2.1 and newer");
+
+-    CUDAPP_CALL_GUARDED(cuModuleLoadData, (&mod, mod_buf));
++    CUDAPP_CALL_GUARDED(cuModuleLoadData, (&mod, py_buf.buf));
++    PyBuffer_Release(&py_buf)
+ #endif
+
+     return new module(mod);
+@@ -500,16 +503,16 @@
+
+       void add_data(py::object py_data, CUjitInputType input_type, py::str py_name)
+       {
+-        const char *data_buf;
++	Py_buffer py_buf;
+         PYCUDA_BUFFER_SIZE_T data_buf_len;
+-        if (PyObject_AsCharBuffer(py_data.ptr(), &data_buf, &data_buf_len) != 0) {
++        if (PyObject_GetBuffer(py_data.ptr(), &py_buf, PyBUF_ANY_CONTIGUOUS)) {
+           throw py::error_already_set();
+         }
+         const char* name = (py_name.ptr() != Py_None)?
+             py::extract<const char*>(py_name) : NULL;
+-        const CUresult cu_result = cuLinkAddData(m_link_state, input_type,
+-            static_cast<void *>(const_cast<char *>(data_buf)),
+-            data_buf_len, name, 0, NULL, NULL);
++        const CUresult cu_result = cuLinkAddData(m_link_state, input_type, py_buf.buf,
++            py_buf.len, name, 0, NULL, NULL);
++	PyBuffer_Release(&py_buf);
+         check_cu_result("cuLinkAddData", cu_result);
+       }
+
+--- a/src/wrapper/_pvt_struct_v3.cpp	2024-08-17 00:35:47.064874915 +0700
++++ b/src/wrapper/_pvt_struct_v3.cpp	2024-08-17 00:43:09.756134319 +0700
+@@ -1349,8 +1349,8 @@
+ s_pack_into(PyObject *self, PyObject *args)
+ {
+     PyStructObject *soself;
+-    char *buffer;
+-    Py_ssize_t buffer_len, offset;
++    Py_buffer buf;
++    Py_ssize_t offset;
+
+     /* Validate arguments.  +1 is for the first arg as buffer. */
+     soself = (PyStructObject *)self;
+@@ -1365,23 +1365,25 @@
+     }
+
+     /* Extract a writable memory buffer from the first argument */
+-    if ( PyObject_AsWriteBuffer(PyTuple_GET_ITEM(args, 0),
+-                                                            (void**)&buffer, &buffer_len) == -1 ) {
++    if (PyObject_GetBuffer(PyTuple_GET_ITEM(args, 0), &buf, PyBUF_ANY_CONTIGUOUS)) {
+         return NULL;
+     }
+-    assert( buffer_len >= 0 );
++    assert( buf.len >= 0 );
+
+     /* Extract the offset from the first argument */
+     offset = PyNumber_AsSsize_t(PyTuple_GET_ITEM(args, 1), PyExc_IndexError);
+-    if (offset == -1 && PyErr_Occurred())
++    if (offset == -1 && PyErr_Occurred()) {
++	PyBuffer_Release(&buf);
+         return NULL;
++    }
+
+     /* Support negative offsets. */
+     if (offset < 0)
+-        offset += buffer_len;
++        offset += buf.len;
+
+     /* Check boundaries */
+-    if (offset < 0 || (buffer_len - offset) < soself->s_size) {
++    if (offset < 0 || (buf.len - offset) < soself->s_size) {
++	PyBuffer_Release(&buf);
+         PyErr_Format(StructError,
+                      "pack_into requires a buffer of at least %zd bytes",
+                      soself->s_size);
+@@ -1389,9 +1391,11 @@
+     }
+
+     /* Call the guts */
+-    if ( s_pack_internal(soself, args, 2, buffer + offset) != 0 ) {
++    if ( s_pack_internal(soself, args, 2, (char *) buf.buf + offset) != 0 ) {
++	PyBuffer_Release(&buf);
+         return NULL;
+     }
++    PyBuffer_Release(&buf);
+
+     Py_RETURN_NONE;
+ }

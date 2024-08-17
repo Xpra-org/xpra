@@ -10,8 +10,10 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%define systemboost 1
 %else
 %global python3 %{getenv:PYTHON3}
+%define systemboost 0
 %undefine __pythondist_requires
 %undefine __python_requires
 %endif
@@ -26,12 +28,13 @@
 
 Name:           %{python3}-pycuda
 Version:        2024.1.2
-Release:        1
+Release:        2
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/source/p/pycuda/pycuda-%{version}.tar.gz
+Patch0:         pycuda-py3.13.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       %{python3}-pycuda
 
@@ -62,17 +65,23 @@ if [ "${sha256}" != "d110b727cbea859da4b63e91b6fa1e9fc32c5bade02d89ff449975996e9
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
+%patch -P 0 -p1
 
 %build
 CUDA=/opt/cuda
+# get the python version number like "312" for 3.12:
+%define py_mm %(%{python3} -c 'import sys;print("%i%i" % sys.version_info[:2])')
 %{python3} ./configure.py \
 	--cuda-enable-gl \
 	--cuda-root=$CUDA \
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
+%if %{systemboost}
+	--no-use-shipped-boost \
+	--boost-python-libname=boost_python%{py_mm} \
+%endif
 	--no-cuda-enable-curand
-#	--boost-python-libname=boost_python37
 #	--boost-thread-libname=boost_thread
 LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{python3} setup.py build
 #make
@@ -92,6 +101,10 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Fri Aug 16 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-2
+- link against the system boost-python library for 'python3' builds
+- add patch for Python 3.13 compatibility: new buffer interface
+
 * Tue Jul 30 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-1
 - new upstream release
 
