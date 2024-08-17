@@ -19,7 +19,7 @@
 
 Name:           %{python3}-pyopengl
 Version:        3.1.7
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -126,6 +126,9 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Sat Aug 17 2024 Antoine Martin <antoine@xpra.org> - 3.1.7-8
+- added cython dependency to re-generate the C bindings
+
 * Tue Jul 02 2024 Antoine Martin <antoine@xpra.org> - 3.1.7-7
 - add Python 3.12 patch for ctypes change
 
