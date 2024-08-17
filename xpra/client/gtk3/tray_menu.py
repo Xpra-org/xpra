@@ -1273,12 +1273,12 @@ class GTKTrayMenu(MenuHelper):
                     variant_submenu = Gtk.Menu()
                     variant.set_submenu(variant_submenu)
                     self.layout_submenu.append(variant)
-                    variant_submenu.append(kbitem(f"{layout} - Default", layout, None))
+                    variant_submenu.append(kbitem(f"{layout} - Default", layout, ""))
                     for v in variants:
                         variant_submenu.append(kbitem(f"{layout} - {v}", layout, v))
                 else:
                     # no variants:
-                    self.layout_submenu.append(kbitem(name, layout, None))
+                    self.layout_submenu.append(kbitem(name, layout, ""))
         self.after_handshake(set_sensitive, keyboard, True)
         return keyboard
 

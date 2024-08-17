@@ -552,7 +552,7 @@ def install_dev_env() -> None:
         if not py3:
             py3 = "python3"
             # is this default python?
-            exit_code, out, err = get_status_output(["python3", "--version"])
+            exit_code, out, _ = get_status_output(["python3", "--version"])
             if exit_code == 0:
                 # ie: out = "Python 3.12.4"
                 try:

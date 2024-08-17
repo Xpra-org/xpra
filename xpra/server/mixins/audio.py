@@ -317,13 +317,12 @@ class AudioServer(StubServerMixin):
                         audiolog.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
 
     def init_audio_options(self) -> None:
-        def audio_missing(*_args):
+        def audio_missing(*_args) -> None:
             return []
 
-        def noaudio():
+        def noaudio() -> None:
             self.supports_speaker = self.supports_microphone = False
             self.speaker_allowed = self.microphone_allowed = False
-            return
 
         parse_codecs: Callable = audio_missing
         if self.supports_speaker or self.supports_microphone:
