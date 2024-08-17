@@ -24,7 +24,7 @@ Version:        2022.1
 %else
 Version:        2024.1.2
 %endif
-Release:        1
+Release:        2
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
@@ -70,12 +70,16 @@ fi
 
 %build
 CUDA=/opt/cuda
+# get the python version number like "312" for 3.12:
+%define py_mm %(%{python3} -c 'import sys;print("%i%i" % sys.version_info[:2])')
 %{__python3} ./configure.py \
 	--cuda-enable-gl \
 	--cuda-root=$CUDA \
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
+	--no-use-shipped-boost \
+	--boost-python-libname=boost_python%{py_mm} \
 	--no-cuda-enable-curand
 #	--boost-python-libname=boost_python37
 #	--boost-thread-libname=boost_thread
@@ -98,6 +102,9 @@ rm -rf %{buildroot}
 
 %changelog
 %if !0%{?el8}
+* Sat Aug 17 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-2
+- link against the system boost-python library
+
 * Tue Jul 30 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-1
 - new upstream release
 
