@@ -89,7 +89,7 @@ def get_image_type(data: SizedBuffer) -> str:
     return ""
 
 
-def open_only(data: SizedBuffer, types=("png", "jpeg", "webp")) -> Image:
+def open_only(data: SizedBuffer, types=("png", "jpeg", "webp", "xpm")) -> Image:
     itype = get_image_type(data) or "unknown"
     if itype not in types:
         raise ValueError(f"invalid data: {itype}, not recognized as {csv(types)}, header: " + hexstr(data[:64]))
