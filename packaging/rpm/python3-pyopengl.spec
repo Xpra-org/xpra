@@ -31,6 +31,7 @@ Patch2:         pyopengl-py3.12-ctypes.patch
 
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
+BuildRequires:  %{python3}-cython
 BuildRequires:  %{python3}-numpy
 BuildRequires:  gcc
 Requires:       freeglut
