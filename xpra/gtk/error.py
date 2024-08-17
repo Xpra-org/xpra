@@ -229,7 +229,7 @@ class XLogContext:
 
     def __exit__(self, e_typ, e_val, trcbak):
         if e_typ:
-            log.error("Error: %s, %s", e_typ, e_val, exc_info=trcbak)
+            log.error("Error: %s, %s", e_typ, e_val, exc_info=True)
             log.error(" X11 log context", backtrace=True)
         trap.safe_x_exit()
         # don't raise exceptions:
