@@ -624,7 +624,7 @@ def install_dev_env() -> None:
             "sd_listen": ("pkgconfig(libsystemd)", ),
             "pam": ("pam-devel", ),
         }
-        cmd = ["dnf", "install"]
+        cmd = ["dnf-3", "install"]
     elif is_Debian() or is_Ubuntu():
         flag_to_pkgs = {
             "modules": (
@@ -698,16 +698,16 @@ def install_repo(repo_variant="") -> None:
         variant = "Fedora"
 
         def add_epel() -> None:
-            setup_cmds.append(["dnf", "config-manager", "--set-enabled", "crb"])
-            setup_cmds.append(["dnf", "install", "epel-release"])
+            setup_cmds.append(["dnf-3", "config-manager", "--set-enabled", "crb"])
+            setup_cmds.append(["dnf-3", "install", "epel-release"])
 
         if is_Fedora():
             release = get_status_output(["rpm", "-E", "%fedora"])
             assert release[0] == 0, "failed to run `rpm -E %fedora`"
             release_name = release[1].strip("\n\r")
-            setup_cmds.append(["dnf", "install", f"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{release_name}.noarch.rpm"])
-            # setup_cmds.append(["dnf", "install", f"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-nonfree-release-{release_name}.noarch.rpm"])
-            setup_cmds.append(["dnf", "config-manager", "--set-enabled", "fedora-cisco-openh264"])
+            setup_cmds.append(["dnf-3", "install", f"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{release_name}.noarch.rpm"])
+            # setup_cmds.append(["dnf-3", "install", f"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-nonfree-release-{release_name}.noarch.rpm"])
+            setup_cmds.append(["dnf-3", "config-manager", "--set-enabled", "fedora-cisco-openh264"])
         elif is_RedHat() or is_AlmaLinux():
             variant = "almalinux"
             add_epel()
