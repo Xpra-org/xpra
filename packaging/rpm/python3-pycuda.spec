@@ -10,8 +10,10 @@
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
+%define systemboost 1
 %else
 %global python3 %{getenv:PYTHON3}
+%define systemboost 0
 %undefine __pythondist_requires
 %undefine __python_requires
 %endif
@@ -75,8 +77,10 @@ CUDA=/opt/cuda
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
+%if %{systemboost}
 	--no-use-shipped-boost \
 	--boost-python-libname=boost_python%{py_mm} \
+%endif
 	--no-cuda-enable-curand
 #	--boost-thread-libname=boost_thread
 LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{python3} setup.py build
@@ -98,7 +102,7 @@ rm -rf %{buildroot}
 
 %changelog
 * Fri Aug 16 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-2
-- link against the system boost-python library
+- link against the system boost-python library for 'python3' builds
 - add patch for Python 3.13 compatibility: new buffer interface
 
 * Tue Jul 30 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-1
