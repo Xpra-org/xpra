@@ -883,14 +883,25 @@ fi
 
 
 %changelog
-* Wed Aug 14 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
+* Sun Aug 18 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
+- Platforms, build and packaging:
+   pyopengl build fix for Fedora 41 + force rebuild
+   build pycuda against the system boost library if possible
+   avoid `dnf` v5
 - Major:
    client errors out with window forwarding disabled, remove more assumptions
    OpenGL probe results were being ignored
    shape client errors with desktop scaling
    xshape windows should still honour the window border
    pointer positions with desktop scaling: initial position and some window events
+   pointer overlay position when scaling
    clipboard `INCR` transfers get stuck
+   `keyboard-sync` switch not honoured
+   connection drops when downscaling
+   system tray not updated
+* Minor:
+   `dev-env` subcommand fails on Debian
+   always set a default initial resolution
 - Encodings:
    sub-optimal non-scroll areas
    prettier sampling filter when downscaling
@@ -903,6 +914,8 @@ fi
    confusing display message
    don't populate av-sync menu if the feature is disabled
    correct type hint
+   skip scary warning without compression
+   log full backtraces with X11 context errors
 
 * Tue Aug 06 2024 Antoine Martin <antoine@xpra.org> 6.1.1-10
 - Platforms, build and packaging:

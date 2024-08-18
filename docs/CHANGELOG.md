@@ -1,13 +1,24 @@
 # Changelog
 
-## [6.1.2] 2024-08-14
+## [6.1.2] 2024-08-18
+* Platforms, build and packaging:
+    * [pyopengl build fix for Fedora 41](https://github.com/Xpra-org/xpra/commit/998d842e37a5bd5a0ab5a8c8777daa6291441482) [+ force rebuild](https://github.com/Xpra-org/xpra/commit/5cbe95aab3c47a119f035ae1f6b7d1f6477210d0)
+    * [build pycuda against the system boost library if possible](https://github.com/Xpra-org/xpra/commit/c0fcd93df4a06c4072009ec4437c8cda8fa1658e)
+    * [avoid `dnf` v5](https://github.com/Xpra-org/xpra/commit/e54afda4e766e7ff88613062557beabfafaf8e68)
 * Major:
     * [client errors out with window forwarding disabled](https://github.com/Xpra-org/xpra/commit/dea2c6557c87c40ce36367aa7c5fabcd56ba657f), [remove more assumptions](https://github.com/Xpra-org/xpra/commit/02d32cac6f3efdf4d62882e73bcd573d83c78f12)
     * [OpenGL probe results were being ignored](https://github.com/Xpra-org/xpra/commit/7e55d3e98f4c0fef0f3ef09be8b620c5ae3e3dad)
     * [shape client errors with desktop scaling](https://github.com/Xpra-org/xpra/commit/c6a7c30004d19e2202faae994e37ea55304da913)
     * [xshape windows should still honour the window border](https://github.com/Xpra-org/xpra/commit/97ef0d5ab065109bd77e1d6e4c614da5cc27fdbd)
     * [pointer positions with desktop scaling: initial position and some window events](https://github.com/Xpra-org/xpra/commit/e70e886032198c46a2706394c4dace1af6022a34)
+    * [pointer overlay position when scaling](https://github.com/Xpra-org/xpra/commit/533af103b58c57edb7a6436f80a08402fa3a132e)
     * [clipboard `INCR` transfers get stuck](https://github.com/Xpra-org/xpra/commit/b30c5d96f20d1a63a1b9a542e9699fa062150daf)
+    * [`keyboard-sync` switch not honoured](https://github.com/Xpra-org/xpra/commit/600d55faa7a323b62b32dfbd71fa22b546cc3979) [and not sent](https://github.com/Xpra-org/xpra/commit/ae01bb311a19e4d7a5ed25db6f6baba0ab90ece9)
+    * [connection drops when downscaling](https://github.com/Xpra-org/xpra/commit/b6b6a1c19db26dd16f60577131c201c4407c75d7)
+    * [system tray not updated](https://github.com/Xpra-org/xpra/commit/8926bd02029ad6f3d862534cedeae9e5b9feb73d)
+* Minor:
+    * [`dev-env` subcommand fails on Debian](https://github.com/Xpra-org/xpra/commit/ae8c475f52fe6bb34431842831473d16e77d2b48)
+    * [always set a default initial resolution](https://github.com/Xpra-org/xpra/commit/cdc39987960ab800284fe12420825db6a2bb2986)
 * Encodings:
     * [sub-optimal non-scroll areas](https://github.com/Xpra-org/xpra/commit/9f7e41d4edf833f72c9ff4542371acf72693ed60)
     * [prettier sampling filter when downscaling](https://github.com/Xpra-org/xpra/commit/b2b3c504ac00949c918bedfe1f75f69e8888b668)
@@ -20,6 +31,8 @@
     * [confusing display message](https://github.com/Xpra-org/xpra/commit/ccbe0ad752ebe2b261eb5f780c2d19b4bc512e7a)
     * [don't populate av-sync menu if the feature is disabled](https://github.com/Xpra-org/xpra/commit/0428a6d113bf872aea9d28914023946cb408b571)
     * [correct type hint](https://github.com/Xpra-org/xpra/commit/b095f26a901b82cf5685f45715ce6e6a407c27ab)
+    * [skip scary warning without compression](https://github.com/Xpra-org/xpra/commit/d22918fd10a615f780d4bd59b80452956ac00ad8)
+    * [log full backtraces with X11 context errors](https://github.com/Xpra-org/xpra/commit/849eb8eb6f582aec00989b65730ec084aaf28296)
 
 ## [6.1.1] 2024-08-06
 * Platforms, build and packaging:
