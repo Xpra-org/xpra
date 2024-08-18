@@ -13,6 +13,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - aioquic 1.2.0
    - pynvml 12.555.43
    - pycuda 2024.1.2
+   - pycuda RPMs to link against the system boost library
   * Major:
    - MS Windows PDF printing crash, library mismatch
    - honour `ssh` option when re-connecting
@@ -27,6 +28,8 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - xshape windows should still honour the window border
    - clipboard `INCR` transfers get stuck
    - `scroll` paint corruption
+   - connection drops when downscaling
+   - always set a default initial resolution
   * Encodings:
    - `mmap` race condition
    - validate openh264 colorspace
@@ -34,7 +37,10 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - avoid slow modules and slow encoders
    - reduce how often quality swings cause scaling changes
    - stick to the same video scaling value longer
+   - sub-optimal non-scroll areas
+   - prettier sampling filter when downscaling
   * Keyboard:
+   - `keyboard-sync` switch not honoured
    - ignore MS Windows keyboard layouts without a valid X11 layout name
    - try harder to identify the key event string
    - don't show duplicate keyboard layout names
@@ -65,7 +71,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - log opengl probe command
    - clarify display name message
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 13 Aug 2024 22:03:09 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 18 Aug 2024 19:56:54 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:

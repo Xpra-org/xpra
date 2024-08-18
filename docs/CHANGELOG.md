@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.10] 2024-08-13
+## [5.0.10] 2024-08-18
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
     * [`openssl.cnf` location in MS Windows builds](https://github.com/Xpra-org/xpra/commit/3ad6c8e44438912c5dd9dcba427b17d6b20a463f)
@@ -16,6 +16,7 @@
     * [aioquic 1.2.0](https://github.com/Xpra-org/xpra/commit/8142aee9b2d6ed713f0b003b21334bab0e8bf802)
     * [pynvml 12.555.43](https://github.com/Xpra-org/xpra/commit/e3115ed747986edbcea4f26300b65854ebacefe5)
     * [pycuda 2024.1.2](https://github.com/Xpra-org/xpra/commit/73767cd45819f621f6e0308ae5bde67191d7cd93)
+    * [pycuda RPMs to link against the system boost library](https://github.com/Xpra-org/xpra/commit/313092fa342f66d79ace1b4be552caead2a38b1b)
 * Major:
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
     * [honour `ssh` option when re-connecting](https://github.com/Xpra-org/xpra/commit/45bad59e6255f03087b8dbd51dfd2380472f6f20)
@@ -30,6 +31,8 @@
     * [xshape windows should still honour the window border](https://github.com/Xpra-org/xpra/commit/e3c659fdf4e06190bc0c97126044a9c1d7cc8ddd)
     * [clipboard `INCR` transfers get stuck](https://github.com/Xpra-org/xpra/commit/f51f86a747690fe68f628b7cd72a1513f835607a)
     * [`scroll` paint corruption](https://github.com/Xpra-org/xpra/commit/ae957f2ff9808c9d5570a6b56e21b6e29483e610)
+    * [connection drops when downscaling](https://github.com/Xpra-org/xpra/commit/3c66507b31f80eddbeb4ec2bfb66e5da709a4bd4)
+    * [always set a default initial resolution](https://github.com/Xpra-org/xpra/commit/a5edfc628ed02837faf6e337a167ae02ab925ec5)
 * Encodings:
     * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
     * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
@@ -37,7 +40,10 @@
     * avoid [slow modules](https://github.com/Xpra-org/xpra/commit/7a16475b73ebd8398e3c1b44561647a9d7877933) and [slow encoders](https://github.com/Xpra-org/xpra/commit/38a7b3daaa6b908d7faf93ab2fa31eed3cabc104)
     * [reduce how often quality swings cause scaling changes](https://github.com/Xpra-org/xpra/commit/7951a696e3afb79cd8b60394561eebaf379453b4)
     * [stick to the same video scaling value longer](https://github.com/Xpra-org/xpra/commit/aaf22afec492240dae512230aa5fe88c73546c51)
+    * [sub-optimal non-scroll areas](https://github.com/Xpra-org/xpra/commit/3b90fc10cd945ee875bda8fc66497991d6fb01ef)
+    * [prettier sampling filter when downscaling](https://github.com/Xpra-org/xpra/commit/5b2c89d53d9c9df119f860209e2c637140989ae1)
 * Keyboard:
+    * [`keyboard-sync` switch not honoured](https://github.com/Xpra-org/xpra/commit/404dc1c177ad292bdaca9ffabbf8bb8a709bd947) [and not sent](https://github.com/Xpra-org/xpra/commit/55809937f4cd3aad0c0ba7b04d75377f15dcedc9)
     * [ignore MS Windows keyboard layouts without a valid X11 layout name](https://github.com/Xpra-org/xpra/commit/3eca141e0027e93ea1150a5a5939fc63425d9aaf)
     * [try harder to identify the key event string](https://github.com/Xpra-org/xpra/commit/01b36a92c1d2113c3897166c12bfc1177e4bdc55)
     * [don't show duplicate keyboard layout names](https://github.com/Xpra-org/xpra/commit/07d51f73ea08188b728633da745ea29b5285bb77)

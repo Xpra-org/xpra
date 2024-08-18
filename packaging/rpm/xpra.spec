@@ -775,7 +775,7 @@ fi
 
 
 %changelog
-* Tue Aug 13 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Sun Aug 18 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:
    syntax compatibility fixes
    `openssl.cnf` location in MS Windows builds
@@ -790,6 +790,7 @@ fi
    aioquic 1.2.0
    pynvml 12.555.43
    pycuda 2024.1.2
+   pycuda RPMs to link against the system boost library
 - Major:
    MS Windows PDF printing crash, library mismatch
    honour `ssh` option when re-connecting
@@ -804,6 +805,8 @@ fi
    xshape windows should still honour the window border
    clipboard `INCR` transfers get stuck
    `scroll` paint corruption
+   connection drops when downscaling
+   always set a default initial resolution
 - Encodings:
    `mmap` race condition
    validate openh264 colorspace
@@ -811,7 +814,10 @@ fi
    avoid slow modules and slow encoders
    reduce how often quality swings cause scaling changes
    stick to the same video scaling value longer
+   sub-optimal non-scroll areas
+   prettier sampling filter when downscaling
 - Keyboard:
+   `keyboard-sync` switch not honoured
    ignore MS Windows keyboard layouts without a valid X11 layout name
    try harder to identify the key event string
    don't show duplicate keyboard layout names
