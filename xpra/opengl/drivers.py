@@ -16,11 +16,11 @@ GL_MATCH_LIST: TypeAlias = dict[str, Sequence[str]]
 WHITELIST: GL_MATCH_LIST = {
 }
 
-# Chipsets from these vendors will trigger warnings,
-# but OpenGL will still be enabled:
+# Chipsets from these vendors will be disabled without triggering any warnings:
 GREYLIST: GL_MATCH_LIST = {
     "renderer":
         (
+            "SVGA3D",
             "Software Rasterizer",
             "llvmpipe",
             # "NV134",
@@ -30,9 +30,7 @@ GREYLIST: GL_MATCH_LIST = {
 # These chipsets will be disabled by default:
 BLACKLIST: GL_MATCH_LIST = {
     "renderer":
-        (
-            "SVGA3D",
-        ),
+        (),
     "vendor":
         (
             # "VMware, Inc.",
