@@ -186,9 +186,9 @@ class ClientTray(ClientWidgetBase):
         callbacks.append(after_draw_update_tray)
         backing.draw_region(x, y, width, height, coding, img_data, rowstride, options, callbacks)
 
-    def set_tray_icon(self, enc: str, w: int, h: int, rowstride: int, pixels, options: typedict) -> None:
-        log("%s.set_tray_icon(%s, %s, %s, %s, %s bytes)", self, enc, w, h, rowstride, len(pixels))
-        has_alpha = enc == "rgb32"
+    def set_tray_icon(self, rgb_format: str, w: int, h: int, rowstride: int, pixels, options: typedict) -> None:
+        log("%s.set_tray_icon(%s, %s, %s, %s, %s bytes)", self, rgb_format, w, h, rowstride, len(pixels))
+        has_alpha = rgb_format.find("A") >= 0
         tw = self.tray_widget
         if tw:
             # some tray implementations can't deal with memoryviews..
@@ -238,10 +238,11 @@ class TrayBacking(WindowBackingBase):
         if width != render_width or height != render_height:
             fire_paint_callbacks(callbacks, False, "tray paint must not use scaling")
             return
-        if encoding not in ("rgb24", "rgb32"):
+        if encoding != "rgb":
             fire_paint_callbacks(callbacks, False, f"invalid encoding for tray: {encoding!r}")
             return
-        self.data = (encoding, width, height, rowstride, img_data[:], options)
+        rgb_format = options.strget("rgb_format", "BGRA")
+        self.data = (rgb_format, width, height, rowstride, img_data[:], options)
         if SAVE:
             self.save_tray_png()
         fire_paint_callbacks(callbacks, True)
