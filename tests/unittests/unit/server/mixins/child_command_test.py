@@ -45,8 +45,9 @@ class ChildCommandMixinTest(ServerMixinTest):
         opts.exec_wrapper = None
         opts.start_env = []
         opts.source_start = []
-        #pynotify can cause crashes,
-        #probably due to threading issues?
+
+        # pynotify can cause crashes,
+        # probably due to threading issues?
 
         def noop():
             pass
@@ -55,16 +56,17 @@ class ChildCommandMixinTest(ServerMixinTest):
             ccs = child_command.ChildCommandServer()
             ccs.setup_menu_watcher = noop
             return ccs
+
         self._test_mixin_class(_ChildCommandServer, opts)
         if not POSIX:
             return
-        #test creating a temp file:
+        # test creating a temp file:
         import tempfile
         tmpfile = os.path.join(tempfile.gettempdir(), "xpra-test-start-command-%s" % os.getpid())
         assert not os.path.exists(tmpfile)
-        command = (b"touch", tmpfile.encode("utf8"))
+        command = ("touch", tmpfile)
         with silence_info(child_command):
-            self.handle_packet(("start-command", b"test", command, True))
+            self.handle_packet(("start-command", "test", command, True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
         commands = info.get("commands")
@@ -75,7 +77,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert pid
         assert os.path.exists(tmpfile)
         os.unlink(tmpfile)
-        #test signals:
+        # test signals:
         with silence_info(child_command):
             self.handle_packet(("start-command", "sleep", "sleep 10", True))
         time.sleep(1)
@@ -86,9 +88,9 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert proc_info
         pid = proc_info.get("pid")
         assert pid
-        assert proc_info.get("name")=="sleep"
+        assert proc_info.get("name") == "sleep"
         assert proc_info.get("dead") is False
-        #send it a SIGINT:
+        # send it a SIGINT:
         with silence_info(child_command):
             self.handle_packet(("command-signal", pid, "SIGINT"))
         time.sleep(1)
