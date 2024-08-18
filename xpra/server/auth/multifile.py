@@ -8,7 +8,7 @@
 
 from xpra.server.auth.sys_auth_base import parse_uid, parse_gid, SessionData
 from xpra.server.auth.file_auth_base import log, FileAuthenticatorBase
-from xpra.util.str_fn import bytestostr, hexstr
+from xpra.util.str_fn import hexstr
 from xpra.util.parsing import parse_str_dict
 from xpra.util.objects import typedict
 from xpra.net.digest import verify_digest
@@ -36,9 +36,9 @@ def parse_auth_line(line: str) -> AuthLine:
     env_options: dict[str, str] = {}
     session_options: dict[str, str] = {}
     if len(ldata) >= 6:
-        env_options = parse_str_dict(bytestostr(ldata[5]), ";")
+        env_options = parse_str_dict(ldata[5], ";")
     if len(ldata) >= 7:
-        session_options = parse_str_dict(bytestostr(ldata[6]), ";")
+        session_options = parse_str_dict(ldata[6], ";")
     return username, password, uid, gid, displays, env_options, session_options
 
 

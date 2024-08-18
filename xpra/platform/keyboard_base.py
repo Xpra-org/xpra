@@ -10,7 +10,6 @@ from collections.abc import Callable
 from xpra.keyboard.common import KeyEvent
 from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP
 from xpra.log import Logger
-from xpra.util.str_fn import bytestostr
 
 log = Logger("keyboard")
 
@@ -59,10 +58,10 @@ class KeyboardBase:
 
     def _do_add_modifier_mapping(self, keynames, keycode, modifier) -> None:
         for keyname in keynames:
-            self.modifier_keys[bytestostr(keyname)] = bytestostr(modifier)
-            self.modifier_names[bytestostr(modifier)] = bytestostr(keyname)
+            self.modifier_keys[keyname] = modifier
+            self.modifier_names[modifier] = keyname
             if keycode:
-                keycodes = self.modifier_keycodes.setdefault(bytestostr(keyname), [])
+                keycodes = self.modifier_keycodes.setdefault(keyname, [])
                 if keycode not in keycodes:
                     keycodes.append(keycode)
 

@@ -6,7 +6,6 @@
 
 from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
 from xpra.os_util import gi_import, WIN32, OSX
-from xpra.util.str_fn import bytestostr
 from xpra.util.objects import make_instance
 from xpra.util.env import envint
 from xpra.common import XPRA_APP_ID, ConnectionMessage
@@ -145,5 +144,5 @@ class TrayClient(StubClientMixin):
         if not t:
             t.insert(0, "Xpra")
         v = "\n".join(str(x) for x in t if x)
-        log("get_tray_title()=%r (items=%s)", v, tuple(bytestostr(x) for x in t))
+        log("get_tray_title()=%r (items=%s)", v, t)
         return v

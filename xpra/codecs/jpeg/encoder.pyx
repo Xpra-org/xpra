@@ -17,7 +17,7 @@ from xpra.codecs.debug import may_save_image
 from xpra.net.compression import Compressed
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.log import Logger
 log = Logger("encoder", "jpeg")
 
@@ -283,7 +283,7 @@ def get_error_str() -> str:
     try:
         return err.decode("latin1")
     except:
-        return bytestostr(err)
+        return str(err)
 
 
 JPEG_INPUT_FORMATS = ("RGB", "RGBX", "BGRX", "XBGR", "XRGB", )

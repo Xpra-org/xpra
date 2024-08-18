@@ -17,7 +17,7 @@ from xpra.util.child_reaper import getChildReaper, ProcInfo
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer, bytestostr
+from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envint, restore_script_env
 from xpra.net.common import PacketType
 from xpra.util.thread import start_thread
@@ -271,7 +271,7 @@ class ChildCommandServer(StubServerMixin):
         try:
             real_cmd = self.get_full_child_command(child_cmd, use_wrapper)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
-            cmd_str = " ".join(bytestostr(x) for x in real_cmd)
+            cmd_str = " ".join(real_cmd)
             # pylint: disable=consider-using-with
             proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, **kwargs)
             procinfo = self.add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
@@ -406,7 +406,7 @@ class ChildCommandServer(StubServerMixin):
 
     def _process_command_signal(self, _proto, packet: PacketType) -> None:
         pid = packet[1]
-        signame = bytestostr(packet[2])
+        signame = packet[2]
         if signame not in COMMAND_SIGNALS:
             log.warn("Warning: invalid signal received: '%s'", signame)
             return

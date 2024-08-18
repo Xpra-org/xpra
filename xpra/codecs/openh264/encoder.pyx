@@ -14,7 +14,7 @@ from xpra.log import Logger
 log = Logger("encoder", "openh264")
 
 from xpra.codecs.image import ImageWrapper
-from xpra.util.str_fn import csv, bytestostr, strtobytes
+from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import VideoSpec
 from collections import deque

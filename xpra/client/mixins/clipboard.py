@@ -16,7 +16,6 @@ from xpra.net import compression
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.system import is_Wayland
-from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
 log = Logger("clipboard")
@@ -235,8 +234,8 @@ class ClipboardClient(StubClientMixin):
 
     def _process_clipboard_packet(self, packet: PacketType) -> None:
         ch = self.clipboard_helper
-        log("process_clipboard_packet: %s, helper=%s", bytestostr(packet[0]), ch)
         packet_type = packet[0]
+        log("process_clipboard_packet: %s, helper=%s", packet_type, ch)
         if packet_type == "clipboard-status":
             self._process_clipboard_status(packet)
         elif ch:
@@ -246,7 +245,7 @@ class ClipboardClient(StubClientMixin):
         clipboard_enabled, reason = packet[1:3]
         if self.clipboard_enabled != clipboard_enabled:
             log.info("clipboard toggled to %s by the server, reason given:", ["off", "on"][int(clipboard_enabled)])
-            log.info(" %s", bytestostr(reason))
+            log.info(" %s", reason)
             self.clipboard_enabled = bool(clipboard_enabled)
             self.emit("clipboard-toggled")
 
