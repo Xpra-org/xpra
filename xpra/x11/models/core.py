@@ -366,8 +366,8 @@ class CoreX11WindowModel(WindowModelStub):
             try:
                 with xsync:
                     self.setup_failed(e)
-            except Exception as ex:
-                log.error("error in cleanup handler: %s", ex)
+            except Exception:
+                log.error(f"Error in cleanup handler for window {self.xid:x}", exc_info=True)
             raise Unmanageable(e) from None
         self._setup_done = True
 
