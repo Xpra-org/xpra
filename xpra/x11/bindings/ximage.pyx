@@ -20,6 +20,7 @@ from xpra.x11.bindings.xlib cimport (
     XFree, XWindowAttributes,
     MSBFirst, LSBFirst, ZPixmap,
     DoRed, DoGreen, DoBlue, AllPlanes,
+    XGetVisualInfo,
 )
 from libc.stdlib cimport free
 from libc.string cimport memcpy
@@ -100,7 +101,6 @@ cdef extern from "X11/Xatom.h":
 cdef extern from "X11/Xlib.h":
     void XQueryColors(Display *display, Colormap colormap, XColor defs_in_out[], int ncolors)
     VisualID XVisualIDFromVisual(Visual *visual)
-    XVisualInfo *XGetVisualInfo(Display *display, long vinfo_mask, XVisualInfo *vinfo_template, int *nitems_return)
 
     Status XGetWindowAttributes(Display * display, Window w, XWindowAttributes * attributes)
 

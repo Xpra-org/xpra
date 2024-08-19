@@ -31,6 +31,7 @@ cdef extern from "X11/X.h":
     unsigned long AnyPropertyType
     unsigned int PropModeReplace
     unsigned int PropertyNotify
+    unsigned int Expose
 
 
 cdef extern from "X11/Xutil.h":
@@ -300,6 +301,8 @@ cdef extern from "X11/Xlib.h":
     int XAddToSaveSet(Display *, Window w)
     int XRemoveFromSaveSet(Display *, Window w)
 
+    XVisualInfo *XGetVisualInfo(Display *display, long vinfo_mask, XVisualInfo *vinfo_template, int *nitems_return)
+
     # windows:
     Status XGetWindowAttributes(Display * display, Window w,
                                 XWindowAttributes * attributes)
@@ -493,6 +496,12 @@ cdef extern from "X11/Xlib.h":
         unsigned int state
         unsigned int keycode
 
+    ctypedef struct XExposeEvent:
+        Window window
+        int x, y
+        int width, height
+        int count
+
     ctypedef union XEvent:
         int type
         XAnyEvent xany
@@ -517,3 +526,4 @@ cdef extern from "X11/Xlib.h":
         XDestroyWindowEvent xdestroywindow
         XPropertyEvent xproperty
         XGenericEventCookie xcookie
+        XExposeEvent xexpose

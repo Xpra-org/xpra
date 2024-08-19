@@ -9,7 +9,10 @@ from xpra.gtk.error import XError
 
 from xpra.x11.bindings.xlib cimport (
     Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime, Cursor, XPointer,
+    VisualID, XVisualInfo,
+    XGetVisualInfo, VisualIDMask,
     GrabModeAsync, XGrabPointer,
+    Expose,
     XRectangle, XEvent, XClassHint,
     XWMHints, XSizeHints,
     XCreateWindow, XDestroyWindow, XIfEvent, PropertyNotify,
@@ -30,6 +33,7 @@ from xpra.x11.bindings.xlib cimport (
     XQueryTree,
     XKillClient,
 )
+from libc.stdint cimport uintptr_t
 from libc.stdlib cimport free, malloc        # pylint: disable=syntax-error
 from libc.string cimport memset
 
@@ -68,6 +72,7 @@ cdef extern from "X11/Xlib.h":
 
     int CopyFromParent
 
+    int CWOverrideRedirect
     int CWEventMask
     int CWColormap
     int CWBorderWidth
@@ -858,6 +863,20 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if s == 0:
             raise ValueError("failed to serialize XEmbed Message")
 
+    def send_expose(self, Window xwindow, int x, int y, int width, int height, int count=0):
+        cdef XEvent e
+        e.xany.display = self.display
+        e.xany.window = xwindow
+        e.xany.type = Expose
+        e.xexpose.x = x
+        e.xexpose.y = y
+        e.xexpose.width = width
+        e.xexpose.height = height
+        e.xexpose.count = count
+        s = XSendEvent(self.display, xwindow, False, NoEventMask, &e)
+        if s == 0:
+            raise ValueError("failed to serialize XExpose Message")
+
     ###################################
     # Clipboard
     ###################################
@@ -934,30 +953,52 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
     def CreateCorralWindow(self, Window parent, Window xid, int x, int y) -> Window:
         self.context_check("CreateCorralWindow")
-        #copy most attributes from the window we will wrap:
+        # copy the dimensions from the window we will wrap:
         cdef int ox, oy
         cdef Window root
         cdef unsigned int width, height, border_width, depth
         if not XGetGeometry(self.display, xid, &root,
                         &ox, &oy, &width, &height, &border_width, &depth):
-            return None
+            return 0
+        cdef long event_mask = PropertyChangeMask | StructureNotifyMask | SubstructureNotifyMask
+        return self.CreateWindow(parent, x, y, width, height, False, event_mask)
+
+    def CreateWindow(self, Window parent, int x, int y, int width, int height, int OR, long event_mask) -> Window:
+        self.context_check("CreateWindow")
         cdef XSetWindowAttributes attributes
         memset(<void*> &attributes, 0, sizeof(XSetWindowAttributes))
-        # We enable PropertyChangeMask so that we can call
-        # get_server_time on this window.
-        attributes.event_mask = PropertyChangeMask | StructureNotifyMask | SubstructureNotifyMask
-        #get depth from parent window:
-        cdef int px, py
-        cdef unsigned int pw, ph, pborder, pdepth
-        if not XGetGeometry(self.display, parent, &root,
-                        &px, &py, &pw, &ph, &pborder, &pdepth):
-            return None
+        attributes.event_mask = event_mask
         cdef unsigned long valuemask = CWEventMask
+        if OR:
+            valuemask |= CWOverrideRedirect
+            attributes.override_redirect = 1
+        cdef Visual* visual = <Visual*> CopyFromParent
+        cdef int depth = self.get_depth(parent)
         cdef Window window = XCreateWindow(self.display, parent,
-                                           x, y, width, height, 0, pdepth,
-                                           InputOutput, <Visual*> CopyFromParent,
+                                           x, y, width, height, 0, depth,
+                                           InputOutput, visual,
                                            valuemask, &attributes)
         return window
+
+    def getWindowVisual(self, Window xid) -> int:
+        self.context_check("getWindowVisual")
+        cdef XWindowAttributes curr
+        XGetWindowAttributes(self.display, xid, &curr)
+        return <uintptr_t> curr.visual
+
+    cdef Visual* GetVisual(self, VisualID visualid):
+        cdef XVisualInfo vinfo_template
+        cdef int count
+        vinfo_template.visualid = visualid
+        cdef XVisualInfo *vinfo = XGetVisualInfo(self.display, VisualIDMask, &vinfo_template, &count)
+        if count != 1 or vinfo == NULL:
+            log.error("Error: visual %i not found, count=%i, vinfo=%#x", visualid, count, <uintptr_t> vinfo)
+            if vinfo:
+                XFree(vinfo)
+            return NULL
+        cdef Visual* visual = vinfo.visual
+        XFree(vinfo)
+        return visual;
 
     def DestroyWindow(self, Window w) -> None:
         self.context_check("DestroyWindow")
