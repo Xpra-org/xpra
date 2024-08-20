@@ -8,7 +8,7 @@ import os
 import re
 
 from xpra.gtk_common.gobject_compat import import_gtk, import_glib, import_pixbufloader
-from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict
+from xpra.util import CLIENT_EXIT, iround, envbool, repr_ellipsized, reverse_dict, typedict
 from xpra.os_util import bytestostr, OSX, WIN32, PYTHON2
 from xpra.gtk_common.gtk_util import (
     ensure_item_selected, menuitem, popup_menu_workaround, CheckMenuItem,
@@ -1628,10 +1628,11 @@ class GTKTrayMenuBase(object):
             #log("category_props(%s)=%s", category, category_props)
             if not isinstance(category_props, dict):
                 continue
-            entries = category_props.get(b"Entries", {})
+            category_props = typedict(category_props)
+            entries = category_props.rawget(b"Entries", {})
             if not entries:
                 continue
-            icondata = category_props.get(b"IconData")
+            icondata = category_props.rawget(b"IconData")
             category_menu_item = self.start_menuitem(s(category), icondata)
             cat_menu = gtk.Menu()
             category_menu_item.set_submenu(cat_menu)
@@ -1692,6 +1693,7 @@ class GTKTrayMenuBase(object):
         return smi
 
     def make_applaunch_menu_item(self, app_name, command_props):
+        command_props = typedict(command_props)
         icondata = command_props.get(b"IconData")
         app_menu_item = self.start_menuitem(app_name, icondata)
         def app_launch(*args):
