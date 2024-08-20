@@ -153,7 +153,7 @@ class SystemTray(gobject.GObject):
             visual = screen.get_rgba_visual()
             if visual is None:
                 log.warn("setup tray: using rgb visual fallback")
-                visual = screen.get_rgb_visual()
+                visual = screen.get_system_visual()
         #only GTK2 uses colormap:
         if not is_gtk3():
             if TRANSPARENCY:
