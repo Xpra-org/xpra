@@ -26,6 +26,7 @@ cdef extern from "X11/X.h":
     unsigned long AnyPropertyType
     unsigned int PropModeReplace
     unsigned int PropertyNotify
+    unsigned int Expose
 
 cdef extern from "X11/Xutil.h":
     ctypedef struct aspect:
@@ -468,6 +469,12 @@ cdef extern from "X11/Xlib.h":
     ctypedef struct XKeyEvent:
         unsigned int keycode, state
 
+    ctypedef struct XExposeEvent:
+        Window window
+        int x, y
+        int width, height
+        int count
+
     ctypedef union XEvent:
         int type
         XAnyEvent xany
@@ -492,3 +499,5 @@ cdef extern from "X11/Xlib.h":
         XDestroyWindowEvent xdestroywindow
         XPropertyEvent xproperty
         XGenericEventCookie xcookie
+        XExposeEvent xexpose
+

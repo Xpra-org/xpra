@@ -10,6 +10,7 @@ from xpra.gtk_common.error import XError
 from xpra.x11.bindings.xlib cimport (
     Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime, Cursor, XPointer,
     GrabModeAsync, XGrabPointer,
+    Expose,
     XRectangle, XEvent, XClassHint,
     XWMHints, XSizeHints,
     XCreateWindow, XDestroyWindow, XIfEvent, PropertyNotify,
@@ -161,6 +162,8 @@ constants = {
     "SubstructureNotifyMask"   : SubstructureNotifyMask,
     "SubstructureRedirectMask" : SubstructureRedirectMask,
     "FocusChangeMask"   : FocusChangeMask,
+    "ExposureMask"      : ExposureMask,
+    "PropertyChangeMask": PropertyChangeMask,
     "AnyPropertyType"   : AnyPropertyType,
     "Success"           : Success,
     "PropModeReplace"   : PropModeReplace,
@@ -814,6 +817,20 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         s = XSendEvent(self.display, xwindow, False, NoEventMask, &e)
         if s == 0:
             raise ValueError("failed to serialize XEmbed Message")
+
+    def send_expose(self, Window xwindow, int x, int y, int width, int height, int count=0):
+        cdef XEvent e
+        e.xany.display = self.display
+        e.xany.window = xwindow
+        e.xany.type = Expose
+        e.xexpose.x = x
+        e.xexpose.y = y
+        e.xexpose.width = width
+        e.xexpose.height = height
+        e.xexpose.count = count
+        s = XSendEvent(self.display, xwindow, False, NoEventMask, &e)
+        if s == 0:
+            raise ValueError("failed to serialize XExpose Message")
 
     ###################################
     # Clipboard
