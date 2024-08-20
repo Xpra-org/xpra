@@ -395,7 +395,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     if keyname in DEBUG_KEYSYMS:
                         log.info("add_gtk_keynames: %s=%s", keyname, keycode)
 
-    def add_loose_matches(self) -> None:
+    def add_loose_matches(self):
         # add lowercase versions of all keynames
         for key, keycode in tuple(self.keycode_translation.items()):
             if isinstance(key, str) and not key.islower():
