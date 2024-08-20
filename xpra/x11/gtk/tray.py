@@ -161,8 +161,8 @@ class SystemTray(GObject.GObject):
         if TRANSPARENCY:
             visual = screen.get_rgba_visual()
             if visual is None:
-                log.warn("setup tray: using rgb visual fallback")
-                visual = screen.get_rgb_visual()
+                log.warn("setup tray: using system visual fallback")
+                visual = screen.get_system_visual()
         assert visual is not None, "failed to obtain visual"
         self.tray_window = GDKX11Window(root, width=1, height=1,
                                         title="Xpra-SystemTray",
