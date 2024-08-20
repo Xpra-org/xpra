@@ -371,7 +371,7 @@ class VersionXpraClient(HelloRequestClient):
         return True
 
     def do_command(self):
-        v = self.server_capabilities.get(b"version")
+        v = self.server_capabilities.strget(b"version")
         if not v:
             self.warn_and_quit(EXIT_FAILURE, "server did not provide the version information")
         else:

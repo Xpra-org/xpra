@@ -307,6 +307,9 @@ class typedict(dict):
         if v is None and isinstance(key, str):
             from xpra.os_util import strtobytes
             v = self.get(strtobytes(key), default)
+        elif v is None and isinstance(key, bytes):
+            from xpra.os_util import bytestostr
+            v = self.get(bytestostr(key), default)
         return v
 
     def capsget(self, key, default=None):
