@@ -441,7 +441,11 @@ class Wm(GObject.GObject):
         log("do_x11_child_configure_request_event(%s) value_mask=%s, reconfigure on withdrawn window",
             event, configure_bits(event.value_mask))
         with xswallow:
-            x, y, w, h = X11Window.getGeometry(xid)[:4]
+            geom = X11Window.getGeometry(xid)
+            if not geom:
+                log(f"failed to get geometry for window {xid:x} - skipping configure request")
+                return
+            x, y, w, h = geom[:4]
             if event.value_mask & CWX:
                 x = event.x
             if event.value_mask & CWY:
