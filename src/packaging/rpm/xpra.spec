@@ -932,21 +932,30 @@ fi
      packaging updates for CentOS7: libyuv, skip pycuda
      python-netifaces missing gcc build dependency
      remove outdated numpy packaging workaround on MS Windows
+     remove ffmpeg codecs from MS Windows builds
 - encodings:
      avoid slow modules (ie: csc_cython)
      stick to the same video scaling setting longer, avoid big swings
 - major:
+     system tray cleanup crash
+     missing start menu
      try harder to find the matching key, using the keyval, key name - lowercase if needed, use default modifiers if that's all we have
      context errors with sync-xvfb switch
      print all pages on MS Windows
      errors when the connection is closed whilst we process it
+     OpenGL scroll paints, scaling arctifacts
+     clipboard INCR transfers stop
+     show border on XShape windows
+     audio failures with 'auto' sink
+     metadata ignored
+     system tray errors on displays without compositing
 - minor and cosmetic fixes:
      handle invalid dbus-launch command options
      try to prevent all ATK warnings
      prevent ssl header from messing up the log
      try to handle missing python pillow slightly more gracefully
      log opengl probe command
-
+     confusing X11 display message
 
 * Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> 3.1.8-10.1xpra1
 - major:
