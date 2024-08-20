@@ -27,6 +27,8 @@ log = Logger("x11", "tray")
 
 XNone = constants["XNone"]
 StructureNotifyMask = constants["StructureNotifyMask"]
+ExposureMask = constants["ExposureMask"]
+PropertyChangeMask = constants["PropertyChangeMask"]
 
 XEMBED_VERSION = 0
 
@@ -83,12 +85,8 @@ IGNORED_MESSAGE_TYPES = ("_GTK_LOAD_ICONTHEMES",)
 MAX_TRAY_SIZE = envint("XPRA_MAX_TRAY_SIZE", 64)
 
 
-def get_tray_window(tray_window) -> int:
-    return getattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, 0)
-
-
-def set_tray_window(tray_window, xid: int):
-    setattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, xid)
+def get_tray_window(xid):
+    return prop_get(xid, XPRA_TRAY_WINDOW_PROPERTY, "u32")
 
 
 def set_tray_visual(xid: int, gdk_visual):
@@ -118,10 +116,8 @@ class SystemTray(GObject.GObject):
         # the window where we embed all the tray icons:
         self.tray_window: GdkX11.X11Window | None = None
         self.xid: int = 0
-        # map xid to the gdk window:
-        self.window_trays: dict[int, Gdk.Window] = {}
-        # map gdk windows to their corral window:
-        self.tray_windows: dict[GdkX11.X11Window, GdkX11.X11Window] = {}
+        # map client tray windows to their corral window:
+        self.tray_windows: dict[int, int] = {}
         self.setup_tray_window()
 
     def cleanup(self) -> None:
@@ -137,14 +133,14 @@ class SystemTray(GObject.GObject):
         remove_event_receiver(self.xid, self)
         tray_windows = self.tray_windows
         self.tray_windows = {}
-        for window, tray_window in tray_windows.items():
+        for xid, xtray in tray_windows.items():
             with xlog:
-                self.undock(window)
-            tray_window.destroy()
+                self.undock(xid)
+                X11Window.Unmap(xtray)
         tw = self.tray_window
         if tw:
             self.tray_window = None
-            tw.destroy()
+            tw.hide()
         log("SystemTray.cleanup() done")
 
     def setup_tray_window(self) -> None:
@@ -161,7 +157,7 @@ class SystemTray(GObject.GObject):
         if TRANSPARENCY:
             visual = screen.get_rgba_visual()
             if visual is None:
-                log.warn("setup tray: using system visual fallback")
+                log.warn("setup tray: using rgb visual fallback")
                 visual = screen.get_system_visual()
         assert visual is not None, "failed to obtain visual"
         self.tray_window = GDKX11Window(root, width=1, height=1,
@@ -225,10 +221,9 @@ class SystemTray(GObject.GObject):
         else:
             log.info("do_x11_client_message_event(%s)", event)
 
-    def undock(self, window) -> None:
-        log("undock(%s)", window)
+    def undock(self, xid) -> None:
+        log("undock(%s)", xid)
         rxid = X11Window.get_root_xid()
-        xid = window.get_xid()
         X11Window.Unmap(xid)
         X11Window.Reparent(xid, rxid, 0, 0)
 
@@ -246,27 +241,26 @@ class SystemTray(GObject.GObject):
 
     def do_dock_tray(self, xid: int) -> None:
         root = get_default_root_window()
-        window = self.get_pywindow(xid)
-        if window is None:
-            log.warn(f"Warning: could not find gdk window for tray window {xid:x}")
-            return
-        w, h = window.get_geometry()[2:4]
+        w, h = X11Window.getGeometry(xid)[2:4]
         log(f"tray geometry={w}x{h}")
         if w == 0 and h == 0:
             log(f"invalid tray geometry {w}x{h}, ignoring this request")
             return
-        em = Gdk.EventMask
-        event_mask = em.STRUCTURE_MASK | em.EXPOSURE_MASK | em.PROPERTY_CHANGE_MASK
-        window.set_events(event_mask=event_mask)
+        window = self.get_pywindow(xid)
+        if window is None:
+            log.warn(f"Warning: could not find gdk window for tray window {xid:x}")
+            return
+        event_mask = StructureNotifyMask | ExposureMask | PropertyChangeMask
+        X11Window.setEventMask(xid, event_mask)
         add_event_receiver(xid, self)
         w = max(1, min(MAX_TRAY_SIZE, w))
         h = max(1, min(MAX_TRAY_SIZE, h))
         title = prop_get(xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
-        if title is None:
+        if not title:
             title = prop_get(xid, "WM_NAME", "latin1", ignore_errors=True)
-        if title is None:
+        if not title:
             title = ""
-        log(f"adjusted geometry={window.get_geometry()}, title={title!r}")
+        log(f"adjusted geometry={X11Window.getGeometry(xid)}, title={title!r}")
         visual = window.get_visual()
         tray_window = GDKX11Window(root, width=w, height=h,
                                    event_mask=event_mask,
@@ -276,29 +270,26 @@ class SystemTray(GObject.GObject):
                                    visual=visual)
         xtray = tray_window.get_xid()
         log(f"tray: recording corral window {xtray:x}, setting tray properties")
-        set_tray_window(tray_window, xid)
-        self.tray_windows[window] = tray_window
-        self.window_trays[xid] = window
+        prop_set(xtray, XPRA_TRAY_WINDOW_PROPERTY, "u32", xid)
+        self.tray_windows[xid] = xtray
         log("showing tray window, resizing and reparenting")
-        tray_window.show()
-        window.resize(w, h)
+        X11Window.MapWindow(xtray)
+        X11Window.ResizeWindow(xtray, w, h)
         X11Window.Withdraw(xid)
         X11Window.Reparent(xid, xtray, 0, 0)
         X11Window.MapRaised(xid)
         log(f"redrawing new tray container window {xtray:x}")
-        rect = Gdk.Rectangle()
-        rect.width = w
-        rect.height = h
-        tray_window.invalidate_rect(rect, True)
+        X11Window.send_expose(xtray, 0, 0, w, h)
         log(f"dock_tray({xid:x}) done, sending xembed notification")
         X11Window.send_xembed_message(xid, XEMBED.EMBEDDED_NOTIFY, 0, xtray, XEMBED_VERSION)
 
     def do_x11_unmap_event(self, event) -> None:
-        gdk_window = self.window_trays.pop(event.window, None)
-        tray_window = self.tray_windows.pop(gdk_window, None)
-        log(f"SystemTray.do_x11_unmap_event({event}) gdk window={gdk_window}, container window={tray_window}")
-        if tray_window:
-            tray_window.destroy()
+        xid = event.window
+        xtray = self.tray_windows.pop(xid, None)
+        log(f"SystemTray.do_x11_unmap_event({event}) window={xid}, container window={xtray}")
+        if xtray:
+            with xlog:
+                X11Window.Unmap(xtray)
 
 
 GObject.type_register(SystemTray)

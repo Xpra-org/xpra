@@ -618,7 +618,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             return
         try:
             # pylint: disable=import-outside-toplevel
-            tray_xid: int = get_tray_window(gdk_window)
+            tray_xid: int = get_tray_window(xid)
             if tray_xid:
                 assert self._tray
                 from xpra.x11.models.systray import SystemTrayWindowModel
