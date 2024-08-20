@@ -16,6 +16,7 @@ RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
 DO_TESTS=${DO_TESTS:-0}
+DO_FFMPEG=${DO_FFMPEG:-0}
 
 # these are only enabled for "full" builds:
 DO_CUDA=${DO_CUDA:-$DO_FULL}
@@ -39,10 +40,10 @@ DIST="./dist"
 BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x265 --without-cuda_rebuild"
 
 if [ "${DO_FULL}" == "0" ]; then
+	DO_FFMPEG=0
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-rfb"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-dbus"
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-enc_ffmpeg --without-webp_encoder --without-jpeg_encoder --without-vpx_encoder"
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-csc_swscale --without-dec_avcodec2"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_proxy --without-enc_x264 --without-webp_encoder --without-jpeg_encoder --without-vpx_encoder"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-webcam"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-win32_tools"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-html5"
@@ -50,6 +51,9 @@ if [ "${DO_FULL}" == "0" ]; then
 fi
 if [ "${DO_CUDA}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvjpeg --without-nvenc --without-nvfbc --without-cuda_kernels"
+fi
+if [ "${DO_FFMPEG}" == "0" ]; then
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_ffmpeg --without-csc_swscale --without-dec_avcodec2"
 fi
 
 ################################################################################
@@ -415,9 +419,7 @@ if [ "${DO_FULL}" == "0" ]; then
 	rm -f libopencv* libleptonica*
 	rm -f libGLES*
 	# ffmpeg:
-	rm -f libx265* avcodec* avutil* avformat* swresample* swscale*
-	rm -f libaom* libassimp* libshaderc* libSvt* libfftw* xvidcore* libde265* libkvazaar* libvpl* libavif*
-	rm -f libprotoc* libhwy* rav1e* libSPIRV* libspirv*
+	rm -f libx265*
 	rm -f libMagick*
 	rm -f libisl* libx264* libdav1d* libraw* libheif* libumfpack* libmng* libdvd* libtheora* libmpeg2*
 	rm -f libfaad* libfaac* libspeex* libcdio* libwavpack* libdca* lib*amrw* liba52*
@@ -428,6 +430,11 @@ if [ "${DO_FULL}" == "0" ]; then
 	rm -f libwebrtc*
 	# gstreamer:
 	rm -f libgstcuda*
+fi
+if [ "${DO_FULL}" == "0" ]; then
+	rm -f avcodec* avutil* avformat* swresample* swscale*
+	rm -f libaom* libassimp* libshaderc* libSvt* libfftw* xvidcore* libde265* libkvazaar* libvpl* libavif*
+	rm -f libprotoc* libhwy* rav1e* libSPIRV* libspirv*
 fi
 if [ "${PYTHON}" == "python3" ]; then
 	rm -f libpython2*
