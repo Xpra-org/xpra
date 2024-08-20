@@ -79,11 +79,12 @@ IGNORED_MESSAGE_TYPES = ("_GTK_LOAD_ICONTHEMES", )
 MAX_TRAY_SIZE = envint("XPRA_MAX_TRAY_SIZE", 64)
 
 
-def get_tray_window(tray_window):
-    return getattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, None)
+def get_tray_window(window):
+    return prop_get(window, XPRA_TRAY_WINDOW_PROPERTY, "u32")
 
 def set_tray_window(tray_window, window):
-    setattr(tray_window, XPRA_TRAY_WINDOW_PROPERTY, get_xwindow(window))
+    xid = get_xwindow(window)
+    prop_set(tray_window, XPRA_TRAY_WINDOW_PROPERTY, "u32", xid)
 
 def set_tray_visual(tray_window, gdk_visual):
     prop_set(tray_window, TRAY_VISUAL, "visual", gdk_visual)
@@ -113,13 +114,11 @@ class SystemTray(gobject.GObject):
 
     def cleanup(self):
         log("SystemTray.cleanup()")
-        root = get_default_root_window()
-        def undock(window):
-            log("undocking %s", window)
-            wxid = get_xwindow(window)
-            rxid = get_xwindow(root)
-            X11Window.Unmap(wxid)
-            X11Window.Reparent(wxid, rxid, 0, 0)
+        rxid = X11Window.getDefaultRootWindow()
+        def undock(xid):
+            log("undocking %s", xid)
+            X11Window.Unmap(xid)
+            X11Window.Reparent(xid, rxid, 0, 0)
         with xlog:
             owner = X11Window.XGetSelectionOwner(SELECTION)
             if owner==get_xwindow(self.tray_window):
@@ -131,11 +130,11 @@ class SystemTray(gobject.GObject):
         remove_event_receiver(self.tray_window, self)
         tray_windows = self.tray_windows
         self.tray_windows = {}
-        for window, tray_window in tray_windows.items():
+        for xid, xtray in tray_windows.items():
             with xswallow:
-                undock(window)
-            tray_window.destroy()
-        self.tray_window.destroy()
+                undock(xid)
+                X11Window.Unmap(xtray)
+        self.tray_window.hide()
         self.tray_window = None
         log("SystemTray.cleanup() done")
 
@@ -272,12 +271,12 @@ class SystemTray(gobject.GObject):
         log("dock_tray(%#x) setting tray properties", xid)
         set_tray_window(tray_window, window)
         tray_window.show()
-        self.tray_windows[window] = tray_window
-        self.window_trays[tray_window] = window
         log("dock_tray(%#x) resizing and reparenting", xid)
         window.resize(w, h)
         xwin = get_xwindow(window)
         xtray = get_xwindow(tray_window)
+        self.tray_windows[xwin] = xtray
+        self.window_trays[xtray] = xwin
         X11Window.Withdraw(xwin)
         X11Window.Reparent(xwin, xtray, 0, 0)
         X11Window.MapRaised(xwin)
@@ -291,16 +290,21 @@ class SystemTray(gobject.GObject):
     def move_resize(self, window, x, y, w, h):
         #see SystemTrayWindowModel.move_resize:
         window.move_resize(x, y, w, h)
-        embedded_window = self.window_trays[window.client_window]
-        embedded_window.resize(w, h)
-        log("system tray moved to %sx%s and resized to %sx%s", x, y, w, h)
+        xid = get_xwindow(window.client_window)
+        embedded_window = self.window_trays.get(xid, 0)
+        if embedded_window:
+            with xlog:
+                X11Window.ResizeWindow(embedded_window, w, h)
+            log("system tray moved to %sx%s and resized to %sx%s", x, y, w, h)
 
     def do_xpra_unmap_event(self, event):
-        tray_window = self.tray_windows.get(event.window)
-        log("SystemTray.do_xpra_unmap_event(%s) container window=%s", event, tray_window)
-        if tray_window:
-            tray_window.destroy()
-            del self.tray_windows[event.window]
-            del self.window_trays[tray_window]
+        xid = get_xwindow(event.window)
+        xtray = self.tray_windows.pop(xid, 0)
+        self.window_trays.pop(xtray, 0)
+        log("SystemTray.do_xpra_unmap_event(%s) container window=%s", event, xtray)
+        if xtray:
+            with xlog:
+                X11Window.Unmap(xtray)
+
 
 gobject.type_register(SystemTray)
