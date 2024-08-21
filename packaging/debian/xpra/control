@@ -32,6 +32,7 @@ Build-Depends: debhelper (>= 8)
 #lunar:              ,libspng-dev
 #mantic:              ,libspng-dev
 #noble:              ,libspng-dev
+#oracular:              ,libspng-dev
 #bookworm:              ,libspng-dev
 #trixie:              ,libspng-dev
 #sid:              ,libspng-dev
@@ -273,12 +274,14 @@ Depends: xpra-common (= ${binary:Version})
 #lunar:              ,libopenh264-7
 #mantic:              ,libopenh264-7
 #noble:              ,libopenh264-7
+#oracular:              ,libopenh264-7
 #bookworm:              ,libopenh264-7
 #trixie:              ,libopenh264-7
 #sid:              ,libopenh264-7
 #lunar:              ,libspng0
 #mantic:              ,libspng0
 #noble:              ,libspng0
+#oracular:              ,libspng0
 #bookworm:              ,libspng0
 #trixie:              ,libspng0
 #sid:              ,libspng0
@@ -301,6 +304,7 @@ Depends: xpra-codecs (= ${binary:Version})
 #lunar:              ,libavif15
 #mantic:              ,libavif15
 #noble:              ,libavif16
+#oracular:              ,libavif16
 #bookworm:              ,libavif15
 #trixie:              ,libavif16
 #sid:              ,libavif16
