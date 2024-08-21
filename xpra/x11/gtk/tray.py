@@ -11,17 +11,13 @@ from xpra.util.env import envint
 from xpra.os_util import gi_import
 from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.error import xsync, xlog
-from xpra.x11.gtk.native_window import GDKX11Window
 from xpra.x11.gtk.prop import prop_set, prop_get, raw_prop_set
-from xpra.gtk.util import get_default_root_window
 from xpra.x11.bindings.window import constants, X11WindowBindings
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xvisual
+from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
 glib = gi_import("GLib")
-Gdk = gi_import("Gdk")
-GdkX11 = gi_import("GdkX11")
 
 X11Window = X11WindowBindings()
 
@@ -114,8 +110,7 @@ class SystemTray(GObject.GObject):
 
     def __init__(self):
         super().__init__()
-        # the window where we embed all the tray icons:
-        self.tray_window: GdkX11.X11Window | None = None
+        # the container window where we embed all the tray icons:
         self.xid: int = 0
         # map client tray windows to their corral window:
         self.tray_windows: dict[int, int] = {}
@@ -138,38 +133,26 @@ class SystemTray(GObject.GObject):
             with xlog:
                 self.undock(xid)
                 X11Window.Unmap(xtray)
-        tw = self.tray_window
-        if tw:
-            self.tray_window = None
-            tw.hide()
+        xid = self.xid
+        if xid:
+            self.xid = 0
+            X11Window.unmap(xid)
         log("SystemTray.cleanup() done")
 
     def setup_tray_window(self) -> None:
-        display = Gdk.Display.get_default()
-        root = get_default_root_window()
-        if root is None:
-            raise RuntimeError("no root window!")
-        screen = root.get_screen()
         owner = X11Window.XGetSelectionOwner(SELECTION)
         log(f"setup tray: current selection owner={owner:x}")
         if owner != XNone:
             raise RuntimeError(f"{SELECTION} already owned by {owner}")
-        visual = screen.get_system_visual()
-        if TRANSPARENCY or not visual:
-            visual = screen.get_rgba_visual()
-            if visual is None:
-                log.warn("Warning: using non-transparent visual fallback for system tray")
-                visual = screen.get_system_visual()
-        assert visual is not None, "failed to obtain visual"
-        xvisual = get_xvisual(visual)
-
-        self.tray_window = GDKX11Window(root, width=1, height=1, visual=visual)
-        self.xid = self.tray_window.get_xid()
+        root_xid = X11Window.get_root_xid()
+        visualid = X11Window.get_rgba_visual()
+        self.xid = X11Window.CreateWindow(root_xid, visualid=visualid)
         prop_set(self.xid, "WM_TITLE", "latin1", "Xpra-SystemTray")
-        set_tray_visual(self.xid, xvisual)
+        set_tray_visual(self.xid, visualid)
         set_tray_orientation(self.xid, TRAY_ORIENTATION.HORZ)
         log("setup tray: tray window %#x", self.xid)
-        display.request_selection_notification(Gdk.Atom.intern(SELECTION, False))
+        X11Window.selectXFSelectionInput(root_xid, SELECTION)
+        X11Window.selectXFSelectionInput(self.xid, SELECTION)
         try:
             with xsync:
                 setsel = X11Window.XSetSelectionOwner(self.xid, SELECTION)
@@ -178,8 +161,7 @@ class SystemTray(GObject.GObject):
                 event_mask = StructureNotifyMask
                 log("setup tray: sending client message")
                 time = X11Window.get_server_time(self.xid)
-                xid = X11Window.get_root_xid()
-                X11Window.sendClientMessage(xid, xid, False, event_mask, "MANAGER", time, SELECTION, self.xid)
+                X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "MANAGER", time, SELECTION, self.xid)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
                 if owner != self.xid:
                     raise RuntimeError("we failed to get ownership of the tray selection")

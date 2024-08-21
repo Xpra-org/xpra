@@ -133,15 +133,6 @@ def get_pywindow(Window xwindow) -> GdkX11.X11Window | None:
         log("cannot get gdk window for %s : %#x, %s", display, xwindow, e)
     return None
 
-def get_xvisual(pyvisual) -> int:
-    cdef Visual *xvisual = _get_xvisual(pyvisual)
-    if xvisual==NULL:
-        return  -1
-    return xvisual.visualid
-
-cdef Visual *_get_xvisual(pyvisual):
-    return GDK_VISUAL_XVISUAL(<cGdkVisual*>unwrap(pyvisual, Gdk.Visual))
-
 
 cdef Display * get_xdisplay() except? NULL:
     gdk_display = Gdk.get_default_root_window().get_display()

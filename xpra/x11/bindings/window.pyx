@@ -963,7 +963,8 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef long event_mask = PropertyChangeMask | StructureNotifyMask | SubstructureNotifyMask
         return self.CreateWindow(parent, x, y, width, height, False, event_mask)
 
-    def CreateWindow(self, Window parent, int x, int y, int width, int height, int OR, long event_mask) -> Window:
+    def CreateWindow(self, Window parent, int x=0, int y=0, int width=1, int height=1,
+                           int OR=0, long event_mask=0, int visualid=0) -> Window:
         self.context_check("CreateWindow")
         cdef XSetWindowAttributes attributes
         memset(<void*> &attributes, 0, sizeof(XSetWindowAttributes))
@@ -973,32 +974,35 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             valuemask |= CWOverrideRedirect
             attributes.override_redirect = 1
         cdef Visual* visual = <Visual*> CopyFromParent
-        cdef int depth = self.get_depth(parent)
-        cdef Window window = XCreateWindow(self.display, parent,
-                                           x, y, width, height, 0, depth,
-                                           InputOutput, visual,
-                                           valuemask, &attributes)
-        return window
+        cdef int depth = 32
+        if visualid:
+            depth = 32
+            visual = self.get_rgba_visual()
+        else:
+            depth = self.get_depth(parent)
+        return XCreateWindow(self.display, parent,
+                             x, y, width, height, 0, depth,
+                             InputOutput, visual,
+                             valuemask, &attributes)
 
-    def getWindowVisual(self, Window xid) -> int:
-        self.context_check("getWindowVisual")
-        cdef XWindowAttributes curr
-        XGetWindowAttributes(self.display, xid, &curr)
-        return <uintptr_t> curr.visual
-
-    cdef Visual* GetVisual(self, VisualID visualid):
+    cdef Visual* get_rgba_visual(self):
         cdef XVisualInfo vinfo_template
         cdef int count
-        vinfo_template.visualid = visualid
-        cdef XVisualInfo *vinfo = XGetVisualInfo(self.display, VisualIDMask, &vinfo_template, &count)
-        if count != 1 or vinfo == NULL:
-            log.error("Error: visual %i not found, count=%i, vinfo=%#x", visualid, count, <uintptr_t> vinfo)
+        cdef XVisualInfo *vinfo = XGetVisualInfo(self.display, 0, &vinfo_template, &count)
+        if not count or vinfo == NULL:
+            log.error("Error: no visuals found, count=%i, vinfo=%#x", count, <uintptr_t> vinfo)
             if vinfo:
                 XFree(vinfo)
             return NULL
-        cdef Visual* visual = vinfo.visual
+        for i in range(count):
+            if vinfo[i].depth != 32:
+                continue
+            if vinfo[i].red_mask != 0xff0000 or vinfo[i].green_mask != 0x00ff00 or vinfo[i].blue_mask != 0x0000ff:
+                continue
+            XFree(vinfo)
+            return vinfo[i].visual
         XFree(vinfo)
-        return visual;
+        return NULL
 
     def DestroyWindow(self, Window w) -> None:
         self.context_check("DestroyWindow")

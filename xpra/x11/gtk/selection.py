@@ -16,6 +16,7 @@ from struct import unpack, calcsize
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom, get_pywindow
+from xpra.x11.gtk.prop import prop_set
 from xpra.exit_codes import ExitCode
 from xpra.util.env import envint
 from xpra.os_util import gi_import
@@ -72,7 +73,7 @@ class ManagerSelection(GObject.GObject):
     # Created for the use of tests.
     FORCE_AND_RETURN = "force_and_return"
 
-    def acquire(self, when):
+    def acquire(self, when) -> None:
         old_owner = self._owner()
         if when is self.IF_UNOWNED and old_owner != XNone:
             raise AlreadyOwned
@@ -142,8 +143,7 @@ class ManagerSelection(GObject.GObject):
                     GLib.source_remove(self.exit_timer)
                     self.exit_timer = 0
                 log("...they did.")
-        window = get_pywindow(self.xid)
-        window.set_title("Xpra_ManagerSelection%s" % self.atom)
+        prop_set(self.xid, "WM_TITLE", "latin1", "Xpra_ManagerSelection%s" % self.atom)
         self.clipboard.connect("owner-change", self._owner_change)
 
     def exit_timeout(self) -> None:
@@ -171,11 +171,6 @@ class ManagerSelection(GObject.GObject):
         if xid:
             remove_event_receiver(xid, self)
         Gtk.main_quit()
-
-    def window(self):
-        if self.xid is None:
-            return None
-        return get_pywindow(self.xid)
 
 
 GObject.type_register(ManagerSelection)

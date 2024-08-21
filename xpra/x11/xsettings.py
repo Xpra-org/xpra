@@ -11,7 +11,7 @@ from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.error import xlog, XError
 from xpra.x11.gtk.prop import raw_prop_set, raw_prop_get
 from xpra.x11.gtk.selection import ManagerSelection
-from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_pywindow, get_xatom
+from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom
 from xpra.x11.xsettings_prop import bytes_to_xsettings, xsettings_to_bytes
 from xpra.log import Logger
 
@@ -41,9 +41,8 @@ class XSettingsManager:
         # gone, the settings are gone. (Also, if we're stealing from
         # ourselves, we probably don't clean up the window properly.)
         self._manager.acquire(self._manager.FORCE_AND_RETURN)
-        self._window = self._manager.window()
 
-    def set_settings(self, settings):
+    def set_settings(self, settings) -> None:
         if isinstance(settings, list):
             settings = tuple(settings)
         elif not isinstance(settings, tuple):
@@ -51,7 +50,7 @@ class XSettingsManager:
             return
         try:
             data = xsettings_to_bytes(settings)
-            raw_prop_set(self._window.get_xid(), XSETTINGS, "_XSETTINGS_SETTINGS", 8, data)
+            raw_prop_set(self._manager.xid, XSETTINGS, "_XSETTINGS_SETTINGS", 8, data)
         except XError as e:
             log("set_settings(%s)", settings, exc_info=True)
             log.error("Error: XSettings not applied")
@@ -68,22 +67,22 @@ class XSettingsHelper:
         atom = Gdk.Atom.intern(self._selection, False)
         self._clipboard = Gtk.Clipboard.get(atom)
 
-    def xsettings_owner(self):
+    def xsettings_owner(self) -> int:
         with xlog:
             from xpra.x11.bindings.window import X11WindowBindings
             X11Window = X11WindowBindings()
             owner_x = X11Window.XGetSelectionOwner(self._selection)
             log("XGetSelectionOwner(%s)=%#x", self._selection, owner_x)
             if owner_x == XNone:
-                return None
-            return get_pywindow(owner_x)
+                return 0
+            return owner_x
 
     def get_settings(self):
         owner = self.xsettings_owner()
         log("Fetching current XSettings data, owner=%s", owner)
-        if owner is None:
+        if not owner:
             return None
-        data = raw_prop_get(owner.get_xid(), XSETTINGS, "_XSETTINGS_SETTINGS", ignore_errors=True, raise_xerrors=False)
+        data = raw_prop_get(owner, XSETTINGS, "_XSETTINGS_SETTINGS", ignore_errors=True, raise_xerrors=False)
         if data:
             return bytes_to_xsettings(data)
         return None
@@ -105,21 +104,21 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
         add_event_receiver(self.xid, self)
         self._add_watch()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         remove_event_receiver(self.xid, self)
 
-    def _add_watch(self):
+    def _add_watch(self) -> None:
         owner = self.xsettings_owner()
-        if owner is not None:
-            add_event_receiver(owner.get_xid(), self)
+        if owner:
+            add_event_receiver(owner, self)
 
-    def do_x11_client_message_event(self, evt):
+    def do_x11_client_message_event(self, evt) -> None:
         if evt.window is self.xid and evt.message_type == "MANAGER" and evt.data[1] == get_xatom(self._selection):
             log("XSettings manager changed")
             self._add_watch()
             self.emit("xsettings-changed")
 
-    def do_x11_property_notify_event(self, event):
+    def do_x11_property_notify_event(self, event) -> None:
         if str(event.atom) == XSETTINGS:
             log("XSettings property value changed")
             self.emit("xsettings-changed")
