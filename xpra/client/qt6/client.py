@@ -222,13 +222,13 @@ class XpraQt6Client(Qt6Client):
         log(f"show_progress({pct}, {msg})")
 
     def init(self, opts):
-        pass
+        """ we don't handle any options yet! """
 
     def init_ui(self, opts):
-        pass
+        """ we don't handle any options yet! """
 
     def cleanup(self):
-        pass
+        """ client classes must define this method """
 
     def setup_connection(self, conn):
         """
