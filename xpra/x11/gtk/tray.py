@@ -129,14 +129,14 @@ class SystemTray(GObject.GObject):
         remove_event_receiver(self.xid, self)
         tray_windows = self.tray_windows
         self.tray_windows = {}
-        for xid, xtray in tray_windows.items():
-            with xlog:
+        with xlog:
+            for xid, xtray in tray_windows.items():
                 self.undock(xid)
                 X11Window.Unmap(xtray)
-        xid = self.xid
-        if xid:
-            self.xid = 0
-            X11Window.Unmap(xid)
+            xid = self.xid
+            if xid:
+                self.xid = 0
+                X11Window.Unmap(xid)
         log("SystemTray.cleanup() done")
 
     def setup_tray_window(self) -> None:
