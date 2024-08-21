@@ -10,7 +10,7 @@ from time import monotonic
 from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.io import pollwait
@@ -44,12 +44,12 @@ class AudioServer(StubServerMixin):
         self.audio_init_done = Event()
         self.audio_init_done.set()
         self.pulseaudio = False
-        self.pulseaudio_command = None
+        self.pulseaudio_command = ""
         self.pulseaudio_configure_commands = []
-        self.pulseaudio_proc = None
-        self.pulseaudio_private_dir = None
-        self.pulseaudio_private_socket = None
-        self.audio_source_plugin = None
+        self.pulseaudio_proc: Popen | None = None
+        self.pulseaudio_private_dir = ""
+        self.pulseaudio_private_socket = ""
+        self.audio_source_plugin = ""
         self.supports_speaker = False
         self.supports_microphone = False
         self.speaker_allowed = False
@@ -317,8 +317,8 @@ class AudioServer(StubServerMixin):
                         audiolog.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
 
     def init_audio_options(self) -> None:
-        def audio_missing(*_args) -> None:
-            return []
+        def audio_missing(*_args) -> Sequence[str]:
+            return ()
 
         def noaudio() -> None:
             self.supports_speaker = self.supports_microphone = False
