@@ -408,11 +408,12 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         except OSError as e:
             self.close_connection = True
             log("send_head()", exc_info=True)
-            log.error("Error sending '%s':", path)
-            emsg = str(e)
-            if emsg.endswith(f": '{path}'"):
-                log.error(" %s", emsg.rsplit(":", 1)[0])
-            else:
-                log.estr(e)
-            self.send_error(404, "File not found")
+            if not isinstance(e, ConnectionResetError):
+                log.error("Error sending '%s':", path)
+                emsg = str(e)
+                if emsg.endswith(f": '{path}'"):
+                    log.error(" %s", emsg.rsplit(":", 1)[0])
+                else:
+                    log.estr(e)
+                self.send_error(404, "File not found")
             return b""
