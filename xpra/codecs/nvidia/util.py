@@ -329,7 +329,7 @@ def validate_driver_yuv444lossless() -> bool:
         else:
             log_fn = log.warn
             _version_warning = True
-        if v < MIN_VERSION:
+        if v < (MIN_VERSION, ):
             log_fn(f"Warning: NVidia driver version {pver(v)} is untested with NVENC")
             log_fn(f" (this encoder has been tested with versions {MIN_VERSION}.x and later only)")
         if not envbool("XPRA_NVENC_YUV444P", False):
