@@ -126,7 +126,7 @@ class ClientWindow(QMainWindow):
         size = self.label.size()
         return size.width(), size.height()
 
-    def eventFilter(self, object, event):
+    def eventFilter(self, obj, event):
         etype = event.type()
         if etype == QEvent.Type.WindowDeactivate:
             self.client.update_focus(0)
@@ -180,7 +180,7 @@ class ClientWindow(QMainWindow):
             painter.drawPixmap(0, 0, old_pixmap)
             painter.end()
             self.label.setPixmap(self.canvas)
-        log(f"{object}: {event} {event.type().name}")
+        log(f"{obj}: {event} {event.type().name}")
         return False
 
     def keyPressEvent(self, event: QKeyEvent):

@@ -69,7 +69,7 @@ class Qt6Client:
         self.send_hello()
 
     def get_encodings(self) -> Sequence[str]:
-        return ("rgb", "png", "jpg", "webp")
+        return "rgb", "png", "jpg", "webp"
 
     def send_hello(self):
         hello = {

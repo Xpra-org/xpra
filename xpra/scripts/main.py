@@ -2039,6 +2039,7 @@ def make_client(error_cb: Callable, opts):
                 mod_path = f"gi.repository.{mod}"
                 if sys.modules.get(mod_path):
                     raise RuntimeError(f"Gtk module {mod!r} is already loaded!")
+                # noinspection PyTypeChecker
                 sys.modules[mod_path] = None
             from xpra.client.qt6.client import make_client
             return make_client()

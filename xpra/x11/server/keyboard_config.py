@@ -641,7 +641,7 @@ class KeyboardConfig(KeyboardConfigBase):
             log("filtered_modifiers_set(%s)=%s", modifiers, m)
             return m
 
-        def change_mask(modifiers: set[str], press: bool, info: str) -> bool:
+        def change_mask(modifiers: set[str], press: bool, info: str) -> list[str]:
             failed = []
             for modifier in modifiers:
                 if modifier not in self.keynames_for_mod:
