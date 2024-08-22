@@ -81,7 +81,7 @@ class KeyboardBase:
     def mask_to_names(self, mask) -> list[str]:
         return mask_to_names(mask, self.modifier_map)
 
-    def get_keymap_modifiers(self) -> tuple[dict, list, list[str]]:
+    def get_keymap_modifiers(self) -> tuple[dict, list[str], list[str]]:
         """
             ask the server to manage capslock ('lock') which can be missing from mouse events
             (or maybe this is virtualbox causing it?)

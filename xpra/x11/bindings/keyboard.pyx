@@ -7,11 +7,12 @@
 import os
 import sys
 from typing import List, Dict
+from collections.abc import Iterable
 
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
-from xpra.util.str_fn import bytestostr, strtobytes
+from xpra.util.str_fn import bytestostr, strtobytes, csv
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, KeySym, KeyCode, Atom, Window, Status, Time, XRectangle, CARD32,
     XModifierKeymap,
@@ -834,7 +835,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         for i in range(0, keymap.max_keypermod):
             keycode[modifier*keymap.max_keypermod+i] = 0
 
-    cdef xmodmap_addmodifier(self, int modifier, keysyms):
+    cdef xmodmap_addmodifier(self, int modifier, keysyms: Iterable[str]):
         self.context_check("xmodmap_addmodifier")
         cdef KeyCode keycode
         cdef KeySym keysym
@@ -848,7 +849,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             keycodes = self.KeysymToKeycodes(keysym)
             log("add modifier: keycodes(%s)=%s", keysym, keycodes)
             if len(keycodes)==0:
-                log.error("xmodmap_exec_add: no keycodes found for keysym %s/%s", keysym_str, keysym)
+                log.error(f"Error: no keycodes found for keysym {keysym_str!r} ({keysym})")
                 success = False
             else:
                 for k in keycodes:
@@ -907,7 +908,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         for keycode in keycodes:
             XTestFakeKeyEvent(self.display, keycode, False, 0)
 
-    cdef native_xmodmap(self, instructions):
+    cdef native_xmodmap(self, instructions: Iterable):
         self.context_check("native_xmodmap")
         cdef XModifierKeymap* keymap
         cdef int modifier
@@ -946,7 +947,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                     if modifier>=0:
                         if self.xmodmap_addmodifier(modifier, keysyms):
                             continue
-                log.error("native_xmodmap could not handle instruction: %s", line)
+                log.error("Error applying xmodmap change: %s", csv(line))
                 unhandled.append(line)
             if len(keycodes)>0:
                 log("calling xmodmap_setkeycodes with %s", keycodes)

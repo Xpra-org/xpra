@@ -51,7 +51,7 @@ ALL_X11_MODIFIERS: dict[str, int] = {
 }
 
 
-def kmlog(keyname, msg, *args) -> None:
+def kmlog(keyname: str, msg: str, *args) -> None:
     """ logs at info level is we are debugging this keyname """
     if keyname in DEBUG_KEYSYMS:
         lfn = log.info
@@ -67,25 +67,24 @@ class KeyboardConfig(KeyboardConfigBase):
         self.query_struct = None
         self.modifier_map: dict[str, int] = {}
         self.mod_meanings = {}
-        self.mod_managed = []
-        self.mod_pointermissing = []
-        self.mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
+        self.mod_managed: list[str] = []
+        self.mod_pointermissing: list[str] = []
+        self.mod_nuisance: set[str] = set(DEFAULT_MODIFIER_NUISANCE)
         self.keycodes = ()
         self.x11_keycodes = []
-        self.layout = None
-        self.variant = None
-        self.options = None
+        self.layout = ""
+        self.variant = ""
+        self.options = ""
         self.layout_groups = False
 
         # this is shared between clients!
         self.keys_pressed = {}
         # these are derived by calling set_keymap:
-        self.keynames_for_mod = {}
+        self.keynames_for_mod: dict[str, list[str]] = {}
         self.keycode_translation = {}
-        self.keycodes_for_modifier_keynames = {}
-        self.modifier_client_keycodes = {}
+        self.keycodes_for_modifier_keynames: dict[str, list[int]] = {}
+        self.modifier_client_keycodes: dict[str, list] = {}
         self.compute_modifier_map()
-        self.modifiers_filter = []
         self.keycode_mappings = {}
 
     def __repr__(self):
@@ -117,9 +116,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 kminfo[i] = (keyval, name, keycode, group, level)
                 i += 1
         # modifiers:
-        modinfo: dict[str, dict[str, Any]] = {
-            "filter": self.modifiers_filter,
-        }
+        modinfo: dict[str, dict[str, Any]] = {}
         if self.modifier_client_keycodes:
             for mod, keys in self.modifier_client_keycodes.items():
                 modinfo.setdefault(mod, {})["client_keys"] = keys
@@ -152,7 +149,7 @@ class KeyboardConfig(KeyboardConfigBase):
         log("keyboard info: %s", info)
         return info
 
-    def parse_options(self, props) -> int:
+    def parse_options(self, props: typedict) -> int:
         """ used by both process_hello and process_keymap
             to set the keyboard attributes """
         super().parse_options(props)
@@ -183,7 +180,7 @@ class KeyboardConfig(KeyboardConfigBase):
         log("assign_keymap_options(..) modified %s", modded)
         return len(modded)
 
-    def parse_layout(self, props) -> None:
+    def parse_layout(self, props: typedict) -> None:
         """ used by both process_hello and process_keymap """
         keymap_dict = typedict(props.dictget("keymap") or {})
         self.layout = keymap_dict.strget("layout", "us")
@@ -318,7 +315,7 @@ class KeyboardConfig(KeyboardConfigBase):
         log("is_modifier(%s) not found", keycode)
         return False
 
-    def set_layout(self, layout: str, variant: str, options) -> bool:
+    def set_layout(self, layout: str, variant: str, options: str) -> bool:
         log("set_layout(%s, %s, %s)", layout, variant, options)
         if layout == "en":
             log.warn("Warning: invalid keyboard layout name '%s', using 'us' instead", layout)
@@ -461,8 +458,8 @@ class KeyboardConfig(KeyboardConfigBase):
     def update_keycode_mappings(self) -> None:
         self.keycode_mappings = get_keycode_mappings()
 
-    def do_get_keycode(self, client_keycode: int, keyname: str, pressed: bool, modifiers, keyval,
-                       keystr: str, group: int):
+    def do_get_keycode(self, client_keycode: int, keyname: str, pressed: bool, modifiers, keyval: int,
+                       keystr: str, group: int) -> tuple[int, int]:
         if not self.enabled:
             kmlog(keyname, "ignoring keycode since keyboard is turned off")
             return -1, group
@@ -477,7 +474,7 @@ class KeyboardConfig(KeyboardConfigBase):
         return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def find_matching_keycode(self, client_keycode: int, keyname: str,
-                              pressed: bool, modifiers, keyval, keystr: str, group) -> tuple[int, int]:
+                              pressed: bool, modifiers, keyval: int, keystr: str, group: int) -> tuple[int, int]:
         """
         from man xmodmap:
         The list of keysyms is assigned to the indicated keycode (which may be specified in decimal,
@@ -491,11 +488,11 @@ class KeyboardConfig(KeyboardConfigBase):
         keycode = -1
         rgroup = group
 
-        def klog(msg, *args):
+        def klog(msg: str, *args) -> None:
             kmlog(keyname, "do_get_keycode%s" + msg,
                   (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), *args)
 
-        def kml(msg, *args):
+        def kml(msg: str, *args) -> None:
             kmlog(keyname, msg, *args)
 
         # non-native: try harder to find matching keysym
@@ -529,50 +526,51 @@ class KeyboardConfig(KeyboardConfigBase):
         kml("will try levels: %s", levels)
         for level in levels:
             keycode = self.keycode_translation.get((keyname, level), -1)
-            if keycode >= 0:
-                keysyms = self.keycode_mappings.get(keycode)
-                klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
-                level0 = levels[0]
-                uq_keysyms = set(keysyms)
-                if len(uq_keysyms) <= 1 or (len(keysyms) > level0 and keysyms[level0] == ""):
-                    # if the keysym we would match for this keycode is 'NoSymbol',
-                    # then we can probably ignore it ('NoSymbol' shows up as "")
-                    # same if there's only one actual keysym for this keycode
-                    kml("not toggling any modifiers state for keysyms=%s", keysyms)
-                    break
-
-                def toggle_modifier(mod):
-                    keynames = self.keynames_for_mod.get(mod, set())
-                    if keyname in keynames:
-                        kml("not toggling '%s' since '%s' should deal with it", mod, keyname)
-                        # the keycode we're returning is for this modifier,
-                        # assume that this will end up doing what is needed
-                        return
-                    if mod in modifiers:
-                        kml("removing '%s' from modifiers", mod)
-                        modifiers.remove(mod)
-                    else:
-                        kml("adding '%s' to modifiers", mod)
-                        modifiers.append(mod)
-
-                # keypad overrules shift state (see #2702):
-                if keyname.startswith("KP_"):
-                    if numlock_modifier and not numlock:
-                        toggle_modifier(numlock_modifier)
-                elif (level & 1) ^ shift:
-                    # shift state does not match
-                    toggle_modifier("shift")
-                if int(bool(level & 2)) ^ mode:
-                    # try to set / unset mode:
-                    for mod, keynames in self.keynames_for_mod.items():
-                        if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
-                            # found mode switch modified
-                            toggle_modifier(mod)
-                            break
-                rgroup = level // 4
-                if rgroup != group:
-                    kml("switching group from %i to %i", group, rgroup)
+            if keycode < 0:
+                continue
+            keysyms = self.keycode_mappings.get(keycode)
+            klog("=%i (level=%i, shift=%s, mode=%i, keysyms=%s)", keycode, level, shift, mode, keysyms)
+            level0 = levels[0]
+            uq_keysyms = set(keysyms)
+            if len(uq_keysyms) <= 1 or (len(keysyms) > level0 and keysyms[level0] == ""):
+                # if the keysym we would match for this keycode is 'NoSymbol',
+                # then we can probably ignore it ('NoSymbol' shows up as "")
+                # same if there's only one actual keysym for this keycode
+                kml("not toggling any modifiers state for keysyms=%s", keysyms)
                 break
+
+            def toggle_modifier(mod: str) -> None:
+                keynames = self.keynames_for_mod.get(mod, set())
+                if keyname in keynames:
+                    kml("not toggling '%s' since '%s' should deal with it", mod, keyname)
+                    # the keycode we're returning is for this modifier,
+                    # assume that this will end up doing what is needed
+                    return
+                if mod in modifiers:
+                    kml(f"removing {mod!r} from modifiers")
+                    modifiers.remove(mod)
+                else:
+                    kml(f"adding {mod} to modifiers")
+                    modifiers.append(mod)
+
+            # keypad overrules shift state (see #2702):
+            if keyname.startswith("KP_"):
+                if numlock_modifier and not numlock:
+                    toggle_modifier(numlock_modifier)
+            elif (level & 1) ^ shift:
+                # shift state does not match
+                toggle_modifier("shift")
+            if int(bool(level & 2)) ^ mode:
+                # try to set / unset mode:
+                for mod, keynames in self.keynames_for_mod.items():
+                    if "ISO_Level3_Shift" in keynames or "Mode_switch" in keynames:
+                        # found mode switch modified
+                        toggle_modifier(mod)
+                        break
+            rgroup = level // 4
+            if rgroup != group:
+                kml("switching group from %i to %i", group, rgroup)
+            break
         # this should not find anything new?:
         if keycode < 0:
             keycode = self.keycode_translation.get(keyname, -1)
@@ -588,7 +586,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         return entry.keycode, entry.group
         return keycode, rgroup
 
-    def get_current_mask(self) -> list:
+    def get_current_mask(self) -> list[str]:
         # this is only called from an existing xsync context in this module
         return mask_to_names(X11Keyboard.query_mask(), self.modifier_map)
 
@@ -626,8 +624,8 @@ class KeyboardConfig(KeyboardConfigBase):
             def is_ignored(_modifier, modifier_keynames) -> bool:
                 return len(set(modifier_keynames or []) & set(ignored_modifier_keynames or [])) > 0
 
-        def filtered_modifiers_set(modifiers):
-            m = set()
+        def filtered_modifiers_set(modifiers) -> set[str]:
+            m: set[str] = set()
             mm = self.mod_managed or ()
             for modifier in modifiers:
                 if modifier in mm:
@@ -641,7 +639,7 @@ class KeyboardConfig(KeyboardConfigBase):
             log("filtered_modifiers_set(%s)=%s", modifiers, m)
             return m
 
-        def change_mask(modifiers, press, info):
+        def change_mask(modifiers: set[str], press: bool, info: str) -> bool:
             failed = []
             for modifier in modifiers:
                 if modifier not in self.keynames_for_mod:

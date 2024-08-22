@@ -163,7 +163,7 @@ class Keyboard(KeyboardBase):
             if x in modifiers:
                 modifiers.remove(x)
 
-    def get_keymap_modifiers(self):
+    def get_keymap_modifiers(self) -> tuple[dict, list[str], list[str]]:
         """
             ask the server to manage numlock, and lock can be missing from mouse events
             (or maybe this is virtualbox causing it?)

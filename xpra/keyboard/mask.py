@@ -42,7 +42,7 @@ DEFAULT_MODIFIER_MEANINGS: dict[str, str] = {
 }
 
 
-def mask_to_names(mask, modifier_map):
+def mask_to_names(mask: int, modifier_map: dict[str, int]) -> list[str]:
     modifiers = []
     for modifier, modifier_mask in modifier_map.items():
         if modifier_mask & mask:

@@ -137,12 +137,12 @@ class Keyboard(KeyboardBase):
     def __repr__(self):
         return "posix.Keyboard"
 
-    def get_keymap_modifiers(self):
+    def get_keymap_modifiers(self) -> tuple[dict, list[str], list[str]]:
         if self.keymap_modifiers is None:
             self.keymap_modifiers = self.do_get_keymap_modifiers()
         return self.keymap_modifiers
 
-    def do_get_keymap_modifiers(self):
+    def do_get_keymap_modifiers(self) -> tuple[dict, list[str], list[str]]:
         if not self.keyboard_bindings:
             if is_Wayland():
                 if first_time("wayland-keymap"):

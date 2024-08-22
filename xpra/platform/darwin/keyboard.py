@@ -134,7 +134,7 @@ class Keyboard(KeyboardBase):
             log.estr(e)
         return layout, layouts, variant, variants, options
 
-    def get_keymap_modifiers(self):
+    def get_keymap_modifiers(self) -> tuple[dict, list[str], list[str]]:
         """
             Override superclass so we can tell the server
             that 'control' will also be missing from non key events modifiers

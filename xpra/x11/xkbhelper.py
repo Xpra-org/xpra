@@ -129,7 +129,7 @@ def safe_setxkbmap(rules: str, model: str, layout: str, variant: str, options: s
 # keycodes
 
 
-def apply_xmodmap(instructions):
+def apply_xmodmap(instructions: list[tuple]) -> list[tuple]:
     try:
         with xsync:
             unset = X11Keyboard.set_xmodmap(instructions)
@@ -149,7 +149,7 @@ def get_keycode_mappings() -> dict[str, list[str]]:
     return X11Keyboard.get_keycode_mappings()
 
 
-def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
+def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
     """
         Translate the given keycodes into the existing keymap
     """
@@ -187,12 +187,12 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
         for keysym in keysyms:
             x11_keycodes_for_keysym.setdefault(keysym, set()).add(keycode)
 
-    def find_keycode(kc, keysym, i):
+    def find_keycode(kc: int, keysym, i: int) -> tuple | None:
         keycodes = tuple(x11_keycodes_for_keysym.get(keysym, set()))
         if keysym in DEBUG_KEYSYMS:
             log.info("set_keycode_translation: find_keycode%s x11 keycodes=%s", (kc, keysym, i), keycodes)
 
-        def rlog(keycode, msg):
+        def rlog(keycode, msg) -> None:
             if keysym in DEBUG_KEYSYMS:
                 log.info("set_keycode_translation: find_keycode%s=%s (%s)", (kc, keysym, i), keycode, msg)
         if not keycodes:
@@ -246,7 +246,7 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes):
     return trans
 
 
-def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keycodes, modifiers):
+def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keycodes, modifiers: dict[str, Iterable]):
     """
         Clients that have access to raw x11 keycodes should provide
         a `xkbmap_x11_keycodes` map, we otherwise fall back to using
@@ -290,11 +290,11 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         log_fn("modifiers_for(%s)=%s", entries, modifiers)
         return modifiers
 
-    def filter_mappings(mappings, drop_extra_keys=False):
+    def filter_mappings(mappings, drop_extra_keys=False) -> dict[int, set]:
         filtered = {}
         invalid_keysyms = set()
 
-        def estr(entries):
+        def estr(entries) -> str:
             try:
                 return csv(tuple(set(x[0] for x in entries)))
             except Exception:
@@ -374,20 +374,8 @@ def dump_dict(d) -> None:
         log("%s\t\t=\t%s", k, v)
 
 
-def group_by_keycode(entries) -> dict:
-    keycodes = {}
-    log_keycodes = []
-    for keysym, keycode, index in entries:
-        keycodes.setdefault(keycode, set()).add((keysym, index))
-        if keysym in DEBUG_KEYSYMS:
-            log_keycodes.append(keycode)
-    if log_keycodes:
-        log.info("group_by_keycode: %s", {keycode: keycodes.get(keycode) for keycode in log_keycodes})
-    return keycodes
-
-
-def indexed_mappings(raw_mappings) -> dict:
-    indexed = {}
+def indexed_mappings(raw_mappings: dict[int, Iterable]) -> dict[int, set]:
+    indexed: dict[int, set] = {}
     for keycode, keysyms in raw_mappings.items():
         pairs = set()
         log_fn = log.debug
@@ -418,7 +406,7 @@ def gtk_keycodes_to_mappings(gtk_mappings: Iterable[tuple[Any, str, int, int, in
     return mappings
 
 
-def x11_keycodes_to_list(x11_mappings) -> list[tuple[str, int, int]]:
+def x11_keycodes_to_list(x11_mappings: dict[int, Iterable]) -> list[tuple[str, int, int]]:
     """
         Takes x11 keycodes as obtained by get_keycode_mappings(), in the form:
         #{keycode : [keysyms], ..}
@@ -438,7 +426,7 @@ def x11_keycodes_to_list(x11_mappings) -> list[tuple[str, int, int]]:
     return entries
 
 
-def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder=False):
+def translate_keycodes(kcmin: int, kcmax: int, keycodes, preserve_keycode_entries, keysym_to_modifier, try_harder=False):
     """
         The keycodes given may not match the range that the server supports,
         or some of those keycodes may not be usable (only one modifier can
@@ -467,7 +455,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_
     for k in DEBUG_KEYSYMS:
         log.info("preserve_keysyms_map[%s]=%s", k, preserve_keysyms_map.get(k))
 
-    def do_assign(keycode, server_keycode, entries, override_server_keycode=False):
+    def do_assign(keycode, server_keycode, entries, override_server_keycode=False) -> int:
         """ may change the keycode if needed
             in which case we update the entries and populate 'keycode_trans'
         """
@@ -615,7 +603,7 @@ def translate_keycodes(kcmin, kcmax, keycodes, preserve_keycode_entries, keysym_
     return keycode_trans, server_keycodes, missing_keycodes
 
 
-def keymap_to_xmodmap(trans_keycodes):
+def keymap_to_xmodmap(trans_keycodes: dict[int, Any]) -> list[tuple]:
     """
         Given a dict with keycodes as keys and lists of keyboard entries as values,
         (keysym, keycode, index)
@@ -688,7 +676,7 @@ def clear_modifiers() -> None:
     apply_xmodmap(instructions)
 
 
-def set_modifiers(modifiers: dict[str, Iterable[str]]):
+def set_modifiers(modifiers: dict[str, Iterable[str]]) -> None:
     """
         modifiers is a dict: {modifier : [keynames]}
         Note: the same keysym cannot appear in more than one modifier
@@ -715,12 +703,11 @@ def set_modifiers(modifiers: dict[str, Iterable[str]]):
             err = apply_xmodmap(subset)
             log("err=%s", err)
             if err:
-                log.warn("removing problematic modifier mapping: %s", instructions[i-1])
+                log.warn("Warning: removing problematic modifier mapping: %s", csv(instructions[i-1]))
                 instructions = instructions[:i-1]+instructions[i:]
                 apply_or_trim(instructions)
                 return
     apply_or_trim(instructions)
-    return modifiers
 
 
 def get_modifiers_from_meanings(xkbmap_mod_meanings: dict[str, str]) -> dict[str, list[str]]:
@@ -738,7 +725,7 @@ def get_modifiers_from_meanings(xkbmap_mod_meanings: dict[str, str]) -> dict[str
     return modifiers
 
 
-def get_modifiers_from_keycodes(xkbmap_keycodes, add_default_modifiers=True):
+def get_modifiers_from_keycodes(xkbmap_keycodes: Iterable, add_default_modifiers=True) -> dict[str, list[str]]:
     """
         Some platforms can't tell us about modifier mappings
         So we try to find matches from the defaults below:
@@ -779,7 +766,7 @@ def get_modifiers_from_keycodes(xkbmap_keycodes, add_default_modifiers=True):
     return matches
 
 
-def map_missing_modifiers(keynames_for_mod):
+def map_missing_modifiers(keynames_for_mod: dict[str, Iterable]):
     x11_keycodes = X11Keyboard.get_keycode_mappings()
     min_keycode, max_keycode = X11Keyboard.get_minmax_keycodes()
     free_keycodes = [x for x in range(min_keycode, max_keycode) if x not in x11_keycodes]

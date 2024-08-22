@@ -5,6 +5,8 @@
 
 from typing import Any
 
+from xpra.util.objects import typedict
+
 
 class KeyboardConfigBase:
     """ Base class representing the keyboard configuration for a server.
@@ -27,7 +29,7 @@ class KeyboardConfigBase:
             "sync": self.sync,
         }
 
-    def parse_options(self, props) -> int:
+    def parse_options(self, props: typedict) -> int:
         oldsync = self.sync
         self.sync = props.boolget("sync", True)
         return int(oldsync != self.sync)
