@@ -301,6 +301,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "auth"          : "Authentication",
         "upnp"          : "UPnP",
         "quic"          : "QUIC",
+        "ping"          : "ping",
     },
     "Server": {
         "server"        : "All server code",

@@ -11,7 +11,7 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.common import ConnectionMessage
+from xpra.common import ConnectionMessage, FULL_INFO
 from xpra.os_util import POSIX
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -19,8 +19,9 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("network")
+pinglog = Logger("network", "ping")
 
-PING_DETAILS = envbool("XPRA_PING_DETAILS", True)
+PING_DETAILS = envbool("XPRA_PING_DETAILS", FULL_INFO > 0)
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 
 
@@ -47,6 +48,7 @@ class NetworkStateMixin(StubSourceMixin):
         self.cancel_ping_timer()
 
     def get_caps(self) -> dict[str, Any]:
+        # legacy flag
         return {"ping-echo-sourceid": True}
 
     def get_info(self) -> dict[str, Any]:
@@ -67,7 +69,7 @@ class NetworkStateMixin(StubSourceMixin):
         self.ping_timer = 0
         # NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000 * monotonic())
-        log("sending ping to %s with time=%s", self.protocol, now_ms)
+        pinglog("sending ping to %s with time=%s", self.protocol, now_ms)
         self.send_async("ping", now_ms, int(time.time() * 1000), will_have_more=False)
         timeout = PING_TIMEOUT
         self.check_ping_echo_timers[now_ms] = GLib.timeout_add(timeout * 1000,
@@ -75,8 +77,13 @@ class NetworkStateMixin(StubSourceMixin):
 
     def check_ping_echo_timeout(self, now_ms: int, timeout: int) -> None:
         self.check_ping_echo_timers.pop(now_ms, None)
-        if self.last_ping_echoed_time < now_ms and not self.is_closed():
-            self.disconnect(ConnectionMessage.CLIENT_PING_TIMEOUT, "waited %s seconds without a response" % timeout)
+        if self.is_closed():
+            return
+        expired = self.last_ping_echoed_time < now_ms
+        message = f"waited {timeout} seconds without a response" if expired else ""
+        pinglog(f"check_ping_echo_timeout {message}")
+        if expired:
+            self.disconnect(ConnectionMessage.CLIENT_PING_TIMEOUT, message)
 
     def cancel_ping_echo_timers(self) -> None:
         timers = self.check_ping_echo_timers.values()
@@ -101,6 +108,7 @@ class NetworkStateMixin(StubSourceMixin):
         # if the client is pinging us, ping it too:
         if not self.ping_timer:
             self.ping_timer = GLib.timeout_add(500, self.ping)
+            pinglog(f"starting client ping timer: {self.ping_timer}")
 
     def cancel_ping_timer(self) -> None:
         pt = self.ping_timer
@@ -121,7 +129,8 @@ class NetworkStateMixin(StubSourceMixin):
         self.client_load = l1, l2, l3
         if 0 <= server_ping_latency < 60000 and stats:
             stats.server_ping_latency.append((monotonic(), server_ping_latency / 1000.0))
-        log("ping echo client load=%s, measured server latency=%s", self.client_load, server_ping_latency)
+        pinglog(f"ping echo client load={self.client_load}, "
+                f"latency measured from server={client_ping_latency}ms, from client={server_ping_latency}ms")
 
     def update_connection_data(self, data) -> None:
         log("update_connection_data(%s)", data)

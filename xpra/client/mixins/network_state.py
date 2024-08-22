@@ -29,7 +29,8 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("network")
-bandwidthlog = Logger("bandwidth")
+bandwidthlog = Logger("network", "bandwidth")
+pinglog = Logger("network", "ping")
 
 SSH_AGENT: bool = envbool("XPRA_SSH_AGENT", True)
 FAKE_BROKEN_CONNECTION: int = envint("XPRA_FAKE_BROKEN_CONNECTION")
@@ -250,15 +251,18 @@ class NetworkState(StubClientMixin):
 
     def check_echo_timeout(self, ping_time) -> None:
         self.ping_echo_timeout_timer = 0
-        log("check_echo_timeout(%s) last_ping_echoed_time=%s", ping_time, self.last_ping_echoed_time)
-        if self.last_ping_echoed_time < ping_time:
+        expired = self.last_ping_echoed_time < ping_time
+        pinglog(f"check_echo_timeout({ping_time}) last={self.last_ping_echoed_time}, {expired=}")
+        if expired:
             # no point trying to use disconnect_and_quit() to tell the server here..
             self.warn_and_quit(ExitCode.CONNECTION_LOST,
                                "server ping timeout - waited %s seconds without a response" % PING_TIMEOUT)
 
     def send_ping(self) -> bool:
         p = self._protocol
-        if not p or p.TYPE not in ("xpra", "websocket"):
+        protocol_type = getattr(p, "TYPE", "undefined")
+        if protocol_type not in ("xpra", "websocket"):
+            pinglog(f"not sending ping for {protocol_type} connection")
             self.ping_timer = 0
             return False
         now_ms = int(1000.0 * monotonic())
@@ -269,9 +273,10 @@ class NetworkState(StubClientMixin):
             spl: Sequence[float] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
             wait = max(1000 * MIN_PING_TIMEOUT, min(1000 * MAX_PING_TIMEOUT, round(1000 + avg * 2000)))
-            log("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",
-                now_ms, round(1000 * avg), wait)
+            pinglog("send_ping() timestamp=%s, average server latency=%ims, using max wait %ims",
+                    now_ms, round(1000 * avg), wait)
         t = GLib.timeout_add(wait, self.check_server_echo, now_ms)
+        pinglog(f"send_ping() time={now_ms}, timer={t}")
         self.ping_echo_timers[now_ms] = t
         return True
 
@@ -284,7 +289,7 @@ class NetworkState(StubClientMixin):
         self.server_load = l1, l2, l3
         if cl >= 0:
             self.client_ping_latency.append((monotonic(), cl / 1000.0))
-        log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
+        pinglog("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
     def _process_ping(self, packet: PacketType) -> None:
         echotime = packet[1]
@@ -303,7 +308,9 @@ class NetworkState(StubClientMixin):
         except IndexError:
             sl = -1
         if SWALLOW_PINGS > 0:
+            pinglog("swallowed ping!")
             return
+        pinglog(f"got ping, sending echo time={echotime} for {sid=}")
         self.send("ping_echo", echotime, l1, l2, l3, int(1000.0 * sl), sid)
 
     ######################################################################

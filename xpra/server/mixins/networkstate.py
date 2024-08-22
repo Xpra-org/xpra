@@ -21,7 +21,7 @@ from xpra.util.env import envint, envbool
 from xpra.log import Logger
 
 log = Logger("network")
-bandwidthlog = Logger("bandwidth")
+bandwidthlog = Logger("network", "bandwidth")
 
 GLib = gi_import("GLib")
 
