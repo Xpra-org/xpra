@@ -149,27 +149,27 @@ class SystemTray(GObject.GObject):
         if root is None:
             raise RuntimeError("no root window!")
         screen = root.get_screen()
-        owner = X11Window.XGetSelectionOwner(SELECTION)
-        log(f"setup tray: current selection owner={owner:x}")
-        if owner != XNone:
-            raise RuntimeError(f"{SELECTION} already owned by {owner}")
-        visual = screen.get_system_visual()
-        if TRANSPARENCY:
-            visual = screen.get_rgba_visual()
-            if visual is None:
-                log.warn("setup tray: using rgb visual fallback")
-                visual = screen.get_system_visual()
-        assert visual is not None, "failed to obtain visual"
-        self.tray_window = GDKX11Window(root, width=1, height=1,
-                                        title="Xpra-SystemTray",
-                                        visual=visual)
-        self.xid = self.tray_window.get_xid()
-        set_tray_visual(self.xid, visual)
-        set_tray_orientation(self.xid, TRAY_ORIENTATION.HORZ)
-        log("setup tray: tray window %#x", self.xid)
-        display.request_selection_notification(Gdk.Atom.intern(SELECTION, False))
         try:
             with xsync:
+                owner = X11Window.XGetSelectionOwner(SELECTION)
+                log(f"setup tray: current selection owner={owner:x}")
+                if owner != XNone:
+                    raise RuntimeError(f"{SELECTION} already owned by {owner}")
+                visual = screen.get_system_visual()
+                if TRANSPARENCY:
+                    visual = screen.get_rgba_visual()
+                    if visual is None:
+                        log.warn("setup tray: using rgb visual fallback")
+                        visual = screen.get_system_visual()
+                assert visual is not None, "failed to obtain visual"
+                self.tray_window = GDKX11Window(root, width=1, height=1,
+                                        title="Xpra-SystemTray",
+                                        visual=visual)
+                self.xid = self.tray_window.get_xid()
+                set_tray_visual(self.xid, visual)
+                set_tray_orientation(self.xid, TRAY_ORIENTATION.HORZ)
+                log("setup tray: tray window %#x", self.xid)
+                display.request_selection_notification(Gdk.Atom.intern(SELECTION, False))
                 setsel = X11Window.XSetSelectionOwner(self.xid, SELECTION)
                 owner = X11Window.XGetSelectionOwner(SELECTION)
                 log(f"setup tray: set selection owner returned {setsel}, owner={owner:x}")
