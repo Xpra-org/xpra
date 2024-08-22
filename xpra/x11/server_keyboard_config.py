@@ -227,6 +227,8 @@ class KeyboardConfig(KeyboardConfigBase):
             else:
                 log.info("client did not supply any modifier definitions, using defaults")
                 self.keynames_for_mod = get_modifiers_from_meanings(DEFAULT_MODIFIER_MEANINGS)
+                if MAP_MISSING_MODIFIERS:
+                    map_missing_modifiers(self.keynames_for_mod)
         log("compute_modifiers() keynames_for_mod=%s", self.keynames_for_mod)
         log("compute_modifiers() keycodes_for_modifier_keynames=%s", self.keycodes_for_modifier_keynames)
         log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
