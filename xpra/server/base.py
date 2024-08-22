@@ -916,7 +916,7 @@ class ServerBase(ServerBaseClass):
         try:
             packet_type = bytestostr(packet[0])
 
-            def call_handler():
+            def call_handler() -> None:
                 may_log_packet(False, packet_type, packet)
                 handler(proto, packet)
 
@@ -937,7 +937,7 @@ class ServerBase(ServerBaseClass):
                 call_handler()
                 return
 
-            def invalid_packet():
+            def invalid_packet() -> None:
                 ss = self.get_server_source(proto)
                 if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
                     netlog("invalid packet: %s", packet)

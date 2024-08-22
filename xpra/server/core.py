@@ -2659,9 +2659,10 @@ class ServerCore:
                 netlog("process packet %s", packet_type)
                 handler(proto, packet)
                 return
-            if not self._closing:
+            if not self._closing and not proto.is_closed():
                 netlog("invalid packet: %s", packet)
-                netlog.error("unknown or invalid packet type: '%s' from %s", packet_type, proto)
+                netlog.error(f"Error: unknown or invalid packet type {packet_type!r}")
+                netlog.error(f" received from {proto}")
             proto.close()
         except Exception:
             netlog.error("Unhandled error while processing a '%s' packet from peer using %s",

@@ -105,6 +105,7 @@ class NetworkStateMixin(StubSourceMixin):
                 _, cl = stats.client_ping_latency[-1]
                 cl = int(1000.0 * cl)
         self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, sid, will_have_more=False)
+        pinglog(f"ping: sending echo for time={time_to_echo} and {sid=}")
         # if the client is pinging us, ping it too:
         if not self.ping_timer:
             self.ping_timer = GLib.timeout_add(500, self.ping)
