@@ -547,7 +547,7 @@ class BaseWindowModel(CoreX11WindowModel):
         was = set(curr)
         added = set(add) - curr
         curr |= added
-        removed = set(remove) - curr
+        removed = set(remove) & curr
         curr -= removed
         metalog("state_update(%s, %s) was=%s, added=%s, removed=%s, new state=%s",
                 add, remove, was, added, removed, curr)
