@@ -796,7 +796,7 @@ class UIXpraClient(ClientBaseClass):
     def mask_to_names(self, mask) -> list[str]:
         if self.keyboard_helper is None:
             return []
-        return self.keyboard_helper.mask_to_names(mask)
+        return self.keyboard_helper.mask_to_names(int(mask))
 
     ######################################################################
     # windows overrides
