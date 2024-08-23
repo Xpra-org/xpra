@@ -548,7 +548,7 @@ class BaseWindowModel(CoreX11WindowModel):
         curr = set(self.get_property("state"))
         added = set(add) - curr
         curr |= added
-        removed = set(remove) - curr
+        removed = set(remove) & curr
         curr -= removed
         if added or removed:
             # note: _sync_state will update _NET_WM_STATE here:
