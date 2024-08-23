@@ -14,6 +14,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - pynvml 12.555.43
    - pycuda 2024.1.2
    - pycuda RPMs to link against the system boost library
+   - build fix for ffmpeg v7 decoder and csc module
   * Major:
    - system tray docking causing server crashes
    - MS Windows PDF printing crash, library mismatch
@@ -74,7 +75,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - log opengl probe command
    - clarify display name message
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 23 Aug 2024 12:17:51 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 23 Aug 2024 21:40:45 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:

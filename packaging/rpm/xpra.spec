@@ -791,6 +791,7 @@ fi
    pynvml 12.555.43
    pycuda 2024.1.2
    pycuda RPMs to link against the system boost library
+   build fix for ffmpeg v7 decoder and csc module
 - Major:
    system tray docking causing server crashes
    MS Windows PDF printing crash, library mismatch

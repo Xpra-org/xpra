@@ -17,6 +17,7 @@
     * [pynvml 12.555.43](https://github.com/Xpra-org/xpra/commit/e3115ed747986edbcea4f26300b65854ebacefe5)
     * [pycuda 2024.1.2](https://github.com/Xpra-org/xpra/commit/73767cd45819f621f6e0308ae5bde67191d7cd93)
     * [pycuda RPMs to link against the system boost library](https://github.com/Xpra-org/xpra/commit/313092fa342f66d79ace1b4be552caead2a38b1b)
+    * [build fix for ffmpeg v7 decoder and csc module](https://github.com/Xpra-org/xpra/commit/db493b80c224c2da3de539ea8d5f4615090bcf8d)
 * Major:
     * [system tray docking causing server crashes](https://github.com/Xpra-org/xpra/commit/010c091fc4da583d8ec6a32e793467d039084724) [+ fixup](https://github.com/Xpra-org/xpra/commit/141a82a33811b061c544310b67aaa4468eb87ca2)
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
