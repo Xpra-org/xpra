@@ -883,12 +883,13 @@ fi
 
 
 %changelog
-* Sun Aug 18 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
+* Fri Aug 23 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
 - Platforms, build and packaging:
    pyopengl build fix for Fedora 41 + force rebuild
    build pycuda against the system boost library if possible
    avoid `dnf` v5
 - Major:
+   system tray docking causing server crashes
    client errors out with window forwarding disabled, remove more assumptions
    OpenGL probe results were being ignored
    shape client errors with desktop scaling
@@ -902,6 +903,9 @@ fi
 * Minor:
    `dev-env` subcommand fails on Debian
    always set a default initial resolution
+   system tray setup failures with non-composited screens, ie: 8-bit displays
+   system tray paint failures with `mmap`
+   map missing modifiers using defaults
 - Encodings:
    sub-optimal non-scroll areas
    prettier sampling filter when downscaling

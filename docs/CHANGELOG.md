@@ -1,11 +1,13 @@
 # Changelog
 
-## [6.1.2] 2024-08-18
+## [6.1.2] 2024-08-23
 * Platforms, build and packaging:
     * [pyopengl build fix for Fedora 41](https://github.com/Xpra-org/xpra/commit/998d842e37a5bd5a0ab5a8c8777daa6291441482) [+ force rebuild](https://github.com/Xpra-org/xpra/commit/5cbe95aab3c47a119f035ae1f6b7d1f6477210d0)
     * [build pycuda against the system boost library if possible](https://github.com/Xpra-org/xpra/commit/c0fcd93df4a06c4072009ec4437c8cda8fa1658e)
     * [avoid `dnf` v5](https://github.com/Xpra-org/xpra/commit/e54afda4e766e7ff88613062557beabfafaf8e68)
 * Major:
+    * [system tray docking causing server crashes](https://github.com/Xpra-org/xpra/commit/ebfad4e695f40f9940d7639d233c0bbfee5faecf) [+ fixup](https://github.com/Xpra-org/xpra/commit/09c5afbfcd12f8cb17dfe4ac93eb1aa68a97d472)
+    * [system tray not updated](https://github.com/Xpra-org/xpra/commit/8926bd02029ad6f3d862534cedeae9e5b9feb73d)
     * [client errors out with window forwarding disabled](https://github.com/Xpra-org/xpra/commit/dea2c6557c87c40ce36367aa7c5fabcd56ba657f), [remove more assumptions](https://github.com/Xpra-org/xpra/commit/02d32cac6f3efdf4d62882e73bcd573d83c78f12)
     * [OpenGL probe results were being ignored](https://github.com/Xpra-org/xpra/commit/7e55d3e98f4c0fef0f3ef09be8b620c5ae3e3dad)
     * [shape client errors with desktop scaling](https://github.com/Xpra-org/xpra/commit/c6a7c30004d19e2202faae994e37ea55304da913)
@@ -15,10 +17,12 @@
     * [clipboard `INCR` transfers get stuck](https://github.com/Xpra-org/xpra/commit/b30c5d96f20d1a63a1b9a542e9699fa062150daf)
     * [`keyboard-sync` switch not honoured](https://github.com/Xpra-org/xpra/commit/600d55faa7a323b62b32dfbd71fa22b546cc3979) [and not sent](https://github.com/Xpra-org/xpra/commit/ae01bb311a19e4d7a5ed25db6f6baba0ab90ece9)
     * [connection drops when downscaling](https://github.com/Xpra-org/xpra/commit/b6b6a1c19db26dd16f60577131c201c4407c75d7)
-    * [system tray not updated](https://github.com/Xpra-org/xpra/commit/8926bd02029ad6f3d862534cedeae9e5b9feb73d)
 * Minor:
     * [`dev-env` subcommand fails on Debian](https://github.com/Xpra-org/xpra/commit/ae8c475f52fe6bb34431842831473d16e77d2b48)
     * [always set a default initial resolution](https://github.com/Xpra-org/xpra/commit/cdc39987960ab800284fe12420825db6a2bb2986)
+    * [system tray setup failures with non-composited screens, ie: 8-bit displays](https://github.com/Xpra-org/xpra/commit/0c9612f232bbd9122fc60ef4cfc231cf06f5a4bc)
+    * [system tray paint failures with `mmap`](https://github.com/Xpra-org/xpra/commit/1774210e741e327c8a630f38bc9d6603d39720b3)
+    * [map missing modifiers using defaults](https://github.com/Xpra-org/xpra/commit/ed0ff32da2af5e0c135f584a669c09c8bf386055)
 * Encodings:
     * [sub-optimal non-scroll areas](https://github.com/Xpra-org/xpra/commit/9f7e41d4edf833f72c9ff4542371acf72693ed60)
     * [prettier sampling filter when downscaling](https://github.com/Xpra-org/xpra/commit/b2b3c504ac00949c918bedfe1f75f69e8888b668)
