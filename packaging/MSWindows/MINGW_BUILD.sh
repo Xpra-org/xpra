@@ -37,6 +37,7 @@ PYTHON=python3
 KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
 
+BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_ffmpeg"
 if [ "${DO_FULL}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-rfb"
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-dbus"
