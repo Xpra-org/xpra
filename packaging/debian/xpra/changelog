@@ -15,6 +15,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - pycuda 2024.1.2
    - pycuda RPMs to link against the system boost library
   * Major:
+   - system tray docking causing server crashes
    - MS Windows PDF printing crash, library mismatch
    - honour `ssh` option when re-connecting
    - missing http headers caused html5 client caching
@@ -53,6 +54,8 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - make it possible to skip NM api
    - handle empty ibus daemon command
    - handle invalid dbus-launch command
+   - system tray setup failures with non-composited screens, ie: 8-bit displays
+   - map missing modifiers using defaults
   * Cosmetic:
    - errors when connections are closed as we process them
    - try to prevent ATK warnings
@@ -71,7 +74,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - log opengl probe command
    - clarify display name message
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 18 Aug 2024 19:56:54 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 23 Aug 2024 12:17:51 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:

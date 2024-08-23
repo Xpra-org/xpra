@@ -775,7 +775,7 @@ fi
 
 
 %changelog
-* Sun Aug 18 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Fri Aug 23 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:
    syntax compatibility fixes
    `openssl.cnf` location in MS Windows builds
@@ -792,6 +792,7 @@ fi
    pycuda 2024.1.2
    pycuda RPMs to link against the system boost library
 - Major:
+   system tray docking causing server crashes
    MS Windows PDF printing crash, library mismatch
    honour `ssh` option when re-connecting
    missing http headers caused html5 client caching
@@ -830,6 +831,8 @@ fi
    make it possible to skip NM api
    handle empty ibus daemon command
    handle invalid dbus-launch command
+   system tray setup failures with non-composited screens, ie: 8-bit displays
+   map missing modifiers using defaults
 - Cosmetic:
    errors when connections are closed as we process them
    try to prevent ATK warnings

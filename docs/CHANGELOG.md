@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.10] 2024-08-18
+## [5.0.10] 2024-08-23
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
     * [`openssl.cnf` location in MS Windows builds](https://github.com/Xpra-org/xpra/commit/3ad6c8e44438912c5dd9dcba427b17d6b20a463f)
@@ -18,6 +18,7 @@
     * [pycuda 2024.1.2](https://github.com/Xpra-org/xpra/commit/73767cd45819f621f6e0308ae5bde67191d7cd93)
     * [pycuda RPMs to link against the system boost library](https://github.com/Xpra-org/xpra/commit/313092fa342f66d79ace1b4be552caead2a38b1b)
 * Major:
+    * [system tray docking causing server crashes](https://github.com/Xpra-org/xpra/commit/010c091fc4da583d8ec6a32e793467d039084724) [+ fixup](https://github.com/Xpra-org/xpra/commit/141a82a33811b061c544310b67aaa4468eb87ca2)
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
     * [honour `ssh` option when re-connecting](https://github.com/Xpra-org/xpra/commit/45bad59e6255f03087b8dbd51dfd2380472f6f20)
     * [missing http headers caused html5 client caching](https://github.com/Xpra-org/xpra/commit/bb8db97afcbd79ca8924728a674736026201d80f)
@@ -58,6 +59,8 @@
     * [only enable gtk error context with x11 Gdk backend](https://github.com/Xpra-org/xpra/commit/161acb245b65e71dae6f179bcbfe0ef8ced230d2)
     * [handle empty ibus daemon command](https://github.com/Xpra-org/xpra/commit/12289c125af7caa58acac01a6b484a6be6fdac0c)
     * [handle invalid dbus-launch command](https://github.com/Xpra-org/xpra/commit/1c7433556d05175d5e43b85dfdcfb88501aab4ca)
+    * [system tray setup failures with non-composited screens, ie: 8-bit displays](https://github.com/Xpra-org/xpra/commit/350bd4ac1f639814a0f9d384687394cca366bfdb)
+    * [map missing modifiers using defaults](https://github.com/Xpra-org/xpra/commit/905cf2e5ca61e6504ba1cfb0429f659cd6c4842e)
 * Cosmetic:
     * [errors when connections are closed as we process them](https://github.com/Xpra-org/xpra/commit/4d4ba9a078e91af86cd61b12b5021504a5e75ac2)
     * [try to prevent ATK warnings](https://github.com/Xpra-org/xpra/commit/440a182dbaaf1db0af81ab1b33d05bc454a726a0)
