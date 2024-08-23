@@ -71,7 +71,7 @@ def calc_constrained_size(width: int, height: int, hints) -> tuple[int, int]:
     if not hints:
         return width, height
 
-    def getintpair(key: str, dv1: int, dv2: int):
+    def getintpair(key: str, dv1: int, dv2: int) -> tuple[int, int]:
         v = hints.get(key)
         if v:
             try:
@@ -378,7 +378,7 @@ class WindowModel(BaseWindowModel):
         # by having WM_HINTS affect _NET_WM_STATE.  But this means that
         # WM_HINTS and _NET_WM_STATE handling become intertangled.
 
-        def set_if_unset(propname, value):
+        def set_if_unset(propname: str, value):
             # the property may not be initialized yet,
             # if that's the case then calling get_property throws an exception:
             try:
@@ -571,12 +571,11 @@ class WindowModel(BaseWindowModel):
         else:
             geometry = self.get_property("geometry")
             geomlog("_update_client_geometry: using current geometry=%s", geometry)
-        self._do_update_client_geometry(geometry)
+        self._do_update_client_geometry(*geometry)
 
-    def _do_update_client_geometry(self, geometry) -> None:
-        geomlog("_do_update_client_geometry(%s)", geometry)
+    def _do_update_client_geometry(self, x, y, allocated_w, allocated_h) -> None:
+        geomlog("_do_update_client_geometry(%s)", (x, y, allocated_w, allocated_h))
         hints = self.get_property("size-hints")
-        x, y, allocated_w, allocated_h = geometry
         w, h = self.calc_constrained_size(allocated_w, allocated_h, hints)
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
         with xlog:
@@ -904,16 +903,13 @@ class WindowModel(BaseWindowModel):
     def get_default_window_icon(self, _size: int = 48):
         return None
 
-    def get_wm_state(self, prop) -> bool:
+    def get_wm_state(self, prop: str) -> bool:
         state_names = self._state_properties.get(prop)
         assert state_names, f"invalid window state {prop}"
         log("get_wm_state(%s) state_names=%s", prop, state_names)
         # this is a virtual property for _NET_WM_STATE:
         # return True if any is set (only relevant for maximized)
-        for x in state_names:
-            if self._state_isset(x):
-                return True
-        return False
+        return any(self._state_isset(x) for x in state_names)
 
     ################################
     # Focus handling:

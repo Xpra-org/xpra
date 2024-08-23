@@ -24,9 +24,6 @@ metalog = Logger("x11", "window", "metadata")
 
 GObject = gi_import("GObject")
 
-dbus_helper = None
-query_actions = None
-
 X11Window = X11WindowBindings()
 
 # _NET_WM_STATE:
@@ -54,8 +51,8 @@ WORKSPACE_STR: dict[int, str] = {
 }
 
 
-def workspacestr(w):
-    return WORKSPACE_STR.get(w, w)
+def workspacestr(w) -> str:
+    return WORKSPACE_STR.get(w, str(w))
 
 
 class BaseWindowModel(CoreX11WindowModel):
@@ -547,20 +544,24 @@ class BaseWindowModel(CoreX11WindowModel):
 
     def _state_update(self, add=(), remove=()) -> None:
         curr = set(self.get_property("state"))
+        was = set(curr)
         added = set(add) - curr
         curr |= added
         removed = set(remove) - curr
         curr -= removed
+        metalog("state_update(%s, %s) was=%s, added=%s, removed=%s, new state=%s",
+                add, remove, was, added, removed, curr)
         if added or removed:
             # note: _sync_state will update _NET_WM_STATE here:
             self._internal_set_property("state", frozenset(curr))
             self._state_notify(added | removed)
 
     def _state_notify(self, state_names: set[str]) -> None:
-        notify_props = set()
+        notify_props: set[str] = set()
         for x in state_names:
             if x in self._state_properties_reversed:
                 notify_props.add(self._state_properties_reversed[x])
+        metalog("state notify(%s)=%s", state_names, notify_props)
         for x in tuple(notify_props):
             self.notify(x)
 
@@ -576,7 +577,7 @@ class BaseWindowModel(CoreX11WindowModel):
         # intercept state properties to route via update_state()
         if pspec.name in self._state_properties:
             # virtual property for WM_STATE:
-            self.update_wm_state(pspec.name, value)
+            self.update_wm_state(pspec.name, bool(value))
             return
         super().do_set_property(pspec, value)
 
@@ -587,7 +588,7 @@ class BaseWindowModel(CoreX11WindowModel):
             return self.get_wm_state(pspec.name)
         return super().do_get_property(pspec)
 
-    def update_wm_state(self, prop, b) -> None:
+    def update_wm_state(self, prop: str, b: bool) -> None:
         state_names = self._state_properties.get(prop)
         if not state_names:
             raise ValueError(f"invalid window state {prop}")
@@ -602,10 +603,7 @@ class BaseWindowModel(CoreX11WindowModel):
             raise ValueError(f"invalid window state {prop}")
         # this is a virtual property for WM_STATE:
         # return True if any is set (only relevant for maximized)
-        for x in state_names:
-            if self._state_isset(x):
-                return True
-        return False
+        return any(self._state_isset(x) for x in state_names)
 
     #########################################
     # X11 Events
@@ -620,7 +618,7 @@ class BaseWindowModel(CoreX11WindowModel):
         #   _NET_WM_STATE (more fully)
 
         if event.message_type == "_NET_WM_STATE":
-            def update_wm_state(prop):
+            def update_wm_state(prop: str) -> None:
                 current = self.get_property(prop)
                 mode = event.data[0]
                 if mode == _NET_WM_STATE_ADD:

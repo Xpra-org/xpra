@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Any
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
@@ -25,23 +26,16 @@ class AutoPropGObjectMixin:
     will work right."""
 
     def __init__(self):
-        self._gproperties = {}
+        self._gproperties: dict[str, Any] = {}
 
     def do_get_property(self, pspec):
         return self._gproperties.get(pspec.name)
 
-    def do_set_property(self, pspec, value):
+    def do_set_property(self, pspec, value) -> None:
         self._internal_set_property(pspec.name, value)
 
-    # Exposed for subclasses that wish to set readonly properties --
-    # .set_property (the public api) will fail, but the property can still be
-    # modified via this method.
-    def _internal_set_property(self, name: str, value):
-        setter = "do_set_property_" + name.replace("-", "_")
-        if hasattr(self, setter):
-            getattr(self, setter)(name, value)
-        else:
-            self._gproperties[name] = value
+    def _internal_set_property(self, name: str, value) -> None:
+        self._gproperties[name] = value
         self.notify(name)
 
 
