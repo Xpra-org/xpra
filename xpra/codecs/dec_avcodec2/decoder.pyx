@@ -93,10 +93,10 @@ cdef extern from "libavcodec/avcodec.h":
     #init and free:
     const AVCodec *avcodec_find_decoder(AVCodecID id)
     AVCodecContext *avcodec_alloc_context3(const AVCodec *codec)
+    void avcodec_free_context(AVCodecContext **context)
     int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
     AVFrame* av_frame_alloc()
     void av_frame_free(AVFrame **frame)
-    int avcodec_close(AVCodecContext *avctx)
 
     #actual decoding:
     AVPacket *av_packet_alloc() nogil
@@ -424,12 +424,7 @@ cdef class Decoder:
                     img.clone_pixel_data()
         log("clean_decoder() freeing AVCodecContext: %#x", <uintptr_t> self.codec_ctx)
         if self.codec_ctx!=NULL:
-            r = avcodec_close(self.codec_ctx)
-            if r!=0:
-                log.error("Error: failed to close decoder context %#x:", <uintptr_t> self.codec_ctx)
-                log.error(" %s", av_error_str(r))
-            av_free(self.codec_ctx)
-            self.codec_ctx = NULL
+            avcodec_free_context(&self.codec_ctx)
         log("clean_decoder() done")
 
     def __repr__(self):                      #@DuplicatedSignature

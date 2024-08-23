@@ -16,7 +16,7 @@ RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
 DO_TESTS=${DO_TESTS:-0}
-DO_FFMPEG=${DO_FFMPEG:-0}
+DO_FFMPEG=${DO_FFMPEG:-1}
 
 # these are only enabled for "full" builds:
 DO_CUDA=${DO_CUDA:-$DO_FULL}
@@ -39,6 +39,7 @@ KEY_FILE="E:\\xpra.pfx"
 DIST="./dist"
 BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_x265 --without-cuda_rebuild"
 
+BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_ffmpeg"
 if [ "${DO_FULL}" == "0" ]; then
 	DO_FFMPEG=0
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-server --without-shadow --without-proxy --without-rfb"
@@ -53,7 +54,7 @@ if [ "${DO_CUDA}" == "0" ]; then
 	BUILD_OPTIONS="${BUILD_OPTIONS} --without-nvjpeg --without-nvenc --without-nvfbc --without-cuda_kernels"
 fi
 if [ "${DO_FFMPEG}" == "0" ]; then
-	BUILD_OPTIONS="${BUILD_OPTIONS} --without-enc_ffmpeg --without-csc_swscale --without-dec_avcodec2"
+	BUILD_OPTIONS="${BUILD_OPTIONS} --without-csc_swscale --without-dec_avcodec2"
 fi
 
 ################################################################################
