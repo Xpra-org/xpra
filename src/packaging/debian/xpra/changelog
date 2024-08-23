@@ -22,6 +22,8 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - metadata ignored
    - system tray errors on displays without compositing
   * minor and cosmetic fixes:
+   - map missing modifiers using defaults
+   - don't assume that zlib is available
    - handle invalid dbus-launch command options
    - try to prevent all ATK warnings
    - prevent ssl header from messing up the log
@@ -29,7 +31,7 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - log opengl probe command
    - confusing X11 display message
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 20 Aug 2024 23:37:32 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 23 Aug 2024 13:56:05 +0700
 
 xpra (3.1.8-1) UNRELEASED; urgency=low
   * major:

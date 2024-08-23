@@ -1,4 +1,4 @@
-v3.1.9 (2024-08-20)
+v3.1.9 (2024-08-23)
 	-- build and packaging:
 		- libyuv 0.1878.20231004
 		- packaging updates for CentOS7: libyuv, skip pycuda
@@ -22,6 +22,8 @@ v3.1.9 (2024-08-20)
 		- metadata ignored
 		- system tray errors on displays without compositing
 	-- minor and cosmetic fixes:
+		- map missing modifiers using defaults
+		- don't assume that zlib is available
 		- handle invalid dbus-launch command options
 		- try to prevent all ATK warnings
 		- prevent ssl header from messing up the log

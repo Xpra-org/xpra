@@ -926,7 +926,7 @@ fi
 
 
 %changelog
-* Wed Aug 07 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
+* Fri Aug 23 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
 - build and packaging:
      libyuv 0.1878.20231004
      packaging updates for CentOS7: libyuv, skip pycuda
@@ -950,6 +950,8 @@ fi
      metadata ignored
      system tray errors on displays without compositing
 - minor and cosmetic fixes:
+     map missing modifiers using defaults
+     don't assume that zlib is available
      handle invalid dbus-launch command options
      try to prevent all ATK warnings
      prevent ssl header from messing up the log
