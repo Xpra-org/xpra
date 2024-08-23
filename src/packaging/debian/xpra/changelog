@@ -4,7 +4,8 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - packaging updates for CentOS7: libyuv, skip pycuda
    - python-netifaces missing gcc build dependency
    - remove outdated numpy packaging workaround on MS Windows
-   - remove ffmpeg codecs from MS Windows builds
+   - ffmpeg v7 compatibility for decoder and swscale
+   - remove ffmpeg encoder from MS Windows builds
   * encodings:
    - avoid slow modules (ie: csc_cython)
    - stick to the same video scaling setting longer, avoid big swings
@@ -31,7 +32,7 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - log opengl probe command
    - confusing X11 display message
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 23 Aug 2024 13:56:05 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 23 Aug 2024 21:53:08 +0700
 
 xpra (3.1.8-1) UNRELEASED; urgency=low
   * major:

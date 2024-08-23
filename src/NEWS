@@ -4,7 +4,8 @@ v3.1.9 (2024-08-23)
 		- packaging updates for CentOS7: libyuv, skip pycuda
 		- python-netifaces missing gcc build dependency
 		- remove outdated numpy packaging workaround on MS Windows
-		- remove ffmpeg codecs from MS Windows builds
+		- ffmpeg v7 compatibility for decoder and swscale
+		- remove ffmpeg encoder from MS Windows builds
 	-- encodings:
 		- avoid slow modules (ie: csc_cython)
 		- stick to the same video scaling setting longer, avoid big swings
