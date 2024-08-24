@@ -2561,7 +2561,7 @@ def stat_display_socket(socket_path: str, timeout=VERIFY_SOCKET_TIMEOUT) -> dict
     return {}
 
 
-def guess_display(dotxpra, current_display, uid: int = getuid(), gid: int = getgid(), sessions_dir: str = None) -> str:
+def guess_display(dotxpra, current_display, uid: int = getuid(), gid: int = getgid(), sessions_dir="") -> str:
     """
     try to find the one "real" active display
     either X11 or wayland displays used by real user sessions
@@ -2829,7 +2829,7 @@ def run_glcheck(opts) -> ExitValue:
     return 0
 
 
-def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid(), sessions_dir=None):
+def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid(), sessions_dir=""):
     if len(args) == 1 and args[0]:
         if OSX or WIN32:
             return args[0]
@@ -3893,7 +3893,7 @@ def run_clean_displays(options, args) -> ExitValue:
     return 0
 
 
-def get_displays_info(dotxpra=None, display_names=None, sessions_dir=None) -> dict[str, Any]:
+def get_displays_info(dotxpra=None, display_names=None, sessions_dir="") -> dict[str, Any]:
     displays = get_displays(dotxpra, display_names)
     log = Logger("util")
     log(f"get_displays({display_names})={displays}")
@@ -3907,7 +3907,7 @@ def get_displays_info(dotxpra=None, display_names=None, sessions_dir=None) -> di
     return {k: displays_info[k] for k in sn}
 
 
-def get_display_info(display, sessions_dir=None) -> dict[str, Any]:
+def get_display_info(display, sessions_dir="") -> dict[str, Any]:
     display_info = {"state": "LIVE"}
     if OSX or not POSIX:
         return display_info
@@ -3916,7 +3916,7 @@ def get_display_info(display, sessions_dir=None) -> dict[str, Any]:
     return get_x11_display_info(display, sessions_dir)
 
 
-def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
+def get_x11_display_info(display, sessions_dir="") -> dict[str, Any]:
     log = Logger("util")
     log(f"get_x11_display_info({display}, {sessions_dir})")
     state = ""
@@ -3926,12 +3926,14 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
     if sessions_dir:
         try:
             from xpra.scripts.server import get_session_dir, load_session_file, session_file_path
-        except ImportError:
-            pass
+        except ImportError as e:
+            log(f"get_x11_display_info: {e}")
         else:
             uid = getuid()
             session_dir = get_session_dir("unknown", sessions_dir, display, uid)
-            if os.path.exists(session_dir) and os.path.isdir(session_dir):
+            found_session_dir = os.path.exists(session_dir) and os.path.isdir(session_dir)
+            log(f"{session_dir} : found={found_session_dir}")
+            if found_session_dir:
                 with OSEnvContext(XPRA_SESSION_DIR=session_dir):
                     log(f"get_x11_display_info({display}, {sessions_dir}) using session directory {session_dir}")
                     try:
@@ -3947,6 +3949,7 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
                     sockfile = session_file_path("socket")
                     if not os.path.exists(pidfile) and not os.path.exists(sockfile):
                         # looks like the server has exited
+                        log(f"pidfile {pidfile!r} and {sockfile!r} not found")
                         state = "DEAD"
                     if xvfb_pid:
                         display_info["pid"] = xvfb_pid
