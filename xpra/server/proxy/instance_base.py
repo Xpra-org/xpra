@@ -9,7 +9,7 @@ from time import sleep, time, monotonic
 from queue import SimpleQueue, Queue
 from typing import Any
 from threading import Thread
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
@@ -49,7 +49,7 @@ CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression",
 CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 
 
-def number(k, v):
+def number(k, v) -> int:
     return parse_number(int, k, v)
 
 
@@ -240,7 +240,7 @@ class ProxyInstance:
     ################################################################################
 
     def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
-        hello = self.filter_client_caps(self.caps)
+        hello = self.filter_client_caps()
         if challenge_response:
             hello.update({
                 "challenge_response": challenge_response,
@@ -261,8 +261,8 @@ class ProxyInstance:
                     log.warn("failed to parse value %s for %s using %s: %s", v, k, parser, e)
         return d
 
-    def filter_client_caps(self, caps, remove=CLIENT_REMOVE_CAPS) -> dict:
-        fc = self.filter_caps(caps, remove, self.server_protocol)
+    def filter_client_caps(self, remove=CLIENT_REMOVE_CAPS) -> dict:
+        fc = self.filter_caps(self.caps, remove, self.server_protocol)
         # the display string may override the username:
         username = self.disp_desc.get("username")
         if username:
@@ -275,12 +275,12 @@ class ProxyInstance:
             fc["encoding.proxy.video.encodings"] = self.video_encoding_defs
         return fc
 
-    def filter_server_caps(self, caps: dict) -> dict:
+    def filter_server_caps(self, caps: typedict) -> dict:
         self.server_protocol.enable_encoder_from_caps(caps)
         return self.filter_caps(caps, ("aliases",), self.client_protocol)
 
-    def filter_caps(self, caps: dict, prefixes, proto=None) -> dict:
-        # removes caps that the proxy overrides / does not use:
+    def filter_caps(self, caps: typedict, prefixes: Iterable[str], proto=None) -> dict:
+        # removes caps that overrides / does not use:
         pcaps = {}
         removed = []
         for k in caps.keys():
@@ -329,7 +329,7 @@ class ProxyInstance:
             # update caps with latest hello caps from client:
             self.caps = typedict(packet[1])
             # keep challenge data in the hello response:
-            hello = self.filter_client_caps(self.caps, CLIENT_REMOVE_CAPS_CHALLENGE)
+            hello = self.filter_client_caps(CLIENT_REMOVE_CAPS_CHALLENGE)
             self.queue_server_packet(("hello", hello))
             return
         if packet_type == "ping_echo" and self.client_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
@@ -572,7 +572,7 @@ class ProxyInstance:
         if q:
             q.put_nowait(())
             q = SimpleQueue()
-            q.put(())
+            q.put(("closed", ))
             self.encode_queue = q
 
     def delvideo(self, wid: int):
@@ -589,6 +589,8 @@ class ProxyInstance:
             if not packet:
                 return
             packet_type = str(packet[0])
+            if packet_type == "closed":
+                return
             try:
                 if packet_type == "lost-window":
                     wid = packet[1]
