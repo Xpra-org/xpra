@@ -255,7 +255,7 @@ class XpraQt6Client(Qt6Client):
         return FakeProtocol()
 
 
-def make_client() -> QApplication:
+def make_client() -> XpraQt6Client:
     app = QApplication([])
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     client = XpraQt6Client()
