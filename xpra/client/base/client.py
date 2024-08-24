@@ -630,7 +630,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             synchronous = False
             self._mouse_position = None
         else:
-            packet = None
+            packet = ("none", )
         has_more = packet is not None and (
             bool(self._priority_packets) or bool(self._ordinary_packets) or self._mouse_position is not None
         )

@@ -95,7 +95,7 @@ def force_flush_queue(q: Queue) -> None:
 
 
 def no_packet() -> [PacketType, bool, bool]:
-    return None, False, False
+    return ("closed", ), False, False
 
 
 class SocketProtocol:
@@ -395,6 +395,8 @@ class SocketProtocol:
         if not packet:
             return
         packet_type: str | int = packet[0]
+        if packet_type in ("closed", "none"):
+            return
         chunks: tuple[NetPacketType, ...] = tuple(self.encode(packet))
         with self._write_lock:
             if self._closed:
