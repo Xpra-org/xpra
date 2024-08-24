@@ -14,7 +14,7 @@ import sys
 import glob
 import os.path
 import datetime
-from typing import Any
+from typing import Any, NoReturn
 from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence
 
@@ -40,7 +40,7 @@ from xpra.common import (
     CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH,
     ConnectionMessage, SocketState, noerr,
 )
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import (
     POSIX, WIN32, OSX,
     force_quit,
@@ -74,7 +74,7 @@ def get_rand_chars(length=16, chars=b"0123456789abcdefghijklmnopqrstuvwxyzABCDEF
     return b"".join(chars[random.randint(0, len(chars) - 1):][:1] for _ in range(length))
 
 
-def deadly_signal(signum, _frame=None):
+def deadly_signal(signum, _frame=None) -> NoReturn:
     signame = SIGNAMES.get(signum, signum)
     info(f"got deadly signal {signame}, exiting\n")
     # This works fine in tests, but for some reason if I use it here, then I
@@ -86,7 +86,7 @@ def deadly_signal(signum, _frame=None):
     force_quit(128 + int(signum))
 
 
-def validate_pixel_depth(pixel_depth, starting_desktop=False):
+def validate_pixel_depth(pixel_depth, starting_desktop=False) -> int:
     try:
         pixel_depth = int(pixel_depth)
     except ValueError:
@@ -100,7 +100,7 @@ def validate_pixel_depth(pixel_depth, starting_desktop=False):
     return pixel_depth
 
 
-def display_name_check(display_name):
+def display_name_check(display_name: str) -> None:
     """ displays a warning
         when a low display number is specified """
     if not display_name.startswith(":"):
@@ -472,9 +472,9 @@ def load_session_file(filename: str) -> bytes:
     return load_binary_file(session_file_path(filename))
 
 
-def save_session_file(filename: str, contents, uid: int = -1, gid: int = -1):
+def save_session_file(filename: str, contents: str | bytes, uid: int = -1, gid: int = -1) -> str:
     if not os.environ.get("XPRA_SESSION_DIR"):
-        return None
+        return ""
     if not isinstance(contents, bytes):
         contents = str(contents).encode("utf8")
     assert contents
@@ -697,7 +697,7 @@ def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
     return dbus_pid, dbus_env
 
 
-def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str):
+def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str) -> bool:
     if daemon:
         # daemon mode would have problems with the pipes
         return False
@@ -755,7 +755,8 @@ def request_exit(uri: str) -> bool:
     return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
 
-def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mode: str, display_name: str, defaults):
+def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mode: str,
+                  display_name: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     assert mode in (
@@ -775,7 +776,7 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mo
         title = f"Xpra {mode_str} Server {__version__}"
         splash_process = make_progress_process(title)
 
-        def stop_progress_process():
+        def stop_progress_process() -> None:
             if not splash_process or splash_process.poll() is not None:
                 return
             try:
@@ -783,7 +784,7 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mo
             except Exception:
                 pass
 
-        def show_progress(pct, text=""):
+        def show_progress(pct: int, text="") -> None:
             if not splash_process or splash_process.poll() is not None:
                 return
             stdin = splash_process.stdin
@@ -820,7 +821,7 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mo
 
 def _do_run_server(script_file: str, cmdline,
                    error_cb, opts, extra_args, full_mode: str, display_name: str, defaults,
-                   splash_process, progress):
+                   splash_process, progress) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
     mode_attrs: dict[str, str] = {}
@@ -993,7 +994,7 @@ def _do_run_server(script_file: str, cmdline,
                 else:
                     gid = os.getgid()
 
-    def write_session_file(filename, contents):
+    def write_session_file(filename: str, contents) -> str:
         return save_session_file(filename, contents, uid, gid)
 
     protected_env = {}
@@ -1343,7 +1344,7 @@ def _do_run_server(script_file: str, cmdline,
             xvfb_pidfile = write_session_file("xvfb.pid", str(xvfb.pid))
             log(f"saved xvfb.pid={xvfb.pid}")
 
-            def xvfb_terminated():
+            def xvfb_terminated() -> None:
                 log(f"xvfb_terminated() removing {xvfb_pidfile}")
                 if xvfb_pidfile:
                     os.unlink(xvfb_pidfile)
@@ -1389,7 +1390,7 @@ def _do_run_server(script_file: str, cmdline,
 
     xvfb_cmd = opts.xvfb
 
-    def check_xvfb(timeout=0):
+    def check_xvfb(timeout=0) -> bool:
         if xvfb is None:
             return True
         from xpra.x11.vfb_util import check_xvfb_process
@@ -1506,7 +1507,7 @@ def _do_run_server(script_file: str, cmdline,
         log("gui_init()")
         gui_init()
 
-    def init_local_sockets():
+    def init_local_sockets() -> None:
         progress(60, "initializing local sockets")
         # setup unix domain socket:
         netlog = get_network_logger()
@@ -1659,7 +1660,7 @@ def _do_run_server(script_file: str, cmdline,
     return r
 
 
-def attach_client(options, defaults):
+def attach_client(options, defaults) -> None:
     from xpra.platform.paths import get_xpra_command
     cmd = get_xpra_command() + ["attach"]
     display_name = os.environ.get("DISPLAY")
@@ -1686,7 +1687,7 @@ def attach_client(options, defaults):
     getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
 
 
-def verify_gdk_display(display_name):
+def verify_gdk_display(display_name: str):
     # pylint: disable=import-outside-toplevel
     # Now we can safely load gtk and connect:
     Gdk = gi_import("Gdk")
