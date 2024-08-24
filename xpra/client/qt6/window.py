@@ -4,11 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import sys
-
 from PyQt6.QtCore import Qt, QPoint, QEvent
 from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeyEvent
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QSizePolicy
+from PyQt6.QtWidgets import QMainWindow, QLabel, QSizePolicy
 
 from xpra.client.qt6.keys import key_names
 from xpra.log import Logger
@@ -228,14 +226,3 @@ class ClientWindow(QMainWindow):
         painter.drawImage(point, image)
         painter.end()
         self.label.setPixmap(canvas)
-
-
-def main(args) -> int:
-    app = QApplication(args)
-    win = ClientWindow({})
-    win.show()
-    return app.exec()
-
-
-if __name__ == "__main__":
-    main(sys.argv)
