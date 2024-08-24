@@ -289,9 +289,13 @@ class ServerCore:
 
     def init_ssl(self, opts) -> None:
         self.ssl_mode = opts.ssl
-        from xpra.net.ssl_util import get_ssl_attributes
-        self._ssl_attributes = get_ssl_attributes(opts, True)
-        netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
+        try:
+            from xpra.net.ssl_util import get_ssl_attributes
+        except ImportError as e:
+            netlog("init_ssl(..) no ssl: %s", e)
+        else:
+            self._ssl_attributes = get_ssl_attributes(opts, True)
+            netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
 
     def validate(self) -> bool:
         return True

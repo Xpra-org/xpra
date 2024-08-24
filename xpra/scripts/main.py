@@ -1982,7 +1982,7 @@ def set_client_features(opts) -> None:
 
     def impcheck(*modules) -> bool:
         for mod in modules:
-            if find_spec("xpra.%s" % mod):
+            if find_spec(mod):
                 continue
             if mod not in impwarned:
                 impwarned.add(mod)
@@ -1997,12 +1997,14 @@ def set_client_features(opts) -> None:
     features.display = opts.windows
     features.windows = opts.windows
     features.gstreamer = opts.gstreamer
-    features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("audio")
-    features.webcam = bo(opts.webcam) and impcheck("codecs")
-    features.clipboard = b(opts.clipboard) and impcheck("clipboard")
-    features.notifications = opts.notifications and impcheck("notifications")
-    features.dbus = b(opts.dbus) and impcheck("dbus")
+    features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("xpra.audio")
+    features.webcam = bo(opts.webcam) and impcheck("xpra.codecs")
+    features.clipboard = b(opts.clipboard) and impcheck("xpra.clipboard")
+    features.notifications = opts.notifications and impcheck("xpra.notifications")
+    features.dbus = b(opts.dbus) and impcheck("dbus", "xpra.dbus")
     features.mmap = b(opts.mmap)
+    features.ssl = b(opts.ssl) and impcheck("ssl")
+    features.ssh = b(opts.ssh)
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
     features.network_state = True
@@ -2023,6 +2025,8 @@ def enforce_client_features() -> None:
         "notifications": "xpra.notifications,xpra.client.mixins.notification",
         "dbus": "dbus,xpra.dbus",
         "mmap": "mmap,xpra.net.mmap,xpra.client.mixins.mmap",
+        "ssl": "ssl,xpra.net.ssl_util",
+        "ssh": "paramiko,xpra.net.ssh",
         "logging": "xpra.client.mixins.logging",
         "tray": "xpra.client.mixins.tray",
         "network_state": "xpra.client.mixins.network_state",

@@ -313,6 +313,8 @@ def set_server_features(opts) -> None:
     features.av_sync = features.audio and b(opts.av_sync)
     features.fileprint = b(opts.printing) or b(opts.file_transfer)
     features.mmap = b(opts.mmap)
+    features.ssl = b(opts.ssl)
+    features.ssh = b(opts.ssh)
     features.input_devices = not opts.readonly and impcheck("keyboard")
     features.commands = envbool("XPRA_RUN_COMMANDS", True)
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
@@ -340,6 +342,8 @@ def enforce_server_features() -> None:
         # "av_sync": "??",
         "fileprint": "xpra.server.mixins.fileprint,xpra.server.source.fileprint",
         "mmap": "xpra.net.mmap,xpra.server.mixins.mmap,xpra.server.source.mmap",
+        "ssl": "ssl,xpra.net.ssl_util",
+        "ssh": "paramiko,xpra.net.ssh",
         "input_devices": "xpra.server.mixins.input,xpra.server.source.input",
         "commands": "xpra.server.control_command",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
@@ -1480,7 +1484,7 @@ def _do_run_server(script_file: str, cmdline,
         if dbus_env:
             os.environ.update(dbus_env)
 
-    if SSH_AGENT_DISPATCH and not (shadowing or proxying):
+    if SSH_AGENT_DISPATCH and not (shadowing or proxying) and opts.ssh.lower() not in FALSE_OPTIONS:
         progress(50, "setup ssh agent forwarding")
         try:
             from xpra.net.ssh.agent import setup_ssh_auth_sock

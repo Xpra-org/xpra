@@ -22,6 +22,7 @@ from xpra.util.str_fn import csv
 from xpra.util.version import full_version_str
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool
+from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
@@ -605,9 +606,12 @@ def parse_display_name(error_cb, opts, display_name: str, cmdline=(),
 
 
 def get_ssl_options(desc, opts, cmdline) -> dict[str, Any]:
+    try:
+        from xpra.net.ssl_util import load_ssl_options, get_ssl_attributes
+    except ImportError as e:
+        raise InitExit(ExitCode.UNSUPPORTED, f"ssl support is not available: {e}")
     port = desc["port"]
     ssl_host = opts.ssl_server_hostname or desc["host"]
-    from xpra.net.ssl_util import load_ssl_options, get_ssl_attributes
     # load the host+port specific options from file:
     ssl_options = load_ssl_options(ssl_host, port)
     # only override these options via the command line and not configuration files:
