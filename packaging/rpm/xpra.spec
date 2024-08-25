@@ -902,7 +902,7 @@ fi
    connection drops when downscaling
    server-side window state not synchronized
    detection of display state
-* Minor:
+- Minor:
    `dev-env` subcommand fails on Debian
    always set a default initial resolution
    system tray setup failures with non-composited screens, ie: 8-bit displays
