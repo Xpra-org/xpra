@@ -57,6 +57,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - handle invalid dbus-launch command
    - system tray setup failures with non-composited screens, ie: 8-bit displays
    - map missing modifiers using defaults
+   - don't setup ssh agent dispatch when ssh is disabled
   * Cosmetic:
    - errors when connections are closed as we process them
    - try to prevent ATK warnings
@@ -75,7 +76,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - log opengl probe command
    - clarify display name message
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 23 Aug 2024 21:40:45 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 25 Aug 2024 18:53:26 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:

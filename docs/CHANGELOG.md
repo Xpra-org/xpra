@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.10] 2024-08-23
+## [5.0.10] 2024-08-25
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
     * [`openssl.cnf` location in MS Windows builds](https://github.com/Xpra-org/xpra/commit/3ad6c8e44438912c5dd9dcba427b17d6b20a463f)
@@ -62,6 +62,7 @@
     * [handle invalid dbus-launch command](https://github.com/Xpra-org/xpra/commit/1c7433556d05175d5e43b85dfdcfb88501aab4ca)
     * [system tray setup failures with non-composited screens, ie: 8-bit displays](https://github.com/Xpra-org/xpra/commit/350bd4ac1f639814a0f9d384687394cca366bfdb)
     * [map missing modifiers using defaults](https://github.com/Xpra-org/xpra/commit/905cf2e5ca61e6504ba1cfb0429f659cd6c4842e)
+    * [don't setup ssh agent dispatch when ssh is disabled](https://github.com/Xpra-org/xpra/commit/ab61a462d79c9aa0dbda310ef9f561c856bece82)
 * Cosmetic:
     * [errors when connections are closed as we process them](https://github.com/Xpra-org/xpra/commit/4d4ba9a078e91af86cd61b12b5021504a5e75ac2)
     * [try to prevent ATK warnings](https://github.com/Xpra-org/xpra/commit/440a182dbaaf1db0af81ab1b33d05bc454a726a0)

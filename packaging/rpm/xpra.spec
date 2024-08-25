@@ -775,7 +775,7 @@ fi
 
 
 %changelog
-* Fri Aug 23 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Sun Aug 25 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:
    syntax compatibility fixes
    `openssl.cnf` location in MS Windows builds
@@ -834,6 +834,7 @@ fi
    handle invalid dbus-launch command
    system tray setup failures with non-composited screens, ie: 8-bit displays
    map missing modifiers using defaults
+   don't setup ssh agent dispatch when ssh is disabled
 - Cosmetic:
    errors when connections are closed as we process them
    try to prevent ATK warnings
