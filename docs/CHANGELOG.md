@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.1.2] 2024-08-23
+## [6.1.2] 2024-08-25
 * Platforms, build and packaging:
     * [pyopengl build fix for Fedora 41](https://github.com/Xpra-org/xpra/commit/998d842e37a5bd5a0ab5a8c8777daa6291441482) [+ force rebuild](https://github.com/Xpra-org/xpra/commit/5cbe95aab3c47a119f035ae1f6b7d1f6477210d0)
     * [build pycuda against the system boost library if possible](https://github.com/Xpra-org/xpra/commit/c0fcd93df4a06c4072009ec4437c8cda8fa1658e)
@@ -17,15 +17,19 @@
     * [clipboard `INCR` transfers get stuck](https://github.com/Xpra-org/xpra/commit/b30c5d96f20d1a63a1b9a542e9699fa062150daf)
     * [`keyboard-sync` switch not honoured](https://github.com/Xpra-org/xpra/commit/600d55faa7a323b62b32dfbd71fa22b546cc3979) [and not sent](https://github.com/Xpra-org/xpra/commit/ae01bb311a19e4d7a5ed25db6f6baba0ab90ece9)
     * [connection drops when downscaling](https://github.com/Xpra-org/xpra/commit/b6b6a1c19db26dd16f60577131c201c4407c75d7)
+    * [server-side window state not updated](https://github.com/Xpra-org/xpra/commit/182ea94e60741137b04ffe422366bfbda11deb82)
+    * [detection of display state](https://github.com/Xpra-org/xpra/commit/b6f1f1ce408b08c801c6a764eb8a990267e7675a)
 * Minor:
     * [`dev-env` subcommand fails on Debian](https://github.com/Xpra-org/xpra/commit/ae8c475f52fe6bb34431842831473d16e77d2b48)
     * [always set a default initial resolution](https://github.com/Xpra-org/xpra/commit/cdc39987960ab800284fe12420825db6a2bb2986)
     * [system tray setup failures with non-composited screens, ie: 8-bit displays](https://github.com/Xpra-org/xpra/commit/0c9612f232bbd9122fc60ef4cfc231cf06f5a4bc)
     * [system tray paint failures with `mmap`](https://github.com/Xpra-org/xpra/commit/1774210e741e327c8a630f38bc9d6603d39720b3)
     * [map missing modifiers using defaults](https://github.com/Xpra-org/xpra/commit/ed0ff32da2af5e0c135f584a669c09c8bf386055)
+    * [don't setup ssh agent dispatch when ssh is disabled](https://github.com/Xpra-org/xpra/commit/632bd11b2cd771c498a0957693b1cdfe89380765)
 * Encodings:
     * [sub-optimal non-scroll areas](https://github.com/Xpra-org/xpra/commit/9f7e41d4edf833f72c9ff4542371acf72693ed60)
     * [prettier sampling filter when downscaling](https://github.com/Xpra-org/xpra/commit/b2b3c504ac00949c918bedfe1f75f69e8888b668)
+    * [NVidia driver version check never fails](https://github.com/Xpra-org/xpra/commit/e167f1a65608b99d260ff38e4e0354bbf9884cf8)
 * OpenGL:
     * [window scaling corruption](https://github.com/Xpra-org/xpra/commit/a6bd39570daa208e0f71a8e3a156a973aef8c237)
     * [desktop scaling miscalculations](https://github.com/Xpra-org/xpra/commit/b75808edb96d833e4d0498e365689ab6d251405b) [and corruption](https://github.com/Xpra-org/xpra/commit/58f772d62dede891770d572af70d924a44972aa0)
