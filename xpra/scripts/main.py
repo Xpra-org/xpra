@@ -511,6 +511,9 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
         options.encodings = validated_encodings(options.encodings)
     try:
         return do_run_mode(script_file, cmdline, error_cb, options, args, full_mode, defaults)
+    except ValueError as e:
+        info(f"{e}")
+        return ExitCode.UNSUPPORTED
     except KeyboardInterrupt as e:
         info(f"\ncaught {e!r}, exiting")
         return 128 + signal.SIGINT
