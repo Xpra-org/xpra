@@ -18,7 +18,7 @@
     * [`keyboard-sync` switch not honoured](https://github.com/Xpra-org/xpra/commit/600d55faa7a323b62b32dfbd71fa22b546cc3979) [and not sent](https://github.com/Xpra-org/xpra/commit/ae01bb311a19e4d7a5ed25db6f6baba0ab90ece9)
     * [connection drops when downscaling](https://github.com/Xpra-org/xpra/commit/b6b6a1c19db26dd16f60577131c201c4407c75d7)
     * [server-side window state not updated](https://github.com/Xpra-org/xpra/commit/182ea94e60741137b04ffe422366bfbda11deb82)
-    * [detection of display state](https://github.com/Xpra-org/xpra/commit/b6f1f1ce408b08c801c6a764eb8a990267e7675a)
+    * [detection of display state](https://github.com/Xpra-org/xpra/commit/b6f1f1ce408b08c801c6a764eb8a990267e7675a) [for all types of servers](https://github.com/Xpra-org/xpra/commit/e629f7d19d9efb9bbae271ec97e4d1db84238cef)
 * Minor:
     * [`dev-env` subcommand fails on Debian](https://github.com/Xpra-org/xpra/commit/ae8c475f52fe6bb34431842831473d16e77d2b48)
     * [always set a default initial resolution](https://github.com/Xpra-org/xpra/commit/cdc39987960ab800284fe12420825db6a2bb2986)
