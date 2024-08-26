@@ -1550,16 +1550,16 @@ def _do_run_server(script_file: str, cmdline,
         if not xvfb_pid:
             # perhaps this is an upgrade from an older version?
             # try harder to find the pid:
-            def _get_int(prop):
-                from xpra.gtk.util import get_default_root_window
+            def _get_int(prop) -> int:
+                from xpra.x11.bindings.core import X11CoreBindings
                 from xpra.x11.gtk.prop import prop_get
                 try:
-                    xid = get_default_root_window().get_xid()
+                    xid = X11CoreBindings().get_root_xid()
                     return prop_get(xid, prop, "u32")
                 except Exception:
-                    return None
+                    return 0
 
-            xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID") or 0
+            xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID")
 
     progress(80, "initializing server")
     if "backend" not in mode_attrs:

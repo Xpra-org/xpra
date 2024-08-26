@@ -118,8 +118,8 @@ if use_x11_bindings():
                 return False
             try:
                 # in theory this is not a proper check, meh - that will do
-                root = get_default_root_window()
-                supported = prop_get(root.get_xid(), "_NET_SUPPORTED", ["atom"], ignore_errors=True) or ()
+                root_xid = X11Window.get_root_xid()
+                supported = prop_get(root_xid, "_NET_SUPPORTED", ["atom"], ignore_errors=True) or ()
                 return "_NET_WM_DESKTOP" in supported
             except Exception as we:
                 workspacelog("x11 workspace bindings error", exc_info=True)
@@ -1658,12 +1658,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             workspacelog(f"moving {app_view} to {vd}")
             app_view.move(vd)
             return
+        if not HAS_X11_BINDINGS:
+            return
         gdkwin = self.get_window()
         workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s",
                      gdkwin.get_xid(), self.get_mapped(), gdkwin.is_visible())
-        root = get_default_root_window()
         with xlog:
-            send_wm_workspace(root.get_xid(), gdkwin.get_xid(), workspace)
+            root_xid = X11Window.get_root_xid()
+            send_wm_workspace(root_xid, gdkwin.get_xid(), workspace)
 
     def get_desktop_workspace(self) -> int:
         if WIN32:

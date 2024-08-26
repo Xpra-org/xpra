@@ -11,6 +11,7 @@ from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk.widget import label
+from xpra.gtk.keymap import get_default_keymap
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import enable_color, Logger
 
@@ -52,8 +53,7 @@ class KeyboardStateInfoWindow:
         self.key_events: deque[str] = deque(maxlen=35)
         self.window.connect("key-press-event", self.key_press)
         self.window.connect("key-release-event", self.key_release)
-        display = Gdk.Display.get_default()
-        keymap = Gdk.Keymap.get_for_display(display)
+        keymap = get_default_keymap()
         self.keymap_change_timer = 0
         keymap.connect("keys-changed", self.keymap_changed)
         self.show_keymap("current keymap")

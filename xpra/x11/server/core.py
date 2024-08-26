@@ -297,12 +297,12 @@ class X11ServerCore(GTKServerBase):
 
     # noinspection PyMethodMayBeStatic
     def do_clean_x11_properties(self, *properties) -> None:
-        root = get_default_root_window()
+        root_xid = X11Window.get_root_xid()
         for prop in properties:
             try:
-                prop_del(root.get_xid(), prop)
+                prop_del(root_xid, prop)
             except Exception as e:
-                log.warn("prop_del(%s, %s) %s", root, prop, e)
+                log.warn(f"Warning: failed to delete property {prop!r} on root window {root_xid}: {e}")
 
     # noinspection PyMethodMayBeStatic
     def get_uuid(self) -> str:
@@ -849,7 +849,7 @@ class X11ServerCore(GTKServerBase):
         if not self.bell:
             return
         wid = 0
-        rxid = get_default_root_window().get_xid()
+        rxid = X11Window.get_root_xid()
         if event.window != rxid and event.window_model is not None:
             wid = self._window_to_id.get(event.window_model, 0)
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)

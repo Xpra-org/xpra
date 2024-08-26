@@ -37,20 +37,17 @@ def window_info(xid: int) -> str:
 def dump_windows() -> None:
     from xpra.log import Logger
     log = Logger("x11", "window")
-    from xpra.gtk.util import get_default_root_window
-    root = get_default_root_window()
-    if not root:
-        return
-    xid = root.get_xid()
-    log(f"root window: {xid:x}")
     try:
-        from xpra.x11.gtk.bindings import get_children
+        from xpra.x11.bindings.window import X11WindowBindings
         from xpra.gtk.error import xlog
     except ImportError:
         pass
     else:
         with xlog:
-            children = get_children(xid)
+            X11Window = X11WindowBindings()
+            xid = X11Window.get_root_xid()
+            log(f"root window: {xid:x}")
+            children = X11Window.get_children(xid)
             log("%s windows" % len(xid))
             for cxid in children:
                 log("found window: %s", window_info(cxid))

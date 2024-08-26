@@ -100,8 +100,8 @@ class KeyboardBase:
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
         return None
 
-    def update_modifier_map(self, display, mod_meanings) -> None:
-        log(f"update_modifier_map({display}, {mod_meanings})")
+    def update_modifier_map(self, mod_meanings) -> None:
+        log(f"update_modifier_map({mod_meanings})")
         self.modifier_map = MODIFIER_MAP
 
     def process_key_event(self, send_key_action_cb: Callable, wid: int, key_event: KeyEvent):

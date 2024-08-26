@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
+from xpra.gtk.keymap import get_default_keymap
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, MODIFIER_MAP
 
@@ -13,7 +14,7 @@ X11Keyboard = X11KeyboardBindings()
 Gdk = gi_import("Gdk")
 
 
-def grok_modifier_map(display, meanings) -> dict[str, int]:
+def grok_modifier_map(meanings) -> dict[str, int]:
     """Return a dict mapping modifier names to corresponding X modifier
     bitmasks."""
     # is this still correct for GTK3?
@@ -29,9 +30,9 @@ def grok_modifier_map(display, meanings) -> dict[str, int]:
     if not meanings:
         meanings = DEFAULT_MODIFIER_MEANINGS
 
-    (max_keypermod, keycodes) = X11Keyboard.get_modifier_map()
+    max_keypermod, keycodes = X11Keyboard.get_modifier_map()
     assert len(keycodes) == 8 * max_keypermod
-    keymap = Gdk.Keymap.get_for_display(display)
+    keymap = get_default_keymap()
     for i in range(8):
         for j in range(max_keypermod):
             keycode = keycodes[i * max_keypermod + j]

@@ -5,8 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any
-from collections.abc import Sequence, Iterable
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -19,6 +18,14 @@ log = Logger("keyboard")
 KEY_TRANSLATIONS: dict[tuple[str, int, int], str] = {}
 
 
+def get_default_keymap():
+    Gdk = gi_import("Gdk")
+    display = Gdk.Display.get_default()
+    if not display:
+        return Gdk.Keymap.get_default()
+    return Gdk.Keymap.get_for_display(display)
+
+
 def get_gtk_keymap(ignore_keys=("", "VoidSymbol", "0xffffff")) -> Sequence[tuple[int, str, int, int, int]]:
     """
         Augment the keymap we get from gtk.gdk.keymap_get_default()
@@ -26,17 +33,11 @@ def get_gtk_keymap(ignore_keys=("", "VoidSymbol", "0xffffff")) -> Sequence[tuple
         We can also ignore some keys
     """
     Gdk = gi_import("Gdk")
-    display = Gdk.Display.get_default()
-    return do_get_gtk_keymap(display, ignore_keys)
-
-
-def do_get_gtk_keymap(display, ignore_keys: Iterable[Any]) -> Sequence[tuple[int, str, int, int, int]]:
-    if not display:
+    keymap = get_default_keymap()
+    if not keymap:
         return ()
-    Gdk = gi_import("Gdk")
-    keymap = Gdk.Keymap.get_for_display(display)
-    log("keymap_get_for_display(%s)=%s, direction=%s, bidirectional layouts: %s",
-        display, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
+    log("get_default_keymap()=%s, direction=%s, bidirectional layouts: %s",
+        ignore_keys, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
     keycodes: list[tuple[int, str, int, int, int]] = []
     for i in range(0, 2 ** 8):
         entries = keymap.get_entries_for_keycode(i)

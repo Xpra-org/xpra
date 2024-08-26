@@ -8,7 +8,7 @@
 from collections.abc import Sequence
 
 from xpra.client.gui.keyboard_helper import KeyboardHelper, log
-from xpra.gtk.keymap import get_gtk_keymap
+from xpra.gtk.keymap import get_gtk_keymap, get_default_keymap
 from xpra.os_util import gi_import
 from xpra.util.system import is_X11
 
@@ -24,10 +24,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         # (as we may be getting dozens of such events at a time)
         self._keymap_changing = False
         self._keymap_change_handler_id = None
-        self._keymap = None
-        display = Gdk.Display.get_default()
-        if display:
-            self._keymap = Gdk.Keymap.get_for_display(display)
+        self._keymap = get_default_keymap()
         self.update()
         if self._keymap:
             self._keymap_change_handler_id = self._keymap.connect("keys-changed", self.keymap_changed)
@@ -55,8 +52,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         if self._keymap_change_handler_id:
             self._keymap.disconnect(self._keymap_change_handler_id)
             self._keymap_change_handler_id = None
-        display = Gdk.Display.get_default()
-        self._keymap = Gdk.Keymap.get_for_display(display)
+        self._keymap = get_default_keymap()
         if self._keymap_changing:
             # timer is already due
             return
@@ -84,7 +80,7 @@ class GTKKeyboardHelper(KeyboardHelper):
         super().update()
         if is_X11():
             with log.trap_error("Error querying modifier map"):
-                self.keyboard.update_modifier_map(Gdk.Display.get_default(), self.mod_meanings)
+                self.keyboard.update_modifier_map(self.mod_meanings)
         log("update() modifier_map=%s, old hash=%s, new hash=%s", self.keyboard.modifier_map, old_hash, self.hash)
         return old_hash != self.hash
 

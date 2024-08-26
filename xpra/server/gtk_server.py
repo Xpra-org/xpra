@@ -18,6 +18,7 @@ from xpra.os_util import gi_import
 from xpra.common import FULL_INFO
 from xpra.net.common import PacketType
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
+from xpra.gtk.keymap import get_default_keymap
 from xpra.server import features
 from xpra.server.base import ServerBase
 from xpra.gtk.util import get_root_size
@@ -54,11 +55,7 @@ class GTKServerBase(ServerBase):
 
     def watch_keymap_changes(self) -> None:
         # Set up keymap change notification:
-        display = Gdk.Display.get_default()
-        if not display:
-            log.warn("Warning: no default Gdk Display!")
-            return
-        keymap = Gdk.Keymap.get_for_display(display)
+        keymap = get_default_keymap()
 
         # this event can fire many times in succession
         # throttle how many times we call self._keys_changed()

@@ -12,7 +12,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
-from xpra.gtk.keymap import get_gtk_keymap
+from xpra.gtk.keymap import get_gtk_keymap, get_default_keymap
 from xpra.gtk.error import xsync, xlog
 from xpra.keyboard.mask import (
     DEFAULT_MODIFIER_NUISANCE, DEFAULT_MODIFIER_MEANINGS, DEFAULT_MODIFIER_NUISANCE_KEYNAMES, mask_to_names,
@@ -244,8 +244,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def compute_modifier_keynames(self) -> None:
         self.keycodes_for_modifier_keynames = {}
         self.mod_nuisance = set(DEFAULT_MODIFIER_NUISANCE)
-        display = Gdk.Display.get_default()
-        keymap = Gdk.Keymap.get_for_display(display)
+        keymap = get_default_keymap()
         if self.keynames_for_mod:
             for modifier, keynames in self.keynames_for_mod.items():
                 for keyname in keynames:
@@ -306,7 +305,7 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def compute_modifier_map(self) -> None:
         with xlog:
-            self.modifier_map = grok_modifier_map(Gdk.Display.get_default(), self.mod_meanings)
+            self.modifier_map = grok_modifier_map(self.mod_meanings)
         log("modifier_map(%s)=%s", self.mod_meanings, self.modifier_map)
 
     def is_modifier(self, keycode: int) -> bool:
@@ -579,8 +578,7 @@ class KeyboardConfig(KeyboardConfigBase):
             klog("=%i, %i (keyname translation)", keycode, rgroup)
         if keycode < 0:
             # last resort, find using the keyval:
-            display = Gdk.Display.get_default()
-            keymap = Gdk.Keymap.get_for_display(display)
+            keymap = get_default_keymap()
             b, entries = keymap.get_entries_for_keyval(keyval)
             if b and entries:
                 for entry in entries:

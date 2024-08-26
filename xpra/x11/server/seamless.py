@@ -23,14 +23,13 @@ from xpra.net.common import PacketType, PacketElement
 from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
 from xpra.server import features, ServerExitMode
 from xpra.gtk.gobject import one_arg_signal
-from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.gtk.prop import prop_set
 from xpra.x11.gtk.tray import get_tray_window, SystemTray
 from xpra.x11.gtk.selection import AlreadyOwned
 from xpra.x11.gtk.bindings import add_event_receiver, get_pywindow
-from xpra.x11.bindings.window import X11WindowBindings
+from xpra.x11.bindings.window import X11WindowBindings, constants
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.server.base import X11ServerBase
@@ -58,6 +57,8 @@ screenlog = Logger("x11", "screen")
 X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
 X11RandR = RandRBindings()
+
+SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 
 REPARENT_ROOT = envbool("XPRA_REPARENT_ROOT", True)
 CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
@@ -144,12 +145,11 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self._focus_history: deque[int] = deque(maxlen=100)
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
-        root = get_default_root_window()
-        if not root:
-            raise RuntimeError("cannot access the root window")
-        root.set_events(root.get_events() | Gdk.EventMask.SUBSTRUCTURE_MASK)
-        xid = root.get_xid()
-        prop_set(xid, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
+        with xsync:
+            xid = X11Window.get_root_xid()
+            event_mask = X11Window.getEventMask(xid) | SubstructureNotifyMask
+            X11Window.setEventMask(xid, event_mask)
+            prop_set(xid, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
         add_event_receiver(xid, self)
         if self.sync_xvfb > 0:
             self.init_root_overlay()
@@ -159,11 +159,11 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.snc_timer = 0
 
     def init_root_overlay(self) -> None:
-        xid = get_default_root_window().get_xid()
         try:
             import cairo
             log(f"init_root_overlay() found cairo: {cairo}")
             with xsync:
+                xid = X11Window.get_root_xid()
                 self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                 log("init_root_overlay() root_overlay=%#x", self.root_overlay)
                 if self.root_overlay:
@@ -393,8 +393,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         # this is used by some newer versions of the dummy driver (xf86-driver-dummy)
         # (and will not be honoured by anything else..)
         if DUMMY_DPI:
-            root = get_default_root_window()
-            xid = root.get_xid()
+            xid = X11Window.get_root_xid()
             prop_set(xid, "dummy-constant-xdpi", "u32", xdpi)
             prop_set(xid, "dummy-constant-ydpi", "u32", ydpi)
             screenlog("set_dpi(%i, %i)", xdpi, ydpi)
@@ -415,10 +414,9 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         for window in self._wm.get_property("windows"):
             self._add_new_window(window)
 
-        root = get_default_root_window()
-        rxid = root.get_xid()
         try:
             with xsync:
+                rxid = X11Window.get_root_xid()
                 children = X11Window.get_children(rxid)
         except XError:
             log("load_existing_windows()", exc_info=True)
