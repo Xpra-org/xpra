@@ -394,8 +394,11 @@ class XpraMonitorServer(DesktopServerBase):
             resolution = packet[2]
             if isinstance(resolution, str):
                 resolution = parse_resolution(resolution, self.refresh_rate)
-            assert isinstance(resolution, (tuple, list)) and len(resolution) == 2
-            width, height = resolution
+            if not isinstance(resolution, (tuple, list)):
+                raise ValueError(f"invalid resolution: {resolution!r} ({type(resolution)}")
+            if len(resolution) not in (2, 3) or not all(isinstance(res, int) for res in resolution):
+                raise ValueError(f"invalid resolution type: {resolution!r}")
+            width, height = resolution[:2]
             self.add_monitor(width, height)
         else:
             raise ValueError(f"unsupported 'configure-monitor' action {action!r}")
