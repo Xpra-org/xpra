@@ -8,7 +8,7 @@ from typing import Final
 
 from xpra.os_util import gi_import
 from xpra.gtk.gobject import one_arg_signal
-from xpra.gtk.error import xlog
+from xpra.gtk.error import xlog, xsync
 from xpra.x11.gtk.damage import WindowDamageHandler
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.x11.gtk.world_window import get_world_window
@@ -19,7 +19,6 @@ from xpra.log import Logger
 log = Logger("x11", "window", "damage")
 
 GObject = gi_import("GObject")
-Gdk = gi_import("Gdk")
 
 XImage = XImageBindings()
 X11Window = X11WindowBindings()
@@ -90,8 +89,8 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
             wxid = None
             if world:
                 wxid = world.get_window().get_xid()
-            root = Gdk.Screen.get_default().get_root_window()
-            rxid = root.get_xid()
+            with xsync:
+                rxid = X11Window.get_root_xid()
             xid = X11Window.getParent(self.xid)
             while xid not in (0, rxid, wxid):
                 # We have to use a lowlevel function to manipulate the

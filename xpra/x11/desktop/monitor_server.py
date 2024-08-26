@@ -31,6 +31,11 @@ MIN_SIZE = 640, 350
 MAX_SIZE = 8192, 8192
 
 
+def get_screen_size() -> tuple[int, int]:
+    with xsync:
+        return RandR.get_screen_size()
+
+
 class XpraMonitorServer(DesktopServerBase):
     """
         Virtualizes monitors
@@ -71,23 +76,14 @@ class XpraMonitorServer(DesktopServerBase):
         return capabilities
 
     def configure_best_screen_size(self):
-        def current():
-            # don't try to match the client
-            gdk = gi_import("Gdk")
-            screen = gdk.Screen.get_default()
-            if not screen:
-                raise RuntimeError("cannot access the display")
-            root = screen.get_root_window()
-            return root.get_geometry()[2:4]
-
         sss = tuple(x for x in self._server_sources.values() if x.ui_client)
         log(f"configure_best_screen_size() sources={sss}")
         if len(sss) != 1:
             screenlog.info(f"screen used by {len(sss)} clients:")
-            return current()
+            return get_screen_size()
         ss = sss[0]
         if not getattr(ss, "desktop_fullscreen", False):
-            return current()
+            return get_screen_size()
         # try to match this client's layout:
         log("will try to mirror")
         # prevent this monitor layout change
@@ -105,7 +101,7 @@ class XpraMonitorServer(DesktopServerBase):
             self.reconfigure_locked = False
 
         GLib.timeout_add(1000, unlock)
-        return current()
+        return get_screen_size()
 
     def load_existing_windows(self) -> None:
         with xlog:
