@@ -1161,6 +1161,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.window_state_timer = GLib.timeout_add(25, self.send_updated_window_state)
 
     def send_updated_window_state(self) -> None:
+        statelog(f"sending configure event with window state={self._window_state}")
         self.window_state_timer = 0
         if self._window_state and self.get_window():
             self.send_configure_event(True)
