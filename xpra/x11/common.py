@@ -221,7 +221,7 @@ def send_client_message(window, message_type: str, *values) -> None:
 device_bell = None
 
 
-def system_bell(window, device, percent: int, _pitch, _duration: int, bell_class, bell_id, bell_name: str) -> bool:
+def system_bell(xid: int, device, percent: int, _pitch, _duration: int, bell_class, bell_id, bell_name: str) -> bool:
     global device_bell
     if device_bell is False:
         # failed already
@@ -235,7 +235,7 @@ def system_bell(window, device, percent: int, _pitch, _duration: int, bell_class
             log("x11_bell()", exc_info=True)
             log.warn("Warning: cannot use X11 bell device without the X11 bindings")
             return False
-    device_bell(window.get_xid(), device, bell_class, bell_id, percent, bell_name)
+    device_bell(xid, device, bell_class, bell_id, percent, bell_name)
     return True
 
 

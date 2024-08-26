@@ -152,13 +152,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
         self.frame_request_window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         self.frame_request_window.set_title("Xpra-FRAME_EXTENTS")
-        root = self.get_root_window()
         self.frame_request_window.realize()
+        win = self.frame_request_window.get_window()
+        xid = win.get_xid()
+        framelog("setup_frame_request_windows() window=%#x", xid)
         with xsync:
-            win = self.frame_request_window.get_window()
-            xid = win.get_xid()
-            framelog("setup_frame_request_windows() window=%#x", xid)
-            send_wm_request_frame_extents(root.get_xid(), xid)
+            root_xid = self.get_root_xid()
+            send_wm_request_frame_extents(root_xid, xid)
 
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
@@ -693,12 +693,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def request_frame_extents(self, window) -> None:
         from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
         from xpra.gtk.error import xsync
-        root = self.get_root_window()
+        win = window.get_window()
+        xid = win.get_xid()
+        framelog(f"request_frame_extents({window}) xid={xid:x}")
         with xsync:
-            win = window.get_window()
-            xid = win.get_xid()
-            framelog(f"request_frame_extents({window}) xid={xid:x}")
-            send_wm_request_frame_extents(root.get_xid(), xid)
+            root_xid = self.get_root_xid()
+            send_wm_request_frame_extents(root_xid, xid)
 
     def get_frame_extents(self, window):
         # try native platform code first:
@@ -780,6 +780,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def get_root_window(self):
         return get_default_root_window()
+
+    def get_root_xid(self) -> int:
+        assert HAS_X11_BINDINGS
+        from xpra.x11.bindings.window import X11WindowBindings
+        return X11WindowBindings().get_root_xid()
 
     def get_root_size(self):
         return get_root_size()
@@ -1069,8 +1074,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             gdkwindow = window.get_window()
         if gdkwindow is None:
             gdkwindow = self.get_root_window()
-        log(f"window_bell(..) gdkwindow={gdkwindow}")
-        if not system_bell(gdkwindow, device, percent, pitch, duration, bell_class, bell_id, bell_name):
+        xid = gdkwindow.get_xid()
+        log(f"window_bell(..) {gdkwindow=}, {xid=}")
+        if not system_bell(xid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
             # fallback to simple beep:
             Gdk.beep()
 

@@ -13,6 +13,7 @@ import sys
 from typing import Final
 from struct import unpack, calcsize
 
+from xpra.gtk.error import xsync
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom, get_pywindow
@@ -118,13 +119,13 @@ class ManagerSelection(GObject.GObject):
         # Calculate the X atom for this selection:
         selection_xatom = get_xatom(self.atom)
         # Ask X what window we used:
-        self.xid = int(X11WindowBindings().XGetSelectionOwner(self.atom))
-
-        root = self.clipboard.get_display().get_default_screen().get_root_window()
-        xid = root.get_xid()
-        X11WindowBindings().sendClientMessage(xid, xid, False, StructureNotifyMask,
-                                              "MANAGER",
-                                              ts_num, selection_xatom, self.xid)
+        with xsync:
+            X11Window = X11WindowBindings()
+            self.xid = int(X11Window.XGetSelectionOwner(self.atom))
+            root_xid = X11Window.get_root_xid()
+            X11Window.sendClientMessage(root_xid, root_xid, False, StructureNotifyMask,
+                                        "MANAGER",
+                                        ts_num, selection_xatom, self.xid)
 
         if old_owner != XNone and when is self.FORCE:
             # Block in a recursive mainloop until the previous owner has

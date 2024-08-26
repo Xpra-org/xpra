@@ -26,8 +26,9 @@ def make_window():
     if icon:
         window.set_icon(icon)
 
-    def get_root_window():
-        return window.get_window().get_screen().get_root_window()
+    def get_pointer():
+        with IgnoreWarningsContext():
+            return window.get_window().get_screen().get_root_window().get_pointer()
 
     def initiate(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int):
         from xpra.x11.gtk.display_source import init_gdk_display_source
@@ -35,9 +36,9 @@ def make_window():
         from xpra.x11.bindings.core import X11CoreBindings
         from xpra.x11.bindings.window import constants, X11WindowBindings
         event_mask = constants["SubstructureNotifyMask"] | constants["SubstructureRedirectMask"]
-        root_xid = get_root_window().get_xid()
         xwin = window.get_window().get_xid()
         X11Core = X11CoreBindings()
+        root_xid = X11Core.get_root_xid()
         X11Core.UngrabPointer()
         X11Window = X11WindowBindings()
         X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",
@@ -60,8 +61,7 @@ def make_window():
 
     def initiate_move(*_args):
         cancel()
-        with IgnoreWarningsContext():
-            pos = get_root_window().get_pointer()
+        pos = get_pointer()
         source_indication = 1  # normal
         button = 1
         initiate(pos.x, pos.y, MoveResize.MOVE, button, source_indication)
@@ -71,8 +71,7 @@ def make_window():
 
     def btn_callback(_btn, _event, direction: MoveResize):
         cancel()
-        with IgnoreWarningsContext():
-            pos = get_root_window().get_pointer()
+        pos = get_pointer()
         source_indication = 1  # normal
         button = 1
         initiate(pos.x, pos.y, direction, button, source_indication)

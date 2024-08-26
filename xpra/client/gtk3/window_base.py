@@ -2057,10 +2057,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                  (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction),
                   button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
-        root = self.get_window().get_screen().get_root_window()
-        root_xid = root.get_xid()
+        assert HAS_X11_BINDINGS
         xwin = self.get_window().get_xid()
         with xlog:
+            root_xid = X11Core.get_root_xid()
             X11Core.UngrabPointer()
             X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",
                                         x_root, y_root, direction, button, source_indication)

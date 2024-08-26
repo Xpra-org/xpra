@@ -34,7 +34,7 @@ class BellWindow(Gtk.Window):
 
     def bell(self, *_args):
         from xpra.platform.gui import system_bell
-        system_bell(self.get_window(), 0, 100, 2000, 1000, 0, 0, "test")
+        system_bell(self.get_window().get_xid(), 0, 100, 2000, 1000, 0, 0, "test")
 
 
 def main():

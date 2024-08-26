@@ -9,6 +9,7 @@ from typing import Final
 from xpra.os_util import gi_import
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.error import xlog, XError
+from xpra.x11.bindings.core import X11CoreBindings
 from xpra.x11.gtk.prop import raw_prop_set, raw_prop_get
 from xpra.x11.gtk.selection import ManagerSelection
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom
@@ -20,6 +21,8 @@ log = Logger("x11", "xsettings")
 GObject = gi_import("GObject")
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
+
+X11Core = X11CoreBindings()
 
 # the X11 atom name for the XSETTINGS property:
 XSETTINGS: Final[str] = "_XSETTINGS_SETTINGS"
@@ -99,8 +102,7 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
     def __init__(self, screen_number=0):
         GObject.GObject.__init__(self)
         XSettingsHelper.__init__(self, screen_number)
-        root = self._clipboard.get_display().get_default_screen().get_root_window()
-        self.xid = root.get_xid()
+        self.xid = X11Core.get_root_xid()
         add_event_receiver(self.xid, self)
         self._add_watch()
 
