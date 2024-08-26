@@ -299,7 +299,7 @@ def select_log_file(log_dir: str, log_file: str, display_name: str) -> str:
 # Redirects stdin from /dev/null, and stdout and stderr to the file with the
 # given file descriptor. Returns file objects pointing to the old stdout and
 # stderr, which can be used to write a message about the redirection.
-def redirect_std_to_log(logfd: int):
+def redirect_std_to_log(logfd: int) -> tuple:
     # preserve old stdio in new filehandles for use (and subsequent closing)
     # by the caller
     old_fd_stdout = os.dup(1)
@@ -342,7 +342,6 @@ def write_pid(pidfile: str, pid: int) -> int:
     if pid <= 0:
         raise ValueError(f"invalid pid value {pid}")
     log = get_logger()
-    log.enable_debug()
     pidstr = str(pid)
     try:
         with open(pidfile, "w", encoding="latin1") as f:
@@ -354,12 +353,13 @@ def write_pid(pidfile: str, pid: int) -> int:
                 fd = f.fileno()
                 inode = os.fstat(fd).st_ino
             except OSError as e:
+                log("fstat", exc_info=True)
                 log.error(f"Error accessing inode of {pidfile!r}: {e}")
                 inode = 0
-        log.info(f"wrote pid {pidstr} to '{pidfile}'")
+        log.info(f"wrote pid {pidstr} to {pidfile!r}")
         return inode
     except Exception as e:
-        log(f"write_pidfile({pidfile})", exc_info=True)
+        log(f"write_pid({pidfile}, {pid})", exc_info=True)
         log.info(f"Error: failed to write pid {pidstr} to {pidfile!r}")
         log.error(f" {e}")
         return 0
