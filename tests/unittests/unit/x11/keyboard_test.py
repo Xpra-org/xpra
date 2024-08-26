@@ -50,10 +50,8 @@ class TestX11Keyboard(ServerTestUtil):
 
     def test_grok_modifier_map(self):
         from xpra.x11.gtk.keys import grok_modifier_map
-        from gi.repository.Gdk import Display  # @UnresolvedImport
-        display = Display.get_default()
-        grok_modifier_map(display, None)
-        grok_modifier_map(display, {})
+        grok_modifier_map(None)
+        grok_modifier_map({})
 
 
 def main():
