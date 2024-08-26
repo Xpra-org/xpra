@@ -6,17 +6,18 @@
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.util.env import IgnoreWarningsContext
 from xpra.gtk.error import XError, xsync
 from xpra.gtk.info import get_screen_sizes
+from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.x11.desktop.model_base import DesktopModelBase
 from xpra.x11.bindings.randr import RandRBindings
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.log import Logger
 
+X11Window = X11WindowBindings()
 RandR = RandRBindings()
 
 GObject = gi_import("GObject")
-Gdk = gi_import("Gdk")
 
 geomlog = Logger("server", "window", "geometry")
 screenlog = Logger("screen")
@@ -71,7 +72,6 @@ class ScreenDesktopModel(DesktopModelBase):
 
     def __init__(self, resize_exact=False):
         super().__init__()
-        self.screen = Gdk.Screen.get_default()
         self.resize_exact = resize_exact
 
     def __repr__(self):
@@ -79,16 +79,19 @@ class ScreenDesktopModel(DesktopModelBase):
 
     def setup(self) -> None:
         super().setup()
-        self.screen.connect("size-changed", self._screen_size_changed)
+        add_event_receiver(self.xid, self)
         self.update_size_hints()
+
+    def unmanage(self, _exiting=False) -> None:
+        remove_event_receiver(self.xid, self)
 
     def get_geometry(self) -> tuple[int, int, int, int]:
         w, h = self.get_dimensions()
         return 0, 0, w, h
 
     def get_dimensions(self) -> tuple[int, int]:
-        with IgnoreWarningsContext():
-            return self.screen.get_width(), self.screen.get_height()
+        with xsync:
+            return RandR.get_screen_size()
 
     def get_property(self, prop: str) -> Any:
         if prop == "xid":
@@ -110,22 +113,18 @@ class ScreenDesktopModel(DesktopModelBase):
                     return
             with xsync:
                 w, h = RandR.get_screen_size()
-            self._screen_size_changed(self.screen)
-            if (ow, oh) == (w, h):
-                # this is already the resolution we have,
-                # but the client has other ideas,
-                # so tell the client we ain't budging:
-                self.emit("resized")
+            self._screen_size_changed()
         except Exception as e:
             geomlog("do_resize() %ix%i", rw, rh, exc_info=True)
             geomlog.error("Error: failed to resize desktop display to %ix%i:", rw, rh)
             geomlog.error(" %s", str(e) or type(e))
 
-    def _screen_size_changed(self, _screen) -> None:
+    def do_x11_configure_event(self, event) -> None:
+        self._screen_size_changed()
+
+    def _screen_size_changed(self):
         w, h = self.get_dimensions()
         screenlog("screen size changed: new size %ix%i", w, h)
-        root = self.screen.get_root_window()
-        screenlog("root window geometry=%s", root.get_geometry())
         self.invalidate_pixmap()
         self.update_size_hints()
         self.emit("resized")

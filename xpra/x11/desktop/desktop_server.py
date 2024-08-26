@@ -33,7 +33,6 @@ class XpraDesktopServer(DesktopServerBase):
     def __init__(self):
         super().__init__()
         self.session_type = "desktop"
-        self.resize_timer = 0
         self.gsettings_modified = {}
         self.root_prop_watcher = None
         self.resize_value = -1, -1
@@ -82,29 +81,12 @@ class XpraDesktopServer(DesktopServerBase):
             geomlog.error("Error: cannot honour resize request,")
             geomlog.error(" no RandR support on this display")
             return
-        # FIXME: small race if the user resizes with randr,
-        # at the same time as he resizes the window..
-        self.resize_value = (w, h)
-        if not self.resize_timer:
-            self.resize_timer = GLib.timeout_add(250, self.do_resize)
-
-    def do_resize(self) -> None:
-        self.resize_timer = 0
-        rw, rh = self.resize_value
-        try:
-            with xsync:
-                ow, oh = RandR.get_screen_size()
-            w, h = self.set_screen_size(rw, rh)
-            if (ow, oh) == (w, h):
-                # this is already the resolution we have,
-                # but the client has other ideas,
-                # so tell the client we ain't budging:
-                for win in self._window_to_id.keys():
-                    win.emit("resized")
-        except Exception as e:
-            geomlog("do_resize() %ix%i", rw, rh, exc_info=True)
-            geomlog.error(f"Error: failed to resize desktop display to {rw}x{rh}")
-            geomlog.estr(e)
+        # find the model:
+        desktop_models = [window for window in self._id_to_window.values() if isinstance(window, ScreenDesktopModel)]
+        if len(desktop_models) != 1:
+            raise RuntimeError(f"found {desktop_models}, expected 1")
+        geomlog(f"will resize {desktop_models}")
+        desktop_models[0].resize(w, h)
 
     def get_server_mode(self) -> str:
         return "X11 desktop"
