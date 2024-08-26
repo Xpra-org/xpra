@@ -17,15 +17,16 @@ from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.gobject import one_arg_signal
 from xpra.x11.gtk.bindings import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
 from xpra.x11.xroot_props import XRootPropWatcher
+from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.server.base import X11ServerBase
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
-Gdk = gi_import("Gdk")
 Gio = gi_import("Gio")
 
+X11Window = X11WindowBindings()
 X11Keyboard = X11KeyboardBindings()
 
 log = Logger("server")
@@ -107,17 +108,14 @@ class DesktopServerBase(DesktopServerBaseClass):
 
     def x11_init(self) -> None:
         X11ServerBase.x11_init(self)
-        display = Gdk.Display.get_default()
-        screen = display.get_default_screen()
-        root = screen.get_root_window()
-        add_event_receiver(root.get_xid(), self)
+        add_event_receiver(X11Window.get_root_xid(), self)
         add_catchall_receiver("x11-motion-event", self)
         add_catchall_receiver("x11-xkb-event", self)
         with xlog:
             X11Keyboard.selectBellNotification(True)
         if MODIFY_GSETTINGS:
             self.modify_gsettings()
-        self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"], root)
+        self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"])
         self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
 
     def root_prop_changed(self, watcher, prop: str) -> None:

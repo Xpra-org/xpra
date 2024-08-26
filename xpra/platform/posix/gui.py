@@ -819,16 +819,14 @@ class ClientExtras:
         try:
             self.init_x11_filter()
             # pylint: disable=import-outside-toplevel
-            from xpra.gtk.util import get_default_root_window
             from xpra.x11.xsettings import XSettingsWatcher
             from xpra.x11.xroot_props import XRootPropWatcher
-            root = get_default_root_window()
             if self._xsettings_watcher is None:
                 self._xsettings_watcher = XSettingsWatcher()
                 self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
                 self._handle_xsettings_changed()
             if self._root_props_watcher is None:
-                self._root_props_watcher = XRootPropWatcher(ROOT_PROPS, root)
+                self._root_props_watcher = XRootPropWatcher(ROOT_PROPS)
                 self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
                 # ensure we get the initial value:
                 self._root_props_watcher.do_notify("RESOURCE_MANAGER")
