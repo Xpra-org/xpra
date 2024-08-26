@@ -3902,12 +3902,11 @@ def get_x11_display_info(display, sessions_dir=None) -> dict[str, Any]:
         if wminfo:
             log(f"wminfo({display})={wminfo}")
             display_info.update(wminfo)
-            mode = wminfo.get("xpra-server-mode", "")
             pid = wminfo.get("xpra-server-pid")
             # seamless servers and non-xpra servers should have a window manager:
-            if mode.find("seamless") >= 0 and not wminfo.get("_NET_SUPPORTING_WM_CHECK"):
-                log("no window manager found")
-                state = "DEAD"
+            if wminfo.get("_NET_SUPPORTING_WM_CHECK"):
+                log("found a window manager")
+                state = "LIVE"
             elif pid and os.path.exists("/proc"):
                 log(f"xpra server pid={pid}")
                 if os.path.exists(f"/proc/{pid}"):
