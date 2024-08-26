@@ -12,7 +12,7 @@ from xpra.log import Logger
 log = Logger("x11", "bindings", "randr")
 
 from xpra.x11.bindings.xlib cimport (
-    Display, XID, Bool, Status, Drawable, Window, Time, Atom,
+    Display, XID, Bool, Status, Drawable, Window, Time, Atom, XEvent,
     XDefaultRootWindow,
     XGetAtomName,
     XFree, XFlush, XSync,
@@ -33,6 +33,7 @@ assert MAX_NEW_MODES>=2
 
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 ctypedef unsigned long CARD32
+ctypedef unsigned short SizeID
 
 
 ###################################
@@ -69,6 +70,8 @@ cdef extern from "X11/extensions/randr.h":
     int RRCrtcChangeNotifyMask
     int RROutputChangeNotifyMask
     int RROutputPropertyNotifyMask
+
+    int RRScreenChangeNotify
 
 
 MODE_FLAGS_STR: Dict[int, str] = {
@@ -137,6 +140,25 @@ cdef extern from "X11/extensions/Xrandr.h":
     ctypedef XID RROutput
     ctypedef XID RRCrtc
 
+    int XRRUpdateConfiguration(XEvent *event)
+
+    ctypedef struct XRRScreenChangeNotifyEvent:
+        int type;                   # event base
+        unsigned long serial
+        Bool send_event             # true if this came from a SendEvent request
+        Display *display            # Display the event was read from
+        Window window               # window which selected for this event
+        Window root                 # Root window for changed screen
+        Time timestamp              # when the screen change occurred
+        Time config_timestamp       # when the last configuration change
+        SizeID size_index
+        SubpixelOrder subpixel_order
+        Rotation rotation
+        int width
+        int height
+        int mwidth
+        int mheight
+
     Bool XRRQueryExtension(Display *, int * major, int * minor)
     Status XRRQueryVersion(Display *, int * major, int * minor)
 
@@ -200,7 +222,6 @@ cdef extern from "X11/extensions/Xrandr.h":
         int             npossible
         RROutput        *possible
 
-    ctypedef unsigned short SizeID
     ctypedef struct XRRScreenConfiguration:
         pass
     Status XRRSetScreenConfigAndRate(Display *dpy, XRRScreenConfiguration *config,
@@ -540,13 +561,15 @@ def RandRBindings():
 cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     cdef int _has_randr
+    cdef int _randr_event_base
     cdef object _added_modes
     cdef object version
 
     def __init__(self):
         self.version = self.query_version()
-        self._has_randr = self.version>(0, ) and self.check_randr_sizes()
         self._added_modes = {}
+        self._has_randr = self.version>(0, ) and self.check_randr_sizes()
+        self._randr_event_base = 0
 
     def __repr__(self):
         return f"RandRBindings({self.display_name})"
@@ -564,6 +587,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         if not XRRQueryVersion(self.display, &cmajor, &cminor):
             return (0, )
         log(f"found XRandR extension version {cmajor}.{cminor}")
+        self._randr_event_base = event_base
         return cmajor, cminor
 
     def check_randr_sizes(self) -> bool:
@@ -581,6 +605,11 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     def has_randr(self) -> bool:
         return bool(self._has_randr)
+
+    def select_screen_changes(self) -> None:
+        cdef int mask = RRScreenChangeNotifyMask
+        cdef Window root = XDefaultRootWindow(self.display)
+        XRRSelectInput(self.display, root, mask)
 
     def select_crtc_output_changes(self) -> None:
         cdef int mask = RRScreenChangeNotifyMask | RRCrtcChangeNotifyMask | RROutputChangeNotifyMask | RROutputPropertyNotifyMask
@@ -1252,3 +1281,4 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 XRRFreeMonitors(monitors)
         finally:
             XRRFreeScreenResources(rsc)
+
