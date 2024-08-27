@@ -21,8 +21,10 @@ First, make sure that all the required [dependencies](Dependencies.md) are insta
 git clone https://github.com/Xpra-org/xpra
 cd xpra
 python3 ./setup.py install --prefix=/usr --single-version-externally-managed --root=/
+cp fs/bin/xpra* fs/bin/run_scaled /usr/bin/
 ```
 
 ## Caveats
 * **Do not** mix source installation with binary packages. Remove one completely before installing the other
 * Current versions of xpra require python3, for python2 use the 3.x LTS branch - see [versions](https://github.com/Xpra-org/xpra/wiki/Versions)
+* the last step installs xpra's own scripts, replacing the unusable ones mangled by setuptools
