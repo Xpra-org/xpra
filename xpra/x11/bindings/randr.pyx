@@ -668,6 +668,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             log("XRRSetScreenConfigAndRate%s=%s", (<uintptr_t> self.display, <uintptr_t> config, window, sizeID, rotation, rate, time), status)
             if status != Success:
                 log.error("Error: failed to set new screen size")
+                log.error(f" XRRSetScreenConfigAndRate returned {status}")
                 return False
             return True
         finally:
