@@ -17,7 +17,7 @@ log = Logger()
 def get_pointer_position(event) -> tuple[int, int, int, int]:
     glo_pos = event.globalPosition()
     pos = event.position()
-    return tuple(round(v) for v in (glo_pos.x(), glo_pos.y(), pos.x(), pos.y()))
+    return round(glo_pos.x()), round(glo_pos.y()), round(pos.x(), round(pos.y()))
 
 
 def get_event_pos(event) -> tuple[int, int]:
