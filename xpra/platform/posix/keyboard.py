@@ -155,15 +155,15 @@ class Keyboard(KeyboardBase):
             if mod_mappings:
                 # ie: {"shift" : ["Shift_L", "Shift_R"], "mod1" : "Meta_L", ...]}
                 log("modifier mappings=%s", mod_mappings)
-                meanings = {}
+                meanings: dict[str, str] = {}
                 for modifier, keys in mod_mappings.items():
                     for _, keyname in keys:
                         meanings[keyname] = modifier
                 # probably a GTK bug? but easier to put here
                 mod_missing: list[str] = []
-                numlock_mod = meanings.get("Num_Lock", [])
+                numlock_mod = meanings.get("Num_Lock", "")
                 if numlock_mod:
-                    mod_missing += numlock_mod
+                    mod_missing.append(numlock_mod)
                 return meanings, [], mod_missing
         return {}, [], []
 
