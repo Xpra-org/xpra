@@ -282,6 +282,10 @@ class ClipboardProxy(ClipboardProxyCore, gobject.GObject):
         if claim:
             self._have_token = True
         if self._can_receive:
+            if target_data:
+                # ensure we also expose the targets in the target_data:
+                # ie: {'UTF8_STRING': ('UTF8_STRING', 8, b'foobar')}
+                targets = list(targets) + list(target_data.keys())
             self.targets = tuple(bytestostr(x) for x in (targets or ()))
             self.target_data = target_data or {}
             if targets and claim:
