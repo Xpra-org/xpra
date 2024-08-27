@@ -183,9 +183,6 @@ class Wm(GObject.GObject):
     def __init__(self, replace_other_wm: bool, wm_name: str, display=None):
         super().__init__()
 
-        if display is None:
-            display = Gdk.Display.get_default()
-        self._display = display
         self._wm_name = wm_name
         self._ewmh_window = None
 
