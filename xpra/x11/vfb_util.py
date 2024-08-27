@@ -25,7 +25,7 @@ from xpra.platform.displayfd import read_displayfd, parse_displayfd
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 def parse_resolution(envkey="XPRA_DEFAULT_VFB_RESOLUTION", default_res="8192x4096"):
     s = os.environ.get(envkey, default_res)
-    res = tuple(int(x) for x in s.replace(",", "x").split("x", 1))
+    res = tuple(int(x) for x in s.split("@", 1)[0].replace(",", "x").split("x", 1))
     assert len(res)==2, "invalid resolution string '%s'" % s
     return res
 DEFAULT_VFB_RESOLUTION = parse_resolution()
