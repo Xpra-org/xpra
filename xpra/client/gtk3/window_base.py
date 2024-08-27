@@ -20,7 +20,7 @@ from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland, is_X11
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
-from xpra.util.env import envint, envbool, first_time, ignorewarnings
+from xpra.util.env import envint, envbool, first_time, ignorewarnings, IgnoreWarningsContext
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
 from xpra.gtk.util import ds_inited, get_default_root_window, GRAB_STATUS_STRING
 from xpra.gtk.window import set_visual
@@ -1766,7 +1766,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._client.pointer_grabbed = self.wid
             grablog(f"{pointer_grab}({gdkwin}) success")
             return
-        r = Gdk.pointer_grab(gdkwin, True, GRAB_EVENT_MASK, gdkwin, None, Gdk.CURRENT_TIME)
+        with IgnoreWarningsContext():
+            r = Gdk.pointer_grab(gdkwin, True, GRAB_EVENT_MASK, gdkwin, None, Gdk.CURRENT_TIME)
         if r == Gdk.GrabStatus.SUCCESS:
             self._client.pointer_grabbed = self.wid
         grablog("pointer_grab%s Gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
