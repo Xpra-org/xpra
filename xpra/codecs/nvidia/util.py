@@ -400,7 +400,7 @@ def main():
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Nvidia-Info", "Nvidia Info"):
-        consume_verbose_argv("encoding", sys.argv)
+        consume_verbose_argv(sys.argv, "encoding")
         # this will log the version number:
         get_nvidia_module_version()
         if is_blacklisted():
