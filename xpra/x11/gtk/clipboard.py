@@ -115,7 +115,7 @@ def get_wintitle(xid) -> str:
     return ""
 
 
-def get_wininfo(xid):
+def get_wininfo(xid) -> str:
     wininfo = [f"xid={xid:x}"]
     if XRes:
         with xswallow:
@@ -125,15 +125,15 @@ def get_wininfo(xid):
     title = get_wintitle(xid)
     if title:
         wininfo.insert(0, repr(title))
-        return wininfo
+        return csv(wininfo)
     while xid:
         title = get_wintitle(xid)
         if title:
             wininfo.append(f"child of {title!r}")
-            return wininfo
+            return csv(wininfo)
         with xswallow:
             xid = X11Window.getParent(xid)
-    return wininfo
+    return csv(wininfo)
 
 
 class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
@@ -284,7 +284,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         blacklisted = tuple(client for client in BLACKLISTED_CLIPBOARD_CLIENTS if client in wininfo)
         if blacklisted:
             if first_time(f"clipboard-blacklisted:{blacklisted}"):
-                log.warn(f"receiving clipboard requests from blacklisted client: {csv(wininfo)}")
+                log.warn(f"receiving clipboard requests from blacklisted client: {wininfo}")
                 log.warn(" all requests will be silently ignored")
             log("responding with nodata for blacklisted client '%s'", wininfo)
             return
