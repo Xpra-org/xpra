@@ -160,10 +160,10 @@ class Keyboard(KeyboardBase):
                     for _, keyname in keys:
                         meanings[keyname] = modifier
                 # probably a GTK bug? but easier to put here
-                mod_missing = []
+                mod_missing: list[str] = []
                 numlock_mod = meanings.get("Num_Lock", [])
                 if numlock_mod:
-                    mod_missing.append(numlock_mod)
+                    mod_missing += numlock_mod
                 return meanings, [], mod_missing
         return {}, [], []
 
