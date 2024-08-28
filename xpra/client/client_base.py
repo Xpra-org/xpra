@@ -659,7 +659,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         digest = bytestostr(packet[3]).split(":", 1)[0]
         #don't send XORed password unencrypted:
         if digest in ("xor", "des"):
-            encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type") in ("ssl", "wss")
+            encrypted = self._protocol.cipher_out or self._protocol.get_info().get("type") in ("ssl", "wss") or self.encryption
             local = self.display_desc.get("local", False)
             authlog("xor challenge, encrypted=%s, local=%s", encrypted, local)
             if local and ALLOW_LOCALHOST_PASSWORDS:
