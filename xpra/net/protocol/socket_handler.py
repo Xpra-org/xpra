@@ -436,7 +436,7 @@ class SocketProtocol:
                 data = self.cipher_out.update(padded)
                 if len(data) != actual_size:
                     raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
-                cryptolog("sending %s bytes %s encrypted with %s bytes of padding",
+                cryptolog("sending %6s bytes %s encrypted with %s bytes of padding",
                           payload_size, self.cipher_out_name, padding_size)
             if proto_flags & FLAGS_NOHEADER:
                 assert not self.cipher_out
@@ -1009,7 +1009,7 @@ class SocketProtocol:
                     if not protocol_flags & FLAGS_CIPHER:
                         self.invalid("unencrypted packet dropped", data)
                         return
-                    cryptolog("received %i %s encrypted bytes with %i padding",
+                    cryptolog("received %6i %s encrypted bytes with %i bytes of padding",
                               payload_size, self.cipher_in_name, padding_size)
                     data = self.cipher_in.update(data)
                     if padding_size > 0:
