@@ -104,6 +104,8 @@ class ScreenDesktopModel(DesktopModelBase):
         try:
             with xsync:
                 ow, oh = RandR.get_screen_size()
+            if ow == rw and oh == rh:
+                return
             with xsync:
                 if RandR.is_dummy16() and (rw, rh) not in get_screen_sizes():
                     RandR.add_screen_size(rw, rh)
@@ -113,6 +115,7 @@ class ScreenDesktopModel(DesktopModelBase):
                     return
             with xsync:
                 w, h = RandR.get_screen_size()
+                geomlog(f"wanted {rw}x{rh} - got {w}x{h}")
             self._screen_size_changed()
         except Exception as e:
             geomlog("do_resize() %ix%i", rw, rh, exc_info=True)
