@@ -39,6 +39,7 @@ Optional: install [pandoc](https://pandoc.org/installing.html#macos)
 jhbuild build
 #some python libraries have to be installed via pip in a jhbuild shell:
 jhbuild shell
+pip3 install --prefix $JHBUILD_PREFIX bcrypt
 pip3 install --prefix $JHBUILD_PREFIX packaging
 pip3 install --prefix $JHBUILD_PREFIX parsing
 pip3 install --prefix $JHBUILD_PREFIX typing_extensions
