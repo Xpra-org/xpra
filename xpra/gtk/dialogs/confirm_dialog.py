@@ -112,7 +112,7 @@ def main(args):
     from xpra.log import consume_verbose_argv
     from xpra.platform import program_context
     with program_context("Confirm-Dialog", "Confirm Dialog"):
-        consume_verbose_argv("util", args)
+        consume_verbose_argv(args, "util",)
         try:
             return show_confirm_dialog(args[1:])
         except KeyboardInterrupt:

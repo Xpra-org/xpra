@@ -55,7 +55,7 @@ class DisplayClient(StubClientMixin):
         self.initial_scaling = 1, 1
         self.xscale, self.yscale = self.initial_scaling
         self.scale_change_embargo = float("inf")
-        self.refresh_rate = 0
+        self.refresh_rate = ""
         self.desktop_fullscreen = False
         self.desktop_scaling = False
         self.screen_size_change_timer = 0
@@ -269,6 +269,7 @@ class DisplayClient(StubClientMixin):
                     },
                 })
 
+    # noinspection PyUnreachableCode
     def set_max_packet_size(self) -> None:
         p = self._protocol
         if not p or p.TYPE != "xpra":
@@ -281,7 +282,6 @@ class DisplayClient(StubClientMixin):
             maxh = max(root_h, server_h)
         except (TypeError, ValueError):
             pass
-        # noinspection PyUnreachableCode
         if maxw <= 0 or maxh <= 0 or maxw >= 32768 or maxh >= 32768:
             message = "invalid maximum desktop size: %ix%i" % (maxw, maxh)
             log(message)

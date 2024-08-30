@@ -40,7 +40,7 @@ def get_capture_instance(cuda=USE_NVFBC_CUDA):
 def main(argv):
     from xpra.platform import program_context
     with program_context("NvFBC-Capture", "NvFBC Capture"):
-        consume_verbose_argv("nvfbc", argv)
+        consume_verbose_argv(argv, "nvfbc")
         from xpra.platform.paths import get_download_dir
         from xpra.util.str_fn import print_nested_dict
         fbc_capture = get_capture_module()
