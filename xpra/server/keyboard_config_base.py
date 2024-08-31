@@ -31,7 +31,8 @@ class KeyboardConfigBase:
 
     def parse_options(self, props: typedict) -> int:
         oldsync = self.sync
-        self.sync = props.boolget("sync", True)
+        keymap_dict = typedict(props.dictget("keymap") or {})
+        self.sync = keymap_dict.boolget("sync", True)
         return int(oldsync != self.sync)
 
     def get_hash(self) -> str:
