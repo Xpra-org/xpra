@@ -6,7 +6,7 @@
 
 from typing import Dict, Tuple, Any
 
-from xpra.util.objects import typedict
+from xpra.util import typedict
 
 
 class KeyboardConfigBase:
