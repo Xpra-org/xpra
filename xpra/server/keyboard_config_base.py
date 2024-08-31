@@ -5,6 +5,8 @@
 
 from typing import Any
 
+from xpra.util.objects import typedict
+
 
 class KeyboardConfigBase:
     """ Base class representing the keyboard configuration for a server.
