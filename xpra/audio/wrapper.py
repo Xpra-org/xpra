@@ -232,7 +232,7 @@ def run_audio(mode: str, error_cb: Callable, options, args) -> int:
                 ss.stop()
 
 
-def _add_debug_args(command: list[str]):
+def _add_debug_args(command: list[str]) -> None:
     from xpra.log import debug_enabled_categories
     debug = list(SUBPROCESS_DEBUG)
     for f in ("audio", "gstreamer"):
@@ -263,20 +263,20 @@ class AudioSubprocessWrapper(SubprocessCaller):
         self.connect("info", self.info_update)
         self.connect("signal", self.subprocess_signal)
 
-    def get_env(self):
+    def get_env(self) -> dict[str, str]:
         env = super().get_env()
         env.update(get_audio_wrapper_env())
         env.pop("DISPLAY", None)
         # env.pop("WAYLAND_DISPLAY", None)
         return env
 
-    def start(self):
+    def start(self) -> None:
         self.state = "starting"
         super().start()
         log("start() %s subprocess(%s)=%s", self.description, self.command, self.process.pid)
         GLib.timeout_add(SOUND_START_TIMEOUT, self.verify_started)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         log("cleanup() sending cleanup request to %s", self.description)
         self.send("cleanup")
         # cleanup should cause the process to exit
@@ -284,7 +284,7 @@ class AudioSubprocessWrapper(SubprocessCaller):
         GLib.timeout_add(1000, self.send, "exit")
         GLib.timeout_add(1500, self.stop)
 
-    def verify_started(self):
+    def verify_started(self) -> None:
         p = self.process
         log("verify_started() process=%s, info=%s, codec=%s", p, self.info, self.codec)
         if p is None:
@@ -298,21 +298,21 @@ class AudioSubprocessWrapper(SubprocessCaller):
             log.warn("Warning: the %s process has failed to start", self.description)
             self.cleanup()
 
-    def subprocess_signal(self, _wrapper, proc):
+    def subprocess_signal(self, _wrapper, proc) -> None:
         log("subprocess_signal: %s", proc)
         # call via idle_add to prevent deadlocks on win32!
         GLib.idle_add(self.stop_protocol)
 
-    def state_changed(self, _wrapper, new_state):
+    def state_changed(self, _wrapper, new_state: str) -> None:
         self.state = new_state
 
-    def get_state(self):
+    def get_state(self) -> str:
         return self.state
 
     def get_info(self) -> dict:
         return self.info
 
-    def info_update(self, _wrapper, info):
+    def info_update(self, _wrapper, info: dict) -> None:
         log("info_update: %s", info)
         self.info.update(info)
         self.info["time"] = int(monotonic())
@@ -321,10 +321,10 @@ class AudioSubprocessWrapper(SubprocessCaller):
             self.info["pid"] = p.pid
         self.codec_description = info.get("codec_description")
 
-    def set_volume(self, v):
+    def set_volume(self, v: float) -> None:
         self.send("set_volume", int(v * 100))
 
-    def get_volume(self):
+    def get_volume(self) -> float:
         return self.info.get("volume", 100) / 100.0
 
 
@@ -403,7 +403,7 @@ def start_sending_audio(plugins, audio_source_plugin: str, device: str, codec: s
     return None
 
 
-def start_receiving_audio(codec):
+def start_receiving_audio(codec: str) -> SinkSubprocessWrapper:
     log("start_receiving_audio(%s)", codec)
     with log.trap_error("Error starting audio sink"):
         return SinkSubprocessWrapper(None, codec, 1.0, {})

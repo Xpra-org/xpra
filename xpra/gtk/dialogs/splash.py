@@ -108,7 +108,7 @@ class SplashScreen(Gtk.Window):
         self.fd_watch = 0
         self.connect("notify::has-toplevel-focus", self._focus_change)
 
-    def cancel_io_watch(self):
+    def cancel_io_watch(self) -> None:
         fd = self.fd_watch
         if fd:
             self.fd_watch = 0
