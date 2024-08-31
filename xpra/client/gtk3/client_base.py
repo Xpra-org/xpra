@@ -1075,7 +1075,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             gdkwindow = window.get_window()
         if gdkwindow is None:
             gdkwindow = self.get_root_window()
-        xid = gdkwindow.get_xid()
+        xid = 0
+        if hasattr(gdkwindow, "get_xid"):
+            xid = gdkwindow.get_xid()
         log(f"window_bell(..) {gdkwindow=}, {xid=}")
         if not system_bell(xid, device, percent, pitch, duration, bell_class, bell_id, bell_name):
             # fallback to simple beep:
