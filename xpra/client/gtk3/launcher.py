@@ -32,7 +32,7 @@ from xpra.util.thread import start_thread
 from xpra.gtk.dialogs.about import about
 from xpra.gtk.dialogs.util import hb_button
 from xpra.scripts.main import (
-    connect_to, make_client,
+    connect_to, make_client, bypass_no_gtk,
     configure_network, configure_env, configure_logging,
 )
 from xpra.common import noop
@@ -805,6 +805,7 @@ class ApplicationWindow:
         def raise_exception(*args):
             raise RuntimeError(*args)
 
+        bypass_no_gtk()
         self.client = make_client(raise_exception, self.config)
         self.client.show_progress(30, "client configuration")
         self.client.init(self.config)
