@@ -375,7 +375,7 @@ class ProxyInstance:
         p = self.server_packets.get()
         s = self.server_packets.qsize()
         log("sending to server: %s (queue size=%i)", p[0], s)
-        return p, None, None, None, True, s > 0 or self.client_has_more
+        return p, True, s > 0 or self.client_has_more
 
     def _packet_recompress(self, packet: PacketType, index: int, name: str) -> PacketType:
         if len(packet) <= index:
