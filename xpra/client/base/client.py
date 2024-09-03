@@ -1168,13 +1168,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     def _process_gibberish(self, packet: PacketType) -> None:
         log("process_gibberish(%s)", Ellipsizer(packet))
-        message, data = packet[1:3]
+        message, bdata = packet[1:3]
         from xpra.net.socket_util import guess_packet_type  # pylint: disable=import-outside-toplevel
-        packet_type = guess_packet_type(data)
+        packet_type = guess_packet_type(bdata)
         p = self._protocol
         exit_code = ExitCode.PACKET_FAILURE
         pcount = p.input_packetcount if p else 0
-        data = bytestostr(data).strip("\n\r")
+        data = bytestostr(bdata).strip("\n\r")
         show_as_text = pcount <= 1 and len(data) < 128 and all((c in string.printable) or c in "\n\r" for c in data)
         if pcount <= 1:
             exit_code = ExitCode.CONNECTION_FAILED
@@ -1183,7 +1183,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             netlog.error("Error: received an invalid packet")
         if packet_type == "xpra":
             netlog.error(" xpra server bug or mangled packet")
-        if packet_type and packet_type != "xpra":
+        if not packet_type and data.startswith("disconnect: "):
+            netlog.error(" %s", bytestostr(data).split(": ", 1)[1])
+            data = ""
+        elif packet_type and packet_type != "xpra":
             netlog.error(f" this is a {packet_type!r} packet,")
             netlog.error(" not from an xpra server?")
         else:
