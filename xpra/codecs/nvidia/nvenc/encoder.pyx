@@ -1913,7 +1913,7 @@ cdef class Encoder:
             log("max_threads_per_block=%s", self.max_threads_per_block)
         else:
             #we don't use a CUDA kernel
-            self.kernel_name = None
+            self.kernel_name = ""
             self.kernel = None
             self.cudaInputBuffer = None
             self.inputPitch = self.outputPitch
@@ -2275,7 +2275,7 @@ cdef class Encoder:
         self.pycuda_info = None
         self.cuda_device_info = None
         self.kernel = None
-        self.kernel_name = None
+        self.kernel_name = ""
         self.max_block_sizes = 0
         self.max_grid_sizes = 0
         self.max_threads_per_block = 0
@@ -2729,6 +2729,8 @@ cdef class Encoder:
             "pts"       : int(timestamp-self.first_frame_timestamp),
             "full-range" : full_range,
         }
+        if self.kernel_name:
+            client_options["csc-type"] = f"cuda:{self.kernel_name}"
         if pic.pictureType==NV_ENC_PIC_TYPE_IDR:
             client_options["type"] = "IDR"
         if self.lossless and not self.scaling:
