@@ -117,26 +117,30 @@ def version_compat_check(remote_version) -> str | None:
     except ValueError:
         warn(f"Warning: failed to parse remote version {remote_version!r}")
         return None
+    rvstr = ".".join(str(part) for part in rv)
     if rv == XPRA_NUMERIC_VERSION:
-        log("identical remote version: %s", remote_version)
+        log(f"identical remote version: {rvstr!r}")
         return None
     if rv[:2] == XPRA_NUMERIC_VERSION[:2]:
-        log("identical major.minor remote version: %s", remote_version)
+        log(f"identical major.minor in remote version: {rvstr!r}")
         return None
     try:
         if rv[0:2] < (3, 0):
             # this is the oldest version we support
-            msg = f"remote version {rv[:2]} is too old, sorry"
+            msg = f"remote version {rvstr} is too old, sorry"
             log(msg)
             return msg
+        if rv[0:2] < (3, 1, 9):
+            warn(f"Warning: remote version {rvstr} is outdated and buggy")
+            return None
     except TypeError as e:
-        msg = f"invalid remote version {rv[:2]}: {e}"
+        msg = f"invalid remote version {rvstr}: {e}"
         log(msg)
         return msg
     if rv[0] > 0:
-        log(f"newer remote version {remote_version} should work, we'll see..")
+        log(f"newer remote version {rvstr} should work, we'll see..")
         return None
-    log(f"local version {XPRA_VERSION!r} should be compatible with remote version {remote_version!r}")
+    log(f"local version {XPRA_VERSION!r} should be compatible with remote version {rvstr!r}")
     return None
 
 
