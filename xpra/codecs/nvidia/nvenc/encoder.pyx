@@ -2043,9 +2043,12 @@ cdef class Encoder:
         rc.rateControlMode = NV_ENC_PARAMS_RC_VBR
         #rc.zeroReorderDelay = 1       #zero-latency
         QP_MAX_VALUE = 51       #255 for AV1!
-        qpmin = QP_MAX_VALUE-min(QP_MAX_VALUE, int(QP_MAX_VALUE*(self.quality-10)//100))
-        qpmax = QP_MAX_VALUE-max(0, int(QP_MAX_VALUE*(self.quality+10)//100))
-        qp = min(QP_MAX_VALUE, max(0, (qpmin + qpmax)//2))
+
+        def qp(pct: float) -> int:
+            return QP_MAX_VALUE-max(0, min(QP_MAX_VALUE, round(QP_MAX_VALUE * pct)))
+        qpmin = qp(self.quality-10)
+        qpmax = qp(self.quality+10)
+        qp = min(QP_MAX_VALUE, max(0, round((qpmin + qpmax)//2)))
         rc.enableMinQP = 1
         rc.enableMaxQP = 1
         rc.minQP.qpInterB = qpmin
