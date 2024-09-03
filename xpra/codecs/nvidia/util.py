@@ -151,9 +151,9 @@ def get_proc_driver_version() -> tuple:
         vtuple = ()
     else:
         log_fn = log.debug
-        vtuple = bytestostr(v[p + len(KSTR):].strip().split(b" ")[0])
+        vtuple = bytestostr(v[p + len(KSTR):].strip().split(b" ")[0]).split(".")
     log_fn(f" {NVIDIA_PROC_FILE!r} contents:")
-    for line in p.splitlines():
+    for line in v.splitlines():
         log_fn(f"  {bytestostr(line)!r}")
     return vtuple
 
