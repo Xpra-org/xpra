@@ -54,7 +54,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.1.2
+Version:			6.1.3
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -883,6 +883,8 @@ fi
 
 
 %changelog
+* Tue Sep 03 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
+- TODO
 * Sun Aug 25 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
 - Platforms, build and packaging:
    pyopengl build fix for Fedora 41 + force rebuild

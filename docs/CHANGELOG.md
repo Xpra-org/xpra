@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.1.3] 2024-09-03
+* TODO
+
 ## [6.1.2] 2024-08-25
 * Platforms, build and packaging:
     * [pyopengl build fix for Fedora 41](https://github.com/Xpra-org/xpra/commit/998d842e37a5bd5a0ab5a8c8777daa6291441482) [+ force rebuild](https://github.com/Xpra-org/xpra/commit/5cbe95aab3c47a119f035ae1f6b7d1f6477210d0)
