@@ -2724,7 +2724,7 @@ cdef class Encoder:
         self.free_memory, self.total_memory = driver.mem_get_info()
 
         client_options = {
-            "csc"       : CSC_ALIAS.get(self.src_format, self.src_format),
+            "csc"       : CSC_ALIAS.get(self.pixel_format, self.pixel_format),
             "frame"     : int(self.frames),
             "pts"       : int(timestamp-self.first_frame_timestamp),
             "full-range" : full_range,
