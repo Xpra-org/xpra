@@ -9,6 +9,7 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
   * encodings:
    - avoid slow modules (ie: csc_cython)
    - stick to the same video scaling setting longer, avoid big swings
+   - handle decoding of padded frames
   * major:
    - system tray cleanup crash
    - missing start menu
@@ -22,6 +23,9 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - audio failures with 'auto' sink
    - metadata ignored
    - system tray errors on displays without compositing
+   - ignore framerate when parsing vfb resolutions
+   - expose all clipboard targets
+   - authentication aborted due to encryption not detected
   * minor and cosmetic fixes:
    - map missing modifiers using defaults
    - don't assume that zlib is available
@@ -31,8 +35,9 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - try to handle missing python pillow slightly more gracefully
    - log opengl probe command
    - confusing X11 display message
+   - use correct type for numlock modifier
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 23 Aug 2024 21:53:08 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Wed, 04 Sep 2024 18:56:08 +0700
 
 xpra (3.1.8-1) UNRELEASED; urgency=low
   * major:

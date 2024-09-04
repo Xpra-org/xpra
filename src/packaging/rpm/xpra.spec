@@ -926,7 +926,7 @@ fi
 
 
 %changelog
-* Fri Aug 23 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
+* Wed Sep 04 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
 - build and packaging:
      libyuv 0.1878.20231004
      packaging updates for CentOS7: libyuv, skip pycuda
@@ -937,6 +937,7 @@ fi
 - encodings:
      avoid slow modules (ie: csc_cython)
      stick to the same video scaling setting longer, avoid big swings
+     handle decoding of padded frames
 - major:
      system tray cleanup crash
      missing start menu
@@ -950,6 +951,9 @@ fi
      audio failures with 'auto' sink
      metadata ignored
      system tray errors on displays without compositing
+     ignore framerate when parsing vfb resolutions
+     expose all clipboard targets
+     authentication aborted due to encryption not detected
 - minor and cosmetic fixes:
      map missing modifiers using defaults
      don't assume that zlib is available
@@ -959,6 +963,7 @@ fi
      try to handle missing python pillow slightly more gracefully
      log opengl probe command
      confusing X11 display message
+     use correct type for numlock modifier
 
 * Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> 3.1.8-10.1xpra1
 - major:
