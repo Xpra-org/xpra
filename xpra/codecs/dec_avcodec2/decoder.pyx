@@ -63,6 +63,8 @@ cdef extern from "libavcodec/avcodec.h":
         int *linesize
         int format
         void *opaque
+        int width
+        int height
     ctypedef struct AVCodec:
         pass
     ctypedef struct AVDictionary:
@@ -569,21 +571,23 @@ cdef class Decoder:
             log("avcodec actual output pixel format is %s (%s), expected %s (%s)", self.actual_pix_fmt, self.get_actual_colorspace(), self.pix_fmt, self.colorspace)
 
         cs = self.get_actual_colorspace()
+        cdef int width = av_frame.width
+        cdef int height = av_frame.height
         if cs.endswith("P"):
             divs = get_subsampling_divs(cs)
             nplanes = 3
             for i in range(3):
                 _, dy = divs[i]
                 if dy==1:
-                    height = self.codec_ctx.height
+                    plane_height = height
                 elif dy==2:
-                    height = (self.codec_ctx.height+1)>>1
+                    plane_height = (height+1)>>1
                 else:
                     av_frame_unref(av_frame)
                     av_frame_free(&av_frame)
                     raise Exception("invalid height divisor %s" % dy)
                 stride = av_frame.linesize[i]
-                size = height * stride
+                size = plane_height * stride
                 outsize += size
 
                 out.append(memory_as_pybuffer(<void *>av_frame.data[i], size, True))
@@ -601,8 +605,17 @@ cdef class Decoder:
             av_frame_unref(av_frame)
             av_frame_free(&av_frame)
             raise Exception("output size is zero!")
-        if self.codec_ctx.width<self.width or self.codec_ctx.height<self.height:
-            raise Exception("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (self.encoding, self.codec_ctx.width, self.codec_ctx.height, self.width, self.height, self.frames+1))
+
+        if width < self.width or height < self.height:
+            log.warn("Error: %s context size mismatch", self.encoding)
+            log.warn(" on %s with colorspace %s (actual: %s)", self.frames+1, self.colorspace, self.get_actual_colorspace())
+            log.warn(" %s decoder object is configured for %sx%s", self.get_type(), self.width, self.height)
+            log.warn(" but the decoded frame is only %sx%s", width, height)
+            av_frame_unref(av_frame)
+            av_frame_free(&av_frame)
+            raise RuntimeError("%s frame dimension %ix%i is smaller than the codec context expected size of %ix%i for frame %i" % (
+                self.encoding, width, height, self.width, self.height, self.frames+1))
+
 
         bpp = BYTES_PER_PIXEL.get(self.actual_pix_fmt, 0)
         framewrapper = AVFrameWrapper()
