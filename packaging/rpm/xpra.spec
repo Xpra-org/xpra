@@ -75,6 +75,9 @@ Requires:			xpra-audio = %{version}-%{release}
 Recommends:			xpra-audio = %{version}-%{release}
 %endif
 BuildRequires:		gcc
+%if 0%{?fedora}>=40
+BuildRequires:		clang
+%endif
 BuildRequires:		gcc-c++
 BuildRequires:		python3-Cython
 BuildRequires:		pkgconfig

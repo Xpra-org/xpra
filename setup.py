@@ -2293,6 +2293,8 @@ if cuda_kernels_ENABLED:
                 nvcc_cmd.append("-std=c++11")
             if gcc_version>=(12, 0) or CC_is_clang():
                 nvcc_cmd.append("--allow-unsupported-compiler")
+            if gcc_version>=(14, 0) and not CC_is_clang():
+                nvcc_cmd.append("-ccbin=clang++")
             if nvcc_version>=(11, 5):
                 nvcc_cmd += ["-arch=all",
                         "-Wno-deprecated-gpu-targets",
