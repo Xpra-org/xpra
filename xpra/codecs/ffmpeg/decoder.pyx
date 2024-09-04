@@ -979,9 +979,9 @@ cdef class Decoder:
             for i in range(3):
                 _, dy = divs[i]
                 if dy==1:
-                    plane_height = self.codec_ctx.height
+                    plane_height = height
                 elif dy==2:
-                    plane_height = (self.codec_ctx.height+1)>>1
+                    plane_height = (height+1)>>1
                 else:
                     av_frame_unref(av_frame)
                     av_frame_free(&av_frame)
@@ -1006,20 +1006,20 @@ cdef class Decoder:
             av_frame_free(&av_frame)
             raise RuntimeError("output size is zero!")
         # ignore rounding:
-        if abs(width-self.width)>1 or abs(height-self.height)>1:
+        if width < self.width or height < self.height:
             log.warn(f"Error: {self.encoding} context size mismatch")
             log.warn(f" on {self.frames+1} with colorspace {self.colorspace} (actual: {self.get_actual_colorspace()})")
             log.warn(f" {self.get_type()} decoder object is configured for {self.width}x{self.height}")
             log.warn(f" but AVCodecContext is set to {width}x{height}")
             av_frame_unref(av_frame)
             av_frame_free(&av_frame)
-            raise RuntimeError("%s context dimension %ix%i is smaller than the codec's expected size of %ix%i for frame %i" % (
+            raise RuntimeError("%s frame dimension %ix%i is smaller than the codec context expected size of %ix%i for frame %i" % (
                 self.encoding, width, height, self.width, self.height, self.frames+1))
 
         bpp = BYTES_PER_PIXEL.get(self.actual_pix_fmt, 0)
         cdef AVFrameWrapper framewrapper = AVFrameWrapper()
         framewrapper.set_context(self.codec_ctx, av_frame)
-        cdef object img = AVImageWrapper(0, 0, width, height, out, cs, 24, strides, bpp, nplanes, thread_safe=False)
+        cdef object img = AVImageWrapper(0, 0, self.width, self.height, out, cs, 24, strides, bpp, nplanes, thread_safe=False)
         img.av_frame = framewrapper
         self.frames += 1
         self.weakref_images.add(img)
