@@ -1010,7 +1010,7 @@ cdef class Decoder:
             log.warn(f"Error: {self.encoding} context size mismatch")
             log.warn(f" on {self.frames+1} with colorspace {self.colorspace} (actual: {self.get_actual_colorspace()})")
             log.warn(f" {self.get_type()} decoder object is configured for {self.width}x{self.height}")
-            log.warn(f" but AVCodecContext is set to {width}x{height}")
+            log.warn(f" but the decoded frame is only {width}x{height}")
             av_frame_unref(av_frame)
             av_frame_free(&av_frame)
             raise RuntimeError("%s frame dimension %ix%i is smaller than the codec context expected size of %ix%i for frame %i" % (
