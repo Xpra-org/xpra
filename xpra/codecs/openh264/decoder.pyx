@@ -284,7 +284,7 @@ cdef class Decoder:
         cdef int wdelta = width - self.width
         cdef int hdelta = height - self.height
         if abs(wdelta) > 1 or abs(hdelta) > 1:
-            if (wdelta & 0xfff0) > 0 or (hdelta & 0xffff0) > 0:
+            if (wdelta & 0xffe0) > 0 or (hdelta & 0xfffe0) > 0:
                 log.warn("Warning: image bigger than expected")
                 log.warn(f" {width}x{height} instead of {self.width}x{self.height}")
         pixels = (
