@@ -778,7 +778,7 @@ fi
 
 
 %changelog
-* Sun Aug 25 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Wed Sep 04 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:
    syntax compatibility fixes
    `openssl.cnf` location in MS Windows builds
@@ -795,6 +795,7 @@ fi
    pycuda 2024.1.2
    pycuda RPMs to link against the system boost library
    build fix for ffmpeg v7 decoder and csc module
+   build CUDA kernels with clang++ instead of gcc >= 14
 - Major:
    system tray docking causing server crashes
    MS Windows PDF printing crash, library mismatch
@@ -808,10 +809,14 @@ fi
    client errors out with window forwarding disabled, remove more assumptions
    xshape client errors with desktop scaling
    xshape windows should still honour the window border
+   expose all clipboard targets
    clipboard `INCR` transfers get stuck
    `scroll` paint corruption
    connection drops when downscaling
+   authentication aborted due to encryption not detected
    always set a default initial resolution
+   honour the initial resolution, even if resizing is disabled
+   failure to add new virtual monitors
 - Encodings:
    `mmap` race condition
    validate openh264 colorspace
@@ -821,6 +826,8 @@ fi
    stick to the same video scaling value longer
    sub-optimal non-scroll areas
    prettier sampling filter when downscaling
+   nvenc causing decoding errors: openh264 decoder and ffmpeg decoder
+   workaround nvenc padded frames
 - Keyboard:
    `keyboard-sync` switch not honoured
    ignore MS Windows keyboard layouts without a valid X11 layout name
@@ -838,6 +845,7 @@ fi
    system tray setup failures with non-composited screens, ie: 8-bit displays
    map missing modifiers using defaults
    don't setup ssh agent dispatch when ssh is disabled
+   request mode failures
 - Cosmetic:
    errors when connections are closed as we process them
    try to prevent ATK warnings
@@ -855,6 +863,8 @@ fi
    missing quote
    log opengl probe command
    clarify display name message
+   support the same resolution aliases as newer versions
+   log randr error code
 
 * Fri May 31 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
 - Encodings:

@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.10] 2024-08-25
+## [5.0.10] 2024-09-04
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
     * [`openssl.cnf` location in MS Windows builds](https://github.com/Xpra-org/xpra/commit/3ad6c8e44438912c5dd9dcba427b17d6b20a463f)
@@ -18,6 +18,7 @@
     * [pycuda 2024.1.2](https://github.com/Xpra-org/xpra/commit/73767cd45819f621f6e0308ae5bde67191d7cd93)
     * [pycuda RPMs to link against the system boost library](https://github.com/Xpra-org/xpra/commit/313092fa342f66d79ace1b4be552caead2a38b1b)
     * [build fix for ffmpeg v7 decoder and csc module](https://github.com/Xpra-org/xpra/commit/db493b80c224c2da3de539ea8d5f4615090bcf8d)
+    * [build CUDA kernels with clang++ instead of gcc >= 14](https://github.com/Xpra-org/xpra/commit/3a6be55fed30528ce4753b26ec598596007c17f5)
 * Major:
     * [system tray docking causing server crashes](https://github.com/Xpra-org/xpra/commit/010c091fc4da583d8ec6a32e793467d039084724) [+ fixup](https://github.com/Xpra-org/xpra/commit/141a82a33811b061c544310b67aaa4468eb87ca2)
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
@@ -31,10 +32,14 @@
     * [client errors out with window forwarding disabled](https://github.com/Xpra-org/xpra/commit/c62bddc5ad170ca4a2bc7de121c969dce5e65349), [remove more assumptions](https://github.com/Xpra-org/xpra/commit/0541065690c0b52fcc41617d33469bf85a95224e)
     * [xshape client errors with desktop scaling](https://github.com/Xpra-org/xpra/commit/674103206ed64eeae92d8d232358472776647c9b)
     * [xshape windows should still honour the window border](https://github.com/Xpra-org/xpra/commit/e3c659fdf4e06190bc0c97126044a9c1d7cc8ddd)
+    * [expose all clipboard targets](https://github.com/Xpra-org/xpra/commit/61ecf3f743c141937844b7eb6f226e6924d3d1aa)
     * [clipboard `INCR` transfers get stuck](https://github.com/Xpra-org/xpra/commit/f51f86a747690fe68f628b7cd72a1513f835607a)
     * [`scroll` paint corruption](https://github.com/Xpra-org/xpra/commit/ae957f2ff9808c9d5570a6b56e21b6e29483e610)
     * [connection drops when downscaling](https://github.com/Xpra-org/xpra/commit/3c66507b31f80eddbeb4ec2bfb66e5da709a4bd4)
+    * [authentication aborted due to encryption not detected](https://github.com/Xpra-org/xpra/commit/557efe2514323c647ac2d4a49283dd8e34fc1475)
     * [always set a default initial resolution](https://github.com/Xpra-org/xpra/commit/a5edfc628ed02837faf6e337a167ae02ab925ec5)
+    * [honour the initial resolution, even if resizing is disabled](https://github.com/Xpra-org/xpra/commit/1973b37e38f00b22d591445e19ce84b1052aef62)
+    * [failure to add new virtual monitors](https://github.com/Xpra-org/xpra/commit/3dd7abcb5732288a421f52623692220883366d2a)
 * Encodings:
     * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
     * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
@@ -44,8 +49,10 @@
     * [stick to the same video scaling value longer](https://github.com/Xpra-org/xpra/commit/aaf22afec492240dae512230aa5fe88c73546c51)
     * [sub-optimal non-scroll areas](https://github.com/Xpra-org/xpra/commit/3b90fc10cd945ee875bda8fc66497991d6fb01ef)
     * [prettier sampling filter when downscaling](https://github.com/Xpra-org/xpra/commit/5b2c89d53d9c9df119f860209e2c637140989ae1)
+    * [nvenc causing decoding errors](https://github.com/Xpra-org/xpra/commit/9d7f74bc6b6d30cd8ffde66451189da42c1fd493)
+    * workaround nvenc padded frames: [openh264 decoder](https://github.com/Xpra-org/xpra/commit/124baa8f3f061d81b5d71cb01bd1ee0dd56a0fef) and [ffmpeg decoder](https://github.com/Xpra-org/xpra/commit/9cb2a66791773f7c06ac961990a9466c8d2b56ca)
 * Keyboard:
-    * [`keyboard-sync` switch not honoured](https://github.com/Xpra-org/xpra/commit/404dc1c177ad292bdaca9ffabbf8bb8a709bd947) [and not sent](https://github.com/Xpra-org/xpra/commit/55809937f4cd3aad0c0ba7b04d75377f15dcedc9)
+    * [`keyboard-sync` switch](https://github.com/Xpra-org/xpra/commit/404dc1c177ad292bdaca9ffabbf8bb8a709bd947) [not honoured](https://github.com/Xpra-org/xpra/commit/4823b24778329cd9718730ea515dbe72b8c607f2) [and not sent](https://github.com/Xpra-org/xpra/commit/55809937f4cd3aad0c0ba7b04d75377f15dcedc9)
     * [ignore MS Windows keyboard layouts without a valid X11 layout name](https://github.com/Xpra-org/xpra/commit/3eca141e0027e93ea1150a5a5939fc63425d9aaf)
     * [try harder to identify the key event string](https://github.com/Xpra-org/xpra/commit/01b36a92c1d2113c3897166c12bfc1177e4bdc55)
     * [don't show duplicate keyboard layout names](https://github.com/Xpra-org/xpra/commit/07d51f73ea08188b728633da745ea29b5285bb77)
@@ -63,6 +70,7 @@
     * [system tray setup failures with non-composited screens, ie: 8-bit displays](https://github.com/Xpra-org/xpra/commit/350bd4ac1f639814a0f9d384687394cca366bfdb)
     * [map missing modifiers using defaults](https://github.com/Xpra-org/xpra/commit/905cf2e5ca61e6504ba1cfb0429f659cd6c4842e)
     * [don't setup ssh agent dispatch when ssh is disabled](https://github.com/Xpra-org/xpra/commit/ab61a462d79c9aa0dbda310ef9f561c856bece82)
+    * [request mode failures](https://github.com/Xpra-org/xpra/commit/afacb052499549b5ea088cfe95d1bd0321c93ae5)
 * Cosmetic:
     * [errors when connections are closed as we process them](https://github.com/Xpra-org/xpra/commit/4d4ba9a078e91af86cd61b12b5021504a5e75ac2)
     * [try to prevent ATK warnings](https://github.com/Xpra-org/xpra/commit/440a182dbaaf1db0af81ab1b33d05bc454a726a0)
@@ -80,6 +88,8 @@
     * [missing quote](https://github.com/Xpra-org/xpra/commit/b88e1667033398ebad55639b10e448a22b08648e)
     * [log opengl probe command](https://github.com/Xpra-org/xpra/commit/675bf35b7f25ac3ec4d5ccd83c0920bba4c9d935)
     * [clarify display name message](https://github.com/Xpra-org/xpra/commit/28f3c30cb10528a91e14b0961b98b1ac2eb47851)
+    * [support the same resolution aliases as newer versions](https://github.com/Xpra-org/xpra/commit/f2c3f6bb182a0007a255a0f52fa9ce55886147a5)
+    * [log randr error code](https://github.com/Xpra-org/xpra/commit/1ec9ff7752d139a2477fcbe4ab219c9507658eea)
 
 
 ## [5.0.9] 2023-06-18
