@@ -883,8 +883,30 @@ fi
 
 
 %changelog
-* Tue Sep 03 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
-- TODO
+* Wed Sep 04 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
+- Major:
+   X11 display state detection
+   failure to add new virtual monitors
+   expose all clipboard targets
+   authentication aborted due to encryption not detected
+   server not honouring `keyboard-sync`
+   launcher failures with "Gtk already loaded" error
+   proxy server packet failures
+- Encodings:
+   nvidia module version parsing from `/proc`
+   nvenc qp values out of range
+   nvenc causing decoding failures, openh264 workaround
+- Minor:
+   nvidia utility command line parsing
+   request mode failures
+   honour the initial resolution, even if resizing is disabled
+- Cosmetic:
+   support the same resolution aliases as newer versions
+   handle early errors more gracefully
+   warn about setuptools breakging things
+   log randr error code
+   use correct type for numlock modifier
+
 * Sun Aug 25 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
 - Platforms, build and packaging:
    pyopengl build fix for Fedora 41 + force rebuild

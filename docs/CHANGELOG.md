@@ -1,7 +1,28 @@
 # Changelog
 
-## [6.1.3] 2024-09-03
-* TODO
+## [6.1.3] 2024-09-04
+* Major:
+    * [X11 display state detection](https://github.com/Xpra-org/xpra/commit/892e6ef021558c0c9145d73d36e323a10b8566f7)
+    * [failure to add new virtual monitors](https://github.com/Xpra-org/xpra/commit/462950c42426d3b8185cbd6c84a3f42136482d47)
+    * [expose all clipboard targets](https://github.com/Xpra-org/xpra/commit/08b03952999071599613255597f554d3e2887b41)
+    * [authentication aborted due to encryption not detected](https://github.com/Xpra-org/xpra/commit/23d04bbe8d2970bdc746fab891fa68e73def6326)
+    * [server not honouring `keyboard-sync`](https://github.com/Xpra-org/xpra/commit/d22dc4b21cd41fd5c763330f8224bd1732cbb8f4)
+    * [launcher failures with "Gtk already loaded" error](https://github.com/Xpra-org/xpra/commit/52f1ff9273f21542cc0cf851a9555f3c54b838e4)
+    * [proxy server packet failures](https://github.com/Xpra-org/xpra/commit/ebadfe60d05529002a5e110d8009db2799adbdb0)
+* Encodings:
+    * [nvidia module version parsing from `/proc`](https://github.com/Xpra-org/xpra/commit/1de554124edbfd503270c60903aa2dcfd574511b)
+    * [nvenc qp values out of range](https://github.com/Xpra-org/xpra/commit/420d12e7e39449ff77d3b27884f861d51005700d)
+    * [nvenc causing decoding failures](https://github.com/Xpra-org/xpra/commit/f432985338ca4579f989c98a61db29404b8340d5), [openh264 workaround](https://github.com/Xpra-org/xpra/commit/dd99d7a237c7b18c65880163d1fbfd0d79c7c8b7)
+* Minor:
+    * [nvidia utility command line parsing](https://github.com/Xpra-org/xpra/commit/4dd35d99d2b5f1c2627c7c0ff4b9628d44bde14c)
+    * [request mode failures](https://github.com/Xpra-org/xpra/commit/33d10cafbde43a0f4894b9d731ac6f445dfefae6)
+    * [honour the initial resolution, even if resizing is disabled](https://github.com/Xpra-org/xpra/commit/39d4d50f5088d418a6c6a3e240cbe87f128dd21c)
+* Cosmetic:
+    * [support the same resolution aliases as newer versions](https://github.com/Xpra-org/xpra/commit/d84dafb4f72ffea5339f75af32eebcfbc9a49702)
+    * [handle early errors more gracefully](https://github.com/Xpra-org/xpra/commit/55cf92df426339b8dc9a016f48ec86a45de0ab8b)
+    * [warn about setuptools breakging things](https://github.com/Xpra-org/xpra/commit/d6a95888e968e7bafbea4d18b344f65d2fa633bc)
+    * [log randr error code](https://github.com/Xpra-org/xpra/commit/20cea9790aedf07e8661f12506ee2aab2ec285f6)
+    * [use correct type for numlock modifier](https://github.com/Xpra-org/xpra/commit/63b167e7be100c25de655fb9f40bdc63c62ec891)
 
 ## [6.1.2] 2024-08-25
 * Platforms, build and packaging:

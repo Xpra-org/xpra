@@ -1,7 +1,28 @@
 xpra (6.1.3-1) UNRELEASED; urgency=low
-  * TODO
+  * Major:
+    X11 display state detection
+    failure to add new virtual monitors
+    expose all clipboard targets
+    authentication aborted due to encryption not detected
+    server not honouring `keyboard-sync`
+    launcher failures with "Gtk already loaded" error
+    proxy server packet failures
+  * Encodings:
+    nvidia module version parsing from `/proc`
+    nvenc qp values out of range
+    nvenc causing decoding failures, openh264 workaround
+  * Minor:
+    nvidia utility command line parsing
+    request mode failures
+    honour the initial resolution, even if resizing is disabled
+  * Cosmetic:
+    support the same resolution aliases as newer versions
+    handle early errors more gracefully
+    warn about setuptools breakging things
+    log randr error code
+    use correct type for numlock modifier
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 03 Sep 2024 15:59:20 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 04 Sep 2024 18:47:58 +0700
 
 xpra (6.1.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
