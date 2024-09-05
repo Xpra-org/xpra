@@ -2079,7 +2079,7 @@ cdef class Encoder:
         #h264.sliceModeData = 0
         h264.sliceMode = 3            #sliceModeData specifies the number of slices
         h264.sliceModeData = 1        #1 slice!
-        h264.disableSPSPPS = 1
+        h264.disableSPSPPS = 0
         h264.repeatSPSPPS = 0
         h264.outputAUD = 1
         h264.outputPictureTimingSEI = 1
@@ -2660,9 +2660,10 @@ cdef class Encoder:
         if self.frames==0:
             #only the first frame needs to be IDR (as we never lose frames)
             pic.pictureType = NV_ENC_PIC_TYPE_IDR
-            pic.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
+            pic.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS | NV_ENC_PIC_FLAG_FORCEIDR
         else:
             pic.pictureType = NV_ENC_PIC_TYPE_P
+            pic.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
         if self.encoding=="h264":
             pic.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
             pic.codecPicParams.h264PicParams.refPicFlag = self.frames==0
