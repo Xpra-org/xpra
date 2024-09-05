@@ -86,7 +86,7 @@ class XpraQuicConnection(Connection):
             log.warn(f"Warning: unhandled websocket http event {event}")
 
     def close(self, code=QuicErrorCode.NO_ERROR, reason="closing") -> None:
-        log("quic.close()")
+        log(f"quic.close({code}, {reason})")
         if not self.closed:
             try:
                 self.send_close(code, reason)
@@ -103,7 +103,7 @@ class XpraQuicConnection(Connection):
             return
         if aioquic_version_info >= (1, 2):
             # we can send the error code and message
-            quic.close(code, reason)
+            quic.close(code)
         else:
             quic.close()
 
