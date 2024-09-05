@@ -1588,6 +1588,7 @@ cdef class Encoder:
     cdef uint64_t bytes_out
     cdef uint8_t ready
     cdef uint8_t closed
+    cdef uint16_t datagram
     cdef uint8_t threaded_init
 
     cdef object __weakref__
@@ -1696,6 +1697,8 @@ cdef class Encoder:
         self.frames = 0
         self.pixel_format = ""
         self.last_frame_times = deque(maxlen=200)
+        # this is disabled because nvenc errors out if we use sliceMode = 1
+        self.datagram = 0 # options.intget("datagram", 0)
         self.update_bitrate()
 
         options = options or typedict()
@@ -2075,11 +2078,14 @@ cdef class Encoder:
     cdef tune_h264(self, NV_ENC_CONFIG_H264 *h264, int gopLength):
         h264.level = NV_ENC_LEVEL_H264_5 #NV_ENC_LEVEL_AUTOSELECT
         h264.chromaFormatIDC = self.get_chroma_format()
-        #h264.sliceMode = 0
-        #h264.sliceModeData = 0
-        h264.sliceMode = 3            #sliceModeData specifies the number of slices
-        h264.sliceModeData = 1        #1 slice!
         h264.disableSPSPPS = 0
+        if self.datagram:
+            h264.sliceMode = 1
+            h264.sliceModeData = self.datagram
+            h264.repeatSPSPPS = 1
+        else:
+            h264.sliceMode = 3            #sliceModeData specifies the number of slices
+            h264.sliceModeData = 1        #1 slice!
         h264.repeatSPSPPS = 0
         h264.outputAUD = 1
         h264.outputPictureTimingSEI = 1
@@ -2660,16 +2666,14 @@ cdef class Encoder:
         if self.frames==0:
             #only the first frame needs to be IDR (as we never lose frames)
             pic.pictureType = NV_ENC_PIC_TYPE_IDR
-            pic.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS | NV_ENC_PIC_FLAG_FORCEIDR
+            # pic.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
+            pic.encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR
         else:
             pic.pictureType = NV_ENC_PIC_TYPE_P
-            pic.encodePicFlags = NV_ENC_PIC_FLAG_OUTPUT_SPSPPS
+            pic.encodePicFlags = 0
         if self.encoding=="h264":
             pic.codecPicParams.h264PicParams.displayPOCSyntax = 2*self.frames
             pic.codecPicParams.h264PicParams.refPicFlag = self.frames==0
-            #this causes crashes with Pascal (ie GTX-1070):
-            #pic.codecPicParams.h264PicParams.sliceMode = 3            #sliceModeData specifies the number of slices
-            #pic.codecPicParams.h264PicParams.sliceModeData = 1        #1 slice!
         else:
             pic.codecPicParams.hevcPicParams.displayPOCSyntax = 2*self.frames
             pic.codecPicParams.hevcPicParams.refPicFlag = self.frames==0
