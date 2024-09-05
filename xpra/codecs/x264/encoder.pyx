@@ -21,8 +21,10 @@ from collections import deque
 
 from libc.string cimport memset
 from libc.stdint cimport int64_t, uint64_t, uint8_t, uintptr_t
+from xpra.buffers.membuf cimport memalign
 
 
+MB_INFO = envbool("XPRA_X264_MB_INFO", False)
 MAX_DELAYED_FRAMES = envint("XPRA_X264_MAX_DELAYED_FRAMES", 4)
 THREADS = envint("XPRA_X264_THREADS", min(4, max(1, os.cpu_count()//2)))
 MIN_SLICED_THREADS_SPEED = envint("XPRA_X264_SLICED_THREADS", 60)
@@ -35,10 +37,16 @@ SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 BLANK_VIDEO = envbool("XPRA_X264_BLANK_VIDEO")
 
 
+DEF X264_MBINFO_CONSTANT = 1
+
+
 cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
+
+cdef extern from "stdlib.h":
+    void free(void *ptr)
 
 cdef extern from "string.h":
     int vsnprintf(char * s, size_t n, const char *fmt, va_list arg)
@@ -157,6 +165,10 @@ cdef extern from "x264.h":
         char        *psz_zones          #alternate method of specifying zones
 
     ctypedef struct analyse:
+        int         intra
+        int         inter
+        int         b_fast_pskip
+        int         b_mb_info
         int         i_me_method         # motion estimation algorithm to use (X264_ME_*)
         int         i_me_range          # integer pixel motion estimation search range (from predicted mv) */
         int         i_mv_range          # maximum length of a mv (in pixels). -1 = auto, based on level */
@@ -242,7 +254,14 @@ cdef extern from "x264.h":
         int i_stride[4]     #Strides for each plane
         uint8_t *plane[4]   #Pointers to each plane
     ctypedef struct x264_image_properties_t:
-        pass
+        float *quant_offsets
+        void (*quant_offsets_free)(void*)
+        uint8_t *mb_info
+        void (*mb_info_free)(void*)
+        double f_ssim
+        double f_psnr_avg
+        double f_psnr[3]
+        double f_crf_avg
     ctypedef struct x264_hrd_t:
         pass
     ctypedef struct x264_sei_t:
@@ -288,6 +307,10 @@ cdef set_f_rf(x264_param_t *param, float q):
 
 cdef const char * const *get_preset_names():
     return x264_preset_names;
+
+
+cdef inline int roundup(int n, int m):
+    return (n + m - 1) & ~(m - 1)
 
 
 ADAPT_TYPES: Dict[int, str] = {
@@ -541,7 +564,7 @@ cdef class Encoder:
         self.full_range = 0
         #self.opencl = USE_OPENCL and width>=32 and height>=32
         self.content_type = options.strget("content-type", "unknown")      #ie: "video"
-        self.b_frames = options.intget("b-frames", 0)
+        self.b_frames = 0 if MB_INFO else options.intget("b-frames", 0)
         self.fast_decode = options.boolget("h264.fast-decode", False)
         self.max_delayed = options.intget("max-delayed", MAX_DELAYED_FRAMES) * int(not self.fast_decode) * int(self.b_frames)
         self.preset = get_x264_preset(self.speed)
@@ -683,6 +706,10 @@ cdef class Encoder:
         param.vui.i_colmatrix = 0
         param.vui.i_chroma_loc = 0
 
+        if MB_INFO:
+            param.analyse.b_fast_pskip = 1
+            param.analyse.b_mb_info = 1
+
         #logging hook:
         param.pf_log = <void *> X264_log
         param.i_log_level = LOG_LEVEL
@@ -805,6 +832,10 @@ cdef class Encoder:
             "mv-range-thread"   : param.analyse.i_mv_range_thread,
             "subpel_refine"     : param.analyse.i_subpel_refine,
             "weighted-pred"     : param.analyse.i_weighted_pred,
+            "intra"             : param.analyse.intra,
+            "inter"             : param.analyse.inter,
+            "fast_pskip"        : bool(param.analyse.b_fast_pskip),
+            "mb_info"           : bool(param.analyse.b_mb_info),
         }
 
     cdef dict get_rc_info(self, x264_param_t *param):
@@ -905,6 +936,16 @@ cdef class Encoder:
             pic_in.img.plane[i] = NULL
             pic_in.img.i_stride[i] = 0
             memset(&py_buf[i], 0, sizeof(Py_buffer))
+
+        cdef int mb_count = roundup(self.width, 16) // 16 * roundup(self.height, 16) // 16
+        cdef uint8_t *mb_info = NULL
+        if MB_INFO:
+            mb_info = <uint8_t*> memalign(mb_count)
+            memset(mb_info, 0, mb_count)
+            pic_in.prop.mb_info_free = &free
+            # for i in range(mb_count):
+            #     mb_info[i] = i % 2
+        pic_in.prop.mb_info = mb_info
 
         try:
             if self.src_format.find("RGB")>=0 or self.src_format.find("BGR")>=0:
