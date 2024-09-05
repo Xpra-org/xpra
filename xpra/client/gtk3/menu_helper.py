@@ -209,6 +209,7 @@ def make_min_auto_menu(title, min_options, options,
     submenu.append(fstitle)
     submenu.menu_items = {}
     submenu.min_menu_items = {}
+    submenu.updating = False
 
     def populate_menu(options, value, set_fn):
         found_match = False
@@ -230,25 +231,29 @@ def make_min_auto_menu(title, min_options, options,
         return items
 
     def set_value(item, ss):
-        if not item.get_active():
+        if not item.get_active() or submenu.updating:
             return
-        # user selected a new value from the menu:
-        s = -1
-        for ts, tl in options.items():
-            if tl == item.get_label():
-                s = ts
-                break
-        if s >= 0 and s != ss.get_current_value():
-            log("setting %s to %s", title, s)
-            ss.set_value_cb(s)
-            # deselect other items:
-            for x in ss.menu_items.values():
-                if x != item:
-                    x.set_active(False)
-            # min is only relevant in auto-mode:
-            if s != 0:
-                for v, x in ss.min_menu_items.items():
-                    x.set_active(v == 0)
+        try:
+            submenu.updating = True
+            # user selected a new value from the menu:
+            s = -1
+            for ts, tl in options.items():
+                if tl == item.get_label():
+                    s = ts
+                    break
+            if s >= 0 and s != ss.get_current_value():
+                log("setting %s to %s", title, s)
+                ss.set_value_cb(s)
+                # deselect other items:
+                for x in ss.menu_items.values():
+                    if x != item:
+                        x.set_active(False)
+                # min is only relevant in auto-mode:
+                if s != 0:
+                    for v, x in ss.min_menu_items.items():
+                        x.set_active(v == 0)
+        finally:
+            submenu.updating = False
 
     submenu.menu_items.update(populate_menu(options, get_current_value(), set_value))
     submenu.append(Gtk.SeparatorMenuItem())
@@ -258,28 +263,32 @@ def make_min_auto_menu(title, min_options, options,
     submenu.append(mstitle)
 
     def set_min_value(item, ss):
-        if not item.get_active():
+        if not item.get_active() or submenu.updating:
             return
-        # user selected a new min-value from the menu:
-        s = -1
-        for ts, tl in min_options.items():
-            if tl == item.get_label():
-                s = ts
-                break
-        if s >= 0 and s != ss.get_current_min_value():
-            log(f"setting min-{title} to {s}")
-            ss.set_min_value_cb(s)
-            # deselect other min items:
-            for x in ss.min_menu_items.values():
-                if x != item:
-                    x.set_active(False)
-            # min requires auto-mode:
-            for x in ss.menu_items.values():
-                if x.get_label() == "Auto":
-                    if not x.get_active():
-                        x.activate()
-                else:
-                    x.set_active(False)
+        try:
+            submenu.updating = True
+            # user selected a new min-value from the menu:
+            s = -1
+            for ts, tl in min_options.items():
+                if tl == item.get_label():
+                    s = ts
+                    break
+            if s >= 0 and s != ss.get_current_min_value():
+                log(f"setting min-{title} to {s}")
+                ss.set_min_value_cb(s)
+                # deselect other min items:
+                for x in ss.min_menu_items.values():
+                    if x != item:
+                        x.set_active(False)
+                # min requires auto-mode:
+                for x in ss.menu_items.values():
+                    if x.get_label() == "Auto":
+                        if not x.get_active():
+                            x.activate()
+                    else:
+                        x.set_active(False)
+        finally:
+            submenu.updating = False
 
     mv = -1
     if get_current_value() <= 0:
