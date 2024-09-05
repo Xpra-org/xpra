@@ -1485,6 +1485,11 @@ class WindowVideoSource(WindowSource):
         cached_scaling = [cached_w, cached_h, self.calculate_scaling(width, height, cached_w, cached_h)]
         scores = []
         all_no_match = {}
+        csc_specs = vh.get_csc_specs(src_format)
+        scorelog(f"csc for {src_format} source format: {csc_specs}")
+        if FORCE_CSC:
+            csc_specs = {FORCE_CSC_MODE : csc_specs.get(FORCE_CSC_MODE, ())}
+            scorelog(f"{FORCE_CSC_MODE=} : {csc_specs=}")
         for encoding in encodings:
             # these are the CSC modes the client can handle for this encoding:
             # we must check that the output csc mode for each encoder is one of those
@@ -1496,6 +1501,7 @@ class WindowVideoSource(WindowSource):
             if not encoder_specs:
                 scorelog(" no encoder specs for %s", encoding)
                 continue
+            scorelog(f"encoders({encoding})={encoder_specs}, {supported_csc_modes=}")
             # if not specified as an encoding option,
             # discount encodings further down the list of preferred encodings:
             # (ie: prefer h264 to vp9)
@@ -1510,6 +1516,7 @@ class WindowVideoSource(WindowSource):
                 # find encoders that take 'enc_in_format' as input:
                 colorspace_specs = encoder_specs.get(enc_in_format)
                 if not colorspace_specs:
+                    scorelog(f"no encoders for {enc_in_format}")
                     no_match.append(info)
                     return
                 # log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
@@ -1517,6 +1524,7 @@ class WindowVideoSource(WindowSource):
                     # ensure that the output of the encoder can be processed by the client:
                     matches = tuple(x for x in encoder_spec.output_colorspaces if x in supported_csc_modes)
                     if not matches or self.is_cancelled():
+                        scorelog(f"output colorspaces {encoder_spec.output_colorspaces} not supported")
                         no_match.append(encoder_spec.codec_type+" "+info)
                         continue
                     max_w = min(encoder_spec.max_w, vmw)
@@ -1551,15 +1559,12 @@ class WindowVideoSource(WindowSource):
                 add_scores(f"direct (no csc) {src_format}", None, src_format)
 
             # now add those that require a csc step:
-            csc_specs = vh.get_csc_specs(src_format)
-            if csc_specs:
-                # log("%s can also be converted to %s using %s",
-                #    pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
-                # we have csc module(s) that can get us from pixel_format to out_csc:
-                for out_csc, l in csc_specs.items():
-                    if not bool(FORCE_CSC_MODE) or FORCE_CSC_MODE == out_csc:
-                        for csc_spec in l:
-                            add_scores(f"via {out_csc}", csc_spec, out_csc)
+            # log("%s can also be converted to %s using %s",
+            #    pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
+            # we have csc module(s) that can get us from pixel_format to out_csc:
+            for out_csc, l in csc_specs.items():
+                for csc_spec in l:
+                    add_scores(f"via {out_csc}", csc_spec, out_csc)
             all_no_match[encoding] = no_match
         if all_no_match:
             scorelog("no matching colorspace specs for %s", all_no_match)
