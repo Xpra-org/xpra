@@ -199,7 +199,7 @@ class WindowSource(WindowIconSource):
                  encoding_options:typedict, icons_encoding_options: typedict,
                  rgb_formats: Sequence[str],
                  default_encoding_options,
-                 mmap, mmap_size: int, bandwidth_limit: int, jitter: int):
+                 mmap, mmap_size: int, bandwidth_limit: int, jitter: int, datagram=0):
         super().__init__(window_icon_encodings, icons_encoding_options)
         # mmap:
         self._mmap = mmap
@@ -300,6 +300,7 @@ class WindowSource(WindowIconSource):
 
         self.bandwidth_limit = bandwidth_limit
         self.jitter = jitter
+        self.datagram = datagram
 
         self.pixel_format = None                            # ie: BGRX
         self.image_depth: int = window.get_property("depth")

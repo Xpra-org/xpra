@@ -2005,6 +2005,7 @@ class WindowVideoSource(WindowSource):
             options["scaled-width"] = enc_width*n//d
             options["scaled-height"] = enc_height*n//d
         options["dst-formats"] = dst_formats
+        options["datagram"] = self.datagram
 
         ve.init_context(encoding, enc_width, enc_height, enc_in_format, typedict(options))
         # record new actual limits:
