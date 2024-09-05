@@ -1,6 +1,6 @@
 # This file is part of Xpra.
 # Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
-# Copyright (C) 2010-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
@@ -158,7 +158,7 @@ class DelayedRegions:
         )
 
 
-def capr(v) -> int:
+def capr(v: int) -> int:
     return min(100, max(0, int(v)))
 
 
@@ -194,7 +194,8 @@ class WindowSource(WindowIconSource):
                  video_helper,
                  cuda_device_context,
                  server_core_encodings: Sequence[str], server_encodings: Sequence[str],
-                 encoding:str, encodings: Sequence[str], core_encodings: Sequence[str], window_icon_encodings: Sequence[str],
+                 encoding: str, encodings: Sequence[str], core_encodings: Sequence[str],
+                 window_icon_encodings: Sequence[str],
                  encoding_options:typedict, icons_encoding_options: typedict,
                  rgb_formats: Sequence[str],
                  default_encoding_options,
@@ -295,7 +296,7 @@ class WindowSource(WindowIconSource):
             self.window_signal_handlers.append(sid)
             children_updated()
         else:
-            self.children = None
+            self.children = ()
 
         self.bandwidth_limit = bandwidth_limit
         self.jitter = jitter
