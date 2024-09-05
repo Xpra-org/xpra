@@ -1795,22 +1795,18 @@ class WindowVideoSource(WindowSource):
                    (width, height, max_w, max_h), scaling, q, s, self.scaling_control)
         return scaling
 
-    def check_pipeline(self, encoding: str, width: int, height: int, src_format: str) -> bool:
+    def check_pipeline(self, encodings: Iterable[str], width: int, height: int, src_format: str) -> bool:
         """
             Checks that the current pipeline is still valid
             for the given input. If not, close it and make a new one.
 
             Runs in the 'encode' thread.
         """
-        if encoding in ("auto", "stream", "grayscale"):
-            encodings = self.common_video_encodings
-        else:
-            encodings = (encoding, )
         if self.do_check_pipeline(encodings, width, height, src_format):
             return True  # OK!
 
         videolog("check_pipeline%s setting up a new pipeline as check failed - encodings=%s",
-                 (encoding, width, height, src_format), encodings)
+                 (encodings, width, height, src_format), encodings)
         # cleanup existing one if needed:
         self.csc_clean(self._csc_encoder)
         self.ve_clean(self._video_encoder)
@@ -2429,27 +2425,28 @@ class WindowVideoSource(WindowSource):
         vh = self.video_helper
         if vh is None:
             return ()         # shortcut when closing down
-        if not self.check_pipeline(encoding, w, h, src_format):
+        if encoding in ("auto", "stream", "grayscale"):
+            encodings = self.common_video_encodings
+        else:
+            encodings = (encoding, )
+        if not self.check_pipeline(encodings, w, h, src_format):
             if self.is_cancelled():
                 return ()
             # just for diagnostics:
-            supported_csc_modes = self.full_csc_modes.strtupleget(encoding)
-            encoder_specs = vh.get_encoder_specs(encoding)
-            encoder_types: set[str] = set()
-            ecsc: set[str] = set()
-            for csc in supported_csc_modes:
-                if csc not in encoder_specs:
-                    continue
-                ecsc.add(csc)
-                for especs in encoder_specs.get(csc, ()):
-                    encoder_types.add(especs.codec_type)
+            supported_csc_modes = dict((encoding, self.full_csc_modes.strtupleget(encoding)) for encoding in encodings)
+            all_encs: set[str] = set()
+            for enc in encodings:
+                encoder_specs = vh.get_encoder_specs(enc)
+                for sublist in encoder_specs.values():
+                    all_encs.update(es.codec_type for es in sublist)
+                for csc in supported_csc_modes:
+                    if csc not in encoder_specs:
+                        continue
             videolog.error("Error: failed to setup a video pipeline for %r encoding with source format %r",
                            encoding, src_format)
-            all_encs = {es.codec_type for sublist in encoder_specs.values() for es in sublist}
-            videolog.error(f" all encoders for {encoding!r}: %s", csv(tuple(all_encs)))
-            videolog.error(f" client supported CSC modes for {encoding!r}: %s", csv(supported_csc_modes))
-            videolog.error(" supported encoders for these CSC modes: %s", csv(encoder_types))
-            videolog.error(" matching CSC modes: %s", csv(ecsc))
+            videolog.error(f" all encoders for {encoding!r}: %s", csv(all_encs))
+            for enc, modes in supported_csc_modes.items():
+                videolog.error(f" client supported CSC modes for {enc!r}: %s", csv(modes))
             if FORCE_CSC:
                 videolog.error(" forced csc mode: %s", FORCE_CSC_MODE)
             return self.video_fallback(image, options)
