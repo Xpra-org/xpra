@@ -360,7 +360,7 @@ class AudioMixin(StubSourceMixin):
 
     def send_audio_data(self, audio_source, data: bytes, metadata: dict,
                         packet_metadata: Iterable = ()) -> None:
-        packet_data = [audio_source.codec, Compressed(audio_source.codec, data), metadata, packet_metadata or ()]
+        packet_data = [audio_source.codec, Compressed(audio_source.codec, data, True), metadata, packet_metadata or ()]
         sequence = audio_source.sequence
         if sequence >= 0:
             metadata["sequence"] = sequence
