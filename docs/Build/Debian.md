@@ -107,7 +107,7 @@ apt-get install openssh-client sshpass python3-paramiko
 
 python libraries:
 ```shell
-apt-get install python3-setproctitle python3-xdg python3-pyinotify python3-opencv
+apt-get install python3-setproctitle python3-xdg
 ```
 X11:
 ```shell

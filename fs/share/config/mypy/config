@@ -19,9 +19,6 @@ ignore_missing_imports = True
 [mypy-uinput.*]
 ignore_missing_imports = True
 
-[mypy-pyinotify.*]
-ignore_missing_imports = True
-
 [mypy-OpenGL.*]
 ignore_missing_imports = True
 

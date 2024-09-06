@@ -162,7 +162,6 @@ Recommends:         xpra-filesystem >= 5
 Recommends:         lsb_release
 Recommends:			%{python3}-pillow
 Recommends:			%{python3}-cryptography
-Recommends:			%{python3}-inotify
 Recommends:			%{python3}-netifaces
 Recommends:			%{python3}-dbus
 Recommends:			%{python3}-dns

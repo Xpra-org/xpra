@@ -72,7 +72,6 @@ cli = [
     # printing, etc:
     "cups",
     "psutil",
-    "inotify",
     "cpuinfo",
     "setproctitle",
     "pyxdg",

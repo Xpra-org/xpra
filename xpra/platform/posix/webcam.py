@@ -6,9 +6,11 @@
 # pylint: disable-msg=E1101
 
 import os
+import glob
 from typing import Any
 from collections.abc import Callable
 
+from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.util.system import is_DEB
 from xpra.log import Logger
@@ -126,73 +128,55 @@ def get_all_video_devices(capture_only=True) -> dict[int, dict[str, Any]]:
     return devices
 
 
-_watch_manager = None
-_notifier = None
+device_timetamps = {}
+device_monitor = None
 
 
-def _video_device_file_filter(event) -> bool:
-    # return True to stop processing of event (to "stop chaining")
-    return not event.pathname.startswith("/dev/video")
+def update_device_timestamps() -> None:
+    for dev in glob.glob("/dev/video*"):
+        try:
+            device_timetamps[dev] = os.path.getmtime(dev)
+        except OSError:
+            pass
 
 
 def add_video_device_change_callback(callback: Callable) -> None:
     # pylint: disable=import-outside-toplevel
+    Gio = gi_import("Gio")
     from xpra.platform.webcam import _video_device_change_callbacks, _fire_video_device_change
-    global _watch_manager, _notifier
-    try:
-        import pyinotify
-    except ImportError as e:
-        log.error("Error: cannot watch for video device changes without pyinotify:")
-        log.estr(e)
-        return
-    log(f"add_video_device_change_callback({callback}) pyinotify={pyinotify}")
+    log(f"add_video_device_change_callback({callback})")
+    global device_timetamps, device_monitor
 
-    if not _watch_manager:
-        class EventHandler(pyinotify.ProcessEvent):
-            def process_IN_CREATE(self, event):
-                _fire_video_device_change(True, event.pathname)
+    def dev_directory_changed(*args):
+        old = dict(device_timetamps)
+        update_device_timestamps()
+        if set(old.keys()) != set(device_timetamps.keys()):
+            _fire_video_device_change()
+            return
+        for dev, ts in old.items():
+            if device_timetamps.get(dev, -1) != ts:
+                _fire_video_device_change()
+                return
 
-            def process_IN_DELETE(self, event):
-                _fire_video_device_change(False, event.pathname)
-
-        _watch_manager = pyinotify.WatchManager()
-        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  # @UndefinedVariable
-        handler = EventHandler(pevent=_video_device_file_filter)
-        _notifier = pyinotify.ThreadedNotifier(_watch_manager, handler)
-        _notifier.daemon = True
-        wdd = _watch_manager.add_watch('/dev', mask)
+    if not device_monitor:
+        update_device_timestamps()
+        gfile = Gio.File.new_for_path("/dev")
+        device_monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+        device_monitor.connect("changed", dev_directory_changed)
         log("watching for video device changes in /dev")
-        log(f"notifier={_notifier}, watch={wdd}")
-        _notifier.start()
     _video_device_change_callbacks.append(callback)
-    # for running standalone:
-    # notifier.loop()
 
 
 def remove_video_device_change_callback(callback: Callable) -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.platform.webcam import _video_device_change_callbacks
-    global _watch_manager, _notifier
-    if not _watch_manager:
-        log.error("Error: cannot remove video device change callback, no watch manager!")
-        return
+    log(f"remove_video_device_change_callback({callback})")
+    global device_monitor, device_timetamps
     if callback not in _video_device_change_callbacks:
         log.error("Error: video device change callback not found, cannot remove it!")
         return
-    log(f"remove_video_device_change_callback({callback})")
     _video_device_change_callbacks.remove(callback)
-    if not _video_device_change_callbacks:
-        log("last video device change callback removed, closing the watch manager")
-        # we can close it:
-        if _notifier:
-            try:
-                _notifier.stop()
-            except Exception:
-                pass
-            _notifier = None
-        if _watch_manager:
-            try:
-                _watch_manager.close()
-            except Exception:
-                pass
-            _watch_manager = None
+    if not _video_device_change_callbacks and device_monitor:
+        device_monitor.cancel()
+        device_monitor = None
+        device_timetamps = {}

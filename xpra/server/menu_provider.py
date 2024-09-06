@@ -9,13 +9,14 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import DEFAULT_XDG_DATA_DIRS
-from xpra.os_util import OSX, POSIX, WIN32, gi_import
+from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.env import envint, envbool, osexpand
 from xpra.util.thread import start_thread
 from xpra.server.background_worker import add_work_item
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
+Gio = gi_import("Gio")
 
 log = Logger("menu")
 
@@ -48,13 +49,12 @@ def get_menu_provider():
 
 class MenuProvider:
     __slots__ = (
-        "watch_manager", "watch_notifier", "xdg_menu_reload_timer",
+        "dir_watchers", "xdg_menu_reload_timer",
         "on_reload", "menu_data", "desktop_sessions", "load_lock",
     )
 
     def __init__(self):
-        self.watch_manager = None
-        self.watch_notifier = None
+        self.dir_watchers: dict[str, Any] = {}
         self.xdg_menu_reload_timer = 0
         self.on_reload: list[Callable] = []
         self.menu_data: dict[str, Any] | None = None
@@ -71,7 +71,7 @@ class MenuProvider:
     def cleanup(self) -> None:
         self.on_reload = []
         self.cancel_xdg_menu_reload()
-        self.cancel_pynotify_watch()
+        self.cancel_dir_watchers()
 
     def setup_menu_watcher(self) -> None:
         try:
@@ -82,62 +82,29 @@ class MenuProvider:
             log.estr(e)
 
     def do_setup_menu_watcher(self) -> None:
-        if self.watch_manager or OSX or WIN32:
-            # already setup
-            return
-        try:
-            # pylint: disable=import-outside-toplevel
-            import pyinotify
-        except ImportError as e:
-            log("setup_menu_watcher() cannot import pyinotify", exc_info=True)
-            log.warn("Warning: cannot watch for application menu changes without pyinotify:")
-            log.warn(" %s", e)
-            return
-        self.watch_manager = pyinotify.WatchManager()
-
-        def menu_data_updated(create: bool, pathname: str):
-            log("menu_data_updated(%s, %s)", create, pathname)
+        def directory_changed(*args):
+            log(f"directory_changed{args}")
             self.schedule_xdg_menu_reload()
 
-        class EventHandler(pyinotify.ProcessEvent):
-
-            def process_IN_CREATE(self, event):
-                menu_data_updated(True, event.pathname)
-
-            def process_IN_DELETE(self, event):
-                menu_data_updated(False, event.pathname)
-
-        mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  # @UndefinedVariable pylint: disable=no-member
-        handler = EventHandler()
-        self.watch_notifier = pyinotify.ThreadedNotifier(self.watch_manager, handler)
-        self.watch_notifier.daemon = True
         data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":")
-        watched = []
         for data_dir in data_dirs:
             menu_dir = os.path.join(osexpand(data_dir), "applications")
-            if not os.path.exists(menu_dir) or menu_dir in watched:
+            if not os.path.exists(menu_dir) or menu_dir in self.dir_watchers:
                 continue
-            wdd = self.watch_manager.add_watch(menu_dir, mask)
-            watched.append(menu_dir)
-            log("watch_notifier=%s, watch=%s", self.watch_notifier, wdd)
-        self.watch_notifier.start()
-        if watched:
+            gfile = Gio.File.new_for_path(menu_dir)
+            monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+            monitor.connect("changed", directory_changed)
+            self.dir_watchers[menu_dir] = monitor
+        if self.dir_watchers:
             log.info("watching for applications menu changes in:")
-            for wd in watched:
-                log.info(" '%s'", wd)
+            for wd in self.dir_watchers.keys():
+                log.info(f" {wd!r}")
 
-    def cancel_pynotify_watch(self) -> None:
-        wn = self.watch_notifier
-        if wn:
-            self.watch_notifier = None
-            wn.stop()
-        wm = self.watch_manager
-        if wm:
-            self.watch_manager = None
-            try:
-                wm.close()
-            except OSError:
-                log("error closing watch manager %s", wm, exc_info=True)
+    def cancel_dir_watchers(self) -> None:
+        dw = self.dir_watchers
+        self.dir_watchers = {}
+        for monitor in dw.values():
+            monitor.cancel()
 
     def load_menu_data(self, force_reload: bool = False) -> None:
         # start loading in a thread,
