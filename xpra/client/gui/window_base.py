@@ -921,7 +921,8 @@ class ClientWindowBase(ClientWidgetBase):
     def show_docs(self, *args) -> None:
         self._client.show_docs(*args)
 
-    def log(self, message="") -> None:
+    @staticmethod
+    def log(message="") -> None:
         log.info(message)
 
     def next_keyboard_layout(self, update_platform_layout) -> None:

@@ -65,6 +65,20 @@ def get_core_encodings() -> Sequence[str]:
     return preforder(core_encodings)
 
 
+def get_batch_caps() -> dict[str, Any]:
+    # batch options:
+    caps = {}
+    for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
+        evalue = os.environ.get(f"XPRA_BATCH_{bprop.upper()}")
+        if evalue:
+            try:
+                caps[f"batch.{bprop}"] = int(evalue)
+            except ValueError:
+                log.error("Error: invalid environment value for %s: %s", bprop, evalue)
+    log("get_batch_caps()=%s", caps)
+    return caps
+
+
 class Encodings(StubClientMixin):
     """
     Mixin for adding encodings to a client
@@ -157,7 +171,7 @@ class Encodings(StubClientMixin):
                 "cursor": self.get_cursor_encodings(),
                 "packet": True,
             },
-            "batch": self.get_batch_caps(),
+            "batch": get_batch_caps(),
             "encoding": self.get_encodings_caps(),
         }
         return caps
@@ -181,19 +195,6 @@ class Encodings(StubClientMixin):
                 else:
                     log.info("server is using %s encoding instead of %s", e, self.encoding)
             self.encoding = e
-
-    def get_batch_caps(self) -> dict[str, Any]:
-        # batch options:
-        caps = {}
-        for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
-            evalue = os.environ.get(f"XPRA_BATCH_{bprop.upper()}")
-            if evalue:
-                try:
-                    caps[f"batch.{bprop}"] = int(evalue)
-                except ValueError:
-                    log.error("Error: invalid environment value for %s: %s", bprop, evalue)
-        log("get_batch_caps()=%s", caps)
-        return caps
 
     def get_encodings_caps(self) -> dict[str, Any]:
         video_b_frames: list[str] = []

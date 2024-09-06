@@ -3051,7 +3051,7 @@ def get_start_server_args(opts, uid=getuid(), gid=getgid(), compat=False, cmdlin
     return get_command_args(opts, uid, gid, option_types, compat, cmdline)
 
 
-def get_command_args(opts, uid=getuid(), gid=getgid(), option_types=OPTION_TYPES,
+def get_command_args(opts, uid: int, gid: int, option_types: dict[str, Any],
                      compat=False, cmdline=()) -> list[str]:
     defaults = make_defaults_struct(uid=uid, gid=gid)
     fdefaults = defaults.clone()

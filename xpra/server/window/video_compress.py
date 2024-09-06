@@ -1800,7 +1800,7 @@ class WindowVideoSource(WindowSource):
                    (width, height, max_w, max_h), scaling, q, s, self.scaling_control)
         return scaling
 
-    def check_pipeline(self, encodings: Iterable[str], width: int, height: int, src_format: str) -> bool:
+    def check_pipeline(self, encodings: Sequence[str], width: int, height: int, src_format: str) -> bool:
         """
             Checks that the current pipeline is still valid
             for the given input. If not, close it and make a new one.

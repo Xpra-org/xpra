@@ -38,7 +38,7 @@ PREFER_CSC_SCALING = envbool("XPRA_PREFER_CSC_SCALING", True)
 _PIL_font = None
 
 
-def load_PIL_font():
+def load_pillow_font():
     global _PIL_font
     if _PIL_font:
         return _PIL_font
@@ -95,7 +95,7 @@ def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int 
     rgb_format = "RGBA"
     img = Image.new(rgb_format, (width, height), color=bg)
     draw = ImageDraw.Draw(img)
-    font = load_PIL_font()
+    font = load_pillow_font()
     draw.text((x, y), text, "blue", font=font)
     return img.tobytes("raw", rgb_format)
 

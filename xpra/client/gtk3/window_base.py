@@ -325,6 +325,29 @@ def add_border_rectangles(rectangles: Sequence[tuple[int, int, int, int]],
 
 
 # noinspection PyTestUnpassedFixture
+def is_awt(metadata) -> bool:
+    wm_class = metadata.strtupleget("class-instance")
+    return wm_class and len(wm_class) == 2 and wm_class[0].startswith("sun-awt-X11")
+
+
+def _button_resolve(button: int) -> int:
+    if WIN32 and button in (4, 5):
+        # On Windows "X" buttons (the extra buttons sometimes found on the
+        # side of the mouse) are numbered 4 and 5, as there is a different
+        # API for scroll events. Convert them into the X11 convention of 8
+        # and 9.
+        return button + 4
+    return button
+
+
+def noop_destroy() -> None:
+    log.warn("Warning: window destroy called twice!")
+
+
+def _event_buttons(event) -> list[int]:
+    return [button for mask, button in BUTTON_MASK.items() if event.state & mask]
+
+
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     __gsignals__ = {
         "state-updated": no_arg_signal,
@@ -738,10 +761,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             log(" because of max viewport dims %s and max backing dims %s",
                 self.MAX_VIEWPORT_DIMS, self.MAX_BACKING_DIMS)
 
-    def is_awt(self, metadata) -> bool:
-        wm_class = metadata.strtupleget("class-instance")
-        return wm_class and len(wm_class) == 2 and wm_class[0].startswith("sun-awt-X11")
-
     def _is_popup(self, metadata) -> bool:
         # decide if the window type is POPUP or NORMAL
         if self._override_redirect:
@@ -754,7 +773,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if UNDECORATED_TRANSIENT_IS_OR > 1:
                     metalog("forcing POPUP type for window transient-for=%s", transient_for)
                     return True
-                if metadata.get("skip-taskbar") and self.is_awt(metadata):
+                if metadata.get("skip-taskbar") and is_awt(metadata):
                     metalog("forcing POPUP type for Java AWT skip-taskbar window, transient-for=%s", transient_for)
                     return True
         window_types = metadata.strtupleget("window-type")
@@ -915,7 +934,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.when_realized("cursor", b.set_cursor_data, cursor_data)
 
     def adjusted_position(self, ox, oy) -> tuple[int, int]:
-        if AWT_RECENTER and self.is_awt(self._metadata):
+        if AWT_RECENTER and is_awt(self._metadata):
             ss = self._client._current_screen_sizes
             if ss and len(ss) == 1:
                 screen0 = ss[0]
@@ -1884,23 +1903,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.remove_pointer_overlay_timer = 0
         self.show_pointer_overlay(None)
 
-    def _button_resolve(self, button: int) -> int:
-        if WIN32 and button in (4, 5):
-            # On Windows "X" buttons (the extra buttons sometimes found on the
-            # side of the mouse) are numbered 4 and 5, as there is a different
-            # API for scroll events. Convert them into the X11 convention of 8
-            # and 9.
-            return button + 4
-        return button
-
     def _do_button_press_event(self, event) -> None:
         # Gtk.Window.do_button_press_event(self, event)
-        button = self._button_resolve(event.button)
+        button = _button_resolve(event.button)
         self._button_action(button, event, True)
 
     def _do_button_release_event(self, event) -> None:
         # Gtk.Window.do_button_release_event(self, event)
-        button = self._button_resolve(event.button)
+        button = _button_resolve(event.button)
         self._button_action(button, event, False)
 
     ######################################################################
@@ -1917,7 +1927,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def motion_moveresize(self, event) -> None:
         x_root, y_root, direction, button, start_buttons, wx, wy, ww, wh = self.moveresize_event
         dirstr = MOVERESIZE_DIRECTION_STRING.get(direction, direction)
-        buttons = self._event_buttons(event)
+        buttons = _event_buttons(event)
         geomlog("motion_moveresize(%s) direction=%s, buttons=%s", event, dirstr, buttons)
         if start_buttons is None:
             # first time around, store the buttons
@@ -2032,7 +2042,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         p = self.get_root_window().get_pointer()[-3:-1]
         x, y = p[0], p[1]
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
-            self.initiate_moveresize_X11(x, y, direction, button, source_indication)
+            self.initiate_moveresize_x11(x, y, direction, button, source_indication)
             return
         if direction == MoveResize.CANCEL:
             self.moveresize_event = None
@@ -2054,9 +2064,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             ww, wh = self.get_size()
             self.moveresize_event = [x_root, y_root, direction, button, None, wx, wy, ww, wh]
 
-    def initiate_moveresize_X11(self, x_root: int, y_root: int, direction: int,
+    def initiate_moveresize_x11(self, x_root: int, y_root: int, direction: int,
                                 button: int, source_indication: int) -> None:
-        statelog("initiate_moveresize_X11%s",
+        statelog("initiate_moveresize_x11%s",
                  (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction),
                   button, SOURCE_INDICATION_STRING.get(source_indication, source_indication)))
         event_mask = SubstructureNotifyMask | SubstructureRedirectMask
@@ -2489,9 +2499,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.repaint(0, 0, w, h)
         self.may_send_client_properties()
 
-    def noop_destroy(self) -> None:
-        log.warn("Warning: window destroy called twice!")
-
     def destroy(self) -> None:  # pylint: disable=method-hidden
         self.cancel_window_state_timer()
         self.cancel_send_iconifiy_timer()
@@ -2506,7 +2513,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         Gtk.Window.destroy(self)
         if self._client.has_focus(self.wid):
             self._unfocus()
-        self.destroy = self.noop_destroy
+        self.destroy = noop_destroy
 
     def do_unmap_event(self, event) -> None:
         self.cancel_follow_handler()
@@ -2556,14 +2563,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         pointer_data = self.get_pointer_data(event)
         # FIXME: state is used for both mods and buttons??
         modifiers = self._client.mask_to_names(event.state)
-        buttons = self._event_buttons(event)
+        buttons = _event_buttons(event)
         v = pointer_data, modifiers, buttons
         mouselog("pointer_modifiers(%s)=%s (x_root=%s, y_root=%s, window_offset=%s)",
                  event, v, event.x_root, event.y_root, self.window_offset)
         return v
-
-    def _event_buttons(self, event) -> list[int]:
-        return [button for mask, button in BUTTON_MASK.items() if event.state & mask]
 
     def parse_key_event(self, event, pressed: bool) -> KeyEvent:
         keyval = event.keyval

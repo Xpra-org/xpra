@@ -24,7 +24,7 @@ from xpra.gtk.dialogs.util import hb_button
 from xpra.net.common import DEFAULT_PORTS
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.objects import typedict
-from xpra.os_util import gi_import, WIN32
+from xpra.os_util import gi_import, WIN32, getuid, getgid
 from xpra.util.env import IgnoreWarningsContext
 from xpra.log import Logger
 
@@ -397,6 +397,7 @@ class SessionsGUI(Gtk.Window):
         option_types = {k: v for k, v in OPTION_TYPES.items() if k.startswith("ssl")}
         cmd = get_xpra_command() + ["attach", uri] + get_command_args(
             self.options,
+            uid=getuid(), gid=getgid(),
             option_types=option_types,
             cmdline=sys.argv,
         )
