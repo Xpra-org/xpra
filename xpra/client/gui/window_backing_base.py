@@ -18,7 +18,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
-from xpra.codecs.constants import TransientCodecException
+from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.common import Gravity, PaintCallbacks
 from xpra.log import Logger
 
@@ -798,8 +798,11 @@ class WindowBackingBase:
                     except Exception as e:
                         log(f"failed to initialize decoder {decoder_spec.codec_type}: {e}")
                         raise
-
-            img = vd.decompress_image(img_data, options)
+            try:
+                img = vd.decompress_image(img_data, options)
+            except CodecStateException as e:
+                restart(str(e))
+                img = None
             if not img:
                 if options.intget("delayed", 0) > 0:
                     # there are further frames queued up,
