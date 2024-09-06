@@ -14,6 +14,7 @@ from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.str_fn import bytestostr
 from xpra.gtk.signals import register_os_signals
 from xpra.util.child_reaper import getChildReaper
+from xpra.exit_codes import ExitValue
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
 from xpra.util.stats import std_unit, std_unit_dec
 from xpra.gtk.window import add_close_accel
@@ -343,10 +344,11 @@ class OpenRequestsWindow:
         else:
             getChildReaper().add_process(proc, "show-downloads", cmd, ignore=True, forget=True)
 
-    def run(self):
+    def run(self) -> ExitValue:
         log("run()")
         Gtk.main()
         log("run() Gtk.main done")
+        return 0
 
     def quit(self, *args):
         log("quit%s", args)

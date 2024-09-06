@@ -37,7 +37,7 @@ from xpra.scripts.main import (
 )
 from xpra.common import noop
 from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args
-from xpra.exit_codes import RETRY_EXIT_CODES, ExitCode, exit_str
+from xpra.exit_codes import RETRY_EXIT_CODES, ExitCode, ExitValue, exit_str
 from xpra.platform.info import get_username
 from xpra.log import Logger, enable_debug_for
 
@@ -558,8 +558,9 @@ class ApplicationWindow:
         self.window.present()
         self.connect_btn.grab_focus()
 
-    def run(self):
+    def run(self) -> ExitValue:
         Gtk.main()
+        return self.exit_code or 0
 
     def mode_changed(self, *_args):
         mode = self.mode_combo.get_active_text().lower()

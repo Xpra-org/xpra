@@ -21,6 +21,7 @@ from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.net.common import PacketType
 from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, gi_import
 from xpra.util.env import osexpand
+from xpra.exit_codes import ExitValue
 from xpra.scripts.config import str_to_bool
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
 from xpra.util.objects import typedict
@@ -121,7 +122,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     ################################################################################
 
-    def run(self) -> None:
+    def run(self) -> ExitValue:
         register_SIGUSR_signals(GLib.idle_add)
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
@@ -173,6 +174,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             self.stop(None, str(e))
         finally:
             log("ProxyProcess.run() ending %s", os.getpid())
+        return 0
 
     def start_network_threads(self) -> None:
         log("start_network_threads()")

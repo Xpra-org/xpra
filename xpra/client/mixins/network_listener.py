@@ -21,7 +21,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.common import is_request_allowed, PacketType
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitException, InitExit
 from xpra.log import Logger
@@ -74,8 +74,9 @@ class Networklistener(StubClientMixin):
         else:
             self.sockets.update(local_sockets)
 
-    def run(self) -> None:
+    def run(self) -> ExitValue:
         self.start_listen_sockets()
+        return 0
 
     def cleanup(self) -> None:
         self.cleanup_sockets()

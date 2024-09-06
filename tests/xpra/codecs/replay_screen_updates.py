@@ -5,6 +5,7 @@ import json
 from io import BytesIO
 import os.path
 from xpra.os_util import gi_import
+from xpra.exit_codes import ExitValue
 
 from PIL import Image
 import cairo
@@ -236,7 +237,7 @@ class ReplayApp:
         self.frame_data = self.replay_data[self.frame]
         self.draw_update()
 
-    def run(self):
+    def run(self) -> ExitValue:
         Gtk.main()
         return 0
 

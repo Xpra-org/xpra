@@ -9,6 +9,7 @@ import threading
 from collections.abc import Callable
 
 from xpra.common import noop
+from xpra.exit_codes import ExitValue
 from xpra.net.bytestreams import untilConcludes
 from xpra.util.str_fn import repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool
@@ -56,7 +57,7 @@ class XpraProxy:
         self._to_client.start()
         self._to_server.start()
 
-    def run(self) -> int:
+    def run(self) -> ExitValue:
         log("XpraProxy.run() %s", self._name)
         self.start_threads()
         self._to_client.join()

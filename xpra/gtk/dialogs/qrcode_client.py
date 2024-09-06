@@ -105,7 +105,7 @@ class QRCodeClient(InfoXpraClient):
         if exit_code != 0:
             super().quit(exit_code)
 
-    def run(self):
+    def run(self) -> ExitValue:
         # override so we can use a GTK main loop instead
         XpraClientBase.run(self)
         Gtk.main()
@@ -143,7 +143,7 @@ class QRCodeWindow(Gtk.Window):
         self.exit_code = 128 - (signum or 0)
         GLib.idle_add(self.exit)
 
-    def run(self):
+    def run(self) -> ExitValue:
         self.show_all()
         force_focus()
         self.present()

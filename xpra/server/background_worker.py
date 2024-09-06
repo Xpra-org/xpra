@@ -10,6 +10,7 @@ from queue import Queue
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
+from xpra.exit_codes import ExitValue
 from xpra.log import Logger
 
 log = Logger("util")
@@ -60,7 +61,7 @@ class Worker_Thread(Thread):
         if daemon:
             self.daemon_work_items.add(item)
 
-    def run(self) -> None:
+    def run(self) -> ExitValue:
         log("Worker_Thread.run() starting")
         while not self.exit:
             item = self.items.get()
@@ -72,6 +73,7 @@ class Worker_Thread(Thread):
                 log("Worker_Thread.run() calling %s (queue size=%s)", item, self.items.qsize())
                 item()
         log("Worker_Thread.run() ended (queue size=%s)", self.items.qsize())
+        return 0
 
 
 # only one worker thread for now:

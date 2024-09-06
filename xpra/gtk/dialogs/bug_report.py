@@ -19,6 +19,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.platform.gui import force_focus
 from xpra.os_util import gi_import
+from xpra.exit_codes import ExitValue
 from xpra.util.str_fn import nonl, repr_ellipsized, hexstr
 from xpra.util.objects import typedict
 from xpra.util.env import envint
@@ -293,10 +294,11 @@ class BugReport:
             self.window = None
 
     @staticmethod
-    def run() -> None:
+    def run() -> ExitValue:
         log("run()")
         Gtk.main()
         log("run() Gtk.main done")
+        return 0
 
     def quit(self, *args) -> None:
         log("quit%s", args)

@@ -22,6 +22,7 @@ from xpra.codecs.video import getVideoHelper, PREFERRED_ENCODER_ORDER
 from xpra.scripts.config import parse_number, str_to_bool
 from xpra.common import FULL_INFO, ConnectionMessage
 from xpra.os_util import get_hex_uuid, gi_import
+from xpra.exit_codes import ExitValue
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, strtobytes, nicestr
 from xpra.util.env import envint, envbool, first_time
@@ -117,7 +118,7 @@ class ProxyInstance:
         log.info(" for client %s", self.client_protocol._conn)
         log.info(" and server %s", self.server_protocol._conn)
 
-    def run(self) -> None:
+    def run(self) -> ExitValue:
         self.video_init()
 
         # server connection tweaks:
@@ -135,6 +136,7 @@ class ProxyInstance:
         self.schedule_client_ping()
 
         self.send_hello()
+        return 0
 
     def start_network_threads(self) -> None:
         raise NotImplementedError()

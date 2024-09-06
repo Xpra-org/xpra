@@ -5,12 +5,14 @@
 # later version. See the file COPYING for details.
 
 import sys
+import signal
 
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals
 from xpra.util.objects import typedict
+from xpra.exit_codes import ExitValue
 from xpra.os_util import gi_import
 from xpra.log import Logger, enable_debug_for
 
@@ -156,10 +158,11 @@ class StartNewCommand:
             self.window.destroy()
             self.window = None
 
-    def run(self):
+    def run(self) -> ExitValue:
         log("run()")
         Gtk.main()
         log("run() Gtk.main done")
+        return 0
 
     def quit(self, *args):
         log("quit%s", args)
@@ -188,10 +191,9 @@ def main():  # pragma: no cover
         try:
             gui_ready()
             app.show()
-            app.run()
+            return app.run()
         except KeyboardInterrupt:
-            pass
-        return 0
+            return 128 + int(signal.SIGINT)
 
 
 if __name__ == "__main__":  # pragma: no cover

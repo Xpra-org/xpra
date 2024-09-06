@@ -16,6 +16,7 @@ from xpra.platform.paths import get_icon_dir
 from xpra.server import features
 from xpra.exit_codes import ExitCode
 from xpra.net.common import PacketType
+from xpra.exit_codes import ExitValue
 from xpra.util.system import is_Wayland
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import csv
@@ -103,7 +104,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         else:
             self.guess_session_name()
 
-    def run(self):
+    def run(self) -> ExitValue:
         if NOTIFY_STARTUP:
             GLib.timeout_add(1000, self.notify_startup_complete)
         return super().run()

@@ -5,9 +5,11 @@
 # later version. See the file COPYING for details.
 
 import sys
+import signal
 from time import monotonic
 
 from xpra.os_util import gi_import
+from xpra.exit_codes import ExitValue
 from xpra.gtk.signals import register_os_signals
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.gtk.window import add_close_accel
@@ -204,10 +206,11 @@ class ServerCommandsWindow:
             self.window.close()
             self.window = None
 
-    def run(self):
+    def run(self) -> ExitValue:
         log("run()")
         Gtk.main()
         log("run() Gtk.main done")
+        return 0
 
     def quit(self, *args):
         log("quit%s", args)
@@ -269,10 +272,9 @@ def main():  # pragma: no cover
         try:
             gui_ready()
             app.show()
-            app.run()
+            return app.run()
         except KeyboardInterrupt:
-            pass
-        return 0
+            return 128 + int(signal.SIGINT)
 
 
 if __name__ == "__main__":  # pragma: no cover

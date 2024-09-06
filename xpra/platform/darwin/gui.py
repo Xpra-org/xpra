@@ -33,6 +33,7 @@ from AppKit import (
 
 from xpra.os_util import gi_import
 from xpra.common import roundup
+from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.io import CaptureStdErr
 from xpra.platform.darwin import get_OSXApplication
@@ -791,7 +792,7 @@ class ClientExtras:
             self.check_display_timer = 0
             return False
 
-    def run(self) -> None:
+    def run(self) -> ExitValue:
         # this is for running standalone
         log("starting console event loop")
         self.event_loop_started = True
@@ -799,6 +800,7 @@ class ClientExtras:
         AppHelper.runConsoleEventLoop(installInterrupt=True)
         # when running from the GTK main loop, we rely on another part of the code
         # to run the event loop for us
+        return 0
 
     def stop(self) -> None:
         if self.event_loop_started:
@@ -807,14 +809,14 @@ class ClientExtras:
             AppHelper.stopEventLoop()
 
 
-def main():
+def main() -> ExitValue:
     from xpra.platform import program_context
     with program_context("OSX Extras"):
         log.enable_debug()
         ce = ClientExtras(None, None)
         ce.check_display()
         ce.ready()
-        ce.run()
+        return ce.run()
 
 
 if __name__ == "__main__":

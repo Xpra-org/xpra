@@ -12,6 +12,7 @@ from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.log import Logger, consume_verbose_argv
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.env import envbool
 from xpra.util.str_fn import strtobytes
 from xpra.platform.win32.common import (
@@ -102,18 +103,20 @@ class NamedPipeListener(Thread):
         log("%s.stop()", self)
         self.exit_loop = True
 
-    def run(self) -> None:
+    def run(self) -> ExitValue:
         log("%s.run()", self)
         try:
             self.do_run()
         except Exception:
             log.error("Error: named pipe '%s'", self.pipe_name, exc_info=True)
+            return ExitCode.FAILURE
         tp = self.token_process
         if tp:
             self.token_process = INVALID_HANDLE
             CloseHandle(tp)
         self.security_attributes = None
         self.security_descriptor = None
+        return ExitCode.OK
 
     def do_run(self) -> None:
         pipe_handle = INVALID_HANDLE
