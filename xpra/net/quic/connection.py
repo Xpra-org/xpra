@@ -122,7 +122,7 @@ class XpraQuicConnection(Connection):
         if not packet_type:
             log.warn(f"Warning: missing packet type for {data}")
         if packet_type in DATAGRAM_PACKET_TYPES:
-            self.connection.send_datagram(flow_id=self.stream_id, data=data)
+            self.connection.send_datagram(self.stream_id, data=data)
             log(f"sending {packet_type!r} using datagram")
             return len(buf)
         stream_id = self.get_packet_stream_id(packet_type)

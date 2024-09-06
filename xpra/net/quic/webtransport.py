@@ -82,7 +82,7 @@ class ServerWebTransportConnection(XpraQuicConnection):
 
     def send_datagram(self, data: bytes) -> None:
         log("send_datagram(%i bytes)", len(data))
-        self.connection.send_datagram(flow_id=self.stream_id, data=data)
+        self.connection.send_datagram(self.stream_id, data=data)
         self.transmit()
 
     def read(self, n: int) -> bytes:
