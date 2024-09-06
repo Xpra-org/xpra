@@ -459,8 +459,12 @@ class WindowBackingBase:
         full_csc_modes = getVideoHelper().get_server_full_csc_modes_for_rgb(*target_rgb_modes)
         full_csc_modes["webp"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA")]
         full_csc_modes["jpeg"] = [x for x in rgb_modes if x in ("BGRX", "BGRA", "RGBX", "RGBA", "YUV420P")]
-        full_csc_modes["jpega"] = [x for x in rgb_modes if x in ("BGRA", "RGBA")]
-        videolog("_get_full_csc_modes(%s) with target_rgb_modes=%s", rgb_modes, target_rgb_modes)
+        if self._alpha_enabled:
+            # this would not match any target rgb modes anyway,
+            # best not to have it in the list at all:
+            full_csc_modes["jpega"] = [x for x in rgb_modes if x in ("BGRA", "RGBA")]
+        videolog("_get_full_csc_modes(%s) with alpha=%s, target_rgb_modes=%s",
+                 rgb_modes, self._alpha_enabled, target_rgb_modes)
         for e in sorted(full_csc_modes.keys()):
             modes = full_csc_modes.get(e)
             videolog(" * %s : %s", e, modes)
