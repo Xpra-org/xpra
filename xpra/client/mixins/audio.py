@@ -359,7 +359,7 @@ class AudioClient(StubClientMixin):
         codec = codec or audio_source.codec
         audio_source.codec = codec
         # tell the server this is the start:
-        self.send("sound-data", codec, "",
+        self.send("sound-data", codec, b"",
                   {
                       "start-of-stream": True,
                       "codec": codec,
@@ -377,7 +377,7 @@ class AudioClient(StubClientMixin):
             log.warn("Warning: cannot stop audio capture which has not been started")
             return
         # tell the server to stop:
-        self.send("sound-data", ss.codec or "", "", {
+        self.send("sound-data", ss.codec or "", b"", {
             "end-of-stream": True,
             "sequence": ss.sequence,
         })

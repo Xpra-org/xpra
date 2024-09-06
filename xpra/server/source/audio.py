@@ -275,7 +275,7 @@ class AudioMixin(StubSourceMixin):
     def send_eos(self, codec: str, sequence: int = 0) -> None:
         log("send_eos(%s, %s)", codec, sequence)
         # tell the client this is the end:
-        self.send_more("sound-data", codec, "",
+        self.send_more("sound-data", codec, b"",
                        {
                            "end-of-stream": True,
                            "sequence": sequence,
@@ -325,7 +325,7 @@ class AudioMixin(StubSourceMixin):
         codec = codec or audio_source.codec
         audio_source.codec = codec
         # tell the client this is the start:
-        self.send("sound-data", codec, "", {
+        self.send("sound-data", codec, b"", {
             "start-of-stream": True,
             "codec": codec,
             "sequence": audio_source.sequence,
