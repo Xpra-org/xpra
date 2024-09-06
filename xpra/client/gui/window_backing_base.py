@@ -787,17 +787,18 @@ class WindowBackingBase:
                         vd = decoder_spec.codec_class()
                         vd.init_context(coding, enc_width, enc_height, input_colorspace, options)
                         self._video_decoder = vd
-                        videolog("paint_with_video_decoder: info=%s", vd.get_info())
+                        break
                     except TransientCodecException as e:
-                        log(f"failed to initialize decoder {decoder_spec.codec_type}: {e}")
+                        log.warn(f"Warning: failed to initialize decoder {decoder_spec.codec_type}: {e}")
                         decoder_spec.setup_cost += 10
-                        if decoder_spec.setup_cost > 100:
-                            decoders_for_cs.remove(decoder_spec)
-                            if not decoders_for_cs:
-                                raise RuntimeError(f"all the video decoders have failed: {all_decoders_for_cs}")
-                    except Exception as e:
-                        log(f"failed to initialize decoder {decoder_spec.codec_type}: {e}")
-                        raise
+                    except (RuntimeError, CodecStateException) as e:
+                        log.warn(f"Warning: failed to initialize decoder {decoder_spec.codec_type}: {e}")
+                        decoder_spec.setup_cost += 50
+                    if decoder_spec.setup_cost > 100:
+                        decoders_for_cs.remove(decoder_spec)
+                        if not decoders_for_cs:
+                            raise RuntimeError(f"all the video decoders have failed: {all_decoders_for_cs}")
+                videolog("paint_with_video_decoder: info=%s", vd.get_info())
             try:
                 img = vd.decompress_image(img_data, options)
             except CodecStateException as e:
