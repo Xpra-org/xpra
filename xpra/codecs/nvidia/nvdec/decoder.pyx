@@ -808,7 +808,7 @@ def download_from_gpu(buf, size_t size) -> MemBuf:
     return pixels
 
 
-def decompress(encoding: str, img_data, width: int, height: int, rgb_format: str, options=None) -> ImageWrapper:
+def decompress(encoding: str, img_data, width: int, height: int, options=None) -> ImageWrapper:
     #decompress using the default device,
     #and download the pixel data from the GPU:
     dev = get_default_device_context()
@@ -821,7 +821,7 @@ def decompress(encoding: str, img_data, width: int, height: int, rgb_format: str
         if not stream:
             stream = Stream()
             options["stream"] = stream
-        return decompress_and_download(encoding, img_data, rgb_format, options)
+        return decompress_and_download(encoding, img_data, width, height, options)
 
 
 def decompress_and_download(encoding: str, img_data, width: int, height: int, options=None) -> ImageWrapper:
