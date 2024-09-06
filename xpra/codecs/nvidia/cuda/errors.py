@@ -4,24 +4,37 @@
 # later version. See the file COPYING for details.
 
 
+from xpra.codecs.constants import TransientCodecException, CodecStateException
+
 # ctypedef int cudaError_t
 # cdef extern from "cuda_runtime_api.h":
 #    const char *cudaGetErrorName(cudaError_t err)
 #    const char *cudaGetErrorString(cudaError_t err)
 
-def cudacheck(r, fn=None):
-    if r:
-        msg = get_error_name(r)
-        if fn:
-            msg = fn + f": {msg!r}"
-        raise RuntimeError(msg)
+
+def cudacheck(r: int, fn=None) -> None:
+    if r == 0:
+        return
+    msg = get_error_name(r)
+    if fn:
+        msg = fn + f": {msg!r}"
+    if r in TRANSIENT_ERRORS:
+        raise TransientCodecException(msg)
+    if r in STATE_ERRORS:
+        raise CodecStateException(msg)
+    raise RuntimeError(msg)
 
 
-def get_error_name(error):
+def get_error_name(error: int) -> str:
     return CUDA_ERRORS.get(error) or str(error)
 
 
-CUDA_ERRORS = {
+TRANSIENT_ERRORS = (2, 304, 600, 701, 702, 802, 909)
+
+STATE_ERRORS = (3, 4, 200, 201, 202, 205, 206, 207, 208, 210, 211, 216, 219, 400, 401, 708, 709, 712, 713)
+
+
+CUDA_ERRORS: dict[int, str] = {
     0: "SUCCESS",
     1: "INVALID_VALUE",
     2: "OUT_OF_MEMORY",

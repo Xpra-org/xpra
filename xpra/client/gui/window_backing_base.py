@@ -18,6 +18,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
+from xpra.codecs.constants import TransientCodecException
 from xpra.common import Gravity, PaintCallbacks
 from xpra.log import Logger
 
@@ -773,20 +774,30 @@ class WindowBackingBase:
                 decoder_options: VdictEntry = VIDEO_DECODERS.get(coding, {})
                 if not decoder_options:
                     raise RuntimeError(f"no video decoders for {coding!r}")
-                decoders_for_cs: list[CodecSpec] = decoder_options.get(input_colorspace, {})
-                if not decoders_for_cs:
+                all_decoders_for_cs: list[CodecSpec] = decoder_options.get(input_colorspace, {})
+                if not all_decoders_for_cs:
                     raise RuntimeError(f"no video decoders for {coding!r} and {input_colorspace!r}")
-                decoder_spec = choose_decoder(decoders_for_cs)
-                videolog("paint_with_video_decoder: new %s%s",
-                         decoder_spec.codec_type, (coding, enc_width, enc_height, input_colorspace))
-                try:
-                    vd = decoder_spec.codec_class()
-                    vd.init_context(coding, enc_width, enc_height, input_colorspace, options)
-                except Exception as e:
-                    log(f"failed to initialize decoder {decoder_spec.codec_type}: {e}")
-                    raise
-                self._video_decoder = vd
-                videolog("paint_with_video_decoder: info=%s", vd.get_info())
+                decoders_for_cs = list(all_decoders_for_cs)
+                while decoders_for_cs:
+                    decoder_spec = choose_decoder(decoders_for_cs)
+                    videolog("paint_with_video_decoder: new %s%s",
+                             decoder_spec.codec_type, (coding, enc_width, enc_height, input_colorspace))
+                    try:
+                        vd = decoder_spec.codec_class()
+                        vd.init_context(coding, enc_width, enc_height, input_colorspace, options)
+                        break
+                    except TransientCodecException as e:
+                        log(f"failed to initialize decoder {decoder_spec.codec_type}: {e}")
+                        decoder_spec.setup_cost += 10
+                        if decoder_spec.setup_cost > 100:
+                            decoders_for_cs.remove(decoder_spec)
+                            if not decoders_for_cs:
+                                raise RuntimeError(f"all the video decoders have failed: {all_decoders_for_cs}")
+                    except Exception as e:
+                        log(f"failed to initialize decoder {decoder_spec.codec_type}: {e}")
+                        raise
+                    self._video_decoder = vd
+                    videolog("paint_with_video_decoder: info=%s", vd.get_info())
 
             img = vd.decompress_image(img_data, options)
             if not img:
