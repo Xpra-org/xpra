@@ -119,7 +119,7 @@ log("win32 clipboard: RETRY=%i, DELAY=%i, CONVERT_LINE_ENDINGS=%s",
     RETRY, DELAY, CONVERT_LINE_ENDINGS)
 
 
-# can be used to blacklist problematic clipboard peers:
+# can be used to blocklist problematic clipboard peers:
 # ie: VBoxTray.exe
 
 
@@ -127,17 +127,17 @@ def get_clients(envvar, default="") -> Sequence[str]:
     return tuple(x for x in os.environ.get("XPRA_%s_CLIPBOARD_CLIENTS" % envvar, default).split(",") if x)
 
 
-BLACKLISTED_CLIPBOARD_CLIENTS = get_clients("BLACKLISTED")
+BLOCKLISTED_CLIPBOARD_CLIENTS = get_clients("BLOCKLISTED")
 SYNCDELAY_CLIPBOARD_CLIENTS = get_clients("NOSYNC", "VBoxTray.exe")
-log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
+log("BLOCKLISTED_CLIPBOARD_CLIENTS=%s", BLOCKLISTED_CLIPBOARD_CLIENTS)
 log("SYNCDELAY_CLIPBOARD_CLIENTS=%s", SYNCDELAY_CLIPBOARD_CLIENTS)
 COMPRESSED_IMAGES = envbool("XPRA_CLIPBOARD_COMPRESSED_IMAGES", True)
 
 CLIPBOARD_WINDOW_CLASS_NAME = "XpraWin32Clipboard"
 
 
-def is_blacklisted(owner_info) -> bool:
-    return any(owner_info.find(x) >= 0 for x in BLACKLISTED_CLIPBOARD_CLIENTS)
+def is_blocklisted(owner_info) -> bool:
+    return any(owner_info.find(x) >= 0 for x in BLOCKLISTED_CLIPBOARD_CLIENTS)
 
 
 def is_syncdelay(owner_info) -> bool:
@@ -743,7 +743,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         if msg == WM_CLIPBOARDUPDATE and owner != self.window:
             owner = GetClipboardOwner()
             owner_info = get_owner_info(owner, self.window)
-            if is_blacklisted(owner_info):
+            if is_blocklisted(owner_info):
                 # ie: don't try to sync from VirtualBox
                 log("CLIPBOARDUPDATE coming from '%s' ignored", owner_info)
                 return r

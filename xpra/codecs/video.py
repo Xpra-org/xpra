@@ -10,8 +10,9 @@ from threading import Lock
 from typing import Any
 from collections.abc import Callable, Sequence, Iterable
 
+from xpra.common import Self
 from xpra.scripts.config import csvstrl
-from xpra.codecs.constants import VideoSpec, CodecSpec
+from xpra.codecs.constants import VideoSpec, CodecSpec, CSCSpec
 from xpra.codecs.loader import load_codec, get_codec, get_codec_error, autoprefix
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.log import Logger
@@ -50,7 +51,7 @@ def has_codec_module(module_name: str) -> bool:
         return False
 
 
-def try_import_modules(prefix: str, *codec_names) -> list[str]:
+def try_import_modules(prefix: str, *codec_names: str) -> list[str]:
     names = []
     for codec_name in codec_names:
         codec_name = autoprefix(prefix, codec_name)
@@ -109,7 +110,10 @@ def get_hardware_encoders(names=HARDWARE_ENCODER_OPTIONS) -> list[str]:
     return try_import_modules("enc", *names)
 
 
-def filt(prefix: str, name: str, inlist, all_fn: Callable, all_options: Iterable[str]) -> list[str]:
+def filt(prefix: str, name: str,
+         inlist: Iterable[str],
+         all_fn: Callable[[], list[str]],
+         all_options: Iterable[str]) -> list[str]:
     # log("filt%s", (prefix, name, inlist, all_fn, all_list))
     instr = csvstrl(set(inlist or ())).strip(",")
     if instr == "none":
@@ -161,7 +165,7 @@ def deepish_clone_dict(indict: Vdict) -> Vdict:
     return outd
 
 
-def modstatus(x: str, def_list, active_list):
+def modstatus(x: str, def_list: Sequence[str], active_list: Sequence[str]):
     # the module is present
     if x in active_list:
         return "active"
@@ -178,7 +182,11 @@ class VideoHelper:
         We can also clone it to modify it (used by per client proxy encoders)
     """
 
-    def __init__(self, vencspecs=None, cscspecs=None, vdecspecs=None, init=False):
+    def __init__(self,
+                 vencspecs: Vdict | None=None,
+                 cscspecs: Vdict | None=None,
+                 vdecspecs: Vdict | None=None,
+                 init=False):
         self._video_encoder_specs: Vdict = vencspecs or {}
         self._csc_encoder_specs: Vdict = cscspecs or {}
         self._video_decoder_specs: Vdict = vdecspecs or {}
@@ -194,7 +202,11 @@ class VideoHelper:
         self._init_from = []
         self._lock = Lock()
 
-    def set_modules(self, video_encoders=(), csc_modules=(), video_decoders=()):
+    def set_modules(self,
+                    video_encoders: Sequence[str] = (),
+                    csc_modules: Sequence[str] = (),
+                    video_decoders: Sequence[str] = (),
+                    ):
         log("set_modules%s", (video_encoders, csc_modules, video_decoders))
         if self._initialized:
             log.error("Error: video helper modules have already been initialized")
@@ -232,7 +244,7 @@ class VideoHelper:
             self.video_decoders = []
             self._initialized = False
 
-    def clone(self):
+    def clone(self) -> Self:
         if not self._initialized:
             self.init()
         ves = deepish_clone_dict(self._video_encoder_specs)
@@ -404,7 +416,7 @@ class VideoHelper:
                 spec = csc_module.get_spec(in_csc, out_csc)
                 self.add_csc_spec(in_csc, out_csc, spec)
 
-    def add_csc_spec(self, in_csc: str, out_csc: str, spec) -> None:
+    def add_csc_spec(self, in_csc: str, out_csc: str, spec: CSCSpec) -> None:
         self._csc_encoder_specs.setdefault(in_csc, {}).setdefault(out_csc, []).append(spec)
 
     def init_video_decoders_options(self) -> None:
@@ -443,7 +455,7 @@ class VideoHelper:
     def add_decoder_spec(self, encoding: str, colorspace: str, decoder_spec: VideoSpec):
         self._video_decoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(decoder_spec)
 
-    def get_server_full_csc_modes(self, *client_supported_csc_modes) -> dict[str, list[str]]:
+    def get_server_full_csc_modes(self, *client_supported_csc_modes: str) -> dict[str, list[str]]:
         """ given a list of CSC modes the client can handle,
             returns the CSC modes per encoding that the server can encode with.
             (taking into account the decoder's actual output colorspace for each encoding)

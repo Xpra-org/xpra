@@ -24,8 +24,8 @@ from xpra.util.str_fn import strtobytes, bytestostr, hexstr
 
 log: Logger = Logger("x11", "xsettings")
 
-BLACKLISTED_XSETTINGS: list[str] = os.environ.get(
-    "XPRA_BLACKLISTED_XSETTINGS",
+BLOCKLISTED_XSETTINGS: list[str] = os.environ.get(
+    "XPRA_BLOCKLISTED_XSETTINGS",
     "Gdk/WindowScalingFactor,Gtk/SessionBusId,Gtk/IMModule"
 ).split(",")
 

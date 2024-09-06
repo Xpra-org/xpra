@@ -46,11 +46,11 @@ sizeof_long = struct.calcsize(b'@L')
 
 MAX_DATA_SIZE: int = 4 * 1024 * 1024
 
-BLACKLISTED_CLIPBOARD_CLIENTS: list[str] = os.environ.get(
-    "XPRA_BLACKLISTED_CLIPBOARD_CLIENTS",
+BLOCKLISTED_CLIPBOARD_CLIENTS: list[str] = os.environ.get(
+    "XPRA_BLOCKLISTED_CLIPBOARD_CLIENTS",
     "clipit,Software,gnome-shell"
 ).split(",")
-log("BLACKLISTED_CLIPBOARD_CLIENTS=%s", BLACKLISTED_CLIPBOARD_CLIENTS)
+log("BLOCKLISTED_CLIPBOARD_CLIENTS=%s", BLOCKLISTED_CLIPBOARD_CLIENTS)
 
 
 def parse_translated_targets(v: str) -> dict[str, list[str]]:
@@ -285,12 +285,12 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not self._enabled:
             nodata()
             return
-        blacklisted = tuple(client for client in BLACKLISTED_CLIPBOARD_CLIENTS if client in wininfo)
-        if blacklisted:
-            if first_time(f"clipboard-blacklisted:{blacklisted}"):
-                log.warn(f"receiving clipboard requests from blacklisted client: {wininfo}")
+        blocklisted = tuple(client for client in BLOCKLISTED_CLIPBOARD_CLIENTS if client in wininfo)
+        if blocklisted:
+            if first_time(f"clipboard-blocklisted:{blocklisted}"):
+                log.warn(f"receiving clipboard requests from blocklisted client: {wininfo}")
                 log.warn(" all requests will be silently ignored")
-            log("responding with nodata for blacklisted client '%s'", wininfo)
+            log("responding with nodata for blocklisted client '%s'", wininfo)
             return
         if not self.owned:
             log.warn("Warning: clipboard selection request received,")

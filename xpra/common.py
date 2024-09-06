@@ -18,8 +18,10 @@ from xpra.util.str_fn import nicestr
 try:
     # Python 3.11 and later:
     from enum import StrEnum
+    from typing import Self
 except ImportError:     # pragma: no cover
     StrEnum = Enum      # type: ignore
+    Self = Any
 
 try:
     # Python 3.12 and later:

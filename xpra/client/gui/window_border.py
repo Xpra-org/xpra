@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.common import Self
+
 
 class WindowBorder:
 
@@ -18,7 +20,7 @@ class WindowBorder:
     def toggle(self) -> None:
         self.shown = not self.shown
 
-    def clone(self):
+    def clone(self) -> Self:
         return WindowBorder(self.shown, self.red, self.green, self.blue, self.alpha, self.size)
 
     def __repr__(self):

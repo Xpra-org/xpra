@@ -28,7 +28,7 @@ GREYLIST: GL_MATCH_LIST = {
 }
 
 # These chipsets will be disabled by default:
-BLACKLIST: GL_MATCH_LIST = {
+BLOCKLIST: GL_MATCH_LIST = {
     "renderer":
         (),
     "vendor":

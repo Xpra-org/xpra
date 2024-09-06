@@ -11,6 +11,7 @@ from typing import Any, Deque
 from collections.abc import Sequence
 
 from collections import deque
+from xpra.common import Self
 from xpra.util.stats import get_list_stats
 from xpra.util.env import envint
 from xpra.log import Logger
@@ -141,7 +142,7 @@ class DamageBatchConfig:
             self.min_delay = max(self.min_delay, ms_per_frame)
             log("match_vrefresh(%s) min_delay=%s", vrefresh, self.min_delay)
 
-    def clone(self):
+    def clone(self) -> Self:
         c = DamageBatchConfig()
         for x in (
                 "always", "max_events", "max_pixels", "time_unit",

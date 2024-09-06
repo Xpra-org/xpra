@@ -12,7 +12,7 @@ import shlex
 from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
-from xpra.common import noop
+from xpra.common import noop, Self
 from xpra.util.str_fn import csv
 from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
@@ -1411,7 +1411,7 @@ class XpraConfig:
     def __repr__(self):
         return f"XpraConfig({self.__dict__})"
 
-    def clone(self):
+    def clone(self) -> Self:
         c = XpraConfig()
         c.__dict__ = dict(self.__dict__)
         return c

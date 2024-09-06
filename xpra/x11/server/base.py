@@ -20,7 +20,7 @@ from xpra.common import SYNC_ICC
 from xpra.x11.server.core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.gtk.prop import prop_set, prop_del
-from xpra.x11.xsettings_prop import XSettingsType, BLACKLISTED_XSETTINGS
+from xpra.x11.xsettings_prop import XSettingsType, BLOCKLISTED_XSETTINGS
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -356,8 +356,8 @@ class X11ServerBase(X11ServerCore):
                     if len(parts) != 2:
                         log(f"skipped invalid option: {option!r}")
                         continue
-                    if parts[0] in BLACKLISTED_XSETTINGS:
-                        log(f"skipped blacklisted option: {option!r}")
+                    if parts[0] in BLOCKLISTED_XSETTINGS:
+                        log(f"skipped blocklisted option: {option!r}")
                         continue
                     values[parts[0]] = parts[1]
                 if cursor_size > 0:
@@ -397,18 +397,18 @@ class X11ServerBase(X11ServerCore):
             # (as those may not be present in xsettings on some platforms… like win32 and osx)
             have_override = self.double_click_time > 0 or self.double_click_distance != (-1, -1) or antialias or dpi > 0
             if k == "xsettings-blob" and have_override:
-                # start by removing blacklisted options:
-                def filter_blacklisted():
+                # start by removing blocklisted options:
+                def filter_blocklisted():
                     serial, values = v
                     new_values = []
                     for _t, _n, _v, _s in values:
-                        if bytestostr(_n) in BLACKLISTED_XSETTINGS:
-                            log("skipped blacklisted option %s", (_t, _n, _v, _s))
+                        if bytestostr(_n) in BLOCKLISTED_XSETTINGS:
+                            log("skipped blocklisted option %s", (_t, _n, _v, _s))
                         else:
                             new_values.append((_t, _n, _v, _s))
                     return serial, new_values
 
-                v = filter_blacklisted()
+                v = filter_blocklisted()
 
                 def set_xsettings_value(name, value_type, value):
                     # remove existing one, if any:

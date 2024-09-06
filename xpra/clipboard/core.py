@@ -586,7 +586,7 @@ class ClipboardProtocolHelperCore:
         if dformat == 8:
             for x in self.filter_res:
                 if x.match(data):
-                    log.warn("clipboard buffer contains blacklisted pattern '%s' and has been dropped!", x.pattern)
+                    log.warn("clipboard buffer contains blocklisted pattern '%s' and has been dropped!", x.pattern)
                     return None, None
             return b"bytes", data
         log.error(f"Error: unhandled format {dformat} for clipboard data type {dtype}")

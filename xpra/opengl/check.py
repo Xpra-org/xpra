@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.util.env import envint, envbool, numpy_import_context
 from xpra.log import Logger, CaptureHandler, consume_verbose_argv
-from xpra.opengl.drivers import GL_MATCH_LIST, WHITELIST, GREYLIST, BLACKLIST, OpenGLFatalError
+from xpra.opengl.drivers import GL_MATCH_LIST, WHITELIST, GREYLIST, BLOCKLIST, OpenGLFatalError
 
 log = Logger("opengl")
 
@@ -292,22 +292,22 @@ def match_list(props: dict[str, Any], thelist: GL_MATCH_LIST, listname: str) -> 
 
 
 def check_lists(props: dict[str, Any], force_enable=False) -> bool:
-    blacklisted = match_list(props, BLACKLIST, "blacklist")
+    blocklisted = match_list(props, BLOCKLIST, "blocklist")
     greylisted = match_list(props, GREYLIST, "greylist")
     whitelisted = match_list(props, WHITELIST, "whitelist")
-    if blacklisted:
+    if blocklisted:
         if whitelisted:
-            log.info("%s '%s' enabled (found in both blacklist and whitelist)", *whitelisted)
+            log.info("%s '%s' enabled (found in both blocklist and whitelist)", *whitelisted)
         elif force_enable:
-            log.info("OpenGL %s '%s' is blacklisted!", *blacklisted)
+            log.info("OpenGL %s '%s' is blocklisted!", *blocklisted)
             log.info(" force enabled by option")
         else:
-            log.info("OpenGL %s '%s' is blacklisted!", *blacklisted)
-            raise_fatal_error("%s '%s' is blacklisted!" % blacklisted)
+            log.info("OpenGL %s '%s' is blocklisted!", *blocklisted)
+            raise_fatal_error("%s '%s' is blocklisted!" % blocklisted)
     if greylisted and not whitelisted:
         log.info("OpenGL %s '%s' is greylisted,", *greylisted)
         log.info(" you may want to turn off OpenGL if you encounter bugs")
-    return bool(whitelisted) or not bool(blacklisted)
+    return bool(whitelisted) or not bool(blocklisted)
 
 
 def check_PyOpenGL_support(force_enable) -> dict[str, Any]:

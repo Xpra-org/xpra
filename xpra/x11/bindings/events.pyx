@@ -529,7 +529,7 @@ cdef object parse_xevent(Display *d, XEvent *e):
             for i in range(20):
                 pieces.append(int(e.xclient.data.b[i]))
         else:
-            log.warn(f"Warning: ignoring ClientMessage type={pyev.message_type} with format={pyev.format}")
+            log.warn(f"Warning: ignoring ClientMessage {pyev.message_type!r} with format={pyev.format}")
             return None
         pyev.data = tuple(pieces)
     elif etype == CreateNotify:

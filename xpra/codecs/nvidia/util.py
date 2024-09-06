@@ -296,14 +296,14 @@ def get_cards(probe=True):
     return _cards
 
 
-def is_blacklisted() -> bool | None:
+def is_blocklisted() -> bool | None:
     v = get_nvidia_module_version(True)
     if v:
         try:
             if v[0] > MIN_VERSION:
                 return False
         except Exception as e:
-            log("is_blacklisted()", exc_info=True)
+            log("is_blocklisted()", exc_info=True)
             log.warn(f"Warning: error checking driver version {v!r}:")
             log.warn(" %s", e)
     return None  # we don't know: unreleased / untested
@@ -319,9 +319,9 @@ def validate_driver_yuv444lossless() -> bool:
         log.warn("Warning: unknown NVidia driver version")
         bl = None
     else:
-        bl = is_blacklisted()
+        bl = is_blocklisted()
     if bl is True:
-        raise ValueError(f"NVidia driver version {pver(v)} is blacklisted, it does not work with NVENC")
+        raise ValueError(f"NVidia driver version {pver(v)} is blocklisted, it does not work with NVENC")
     if bl is None:
         global _version_warning
         if _version_warning:
@@ -403,8 +403,8 @@ def main():
         consume_verbose_argv(sys.argv, "encoding")
         # this will log the version number:
         get_nvidia_module_version()
-        if is_blacklisted():
-            log.warn("Warning: this driver version is blacklisted")
+        if is_blocklisted():
+            log.warn("Warning: this driver version is blocklisted")
         keys = get_license_keys()
         log.info(f"{len(keys)} NVENC license keys")
         for k in keys:

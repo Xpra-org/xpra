@@ -15,14 +15,14 @@ from xpra.log import Logger
 
 log = Logger("network", "crypto")
 
-BLACKLISTED_HASHES = ("sha1", "md5")
+BLOCKLISTED_HASHES = ("sha1", "md5")
 DEFAULT_SALT_LENGTH = envint("XPRA_DEFAULT_SALT_LENGTH", 64)
 
 
 def get_digests() -> Sequence[str]:
     digests = ["xor"]
     digests += [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
-                if not x.startswith("shake_") and x not in BLACKLISTED_HASHES and getattr(hashlib, x, None) is not None]
+                if not x.startswith("shake_") and x not in BLOCKLISTED_HASHES and getattr(hashlib, x, None) is not None]
     try:
         from xpra.net.rfb import d3des  # pylint: disable=import-outside-toplevel
         assert d3des
