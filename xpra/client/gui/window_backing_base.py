@@ -477,44 +477,31 @@ class WindowBackingBase:
                     options: typedict, callbacks: PaintCallbacks) -> None:
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
-    def nvdec_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options: typedict):
-        if not self.nvdec_decoder or width < 16 or height < 16:
+    def nv_decode(self, encoding: str, img_data, width: int, height: int, options: typedict):
+        if width < 16 or height < 16:
             return None
-        if encoding not in self.nvdec_decoder.get_encodings():
-            return None
+        nvdec = self.nvdec_decoder
+        nvjpeg = self.nvjpeg_decoder
         try:
             with self.assign_cuda_context(False):
-                return self.nvdec_decoder.decompress_and_download(encoding, img_data, width, height, options)
-        except Exception as e:
-            if first_time(str(e)):
-                log.error("Error accessing cuda context", exc_info=True)
-            else:
-                log(f"cuda context error, again: {e}")
-        return None
-
-    def nvjpeg_decode(self, encoding: str, data, x: int, y: int, width: int, height: int, options: typedict) -> None:
-        if not self.nvjpeg_decoder or width < 16 or height < 16:
+                if nvdec and encoding in nvdec.get_encodings():
+                    return nvdec.decompress_and_download(encoding, img_data, width, height, options)
+                if nvjpeg and encoding in nvjpeg.get_encodings():
+                    return nvjpeg.decompress_and_download("RGB", img_data, options)
+                return None
+        except TransientCodecException as e:
+            log(f"nv_decode failed: {e} - will retry")
             return None
-        if encoding not in self.nvjpeg_decoder.get_encodings():
-            return None
-        try:
-            with self.assign_cuda_context(False):
-                return self.nvjpeg_decoder.decompress_and_download("RGB", data)
-        except Exception as e:
-            if first_time(str(e)):
-                log.error("Error accessing cuda context", exc_info=True)
-            else:
-                log(f"cuda context error, again: {e}")
-        return None
-
-    def nv_decode(self, encoding: str, img_data, x: int, y: int, width: int, height: int, options: typedict):
-        return self.nvjpeg_decode(encoding, img_data, x, y, width, height, options) or \
-            self.nvdec_decode(encoding, img_data, x, y, width, height, options)
+        except (CodecStateException, RuntimeError) as e:
+            self.nvdec_decode = self.nvjpeg_decode = None
+            log(f"nv_decode {encoding=}", exc_info=True)
+            log.warn("Warning: nv decode error, disabling hardware accelerated decoding for this window")
+            log.warn(f" {e}")
 
     def do_paint_jpeg(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
                       options: typedict, callbacks: PaintCallbacks) -> None:
         alpha_offset = options.intget("alpha-offset", 0)
-        img = self.nv_decode(encoding, img_data, x, y, width, height, options)
+        img = self.nv_decode(encoding, img_data, width, height, options)
         if img is None:
             if encoding == "jpeg":
                 rgb_format = "BGRX"
