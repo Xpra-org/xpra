@@ -821,7 +821,7 @@ def decompress(encoding: str, img_data, width: int, height: int, rgb_format: str
         if not stream:
             stream = Stream()
             options["stream"] = stream
-        return decompress_and_download(encoding, img_data, rgb_format, options)
+        return decompress_and_download(encoding, img_data)
 
 
 def decompress_and_download(encoding: str, img_data, width: int, height: int, options=None) -> ImageWrapper:
