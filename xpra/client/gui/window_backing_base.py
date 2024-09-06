@@ -100,15 +100,16 @@ def rgba_text(text: str, width: int = 64, height: int = 32, x: int = 20, y: int 
     return img.tobytes("raw", rgb_format)
 
 
-def choose_decoder(decoders_for_cs: list[CodecSpec]) -> CodecSpec:
-    assert decoders_for_cs
-    if len(decoders_for_cs) == 1:
-        return decoders_for_cs[0]
+def choose_decoder(decoders_for_cs: list[CodecSpec], max_setup_cost=100) -> CodecSpec:
     # for now, just rank by setup-cost, so gstreamer decoders come last:
     scores: dict[int, list[int]] = {}
     for index, decoder_spec in enumerate(decoders_for_cs):
-        score = decoder_spec.setup_cost
-        scores.setdefault(score, []).append(index)
+        cost = decoder_spec.setup_cost
+        if cost > max_setup_cost:
+            continue
+        scores.setdefault(cost, []).append(index)
+    if not scores:
+        raise RuntimeError("no decoders available!")
     best_score = sorted(scores)[0]
     options_for_score = scores[best_score]
     # if multiple decoders have the same score, just use the first one:
