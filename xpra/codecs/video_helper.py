@@ -123,13 +123,13 @@ def filt(prefix, name, inlist, all_fn, all_list):
         inclist = apl(all_fn())
     lists = exclist + inclist
     all_list = apl(all_list)
-    unknown = tuple(x for x in lists if ap(x) not in CODEC_TO_MODULE and x.lower()!="none")
+    unknown = tuple(x for x in lists if ap(x) not in CODEC_TO_MODULE and not x.lower().endswith("none"))
     if unknown:
         log.warn(f"Warning: ignoring unknown {name}: "+csv(unknown))
-    notfound = tuple(x for x in lists if (x and ap(x) not in all_list and x not in unknown and x!="none"))
+    notfound = tuple(x for x in lists if (x and ap(x) not in all_list and x not in unknown and not x.endswith("none")))
     if notfound:
         log.warn(f"Warning: {name} not found: "+csv(notfound))
-    r = apl(x for x in inclist if x not in exclist and x!="none")
+    r = apl(x for x in inclist if x not in exclist and not x.endswith("none"))
     #log("filt%s=%s", (prefix, name, inlist, all_fn, all_list), r)
     return r
 
