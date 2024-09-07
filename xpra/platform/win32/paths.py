@@ -102,6 +102,21 @@ def do_get_system_conf_dirs() -> list[str]:
     return [os.path.join(get_program_data_dir(), "Xpra")]
 
 
+def do_get_system_menu_dirs() -> list[str]:
+    from xpra.platform.win32 import get_common_startmenu_dir, get_startmenu_dir
+    menu_dirs = []
+    for menu_dir in (get_common_startmenu_dir(), get_startmenu_dir()):
+        if not menu_dir or not os.path.exists(menu_dir) or not os.path.isdir(menu_dir):
+            continue
+        # ie: "C:\ProgramData\Microsoft\Windows\Start Menu"
+        menu_dirs.append(menu_dir)
+        for x in os.listdir(menu_dir):
+            subdir = os.path.join(menu_dir, x)
+            if os.path.isdir(subdir):
+                menu_dirs.append(subdir)
+    return menu_dirs
+
+
 def do_get_ssl_cert_dirs() -> list[str]:
     dirs = []
     for i in (CSIDL_PROFILE, CSIDL_COMMON_APPDATA, CSIDL_LOCAL_APPDATA, CSIDL_APPDATA):

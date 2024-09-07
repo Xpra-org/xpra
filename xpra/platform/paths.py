@@ -54,6 +54,14 @@ def do_get_system_conf_dirs() -> list[str]:
     return []
 
 
+def get_system_menu_dirs() -> list[str]:
+    return envaslist_or_delegate("XPRA_SYSTEM_MENU_DIRS", do_get_system_menu_dirs)
+
+
+def do_get_system_menu_dirs() -> list[str]:
+    return []
+
+
 def get_ssl_cert_dirs() -> list[str]:
     return envaslist_or_delegate("XPRA_SSL_CERT_PATHS", do_get_ssl_cert_dirs)
 
@@ -400,6 +408,7 @@ platform_import(globals(), "paths", False,
                 "do_get_install_prefix",
                 "do_get_default_conf_dirs",
                 "do_get_system_conf_dirs",
+                "do_get_system_menu_dirs",
                 "do_get_ssl_cert_dirs",
                 "do_get_ssl_hosts_config_dirs",
                 "do_get_ssh_conf_dirs",
@@ -433,6 +442,7 @@ def get_info():
         "install": {"prefix": get_install_prefix()},
         "default_conf": {"dirs": get_default_conf_dirs()},
         "system_conf": {"dirs": get_system_conf_dirs()},
+        "system-menu": {"dirs" : get_system_menu_dirs()},
         "ssl-cert": {"dirs": get_ssl_cert_dirs()},
         "ssl-hosts-config": {"dirs": get_ssl_hosts_config_dirs()},
         "ssh_conf": {"dirs": get_ssh_conf_dirs()},

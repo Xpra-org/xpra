@@ -8,9 +8,8 @@ from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
-from xpra.common import DEFAULT_XDG_DATA_DIRS
-from xpra.os_util import OSX, POSIX, gi_import
-from xpra.util.env import envint, envbool, osexpand
+from xpra.os_util import gi_import, WIN32
+from xpra.util.env import envint, envbool
 from xpra.util.thread import start_thread
 from xpra.server.background_worker import add_work_item
 from xpra.log import Logger
@@ -20,9 +19,9 @@ Gio = gi_import("Gio")
 
 log = Logger("menu")
 
-MENU_WATCHER = envbool("XPRA_MENU_WATCHER", True)
+MENU_WATCHER = envbool("XPRA_MENU_WATCHER", not WIN32)
 MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
-EXPORT_XDG_MENU_DATA = envbool("XPRA_EXPORT_XDG_MENU_DATA", True)
+EXPORT_MENU_DATA = envbool("XPRA_EXPORT_MENU_DATA", True)
 
 
 def noicondata(menu_data: dict) -> dict:
@@ -49,20 +48,20 @@ def get_menu_provider():
 
 class MenuProvider:
     __slots__ = (
-        "dir_watchers", "xdg_menu_reload_timer",
+        "dir_watchers", "menu_reload_timer",
         "on_reload", "menu_data", "desktop_sessions", "load_lock",
     )
 
     def __init__(self):
         self.dir_watchers: dict[str, Any] = {}
-        self.xdg_menu_reload_timer = 0
+        self.menu_reload_timer = 0
         self.on_reload: list[Callable] = []
         self.menu_data: dict[str, Any] | None = None
         self.desktop_sessions: dict[str, Any] | None = None
         self.load_lock = Lock()
 
     def setup(self) -> None:
-        if OSX or not EXPORT_XDG_MENU_DATA:
+        if not EXPORT_MENU_DATA:
             return
         if MENU_WATCHER:
             self.setup_menu_watcher()
@@ -70,7 +69,7 @@ class MenuProvider:
 
     def cleanup(self) -> None:
         self.on_reload = []
-        self.cancel_xdg_menu_reload()
+        self.cancel_menu_reload()
         self.cancel_dir_watchers()
 
     def setup_menu_watcher(self) -> None:
@@ -84,11 +83,10 @@ class MenuProvider:
     def do_setup_menu_watcher(self) -> None:
         def directory_changed(*args):
             log(f"directory_changed{args}")
-            self.schedule_xdg_menu_reload()
+            self.schedule_menu_reload()
 
-        data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":")
-        for data_dir in data_dirs:
-            menu_dir = os.path.join(osexpand(data_dir), "applications")
+        from xpra.platform.paths import get_system_menu_dirs
+        for menu_dir in get_system_menu_dirs():
             if not os.path.exists(menu_dir) or menu_dir in self.dir_watchers:
                 continue
             gfile = Gio.File.new_for_path(menu_dir)
@@ -126,9 +124,7 @@ class MenuProvider:
 
     def get_menu_data(self, force_reload=False, remove_icons=False, wait=True) -> dict[str, Any]:
         log("get_menu_data%s", (force_reload, remove_icons, wait))
-        if not EXPORT_XDG_MENU_DATA:
-            return {}
-        if OSX:
+        if not EXPORT_MENU_DATA:
             return {}
         menu_data = self.menu_data
         if self.load_lock.acquire(wait):  # pylint: disable=consider-using-with
@@ -155,27 +151,27 @@ class MenuProvider:
         log("%s()", clear_cache)
         clear_cache()
 
-    def cancel_xdg_menu_reload(self) -> None:
-        xmrt = self.xdg_menu_reload_timer
+    def cancel_menu_reload(self) -> None:
+        xmrt = self.menu_reload_timer
         if xmrt:
-            self.xdg_menu_reload_timer = 0
+            self.menu_reload_timer = 0
             GLib.source_remove(xmrt)
 
-    def schedule_xdg_menu_reload(self) -> None:
-        self.cancel_xdg_menu_reload()
-        self.xdg_menu_reload_timer = GLib.timeout_add(MENU_RELOAD_DELAY * 1000, self.xdg_menu_reload)
+    def schedule_menu_reload(self) -> None:
+        self.cancel_menu_reload()
+        self.menu_reload_timer = GLib.timeout_add(MENU_RELOAD_DELAY * 1000, self.menu_reload)
 
-    def xdg_menu_reload(self) -> bool:
-        self.xdg_menu_reload_timer = 0
-        log("xdg_menu_reload()")
+    def menu_reload(self) -> bool:
+        self.menu_reload_timer = 0
+        log("menu_reload()")
         self.load_menu_data(True)
         return False
 
     def get_menu_icon(self, category_name: str, app_name: str) -> tuple[str, bytes]:
-        xdg_menu = self.get_menu_data()
-        if not xdg_menu:
+        menu_data = self.get_menu_data()
+        if not menu_data:
             return "", b""
-        category = xdg_menu.get(category_name)
+        category = menu_data.get(category_name)
         if not category:
             log("get_menu_icon: invalid menu category '%s'", category_name)
             return "", b""
@@ -193,10 +189,8 @@ class MenuProvider:
         return app.get("IconType", ""), app.get("IconData", b"")
 
     def get_desktop_sessions(self, force_reload: bool = False, remove_icons: bool = False) -> dict[str, Any]:
-        if not POSIX or OSX:
-            return {}
         if force_reload or self.desktop_sessions is None:
-            from xpra.platform.posix.menu_helper import load_desktop_sessions  # pylint: disable=import-outside-toplevel
+            from xpra.platform.menu_helper import load_desktop_sessions  # pylint: disable=import-outside-toplevel
             self.desktop_sessions = load_desktop_sessions()
         desktop_sessions = self.desktop_sessions
         if remove_icons:

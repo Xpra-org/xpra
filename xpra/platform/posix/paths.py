@@ -110,6 +110,17 @@ def do_get_system_conf_dirs():
     return dirs
 
 
+def do_get_system_menu_dirs() -> list[str]:
+    from xpra.common import DEFAULT_XDG_DATA_DIRS
+    data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS).split(":")
+    menu_dirs = []
+    for data_dir in data_dirs:
+        menu_dir = os.path.join(os.path.expanduser(data_dir), "applications")
+        if os.path.exists(menu_dir):
+            menu_dirs.append(menu_dir)
+    return menu_dirs
+
+
 def do_get_state_dir():
     if os.getuid() > 0:
         xdg_state = os.path.expanduser(os.environ.get("XDG_STATE_HOME", "~/.local/state"))

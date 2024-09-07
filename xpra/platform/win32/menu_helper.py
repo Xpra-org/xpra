@@ -5,6 +5,8 @@
 
 import os
 import struct
+from typing import Any
+from collections.abc import Sequence
 
 from xpra.platform.win32 import get_common_startmenu_dir, get_startmenu_dir
 from xpra.log import Logger
@@ -13,7 +15,7 @@ from xpra.util.str_fn import print_nested_dict
 log = Logger("exec")
 
 
-def parse_link(content):
+def parse_link(content: bytes) -> str:
     # skip first 20 bytes (HeaderSize and LinkCLSID)
     # read the LinkFlags structure (4 bytes)
     lflags = struct.unpack('I', content[0x14:0x18])[0]
@@ -37,7 +39,7 @@ def parse_link(content):
     return ''.join([chr(ord(a)) for a in temp])
 
 
-def read_link(path):
+def read_link(path: str) -> str:
     try:
         with open(path, "rb") as stream:
             content = stream.read()
@@ -45,20 +47,22 @@ def read_link(path):
     except Exception as e:
         # log("error parsing '%s'", path, exc_info=True)
         log("error parsing '%s': %s", path, e)
-        return None
+        return ""
 
 
-def listdir(d):
+def listdir(d) -> Sequence[str]:
+    if not d:
+        return ()
     try:
         return os.listdir(d)
     except PermissionError as e:
         log("listdir(%s)", d, exc_info=True)
-        log.warn("Warning: cannot access directory '%s':", d)
-        log.warn(" %s", e)
+        log.warn(f"Warning: cannot access directory {d!r}")
+        log.warn(f" {e}")
         return ()
 
 
-def load_subdir(d):
+def load_subdir(d: str) -> dict[str, dict[str, str]]:
     # recurse down directories
     # and return a dictionary of entries
     menu = {}
@@ -77,7 +81,7 @@ def load_subdir(d):
     return menu
 
 
-def load_dir(d):
+def load_dir(d: str) -> dict[str, dict[str, Any]]:
     log("load_dir(%s)", d)
     menu = {}
     for x in listdir(d):
@@ -101,15 +105,12 @@ def load_dir(d):
     return menu
 
 
-def load_menu():
+def load_menu() -> dict[str, dict[str, Any]]:
     menu = {}
-    for d_fn in (get_common_startmenu_dir, get_startmenu_dir):
-        d = d_fn()
-        if not d:
-            continue
+    for menu_dir in (get_common_startmenu_dir(), get_startmenu_dir()):
         # ie: "C:\ProgramData\Microsoft\Windows\Start Menu"
-        for x in listdir(d):
-            subdir = os.path.join(d, x)
+        for x in listdir(menu_dir):
+            subdir = os.path.join(menu_dir, x)
             if os.path.isdir(subdir):
                 # ie: "C:\ProgramData\Microsoft\Windows\Start Menu\Programs"
                 m = load_dir(subdir)

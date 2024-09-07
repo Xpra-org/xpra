@@ -23,7 +23,6 @@ from xpra.net.common import PacketType
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.util import source_env, write_pid
-from xpra.server.menu_provider import get_menu_provider
 from xpra.server import ServerExitMode
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -107,6 +106,7 @@ class ChildCommandServer(StubServerMixin):
         self.start_env = parse_env(opts.start_env)
         if self.start_new_commands:
             # may already have been initialized by servercore:
+            from xpra.server.menu_provider import get_menu_provider
             self.menu_provider = self.menu_provider or get_menu_provider()
             self.menu_provider.on_reload.append(self.send_updated_menu)
 

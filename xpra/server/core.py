@@ -58,7 +58,6 @@ from xpra.util.system import get_frame_info, get_env_info, get_sysconfig_info, p
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf, which
 from xpra.server.background_worker import add_work_item, quit_worker
-from xpra.server.menu_provider import get_menu_provider
 from xpra.server.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, ConnectionMessage, noerr
@@ -278,6 +277,7 @@ class ServerCore:
         self.mdns = opts.mdns
         if opts.start_new_commands:
             # must be initialized before calling init_html_proxy
+            from xpra.server.menu_provider import get_menu_provider
             self.menu_provider = get_menu_provider()
         self.init_html_proxy(opts)
         self.init_http_scripts(opts.http_scripts)
