@@ -1208,10 +1208,11 @@ class ServerCore:
             peek_data = peek_connection(conn, timeout)
         line1 = peek_data.split(b"\n")[0]
         netlog("socket peek=%s", Ellipsizer(peek_data, limit=512))
-        netlog("socket peek hex=%s", hexstr(peek_data[:128]))
-        netlog("socket peek line1=%s", Ellipsizer(line1))
         packet_type = guess_packet_type(peek_data)
-        netlog("guess_packet_type(..)=%s", packet_type)
+        if peek_data:
+            netlog("socket peek hex=%s", hexstr(peek_data[:128]))
+            netlog("socket peek line1=%s", Ellipsizer(line1))
+            netlog("guess_packet_type(..)=%s", packet_type)
 
         def ssl_wrap():
             ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
