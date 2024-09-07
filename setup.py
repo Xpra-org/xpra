@@ -2006,6 +2006,9 @@ if WIN32:
     if qt6_client_ENABLED:
         external_includes.append("PyQt6")
 
+    if shadow_ENABLED:
+        external_includes.append("watchdog")
+
     external_includes.append("cairo")
     external_includes.append("certifi")
 

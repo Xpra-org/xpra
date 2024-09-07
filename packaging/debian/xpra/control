@@ -154,6 +154,7 @@ Recommends: xpra-codecs (= ${binary:Version})
         ,python3-setproctitle
 # start menu and start-session GUI:
         ,python3-xdg
+        ,python3-watchdog
 # to be able to resize large svg icons:
         ,gir1.2-rsvg-2.0
 # printer forwarding:

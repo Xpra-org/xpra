@@ -110,10 +110,6 @@ def do_get_system_menu_dirs() -> list[str]:
             continue
         # ie: "C:\ProgramData\Microsoft\Windows\Start Menu"
         menu_dirs.append(menu_dir)
-        for x in os.listdir(menu_dir):
-            subdir = os.path.join(menu_dir, x)
-            if os.path.isdir(subdir):
-                menu_dirs.append(subdir)
     return menu_dirs
 
 

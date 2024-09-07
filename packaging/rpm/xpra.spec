@@ -431,6 +431,7 @@ Recommends:			%{python3}-setproctitle
 Recommends:			librsvg2
 Recommends:			ibus
 Recommends:			%{python3}-pyxdg
+Recommends:         %{python3}-watchdog
 Recommends:			xdg-menu
 Suggests:			tcp_wrappers-libs
 Suggests:			%{python3}-ldap3

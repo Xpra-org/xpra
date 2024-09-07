@@ -3,12 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os.path
 from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
-from xpra.os_util import gi_import, WIN32
+from xpra.os_util import gi_import
 from xpra.util.env import envint, envbool
 from xpra.util.thread import start_thread
 from xpra.server.background_worker import add_work_item
@@ -19,7 +18,7 @@ Gio = gi_import("Gio")
 
 log = Logger("menu")
 
-MENU_WATCHER = envbool("XPRA_MENU_WATCHER", not WIN32)
+MENU_WATCHER = envbool("XPRA_MENU_WATCHER", True)
 MENU_RELOAD_DELAY = envint("XPRA_MENU_RELOAD_DELAY", 5)
 EXPORT_MENU_DATA = envbool("XPRA_EXPORT_MENU_DATA", True)
 
@@ -86,22 +85,50 @@ class MenuProvider:
             self.schedule_menu_reload()
 
         from xpra.platform.paths import get_system_menu_dirs
-        for menu_dir in get_system_menu_dirs():
-            if not os.path.exists(menu_dir) or menu_dir in self.dir_watchers:
-                continue
-            gfile = Gio.File.new_for_path(menu_dir)
-            monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
-            monitor.connect("changed", directory_changed)
-            self.dir_watchers[menu_dir] = monitor
+        try:
+            from watchdog.events import (
+                FileSystemEvent, FileSystemEventHandler,
+                EVENT_TYPE_MOVED, EVENT_TYPE_DELETED, EVENT_TYPE_CREATED, EVENT_TYPE_MODIFIED,
+                # unused: EVENT_TYPE_CLOSED, EVENT_TYPE_OPENED
+            )
+            DIR_CHANGE_EVENT_TYPES = (EVENT_TYPE_MOVED, EVENT_TYPE_DELETED, EVENT_TYPE_CREATED, EVENT_TYPE_MODIFIED)
+            from watchdog.observers import Observer
+
+            class MenuDirEventHandler(FileSystemEventHandler):
+                def on_any_event(self, event: FileSystemEvent) -> None:
+                    if event.event_type in DIR_CHANGE_EVENT_TYPES:
+                        directory_changed(event)
+
+            event_handler = MenuDirEventHandler()
+            observer = Observer()
+            # alias so we can use the same method call as Gio to stop it:
+            observer.cancel = observer.stop
+            for menu_dir in get_system_menu_dirs():
+                if menu_dir not in self.dir_watchers:
+                    observer.schedule(event_handler, menu_dir, recursive=True)
+                    self.dir_watchers[menu_dir] = observer
+            log(f"using watchdog library: {observer} and {event_handler}")
+            observer.start()
+            watcher = "watchdog library"
+        except ImportError as e:
+            log(f"watchdog library not found: {e}, using Gio instead")
+            for menu_dir in get_system_menu_dirs():
+                if menu_dir not in self.dir_watchers:
+                    gfile = Gio.File.new_for_path(menu_dir)
+                    monitor = gfile.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+                    monitor.connect("changed", directory_changed)
+                    self.dir_watchers[menu_dir] = monitor
+            watcher = "Gio file monitor"
         if self.dir_watchers:
             log.info("watching for applications menu changes in:")
             for wd in self.dir_watchers.keys():
                 log.info(f" {wd!r}")
+            log.info(f"using {watcher!r}")
 
     def cancel_dir_watchers(self) -> None:
         dw = self.dir_watchers
         self.dir_watchers = {}
-        for monitor in dw.values():
+        for monitor in set(dw.values()):
             monitor.cancel()
 
     def load_menu_data(self, force_reload: bool = False) -> None:
