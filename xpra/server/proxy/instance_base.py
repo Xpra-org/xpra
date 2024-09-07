@@ -154,7 +154,7 @@ class ProxyInstance:
         sp = self.server_protocol
         for i in range(10):
             if cp.is_closed() and sp.is_closed():
-                break
+                return
             if i == 0:
                 log("waiting for network connections to close")
             elif i == 1:
@@ -164,11 +164,13 @@ class ProxyInstance:
                     i + 1, cp.is_closed(), sp.is_closed())
             sleep(0.1)
         if not cp.is_closed():
-            log.warn("Warning: proxy instance client connection has not been closed yet:")
-            log.warn(" %s", cp)
+            log("proxy instance client connection has not been closed yet:")
+            log(" %s", cp)
+            cp.close()
         if not sp.is_closed():
-            log.warn("Warning: proxy instance server connection has not been closed yet:")
-            log.warn(" %s", sp)
+            log("proxy instance server connection has not been closed yet:")
+            log(" %s", sp)
+            sp.close()
 
     def send_disconnect(self, proto, *reasons) -> None:
         log("send_disconnect(%s, %s)", proto, reasons)
