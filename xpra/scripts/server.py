@@ -777,29 +777,7 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mo
         mode_str = MODE_TO_NAME.get(mode, "").split(" Upgrade")[0]
         title = f"Xpra {mode_str} Server {__version__}"
         splash_process = make_progress_process(title)
-
-        def stop_progress_process() -> None:
-            if not splash_process or splash_process.poll() is not None:
-                return
-            try:
-                splash_process.terminate()
-            except Exception:
-                pass
-
-        def show_progress(pct: int, text="") -> None:
-            if not splash_process or splash_process.poll() is not None:
-                return
-            stdin = splash_process.stdin
-            if stdin:
-                noerr(stdin.write, f"{pct}:{text}\n".encode("latin1"))
-                noerr(stdin.flush)
-            if pct == 100:
-                # it should exit on its own, but just in case:
-                from xpra.common import SPLASH_EXIT_DELAY
-                glib = gi_import("GLib")
-                glib.timeout_add(SPLASH_EXIT_DELAY * 1000 + 500, stop_progress_process)
-
-        progress = show_progress
+        progress = splash_process.progress
     else:
         if PROGRESS_TO_STDERR:
             def progress_to_stderr(*args):
@@ -818,6 +796,8 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mo
                               splash_process, progress)
     except Exception as e:
         progress(100, f"error: {e}")
+        import time
+        time.sleep(1)
         raise
 
 

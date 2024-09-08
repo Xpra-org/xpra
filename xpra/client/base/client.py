@@ -17,7 +17,7 @@ from collections.abc import Callable
 
 from xpra.scripts.config import InitExit
 from xpra.common import (
-    SPLASH_EXIT_DELAY, FULL_INFO, LOG_HELLO,
+    FULL_INFO, LOG_HELLO,
     ConnectionMessage, disconnect_is_an_error, noerr, NotificationID, noop,
 )
 from xpra.util.child_reaper import getChildReaper, reaper_cleanup
@@ -110,7 +110,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.exit_on_signal = False
         self.display_desc = {}
         self.progress_process = None
-        self.progress_timer = 0
         # connection attributes:
         self.hello_extra = {}
         self.compression_level = 0
@@ -167,39 +166,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.init_aliases()
 
     def show_progress(self, pct: int, text="") -> None:
-        log(f"progress({pct}, {text!r})")
+        pp = self.progress_process
+        log(f"progress({pct}, {text!r}) progress process={pp}")
         if SPLASH_LOG:
             log.info(f"{pct:3} {text}")
-        pp = self.progress_process
-        if not pp:
-            return
-        if pp.poll() is not None:
-            self.progress_process = None
-            return
-        stdin = pp.stdin
-        if stdin:
-            try:
-                noerr(stdin.write, f"{pct}:{text}\n".encode("utf8"))
-            except UnicodeEncodeError as e:
-                log.warn(f"Warning: failed to send {text!r} to progress process: {e}")
-                noerr(stdin.write, f"{pct}:\n".encode("utf8"))
-            noerr(stdin.flush)
-        if pct == 100:
-            # it should exit on its own, but just in case:
-            # kill it if it's still running after 2 seconds
-            self.cancel_progress_timer()
-
-            def stop_progress():
-                self.progress_timer = 0
-                self.stop_progress_process()
-
-            self.progress_timer = GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 + 500, stop_progress)
-
-    def cancel_progress_timer(self) -> None:
-        pt = self.progress_timer
-        if pt:
-            self.progress_timer = 0
-            GLib.source_remove(pt)
+        if pp:
+            pp.progress(pct, text)
 
     def init_challenge_handlers(self, challenge_handlers) -> None:
         # register the authentication challenge handlers:

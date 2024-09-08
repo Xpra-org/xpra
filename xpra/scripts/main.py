@@ -1862,23 +1862,33 @@ def make_progress_process(title="Xpra") -> Popen | None:
         werr("Error launching 'splash' subprocess", " %s" % e)
         return None
     # always close stdin when terminating the splash screen process:
-    saved_terminate = progress_process.terminate
+    progress_process.saved_terminate = progress_process.terminate
 
-    def terminate(*_args):
-        noerr(progress_process.stdin.close)
-        progress_process.stdin = None
-        saved_terminate()
+    def terminate(*_args) -> None:
+        stdin = progress_process.stdin
+        if stdin:
+            progress_process.stdin = None
+            noerr(stdin.close)
+        progress_process.saved_terminate()
+        setattr(progress_process, "terminate", progress_process.saved_terminate)
 
     # override Popen.terminate()
     setattr(progress_process, "terminate", terminate)
 
-    def progress(pct, text):
-        if progress_process.poll():
+    def progress(pct: int, text: str):
+        if progress_process.poll() is not None:
             return
         stdin = progress_process.stdin
         if stdin:
             stdin.write(("%i:%s\n" % (pct, text)).encode("latin1"))
             stdin.flush()
+        if pct == 100:
+            # it should exit on its own, but just in case:
+            from xpra.common import SPLASH_EXIT_DELAY
+            glib = gi_import("GLib")
+            glib.timeout_add(SPLASH_EXIT_DELAY * 1000 + 500, terminate)
+
+    progress_process.progress = progress
 
     add_process(progress_process, "splash", cmd, ignore=True, forget=True)
     progress(0, title)
