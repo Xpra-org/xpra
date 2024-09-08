@@ -309,6 +309,7 @@ def set_server_features(opts) -> None:
     features.webcam = b(opts.webcam) and impcheck("codecs")
     features.clipboard = b(opts.clipboard) and impcheck("clipboard")
     features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
+    features.x11 = b(opts.x11) and impcheck("x11")
     features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
     features.av_sync = features.audio and b(opts.av_sync)
     features.fileprint = b(opts.printing) or b(opts.file_transfer)
@@ -347,6 +348,7 @@ def enforce_server_features() -> None:
         "input_devices": "xpra.server.mixins.input,xpra.server.source.input",
         "commands": "xpra.server.control_command",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
+        "x11": "xpra.x11,gi.repository.GdkX11",
         "dbus": "xpra.dbus,xpra.server.dbus,xpra.server.source.dbus",
         "encoding": "xpra.server.mixins.encoding,xpra.server.source.encodings",
         "logging": "xpra.server.mixins.logging",
@@ -853,6 +855,8 @@ def _do_run_server(script_file: str, cmdline,
         use_display = True
 
     if not proxying and not shadowing and POSIX and not OSX:
+        if not opts.x11:
+            raise InitExit(ExitCode.UNSUPPORTED, f"{mode!r} requires x11")
         os.environ["GDK_BACKEND"] = "x11"
 
     has_child_arg = any((

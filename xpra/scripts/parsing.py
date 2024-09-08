@@ -1756,6 +1756,11 @@ def parse_command_line(cmdline, defaults):
                      dest="gstreamer", default=defaults.gstreamer,
                      help="Enable GStreamer audio and video support."
                           " Default: '%default'.")
+    legacy_bool_parse("x11")
+    group.add_option("--x11", action="store",
+                     dest="x11", default=defaults.x11,
+                     help="Enable X11."
+                          " Default: '%default'.")
     group.add_option("--env", action="append",
                      dest="env", default=list(defaults.env or []),
                      help="Define environment variables which will apply to this process and all subprocesses,"

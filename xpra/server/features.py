@@ -16,6 +16,7 @@ ssh = True
 input_devices = True
 commands = True
 gstreamer = True
+x11 = True
 dbus = True
 encoding = True
 logging = True
