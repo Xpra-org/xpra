@@ -9,7 +9,7 @@ from time import sleep, time, monotonic
 from queue import SimpleQueue, Queue
 from typing import Any
 from threading import Thread
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
@@ -64,9 +64,9 @@ SESSION_OPTION_WHITELIST: dict[str, Callable] = {
 # noinspection PyMethodMayBeStatic
 class ProxyInstance:
 
-    def __init__(self, session_options,
-                 video_encoder_modules, pings,
-                 disp_desc, cipher, cipher_mode, encryption_key, caps):
+    def __init__(self, session_options: dict[str, str],
+                 video_encoder_modules: Sequence[str], pings: int,
+                 disp_desc: dict, cipher: str, cipher_mode: str, encryption_key: bytes, caps: typedict):
         self.session_options = session_options
         self.video_encoder_modules = video_encoder_modules
         self.pings = pings
@@ -848,4 +848,4 @@ class ProxyInstance:
                 order.append(x)
         self.video_encoder_types = [x for x in order if x in encoder_types]
         enclog.info("proxy video encoders: %s", csv(self.video_encoder_types or ["none", ]))
-        self.timeout_add(VIDEO_TIMEOUT * 1000, self.timeout_video_encoders)
+        GLib.timeout_add(VIDEO_TIMEOUT * 1000, self.timeout_video_encoders)

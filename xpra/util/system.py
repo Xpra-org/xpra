@@ -28,7 +28,7 @@ for signame in (sig for sig in dir(signal) if sig.startswith("SIG") and not sig.
         pass
 
 
-def set_proc_title(title) -> None:
+def set_proc_title(title: str) -> None:
     try:
         import setproctitle  # pylint: disable=import-outside-toplevel
         setproctitle.setproctitle(title)  # @UndefinedVariable pylint: disable=c-extension-no-member
@@ -36,7 +36,7 @@ def set_proc_title(title) -> None:
         get_util_logger().debug("setproctitle is not installed: %s", e)
 
 
-def no_idle(fn, *args, **kwargs):
+def no_idle(fn, *args, **kwargs) -> None:
     fn(*args, **kwargs)
 
 
@@ -46,12 +46,12 @@ def register_SIGUSR_signals(idle_add=no_idle) -> None:
     from xpra.util.pysystem import dump_gc_frames
     from xpra.util.pysystem import dump_all_frames
 
-    def sigusr1(*_args):
+    def sigusr1(*_args) -> None:
         log = get_util_logger().info
         log("SIGUSR1")
         idle_add(dump_all_frames, log)
 
-    def sigusr2(*_args):
+    def sigusr2(*_args) -> None:
         log = get_util_logger().info
         log("SIGUSR2")
         idle_add(dump_gc_frames, log)

@@ -3,6 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+from collections.abc import Sequence
+
+from xpra.util.objects import typedict
 from xpra.os_util import gi_import
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.server.proxy.instance_base import ProxyInstance
@@ -16,8 +20,10 @@ GLib = gi_import("GLib")
 
 class ProxyInstanceThread(ProxyInstance):
 
-    def __init__(self, session_options, video_encoders, pings, client_proto, server_conn,
-                 disp_desc, cipher, cipher_mode, encryption_key, caps):
+    def __init__(self, session_options: dict[str, str], video_encoders: Sequence[str], pings: int,
+                 client_proto, server_conn,
+                 disp_desc: dict[str, Any],
+                 cipher: str, cipher_mode: str, encryption_key: bytes, caps: typedict):
         super().__init__(session_options, video_encoders, pings,
                          disp_desc, cipher, cipher_mode, encryption_key, caps)
         self.client_protocol = client_proto

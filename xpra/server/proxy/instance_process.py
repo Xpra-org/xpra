@@ -6,7 +6,9 @@
 
 import os
 import signal
+from typing import Any
 from queue import SimpleQueue
+from collections.abc import Sequence
 from multiprocessing import Process
 
 from xpra.server.proxy.instance_base import ProxyInstance
@@ -55,10 +57,11 @@ def set_blocking(conn) -> None:
 
 class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
-    def __init__(self, uid, gid, env_options, session_options, socket_dir,
-                 video_encoder_modules, pings,
-                 client_conn, disp_desc, client_state,
-                 cipher, cipher_mode, encryption_key, server_conn, caps, message_queue):
+    def __init__(self, uid: int, gid: int, env_options: dict[str, str], session_options: dict[str, str],
+                 socket_dir: str,
+                 video_encoder_modules: Sequence[str], pings: int,
+                 client_conn, disp_desc: dict[str, Any], client_state: dict[str, Any],
+                 cipher: str, cipher_mode: str, encryption_key: bytes, server_conn, caps: typedict, message_queue):
         ProxyInstance.__init__(self, session_options,
                                video_encoder_modules, pings,
                                disp_desc, cipher, cipher_mode, encryption_key, caps)
@@ -172,6 +175,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             QueueScheduler.run(self)
         except KeyboardInterrupt as e:
             self.stop(None, str(e))
+            return 128 + int(signal.SIGINT)
         finally:
             log("ProxyProcess.run() ending %s", os.getpid())
         return 0
@@ -187,7 +191,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     def create_control_socket(self) -> bool:
         assert self.socket_dir
 
-        def stop(msg):
+        def stop(msg) -> None:
             self.stop(None, f"cannot create the proxy control socket: {msg}")
 
         username = get_username_for_uid(self.uid)

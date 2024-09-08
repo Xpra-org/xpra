@@ -25,6 +25,7 @@ from xpra.net.common import PacketType, is_request_allowed
 from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server.core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
+from xpra.server.auth.sys_auth_base import SessionData
 from xpra.util.child_reaper import getChildReaper
 from xpra.scripts.parsing import str_to_bool, MODE_ALIAS
 from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
@@ -64,7 +65,7 @@ if WIN32:
 ENV_WHITELIST: list[str] = os.environ.get("XPRA_PROXY_ENV_WHITELIST", DEFAULT_ENV_WHITELIST).split(",")
 
 
-def get_socktype(proto):
+def get_socktype(proto) -> str:
     try:
         return proto._conn.socktype
     except AttributeError:
@@ -271,7 +272,7 @@ class ProxyServer(ServerCore):
         if not protocol.is_closed():
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
-    def hello_oked(self, proto, c, auth_caps) -> None:
+    def hello_oked(self, proto, c: typedict, auth_caps: dict) -> None:
         if super().hello_oked(proto, c, auth_caps):
             # already handled in superclass
             return
@@ -290,7 +291,7 @@ class ProxyServer(ServerCore):
             return True
         return False
 
-    def handle_stop_request(self, proto):
+    def handle_stop_request(self, proto) -> None:
         default_can_stop = CAN_STOP_PROXY and get_socktype(proto) in STOP_PROXY_SOCKET_TYPES and proto.authenticators
         if not is_request_allowed(proto, "stop", default_can_stop):
             msg = "`stop` requests are not enabled for this proxy server connection"
@@ -303,7 +304,7 @@ class ProxyServer(ServerCore):
         capabilities = self.make_hello(None)
         proto.send_now(("hello", capabilities))
 
-        def force_exit_request_client():
+        def force_exit_request_client() -> None:
             try:
                 self._requests.remove(proto)
             except KeyError:
@@ -313,7 +314,7 @@ class ProxyServer(ServerCore):
 
         GLib.timeout_add(10 * 1000, force_exit_request_client)
 
-    def proxy_auth(self, client_proto, c, auth_caps) -> None:
+    def proxy_auth(self, client_proto, c: typedict, auth_caps: dict) -> None:
         def disconnect(reason, *extras) -> None:
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
@@ -331,7 +332,7 @@ class ProxyServer(ServerCore):
             log.error(" use 'none' to disable authentication")
             nosession("no sessions found")
             return
-        sessions = None
+        sessions : SessionData | None = None
         for authenticator in client_proto.authenticators:
             try:
                 auth_sessions = authenticator.get_sessions()
@@ -351,7 +352,7 @@ class ProxyServer(ServerCore):
             return
         self.proxy_session(client_proto, c, auth_caps, sessions)
 
-    def proxy_session(self, client_proto, c, auth_caps, sessions) -> None:
+    def proxy_session(self, client_proto, c: typedict, auth_caps: dict, sessions: SessionData) -> None:
         def disconnect(reason, *extras) -> None:
             log("disconnect(%s, %s)", reason, extras)
             self.send_disconnect(client_proto, reason, *extras)
@@ -481,7 +482,7 @@ class ProxyServer(ServerCore):
             return
         log("server connection=%s", server_conn)
 
-        cipher = cipher_mode = None
+        cipher = cipher_mode = ""
         encryption_key = b""
         if auth_caps:
             cipher = auth_caps.get("cipher")
@@ -519,7 +520,7 @@ class ProxyServer(ServerCore):
             client_conn = None
             try:
                 # no other packets should be arriving until the proxy instance responds to the initial hello packet
-                def unexpected_packet(packet):
+                def unexpected_packet(packet) -> None:
                     if packet:
                         log.warn("Warning: received an unexpected packet")
                         log.warn(" from the proxy connection %s:", client_proto)
