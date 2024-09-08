@@ -795,9 +795,10 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mo
                               error_cb, opts, extra_args, full_mode, display_name, defaults,
                               splash_process, progress)
     except Exception as e:
-        progress(100, f"error: {e}")
-        import time
-        time.sleep(1)
+        if splash_process and splash_process.poll() is None:
+            progress(100, f"error: {e}")
+            import time
+            time.sleep(1)
         raise
 
 
