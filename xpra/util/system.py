@@ -15,7 +15,7 @@ from threading import Thread
 from collections.abc import Sequence
 
 from xpra.os_util import POSIX, LINUX, OSX, WIN32
-from xpra.util.env import _saved_env, boolget
+from xpra.util.env import _saved_env, envbool
 from xpra.util.thread import main_thread
 from xpra.util.io import load_binary_file, get_util_logger
 
@@ -256,7 +256,7 @@ def do_get_generic_os_name() -> str:
 def is_X11() -> bool:
     if OSX or WIN32:
         return False
-    if boolget("XPRA_NOX11", False):
+    if envbool("XPRA_NOX11", False):
         return False
     try:
         from xpra import x11
