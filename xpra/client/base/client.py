@@ -628,7 +628,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             pass
 
     def cleanup(self) -> None:
-        self.cancel_progress_timer()
         self.stop_progress_process()
         reaper_cleanup()
         with log.trap_error("Error cleaning file-print handler"):
