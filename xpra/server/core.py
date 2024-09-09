@@ -60,7 +60,7 @@ from xpra.util.io import load_binary_file, filedata_nocrlf, which
 from xpra.server.background_worker import add_work_item, quit_worker
 from xpra.server.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.thread import start_thread
-from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, ConnectionMessage, noerr
+from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, DEFAULT_XDG_DATA_DIRS, ConnectionMessage, noerr
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict, notypedict, merge_dicts
 from xpra.util.str_fn import (
@@ -689,6 +689,9 @@ class ServerCore:
                 get_app_dir(): "www",
             }
             if POSIX:
+                xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS)
+                for d in xdg_data_dirs.split(":"):
+                    dirs[d] = "www"
                 for d in ("/usr/share/xpra", "/usr/local/share/xpra"):
                     dirs[d] = "www"
                 dirs["/var/www/xpra"] = "www"

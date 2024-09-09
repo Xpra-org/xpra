@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler
 from typing import Any
 from collections.abc import Iterable, Callable
 
-from xpra.common import DEFAULT_XDG_DATA_DIRS, FULL_INFO
+from xpra.common import FULL_INFO
 from xpra.net.common import HttpResponse
 from xpra.net.http.common import EXTENSION_TO_MIMETYPE
 from xpra.net.http.directory_listing import list_directory
@@ -94,12 +94,6 @@ def translate_path(path: str, web_root: str = "/usr/share/xpra/www") -> str:
     words = path.split('/')
     words = list(filter(None, words))
     path = web_root
-    xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS)
-    www_dir_options = [web_root] + [os.path.join(x, "xpra", "www") for x in xdg_data_dirs.split(":")]
-    for p in www_dir_options:
-        if os.path.exists(p) and os.path.isdir(p):
-            path = p
-            break
     for word in words:
         word = os.path.splitdrive(word)[1]
         word = os.path.split(word)[1]
