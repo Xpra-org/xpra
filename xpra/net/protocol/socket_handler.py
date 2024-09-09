@@ -1268,8 +1268,11 @@ class SocketProtocol:
                 if bytecount > 0:
                     msg += " (%s bytes)" % std_unit_dec(bytecount)
                 log_fn(msg)
-            log_count("received", icount, getattr(self._conn, "input_bytecount", -1))
-            log_count("sent", ocount, getattr(self._conn, "output_bytecount", -1))
+
+            ibytes = getattr(self._conn, "input_bytecount", -1)
+            obytes = getattr(self._conn, "output_bytecount", -1)
+            log_count("received", icount, ibytes)
+            log_count("sent", ocount, obytes)
 
     def steal_connection(self, read_callback: Callable[[SizedBuffer], None] | None = None):
         # so we can re-use this connection somewhere else
