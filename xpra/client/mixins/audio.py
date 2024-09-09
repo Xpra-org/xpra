@@ -11,7 +11,7 @@ from xpra.scripts.parsing import audio_option
 from xpra.net.common import PacketType
 from xpra.net.compression import Compressed
 from xpra.net.protocol.constants import CONNECTION_LOST
-from xpra.common import FULL_INFO, noop
+from xpra.common import FULL_INFO, noop, SizedBuffer
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr, memoryview_to_bytes
@@ -529,7 +529,8 @@ class AudioClient(StubClientMixin):
             self.audio_sink_error(self.audio_sink, e)
             return False
 
-    def new_audio_buffer(self, audio_source, data: bytes, metadata: dict, packet_metadata: Iterable = ()) -> None:
+    def new_audio_buffer(self, audio_source, data: bytes,
+                         metadata: dict, packet_metadata: Sequence[SizedBuffer] = ()) -> None:
         log("new_audio_buffer(%s, %s, %s, %s)", audio_source, len(data or ()), metadata, packet_metadata)
         if audio_source.sequence < self.audio_source_sequence:
             log("audio buffer dropped: old sequence number: %s (current is %s)",
@@ -539,14 +540,14 @@ class AudioClient(StubClientMixin):
         for x in packet_metadata:
             self.audio_out_bytecount += len(x)
         metadata["sequence"] = audio_source.sequence
-        if packet_metadata:
-            # the packet metadata is already compressed:
-            packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         self.send_audio_data(audio_source, data, metadata, packet_metadata)
 
-    def send_audio_data(self, audio_source, data: bytes, metadata: dict, packet_metadata=()) -> None:
+    def send_audio_data(self, audio_source, data: bytes,
+                        metadata: dict, packet_metadata: Sequence[SizedBuffer]) -> None:
         codec = audio_source.codec
-        packet_data = [codec, Compressed(codec, data, True), metadata, packet_metadata]
+        # tag the packet metadata as already compressed:
+        pmetadata = Compressed("packet metadata", packet_metadata, can_inline=True)
+        packet_data = [codec, Compressed(codec, data, True), metadata, pmetadata]
         self.send("sound-data", *packet_data)
 
     def send_audio_sync(self, v: int) -> None:

@@ -145,8 +145,8 @@ def get_compressor(name) -> Callable:
 class Compressed:
     __slots__ = ("datatype", "data", "can_inline")
 
-    def __init__(self, datatype: str, data: SizedBuffer, can_inline=False):
-        if not data:
+    def __init__(self, datatype: str, data: SizedBuffer | Sequence, can_inline=False):
+        if not data and not isinstance(data, Sequence):
             raise ValueError(f"missing compressed data, got {data!r} ({type(data)})")
         self.datatype = datatype
         self.data = data

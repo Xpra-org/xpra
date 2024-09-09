@@ -7,11 +7,11 @@ import os
 from subprocess import Popen
 from shutil import which
 from typing import Any
-from collections.abc import Sequence, Iterable
+from collections.abc import Sequence
 
 from xpra.net.compression import Compressed
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.common import FULL_INFO, NotificationID
+from xpra.common import FULL_INFO, NotificationID, SizedBuffer
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
@@ -343,7 +343,8 @@ class AudioMixin(StubSourceMixin):
         if callable(update_av_sync):
             update_av_sync()  # pylint: disable=not-callable
 
-    def new_audio_buffer(self, audio_source, data: bytes, metadata: dict, packet_metadata: Iterable = ()) -> None:
+    def new_audio_buffer(self, audio_source, data: bytes,
+                         metadata: dict, packet_metadata: Sequence[SizedBuffer]) -> None:
         log("new_audio_buffer(%s, %s, %s, %s) info=%s",
             audio_source, len(data or []), metadata, [len(x) for x in packet_metadata], audio_source.info)
         if self.audio_source != audio_source or self.is_closed():
@@ -353,14 +354,13 @@ class AudioMixin(StubSourceMixin):
             log("audio buffer dropped: old sequence number: %s (current is %s)",
                 audio_source.sequence, self.audio_source_sequence)
             return
-        if packet_metadata:
-            # the packet metadata is compressed already:
-            packet_metadata = Compressed("packet metadata", packet_metadata, can_inline=True)
         self.send_audio_data(audio_source, data, metadata, packet_metadata)
 
     def send_audio_data(self, audio_source, data: bytes, metadata: dict,
-                        packet_metadata: Iterable = ()) -> None:
-        packet_data = [audio_source.codec, Compressed(audio_source.codec, data, True), metadata, packet_metadata or ()]
+                        packet_metadata: Sequence[SizedBuffer]) -> None:
+        # tag the packet metadata as already compressed:
+        pmetadata = Compressed("packet metadata", packet_metadata, can_inline=True)
+        packet_data = [audio_source.codec, Compressed(audio_source.codec, data, True), metadata, pmetadata]
         sequence = audio_source.sequence
         if sequence >= 0:
             metadata["sequence"] = sequence
@@ -473,7 +473,7 @@ class AudioMixin(StubSourceMixin):
             self.audio_fade_timer = 0
             GLib.source_remove(sft)
 
-    def audio_data(self, codec: str, data: bytes, metadata: dict, packet_metadata: Iterable = ()) -> None:
+    def audio_data(self, codec: str, data: bytes, metadata: dict, packet_metadata: Sequence[SizedBuffer] = ()) -> None:
         log("audio_data(%s, %s, %s, %s) audio sink=%s",
             codec, len(data or []), metadata, packet_metadata, self.audio_sink)
         if self.is_closed():
