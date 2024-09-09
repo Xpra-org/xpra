@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.10] 2024-09-04
+## [5.0.10] 2024-09-09
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
     * [`openssl.cnf` location in MS Windows builds](https://github.com/Xpra-org/xpra/commit/3ad6c8e44438912c5dd9dcba427b17d6b20a463f)
@@ -40,6 +40,8 @@
     * [always set a default initial resolution](https://github.com/Xpra-org/xpra/commit/a5edfc628ed02837faf6e337a167ae02ab925ec5)
     * [honour the initial resolution, even if resizing is disabled](https://github.com/Xpra-org/xpra/commit/1973b37e38f00b22d591445e19ce84b1052aef62)
     * [failure to add new virtual monitors](https://github.com/Xpra-org/xpra/commit/3dd7abcb5732288a421f52623692220883366d2a)
+    * [http directory listing](https://github.com/Xpra-org/xpra/commit/3aa22cfa636f21ba079e352b81448d675174d59a) + [handler errors](https://github.com/Xpra-org/xpra/commit/ea6894996a3315311187eceffb1298c42bf904fa)
+    * [avoid _Directory listing forbidden_ error](https://github.com/Xpra-org/xpra/commit/309a7c60d6df86f94bf842d93224cabfca0e5fa0)
 * Encodings:
     * [`mmap` race condition](https://github.com/Xpra-org/xpra/commit/85e5a753aa96999d8160d71bff094f682ae3fc74)
     * [validate openh264 colorspace](https://github.com/Xpra-org/xpra/commit/0be7faef9ee503efabcd6d925ded8259243e4ac9)
@@ -59,7 +61,6 @@
     * [try harder to find a matching key by name](https://github.com/Xpra-org/xpra/commit/f5b83a7d8b19d50f161ecb5d51d44d1e8a4babfc) [try lowercase if needed](https://github.com/Xpra-org/xpra/commit/7c9be1a19755a96c476db74c8b176accf554caa5), [use default modifiers if that's all we've got](https://github.com/Xpra-org/xpra/commit/ef9e2839f494de28353b5aeb6fa01dd63703b582)
 * Minor:
     * [remove enum prefix with older Python versions](https://github.com/Xpra-org/xpra/commit/8eabd33b578aed9670c1cef62a24e2dc73370b79)
-    * [http directory listing](https://github.com/Xpra-org/xpra/commit/3aa22cfa636f21ba079e352b81448d675174d59a)
     * [ssl path checks](https://github.com/Xpra-org/xpra/commit/e29d360cf5d09d1909c7556eca6bdaeadbb5d48a)
     * [RFB connections cannot be upgraded to `http` or `ws`](https://github.com/Xpra-org/xpra/commit/d91d34fb8b1303bbebbfbff733e35fed1ec6fb0a)
     * [make it possible to skip NM api](https://github.com/Xpra-org/xpra/commit/560e25100dafdf4c18caef559539db4510f4b997)
@@ -71,6 +72,8 @@
     * [map missing modifiers using defaults](https://github.com/Xpra-org/xpra/commit/905cf2e5ca61e6504ba1cfb0429f659cd6c4842e)
     * [don't setup ssh agent dispatch when ssh is disabled](https://github.com/Xpra-org/xpra/commit/ab61a462d79c9aa0dbda310ef9f561c856bece82)
     * [request mode failures](https://github.com/Xpra-org/xpra/commit/afacb052499549b5ea088cfe95d1bd0321c93ae5)
+    * [proxy servers should respond to `id` requests](https://github.com/Xpra-org/xpra/commit/3de103258e8d1a6d297427adf92a6f1ff5763fb7)
+    * [system tray menu encoding options don't stick](https://github.com/Xpra-org/xpra/commit/ffe9a6bf8a8abd0c266c137f2abd47ddc8132c06)
 * Cosmetic:
     * [errors when connections are closed as we process them](https://github.com/Xpra-org/xpra/commit/4d4ba9a078e91af86cd61b12b5021504a5e75ac2)
     * [try to prevent ATK warnings](https://github.com/Xpra-org/xpra/commit/440a182dbaaf1db0af81ab1b33d05bc454a726a0)
@@ -90,6 +93,8 @@
     * [clarify display name message](https://github.com/Xpra-org/xpra/commit/28f3c30cb10528a91e14b0961b98b1ac2eb47851)
     * [support the same resolution aliases as newer versions](https://github.com/Xpra-org/xpra/commit/f2c3f6bb182a0007a255a0f52fa9ce55886147a5)
     * [log randr error code](https://github.com/Xpra-org/xpra/commit/1ec9ff7752d139a2477fcbe4ab219c9507658eea)
+    * [X11 client messages warnings](https://github.com/Xpra-org/xpra/commit/f267241ff07bcb86df10e5ebec19582968626dd0)
+    * [avoid 'none' values warnings with video options](https://github.com/Xpra-org/xpra/commit/8eed3948a0ac4f14ffd28a8a1b1baef2047af9be)
 
 
 ## [5.0.9] 2023-06-18

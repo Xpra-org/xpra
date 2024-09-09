@@ -37,6 +37,8 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - always set a default initial resolution
    - honour the initial resolution, even if resizing is disabled
    - failure to add new virtual monitors
+   - http directory listing + handler errors
+   - avoid 'Directory listing forbidden' error
   * Encodings:
    - `mmap` race condition
    - validate openh264 colorspace
@@ -66,6 +68,8 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - map missing modifiers using defaults
    - don't setup ssh agent dispatch when ssh is disabled
    - request mode failures
+   - proxy servers should respond to `id` requests
+   - system tray menu encoding options don't stick
   * Cosmetic:
    - errors when connections are closed as we process them
    - try to prevent ATK warnings
@@ -85,8 +89,10 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - clarify display name message
    - support the same resolution aliases as newer versions
    - log randr error code
+   - X11 client messages warnings
+   - avoid 'none' values warnings with video options
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 04 Aug 2024 18:28:32 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 09 Aug 2024 19:34:28 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:

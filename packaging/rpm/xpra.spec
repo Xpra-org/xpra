@@ -778,7 +778,7 @@ fi
 
 
 %changelog
-* Wed Sep 04 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Mon Sep 09 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:
    syntax compatibility fixes
    `openssl.cnf` location in MS Windows builds
@@ -817,6 +817,8 @@ fi
    always set a default initial resolution
    honour the initial resolution, even if resizing is disabled
    failure to add new virtual monitors
+   http directory listing + handler errors
+   avoid 'Directory listing forbidden' error
 - Encodings:
    `mmap` race condition
    validate openh264 colorspace
@@ -836,7 +838,6 @@ fi
    try harder to find a matching key by name, try lowercase if needed, use default modifiers if that's all we've got
 - Minor:
    remove enum prefix with older Python versions
-   http directory listing
    ssl path checks
    RFB connections cannot be upgraded to `http` or `ws`
    make it possible to skip NM api
@@ -846,6 +847,8 @@ fi
    map missing modifiers using defaults
    don't setup ssh agent dispatch when ssh is disabled
    request mode failures
+   proxy servers should respond to `id` requests
+   system tray menu encoding options don't stick
 - Cosmetic:
    errors when connections are closed as we process them
    try to prevent ATK warnings
@@ -865,6 +868,8 @@ fi
    clarify display name message
    support the same resolution aliases as newer versions
    log randr error code
+   X11 client messages warnings
+   avoid 'none' values warnings with video options
 
 * Fri May 31 2024 Antoine Martin <antoine@xpra.org> 5.0.9-10
 - Encodings:
