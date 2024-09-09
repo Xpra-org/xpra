@@ -72,6 +72,63 @@ def get_socktype(proto) -> str:
         return "unknown"
 
 
+def create_system_dir(sps: str) -> None:
+    if not POSIX or OSX or not sps:
+        return
+    xpra_group_id = get_group_id(SOCKET_DIR_GROUP)
+    if sps.startswith("/run/xpra") or sps.startswith("/var/run/xpra"):
+        # create the directory and verify its permissions
+        # which should have been set correctly by tmpfiles.d,
+        # but may have been set wrong if created by systemd's socket activation instead
+        d = sps.split("/xpra")[0] + "/xpra"
+        try:
+            if os.path.exists(d):
+                stat = os.stat(d)
+                mode = stat.st_mode
+                if (mode & SOCKET_DIR_MODE) != SOCKET_DIR_MODE:
+                    log.warn("Warning: invalid permissions on '%s' : %s", d, oct(mode))
+                    mode = mode | SOCKET_DIR_MODE
+                    log.warn(" changing to %s", oct(mode))
+                    os.chmod(d, mode)
+                # noinspection PyChainedComparisons
+                if xpra_group_id >= 0 and stat.st_gid != xpra_group_id:
+                    import grp
+                    group = grp.getgrgid(stat.st_gid)[0]
+                    log.warn("Warning: invalid group on '%s': %s", d, group)
+                    log.warn(" changing to '%s'", SOCKET_DIR_GROUP)
+                    os.lchown(d, stat.st_uid, xpra_group_id)
+            else:
+                log.info("creating '%s' with permissions %s and group '%s'",
+                         d, oct(SOCKET_DIR_MODE), SOCKET_DIR_GROUP)
+                with umask_context(0):
+                    os.mkdir(d, SOCKET_DIR_MODE)
+                stat = os.stat(d)
+                # noinspection PyChainedComparisons
+                if xpra_group_id >= 0 and stat.st_gid != xpra_group_id:
+                    os.lchown(d, stat.st_uid, xpra_group_id)
+            mode = os.stat(d).st_mode
+            log("%s permissions: %s", d, oct(mode))
+        except OSError as e:
+            log("create_system_dir()", exc_info=True)
+            log.error("Error: failed to create or change the permissions on '%s':", d)
+            log.estr(e)
+
+
+def get_proxy_env() -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if k in ENV_WHITELIST or "*" in ENV_WHITELIST}
+    # env var to add to environment of subprocess:
+    extra_env_str = os.environ.get("XPRA_PROXY_START_ENV", "")
+    if extra_env_str:
+        extra_env = {}
+        for e in extra_env_str.split(os.path.pathsep):  # ie: "A=1:B=2"
+            parts = e.split("=", 1)
+            if len(parts) == 2:
+                extra_env[parts[0]] = parts[1]
+        log("extra_env(%s)=%s", extra_env_str, extra_env)
+        env.update(extra_env)
+    return env
+
+
 class ProxyServer(ServerCore):
     """
         This is the proxy server you can launch with "xpra proxy",
@@ -113,48 +170,7 @@ class ProxyServer(ServerCore):
         from xpra.util.version import get_platform_info
         get_platform_info()
         self.child_reaper = getChildReaper()
-        self.create_system_dir(opts.system_proxy_socket)
-
-    def create_system_dir(self, sps) -> None:
-        if not POSIX or OSX or not sps:
-            return
-        xpra_group_id = get_group_id(SOCKET_DIR_GROUP)
-        if sps.startswith("/run/xpra") or sps.startswith("/var/run/xpra"):
-            # create the directory and verify its permissions
-            # which should have been set correctly by tmpfiles.d,
-            # but may have been set wrong if created by systemd's socket activation instead
-            d = sps.split("/xpra")[0] + "/xpra"
-            try:
-                if os.path.exists(d):
-                    stat = os.stat(d)
-                    mode = stat.st_mode
-                    if (mode & SOCKET_DIR_MODE) != SOCKET_DIR_MODE:
-                        log.warn("Warning: invalid permissions on '%s' : %s", d, oct(mode))
-                        mode = mode | SOCKET_DIR_MODE
-                        log.warn(" changing to %s", oct(mode))
-                        os.chmod(d, mode)
-                    # noinspection PyChainedComparisons
-                    if xpra_group_id >= 0 and stat.st_gid != xpra_group_id:
-                        import grp
-                        group = grp.getgrgid(stat.st_gid)[0]
-                        log.warn("Warning: invalid group on '%s': %s", d, group)
-                        log.warn(" changing to '%s'", SOCKET_DIR_GROUP)
-                        os.lchown(d, stat.st_uid, xpra_group_id)
-                else:
-                    log.info("creating '%s' with permissions %s and group '%s'",
-                             d, oct(SOCKET_DIR_MODE), SOCKET_DIR_GROUP)
-                    with umask_context(0):
-                        os.mkdir(d, SOCKET_DIR_MODE)
-                    stat = os.stat(d)
-                    # noinspection PyChainedComparisons
-                    if xpra_group_id >= 0 and stat.st_gid != xpra_group_id:
-                        os.lchown(d, stat.st_uid, xpra_group_id)
-                mode = os.stat(d).st_mode
-                log("%s permissions: %s", d, oct(mode))
-            except OSError as e:
-                log("create_system_dir()", exc_info=True)
-                log.error("Error: failed to create or change the permissions on '%s':", d)
-                log.estr(e)
+        create_system_dir(opts.system_proxy_socket)
 
     def init_control_commands(self) -> None:
         super().init_control_commands()
@@ -555,11 +571,11 @@ class ProxyServer(ServerCore):
                 # when this process dies, run reap to update our list of proxy instances:
                 self.child_reaper.add_process(popen, f"xpra-proxy-{display}",
                                               "xpra-proxy-instance", True, True, self.reap)
-            except Exception as e:
+            except Exception as pie:
                 log("start_proxy_process() failed", exc_info=True)
                 log.error("Error starting proxy instance process:")
-                log.estr(e)
-                message_queue.put(f"error: {e}")
+                log.estr(pie)
+                message_queue.put(f"error: {pie}")
                 message_queue.put("stop")
             finally:
                 # now we can close our handle on the connection:
@@ -623,7 +639,7 @@ class ProxyServer(ServerCore):
                 log("start override: %24s=%-24s (invalid, unchanged)", k, v)
         opts.attach = False
         opts.start_via_proxy = False
-        env = self.get_proxy_env()
+        env = get_proxy_env()
         cwd = None
         if uid > 0:
             cwd = get_home_for_uid(uid) or None
@@ -640,20 +656,6 @@ class ProxyServer(ServerCore):
             self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), f"xpra {mode}", True, True)
         log("start_new_session(..) pid=%s, socket_path=%s, display=%s, ", proc.pid, socket_path, display)
         return proc, socket_path, display
-
-    def get_proxy_env(self) -> dict[str, str]:
-        env = {k: v for k, v in os.environ.items() if k in ENV_WHITELIST or "*" in ENV_WHITELIST}
-        # env var to add to environment of subprocess:
-        extra_env_str = os.environ.get("XPRA_PROXY_START_ENV", "")
-        if extra_env_str:
-            extra_env = {}
-            for e in extra_env_str.split(os.path.pathsep):  # ie: "A=1:B=2"
-                parts = e.split("=", 1)
-                if len(parts) == 2:
-                    extra_env[parts[0]] = parts[1]
-            log("extra_env(%s)=%s", extra_env_str, extra_env)
-            env.update(extra_env)
-        return env
 
     def reap(self, *args) -> None:
         log("reap%s", args)

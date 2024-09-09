@@ -227,7 +227,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 notifylog.info(" %s", x)
         self.show_progress(100, f"notification: {summary}")
 
-    def force_quit(self, exit_code: ExitValue = ExitCode.FAILURE) -> NoReturn:
+    @staticmethod
+    def force_quit(exit_code: ExitValue = ExitCode.FAILURE) -> NoReturn:
         from xpra import os_util
         log(f"force_quit() calling {os_util.force_quit}")
         os_util.force_quit(int(exit_code))
@@ -494,7 +495,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                                      key_salt, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE, iterations, padding)
         return cipher_caps
 
-    def get_version_info(self) -> dict[str, Any]:
+    @staticmethod
+    def get_version_info() -> dict[str, Any]:
         return get_version_info(FULL_INFO)
 
     def make_hello(self) -> dict[str, Any]:

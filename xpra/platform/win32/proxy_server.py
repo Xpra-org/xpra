@@ -6,7 +6,7 @@
 import os
 from time import sleep
 
-from xpra.server.proxy.server import ProxyServer as _ProxyServer
+from xpra.server.proxy.server import ProxyServer as _ProxyServer, get_proxy_env
 from xpra.platform.paths import get_app_dir
 from xpra.common import SocketState
 from xpra.util.env import envbool
@@ -100,7 +100,7 @@ class ProxyServer(_ProxyServer):
         from xpra.log import debug_enabled_categories
         if debug_enabled_categories:
             cmd += ["-d", ",".join(tuple(debug_enabled_categories))]
-        env = self.get_proxy_env()
+        env = get_proxy_env()
         env["XPRA_REDIRECT_OUTPUT"] = "1"
         # env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
         proc = exec_command(username, cmd, exe, app_dir, env)

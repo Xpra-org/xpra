@@ -166,7 +166,7 @@ class Gravity(IntEnum):
     Static      = 10
 
 
-def GravityStr(v) -> str:
+def gravity_str(v) -> str:
     try:
         return str(Gravity(v))
     except ValueError:

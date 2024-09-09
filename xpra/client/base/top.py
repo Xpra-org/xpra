@@ -24,7 +24,7 @@ from xpra.client.base.command import InfoTimerClient
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_nodock_command
 from xpra.util.stats import std_unit
-from xpra.common import GravityStr, SocketState, noerr
+from xpra.common import gravity_str, SocketState, noerr
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -127,7 +127,7 @@ def get_window_info(wi: typedict) -> Sequence[tuple[str, int]]:
     if sc:
         def sc_str(k, v):
             if k == "gravity":
-                v = GravityStr(v)
+                v = gravity_str(v)
             return f"{k}={v}"
 
         g_str += " - %s" % csv(sc_str(k, v) for k, v in sc.items())

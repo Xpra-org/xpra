@@ -15,7 +15,7 @@ from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
-from xpra.common import GravityStr, WORKSPACE_UNSET, WORKSPACE_NAMES, force_size_constraint
+from xpra.common import gravity_str, WORKSPACE_UNSET, WORKSPACE_NAMES, force_size_constraint
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
@@ -163,7 +163,7 @@ class ClientWindowBase(ClientWidgetBase):
             "geometry-hints": dict(self.geometry_hints),
             "content-type": self.content_type,
             "attributes": attributes,
-            "gravity": GravityStr(self.window_gravity),
+            "gravity": gravity_str(self.window_gravity),
             # "border"                : self.border or "",
             # cursor_data
             "max-size": self.max_window_size,

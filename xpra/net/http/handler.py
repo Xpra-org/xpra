@@ -190,6 +190,7 @@ def load_path(accept_encoding: list[str], path: str) -> tuple[int, dict[str, Any
         return 200, extra_headers, content
 
 
+# noinspection PyPep8Naming
 class HTTPRequestHandler(BaseHTTPRequestHandler):
     """
     Xpra's builtin HTTP server.

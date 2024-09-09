@@ -7,7 +7,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import AtomicInteger
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import IgnoreWarningsContext
-from xpra.common import GravityStr, WORKSPACE_UNSET
+from xpra.common import gravity_str, WORKSPACE_UNSET
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -199,7 +199,7 @@ class WindowInfo(Gtk.Window):
             "attributes": get_window_attributes(w),
             "focused": w._focused,
             "buttons": csv(b for b, s in w.button_state.items() if s) or "none",
-            "gravity": GravityStr(w.window_gravity),
+            "gravity": gravity_str(w.window_gravity),
             "content-type": w.content_type or "unknown",
             "pixel-depth": w.pixel_depth or 24,
             "alpha": w._window_alpha,
@@ -247,7 +247,7 @@ class WindowInfo(Gtk.Window):
         self.button_state_label.set_text(csv(b for b, s in w.button_state.items() if s) or "none")
         self.fps_label.set_text(fps)
         # self.group_leader_label.set_text(str(w.group_leader))
-        self.gravity_label.set_text(GravityStr(w.window_gravity))
+        self.gravity_label.set_text(gravity_str(w.window_gravity))
         self.content_type_label.set_text(w.content_type or "unknown")
         # geometry:
         self.pixel_depth_label.set_text(str(w.pixel_depth or 24))
