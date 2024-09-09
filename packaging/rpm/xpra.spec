@@ -883,7 +883,7 @@ fi
 
 
 %changelog
-* Wed Sep 04 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
+* Mon Sep 09 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
 - Major:
    X11 display state detection
    failure to add new virtual monitors
@@ -892,20 +892,30 @@ fi
    server not honouring `keyboard-sync`
    launcher failures with "Gtk already loaded" error
    proxy server packet failures
+   proxy server fails to start in process mode
 - Encodings:
    nvidia module version parsing from `/proc`
    nvenc qp values out of range
-   nvenc causing decoding failures, openh264 workaround
-- Minor:
+   nvenc causing decoding failures, missing sps / pps, openh264 workaround
+   unused `nvdec` test function was broken
    nvidia utility command line parsing
+- Minor:
+   system tray menu encoding options don't stick
    request mode failures
    honour the initial resolution, even if resizing is disabled
+   don't log `id` requests
+   proxy servers should respond to `id` requests
+   quic close errors with aioquic 1.2
 - Cosmetic:
    support the same resolution aliases as newer versions
    handle early errors more gracefully
    warn about setuptools breakging things
    log randr error code
    use correct type for numlock modifier
+   strict dictionary keys checking
+   strict type hint for audio data
+   virtual encodings misleading error message
+   audio data can be inlined
 
 * Sun Aug 25 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
 - Platforms, build and packaging:

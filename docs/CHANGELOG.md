@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.1.3] 2024-09-04
+## [6.1.3] 2024-09-09
 * Major:
     * [X11 display state detection](https://github.com/Xpra-org/xpra/commit/892e6ef021558c0c9145d73d36e323a10b8566f7)
     * [failure to add new virtual monitors](https://github.com/Xpra-org/xpra/commit/462950c42426d3b8185cbd6c84a3f42136482d47)
@@ -9,20 +9,30 @@
     * [server not honouring `keyboard-sync`](https://github.com/Xpra-org/xpra/commit/d22dc4b21cd41fd5c763330f8224bd1732cbb8f4)
     * [launcher failures with "Gtk already loaded" error](https://github.com/Xpra-org/xpra/commit/52f1ff9273f21542cc0cf851a9555f3c54b838e4)
     * [proxy server packet failures](https://github.com/Xpra-org/xpra/commit/ebadfe60d05529002a5e110d8009db2799adbdb0)
+    * [proxy server fails to start in process mode](https://github.com/Xpra-org/xpra/commit/576b20095c4cf0a39bcefa4de1947c925ddf8a2d)
 * Encodings:
     * [nvidia module version parsing from `/proc`](https://github.com/Xpra-org/xpra/commit/1de554124edbfd503270c60903aa2dcfd574511b)
     * [nvenc qp values out of range](https://github.com/Xpra-org/xpra/commit/420d12e7e39449ff77d3b27884f861d51005700d)
-    * [nvenc causing decoding failures](https://github.com/Xpra-org/xpra/commit/f432985338ca4579f989c98a61db29404b8340d5), [openh264 workaround](https://github.com/Xpra-org/xpra/commit/dd99d7a237c7b18c65880163d1fbfd0d79c7c8b7)
-* Minor:
+    * [nvenc causing decoding failures](https://github.com/Xpra-org/xpra/commit/f432985338ca4579f989c98a61db29404b8340d5), [missing sps / pps](https://github.com/Xpra-org/xpra/commit/3c20932d15ed4944bcc521081a3fe3dfb4d5f663), [openh264 workaround](https://github.com/Xpra-org/xpra/commit/dd99d7a237c7b18c65880163d1fbfd0d79c7c8b7)
+    * [unused `nvdec` test function was broken](https://github.com/Xpra-org/xpra/commit/f847c8340f63036ad2d86bde27c1db4c1427723c)
     * [nvidia utility command line parsing](https://github.com/Xpra-org/xpra/commit/4dd35d99d2b5f1c2627c7c0ff4b9628d44bde14c)
+* Minor:
+    * [system tray menu encoding options don't stick](https://github.com/Xpra-org/xpra/commit/eae72eabc8982e2889072e4a0cfaea9892e1f8d2)
     * [request mode failures](https://github.com/Xpra-org/xpra/commit/33d10cafbde43a0f4894b9d731ac6f445dfefae6)
     * [honour the initial resolution, even if resizing is disabled](https://github.com/Xpra-org/xpra/commit/39d4d50f5088d418a6c6a3e240cbe87f128dd21c)
+    * [don't log `id` requests](https://github.com/Xpra-org/xpra/commit/54c80ce3a3053a833e821558827711804f6ad69a)
+    * [proxy servers should respond to `id` requests](https://github.com/Xpra-org/xpra/commit/b6889a335e844be3b2b9c3808506f65e9fc583a3)
+    * [quic close errors with aioquic 1.2](https://github.com/Xpra-org/xpra/commit/5402a297711525051d76ef2ea9f457de84799238)
 * Cosmetic:
     * [support the same resolution aliases as newer versions](https://github.com/Xpra-org/xpra/commit/d84dafb4f72ffea5339f75af32eebcfbc9a49702)
     * [handle early errors more gracefully](https://github.com/Xpra-org/xpra/commit/55cf92df426339b8dc9a016f48ec86a45de0ab8b)
     * [warn about setuptools breakging things](https://github.com/Xpra-org/xpra/commit/d6a95888e968e7bafbea4d18b344f65d2fa633bc)
     * [log randr error code](https://github.com/Xpra-org/xpra/commit/20cea9790aedf07e8661f12506ee2aab2ec285f6)
     * [use correct type for numlock modifier](https://github.com/Xpra-org/xpra/commit/63b167e7be100c25de655fb9f40bdc63c62ec891)
+    * [strict dictionary keys checking](https://github.com/Xpra-org/xpra/commit/babdf9127fd19d011c4a47bc516d593c1a44ed44)
+    * [strict type hint for audio data](https://github.com/Xpra-org/xpra/commit/faf56458fef6c25aff9362edfd2caeeb4c25d5b3)
+    * [virtual encodings misleading error message](https://github.com/Xpra-org/xpra/commit/90a8cff5bb084335018ebaf6bd94522953318d8f)
+    * [audio data can be inlined](https://github.com/Xpra-org/xpra/commit/dce4f3460cd5845fae9d5ebd2907892b03be1a68)
 
 ## [6.1.2] 2024-08-25
 * Platforms, build and packaging:
