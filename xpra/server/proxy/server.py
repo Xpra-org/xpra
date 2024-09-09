@@ -289,6 +289,9 @@ class ProxyServer(ServerCore):
         if request == "stop":
             self.handle_stop_request(proto)
             return True
+        if request == "id":
+            self.send_id_info(proto)
+            return True
         return False
 
     def handle_stop_request(self, proto) -> None:
