@@ -1254,25 +1254,26 @@ class SocketProtocol:
         log("Protocol.close(%s) done", message)
 
     def may_log_stats(self, log_fn: Callable = log.info):
+        if self._log_stats is False:
+            return
         icount = self.input_packetcount
         ocount = self.output_packetcount
         if self._log_stats is None and icount == ocount == 0:
             # no data sent or received, skip logging of stats:
             return
-        if self._log_stats is not False:
-            # pylint: disable=import-outside-toplevel
-            from xpra.util.stats import std_unit, std_unit_dec
+        # pylint: disable=import-outside-toplevel
+        from xpra.util.stats import std_unit, std_unit_dec
 
-            def log_count(ptype="received", count: int = 0, bytecount: int = -1):
-                msg = std_unit(count) + f" packets {ptype}"
-                if bytecount > 0:
-                    msg += " (%s bytes)" % std_unit_dec(bytecount)
-                log_fn(msg)
+        def log_count(ptype="received", count: int = 0, bytecount: int = -1):
+            msg = std_unit(count) + f" packets {ptype}"
+            if bytecount > 0:
+                msg += " (%s bytes)" % std_unit_dec(bytecount)
+            log_fn(msg)
 
-            ibytes = getattr(self._conn, "input_bytecount", -1)
-            obytes = getattr(self._conn, "output_bytecount", -1)
-            log_count("received", icount, ibytes)
-            log_count("sent", ocount, obytes)
+        ibytes = getattr(self._conn, "input_bytecount", -1)
+        obytes = getattr(self._conn, "output_bytecount", -1)
+        log_count("received", icount, ibytes)
+        log_count("sent", ocount, obytes)
 
     def steal_connection(self, read_callback: Callable[[SizedBuffer], None] | None = None):
         # so we can re-use this connection somewhere else
