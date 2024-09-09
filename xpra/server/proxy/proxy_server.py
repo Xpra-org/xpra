@@ -325,6 +325,9 @@ class ProxyServer(ServerCore):
                     self.send_disconnect(proto, "timeout")
             self.timeout_add(10*1000, force_exit_request_client)
             return
+        if is_req("id"):
+            self.send_id_info(proto)
+            return True
         self.proxy_auth(proto, c, auth_caps)
 
     def proxy_auth(self, client_proto, c, auth_caps) -> None:
