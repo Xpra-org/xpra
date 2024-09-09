@@ -175,7 +175,7 @@ class typedict(dict):
     def boolget(self, k: str, default: bool = False) -> bool:
         return self.conv_get(k, default, bool)
 
-    def dictget(self, k: str, default: dict | None = None) -> dict:
+    def dictget(self, k: str | int, default: dict | None = None) -> dict:
         return self.conv_get(k, default, checkdict)
 
     def intpair(self, k: str, default_value: tuple[int, int] | None = None) -> tuple[int, int] | None:
