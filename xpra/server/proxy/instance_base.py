@@ -61,6 +61,50 @@ SESSION_OPTION_WHITELIST: dict[str, Callable] = {
 }
 
 
+def sanitize_session_options(options: dict[str, str]) -> dict[str, Any]:
+    d = {}
+    for k, v in options.items():
+        parser = SESSION_OPTION_WHITELIST.get(k)
+        if parser:
+            log("trying to add %s=%s using %s", k, v, parser)
+            try:
+                d[k] = parser(k, v)
+            except Exception as e:
+                log.warn("failed to parse value %s for %s using %s: %s", v, k, parser, e)
+    return d
+
+
+def filter_caps(caps: typedict, prefixes: Iterable[str], proto=None) -> dict:
+    # removes caps that overrides / does not use:
+    pcaps = {}
+    removed = []
+    for k in caps.keys():
+        if any(e for e in prefixes if str(k).startswith(e)):
+            removed.append(k)
+        else:
+            pcaps[k] = caps[k]
+    log("filtered out %s matching %s", removed, prefixes)
+    # replace the network caps with the proxy's own:
+    pcaps |= get_network_caps() | proto_crypto_caps(proto)
+    # then add the proxy info:
+    si = get_server_info()
+    if FULL_INFO > 0:
+        si["hostname"] = socket.gethostname()
+    pcaps["proxy"] = si
+    return pcaps
+
+
+def replace_packet_item(packet: PacketType,
+                        index: int,
+                        new_value: Compressed | str | dict | int) -> PacketType:
+    # make the packet data mutable and replace the contents at `index`:
+    assert index > 0
+    lpacket = list(packet)
+    lpacket[index] = new_value
+    # noinspection PyTypeChecker
+    return tuple(lpacket)
+
+
 # noinspection PyMethodMayBeStatic
 class ProxyInstance:
 
@@ -253,26 +297,14 @@ class ProxyInstance:
         hello.setdefault("network", {})["pings"] = self.pings
         self.queue_server_packet(("hello", hello))
 
-    def sanitize_session_options(self, options) -> dict[str, Any]:
-        d = {}
-        for k, v in options.items():
-            parser = SESSION_OPTION_WHITELIST.get(k)
-            if parser:
-                log("trying to add %s=%s using %s", k, v, parser)
-                try:
-                    d[k] = parser(k, v)
-                except Exception as e:
-                    log.warn("failed to parse value %s for %s using %s: %s", v, k, parser, e)
-        return d
-
     def filter_client_caps(self, remove=CLIENT_REMOVE_CAPS) -> dict:
-        fc = self.filter_caps(self.caps, remove, self.server_protocol)
+        fc = filter_caps(self.caps, remove, self.server_protocol)
         # the display string may override the username:
         username = self.disp_desc.get("username")
         if username:
             fc["username"] = username
         # update with options provided via config if any:
-        fc.update(self.sanitize_session_options(self.session_options))
+        fc.update(sanitize_session_options(self.session_options))
         # add video proxies if any:
         fc["encoding.proxy.video"] = len(self.video_encoding_defs) > 0
         if self.video_encoding_defs:
@@ -281,26 +313,7 @@ class ProxyInstance:
 
     def filter_server_caps(self, caps: typedict) -> dict:
         self.server_protocol.enable_encoder_from_caps(caps)
-        return self.filter_caps(caps, ("aliases",), self.client_protocol)
-
-    def filter_caps(self, caps: typedict, prefixes: Iterable[str], proto=None) -> dict:
-        # removes caps that overrides / does not use:
-        pcaps = {}
-        removed = []
-        for k in caps.keys():
-            if any(e for e in prefixes if str(k).startswith(e)):
-                removed.append(k)
-            else:
-                pcaps[k] = caps[k]
-        log("filtered out %s matching %s", removed, prefixes)
-        # replace the network caps with the proxy's own:
-        pcaps |= get_network_caps() | proto_crypto_caps(proto)
-        # then add the proxy info:
-        si = get_server_info()
-        if FULL_INFO > 0:
-            si["hostname"] = socket.gethostname()
-        pcaps["proxy"] = si
-        return pcaps
+        return filter_caps(caps, ("aliases",), self.client_protocol)
 
     ################################################################################
 
@@ -356,18 +369,8 @@ class ProxyInstance:
             packet = self.compressed_marker(packet, 3, "file-chunk-data")
         self.queue_server_packet(packet)
 
-    def compressed_marker(self, packet: PacketType, index: int, description: str):
-        return self.replace_packet_item(packet, index, Compressed(description, packet[index], can_inline=False))
-
-    def replace_packet_item(self, packet: PacketType,
-                            index: int,
-                            new_value: Compressed | str | dict | int) -> PacketType:
-        # make the packet data mutable and replace the contents at `index`:
-        assert index > 0
-        lpacket = list(packet)
-        lpacket[index] = new_value
-        # noinspection PyTypeChecker
-        return tuple(lpacket)
+    def compressed_marker(self, packet: PacketType, index: int, description: str) -> PacketType:
+        return replace_packet_item(packet, index, Compressed(description, packet[index], can_inline=False))
 
     def queue_server_packet(self, packet: PacketType) -> None:
         log("queueing server packet: %s (queue size=%s)", packet[0], self.server_packets.qsize())
@@ -389,7 +392,7 @@ class ProxyInstance:
             return packet
         # this is ugly and not generic!
         kw = {"lz4": self.caps.boolget("lz4")}
-        return self.replace_packet_item(packet, index, compressed_wrapper(name, data, can_inline=False, **kw))
+        return replace_packet_item(packet, index, compressed_wrapper(name, data, can_inline=False, **kw))
 
     def cancel_server_ping_timer(self) -> None:
         spt = self.server_ping_timer
@@ -579,7 +582,7 @@ class ProxyInstance:
             q.put(("closed", ))
             self.encode_queue = q
 
-    def delvideo(self, wid: int):
+    def delvideo(self, wid: int) -> None:
         ve = self.video_encoders.pop(wid, None)
         if ve:
             ve.clean()
@@ -642,9 +645,9 @@ class ProxyInstance:
                          compressed_data: Compressed | bytes,
                          updated_client_options: dict) -> None:
             # update the packet with actual encoding data used:
-            packet = self.replace_packet_item(packet, 6, encoding)
-            packet = self.replace_packet_item(packet, 7, compressed_data)
-            packet = self.replace_packet_item(packet, 10, updated_client_options)
+            packet = replace_packet_item(packet, 6, encoding)
+            packet = replace_packet_item(packet, 7, compressed_data)
+            packet = replace_packet_item(packet, 10, updated_client_options)
             enclog("returning %s bytes from %s, options=%s", len(compressed_data), len(pixels), updated_client_options)
             if wid not in self.lost_windows:
                 self.queue_client_packet(packet)
@@ -663,7 +666,7 @@ class ProxyInstance:
                     c = 255
                     for i in range(len(pixels) // 4):
                         newdata[i * 4 + Xindex] = c
-                    updated = self.replace_packet_item(packet, 9, client_options.intget("rowstride", 0))
+                    updated = replace_packet_item(packet, 9, client_options.intget("rowstride", 0))
                     cdata = bytes(newdata)
                 else:
                     cdata = pixels
@@ -783,7 +786,7 @@ class ProxyInstance:
                 self.encode_queue.put(("check-video-timeout", wid))
         return True  # run again
 
-    def _find_video_encoder(self, video_encoding, rgb_format):
+    def _find_video_encoder(self, video_encoding: str, rgb_format: str):
         # try the one specified first, then all the others:
         try_encodings = [video_encoding] + [x for x in self.video_helper.get_encodings() if x != video_encoding]
         for encoding in try_encodings:
