@@ -250,6 +250,9 @@ class ServerCore:
         log("ServerCore.init(%s)", opts)
         self.session_name = bytestostr(opts.session_name)
         set_name("Xpra", self.session_name or "Xpra")
+        self.pidfile = osexpand(opts.pidfile)
+        if self.pidfile:
+            self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
 
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
         self.unix_socket_paths = []
@@ -273,7 +276,6 @@ class ServerCore:
         self.websocket_upgrade = opts.websocket_upgrade
         self.ssh_upgrade = opts.ssh_upgrade
         self.dbus_control = opts.dbus_control
-        self.pidfile = osexpand(opts.pidfile)
         self.mdns = opts.mdns
         if opts.start_new_commands:
             # must be initialized before calling init_html_proxy
@@ -283,8 +285,6 @@ class ServerCore:
         self.init_http_scripts(opts.http_scripts)
         self.init_auth(opts)
         self.init_ssl(opts)
-        if self.pidfile:
-            self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
         self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
 
     def init_ssl(self, opts) -> None:
