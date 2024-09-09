@@ -130,10 +130,14 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
         self.client_protocol = client_protocol_class(self.client_conn,
-                                                     self.process_client_packet, self.get_client_packet)
+                                                     self.process_client_packet,
+                                                     self.get_client_packet,
+                                                     scheduler=self)
         self.client_protocol.restore_state(self.client_state)
         self.server_protocol = server_protocol_class(self.server_conn,
-                                                     self.process_server_packet, self.get_server_packet)
+                                                     self.process_server_packet,
+                                                     self.get_server_packet,
+                                                     scheduler=self)
         self.log_start()
 
         log("ProxyProcessProcess.run() pid=%s, uid=%s, gid=%s", os.getpid(), getuid(), getgid())
