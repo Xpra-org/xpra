@@ -2404,6 +2404,7 @@ class ServerCore:
     # info:
     def send_id_info(self, proto: SocketProtocol) -> None:
         log("id info request from %s", proto._conn)
+        proto._log_stats = False
         proto.send_now(("hello", self.get_session_id_info()))
 
     def get_session_id_info(self) -> dict[str, Any]:
