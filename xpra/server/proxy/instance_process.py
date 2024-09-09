@@ -23,7 +23,7 @@ from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.net.common import PacketType
 from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, gi_import
 from xpra.util.env import osexpand
-from xpra.exit_codes import ExitValue
+from xpra.exit_codes import ExitValue, ExitCode
 from xpra.scripts.config import str_to_bool
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
 from xpra.util.objects import typedict
@@ -164,7 +164,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         start_thread(self.server_message_queue, "server message queue")
 
         if not self.create_control_socket():
-            return
+            return ExitCode.FAILURE
         self.control_socket_thread = start_thread(self.control_socket_loop, "control", daemon=True)
 
         self.main_queue = SimpleQueue()
@@ -357,3 +357,4 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.message_queue.put_nowait(None)
         super().stop(skip_proto, *reasons)
         self.stop_control_socket()
+        self.loop.quit()
