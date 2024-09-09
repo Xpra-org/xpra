@@ -356,7 +356,8 @@ def write_pid(pidfile: str, pid: int) -> int:
                 log("fstat", exc_info=True)
                 log.error(f"Error accessing inode of {pidfile!r}: {e}")
                 inode = 0
-        log.info(f"wrote pid {pidstr} to {pidfile!r}")
+        space = "" if pid == os.getpid() else " "
+        log.info(f"{space}wrote pid {pidstr} to {pidfile!r}")
         return inode
     except Exception as e:
         log(f"write_pid({pidfile}, {pid})", exc_info=True)
