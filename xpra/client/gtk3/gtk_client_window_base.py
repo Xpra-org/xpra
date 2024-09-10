@@ -2432,8 +2432,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 if first_time(f"key-{keycode}-{keyname}"):
                     keylog("parse_key_event(%s, %s)", event, pressed, exc_info=True)
                     keylog.warn("Warning: failed to parse string for key")
-                    keylog.warn(f" {keyname=}, {keycode=}")
-                    keylog.warn(f" {keyval=}, group={event.group}")
+                    keylog.warn(f" keyname=%s, keycode=%s", keyname, keycode)
+                    keylog.warn(f" keyval=%s, group=%s", keyval, event.group)
                     keylog.warn(" modifiers=%s", csv(key_event.modifiers))
                     keylog.warn(" %s", e)
                     keylog.warn(f" unicode keyval also failed: {ve}")

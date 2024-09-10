@@ -86,7 +86,7 @@ class DisplayManager(StubServerMixin):
             env = self.get_child_env()
             #we want the output so we can parse it:
             env["XPRA_REDIRECT_OUTPUT"] = "0"
-            gllog(f"query_opengl() using {cmd=}, {env=}")
+            gllog(f"query_opengl() using cmd=%s, env=%s", cmd, env)
             proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=env)
             out,err = proc.communicate()
             gllog("out(%s)=%s", cmd, out)
