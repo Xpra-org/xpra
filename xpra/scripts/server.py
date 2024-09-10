@@ -1118,7 +1118,7 @@ def _do_run_server(script_file:str, cmdline,
     odisplay_name = display_name
     xvfb = None
     xauthority = None
-    if (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland")<0:
+    if POSIX and not OSX and (start_vfb or clobber or (shadowing and display_name.startswith(":"))) and display_name.find("wayland")<0:
         #XAUTHORITY
         from xpra.x11.vfb_util import get_xauthority_path, valid_xauth, xauth_add
         xauthority = valid_xauth((load_session_file("xauthority") or b"").decode(), uid, gid)
