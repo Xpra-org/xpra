@@ -124,7 +124,7 @@ def init_capture(w, h, pixel_depth=32):
             for el in capture_elements:
                 log(f"testing gstreamer capture using {el}")
                 try:
-                    capture = Capture(el, pixel_format="BGRX", width=w, height=h)
+                    capture = Capture(el, pixel_format="BGR", width=w, height=h)
                     capture.start()
                     image = capture.get_image(0, 0, w, h)
                     if image:

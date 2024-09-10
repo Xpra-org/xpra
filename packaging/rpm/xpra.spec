@@ -778,7 +778,7 @@ fi
 
 
 %changelog
-* Mon Sep 09 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
+* Tue Sep 10 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:
    syntax compatibility fixes
    `openssl.cnf` location in MS Windows builds
@@ -796,6 +796,8 @@ fi
    pycuda RPMs to link against the system boost library
    build fix for ffmpeg v7 decoder and csc module
    build CUDA kernels with clang++ instead of gcc >= 14
+   don't ship any Qt components in this branch
+   skip `xauth` setup on MS Windows servers
 - Major:
    system tray docking causing server crashes
    MS Windows PDF printing crash, library mismatch

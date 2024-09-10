@@ -16,6 +16,8 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - pycuda RPMs to link against the system boost library
    - build fix for ffmpeg v7 decoder and csc module
    - build CUDA kernels with clang++ instead of gcc >= 14
+   - don't ship any Qt components in this branch
+   - skip `xauth` setup on MS Windows servers
   * Major:
    - system tray docking causing server crashes
    - MS Windows PDF printing crash, library mismatch
@@ -92,7 +94,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - X11 client messages warnings
    - avoid 'none' values warnings with video options
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 09 Aug 2024 19:34:28 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 10 Aug 2024 21:22:26 +0700
 
 xpra (5.0.9-1) UNRELEASED; urgency=low
   * Encodings:

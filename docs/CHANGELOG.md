@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.10] 2024-09-09
+## [5.0.10] 2024-09-10
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
     * [`openssl.cnf` location in MS Windows builds](https://github.com/Xpra-org/xpra/commit/3ad6c8e44438912c5dd9dcba427b17d6b20a463f)
@@ -19,6 +19,8 @@
     * [pycuda RPMs to link against the system boost library](https://github.com/Xpra-org/xpra/commit/313092fa342f66d79ace1b4be552caead2a38b1b)
     * [build fix for ffmpeg v7 decoder and csc module](https://github.com/Xpra-org/xpra/commit/db493b80c224c2da3de539ea8d5f4615090bcf8d)
     * [build CUDA kernels with clang++ instead of gcc >= 14](https://github.com/Xpra-org/xpra/commit/3a6be55fed30528ce4753b26ec598596007c17f5)
+    * [don't ship any Qt components in this branch](https://github.com/Xpra-org/xpra/commit/c595576cabdc33d45061cb92cf65c8c342559ef2)
+    * [skip `xauth` setup on MS Windows servers](https://github.com/Xpra-org/xpra/commit/ad335412c4164293823158284794109ecb3fc70f)
 * Major:
     * [system tray docking causing server crashes](https://github.com/Xpra-org/xpra/commit/010c091fc4da583d8ec6a32e793467d039084724) [+ fixup](https://github.com/Xpra-org/xpra/commit/141a82a33811b061c544310b67aaa4468eb87ca2)
     * [MS Windows PDF printing crash](https://github.com/Xpra-org/xpra/commit/57b88bc7703a6aebb619ef93809ff7e05d52107b), [library mismatch](https://github.com/Xpra-org/xpra/commit/89377450c9b728366d18208f775cc3419d712b39)
