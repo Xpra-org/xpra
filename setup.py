@@ -2005,6 +2005,8 @@ if WIN32:
 
     if qt6_client_ENABLED:
         external_includes.append("PyQt6")
+    else:
+        remove_packages("PyQt6")
 
     if shadow_ENABLED:
         external_includes.append("watchdog")

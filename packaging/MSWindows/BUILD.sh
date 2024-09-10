@@ -538,6 +538,10 @@ for i in `seq 4`; do
 	find share/icons -type d -exec rmdir {} \; 2> /dev/null
 done
 
+if [ "${DO_FULL}" == "0" ]; then
+  rm qt.conf
+fi
+
 #leave ./dist
 popd > /dev/null
 
