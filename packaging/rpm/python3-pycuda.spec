@@ -21,8 +21,10 @@ Autoreq: 0
 Name:           python3-pycuda
 %if 0%{?el8}
 Version:        2022.1
+%define systemboost 0
 %else
 Version:        2024.1.2
+%define systemboost 1
 %endif
 Release:        2
 URL:            http://mathema.tician.de/software/pycuda
@@ -78,8 +80,10 @@ CUDA=/opt/cuda
 	--cudadrv-lib-dir=%{_libdir} \
 	--boost-inc-dir=%{_includedir} \
 	--boost-lib-dir=%{_libdir} \
+%if %{systemboost}
 	--no-use-shipped-boost \
 	--boost-python-libname=boost_python%{py_mm} \
+%endif
 	--no-cuda-enable-curand
 #	--boost-python-libname=boost_python37
 #	--boost-thread-libname=boost_thread
