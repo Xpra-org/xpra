@@ -13,7 +13,7 @@ xpra (5.0.10-1) UNRELEASED; urgency=low
    - aioquic 1.2.0
    - pynvml 12.555.43
    - pycuda 2024.1.2
-   - pycuda RPMs to link against the system boost library
+   - pycuda RPMs to link against the system boost library, but not on RHEL 8
    - build fix for ffmpeg v7 decoder and csc module
    - build CUDA kernels with clang++ instead of gcc >= 14
    - don't ship any Qt components in this branch

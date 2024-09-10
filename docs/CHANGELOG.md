@@ -16,7 +16,7 @@
     * [aioquic 1.2.0](https://github.com/Xpra-org/xpra/commit/8142aee9b2d6ed713f0b003b21334bab0e8bf802)
     * [pynvml 12.555.43](https://github.com/Xpra-org/xpra/commit/e3115ed747986edbcea4f26300b65854ebacefe5)
     * [pycuda 2024.1.2](https://github.com/Xpra-org/xpra/commit/73767cd45819f621f6e0308ae5bde67191d7cd93)
-    * [pycuda RPMs to link against the system boost library](https://github.com/Xpra-org/xpra/commit/313092fa342f66d79ace1b4be552caead2a38b1b)
+    * [pycuda RPMs to link against the system boost library](https://github.com/Xpra-org/xpra/commit/313092fa342f66d79ace1b4be552caead2a38b1b), [but not on RHEL 8](https://github.com/Xpra-org/xpra/commit/3f5325acedc0cb917bfb5ef53c22d664ade83803)
     * [build fix for ffmpeg v7 decoder and csc module](https://github.com/Xpra-org/xpra/commit/db493b80c224c2da3de539ea8d5f4615090bcf8d)
     * [build CUDA kernels with clang++ instead of gcc >= 14](https://github.com/Xpra-org/xpra/commit/3a6be55fed30528ce4753b26ec598596007c17f5)
     * [don't ship any Qt components in this branch](https://github.com/Xpra-org/xpra/commit/c595576cabdc33d45061cb92cf65c8c342559ef2)
