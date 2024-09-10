@@ -2046,6 +2046,8 @@ if WIN32:
         external_includes += ["pyasn1", "aioquic", "pylsqpack"]
         add_modules("aioquic._buffer")
 
+    remove_packages("PyQt6")
+
     if webcam_ENABLED:
         external_includes.append("cv2")
     else:
