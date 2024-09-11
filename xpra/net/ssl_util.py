@@ -59,7 +59,7 @@ def get_ssl_attributes(opts, server_side: bool = True, overrides: dict | None = 
     return args
 
 
-def find_ssl_cert(filename: str = "ssl-cert.pem") -> str:
+def find_ssl_cert(filename: str = SSL_CERT_FILENAME) -> str:
     ssllog = get_ssl_logger()
     # try to locate the cert file from known locations
     from xpra.platform.paths import get_ssl_cert_dirs  # pylint: disable=import-outside-toplevel
@@ -178,7 +178,9 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
                                 options: str = "ALL,NO_COMPRESSION", ciphers: str = "DEFAULT",
                                 server_side: bool = True):
     if server_side and not cert:
-        raise InitException("you must specify an 'ssl-cert' file to use ssl sockets")
+        cert = find_ssl_cert(SSL_CERT_FILENAME)
+        if not cert:
+            raise InitException("you must specify an 'ssl-cert' file to use ssl sockets")
     ssllog = get_ssl_logger()
     ssllog("get_ssl_wrap_socket_context%s", (
         cert, key, ca_certs, ca_data,
@@ -445,11 +447,11 @@ def save_ssl_options(server_hostname: str, port, options: dict) -> str:
     return f
 
 
-def find_ssl_config_file(hostname: str, port=443, filename="cert.pem") -> str:
+def find_ssl_config_file(hostname: str, port=443, filename=CERT_FILENAME) -> str:
     return do_find_ssl_config_file(hostname, port, filename) or do_find_ssl_config_file(hostname, 0, filename)
 
 
-def do_find_ssl_config_file(server_hostname: str, port=443, filename="cert.pem") -> str:
+def do_find_ssl_config_file(server_hostname: str, port=443, filename=CERT_FILENAME) -> str:
     ssllog = get_ssl_logger()
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     dirs = get_ssl_hosts_config_dirs()
@@ -467,7 +469,7 @@ def do_find_ssl_config_file(server_hostname: str, port=443, filename="cert.pem")
 
 
 def save_ssl_config_file(server_hostname: str, port=443,
-                         filename="cert.pem", fileinfo="certificate", filedata=b"") -> str:
+                         filename=CERT_FILENAME, fileinfo="certificate", filedata=b"") -> str:
     ssllog = get_ssl_logger()
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     dirs = get_ssl_hosts_config_dirs()
