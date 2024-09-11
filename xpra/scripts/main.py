@@ -91,6 +91,10 @@ def werr(*msg) -> None:
         stderr_print(str(x))
 
 
+def error_handler(*args) -> NoReturn:
+    raise InitException(*args)
+
+
 def add_process(*args, **kwargs):
     from xpra.util.child_reaper import getChildReaper
     return getChildReaper().add_process(*args, **kwargs)
@@ -134,10 +138,7 @@ def main(script_file: str, cmdline) -> ExitValue:
         mode = args.pop(0)
         mode = MODE_ALIAS.get(mode, mode)
 
-        def err(*args) -> NoReturn:
-            raise InitException(*args)
-
-        return run_mode(script_file, cmdline, err, options, args, mode, defaults)
+        return run_mode(script_file, cmdline, error_handler, options, args, mode, defaults)
     except SystemExit:
         debug_exc()
         raise
@@ -471,7 +472,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "keyboard", "gtk-info", "gui-info", "network-info",
             "compression", "packet-encoding", "path-info",
             "printing-info", "version-info", "toolbox",
-            "initenv",
+            "initenv", "setup-ssl",
             "auth", "showconfig", "showsetting",
             "applications-menu", "sessions-menu",
             "_proxy",
@@ -837,6 +838,10 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         script = xpra_runner_shell_script(script_file, os.getcwd())
         write_runner_shell_scripts(script, False)
         return ExitCode.OK
+    if mode == "setup-ssl":
+        if args:
+            raise InitExit(ExitCode.FAILURE, "this subcommand does not take any arguments")
+        return setup_ssl()
     if mode == "auth":
         return run_auth(options, args)
     if mode == "configure":
@@ -4330,6 +4335,19 @@ def run_auth(_options, args) -> ExitValue:
         raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
     argv = [auth_module.__file__] + args[1:]
     return main_fn(argv)
+
+
+def err(*args) -> NoReturn:
+    raise InitException(*args)
+
+
+def setup_ssl() -> ExitValue:
+    from xpra.util.io import load_binary_file
+    from xpra.net.ssl_util import gen_ssl_cert
+    _keyfile, certfile = gen_ssl_cert()
+    cert = load_binary_file(certfile)
+    sys.stdout.write(cert.decode("latin1"))
+    return 0
 
 
 def run_showconfig(options, args) -> ExitValue:

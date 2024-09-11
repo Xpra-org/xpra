@@ -67,7 +67,7 @@ def get_ssl_cert_dirs() -> list[str]:
 
 
 def do_get_ssl_cert_dirs() -> list[str]:
-    dirs = ["/etc/xpra/", "/etc/xpra/ssl", "/usr/local/etc/xpra", "/usr/local/etc/xpra/ssl"]
+    dirs = ["/etc/xpra/ssl", "/usr/local/etc/xpra/ssl", "/etc/xpra/", "/usr/local/etc/xpra"]
     if os.name != "posix" or os.getuid() != 0:
         dirs = ["~/.config/xpra/ssl", "~/.xpra/ssl"] + dirs + ["./"]
     return dirs

@@ -3,11 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import os.path
 from typing import Any
 
 from xpra.exit_codes import ExitCode
-from xpra.os_util import WIN32
+from xpra.os_util import WIN32, POSIX, OSX, getuid
+from xpra.util.io import load_binary_file, umask_context
 from xpra.scripts.config import InitExit, InitException, TRUE_OPTIONS
 from xpra.util.env import osexpand, envbool
 from xpra.util.parsing import parse_encoded_bin_data
@@ -23,7 +25,9 @@ SSL_ATTRIBUTES = (
     "options", "ciphers",
 )
 
+KEY_FILENAME = "key.pem"
 CERT_FILENAME = "cert.pem"
+SSL_CERT_FILENAME = "ssl-cert.pem"
 
 logger = None
 
@@ -68,11 +72,11 @@ def find_ssl_cert(filename: str = "ssl-cert.pem") -> str:
         if not os.path.isfile(f):
             ssllog.warn(f"Warning: {f!r} is not a file")
             continue
-        if not os.access(p, os.R_OK):
+        if not os.access(f, os.R_OK):
             ssllog.info(f"SSL certificate file {f!r} is not accessible")
             continue
         ssllog(f"found ssl cert {f!r}")
-        return f
+        return os.path.abspath(f)
     return ""
 
 
@@ -447,7 +451,7 @@ def find_ssl_config_file(server_hostname: str, port=443, filename="cert.pem") ->
         f = os.path.join(d, filename)
         if os.path.exists(f):
             ssllog(f"found {f}")
-            return f
+            return os.path.abspath(f)
     return ""
 
 
@@ -493,3 +497,98 @@ def save_ssl_config_file(server_hostname: str, port=443,
         except OSError:
             ssllog(f"failed to save cert data to {d!r}", exc_info=True)
     return ""
+
+
+def gen_ssl_cert() -> tuple[str, str]:
+    log = get_ssl_logger()
+    keypath = find_ssl_cert(KEY_FILENAME)
+    certpath = find_ssl_cert(CERT_FILENAME)
+    if keypath and certpath:
+        log.info("found an existing certificate:")
+        log.info(f" {keypath!r}")
+        log.info(f" {certpath!r}")
+        return keypath, certpath
+    from shutil import which
+    openssl = which("openssl") or os.environ.get("OPENSSL", "")
+    if not openssl:
+        raise InitExit(ExitCode.SSL_FAILURE, "cannot find openssl executable")
+    if POSIX and not OSX and getuid() == 0:
+        # running as root, use global location:
+        prefix = "" if sys.prefix == "/usr" else sys.prefix
+        xpra_dir = f"{prefix}/etc/xpra"
+        ssldir = f"{xpra_dir}/ssl"
+        if not os.path.exists(xpra_dir):
+            os.mkdir(ssldir, 0o777)
+        if not os.path.exists(ssldir):
+            os.mkdir(ssldir, 0o777)
+    else:
+        from xpra.platform.paths import get_ssl_cert_dirs
+        dirs = [d for d in get_ssl_cert_dirs() if not d.startswith("/etc") and not d.startswith("/usr") and d != "./"]
+        # use the first writeable one:
+        log(f"testing ssl dirs: {dirs}")
+        ssldir = ""
+        for sdir in dirs:
+            path = osexpand(sdir)
+            if os.path.exists(path) and os.path.isdir(path) and os.access(path, os.W_OK):
+                ssldir = path
+                log(f"found writeable ssl dir {ssldir!r}")
+                break
+        if not ssldir:
+            # we may have to create the parent directories:
+            log("no ssl dir found, trying to create one")
+            for sdir in dirs:
+                path = osexpand(sdir)
+                head = path
+                create_dirs = []
+                while head:
+                    head, tail = os.path.split(head)        #ie: "/home/user/.config/xpra", "ssl"
+                    log(f"{head=}, {tail=}")
+                    if tail:
+                        create_dirs.append(tail)
+                    else:
+                        break
+                    if tail.find("xpra") >= 0:
+                        # don't create directories above our one
+                        break
+                if create_dirs and head:
+                    while create_dirs:
+                        tail = create_dirs.pop()
+                        head = os.path.join(head, tail)
+                        try:
+                            os.mkdir(head, 0o777)
+                        except OSError as e:
+                            log(f"failed to create {head!r} for {path!r}: {e}")
+                            continue
+                    ssldir = path
+                    log(f"created {ssldir!r}")
+                    break
+    keypath = f"{ssldir}/{KEY_FILENAME}"
+    certpath = f"{ssldir}/{CERT_FILENAME}"
+    cmd = [
+        openssl,
+        "req", "-new",
+        "-newkey", "rsa:4096",
+        "-days", "3650",
+        "-nodes", "-x509",
+        "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
+        "-keyout", keypath,
+        "-out", certpath,
+    ]
+    log.info("generating a new certificate:")
+    log.info(f" {keypath!r}")
+    log.info(f" {certpath!r}")
+    log(f"openssl command: {cmd}")
+    from subprocess import Popen
+    with umask_context(0o022):
+        with Popen(cmd) as p:
+            exit_code = p.wait()
+    if exit_code != 0:
+        raise InitExit(ExitCode.FAILURE, f"openssl command returned {exit_code}")
+    key = load_binary_file(keypath)
+    cert = load_binary_file(certpath)
+    sslcert = key+cert
+    sslcertpath = f"{ssldir}/{SSL_CERT_FILENAME}"
+    with open(sslcertpath, "wb") as f:
+        os.fchmod(f.fileno(), 0o600)
+        f.write(sslcert)
+    return keypath, certpath
