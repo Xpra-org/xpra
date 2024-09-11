@@ -6,6 +6,7 @@
 import sys
 import os.path
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.exit_codes import ExitCode
 from xpra.os_util import WIN32, POSIX, OSX, is_admin
@@ -17,13 +18,17 @@ from xpra.util.str_fn import print_nested_dict, csv, Ellipsizer, std
 
 SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
 
-SSL_ATTRIBUTES = (
+SSL_ATTRIBUTES: Sequence[str] = (
     "cert", "key", "ca-certs", "ca-data",
     "protocol",
     "client-verify-mode", "server-verify-mode", "verify-flags",
     "check-hostname", "server-hostname",
     "options", "ciphers",
 )
+
+KEY_SIZE = 4096
+KEY_DAYS = 3650
+KEY_SUBJ = "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost"
 
 KEY_FILENAME = "key.pem"
 CERT_FILENAME = "cert.pem"
@@ -504,7 +509,7 @@ def gen_ssl_cert() -> tuple[str, str]:
     keypath = find_ssl_cert(KEY_FILENAME)
     certpath = find_ssl_cert(CERT_FILENAME)
     if keypath and certpath:
-        log.info("found an existing certificate:")
+        log.info("found an existing SSL certificate:")
         log.info(f" {keypath!r}")
         log.info(f" {certpath!r}")
         return keypath, certpath
@@ -513,8 +518,11 @@ def gen_ssl_cert() -> tuple[str, str]:
     if not openssl:
         raise InitExit(ExitCode.SSL_FAILURE, "cannot find openssl executable")
     openssl_config = ""
+    creationflags = 0
     if WIN32:
         from xpra.platform.paths import get_app_dir
+        from subprocess import CREATE_NO_WINDOW
+        creationflags = CREATE_NO_WINDOW
         openssl_config = os.path.join(get_app_dir(), "etc", "ssl", "openssl.cnf")
     if is_admin():
         # running as root, use global location:
@@ -577,22 +585,22 @@ def gen_ssl_cert() -> tuple[str, str]:
     cmd = [
         openssl,
         "req", "-new",
-        "-newkey", "rsa:4096",
-        "-days", "3650",
+        "-newkey", f"rsa:{KEY_SIZE}",
+        "-days", f"{KEY_DAYS}",
         "-nodes", "-x509",
-        "-subj", "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost",
+        "-subj", KEY_SUBJ,
         "-keyout", keypath,
         "-out", certpath,
     ]
     if openssl_config and os.path.exists(openssl_config):
         cmd += ["-config", openssl_config]
-    log.info("generating a new certificate:")
+    log.info("generating a new SSL certificate:")
     log.info(f" {keypath!r}")
     log.info(f" {certpath!r}")
     log(f"openssl command: {cmd}")
     from subprocess import Popen
     with umask_context(0o022):
-        with Popen(cmd) as p:
+        with Popen(cmd, creationflags=creationflags) as p:
             exit_code = p.wait()
     if exit_code != 0:
         raise InitExit(ExitCode.FAILURE, f"openssl command returned {exit_code}")

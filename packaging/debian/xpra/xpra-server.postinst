@@ -10,6 +10,6 @@ case "${1}" in
     ;;
 esac
 
-xpra setup-ssl
+xpra setup-ssl > /dev/null
 
 #DEBHELPER#

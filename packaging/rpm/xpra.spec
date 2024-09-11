@@ -784,7 +784,7 @@ restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 %endif
 
 %post -n %{package_prefix}-server
-%{python3} /usr/bin/xpra setup-ssl
+%{python3} /usr/bin/xpra setup-ssl > /dev/null
 %if 0%{update_firewall}
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then

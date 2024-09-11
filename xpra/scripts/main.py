@@ -421,7 +421,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
 
     # configure default logging handler:
     if POSIX and getuid() == options.uid == 0 and mode not in (
-            "proxy", "autostart", "showconfig",
+            "proxy", "autostart", "showconfig", "setup-ssl",
     ) and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
 
