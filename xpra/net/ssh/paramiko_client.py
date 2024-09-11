@@ -59,6 +59,8 @@ EXEC_STDERR_TIMEOUT = envfloat("XPRA_SSH_EXEC_STDERR_TIMEOUT", 0)
 MSYS_DEFAULT_PATH = os.environ.get("XPRA_MSYS_DEFAULT_PATH", "/mingw64/bin/xpra")
 CYGWIN_DEFAULT_PATH = os.environ.get("XPRA_CYGWIN_DEFAULT_PATH", "/cygdrive/c/Program Files/Xpra/Xpra_cmd.exe")
 DEFAULT_WIN32_INSTALL_PATH = "C:\\Program Files\\Xpra"
+WIN_OPENSSH_AGENT = envbool("XPRA_WIN_OPENSSH_AGENT", False)
+WIN_OPENSSH_AGENT_MODULE = "win_openssh.OpenSSHAgentConnection"
 
 PARAMIKO_SESSION_LOST = "No existing session"
 
@@ -942,6 +944,9 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
         agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
         log(f"paramiko {agent_option=}")
         if agent_option.lower() in TRUE_OPTIONS:
+            if not WIN_OPENSSH_AGENT and WIN_OPENSSH_AGENT_MODULE not in sys.modules:
+                log(f"preventing {WIN_OPENSSH_AGENT_MODULE!r} from loading")
+                sys.modules[WIN_OPENSSH_AGENT_MODULE] = None
             log.info("paramiko SSH agent forwarding enabled")
             from paramiko.agent import AgentRequestHandler
             AgentRequestHandler(chan)
