@@ -784,16 +784,7 @@ restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 %endif
 
 %post -n %{package_prefix}-server
-if [ ! -e "/etc/xpra/ssl-cert.pem" ]; then
-	umask=`umask`
-	umask 077
-	openssl req -new -newkey rsa:4096 -days 3650 -nodes -x509 \
-		-subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
-		-keyout "/etc/xpra/key.pem" -out "/etc/xpra/cert.pem" 2> /dev/null
-	cat "/etc/xpra/key.pem" "/etc/xpra/cert.pem" > "/etc/xpra/ssl-cert.pem"
-	umask $umask
-	chmod 644 /etc/xpra/cert.pem
-fi
+%{python3} /usr/bin/xpra setup-ssl
 %if 0%{update_firewall}
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
@@ -805,6 +796,15 @@ if [ ! -z "${ZONE}" ]; then
 			firewall-cmd --reload | grep -v "^success"
 		else
 			firewall-offline-cmd --add-port=14500/tcp | grep -v "^success"
+		fi
+	fi
+	firewall-cmd --zone=${ZONE}	--list-ports | grep "14500/udp" >> /dev/null 2>&1
+	if [ $? != "0" ]; then
+		firewall-cmd --zone=${ZONE} --add-port=14500/udp --permanent >> /dev/null 2>&1
+		if [ $? == "0" ]; then
+			firewall-cmd --reload | grep -v "^success"
+		else
+			firewall-offline-cmd --add-port=14500/udp | grep -v "^success"
 		fi
 	fi
 	set -e
