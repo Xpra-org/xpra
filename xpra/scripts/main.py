@@ -839,9 +839,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         write_runner_shell_scripts(script, False)
         return ExitCode.OK
     if mode == "setup-ssl":
-        if args:
-            raise InitExit(ExitCode.FAILURE, "this subcommand does not take any arguments")
-        return setup_ssl()
+        return setup_ssl(options, args, cmdline)
     if mode == "auth":
         return run_auth(options, args)
     if mode == "configure":
@@ -4341,9 +4339,43 @@ def err(*args) -> NoReturn:
     raise InitException(*args)
 
 
-def setup_ssl() -> ExitValue:
+def setup_ssl(options, args, cmdline) -> ExitValue:
+    from xpra.net.ssl_util import gen_ssl_cert, save_ssl_config_file
+    if args:
+        if len(args) != 1:
+            raise InitExit(ExitCode.FAILURE, "a single optional argument may be specified")
+        arg = args[0]
+        disp = parse_display_name(error_handler, options, arg, cmdline)
+        if disp.get("type", "") != "ssh":
+            raise InitExit(ExitCode.FAILURE, "argument must be an ssh URL")
+        disp["display_as_args"] = []
+        disp["proxy_command"] = ["setup-ssl", ]
+
+        def ssh_fail(*_args) -> NoReturn:
+            sys.exit(int(ExitCode.SSH_FAILURE))
+        conn = connect_to(disp, options, debug_cb=noop, ssh_fail_cb=ssh_fail)
+        data = b""
+        until = monotonic() + 30
+        while monotonic() < until:
+            bdata = conn.read(4096)
+            if not bdata:
+                break
+            data += bdata
+        noerr(conn.close)
+        if not data:
+            raise InitExit(ExitCode.FAILURE, "no certificate data received, check the command output")
+        # strip any pollution from ssh output:
+        BEGIN = b"-----BEGIN CERTIFICATE-----"
+        if data.find(BEGIN) >= 0:
+            data = BEGIN + data.split(BEGIN, 1)[1]
+        END = b"-----END CERTIFICATE-----"
+        if data.find(END) > 0:
+            data = data.split(END, 1)[0] + END + b"\n"
+
+        host = disp["host"]
+        save_ssl_config_file(host, port=0, filename="cert.pem", fileinfo="certificate", filedata=data)
+        return ExitCode.OK
     from xpra.util.io import load_binary_file
-    from xpra.net.ssl_util import gen_ssl_cert
     _keyfile, certfile = gen_ssl_cert()
     cert = load_binary_file(certfile)
     sys.stdout.write(cert.decode("latin1"))

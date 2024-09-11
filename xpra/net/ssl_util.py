@@ -445,11 +445,17 @@ def save_ssl_options(server_hostname: str, port, options: dict) -> str:
     return f
 
 
-def find_ssl_config_file(server_hostname: str, port=443, filename="cert.pem") -> str:
+def find_ssl_config_file(hostname: str, port=443, filename="cert.pem") -> str:
+    return do_find_ssl_config_file(hostname, port, filename) or do_find_ssl_config_file(hostname, 0, filename)
+
+
+def do_find_ssl_config_file(server_hostname: str, port=443, filename="cert.pem") -> str:
     ssllog = get_ssl_logger()
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     dirs = get_ssl_hosts_config_dirs()
-    host_dirname = std(server_hostname, extras="-.:#_") + f"_{port}"
+    host_dirname = std(server_hostname, extras="-.:#_")
+    if port:
+        host_dirname += f"_{port}"
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
     ssllog(f"looking for {filename!r} in {host_dirs}")
     for d in host_dirs:
@@ -465,7 +471,9 @@ def save_ssl_config_file(server_hostname: str, port=443,
     ssllog = get_ssl_logger()
     from xpra.platform.paths import get_ssl_hosts_config_dirs
     dirs = get_ssl_hosts_config_dirs()
-    host_dirname = std(server_hostname, extras="-.:#_") + f"_{port}"
+    host_dirname = std(server_hostname, extras="-.:#_")
+    if port:
+        host_dirname += f"_{port}"
     host_dirs = [os.path.join(osexpand(d), host_dirname) for d in dirs]
     ssllog(f"save_ssl_config_file%s dirs={dirs}, host_dirname={host_dirname}, host_dirs={host_dirs}",
            (server_hostname, port, filename, fileinfo, Ellipsizer(filedata)), )
