@@ -28,6 +28,7 @@
 %if 0%{?nvidia_codecs}
 %define build_args %{DEFAULT_BUILD_ARGS}
 %else
+%define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
 %if 0%{?fedora}>=39
 %global debug_package %{nil}
 %endif
