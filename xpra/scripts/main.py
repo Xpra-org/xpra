@@ -119,7 +119,7 @@ def main(script_file: str, cmdline) -> ExitValue:
     if len(cmdline) == 1:
         cmdline.append("gui")
 
-    def debug_exc(msg: str = "run_mode error"):
+    def debug_exc(msg: str = "run_mode error") -> None:
         get_logger().debug(msg, exc_info=True)
 
     try:
@@ -134,7 +134,7 @@ def main(script_file: str, cmdline) -> ExitValue:
         mode = args.pop(0)
         mode = MODE_ALIAS.get(mode, mode)
 
-        def err(*args):
+        def err(*args) -> NoReturn:
             raise InitException(*args)
 
         return run_mode(script_file, cmdline, err, options, args, mode, defaults)
@@ -1192,7 +1192,7 @@ def connect_to(display_desc, opts=None, debug_cb=noop, ssh_fail_cb=noop):
         if not hasattr(socket, "AF_UNIX"):  # pragma: no cover
             raise InitExit(ExitCode.UNSUPPORTED, "unix domain sockets are not available on this operating system")
 
-        def sockpathfail_cb(msg):
+        def sockpathfail_cb(msg) -> NoReturn:
             raise InitException(msg)
 
         sockpath = ""
@@ -1390,7 +1390,7 @@ def run_send_file(extra_args) -> ExitValue:
         if proc.returncode:
             filelog.error(f"Error: failed to send file {f!r}")
 
-            def logfdoutput(v):
+            def logfdoutput(v) -> None:
                 if v:
                     try:
                         v = v.decode()
@@ -1432,7 +1432,7 @@ def get_sockpath(display_desc: dict[str, Any], error_cb, timeout=CONNECT_TIMEOUT
     )
     display = display_desc["display"]
 
-    def socket_details(state=SocketState.LIVE):
+    def socket_details(state=SocketState.LIVE) -> dict:
         return dotxpra.socket_details(matching_state=state, matching_display=display)
 
     dir_servers = socket_details()
@@ -1527,10 +1527,10 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
     backend = opts.backend or "gtk"
     if backend == "qt":
 
-        def call(fn, *args):
+        def call(fn: Callable, *args) -> None:
             fn(*args)
 
-        def setup_connection():
+        def setup_connection() -> None:
             do_setup_connection()
 
     else:
@@ -1538,7 +1538,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
         # before we can call connect()
         # because connect() may run a subprocess,
         # and Gdk locks up the system if the main loop is not running by then!
-        def setup_connection():
+        def setup_connection() -> None:
             log("setup_connection() starting setup-connection thread")
             from xpra.util.thread import start_thread
             start_thread(do_setup_connection, "setup-connection", True)
@@ -1546,7 +1546,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
         GLib = gi_import("GLib")
         call = GLib.idle_add
 
-    def do_setup_connection():
+    def do_setup_connection() -> None:
         try:
             log("do_setup_connection() display_desc=%s", display_desc)
             conn = connect_or_fail(display_desc, opts)
@@ -1780,7 +1780,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
             listen_cleanup: list[Callable] = []
             socket_cleanup: list[Callable] = []
 
-            def new_connection(socktype, sock, handle=0):
+            def new_connection(socktype, sock, handle=0) -> bool:
                 from xpra.util.thread import start_thread
                 netlog = Logger("network")
                 netlog("new_connection%s", (socktype, sock, handle))
@@ -1789,7 +1789,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
                 start_thread(handle_new_connection, f"handle new connection: {conn}", daemon=True, args=(conn,))
                 return True
 
-            def handle_new_connection(conn):
+            def handle_new_connection(conn) -> None:
                 # see if this is a redirection:
                 netlog = Logger("network")
                 line1 = peek_connection(conn)[1]
@@ -1807,13 +1807,13 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
                             return
                 app.idle_add(do_handle_connection, conn)
 
-            def do_handle_connection(conn):
+            def do_handle_connection(conn) -> None:
                 protocol = app.setup_connection(conn)
                 protocol.start()
                 # stop listening for new connections:
                 run_socket_cleanups()
 
-            def run_socket_cleanups():
+            def run_socket_cleanups() -> None:
                 for cleanup in listen_cleanup:
                     cleanup()
                 listen_cleanup[:] = []
@@ -1875,7 +1875,7 @@ def make_progress_process(title="Xpra") -> Popen | None:
     # override Popen.terminate()
     setattr(progress_process, "terminate", terminate)
 
-    def progress(pct: int, text: str):
+    def progress(pct: int, text: str) -> None:
         if progress_process.poll() is not None:
             return
         stdin = progress_process.stdin
@@ -2423,7 +2423,7 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
             app.init_ui(opts)
             app.hello_extra = hello_extra
 
-            def handshake_complete(*_args):
+            def handshake_complete(*_args) -> None:
                 app.show_progress(100, "connection established")
 
             app.after_handshake(handshake_complete)
@@ -2502,7 +2502,7 @@ def find_wayland_display_sockets(uid: int = getuid(), gid: int = getgid()) -> di
         return {}
     displays = {}
 
-    def addwaylandsock(d: str, p: str):
+    def addwaylandsock(d: str, p: str) -> None:
         if os.path.isabs(p) and is_socket(p) and os.path.exists(p) and d not in displays:
             displays[d] = p
 
@@ -2594,7 +2594,7 @@ def guess_display(dotxpra, current_display, uid: int = getuid(), gid: int = getg
             info_cache[display] = info
         return info_cache.get(display, {})
 
-    def islive(display):
+    def islive(display) -> bool:
         return dinfo(display).get("state", "") == "LIVE"
 
     def notlivexpra(display) -> bool:
@@ -2711,7 +2711,7 @@ def run_example(args) -> ExitValue:
 
 
 def run_autostart(script_file, args) -> ExitValue:
-    def err(msg):
+    def err(msg) -> int:
         print(msg)
         print(f"Usage: {script_file!r} autostart enable|disable|status")
         return 1
@@ -3039,7 +3039,7 @@ def start_server_subprocess(script_file, args, mode, opts,
             noerr(os.close, r_pipe)
             noerr(os.close, w_pipe)
 
-            def displayfd_err(msg):
+            def displayfd_err(msg: str) -> None:
                 log.error("Error: displayfd failed")
                 log.error(f" {msg}")
 
@@ -3255,7 +3255,7 @@ def run_stopexit(mode: str, error_cb, opts, extra_args, cmdline) -> ExitValue:
     assert mode in ("stop", "exit")
     no_gtk()
 
-    def show_final_state(display_desc):
+    def show_final_state(display_desc) -> int:
         # this is for local sockets only!
         display = display_desc["display"]
         sockdir = display_desc.get("socket_dir", "")
@@ -3291,7 +3291,7 @@ def run_stopexit(mode: str, error_cb, opts, extra_args, cmdline) -> ExitValue:
             return 1
         raise RuntimeError(f"invalid state: {final_state}")
 
-    def multimode(displays):
+    def multimode(displays) -> int:
         sys.stdout.write(f"Trying to {mode} {len(displays)} displays:\n")
         sys.stdout.write(" %s\n" % csv(displays))
         procs = []
@@ -3395,7 +3395,7 @@ def run_session_info(error_cb, options, args, cmdline) -> ExitValue:
 
 
 def show_docs() -> None:
-    def show_docs_thread():
+    def show_docs_thread() -> None:
         try:
             run_docs()
         except InitExit as e:
@@ -3485,7 +3485,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
     found: dict[tuple[str, str, str], list] = {}
     shown = set()
 
-    def show_new_found():
+    def show_new_found() -> None:
         new_found = [x for x in found.keys() if x not in shown]
         for uq in new_found:
             recs = found[uq]
@@ -3514,7 +3514,7 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
                 print("   \"%s\"" % uri)
             shown.add(uq)
 
-    def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text):
+    def mdns_add(interface, _protocol, name, _stype, domain, host, address, port, text) -> None:
         text = typedict(text or {})
         iface = interface
         if iface is not None:
@@ -3529,11 +3529,11 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
 
     listeners = []
 
-    def add(service_type):
+    def add(service_type: str) -> None:
         listener = listener_class(service_type, mdns_add=mdns_add)
         listeners.append(listener)
 
-        def start():
+        def start() -> None:
             listener.start()
 
         GLib.idle_add(start)
@@ -3743,7 +3743,7 @@ def run_recover(script_file, cmdline, error_cb, options, args, defaults) -> Exit
         descr = get_display_info(display, options.sessions_dir)
     else:
 
-        def recover_many(displays):
+        def recover_many(displays) -> int:
             from xpra.platform.paths import get_xpra_command  # pylint: disable=import-outside-toplevel
             for display in displays:
                 cmd = get_xpra_command() + ["recover", display]
@@ -3800,7 +3800,7 @@ def run_displays(options, args) -> ExitValue:
         if wmname:
             info_str += f"{wmname}: "
 
-        def show(name, value):
+        def show(name: str, value) -> str:
             if value is True:
                 return name
             return f"{name}={value}"
@@ -4437,7 +4437,7 @@ def run_showsetting(args) -> ExitValue:
     # default config:
     config = get_defaults()
 
-    def show_settings():
+    def show_settings() -> None:
         for setting in settings:
             value = config.get(setting)
             otype = OPTION_TYPES.get(setting, str)
