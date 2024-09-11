@@ -68,7 +68,7 @@ def find_ssl_cert(filename: str = "ssl-cert.pem") -> str:
         if not os.path.isfile(f):
             ssllog.warn(f"Warning: {f!r} is not a file")
             continue
-        if not os.access(p, os.R_OK):
+        if not os.access(f, os.R_OK):
             ssllog.info(f"SSL certificate file {f!r} is not accessible")
             continue
         ssllog(f"found ssl cert {f!r}")
