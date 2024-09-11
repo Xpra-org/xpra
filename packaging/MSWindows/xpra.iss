@@ -178,47 +178,14 @@ end;
 
 procedure PostInstall();
 var
-  cert, config, saved_config, args, openssl, ssh_keygen, rsa_key: string;
+  xpra_exe: string;
   ResultCode: integer;
 begin
   Log('PostInstall()');
-  cert := ExpandConstant('{commonappdata}\Xpra\ssl-cert.pem');
-  if (NOT FileExists(cert)) then
-  begin
-    config := ExpandConstant('{app}\etc\ssl\openssl.cnf');
-    args := 'req -new -newkey rsa:4096 -days 365 -nodes -x509 -config "'+config+'" -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -out "'+cert+'" -keyout "'+cert+'"';
-    openssl := ExpandConstant('{app}\OpenSSL.exe');
-    if (FileExists(openssl)) then
-    begin
-      Log('PostInstall() generating ssl-cert.pem');
-      Exec(openssl, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    end;
-  end;
-  //move old config file:
-  config := ExpandConstant('{app}\xpra.conf');
-  saved_config := ExpandConstant('{app}\etc\xpra.conf.bak');
-  if (FileExists(config)) then
-  begin
-	RenameFile(config, saved_config);
-  end;
-  //ssh host key:
-  ssh_keygen := ExpandConstant('{app}\ssh-keygen.exe');
-  if (FileExists(ssh_keygen)) then
-  begin
-    Log('found ssh_keygen');
-    rsa_key := ExpandConstant('{commonappdata}\SSH\ssh_host_rsa_key');
-    if (NOT FileExists(rsa_key)) then
-    begin
-      Log('generating rsa key');
-      args := '-P "" -t rsa -b 4096 -f "'+rsa_key+'"';
-      Exec(ssh_keygen, args, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    end;
-  end else begin
-    Log('ssh-keygen.exe not found');
-  end;
+  xpra_exe := ExpandConstant('{app}\xpra.exe');
+  Exec(xpra_exe, 'setup-ssl', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   //store installation path:
-  RegWriteStringValue(HKEY_LOCAL_MACHINE, 'Software\Xpra',
-    'InstallPath', ExpandConstant('{app}'));
+  RegWriteStringValue(HKEY_LOCAL_MACHINE, 'Software\Xpra', 'InstallPath', ExpandConstant('{app}'));
   Log('PostInstall() done');
 end;
 

@@ -1,5 +1,5 @@
 # This file is part of Xpra.
-# Copyright (C) 2017-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -8,7 +8,7 @@ import os.path
 from typing import Any
 
 from xpra.exit_codes import ExitCode
-from xpra.os_util import WIN32, POSIX, OSX, getuid
+from xpra.os_util import WIN32, POSIX, OSX, is_admin
 from xpra.util.io import load_binary_file, umask_context
 from xpra.scripts.config import InitExit, InitException, TRUE_OPTIONS
 from xpra.util.env import osexpand, envbool
@@ -512,10 +512,20 @@ def gen_ssl_cert() -> tuple[str, str]:
     openssl = which("openssl") or os.environ.get("OPENSSL", "")
     if not openssl:
         raise InitExit(ExitCode.SSL_FAILURE, "cannot find openssl executable")
-    if POSIX and not OSX and getuid() == 0:
+    openssl_config = ""
+    if WIN32:
+        from xpra.platform.paths import get_app_dir
+        openssl_config = os.path.join(get_app_dir(), "etc", "ssl", "openssl.cnf")
+    if is_admin():
         # running as root, use global location:
-        prefix = "" if sys.prefix == "/usr" else sys.prefix
-        xpra_dir = f"{prefix}/etc/xpra"
+        if OSX:
+            xpra_dir = "/Library/Application Support/Xpra"
+        elif WIN32:
+            from xpra.platform.win32.paths import get_program_data_dir
+            xpra_dir = os.path.join(get_program_data_dir(), "Xpra")
+        else:
+            prefix = "" if sys.prefix == "/usr" else sys.prefix
+            xpra_dir = f"{prefix}/etc/xpra"
         ssldir = f"{xpra_dir}/ssl"
         if not os.path.exists(xpra_dir):
             os.mkdir(ssldir, 0o777)
@@ -574,6 +584,8 @@ def gen_ssl_cert() -> tuple[str, str]:
         "-keyout", keypath,
         "-out", certpath,
     ]
+    if openssl_config and os.path.exists(openssl_config):
+        cmd += ["-config", openssl_config]
     log.info("generating a new certificate:")
     log.info(f" {keypath!r}")
     log.info(f" {certpath!r}")
@@ -589,6 +601,7 @@ def gen_ssl_cert() -> tuple[str, str]:
     sslcert = key+cert
     sslcertpath = f"{ssldir}/{SSL_CERT_FILENAME}"
     with open(sslcertpath, "wb") as f:
-        os.fchmod(f.fileno(), 0o600)
+        if POSIX:
+            os.fchmod(f.fileno(), 0o600)
         f.write(sslcert)
     return keypath, certpath

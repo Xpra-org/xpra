@@ -16,19 +16,7 @@ if [ -d "$APP_ROOT" ]; then
 		fi
 	fi
 
-	LAS_XPRA="/Library/Application Support/Xpra"
-	if [ ! -e "${LAS_XPRA}/ssl-cert.pem" ]; then
-		mkdir "${LAS_XPRA}" 2> /dev/null
-		chmod 755 "${LAS_XPRA}"
-		umask=`umask`
-		umask 077
-		openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
-			-subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" \
-			-keyout "${LAS_XPRA}/key.pem" \
-			-out "${LAS_XPRA}/cert.pem" 2> /dev/null
-		cat "${LAS_XPRA}/key.pem" "${LAS_XPRA}/cert.pem" > "${LAS_XPRA}/ssl-cert.pem"
-		umask $umask
-	fi
+  $APP_ROOT/Contents/MacOS/Xpra setup-ssl
 
 	for x in Xpra; do
 		echo '#!/bin/sh' > /usr/local/bin/$x
