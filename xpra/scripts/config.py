@@ -1178,7 +1178,7 @@ def get_defaults() -> dict[str, Any]:
         "ssh-upgrade"       : True,
         "splash"            : None,
         "gstreamer"         : True,
-        "x11"               : True,
+        "x11"               : POSIX and not OSX,
         "pulseaudio-configure-commands"  : [" ".join(x) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS],
         "socket-dirs"       : unexpand_all(get_socket_dirs()),
         "client-socket-dirs" : unexpand_all(get_client_socket_dirs()),
