@@ -98,7 +98,7 @@ class SSHSocketConnection(SocketConnection):
         while self.active:
             v = stderr.readline()
             if not v:
-                if LOG_EOF:
+                if LOG_EOF and self.active:
                     log.info("SSH EOF on stderr of %s", chan.get_name())
                 break
             s = v.rstrip(b"\n\r").decode()
