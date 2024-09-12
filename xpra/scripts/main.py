@@ -421,7 +421,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
 
     # configure default logging handler:
     if POSIX and getuid() == options.uid == 0 and mode not in (
-            "proxy", "autostart", "showconfig", "setup-ssl",
+            "proxy", "autostart", "showconfig", "setup-ssl", "show-ssl",
     ) and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
 
@@ -472,7 +472,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "keyboard", "gtk-info", "gui-info", "network-info",
             "compression", "packet-encoding", "path-info",
             "printing-info", "version-info", "toolbox",
-            "initenv", "setup-ssl",
+            "initenv", "setup-ssl", "show-ssl",
             "auth", "showconfig", "showsetting",
             "applications-menu", "sessions-menu",
             "_proxy",
@@ -840,6 +840,8 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         return ExitCode.OK
     if mode == "setup-ssl":
         return setup_ssl(options, args, cmdline)
+    if mode == "show-ssl":
+        return show_ssl(options, args, cmdline)
     if mode == "auth":
         return run_auth(options, args)
     if mode == "configure":
@@ -4339,39 +4341,45 @@ def err(*args) -> NoReturn:
     raise InitException(*args)
 
 
-def setup_ssl(options, args, cmdline) -> ExitValue:
-    from xpra.net.ssl_util import gen_ssl_cert, save_ssl_config_file
-    if args:
-        if len(args) != 1:
-            raise InitExit(ExitCode.FAILURE, "a single optional argument may be specified")
-        arg = args[0]
-        disp = parse_display_name(error_handler, options, arg, cmdline)
-        if disp.get("type", "") != "ssh":
-            raise InitExit(ExitCode.FAILURE, "argument must be an ssh URL")
-        disp["display_as_args"] = []
-        disp["proxy_command"] = ["setup-ssl", ]
+def get_remote_proxy_command_output(options, args, cmdline, subcommand="setup-ssl") -> tuple[dict, bytes]:
+    if len(args) != 1:
+        raise InitExit(ExitCode.FAILURE, "a single optional argument may be specified")
+    arg = args[0]
+    disp = parse_display_name(error_handler, options, arg, cmdline)
+    if disp.get("type", "") != "ssh":
+        raise InitExit(ExitCode.FAILURE, "argument must be an ssh URL")
+    disp["display_as_args"] = []
+    disp["proxy_command"] = [subcommand, ]
 
-        def ssh_fail(*_args) -> NoReturn:
-            sys.exit(int(ExitCode.SSH_FAILURE))
-        conn = connect_to(disp, options, debug_cb=noop, ssh_fail_cb=ssh_fail)
-        data = b""
-        until = monotonic() + 30
-        while monotonic() < until:
-            bdata = conn.read(4096)
-            if not bdata:
-                break
-            data += bdata
-        noerr(conn.close)
+    from xpra.net.ssh import util
+    util.LOG_EOF = False
+
+    def ssh_fail(*_args) -> NoReturn:
+        sys.exit(int(ExitCode.SSH_FAILURE))
+
+    def ssh_log(*args) -> None:
+        log = Logger("ssh")
+        log.debug(*args)
+
+    conn = connect_to(disp, options, debug_cb=ssh_log, ssh_fail_cb=ssh_fail)
+    data = b""
+    until = monotonic() + 30
+    while monotonic() < until:
+        bdata = conn.read(4096)
+        if not bdata:
+            break
+        data += bdata
+    noerr(conn.close)
+    return disp, data
+
+
+def setup_ssl(options, args, cmdline) -> ExitValue:
+    from xpra.net.ssl_util import gen_ssl_cert, save_ssl_config_file, strip_cert
+    if args:
+        disp, data = get_remote_proxy_command_output(options, args, cmdline, "setup-ssl")
         if not data:
             raise InitExit(ExitCode.FAILURE, "no certificate data received, check the command output")
-        # strip any pollution from ssh output:
-        BEGIN = b"-----BEGIN CERTIFICATE-----"
-        if data.find(BEGIN) >= 0:
-            data = BEGIN + data.split(BEGIN, 1)[1]
-        END = b"-----END CERTIFICATE-----"
-        if data.find(END) > 0:
-            data = data.split(END, 1)[0] + END + b"\n"
-
+        data = strip_cert(data)
         host = disp["host"]
         save_ssl_config_file(host, port=0, filename="cert.pem", fileinfo="certificate", filedata=data)
         return ExitCode.OK
@@ -4380,6 +4388,29 @@ def setup_ssl(options, args, cmdline) -> ExitValue:
     cert = load_binary_file(certfile)
     sys.stdout.write(cert.decode("latin1"))
     return 0
+
+
+def show_ssl(options, args, cmdline) -> ExitValue:
+    from xpra.net.ssl_util import find_ssl_cert, strip_cert, KEY_FILENAME, CERT_FILENAME
+    if args:
+        _disp, data = get_remote_proxy_command_output(options, args, cmdline, "show-ssl")
+        if not data:
+            raise InitExit(ExitCode.FAILURE, "no certificate data received, check the command output")
+        cert = strip_cert(data)
+    else:
+        log = Logger("ssl")
+        keypath = find_ssl_cert(KEY_FILENAME)
+        certpath = find_ssl_cert(CERT_FILENAME)
+        if not keypath or not certpath:
+            log.info("no certificate found")
+            return ExitCode.NO_DATA
+        log.info("found an existing SSL certificate:")
+        log.info(f" {keypath!r}")
+        log.info(f" {certpath!r}")
+        from xpra.util.io import load_binary_file
+        cert = load_binary_file(certpath)
+    sys.stdout.write(cert.decode("latin1"))
+    return ExitCode.OK
 
 
 def run_showconfig(options, args) -> ExitValue:

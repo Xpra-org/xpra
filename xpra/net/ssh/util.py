@@ -5,7 +5,10 @@
 
 import os
 
-from xpra.util.env import osexpand
+from xpra.util.env import osexpand, envbool
+
+
+LOG_EOF = envbool("XPRA_SSH_LOG_EOF", True)
 
 
 def get_default_keyfiles() -> list[str]:

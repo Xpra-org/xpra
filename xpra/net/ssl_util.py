@@ -623,3 +623,13 @@ def gen_ssl_cert() -> tuple[str, str]:
             os.fchmod(f.fileno(), 0o600)
         f.write(sslcert)
     return keypath, certpath
+
+
+def strip_cert(data: bytes) -> bytes:
+    BEGIN = b"-----BEGIN CERTIFICATE-----"
+    if data.find(BEGIN) >= 0:
+        data = BEGIN + data.split(BEGIN, 1)[1]
+    END = b"-----END CERTIFICATE-----"
+    if data.find(END) > 0:
+        data = data.split(END, 1)[0] + END + b"\n"
+    return data

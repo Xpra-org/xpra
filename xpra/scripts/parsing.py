@@ -826,6 +826,8 @@ def get_usage() -> list[str]:
         ]
     command_options += [
         "showconfig",
+        "setup-ssl",
+        "show-ssl",
         "list",
         "list-sessions",
         "list-windows",

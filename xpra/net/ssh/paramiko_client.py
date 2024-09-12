@@ -16,14 +16,14 @@ from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.platform.info import get_username
 from xpra.scripts.config import str_to_bool, TRUE_OPTIONS
 from xpra.scripts.pinentry import input_pass, confirm
-from xpra.net.ssh.util import get_default_keyfiles
+from xpra.net.ssh.util import get_default_keyfiles, LOG_EOF
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.util.io import load_binary_file, stderr_print, umask_context
 from xpra.common import noerr
 from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool, envfloat
+from xpra.util.env import envint, envbool, envfloat, first_time
 from xpra.log import Logger
 
 # pylint: disable=import-outside-toplevel
@@ -98,7 +98,8 @@ class SSHSocketConnection(SocketConnection):
         while self.active:
             v = stderr.readline()
             if not v:
-                log.info("SSH EOF on stderr of %s", chan.get_name())
+                if LOG_EOF:
+                    log.info("SSH EOF on stderr of %s", chan.get_name())
                 break
             s = v.rstrip(b"\n\r").decode()
             if s:
@@ -172,10 +173,11 @@ def safe_lookup(config_obj, host: str) -> dict:
             log.warn(" (looks like a 'paramiko' distribution packaging issue)")
     except KeyError as e:
         log("%s.lookup(%s)", config_obj, host, exc_info=True)
-        log.info(f"paramiko ssh config lookup error for host {host!r}:")
-        log.info(" %s: %s", type(e), e)
-        log.info(" the paramiko project looks unmaintained:")
-        log.info(" https://github.com/paramiko/paramiko/pull/2338")
+        log.info(f"paramiko ssh config lookup error for host {host!r}")
+        if first_time("paramiko-#2338"):
+            log.info(" %s: %s", type(e), e)
+            log.info(" the paramiko project looks unmaintained:")
+            log.info(" https://github.com/paramiko/paramiko/pull/2338")
     return {}
 
 
