@@ -486,6 +486,8 @@ class WindowBackingBase:
             return None
         nvdec = self.nvdec_decoder
         nvjpeg = self.nvjpeg_decoder
+        if not nvdec and not nvjpeg:
+            return None
         try:
             with self.assign_cuda_context(False):
                 if nvdec and encoding in nvdec.get_encodings():
