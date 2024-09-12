@@ -32,6 +32,7 @@ if [ "${CLIENT_ONLY}" == "1" ]; then
 	BUILD_ARGS="${BUILD_ARGS} --without-server --without-shadow --without-proxy --without-html5"
 	DO_TESTS="0"
 fi
+BUILD_ARGS="${BUILD_ARGS} --without-enc_ffmpeg"
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RSCDIR="${CONTENTS_DIR}/Resources"
