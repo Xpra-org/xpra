@@ -1507,6 +1507,8 @@ if WIN32:
                     #this is a mac osx thing:
                     "ctypes.macholib")
 
+    remove_packages("PyQt6")
+
     if webcam_ENABLED:
         external_includes.append("cv2")
     else:

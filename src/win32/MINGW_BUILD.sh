@@ -515,6 +515,9 @@ for i in `seq 4`; do
 	find dist/share/icons -type d -exec rmdir {} \; 2> /dev/null
 done
 
+#no qt in this branch
+rm dist/qt.conf
+
 echo "* Generating gdk pixbuf loaders.cache"
 gdk-pixbuf-query-loaders.exe "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders/*" | sed 's+".*dist/+"+g' > dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
 
