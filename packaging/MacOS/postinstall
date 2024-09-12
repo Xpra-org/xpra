@@ -16,7 +16,7 @@ if [ -d "$APP_ROOT" ]; then
 		fi
 	fi
 
-  $APP_ROOT/Contents/MacOS/Xpra setup-ssl
+	$APP_ROOT/Contents/MacOS/Xpra setup-ssl
 
 	for x in Xpra; do
 		echo '#!/bin/sh' > /usr/local/bin/$x
