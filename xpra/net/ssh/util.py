@@ -8,9 +8,6 @@ import os
 from xpra.util.env import osexpand
 
 
-# workaround incompatibility between paramiko and gssapi:
-
-
 def get_default_keyfiles() -> list[str]:
     dkf = os.environ.get("XPRA_SSH_DEFAULT_KEYFILES", None)
     if dkf is not None:
