@@ -14,31 +14,37 @@
 %{!?update_firewall: %define update_firewall 1}
 %{!?run_tests: %define run_tests 0}
 %{!?with_selinux: %define with_selinux 1}
-#we only enable CUDA / NVENC with 64-bit builds:
-%if 0%{?with_cuda}%{?nvidia_codecs}
-%define nvidia_codecs 1
-%else
-#detect:
-%if 0%{?fedora}>=38
-%define nvidia_codecs 0
-%else
-%{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda && echo 1)}
-%endif
-%endif
-%if 0%{?nvidia_codecs}
-%define build_args %{DEFAULT_BUILD_ARGS}
-%else
-%define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
-%if 0%{?fedora}>=39
-%global debug_package %{nil}
-%endif
-%endif
-%global selinux_variants mls targeted
-%define selinux_modules cups_xpra xpra_socketactivation
 
 %ifarch aarch64 riscv5
 %{!?nthreads: %global nthreads 1}
 %endif
+%ifarch riscv5
+%define nvidia_codecs 0
+%endif
+
+%if 0%{?with_cuda}%{?nvidia_codecs}
+%define nvidia_codecs 1
+%else
+%{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda && echo 1)}
+%endif
+
+%if 0%{?fedora}%{?el10}
+%global debug_package %{nil}
+%endif
+%if 0%{?el10}
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild --without-docs
+%endif
+
+
+%if 0%{?nvidia_codecs}
+%define build_args %{DEFAULT_BUILD_ARGS}
+%else
+%define build_args %{DEFAULT_BUILD_ARGS} --without-nvidia
+%endif
+
+%global selinux_variants mls targeted
+%define selinux_modules cups_xpra xpra_socketactivation
+
 
 %if 0%{?el7}
 echo CentOS / RHEL 7.x is no longer supported
