@@ -42,7 +42,7 @@ backtrace_expressions: set[re.Pattern] = set()
 MODULE_FILE = os.path.join(os.sep, "xpra", "log.py")        # ie: "/xpra/log.py"
 
 
-def get_debug_args() -> list[str]:
+def get_debug_args() -> Sequence[str]:
     args = []
     if debug_enabled_categories:
         args += list(debug_enabled_categories)
@@ -92,13 +92,13 @@ def is_debug_enabled(category: str) -> bool:
     return isenvdebug(category) or isenvdebug("ALL")
 
 
-def add_disabled_category(*cat) -> None:
+def add_disabled_category(*cat: str) -> None:
     remove_debug_category(*cat)
     for c in cat:
         debug_disabled_categories.add(c)
 
 
-def remove_disabled_category(*cat) -> None:
+def remove_disabled_category(*cat: str) -> None:
     for c in cat:
         if c in debug_disabled_categories:
             debug_disabled_categories.remove(c)
@@ -178,7 +178,7 @@ def enable_format(format_string: str) -> None:
         pass
 
 
-def consume_verbose_argv(argv: list[str], *categories) -> bool:
+def consume_verbose_argv(argv: list[str], *categories: str) -> bool:
     verbose = False
     for x in list(argv):
         if x in ("-v", "--verbose"):
@@ -458,16 +458,16 @@ class Logger:
     def is_debug_enabled(self) -> bool:
         return self.debug_enabled
 
-    def enable_debug(self):
+    def enable_debug(self) -> None:
         self.debug_enabled = True
 
-    def disable_debug(self):
+    def disable_debug(self) -> None:
         self.debug_enabled = False
 
-    def critical(self, enable=False):
+    def critical(self, enable=False) -> None:
         self.level_override = logging.CRITICAL if enable else 0
 
-    def log(self, level, msg: str, *args, **kwargs):
+    def log(self, level, msg: str, *args, **kwargs) -> None:
         exc_info = kwargs.pop("exc_info", None)
         if exc_info is True:
             ei = sys.exc_info()
@@ -498,23 +498,23 @@ class Logger:
                     for rec in frame_summary.splitlines():
                         global_logging_handler(self._logger.log, self.level_override or level, rec)
 
-    def __call__(self, msg: str, *args, **kwargs):
+    def __call__(self, msg: str, *args, **kwargs) -> None:
         self.debug(msg, *args, **kwargs)
 
-    def debug(self, msg: str, *args, **kwargs):
+    def debug(self, msg: str, *args, **kwargs) -> None:
         if self.debug_enabled:
             self.log(logging.DEBUG, msg, *args, **kwargs)
 
-    def info(self, msg: str, *args, **kwargs):
+    def info(self, msg: str, *args, **kwargs) -> None:
         self.log(logging.INFO, msg, *args, **kwargs)
 
-    def warn(self, msg: str, *args, **kwargs):
+    def warn(self, msg: str, *args, **kwargs) -> None:
         self.log(logging.WARN, msg, *args, **kwargs)
 
-    def error(self, msg: str, *args, **kwargs):
+    def error(self, msg: str, *args, **kwargs) -> None:
         self.log(logging.ERROR, msg, *args, **kwargs)
 
-    def estr(self, e, **kwargs):
+    def estr(self, e, **kwargs) -> None:
         einfo = str(e) or type(e)
         self.error(f" {einfo}", **kwargs)
 
@@ -601,24 +601,24 @@ class CaptureHandler(logging.Handler):
         super().__init__(logging.DEBUG)
         self.records = []
 
-    def handle(self, record):
+    def handle(self, record) -> None:
         self.records.append(record)
 
-    def emit(self, record):
+    def emit(self, record) -> None:
         self.records.append(record)
 
-    def createLock(self):
+    def createLock(self) -> None:
         self.lock = None
 
 
 class SIGPIPEStreamHandler(logging.StreamHandler):
-    def flush(self):
+    def flush(self) -> None:
         try:
             super().flush()
         except BrokenPipeError:
             pass
 
-    def emit(self, record):
+    def emit(self, record) -> None:
         # noinspection PyBroadException
         try:
             msg = self.format(record)
