@@ -2493,11 +2493,19 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
                         i += 1
                     continue
             attach_args.append(arg)
-        if WIN32 and not os.path.exists(abs_script_file) and not abs_script_file.lower().endswith(".exe"):
-            abs_script_file += ".exe"
+        if WIN32:
+            if not os.path.exists(abs_script_file) and not abs_script_file.lower().endswith(".exe"):
+                abs_script_file += ".exe"
+            # see ticket #4355,
+            # ensure that the script file is parsed correctly,
+            # even if it has spaces in it
+            abs_script_file = shlex.quote(abs_script_file)
+            attach_args[0] = abs_script_file
         if is_debug_enabled("client"):
             log = Logger("client")
-            log.info(f"reconnecting to {params} using script file {abs_script_file!r} and args={attach_args}")
+            log.info(f"reconnecting to {params}")
+            log.info(f" using script file {abs_script_file!r}")
+            log.info(f" args={attach_args}")
             log.info(f" derived from {script_file!r} and {cmdline!r}")
         try:
             os.execv(abs_script_file, attach_args)
