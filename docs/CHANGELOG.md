@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.0.11] 2024-09-14
+* Platforms, build and packaging:
+    * [don't build ffmpeg encoder on MacOS](https://github.com/Xpra-org/xpra/commit/bf2f1a3f4927428da0ae4c5d40e5125c4c8617d0)
+    * [RPM builds without nvidia codecs failed](https://github.com/Xpra-org/xpra/commit/eeb6fd4cfb7c9c486b0c5649a993c4dc79099f34)
+    * [RPM simplify Fedora feature checks](https://github.com/Xpra-org/xpra/commit/034b0a5c5891595b9cbda687f1fed2c25607e4cb)
+* Major:
+    * [verify ssl certificates can be accessed - not just the parent directory](https://github.com/Xpra-org/xpra/commit/f6e1caf75025a9f9354b587262d1350f7f915944)
+
 ## [5.0.10] 2024-09-10
 * Platforms, build and packaging:
     * [syntax compatibility fix](https://github.com/Xpra-org/xpra/commit/8b56099122a8a8f6f753b97421910de487c30335), [and another one](https://github.com/Xpra-org/xpra/commit/a74a949e90c5fb397c8e6cf590e9fed4aad10de4)
