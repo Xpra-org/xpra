@@ -2364,22 +2364,24 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
         # made more difficult by mode name aliases
         mode_pos = find_mode_pos(args, mode)
         args[mode_pos] = "attach"
-        if params.get("display") is None:
+        if not params.get("display", ""):
             # try to find which display was used,
             # so we can re-connect to this specific one:
             display = getattr(app, "_remote_display", None)
             if not display:
-                raise InitException("cannot identify the remote display to reconnect to")
-            # then re-generate a URI with this display name in it:
-            new_params = params.copy()
-            new_params["display"] = display
-            uri = display_desc_to_uri(new_params)
-            # and change it in the command line:
-            try:
-                uri_pos = args.index(display_name)
-            except ValueError:
-                raise InitException("URI not found in command line arguments") from None
-            args[uri_pos] = uri
+                warn("cannot identify the remote display to reconnect to")
+                warn(" this may fail if there is more than one")
+            else:
+                # then re-generate a URI with this display name in it:
+                new_params = params.copy()
+                new_params["display"] = display
+                uri = display_desc_to_uri(new_params)
+                # and change it in the command line:
+                try:
+                    uri_pos = args.index(display_name)
+                except ValueError:
+                    raise InitException("URI not found in command line arguments") from None
+                args[uri_pos] = uri
         # remove command line options consumed by 'start' that should not be used again:
         attach_args = []
         i = 0
