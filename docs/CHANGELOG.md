@@ -1,7 +1,11 @@
 # Changelog
 
-## [6.1.3] 2024-09-09
+## [6.1.3] 2024-09-14
+* Platforms, build and packaging:
+    * [don't bundle any Qt components](https://github.com/Xpra-org/xpra/commit/6af5e72a34a6d0e6947a343255b3f885547b1391)
 * Major:
+    * [ssl failures with default certificates](https://github.com/Xpra-org/xpra/commit/7c352bca42200ee26d5e04939148d93cfc1d6f9e)
+    * [verify ssl certificates can be accessed - not just the parent directory](https://github.com/Xpra-org/xpra/commit/94736d0aec9173e1106c09f331fb6e8481aca21e)
     * [X11 display state detection](https://github.com/Xpra-org/xpra/commit/892e6ef021558c0c9145d73d36e323a10b8566f7)
     * [failure to add new virtual monitors](https://github.com/Xpra-org/xpra/commit/462950c42426d3b8185cbd6c84a3f42136482d47)
     * [expose all clipboard targets](https://github.com/Xpra-org/xpra/commit/08b03952999071599613255597f554d3e2887b41)
@@ -17,6 +21,7 @@
     * [unused `nvdec` test function was broken](https://github.com/Xpra-org/xpra/commit/f847c8340f63036ad2d86bde27c1db4c1427723c)
     * [nvidia utility command line parsing](https://github.com/Xpra-org/xpra/commit/4dd35d99d2b5f1c2627c7c0ff4b9628d44bde14c)
 * Minor:
+    * [reconnection to automatically assigned displays](https://github.com/Xpra-org/xpra/commit/a210ae1370e5a3c3ca67279ab8e257764dfc0d0b)
     * [system tray menu encoding options don't stick](https://github.com/Xpra-org/xpra/commit/eae72eabc8982e2889072e4a0cfaea9892e1f8d2)
     * [request mode failures](https://github.com/Xpra-org/xpra/commit/33d10cafbde43a0f4894b9d731ac6f445dfefae6)
     * [honour the initial resolution, even if resizing is disabled](https://github.com/Xpra-org/xpra/commit/39d4d50f5088d418a6c6a3e240cbe87f128dd21c)

@@ -883,8 +883,12 @@ fi
 
 
 %changelog
-* Mon Sep 09 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
+* Sat Sep 14 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
+- Platforms, build and packaging:
+   don't bundle any Qt components
 - Major:
+   ssl failures with default certificates
+   verify ssl certificates can be accessed - not just the parent directory
    X11 display state detection
    failure to add new virtual monitors
    expose all clipboard targets
