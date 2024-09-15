@@ -49,7 +49,7 @@ def do_check_host_key(hostname: str, keytype, keydata):
     log("key algorithm for %s: %s", keytype, key_alg)
 
     try:
-        resp = resolver.query(hostname, "SSHFP")
+        resp = resolver.resolve(hostname, "SSHFP", search=True)
     except (NoAnswer, NoNameservers):
         return f"could not obtain SSHFP records for host {hostname!r}"
 
