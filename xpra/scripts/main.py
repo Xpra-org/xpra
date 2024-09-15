@@ -1314,29 +1314,52 @@ def run_client(script_file, cmdline, error_cb, opts, extra_args, mode:str) -> in
     r = do_run_client(app)
     if opts.reconnect is not False and r in RETRY_EXIT_CODES:
         warn("%s, reconnecting" % exit_str(r))
-        log = Logger("exec")
-        if WIN32:
-            #the cx_Freeze wrapper changes the cwd to the directory containing the exe,
-            #so we have to re-construct the actual path to the exe:
-            if not os.path.isabs(script_file):
-                script_file = os.path.join(os.getcwd(), os.path.basename(script_file))
-            if not os.path.exists(script_file):
-                #perhaps the extension is missing?
-                if not os.path.splitext(script_file)[1]:
-                    log(f"script file {script_file!r} not found, retrying with %PATHEXT%")
-                    for ext in os.environ.get("PATHEXT", ".COM;.EXE").split(os.path.pathsep):
-                        tmp = script_file+ext
-                        if os.path.exists(tmp):
-                            script_file = tmp
-            cmdline[0] = script_file
-            log(f"Popen(args={cmdline}, executable={script_file}")
-            Popen(args=cmdline, executable=script_file)
-            #we can't keep re-spawning ourselves without freeing memory,
-            #so exit the current process with "no error":
-            return ExitCode.OK
-        log("execv%s", (script_file, cmdline))
-        os.execv(script_file, cmdline)
+        return int(exec_reconnect(script_file, cmdline))
     return r
+
+
+def exec_reconnect(script_file: str, cmdline) -> ExitCode:
+    if is_debug_enabled("client"):
+        log = Logger("client")
+        log.info(f"reconnecting using script file {script_file!r}")
+        log.info(f" and {cmdline=}")
+    try:
+        if WIN32:
+            return win32_reconnect(script_file, cmdline)
+        else:
+            abs_script_file = os.path.abspath(script_file)
+            os.execv(abs_script_file, cmdline)
+    except FileNotFoundError:
+        warn(f"failed to re-connect using {script_file!r}")
+        return ExitCode.FAILURE
+
+
+def win32_reconnect(script_file: str, cmdline) -> ExitCode:
+    # the cx_Freeze wrapper changes the cwd to the directory containing the exe,
+    # so we have to re-construct the actual path to the exe:
+    # see issue #4026
+    # we have to extract the exe name then get an abs path for it:
+    # so that someone running xpra using:
+    # `Xpra-x86_64_6.0-r34669M\xpra_cmd" attach ...`
+    # will still end up with a valid absolute path
+    # when the exe wrapper changes directory to `Xpra-x86_64_6.0-r34669M`.
+    if not os.path.isabs(script_file):
+        script_file = os.path.join(os.getcwd(), os.path.basename(script_file))
+    if not os.path.exists(script_file):
+        # perhaps the extension is missing?
+        if not os.path.splitext(script_file)[1]:
+            for ext in os.environ.get("PATHEXT", ".COM;.EXE").split(os.path.pathsep):
+                tmp = script_file + ext
+                if os.path.exists(tmp):
+                    script_file = tmp
+    cmdline[0] = script_file
+    if is_debug_enabled("client"):
+        log = Logger("client")
+        log(f"Popen(args={cmdline}, executable={script_file}")
+    Popen(args=cmdline, executable=script_file)
+    # we can't keep re-spawning ourselves without freeing memory,
+    # so exit the current process with "no error":
+    return ExitCode.OK
 
 
 def connect_to_server(app, display_desc:Dict[str,Any], opts) -> None:
@@ -2014,7 +2037,6 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     if not args:
         raise RuntimeError("no remote server specified")
-    abs_script_file = os.path.abspath(script_file)
     display_name = args[0]
     params = parse_display_name(error_cb, opts, display_name, cmdline)
     hello_extra = {}
@@ -2163,12 +2185,7 @@ def run_remote_server(script_file:str, cmdline, error_cb, opts, args, mode:str, 
                         i += 1
                     continue
             attach_args.append(arg)
-        if WIN32 and not os.path.exists(abs_script_file) and not abs_script_file.lower().endswith(".exe"):
-            abs_script_file += ".exe"
-        try:
-            os.execv(abs_script_file, attach_args)
-        except FileNotFoundError:
-            warn(f"failed to re-connect using {abs_script_file!r}")
+        return int(exec_reconnect(script_file, attach_args))
     return r
 
 
