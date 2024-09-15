@@ -142,11 +142,11 @@ class CaptureStdErr:
             os.dup2(self.savedstderr, 2)
 
 
-def path_permission_info(filename: str, ftype=None) -> Sequence[str]:
+def path_permission_info(filename: str, ftype="") -> Sequence[str]:
     from xpra.os_util import POSIX
     if not POSIX:
         return ()
-    info = []
+    pinfo = []
     try:
         stat_info = os.stat(filename)
         if not ftype:
@@ -154,16 +154,16 @@ def path_permission_info(filename: str, ftype=None) -> Sequence[str]:
             if os.path.isdir(filename):
                 ftype = "directory"
         operm = oct(stat.S_IMODE(stat_info.st_mode))
-        info.append(f"permissions on {ftype} {filename}: {operm}")
+        pinfo.append(f"permissions on {ftype} {filename}: {operm}")
         # pylint: disable=import-outside-toplevel
         import pwd
         import grp
         user = pwd.getpwuid(stat_info.st_uid)[0]
         group = grp.getgrgid(stat_info.st_gid)[0]
-        info.append(f"ownership {user}:{group}")
+        pinfo.append(f"ownership {user}:{group}")
     except Exception as e:
-        info.append(f"failed to query path information for {filename!r}: {e}")
-    return tuple(info)
+        pinfo.append(f"failed to query path information for {filename!r}: {e}")
+    return tuple(pinfo)
 
 
 def disable_stdout_buffering():

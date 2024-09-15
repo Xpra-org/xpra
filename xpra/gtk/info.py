@@ -7,6 +7,7 @@
 import os
 import sys
 from typing import Any
+from collections.abc import Callable
 import cairo
 
 from xpra.common import noop
@@ -202,8 +203,8 @@ def get_monitor_info(monitor: Gdk.Monitor) -> dict[str, Any]:
     for x in ("manufacturer", "model"):
         info[x] = getattr(monitor, f"get_{x}", noop)() or ""
     for x in ("scale_factor", "width_mm", "height_mm", "refresh_rate"):
-        fn = getattr(monitor, f"get_{x}", noop)
-        if fn != noop:
+        if hasattr(monitor, f"get_{x}"):
+            fn: Callable = getattr(monitor, f"get_{x}")
             info[x] = int(fn())
     workarea = monitor.get_workarea()
     info["workarea"] = get_rectangle_info(workarea)
