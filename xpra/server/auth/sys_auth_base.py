@@ -84,9 +84,8 @@ class SysAuthenticatorBase:
         if client_username:
             # allow the client to specify the username to authenticate with:
             self.username = kwargs.get("remote", {}).get("username", self.username)
-        elif verify_username:
-            if remote_username != self.username:
-                raise ValueError("invalid username %r" % (std(remote_username)))
+        elif verify_username and remote_username != self.username:
+            raise ValueError(f"invalid username {remote_username!r}")
         self.salt = None
         self.digest = None
         self.salt_digest = None
