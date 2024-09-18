@@ -171,8 +171,11 @@ def _get_xsettings():
     return None
 
 
-def _get_xsettings_dict():
-    from xpra.x11.common import xsettings_to_dict
+def _get_xsettings_dict() -> dict[str, Any]:
+    try:
+        from xpra.x11.common import xsettings_to_dict
+    except ImportError:
+        return {}
     return xsettings_to_dict(_get_xsettings())
 
 
