@@ -1,4 +1,4 @@
-TCP_AUTH=sys
+TCP_AUTH=sys:client-username=yes,verify-username=no
 AUTH=peercred
 #DEBUG=auth,proxy
 DEBUG=
