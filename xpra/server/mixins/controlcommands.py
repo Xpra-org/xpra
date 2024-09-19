@@ -144,15 +144,15 @@ class ServerBaseControlCommands(StubServerMixin):
                 ArgsControlCommand("add-window-filter", "add a window filter", min_args=4, max_args=5),
         ):
             cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"))
-            self.control_commands[cmd.name] = cmd
+            self.add_control_command(cmd.name, cmd)
         # encoding bits:
         for name in (
                 "quality", "min-quality", "max-quality",
                 "speed", "min-speed", "max-speed",
         ):
             fn = getattr(self, "control_command_%s" % name.replace("-", "_"))
-            self.control_commands[name] = ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn,
-                                                             min_args=1, validation=[from0to100])
+            self.add_control_command(name, ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn,
+                                                              min_args=1, validation=[from0to100]))
 
     #########################################
     # Control Commands
@@ -462,7 +462,7 @@ class ServerBaseControlCommands(StubServerMixin):
         """ forwards the command to all clients """
         for source in tuple(self._server_sources.values()):
             # forwards to *the* client, if there is *one*
-            if client_command[0] not in source.control_commands:
+            if client_command[0] not in source.client_control_commands:
                 log.info(f"client command {client_command!r} not forwarded to client {source} (not supported)")
             else:
                 source.send_client_command(*client_command)

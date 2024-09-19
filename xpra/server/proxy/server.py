@@ -23,6 +23,7 @@ from xpra.os_util import (
 from xpra.util.io import umask_context
 from xpra.net.common import PacketType, is_request_allowed
 from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
+from xpra.server import features
 from xpra.server.core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
 from xpra.server.auth.sys_auth_base import SessionData
@@ -175,8 +176,10 @@ class ProxyServer(ServerCore):
 
     def init_control_commands(self) -> None:
         super().init_control_commands()
-        self.control_commands["stop"] = ArgsControlCommand("stop", "stops the proxy instance on the given display",
-                                                           self.handle_stop_command, min_args=1, max_args=1)
+        if features.control:
+            self.add_control_command("stop", ArgsControlCommand("stop",
+                                                                "stops the proxy instance on the given display",
+                                                                self.handle_stop_command, min_args=1, max_args=1))
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
         from xpra.gtk.signals import register_SIGUSR_signals, register_os_signals

@@ -107,7 +107,7 @@ class ClientConnection(StubSourceMixin):
         self.hello_sent = False
         self.share = False
         self.lock = False
-        self.control_commands: Sequence[str] = ()
+        self.client_control_commands: Sequence[str] = ()
         self.xdg_menu = True
         self.bandwidth_limit = self.server_bandwidth_limit
         self.soft_bandwidth_limit = self.bandwidth_limit
@@ -194,7 +194,7 @@ class ClientConnection(StubSourceMixin):
         # general features:
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
-        self.control_commands = c.strtupleget("control_commands")
+        self.client_control_commands = c.strtupleget("control_commands")
         self.xdg_menu = c.boolget("xdg-menu", False)
         bandwidth_limit = c.intget("bandwidth-limit", 0)
         server_bandwidth_limit = self.server_bandwidth_limit

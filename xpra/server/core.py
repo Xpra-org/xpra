@@ -27,6 +27,8 @@ from xpra.util.version import (
 from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
+from xpra.server import features
+from xpra.server.mixins.control import ControlHandler
 from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
@@ -79,7 +81,6 @@ ssllog = Logger("ssl")
 httplog = Logger("http")
 wslog = Logger("websocket")
 proxylog = Logger("proxy")
-commandlog = Logger("command")
 authlog = Logger("auth")
 cryptolog = Logger("crypto")
 timeoutlog = Logger("timeout")
@@ -151,7 +152,7 @@ def force_close_connection(conn) -> None:
 
 
 # noinspection PyMethodMayBeStatic
-class ServerCore:
+class ServerCore(ControlHandler):
     """
         This is the simplest base class for servers.
         It only handles the connection layer:
@@ -160,6 +161,7 @@ class ServerCore:
 
     def __init__(self):
         log("ServerCore.__init__()")
+        ControlHandler.__init__(self)
         self.start_time = time()
         self.uuid = ""
         self.auth_classes: dict[str, Sequence[AuthDef]] = {}
@@ -216,7 +218,6 @@ class ServerCore:
             self.session_files.append("ssh/agent.default")
             self.session_files.append("ssh")
         self.splash_process = None
-        self.control_commands: dict[str, Any] = {}
 
         self.session_name = ""
 
@@ -306,12 +307,15 @@ class ServerCore:
         self.start_listen_sockets()
 
     def setup(self) -> None:
+        self.init_control_commands()
         self.init_packet_handlers()
         self.init_aliases()
         self.init_dbus_server()
-        self.init_control_commands()
         # for things that can take longer:
         self.init_thread = start_thread(target=self.threaded_init, name="server-init-thread")
+
+    def init_control_commands(self):
+        self.add_default_control_commands(features.control)
 
     ######################################################################
     # run / stop:
@@ -765,68 +769,6 @@ class ServerCore:
         if not auth_strs:
             return ()
         return tuple(get_auth_module(auth_str) for auth_str in auth_strs)
-
-    ######################################################################
-    # control commands:
-    def init_control_commands(self) -> None:
-        try:
-            from xpra.server.control_command import HelloCommand, HelpCommand, DebugControl, DisabledCommand
-        except ImportError:
-            return
-        self.control_commands = {
-            "hello": HelloCommand(),
-        }
-        from xpra.server import features
-        if features.control:
-            self.control_commands["debug"] = DebugControl()
-            self.control_commands["help"] = HelpCommand(self.control_commands)
-        else:
-            self.control_commands["*"] = DisabledCommand()
-
-    def handle_command_request(self, proto, *args) -> None:
-        """ client sent a command request as part of the hello packet """
-        assert args, "no arguments supplied"
-        code, response = self.process_control_command(proto, *args)
-        hello = {"command_response": (code, response)}
-        proto.send_now(("hello", hello))
-
-    def process_control_command(self, protocol, *args):
-        try:
-            options = protocol._conn.options
-            control = options.get("control", "yes")
-        except AttributeError:
-            control = "no"
-        if not str_to_bool(control):
-            err = "control commands are not enabled on this connection"
-            log.warn(f"Warning: {err}")
-            return 6, err
-        from xpra.server.control_command import ControlError
-        if not args:
-            err = "control command must have arguments"
-            log.warn(f"Warning: {err}")
-            return 6, err
-        name = args[0]
-        try:
-            command = self.control_commands.get(name) or self.control_commands.get("*")
-            commandlog(f"process_control_command control_commands[{name}]={command}")
-            if not command:
-                commandlog.warn(f"Warning: invalid command: {name!r}")
-                commandlog.warn(f" must be one of: {csv(self.control_commands)}")
-                return 6, "invalid command"
-            commandlog(f"process_control_command calling {command.run}({args[1:]})")
-            v = command.run(*args[1:])
-            return 0, v
-        except ControlError as e:
-            commandlog.error(f"error {e.code} processing control command {name}")
-            msgs = [f" {e}"]
-            if e.help:
-                msgs.append(f" {name!r}: {e.help}")
-            for msg in msgs:
-                commandlog.error(msg)
-            return e.code, "\n".join(msgs)
-        except Exception as e:
-            commandlog.error(f"error processing control command {name!r}", exc_info=True)
-            return 127, f"error processing control command: {e}"
 
     def print_run_info(self) -> None:
         add_work_item(self.do_print_run_info)

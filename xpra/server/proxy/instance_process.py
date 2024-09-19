@@ -15,6 +15,8 @@ from multiprocessing import Process
 from xpra.server.proxy.instance_base import ProxyInstance
 from xpra.server.proxy.queue_scheduler import QueueScheduler
 from xpra.server.util import setuidgid
+from xpra.server.mixins.control import ControlHandler
+from xpra.server import features
 from xpra.scripts.server import deadly_signal
 from xpra.net.protocol.factory import get_client_protocol_class, get_server_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST
@@ -54,7 +56,7 @@ def set_blocking(conn) -> None:
         log("cannot set %s to blocking mode", conn)
 
 
-class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
+class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Process):
 
     def __init__(self, uid: int, gid: int, env_options: dict[str, str], session_options: dict[str, str],
                  socket_dir: str,
@@ -65,6 +67,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                                video_encoder_modules, pings,
                                disp_desc, cipher, cipher_mode, encryption_key, caps)
         QueueScheduler.__init__(self)
+        ControlHandler.__init__(self)
         Process.__init__(self, name=str(client_conn), daemon=False)
         self.client_conn = client_conn
         self.server_conn = server_conn
@@ -126,6 +129,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     def run(self) -> ExitValue:
         register_SIGUSR_signals(self.idle_add)
+        ControlHandler.add_default_control_commands(self, features.control)
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
         self.client_protocol = client_protocol_class(self.client_conn,
@@ -343,6 +347,10 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             else:
                 log.warn("Warning: `stop` requests are not allowed for this connection")
             return True
+        if request == "command":
+            command_req = tuple(str(x) for x in caps.tupleget("command_request"))
+            self.idle_add(self.handle_command_request, proto, *command_req)
+            return True
         if request == "version":
             version = XPRA_VERSION
             if caps.boolget("full-version-request") and FULL_INFO:
@@ -357,6 +365,11 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "id info sent")
             return True
+        return False
+
+    def handle_control(self, command: Sequence[str]) -> bool:
+        log.info(f"handle_control({command})")
+
         return False
 
     def get_session_id_info(self) -> dict[str, Any]:

@@ -8,6 +8,7 @@ import os.path
 import sys
 from time import monotonic
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import nonl, csv, Ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
@@ -543,7 +544,7 @@ class ControlXpraClient(CommandConnectClient):
     """ Allows us to send commands to a server.
     """
 
-    def set_command_args(self, command) -> None:
+    def set_command_args(self, command: Sequence[str]) -> None:
         self.command = command
 
     def timeout(self, *_args) -> None:
@@ -575,7 +576,7 @@ class PrintClient(SendCommandConnectClient):
     Allows us to send a file to the server for printing.
     """
 
-    def set_command_args(self, command) -> None:
+    def set_command_args(self, command: Sequence[str]) -> None:
         log("set_command_args(%s)", command)
         self.filename = command[0]
         # print command arguments:

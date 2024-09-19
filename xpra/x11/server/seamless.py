@@ -664,12 +664,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         from xpra.server.control_command import ArgsControlCommand
         cmd = ArgsControlCommand("show-all-windows", "make all the windows visible", validation=[])
 
-        def control_cb():
+        def control_cb() -> str:
             self.show_all_windows()
             return "%i windows shown" % len(self._id_to_window)
 
         cmd.do_run = control_cb
-        self.control_commands[cmd.name] = cmd
+        self.add_control_command(cmd.name, cmd)
 
     def show_all_windows(self) -> None:
         for w in self._id_to_window.values():
