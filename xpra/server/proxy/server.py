@@ -48,6 +48,7 @@ STOP_PROXY_SOCKET_TYPES = os.environ.get("XPRA_STOP_PROXY_SOCKET_TYPES", "socket
 STOP_PROXY_AUTH_SOCKET_TYPES = os.environ.get("XPRA_STOP_PROXY_AUTH_SOCKET_TYPES", "socket").split(",")
 # something (a thread lock?) doesn't allow us to use multiprocessing on MS Windows:
 PROXY_INSTANCE_THREADED = envbool("XPRA_PROXY_INSTANCE_THREADED", WIN32)
+PROXY_SSL_THREADED = envbool("XPRA_PROXY_SSL_THREADED", False)
 PROXY_CLEANUP_GRACE_PERIOD = envfloat("XPRA_PROXY_CLEANUP_GRACE_PERIOD", 0.5)
 
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_PROXY_MAX_CONCURRENT_CONNECTIONS", 200)
@@ -511,7 +512,7 @@ class ProxyServer(ServerCore):
                 encryption_key = self.get_encryption_key(client_proto.authenticators, client_proto.keyfile)
 
         use_thread = PROXY_INSTANCE_THREADED
-        if not use_thread:
+        if not use_thread and PROXY_SSL_THREADED:
             client_socktype = get_socktype(client_proto)
             server_socktype = disp_desc["type"]
             if client_socktype in ("ssl", "wss", "ssh"):
