@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import signal
 from typing import Any
 from queue import SimpleQueue
@@ -21,7 +22,7 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE, create_unix_domain_socket, handle_socket_error
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.net.common import PacketType
-from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid
+from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, get_machine_id
 from xpra.util.env import osexpand
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.scripts.config import str_to_bool
@@ -350,7 +351,23 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "version sent")
             return True
+        if request == "id":
+            proto._log_stats = False
+            proto.send_now(("hello", self.get_session_id_info()))
+            self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+                             "id info sent")
+            return True
         return False
+
+    def get_session_id_info(self) -> dict[str, Any]:
+        # minimal information for identifying the session
+        return {
+            "session-type": "proxy-instance",
+            "uuid": self.uuid,
+            "platform": sys.platform,
+            "pid": os.getpid(),
+            "machine-id": get_machine_id(),
+        }
 
     ################################################################################
 
