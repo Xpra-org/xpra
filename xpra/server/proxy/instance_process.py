@@ -21,7 +21,7 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE, create_unix_domain_socket, handle_socket_error
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.net.common import PacketType
-from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, gi_import
+from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.scripts.config import str_to_bool
@@ -34,8 +34,6 @@ from xpra.util.version import full_version_str
 from xpra.common import ConnectionMessage, SocketState, noerr, FULL_INFO
 from xpra.platform.dotxpra import DotXpra
 from xpra.log import Logger
-
-GLib = gi_import("GLib")
 
 log = Logger("proxy")
 enclog = Logger("encoding")
@@ -126,7 +124,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     ################################################################################
 
     def run(self) -> ExitValue:
-        register_SIGUSR_signals(GLib.idle_add)
+        register_SIGUSR_signals(self.idle_add)
         client_protocol_class = get_client_protocol_class(self.client_conn.socktype)
         server_protocol_class = get_server_protocol_class(self.server_conn.socktype)
         self.client_protocol = client_protocol_class(self.client_conn,
@@ -275,12 +273,12 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         sc = SocketConnection(sock, sockname, address, target, "socket")
         log.info("New proxy instance control connection received:")
         log.info(" '%s'", sc)
-        protocol = SocketProtocol(sc, self.process_control_packet)
+        protocol = SocketProtocol(sc, self.process_control_packet, scheduler=self)
         protocol.large_packets.append("info-response")
         self.potential_protocols.append(protocol)
         protocol.enable_default_encoder()
         protocol.start()
-        GLib.timeout_add(SOCKET_TIMEOUT * 1000, self.verify_connection_accepted, protocol)
+        self.timeout_add(SOCKET_TIMEOUT * 1000, self.verify_connection_accepted, protocol)
 
     def verify_connection_accepted(self, protocol) -> None:
         if not protocol.is_closed() and protocol in self.potential_protocols:
@@ -335,7 +333,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             else:
                 info = {"error": "`info` requests are not enabled for this connection"}
             proto.send_now(("hello", info))
-            GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+            self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "info sent")
             return True
         if request == "stop":
@@ -349,7 +347,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             if caps.boolget("full-version-request") and FULL_INFO:
                 version = full_version_str()
             proto.send_now(("hello", {"version": version}))
-            GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
+            self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "version sent")
             return True
         return False
@@ -361,4 +359,3 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.message_queue.put_nowait(None)
         super().stop(skip_proto, *reasons)
         self.stop_control_socket()
-        self.loop.quit()
