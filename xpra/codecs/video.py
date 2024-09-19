@@ -202,6 +202,9 @@ class VideoHelper:
         self._init_from = []
         self._lock = Lock()
 
+    def is_initialized(self) -> bool:
+        return self._initialized
+
     def set_modules(self,
                     video_encoders: Sequence[str] = (),
                     csc_modules: Sequence[str] = (),
