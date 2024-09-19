@@ -2010,7 +2010,7 @@ class ServerCore:
                 opts.update(sock_options)
                 opts["connection"] = conn
 
-                def parse_socket_dirs(v):
+                def parse_socket_dirs(v) -> Sequence[str]:
                     if isinstance(v, (tuple, list)):
                         return v
                     # FIXME: this can never actually match ","
@@ -2146,7 +2146,7 @@ class ServerCore:
                     countinfo += f" ({index + 1} of {len(proto.authenticators)})"
                 authlog.info(f"Authentication required by {authenticator!r} authenticator module{countinfo}")
                 authlog.info(
-                    f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")  # noqa: E501
+                    f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")
                 if actual_digest not in digest_modes:
                     fail(f"cannot proceed without {actual_digest!r} digest support")
                     return
