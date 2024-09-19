@@ -445,7 +445,7 @@ class ProxyServer(ServerCore):
                         return
             else:
                 if len(displays) != 1:
-                    nosession("please specify a display, more than one is available: " + csv(displays))
+                    nosession("please specify a display, more than one is available: " + csv(sorted(displays)))
                     return
                 display = displays[0]
 
