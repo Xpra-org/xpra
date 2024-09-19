@@ -883,20 +883,25 @@ fi
 
 
 %changelog
-* Sat Sep 14 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
+* Sat Sep 19 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
 - Platforms, build and packaging:
    don't bundle any Qt components
+   automatic re-connect paths errors on MS Windows
 - Major:
    ssl failures with default certificates
    verify ssl certificates can be accessed - not just the parent directory
    X11 display state detection
+   client can run without `xpra-x11` package installed
    failure to add new virtual monitors
    expose all clipboard targets
    authentication aborted due to encryption not detected
    server not honouring `keyboard-sync`
    launcher failures with "Gtk already loaded" error
-   proxy server packet failures
-   proxy server fails to start in process mode
+- Proxy server:
+   packet failures
+   fails to start in process mode
+   can authenticate as any user
+   should respond to `id` requests
 - Encodings:
    nvidia module version parsing from `/proc`
    nvenc qp values out of range
@@ -908,8 +913,8 @@ fi
    request mode failures
    honour the initial resolution, even if resizing is disabled
    don't log `id` requests
-   proxy servers should respond to `id` requests
    quic close errors with aioquic 1.2
+   validate http hostname without port for ssl redirection
 - Cosmetic:
    support the same resolution aliases as newer versions
    handle early errors more gracefully

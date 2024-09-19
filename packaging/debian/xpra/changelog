@@ -1,17 +1,22 @@
 xpra (6.1.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     don't bundle any Qt components
+    automatic re-connect paths errors on MS Windows
   * Major:
     ssl failures with default certificates
     verify ssl certificates can be accessed - not just the parent directory
     X11 display state detection
+    client can run without `xpra-x11` package installed
     failure to add new virtual monitors
     expose all clipboard targets
     authentication aborted due to encryption not detected
     server not honouring `keyboard-sync`
     launcher failures with "Gtk already loaded" error
-    proxy server packet failures
-    proxy server fails to start in process mode
+  * Proxy server:
+    packet failures
+    fails to start in process mode
+    can authenticate as any user
+    servers should respond to `id` requests
   * Encodings:
     nvidia module version parsing from `/proc`
     nvenc qp values out of range
@@ -24,8 +29,8 @@ xpra (6.1.3-1) UNRELEASED; urgency=low
     request mode failures
     honour the initial resolution, even if resizing is disabled
     don't log `id` requests
-    proxy servers should respond to `id` requests
     quic close errors with aioquic 1.2
+    validate http hostname without port for ssl redirection
   * Cosmetic:
     support the same resolution aliases as newer versions
     handle early errors more gracefully
@@ -37,8 +42,7 @@ xpra (6.1.3-1) UNRELEASED; urgency=low
     virtual encodings misleading error message
     audio data can be inlined
 
-
- -- Antoine Martin <antoine@xpra.org>  Mon, 09 Sep 2024 19:21:40 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 19 Sep 2024 15:20:16 +0700
 
 xpra (6.1.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
