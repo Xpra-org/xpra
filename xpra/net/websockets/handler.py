@@ -117,9 +117,14 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             log.warn("Warning: cannot redirect to https without a 'Host' header")
             self.send_error(400, "Client did not send a 'Host' header")
             return
-        if not is_valid_hostname(server_address):
+        parts = server_address.split(":")
+        if len(parts) == 2:
+            host = parts[0]
+        else:
+            host = server_address
+        if not is_valid_hostname(host):
             log.warn("Warning: cannot redirect to https using an invalid hostname")
-            log.warn(f" {server_address!r}")
+            log.warn(f" {host!r}")
             self.send_error(400, "Client specified an invalid 'Host' header")
             return
         redirect = "301 Moved Permanently" if HTTPS_REDIRECT_PERMANENT else "307 Temporary Redirect"
