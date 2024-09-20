@@ -231,7 +231,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def log_error(self, fmt, *args) -> None:  # pylint: disable=arguments-differ
         # don't log 404s at error level:
-        if len(args) == 2 and args[0] == 404:
+        if len(args) == 1 and isinstance(args[0], TimeoutError):
+            log(fmt, *args)
+        elif len(args) == 2 and args[0] == 404:
             log(fmt, *args)
         else:
             log.error(fmt, *args)
