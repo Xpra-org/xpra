@@ -26,7 +26,7 @@ class OSXTray(TrayBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        from xpra.platform.darwin.gui import get_OSXApplication
+        from xpra.platform.darwin import get_OSXApplication
         self.macapp = get_OSXApplication()
         assert self.macapp, "cannot use OSX Tray without the native gtkosx_application bindings"
         self.last_attention_request_id = -1
