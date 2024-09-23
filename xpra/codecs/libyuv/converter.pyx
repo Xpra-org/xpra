@@ -32,6 +32,14 @@ cdef extern from "Python.h":
     object PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags)
     int PyBUF_WRITE
 
+cdef extern from "libyuv/convert_argb.h" namespace "libyuv":
+    int YUY2ToARGB(const uint8_t* src_yuy2,
+               int src_stride_yuy2,
+               uint8_t* dst_argb,
+               int dst_stride_argb,
+               int width,
+               int height) nogil
+
 cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
     #int BGRAToI420(const uint8_t* src_frame, ...
     #this is actually BGRX for little endian systems:
@@ -230,6 +238,7 @@ COLORSPACES: Dict[str, Sequence[str]] = {
     "NV12" : ("RGB", "BGRX", "RGBX"),
     "YUV420P" : ("RGB", "XBGR", "RGBX", "BGRX"),
     "YUV444P" : ("BGRX", "RGBX"),
+    "YUYV" : ("BGRX", ),
 }
 
 
@@ -255,7 +264,7 @@ def get_spec(in_colorspace: str, out_colorspace: str) -> CSCSpec:
     return CSCSpec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
                     codec_class=Converter, codec_type=get_type(),
                     quality=100, speed=100,
-                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace!="NV12",
+                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace not in ("NV12", "YUYV"),
                     max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
 
 
@@ -392,26 +401,30 @@ cdef class Converter:
         self.time = 0
         self.frames = 0
         self.output_buffer = NULL
+        self.yuv_scaling = False
+        self.rgb_scaling = False
         cdef uint8_t scaling = int(src_width!=dst_width or src_height!=dst_height)
         if dst_format=="YUV420P" or dst_format=="YUV444P":
             self.planes = 3
             self.yuv_scaling = scaling
-            self.rgb_scaling = False
             if scaling:
                 self.init_yuv_scaled_buffer(dst_format, dst_width, dst_height)
             self.init_yuv_output()
         elif dst_format=="NV12":
             self.planes = 2
-            self.yuv_scaling = False
             self.rgb_scaling = scaling
             self.init_yuv_output()
         elif dst_format in ("RGB", "BGRX", "RGBX", "XBGR"):
             self.planes = 1
             self.yuv_scaling = scaling
-            self.rgb_scaling = False
             if scaling:
                 self.init_yuv_scaled_buffer(src_format, dst_width, dst_height)
             self.out_buffer_size = dst_width*len(dst_format)*dst_height
+        elif src_format == "YUYV":
+            assert dst_format in ("BGRX", )
+            assert not scaling
+            self.planes = 1
+            self.out_buffer_size = dst_width * 4 * dst_height
         else:
             raise ValueError(f"invalid destination format: {dst_format!r}")
         log(f"{src_format} -> {dst_format} planes={self.planes}, output buffer-size={self.out_buffer_size}")
@@ -549,8 +562,10 @@ cdef class Converter:
             return self.convert_bgrx_image(image)
         elif self.src_format=="NV12":
             return self.convert_nv12_image(image)
-        elif self.src_format=="YUV420P" or self.src_format=="YUV444P":
+        elif self.src_format in ("YUV420P", "YUV444P"):
             return self.convert_yuv_image(image)
+        elif self.src_format == "YUYV":
+            return self.convert_yuyv_image(image)
         else:
             raise RuntimeError(f"invalid source format {self.src_format}")
 
@@ -562,9 +577,9 @@ cdef class Converter:
         if iplanes!=2:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.dst_format not in ("RGB", "BGRX", "RGBX"):
-            raise ValueError(f"invalid dst format {self.dst_format}")
+            raise ValueError(f"invalid dst format {self.dst_format!r}")
         if self.rgb_scaling:
-            raise ValueError(f"cannot scale {self.src_format}")
+            raise ValueError(f"cannot scale {self.src_format!r}")
         pixels = image.get_pixels()
         strides = image.get_rowstride()
         cdef int y_stride = strides[0]
@@ -670,6 +685,52 @@ cdef class Converter:
         out_image.cython_buffer = <uintptr_t> scaled_buffer
         return out_image
 
+    def convert_yuyv_image(self, image: ImageWrapper) -> ImageWrapper:
+        assert not self.yuv_scaling
+        assert image.get_pixel_format() == "YUYV"
+        cdef double start = monotonic()
+        cdef iplanes = image.get_planes()
+        assert iplanes == 0, f"expected packed pixels, got {iplanes}"
+        if self.dst_format != "BGRX":
+            raise ValueError(f"invalid dst format {self.dst_format!r}")
+
+        cdef int width = image.get_width()
+        cdef int height = image.get_height()
+        if width < self.src_width:
+            raise ValueError(f"source image width {width} is smaller than context {self.src_width}")
+        if height < self.src_height:
+            raise ValueError(f"source image height {height} is smaller than context {self.src_height}")
+        assert self.dst_width >= self.src_width and self.dst_height >= self.src_height
+        pixels = image.get_pixels()
+        cdef int stride = image.get_rowstride()
+        cdef int dst_stride = self.dst_width * 4
+
+        rgb_buffer = getbuf(self.out_buffer_size, 0)
+        if not rgb_buffer:
+            raise RuntimeError(f"failed to allocate {self.out_buffer_size} bytes for output buffer")
+
+        cdef uintptr_t yuyv
+        cdef uint8_t *rgb
+        cdef int r = 0
+        with buffer_context(pixels) as yuyv_buf:
+            yuyv = <uintptr_t> int(yuyv_buf)
+            rgb = <uint8_t*> rgb_buffer.get_mem()
+            with nogil:
+                r = YUY2ToARGB(<const uint8_t*> yuyv,
+                               stride,
+                               rgb,
+                               dst_stride,
+                               width, height)
+        if r!=0:
+            raise RuntimeError(f"libyuv YUY2ToARGB failed and returned {r}")
+        image.free()
+        cdef double elapsed = monotonic()-start
+        log("libyuv.YUY2ToARGB took %.1fms", 1000.0*elapsed)
+        self.time += elapsed
+        img = ImageWrapper(0, 0, self.dst_width, self.dst_height,
+                           rgb_buffer, self.dst_format, 24, dst_stride, 4, ImageWrapper.PACKED)
+        return img
+
     def convert_yuv_image(self, image: ImageWrapper) -> ImageWrapper:
         if self.yuv_scaling:
             image = self.scale_yuv_image(image)
@@ -681,9 +742,9 @@ cdef class Converter:
         if iplanes!=3:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.src_format not in ("YUV420P", "YUV444P"):
-            raise ValueError(f"invalid src format {self.src_format}")
+            raise ValueError(f"invalid src format {self.src_format!r}")
         if self.dst_format not in ("RGB", "XBGR", "RGBX", "BGRX"):
-            raise ValueError(f"invalid dst format {self.dst_format}")
+            raise ValueError(f"invalid dst format {self.dst_format!r}")
         if self.rgb_scaling:
             raise ValueError(f"cannot scale {self.src_format}")
         pixels = image.get_pixels()

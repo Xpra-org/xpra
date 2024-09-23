@@ -304,7 +304,7 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values: Iterable[in
             planes = tuple(makebuf(sizes[i]) for i in range(nplanes))
         return makeimage(planes, rowstride=strides, planes=nplanes)
         # l = len(y)+len(u)+len(v)
-    if pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48"):
+    if pixel_format in ("RGB", "BGR", "RGBX", "BGRX", "XRGB", "BGRA", "RGBA", "r210", "BGR48", "YUYV"):
         Bpp = len(pixel_format)
         if pixel_format == "BGR48":
             Bpp = 6
@@ -313,6 +313,8 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values: Iterable[in
             rgb_data = h2b(plane_values) * w * h
         else:
             rgb_data = bytes(makebuf(stride*h))
+        if pixel_format == "YUYV":
+            stride = w * 2
         return makeimage(rgb_data, bytesperpixel=Bpp, rowstride=stride)
     raise ValueError(f"don't know how to create a {pixel_format} image")
 
