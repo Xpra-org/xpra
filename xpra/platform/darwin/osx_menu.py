@@ -20,7 +20,7 @@ from xpra.client.gtk3.gtk_tray_menu_base import (
     SHOW_QR,
     )
 from xpra.platform.paths import get_icon
-from xpra.platform.darwin.gui import get_OSXApplication
+from xpra.platform.darwin import get_OSXApplication
 from xpra.client.gui import mixin_features
 from xpra.log import Logger
 
