@@ -159,10 +159,14 @@ def default_get_icc_info() -> dict[str, Any]:
 
 def get_pillow_icc_info() -> dict[str, Any]:
     screenlog = Logger("screen")
-    info = {}
+    info: dict[str, Any] = {}
     try:
         from PIL import ImageCms
         from PIL.ImageCms import get_display_profile
+    except ImportError as e:
+        screenlog.warn(f"Warning: unable to query color profile via Pillow: {e}")
+        return info
+    try:
         INTENT_STR: dict[Any, str] = {}
         for x in ("PERCEPTUAL", "RELATIVE_COLORIMETRIC", "SATURATION", "ABSOLUTE_COLORIMETRIC"):
             intent = getattr(ImageCms, "Intent", None)
