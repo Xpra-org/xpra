@@ -2,6 +2,8 @@ xpra (6.1.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
     don't bundle any Qt components
     automatic re-connect paths errors on MS Windows
+    remove bookworm riscv64 repository link
+    import macos gui module only when needed
   * Major:
     ssl failures with default certificates
     verify ssl certificates can be accessed - not just the parent directory
@@ -41,8 +43,9 @@ xpra (6.1.3-1) UNRELEASED; urgency=low
     strict type hint for audio data
     virtual encodings misleading error message
     audio data can be inlined
+    http timeout errors
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 19 Sep 2024 15:20:16 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 24 Sep 2024 19:50:29 +0700
 
 xpra (6.1.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

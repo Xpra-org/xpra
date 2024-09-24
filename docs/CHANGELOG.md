@@ -1,10 +1,13 @@
 # Changelog
 
-## [6.1.3] 2024-09-19
+## [6.1.3] 2024-09-24
 * Platforms, build and packaging:
     * [don't bundle any Qt components](https://github.com/Xpra-org/xpra/commit/6af5e72a34a6d0e6947a343255b3f885547b1391)
     * [automatic re-connect paths errors on MS Windows](https://github.com/Xpra-org/xpra/commit/ef2edd088d4550b51a73432eac7d50eb729b92bb)
+    * [remove bookworm riscv64 repository link](https://github.com/Xpra-org/xpra/commit/a1e6144230da2a58df3df0f09048d2d74fbb9b05)
+    * [import macos gui module only when needed](https://github.com/Xpra-org/xpra/commit/f948c4965f9f35857725f3997559139b8154f978)
 * Major:
+    * [focus lost](https://github.com/Xpra-org/xpra/commit/ffe296c1005b5aa17113c2036811b4679de4d3ae)
     * [ssl failures with default certificates](https://github.com/Xpra-org/xpra/commit/7c352bca42200ee26d5e04939148d93cfc1d6f9e)
     * [verify ssl certificates can be accessed - not just the parent directory](https://github.com/Xpra-org/xpra/commit/94736d0aec9173e1106c09f331fb6e8481aca21e)
     * [X11 display state detection](https://github.com/Xpra-org/xpra/commit/892e6ef021558c0c9145d73d36e323a10b8566f7)
@@ -43,6 +46,7 @@
     * [strict type hint for audio data](https://github.com/Xpra-org/xpra/commit/faf56458fef6c25aff9362edfd2caeeb4c25d5b3)
     * [virtual encodings misleading error message](https://github.com/Xpra-org/xpra/commit/90a8cff5bb084335018ebaf6bd94522953318d8f)
     * [audio data can be inlined](https://github.com/Xpra-org/xpra/commit/dce4f3460cd5845fae9d5ebd2907892b03be1a68)
+    * [http timeout errors](https://github.com/Xpra-org/xpra/commit/1609bcc7b989c9ffd957b9c0a2da570282a4c3a4)
 
 ## [6.1.2] 2024-08-25
 * Platforms, build and packaging:

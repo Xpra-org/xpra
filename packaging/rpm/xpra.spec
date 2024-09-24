@@ -883,10 +883,12 @@ fi
 
 
 %changelog
-* Sat Sep 19 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
+* Tue Sep 24 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
 - Platforms, build and packaging:
    don't bundle any Qt components
    automatic re-connect paths errors on MS Windows
+   remove bookworm riscv64 repository link
+   import macos gui module only when needed
 - Major:
    ssl failures with default certificates
    verify ssl certificates can be accessed - not just the parent directory
@@ -925,6 +927,7 @@ fi
    strict type hint for audio data
    virtual encodings misleading error message
    audio data can be inlined
+   http timeout errors
 
 * Sun Aug 25 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
 - Platforms, build and packaging:
