@@ -145,7 +145,7 @@ def get_compressor(name) -> Callable:
 class Compressed:
     __slots__ = ("datatype", "data", "can_inline")
 
-    def __init__(self, datatype: str, data: SizedBuffer | Sequence, can_inline=False):
+    def __init__(self, datatype: str, data: SizedBuffer | Sequence, can_inline=True):
         if not data and not isinstance(data, Sequence):
             raise ValueError(f"missing compressed data, got {data!r} ({type(data)})")
         self.datatype = datatype
@@ -201,7 +201,7 @@ class Compressible(LargeStructure):
 def compressed_wrapper(datatype, data, level=5, can_inline=True, **kwargs) -> Compressed:
     size = len(data)
 
-    def no():
+    def no() -> Compressed:
         return Compressed(f"raw {datatype}", data, can_inline=can_inline)
 
     if size <= MIN_COMPRESS_SIZE:

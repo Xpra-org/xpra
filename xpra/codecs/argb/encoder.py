@@ -108,7 +108,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
         # can't pass a raw buffer to rencodeplus,
         # and even if we could, the image containing those pixels may be freed by the time we get to the encoder
         algo = "not"
-        cwrapper = Compressed(coding, rgb_transform.pixels_to_bytes(pixels), True)
+        cwrapper = Compressed(coding, rgb_transform.pixels_to_bytes(pixels))
     if pixel_format.find("A") >= 0 or pixel_format.find("X") >= 0:
         bpp = 32
     else:

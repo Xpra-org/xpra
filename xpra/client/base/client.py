@@ -520,7 +520,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 # the compressed version is smaller, use it:
                 return cw
         # we can't compress, so at least avoid warnings in the protocol layer:
-        return compression.Compressed(f"raw {datatype}", data, can_inline=True)
+        return compression.Compressed(f"raw {datatype}", data)
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         packet = (packet_type, *parts)

@@ -370,7 +370,7 @@ class ProxyInstance:
         self.queue_server_packet(packet)
 
     def compressed_marker(self, packet: PacketType, index: int, description: str) -> PacketType:
-        return replace_packet_item(packet, index, Compressed(description, packet[index], can_inline=False))
+        return replace_packet_item(packet, index, Compressed(description, packet[index]))
 
     def queue_server_packet(self, packet: PacketType) -> None:
         log("queueing server packet: %s (queue size=%s)", packet[0], self.server_packets.qsize())

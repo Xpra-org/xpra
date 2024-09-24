@@ -359,8 +359,8 @@ class AudioMixin(StubSourceMixin):
     def send_audio_data(self, audio_source, data: bytes, metadata: dict,
                         packet_metadata: Sequence[SizedBuffer]) -> None:
         # tag the packet metadata as already compressed:
-        pmetadata = Compressed("packet metadata", packet_metadata, can_inline=True)
-        packet_data = [audio_source.codec, Compressed(audio_source.codec, data, True), metadata, pmetadata]
+        pmetadata = Compressed("packet metadata", packet_metadata)
+        packet_data = [audio_source.codec, Compressed(audio_source.codec, data), metadata, pmetadata]
         sequence = audio_source.sequence
         if sequence >= 0:
             metadata["sequence"] = sequence

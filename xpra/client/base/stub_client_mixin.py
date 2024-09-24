@@ -99,7 +99,7 @@ class StubClientMixin:
         subclasses should override this method.
         """
         assert level >= 0
-        return Compressed("raw %s" % datatype, data, can_inline=True)
+        return Compressed("raw %s" % datatype, data)
 
     def init_authenticated_packet_handlers(self) -> None:
         """

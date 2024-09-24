@@ -546,8 +546,8 @@ class AudioClient(StubClientMixin):
                         metadata: dict, packet_metadata: Sequence[SizedBuffer]) -> None:
         codec = audio_source.codec
         # tag the packet metadata as already compressed:
-        pmetadata = Compressed("packet metadata", packet_metadata, can_inline=True)
-        packet_data = [codec, Compressed(codec, data, True), metadata, pmetadata]
+        pmetadata = Compressed("packet metadata", packet_metadata)
+        packet_data = [codec, Compressed(codec, data), metadata, pmetadata]
         self.send("sound-data", *packet_data)
 
     def send_audio_sync(self, v: int) -> None:

@@ -287,7 +287,7 @@ class WindowsMixin(StubSourceMixin):
                 img.save(buf, "PNG")
                 pngdata = buf.getvalue()
                 buf.close()
-                cpixels = Compressed("png cursor", pngdata, can_inline=True)
+                cpixels = Compressed("png cursor", pngdata)
                 encoding = "png"
                 if SAVE_CURSORS:
                     filename = f"raw-cursor-{serial:x}.png"
