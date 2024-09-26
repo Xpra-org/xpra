@@ -11,7 +11,7 @@ EnvironmentFile=-/etc/sysconfig/xpra
 ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
     --tcp-auth=${TCP_AUTH} \
     --bind=none --auth=${AUTH} --socket-permissions=666 \
-    --bind-quic=*:10000 --quic-auth={QUIC_AUTH} \
+    --bind-quic=*:10000 --quic-auth=${QUIC_AUTH} \
     --ssl-cert=/etc/xpra/ssl-cert.pem --ssl-key=/etc/xpra/key.pem --ssl=on \
     --log-dir=/var/log --pidfile=/run/xpra/proxy/server.pid --debug=${DEBUG}
 #rely on SIGKILL which returns 128+15=143
