@@ -81,6 +81,7 @@ ICON_OVERLAY: int = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
 SAVE_WINDOW_ICONS: bool = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 SAVE_CURSORS: bool = envbool("XPRA_SAVE_CURSORS", False)
+POLL_POINTER = envint("XPRA_POLL_POINTER", 0)
 
 DRAW_LOG_FMT = "process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i" \
                " using %6s encoding with options=%s"
@@ -237,6 +238,9 @@ class WindowClient(StubClientMixin):
         self._suspended_at: float = 0
         self._button_state = {}
 
+        self.poll_pointer_timer = 0
+        self.poll_pointer_position = -1, -1
+
     def init(self, opts) -> None:
         if opts.system_tray:
             try:
@@ -340,6 +344,7 @@ class WindowClient(StubClientMixin):
         # (cleaner and needed when we run embedded in the client launcher)
         self.destroy_all_windows()
         self.cancel_lost_focus_timer()
+        self.cancel_poll_pointer_timer()
         if dq:
             dq.put(None)
         dt = self._draw_thread
@@ -440,6 +445,11 @@ class WindowClient(StubClientMixin):
         # input devices:
         self.server_input_devices = c.strget("input-devices")
         self.server_precise_wheel = c.boolget("wheel.precise", False)
+        if POLL_POINTER:
+            if is_Wayland():
+                log.warn("Warning: pointer polling is unlikely to work under Wayland")
+                log.warn(" and may cause problems")
+            self.poll_pointer_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
         return True
 
     ######################################################################
@@ -561,6 +571,22 @@ class WindowClient(StubClientMixin):
     def send_input_devices(self, fmt, input_devices) -> None:
         assert self.server_input_devices
         self.send("input-devices", fmt, input_devices)
+
+    def poll_pointer(self) -> bool:
+        pos = self.get_mouse_position()
+        if pos != self.poll_pointer_position:
+            self.poll_pointer_position = pos
+            device_id = -1
+            wid = 0
+            mouselog(f"poll_pointer() updated position: {pos}")
+            self.send_mouse_position(device_id, wid, pos)
+        return True
+    def cancel_poll_pointer_timer(self) -> None:
+        ppt = self.poll_pointer_timer
+        if ppt:
+            self.poll_pointer_timer = 0
+            GLib.source_remove(ppt)
+
 
     ######################################################################
     # cursor:
