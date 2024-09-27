@@ -883,7 +883,7 @@ fi
 
 
 %changelog
-* Tue Sep 24 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
+* Fri Sep 27 2024 Antoine Martin <antoine@xpra.org> 6.1.3-10
 - Platforms, build and packaging:
    don't bundle any Qt components
    automatic re-connect paths errors on MS Windows
@@ -917,6 +917,7 @@ fi
    don't log `id` requests
    quic close errors with aioquic 1.2
    validate http hostname without port for ssl redirection
+   support polling pointer position
 - Cosmetic:
    support the same resolution aliases as newer versions
    handle early errors more gracefully
@@ -928,6 +929,7 @@ fi
    virtual encodings misleading error message
    audio data can be inlined
    http timeout errors
+   add `minimal` to manual page
 
 * Sun Aug 25 2024 Antoine Martin <antoine@xpra.org> 6.1.2-10
 - Platforms, build and packaging:

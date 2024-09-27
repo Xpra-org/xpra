@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.1.3] 2024-09-24
+## [6.1.3] 2024-09-27
 * Platforms, build and packaging:
     * [don't bundle any Qt components](https://github.com/Xpra-org/xpra/commit/6af5e72a34a6d0e6947a343255b3f885547b1391)
     * [automatic re-connect paths errors on MS Windows](https://github.com/Xpra-org/xpra/commit/ef2edd088d4550b51a73432eac7d50eb729b92bb)
@@ -36,6 +36,7 @@
     * [don't log `id` requests](https://github.com/Xpra-org/xpra/commit/54c80ce3a3053a833e821558827711804f6ad69a)
     * [quic close errors with aioquic 1.2](https://github.com/Xpra-org/xpra/commit/5402a297711525051d76ef2ea9f457de84799238)
     * [validate http hostname without port for ssl redirection](https://github.com/Xpra-org/xpra/commit/b7327d1c086281a641d95c961bf6e142e363c8a5)
+    * [support polling pointer position](https://github.com/Xpra-org/xpra/commit/83b53e4479d1727457eb0731e1ceb895d15a7f48)
 * Cosmetic:
     * [support the same resolution aliases as newer versions](https://github.com/Xpra-org/xpra/commit/d84dafb4f72ffea5339f75af32eebcfbc9a49702)
     * [handle early errors more gracefully](https://github.com/Xpra-org/xpra/commit/55cf92df426339b8dc9a016f48ec86a45de0ab8b)
@@ -47,6 +48,7 @@
     * [virtual encodings misleading error message](https://github.com/Xpra-org/xpra/commit/90a8cff5bb084335018ebaf6bd94522953318d8f)
     * [audio data can be inlined](https://github.com/Xpra-org/xpra/commit/dce4f3460cd5845fae9d5ebd2907892b03be1a68)
     * [http timeout errors](https://github.com/Xpra-org/xpra/commit/1609bcc7b989c9ffd957b9c0a2da570282a4c3a4)
+    * [add `minimal` to manual page](https://github.com/Xpra-org/xpra/commit/aa10de537135200fc27718c9ee064de09b0837f3)
 
 ## [6.1.2] 2024-08-25
 * Platforms, build and packaging:
