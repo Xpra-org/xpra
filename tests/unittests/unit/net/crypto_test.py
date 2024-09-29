@@ -41,13 +41,13 @@ class TestCrypto(unittest.TestCase):
             for i in range(size):
                 assert l[i] == v
 
-        password = "this is our secret"
+        key_data = b"this is our secret"
         key_salt = DEFAULT_SALT
         key_hash = DEFAULT_KEY_HASH
         iterations = DEFAULT_ITERATIONS
         block_size = DEFAULT_KEYSIZE
         # test key stretching:
-        args = password, key_salt, key_hash, block_size, iterations
+        args = key_data, key_salt, key_hash, block_size, iterations
         secret = get_key(*args)
         log("%s%s=%s" % (get_key, args, hexstr(secret)))
         assert secret is not None
