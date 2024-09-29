@@ -233,21 +233,21 @@ class SocketProtocol:
     def set_packet_source(self, get_packet_cb: Callable[[], [PacketType, bool, bool]]) -> None:
         self._get_packet_cb = get_packet_cb
 
-    def set_cipher_in(self, ciphername: str, iv, password, key_salt, key_hash, key_size: int, iterations: int, padding):
-        cryptolog("set_cipher_in%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations))
+    def set_cipher_in(self, ciphername: str, iv, key_data, key_salt, key_hash, key_size: int, iterations: int, padding):
+        cryptolog("set_cipher_in%s", (ciphername, iv, key_data, key_salt, key_hash, key_size, iterations))
         self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
-                                                                  iv, password,
+                                                                  iv, key_data,
                                                                   key_salt, key_hash, key_size, iterations)
         self.cipher_in_padding = padding
         if self.cipher_in_name != ciphername:
             cryptolog.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
 
-    def set_cipher_out(self, ciphername: str, iv, password, key_salt, key_hash, key_size: int, iterations: int,
+    def set_cipher_out(self, ciphername: str, iv, key_data, key_salt, key_hash, key_size: int, iterations: int,
                        padding):
-        cryptolog("set_cipher_out%s", (ciphername, iv, password, key_salt, key_hash, key_size, iterations, padding))
+        cryptolog("set_cipher_out%s", (ciphername, iv, key_data, key_salt, key_hash, key_size, iterations, padding))
         self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
-                                                                    iv, password,
+                                                                    iv, key_data,
                                                                     key_salt, key_hash, key_size, iterations)
         self.cipher_out_padding = padding
         if self.cipher_out_name != ciphername:

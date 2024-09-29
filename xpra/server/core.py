@@ -2093,6 +2093,7 @@ class ServerCore(ControlHandler):
                     fail(f"cannot proceed without {actual_digest!r} digest support")
                     return
                 salt_digest: str = authenticator.choose_salt_digest(salt_digest_modes)
+                authlog(f"{authenticator}.choose_salt_digest({salt_digest_modes})={salt_digest!r}")
                 if salt_digest in ("xor", "des"):
                     fail(f"insecure salt digest {salt_digest!r} rejected")
                     return
@@ -2123,7 +2124,7 @@ class ServerCore(ControlHandler):
         # continue processing hello packet in UI thread:
         GLib.idle_add(self.call_hello_oked, proto, caps, auth_caps)
 
-    def _process_ssl_upgrade(self, proto: SocketProtocol, packet: PacketType):
+    def _process_ssl_upgrade(self, proto: SocketProtocol, packet: PacketType) -> None:
         socktype = proto._conn.socktype
         new_socktype = {"tcp": "ssl", "ws": "wss"}.get(socktype)
         if not new_socktype:
@@ -2155,7 +2156,7 @@ class ServerCore(ControlHandler):
         ssllog.info("upgraded %s to %s", conn, new_socktype)
 
     def setup_encryption(self, proto: SocketProtocol, c: typedict) -> dict[str, Any] | None:
-        def auth_failed(msg):
+        def auth_failed(msg) -> None:
             self.auth_failed(proto, msg)
             return None
 
@@ -2163,7 +2164,7 @@ class ServerCore(ControlHandler):
         c = typedict(c.dictget("encryption") or {})
         cipher = c.strget("cipher")
         cipher_iv = c.strget("iv")
-        cryptolog(f"setup_encryption(..) for cipher={cipher} and iv={cipher_iv}")
+        cryptolog(f"setup_encryption(..) for cipher={cipher!r} and iv={cipher_iv!r}")
         if cipher and cipher_iv:
             # check that the server supports encryption:
             if not proto.encryption:
