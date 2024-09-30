@@ -18,9 +18,16 @@ from xpra.net.crypto import (
 SHOW_PERF = envbool("XPRA_SHOW_PERF", False)
 
 
-def log(_message):
+def log(_message) -> None:
     # print(message[:256])
     pass
+
+
+def all_identical(*items: bytes) -> None:
+    first = items[0]
+    size = len(items)
+    for i in range(size):
+        assert items[i] == first
 
 
 class TestCrypto(unittest.TestCase):
@@ -29,17 +36,28 @@ class TestCrypto(unittest.TestCase):
         from xpra.net.crypto import get_modes
         for mode in get_modes():
             self.do_test_roundtrip(mode=mode)
+            self.do_test_fixed_output(mode=mode)
 
-    def do_test_roundtrip(self, message=b"some message1234", encrypt_count=1, decrypt_count=1, mode="CBC") -> None:
+    def do_test_fixed_output(self, mode) -> None:
+        enc_data = self.do_test_roundtrip(mode=mode)[0]
+        expected = {
+            "CBC": "ad1e476da9b779bfb4c8743b72055fd8",
+            "GCM": "dfc2744ae0dacf082c04424017b07131",
+            "CFB": "78c310e4ea81652172d522d4a6388765",
+            "CTR": "78c310e4ea81652172d522d4a6388765",
+        }.get(mode)
+        if not expected:
+            print(f"warning: no fixed output test data recorded for {mode!r}")
+            print(f" got {hexstr(enc_data)}")
+            return
+        if hexstr(enc_data) != expected:
+            raise RuntimeError(f"expected encryted data {hexstr(expected)} but got {hexstr(enc_data)} for {mode!r}")
+
+    def do_test_roundtrip(self, message=b"some message1234",
+                          encrypt_count=1,
+                          decrypt_count=1,
+                          mode="CBC") -> list[bytes]:
         from xpra.net.crypto import get_cipher_encryptor, get_cipher_decryptor, get_key
-
-        def mustequ(l) -> None:
-            if not l:
-                return
-            v = l[0]
-            size = len(l)
-            for i in range(size):
-                assert l[i] == v
 
         key_data = b"this is our secret"
         key_salt = DEFAULT_SALT
@@ -61,25 +79,25 @@ class TestCrypto(unittest.TestCase):
         log("%s%s=%s" % (get_cipher_decryptor, args, dec))
         assert dec is not None
         # test encoding of a message:
-        encrypted = []
+        encrypted: list[bytes] = []
         for i in range(encrypt_count):
             v = enc.update(message)
             # print("%s%s=%s" % (enc.encrypt, (message,), hexstr(v)))
             assert v is not None
-            if i == 0:
+            if i < 10:
                 encrypted.append(v)
-        mustequ(encrypted)
+        assert encrypted
         # test decoding of the message:
-        decrypted = []
+        decrypted: list[bytes] = []
         for i in range(decrypt_count):
-            v = dec.update(encrypted[0])
+            v = dec.update(encrypted[i % len(encrypted)])
             log("%s%s=%s" % (dec.update, (encrypted[0],), hexstr(v)))
             assert v is not None
-            if i == 0:
+            if i < 10:
                 decrypted.append(v)
-        mustequ(decrypted)
         if decrypted:
-            mustequ([decrypted[0], message])
+            all_identical([message] + decrypted)
+        return encrypted
 
     def do_test_perf(self, size=1024 * 4, enc_iterations=20, dec_iterations=20) -> list[float]:
         asize = (size + 15) // 16
