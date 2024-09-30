@@ -224,13 +224,8 @@ def get_encryptor(ciphername: str, iv: str, key_data: bytes, key_salt, key_hash:
     log("get_encryptor%s", (ciphername, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
-    assert key_size >= 16
-    if iterations < MIN_ITERATIONS or iterations > MAX_ITERATIONS:
-        raise ValueError(f"invalid number of iterations {iterations}, range is {MIN_ITERATIONS} to {MAX_ITERATIONS}")
     if not ciphername.startswith("AES"):
         raise ValueError(f"unsupported cipher {ciphername!r}")
-    if not key_data:
-        raise ValueError("missing encryption key data")
     if not iv:
         raise ValueError("missing encryption iv")
     mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
@@ -246,13 +241,8 @@ def get_decryptor(ciphername: str, iv: str, key_data: bytes, key_salt, key_hash:
     log("get_decryptor%s", (ciphername, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
-    assert key_size >= 16
-    if iterations < MIN_ITERATIONS or iterations > MAX_ITERATIONS:
-        raise ValueError(f"invalid number of iterations {iterations}, range is {MIN_ITERATIONS} to {MAX_ITERATIONS}")
     if not ciphername.startswith("AES"):
         raise ValueError(f"unsupported cipher {ciphername!r}")
-    if not key_data:
-        raise ValueError("missing encryption key data")
     if not iv:
         raise ValueError("missing encryption iv")
     mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
@@ -272,7 +262,12 @@ def get_block_size(mode: str) -> int:
     return 0
 
 
-def get_key(key_data: bytes, key_salt, key_hash, block_size: int, iterations: int) -> bytes:
+def get_key(key_data: bytes, key_salt, key_hash, key_size: int, iterations: int) -> bytes:
+    assert key_size >= 16
+    if iterations < MIN_ITERATIONS or iterations > MAX_ITERATIONS:
+        raise ValueError(f"invalid number of iterations {iterations}, range is {MIN_ITERATIONS} to {MAX_ITERATIONS}")
+    if not key_data:
+        raise ValueError("missing encryption key data")
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
     from cryptography.hazmat.primitives import hashes
     if key_hash.upper() not in KEY_HASHES:
@@ -282,7 +277,7 @@ def get_key(key_data: bytes, key_salt, key_hash, block_size: int, iterations: in
         raise ValueError(f"{key_hash.upper()!r} not found in cryptography hashes")
     hash_algo = algorithm()
     from cryptography.hazmat.backends import default_backend
-    kdf = PBKDF2HMAC(algorithm=hash_algo, length=block_size,
+    kdf = PBKDF2HMAC(algorithm=hash_algo, length=key_size,
                      salt=strtobytes(key_salt), iterations=iterations,
                      backend=default_backend())
     key = kdf.derive(key_data)
