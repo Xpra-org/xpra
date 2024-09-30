@@ -20,7 +20,7 @@ It contains common features such as basic configuration, scheduling, filtering, 
 
 | Platform | Link                                                                                                             |
 |----------|------------------------------------------------------------------------------------------------------------------|
-| `x11`    | [xpra.x11.gtk_x11.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/x11/gtk_x11/clipboard.py)         |
+| `x11`    | [xpra.x11.gtk_x11.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/x11/gtk/clipboard.py)         |
 | `win32`  | [xpra.platform.win32.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/win32/clipboard.py)   |
 | `MacOS`  | [xpra.platform.darwin.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/darwin/clipboard.py) |
 | others   | [xpra.gtk_common.gtk_clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/gtk/clipboard.py)              |
