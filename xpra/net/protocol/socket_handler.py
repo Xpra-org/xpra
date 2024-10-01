@@ -454,7 +454,7 @@ class SocketProtocol:
                 data = self.cipher_out.update(padded)
                 if len(data) != actual_size:
                     raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
-                cryptolog("sending %6s bytes %s encrypted with %s bytes of padding",
+                cryptolog("sending %6s bytes %s encrypted with %2s bytes of padding",
                           payload_size, self.cipher_out_name, padding_size)
             if proto_flags & FLAGS_NOHEADER:
                 assert not self.cipher_out
