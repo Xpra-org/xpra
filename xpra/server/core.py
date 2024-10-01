@@ -2163,7 +2163,7 @@ class ServerCore(ControlHandler):
         c = typedict(c.dictget("encryption") or {})
         cipher = c.strget("cipher").upper()
         cipher_iv = c.strget("iv")
-        cryptolog(f"setup_encryption(..) for cipher={cipher!r} and iv={cipher_iv!r}")
+        cryptolog(f"setup_encryption(..) for cipher={cipher!r} and iv={hexstr(cipher_iv)}")
         if not (cipher and cipher_iv):
             if proto.encryption:
                 cryptolog(f"client does not provide encryption tokens: encryption={c}")
@@ -2194,7 +2194,7 @@ class ServerCore(ControlHandler):
                 return auth_failed(f"the server is configured for {server_cipher}-{server_cipher_mode}"
                                    f"not {cipher}-{cipher_mode} as requested by the client")
         iterations = c.intget("key_stretch_iterations")
-        key_salt = c.strget("key_salt")
+        key_salt = c.bytesget("key_salt")
         key_hash = c.strget("key_hash", DEFAULT_KEY_HASH)
         key_stretch = c.strget("key_stretch", DEFAULT_KEY_STRETCH)
         padding = c.strget("padding", DEFAULT_PADDING)

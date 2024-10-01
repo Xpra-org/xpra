@@ -71,8 +71,8 @@ KEY_STRETCHING: Sequence[str] = ()
 
 def crypto_backend_init():
     global cryptography, CIPHERS, MODES, KEY_HASHES, KEY_STRETCHING
-    log("crypto_backend_init() pycryptography=%s", cryptography)
     if cryptography:
+        log("cryptography %s found in %s", cryptography.__version__, cryptography)
         return cryptography
     try:
         import cryptography as pc
@@ -91,6 +91,9 @@ def crypto_backend_init():
         from cryptography.hazmat.primitives import hashes
         assert Cipher and algorithms and modes and hashes  # type: ignore[truthy-function]
         validate_backend()
+        name = getattr(backend, "name", "")
+        if name:
+            log.info(f"cryptography {cryptography.__version__} using {name!r} backend")
         return cryptography
     except ImportError:
         log("crypto backend init failure", exc_info=True)
@@ -219,7 +222,7 @@ def get_crypto_caps(full=True) -> dict[str, Any]:
     return caps
 
 
-def get_encryptor(ciphername: str, iv: str, key_data: bytes, key_salt, key_hash: str, key_size: int, iterations: int):
+def get_encryptor(ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iterations: int):
     log("get_encryptor%s", (ciphername, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
     if not ciphername:
         return None, 0
@@ -261,7 +264,7 @@ def get_block_size(mode: str) -> int:
     return 0
 
 
-def get_key(key_data: bytes, key_salt, key_hash, key_size: int, iterations: int) -> bytes:
+def get_key(key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iterations: int) -> bytes:
     assert key_size >= 16
     if iterations < MIN_ITERATIONS or iterations > MAX_ITERATIONS:
         raise ValueError(f"invalid number of iterations {iterations}, range is {MIN_ITERATIONS} to {MAX_ITERATIONS}")

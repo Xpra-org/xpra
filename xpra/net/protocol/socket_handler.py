@@ -237,7 +237,8 @@ class SocketProtocol:
 
     def set_cipher_in(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
                       iterations: int, padding: int, always_pad: bool) -> None:
-        cryptolog("set_cipher_in%s", (ciphername, iv, key_data, key_salt, key_hash, key_size,
+        cryptolog("set_cipher_in%s", (ciphername, iv,
+                                      hexstr(key_data), hexstr(key_salt), key_hash, key_size,
                                       iterations, padding, always_pad))
         self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
                                                                   iv, key_data,
@@ -250,7 +251,8 @@ class SocketProtocol:
 
     def set_cipher_out(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
                        iterations: int, padding: int, always_pad: bool) -> None:
-        cryptolog("set_cipher_out%s", (ciphername, iv, key_data, key_salt, key_hash, key_size,
+        cryptolog("set_cipher_out%s", (ciphername, iv,
+                                       hexstr(key_data), hexstr(key_salt), key_hash, key_size,
                                        iterations, padding, always_pad))
         self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
                                                                     iv, key_data,
