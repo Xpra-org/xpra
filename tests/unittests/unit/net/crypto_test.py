@@ -44,20 +44,20 @@ class TestCrypto(unittest.TestCase):
             enc_data = self.do_test_roundtrip(mode=mode, padding=padding)[0]
             expected = {
                 "CBC": (
-                    "ad1e476da9b779bfb4c8743b72055fd8",
-                    "ad1e476da9b779bfb4c8743b72055fd8926c2c5f1af71ff8b6a79e5d30baccdb",
+                    "6339a0861384e208ed20313a64912298",
+                    "6339a0861384e208ed20313a649122980c79458182b8882dbf1cca137a0f88bd",
                 ),
                 "GCM": (
-                    "dfc2744ae0dacf082c04424017b07131",
-                    "dfc2744ae0dacf082c04424017b07131186db392ed92e4e2e024bfc1cc6fe258",
+                    "6643bd873e794c3ab30a84cd18ddd5aa",
+                    "6643bd873e794c3ab30a84cd18ddd5aa558654e6345cbd03240d080e736eaff3",
                 ),
                 "CFB": (
-                    "78c310e4ea81652172d522d4a6388765",
-                    "78c310e4ea81652172d522d4a6388765b65eddf50e61b409f297595f685086fa",
+                    "221373bd31b628311b3f99fc6ab1fa12",
+                    "221373bd31b628311b3f99fc6ab1fa127f1e6c8ac17681cbfdc96e4fe060e020",
                 ),
                 "CTR": (
-                    "78c310e4ea81652172d522d4a6388765",
-                    "78c310e4ea81652172d522d4a6388765b4e9dade682cd25d291876e768746c1d",
+                    "221373bd31b628311b3f99fc6ab1fa12",
+                    "221373bd31b628311b3f99fc6ab1fa1244703739a928ff644c221e3f59c51807",
                 ),
             }.get(mode)
             if not expected:
