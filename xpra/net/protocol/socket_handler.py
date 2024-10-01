@@ -172,10 +172,12 @@ class SocketProtocol:
         self.cipher_in_name = ""
         self.cipher_in_block_size = 0
         self.cipher_in_padding = INITIAL_PADDING
+        self.cipher_in_always_pad = False
         self.cipher_out = None
         self.cipher_out_name = ""
         self.cipher_out_block_size = 0
         self.cipher_out_padding = INITIAL_PADDING
+        self.cipher_out_always_pad = False
         self._threading_lock = RLock()
         self._write_lock = Lock()
         self._write_thread: Thread | None = None
@@ -190,8 +192,8 @@ class SocketProtocol:
 
     STATE_FIELDS: Sequence[str] = (
         "max_packet_size", "large_packets", "send_aliases", "receive_aliases",
-        "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
-        "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
+        "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding", "cipher_in_always_pad",
+        "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding", "cipher_out_always_pad",
         "compression_level", "encoder", "compressor",
     )
 
@@ -233,23 +235,28 @@ class SocketProtocol:
     def set_packet_source(self, get_packet_cb: Callable[[], [PacketType, bool, bool]]) -> None:
         self._get_packet_cb = get_packet_cb
 
-    def set_cipher_in(self, ciphername: str, iv, key_data, key_salt, key_hash, key_size: int, iterations: int, padding):
-        cryptolog("set_cipher_in%s", (ciphername, iv, key_data, key_salt, key_hash, key_size, iterations))
+    def set_cipher_in(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
+                      iterations: int, padding: int, always_pad: bool) -> None:
+        cryptolog("set_cipher_in%s", (ciphername, iv, key_data, key_salt, key_hash, key_size,
+                                      iterations, padding, always_pad))
         self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
                                                                   iv, key_data,
                                                                   key_salt, key_hash, key_size, iterations)
         self.cipher_in_padding = padding
+        self.cipher_in_always_pad = always_pad
         if self.cipher_in_name != ciphername:
             cryptolog.info("receiving data using %s encryption", ciphername)
             self.cipher_in_name = ciphername
 
-    def set_cipher_out(self, ciphername: str, iv, key_data, key_salt, key_hash, key_size: int, iterations: int,
-                       padding):
-        cryptolog("set_cipher_out%s", (ciphername, iv, key_data, key_salt, key_hash, key_size, iterations, padding))
+    def set_cipher_out(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
+                       iterations: int, padding: int, always_pad: bool) -> None:
+        cryptolog("set_cipher_out%s", (ciphername, iv, key_data, key_salt, key_hash, key_size,
+                                       iterations, padding, always_pad))
         self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
                                                                     iv, key_data,
                                                                     key_salt, key_hash, key_size, iterations)
         self.cipher_out_padding = padding
+        self.cipher_out_always_pad = always_pad
         if self.cipher_out_name != ciphername:
             cryptolog.info("sending data using %s encryption", ciphername)
             self.cipher_out_name = ciphername
@@ -432,6 +439,8 @@ class SocketProtocol:
                     padding_size = 0
                 else:
                     padding_size = self.cipher_out_block_size - (payload_size % self.cipher_out_block_size)
+                    if self.cipher_out_always_pad and padding_size == 0:
+                        padding_size = self.cipher_out_block_size
                 if padding_size == 0:
                     padded = data
                 else:
@@ -958,6 +967,8 @@ class SocketProtocol:
                             padding_size = 0
                         else:
                             padding_size = self.cipher_in_block_size - (data_size % self.cipher_in_block_size)
+                            if self.cipher_in_always_pad and padding_size == 0:
+                                padding_size = self.cipher_in_block_size
                         payload_size = data_size + padding_size
                     else:
                         # no cipher, no padding:
@@ -1028,9 +1039,7 @@ class SocketProtocol:
 
                         # pad byte value is number of padding bytes added
                         padtext = pad(self.cipher_in_padding, padding_size)
-                        if data.endswith(padtext):
-                            cryptolog("found %s %s padding", self.cipher_in_padding, self.cipher_in_name)
-                        else:
+                        if not data.endswith(padtext):
                             actual_padding = data[-padding_size:]
                             cryptolog.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
                             cryptolog(" cipher block size=%i, data size=%i", self.cipher_in_block_size, data_size)
@@ -1042,6 +1051,7 @@ class SocketProtocol:
                             cryptolog(" decrypted data (hex): %s..", debug_str(data[:128]))
                             self._internal_error(f"{self.cipher_in_name} encryption padding error - wrong key?")
                             return
+                        cryptolog("removing %i bytes of %s padding", padding_size, self.cipher_in_name)
                         data = data[:-padding_size]
                 # uncompress if needed:
                 if compression_level > 0:

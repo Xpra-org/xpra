@@ -35,6 +35,7 @@ MIN_ITERATIONS = envint("XPRA_CRYPTO_STRETCH_MIN_ITERATIONS", 100)
 MAX_ITERATIONS = envint("XPRA_CRYPTO_STRETCH_MIN_ITERATIONS", 10000)
 DEFAULT_MODE = os.environ.get("XPRA_CRYPTO_MODE", "CBC")
 DEFAULT_KEY_HASH = os.environ.get("XPRA_CRYPTO_KEY_HASH", "SHA1")
+DEFAULT_ALWAYS_PAD = envbool("XPRA_CRYPTO_ALWAYS_PAD", False)
 DEFAULT_KEY_STRETCH = "PBKDF2"
 
 # other option "PKCS#7", "legacy"
@@ -183,10 +184,12 @@ def new_cipher_caps(proto, cipher: str, cipher_mode: str, encryption_key, paddin
     key_size = DEFAULT_KEYSIZE
     key_hash = DEFAULT_KEY_HASH
     key_stretch = DEFAULT_KEY_STRETCH
+    always_pad = DEFAULT_ALWAYS_PAD
     iterations = get_iterations()
     padding = choose_padding(padding_options)
-    proto.set_cipher_in(cipher + "-" + cipher_mode, iv, encryption_key,
-                        key_salt, key_hash, key_size, iterations, padding)
+    proto.set_cipher_in(cipher + "-" + cipher_mode, iv,
+                        encryption_key, key_salt, key_hash, key_size,
+                        iterations, padding, always_pad)
     attrs = {
         "cipher": cipher,
         "mode": cipher_mode,

@@ -1430,15 +1430,15 @@ class ServerCore(ControlHandler):
                 DEFAULT_KEY_HASH,
                 DEFAULT_KEYSIZE,
                 DEFAULT_ITERATIONS,
+                DEFAULT_ALWAYS_PAD,
                 INITIAL_PADDING,
             )
             if ENCRYPT_FIRST_PACKET:
                 authlog(f"encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
                 password = protocol.keydata or self.get_encryption_key((), protocol.keyfile)
-                protocol.set_cipher_in(protocol.encryption,
-                                       DEFAULT_IV, password,
-                                       DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                       DEFAULT_ITERATIONS, INITIAL_PADDING)
+                protocol.set_cipher_in(protocol.encryption, DEFAULT_IV,
+                                       password, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
+                                       DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD)
         protocol.invalid_header = self.invalid_header
         authlog(f"socktype={socktype}, encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
         protocol.start()
@@ -2156,73 +2156,79 @@ class ServerCore(ControlHandler):
         ssllog.info("upgraded %s to %s", conn, new_socktype)
 
     def setup_encryption(self, proto: SocketProtocol, c: typedict) -> dict[str, Any] | None:
-        def auth_failed(msg) -> None:
+        def auth_failed(msg: str) -> None:
             self.auth_failed(proto, msg)
             return None
 
-        # client may have requested encryption:
         c = typedict(c.dictget("encryption") or {})
-        cipher = c.strget("cipher")
+        cipher = c.strget("cipher").upper()
         cipher_iv = c.strget("iv")
         cryptolog(f"setup_encryption(..) for cipher={cipher!r} and iv={cipher_iv!r}")
-        if cipher and cipher_iv:
-            # check that the server supports encryption:
-            if not proto.encryption:
-                return auth_failed("the server does not support encryption on this connection")
-            server_cipher = proto.encryption.split("-")[0]
-            if server_cipher != cipher:
-                return auth_failed(
-                    f"the server is configured for {server_cipher!r} not {cipher!r} as requested by the client")  # noqa: E501
-            from xpra.net.crypto import (
-                DEFAULT_PADDING, ALL_PADDING_OPTIONS,
-                DEFAULT_MODE, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                DEFAULT_KEY_STRETCH,
-                new_cipher_caps, get_ciphers, get_key_hashes,
-            )
-            cipher_mode = c.strget("mode")
-            if not cipher_mode:
-                cipher_mode = DEFAULT_MODE
-            if proto.encryption.find("-") > 0:
-                # server specifies the mode to use
-                server_cipher_mode = proto.encryption.split("-")[1]
-                if server_cipher_mode != cipher_mode:
-                    return auth_failed("the server is configured for {}-{} not {}-{} as requested by the client".format(
-                        server_cipher, server_cipher_mode, cipher, cipher_mode))
-            iterations = c.intget("key_stretch_iterations")
-            key_salt = c.strget("key_salt")
-            key_hash = c.strget("key_hash", DEFAULT_KEY_HASH)
-            key_stretch = c.strget("key_stretch", DEFAULT_KEY_STRETCH)
-            padding = c.strget("padding", DEFAULT_PADDING)
-            padding_options = c.strtupleget("padding.options", (DEFAULT_PADDING,))
-            ciphers = get_ciphers()
-            if cipher not in ciphers:
-                authlog.warn(f"Warning: unsupported cipher: {cipher!r}")
-                if ciphers:
-                    authlog.warn(" should be: " + csv(ciphers))
-                return auth_failed("unsupported cipher")
-            if key_stretch != "PBKDF2":
-                return auth_failed(f"unsupported key stretching {key_stretch!r}")
-            encryption_key = proto.keydata or self.get_encryption_key(proto.authenticators, proto.keyfile)
-            if encryption_key is None:
-                return auth_failed("encryption key is missing")
-            if padding not in ALL_PADDING_OPTIONS:
-                return auth_failed(f"unsupported padding {padding!r}")
-            key_hashes = get_key_hashes()
-            if key_hash not in key_hashes:
-                return auth_failed(f"unsupported key hash algorithm {key_hash!r}")
-            cryptolog("setting output cipher using %s-%s encryption key '%s'",
-                      cipher, cipher_mode, repr_ellipsized(bytestostr(encryption_key)))
-            key_size = c.intget("key_size", DEFAULT_KEYSIZE)
+        if not (cipher and cipher_iv):
+            if proto.encryption:
+                cryptolog(f"client does not provide encryption tokens: encryption={c}")
+                return auth_failed("missing encryption tokens from client")
+            # no encryption requested
+            return {}
+
+        # check that the server supports encryption:
+        if not proto.encryption:
+            return auth_failed("the server does not support encryption on this connection")
+        server_cipher = proto.encryption.split("-")[0].upper()
+        if server_cipher != cipher:
+            return auth_failed(
+                f"the server is configured for {server_cipher!r} not {cipher!r} as requested by the client")
+        from xpra.net.crypto import (
+            DEFAULT_PADDING, ALL_PADDING_OPTIONS,
+            DEFAULT_MODE, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
+            DEFAULT_KEY_STRETCH, DEFAULT_ALWAYS_PAD,
+            new_cipher_caps, get_ciphers, get_key_hashes,
+        )
+        cipher_mode = c.strget("mode", "").upper()
+        if not cipher_mode:
+            cipher_mode = DEFAULT_MODE
+        if proto.encryption.find("-") > 0:
+            # server specifies the mode to use
+            server_cipher_mode = proto.encryption.split("-")[1].upper()
+            if server_cipher_mode != cipher_mode:
+                return auth_failed(f"the server is configured for {server_cipher}-{server_cipher_mode}"
+                                   f"not {cipher}-{cipher_mode} as requested by the client")
+        iterations = c.intget("key_stretch_iterations")
+        key_salt = c.strget("key_salt")
+        key_hash = c.strget("key_hash", DEFAULT_KEY_HASH)
+        key_stretch = c.strget("key_stretch", DEFAULT_KEY_STRETCH)
+        padding = c.strget("padding", DEFAULT_PADDING)
+        always_pad = c.boolget("always-pad", DEFAULT_ALWAYS_PAD)
+        padding_options = c.strtupleget("padding.options", (DEFAULT_PADDING,))
+        ciphers = get_ciphers()
+        if cipher not in ciphers:
+            authlog.warn(f"Warning: unsupported cipher: {cipher!r}")
+            if ciphers:
+                authlog.warn(" should be: " + csv(ciphers))
+            return auth_failed("unsupported cipher")
+        if key_stretch != "PBKDF2":
+            return auth_failed(f"unsupported key stretching {key_stretch!r}")
+        encryption_key = proto.keydata or self.get_encryption_key(proto.authenticators, proto.keyfile)
+        if not encryption_key:
+            return auth_failed("encryption key is missing")
+        if padding not in ALL_PADDING_OPTIONS:
+            return auth_failed(f"unsupported padding {padding!r}")
+        key_hashes = get_key_hashes()
+        if key_hash not in key_hashes:
+            return auth_failed(f"unsupported key hash algorithm {key_hash!r}")
+        cryptolog("setting output cipher using %s-%s encryption key '%s'",
+                  cipher, cipher_mode, repr_ellipsized(bytestostr(encryption_key)))
+        key_size = c.intget("key_size", DEFAULT_KEYSIZE)
+        try:
             proto.set_cipher_out(cipher + "-" + cipher_mode, cipher_iv,
-                                 encryption_key, key_salt, key_hash, key_size, iterations, padding)
-            # use the same cipher as used by the client:
-            auth_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
-            cryptolog("server cipher=%s", auth_caps)
-            return auth_caps
-        if proto.encryption:
-            cryptolog("client does not provide encryption tokens")
-            return auth_failed("missing encryption tokens from client")
-        return {}
+                                 encryption_key, key_salt, key_hash, key_size,
+                                 iterations, padding, always_pad)
+        except ValueError as e:
+            return auth_failed(f"{e}")
+        # use the same cipher as used by the client:
+        auth_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
+        cryptolog("server cipher=%s", auth_caps)
+        return auth_caps
 
     def get_encryption_key(self, authenticators: tuple = (), keyfile: str = "") -> bytes:
         # if we have a keyfile specified, use that:

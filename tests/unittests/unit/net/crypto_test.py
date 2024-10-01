@@ -12,6 +12,7 @@ from xpra.util.env import envbool
 
 from xpra.net.crypto import (
     DEFAULT_SALT, DEFAULT_ITERATIONS, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_IV,
+    PADDING_PKCS7, pad,
     crypto_backend_init,
 )
 
@@ -39,24 +40,39 @@ class TestCrypto(unittest.TestCase):
             self.do_test_fixed_output(mode=mode)
 
     def do_test_fixed_output(self, mode) -> None:
-        enc_data = self.do_test_roundtrip(mode=mode)[0]
-        expected = {
-            "CBC": "ad1e476da9b779bfb4c8743b72055fd8",
-            "GCM": "dfc2744ae0dacf082c04424017b07131",
-            "CFB": "78c310e4ea81652172d522d4a6388765",
-            "CTR": "78c310e4ea81652172d522d4a6388765",
-        }.get(mode)
-        if not expected:
-            print(f"warning: no fixed output test data recorded for {mode!r}")
-            print(f" got {hexstr(enc_data)}")
-            return
-        if hexstr(enc_data) != expected:
-            raise RuntimeError(f"expected encryted data {hexstr(expected)} but got {hexstr(enc_data)} for {mode!r}")
+        for padding in (False, True):
+            enc_data = self.do_test_roundtrip(mode=mode, padding=padding)[0]
+            expected = {
+                "CBC": (
+                    "ad1e476da9b779bfb4c8743b72055fd8",
+                    "ad1e476da9b779bfb4c8743b72055fd8926c2c5f1af71ff8b6a79e5d30baccdb",
+                ),
+                "GCM": (
+                    "dfc2744ae0dacf082c04424017b07131",
+                    "dfc2744ae0dacf082c04424017b07131186db392ed92e4e2e024bfc1cc6fe258",
+                ),
+                "CFB": (
+                    "78c310e4ea81652172d522d4a6388765",
+                    "78c310e4ea81652172d522d4a6388765b65eddf50e61b409f297595f685086fa",
+                ),
+                "CTR": (
+                    "78c310e4ea81652172d522d4a6388765",
+                    "78c310e4ea81652172d522d4a6388765b4e9dade682cd25d291876e768746c1d",
+                ),
+            }.get(mode)
+            if not expected:
+                print(f"warning: no fixed output test data recorded for {mode!r}")
+                print(f" got {hexstr(enc_data)}")
+                return
+            ref_data = expected[int(padding)]
+            if hexstr(enc_data) != ref_data:
+                raise RuntimeError(f"expected {ref_data} but got {hexstr(enc_data)} for {mode!r} with {padding=}")
 
     def do_test_roundtrip(self, message=b"some message1234",
                           encrypt_count=1,
                           decrypt_count=1,
-                          mode="CBC") -> list[bytes]:
+                          mode="CBC",
+                          padding=True) -> list[bytes]:
         from xpra.net.crypto import get_cipher_encryptor, get_cipher_decryptor, get_key
 
         key_data = b"this is our secret"
@@ -81,7 +97,11 @@ class TestCrypto(unittest.TestCase):
         # test encoding of a message:
         encrypted: list[bytes] = []
         for i in range(encrypt_count):
-            v = enc.update(message)
+            data = message
+            if padding:
+                count = 33 - (len(data) + 1) % 32
+                data += pad(PADDING_PKCS7, count)
+            v = enc.update(data)
             # print("%s%s=%s" % (enc.encrypt, (message,), hexstr(v)))
             assert v is not None
             if i < 10:
