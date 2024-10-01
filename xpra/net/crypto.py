@@ -38,10 +38,8 @@ DEFAULT_KEY_HASH = os.environ.get("XPRA_CRYPTO_KEY_HASH", "SHA1")
 DEFAULT_ALWAYS_PAD = envbool("XPRA_CRYPTO_ALWAYS_PAD", False)
 DEFAULT_KEY_STRETCH = "PBKDF2"
 
-# other option "PKCS#7", "legacy"
-PADDING_LEGACY = "legacy"
 PADDING_PKCS7 = "PKCS#7"
-ALL_PADDING_OPTIONS = (PADDING_LEGACY, PADDING_PKCS7)
+ALL_PADDING_OPTIONS = (PADDING_PKCS7, )
 INITIAL_PADDING = os.environ.get("XPRA_CRYPTO_INITIAL_PADDING", PADDING_PKCS7)
 DEFAULT_PADDING = PADDING_PKCS7
 PREFERRED_PADDING = os.environ.get("XPRA_CRYPTO_PREFERRED_PADDING", PADDING_PKCS7)
@@ -154,11 +152,9 @@ def validate_backend() -> None:
 
 
 def pad(padding: str, size: int) -> bytes:
-    if padding == PADDING_LEGACY:
-        return b" " * size
-    if padding == PADDING_PKCS7:
-        return pack("B", size) * size
-    raise ValueError(f"invalid padding: {padding}")
+    if padding != PADDING_PKCS7:
+        raise ValueError(f"invalid padding: {padding!r}")
+    return pack("B", size) * size
 
 
 def choose_padding(options: Iterable[str]) -> str:
