@@ -456,7 +456,6 @@ class SocketProtocol:
                     raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
                 cryptolog("sending %6s bytes %s encrypted with %2s bytes of padding",
                           payload_size, self.cipher_out_name, padding_size)
-                cryptolog.warn("encrypted(%s)=%s", hexstr(padded), hexstr(data))
             if proto_flags & FLAGS_NOHEADER:
                 assert not self.cipher_out
                 # for plain/text packets (ie: gibberish response)
