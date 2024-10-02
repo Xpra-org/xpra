@@ -258,9 +258,8 @@ def get_cipher_decryptor(key: bytes, iv: str, mode: str):
 
 def get_block_size(mode: str) -> int:
     if mode == "CBC":
-        # 16 would also work,
-        # but older versions require 32
-        return 32
+        # older versions require 32
+        return 16
     return 0
 
 
