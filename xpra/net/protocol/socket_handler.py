@@ -236,7 +236,7 @@ class SocketProtocol:
         self._get_packet_cb = get_packet_cb
 
     def set_cipher_in(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
-                      iterations: int, padding: int, always_pad: bool) -> None:
+                      iterations: int, padding: str, always_pad: bool) -> None:
         cryptolog("set_cipher_in%s", (ciphername, iv,
                                       hexstr(key_data), hexstr(key_salt), key_hash, key_size,
                                       iterations, padding, always_pad))
@@ -250,7 +250,7 @@ class SocketProtocol:
             self.cipher_in_name = ciphername
 
     def set_cipher_out(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
-                       iterations: int, padding: int, always_pad: bool) -> None:
+                       iterations: int, padding: str, always_pad: bool) -> None:
         cryptolog("set_cipher_out%s", (ciphername, iv,
                                        hexstr(key_data), hexstr(key_salt), key_hash, key_size,
                                        iterations, padding, always_pad))
@@ -456,6 +456,7 @@ class SocketProtocol:
                     raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
                 cryptolog("sending %6s bytes %s encrypted with %2s bytes of padding",
                           payload_size, self.cipher_out_name, padding_size)
+                cryptolog.warn("encrypted(%s)=%s", hexstr(padded), hexstr(data))
             if proto_flags & FLAGS_NOHEADER:
                 assert not self.cipher_out
                 # for plain/text packets (ie: gibberish response)

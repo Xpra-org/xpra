@@ -285,7 +285,7 @@ def get_key(key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iter
     return key
 
 
-def _get_cipher(key, iv: str, mode: str = DEFAULT_MODE):
+def _get_cipher(key: bytes, iv: str, mode: str = DEFAULT_MODE):
     assert mode in MODES
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     mode_class = getattr(modes, mode, None)
