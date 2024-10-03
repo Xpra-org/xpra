@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.1.4] 2024-10-03
+* TODO
+
 ## [6.1.3] 2024-09-27
 * Platforms, build and packaging:
     * [don't bundle any Qt components](https://github.com/Xpra-org/xpra/commit/6af5e72a34a6d0e6947a343255b3f885547b1391)
