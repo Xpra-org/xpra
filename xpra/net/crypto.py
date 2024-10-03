@@ -189,7 +189,7 @@ def new_cipher_caps(proto, cipher: str, cipher_mode: str, encryption_key, paddin
     proto.set_cipher_in(cipher + "-" + cipher_mode, iv,
                         encryption_key, key_salt, key_hash, key_size,
                         iterations, padding, always_pad)
-    attrs = {
+    return {
         "cipher": cipher,
         "mode": cipher_mode,
         "mode.options": MODES,
@@ -203,8 +203,6 @@ def new_cipher_caps(proto, cipher: str, cipher_mode: str, encryption_key, paddin
         "padding": padding,
         "padding.options": PADDING_OPTIONS,
     }
-    # v5 onwards with namespace:
-    return {"encryption": attrs}
 
 
 def get_crypto_caps(full=True) -> dict[str, Any]:

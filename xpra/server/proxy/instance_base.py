@@ -480,9 +480,8 @@ class ProxyInstance:
                 crypto_backend_init()
                 enc_caps = self.caps.dictget("encryption")
                 padding_options = typedict(enc_caps or {}).strtupleget("padding.options", [DEFAULT_PADDING])
-                auth_caps = new_cipher_caps(self.client_protocol,
-                                            self.cipher, self.cipher_mode, self.encryption_key, padding_options)
-                caps.update(auth_caps)
+                caps["encryption"] = new_cipher_caps(self.client_protocol,
+                                                     self.cipher, self.cipher_mode, self.encryption_key, padding_options)
             # may need to bump packet size:
             proto.max_packet_size = max(MAX_PACKET_SIZE, maxw * maxh * 4 * 4)
             packet = ("hello", caps)

@@ -2226,9 +2226,9 @@ class ServerCore(ControlHandler):
         except ValueError as e:
             return auth_failed(f"{e}")
         # use the same cipher as used by the client:
-        auth_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
-        cryptolog("server cipher=%s", auth_caps)
-        return auth_caps
+        encryption_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
+        cryptolog("server encryption=%s", encryption_caps)
+        return {"encryption": encryption_caps}
 
     def get_encryption_key(self, authenticators: tuple = (), keyfile: str = "") -> bytes:
         # if we have a keyfile specified, use that:
