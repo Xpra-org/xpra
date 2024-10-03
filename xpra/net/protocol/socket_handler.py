@@ -435,6 +435,7 @@ class SocketProtocol:
         items = []
         for proto_flags, index, level, data in chunks:
             payload_size = len(data)
+            payload = data
             if not payload_size:
                 raise RuntimeError(f"missing data in chunk {index}")
             actual_size = payload_size
@@ -456,16 +457,17 @@ class SocketProtocol:
                 if len(padded) != actual_size:
                     raise RuntimeError(f"expected padded size to be {actual_size}, but got {len(padded)}")
                 encryptor = self.cipher_out.encryptor()
-                data = encryptor.update(padded) + encryptor.finalize()
-                if len(data) != actual_size:
+                payload = encryptor.update(padded) + encryptor.finalize()
+                if len(payload) != actual_size:
                     raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
                 cryptolog("sending %6s bytes %s encrypted with %2s bytes of padding",
                           payload_size, self.cipher_out_name, padding_size)
+                # cryptolog("encrypted(%s)=%s", hexstr(data), hexstr(payload))
             if proto_flags & FLAGS_NOHEADER:
                 assert not self.cipher_out
                 # for plain/text packets (ie: gibberish response)
                 log("sending %s bytes without header", payload_size)
-                items.append(data)
+                items.append(payload)
             else:
                 # if the other end can use this flag, expose it:
                 if index == 0 and not more:
@@ -474,12 +476,12 @@ class SocketProtocol:
                 # (WebSocketProtocol may also add a websocket header too)
                 header = self.make_chunk_header(packet_type, proto_flags, level, index, payload_size)
                 if actual_size < PACKET_JOIN_SIZE:
-                    if not isinstance(data, bytes):
-                        data = memoryview_to_bytes(data)
-                    items.append(header + data)
+                    if not isinstance(payload, bytes):
+                        payload = memoryview_to_bytes(payload)
+                    items.append(header + payload)
                 else:
                     items.append(header)
-                    items.append(data)
+                    items.append(payload)
         # WebSocket header may be added here:
         frame_header = self.make_frame_header(packet_type, items)  # pylint: disable=assignment-from-none
         if frame_header:
