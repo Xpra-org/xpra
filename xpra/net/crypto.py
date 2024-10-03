@@ -79,7 +79,7 @@ def crypto_backend_init():
         cryptography = pc
         MODES = tuple(x for x in os.environ.get(
             "XPRA_CRYPTO_MODES",
-            "CBC,GCM,CFB,CTR").split(",") if x in ("CBC", "GCM", "CFB", "CTR"))
+            "CBC,CFB,CTR").split(",") if x in ("CBC", "CFB", "CTR"))
         KEY_HASHES = ("SHA1", "SHA224", "SHA256", "SHA384", "SHA512")
         KEY_STRETCHING = ("PBKDF2",)
         CIPHERS = ("AES",)
@@ -132,26 +132,32 @@ def validate_backend() -> None:
         block_size = get_block_size(mode)
         log(" key=%s, block_size=%s", hexstr(key), block_size)
         assert key is not None, "pycryptography failed to generate a key"
-        enc = _get_cipher(key, DEFAULT_IV, mode).encryptor()
-        log(" encryptor=%s", enc)
-        assert enc is not None, "pycryptography failed to generate an encryptor"
-        dec = _get_cipher(key, DEFAULT_IV, mode).decryptor()
-        log(" decryptor=%s", dec)
-        assert dec is not None, "pycryptography failed to generate a decryptor"
+        enc_cipher = _get_cipher(key, DEFAULT_IV, mode)
+        log(" encryptor cipher=%s", enc_cipher)
+        assert enc_cipher is not None, "pycryptography failed to generate an encryptor"
+        dec_cipher = _get_cipher(key, DEFAULT_IV, mode)
+        log(" decryptor cipher=%s", dec_cipher)
+        assert dec_cipher is not None, "pycryptography failed to generate a decryptor"
         test_messages = [message * (1 + block_size)]
         if block_size == 0:
             test_messages.append(message[:29])
         else:
             test_messages.append(message[:block_size])
-        for m in test_messages:
-            ev = enc.update(m)
-            evs = hexstr(ev)
-            log(" encrypted(%s)=%s", m, evs)
-            dv = dec.update(ev)
-            log(" decrypted(%s)=%s", evs, dv)
-            if dv != m:
-                raise RuntimeError(f"expected {m!r} but got {dv!r}")
-            log(" test passed")
+        try:
+            for m in test_messages:
+                enc = enc_cipher.encryptor()
+                ev = enc.update(m) + enc.finalize()
+                evs = hexstr(ev)
+                log(" encrypted(%s)=%s", m, evs)
+                dec = dec_cipher.decryptor()
+                dv = dec.update(ev) + dec.finalize()
+                log(" decrypted(%s)=%s", evs, dv)
+                if dv != m:
+                    raise RuntimeError(f"expected {m!r} but got {dv!r}")
+                log(" test passed")
+        except ValueError:
+            print(f"test error on {mode=}")
+            raise
 
 
 def pad(padding: str, size: int) -> bytes:
@@ -224,14 +230,6 @@ def get_cipher(mode: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: s
     log("get_cipher%s", (mode, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
     key = get_key(key_data, key_salt, key_hash, key_size, iterations)
     return _get_cipher(key, iv, mode)
-
-
-def get_cipher_encryptor(key: bytes, iv: str, mode: str):
-    return _get_cipher(key, iv, mode).encryptor()
-
-
-def get_cipher_decryptor(key: bytes, iv: str, mode: str):
-    return _get_cipher(key, iv, mode).decryptor()
 
 
 def get_block_size(mode: str) -> int:
