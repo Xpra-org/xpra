@@ -1008,27 +1008,28 @@ class SocketProtocol:
                     # incomplete packet, wait for the rest to arrive
                     break
 
-                data: SizedBuffer
+                raw_data: SizedBuffer
                 buf = read_buffers[0]
                 if len(buf) == payload_size:
                     # exact match, consume it all:
-                    data = read_buffers.pop(0)
+                    raw_data = read_buffers.pop(0)
                 elif len(buf) > payload_size:
                     # keep rest of packet for later:
                     read_buffers[0] = buf[payload_size:]
-                    data = buf[:payload_size]
+                    raw_data = buf[:payload_size]
                 else:
                     # we need to aggregate chunks,
                     # just concatenate them all:
-                    data = b"".join(read_buffers)
+                    raw_data = b"".join(read_buffers)
                     if bl == payload_size:
                         # nothing left:
                         read_buffers = []
                     else:
                         # keep the left over:
-                        read_buffers = [data[payload_size:]]
-                        data = data[:payload_size]
+                        read_buffers = [raw_data[payload_size:]]
+                        raw_data = raw_data[:payload_size]
 
+                data = raw_data
                 # decrypt if needed:
                 if self.cipher_in:
                     if not protocol_flags & FLAGS_CIPHER:
@@ -1037,7 +1038,7 @@ class SocketProtocol:
                     cryptolog("received %6i %s encrypted bytes with %i bytes of padding",
                               payload_size, self.cipher_in_name, padding_size)
                     decryptor = self.cipher_in.decryptor()
-                    data = decryptor.update(data) + decryptor.finalize()
+                    data = decryptor.update(raw_data) + decryptor.finalize()
                     if padding_size > 0:
                         def debug_str(s):
                             try:
@@ -1055,6 +1056,8 @@ class SocketProtocol:
                                       padding_size, self.cipher_in_padding, debug_str(padtext), type(padtext))
                             cryptolog(" but with %i bytes: %s (%s)",
                                       len(actual_padding), debug_str(actual_padding), type(data))
+                            cryptolog(" encrypted data (%i bytes): %r..", len(raw_data), memoryview_to_bytes(raw_data[:128]))
+                            cryptolog(" encrypted data (hex): %s..", debug_str(raw_data[:128]))
                             cryptolog(" decrypted data (%i bytes): %r..", len(data), data[:128])
                             cryptolog(" decrypted data (hex): %s..", debug_str(data[:128]))
                             self._internal_error(f"{self.cipher_in_name} encryption padding error - wrong key?")
