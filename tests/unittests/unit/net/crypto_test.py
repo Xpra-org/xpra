@@ -74,7 +74,7 @@ class TestCrypto(unittest.TestCase):
                           decrypt_count=1,
                           mode="CBC",
                           padding=True) -> list[bytes]:
-        from xpra.net.crypto import get_cipher, get_key
+        from xpra.net.crypto import _get_cipher, get_key
 
         key_data = b"this is our secret"
         key_salt = DEFAULT_SALT
@@ -89,11 +89,11 @@ class TestCrypto(unittest.TestCase):
         # test creation of encryptors and decryptors:
         iv = DEFAULT_IV
         args = secret, iv, mode
-        enc = get_cipher(*args).encryptor()
-        log("%s%s.encryptor()=%s" % (get_cipher, args, enc))
+        enc = _get_cipher(*args).encryptor()
+        log("%s%s.encryptor()=%s" % (_get_cipher, args, enc))
         assert enc is not None
-        dec = get_cipher(*args).decryptor()
-        log("%s%s.decryptor()=%s" % (get_cipher, args, dec))
+        dec = _get_cipher(*args).decryptor()
+        log("%s%s.decryptor()=%s" % (_get_cipher, args, dec))
         assert dec is not None
         # test encoding of a message:
         encrypted: list[bytes] = []
