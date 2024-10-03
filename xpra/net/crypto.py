@@ -222,34 +222,20 @@ def get_crypto_caps(full=True) -> dict[str, Any]:
     return caps
 
 
-def get_encryptor(ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iterations: int):
-    log("get_encryptor%s", (ciphername, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
-    if not ciphername:
-        return None, 0
-    if not ciphername.startswith("AES"):
-        raise ValueError(f"unsupported cipher {ciphername!r}")
-    if not iv:
-        raise ValueError("missing encryption iv")
-    mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
+def get_encryptor(mode: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iterations: int):
+    log("get_encryptor%s", (mode, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
     key = get_key(key_data, key_salt, key_hash, key_size, iterations)
-    return get_cipher_encryptor(key, iv, mode), get_block_size(mode)
+    return get_cipher_encryptor(key, iv, mode)
 
 
 def get_cipher_encryptor(key: bytes, iv: str, mode: str):
     return _get_cipher(key, iv, mode).encryptor()
 
 
-def get_decryptor(ciphername: str, iv: str, key_data: bytes, key_salt, key_hash: str, key_size: int, iterations: int):
-    log("get_decryptor%s", (ciphername, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
-    if not ciphername:
-        return None, 0
-    if not ciphername.startswith("AES"):
-        raise ValueError(f"unsupported cipher {ciphername!r}")
-    if not iv:
-        raise ValueError("missing encryption iv")
-    mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
+def get_decryptor(mode: str, iv: str, key_data: bytes, key_salt, key_hash: str, key_size: int, iterations: int):
+    log("get_decryptor%s", (mode, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
     key = get_key(key_data, key_salt, key_hash, key_size, iterations)
-    return get_cipher_decryptor(key, iv, mode), get_block_size(mode)
+    return get_cipher_decryptor(key, iv, mode)
 
 
 def get_cipher_decryptor(key: bytes, iv: str, mode: str):
@@ -286,6 +272,8 @@ def get_key(key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iter
 
 
 def _get_cipher(key: bytes, iv: str, mode: str = DEFAULT_MODE):
+    if not iv:
+        raise ValueError("missing encryption iv")
     assert mode in MODES
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     mode_class = getattr(modes, mode, None)

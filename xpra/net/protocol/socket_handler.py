@@ -48,7 +48,7 @@ from xpra.net.packet_encoding import (
     decode,
     InvalidPacketEncodingException,
 )
-from xpra.net.crypto import get_encryptor, get_decryptor, pad, INITIAL_PADDING
+from xpra.net.crypto import get_encryptor, get_decryptor, pad, get_block_size, INITIAL_PADDING, DEFAULT_MODE
 from xpra.log import Logger
 
 log = Logger("network", "protocol")
@@ -240,9 +240,11 @@ class SocketProtocol:
         cryptolog("set_cipher_in%s", (ciphername, iv,
                                       hexstr(key_data), hexstr(key_salt), key_hash, key_size,
                                       iterations, padding, always_pad))
-        self.cipher_in, self.cipher_in_block_size = get_decryptor(ciphername,
-                                                                  iv, key_data,
-                                                                  key_salt, key_hash, key_size, iterations)
+        mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
+        if not ciphername.startswith("AES"):
+            raise ValueError(f"unsupported cipher {ciphername!r}")
+        self.cipher_in = get_decryptor(mode, iv, key_data, key_salt, key_hash, key_size, iterations)
+        self.cipher_in_block_size = get_block_size(mode)
         self.cipher_in_padding = padding
         self.cipher_in_always_pad = always_pad
         if self.cipher_in_name != ciphername:
@@ -254,9 +256,11 @@ class SocketProtocol:
         cryptolog("set_cipher_out%s", (ciphername, iv,
                                        hexstr(key_data), hexstr(key_salt), key_hash, key_size,
                                        iterations, padding, always_pad))
-        self.cipher_out, self.cipher_out_block_size = get_encryptor(ciphername,
-                                                                    iv, key_data,
-                                                                    key_salt, key_hash, key_size, iterations)
+        mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
+        if not ciphername.startswith("AES"):
+            raise ValueError(f"unsupported cipher {ciphername!r}")
+        self.cipher_out = get_encryptor(mode, iv, key_data, key_salt, key_hash, key_size, iterations)
+        self.cipher_out_block_size = get_block_size(mode)
         self.cipher_out_padding = padding
         self.cipher_out_always_pad = always_pad
         if self.cipher_out_name != ciphername:
