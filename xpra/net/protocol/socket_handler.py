@@ -48,7 +48,7 @@ from xpra.net.packet_encoding import (
     decode,
     InvalidPacketEncodingException,
 )
-from xpra.net.crypto import get_encryptor, get_decryptor, pad, get_block_size, INITIAL_PADDING, DEFAULT_MODE
+from xpra.net.crypto import get_cipher, pad, get_block_size, INITIAL_PADDING, DEFAULT_MODE
 from xpra.log import Logger
 
 log = Logger("network", "protocol")
@@ -243,7 +243,7 @@ class SocketProtocol:
         mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
         if not ciphername.startswith("AES"):
             raise ValueError(f"unsupported cipher {ciphername!r}")
-        self.cipher_in = get_decryptor(mode, iv, key_data, key_salt, key_hash, key_size, iterations)
+        self.cipher_in = get_cipher(mode, iv, key_data, key_salt, key_hash, key_size, iterations)
         self.cipher_in_block_size = get_block_size(mode)
         self.cipher_in_padding = padding
         self.cipher_in_always_pad = always_pad
@@ -259,7 +259,7 @@ class SocketProtocol:
         mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
         if not ciphername.startswith("AES"):
             raise ValueError(f"unsupported cipher {ciphername!r}")
-        self.cipher_out = get_encryptor(mode, iv, key_data, key_salt, key_hash, key_size, iterations)
+        self.cipher_out = get_cipher(mode, iv, key_data, key_salt, key_hash, key_size, iterations)
         self.cipher_out_block_size = get_block_size(mode)
         self.cipher_out_padding = padding
         self.cipher_out_always_pad = always_pad
@@ -455,7 +455,8 @@ class SocketProtocol:
                     actual_size += padding_size
                 if len(padded) != actual_size:
                     raise RuntimeError(f"expected padded size to be {actual_size}, but got {len(padded)}")
-                data = self.cipher_out.update(padded)
+                encryptor = self.cipher_out.encryptor()
+                data = encryptor.update(padded) + encryptor.finalize()
                 if len(data) != actual_size:
                     raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
                 cryptolog("sending %6s bytes %s encrypted with %2s bytes of padding",
@@ -1035,7 +1036,8 @@ class SocketProtocol:
                         return
                     cryptolog("received %6i %s encrypted bytes with %i bytes of padding",
                               payload_size, self.cipher_in_name, padding_size)
-                    data = self.cipher_in.update(data)
+                    decryptor = self.cipher_in.decryptor()
+                    data = decryptor.update(data) + decryptor.finalize()
                     if padding_size > 0:
                         def debug_str(s):
                             try:

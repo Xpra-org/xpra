@@ -132,10 +132,10 @@ def validate_backend() -> None:
         block_size = get_block_size(mode)
         log(" key=%s, block_size=%s", hexstr(key), block_size)
         assert key is not None, "pycryptography failed to generate a key"
-        enc = get_cipher_encryptor(key, DEFAULT_IV, mode)
+        enc = _get_cipher(key, DEFAULT_IV, mode).encryptor()
         log(" encryptor=%s", enc)
         assert enc is not None, "pycryptography failed to generate an encryptor"
-        dec = get_cipher_decryptor(key, DEFAULT_IV, mode)
+        dec = _get_cipher(key, DEFAULT_IV, mode).decryptor()
         log(" decryptor=%s", dec)
         assert dec is not None, "pycryptography failed to generate a decryptor"
         test_messages = [message * (1 + block_size)]
@@ -220,20 +220,14 @@ def get_crypto_caps(full=True) -> dict[str, Any]:
     return caps
 
 
-def get_encryptor(mode: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iterations: int):
-    log("get_encryptor%s", (mode, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
+def get_cipher(mode: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iterations: int):
+    log("get_cipher%s", (mode, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
     key = get_key(key_data, key_salt, key_hash, key_size, iterations)
-    return get_cipher_encryptor(key, iv, mode)
+    return _get_cipher(key, iv, mode)
 
 
 def get_cipher_encryptor(key: bytes, iv: str, mode: str):
     return _get_cipher(key, iv, mode).encryptor()
-
-
-def get_decryptor(mode: str, iv: str, key_data: bytes, key_salt, key_hash: str, key_size: int, iterations: int):
-    log("get_decryptor%s", (mode, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
-    key = get_key(key_data, key_salt, key_hash, key_size, iterations)
-    return get_cipher_decryptor(key, iv, mode)
 
 
 def get_cipher_decryptor(key: bytes, iv: str, mode: str):
