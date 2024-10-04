@@ -528,7 +528,7 @@ def parse_bind_ip(bind_ip:str, default_port:int=DEFAULT_PORT):
             else:
                 try:
                     iport = int(port)
-                    assert 0<iport<2**16
+                    assert 0<=iport<2**16
                 except (TypeError, ValueError):
                     raise InitException(f"invalid port number: {port}") from None
             options = {}
