@@ -8,7 +8,6 @@ import os
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import nonl
 from xpra.platform.keyboard_base import KeyboardBase, log
 from xpra.platform.darwin.menu import getOSXMenuHelper
 
@@ -112,7 +111,7 @@ class Keyboard(KeyboardBase):
             code = APPLE_LAYOUTS.get(current_keyboard.split(".")[-1])
             log("get_layout_spec() current_keyboard=%s, code=%s", current_keyboard, code)
             all_keyboards = text_input_context.keyboardInputSources()
-            log("get_layout_spec() other keyboards=%s", nonl(all_keyboards))
+            log("get_layout_spec() other keyboards=%s", repr(all_keyboards))
             if code:
                 layout = code
             if all_keyboards:
@@ -127,7 +126,7 @@ class Keyboard(KeyboardBase):
                 if code and code not in layouts:
                     layouts.insert(0, code)
             log("get_layout_spec() view=%s, input_context=%s, layout=%s, layouts=%s",
-                nonl(view), text_input_context, layout, layouts)
+                repr(view), text_input_context, layout, layouts)
         except Exception as e:
             log("get_layout_spec()", exc_info=True)
             log.error("Error querying keyboard layout:")

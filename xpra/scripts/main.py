@@ -2812,7 +2812,7 @@ def do_run_glcheck(opts, show=False) -> dict[str, Any]:
         if is_debug_enabled("opengl"):
             log("do_run_glcheck(..)", exc_info=True)
         if use_tty():
-            stderr_print("error=%s" % nonl(e))
+            stderr_print("error=%s" % repr(e))
         return {
             "success": False,
             "message": str(e).replace("\n", " "),

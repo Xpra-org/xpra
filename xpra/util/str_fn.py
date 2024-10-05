@@ -94,18 +94,19 @@ class Ellipsizer:
 
 def repr_ellipsized(obj, limit=100) -> str:
     if isinstance(obj, str):
-        if len(obj) > limit > 6:
-            return nonl(obj[:limit // 2 - 2] + " .. " + obj[2 - limit // 2:])
-        return nonl(obj)
+        s = repr(obj)
+        if len(s) > limit > 6:
+            return s[:limit // 2 - 2] + " .. " + s[2 - limit // 2:]
+        return s
     if isinstance(obj, memoryview):
         obj = obj.tobytes()
     if isinstance(obj, bytes):
         try:
-            s = nonl(repr(obj))
+            s = repr(obj)
         except TypeError:
             s = binascii.hexlify(obj).decode()
         if len(s) > limit > 6:
-            return nonl(s[:limit // 2 - 2] + " .. " + s[2 - limit // 2:])
+            return s[:limit // 2 - 2] + " .. " + s[2 - limit // 2:]
         return s
     return repr_ellipsized(repr(obj), limit)
 

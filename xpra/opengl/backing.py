@@ -54,7 +54,7 @@ from OpenGL.GL.ARB.framebuffer_object import (
 )
 
 from xpra.os_util import POSIX, OSX, gi_import
-from xpra.util.str_fn import repr_ellipsized, nonl, hexstr
+from xpra.util.str_fn import repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.objects import typedict
 from xpra.util.system import is_Wayland
@@ -494,7 +494,7 @@ class GLWindowBackingBase(WindowBackingBase):
         for line in err_str.split("\n"):
             if line.strip():
                 log.error(" %s", line.strip())
-        raise RuntimeError(f"OpenGL failed to compile shader {name!r}: {nonl(err_str)}")
+        raise RuntimeError(f"OpenGL failed to compile shader {name!r}: {repr(err_str)}")
 
     def init_shader(self, name: str, shader_type) -> int:
         # Create and assign fragment programs

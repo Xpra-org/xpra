@@ -11,7 +11,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
-from xpra.util.str_fn import nonl, csv, Ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
+from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
 from xpra.common import ConnectionMessage, disconnect_is_an_error, noop
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
@@ -137,7 +137,7 @@ class HelloRequestClient(SendCommandConnectClient):
         # overridden method, so we can avoid printing a warning,
         # we haven't received the hello back from the server
         # but that's fine for a request client
-        info = tuple(nonl(x) for x in packet[1:])
+        info = tuple(repr(x) for x in packet[1:])
         reason = info[0]
         if disconnect_is_an_error(reason):
             self.server_disconnect_warning(*info)
@@ -239,7 +239,7 @@ class InfoXpraClient(CommandConnectClient):
                     print_dict(v, kpath)
                     continue
                 fv = str(prettify(k, v))
-                print_fn(f"{kpath}={nonl(fv)}")
+                print_fn(f"{kpath}={repr(fv)}")
 
         exit_code = ExitCode.OK
         try:
