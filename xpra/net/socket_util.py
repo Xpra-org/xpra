@@ -375,7 +375,7 @@ def parse_bind_ip(bind_ip, default_port=DEFAULT_PORT):
             else:
                 try:
                     iport = int(port)
-                    assert iport>0 and iport<2**16
+                    assert iport>=0 and iport<2**16
                 except:
                     raise InitException("invalid port number: %s" % port)
             ip_sockets.add((host, iport))
