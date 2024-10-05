@@ -44,11 +44,8 @@ from xpra.net.compression import (
 )
 from xpra.net import packet_encoding
 from xpra.net.socket_util import guess_packet_type
-from xpra.net.packet_encoding import (
-    decode,
-    InvalidPacketEncodingException,
-)
-from xpra.net.crypto import get_cipher, pad, get_block_size, INITIAL_PADDING, DEFAULT_MODE
+from xpra.net.packet_encoding import decode, InvalidPacketEncodingException
+from xpra.net.crypto import get_cipher, get_key, get_mode, pad, get_block_size, INITIAL_PADDING
 from xpra.log import Logger
 
 log = Logger("network", "protocol")
@@ -173,11 +170,17 @@ class SocketProtocol:
         self.cipher_in_block_size = 0
         self.cipher_in_padding = INITIAL_PADDING
         self.cipher_in_always_pad = False
+        self.cipher_in_stream = True
+        self.cipher_in_key = b""
+        self.cipher_in_decryptor = None
         self.cipher_out = None
         self.cipher_out_name = ""
         self.cipher_out_block_size = 0
         self.cipher_out_padding = INITIAL_PADDING
         self.cipher_out_always_pad = False
+        self.cipher_out_stream = True
+        self.cipher_out_key = b""
+        self.cipher_out_encryptor = None
         self._threading_lock = RLock()
         self._write_lock = Lock()
         self._write_thread: Thread | None = None
@@ -192,8 +195,10 @@ class SocketProtocol:
 
     STATE_FIELDS: Sequence[str] = (
         "max_packet_size", "large_packets", "send_aliases", "receive_aliases",
-        "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding", "cipher_in_always_pad",
-        "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding", "cipher_out_always_pad",
+        "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
+        "cipher_in_always_pad", "cipher_in_stream", "cipher_in_key",
+        "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
+        "cipher_out_always_pad", "cipher_out_stream", "cipher_out_key",
         "compression_level", "encoder", "compressor",
     )
 
@@ -216,7 +221,7 @@ class SocketProtocol:
         return self._closed
 
     def is_sending_encrypted(self) -> bool:
-        return bool(self.cipher_out) or self._conn.socktype in ("ssl", "wss", "ssh")
+        return bool(self.cipher_out_name) or self._conn.socktype in ("ssl", "wss", "ssh")
 
     def wait_for_io_threads_exit(self, timeout=None) -> bool:
         io_threads = (self._read_thread, self._write_thread, self._read_parser_thread, self._read_parser_thread)
@@ -236,36 +241,114 @@ class SocketProtocol:
         self._get_packet_cb = get_packet_cb
 
     def set_cipher_in(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
-                      iterations: int, padding: str, always_pad: bool) -> None:
+                      iterations: int, padding: str, always_pad: bool, stream: bool) -> None:
         cryptolog("set_cipher_in%s", (ciphername, iv,
                                       hexstr(key_data), hexstr(key_salt), key_hash, key_size,
                                       iterations, padding, always_pad))
-        mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
-        if not ciphername.startswith("AES"):
-            raise ValueError(f"unsupported cipher {ciphername!r}")
-        self.cipher_in = get_cipher(mode, iv, key_data, key_salt, key_hash, key_size, iterations)
+        mode = get_mode(ciphername)
         self.cipher_in_block_size = get_block_size(mode)
         self.cipher_in_padding = padding
         self.cipher_in_always_pad = always_pad
+        self.cipher_in_stream = stream
+        self.cipher_in_key = get_key(key_data, key_salt, key_hash, key_size, iterations)
+        if stream:
+            self.cipher_in_decryptor = get_cipher(self.cipher_in_key, iv, mode).decryptor()
         if self.cipher_in_name != ciphername:
-            cryptolog.info("receiving data using %s encryption", ciphername)
+            cryptolog.info(f"receiving data using {ciphername!r} encryption")
             self.cipher_in_name = ciphername
 
     def set_cipher_out(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
-                       iterations: int, padding: str, always_pad: bool) -> None:
+                       iterations: int, padding: str, always_pad: bool, stream: bool) -> None:
         cryptolog("set_cipher_out%s", (ciphername, iv,
                                        hexstr(key_data), hexstr(key_salt), key_hash, key_size,
                                        iterations, padding, always_pad))
-        mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
-        if not ciphername.startswith("AES"):
-            raise ValueError(f"unsupported cipher {ciphername!r}")
-        self.cipher_out = get_cipher(mode, iv, key_data, key_salt, key_hash, key_size, iterations)
+        mode = get_mode(ciphername)
         self.cipher_out_block_size = get_block_size(mode)
         self.cipher_out_padding = padding
         self.cipher_out_always_pad = always_pad
+        self.cipher_out_stream = stream
+        self.cipher_out_key = get_key(key_data, key_salt, key_hash, key_size, iterations)
+        if stream:
+            self.cipher_out_encryptor = get_cipher(self.cipher_out_key, iv, mode).encryptor()
         if self.cipher_out_name != ciphername:
-            cryptolog.info("sending data using %s encryption", ciphername)
+            cryptolog.info(f"sending data using {ciphername!r} encryption")
             self.cipher_out_name = ciphername
+
+    def decrypt(self, encrypted: bytes, padding_size: int) -> bytes:
+        cryptolog("received %6i %s encrypted bytes with %i bytes of padding",
+                  len(encrypted), self.cipher_in_name, padding_size)
+        if self.cipher_in_stream:
+            assert self.cipher_in_decryptor
+            data = self.cipher_in_decryptor.update(encrypted)
+        else:
+            iv = encrypted[:16]
+            mode = get_mode(self.cipher_in_name)
+            decryptor = get_cipher(self.cipher_in_key, iv, mode).decryptor()
+            data = decryptor.update(encrypted[16:]) + decryptor.finalize()
+
+        # remove the padding:
+        if not padding_size:
+            return data
+
+        # pad byte value is number of padding bytes added
+        padtext = pad(self.cipher_in_padding, padding_size)
+        if data.endswith(padtext):
+            cryptolog("removing %i bytes of %s padding", padding_size, self.cipher_in_name)
+            return data[:-padding_size]
+
+        def debug_str(s) -> None:
+            try:
+                return repr_ellipsized(hexstr(s))
+            except (TypeError, ValueError):
+                return repr_ellipsized(csv(tuple(s)))
+
+        actual_padding = data[-padding_size:]
+        cryptolog.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
+        cryptolog(" cipher block size=%i", self.cipher_in_block_size)
+        cryptolog(" data does not end with %i %s padding bytes %s (%s)",
+                  padding_size, self.cipher_in_padding, debug_str(padtext), type(padtext))
+        cryptolog(" but with %i bytes: %s (%s)",
+                  len(actual_padding), debug_str(actual_padding), type(data))
+        cryptolog(" encrypted data (%i bytes): %r..", len(encrypted), memoryview_to_bytes(encrypted[:128]))
+        cryptolog(" encrypted data (hex): %s..", debug_str(encrypted))
+        cryptolog(" decrypted data (%i bytes): %r..", len(data), data[:128])
+        cryptolog(" decrypted data (hex): %s..", debug_str(data))
+        self._internal_error(f"{self.cipher_in_name} encryption padding error - wrong key?")
+        return b""
+
+    def encrypt(self, data) -> tuple[bytes, int]:
+        # add padding:
+        payload_size = len(data)
+        if self.cipher_out_block_size == 0:
+            padding_size = 0
+        else:
+            padding_size = self.cipher_out_block_size - (payload_size % self.cipher_out_block_size)
+            if self.cipher_out_always_pad and padding_size == 0:
+                padding_size = self.cipher_out_block_size
+        if padding_size == 0:
+            padded = data
+        else:
+            # pad byte value is number of padding bytes added
+            padded = memoryview_to_bytes(data) + pad(self.cipher_out_padding, padding_size)
+
+        # create cipher if needed:
+        assert self.cipher_out_name
+        if self.cipher_out_stream:
+            assert self.cipher_out_encryptor
+            payload = self.cipher_out_encryptor.update(padded)
+            iv_size = 0
+        else:
+            import struct
+            iv = os.urandom(8) + struct.pack(b'L', self.output_raw_packetcount)
+            iv_size = len(iv)
+            payload_size += iv_size
+            mode = get_mode(self.cipher_out_name)
+            encryptor = get_cipher(self.cipher_out_key, iv, mode).encryptor()
+            payload = iv + encryptor.update(padded) + encryptor.finalize()
+        cryptolog("sending %6s bytes %s encrypted with %2s bytes of padding, %2s bytes of iv",
+                  len(payload), self.cipher_out_name, padding_size, iv_size)
+        # cryptolog("encrypted(%s)=%s", repr_ellipsized(hexstr(padded)), repr_ellipsized(hexstr(payload)))
+        return payload, payload_size
 
     def __repr__(self):
         return f"Protocol({self._conn})"
@@ -434,39 +517,17 @@ class SocketProtocol:
         """ the write_lock must be held when calling this function """
         items = []
         for proto_flags, index, level, data in chunks:
-            payload_size = len(data)
-            payload = data
-            if not payload_size:
+            if not data:
                 raise RuntimeError(f"missing data in chunk {index}")
-            actual_size = payload_size
-            if self.cipher_out:
+            payload = data
+            size = len(payload)
+            if self.cipher_out_name:
                 proto_flags |= FLAGS_CIPHER
-                # note: since we are padding: l!=len(data)
-                if self.cipher_out_block_size == 0:
-                    padding_size = 0
-                else:
-                    padding_size = self.cipher_out_block_size - (payload_size % self.cipher_out_block_size)
-                    if self.cipher_out_always_pad and padding_size == 0:
-                        padding_size = self.cipher_out_block_size
-                if padding_size == 0:
-                    padded = data
-                else:
-                    # pad byte value is number of padding bytes added
-                    padded = memoryview_to_bytes(data) + pad(self.cipher_out_padding, padding_size)
-                    actual_size += padding_size
-                if len(padded) != actual_size:
-                    raise RuntimeError(f"expected padded size to be {actual_size}, but got {len(padded)}")
-                encryptor = self.cipher_out.encryptor()
-                payload = encryptor.update(padded) + encryptor.finalize()
-                if len(payload) != actual_size:
-                    raise RuntimeError(f"expected encrypted size to be {actual_size}, but got {len(data)}")
-                cryptolog("sending %6s bytes %s encrypted with %2s bytes of padding",
-                          payload_size, self.cipher_out_name, padding_size)
-                # cryptolog("encrypted(%s)=%s", hexstr(data), hexstr(payload))
+                payload, size = self.encrypt(data)
             if proto_flags & FLAGS_NOHEADER:
                 assert not self.cipher_out
                 # for plain/text packets (ie: gibberish response)
-                log("sending %s bytes without header", payload_size)
+                log("sending %s bytes without header", size)
                 items.append(payload)
             else:
                 # if the other end can use this flag, expose it:
@@ -474,8 +535,8 @@ class SocketProtocol:
                     proto_flags |= FLAGS_FLUSH
                 # the xpra packet header:
                 # (WebSocketProtocol may also add a websocket header too)
-                header = self.make_chunk_header(packet_type, proto_flags, level, index, payload_size)
-                if actual_size < PACKET_JOIN_SIZE:
+                header = self.make_chunk_header(packet_type, proto_flags, level, index, size)
+                if size < PACKET_JOIN_SIZE:
                     if not isinstance(payload, bytes):
                         payload = memoryview_to_bytes(payload)
                     items.append(header + payload)
@@ -675,7 +736,6 @@ class SocketProtocol:
             verify_packet(packet)
             raise
         size = len(main_packet)
-        payload_size += size
         if size > size_check and packet_in[0] not in self.large_packets:
             log.warn("Warning: found large packet")
             log.warn(f" {packet_type!r} packet is {len(main_packet)} bytes: ")
@@ -687,13 +747,15 @@ class SocketProtocol:
             try:
                 cl, cdata = self._compress(main_packet, level)
                 if LOG_RAW_PACKET_SIZE and packet_type != "logging":
-                    log.info(f"         {packet_type!r:<32}: %i bytes compressed", len(cdata))
+                    log.info(f"         {packet_type!r:<32}: %i bytes compressed, from %i", len(cdata), size)
             except Exception as e:
                 log.error(f"Error compressing {packet_type!r} packet")
                 log.estr(e)
                 raise
+            payload_size += len(cdata)
             packets.append((proto_flags, 0, cl, cdata))
         else:
+            payload_size += size
             packets.append((proto_flags, 0, 0, main_packet))
         may_log_packet(True, packet_type, packet)
         if LOG_RAW_PACKET_SIZE and packet_type != "logging":
@@ -1033,39 +1095,12 @@ class SocketProtocol:
 
                 data = raw_data
                 # decrypt if needed:
-                if self.cipher_in:
+                if self.cipher_in_name:
                     if not protocol_flags & FLAGS_CIPHER:
                         self.invalid("unencrypted packet dropped", data)
                         return
-                    cryptolog("received %6i %s encrypted bytes with %i bytes of padding",
-                              payload_size, self.cipher_in_name, padding_size)
-                    decryptor = self.cipher_in.decryptor()
-                    data = decryptor.update(raw_data) + decryptor.finalize()
-                    if padding_size > 0:
-                        def debug_str(s):
-                            try:
-                                return hexstr(s)
-                            except (TypeError, ValueError):
-                                return csv(tuple(s))
+                    data = self.decrypt(raw_data, padding_size)
 
-                        # pad byte value is number of padding bytes added
-                        padtext = pad(self.cipher_in_padding, padding_size)
-                        if not data.endswith(padtext):
-                            actual_padding = data[-padding_size:]
-                            cryptolog.warn("Warning: %s decryption failed: invalid padding", self.cipher_in_name)
-                            cryptolog(" cipher block size=%i, data size=%i", self.cipher_in_block_size, data_size)
-                            cryptolog(" data does not end with %i %s padding bytes %s (%s)",
-                                      padding_size, self.cipher_in_padding, debug_str(padtext), type(padtext))
-                            cryptolog(" but with %i bytes: %s (%s)",
-                                      len(actual_padding), debug_str(actual_padding), type(data))
-                            cryptolog(" encrypted data (%i bytes): %r..", len(raw_data), memoryview_to_bytes(raw_data[:128]))
-                            cryptolog(" encrypted data (hex): %s..", debug_str(raw_data[:128]))
-                            cryptolog(" decrypted data (%i bytes): %r..", len(data), data[:128])
-                            cryptolog(" decrypted data (hex): %s..", debug_str(data[:128]))
-                            self._internal_error(f"{self.cipher_in_name} encryption padding error - wrong key?")
-                            return
-                        cryptolog("removing %i bytes of %s padding", padding_size, self.cipher_in_name)
-                        data = data[:-padding_size]
                 # uncompress if needed:
                 if compression_level > 0:
                     try:

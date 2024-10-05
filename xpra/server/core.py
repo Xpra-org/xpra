@@ -1431,6 +1431,7 @@ class ServerCore(ControlHandler):
                 DEFAULT_KEYSIZE,
                 DEFAULT_ITERATIONS,
                 DEFAULT_ALWAYS_PAD,
+                DEFAULT_STREAM,
                 INITIAL_PADDING,
             )
             if ENCRYPT_FIRST_PACKET:
@@ -1438,7 +1439,7 @@ class ServerCore(ControlHandler):
                 password = protocol.keydata or self.get_encryption_key((), protocol.keyfile)
                 protocol.set_cipher_in(protocol.encryption, DEFAULT_IV,
                                        password, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                       DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD)
+                                       DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM)
         protocol.invalid_header = self.invalid_header
         authlog(f"socktype={socktype}, encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
         protocol.start()
@@ -2181,7 +2182,7 @@ class ServerCore(ControlHandler):
         from xpra.net.crypto import (
             DEFAULT_PADDING, ALL_PADDING_OPTIONS,
             DEFAULT_MODE, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-            DEFAULT_KEY_STRETCH, DEFAULT_ALWAYS_PAD,
+            DEFAULT_KEY_STRETCH, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM,
             new_cipher_caps, get_ciphers, get_key_hashes,
         )
         cipher_mode = c.strget("mode", "").upper()
@@ -2199,6 +2200,7 @@ class ServerCore(ControlHandler):
         key_stretch = c.strget("key_stretch", DEFAULT_KEY_STRETCH)
         padding = c.strget("padding", DEFAULT_PADDING)
         always_pad = c.boolget("always-pad", DEFAULT_ALWAYS_PAD)
+        stream = c.boolget("stream", DEFAULT_STREAM)
         padding_options = c.strtupleget("padding.options", (DEFAULT_PADDING,))
         ciphers = get_ciphers()
         if cipher not in ciphers:
@@ -2222,7 +2224,7 @@ class ServerCore(ControlHandler):
         try:
             proto.set_cipher_out(cipher + "-" + cipher_mode, cipher_iv,
                                  encryption_key, key_salt, key_hash, key_size,
-                                 iterations, padding, always_pad)
+                                 iterations, padding, always_pad, stream)
         except ValueError as e:
             return auth_failed(f"{e}")
         # use the same cipher as used by the client:

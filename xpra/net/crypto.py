@@ -36,6 +36,7 @@ MAX_ITERATIONS = envint("XPRA_CRYPTO_STRETCH_MIN_ITERATIONS", 1000000)
 DEFAULT_MODE = os.environ.get("XPRA_CRYPTO_MODE", "CBC")
 DEFAULT_KEY_HASH = os.environ.get("XPRA_CRYPTO_KEY_HASH", "SHA1")
 DEFAULT_ALWAYS_PAD = envbool("XPRA_CRYPTO_ALWAYS_PAD", False)
+DEFAULT_STREAM = envbool("XPRA_CRYPTO_STREAM", True)
 DEFAULT_KEY_STRETCH = "PBKDF2"
 
 PADDING_PKCS7 = "PKCS#7"
@@ -132,10 +133,10 @@ def validate_backend() -> None:
         block_size = get_block_size(mode)
         log(" key=%s, block_size=%s", hexstr(key), block_size)
         assert key is not None, "pycryptography failed to generate a key"
-        enc_cipher = _get_cipher(key, DEFAULT_IV, mode)
+        enc_cipher = get_cipher(key, DEFAULT_IV, mode)
         log(" encryptor cipher=%s", enc_cipher)
         assert enc_cipher is not None, "pycryptography failed to generate an encryptor"
-        dec_cipher = _get_cipher(key, DEFAULT_IV, mode)
+        dec_cipher = get_cipher(key, DEFAULT_IV, mode)
         log(" decryptor cipher=%s", dec_cipher)
         assert dec_cipher is not None, "pycryptography failed to generate a decryptor"
         test_messages = [message * (1 + block_size)]
@@ -190,11 +191,12 @@ def new_cipher_caps(proto, cipher: str, cipher_mode: str, encryption_key, paddin
     key_hash = DEFAULT_KEY_HASH
     key_stretch = DEFAULT_KEY_STRETCH
     always_pad = DEFAULT_ALWAYS_PAD
+    stream = DEFAULT_STREAM
     iterations = get_iterations()
     padding = choose_padding(padding_options)
     proto.set_cipher_in(cipher + "-" + cipher_mode, iv,
                         encryption_key, key_salt, key_hash, key_size,
-                        iterations, padding, always_pad)
+                        iterations, padding, always_pad, stream)
     return {
         "cipher": cipher,
         "mode": cipher_mode,
@@ -206,6 +208,7 @@ def new_cipher_caps(proto, cipher: str, cipher_mode: str, encryption_key, paddin
         "key_stretch": key_stretch,
         "key_stretch.options": KEY_STRETCHING,
         "key_stretch_iterations": iterations,
+        "stream": stream,
         "padding": padding,
         "padding.options": PADDING_OPTIONS,
     }
@@ -226,10 +229,24 @@ def get_crypto_caps(full=True) -> dict[str, Any]:
     return caps
 
 
-def get_cipher(mode: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iterations: int):
-    log("get_cipher%s", (mode, iv, key_data, hexstr(key_salt), key_hash, key_size, iterations))
-    key = get_key(key_data, key_salt, key_hash, key_size, iterations)
-    return _get_cipher(key, iv, mode)
+def get_mode(ciphername: str) -> str:
+    mode = (ciphername + "-").split("-")[1] or DEFAULT_MODE
+    if not ciphername.startswith("AES"):
+        raise ValueError(f"unsupported cipher {ciphername!r}")
+    if mode not in MODES:
+        raise ValueError(f"unsupported AES mode {mode!r}")
+    return mode
+
+
+def get_cipher(key: bytes, iv: str, mode: str = DEFAULT_MODE):
+    if not iv:
+        raise ValueError("missing encryption iv")
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    mode_class = getattr(modes, mode, None)
+    if mode_class is None:
+        raise ValueError(f"no {mode} mode in this version of python-cryptography")
+    from cryptography.hazmat.backends import default_backend
+    return Cipher(algorithms.AES(key), mode_class(strtobytes(iv)), backend=default_backend())
 
 
 def get_block_size(mode: str) -> int:
@@ -259,18 +276,6 @@ def get_key(key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iter
                      backend=default_backend())
     key = kdf.derive(key_data)
     return key
-
-
-def _get_cipher(key: bytes, iv: str, mode: str = DEFAULT_MODE):
-    if not iv:
-        raise ValueError("missing encryption iv")
-    assert mode in MODES
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    mode_class = getattr(modes, mode, None)
-    if mode_class is None:
-        raise ValueError(f"no {mode} mode in this version of python-cryptography")
-    from cryptography.hazmat.backends import default_backend
-    return Cipher(algorithms.AES(key), mode_class(strtobytes(iv)), backend=default_backend())
 
 
 def main():

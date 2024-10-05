@@ -31,7 +31,7 @@ from xpra.net.digest import get_salt, gendigest
 from xpra.net.crypto import (
     crypto_backend_init, get_iterations, get_iv, choose_padding,
     get_ciphers, get_modes, get_key_hashes,
-    ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT,
+    ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_STREAM,
     DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
     DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_KEY_STRETCH, DEFAULT_ALWAYS_PAD,
 )
@@ -45,7 +45,7 @@ from xpra.util.io import filedata_nocrlf, stderr_print, use_gui_prompt
 from xpra.util.pysystem import dump_all_frames, detect_leaks
 from xpra.util.objects import typedict
 from xpra.util.str_fn import (
-    std, nonl, obsc, csv, Ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
+    std, obsc, csv, Ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
     bytestostr, hexstr,
 )
 from xpra.util.parsing import parse_simple_dict, parse_encoded_bin_data
@@ -350,7 +350,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 key = self.get_encryption_key()
                 protocol.set_cipher_out(encryption, DEFAULT_IV,
                                         key, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                        DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD)
+                                        DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM)
         self.have_more = protocol.source_has_more
         if conn.timeout > 0:
             GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
@@ -478,6 +478,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         iterations = get_iterations()
         padding = choose_padding(self.server_padding_options)
         always_pad = DEFAULT_ALWAYS_PAD
+        stream = DEFAULT_STREAM
         cipher_caps: dict[str, Any] = {
             "cipher": enc,
             "mode": mode,
@@ -490,12 +491,13 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             "padding": padding,
             "padding.options": PADDING_OPTIONS,
             "always-pad": always_pad,
+            "stream": stream,
         }
         cryptolog(f"cipher_caps={cipher_caps}")
         key = self.get_encryption_key()
         self._protocol.set_cipher_in(encryption, iv,
                                      key, key_salt, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                     iterations, padding, always_pad)
+                                     iterations, padding, always_pad, stream)
         return cipher_caps
 
     @staticmethod
@@ -685,7 +687,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def _process_disconnect(self, packet: PacketType) -> None:
         # ie: ("disconnect", "version error", "incompatible version")
         netlog("%s", packet)
-        info = tuple(nonl(str(x)) for x in packet[1:])
+        info = tuple(repr(str(x)) for x in packet[1:])
         reason = info[0]
         if not self.connection_established:
             # server never sent hello to us - so disconnect is an error
@@ -994,6 +996,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         iterations = caps.intget("key_stretch_iterations")
         padding = caps.strget("padding", DEFAULT_PADDING)
         always_pad = caps.boolget("always-pad", DEFAULT_ALWAYS_PAD)
+        stream = caps.boolget("stream", DEFAULT_STREAM)
         ciphers = get_ciphers()
         key_hashes = get_key_hashes()
         # server may tell us what it supports,
@@ -1019,7 +1022,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return False
         p.set_cipher_out(cipher + "-" + cipher_mode, cipher_iv,
                          key, key_salt, key_hash, key_size,
-                         iterations, padding, always_pad)
+                         iterations, padding, always_pad, stream)
         return True
 
     def get_encryption(self) -> str:
