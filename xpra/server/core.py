@@ -1437,7 +1437,8 @@ class ServerCore(ControlHandler):
             if ENCRYPT_FIRST_PACKET:
                 authlog(f"encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
                 password = protocol.keydata or self.get_encryption_key((), protocol.keyfile)
-                protocol.set_cipher_in(protocol.encryption, DEFAULT_IV,
+                iv = strtobytes(DEFAULT_IV)
+                protocol.set_cipher_in(protocol.encryption, iv,
                                        password, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
                                        DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM)
         protocol.invalid_header = self.invalid_header
@@ -2163,9 +2164,8 @@ class ServerCore(ControlHandler):
 
         c = typedict(c.dictget("encryption") or {})
         cipher = c.strget("cipher").upper()
-        cipher_iv = c.strget("iv")
-        cryptolog(f"setup_encryption(..) for cipher={cipher!r} and iv={hexstr(cipher_iv)}")
-        if not (cipher and cipher_iv):
+        cryptolog(f"setup_encryption(..) for cipher={cipher!r} : {c}")
+        if not cipher:
             if proto.encryption:
                 cryptolog(f"client does not provide encryption tokens: encryption={c}")
                 return auth_failed("missing encryption tokens from client")
@@ -2194,6 +2194,7 @@ class ServerCore(ControlHandler):
             if server_cipher_mode != cipher_mode:
                 return auth_failed(f"the server is configured for {server_cipher}-{server_cipher_mode}"
                                    f"not {cipher}-{cipher_mode} as requested by the client")
+        cipher_iv = c.strget("iv")
         iterations = c.intget("key_stretch_iterations")
         key_salt = c.bytesget("key_salt")
         key_hash = c.strget("key_hash", DEFAULT_KEY_HASH)
@@ -2222,13 +2223,14 @@ class ServerCore(ControlHandler):
                   cipher, cipher_mode, repr_ellipsized(bytestostr(encryption_key)))
         key_size = c.intget("key_size", DEFAULT_KEYSIZE)
         try:
-            proto.set_cipher_out(cipher + "-" + cipher_mode, cipher_iv,
+            proto.set_cipher_out(cipher + "-" + cipher_mode, strtobytes(cipher_iv),
                                  encryption_key, key_salt, key_hash, key_size,
                                  iterations, padding, always_pad, stream)
         except ValueError as e:
             return auth_failed(f"{e}")
         # use the same cipher as used by the client:
-        encryption_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key, padding_options)
+        encryption_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key,
+                                          padding_options, always_pad, stream)
         cryptolog("server encryption=%s", encryption_caps)
         return {"encryption": encryption_caps}
 

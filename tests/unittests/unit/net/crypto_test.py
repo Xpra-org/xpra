@@ -8,7 +8,7 @@
 import unittest
 import binascii
 from time import monotonic
-from xpra.util.str_fn import hexstr
+from xpra.util.str_fn import hexstr, strtobytes
 from xpra.util.env import envbool
 
 from xpra.net.crypto import (
@@ -88,7 +88,7 @@ class TestCrypto(unittest.TestCase):
         assert secret is not None
         # test creation of encryptors and decryptors:
         iv = DEFAULT_IV
-        args = secret, iv, mode
+        args = secret, strtobytes(iv), mode
         enc = get_cipher(*args).encryptor()
         log("%s%s.encryptor()=%s" % (get_cipher, args, enc))
         assert enc is not None

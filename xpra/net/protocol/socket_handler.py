@@ -240,7 +240,7 @@ class SocketProtocol:
     def set_packet_source(self, get_packet_cb: Callable[[], [PacketType, bool, bool]]) -> None:
         self._get_packet_cb = get_packet_cb
 
-    def set_cipher_in(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
+    def set_cipher_in(self, ciphername: str, iv: bytes, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
                       iterations: int, padding: str, always_pad: bool, stream: bool) -> None:
         cryptolog("set_cipher_in%s", (ciphername, iv,
                                       hexstr(key_data), hexstr(key_salt), key_hash, key_size,
@@ -254,10 +254,10 @@ class SocketProtocol:
         if stream:
             self.cipher_in_decryptor = get_cipher(self.cipher_in_key, iv, mode).decryptor()
         if self.cipher_in_name != ciphername:
-            cryptolog.info(f"receiving data using {ciphername!r} encryption")
+            cryptolog.info(f"receiving data using {ciphername!r} %sencryption", "stream " if stream else "")
             self.cipher_in_name = ciphername
 
-    def set_cipher_out(self, ciphername: str, iv: str, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
+    def set_cipher_out(self, ciphername: str, iv: bytes, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
                        iterations: int, padding: str, always_pad: bool, stream: bool) -> None:
         cryptolog("set_cipher_out%s", (ciphername, iv,
                                        hexstr(key_data), hexstr(key_salt), key_hash, key_size,
@@ -271,20 +271,28 @@ class SocketProtocol:
         if stream:
             self.cipher_out_encryptor = get_cipher(self.cipher_out_key, iv, mode).encryptor()
         if self.cipher_out_name != ciphername:
-            cryptolog.info(f"sending data using {ciphername!r} encryption")
+            cryptolog.info(f"sending data using {ciphername!r} %sencryption", "stream " if stream else "")
             self.cipher_out_name = ciphername
 
     def decrypt(self, encrypted: bytes, padding_size: int) -> bytes:
         cryptolog("received %6i %s encrypted bytes with %i bytes of padding",
                   len(encrypted), self.cipher_in_name, padding_size)
+        mode = get_mode(self.cipher_in_name)
+        info_options = {
+            "always-pad": self.cipher_in_always_pad,
+            "stream": self.cipher_in_stream,
+            "block-size": self.cipher_in_block_size,
+            "mode": mode,
+        }
+
         if self.cipher_in_stream:
             assert self.cipher_in_decryptor
             data = self.cipher_in_decryptor.update(encrypted)
         else:
             iv = encrypted[:16]
-            mode = get_mode(self.cipher_in_name)
             decryptor = get_cipher(self.cipher_in_key, iv, mode).decryptor()
             data = decryptor.update(encrypted[16:]) + decryptor.finalize()
+            info_options["iv"] = iv
 
         # remove the padding:
         if not padding_size:
@@ -313,6 +321,7 @@ class SocketProtocol:
         cryptolog(" encrypted data (hex): %s..", debug_str(encrypted))
         cryptolog(" decrypted data (%i bytes): %r..", len(data), data[:128])
         cryptolog(" decrypted data (hex): %s..", debug_str(data))
+        cryptolog(" options: %s", info_options)
         self._internal_error(f"{self.cipher_in_name} encryption padding error - wrong key?")
         return b""
 
@@ -1100,6 +1109,8 @@ class SocketProtocol:
                         self.invalid("unencrypted packet dropped", data)
                         return
                     data = self.decrypt(raw_data, padding_size)
+                    if not data:
+                        return
 
                 # uncompress if needed:
                 if compression_level > 0:

@@ -133,10 +133,11 @@ def validate_backend() -> None:
         block_size = get_block_size(mode)
         log(" key=%s, block_size=%s", hexstr(key), block_size)
         assert key is not None, "pycryptography failed to generate a key"
-        enc_cipher = get_cipher(key, DEFAULT_IV, mode)
+        iv = strtobytes(DEFAULT_IV)
+        enc_cipher = get_cipher(key, iv, mode)
         log(" encryptor cipher=%s", enc_cipher)
         assert enc_cipher is not None, "pycryptography failed to generate an encryptor"
-        dec_cipher = get_cipher(key, DEFAULT_IV, mode)
+        dec_cipher = get_cipher(key, iv, mode)
         log(" decryptor cipher=%s", dec_cipher)
         assert dec_cipher is not None, "pycryptography failed to generate a decryptor"
         test_messages = [message * (1 + block_size)]
@@ -184,17 +185,16 @@ def get_iterations() -> int:
     return DEFAULT_ITERATIONS
 
 
-def new_cipher_caps(proto, cipher: str, cipher_mode: str, encryption_key, padding_options) -> dict[str, Any]:
+def new_cipher_caps(proto, cipher: str, cipher_mode: str, encryption_key,
+                    padding_options, always_pad: bool, stream: bool) -> dict[str, Any]:
     iv = get_iv()
     key_salt = get_salt()
     key_size = DEFAULT_KEYSIZE
     key_hash = DEFAULT_KEY_HASH
     key_stretch = DEFAULT_KEY_STRETCH
-    always_pad = DEFAULT_ALWAYS_PAD
-    stream = DEFAULT_STREAM
     iterations = get_iterations()
     padding = choose_padding(padding_options)
-    proto.set_cipher_in(cipher + "-" + cipher_mode, iv,
+    proto.set_cipher_in(cipher + "-" + cipher_mode, strtobytes(iv),
                         encryption_key, key_salt, key_hash, key_size,
                         iterations, padding, always_pad, stream)
     return {
@@ -238,7 +238,7 @@ def get_mode(ciphername: str) -> str:
     return mode
 
 
-def get_cipher(key: bytes, iv: str, mode: str = DEFAULT_MODE):
+def get_cipher(key: bytes, iv: bytes, mode: str = DEFAULT_MODE):
     if not iv:
         raise ValueError("missing encryption iv")
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -246,7 +246,7 @@ def get_cipher(key: bytes, iv: str, mode: str = DEFAULT_MODE):
     if mode_class is None:
         raise ValueError(f"no {mode} mode in this version of python-cryptography")
     from cryptography.hazmat.backends import default_backend
-    return Cipher(algorithms.AES(key), mode_class(strtobytes(iv)), backend=default_backend())
+    return Cipher(algorithms.AES(key), mode_class(iv), backend=default_backend())
 
 
 def get_block_size(mode: str) -> int:

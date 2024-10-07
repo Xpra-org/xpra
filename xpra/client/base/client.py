@@ -348,7 +348,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             encryption = self.get_encryption()
             if encryption and ENCRYPT_FIRST_PACKET:
                 key = self.get_encryption_key()
-                protocol.set_cipher_out(encryption, DEFAULT_IV,
+                protocol.set_cipher_out(encryption, strtobytes(DEFAULT_IV),
                                         key, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
                                         DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM)
         self.have_more = protocol.source_has_more
@@ -495,7 +495,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         }
         cryptolog(f"cipher_caps={cipher_caps}")
         key = self.get_encryption_key()
-        self._protocol.set_cipher_in(encryption, iv,
+        self._protocol.set_cipher_in(encryption, strtobytes(iv),
                                      key, key_salt, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
                                      iterations, padding, always_pad, stream)
         return cipher_caps
@@ -1020,7 +1020,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         p = self._protocol
         if not p:
             return False
-        p.set_cipher_out(cipher + "-" + cipher_mode, cipher_iv,
+        p.set_cipher_out(cipher + "-" + cipher_mode, strtobytes(cipher_iv),
                          key, key_salt, key_hash, key_size,
                          iterations, padding, always_pad, stream)
         return True

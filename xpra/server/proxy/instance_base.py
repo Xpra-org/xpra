@@ -481,7 +481,10 @@ class ProxyInstance:
                 enc_caps = self.caps.dictget("encryption")
                 padding_options = typedict(enc_caps or {}).strtupleget("padding.options", [DEFAULT_PADDING])
                 caps["encryption"] = new_cipher_caps(self.client_protocol,
-                                                     self.cipher, self.cipher_mode, self.encryption_key, padding_options)
+                                                     self.cipher, self.cipher_mode, self.encryption_key,
+                                                     padding_options,
+                                                     enc_caps.boolget("always-pad", False),
+                                                     enc_caps.boolget("stream", True))
             # may need to bump packet size:
             proto.max_packet_size = max(MAX_PACKET_SIZE, maxw * maxh * 4 * 4)
             packet = ("hello", caps)
