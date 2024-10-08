@@ -347,8 +347,7 @@ class SocketProtocol:
             payload = self.cipher_out_encryptor.update(padded)
             iv_size = 0
         else:
-            import struct
-            iv = os.urandom(8) + struct.pack(b'L', self.output_raw_packetcount)
+            iv = os.urandom(16)
             iv_size = len(iv)
             payload_size += iv_size
             mode = get_mode(self.cipher_out_name)
