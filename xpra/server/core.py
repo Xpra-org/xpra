@@ -1979,7 +1979,7 @@ class ServerCore(ControlHandler):
 
     def send_challenge(self, proto: SocketProtocol, salt: bytes, auth_caps: dict, digest: str, salt_digest: str,
                        prompt: str = "password") -> None:
-        proto.send_now(("challenge", salt, auth_caps or {}, digest, salt_digest, prompt))
+        proto.send_now(("challenge", salt, auth_caps, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
     def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage, authenticator=None) -> None:

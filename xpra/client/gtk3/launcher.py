@@ -17,7 +17,7 @@ import os.path
 import sys
 import traceback
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.gtk.signals import register_os_signals
@@ -214,7 +214,7 @@ class ApplicationWindow:
         self.is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
         self.is_paramiko = ssh_cmd.startswith("paramiko")
 
-    def get_launcher_validation(self):
+    def get_launcher_validation(self) -> dict:
         # TODO: since "mode" is not part of global options
         # this validation should be injected from the launcher instead
         def validate_in_list(x, options):
@@ -1138,7 +1138,7 @@ def main(argv) -> int:
         return do_main(argv)
 
 
-def do_main(argv) -> int:
+def do_main(argv: Sequence[str]) -> int:
     from xpra.util.system import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
     from xpra.platform.gui import init as gui_init, ready as gui_ready

@@ -39,7 +39,7 @@ class XpraClient(GTKXpraClient):
     def get_notifier_classes(self) -> list[type]:
         ncs = super().get_notifier_classes()
 
-        def nwarn(notifier_name: str, err: Exception):
+        def nwarn(notifier_name: str, err: Exception) -> None:
             from xpra.log import Logger
             log = Logger("gtk", "client", "notify")
             log("get_notifier_classes()", exc_info=True)

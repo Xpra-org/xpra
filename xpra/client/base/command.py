@@ -210,7 +210,7 @@ class InfoXpraClient(CommandConnectClient):
         def print_fn(s) -> None:
             sys.stdout.write(f"{s}\n")
 
-        def prettify(k, v) -> str:
+        def prettify(k, v):
             ks = str(k)
             if ks.endswith("xid"):
                 try:

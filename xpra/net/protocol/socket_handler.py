@@ -274,7 +274,7 @@ class SocketProtocol:
             cryptolog.info(f"sending data using {ciphername!r} %sencryption", "stream " if stream else "")
             self.cipher_out_name = ciphername
 
-    def decrypt(self, encrypted: bytes, padding_size: int) -> bytes:
+    def decrypt(self, encrypted: SizedBuffer, padding_size: int) -> SizedBuffer:
         cryptolog("received %6i %s encrypted bytes with %i bytes of padding",
                   len(encrypted), self.cipher_in_name, padding_size)
         mode = get_mode(self.cipher_in_name)
@@ -304,7 +304,7 @@ class SocketProtocol:
             cryptolog("removing %i bytes of %s padding", padding_size, self.cipher_in_name)
             return data[:-padding_size]
 
-        def debug_str(s) -> None:
+        def debug_str(s) -> str:
             try:
                 return repr_ellipsized(hexstr(s))
             except (TypeError, ValueError):
@@ -352,7 +352,9 @@ class SocketProtocol:
             payload_size += iv_size
             mode = get_mode(self.cipher_out_name)
             encryptor = get_cipher(self.cipher_out_key, iv, mode).encryptor()
-            payload = iv + encryptor.update(padded) + encryptor.finalize()
+            encrypted = encryptor.update(padded)
+            extra = encryptor.finalize()
+            payload = iv + encrypted + extra
         cryptolog("sending %6s bytes %s encrypted with %2s bytes of padding, %2s bytes of iv",
                   len(payload), self.cipher_out_name, padding_size, iv_size)
         # cryptolog("encrypted(%s)=%s", repr_ellipsized(hexstr(padded)), repr_ellipsized(hexstr(payload)))

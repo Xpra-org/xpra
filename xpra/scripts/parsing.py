@@ -48,17 +48,17 @@ MODE_ALIAS: dict[str, str] = {
 REVERSE_MODE_ALIAS: dict[str, str] = {v: k for k, v in MODE_ALIAS.items()}
 
 
-def enabled_str(v, true_str: str = "yes", false_str: str = "no") -> str:
+def enabled_str(v: Any, true_str: str = "yes", false_str: str = "no") -> str:
     if v:
         return true_str
     return false_str
 
 
-def enabled_or_auto(v):
+def enabled_or_auto(v: Any) -> str:
     return bool_or(v, None, true_str="yes", false_str="no", other_str="auto")
 
 
-def bool_or(v, other_value, true_str, false_str, other_str):
+def bool_or(v: Any, other_value: Any, true_str: str, false_str: str, other_str: str):
     vs = str(v).lower()
     if vs == str(other_value).lower():
         return other_str
@@ -66,7 +66,7 @@ def bool_or(v, other_value, true_str, false_str, other_str):
     return enabled_str(bv, true_str, false_str)
 
 
-def audio_option(v):
+def audio_option(v) -> str:
     vl = v.lower()
     # ensures we return only: "on", "off" or "disabled" given any value
     if vl == "no":
@@ -99,7 +99,7 @@ def fixup_defaults(defaults: XpraConfig) -> None:
                 v.remove("help")
 
 
-def do_replace_option(cmdline, oldoption: str, newoption: str) -> None:
+def do_replace_option(cmdline: Sequence[str], oldoption: str, newoption: str) -> None:
     for i, x in enumerate(cmdline):
         if x == oldoption:
             cmdline[i] = newoption
@@ -107,7 +107,7 @@ def do_replace_option(cmdline, oldoption: str, newoption: str) -> None:
             cmdline[i] = f"{newoption}=" + x.split("=", 1)[1]
 
 
-def do_legacy_bool_parse(cmdline, optionname: str, newoptionname: str = "") -> None:
+def do_legacy_bool_parse(cmdline: Sequence[str], optionname: str, newoptionname: str = "") -> None:
     # find --no-XYZ or --XYZ
     # and replace it with --XYZ=yes|no
     if not newoptionname:
@@ -116,7 +116,7 @@ def do_legacy_bool_parse(cmdline, optionname: str, newoptionname: str = "") -> N
     do_replace_option(cmdline, f"--{optionname}", f"--{newoptionname}=yes")
 
 
-def ignore_options(args, options) -> None:
+def ignore_options(args: Sequence[str], options) -> None:
     for x in options:
         o = f"--{x}"  # ie: --use-display
         while o in args:
@@ -175,7 +175,7 @@ def parse_URL(url: str) -> tuple[str, dict]:
     return address, options
 
 
-def _sep_pos(display_name):
+def _sep_pos(display_name) -> int:
     # split the display name on ":" or "/"
     scpos = display_name.find(":")
     slpos = display_name.find("/")
@@ -393,7 +393,7 @@ def parse_display_name(error_cb, opts, display_name: str, cmdline=(),
     # (should we remove them afterwards?)
     from xpra.net.common import SOCKET_TYPES
 
-    def addschemes(array):
+    def addschemes(array) -> None:
         for x in SOCKET_TYPES:
             if x not in array:
                 array.append(x)
@@ -848,12 +848,12 @@ def get_usage() -> list[str]:
     return command_options
 
 
-def parse_cmdline(cmdline):
+def parse_cmdline(cmdline: Sequence[str]):
     defaults = make_defaults_struct()
     return do_parse_cmdline(cmdline, defaults)
 
 
-def do_parse_cmdline(cmdline, defaults):
+def do_parse_cmdline(cmdline: Sequence[str], defaults):
     # pylint: disable=consider-using-f-string
     #################################################################
     # NOTE NOTE NOTE
@@ -1007,7 +1007,7 @@ def parse_window_size(v, attribute="max-size"):
     return w, h
 
 
-def parse_command_line(cmdline, defaults):
+def parse_command_line(cmdline: Sequence[str], defaults: XpraConfig):
     usage_strs = ["\t%%prog %s\n" % x for x in get_usage()]
     parser = ModifiedOptionParser(version="xpra v" + full_version_str(), usage="\n" + "".join(usage_strs))
     hidden_options = {
@@ -1016,10 +1016,10 @@ def parse_command_line(cmdline, defaults):
         "download-path": defaults.download_path,
     }
 
-    def replace_option(oldoption, newoption):
+    def replace_option(oldoption: str, newoption: str):
         do_replace_option(cmdline, oldoption, newoption)
 
-    def legacy_bool_parse(optionname, newoptionname: str = ""):
+    def legacy_bool_parse(optionname: str, newoptionname: str = ""):
         do_legacy_bool_parse(cmdline, optionname, newoptionname)
 
     def ignore(defaults):
@@ -1034,13 +1034,13 @@ def parse_command_line(cmdline, defaults):
     parser.add_option_group(group)
 
     # we support remote start, so we need those even if we don't have server support:
-    def nonedefault(v):
+    def nonedefault(v) -> str:
         return repr(v) if v else "none"
 
-    def autodefault(v):
+    def autodefault(v) -> str:
         return "auto" if v is None else repr(v)
 
-    def dcsv(v):
+    def dcsv(v) -> str:
         return csv(v or ["none"])
 
     group.add_option("--start", action="append",
@@ -2002,7 +2002,7 @@ def validate_encryption(opts) -> None:
 
 
 def do_validate_encryption(auth, tcp_auth,
-                           encryption, tcp_encryption, encryption_keyfile, tcp_encryption_keyfile):
+                           encryption: str, tcp_encryption: str, encryption_keyfile: str, tcp_encryption_keyfile: str):
     if not encryption and not tcp_encryption:
         # don't bother initializing anything
         return
@@ -2045,7 +2045,7 @@ def do_validate_encryption(auth, tcp_auth,
     #                            +" as the password authentication file" % tcp_encryption)
 
 
-def show_audio_codec_help(is_server, speaker_codecs, microphone_codecs) -> list[str]:
+def show_audio_codec_help(is_server: bool, speaker_codecs, microphone_codecs) -> list[str]:
     from xpra.audio.wrapper import query_audio
     props = query_audio()
     if not props:
