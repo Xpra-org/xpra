@@ -15,8 +15,6 @@ from xpra.util.env import first_time
 from xpra.util.system import is_Wayland, is_X11
 from xpra.util.str_fn import bytestostr
 
-if is_X11() and not is_Wayland():
-    from xpra.gtk.error import xsync
 
 log = Logger("keyboard", "posix")
 
@@ -205,6 +203,7 @@ class Keyboard(KeyboardBase):
                     query_struct["layout"] = layout
             log("query_struct(%s)=%s", locale, query_struct)
             return query_struct
+        from xpra.gtk.error import xsync
         with xsync:
             query_struct = self.keyboard_bindings.getXkbProperties()
         log("get_keymap_spec()=%r", query_struct)
@@ -271,6 +270,7 @@ class Keyboard(KeyboardBase):
         variant = ""
         options = ""
         if self.keyboard_bindings:
+            from xpra.gtk.error import xsync
             with xsync:
                 props = self.keyboard_bindings.getXkbProperties()
             v = props.get("layout")
