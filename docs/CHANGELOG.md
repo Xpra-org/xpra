@@ -1,7 +1,26 @@
 # Changelog
 
 ## [6.2.0] 2024-07-18
-* TODO
+* Platforms, build and packaging:
+    * [pycuda for Fedora 41](https://github.com/Xpra-org/xpra/issues/4332)
+    * [move `opengl` module to top level](https://github.com/Xpra-org/xpra/commit/111afa5e028bea7b006bb6cb820e4104af8ba4e9)
+    * [re-enable cython csc module](https://github.com/Xpra-org/xpra/commit/b89ed18a344a30780b69a3288f8e741287e81e0e)
+* Fixes:
+    * [AES padding](https://github.com/Xpra-org/xpra/issues/4372)
+* Features:
+    * [PoC PyQt6 client](https://github.com/Xpra-org/xpra/issues/4314)
+    * [`minimal` command line switch](https://github.com/Xpra-org/xpra/issues/3953)
+    * [option to completely disable all of GStreamer](https://github.com/Xpra-org/xpra/issues/4330)
+    * [strongly enforce disabled subsystems](https://github.com/Xpra-org/xpra/issues/4307)
+    * [watch for start menu file changes reliably, on all platforms](https://github.com/Xpra-org/xpra/issues/3335)
+    * [improve transient and permanent hardware codec failures differently](https://github.com/Xpra-org/xpra/issues/4348)
+    * [continue to remove GTK](https://github.com/Xpra-org/xpra/issues/3871)
+    * [guess initial server display resolution](https://github.com/Xpra-org/xpra/issues/4302)
+* Network:
+    * [multi-processing proxy server with SSL](https://github.com/Xpra-org/xpra/issues/4362)
+    * [more control commands for proxy instances](https://github.com/Xpra-org/xpra/issues/4363)
+    * [inline more data in network packets](https://github.com/Xpra-org/xpra/issues/4366)
+    * [SSL setup made easy](https://github.com/Xpra-org/xpra/issues/4288)
 
 ## [6.1] 2024-07-18
 * Platforms, build and packaging:

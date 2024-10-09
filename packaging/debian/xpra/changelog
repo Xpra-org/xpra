@@ -1,7 +1,26 @@
 xpra (6.2.0-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+    pycuda for Fedora 41
+    move `opengl` module to top level
+    re-enable cython csc module
+  * Fixes:
+    AES padding
+  * Features:
+    PoC PyQt6 client
+    `minimal` command line switch
+    option to completely disable all of GStreamer
+    strongly enforce disabled subsystems
+    watch for start menu file changes reliably, on all platforms
+    improve transient and permanent hardware codec failures differently
+    continue to remove GTK
+    guess initial server display resolution
+  * Network:
+    multi-processing proxy server with SSL
+    more control commands for proxy instances
+    inline more data in network packets
+    SSL setup made easy
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 18 Jul 2024 20:27:54 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 09 Oct 2024 18:0:27 +0700
 
 xpra (6.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

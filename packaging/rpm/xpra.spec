@@ -905,8 +905,28 @@ fi
 
 
 %changelog
-* Thu Jul 18 2024 Antoine Martin <antoine@xpra.org> 6.2.0-10
-- TODO
+* Wed Oct 09 2024 Antoine Martin <antoine@xpra.org> 6.2-10
+- Platforms, build and packaging:
+   pycuda for Fedora 41
+   move `opengl` module to top level
+   re-enable cython csc module
+- Fixes:
+   AES padding
+- Features:
+   PoC PyQt6 client
+   `minimal` command line switch
+   option to completely disable all of GStreamer
+   strongly enforce disabled subsystems
+   watch for start menu file changes reliably, on all platforms
+   improve transient and permanent hardware codec failures differently
+   continue to remove GTK
+   guess initial server display resolution
+- Network:
+   multi-processing proxy server with SSL
+   more control commands for proxy instances
+   inline more data in network packets
+   SSL setup made easy
+
 * Thu Jul 18 2024 Antoine Martin <antoine@xpra.org> 6.1-10
 - Platforms, build and packaging:
    RHEL 10 builds
