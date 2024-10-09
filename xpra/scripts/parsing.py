@@ -99,7 +99,7 @@ def fixup_defaults(defaults: XpraConfig) -> None:
                 v.remove("help")
 
 
-def do_replace_option(cmdline: Sequence[str], oldoption: str, newoption: str) -> None:
+def do_replace_option(cmdline: list[str], oldoption: str, newoption: str) -> None:
     for i, x in enumerate(cmdline):
         if x == oldoption:
             cmdline[i] = newoption
@@ -107,7 +107,7 @@ def do_replace_option(cmdline: Sequence[str], oldoption: str, newoption: str) ->
             cmdline[i] = f"{newoption}=" + x.split("=", 1)[1]
 
 
-def do_legacy_bool_parse(cmdline: Sequence[str], optionname: str, newoptionname: str = "") -> None:
+def do_legacy_bool_parse(cmdline: list[str], optionname: str, newoptionname: str = "") -> None:
     # find --no-XYZ or --XYZ
     # and replace it with --XYZ=yes|no
     if not newoptionname:
@@ -116,7 +116,7 @@ def do_legacy_bool_parse(cmdline: Sequence[str], optionname: str, newoptionname:
     do_replace_option(cmdline, f"--{optionname}", f"--{newoptionname}=yes")
 
 
-def ignore_options(args: Sequence[str], options) -> None:
+def ignore_options(args: list[str], options) -> None:
     for x in options:
         o = f"--{x}"  # ie: --use-display
         while o in args:
@@ -848,12 +848,12 @@ def get_usage() -> list[str]:
     return command_options
 
 
-def parse_cmdline(cmdline: Sequence[str]):
+def parse_cmdline(cmdline: list[str]):
     defaults = make_defaults_struct()
     return do_parse_cmdline(cmdline, defaults)
 
 
-def do_parse_cmdline(cmdline: Sequence[str], defaults):
+def do_parse_cmdline(cmdline: list[str], defaults):
     # pylint: disable=consider-using-f-string
     #################################################################
     # NOTE NOTE NOTE
@@ -1007,7 +1007,7 @@ def parse_window_size(v, attribute="max-size"):
     return w, h
 
 
-def parse_command_line(cmdline: Sequence[str], defaults: XpraConfig):
+def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     usage_strs = ["\t%%prog %s\n" % x for x in get_usage()]
     parser = ModifiedOptionParser(version="xpra v" + full_version_str(), usage="\n" + "".join(usage_strs))
     hidden_options = {
