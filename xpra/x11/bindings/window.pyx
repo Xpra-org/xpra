@@ -146,7 +146,7 @@ cdef extern from "X11/Xlib.h":
     int NotifyDetailNone
 
 
-constants = {
+constants: Dict[str, int] = {
     "CWX"               : CWX,
     "CWY"               : CWY,
     "CWWidth"           : CWWidth,
@@ -236,13 +236,13 @@ constants = {
     "OwnerGrabButtonMask": OwnerGrabButtonMask,
 }
 
-MASKS = {}
+MASKS: Dict[int, str] = {}
 for name, constant in constants.items():
     if name.endswith("Mask") and constant>0:
         MASKS[constant] = name[:-4]
 
 
-def get_mask_strs(int mask):
+def get_mask_strs(int mask) -> list[str]:
     masks = []
     for constant, name in MASKS.items():
         if mask & constant:
@@ -280,7 +280,8 @@ cdef extern from "X11/extensions/shape.h":
     cdef int ShapeBounding
     cdef int ShapeClip
     cdef int ShapeInput
-SHAPE_KIND = {
+
+SHAPE_KIND: Dict[int, str] = {
     ShapeBounding   : "Bounding",
     ShapeClip       : "Clip",
     ShapeInput      : "ShapeInput",

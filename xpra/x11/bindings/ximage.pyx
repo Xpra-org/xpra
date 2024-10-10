@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from time import monotonic
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.log import Logger
@@ -152,7 +152,7 @@ cdef extern from "X11/extensions/XShm.h":
     int XShmGetEventBase(Display *display)
 
 
-SBFirst = {
+SBFirst: Dict[int, str] = {
     MSBFirst : "MSBFirst",
     LSBFirst : "LSBFirst"
 }
