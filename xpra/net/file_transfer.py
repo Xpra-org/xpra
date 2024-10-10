@@ -232,11 +232,6 @@ def digest_mismatch(filename: str, digest, expected_digest) -> None:
     filelog.error(f" for {filename!r}")
     filelog.error(f" received {digest.hexdigest()}")
     filelog.error(f" expected {expected_digest}")
-    try:
-        if os.path.exists(filename):
-            os.unlink(filename)
-    except OSError:
-        filelog.error(f"Error: failed to delete uploaded file {filename}")
 
 
 def get_open_env() -> dict[str, str]:
@@ -391,25 +386,38 @@ class FileTransferHandler(FileTransferAttributes):
         filelog(f"file_data={len(file_data)} {type(file_data)}")
         filelog("_process_send_file_chunk%s", (chunk_id, chunk, f"{len(file_data)} bytes", has_more))
         chunk_state = self.receive_chunks_in_progress.get(chunk_id)
-        if not chunk_state:
-            filelog.error(f"Error: cannot find the file transfer id {chunk_id!r}")
-            self.cancel_file(chunk_id, f"file transfer id {chunk_id!r} not found", chunk)
-            return
-        if chunk_state.cancelled:
-            filelog("got chunk for a cancelled file transfer, ignoring it")
-            return
 
         def progress(position: int, error="") -> None:
             s_elapsed = monotonic() - chunk_state.start
             self.transfer_progress_update(False, chunk_state.send_id, s_elapsed, position, chunk_state.filesize, error)
 
+        def error(message: str) -> None:
+            filelog.error(f"Error: {message}")
+            self.cancel_file(chunk_id, message, chunk)
+            if chunk_state:
+                if chunk_state.fd:
+                    osclose(chunk_state.fd)
+                filename = chunk_state.filename
+                if filename and os.path.exists(filename):
+                    try:
+                        os.unlink(filename)
+                    except OSError:
+                        filelog.error(f"Error: failed to delete uploaded file {filename!r}")
+            progress(-1, message)
+
+        if not chunk_state:
+            error(f"file transfer id {chunk_id!r} not found")
+            return
+
+        if chunk_state.cancelled:
+            filelog("got chunk for a cancelled file transfer, ignoring it")
+            return
+
         fd = chunk_state.fd
         if chunk_state.chunk + 1 != chunk:
-            filelog.error("Error: chunk number mismatch, expected %i but got %i", chunk_state.chunk + 1, chunk)
-            self.cancel_file(chunk_id, "chunk number mismatch", chunk)
-            osclose(fd)
-            progress(-1, "chunk no mismatch")
+            error("chunk number mismatch")
             return
+
         # update chunk number:
         chunk_state.chunk = chunk
         try:
@@ -418,21 +426,19 @@ class FileTransferHandler(FileTransferAttributes):
                 chunk_state.digest.update(file_data)
             chunk_state.written += len(file_data)
         except OSError as e:
-            filelog.error("Error: cannot write file chunk")
-            filelog.estr(e)
-            self.cancel_file(chunk_id, f"write error: {e}", chunk)
-            osclose(fd)
-            progress(-1, f"write error ({e}")
+            error(f"cannot write file chunk: {e}")
             return
+
         if chunk_state.written > chunk_state.filesize:
-            filelog.error("Error: too much data received")
-            progress(-1, "file data size mismatch")
+            error("more data received than specified in the file size!")
             return
+
         self.send("ack-file-chunk", chunk_id, True, "", chunk)
         if chunk_state.cancelled:
             # check again if the transfer has been cancelled
             filelog("got chunk for a cancelled file transfer, ignoring it")
             return
+
         if has_more:
             progress(chunk_state.written)
             if chunk_state.timer:
@@ -442,6 +448,7 @@ class FileTransferHandler(FileTransferAttributes):
             pct = round(100 * chunk_state.written / chunk_state.filesize)
             filelog(f"waiting for the next chunk, got {chunk_state.written:8} of {chunk_state.filesize:8}: {pct:3}%")
             return
+
         # we have received all the packets
         self.receive_chunks_in_progress.pop(chunk_id, None)
         osclose(fd)
@@ -451,15 +458,16 @@ class FileTransferHandler(FileTransferAttributes):
         if chunk_state.digest:
             expected_digest = options.strget(chunk_state.digest.name)  # ie: "sha256"
             if expected_digest and chunk_state.digest.hexdigest() != expected_digest:
-                progress(-1, "checksum mismatch")
                 digest_mismatch(filename, chunk_state.digest, expected_digest)
+                error("checksum mismatch")
                 return
             filelog("%s digest matches: %s", chunk_state.digest.name, expected_digest)
+
         # check file size and digest then process it:
         if chunk_state.written != chunk_state.filesize:
-            filelog.error("Error: expected a file of %i bytes, got %i", chunk_state.filesize, chunk_state.written)
-            progress(-1, "file size mismatch")
+            error("expected a file of %i bytes, got %i", chunk_state.filesize, chunk_state.written)
             return
+
         progress(chunk_state.written)
         elapsed = monotonic() - chunk_state.start
         filelog("%i bytes received in %i chunks, took %ims", chunk_state.filesize, chunk, elapsed * 1000)
@@ -505,19 +513,31 @@ class FileTransferHandler(FileTransferAttributes):
         send_id = ""
         if len(packet) >= 9:
             send_id = str(packet[8])
+        chunk_id = options.strget("file-chunk-id")
+
+        def cancel(message: str) -> None:
+            log.error(f"Error: {message}")
+            if chunk_id:
+                self.cancel_file(chunk_id, message, chunk)
+
         if filesize <= 0:
-            filelog.error("Error: invalid file size: %s", filesize)
-            filelog.error(" file transfer aborted for %r", basefilename)
+            cancel(f"invalid file size {filesize} for {basefilename!r}")
             return
+        if filesize > self.file_size_limit:
+            fstr = std_unit(filesize)
+            limstr = std_unit(self.file_size_limit)
+            cancel(f"file {basefilename!r} is too large: {fstr}B, the file size limit is {limstr}B")
+            return
+
         args = (send_id, "file", basefilename, printit, openit)
         acceptit, printit, openit = self.accept_data(*args)
         filelog("%s%s=%s", self.accept_data, args, (acceptit, printit, openit))
         if not acceptit:
-            filelog.warn("Warning: %s rejected for file '%s'",
-                         ("transfer", "printing")[bool(printit)],
-                         basefilename)
+            ftype = "printing" if printit else "transfer"
+            cancel(f"{ftype} rejected for file {basefilename!r}")
             return
-        # accept_data can override the flags:
+
+        # accept_data() method can override the flags:
         if printit:
             log = printlog
             assert self.printing
@@ -526,21 +546,29 @@ class FileTransferHandler(FileTransferAttributes):
             assert self.file_transfer
         log("receiving file: %s",
             (basefilename, mimetype, printit, openit, filesize, f"{len(file_data)} bytes", options))
-        if filesize > self.file_size_limit:
-            log.error("Error: file '%s' is too large:", basefilename)
-            log.error(" %sB, the file size limit is %sB", std_unit(filesize), std_unit(self.file_size_limit))
-            return
-        chunk_id = options.strget("file-chunk-id")
+
         try:
             filename, fd = safe_open_download_file(basefilename, mimetype)
         except OSError as e:
             log("cannot save file %s / %s", basefilename, mimetype, exc_info=True)
-            log.error("Error: failed to save downloaded file")
-            log.estr(e)
-            if chunk_id:
-                self.send("ack-file-chunk", chunk_id, False, f"failed to create file: {e}", 0)
+            cancel(f"failed to save downloaded file: {e}")
             return
         self.file_descriptors.add(fd)
+
+        # from now on, call error() so we also close / cleanup the temporary file:
+        def error(message: str) -> None:
+            cancel(message)
+            if fd:
+                try:
+                    os.close(fd)
+                except OSError:
+                    log.error(f"Error: failed to close {fd=} used for file transfer")
+                else:
+                    try:
+                        self.file_descriptors.remove(fd)
+                    except KeyError:
+                        pass
+
         digest: hashlib._Hash | None = None
         for hash_fn in ("sha512", "sha384", "sha256", "sha224", "sha1"):
             if options.strget(hash_fn):
@@ -550,8 +578,7 @@ class FileTransferHandler(FileTransferAttributes):
             chunk = 0
             nfiles = len(self.receive_chunks_in_progress)
             if nfiles >= MAX_CONCURRENT_FILES:
-                self.cancel_file(chunk_id, f"too many file transfers in progress: {nfiles}", chunk)
-                osclose(fd)
+                error(f"too many file transfers in progress: {nfiles}")
                 return
             timer = GLib.timeout_add(CHUNK_TIMEOUT, self._check_chunk_receiving, chunk_id, chunk)
             self.receive_chunks_in_progress[chunk_id] = ReceiveChunkState(monotonic(),
@@ -563,10 +590,10 @@ class FileTransferHandler(FileTransferAttributes):
             return
         # not chunked, full file:
         if not file_data:
-            raise RuntimeError("no file data")
+            error("no file data")
+            return
         if len(file_data) != filesize:
-            log.error("Error: invalid data size for file '%s'", basefilename)
-            log.error(" received %i bytes, expected %i bytes", len(file_data), filesize)
+            error(f"file {basefilename!r} size: received {len(file_data)} bytes, expected {filesize} bytes")
             return
         # check digest if present:
         if digest:
@@ -574,12 +601,16 @@ class FileTransferHandler(FileTransferAttributes):
             expected_digest = options.strget(digest.name)  # ie: "sha256"
             if expected_digest and digest.hexdigest() != expected_digest:
                 digest_mismatch(basefilename, digest, expected_digest)
+                error("checksum mismatch")
                 return
             log("%s digest matches: %s", digest.name, expected_digest)
         try:
             os.write(fd, file_data)
+        except OSError as e:
+            error(f"failed to write file data: {e}")
+            return
         finally:
-            os.close(fd)
+            osclose(fd)
         self.transfer_progress_update(False, send_id, monotonic() - start, filesize, filesize, None)
         self.process_downloaded_file(filename, mimetype, printit, openit, filesize, options)
 
@@ -641,7 +672,7 @@ class FileTransferHandler(FileTransferAttributes):
             delfile()
             return
         if printer not in printers:
-            printlog.error("Error: printer '%s' does not exist!", printer)
+            printlog.error(f"Error: printer {printer!r} does not exist!")
             printlog.error(" printers available: %s", csv(printers.keys()) or "none")
             delfile()
             return
@@ -655,9 +686,9 @@ class FileTransferHandler(FileTransferAttributes):
             printlog.estr(e)
             delfile()
             return
-        printlog("printing %s, job=%s", filename, job)
+        printlog(f"printing {filename!r}, job={job}")
         if job <= 0:
-            printlog("printing failed and returned %i", job)
+            printlog(f"printing failed and returned {job}")
             delfile()
             return
         start = monotonic()
