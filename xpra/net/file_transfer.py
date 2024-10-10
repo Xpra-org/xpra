@@ -184,7 +184,7 @@ class FileTransferAttributes:
         self.open_command = open_command
         self.files_requested: dict[str, bool] = {}
         self.files_accepted: dict[str, bool] = {}
-        self.file_request_callback: dict[str, Callable] = {}
+        self.file_request_callback: dict[str, Callable[[str, int], None]] = {}
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
     def get_file_transfer_features(self) -> dict[str, Any]:
@@ -616,9 +616,11 @@ class FileTransferHandler(FileTransferAttributes):
 
     def process_downloaded_file(self, filename: str, mimetype: str,
                                 printit: bool, openit: bool, filesize: int, options) -> None:
-        filelog.info("downloaded %s bytes to %s file%s:",
-                     filesize, (mimetype or "temporary"), ["", " for printing"][int(printit)])
-        filelog.info(" '%s'", filename)
+        sizestr = std_unit(filesize)
+        ftype = mimetype or "temporary"
+        extra = " for printing" if printit else ""
+        filelog.info(f"downloaded {sizestr} bytes to {ftype} file{extra}:")
+        filelog.info(f" {filename!r}")
         # some file requests may have a custom callback
         # (ie: bug report tool will just include the file)
         rf = options.tupleget("request-file")

@@ -542,7 +542,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.file_size_dialog = None
             fsd.close()
 
-    def download_server_log(self, callback: Callable = noop) -> None:
+    def download_server_log(self, callback: Callable[[str, int], None] = noop) -> None:
         filename = "${XPRA_SERVER_LOG}"
         self.file_request_callback[filename] = callback
         self.send_request_file(filename, self.open_files)
@@ -674,7 +674,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         # gives the server time to send an info response..
         # (by the time the user clicks on copy, it should have arrived, we hope!)
 
-        def got_server_log(filename: str, filesize: int):
+        def got_server_log(filename: str, filesize: int) -> None:
             log(f"got_server_log({filename!r}, {filesize})")
             filedata = load_binary_file(filename)
             self.bug_report.set_server_log_data(filedata)
