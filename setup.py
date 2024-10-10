@@ -1977,7 +1977,7 @@ if WIN32:
     external_includes += [
         "pyu2f",
         "mmap",
-        "comtypes"      # used by webcam and netdev_query
+        "comtypes", "comtypes.stream",      # used by webcam, netdev_query, taskbar progress (file-transfers), etc
     ]
     # this is generated at runtime,
     # but we still have to remove the empty directory by hand
