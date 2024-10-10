@@ -394,6 +394,8 @@ class AudioServer(StubServerMixin):
 
     def _process_sound_control(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
+        if not ss:
+            return
         audio_control = getattr(ss, "audio_control", None)
         if not audio_control:
             if first_time(f"no-audio-control-{ss}"):
