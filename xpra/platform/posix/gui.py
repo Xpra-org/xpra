@@ -66,7 +66,6 @@ def X11XI2Bindings():
 
 
 device_bell = None
-GTK_MENUS = envbool("XPRA_GTK_MENUS", False)
 RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
