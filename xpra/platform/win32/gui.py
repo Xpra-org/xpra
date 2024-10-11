@@ -595,9 +595,10 @@ def add_window_hooks(window) -> None:
                 apply_maxsize_hints(window, window.geometry_hints)
 
         if LANGCHANGE:
-            def inputlangchange(_hwnd, _event, wParam, lParam):
+            def inputlangchange(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
                 keylog("WM_INPUTLANGCHANGE: character set: %i, input locale identifier: %i", wParam, lParam)
                 window.keyboard_layout_changed("WM_INPUTLANGCHANGE", wParam, lParam)
+                return 0
 
             win32hooks.add_window_event_handler(win32con.WM_INPUTLANGCHANGE, inputlangchange)
 
@@ -605,7 +606,7 @@ def add_window_hooks(window) -> None:
             VERTICAL = "vertical"
             HORIZONTAL = "horizontal"
 
-            def handle_wheel(orientation, wParam, lParam):
+            def handle_wheel(orientation: str, wParam: int, lParam: int):
                 distance = wParam >> 16
                 if distance > 2 ** 15:
                     # ie: 0xFF88 -> 0x78 (120)
@@ -630,11 +631,11 @@ def add_window_hooks(window) -> None:
                     device_id = -1
                     client.wheel_event(device_id, wid, deltax, deltay, pointer)
 
-            def mousewheel(_hwnd, _event, wParam, lParam):
+            def mousewheel(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
                 handle_wheel(VERTICAL, wParam, lParam)
                 return 0
 
-            def mousehwheel(_hwnd, _event, wParam, lParam):
+            def mousehwheel(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
                 handle_wheel(HORIZONTAL, wParam, lParam)
                 return 0
 

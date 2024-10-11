@@ -67,7 +67,7 @@ class Win32Hooks:
         log("Win32Hooks: window frame size is %sx%s", self.frame_width, self.frame_height)
         log("Win32Hooks: message_map=%s", self._message_map)
 
-    def add_window_event_handler(self, event: int, handler: Callable) -> None:
+    def add_window_event_handler(self, event: int, handler: Callable[[int, int, int, int], int]) -> None:
         self._message_map[event] = handler
 
     def setup(self) -> None:
@@ -78,7 +78,7 @@ class Win32Hooks:
         except Exception:
             log.error(f"Error setting up window hook for {self._hwnd}", exc_info=True)
 
-    def on_getminmaxinfo(self, hwnd: int, msg, wparam: int, lparam: int):
+    def on_getminmaxinfo(self, hwnd: int, msg, wparam: int, lparam: int) -> int:
         if (self.min_size or self.max_size) and lparam:
             info = cast(lparam, POINTER(MINMAXINFO)).contents
             style = GetWindowLongW(hwnd, win32con.GWL_STYLE)
