@@ -136,7 +136,7 @@ class Win32Eventlistener:
 
     def cleanup(self):
         log("Win32Eventlistener.cleanup()")
-        self.event_callback = {}
+        self.event_callbacks = {}
 
         hwnd = self.hwnd
         if hwnd:
