@@ -89,6 +89,14 @@ WINDOW_EVENTS = envbool("XPRA_WIN32_WINDOW_EVENTS", True)
 EVENT_CALLBACK_TYPE = Callable[[int, int], None]
 
 
+def add_handler(event: str, handler: Callable) -> None:
+    pass
+
+
+def remove_handler(event: str, handler: Callable) -> None:
+    pass
+
+
 class Win32Eventlistener:
 
     def __init__(self):

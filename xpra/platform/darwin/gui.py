@@ -4,32 +4,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-import math
 import ctypes
 import struct
 from weakref import WeakValueDictionary
 from typing import Any
 from collections.abc import Callable, Sequence
 
-import objc
 import Quartz
+from Quartz import kCGDisplaySetModeFlag
 import Quartz.CoreGraphics as CG
-from Quartz import (
-    CGWindowListCopyWindowInfo, kCGDisplaySetModeFlag, kCGWindowListOptionOnScreenOnly,
-    kCGNullWindowID, kCGWindowListOptionAll,
-)
-from Quartz.CoreGraphics import (
-    CGDisplayRegisterReconfigurationCallback,
-    CGDisplayRemoveReconfigurationCallback,
-)
-from AppKit import (
-    NSObject, NSAppleEventManager, NSScreen, NSBeep,
-    NSApp, NSApplication, NSWorkspace,
-    NSWorkspaceActiveSpaceDidChangeNotification,
-    NSWorkspaceWillSleepNotification,
-    NSWorkspaceDidWakeNotification,
-)
+from Quartz.CoreGraphics import CGDisplayRegisterReconfigurationCallback, CGDisplayRemoveReconfigurationCallback
+from AppKit import NSObject, NSAppleEventManager, NSScreen, NSBeep, NSApp
 
 from xpra.os_util import gi_import
 from xpra.common import roundup
@@ -546,7 +531,7 @@ def register_URL_handler(handler: Callable) -> None:
 
     # A helper to make struct since cocoa headers seem to make
     # it impossible to use kAE*
-    def four_char_to_int(code):
+    def four_char_to_int(code: bytes) -> int:
         return struct.unpack(b'>l', code)[0]
 
     urlh = GURLHandler.alloc()
@@ -557,117 +542,6 @@ def register_URL_handler(handler: Callable) -> None:
         urlh, 'handleEvent:withReplyEvent:',
         four_char_to_int(b'GURL'), four_char_to_int(b'GURL')
     )
-
-
-class AppDelegate(NSObject):
-
-    # noinspection PyTypeHints
-    def init(self) -> None:
-        objc_self = objc.super(AppDelegate, self).init()
-        if self is None:
-            return None
-        objc_self.callbacks: dict[str, Callable] = {}
-        objc_self.workspace = None
-        objc_self.notificationCenter = None
-        return objc_self
-
-    @objc.python_method
-    def wheel_event_handler(self, nsview, deltax, deltay, precise):
-        global VIEW_TO_WINDOW
-        window = VIEW_TO_WINDOW.get(nsview)
-        mouselog("wheel_event_handler(%#x, %.4f, %.4f, %s) window=%s", nsview, deltax, deltay, precise, window)
-        if not window:
-            return False  # not handled
-
-        def normalize_precision(distance):
-            if distance == 0:
-                return 0
-            if precise:
-                m = OSX_WHEEL_PRECISE_MULTIPLIER
-            else:
-                m = OSX_WHEEL_MULTIPLIER
-            v = m * abs(distance) / OSX_WHEEL_DIVISOR
-            if v > 1:
-                # cancel out some of the crazy fast scroll acceleration from macos:
-                v = math.sqrt(v)
-            if distance < 0:
-                # restore sign:
-                v = -v
-            mouselog("normalize_precision(%.3f)=%.3f (multiplier=%i)", distance, v, m)
-            return v
-
-        dx = normalize_precision(deltax)
-        dy = normalize_precision(deltay)
-        if dx != 0 or dy != 0:
-            client = window._client
-            wid = window.wid
-            pointer = window.get_mouse_position()
-            device_id = -1
-            client.wheel_event(device_id, wid, dx, dy, pointer)
-        return True
-
-    @objc.python_method
-    def register_sleep_handlers(self):
-        log("register_sleep_handlers()")
-        self.workspace: NSWorkspace = NSWorkspace.sharedWorkspace()
-        self.notificationCenter = self.workspace.notificationCenter()
-
-        def add_observer(fn, val):
-            self.notificationCenter.addObserver_selector_name_object_(self, fn, val, None)
-
-        # NSWorkspaceWillPowerOffNotification
-        add_observer(self.receiveSleepNotification_, NSWorkspaceWillSleepNotification)
-        add_observer(self.receiveWakeNotification_, NSWorkspaceDidWakeNotification)
-        add_observer(self.receiveWorkspaceChangeNotification_, NSWorkspaceActiveSpaceDidChangeNotification)
-
-    @objc.typedSelector(b'B@:#B')
-    def applicationShouldHandleReopen_hasVisibleWindows_(self, ns_app, flag):
-        log("applicationShouldHandleReopen_hasVisibleWindows%s", (ns_app, flag))
-        self.delegate_cb("deiconify")
-        return True
-
-    @objc.typedSelector(b'v@:I')
-    def receiveWorkspaceChangeNotification_(self, aNotification):
-        workspacelog("receiveWorkspaceChangeNotification_(%s)", aNotification)
-        if not CGWindowListCopyWindowInfo:
-            return
-        with workspacelog.trap_error("Error querying workspace info"):
-            ourpid = os.getpid()
-            windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListOptionOnScreenOnly,
-                                                    kCGNullWindowID)
-            our_windows = {}
-            for window in windowList:
-                pid = window['kCGWindowOwnerPID']
-                if pid == ourpid:
-                    num = window['kCGWindowNumber']
-                    name = window['kCGWindowName']
-                    our_windows[num] = name
-            workspacelog("workspace change - our windows on screen: %s", our_windows)
-            if our_windows:
-                self.delegate_cb("wake")
-            else:
-                self.delegate_cb("sleep")
-
-    # def application_openFile_(self, application, fileName):
-    #    log.warn("application_openFile_(%s, %s)", application, fileName)
-    @objc.typedSelector(b'v@:I')
-    def receiveSleepNotification_(self, aNotification):
-        log("receiveSleepNotification_(%s) sleep_callback=%s", aNotification, self.sleep_callback)
-        self.delegate_cb("sleep")
-
-    @objc.typedSelector(b'v@:I')
-    def receiveWakeNotification_(self, aNotification):
-        log("receiveWakeNotification_(%s)", aNotification)
-        self.delegate_cb("wake")
-
-    @objc.python_method
-    def delegate_cb(self, name):
-        # find the named callback and call it
-        callback = self.callbacks.get(name)
-        log("delegate_cb(%s)=%s", name, callback)
-        if callback:
-            with log.trap_error("Error in %s callback %s", name, callback):
-                callback()
 
 
 def disable_focus_workaround() -> None:
@@ -709,8 +583,6 @@ class ClientExtras:
         self.event_loop_started = False
         self.check_display_timer = 0
         self.display_is_asleep = False
-        self.shared_app = None
-        self.delegate = None
         if opts and client:
             swap_keys = opts.swap_keys
             log("setting swap_keys=%s using %s", swap_keys, client.keyboard_helper)
@@ -742,19 +614,14 @@ class ClientExtras:
                 self.setup_event_listener()
 
     def setup_event_listener(self) -> None:
-        self.shared_app = NSApplication.sharedApplication()
-        log(f"setup_event_listener() delegate={self.delegate}, shared app={self.shared_app}")
-        self.delegate = AppDelegate.alloc()
-        self.delegate.init()
-        self.delegate.retain()
+        log(f"setup_event_listener() client={self.client}")
         if self.client:
-            self.delegate.callbacks.update({
-                "sleep": self.client.suspend,
-                "wake": self.client.resume,
-                "deiconify": self.client.deiconify_windows,
-            })
-        self.shared_app.setDelegate_(self.delegate)
-        log("setup_event_listener() the application delegate has been registered")
+            from xpra.platform.darwin.events import get_app_delegate
+            delegate = get_app_delegate()
+            log(f"setup_event_listener() delegate={delegate}")
+            delegate.add_handler("suspend", self.client.suspend)
+            delegate.add_handler("resume", self.client.resume)
+            delegate.add_handler("deiconify", self.client.deiconify_windows)
         r = CGDisplayRegisterReconfigurationCallback(self.display_change, self)
         if r != 0:
             log.warn("Warning: failed to register display reconfiguration callback")
