@@ -13,6 +13,7 @@ from xpra.os_util import gi_import
 from xpra.util.system import is_Wayland, is_X11
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time, get_saved_env, get_saved_env_var
+from xpra.platform.posix.events import add_handler, remove_handler
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -70,7 +71,6 @@ RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
-DBUS_SCREENSAVER = envbool("XPRA_DBUS_SCREENSAVER", False)
 
 
 def gl_check() -> str:
@@ -645,12 +645,6 @@ class ClientExtras:
         self.client = client
         self._xsettings_watcher = None
         self._root_props_watcher = None
-        self.system_bus = None
-        self.session_bus = None
-        self.upower_resuming_match = None
-        self.upower_sleeping_match = None
-        self.login1_match = None
-        self.screensaver_match = None
         self.x11_filter = None
         if client.xsettings_enabled:
             self.setup_xprops()
@@ -690,125 +684,22 @@ class ClientExtras:
         if self._root_props_watcher:
             self._root_props_watcher.cleanup()
             self._root_props_watcher = None
-        if self.system_bus:
-            bus = self.system_bus
-            log("cleanup() system bus=%s, matches: %s",
-                bus, (self.upower_resuming_match, self.upower_sleeping_match, self.login1_match))
-            self.system_bus = None
-            if self.upower_resuming_match:
-                bus._clean_up_signal_match(self.upower_resuming_match)
-                self.upower_resuming_match = None
-            if self.upower_sleeping_match:
-                bus._clean_up_signal_match(self.upower_sleeping_match)
-                self.upower_sleeping_match = None
-            if self.login1_match:
-                bus._clean_up_signal_match(self.login1_match)
-                self.login1_match = None
-        if self.session_bus and self.screensaver_match:
-            self.session_bus._clean_up_signal_match(self.screensaver_match)
-            self.screensaver_match = None
+        remove_handler("suspend", self.suspend_callback)
+        remove_handler("resume", self.resume_callback)
 
-    def resuming_callback(self, *args) -> None:
-        eventlog("resuming_callback%s", args)
-        self.client.resume()
+    def suspend_callback(self, *args) -> None:
+        eventlog("suspend_callback%s", args)
+        if self.client:
+            self.client.suspend()
 
-    def sleeping_callback(self, *args) -> None:
-        eventlog("sleeping_callback%s", args)
-        self.client.suspend()
+    def resume_callback(self, *args) -> None:
+        eventlog("resume_callback%s", args)
+        if self.client:
+            self.client.resume()
 
     def setup_dbus_signals(self) -> None:
-        try:
-            import xpra.dbus
-            assert xpra.dbus
-        except ImportError:
-            dbuslog("setup_dbus_signals()", exc_info=True)
-            dbuslog.info("dbus support is not installed")
-            dbuslog.info(" no support for power events")
-            return
-        try:
-            from xpra.dbus.common import init_system_bus, init_session_bus
-        except ImportError as e:
-            dbuslog("setup_dbus_signals()", exc_info=True)
-            dbuslog.error("Error: dbus bindings are missing,")
-            dbuslog.error(" cannot setup event listeners:")
-            dbuslog.estr(e)
-            return
-
-        try:
-            import dbus
-            assert dbus
-        except ImportError as e:
-            dbuslog("setup_dbus_signals()", exc_info=True)
-            dbuslog.warn("Warning: cannot setup dbus signals")
-            dbuslog.warn(f" {e}")
-            return
-
-        try:
-            bus = init_system_bus()
-            self.system_bus = bus
-            dbuslog("setup_dbus_signals() system bus=%s", bus)
-        except Exception as e:
-            dbuslog("setup_dbus_signals()", exc_info=True)
-            dbuslog.error("Error setting up dbus signals:")
-            dbuslog.estr(e)
-            return
-
-        # the UPower signals:
-        try:
-            bus_name = 'org.freedesktop.UPower'
-            dbuslog("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
-            iface_name = 'org.freedesktop.UPower'
-            self.upower_resuming_match = bus.add_signal_receiver(self.resuming_callback,
-                                                                 "Resuming", iface_name, bus_name)
-            self.upower_sleeping_match = bus.add_signal_receiver(self.sleeping_callback,
-                                                                 "Sleeping", iface_name, bus_name)
-            dbuslog("listening for 'Resuming' and 'Sleeping' signals on %s", iface_name)
-        except Exception as e:
-            dbuslog("failed to setup UPower event listener: %s", e)
-
-        # the "logind" signals:
-        try:
-            bus_name = 'org.freedesktop.login1'
-            dbuslog("bus has owner(%s)=%s", bus_name, bus.name_has_owner(bus_name))
-
-            def sleep_event_handler(suspend):
-                if suspend:
-                    self.sleeping_callback()
-                else:
-                    self.resuming_callback()
-
-            iface_name = 'org.freedesktop.login1.Manager'
-            self.login1_match = bus.add_signal_receiver(sleep_event_handler, 'PrepareForSleep', iface_name, bus_name)
-            dbuslog("listening for 'PrepareForSleep' signal on %s", iface_name)
-        except Exception as e:
-            dbuslog("failed to setup login1 event listener: %s", e)
-
-        if DBUS_SCREENSAVER:
-            try:
-                session_bus = init_session_bus()
-                self.session_bus = session_bus
-                dbuslog("setup_dbus_signals() session bus=%s", session_bus)
-            except Exception as e:
-                dbuslog("setup_dbus_signals()", exc_info=True)
-                dbuslog.error("Error setting up dbus signals:")
-                dbuslog.estr(e)
-            else:
-                # screensaver signals:
-                try:
-                    bus_name = "org.gnome.ScreenSaver"
-                    iface_name = bus_name
-                    self.screensaver_match = bus.add_signal_receiver(self.ActiveChanged,
-                                                                     "ActiveChanged", iface_name, bus_name)
-                    dbuslog("listening for 'ActiveChanged' signal on %s", iface_name)
-                except Exception as e:
-                    dbuslog.warn("Warning: failed to setup screensaver event listener: %s", e)
-
-    def ActiveChanged(self, active) -> None:
-        log("ActiveChanged(%s)", active)
-        if active:
-            self.client.suspend()
-        else:
-            self.client.resume()
+        add_handler("suspend", self.suspend_callback)
+        add_handler("resume", self.resume_callback)
 
     def setup_xprops(self) -> None:
         # wait for handshake to complete:
