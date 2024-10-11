@@ -19,8 +19,8 @@ Other packages you will need for:
 * building / downloading the source: `gcc cython subversion pkgconf`
 * X11 libraries: `libXrandr libXtst libXcomposite libXdamage`
 * GTK: `gobject-introspection gtk3`
-* strongly recommended addons: `py37-PyOpenGL py37-PyOpenGL-accelerate`
-* audio: `py37-gstreamer1 gstreamer1-plugins-flac gstreamer1-plugins-mad gstreamer1-plugins-ogg gstreamer1-plugins-opus gstreamer1-plugins-vorbis`
+* strongly recommended addons: `py311-PyOpenGL py311-PyOpenGL-accelerate`
+* audio: `py311-gstreamer1 gstreamer1-plugins-flac gstreamer1-plugins-mad gstreamer1-plugins-ogg gstreamer1-plugins-opus gstreamer1-plugins-vorbis`
 
 
 ***
