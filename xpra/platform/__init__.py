@@ -188,7 +188,7 @@ def platform_import(where: dict, pm="", required=False, *imports) -> None:
     elif POSIX:             # pragma: no cover
         p = "posix"
     else:                   # pragma: no cover
-        raise OSError(f"Unknown OS {os.name}")
+        raise OSError(f"Unknown OS {os.name!r}")
 
     module = "xpra.platform.%s" % p
     if pm:

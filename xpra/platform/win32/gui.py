@@ -583,7 +583,6 @@ def add_window_hooks(window) -> None:
         win32hooks = Win32Hooks(handle)
         log("add_window_hooks(%s) added hooks for hwnd %#x: %s", window, handle, win32hooks)
         window.win32hooks = win32hooks
-        win32hooks.max_size = None
         win32hooks.setup()
 
         if MAX_SIZE_HINT:

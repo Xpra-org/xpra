@@ -10,13 +10,12 @@ from ctypes import Structure, cast, POINTER
 from ctypes.wintypes import POINT
 
 from xpra.util.env import envbool
-from xpra.log import Logger
+from xpra.common import noop
 from xpra.platform.win32.wndproc_events import WNDPROC_EVENT_NAMES
 from xpra.platform.win32 import constants as win32con
-from xpra.platform.win32.common import (
-    WNDPROC,
-    GetWindowLongW, SetWindowLongW, GetSystemMetrics, CallWindowProcW,
-)
+from xpra.platform.win32.common import WNDPROC, GetWindowLongW, SetWindowLongW, GetSystemMetrics, CallWindowProcW
+from xpra.log import Logger
+
 
 log = Logger("win32", "window", "util")
 vlog = Logger("verbose")
@@ -47,9 +46,9 @@ class Win32Hooks:
 
     def __init__(self, hwnd: int):
         self._hwnd = hwnd
-        self._message_map: dict[int, Callable] = {}
-        self.max_size = None
-        self.min_size = None
+        self._message_map: dict[int, Callable[[int, int, int, int], int]] = {}
+        self.max_size = ()
+        self.min_size = ()
         self.frame_width = 4
         self.frame_height = 4
         self.caption_height = 26
@@ -133,7 +132,7 @@ class Win32Hooks:
             (hwnd, msg, wparam, lparam), self.min_size, self.max_size)
         return 0
 
-    def cleanup(self, *args):
+    def cleanup(self, *args) -> None:
         log("cleanup%s", args)
         self._message_map = {}
         # since we assume the window is closed, restoring the wnd proc may be redundant here:
@@ -144,12 +143,12 @@ class Win32Hooks:
             self._oldwndproc = None
             self._hwnd = None
 
-    def _wndproc(self, hwnd: int, msg, wparam: int, lparam: int):
+    def _wndproc(self, hwnd: int, msg, wparam: int, lparam: int) -> int:
         event_name = WNDPROC_EVENT_NAMES.get(msg, msg)
-        callback = self._message_map.get(msg)
+        callback = self._message_map.get(msg, noop)
         vlog("_wndproc%s event name=%s, callback=%s", (hwnd, msg, wparam, lparam), event_name, callback)
         v = None
-        if callback:
+        if callback != noop:
             # run our callback
             try:
                 v = callback(hwnd, msg, wparam, lparam)
