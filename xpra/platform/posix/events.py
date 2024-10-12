@@ -140,9 +140,7 @@ def add_handler(event: str, handler: Callable) -> None:
     if DBUS_SCREENSAVER:
         def active_changed(active) -> None:
             log("ActiveChanged(%s)", active)
-            if active and event == "suspend":
-                forward(active)
-            elif not active and event == "resume":
+            if (active and event == "suspend") or (not active and event == "resume"):
                 forward(active)
         add(get_session_bus, active_changed, "ActiveChanged", SCREENSAVER_IFACE_NAME, SCREENSAVER_BUS_NAME)
 

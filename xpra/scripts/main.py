@@ -355,7 +355,7 @@ def check_gtk_client() -> None:
         raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
 
 
-def gtk_init_check() -> None:
+def gtk_init_check() -> bool:
     Gtk = gi_import("Gtk")
     if Gtk._version[0] > "3":
         r = Gtk.init_check()

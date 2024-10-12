@@ -121,7 +121,7 @@ class UpdateStatusWindow:
         log("hide()")
         self.window.hide()
 
-    def close(self, *args) -> None:
+    def close(self, *args) -> bool:
         log("close%s", args)
         self.hide()
         return True
