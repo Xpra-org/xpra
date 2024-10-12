@@ -14,21 +14,12 @@ from xpra.platform.gui import init as gui_init, force_focus
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.log import Logger, enable_debug_for
+from xpra.log import Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 log = Logger("util")
-
-_instance = None
-
-
-def get_update_status_window():
-    global _instance
-    if _instance is None:
-        _instance = UpdateStatusWindow()
-    return _instance
 
 
 # noinspection PyTestUnpassedFixture
@@ -60,7 +51,7 @@ class UpdateStatusWindow:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
 
-        def btn(label: str, tooltip: str, callback: Callable, icon_name: str = ""):
+        def btn(label: str, tooltip: str, callback: Callable, icon_name: str = "") -> Gtk.Button:
             btn = Gtk.Button(label=label)
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
@@ -73,7 +64,7 @@ class UpdateStatusWindow:
         btn("Download", "Show download page", self.download, "download.png")
         btn("Close", "", self.close, "quit.png")
 
-        def accel_close(*_args):
+        def accel_close(*_args) -> None:
             self.close()
 
         add_close_accel(self.window, accel_close)
@@ -82,7 +73,7 @@ class UpdateStatusWindow:
         self.window.add(vbox)
         self.newer_version: None | bool | Sequence[int] = None
 
-    def check(self):
+    def check(self) -> None:
         if self.progress:
             return
         self.newer_version = None
@@ -90,14 +81,14 @@ class UpdateStatusWindow:
         from xpra.util.thread import start_thread
         start_thread(self.do_check, "version check", daemon=True)
 
-    def do_check(self):
+    def do_check(self) -> None:
         from xpra.util.version import version_update_check
         try:
             self.newer_version = version_update_check()
         finally:
             self.progress = 0
 
-    def update_label(self):
+    def update_label(self) -> bool:
         if self.newer_version is False:
             from xpra import __version__ as version_str
             self.label.set_label("Version %s is up to date" % version_str)
@@ -110,26 +101,26 @@ class UpdateStatusWindow:
         self.progress += 1
         return True
 
-    def show(self):
+    def show(self) -> None:
         log("show()")
 
-        def show():
+        def show() -> None:
             force_focus()
             self.window.show()
             self.window.present()
 
         GLib.idle_add(show)
 
-    def hide(self):
+    def hide(self) -> None:
         log("hide()")
         self.window.hide()
 
-    def close(self, *args):
+    def close(self, *args) -> None:
         log("close%s", args)
         self.hide()
         return True
 
-    def destroy(self, *args):
+    def destroy(self, *args) -> None:
         log("destroy%s", args)
         if self.window:
             self.window.destroy()
@@ -141,23 +132,32 @@ class UpdateStatusWindow:
         log("run() Gtk.main done")
         return 0
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
-        self.close()
+        self.hide()
         Gtk.main_quit()
 
-    def download(self, *_args):
+    def download(self, *_args) -> None:
         self.hide()
         import webbrowser
         webbrowser.open_new_tab("https://github.com/Xpra-org/xpra/wiki/Download")
 
 
-def main():
+_instance = None
+
+
+def get_update_status_window() -> UpdateStatusWindow:
+    global _instance
+    if _instance is None:
+        _instance = UpdateStatusWindow()
+    return _instance
+
+
+def main(argv) -> int:
     from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready
     with program_context("Xpra-Version-Check", "Xpra Version Check"):
-        if "-v" in sys.argv:
-            enable_debug_for("util")
+        consume_verbose_argv(argv, "all")
 
         from xpra.gtk.signals import register_os_signals
         app = UpdateStatusWindow()
@@ -174,5 +174,5 @@ def main():
 
 if __name__ == "__main__":
     gui_init()
-    v = main()
+    v = main(sys.argv)
     sys.exit(v)

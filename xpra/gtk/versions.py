@@ -43,7 +43,7 @@ def get_gtk_version_info() -> dict[str, Any]:
     giv("pixbuf", "GdkPixbuf", "_version")
     giv("pixbuf", "GdkPixbuf", "PIXBUF_VERSION")
 
-    def MAJORMICROMINOR(name, module):
+    def MAJORMICROMINOR(name: str, module) -> None:
         try:
             v = tuple(getattr(module, x) for x in ("MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"))
             av(name, ".".join(str(x) for x in v))
