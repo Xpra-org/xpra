@@ -213,7 +213,6 @@ Recommends: xpra-codecs (= ${binary:Version})
 # client opengl acceleration:)
         ,python3-opengl
 # hope that this will allow our status icon to be shown:
-        ,gir1.2-appindicator3-0.1
         ,gir1.2-ayatanaappindicator3-0.1
 Suggests: xpra-codecs-nvidia (= ${binary:Version})
 # for CPU percentage in "xpra top"
