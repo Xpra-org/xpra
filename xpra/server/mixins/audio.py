@@ -30,7 +30,6 @@ GLib = gi_import("GLib")
 
 log = Logger("server")
 audiolog = Logger("audio")
-httplog = Logger("audio", "http")
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", True)
 
