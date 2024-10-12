@@ -228,7 +228,9 @@ class InfoXpraClient(CommandConnectClient):
                 if len(eltypes) == 1 and tuple(eltypes)[0] in (int, bool, float):
                     return str(v)
                 return type(v)(prettify(k, x) for x in v)
-            return v
+            elif isinstance(v, str) and v.isprintable():
+                return v
+            return repr(v)
 
         def print_dict(d: dict, path=""):
             for k in sorted_nicely(d.keys()):
@@ -238,8 +240,8 @@ class InfoXpraClient(CommandConnectClient):
                 if isinstance(v, dict):
                     print_dict(v, kpath)
                     continue
-                fv = str(prettify(k, v))
-                print_fn(f"{kpath}={repr(fv)}")
+                fv = prettify(k, v)
+                print_fn(f"{kpath}={fv}")
 
         exit_code = ExitCode.OK
         try:
