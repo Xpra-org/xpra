@@ -25,7 +25,6 @@ from xpra.log import Logger
 
 log = Logger("server")
 audiolog = Logger("audio")
-httplog = Logger("audio", "http")
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", True)
 
