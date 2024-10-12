@@ -30,9 +30,16 @@ GLib = gi_import("GLib")
 
 log = Logger("server")
 audiolog = Logger("audio")
-httplog = Logger("audio", "http")
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", True)
+
+PA_ENV_WHITELIST = (
+    "DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID",
+    "DISPLAY", "HOME", "HOSTNAME", "LANG", "PATH",
+    "PWD", "SHELL", "XAUTHORITY",
+    "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
+    "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
+)
 
 
 class AudioServer(StubServerMixin):
@@ -130,13 +137,6 @@ class AudioServer(StubServerMixin):
             "XPRA_PULSE_SINK_DEVICE_NAME": "Xpra-Microphone",
         })
         # 2) whitelist the env vars that pulseaudio may use:
-        PA_ENV_WHITELIST = (
-            "DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID",
-            "DISPLAY", "HOME", "HOSTNAME", "LANG", "PATH",
-            "PWD", "SHELL", "XAUTHORITY",
-            "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE",
-            "XPRA_PULSE_SOURCE_DEVICE_NAME", "XPRA_PULSE_SINK_DEVICE_NAME",
-        )
         env = {k: v for k, v in self.get_child_env().items() if k in PA_ENV_WHITELIST}
         # 3) use a private pulseaudio server, so each xpra
         #    session can have its own server,
@@ -186,14 +186,14 @@ class AudioServer(StubServerMixin):
             cmd[0] = pa_cmd
         started_at = monotonic()
 
-        def pulseaudio_warning():
+        def pulseaudio_warning() -> None:
             audiolog.warn("Warning: pulseaudio has terminated shortly after startup.")
             audiolog.warn(" pulseaudio is limited to a single instance per user account,")
             audiolog.warn(" and one may be running already for user '%s'.", get_username())
             audiolog.warn(" To avoid this warning, either fix the pulseaudio command line")
             audiolog.warn(" or use the 'pulseaudio=no' option.")
 
-        def pulseaudio_ended(proc):
+        def pulseaudio_ended(proc) -> None:
             audiolog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
                      proc, self.pulseaudio_proc, proc.returncode, self._closing)
             if self.pulseaudio_proc is None or self._closing:
@@ -225,7 +225,7 @@ class AudioServer(StubServerMixin):
                 audiolog.info(" '%s'", self.pulseaudio_private_socket)
                 os.environ["PULSE_SERVER"] = "unix:%s" % self.pulseaudio_private_socket
 
-            def configure_pulse():
+            def configure_pulse() -> None:
                 p = self.pulseaudio_proc
                 if p is None or p.poll() is not None:
                     return
