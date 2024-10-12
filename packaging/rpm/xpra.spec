@@ -334,6 +334,7 @@ Requires(posttrans): gtk-update-icon-cache
 Recommends:			%{package_prefix}-codecs = %{version}-%{release}
 Recommends:			%{package_prefix}-x11 = %{version}-%{release}
 Recommends:			pinentry
+Recommends:			libayatana-appindicator-gtk3
 Recommends:			%{package_prefix}-audio
 Recommends:			%{python3}-pyopengl
 Recommends:			%{python3}-pyu2f
