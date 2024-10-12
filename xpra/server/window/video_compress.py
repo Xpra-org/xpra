@@ -676,6 +676,7 @@ class WindowVideoSource(WindowSource):
     def cancel_gstreamer_timer(self) -> None:
         gt = self.gstreamer_timer
         if gt:
+            self.gstreamer_timer = 0
             GLib.source_remove(gt)
 
     def start_gstreamer_pipeline(self) -> bool:
