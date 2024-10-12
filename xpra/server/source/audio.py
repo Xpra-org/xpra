@@ -27,15 +27,15 @@ NEW_STREAM_SOUND_STOP = envint("XPRA_NEW_STREAM_SOUND_STOP", 20)
 
 
 class FakeSink:
-    def __init__(self, codec):
+    def __init__(self, codec: str):
         self.codec = codec
 
     @staticmethod
-    def add_data(*args):
+    def add_data(*args) -> None:
         log("FakeSink.add_data%s ignored", args)
 
     @staticmethod
-    def cleanup(*args):
+    def cleanup(*args) -> None:
         log("FakeSink.cleanup%s ignored", args)
 
 
