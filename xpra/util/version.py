@@ -309,6 +309,7 @@ def get_platform_info() -> dict[str, Any]:
 def get_version_from_url(url: str) -> tuple[int, ...]:
     try:
         from urllib.request import urlopen
+        from urllib.error import HTTPError
     except ImportError as e:
         log("get_version_from_url(%s) urllib2 not found: %s", url, e)
         return ()
@@ -318,39 +319,72 @@ def get_version_from_url(url: str) -> tuple[int, ...]:
         latest_version_no = tuple(int(y) for y in latest_version.split(b"."))
         log("get_version_from_url(%s)=%s", url, latest_version_no)
         return latest_version_no
-    except Exception as e:
-        log("get_version_from_url(%s)", url, exc_info=True)
-        if getattr(e, "code", 0) == 404:
-            log("no version at url=%s", url)
-        else:
-            log("Error retrieving URL '%s': %s", url, e)
+    except HTTPError as e:
+        log(f"get_version_from_url({url!r}) {e}", exc_info=e.code != 404)
+    except Exception:
+        log.error(f"Error accessing {url!r}", exc_info=True)
+    return ()
+
+
+PLATFORM_FRIENDLY_NAMES: dict[str, str] = {
+    "linux2": "LINUX",
+    "win": "WINDOWS",
+    "darwin": "OSX",
+}
+
+
+def get_branch() -> str:
+    BRANCH = os.environ.get("XPRA_CURRENT_VERSION_BRANCH", "")
+    if BRANCH:
+        return BRANCH
+    try:
+        from xpra.src_info import BRANCH
+        return BRANCH
+    except ImportError as e:
+        log(f"unknown branch: {e}")
+    return ""
+
+
+def get_latest_version(branch: str) -> bool | None | tuple[int, ...]:
+    CURRENT_VERSION_URL = ("https" if CHECK_SSL else "http") + "://xpra.org/CURRENT_VERSION"
+    BRANCH = os.environ.get("XPRA_CURRENT_VERSION_BRANCH", "")
+    if not BRANCH:
+        try:
+            from xpra.src_info import BRANCH
+        except ImportError as e:
+            log(f"unknown branch: {e}")
+    branch_strs = []
+    if BRANCH not in ("", "master"):
+        branch_parts = BRANCH.split(".")            # ie: "v6.2.x" -> ["v6", "2", "x"]
+        if branch_parts[-1] == "x":
+            branch_parts = branch_parts[:-1]        # ie: ["v6", "2"]
+        branch_strs.append("_" + "_".join(branch_parts[:2]))    # ie: "_v6_2"
+        if len(branch_parts) >= 2:
+            branch_strs.append("_" + branch_parts[0])           # ie: "_v6"
+    branch_strs.append("")
+    platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
+    arch = get_platform_info().get("machine")
+    for branch_str in branch_strs:
+        for url in (
+            f"{CURRENT_VERSION_URL}{branch_str}_{platform_name}_{arch}?{XPRA_VERSION}",
+            f"{CURRENT_VERSION_URL}{branch_str}_{platform_name}?{XPRA_VERSION}",
+            f"{CURRENT_VERSION_URL}{branch_str}?{XPRA_VERSION}",
+        ):
+            latest_version_no = get_version_from_url(url)
+            if latest_version_no:
+                return latest_version_no
     return ()
 
 
 def version_update_check() -> bool | None | tuple[int, ...]:
     FAKE_NEW_VERSION = envbool("XPRA_FAKE_NEW_VERSION", False)
-    CURRENT_VERSION_URL = ("https" if CHECK_SSL else "http") + "://xpra.org/CURRENT_VERSION"
-    PLATFORM_FRIENDLY_NAMES = {
-        "linux2": "LINUX",
-        "win": "WINDOWS",
-        "darwin": "OSX",
-    }
-    our_version_no = tuple(int(y) for y in XPRA_VERSION.split("."))
-    platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
-    arch = get_platform_info().get("machine")
-    for url in (
-            f"{CURRENT_VERSION_URL}_{platform_name}_{arch}?{XPRA_VERSION}",
-            f"{CURRENT_VERSION_URL}_{platform_name}?{XPRA_VERSION}",
-            f"{CURRENT_VERSION_URL}?{XPRA_VERSION}",
-    ):
-        latest_version_no = get_version_from_url(url)
-        if latest_version_no:
-            break
+    branch = get_branch()
+    latest_version_no = get_latest_version(branch)
     if not latest_version_no:
         log("version_update_check() failed to contact version server")
         return None
-    if latest_version_no > our_version_no or FAKE_NEW_VERSION:
+    if latest_version_no > XPRA_NUMERIC_VERSION or FAKE_NEW_VERSION:
         log("version_update_check() newer version found")
-        log(" local version is {our_version_no} and the latest version available is {latest_version_no}")
+        log(f" local version is {XPRA_NUMERIC_VERSION} and the latest version available is {latest_version_no}")
         return latest_version_no
     return False

@@ -355,13 +355,17 @@ def check_gtk_client() -> None:
         raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
 
 
-def check_gtk() -> None:
+def gtk_init_check() -> None:
     Gtk = gi_import("Gtk")
     if Gtk._version[0] > "3":
         r = Gtk.init_check()
     else:
         r = Gtk.init_check(argv=None)[0]
-    if not r:
+    return bool(r)
+
+
+def check_gtk() -> None:
+    if not gtk_init_check():
         raise InitExit(ExitCode.NO_DISPLAY, "failed to initialize Gtk, no display?")
     check_display()
 
@@ -471,7 +475,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "nvinfo", "webcam",
             "keyboard", "gtk-info", "gui-info", "network-info",
             "compression", "packet-encoding", "path-info",
-            "printing-info", "version-info", "toolbox",
+            "printing-info", "version-info", "version-check", "toolbox",
             "initenv", "setup-ssl", "show-ssl",
             "auth", "showconfig", "showsetting",
             "applications-menu", "sessions-menu",
@@ -827,6 +831,8 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode == "version-info":
         from xpra.scripts import version
         return version.main()
+    if mode == "version-check":
+        return run_version_check(args)
     if mode == "toolbox":
         check_gtk_client()
         from xpra.gtk.dialogs import toolbox
@@ -4346,6 +4352,21 @@ def run_auth(_options, args) -> ExitValue:
         raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
     argv = [auth_module.__file__] + args[1:]
     return main_fn(argv)
+
+
+def run_version_check(args) -> ExitValue:
+    if gtk_init_check():
+        check_display()
+        from xpra.gtk.dialogs import update_status
+        return update_status.main(args)
+    # text version:
+    from xpra.util.version import get_latest_version, get_branch
+    branch = get_branch()
+    version = get_latest_version(branch)
+    vstr = ".".join(str(x) for x in version)
+    branch_info = f" for {branch} branch" if branch not in ("", "master") else ""
+    print(f"latest version{branch_info} is v{vstr}")
+    return 0
 
 
 def err(*args) -> NoReturn:
