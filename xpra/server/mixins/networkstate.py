@@ -122,7 +122,7 @@ class NetworkStateServer(StubServerMixin):
         if POSIX and self.mem_bytes == 0:
             try:
                 self.mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
-                LOW_MEM_LIMIT = 512 * 1024 * 1024
+                LOW_MEM_LIMIT = 1024 * 1024 * 1024
                 if self.mem_bytes <= LOW_MEM_LIMIT:
                     log.warn("Warning: only %iMB total system memory available", self.mem_bytes // (1024 ** 2))
                     log.warn(" this may not be enough to run a server")
