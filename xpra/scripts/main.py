@@ -2818,7 +2818,7 @@ def do_run_glcheck(opts, show=False) -> dict[str, Any]:
         if is_debug_enabled("opengl"):
             log("do_run_glcheck(..)", exc_info=True)
         if use_tty():
-            stderr_print("error=%s" % repr(e))
+            stderr_print(f"error={e!r}")
         return {
             "success": False,
             "message": str(e).replace("\n", " "),
@@ -3158,17 +3158,10 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
             try:
                 # we must use a subprocess to avoid messing things up - yuk
                 cmd = get_nodock_command() + ["id", f"socket://{socket_path}"]
-                p = Popen(cmd, stdout=PIPE, stderr=PIPE)
-                stdout, _ = p.communicate()
+                p = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True)
+                stdout = p.communicate()[0]
                 if p.returncode == 0:
-                    try:
-                        out = stdout.decode('utf-8')
-                    except Exception:
-                        try:
-                            out = stdout.decode()
-                        except Exception:
-                            out = bytestostr(stdout)
-                    lines = out.splitlines()
+                    lines = stdout.splitlines()
                     log(f"id({socket_path}): " + csv(lines))
                     found = False
                     display = matching_display
