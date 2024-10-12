@@ -136,6 +136,14 @@ class ServerBase(ServerBaseClass):
         self.init_packet_handlers()
         self.init_aliases()
 
+    def suspend_event(self, args):
+        ServerCore.suspend_event(self, args)
+        self.server_event("suspend")
+
+    def resume_event(self, args):
+        ServerCore.resume_event(self, args)
+        self.server_event("resume")
+
     def server_event(self, event_type: str, *args: PacketElement) -> None:
         for s in self._server_sources.values():
             s.send_server_event(event_type, *args)
