@@ -139,10 +139,16 @@ class ServerBase(ServerBaseClass):
     def suspend_event(self, args):
         ServerCore.suspend_event(self, args)
         self.server_event("suspend")
+        for s in self._server_sources.values():
+            if hasattr(s, "go_idle"):
+                s.go_idle()
 
     def resume_event(self, args):
         ServerCore.resume_event(self, args)
         self.server_event("resume")
+        for s in self._server_sources.values():
+            if hasattr(s, "no_idle"):
+                s.no_idle()
 
     def server_event(self, event_type: str, *args: PacketElement) -> None:
         for s in self._server_sources.values():
