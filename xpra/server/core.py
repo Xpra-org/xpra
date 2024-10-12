@@ -54,6 +54,7 @@ from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name, threaded_server_init
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs, get_icon_filename
+from xpra.platform.events import add_handler, remove_handler
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, gi_import, POSIX, OSX
 from xpra.util.system import get_frame_info, get_env_info, get_sysconfig_info, platform_name, register_SIGUSR_signals
@@ -98,6 +99,8 @@ SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO > 1)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
+
+POWER_EVENTS = envbool("XPRA_POWER_EVENTS", True)
 
 ENCRYPTED_SOCKET_TYPES = os.environ.get("XPRA_ENCRYPTED_SOCKET_TYPES", "tcp,ws")
 
@@ -429,6 +432,7 @@ class ServerCore(ControlHandler):
 
     def run(self) -> ExitValue:
         self.install_signal_handlers(self.signal_quit)
+        GLib.idle_add(self.register_power_events)
         GLib.idle_add(self.reset_server_timeout)
         GLib.idle_add(self.server_is_ready)
         GLib.idle_add(self.print_run_info)
@@ -436,6 +440,22 @@ class ServerCore(ControlHandler):
         self.do_run()
         log("run()")
         return 0
+
+    def register_power_events(self):
+        if not POWER_EVENTS:
+            return
+        add_handler("suspend", self.suspend_event)
+        add_handler("resume", self.resume_event)
+
+    def remove_power_events(self):
+        remove_handler("suspend", self.suspend_event)
+        remove_handler("resume", self.resume_event)
+
+    def suspend_event(self, _args):
+        log.info("suspending")
+
+    def resume_event(self, _args):
+        log.info("resuming")
 
     def server_is_ready(self) -> None:
         log.info("xpra is ready.")
@@ -447,6 +467,7 @@ class ServerCore(ControlHandler):
     def cleanup(self) -> None:
         self.stop_splash_process()
         self.cancel_touch_timer()
+        self.remove_power_events()
         self.mdns_cleanup()
         self.cleanup_all_protocols()
         self.do_cleanup()
