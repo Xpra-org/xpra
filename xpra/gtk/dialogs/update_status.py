@@ -143,7 +143,7 @@ class UpdateStatusWindow:
 
     def quit(self, *args):
         log("quit%s", args)
-        self.close()
+        self.hide()
         Gtk.main_quit()
 
     def download(self, *_args):
