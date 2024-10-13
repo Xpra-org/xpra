@@ -1,6 +1,11 @@
 # Changelog
 
-## [6.2.0] 2024-07-18
+## [6.3] 2024-10-13
+* Features:
+    * [server power events](https://github.com/Xpra-org/xpra/issues/4382)
+    * [per-branch version check](https://github.com/Xpra-org/xpra/issues/4386)
+
+## [6.2.0] 2024-10-09
 * Platforms, build and packaging:
     * [pycuda for Fedora 41](https://github.com/Xpra-org/xpra/issues/4332)
     * [move `opengl` module to top level](https://github.com/Xpra-org/xpra/commit/111afa5e028bea7b006bb6cb820e4104af8ba4e9)

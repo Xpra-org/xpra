@@ -59,7 +59,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.2.0
+Version:			6.3
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -906,6 +906,8 @@ fi
 
 
 %changelog
+* Sun Oct 13 2024 Antoine Martin <antoine@xpra.org> 6.3-10
+- TODO
 * Wed Oct 09 2024 Antoine Martin <antoine@xpra.org> 6.2-10
 - Platforms, build and packaging:
    pycuda for Fedora 41
