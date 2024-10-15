@@ -3356,6 +3356,10 @@ def run_stopexit(mode: str, error_cb, opts, extra_args, cmdline) -> ExitValue:
         app.display_desc = display_desc
         connect_to_server(app, display_desc, opts)
         e = app.run()
+    except ImportError:
+        sys.stderr.write(f"Error: unable to use the {mode!r} subcommand:\n")
+        sys.stderr.write(" the 'xpra-client' component is not installed\n")
+        return ExitCode.COMPONENT_MISSING
     finally:
         if app:
             app.cleanup()
