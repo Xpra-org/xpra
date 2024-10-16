@@ -1,13 +1,13 @@
 [Setup]
-AppName=Xpra
+AppName=Xpra (64-bit)
 AppId=Xpra_is1
 AppVersion=6.3
-AppVerName=Xpra 6.3
+AppVerName=Xpra 6.3 (64-bit)
 UninstallDisplayName=Xpra 6.3
 AppPublisher=xpra.org
 AppPublisherURL=http:;xpra.org/
 DefaultDirName={pf}\Xpra
-DefaultGroupName=Xpra
+DefaultGroupName=Xpra (64-bit)
 DisableProgramGroupPage=true
 OutputDir=dist
 OutputBaseFilename=Xpra_Setup
@@ -23,8 +23,8 @@ WizardImageFile=packaging\MSWindows\xpra-logo.bmp
 WizardSmallImageFile=packaging\MSWindows\xpra.bmp
 LicenseFile=COPYING
 UninstallDisplayIcon={app}\Xpra-Launcher.exe
-ArchitecturesInstallIn64BitMode=
-ArchitecturesAllowed=
+ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64
 
 [Dirs]
 Name: "{app}"; Flags: uninsalwaysuninstall;

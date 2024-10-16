@@ -259,7 +259,7 @@ vsock_ENABLED           = LINUX and has_header_file("/linux/vm_sockets.h")
 lz4_ENABLED             = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
 brotli_ENABLED          = DEFAULT and has_header_file("/brotli/decode.h") and has_header_file("/brotli/encode.h")
-cityhash_ENABLED        = False # has_header_file("/city.h")
+cityhash_ENABLED        = False  # has_header_file("/city.h")
 qrencode_ENABLED        = DEFAULT and has_header_file("/qrencode.h")
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  # None means auto-detect
@@ -500,7 +500,11 @@ def convert_doc(fsrc: str, fdst: str, fmt="html", force=False) -> None:
     if not force and not should_rebuild(fsrc, fdst):
         return
     print(f"  {bsrc:<30} -> {bdst}")
-    pandoc = os.environ.get("PANDOC", "pandoc")
+    pandoc = os.environ.get("PANDOC", "") or shutil.which("pandoc")
+    if WIN32 and not pandoc:
+        pandoc = "/c/Program Files/Pandoc/pandoc.exe"
+    if not os.path.exits(pandoc):
+        raise RuntimeError("`pandoc` was not found!")
     cmd = [pandoc, "--from", "commonmark", "--to", fmt, "-o", fdst, fsrc]
     if fmt=="html" and pandoc_lua_ENABLED:
         cmd += ["--lua-filter", "./fs/bin/links-to-html.lua"]
