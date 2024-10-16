@@ -29,6 +29,7 @@ def main(argv=()):
                 opengl_props["safe"] = False
             return 0
         except Exception:
+            log = Logger("opengl")
             log("do_run_glcheck(..)", exc_info=True)
             return 1
 
