@@ -503,7 +503,7 @@ def convert_doc(fsrc: str, fdst: str, fmt="html", force=False) -> None:
     pandoc = os.environ.get("PANDOC", "") or shutil.which("pandoc")
     if WIN32 and not pandoc:
         pandoc = "/c/Program Files/Pandoc/pandoc.exe"
-    if not os.path.exits(pandoc):
+    if not os.path.exists(pandoc):
         raise RuntimeError("`pandoc` was not found!")
     cmd = [pandoc, "--from", "commonmark", "--to", fmt, "-o", fdst, fsrc]
     if fmt=="html" and pandoc_lua_ENABLED:
