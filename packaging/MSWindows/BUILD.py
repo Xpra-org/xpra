@@ -9,11 +9,12 @@ import sys
 import os.path
 import shlex
 from datetime import datetime
+from collections import namedtuple
 from collections.abc import Iterable
 from importlib.util import find_spec, spec_from_file_location, module_from_spec
 
 from glob import glob
-from subprocess import getstatusoutput, check_output, Popen, getoutput
+from subprocess import getstatusoutput, check_output, Popen, getoutput, PIPE
 from shutil import which, rmtree, copyfile, move, copytree
 
 KEY_FILE = "E:\\xpra.pfx"
@@ -270,17 +271,12 @@ def build_service() -> None:
     raise NotImplementedError()
 
 
-VERSION = "invalid"
-VERSION_INFO = (0, 0)
-REVISION = "invalid"
-FULL_VERSION = "invalid"
-BUILD_ARCH_INFO = "invalid"
-EXTRA_VERSION = ""
-ZERO_PADDED_VERSION = (0, 0, 0, 0)
+VersionInfo = namedtuple("VersionInfo", "string,value,revision,full_string,arch_info,extra,padded")
+version_info = VersionInfo("invalid", (0, 0), 0, "invalid", "arch", "extra", (0, 0, 0, 0))
 
 
 def set_version_info(full: bool):
-    step("Collection version information")
+    step("Collecting version information")
     for filename in ("src_info.py", "build_info.py"):
         path = os.path.join("xpra", filename)
         if os.path.exists(path):
@@ -296,26 +292,26 @@ def set_version_info(full: bool):
 
     xpra = load("__init__.py")
     src_info = load("src_info.py")
-    global VERSION, VERSION_INFO, REVISION, ZERO_PADDED_VERSION, FULL_VERSION, BUILD_ARCH_INFO, EXTRA_VERSION
-    VERSION = xpra.__version__
-    VERSION_INFO = xpra.__version_info__
-    REVISION = src_info.REVISION
-    LOCAL_MODIFICATIONS = src_info.LOCAL_MODIFICATIONS
 
-    FULL_VERSION = f"{VERSION}-r{REVISION}"
-    if LOCAL_MODIFICATIONS:
-        FULL_VERSION += "M"
+    string = xpra.__version__
+    value = xpra.__version_info__
+    revision = src_info.REVISION
 
-    EXTRA_VERSION = "" if full else "-Light"
+    full_string = f"{string}-r{revision}"
+    if src_info.LOCAL_MODIFICATIONS:
+        full_string += "M"
 
+    extra = "" if full else "-Light"
     # ie: "x86_64"
-    BUILD_ARCH_INFO = "-" + os.environ.get("MSYSTEM_CARCH", "")
+    arch_info = "-" + os.environ.get("MSYSTEM_CARCH", "")
 
     # for msi and verpatch:
-    padded = (list(VERSION_INFO) + [0, 0, 0])[:3] + [REVISION]
-    ZERO_PADDED_VERSION = ".".join(str(x) for x in padded)
+    padded = (list(value) + [0, 0, 0])[:3] + [revision]
+    padded = ".".join(str(x) for x in padded)
 
-    print(f"    Xpra{EXTRA_VERSION} {FULL_VERSION}")
+    print(f"    Xpra{extra} {full_string}")
+    global version_info
+    version_info = VersionInfo(string, value, revision, full_string, arch_info, extra, padded)
 
 
 ################################################################################
@@ -374,7 +370,7 @@ def install_docs() -> None:
 
 
 def fixups(full: bool) -> None:
-    step("Fixups")
+    step("Fixups: paths, etc")
     # fix case sensitive mess:
     gi_dir = f"{LIB_DIR}/girepository-1.0"
     debug("Glib misspelt")
@@ -522,7 +518,7 @@ def delete_dlls(full: bool) -> None:
 
 def trim_pillow() -> None:
     # remove PIL loaders and modules we don't need:
-    step("removing unnecessary PIL plugins:")
+    step("removing unnecessary PIL plugins")
     KEEP = (
         "Bmp", "Ico", "Jpeg", "Tiff", "Png", "Ppm", "Xpm", "WebP",
         "Image.py", "ImageChops", "ImageCms", "ImageWin", "ImageChops", "ImageColor", "ImageDraw", "ImageFile.py",
@@ -570,32 +566,31 @@ def trim_python_libs() -> None:
 
 
 def fixup_zeroconf() -> None:
+    lib_zeroconf = f"{LIB_DIR}/zeroconf"
+    if os.path.exists(lib_zeroconf):
+        rmtree(lib_zeroconf)
     # workaround for zeroconf - just copy it wholesale
     # since I have no idea why cx_Freeze struggles with it:
-    delete_libs("zeroconf")
     zc = find_spec("zeroconf")
     if not zc:
         print("Warning: zeroconf not found for Python %s" % sys.version)
         return
     zeroconf_dir = os.path.dirname(zc.origin)
-    lib_zeroconf = f"{LIB_DIR}/zeroconf"
-    if os.path.exists(lib_zeroconf):
-        rmtree(lib_zeroconf)
     debug(f"adding zeroconf from {zeroconf_dir!r} to {lib_zeroconf!r}")
     copytree(zeroconf_dir, lib_zeroconf)
 
 
+def rm_empty_dir(dirpath: str) -> None:
+    cmd = ["find", dirpath, "-type", "d", "-empty"]
+    output = getoutput(command_args(cmd))
+    for path in output.splitlines():
+        os.rmdir(path)
+
+
 def rm_empty_dirs() -> None:
     step("Removing empty directories")
-
-    def rm_empty_dir() -> None:
-        cmd = ["find", DIST, "-type", "d", "-empty"]
-        output = getoutput(command_args(cmd))
-        for path in output.splitlines():
-            os.rmdir(path)
-
     for _ in range(3):
-        rm_empty_dir()
+        rm_empty_dir(DIST)
 
 
 def zip_modules(full: bool) -> None:
@@ -627,11 +622,7 @@ def zip_modules(full: bool) -> None:
 
 
 def setup_share(full: bool) -> None:
-    step("Deleting unnecessary share/ files")
-    delete_dist_files(
-        "share/xml", "share/glib-2.0/codegen", "share/glib-2.0/gdb", "share/glib-2.0/gettext",
-        "share/themes/Default/gtk-2.0*"
-    )
+    step("Deleting unnecessary `share/` files")
     if not full:
         # remove extra bits that take up a lot of space:
         delete_dist_files(
@@ -644,7 +635,7 @@ def setup_share(full: bool) -> None:
     step("Removing empty icon directories")
     # remove empty icon directories
     for _ in range(4):
-        os.system(f"find {DIST}/share/icons -type d -exec rmdir {{}} \\; 2> /dev/null")
+        rm_empty_dir("{DIST}/share/icons")
 
 
 def add_manifests() -> None:
@@ -667,12 +658,23 @@ def gen_caches() -> None:
             raise RuntimeError("gdk-pixbuf-query-loaders.exe failed")
     step("Generating icons and theme cache")
     for itheme in glob(f"{DIST}/share/icons/*"):
-        os.system(f"gtk-update-icon-cache.exe -t -i {itheme!r}")
+        log_command(["gtk-update-icon-cache.exe", "-t", "-i", itheme], "icon-cache.log")
 
 
 def bundle_manual() -> None:
     step("Generating HTML Manual Page")
-    os.system("groff.exe -mandoc -Thtml < ./fs/share/man/man1/xpra.1 > ${DIST}/manual.html")
+    manual = os.path.join(DIST, "manual.html")
+    if os.path.exists(manual):
+        os.unlink(manual)
+    with open("fs/share/man/man1/xpra.1", "rb") as f:
+        man = f.read()
+    proc = Popen(["groff", "-mandoc", "-Thtml"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    out, err = proc.communicate(man)
+    if proc.returncode != 0:
+        raise RuntimeError(f"groff failed and returned {proc.returncode}: {err!r}")
+    debug(f"groff warnings: {err!r}")
+    with open(manual, "wb") as manual_file:
+        manual_file.write(out)
 
 
 def bundle_html5() -> None:
@@ -681,7 +683,8 @@ def bundle_html5() -> None:
     if not os.path.exists(www):
         os.mkdir(www)
     html5 = os.path.join(os.path.abspath("."), DIST, "xpra-html5")
-    log_command(f"{PYTHON} ./setup.py install {www!r}", "html5.log", cwd=html5)
+    debug(f"running html5 install step in {html5!r}")
+    log_command([PYTHON, "./setup.py", "install", www], "html5.log", cwd=html5)
 
 
 def bundle_putty() -> None:
@@ -711,8 +714,10 @@ def bundle_openssh() -> None:
         if not exe:
             raise RuntimeError(f"{exe_name!r} not found!")
         copyfile(exe, f"{DIST}/{exe_name}.exe")
+    bin_dir = os.path.dirname(which("ssh"))
+    debug(f"looking for msys DLLs in {bin_dir!r}")
     msys_dlls = tuple(
-        f"/usr/bin/msys-{dllname}*.dll" for dllname in (
+        f"{bin_dir}/msys-{dllname}*" for dllname in (
             "2.0", "gcc_s", "crypto", "z", "gssapi", "asn1", "com_err", "roken",
             "crypt", "heimntlm", "krb5", "heimbase", "wind", "hx509", "hcrypto", "sqlite3",
         )
@@ -763,9 +768,9 @@ def verpatch() -> None:
     EXCLUDE = ("plink", "openssh", "openssl", "paexec")
 
     def run_verpatch(filename: str, descr: str):
-        check_output(f'verpatch {filename} //s desc "{descr}" //va "{ZERO_PADDED_VERSION}" "'
+        check_output(f'verpatch {filename} //s desc "{descr}" //va "{version_info.padded}" "'
                      f'//s company "xpra.org" //s copyright "(c) xpra.org 2020" "'
-                     f'//s product "xpra" //pv "{ZERO_PADDED_VERSION}"')
+                     f'//s product "xpra" //pv "{version_info.padded}"')
 
     for exe in glob(f"{DIST}/*.exe"):
         if any(exe.lower().find(excl) >= 0 for excl in EXCLUDE):
@@ -795,7 +800,7 @@ def show_diskusage() -> None:
 
 def create_zip() -> None:
     step("Creating ZIP file:")
-    ZIP_DIR = f"Xpra{EXTRA_VERSION}{BUILD_ARCH_INFO}_{FULL_VERSION}"
+    ZIP_DIR = f"Xpra{version_info.extra}{version_info.arch_info}_{version_info.full_string}"
     ZIP_FILENAME = f"{ZIP_DIR}.zip"
     if os.path.exists(ZIP_DIR):
         rmtree(ZIP_DIR)
@@ -818,7 +823,7 @@ def create_installer(args) -> str:
                              f"{PROGRAMFILES_X86}\\Inno Setup 6\\ISCC.exe",
                              )
     SETUP_EXE = "Xpra_Setup.exe"
-    INSTALLER_FILENAME = f"Xpra${EXTRA_VERSION}${BUILD_ARCH_INFO}_Setup_{FULL_VERSION}.exe"
+    INSTALLER_FILENAME = f"Xpra${version_info.extra}${version_info.arch_info}_Setup_{version_info.full_string}.exe"
     XPRA_ISS = "xpra.iss"
     APPID = "Xpra_is1"
     INNOSETUP_LOG = "innosetup.log"
@@ -831,9 +836,9 @@ def create_installer(args) -> str:
     lines = []
     subs = {
         "AppId": APPID,
-        "AppName": f"Xpra {VERSION}",
-        "UninstallDisplayName": f"Xpra {VERSION}",
-        "AppVersion": FULL_VERSION,
+        "AppName": f"Xpra {version_info.string}",
+        "UninstallDisplayName": f"Xpra {version_info.string}",
+        "AppVersion": version_info.full_string,
     }
     for line in contents:
         if line.startswith("    PostInstall()") and not args.full:
@@ -882,9 +887,10 @@ def run_installer(installer: str) -> None:
 def create_msi() -> str:
     msiwrapper = find_command("msiwrapper", "MSIWRAPPER",
                               f"{PROGRAMFILES}\\MSI Wrapper\\MsiWrapper.exe")
-    MSI_FILENAME = f"Xpra{EXTRA_VERSION}{BUILD_ARCH_INFO}_{FULL_VERSION}.msi"
+    MSI_FILENAME = f"Xpra{version_info.extra}{version_info.arch_info}_{version_info.full_string}.msi"
     # we need to quadruple escape backslashes!
     # as they get interpreted by the shell and sed, multiple times:
+
     # CWD = os.getcwd()   #`pwd | sed 's+/\([a-zA-Z]\)/+\1:\\\\\\\\+g; s+/+\\\\\\\\+g'`
     # print(f"CWD={CWD}")
     # cat "packaging\\MSWindows\\msi.xml" | sed "s+\$CWD+${CWD}+g" | sed "s+\$INPUT+${INSTALLER_FILENAME}+g" | sed "s+\$OUTPUT+${MSI_FILENAME}+g" | sed "s+\$ZERO_PADDED_VERSION+${ZERO_PADDED_VERSION}+g" | sed "s+\$FULL_VERSION+${FULL_VERSION}+g" > msi.xml
@@ -922,8 +928,8 @@ def build(args) -> None:
         bundle_numpy(args.numpy)
         fixup_gstreamer()
         fixup_dlls()
-        trim_pillow()
         trim_python_libs()
+        trim_pillow()
         fixup_zeroconf()
         rm_empty_dirs()
 
