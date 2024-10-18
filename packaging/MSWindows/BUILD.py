@@ -127,7 +127,7 @@ def get_build_args(args) -> list[str]:
     return xpra_args
 
 
-def find_command(name: str, env_name: str, *paths) -> str:
+def _find_command(name: str, env_name: str, *paths) -> str:
     cmd = os.environ.get(env_name, "")
     if cmd and os.path.exists(cmd):
         return cmd
@@ -137,51 +137,71 @@ def find_command(name: str, env_name: str, *paths) -> str:
     for path in paths:
         if os.path.exists(path) and os.path.isfile(path):
             return path
+    return ""
+
+
+def find_command(name: str, env_name: str, *paths) -> str:
+    cmd = _find_command(name, env_name, *paths)
+    if cmd:
+        return cmd
     print(f"{name!r} not found")
     print(f" (you can set the {env_name!r} environment variable to point to it)")
+    print(f" tried %PATH%={os.environ.get('PATH')}")
+    print(f" tried {paths=}")
     raise RuntimeError(f"{name!r} not found")
+
+
+def search_command(wholename: str, *dirs: str) -> str:
+    debug(f"searching for {wholename!r} in {dirs}")
+    for dirname in dirs:
+        cmd = ["find", dirname, "-wholename", wholename]
+        r, output = getstatusoutput(cmd)
+        debug(f"getstatusoutput({cmd})={r}, {output}")
+        if r == 0:
+            return output.splitlines()[0]
+    raise RuntimeError(f"{wholename!r} not found in {dirs}")
 
 
 def find_java() -> str:
     try:
-        return find_command("java", "JAVA")
-    except RuntimeError:
-        pass
+        return _find_command("java", "JAVA")
+    except RuntimeError as e:
+        debug(f"`java` was not found: {e}")
     # try my hard-coded default first to save time:
     java = f"{PROGRAMFILES}\\Java\\jdk1.8.0_121\\bin\\java.exe"
     if java and getstatusoutput(f"{java} --version")[0] == 0:
         return java
     dirs = (f"{PROGRAMFILES}/Java", f"{PROGRAMFILES}", f"{PROGRAMFILES_X86}")
     for directory in dirs:
-        r, output = getstatusoutput(f"find {directory} -name java.exe")
+        r, output = getstatusoutput(f"find {directory!r} -name java.exe")
         if r == 0:
             return output[0]
     raise RuntimeError(f"java.exe was not found in {dirs}")
 
 
-def sanity_checks(args) -> None:
-    if args.html5:
-        if not os.path.exists("xpra-html5") or not os.path.isdir("xpra-html5"):
-            print("html5 client not found")
-            print(" perhaps run: `git clone https://github.com/Xpra-org/xpra-html5`")
-            raise RuntimeError("`xpra-html5` client not found")
+def check_html5() -> None:
+    step("Verify `xpra-html5` is installed")
+    if not os.path.exists("xpra-html5") or not os.path.isdir("xpra-html5"):
+        print("html5 client not found")
+        print(" perhaps run: `git clone https://github.com/Xpra-org/xpra-html5`")
+        raise RuntimeError("`xpra-html5` client not found")
 
-        # Find a java interpreter we can use for the html5 minifier
-        os.environ["JAVA"] = find_java()
+    # Find a java interpreter we can use for the html5 minifier
+    os.environ["JAVA"] = find_java()
 
-    if args.sign:
-        try:
-            signtool = find_command("signtool", "SIGNTOOL",
-                                    f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe"
-                                    f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe"
-                                    f"{PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
-                                    f"{PROGRAMFILES_X86}\\Windows Kits\\10\\App Certification Kit\\signtool.exe")
-        except RuntimeError:
-            # try the hard (slow) way:
-            r, output = getstatusoutput('find "c:\\Program\\ Files*" -wholename "*/x64/signtool.exe"')
-            if r != 0:
-                raise
-            signtool = output[0]
+
+def check_signtool() -> None:
+    step("locating `signtool`")
+    try:
+        signtool = find_command("signtool", "SIGNTOOL",
+                                f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe"
+                                f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe"
+                                f"{PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
+                                f"{PROGRAMFILES_X86}\\Windows Kits\\10\\App Certification Kit\\signtool.exe")
+    except RuntimeError:
+        # try the hard (slow) way:
+        find_vs_command("*/x64/signtool.exe")
+    if signtool.lower() != "./signtool.exe":
         copyfile(signtool, "./signtool.exe")
 
 
@@ -266,15 +286,51 @@ def clean() -> None:
     delfile(BUILD_INFO)
 
 
+def find_wk_command(name="mc") -> str:
+    # the proper way would be to run vsvars64.bat
+    # but we only want to locate 3 commands,
+    # so we find them "by hand":
+    ARCH_DIRS = ("x64", "x86")
+    paths = []
+    for prog_dir in (PROGRAMFILES, PROGRAMFILES_X86):
+        for V in (8.1, 10):
+            for ARCH in ARCH_DIRS:
+                paths += glob(f"{prog_dir}\\Windows Kits\\{V}\\bin\\*\\{ARCH}\\{name}.exe")
+    env_name = name.upper()   # ie: "MC"
+    return find_command(name, env_name, *paths)
+
+
+def find_vs_command(name="link") -> str:
+    dirs = []
+    for prog_dir in (PROGRAMFILES, PROGRAMFILES_X86):
+        for VSV in (14.0, 17.0, 19.0, 2019):
+            vsdir = f"{prog_dir}\\Microsoft Visual Studio\\{VSV}"
+            if os.path.exists(vsdir):
+                dirs.append(f"{vsdir}\\VC\\bin")
+                dirs.append(f"{vsdir}\\BuildTools\\VC\\Tools\\MSVC")
+    return search_command(f"*/x64/{name}.exe", *dirs)
+
+
 def build_service() -> None:
     step("* Compiling system service shim")
-    # ARCH_DIRS = ("x64", "x86")
-    SERVICE_SRC_DIR = "packaging/MSWindows/service"
+    XPRA_SERVICE_EXE = "Xpra-Service.exe"
+    delfile(XPRA_SERVICE_EXE)
+    SERVICE_SRC_DIR = os.path.join(os.path.abspath("."), "packaging", "MSWindows", "service")
     for filename in ("event_log.rc", "event_log.res", "MSG00409.bin", "Xpra-Service.exe"):
         path = os.path.join(SERVICE_SRC_DIR, filename)
         delfile(path)
 
-    raise NotImplementedError()
+    MC = find_wk_command("mc")
+    RC = find_wk_command("rc")
+    LINK = find_vs_command("link")
+
+    log_command([MC, "-U", "event_log.mc"], "service-mc.log", cwd=SERVICE_SRC_DIR)
+    log_command([RC, "event_log.rc"], "service-rc.log", cwd=SERVICE_SRC_DIR)
+    log_command([LINK, "-dll", "-noentry", "-out:event_log.dll", "event_log.res"], "service-link.log",
+                cwd=SERVICE_SRC_DIR)
+    log_command(["g++", "-o", XPRA_SERVICE_EXE, "Xpra-Service.cpp", "-Wno-write-strings"], "service-gcc.log",
+                cwd=SERVICE_SRC_DIR)
+    os.rename(os.path.join(SERVICE_SRC_DIR, XPRA_SERVICE_EXE), XPRA_SERVICE_EXE)
 
 
 VersionInfo = namedtuple("VersionInfo", "string,value,revision,full_string,arch_info,extra,padded")
@@ -404,12 +460,13 @@ def fixups(light: bool) -> None:
     debug("move lz4")
 
 
-def bundle_numpy(bundle: bool) -> None:
+def add_numpy(bundle: bool) -> None:
     step(f"numpy: {bundle}")
     lib_numpy = f"{LIB_DIR}/numpy"
     if not bundle:
         debug("removed")
-        rmtree(f"{lib_numpy}")
+        rmrf(f"{lib_numpy}")
+        delete_libs("libopenblas*", "libgfortran*", "libquadmath*")
         return
     debug("moving libraries to lib")
     for libname in ("openblas", "gfortran", "quadmath"):
@@ -468,7 +525,7 @@ def fixup_dlls() -> None:
 
 def delete_dist_files(*exps: str) -> None:
     for exp in exps:
-        matches = glob(f"{LIB_DIR}/{exp}")
+        matches = glob(f"{DIST}/{exp}")
         if not matches:
             print(f"Warning: glob {exp!r} did not match any files!")
             continue
@@ -482,18 +539,18 @@ def delete_dist_files(*exps: str) -> None:
 
 
 def delete_libs(*exps: str) -> None:
-    delete_dist_files(*(f"{LIB_DIR}/{exp}" for exp in exps))
+    delete_dist_files(*(f"lib/{exp}" for exp in exps))
 
 
-def delete_dlls(full: bool) -> None:
-    os.unlink("keyring/testing")
+def delete_dlls(light: bool) -> None:
+    step("Deleting unnecessary DLLs")
     delete_libs(
         "libjasper*", "lib2to3*", "xdg*", "olefile*", "pygtkcompat*", "jaraco*",
         "p11-kit*", "lz4",
     )
     # remove codecs we don't need:
     delete_libs("libx265*", "libjxl*", "libde265*", "libkvazaar*")
-    if not full:
+    if light:
         delete_libs(
             "*.dist-info",
             # kerberos / gss libs:
@@ -530,11 +587,12 @@ def trim_pillow() -> None:
         "ImageFilter", "ImageFont", "ImageGrab", "ImageMode", "ImageOps", "ImagePalette", "ImagePath", "ImageSequence",
         "ImageStat", "ImageTransform",
     )
+    NO_KEEP = ("Jpeg2K", )
     kept = []
     removed = []
     for filename in glob(f"{LIB_DIR}/PIL/*Image*"):
         infoname = os.path.splitext(os.path.basename(filename))[0]
-        if any(filename.find(keep) >= 0 for keep in KEEP):
+        if any(filename.find(keep) >= 0 for keep in KEEP) and not any(filename.find(nokeep) for nokeep in NO_KEEP):
             kept.append(infoname)
             continue
         removed.append(infoname)
@@ -546,10 +604,17 @@ def trim_pillow() -> None:
 def trim_python_libs() -> None:
     step("Removing unnecessary Python modules")
     # remove test bits we don't need:
-    # delete_libs(
-    #    # no need for headers:
-    #    "cairo/include",
-    # )
+    delete_libs(
+        "asyncio",
+        "pywin*",
+        "win32com",
+        "backports",
+        "importlib_resources/compat",
+        "importlib_resources/tests",
+        "yaml",
+        # no need for headers:
+        # "cairo/include"
+    )
     step("Removing unnecessary files")
     for ftype in (
         # no runtime type checks:
@@ -626,6 +691,17 @@ def zip_modules(light: bool) -> None:
 
 def setup_share(light: bool) -> None:
     step("Deleting unnecessary `share/` files")
+    delete_dist_files(
+        "share/xml",
+        "share/glib-2.0/codegen",
+        "share/glib-2.0/gdb",
+        "share/glib-2.0/gettext",
+        "share/locale",
+        "share/gstreamer-1.0",
+        "share/gst-plugin-base",
+        "share/p11-kit",
+        "share/themes/*/gtk-2.0*",
+    )
     if light:
         # remove extra bits that take up a lot of space:
         delete_dist_files(
@@ -654,7 +730,7 @@ def add_manifests() -> None:
 
 
 def gen_caches() -> None:
-    step("Generating gdk pixbuf loaders.cache")
+    step("Generating gdk pixbuf loaders cache")
     cmd = 'gdk-pixbuf-query-loaders.exe "lib/gdk-pixbuf-2.0/2.10.0/loaders/*"'
     with open(f"{LIB_DIR}/gdk-pixbuf-2.0/2.10.0/loaders.cache", "w") as cache:
         if Popen(cmd, cwd=os.path.abspath(DIST), stdout=cache, shell=True).wait() != 0:
@@ -750,10 +826,13 @@ def bundle_desktop_logon() -> None:
 
 
 def add_cuda(enabled: bool) -> None:
+    step(f"cuda: {enabled}")
     if not enabled:
+        delete_libs("pycuda*")
         find_delete(DIST, "pycuda*")
         find_delete(DIST, "libnv*")
         find_delete(DIST, "cuda.conf")
+        delete_libs("curand*")
         cuda_dir = os.path.join(LIB_DIR, "cuda")
         rmrf(cuda_dir)
         return
@@ -894,6 +973,10 @@ def create_msi(installer: str) -> str:
 
 def build(args) -> None:
     set_version_info(args.light)
+    if args.html5:
+        check_html5()
+    if args.sign:
+        check_signtool()
 
     if args.clean:
         clean()
@@ -910,13 +993,16 @@ def build(args) -> None:
 
     if args.fixups:
         fixups(args.light)
-        bundle_numpy(args.numpy)
         fixup_gstreamer()
         fixup_dlls()
+        delete_dlls(args.light)
         trim_python_libs()
         trim_pillow()
         fixup_zeroconf()
         rm_empty_dirs()
+
+    add_cuda(args.cuda)
+    add_numpy(args.numpy)
 
     if args.zip_modules:
         zip_modules(args.light)
@@ -940,7 +1026,6 @@ def build(args) -> None:
         bundle_paxec()
     if args.desktop_logon:
         bundle_desktop_logon()
-    add_cuda(args.cuda)
     rec_options(args)
 
     if args.verpatch:
