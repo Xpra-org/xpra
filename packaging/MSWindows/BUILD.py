@@ -8,6 +8,7 @@
 import sys
 import os.path
 import shlex
+from datetime import datetime
 from collections.abc import Iterable
 from importlib.util import find_spec, spec_from_file_location, module_from_spec
 
@@ -81,6 +82,12 @@ def parse_command_line():
         global DEBUG
         DEBUG = True
     return args
+
+
+def step(message: str) -> None:
+    now = datetime.now()
+    ts = f"{now.hour:02}:{now.minute:02}:{now.second:02}"
+    print(f"* {ts} {message}")
 
 
 def debug(message: str) -> None:
@@ -235,7 +242,7 @@ def rmrf(path: str) -> None:
 
 
 def clean() -> None:
-    print("* Cleaning output directories and generated files")
+    step("Cleaning output directories and generated files")
     debug("cleaning log files:")
     find_delete("packaging/MSWindows/", "*.log")
     for dirname in (DIST, "build"):
@@ -258,7 +265,7 @@ def clean() -> None:
 
 
 def build_service() -> None:
-    print("* Compiling system service shim")
+    step("* Compiling system service shim")
     # ARCH_DIRS = ("x64", "x86")
     raise NotImplementedError()
 
@@ -273,7 +280,7 @@ ZERO_PADDED_VERSION = (0, 0, 0, 0)
 
 
 def set_version_info(full: bool):
-    print("* Collection version information")
+    step("Collection version information")
     for filename in ("src_info.py", "build_info.py"):
         path = os.path.join("xpra", filename)
         if os.path.exists(path):
@@ -316,7 +323,7 @@ def set_version_info(full: bool):
 
 
 def build_cuda_kernels() -> None:
-    print("* Building the CUDA kernels")
+    step("Building CUDA kernels")
     for cupath in glob("fs/share/xpra/cuda/*.cu"):
         kname = os.path.splitext(os.path.basename(cupath))[0]
         cu = os.path.splitext(cupath)[0]
@@ -336,7 +343,7 @@ def build_cuda_kernels() -> None:
 
 
 def build_ext(args) -> None:
-    print("* Building Cython modules")
+    step("Building Cython modules")
     build_args = get_build_args(args) + ["--inplace"]
     if NPROCS > 0:
         build_args += ["-j", str(NPROCS)]
@@ -345,7 +352,7 @@ def build_ext(args) -> None:
 
 
 def run_tests() -> None:
-    print("* Running unit tests")
+    step("Running unit tests")
     env = os.environ.copy()
     env["PYTHONPATH"] = ".:./tests/unittests"
     env["XPRA_COMMAND"] = "./fs/bin/xpra"
@@ -353,12 +360,12 @@ def run_tests() -> None:
 
 
 def install_exe() -> None:
-    print("* Generating installation directory")
+    step("Generating installation directory")
     log_command(f"{PYTHON} ./setup.py install_exe --install={DIST}", "install.log")
 
 
 def install_docs() -> None:
-    print("* Generating the documentation")
+    step("Generating the documentation")
     if not os.path.exists(f"{DIST}/doc"):
         os.mkdir(f"{DIST}/doc")
     env = os.environ.copy()
@@ -367,7 +374,7 @@ def install_docs() -> None:
 
 
 def fixups(full: bool) -> None:
-    print("* Fixups")
+    step("Fixups")
     # fix case sensitive mess:
     gi_dir = f"{LIB_DIR}/girepository-1.0"
     debug("Glib misspelt")
@@ -397,7 +404,7 @@ def fixups(full: bool) -> None:
 
 
 def bundle_numpy(bundle: bool) -> None:
-    print(f"* numpy: {bundle}")
+    step(f"numpy: {bundle}")
     lib_numpy = f"{LIB_DIR}/numpy"
     if not bundle:
         debug("removed")
@@ -423,7 +430,7 @@ def move_lib(frompath: str, todir: str) -> None:
 
 
 def fixup_gstreamer() -> None:
-    print("* Fixup GStreamer")
+    step("Fixup GStreamer")
     lib_gst = f"{LIB_DIR}/gstreamer-1.0"
     # these are not modules, so they belong in "lib/":
     for dllname in ("gstreamer*", "gst*-1.0-*", "wavpack*", "*-?"):
@@ -439,7 +446,7 @@ def fixup_gstreamer() -> None:
 
 
 def fixup_dlls() -> None:
-    print("* Fixup DLLs")
+    step("Fixup DLLs")
     debug("remove dll.a")
     # why is it shipping those files??
     find_delete(DIST, "*dll.a")
@@ -515,7 +522,7 @@ def delete_dlls(full: bool) -> None:
 
 def trim_pillow() -> None:
     # remove PIL loaders and modules we don't need:
-    print("* removing unnecessary PIL plugins:")
+    step("removing unnecessary PIL plugins:")
     KEEP = (
         "Bmp", "Ico", "Jpeg", "Tiff", "Png", "Ppm", "Xpm", "WebP",
         "Image.py", "ImageChops", "ImageCms", "ImageWin", "ImageChops", "ImageColor", "ImageDraw", "ImageFile.py",
@@ -536,13 +543,13 @@ def trim_pillow() -> None:
 
 
 def trim_python_libs() -> None:
-    print("* removing unnecessary Python modules")
+    step("removing unnecessary Python modules")
     # remove test bits we don't need:
     # delete_libs(
     #    # no need for headers:
     #    "cairo/include",
     # )
-    print("* removing unnecessary files")
+    step("removing unnecessary files")
     for ftype in (
         # no runtime type checks:
         "py.typed",
@@ -579,7 +586,7 @@ def fixup_zeroconf() -> None:
 
 
 def rm_empty_dirs() -> None:
-    print("* Removing empty directories")
+    step("Removing empty directories")
 
     def rm_empty_dir() -> None:
         cmd = ["find", DIST, "-type", "d", "-empty"]
@@ -592,7 +599,7 @@ def rm_empty_dirs() -> None:
 
 
 def zip_modules(full: bool) -> None:
-    print("* zipping up some Python modules")
+    step("zipping up some Python modules")
     # these modules contain native code or data files,
     # so they will require special treatment:
     # xpra numpy cryptography PIL nacl cffi gtk gobject glib aioquic pylsqpack > /dev/null
@@ -620,7 +627,7 @@ def zip_modules(full: bool) -> None:
 
 
 def setup_share(full: bool) -> None:
-    print("* Deleting unnecessary share/ files")
+    step("Deleting unnecessary share/ files")
     delete_dist_files(
         "share/xml", "share/glib-2.0/codegen", "share/glib-2.0/gdb", "share/glib-2.0/gettext",
         "share/themes/Default/gtk-2.0*"
@@ -634,14 +641,14 @@ def setup_share(full: bool) -> None:
             "share/fonts/cantarell",
             "qt.conf",
         )
-    print("* Removing empty icon directories")
+    step("Removing empty icon directories")
     # remove empty icon directories
     for _ in range(4):
         os.system(f"find {DIST}/share/icons -type d -exec rmdir {{}} \\; 2> /dev/null")
 
 
-def add_manifest() -> None:
-    print("* Adding manifest")
+def add_manifests() -> None:
+    step("Adding EXE manifests")
     EXES = [
         "Bug_Report", "Xpra-Launcher", "Xpra", "Xpra_cmd",
         # these are only included in full builds:
@@ -653,23 +660,23 @@ def add_manifest() -> None:
 
 
 def gen_caches() -> None:
-    print("* Generating gdk pixbuf loaders.cache")
+    step("Generating gdk pixbuf loaders.cache")
     cmd = 'gdk-pixbuf-query-loaders.exe "lib/gdk-pixbuf-2.0/2.10.0/loaders/*"'
     with open(f"{LIB_DIR}/gdk-pixbuf-2.0/2.10.0/loaders.cache", "w") as cache:
         if Popen(cmd, cwd=os.path.abspath(DIST), stdout=cache, shell=True).wait() != 0:
             raise RuntimeError("gdk-pixbuf-query-loaders.exe failed")
-    print("* Generating icons and theme cache")
+    step("Generating icons and theme cache")
     for itheme in glob(f"{DIST}/share/icons/*"):
         os.system(f"gtk-update-icon-cache.exe -t -i {itheme!r}")
 
 
 def bundle_manual() -> None:
-    print("* Generating HTML Manual Page")
+    step("Generating HTML Manual Page")
     os.system("groff.exe -mandoc -Thtml < ./fs/share/man/man1/xpra.1 > ${DIST}/manual.html")
 
 
 def bundle_html5() -> None:
-    print("* Installing the HTML5 client")
+    step("Installing the HTML5 client")
     www = os.path.join(os.path.abspath("."), DIST, "www")
     if not os.path.exists(www):
         os.mkdir(www)
@@ -678,7 +685,7 @@ def bundle_html5() -> None:
 
 
 def bundle_putty() -> None:
-    print("* Adding TortoisePlink")
+    step("Bundling TortoisePlink")
     tortoiseplink = find_command("TortoisePlink", "TORTOISEPLINK",
                                  f"{PROGRAMFILES}\\TortoiseSVN\\bin\\TortoisePlink.exe")
     copyfile(tortoiseplink, f"{DIST}/Plink.exe")
@@ -698,7 +705,7 @@ def bundle_dlls(*expr: str) -> None:
 
 
 def bundle_openssh() -> None:
-    print("* Bundling OpenSSH")
+    step("Bundling OpenSSH")
     for exe_name in ("ssh", "sshpass", "ssh-keygen"):
         exe = which(exe_name)
         if not exe:
@@ -714,7 +721,7 @@ def bundle_openssh() -> None:
 
 
 def bundle_openssl() -> None:
-    print("* Bundling OpenSSL")
+    step("Bundling OpenSSL")
     copyfile(f"{MINGW_PREFIX}/bin/openssl.exe", f"{DIST}/openssl.exe")
     ssl_dir = f"{DIST}/etc/ssl"
     if not os.path.exists(ssl_dir):
@@ -725,12 +732,12 @@ def bundle_openssl() -> None:
 
 
 def bundle_paxec() -> None:
-    print("* Bundling paexec")
+    step("Bundling paexec")
     copyfile(f"{MINGW_PREFIX}/bin/paexec.exe", f"{DIST}/paexec.exe")
 
 
 def bundle_desktop_logon() -> None:
-    print("* Bundling desktop_logon")
+    step("Bundling desktop_logon")
     dl_dlls = tuple(f"{MINGW_PREFIX}/bin/{dll}" for dll in ("AxMSTSCLib", "MSTSCLib", "DesktopLogon"))
     bundle_dlls(*dl_dlls)
 
@@ -778,7 +785,7 @@ def verpatch() -> None:
 
 def show_diskusage() -> None:
     print()
-    print("installation disk usage:")
+    print("  installation disk usage:")
     os.system(f"du -sm {DIST!r}")
     print()
 
@@ -787,7 +794,7 @@ def show_diskusage() -> None:
 # packaging: ZIP / EXE / MSI
 
 def create_zip() -> None:
-    print("* Creating ZIP file:")
+    step("Creating ZIP file:")
     ZIP_DIR = f"Xpra{EXTRA_VERSION}{BUILD_ARCH_INFO}_{FULL_VERSION}"
     ZIP_FILENAME = f"{ZIP_DIR}.zip"
     if os.path.exists(ZIP_DIR):
@@ -805,7 +812,7 @@ def create_zip() -> None:
 
 
 def create_installer(args) -> str:
-    print("* Creating the installer using InnoSetup")
+    step("Creating the installer using InnoSetup")
     innosetup = find_command("innosetup", "INNOSETUP",
                              f"{PROGRAMFILES}\\Inno Setup 6\\ISCC.exe",
                              f"{PROGRAMFILES_X86}\\Inno Setup 6\\ISCC.exe",
@@ -858,7 +865,7 @@ def sign_file(filename: str) -> None:
 
 
 def sign_installer(installer: str) -> None:
-    print("* Signing EXE")
+    step("Signing EXE")
     sign_file(installer)
     print()
     os.system(f"du -sm ${installer!r}")
@@ -866,7 +873,7 @@ def sign_installer(installer: str) -> None:
 
 
 def run_installer(installer: str) -> None:
-    print("* Finished - running the new installer")
+    step("Finished - running the new installer")
     # we need to escape slashes!
     # (this doesn't preserve spaces.. we should use shift instead)
     os.system(installer)
@@ -887,7 +894,7 @@ def create_msi() -> str:
 
 
 def sign_msi(msi: str) -> None:
-    print("* Signing MSI")
+    step("Signing MSI")
     sign_file(msi)
     print()
     os.system(f"du -sm {msi}")
@@ -924,7 +931,7 @@ def build(args) -> None:
         zip_modules(args.full)
 
     setup_share(args.full)
-    add_manifest()
+    add_manifests()
     gen_caches()
 
     if args.docs:
