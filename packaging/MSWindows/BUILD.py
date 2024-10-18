@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from importlib.util import find_spec, spec_from_file_location, module_from_spec
 
 from glob import glob
-from subprocess import getstatusoutput, check_output, Popen, getoutput, PIPE
+from subprocess import getstatusoutput, check_output, Popen, PIPE
 from shutil import which, rmtree, copyfile, move, copytree
 
 KEY_FILE = "E:\\xpra.pfx"
@@ -154,6 +154,8 @@ def find_command(name: str, env_name: str, *paths) -> str:
 def search_command(wholename: str, *dirs: str) -> str:
     debug(f"searching for {wholename!r} in {dirs}")
     for dirname in dirs:
+        if not os.path.exists(dirname):
+            continue
         cmd = ["find", dirname, "-wholename", wholename]
         r, output = getstatusoutput(cmd)
         debug(f"getstatusoutput({cmd})={r}, {output}")
@@ -194,13 +196,19 @@ def check_signtool() -> None:
     step("locating `signtool`")
     try:
         signtool = find_command("signtool", "SIGNTOOL",
+                                "./signtool.exe",
                                 f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe"
                                 f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe"
                                 f"{PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
                                 f"{PROGRAMFILES_X86}\\Windows Kits\\10\\App Certification Kit\\signtool.exe")
     except RuntimeError:
+        signtool = ""
+    if not signtool:
         # try the hard (slow) way:
-        find_vs_command("*/x64/signtool.exe")
+        signtool = find_vs_command("signtool.exe")
+        if not signtool:
+            raise RuntimeError("signtool not found")
+    debug(f"{signtool=}")
     if signtool.lower() != "./signtool.exe":
         copyfile(signtool, "./signtool.exe")
 
@@ -247,7 +255,8 @@ def find_delete(path: str, name: str, mindepth=0) -> None:
     if name:
         cmd += ["-name", "'"+name+"'"]
     cmd += ["-type", "f"]
-    output = getoutput(command_args(cmd))
+    cmd = command_args(cmd)
+    output = check_output(cmd)
     for filename in output.splitlines():
         delfile(filename)
 
@@ -301,6 +310,7 @@ def find_wk_command(name="mc") -> str:
 
 
 def find_vs_command(name="link") -> str:
+    debug(f"find_vs_command({name})")
     dirs = []
     for prog_dir in (PROGRAMFILES, PROGRAMFILES_X86):
         for VSV in (14.0, 17.0, 19.0, 2019):
@@ -552,7 +562,6 @@ def delete_dlls(light: bool) -> None:
     delete_libs("libx265*", "libjxl*", "libde265*", "libkvazaar*")
     if light:
         delete_libs(
-            "*.dist-info",
             # kerberos / gss libs:
             "libshishi*", "libgss*",
             # no dbus:
@@ -566,14 +575,14 @@ def delete_dlls(light: bool) -> None:
             # should not be needed:
             "libsqlite*", "libp11-kit*",
             # extra audio codecs (we just keep vorbis and opus):
-            "libmp3*", "libwavpack*", "libmpdec*", "libspeex*", "libFLAC*", "libmpg123*", "libfaad*", "libfaac*",
+            "libmp3*", "libwavpack*", "libmpdec*", "libFLAC*", "libmpg123*", "libfaad*", "libfaac*",
         )
 
         def delgst(*exps: str) -> None:
             gstlibs = tuple(f"gstreamer-1.0/libgst{exp}*" for exp in exps)
             delete_libs(*gstlibs)
         # matching gstreamer modules:
-        delgst("flac", "wavpack", "speex", "wavenc", "lame", "mpg123", "faac", "faad", "wav")
+        delgst("flac", "wavpack", "wavenc", "lame", "mpg123", "faac", "faad", "wav")
         # these started causing packaging problems with GStreamer 1.24:
         delgst("isomp4")
 
@@ -651,7 +660,7 @@ def fixup_zeroconf() -> None:
 
 def rm_empty_dir(dirpath: str) -> None:
     cmd = ["find", dirpath, "-type", "d", "-empty"]
-    output = getoutput(command_args(cmd))
+    output = check_output(command_args(cmd))
     for path in output.splitlines():
         os.rmdir(path)
 
@@ -680,7 +689,7 @@ def zip_modules(light: bool) -> None:
         "logging", "queue", "urllib", "xml", "xmlrpc", "pyasn1_modules",
         "concurrent", "collections",
     ]
-    EXTRAS = ["test", "unittest", "gssapi", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
+    EXTRAS = ["unittest", "gssapi", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
     if light:
         delete_libs(*EXTRAS)
     else:
@@ -714,7 +723,7 @@ def setup_share(light: bool) -> None:
     step("Removing empty icon directories")
     # remove empty icon directories
     for _ in range(4):
-        rm_empty_dir("{DIST}/share/icons")
+        rm_empty_dir(f"{DIST}/share/icons")
 
 
 def add_manifests() -> None:
@@ -834,7 +843,8 @@ def add_cuda(enabled: bool) -> None:
         find_delete(DIST, "cuda.conf")
         delete_libs("curand*")
         cuda_dir = os.path.join(LIB_DIR, "cuda")
-        rmrf(cuda_dir)
+        if os.path.exists(cuda_dir):
+            rmtree(cuda_dir)
         return
     # pycuda wants a CUDA_PATH with "/bin" in it:
     if not os.path.exists(f"{DIST}/bin"):
@@ -858,7 +868,7 @@ def verpatch() -> None:
                      "/s", "desc", descr,
                      "/va", version_info.padded,
                      "/s", "company", "xpra.org",
-                     "/s", "copyright", "(c) xpra.org 2020",
+                     "/s", "copyright", "(c) xpra.org 2024",
                      "/s", "product", "xpra",
                      "/pv", version_info.padded,
                      ], "verpatch.log")
