@@ -956,7 +956,9 @@ class WindowClient(StubClientMixin):
 
     def _find_pid_focused_window(self, pid: int, OR=False) -> int:
         for twid, twin in self._id_to_window.items():
-            if twin._override_redirect != OR:
+            if twin.is_tray():
+                continue
+            if twin.is_OR() != OR:
                 continue
             if twin._metadata.intget("pid", -1) == pid:
                 if OR or twid == self._focused:
