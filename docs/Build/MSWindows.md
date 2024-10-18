@@ -13,4 +13,4 @@ To be able to generate EXE packages, install [verpatch](https://github.com/pavel
 
 
 ## Build
-From the source directory, just run the build script [BUILD.sh](https://github.com/Xpra-org/xpra/tree/master/packaging/MSWindows/BUILD.sh)
+From the source directory, just run the build script [BUILD.py](https://github.com/Xpra-org/xpra/tree/master/packaging/MSWindows/BUILD.py)
