@@ -2086,6 +2086,7 @@ def enforce_client_features() -> None:
 
 def make_client(error_cb: Callable, opts):
     backend = opts.backend or "gtk"
+    BACKENDS = ("qt", "gtk", "auto")
     if backend == "qt":
         try:
             for mod in ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication"):
@@ -2099,7 +2100,7 @@ def make_client(error_cb: Callable, opts):
         except ImportError as e:
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the qt6 client component is missing: {e}")
     elif backend not in ("gtk", "auto"):
-        raise ValueError(f"invalid gui backend {backend!r}")
+        raise ValueError(f"invalid gui backend {backend!r}, must be one of: "+csv(BACKENDS))
 
     progress_process = None
     if opts.splash is not False:
