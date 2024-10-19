@@ -425,9 +425,10 @@ def run_tests() -> None:
     log_command(f"{PYTHON} ./setup.py unittests", "unittest.log", env=env)
 
 
-def install_exe() -> None:
+def install_exe(args) -> None:
     step("Generating installation directory")
-    log_command(f"{PYTHON} ./setup.py install_exe --install={DIST}", "install.log")
+    args_str = " ".join(get_build_args(args))
+    log_command(f"{PYTHON} ./setup.py install_exe {args_str} --install={DIST}", "install.log")
 
 
 def install_docs() -> None:
@@ -601,7 +602,7 @@ def trim_pillow() -> None:
     removed = []
     for filename in glob(f"{LIB_DIR}/PIL/*Image*"):
         infoname = os.path.splitext(os.path.basename(filename))[0]
-        if any(filename.find(keep) >= 0 for keep in KEEP) and not any(filename.find(nokeep) for nokeep in NO_KEEP):
+        if any(filename.find(keep) >= 0 for keep in KEEP) and not any(filename.find(nokeep) >= 0 for nokeep in NO_KEEP):
             kept.append(infoname)
             continue
         removed.append(infoname)
@@ -614,7 +615,6 @@ def trim_python_libs() -> None:
     step("Removing unnecessary Python modules")
     # remove test bits we don't need:
     delete_libs(
-        "asyncio",
         "pywin*",
         "win32com",
         "backports",
@@ -689,7 +689,7 @@ def zip_modules(light: bool) -> None:
         "logging", "queue", "urllib", "xml", "xmlrpc", "pyasn1_modules",
         "concurrent", "collections",
     ]
-    EXTRAS = ["unittest", "gssapi", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
+    EXTRAS = ["asyncio", "unittest", "gssapi", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
     if light:
         delete_libs(*EXTRAS)
     else:
@@ -706,7 +706,7 @@ def setup_share(light: bool) -> None:
         "share/glib-2.0/gettext",
         "share/locale",
         "share/gstreamer-1.0",
-        "share/gst-plugin-base",
+        "share/gst-plugins-base",
         "share/p11-kit",
         "share/themes/*/gtk-2.0*",
     )
@@ -717,7 +717,6 @@ def setup_share(light: bool) -> None:
             "share/fonts/gsfonts",
             "share/fonts/adobe*",
             "share/fonts/cantarell",
-            "qt.conf",
         )
     step("Removing empty icon directories")
     # remove empty icon directories
@@ -998,7 +997,7 @@ def build(args) -> None:
     if args.tests:
         run_tests()
     if args.install:
-        install_exe()
+        install_exe(args)
 
     if args.fixups:
         fixups(args.light)
