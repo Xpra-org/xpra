@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.2.1] 2024-10-19
+* TODO
+
 ## [6.2.0] 2024-10-09
 * Platforms, build and packaging:
     * [pycuda for Fedora 41](https://github.com/Xpra-org/xpra/issues/4332)
