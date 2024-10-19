@@ -484,7 +484,6 @@ def add_numpy(bundle: bool) -> None:
         for dll in glob(f"{lib_numpy}/core/lib{libname}*.dll"):
             move(dll, LIB_DIR)
     debug("trim tests")
-    rmrf(f"{lib_numpy}/doc")
 
 
 def move_lib(frompath: str, todir: str) -> None:
@@ -894,7 +893,8 @@ def create_zip() -> None:
     step("Creating ZIP file:")
     ZIP_DIR = f"Xpra{version_info.extra}{version_info.arch_info}_{version_info.full_string}"
     ZIP_FILENAME = f"{ZIP_DIR}.zip"
-    rmrf(ZIP_DIR)
+    if os.path.exists(ZIP_DIR):
+        rmrf(ZIP_DIR)
     delfile(ZIP_FILENAME)
     copytree(DIST, ZIP_DIR)
     log_command(["zip", "-9mr", ZIP_FILENAME, ZIP_DIR], "zip.log")
