@@ -22,7 +22,7 @@ DIST = "dist"
 LIB_DIR = f"{DIST}/lib"
 
 DEBUG = os.environ.get("XPRA_DEBUG", "0") != "0"
-PYTHON = os.environ.get("PYTHON", "python3")
+PYTHON = os.environ.get("PYTHON", "python%i.%i" % sys.version_info[:2])
 MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
 TIMESTAMP_SERVER = "http://timestamp.digicert.com"
 # alternative:
