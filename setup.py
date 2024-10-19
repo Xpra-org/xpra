@@ -663,7 +663,7 @@ def install_repo(repo_variant="") -> None:
     if distro[0] in ("Debian", "Ubuntu"):
         variant = distro[2]     # ie: "noble"
         if variant not in (
-            "xenial", "bionic", "focal", "jammy", "mantic", "noble",
+            "xenial", "bionic", "focal", "jammy", "mantic", "noble", "oracular",
             "bullseye", "bookworm", "trixie", "sid",
         ):
             raise ValueError(f"Debian / Ubuntu variant {variant} is not supported by this subcommand")
