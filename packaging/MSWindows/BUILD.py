@@ -694,7 +694,6 @@ def zip_modules(light: bool) -> None:
         delete_libs(*EXTRAS)
     else:
         ZIPPED += EXTRAS
-    delfile(f"{LIB_DIR}/library.zip")
     log_command(["zip", "--move", "-ur", "library.zip"] + ZIPPED, "zip.log", cwd=LIB_DIR)
 
 
