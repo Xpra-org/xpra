@@ -1,21 +1,28 @@
 # Changelog
 
-## [5.0.11] 2024-10-03
+## [5.0.11] 2024-10-19
 * Platforms, build and packaging:
     * [don't build ffmpeg encoder on MacOS](https://github.com/Xpra-org/xpra/commit/bf2f1a3f4927428da0ae4c5d40e5125c4c8617d0)
     * [RPM builds without nvidia codecs failed](https://github.com/Xpra-org/xpra/commit/eeb6fd4cfb7c9c486b0c5649a993c4dc79099f34)
     * [RPM simplify Fedora feature checks](https://github.com/Xpra-org/xpra/commit/034b0a5c5891595b9cbda687f1fed2c25607e4cb)
     * [unnecessary module import on MacOS](https://github.com/Xpra-org/xpra/commit/6c7e63b93f40bc3a2fc710b82edff80c8450b38d)
+    * [match `comtypes` module changes](https://github.com/Xpra-org/xpra/commit/51c589e30159e2d3559e144d8f6e64fd3644b869)
+    * [run CI on Ubuntu 22.04 image](https://github.com/Xpra-org/xpra/commit/37cbdc2ca3f6991f792ae40786f84da3109db197)
 * Major:
     * [verify ssl certificates can be accessed - not just the parent directory](https://github.com/Xpra-org/xpra/commit/f6e1caf75025a9f9354b587262d1350f7f915944)
     * [automatic re-connection path errors with MS Windows clients](https://github.com/Xpra-org/xpra/commit/6bfd2dc03bf5a6253f389f32525bef4b3bbb255a)
     * [ssl redirection errors](https://github.com/Xpra-org/xpra/commit/4e64fb776f4e14f6929dd1faa2a68202705883e5)
     * [focus lost](https://github.com/Xpra-org/xpra/commit/2551a32bac64aee8354c4962426e80eb9fe3a298)
     * [raise maximum number of AES key stretching iterations](https://github.com/Xpra-org/xpra/commit/c6c055490605a85bfb02fbff7ac9c3f8e4867989), [and default](https://github.com/Xpra-org/xpra/commit/a296babb5020f1f78232cb8142005fcb44c8831f)
+    * [automatic port assignment error](https://github.com/Xpra-org/xpra/commit/cc6582e6c5a61c6a05107c3fd2f9a11f338683c0)
 * Minor:
     * [support pointer polling](https://github.com/Xpra-org/xpra/commit/8a7df98a6683f3af958df74308090e5734306b75)
+    * [version update dialog cannot be closed](https://github.com/Xpra-org/xpra/commit/7643e477bf57dda71e137e73fe51f9ebe7ccbd60)
+    * [prevent missing menu data from causing connection errors](https://github.com/Xpra-org/xpra/commit/deab47e10cc95005ca13d13afdc9e0f3e05a7c6e)
 * Cosmetic:
     * [silence http timeouts](https://github.com/Xpra-org/xpra/commit/892f8de2b8c50928d30c27889350b46be000e83b)
+    * [typo in manpage](https://github.com/Xpra-org/xpra/commit/233c8ddca6ceae90fe59ad326ff20f864c658b83)
+    * [remove unused logger](https://github.com/Xpra-org/xpra/commit/a2e14564ee7cf349b408e20b51d9e4f0ca8c2c5e)
 
 ## [5.0.10] 2024-09-10
 * Platforms, build and packaging:
