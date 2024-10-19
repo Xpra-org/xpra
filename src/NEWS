@@ -1,17 +1,21 @@
-v3.1.9 (2024-09-04)
+v3.1.9 (2024-10-19)
 	-- build and packaging:
 		- libyuv 0.1878.20231004
 		- packaging updates for CentOS7: libyuv, skip pycuda
 		- python-netifaces missing gcc build dependency
 		- remove outdated numpy packaging workaround on MS Windows
 		- ffmpeg v7 compatibility for decoder and swscale
-		- remove ffmpeg encoder from MS Windows builds
+		- remove ffmpeg encoder from MS Windows and MacOS builds
+		- never bundle any Qt components
+		- match `comtypes` module changes
 	-- encodings:
 		- avoid slow modules (ie: csc_cython)
 		- stick to the same video scaling setting longer, avoid big swings
 		- handle decoding of padded frames
 	-- major:
 		- system tray cleanup crash
+		- automatic port assignment error
+		- raise AES key derivation limits
 		- missing start menu
 		- try harder to find the matching key, using the keyval, key name - lowercase if needed, use default modifiers if that's all we have
 		- context errors with sync-xvfb switch
@@ -27,6 +31,8 @@ v3.1.9 (2024-09-04)
 		- expose all clipboard targets
 		- authentication aborted due to encryption not detected
 	-- minor and cosmetic fixes:
+		- proxy servers should respond to `id` requests
+		- encoding speed and quality menus not sticking
 		- map missing modifiers using defaults
 		- don't assume that zlib is available
 		- handle invalid dbus-launch command options
@@ -35,6 +41,7 @@ v3.1.9 (2024-09-04)
 		- try to handle missing python pillow slightly more gracefully
 		- log opengl probe command
 		- confusing X11 display message
+		- avoid X11 client message format warnings
 		- use correct type for numlock modifier
 
 v3.1.8 (2024-06-13)
