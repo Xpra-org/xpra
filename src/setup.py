@@ -1498,6 +1498,7 @@ if WIN32:
     external_includes.append("pyu2f")
     external_includes.append("mmap")
     external_includes.append("comtypes")    #used by webcam and netdev_query
+    external_includes.append("comtypes.stream")    #used by webcam and netdev_query
     remove_packages("comtypes.gen")         #this is generated at runtime
                                             #but we still have to remove the empty directory by hand
                                             #afterwards because cx_freeze does weird things (..)
