@@ -1,7 +1,13 @@
 # Changelog
 
 ## [6.2.1] 2024-10-19
-* TODO
+* Major:
+    * [some windows not shown when there is a tray window being forwarded](https://github.com/Xpra-org/xpra/commit/445ea1d4f11cdfdac655c4729fd7af360a37b481)
+    * [connection failures on some server platforms](https://github.com/Xpra-org/xpra/commit/66e69de7481241f47626fa48ab8691abaa3eb646)
+* Cosmetic:
+    * [show which client backend values are acceptable](https://github.com/Xpra-org/xpra/commit/ae425f0fc919011755dff678c687fa2f04221239)
+    * [log OpenGL probe errors](https://github.com/Xpra-org/xpra/commit/43e291cd691c9c8d2afd434f19a1da85d5771373)
+    * [date in changelog](https://github.com/Xpra-org/xpra/commit/972da07248e2f51566ddf0ca189a0344a2f1c420)
 
 ## [6.2.0] 2024-10-09
 * Platforms, build and packaging:
