@@ -292,38 +292,34 @@ def get_build_info() -> list[str]:
     except Exception as e:
         warn(f"Error: could not find the source information: {e}")
     try:
-        from xpra.build_info import BUILD_TYPE
-        if BUILD_TYPE:
-            info.append(f"{BUILD_TYPE} build")
-    except ImportError:
-        pass
-    try:
-        from xpra.build_info import (
-            BUILD_DATE, BUILD_TIME, BUILD_BIT,
-            CYTHON_VERSION, COMPILER_VERSION,
-        )
-        info.insert(0, "")
-        einfo = "Python " + ".".join(str(v) for v in sys.version_info[:2])
-        if BUILD_BIT:
-            einfo += ", "+BUILD_BIT
-        info.insert(0, einfo)
-        try:
-            from xpra.build_info import BUILT_BY, BUILT_ON
-            info.append(f"built on {BUILT_ON} by {BUILT_BY}")
-        except ImportError:
-            # reproducible builds dropped this info
-            pass
-        if BUILD_DATE and BUILD_TIME:
-            info.append(f"{BUILD_DATE} {BUILD_TIME}")
-        if CYTHON_VERSION != "unknown" or COMPILER_VERSION != "unknown":
-            info.append("")
-        if CYTHON_VERSION != "unknown":
-            info.append(f"using Cython {CYTHON_VERSION}")
-        if COMPILER_VERSION != "unknown":
-            cv = COMPILER_VERSION.replace("Optimizing Compiler Version", "Optimizing Compiler\nVersion")
-            info += cv.splitlines()
-    except Exception as e:
+        from xpra.build_info import build
+    except ImportError as e:
         warn(f"Error: could not find the build information: {e}")
+        build = {}
+    info.append(build.get("type", "") + " build")
+    info.insert(0, "")
+    einfo = "Python " + ".".join(str(v) for v in sys.version_info[:2])
+    bit = build.get("bit")
+    if bit:
+        einfo += ", "+bit
+    info.insert(0, einfo)
+    by = build.get("by", "")
+    on = build.get("on", "")
+    if by and on:
+        info.append(f"built on {on} by {by}")
+    date = build.get("date", "")
+    time = build.get("time", "")
+    if date and time:
+        info.append(f"{date} {time}")
+    cython = build.get("cython", "unknown")
+    compiler = build.get("compiler", "unknown")
+    if cython != "unknown" or compiler != "unknown":
+        info.append("")
+    if cython != "unknown":
+        info.append(f"using Cython {cython}")
+    if compiler != "unknown":
+        cv = compiler.replace("Optimizing Compiler Version", "Optimizing Compiler\nVersion")
+        info += cv.splitlines()
     return info
 
 

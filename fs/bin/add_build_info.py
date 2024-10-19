@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -10,6 +10,7 @@
 import datetime
 import shutil
 from subprocess import Popen, PIPE, STDOUT
+from typing import Any
 import socket
 import platform
 import os.path
@@ -17,8 +18,8 @@ import re
 import sys
 
 
-SRC_INFO_FILE = "./xpra/src_info.py"
-BUILD_INFO_FILE = "./xpra/build_info.py"
+SRC_INFO_FILE = "xpra/src_info.py"
+BUILD_INFO_FILE = "xpra/build_info.py"
 
 
 def bytestostr(x) -> str:
@@ -29,39 +30,9 @@ def bytestostr(x) -> str:
 
 def update_properties(props: dict, filename: str) -> None:
     eprops = get_properties(filename)
-    for key,value in props.items():
+    for key, value in props.items():
         set_prop(eprops, key, value)
     save_properties(eprops, filename)
-
-
-def write_props(f, props: dict, prefix="") -> None:
-    def u(v) -> bytes:
-        if isinstance(v, bytes):
-            return v
-        try:
-            v = v.decode()
-        except (UnicodeDecodeError, AttributeError):
-            v = str(v)
-        try:
-            return v.encode("utf-8")
-        except UnicodeEncodeError:
-            return v.encode("latin1")
-
-    def w(v) -> None:
-        f.write(u(v))
-
-    def fmt(value) -> str:
-        if isinstance(value, (bool, tuple, int)):
-            return str(value)
-        s = bytestostr(value).replace("'", "\\'")
-        return f"'{s}'"
-
-    for name in sorted(props.keys()):
-        if prefix:
-            w(f"{prefix}{fmt(name)}")
-        else:
-            w(name)
-        w(f" = {fmt(props[name])}\n")
 
 
 def save_properties(props: dict, filename: str) -> None:
@@ -70,40 +41,29 @@ def save_properties(props: dict, filename: str) -> None:
             os.unlink(filename)
         except OSError:
             print(f"WARNING: failed to delete {filename!r}")
-    with open(filename, mode='wb') as f:
-        write_props(f, props)
     print(f"updated {filename!r} with:")
-    for k in sorted(props.keys()):
-        print("* %s = %s" % (str(k).ljust(20), bytestostr(props[k])))
+    with open(filename, mode="w") as f:
+        for k in sorted(props.keys()):
+            v = props[k]
+            pair = f"{k} = {v!r}"
+            f.write(f"{pair}\n")
+            print(pair)
 
 
-def get_properties(filename: str) -> dict:
+def get_properties(filename: str) -> dict[str, Any]:
     props = dict()
     if not os.path.exists(filename):
         return props
-    with open(filename, "rb") as f:
-        for line in f:
-            try:
-                s = line.decode("utf-8")
-            except UnicodeDecodeError:
-                # str cannot be decoded!
-                s = str(line)
-            s = s.strip()
-            if not s:
-                continue
-            if s[0] in ('!', '#'):
-                continue
-            parts = s.split("=", 1)
-            if len(parts)<2:
-                print(f"missing equal sign in {s!r}")
-                continue
-            name = parts[0]
-            value = parts[1]
-            if not value:
-                continue
-            if value[0] != "'" or value[-1] != "'":
-                continue
-            props[name] = value[1:-1]
+
+    from importlib.util import spec_from_file_location, module_from_spec
+    spec = spec_from_file_location("xpra", filename)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    for attr in dir(module):
+        if attr.startswith("_"):
+            continue
+        props[attr] = getattr(module, attr)
     return props
 
 
@@ -175,7 +135,7 @@ def get_nvcc_version() -> str:
     return ""
 
 
-def get_compiler_version():
+def get_compiler_version() -> str:
     cc_version = "%s --version" % os.environ.get("CC", "gcc")
     if sys.platform == "darwin":
         lines = get_output_lines(cc_version)
@@ -186,7 +146,7 @@ def get_compiler_version():
     return get_first_line_output(cc_version)
 
 
-def get_linker_version():
+def get_linker_version() -> str:
     if sys.platform == "darwin":
         ld_version = "%s -v" % os.environ.get("LD", "ld")
         lines = get_output_lines(ld_version)
@@ -246,12 +206,8 @@ def get_platform_name() -> str:
     return sys.platform
 
 
-def alnum(v: str | bytes) -> str:
-    return "".join(v for v in filter(str.isalnum, bytestostr(v)))
-
-
-def record_build_info() -> None:
-    props = get_properties(BUILD_INFO_FILE)
+def get_build_props() -> dict[str, Any]:
+    props = {}
     source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
     if source_epoch:
         # reproducible builds:
@@ -264,28 +220,38 @@ def record_build_info() -> None:
         # also record username and hostname:
         try:
             import getpass
-            set_prop(props, "BUILT_BY", getpass.getuser())
+            props["user"] = getpass.getuser()
         except OSError:
-            set_prop(props, "BUILT_BY", os.environ.get("USER"))
-        set_prop(props, "BUILT_ON", socket.gethostname())
-    set_prop(props, "BUILD_DATE", build_date.isoformat())
-    set_prop(props, "BUILD_TIME", build_time.strftime("%H:%M"))
-    set_prop(props, "BUILD_MACHINE", get_machineinfo())
-    set_prop(props, "BUILD_CPU", get_cpuinfo())
-    set_prop(props, "BUILD_BIT", platform.architecture()[0])
-    set_prop(props, "BUILD_OS", get_platform_name())
-    set_prop(props, "BUILD_TYPE", os.environ.get("BUILD_TYPE", ""))
+            props["user"] = os.environ.get("USER")
+        props["on"] = socket.gethostname()
+
+    props.update({
+        "date": build_date.isoformat(),
+        "time": build_time.strftime("%H:%M"),
+        "machine": get_machineinfo(),
+        "cpu": get_cpuinfo(),
+        "bit": platform.architecture()[0],
+        "os": get_platform_name(),
+        "type": os.environ.get("BUILD_TYPE", ""),
+    })
     try:
         from Cython import __version__ as cython_version
     except ImportError:
         cython_version = "unknown"
-    set_prop(props, "PYTHON_VERSION", ".".join(str(x) for x in sys.version_info[:3]))
-    set_prop(props, "CYTHON_VERSION", cython_version)
-    set_prop(props, "COMPILER_VERSION", get_compiler_version())
-    set_prop(props, "NVCC_VERSION", get_nvcc_version())
-    set_prop(props, "LINKER_VERSION", get_linker_version())
+    props.update({
+        "python": ".".join(str(x) for x in sys.version_info[:3]),
+        "cython": cython_version,
+        "compiler": get_compiler_version(),
+        "nvcc": get_nvcc_version(),
+        "linker": get_linker_version(),
+    })
+    return props
+
+
+def get_libs() -> dict[str, Any]:
     # record pkg-config versions:
     PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
+    libs: dict[str, Any] = {}
     if os.name == "nt":
         returncode, out, _ = get_status_output(["pacman", "-Q"])
         if returncode == 0:
@@ -294,8 +260,7 @@ def record_build_info() -> None:
                 if len(parts) != 2:
                     continue
                 pkg_name, version = parts
-                pkg_name = alnum(pkg_name)
-                set_prop(props, f"lib_{pkg_name}", version)
+                libs[pkg_name] = version
     elif sys.platform == "darwin":
         returncode, out, _ = get_status_output(["jhbuild", "list", "-a", "-r"])
         if returncode == 0:
@@ -306,8 +271,7 @@ def record_build_info() -> None:
                 pkg_name, version = parts
                 if pkg_name == "Modules":
                     continue
-                pkg_name = alnum(pkg_name)
-                set_prop(props, f"lib_{pkg_name}", version.lstrip("(").rstrip(")"))
+                libs[pkg_name] = version.lstrip("(").rstrip(")")
     else:
         for pkg in (
             "libc",
@@ -319,24 +283,35 @@ def record_build_info() -> None:
             "python3",
         ):
             # fugly magic for turning the package atom into a legal variable name:
-            pkg_name = alnum(pkg.lstrip("lib"))
-            if pkg_name.rsplit("_", 1)[-1].rstrip("0123456789.")=="":
-                pkg_name = "_".join(pkg_name.split("_")[:-1])
             cmd = [PKG_CONFIG, "--modversion", pkg]
             returncode, out, _ = get_status_output(cmd)
             if returncode == 0:
-                set_prop(props, "lib_"+pkg_name, out.decode().replace("\n", "").replace("\r", ""))
+                libs[pkg] = out.decode().replace("\n", "").replace("\r", "")
+    return libs
+
+
+def get_python_libs() -> dict[str, Any]:
     # we could potentially limit this data collection to win32 and macos?
+    python_libs: dict[str, Any] = {}
     returncode, out, _ = get_status_output(["pip3", "freeze"])
     if returncode == 0:
+        python_libs: dict[str, Any] = {}
         for line in out.decode().splitlines():
             parts = line.split("==")
             if len(parts) != 2:
                 continue
             pkg_name, version = parts
-            pkg_name = alnum(pkg_name)
-            set_prop(props, f"lib_python_{pkg_name}", version)
+            python_libs[pkg_name] = version
+    return python_libs
 
+
+def record_build_info() -> None:
+    props = get_properties(BUILD_INFO_FILE)
+    props.update({
+        "build": get_build_props(),
+        "libs": get_libs(),
+        "python_libs": get_python_libs(),
+    })
     save_properties(props, BUILD_INFO_FILE)
 
 
