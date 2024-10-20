@@ -81,6 +81,8 @@ CLIPBOARD_DIRECTION_NAME_TO_LABEL = reverse_dict(CLIPBOARD_DIRECTION_LABEL_TO_NA
 
 SERVER_NOT_SUPPORTED = "Not supported by the server"
 
+GENERIC_ENCODINGS = ("", "stream", "grayscale")
+
 
 class GTKTrayMenu(MenuHelper):
 
@@ -810,7 +812,8 @@ class GTKTrayMenu(MenuHelper):
     def set_qualitymenu(self, *_args) -> None:
         if self.quality:
             enc = self.client.encoding
-            with_quality = enc in self.client.server_encodings_with_quality or enc == "auto"
+            # 'auto' is recorded as '' unfortunately:
+            with_quality = enc in self.client.server_encodings_with_quality or enc in GENERIC_ENCODINGS
             can_use = with_quality and not self.client.mmap_enabled
             set_sensitive(self.quality, can_use)
             if self.client.mmap_enabled:
@@ -862,7 +865,7 @@ class GTKTrayMenu(MenuHelper):
     def set_speedmenu(self, *_args) -> None:
         if self.speed:
             enc = self.client.encoding
-            with_speed = enc in self.client.server_encodings_with_speed or enc == "auto"
+            with_speed = enc in self.client.server_encodings_with_speed or enc in GENERIC_ENCODINGS
             set_sensitive(self.speed, with_speed and not self.client.mmap_enabled)
             if self.client.mmap_enabled:
                 self.speed.set_tooltip_text("Quality is always 100% with mmap")
