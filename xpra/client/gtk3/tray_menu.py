@@ -810,19 +810,19 @@ class GTKTrayMenu(MenuHelper):
     def set_qualitymenu(self, *_args) -> None:
         if self.quality:
             enc = self.client.encoding
-            with_quality = enc in self.client.server_encodings_with_quality or self.client.encoding == "auto"
+            with_quality = enc in self.client.server_encodings_with_quality or enc == "auto"
             can_use = with_quality and not self.client.mmap_enabled
             set_sensitive(self.quality, can_use)
             if self.client.mmap_enabled:
                 self.quality.set_tooltip_text("Speed is always 100% with mmap")
                 return
             if not can_use:
-                self.quality.set_tooltip_text("Not supported with %s encoding" % enc)
+                self.quality.set_tooltip_text(f"Not supported with {enc!r} encoding")
                 return
             self.quality.set_tooltip_text("Minimum picture quality")
             # now check if lossless is supported:
             if self.quality.get_submenu():
-                can_lossless = self.client.encoding in self.client.server_encodings_with_lossless_mode
+                can_lossless = enc in self.client.server_encodings_with_lossless_mode
                 for q, item in self.quality.get_submenu().menu_items.items():
                     set_sensitive(item, q < 100 or can_lossless)
 
@@ -862,12 +862,12 @@ class GTKTrayMenu(MenuHelper):
     def set_speedmenu(self, *_args) -> None:
         if self.speed:
             enc = self.client.encoding
-            with_speed = enc in self.client.server_encodings_with_speed or self.client.encoding == "auto"
+            with_speed = enc in self.client.server_encodings_with_speed or enc == "auto"
             set_sensitive(self.speed, with_speed and not self.client.mmap_enabled)
             if self.client.mmap_enabled:
                 self.speed.set_tooltip_text("Quality is always 100% with mmap")
             elif self.client.encoding != "h264":
-                self.speed.set_tooltip_text(f"Not supported with {enc} encoding")
+                self.speed.set_tooltip_text(f"Not supported with {enc!r} encoding")
             else:
                 self.speed.set_tooltip_text("Encoding latency vs size")
 
