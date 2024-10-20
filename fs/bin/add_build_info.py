@@ -11,6 +11,7 @@ import datetime
 import shutil
 from subprocess import Popen, PIPE, STDOUT
 from typing import Any
+from collections.abc import Sequence
 import socket
 import platform
 import os.path
@@ -22,16 +23,13 @@ SRC_INFO_FILE = "xpra/src_info.py"
 BUILD_INFO_FILE = "xpra/build_info.py"
 
 
-def bytestostr(x) -> str:
-    if isinstance(x, bytes):
-        return x.decode("latin1")
-    return str(x)
-
-
 def update_properties(props: dict, filename: str) -> None:
     eprops = get_properties(filename)
     for key, value in props.items():
-        set_prop(eprops, key, value)
+        if value is None:
+            continue
+        if value not in ("unknown", "") or not props.get(key):
+            props[key] = value
     save_properties(eprops, filename)
 
 
@@ -41,7 +39,7 @@ def save_properties(props: dict, filename: str) -> None:
             os.unlink(filename)
         except OSError:
             print(f"WARNING: failed to delete {filename!r}")
-    print(f"updated {filename!r} with:")
+    print(f"# updated {filename!r} with:")
     with open(filename, mode="w") as f:
         for k in sorted(props.keys()):
             v = props[k]
@@ -96,7 +94,7 @@ def get_status_output(*args, **kwargs) -> tuple[int, str | bytes, str | bytes]:
     return p.returncode, stdout, stderr
 
 
-def get_output_lines(cmd, valid_exit_code=0):
+def get_output_lines(cmd, valid_exit_code=0) -> Sequence[str]:
     try:
         returncode, stdout, stderr = get_status_output(cmd, shell=True)
         if returncode != valid_exit_code:
@@ -156,13 +154,6 @@ def get_linker_version() -> str:
         return None
     ld_version = "%s --version" % os.environ.get("LD", "ld")
     return get_first_line_output(ld_version)
-
-
-def set_prop(props, key: str, value) -> None:
-    if value is None:
-        return
-    if value not in ("unknown", "") or props.get(key) is None:
-        props[key] = value
 
 
 def get_platform_name() -> str:

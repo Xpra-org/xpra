@@ -181,7 +181,7 @@ def codec_import_check(name: str, description: str, top_module, class_module, cl
 codec_versions: dict[str, Iterable[Any]] = {}
 
 
-def add_codec_version(name: str, top_module, version: str = "get_version()", alt_version: str = "__version__"):
+def add_codec_version(name: str, top_module, version: str = "get_version()", alt_version: str = "__version__") -> None:
     try:
         fieldnames = [x for x in (version, alt_version) if x is not None]
         for fieldname in fieldnames:
@@ -201,7 +201,7 @@ def add_codec_version(name: str, top_module, version: str = "get_version()", alt
             if hasattr(module, "get_info"):
                 info = getattr(module, "get_info")
                 log(f" {name} {top_module}.{info}={info()}")
-            return v
+            return
         if name in codecs:
             log.warn(f" cannot find %s in {top_module}", " or ".join(fieldnames))
         else:
@@ -213,7 +213,6 @@ def add_codec_version(name: str, top_module, version: str = "get_version()", alt
     except Exception as e:
         log.warn(f"error during {name} codec import: %s", e)
         log.warn("", exc_info=True)
-    return None
 
 
 def xpra_codec_import(name: str, description: str, top_module, class_module, classnames):
@@ -413,7 +412,7 @@ def get_encoding_help(encoding: str) -> str:
     }.get(encoding, "")
 
 
-def encodings_help(encodings) -> list[str]:
+def encodings_help(encodings: Iterable[str]) -> list[str]:
     h = []
     for e in HELP_ORDER:
         if e in encodings:
@@ -513,7 +512,7 @@ def main(args) -> int:
         out("")
         out.info("codecs versions:")
 
-        def forcever(v):
+        def forcever(v) -> str:
             return pver(v, numsep=".", strsep=".").lstrip("v")
         print_nested_dict(codec_versions, vformat=forcever, print_fn=out.info)
     return 0
