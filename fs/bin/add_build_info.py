@@ -23,17 +23,13 @@ SRC_INFO_FILE = "xpra/src_info.py"
 BUILD_INFO_FILE = "xpra/build_info.py"
 
 
-def update_properties(props: dict, filename: str) -> None:
+def update_properties(props: dict[str, Any], filename: str) -> None:
     eprops = get_properties(filename)
-    for key, value in props.items():
-        if value is None:
-            continue
-        if value not in ("unknown", "") or not props.get(key):
-            props[key] = value
+    eprops.update(props)
     save_properties(eprops, filename)
 
 
-def save_properties(props: dict, filename: str) -> None:
+def save_properties(props: dict[str, Any], filename: str) -> None:
     if os.path.exists(filename):
         try:
             os.unlink(filename)
@@ -395,18 +391,14 @@ def record_src_info() -> None:
     update_properties(get_vcs_props(), SRC_INFO_FILE)
 
 
-def has_src_info() -> bool:
-    return os.path.exists(SRC_INFO_FILE) and os.path.isfile(SRC_INFO_FILE)
-
-
-def has_build_info() -> bool:
-    return os.path.exists(BUILD_INFO_FILE) and os.path.isfile(BUILD_INFO_FILE)
+def check_file(filename: str) -> bool:
+    return os.path.exists(filename) and os.path.isfile(filename) and os.stat(filename).st_size > 0
 
 
 def main(args):
-    if not has_src_info() or "src" in args:
+    if not check_file(SRC_INFO_FILE) or "src" in args:
         record_src_info()
-    if not has_build_info() or "build" in args:
+    if not check_file(BUILD_INFO_FILE) or "build" in args:
         record_build_info()
     if "revision" in args:
         props = get_vcs_props()
