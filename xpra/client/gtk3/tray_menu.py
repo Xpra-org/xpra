@@ -81,6 +81,7 @@ CLIPBOARD_DIRECTION_NAME_TO_LABEL = reverse_dict(CLIPBOARD_DIRECTION_LABEL_TO_NA
 
 SERVER_NOT_SUPPORTED = "Not supported by the server"
 
+# 'auto' is recorded as '' unfortunately:
 GENERIC_ENCODINGS = ("", "stream", "grayscale")
 
 
@@ -812,7 +813,6 @@ class GTKTrayMenu(MenuHelper):
     def set_qualitymenu(self, *_args) -> None:
         if self.quality:
             enc = self.client.encoding
-            # 'auto' is recorded as '' unfortunately:
             with_quality = enc in self.client.server_encodings_with_quality or enc in GENERIC_ENCODINGS
             can_use = with_quality and not self.client.mmap_enabled
             set_sensitive(self.quality, can_use)
