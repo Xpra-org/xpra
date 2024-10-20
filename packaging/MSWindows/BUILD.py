@@ -56,6 +56,7 @@ def parse_command_line():
     add("zip", help="generate a ZIP installation file")
     add("verpatch", help="run `verpatch` on the executables")
     add("light", help="trimmed down build")
+    add("sbom", help="record SBOM")
     add("installer", help="create an EXE installer")
     add("run", help="run the installer")
     add("msi", help="create an MSI installer")
@@ -858,6 +859,62 @@ def rec_options(args) -> None:
         f.write(f"\nBUILD_OPTIONS={info!r}\n")
 
 
+def find_source(path: str) -> str:
+    basename = os.path.basename(path)
+    if path.endswith(".exe"):
+        filename = which(basename)
+        if filename:
+            return filename
+    # try "$MINGW_PREFIX/bin/$basename" and "$MINGW_PREFIX/$path":
+    for filename in (os.path.join(MINGW_PREFIX, "bin", basename), os.path.join(MINGW_PREFIX, path)):
+        if os.path.exists(filename):
+            return filename
+    # try %PATH%:
+    for bpath in os.environ.get("PATH", "").split(":"):
+        filename = os.path.join(bpath, basename)
+        if os.path.exists(filename):
+            return filename
+    return ""
+
+
+def get_package(path: str) -> tuple[str, str]:
+    filename = find_source(path)
+    if not filename:
+        debug(f"failed to locate source path for {path!r}")
+        return "", ""
+    cmd = command_args(["pacman", "-Qo", filename])
+    r, output = getstatusoutput(cmd)
+    if r:
+        debug(f"pacman failed for {filename!r} and returned {r}")
+        return "", ""
+    # ie: "/usr/bin/msys-2.0.dll is owned by msys2-runtime 3.5.4-2" ->
+    #     ["/usr/bin/msys-2.0.dll", "msys2-runtime 3.5.4-2"]
+    parts = output.split("is owned by ")
+    if len(parts) != 2:
+        debug(f"unable to parse pacman output: {output!r}")
+        return "", ""
+    # ie: "msys2-runtime 3.5.4-2" -> ["msys2-runtime", "3.5.4-2"]
+    package, version = parts[1].split(" ", 1)
+    return package, version
+
+
+def rec_dll_sbom() -> None:
+    step("DLL SBOM")
+    cmd = command_args(["find", DIST, "-name", "*.dll"])
+    r, output = getstatusoutput(cmd)
+    assert r == 0
+    dll_sbom: dict[str, tuple[str, str]] = {}
+    for path in output.splitlines():
+        filename = path[len(DIST)+1:]
+        # find which package owns it:
+        package, version = get_package(filename)
+        if package and version:
+            debug(f" * {filename!r}: {package!r}, {version!r}")
+            dll_sbom[filename] = (package, version)
+    with open("xpra/build_info.py", "a") as f:
+        f.write(f"\ndll_sbom={dll_sbom!r}\n")
+
+
 def verpatch() -> None:
     EXCLUDE = ("plink", "openssh", "openssl", "paexec")
 
@@ -1036,6 +1093,8 @@ def build(args) -> None:
     if args.desktop_logon:
         bundle_desktop_logon()
     rec_options(args)
+    if args.sbom:
+        rec_dll_sbom()
 
     if args.verpatch:
         verpatch()
