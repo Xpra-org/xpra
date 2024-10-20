@@ -687,8 +687,9 @@ def zip_modules(light: bool) -> None:
         "builtins", "importlib",
         "logging", "queue", "urllib", "xml", "xmlrpc", "pyasn1_modules",
         "concurrent", "collections",
+        "asyncio",
     ]
-    EXTRAS = ["asyncio", "unittest", "gssapi", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
+    EXTRAS = ["unittest", "gssapi", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
     if light:
         delete_libs(*EXTRAS)
     else:
