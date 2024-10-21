@@ -5,6 +5,16 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+
+echo "WARNING: this script is deprecated and will be removed"
+echo "please use BUILD.py instead"
+for i in `seq 1 5`; do
+  echo -n "."
+  sleep 1
+done
+echo
+
+
 ARGS=$@
 DO_CLEAN=${DO_CLEAN:-1}
 DO_ZIP=${DO_ZIP:-0}

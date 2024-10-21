@@ -8,6 +8,8 @@
 import sys
 import os.path
 import shlex
+import hashlib
+from sysconfig import get_path
 from datetime import datetime
 from collections import namedtuple
 from collections.abc import Iterable
@@ -24,6 +26,9 @@ LIB_DIR = f"{DIST}/lib"
 DEBUG = os.environ.get("XPRA_DEBUG", "0") != "0"
 PYTHON = os.environ.get("PYTHON", "python%i.%i" % sys.version_info[:2])
 MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
+MSYSTEM_CARCH = os.environ.get("MSYSTEM_CARCH", "x86_64")
+PACKAGE_PREFIX = f"mingw-w64-{MSYSTEM_CARCH}-"
+
 TIMESTAMP_SERVER = "http://timestamp.digicert.com"
 # alternative:
 # http://timestamp.comodoca.com/authenticode
@@ -41,7 +46,7 @@ NPROCS = int(os.environ.get("NPROCS", os.cpu_count()))
 BUILD_CUDA_KERNEL = "packaging\\MSWindows\\BUILD_CUDA_KERNEL.BAT"
 
 
-def parse_command_line():
+def parse_command_line(argv: list[str]):
     from argparse import ArgumentParser, BooleanOptionalAction
     ap = ArgumentParser()
 
@@ -75,7 +80,7 @@ def parse_command_line():
     add("paexec", help="bundle `paexec`")
     add("desktop-logon", help="build `desktop-logon` tool")
 
-    args = ap.parse_args()
+    args, unknown_args = ap.parse_known_args(argv)
     if args.light:
         # disable many switches:
         args.cuda = args.numpy = args.service = args.docs = args.html5 = args.manual = False
@@ -83,7 +88,7 @@ def parse_command_line():
     if args.verbose:
         global DEBUG
         DEBUG = True
-    return args
+    return args, unknown_args
 
 
 def step(message: str) -> None:
@@ -257,7 +262,7 @@ def find_delete(path: str, name: str, mindepth=0) -> None:
         cmd += ["-name", "'"+name+"'"]
     cmd += ["-type", "f"]
     cmd = command_args(cmd)
-    output = check_output(cmd)
+    output = check_output(cmd).decode()
     for filename in output.splitlines():
         delfile(filename)
 
@@ -296,7 +301,7 @@ def clean() -> None:
     delfile(BUILD_INFO)
 
 
-def find_wk_command(name="mc") -> str:
+def find_windowskit_command(name="mc") -> str:
     # the proper way would be to run vsvars64.bat
     # but we only want to locate 3 commands,
     # so we find them "by hand":
@@ -323,7 +328,7 @@ def find_vs_command(name="link") -> str:
 
 
 def build_service() -> None:
-    step("* Compiling system service shim")
+    step("Compiling system service shim")
     XPRA_SERVICE_EXE = "Xpra-Service.exe"
     delfile(XPRA_SERVICE_EXE)
     SERVICE_SRC_DIR = os.path.join(os.path.abspath("."), "packaging", "MSWindows", "service")
@@ -331,8 +336,8 @@ def build_service() -> None:
         path = os.path.join(SERVICE_SRC_DIR, filename)
         delfile(path)
 
-    MC = find_wk_command("mc")
-    RC = find_wk_command("rc")
+    MC = find_windowskit_command("mc")
+    RC = find_windowskit_command("rc")
     LINK = find_vs_command("link")
 
     log_command([MC, "-U", "event_log.mc"], "service-mc.log", cwd=SERVICE_SRC_DIR)
@@ -373,7 +378,7 @@ def set_version_info(light: bool):
 
     extra = "-Light" if light else ""
     # ie: "x86_64"
-    arch_info = "-" + os.environ.get("MSYSTEM_CARCH", "")
+    arch_info = "-" + MSYSTEM_CARCH
 
     # for msi and verpatch:
     padded = (list(xpra.__version_info__) + [0, 0, 0])[:3] + [revision]
@@ -506,8 +511,11 @@ def fixup_gstreamer() -> None:
         for gstdll in glob(f"{lib_gst}/lib{dllname}.dll"):
             move_lib(gstdll, f"{LIB_DIR}")
     # all the remaining libgst* DLLs are gstreamer elements:
-    for gstdll in glob(f"{LIB_DIR}gst*.dll"):
+    for gstdll in glob(f"{LIB_DIR}/gst*.dll"):
         move(gstdll, lib_gst)
+    # gst-inspect and gst-launch don't need to be at the root:
+    for exe in glob(f"{DIST}/gst-*.exe"):
+        move_lib(exe, LIB_DIR)
     # these are not needed at all for now:
     for elementname in ("basecamerabinsrc", "photography"):
         for filename in glob(f"{LIB_DIR}/libgst{elementname}*"):
@@ -870,7 +878,7 @@ def find_source(path: str) -> str:
         if os.path.exists(filename):
             return filename
     # try %PATH%:
-    for bpath in os.environ.get("PATH", "").split(":"):
+    for bpath in os.environ.get("PATH", "").split(os.path.pathsep):
         filename = os.path.join(bpath, basename)
         if os.path.exists(filename):
             return filename
@@ -895,24 +903,103 @@ def get_package(path: str) -> tuple[str, str]:
         return "", ""
     # ie: "msys2-runtime 3.5.4-2" -> ["msys2-runtime", "3.5.4-2"]
     package, version = parts[1].split(" ", 1)
+    if not package.startswith(PACKAGE_PREFIX):
+        debug(f"unexpected package prefix: {package!r}")
+        return "", ""
+    package = package[len(PACKAGE_PREFIX):]
     return package, version
 
 
-def rec_dll_sbom() -> None:
-    step("DLL SBOM")
-    cmd = command_args(["find", DIST, "-name", "*.dll"])
+def get_py_lib_dirs() -> list[str]:
+    # python modules:
+    py_lib_dirs: list[str] = []
+    for k in ("stdlib", "platstdlib", "purelib", "platlib", ):
+        path = get_path(k)
+        if os.path.exists(path) and path not in py_lib_dirs:
+            py_lib_dirs.append(path)
+            for extra in ("lib-dynload", "win32", "pywin32_system32"):
+                epath = os.path.join(path, extra)
+                if os.path.exists(epath) and epath not in py_lib_dirs:
+                    py_lib_dirs.append(epath)
+    debug(f"using python lib directories: {py_lib_dirs!r}")
+    return py_lib_dirs
+
+
+def sbom_rec(path: str) -> tuple:
+    package, version = get_package(path)
+    if not (package and version):
+        print(f"Warning: no package data found for {path!r}")
+        return ()
+    dist_path = os.path.join(DIST, path)
+    if os.path.isdir(dist_path):
+        size = 0
+        csum = ""
+    else:
+        size = os.stat(dist_path).st_size
+        with open(dist_path, "rb") as f:
+            data = f.read()
+        csum = hashlib.sha256(data).hexdigest()
+    debug(f" * {path!r}: {package!r}, {version!r}")
+    return size, csum, package, version
+
+
+def find_glob_paths(dirname: str, glob_str: str) -> list[str]:
+    cmd = command_args(["find", dirname, "-name", "'"+glob_str+"'"])
     r, output = getstatusoutput(cmd)
-    assert r == 0
-    dll_sbom: dict[str, tuple[str, str]] = {}
-    for path in output.splitlines():
-        filename = path[len(DIST)+1:]
-        # find which package owns it:
-        package, version = get_package(filename)
-        if package and version:
-            debug(f" * {filename!r}: {package!r}, {version!r}")
-            dll_sbom[filename] = (package, version)
+    assert r == 0, f"{cmd!r} failed and returned {r}"
+    return output.splitlines()
+
+
+def rec_sbom() -> None:
+    step("Recording SBOM")
+    sbom: dict[str, tuple[str, str]] = {}
+    py_lib_dirs: list[str] = get_py_lib_dirs()
+
+    def rec_path(path: str) -> None:
+        rec = sbom_rec(path)
+        if rec:
+            sbom[path] = rec
+
+    def rec_py_lib(path: str) -> None:
+        name = os.path.basename(path)
+        for py_lib_dir in py_lib_dirs:
+            src_path = os.path.join(py_lib_dir, name)
+            if os.path.exists(src_path):
+                rec_path(src_path)
+                return
+        print(f"Warning: unknown source for directory {path!r}")
+
+    debug("adding DLLs and EXEs")
+    for globbed_path in find_glob_paths(DIST, "*.dll") + find_glob_paths(LIB_DIR, "*.exe"):
+        path = globbed_path[len(DIST)+1:]
+        if path.startswith("lib/PyQt") or path.startswith("lib/python"):
+            # some need to be resolved in the python library paths:
+            rec_py_lib(path[4:])
+        else:
+            rec_path(path)
+
+    # python modules:
+    debug("adding python modules (directories)")
+    SKIP_DIRS = (
+        "xpra", "tlb",
+        "gi", "girepository-1.0", "gstreamer-1.0", "gtk-3.0", "gdk-pixbuf-2.0",
+    )
+    for child in os.listdir(LIB_DIR):
+        if child in SKIP_DIRS or child.endswith(".dll"):
+            continue
+        path = os.path.join(LIB_DIR, child)
+        if os.path.isdir(path) or path.endswith(".py") or path.endswith(".pyd"):
+            rec_py_lib(path)
+
+    # summary: list of packages
+    packages = tuple(sorted(set(sbom_data[2] for sbom_data in sbom.values())))
+
+    debug("recording sbom data")
     with open("xpra/build_info.py", "a") as f:
-        f.write(f"\ndll_sbom={dll_sbom!r}\n")
+        f.write(f"\n# {len(sbom)} SBOM path entries:\n")
+        f.write(f"{sbom!r}\n")
+        f.write(f"\n# {len(packages)} {PACKAGE_PREFIX!r} packages:\n")
+        f.write(f"{packages!r}\n")
 
 
 def verpatch() -> None:
@@ -1094,7 +1181,7 @@ def build(args) -> None:
         bundle_desktop_logon()
     rec_options(args)
     if args.sbom:
-        rec_dll_sbom()
+        rec_sbom()
 
     if args.verpatch:
         verpatch()
@@ -1117,10 +1204,23 @@ def build(args) -> None:
                 sign_file(msi)
 
 
-def main():
-    args = parse_command_line()
-    build(args)
+def main(argv):
+    args, unknownargs = parse_command_line(argv)
+    if len(unknownargs) > 1:
+        if len(unknownargs) != 2:
+            raise ValueError(f"too many arguments: {unknownargs!r}")
+        arg = unknownargs[1]
+        if arg == "sbom":
+            rec_sbom()
+        elif arg == "zip":
+            create_zip()
+        elif arg == "exe":
+            create_installer()
+        else:
+            raise ValueError(f"unknown argument {arg!r}")
+    else:
+        build(args)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
