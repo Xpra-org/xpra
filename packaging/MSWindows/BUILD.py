@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import sys
 import os.path
 import shlex
@@ -747,10 +748,15 @@ def add_manifests() -> None:
 
 def gen_caches() -> None:
     step("Generating gdk pixbuf loaders cache")
-    cmd = 'gdk-pixbuf-query-loaders.exe "lib/gdk-pixbuf-2.0/2.10.0/loaders/*"'
-    with open(f"{LIB_DIR}/gdk-pixbuf-2.0/2.10.0/loaders.cache", "w") as cache:
-        if Popen(cmd, cwd=os.path.abspath(DIST), stdout=cache, shell=True).wait() != 0:
-            raise RuntimeError("gdk-pixbuf-query-loaders.exe failed")
+    cmd = ["gdk-pixbuf-query-loaders.exe", "lib/gdk-pixbuf-2.0/2.10.0/loaders/*"]
+    with Popen(cmd, cwd=os.path.abspath(DIST), stdout=PIPE, text=True) as proc:
+        cache, err = proc.communicate(None)
+    if proc.returncode != 0:
+        raise RuntimeError(f"gdk-pixbuf-query-loaders.exe failed and returned {proc.returncode}: {err}")
+    # replace absolute paths:
+    cache = re.sub(r'".*xpra/dist/lib/', '"lib/', cache)
+    with open(f"{LIB_DIR}/gdk-pixbuf-2.0/2.10.0/loaders.cache", "w") as cache_file:
+        cache_file.write(cache)
     step("Generating icons and theme cache")
     for itheme in glob(f"{DIST}/share/icons/*"):
         log_command(["gtk-update-icon-cache.exe", "-t", "-i", itheme], "icon-cache.log")
@@ -1212,6 +1218,8 @@ def main(argv):
         arg = unknownargs[1]
         if arg == "sbom":
             rec_sbom()
+        elif arg == "gen-caches":
+            gen_caches()
         elif arg == "zip":
             create_zip()
         elif arg == "exe":
