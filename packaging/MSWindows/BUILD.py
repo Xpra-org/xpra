@@ -38,6 +38,7 @@ PROGRAMFILES = "C:\\Program Files"
 PROGRAMFILES_X86 = "C:\\Program Files (x86)"
 SYSTEM32 = "C:\\Windows\\System32"
 
+SRC_INFO = "xpra/src_info.py"
 BUILD_INFO = "xpra/build_info.py"
 
 LOG_DIR = "packaging/MSWindows/"
@@ -369,7 +370,7 @@ def set_version_info(light: bool):
         return module
 
     xpra = load_module("xpra/__init__.py")
-    src_info = load_module("xpra/src_info.py")
+    src_info = load_module(SRC_INFO)
 
     revision = src_info.REVISION
 
@@ -869,7 +870,7 @@ def add_cuda(enabled: bool) -> None:
 
 def rec_options(args) -> None:
     info = dict((k, getattr(args, k)) for k in dir(args) if not k.startswith("_"))
-    with open("xpra/build_info.py", "a") as f:
+    with open(BUILD_INFO, "a") as f:
         f.write(f"\nBUILD_OPTIONS={info!r}\n")
 
 
@@ -1001,7 +1002,7 @@ def rec_sbom() -> None:
     packages = tuple(sorted(set(sbom_data[2] for sbom_data in sbom.values())))
 
     debug("recording sbom data")
-    with open("xpra/build_info.py", "a") as f:
+    with open(BUILD_INFO, "a") as f:
         f.write(f"\n# {len(sbom)} SBOM path entries:\n")
         f.write(f"{sbom!r}\n")
         f.write(f"\n# {len(packages)} {PACKAGE_PREFIX!r} packages:\n")
