@@ -7,6 +7,7 @@
 
 import re
 import sys
+import json
 import os.path
 import shlex
 import hashlib
@@ -106,6 +107,10 @@ def debug(message: str) -> None:
 
 def csv(values: Iterable) -> str:
     return ", ".join(str(x) for x in values)
+
+
+def du(path: str) -> int:
+    return sum(os.path.getsize(f) for f in glob(f"{path}/**", recursive=True) if os.path.isfile(f))
 
 
 def get_build_args(args) -> list[str]:
@@ -871,7 +876,7 @@ def add_cuda(enabled: bool) -> None:
 def rec_options(args) -> None:
     info = dict((k, getattr(args, k)) for k in dir(args) if not k.startswith("_"))
     with open(BUILD_INFO, "a") as f:
-        f.write(f"\nBUILD_OPTIONS={info!r}\n")
+        f.write(f"\n\nBUILD_OPTIONS={info!r}\n")
 
 
 def find_source(path: str) -> str:
@@ -939,7 +944,7 @@ def sbom_rec(path: str) -> tuple:
         return ()
     dist_path = os.path.join(DIST, path)
     if os.path.isdir(dist_path):
-        size = 0
+        size = du(dist_path)
         csum = ""
     else:
         size = os.stat(dist_path).st_size
@@ -967,21 +972,52 @@ def rec_sbom() -> None:
         if rec:
             sbom[path] = rec
 
-    def rec_py_lib(path: str) -> None:
+    def rec_prefixed_path(path: str, prefixes: list[str]) -> None:
         name = os.path.basename(path)
-        for py_lib_dir in py_lib_dirs:
-            src_path = os.path.join(py_lib_dir, name)
+        for prefix in prefixes:
+            src_path = os.path.join(prefix, name)
             if os.path.exists(src_path):
                 rec_path(src_path)
                 return
-        print(f"Warning: unknown source for directory {path!r}")
+        print(f"Warning: unknown source for path {path!r}, tried {prefixes}")
+
+    def rec_py_lib(path: str) -> None:
+        rec_prefixed_path(path, py_lib_dirs)
+
+    def rec_pyqt_lib(path: str) -> None:
+        share_dirs = os.environ.get("XDG_DATA_DIRS", f"{MINGW_PREFIX}/share").split(os.path.pathsep)
+        dirs = []
+        for share_dir in share_dirs:
+            dirs += glob(f"{share_dir}/qt6/plugins/*")
+        rec_prefixed_path(path, dirs)
+
+    def rec_cuda(path: str) -> None:
+        if not os.path.exists("CUDA") or not os.path.isdir("CUDA"):
+            raise RuntimeError("CUDA not found!")
+        version_json = os.path.join("CUDA", "version.json")
+        if not os.path.exists(version_json):
+            raise RuntimeError(f"{version_json!r} does not exist")
+        with open(version_json, "r") as f:
+            version_data = json.loads(f.read())
+        cuda_version = version_data["cuda"]["version"]
+        sbom[path] = (0, "", "cuda", cuda_version)
 
     debug("adding DLLs and EXEs")
     for globbed_path in find_glob_paths(DIST, "*.dll") + find_glob_paths(LIB_DIR, "*.exe"):
         path = globbed_path[len(DIST)+1:]
-        if path.startswith("lib/PyQt") or path.startswith("lib/python"):
+        if path.startswith("lib/PyQt6"):
+            rec_pyqt_lib(path[4:])
+        elif path.startswith("lib/python"):
             # some need to be resolved in the python library paths:
             rec_py_lib(path[4:])
+        elif path.startswith("lib/curand"):
+            rec_cuda(path)
+        elif path in ("AxMSTSCLib.dll",):
+            debug(f"ignoring {path!r} (generated from .NET SDK)")
+            continue
+        elif path in ("DesktopLogon.dll",):
+            debug(f"ignoring {path!r} (one of ours)")
+            continue
         else:
             rec_path(path)
 
@@ -1050,7 +1086,8 @@ def create_zip() -> None:
     delfile(ZIP_FILENAME)
     copytree(DIST, ZIP_DIR)
     log_command(["zip", "-9mr", ZIP_FILENAME, ZIP_DIR], "zip.log")
-    os.system(f"du -sm {ZIP_FILENAME!r}")
+    size = du(ZIP_FILENAME) // 1024 // 1024
+    print(f"{ZIP_FILENAME}: %{size}MB")
 
 
 def create_installer(args) -> str:
@@ -1096,9 +1133,8 @@ def create_installer(args) -> str:
     os.unlink(XPRA_ISS)
 
     os.rename(SETUP_EXE, INSTALLER_FILENAME)
-    print()
-    os.system(f"du -sm {INSTALLER_FILENAME!r}")
-    print()
+    size = du(INSTALLER_FILENAME) // 1024 // 1024
+    print(f"{INSTALLER_FILENAME}: {size}MB")
     return INSTALLER_FILENAME
 
 
@@ -1127,7 +1163,8 @@ def create_msi(installer: str) -> str:
     with open(MSI_XML, "w") as f:
         f.write(msi_data)
     log_command([msiwrapper, MSI_XML], "msiwrapper.log")
-    os.system(f"du -sm {MSI_FILENAME}")
+    size = du(MSI_FILENAME) // 1024 // 1024
+    print(f"{MSI_FILENAME}: {size}MB")
     return MSI_FILENAME
 
 
@@ -1193,7 +1230,8 @@ def build(args) -> None:
     if args.verpatch:
         verpatch()
 
-    os.system(f"du -sm {DIST!r}")
+    size = du(DIST) // 1024 // 1024
+    os.system(f"{size}MB")
     if args.zip:
         create_zip()
     if args.installer:
