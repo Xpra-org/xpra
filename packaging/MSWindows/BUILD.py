@@ -30,6 +30,9 @@ PYTHON = os.environ.get("PYTHON", "python%i.%i" % sys.version_info[:2])
 MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
 MSYSTEM_CARCH = os.environ.get("MSYSTEM_CARCH", "x86_64")
 PACKAGE_PREFIX = f"mingw-w64-{MSYSTEM_CARCH}-"
+MSYS2_PACKAGE_PREFIX = "msys2-"
+MSYS_DLL_PREFIX = "msys-"
+
 
 TIMESTAMP_SERVER = "http://timestamp.digicert.com"
 # alternative:
@@ -909,16 +912,23 @@ def get_package(path: str) -> tuple[str, str]:
         return "", ""
     # ie: "/usr/bin/msys-2.0.dll is owned by msys2-runtime 3.5.4-2" ->
     #     ["/usr/bin/msys-2.0.dll", "msys2-runtime 3.5.4-2"]
-    parts = output.split("is owned by ")
+    parts = output.split("\n")[0].split("is owned by ")
     if len(parts) != 2:
         debug(f"unable to parse pacman output: {output!r}")
         return "", ""
     # ie: "msys2-runtime 3.5.4-2" -> ["msys2-runtime", "3.5.4-2"]
     package, version = parts[1].split(" ", 1)
-    if not package.startswith(PACKAGE_PREFIX):
+    if package.startswith(PACKAGE_PREFIX):
+        package = package[len(PACKAGE_PREFIX):]
+    elif os.path.basename(path).startswith(MSYS_DLL_PREFIX):
+        # ie: "msys-com_err-1.dll"
+        pass  # keep it as it is
+    elif package.startswith(MSYS2_PACKAGE_PREFIX):
+        # ie: "msys2-runtime"
+        pass  # keep it as it is
+    else:
         debug(f"unexpected package prefix: {package!r}")
         return "", ""
-    package = package[len(PACKAGE_PREFIX):]
     return package, version
 
 
@@ -1012,12 +1022,10 @@ def rec_sbom() -> None:
             rec_py_lib(path[4:])
         elif path.startswith("lib/curand"):
             rec_cuda(path)
-        elif path in ("AxMSTSCLib.dll",):
+        elif path in ("AxMSTSCLib.dll", "MSTSCLib.dll", "vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll"):
             debug(f"ignoring {path!r} (generated from .NET SDK)")
-            continue
-        elif path in ("DesktopLogon.dll",):
+        elif path in ("DesktopLogon.dll", ):
             debug(f"ignoring {path!r} (one of ours)")
-            continue
         else:
             rec_path(path)
 
@@ -1041,7 +1049,7 @@ def rec_sbom() -> None:
     with open(BUILD_INFO, "a") as f:
         f.write(f"\n# {len(sbom)} SBOM path entries:\n")
         f.write(f"{sbom!r}\n")
-        f.write(f"\n# {len(packages)} {PACKAGE_PREFIX!r} packages:\n")
+        f.write(f"\n# {len(packages)} packages:\n")
         f.write(f"{packages!r}\n")
 
 
