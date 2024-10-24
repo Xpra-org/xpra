@@ -238,7 +238,7 @@ class TrayBacking(WindowBackingBase):
         if width != render_width or height != render_height:
             fire_paint_callbacks(callbacks, False, "tray paint must not use scaling")
             return
-        if encoding != "rgb":
+        if encoding not in ("rgb", "mmap"):
             fire_paint_callbacks(callbacks, False, f"invalid encoding for tray: {encoding!r}")
             return
         self.data = (rgb_format, width, height, rowstride, img_data[:], options)
