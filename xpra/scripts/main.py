@@ -215,7 +215,7 @@ def configure_logging(options, mode) -> None:
             "attach", "listen", "proxy",
             "version", "info", "id",
             "_audio_record", "_audio_play",
-            "stop", "print", "showconfig", "configure",
+            "stop", "print", "showconfig", "configure", "sbom",
             "_dialog", "_pass",
             "pinentry",
             "opengl",
@@ -226,7 +226,7 @@ def configure_logging(options, mode) -> None:
             codec_help = show_audio_codec_help(server_mode, options.speaker_codec, options.microphone_codec)
             raise InitInfo("\n".join(codec_help))
         fmt = LOG_FORMAT
-        if mode in ("stop", "showconfig", "version", "info", "id"):
+        if mode in ("stop", "showconfig", "version", "info", "id", "sbom"):
             fmt = NOPREFIX_FORMAT
         if envbool("XPRA_COLOR_LOG", hasattr(to, "fileno") and os.isatty(to.fileno())):
             enable_color(to, fmt)
@@ -425,7 +425,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
 
     # configure default logging handler:
     if POSIX and getuid() == options.uid == 0 and mode not in (
-            "proxy", "autostart", "showconfig", "setup-ssl", "show-ssl",
+            "proxy", "autostart", "showconfig", "setup-ssl", "show-ssl", "sbom",
     ) and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
 
@@ -460,7 +460,8 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
     configure_env(options.env)
     configure_logging(options, mode)
     if mode not in (
-            "showconfig", "splash", "root-size",
+            "sbom",
+            "splash", "root-size",
             "list", "list-windows", "list-mdns", "mdns-gui",
             "list-clients",
             "list-sessions", "sessions", "displays",
@@ -485,7 +486,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
         verify_gir()
 
     xrd = os.environ.get("XDG_RUNTIME_DIR", "")
-    if mode not in ("showconfig", "splash") and POSIX and not OSX and not xrd and getuid() > 0:
+    if mode not in ("showconfig", "splash", "sbom") and POSIX and not OSX and not xrd and getuid() > 0:
         xrd = "/run/user/%i" % getuid()
         if os.path.exists(xrd):
             warn(f"Warning: using {xrd!r} as XDG_RUNTIME_DIR")
@@ -853,6 +854,8 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode == "configure":
         from xpra.gtk.configure.main import main
         return main(args)
+    if mode == "sbom":
+        return run_sbom()
     if mode == "showconfig":
         return run_showconfig(options, args)
     if mode == "showsetting":
@@ -4440,6 +4443,20 @@ def show_ssl(options, args, cmdline) -> ExitValue:
         from xpra.util.io import load_binary_file
         cert = load_binary_file(certpath)
     sys.stdout.write(cert.decode("latin1"))
+    return ExitCode.OK
+
+
+def run_sbom() -> ExitValue:
+    from xpra import build_info
+    if not WIN32:
+        print("please refer to your package manager")
+    else:
+        if not hasattr(build_info, "sbom"):
+            raise RuntimeError("the sbom is missing!")
+        for path, package_info in build_info.sbom.items():
+            # size, csum, package, version = package_info
+            package, version = package_info[-2:]
+            print(f"{path!r:60}: {package:20} {version}")
     return ExitCode.OK
 
 
