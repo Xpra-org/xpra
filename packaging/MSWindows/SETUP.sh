@@ -18,7 +18,7 @@ PACMAN="pacman"
 #most packages get installed here: (python, gtk, etc):
 $PACMAN --noconfirm --needed -S ${XPKG}python ${XPKG}libnotify ${XPKG}gtk3
 #media libraries (more than we actually need):
-$PACMAN --noconfirm --needed -S ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
+$PACMAN --noconfirm --needed -S ${XPKG}libspng ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
 $PACMAN --noconfirm --needed -S ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
 #not strictly needed:
@@ -27,7 +27,7 @@ $PACMAN --noconfirm --needed -S ${XPKG}dbus-glib
 $PACMAN --noconfirm --needed -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm gcc groff subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks pyopenssl importlib_resources; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks pyopenssl importlib_resources pylsqpack aioquic service_identity; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
 #dependencies of browser_cookie3 and pycuda,
@@ -39,7 +39,7 @@ $PACMAN --noconfirm --needed -S ${XPKG}cython
 
 #these need to be converted to PKGBUILD:
 $PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}python-pycryptodome ${XPKG}python-pycryptodomex ${XPKG}python-keyring ${XPKG}python-idna openssl-devel
-for x in browser-cookie3 pylsqpack aioquic pyaes pbkdf2 pytools pyvda; do
+for x in browser-cookie3 pyaes pbkdf2 pytools pyvda; do
 	pip3 install $x
 done
 # to keep these libraries updated, you may need:
