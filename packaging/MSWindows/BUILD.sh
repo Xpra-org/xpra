@@ -25,6 +25,7 @@ RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
 DO_TESTS=${DO_TESTS:-0}
+DO_SBOM=${DO_SBOM:1}
 
 # these are only enabled for "full" builds:
 DO_CUDA=${DO_CUDA:-$DO_FULL}
@@ -505,6 +506,22 @@ rmdir xpra/*/*/* 2> /dev/null
 rmdir xpra/*/* 2> /dev/null
 rmdir xpra/* 2> /dev/null
 
+# workaround for zeroconf - just copy it wholesale
+# since I have no idea why cx_Freeze struggles with it:
+rm -fr zeroconf
+ZEROCONF_DIR=`$PYTHON -c "import zeroconf,os;print(os.path.dirname(zeroconf.__file__))"`
+cp -apr $ZEROCONF_DIR ./
+
+#leave ./lib
+popd > /dev/null
+#leave ./dist
+popd > /dev/null
+
+if [ "${DO_SBOM}" != "0" ]; then
+  ./packaging/MSWindows/BUILD.py sbom
+fi
+
+pushd dist/lib > /dev/null
 #zip up some modules:
 if [ "${ZIP_MODULES}" == "1" ]; then
 	#these modules contain native code or data files,
@@ -518,22 +535,17 @@ if [ "${ZIP_MODULES}" == "1" ]; then
 	zip --move -ur library.zip OpenGL encodings future paramiko html \
 			pyasn1 asn1crypto async_timeout \
 			certifi OpenSSL pkcs11 keyring \
-			ifaddr pyaes browser_cookie3 service_identity\
+			ifaddr pyaes browser_cookie3 service_identity \
 			re platformdirs attr setproctitle pyvda zipp \
 			distutils comtypes email multiprocessing packaging \
 			pkg_resources pycparser idna ctypes json \
 			http enum winreg copyreg _thread _dummythread builtins importlib \
 			logging queue urllib xml xmlrpc pyasn1_modules concurrent collections > /dev/null
 fi
-# workaround for zeroconf - just copy it wholesale
-# since I have no idea why cx_Freeze struggles with it:
-rm -fr zeroconf
-ZEROCONF_DIR=`$PYTHON -c "import zeroconf,os;print(os.path.dirname(zeroconf.__file__))"`
-cp -apr $ZEROCONF_DIR ./
-
-#leave ./lib
+#leave ./dist/lib
 popd > /dev/null
 
+pushd dist > /dev/null
 rm -fr share/xml
 rm -fr share/glib-2.0/codegen share/glib-2.0/gdb share/glib-2.0/gettext
 rm -fr share/themes/Default/gtk-2.0*
