@@ -977,29 +977,33 @@ def rec_sbom() -> None:
     sbom: dict[str, tuple[str, str]] = {}
     py_lib_dirs: list[str] = get_py_lib_dirs()
 
-    def rec_path(path: str) -> None:
-        rec = sbom_rec(path)
-        if rec:
-            sbom[path] = rec
-
-    def rec_prefixed_path(path: str, prefixes: list[str]) -> None:
-        name = os.path.basename(path)
+    def find_prefixed_sbom_rec(filename: str, prefixes: list[str]) -> tuple:
         for prefix in prefixes:
-            src_path = os.path.join(prefix, name)
+            src_path = os.path.join(prefix, filename)
             if os.path.exists(src_path):
-                rec_path(src_path)
-                return
-        print(f"Warning: unknown source for path {path!r}, tried {prefixes}")
+                rec = sbom_rec(src_path)
+                if rec:
+                    return rec
+        print(f"Warning: unknown source for filename {filename!r}, tried {prefixes}")
+        return ()
 
     def rec_py_lib(path: str) -> None:
-        rec_prefixed_path(path, py_lib_dirs)
+        assert path.startswith("lib/"), f"invalid path {path!r}"
+        name = os.path.basename(path)
+        rec = find_prefixed_sbom_rec(name, py_lib_dirs)
+        if rec:
+            sbom[f"lib/{path}"] = rec
 
     def rec_pyqt_lib(path: str) -> None:
+        assert path.startswith("lib/PyQt6")
         share_dirs = os.environ.get("XDG_DATA_DIRS", f"{MINGW_PREFIX}/share").split(os.path.pathsep)
         dirs = []
         for share_dir in share_dirs:
             dirs += glob(f"{share_dir}/qt6/plugins/*")
-        rec_prefixed_path(path, dirs)
+        name = os.path.basename(path)
+        rec = find_prefixed_sbom_rec(name, dirs)
+        if rec:
+            sbom[path] = rec
 
     def rec_cuda(path: str) -> None:
         if not os.path.exists("CUDA") or not os.path.isdir("CUDA"):
@@ -1016,21 +1020,23 @@ def rec_sbom() -> None:
     for globbed_path in find_glob_paths(DIST, "*.dll") + find_glob_paths(LIB_DIR, "*.exe"):
         path = globbed_path[len(DIST)+1:]
         if path.startswith("lib/PyQt6"):
-            rec_pyqt_lib(path[4:])
+            rec_pyqt_lib(path)
         elif path.startswith("lib/python"):
             # some need to be resolved in the python library paths:
-            rec_py_lib(path[4:])
+            rec_py_lib(path)
         elif path.startswith("lib/curand"):
             rec_cuda(path)
         elif path in ("AxMSTSCLib.dll", "MSTSCLib.dll", "vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll"):
-            debug(f"ignoring {path!r} (generated from .NET SDK)")
+            debug(f"ignoring {path!r} (.NET SDK)")
         elif path in ("DesktopLogon.dll", ):
             debug(f"ignoring {path!r} (one of ours)")
         else:
-            rec_path(path)
+            rec = sbom_rec(path)
+            if rec:
+                sbom[path] = rec
 
     # python modules:
-    debug("adding python modules (directories)")
+    debug("adding python modules")
     SKIP_DIRS = (
         "xpra", "tlb",
         "gi", "girepository-1.0", "gstreamer-1.0", "gtk-3.0", "gdk-pixbuf-2.0",
@@ -1040,17 +1046,17 @@ def rec_sbom() -> None:
             continue
         path = os.path.join(LIB_DIR, child)
         if os.path.isdir(path) or path.endswith(".py") or path.endswith(".pyd"):
-            rec_py_lib(path)
+            rec_py_lib(os.path.join("lib", child))
 
     # summary: list of packages
     packages = tuple(sorted(set(sbom_data[2] for sbom_data in sbom.values())))
 
-    debug("recording sbom data")
+    debug(f"recording sbom data: {len(sbom)} paths, {len(packages)} packages")
     with open(BUILD_INFO, "a") as f:
         f.write(f"\n# {len(sbom)} SBOM path entries:\n")
-        f.write(f"{sbom!r}\n")
+        f.write(f"sbom={sbom!r}\n")
         f.write(f"\n# {len(packages)} packages:\n")
-        f.write(f"{packages!r}\n")
+        f.write(f"packages={packages!r}\n")
 
 
 def verpatch() -> None:
@@ -1209,9 +1215,6 @@ def build(args) -> None:
     add_cuda(args.cuda)
     add_numpy(args.numpy)
 
-    if args.zip_modules:
-        zip_modules(args.light)
-
     setup_share(args.light)
     add_manifests()
     gen_caches()
@@ -1234,6 +1237,9 @@ def build(args) -> None:
     rec_options(args)
     if args.sbom:
         rec_sbom()
+
+    if args.zip_modules:
+        zip_modules(args.light)
 
     if args.verpatch:
         verpatch()
