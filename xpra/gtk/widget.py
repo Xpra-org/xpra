@@ -171,7 +171,8 @@ def color_parse(*args) -> Gdk.Color | None:
     ok = v.parse(*args)
     if ok:
         return v.to_color()  # pylint: disable=no-member
-    ok, v = Gdk.Color.parse(*args)
+    with IgnoreWarningsContext():
+        ok, v = Gdk.Color.parse(*args)
     if ok:
         return v
     return None
