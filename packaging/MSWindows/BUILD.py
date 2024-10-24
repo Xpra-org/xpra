@@ -1101,7 +1101,7 @@ def create_zip() -> None:
     copytree(DIST, ZIP_DIR)
     log_command(["zip", "-9mr", ZIP_FILENAME, ZIP_DIR], "zip.log")
     size = du(ZIP_FILENAME) // 1024 // 1024
-    print(f"{ZIP_FILENAME}: %{size}MB")
+    print(f"{ZIP_FILENAME}: {size}MB")
 
 
 def create_installer(args) -> str:
@@ -1245,11 +1245,13 @@ def build(args) -> None:
         verpatch()
 
     size = du(DIST) // 1024 // 1024
-    os.system(f"{size}MB")
+    print(f"{size}MB")
     if args.zip:
         create_zip()
     if args.installer:
         installer = create_installer(args)
+        if not os.path.exists(installer):
+            raise RuntimeError("failed to create installer")
         if args.sign:
             step("Signing EXE")
             sign_file(installer)
@@ -1258,6 +1260,8 @@ def build(args) -> None:
             os.system(installer)
         if args.msi:
             msi = create_msi(installer)
+            if not os.path.exists(msi):
+                raise RuntimeError("failed to create msi")
             if args.sign:
                 step("Signing MSI")
                 sign_file(msi)
