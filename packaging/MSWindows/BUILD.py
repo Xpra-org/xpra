@@ -698,7 +698,7 @@ def zip_modules(light: bool) -> None:
         "OpenGL", "encodings", "future", "paramiko", "html",
         "pyasn1", "asn1crypto", "async_timeout",
         "certifi", "OpenSSL", "pkcs11", "keyring",
-        "ifaddr", "pyaes", "browser_cookie3", "service_identity",
+        "ifaddr", "pyaes", "service_identity",
         "re", "platformdirs", "attr", "setproctitle", "pyvda", "zipp",
         "distutils", "comtypes", "email", "multiprocessing", "packaging",
         "pkg_resources", "pycparser", "idna", "ctypes", "json",
@@ -708,7 +708,7 @@ def zip_modules(light: bool) -> None:
         "concurrent", "collections",
         "asyncio",
     ]
-    EXTRAS = ["unittest", "gssapi", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
+    EXTRAS = ["unittest", "gssapi", "browser_cookie3", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
     if light:
         delete_libs(*EXTRAS)
     else:
