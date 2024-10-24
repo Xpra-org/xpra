@@ -1,4 +1,4 @@
-#!/bin/python
+#!/bin/env python3
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
 # Copyright (C) 2024 Antoine Martin <antoine@xpra.org>
