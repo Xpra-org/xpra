@@ -900,35 +900,38 @@ def find_source(path: str) -> str:
     return ""
 
 
+def get_package_info(name: str) -> dict[str, str]:
+    cmd = command_args(["pacman", "-Qi", name])
+    r, output = getstatusoutput(cmd)
+    if r:
+        debug(f"pacman failed for {name!r} and returned {r}")
+        return {}
+    props: dict[str, str] = {}
+    for line in output.split("\n"):
+        parts = line.split(":", 1)
+        if len(parts) == 2:
+            props[parts[0].strip()] = parts[1].strip()
+    return props
+
+
 def get_package(path: str) -> tuple[str, str]:
     filename = find_source(path)
     if not filename:
         debug(f"failed to locate source path for {path!r}")
-        return "", ""
+        return "", "", {}
     cmd = command_args(["pacman", "-Qo", filename])
     r, output = getstatusoutput(cmd)
     if r:
         debug(f"pacman failed for {filename!r} and returned {r}")
-        return "", ""
+        return "", "", {}
     # ie: "/usr/bin/msys-2.0.dll is owned by msys2-runtime 3.5.4-2" ->
     #     ["/usr/bin/msys-2.0.dll", "msys2-runtime 3.5.4-2"]
     parts = output.split("\n")[0].split("is owned by ")
     if len(parts) != 2:
         debug(f"unable to parse pacman output: {output!r}")
-        return "", ""
+        return "", "", {}
     # ie: "msys2-runtime 3.5.4-2" -> ["msys2-runtime", "3.5.4-2"]
     package, version = parts[1].split(" ", 1)
-    if package.startswith(PACKAGE_PREFIX):
-        package = package[len(PACKAGE_PREFIX):]
-    elif os.path.basename(path).startswith(MSYS_DLL_PREFIX):
-        # ie: "msys-com_err-1.dll"
-        pass  # keep it as it is
-    elif package.startswith(MSYS2_PACKAGE_PREFIX):
-        # ie: "msys2-runtime"
-        pass  # keep it as it is
-    else:
-        debug(f"unexpected package prefix: {package!r}")
-        return "", ""
     return package, version
 
 
@@ -961,7 +964,6 @@ def sbom_rec(path: str) -> tuple:
         with open(dist_path, "rb") as f:
             data = f.read()
         csum = hashlib.sha256(data).hexdigest()
-    debug(f" * {path!r}: {package!r}, {version!r}")
     return size, csum, package, version
 
 
@@ -983,6 +985,7 @@ def rec_sbom() -> None:
             if os.path.exists(src_path):
                 rec = sbom_rec(src_path)
                 if rec:
+                    debug(f" * {filename!r}: {rec[-2]!r}, {rec[-1]!r}")
                     return rec
         print(f"Warning: unknown source for filename {filename!r}, tried {prefixes}")
         return ()
@@ -1033,6 +1036,7 @@ def rec_sbom() -> None:
         else:
             rec = sbom_rec(path)
             if rec:
+                debug(f" * {path!r}: {rec[-2]!r}, {rec[-1]!r}")
                 sbom[path] = rec
 
     # python modules:
@@ -1050,13 +1054,35 @@ def rec_sbom() -> None:
 
     # summary: list of packages
     packages = tuple(sorted(set(sbom_data[2] for sbom_data in sbom.values())))
+    packages_info: dict[str, tuple] = {}
+    for package_name in packages:
+        # shorten the package name:
+        package = package_name
+        if package.startswith(PACKAGE_PREFIX):
+            package = package[len(PACKAGE_PREFIX):]
+        elif os.path.basename(path).startswith(MSYS_DLL_PREFIX):
+            # ie: "msys-com_err-1.dll"
+            pass  # keep it as it is
+        elif package.startswith(MSYS2_PACKAGE_PREFIX):
+            # ie: "msys2-runtime"
+            pass  # keep it as it is
+        else:
+            debug(f"unexpected package prefix: {package!r}")
+        # keep only the keys relevant to the sbom:
+        info = get_package_info(package_name)
+        packages_info[package] = {key: info.get(key, "") for key in (
+            "Name", "Version", "Description", "Architecture", "URL", "Licenses",
+        ) if key in info}
 
     debug(f"recording sbom data: {len(sbom)} paths, {len(packages)} packages")
     with open(BUILD_INFO, "a") as f:
         f.write(f"\n# {len(sbom)} SBOM path entries:\n")
         f.write(f"sbom={sbom!r}\n")
-        f.write(f"\n# {len(packages)} packages:\n")
-        f.write(f"packages={packages!r}\n")
+        f.write(f"\n# {len(packages_info)} packages:\n")
+        f.write(f"packages={packages_info!r}\n")
+    # also replace it in the target directory:
+    find_delete(LIB_DIR, os.path.basename(BUILD_INFO))
+    copyfile(BUILD_INFO, f"{LIB_DIR}/{BUILD_INFO}")
 
 
 def verpatch() -> None:

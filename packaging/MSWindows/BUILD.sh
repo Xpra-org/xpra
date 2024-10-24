@@ -519,6 +519,8 @@ popd > /dev/null
 
 if [ "${DO_SBOM}" != "0" ]; then
   ./packaging/MSWindows/BUILD.py sbom
+  rm -f ./dist/lib/xpra/build_info*
+  cp xpra/build_info.py ./dist/lib/xpra/
 fi
 
 pushd dist/lib > /dev/null

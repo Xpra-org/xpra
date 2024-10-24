@@ -4450,13 +4450,23 @@ def run_sbom() -> ExitValue:
     from xpra import build_info
     if not WIN32:
         print("please refer to your package manager")
-    else:
-        if not hasattr(build_info, "sbom"):
-            raise RuntimeError("the sbom is missing!")
-        for path, package_info in build_info.sbom.items():
-            # size, csum, package, version = package_info
-            package, version = package_info[-2:]
-            print(f"{path!r:60}: {package:20} {version}")
+        return ExitCode.UNSUPPORTED
+    sbom = getattr(build_info, "sbom", {})
+    if not sbom:
+        raise RuntimeError("the sbom is missing!")
+    print(f"# {len(sbom)} path entries:")
+    for path, package_info in sbom.items():
+        package, version = package_info[-2:]
+        print(f"{path!r:60}: {package:48} {version}")
+    print("")
+    packages = getattr(build_info, "packages", {})
+    if not packages:
+        raise RuntimeError("the packages list is missing!")
+    print(f"# {len(packages)} packages:")
+    for package, pinfo in packages.items():
+        print(f"{package}:")
+        for key, value in pinfo.items():
+            print(f"    {key:16}: {value}")
     return ExitCode.OK
 
 
