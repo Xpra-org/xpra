@@ -918,18 +918,18 @@ def get_package(path: str) -> tuple[str, str]:
     filename = find_source(path)
     if not filename:
         debug(f"failed to locate source path for {path!r}")
-        return "", "", {}
+        return "", ""
     cmd = command_args(["pacman", "-Qo", filename])
     r, output = getstatusoutput(cmd)
     if r:
         debug(f"pacman failed for {filename!r} and returned {r}")
-        return "", "", {}
+        return "", ""
     # ie: "/usr/bin/msys-2.0.dll is owned by msys2-runtime 3.5.4-2" ->
     #     ["/usr/bin/msys-2.0.dll", "msys2-runtime 3.5.4-2"]
     parts = output.split("\n")[0].split("is owned by ")
     if len(parts) != 2:
         debug(f"unable to parse pacman output: {output!r}")
-        return "", "", {}
+        return "", ""
     # ie: "msys2-runtime 3.5.4-2" -> ["msys2-runtime", "3.5.4-2"]
     package, version = parts[1].split(" ", 1)
     return package, version
