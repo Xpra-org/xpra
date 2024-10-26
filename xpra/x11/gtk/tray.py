@@ -147,11 +147,15 @@ class SystemTray(GObject.GObject):
                 if owner != XNone:
                     raise RuntimeError(f"{SELECTION} already owned by {owner:x}")
                 root_xid = X11Window.get_root_xid()
-                depth = X11Window.get_depth(root_xid)
-                visualid = X11Window.get_rgba_visualid(depth) if TRANSPARENCY else 0
+                root_depth = X11Window.get_depth(root_xid)
+                visualid = 0
+                if TRANSPARENCY:
+                    depth = root_depth if root_depth != 24 else 32
+                    visualid = X11Window.get_rgba_visualid(depth)
                 event_mask = PropertyChangeMask
-                self.xid = X11Window.CreateWindow(root_xid, depth=depth, event_mask=event_mask, visualid=visualid)
-                log("tray dock window: {visualid=} geometry=%s", X11Window.getGeometry(self.xid))
+                win_vid = X11Window.get_default_visualid()
+                self.xid = X11Window.CreateWindow(root_xid, depth=root_depth, event_mask=event_mask, visualid=win_vid)
+                log(f"tray dock window: visualid=0x{visualid:x} geometry=%s", X11Window.getGeometry(self.xid))
                 prop_set(self.xid, "WM_TITLE", "latin1", "Xpra-SystemTray")
                 set_tray_visual(self.xid, visualid)
                 set_tray_orientation(self.xid, TRAY_ORIENTATION.HORZ)
