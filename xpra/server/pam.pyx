@@ -176,7 +176,7 @@ cdef class pam_session:
             conv.appdata_ptr = NULL
         cdef int r = 0
         try:
-            pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
+            r = pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
         finally:
             if view.buf!=NULL:
                 PyBuffer_Release(&view)
