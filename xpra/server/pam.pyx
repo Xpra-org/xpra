@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2016-2023 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
@@ -98,7 +98,7 @@ cdef extern from "pam_appl.h":
     int PAM_SUCCESS             #The user was successfully authenticated
     int PAM_USER_UNKNOWN        #User unknown to authentication service
 
-PAM_ERR_STR = {
+PAM_ERR_STR: Dict[int, str] = {
     PAM_ABORT               : "ABORT",
     PAM_AUTH_ERR            : "AUTH_ERR",
     PAM_CRED_INSUFFICIENT   : "CRED_INSUFFICIENT",
@@ -106,9 +106,9 @@ PAM_ERR_STR = {
     PAM_MAXTRIES            : "MAXTRIES",
     PAM_SUCCESS             : "SUCCESS",
     PAM_USER_UNKNOWN        : "USER_UNKNOWN",
-    }
+}
 
-PAM_ITEMS = {
+PAM_ITEMS: Dict[str, int] = {
     "SERVICE"       : PAM_SERVICE,
     "USER"          : PAM_USER,
     "TTY"           : PAM_TTY,
@@ -122,7 +122,7 @@ PAM_ITEMS = {
     "XDISPLAY"      : PAM_XDISPLAY,
     "XAUTHDATA"     : PAM_XAUTHDATA,
     "AUTHTOK_TYPE"  : PAM_AUTHTOK_TYPE,
-    }
+}
 
 
 cdef int password_conv(int n_msg, const pam_message **msg, pam_response **resp, void *appdata_ptr):
@@ -156,6 +156,13 @@ cdef class pam_session:
     def __repr__(self):
         return "pam_session(%#x)" % (<uintptr_t> self.pam_handle)
 
+    def pam_strerror(self, int r) -> str:
+        berr = pam_strerror(self.pam_handle, r)
+        try:
+            return berr.decode("latin1")
+        except UnicodeError:
+            return str(berr)
+
     def start(self, password=False) -> bool:
         cdef pam_conv conv
         cdef Py_buffer view
@@ -176,19 +183,15 @@ cdef class pam_session:
             conv.appdata_ptr = NULL
         cdef int r = 0
         try:
-            pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
+            r = pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
         finally:
             if view.buf!=NULL:
                 PyBuffer_Release(&view)
         log("pam_start: %s", PAM_ERR_STR.get(r, r))
-        if r!=PAM_SUCCESS:
+        if r != PAM_SUCCESS:
             self.pam_handle = NULL
             log.error("Error: pam_start failed: %s", PAM_ERR_STR.get(r, r))
-            berr = pam_strerror(self.pam_handle, r)
-            try:
-                log.warn(" %s", berr.decode("latin1"))
-            except UnicodeError:
-                log.warn(" %r", berr)
+            log.error(" %r", self.pam_strerror(r))
             return False
         return True
 
@@ -198,8 +201,9 @@ cdef class pam_session:
         for k,v in env.items():
             name_value = "%s=%s\0" % (k, v)
             r = pam_putenv(self.pam_handle, strtobytes(name_value))
-            if r!=PAM_SUCCESS:
+            if r != PAM_SUCCESS:
                 log.error("Error %i: failed to add '%s' to pam environment", r, name_value)
+                log.error(" %r", self.pam_strerror(r))
             else:
                 log("pam_putenv: %s", name_value)
 
@@ -245,8 +249,9 @@ cdef class pam_session:
                 l = addressof(s)
                 item = <const_void_p> l
             r = pam_set_item(self.pam_handle, item_type, item)
-            if r!=PAM_SUCCESS:
+            if r != PAM_SUCCESS:
                 log.error("Error %i: failed to set pam item '%s' to '%s'", r, k, v)
+                log.error(" %r", self.pam_strerror(r))
             else:
                 log("pam_set_item: %s=%s", k, v)
 
@@ -254,10 +259,10 @@ cdef class pam_session:
         assert self.pam_handle!=NULL
         cdef int r = pam_open_session(self.pam_handle, 0)
         log("pam_open_session: %s", PAM_ERR_STR.get(r, r))
-        if r!=PAM_SUCCESS:
+        if r != PAM_SUCCESS:
             self.pam_handle = NULL
             log.error("Error: pam_open_session failed: %s", PAM_ERR_STR.get(r, r))
-            log.error(" %s", pam_strerror(self.pam_handle, r))
+            log.error(" %r", self.pam_strerror(r))
             return False
         return True
 
@@ -266,23 +271,19 @@ cdef class pam_session:
         assert self.pam_handle!=NULL
         cdef int r = pam_authenticate(self.pam_handle, PAM_SILENT)
         log("pam_authenticate: %s", PAM_ERR_STR.get(r, r))
-        if r!=PAM_SUCCESS:
+        if r != PAM_SUCCESS:
             log.warn("Warning: pam authentication failed: %s", PAM_ERR_STR.get(r, r))
-            berr = pam_strerror(self.pam_handle, r)
-            try:
-                log.warn(" %s", berr.decode("latin1"))
-            except UnicodeError:
-                log.warn(" %r", berr)
+            log.warn(" %r", self.pam_strerror(r))
             return False
         return True
 
     def check_account(self) -> bool:
         assert self.pam_handle!=NULL
         cdef int r = pam_acct_mgmt(self.pam_handle, 0)
-        if r!=PAM_SUCCESS:
+        if r != PAM_SUCCESS:
             self.pam_handle = NULL
             log.error("Error: pam_acct_mgmt failed: %s", PAM_ERR_STR.get(r, r))
-            log.error(" %s", pam_strerror(self.pam_handle, r))
+            log.error(" %r", self.pam_strerror(r))
             return False
         return True
 
@@ -293,16 +294,17 @@ cdef class pam_session:
 
         cdef int r = pam_close_session(self.pam_handle, 0)
         log("pam_close_session: %s", PAM_ERR_STR.get(r, r))
-        if r!=PAM_SUCCESS:
+        if r != PAM_SUCCESS:
             self.pam_handle = NULL
             log.error("Error: failed to close the pam session: %s", PAM_ERR_STR.get(r, r))
-            log.error(" %s", pam_strerror(self.pam_handle, r))
+            log.error(" %r", self.pam_strerror(r))
             return False
 
         r = pam_end(self.pam_handle, r)
         log("pam_end: %s", PAM_ERR_STR.get(r, r))
         self.pam_handle = NULL
-        if r!=PAM_SUCCESS:
-            log.error("Error: pam_end '%s'", pam_strerror(self.pam_handle, r))
+        if r != PAM_SUCCESS:
+            log.error("Error: pam_end '%s'", PAM_ERR_STR.get(r, r))
+            log.error(" %r", self.pam_strerror(r))
             return False
         return True
