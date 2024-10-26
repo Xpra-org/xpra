@@ -149,7 +149,7 @@ cdef extern from "X11/Xlib.h":
         VisualID visualid
         int screen
         unsigned int depth
-        int c_class
+        int c_class "class"
         unsigned long red_mask
         unsigned long green_mask
         unsigned long blue_mask
@@ -301,6 +301,7 @@ cdef extern from "X11/Xlib.h":
     int XAddToSaveSet(Display *, Window w)
     int XRemoveFromSaveSet(Display *, Window w)
 
+    Visual *XDefaultVisual(Display *display, int screen_number)
     XVisualInfo *XGetVisualInfo(Display *display, long vinfo_mask, XVisualInfo *vinfo_template, int *nitems_return)
 
     # windows:

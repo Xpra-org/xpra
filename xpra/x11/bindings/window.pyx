@@ -10,7 +10,7 @@ from xpra.gtk.error import XError
 from xpra.x11.bindings.xlib cimport (
     Display, Drawable, Visual, Window, Bool, Pixmap, XID, Status, Atom, Time, CurrentTime, Cursor, XPointer,
     VisualID, XVisualInfo,
-    XGetVisualInfo, VisualIDMask,
+    XGetVisualInfo, VisualIDMask, XDefaultVisual,
     GrabModeAsync, XGrabPointer,
     Expose,
     XRectangle, XEvent, XClassHint,
@@ -998,7 +998,13 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             XFree(vinfo)
         return visual
 
-    def get_rgba_visualid(self, depth=32):
+    def get_default_visualid(self) -> int:
+        cdef Visual *visual = XDefaultVisual(self.display, 0)
+        if not visual:
+            return 0
+        return visual.visualid
+
+    def get_rgba_visualid(self, depth=32) -> int:
         cdef XVisualInfo vinfo_template
         cdef int count
         cdef XVisualInfo *vinfo = XGetVisualInfo(self.display, 0, &vinfo_template, &count)
