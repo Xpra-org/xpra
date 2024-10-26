@@ -16,7 +16,7 @@ RUN_INSTALLER=${RUN_INSTALLER:-1}
 DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
 DO_TESTS=${DO_TESTS:-0}
-DO_SBOM=${DO_SBOM:1}
+DO_SBOM=${DO_SBOM:-1}
 
 # these are only enabled for "full" builds:
 DO_CUDA=${DO_CUDA:-$DO_FULL}
