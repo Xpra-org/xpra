@@ -473,7 +473,7 @@ class KeyboardConfig(KeyboardConfigBase):
             return -1, group
         if self.raw:
             return client_keycode, group
-        if self.query_struct:
+        if self.x11_keycodes:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
             self.kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
             return keycode, group
