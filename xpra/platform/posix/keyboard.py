@@ -19,6 +19,82 @@ from xpra.util.str_fn import bytestostr
 log = Logger("keyboard", "posix")
 
 
+def get_locale_status() -> dict[str, str]:
+    # parse the output into a dictionary:
+    # $ localectl status
+    # System Locale: LANG=en_GB.UTF-8
+    # VC Keymap: gb
+    # X11 Layout: gb
+    from subprocess import getoutput  # pylint: disable=import-outside-toplevel
+    out = getoutput("localectl status")
+    if not out:
+        return {}
+    locale = {}
+    for line in bytestostr(out).splitlines():
+        parts = line.lstrip(" ").split(": ")
+        if len(parts) == 2:
+            locale[parts[0]] = parts[1]
+    log("locale(%s)=%s", out, locale)
+    return locale
+
+
+def get_xkb_rules_names_property() -> Sequence[str]:
+    # parses the "_XKB_RULES_NAMES" X11 property
+    if not is_X11():
+        return ()
+    xkb_rules_names: list[str] = []
+    # pylint: disable=import-outside-toplevel
+    from xpra.gtk.error import xlog
+    from xpra.x11.common import get_X11_root_property
+    with xlog:
+        prop = get_X11_root_property("_XKB_RULES_NAMES", "STRING")
+        log("get_xkb_rules_names_property() _XKB_RULES_NAMES=%s", prop)
+        # ie: 'evdev\x00pc104\x00gb,us\x00,\x00\x00'
+        if prop:
+            xkb_rules_names = bytestostr(prop).split("\0")
+        # ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
+    log("get_xkb_rules_names_property()=%s", xkb_rules_names)
+    return tuple(xkb_rules_names)
+
+
+def get_all_x11_layouts() -> dict[str, str]:
+    repository = "/usr/share/X11/xkb/rules/base.xml"
+    x11_layouts: dict[str, str] = {}
+    if os.path.exists(repository):
+        try:
+            import lxml.etree  # pylint: disable=import-outside-toplevel
+        except ImportError:
+            log("cannot parse xml", exc_info=True)
+        else:
+            try:
+                with open(repository, encoding="latin1") as f:
+                    tree = lxml.etree.parse(f)  # pylint: disable=c-extension-no-member @UndefinedVariable
+            except Exception:
+                log.error(f"Error parsing {repository}", exc_info=True)
+            else:
+                for layout in list(tree.xpath("//layout")):
+                    layout_str = str(layout.xpath("./configItem/name")[0].text)
+                    x11_layouts[layout] = layout_str
+                    # for variant in layout.xpath("./variantlist/variant/configItem/name"):
+                    #    variant_name = variant.text
+                return x11_layouts
+    from subprocess import Popen, PIPE  # pylint: disable=import-outside-toplevel
+    try:
+        proc = Popen(["localectl", "list-x11-keymap-layouts"], stdout=PIPE, stderr=PIPE)
+        out = proc.communicate()[0]
+        log("get_all_x11_layouts() proc=%s", proc)
+        log("get_all_x11_layouts() returncode=%s", proc.returncode)
+        if proc.wait() == 0:
+            for line in out.splitlines():
+                layout = line.decode().split("/")[-1]
+                if layout:
+                    x11_layouts[layout] = layout
+            return x11_layouts
+    except OSError:
+        log("get_all_x11_layouts()", exc_info=True)
+    return {"us": "English"}
+
+
 class Keyboard(KeyboardBase):
 
     def __init__(self):
@@ -174,28 +250,10 @@ class Keyboard(KeyboardBase):
             return self.keyboard_bindings.get_keycode_mappings()
         return {}
 
-    def get_locale_status(self) -> dict[str, str]:
-        # parse the output into a dictionary:
-        # $ localectl status
-        # System Locale: LANG=en_GB.UTF-8
-        # VC Keymap: gb
-        # X11 Layout: gb
-        from subprocess import getoutput  # pylint: disable=import-outside-toplevel
-        out = getoutput("localectl status")
-        if not out:
-            return {}
-        locale = {}
-        for line in bytestostr(out).splitlines():
-            parts = line.lstrip(" ").split(": ")
-            if len(parts) == 2:
-                locale[parts[0]] = parts[1]
-        log("locale(%s)=%s", out, locale)
-        return locale
-
     def get_keymap_spec(self) -> dict[str, str]:
         log("get_keymap_spec() keyboard_bindings=%s", self.keyboard_bindings)
         if is_Wayland() or not self.keyboard_bindings:
-            locale = self.get_locale_status()
+            locale = get_locale_status()
             query_struct = {}
             if locale:
                 layout = locale.get("X11 Layout")
@@ -209,60 +267,8 @@ class Keyboard(KeyboardBase):
         log("get_keymap_spec()=%r", query_struct)
         return query_struct
 
-    def get_xkb_rules_names_property(self) -> Sequence[str]:
-        # parses the "_XKB_RULES_NAMES" X11 property
-        if not is_X11():
-            return ()
-        xkb_rules_names: list[str] = []
-        # pylint: disable=import-outside-toplevel
-        from xpra.gtk.error import xlog
-        from xpra.x11.common import get_X11_root_property
-        with xlog:
-            prop = get_X11_root_property("_XKB_RULES_NAMES", "STRING")
-            log("get_xkb_rules_names_property() _XKB_RULES_NAMES=%s", prop)
-            # ie: 'evdev\x00pc104\x00gb,us\x00,\x00\x00'
-            if prop:
-                xkb_rules_names = bytestostr(prop).split("\0")
-            # ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
-        log("get_xkb_rules_names_property()=%s", xkb_rules_names)
-        return tuple(xkb_rules_names)
-
-    def get_all_x11_layouts(self) -> dict[str, str]:
-        repository = "/usr/share/X11/xkb/rules/base.xml"
-        x11_layouts: dict[str, str] = {}
-        if os.path.exists(repository):
-            try:
-                import lxml.etree  # pylint: disable=import-outside-toplevel
-            except ImportError:
-                log("cannot parse xml", exc_info=True)
-            else:
-                try:
-                    with open(repository, encoding="latin1") as f:
-                        tree = lxml.etree.parse(f)  # pylint: disable=c-extension-no-member @UndefinedVariable
-                except Exception:
-                    log.error(f"Error parsing {repository}", exc_info=True)
-                else:
-                    for layout in list(tree.xpath("//layout")):
-                        layout_str = str(layout.xpath("./configItem/name")[0].text)
-                        x11_layouts[layout] = layout_str
-                        # for variant in layout.xpath("./variantlist/variant/configItem/name"):
-                        #    variant_name = variant.text
-                    return x11_layouts
-        from subprocess import Popen, PIPE  # pylint: disable=import-outside-toplevel
-        try:
-            proc = Popen(["localectl", "list-x11-keymap-layouts"], stdout=PIPE, stderr=PIPE)
-            out = proc.communicate()[0]
-            log("get_all_x11_layouts() proc=%s", proc)
-            log("get_all_x11_layouts() returncode=%s", proc.returncode)
-            if proc.wait() == 0:
-                for line in out.splitlines():
-                    layout = line.decode().split("/")[-1]
-                    if layout:
-                        x11_layouts[layout] = layout
-                return x11_layouts
-        except OSError:
-            log("get_all_x11_layouts()", exc_info=True)
-        return {"us": "English"}
+    def get_all_x11_layouts(self):
+        return get_all_x11_layouts()
 
     def get_layout_spec(self):
         layout = ""
@@ -277,11 +283,11 @@ class Keyboard(KeyboardBase):
             variant = props.get("variant", "")
             options = props.get("options", "")
         else:
-            locale = self.get_locale_status()
+            locale = get_locale_status()
             v = locale.get("X11 Layout", "")
         if not v:
             # fallback:
-            props = self.get_xkb_rules_names_property()
+            props = get_xkb_rules_names_property()
             # ie: ['evdev', 'pc104', 'gb,us', ',', '', '']
             if props and len(props) >= 3:
                 v = props[2]
