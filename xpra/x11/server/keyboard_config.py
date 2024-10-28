@@ -468,12 +468,10 @@ class KeyboardConfig(KeyboardConfigBase):
             return -1, group
         if self.raw:
             return client_keycode, group
-        keycode = self.keycode_translation.get((client_keycode, keyname), -1)
-        if keycode >= 0:
+        if self.x11_keycodes and client_keycode > 0:
+            keycode = self.keycode_translation.get((client_keycode, keyname), 0) or client_keycode
             kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
             return keycode, group
-        if self.x11_keycodes and client_keycode >= 0:
-            return client_keycode, group
         return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def find_matching_keycode(self, client_keycode: int, keyname: str,
