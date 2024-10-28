@@ -64,7 +64,7 @@ class KeyboardConfigBase:
         if keycode < 0 and not keyname.islower():
             keyname = keyname.lower()
             keycode, group = self.do_get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
-        if pressed and keycode not in (None, -1):
+        if pressed and keycode > 0:
             # keep track of it, so we can unpress the same key:
             self.pressed_translation[client_keycode] = keycode, group
         return keycode, group
