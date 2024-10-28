@@ -472,6 +472,8 @@ class KeyboardConfig(KeyboardConfigBase):
         if keycode >= 0:
             kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
             return keycode, group
+        if self.x11_keycodes and client_keycode >= 0:
+            return client_keycode, group
         return self.find_matching_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def find_matching_keycode(self, client_keycode: int, keyname: str,
