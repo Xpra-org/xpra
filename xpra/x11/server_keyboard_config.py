@@ -463,7 +463,7 @@ class KeyboardConfig(KeyboardConfigBase):
         if self.xkbmap_raw:
             return client_keycode, group
         keycode = None
-        if self.xkbmap_query:
+        if self.x11_keycodes:
             keycode = self.keycode_translation.get((client_keycode, keyname)) or client_keycode
             log("get_keycode(%s, %s, %s)=%s (native keymap)", client_keycode, keyname, modifiers, keycode)
         else:
