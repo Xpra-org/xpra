@@ -660,12 +660,13 @@ def install_repo(repo_variant="") -> None:
     distro = get_linux_distribution()
     setup_cmds: list[list[str]] = []
 
-    if distro[0] in ("Debian", "Ubuntu"):
-        variant = distro[2]     # ie: "noble"
-        if variant not in (
-            "xenial", "bionic", "focal", "jammy", "mantic", "noble", "oracular",
-            "bullseye", "bookworm", "trixie", "sid",
-        ):
+    DEB_VARIANTS = (
+        "focal", "jammy", "noble", "oracular",
+        "bullseye", "bookworm", "trixie", "sid",
+    )
+    variant = distro[2]  # ie: "noble"
+    if distro[0] in ("Debian", "Ubuntu") or variant in DEB_VARIANTS:
+        if variant not in DEB_VARIANTS:
             raise ValueError(f"Debian / Ubuntu variant {variant} is not supported by this subcommand")
         to = "/etc/apt/sources.list.d/"
         setup_cmds.append(["wget", "-O", "/usr/share/keyrings/xpra.asc", "https://xpra.org/xpra.asc"])
@@ -675,13 +676,13 @@ def install_repo(repo_variant="") -> None:
 
     else:
         # assume RPM
-        variant = "Fedora"
 
         def add_epel() -> None:
             setup_cmds.append(["dnf-3", "config-manager", "--set-enabled", "crb"])
             setup_cmds.append(["dnf-3", "install", "epel-release"])
 
         if is_Fedora():
+            variant = "Fedora"
             release = get_status_output(["rpm", "-E", "%fedora"])
             assert release[0] == 0, "failed to run `rpm -E %fedora`"
             release_name = release[1].strip("\n\r")
