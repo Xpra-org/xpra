@@ -905,8 +905,25 @@ fi
 
 
 %changelog
-* Sat Oct 19 2024 Antoine Martin <antoine@xpra.org> 6.2.1-10
-- TODO
+* Mon Oct 28 2024 Antoine Martin <antoine@xpra.org> 6.2.1-10
+- System tray:
+   paint errors with `mmap` mode
+   distorted paints
+- Major:
+   keycode mapping for Wayland clients
+   some windows not shown when there is a tray window being forwarded
+   connection failures on some server platforms
+- Minor:
+   quality and speed options can be used with generic encodings
+   check `pam_start` return value in `pam` authentication module
+   `install-repo` support for Debian and Ubuntu derivatives
+- Cosmetic:
+   show which client backend values are acceptable
+   log OpenGL probe errors
+   date in changelog
+   add Ubuntu `oracular` support to `install-repo` subcommand
+   border color parsing deprecation warning
+
 * Wed Oct 09 2024 Antoine Martin <antoine@xpra.org> 6.2-10
 - Platforms, build and packaging:
    pycuda for Fedora 41

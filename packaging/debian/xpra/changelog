@@ -1,7 +1,23 @@
 xpra (6.2.1-1) UNRELEASED; urgency=low
-  * TODO
+  * System tray:
+    paint errors with `mmap` mode
+    distorted paints
+  * Major:
+    keycode mapping for Wayland clients
+    some windows not shown when there is a tray window being forwarded
+    connection failures on some server platforms
+  * Minor:
+    quality and speed options can be used with generic encodings
+    check `pam_start` return value in `pam` authentication module
+    `install-repo` support for Debian and Ubuntu derivatives
+  * Cosmetic:
+    show which client backend values are acceptable
+    log OpenGL probe errors
+    date in changelog
+    add Ubuntu `oracular` support to `install-repo` subcommand
+    border color parsing deprecation warning
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 19 Oct 2024 19:59:14 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 28 Oct 2024 22:03:43 +0700
 
 xpra (6.2.0-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
