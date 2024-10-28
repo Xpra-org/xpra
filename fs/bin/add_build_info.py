@@ -8,8 +8,8 @@
 # pylint: disable=bare-except
 
 import datetime
-import shutil
-from subprocess import Popen, PIPE, STDOUT
+from shutil import which
+from subprocess import Popen, PIPE, STDOUT, getstatusoutput
 from typing import Any
 from collections.abc import Sequence
 import socket
@@ -117,7 +117,7 @@ def get_first_line_output(cmd, valid_exit_code=0) -> str:
 def get_nvcc_version() -> str:
     if sys.platform == "darwin":
         return ""
-    for nvcc in ("/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc", shutil.which("nvcc")):
+    for nvcc in ("/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc", which("nvcc")):
         if nvcc and os.path.exists(nvcc):
             cmd = f"{nvcc} --version"
             lines = get_output_lines(cmd)
@@ -299,7 +299,48 @@ def record_build_info() -> None:
         "libs": get_libs(),
         "python_libs": get_python_libs(),
     })
+    if sys.platform == "darwin":
+        sbom = {}
+        packages = {}
+        SKIPPED = ("xar", "cpio", "bomutils", )
+        for package_name in get_jhbuild_package_list():
+            if package_name in SKIPPED or package_name.startswith("meta-"):
+                continue
+            pinfo = get_jhbuild_package_info(package_name)
+            if pinfo:
+                sbom[package_name] = (0, "", package_name, pinfo.get("Version", ""))
+                packages[package_name] = {key: value for key, value in pinfo.items() if key in ("Name", "Version", "URL")}
+        props["sbom"] = sbom
+        props["packages"] = packages
     save_properties(props, BUILD_INFO_FILE)
+
+
+def get_jhbuild_package_list() -> list[str]:
+    cmd = "jhbuild list"
+    r, output = getstatusoutput(cmd)
+    if r:
+        print(f"`jhbuild list` failed and returned {r}")
+        return []
+    packages = []
+    for line in output.split("\n"):
+        if line.find(" ") >= 0:
+            continue
+        packages.append(line.strip())
+    return packages
+
+
+def get_jhbuild_package_info(name: str) -> dict[str, str]:
+    cmd = f"jhbuild info {name}"
+    r, output = getstatusoutput(cmd)
+    if r:
+        print(f"`jhbuild info {name}` failed and returned {r}")
+        return {}
+    props: dict[str, str] = {}
+    for line in output.split("\n"):
+        parts = line.split(":", 1)
+        if len(parts) == 2:
+            props[parts[0].strip()] = parts[1].strip()
+    return props
 
 
 def get_vcs_props():
