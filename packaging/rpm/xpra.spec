@@ -785,13 +785,32 @@ fi
 
 
 %changelog
-* Sat Sep 14 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
+* Mon Oct 28 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:
    don't build ffmpeg encoder on MacOS
    RPM builds without nvidia codecs failed
    RPM simplify Fedora feature checks
+   unnecessary module import on MacOS
+   match `comtypes` module changes
+   run CI on Ubuntu 22.04 image
+   generate SBOM for MS Windows builds
 - Major:
    verify ssl certificates can be accessed - not just the parent directory
+   automatic re-connection path errors with MS Windows clients
+   ssl redirection errors
+   focus lost
+   raise maximum number of AES key stretching iterations
+   automatic port assignment error
+   keycode mapping for Wayland clients
+- Minor:
+   quality and speed options can be used with generic encodings
+   support pointer polling
+   version update dialog cannot be closed
+   prevent missing menu data from causing connection errors
+- Cosmetic:
+   silence http timeouts
+   typo in manpage
+   remove unused logger]
 
 * Tue Sep 10 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:

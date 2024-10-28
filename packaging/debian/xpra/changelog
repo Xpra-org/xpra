@@ -3,10 +3,29 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - don't build ffmpeg encoder on MacOS
    - RPM builds without nvidia codecs failed
    - RPM simplify Fedora feature checks
+   - unnecessary module import on MacOS
+   - match `comtypes` module changes
+   - run CI on Ubuntu 22.04 image
+   - generate SBOM for MS Windows builds
   * Major:
    - verify ssl certificates can be accessed - not just the parent directory
+   - automatic re-connection path errors with MS Windows clients
+   - ssl redirection errors
+   - focus lost
+   - raise maximum number of AES key stretching iterations
+   - automatic port assignment error
+   - keycode mapping for Wayland clients
+  * Minor:
+   - quality and speed options can be used with generic encodings
+   - support pointer polling
+   - version update dialog cannot be closed
+   - prevent missing menu data from causing connection errors
+  * Cosmetic:
+   - silence http timeouts
+   - typo in manpage
+   - remove unused logger]
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 14 Sep 2024 22:13:37 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 28 Sep 2024 22:40:31 +0700
 
 xpra (5.0.10-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
