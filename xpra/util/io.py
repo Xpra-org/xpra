@@ -128,7 +128,10 @@ class CaptureStdErr:
         self.tmp = NamedTemporaryFile(prefix="stderr")
         fd = self.tmp.fileno()
         os.dup2(fd, 2)
-        sys.stderr = os.fdopen(self.savedstderr, "w")
+        try:
+            sys.stderr = os.fdopen(self.savedstderr, "w")
+        except OSError as e:
+            noerr(sys.stderr.write, f"failed to replace stderr: {e}\n")
 
     def __exit__(self, *_args):
         try:
@@ -137,7 +140,7 @@ class CaptureStdErr:
             self.stderr = os.read(fd, 32768)
             self.tmp.close()
         except OSError as e:
-            noerr(sys.stderr.write, f"oops: {e}\n")
+            noerr(sys.stderr.write, f"failed to restore stderr: {e}\n")
         if self.savedstderr is not None:
             os.dup2(self.savedstderr, 2)
 
