@@ -421,7 +421,8 @@ def query_audio() -> typedict:
     proc = subprocess.Popen(command,
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, universal_newlines=True,
                             **kwargs)
-    out, err = proc.communicate(None)
+    with proc:
+        out, err = proc.communicate(None)
     log(f"query_audio() process returned {proc.returncode}")
     log(f"query_audio() out={out!r}, err={err!r}")
     if proc.returncode != 0:
