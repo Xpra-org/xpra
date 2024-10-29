@@ -1,10 +1,11 @@
 # Changelog
 
-## [6.2.1] 2024-10-28
+## [6.2.1] 2024-10-29
 * System tray:
     * [paint errors with `mmap` mode](https://github.com/Xpra-org/xpra/commit/42e039eb3b5ab256a926f6be530ce5e54be96742)
     * [distorted paints](https://github.com/Xpra-org/xpra/commit/450f17a217a0f0361f20eb5b072646598a3ceeb7)
 * Major:
+    * [OpenGL errors with MS Windows clients](https://github.com/Xpra-org/xpra/commit/adc0487184923a7f08d3623b4ba2eb50feeb5276) [missing stderr](https://github.com/Xpra-org/xpra/commit/ee8827a44cad3a2a0e2d171c85979b3d9e425dc7)
     * [keycode mapping for Wayland clients](https://github.com/Xpra-org/xpra/commit/8df4acacccd1780e9ef3ecdcaf71e1194cb14cce)
     * [some windows not shown when there is a tray window being forwarded](https://github.com/Xpra-org/xpra/commit/445ea1d4f11cdfdac655c4729fd7af360a37b481)
     * [connection failures on some server platforms](https://github.com/Xpra-org/xpra/commit/66e69de7481241f47626fa48ab8691abaa3eb646)

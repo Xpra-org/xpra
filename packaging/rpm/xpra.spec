@@ -905,11 +905,12 @@ fi
 
 
 %changelog
-* Mon Oct 28 2024 Antoine Martin <antoine@xpra.org> 6.2.1-10
+* Tue Oct 29 2024 Antoine Martin <antoine@xpra.org> 6.2.1-10
 - System tray:
    paint errors with `mmap` mode
    distorted paints
 - Major:
+   OpenGL errors with MS Windows clients missing stderr
    keycode mapping for Wayland clients
    some windows not shown when there is a tray window being forwarded
    connection failures on some server platforms
