@@ -707,7 +707,13 @@ class HideStdErr:
         devnull = os.open(os.devnull, os.O_WRONLY)
         os.dup2(devnull, 2)
         os.close(devnull)
-        sys.stderr = os.fdopen(self.savedstderr, 'w')
+        try:
+            sys.stderr = os.fdopen(self.savedstderr, 'w')
+        except OSError as e:
+            try:
+                sys.stderr.write(f"failed to replace stderr: {e}\n")
+            except:
+                pass
 
     def __exit__(self, *_args):
         if self.savedstderr is not None:
