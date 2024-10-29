@@ -14,7 +14,10 @@ from xpra.util.str_fn import memoryview_to_bytes
 from xpra.common import MIN_COMPRESS_SIZE, MAX_DECOMPRESSED_SIZE, SizedBuffer
 
 # all the compressors we know about:
-ALL_COMPRESSORS: Sequence[str] = ("lz4", "zlib", "brotli", "none")
+ALL_COMPRESSORS: Sequence[str] = ("lz4", "zlib", "lzo", "brotli", "none")
+
+VALID_COMPRESSORS: Sequence[str] = ("lz4", "brotli")
+
 # the compressors we may want to use, in the best compatibility order:
 TRY_COMPRESSORS: Sequence[str] = ("lz4", "brotli", "none")
 # order for performance:

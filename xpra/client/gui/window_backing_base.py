@@ -561,8 +561,11 @@ class WindowBackingBase:
         comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
         if comp:
             if len(comp) != 1:
-                raise ValueError(f"more than one compressor specified: {comp}")
-            rgb_data = compression.decompress_by_name(raw_data, algo=comp[0])
+                raise ValueError(f"more than one compressor specified: {comp!r}")
+            compressor = comp[0]
+            if compressor != "lz4":
+                raise ValueError(f"pixel data can only be compressed with lz4, not {compressor!r}")
+            rgb_data = compression.decompress_by_name(raw_data, algo=compressor)
         else:
             rgb_data = raw_data
         self.ui_paint_rgb("rgb", rgb_format, rgb_data,

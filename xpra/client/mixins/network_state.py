@@ -21,7 +21,7 @@ from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import PacketType
-from xpra.net.packet_encoding import ALL_ENCODERS
+from xpra.net.packet_encoding import VALID_ENCODERS
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.log import Logger
@@ -173,7 +173,7 @@ class NetworkState(StubClientMixin):
         self.server_start_time = min(time.time(), c.intget("start_time", -1))
         self.server_bandwidth_limit = c.intget("network.bandwidth-limit")
         bandwidthlog(f"{self.server_bandwidth_limit=}")
-        self.server_packet_encoders = tuple(x for x in ALL_ENCODERS if c.boolget(x, False))
+        self.server_packet_encoders = tuple(x for x in VALID_ENCODERS if c.boolget(x, False))
         return True
 
     def process_ui_capabilities(self, caps: typedict) -> None:

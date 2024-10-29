@@ -1592,6 +1592,9 @@ def fixup_compression(options) -> None:
         unknown = tuple(x for x in compressors if x and x not in compression.ALL_COMPRESSORS)
         if unknown:
             warn("Warning: invalid compressor(s) specified: " + csv(unknown))
+        # keep only valid ones
+        # (ignores `lzo` and `zlib` which have been removed but may still exist in config files)
+        compressors = [x for x in compressors if x in compression.VALID_COMPRESSORS]
     options.compressors = list(compressors)
 
 
@@ -1605,6 +1608,9 @@ def fixup_packetencoding(options) -> None:
         unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
         if unknown:
             warn("Warning: invalid packet encoder(s) specified: " + csv(unknown))
+        # keep only valid ones
+        # (ignores `rencode`, `bencode` and `yaml` which have been removed but may still exist in config files)
+        packet_encoders = [x for x in packet_encoders if x in packet_encoding.VALID_ENCODERS]
     options.packet_encoders = packet_encoders
 
 

@@ -18,7 +18,9 @@ from xpra.util.str_fn import strtobytes, memoryview_to_bytes
 from xpra.util.env import envbool
 
 # all the encoders we know about:
-ALL_ENCODERS: Sequence[str] = ("rencodeplus", "none")
+ALL_ENCODERS: Sequence[str] = ("rencodeplus", "rencode", "bencode", "yaml", "none")
+
+VALID_ENCODERS: Sequence[str] = ("rencodeplus", "none")
 # the encoders we may have, in the best compatibility order
 TRY_ENCODERS: Sequence[str] = ("rencodeplus", "none")
 # order for performance:
@@ -108,7 +110,7 @@ def get_enabled_encoders(order: Iterable[str] = TRY_ENCODERS) -> Sequence[str]:
 
 
 def get_encoder(e) -> Callable:
-    if e not in ALL_ENCODERS:
+    if e not in VALID_ENCODERS:
         raise ValueError(f"invalid encoder name {e!r}")
     if e not in ENCODERS:
         raise ValueError(f"{e!r} is not available")
