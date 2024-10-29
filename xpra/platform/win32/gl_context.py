@@ -10,6 +10,7 @@ from contextlib import nullcontext, AbstractContextManager
 
 from xpra.opengl.check import check_PyOpenGL_support
 from xpra.util.io import CaptureStdErr
+from xpra.platform.win32 import is_terminal
 from xpra.platform.win32.gui import get_window_handle
 from xpra.platform.win32.constants import (
     CS_OWNDC, CS_HREDRAW, CS_VREDRAW, COLOR_WINDOW,
@@ -87,7 +88,7 @@ gl_init_done = False
 def get_gl_context_manager() -> AbstractContextManager:
     # capture stderr only the first time this is called
     global gl_init_done
-    if not gl_init_done:
+    if not gl_init_done and is_terminal():
         gl_init_done = True
         return CaptureStdErr()
     cm = nullcontext()
