@@ -4448,7 +4448,7 @@ def show_ssl(options, args, cmdline) -> ExitValue:
 
 def run_sbom() -> ExitValue:
     from xpra import build_info
-    if not WIN32:
+    if not (WIN32 or OSX):
         print("please refer to your package manager")
         return ExitCode.UNSUPPORTED
     sbom = getattr(build_info, "sbom", {})
