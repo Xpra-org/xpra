@@ -4456,7 +4456,8 @@ def run_sbom() -> ExitValue:
         raise RuntimeError("the sbom is missing!")
     print(f"# {len(sbom)} path entries:")
     for path, package_info in sbom.items():
-        package, version = package_info[-2:]
+        package = package_info["package"]
+        version = package_info["version"]
         print(f"{path!r:60}: {package:48} {version}")
     print("")
     packages = getattr(build_info, "packages", {})

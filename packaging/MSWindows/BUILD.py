@@ -11,6 +11,8 @@ import json
 import os.path
 import shlex
 import hashlib
+from typing import Any
+
 from sysconfig import get_path
 from datetime import datetime
 from collections import namedtuple
@@ -44,6 +46,7 @@ SYSTEM32 = "C:\\Windows\\System32"
 
 SRC_INFO = "xpra/src_info.py"
 BUILD_INFO = "xpra/build_info.py"
+SBOM_JSON = "sbom.json"
 
 LOG_DIR = "packaging/MSWindows/"
 
@@ -370,6 +373,10 @@ def set_version_info(light: bool):
         delfile(path)
     log_command([PYTHON, "fs/bin/add_build_info.py", "src", "build"], "add-build-info.log")
     print("    Python " + sys.version)
+    load_version_info(light)
+
+
+def load_version_info(light: bool):
 
     def load_module(src: str):
         spec = spec_from_file_location("xpra", src)
@@ -950,21 +957,24 @@ def get_py_lib_dirs() -> list[str]:
     return py_lib_dirs
 
 
-def sbom_rec(path: str) -> tuple:
+def sbom_rec(path: str) -> dict[str, Any]:
     package, version = get_package(path)
     if not (package and version):
         print(f"Warning: no package data found for {path!r}")
-        return ()
+        return {}
+    rec = {
+        "package": package,
+        "version": version,
+    }
     dist_path = os.path.join(DIST, path)
     if os.path.isdir(dist_path):
-        size = du(dist_path)
-        csum = ""
+        rec["size"] = du(dist_path)
     else:
-        size = os.stat(dist_path).st_size
+        rec["size"] = os.stat(dist_path).st_size
         with open(dist_path, "rb") as f:
             data = f.read()
-        csum = hashlib.sha256(data).hexdigest()
-    return size, csum, package, version
+        rec["checksum"] = hashlib.sha256(data).hexdigest()
+    return rec
 
 
 def find_glob_paths(dirname: str, glob_str: str) -> list[str]:
@@ -979,13 +989,15 @@ def rec_sbom() -> None:
     sbom: dict[str, tuple[str, str]] = {}
     py_lib_dirs: list[str] = get_py_lib_dirs()
 
-    def find_prefixed_sbom_rec(filename: str, prefixes: list[str]) -> tuple:
+    def find_prefixed_sbom_rec(filename: str, prefixes: list[str]) -> dict[str, Any]:
         for prefix in prefixes:
             src_path = os.path.join(prefix, filename)
             if os.path.exists(src_path):
                 rec = sbom_rec(src_path)
                 if rec:
-                    debug(f" * {filename!r}: {rec[-2]!r}, {rec[-1]!r}")
+                    package = rec["package"]
+                    version = rec["version"]
+                    debug(f" * {filename!r}: {package!r}, {version!r}")
                     return rec
         print(f"Warning: unknown source for filename {filename!r}, tried {prefixes}")
         return ()
@@ -1036,7 +1048,9 @@ def rec_sbom() -> None:
         else:
             rec = sbom_rec(path)
             if rec:
-                debug(f" * {path!r}: {rec[-2]!r}, {rec[-1]!r}")
+                package = rec["package"]
+                version = rec["version"]
+                debug(f" * {path!r}: {package!r}, {version!r}")
                 sbom[path] = rec
 
     # python modules:
@@ -1053,7 +1067,7 @@ def rec_sbom() -> None:
             rec_py_lib(os.path.join("lib", child))
 
     # summary: list of packages
-    packages = tuple(sorted(set(sbom_data[2] for sbom_data in sbom.values())))
+    packages = tuple(sorted(set(sbom_data["package"] for sbom_data in sbom.values())))
     packages_info: dict[str, tuple] = {}
     for package_name in packages:
         # shorten the package name:
@@ -1070,9 +1084,18 @@ def rec_sbom() -> None:
             debug(f"unexpected package prefix: {package!r}")
         # keep only the keys relevant to the sbom:
         info = get_package_info(package_name)
-        packages_info[package] = {key: info.get(key, "") for key in (
-            "Name", "Version", "Description", "Architecture", "URL", "Licenses",
-        ) if key in info}
+        exported_info = {}
+        for key in (
+            "Name", "Version", "Description",
+            "Architecture", "URL", "Licenses", "Depends On", "Required By",
+        ):
+            value = info.get(key)
+            if str(value) == "None":
+                continue
+            if key in ("Depends On", "Required By"):
+                value = [x.strip() for x in str(value).split(" ") if x.strip()]
+            exported_info[key] = value
+        packages_info[package] = exported_info
 
     debug(f"recording sbom data: {len(sbom)} paths, {len(packages)} packages")
     with open(BUILD_INFO, "a") as f:
@@ -1083,6 +1106,20 @@ def rec_sbom() -> None:
     # also replace it in the target directory:
     find_delete(LIB_DIR, os.path.basename(BUILD_INFO))
     copyfile(BUILD_INFO, f"{LIB_DIR}/{BUILD_INFO}")
+
+
+def export_sbom() -> None:
+    WIN_PYTHON = "C:\\Program Files\\Python312\\python.exe"
+    SBOM_SCRIPT = "packaging\\MSWindows\\cyclonedx_sbom.py"
+    output = f"{DIST}/{SBOM_JSON}"
+    delfile(output)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = "."
+    log_command([WIN_PYTHON, SBOM_SCRIPT, output], "export-sbom.log", env=env)
+    # make a copy that can be distributed separately:
+    SBOM_FILENAME = f"Xpra{version_info.extra}{version_info.arch_info}_{version_info.full_string}.json"
+    delfile(SBOM_FILENAME)
+    copyfile(output, SBOM_FILENAME)
 
 
 def verpatch() -> None:
@@ -1263,6 +1300,7 @@ def build(args) -> None:
     rec_options(args)
     if args.sbom:
         rec_sbom()
+        export_sbom()
 
     if args.zip_modules:
         zip_modules(args.light)
@@ -1301,6 +1339,9 @@ def main(argv):
         arg = unknownargs[1]
         if arg == "sbom":
             rec_sbom()
+        elif arg == "export-sbom":
+            load_version_info(args.light)
+            export_sbom()
         elif arg == "gen-caches":
             gen_caches()
         elif arg == "zip":
