@@ -855,7 +855,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         from xpra.gtk.configure.main import main
         return main(args)
     if mode == "sbom":
-        return run_sbom()
+        return run_sbom(args)
     if mode == "showconfig":
         return run_showconfig(options, args)
     if mode == "showsetting":
@@ -4446,7 +4446,7 @@ def show_ssl(options, args, cmdline) -> ExitValue:
     return ExitCode.OK
 
 
-def run_sbom() -> ExitValue:
+def run_sbom(args: list[str]) -> ExitValue:
     from xpra import build_info
     if not (WIN32 or OSX):
         print("please refer to your package manager")
@@ -4455,6 +4455,8 @@ def run_sbom() -> ExitValue:
     if not sbom:
         raise RuntimeError("the sbom is missing!")
     print(f"# {len(sbom)} path entries:")
+    if args:
+        sbom = {k:v for k, v in sbom.items() if any(k.find(arg) >= 0 for arg in args)}
     for path, package_info in sbom.items():
         package = package_info["package"]
         version = package_info["version"]
@@ -4463,6 +4465,8 @@ def run_sbom() -> ExitValue:
     packages = getattr(build_info, "packages", {})
     if not packages:
         raise RuntimeError("the packages list is missing!")
+    if args:
+        packages = {k:v for k, v in packages.items() if any(k.find(arg) >= 0 for arg in args)}
     print(f"# {len(packages)} packages:")
     for package, pinfo in packages.items():
         print(f"{package}:")
