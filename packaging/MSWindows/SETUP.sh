@@ -54,6 +54,8 @@ echo "and innosetup":
 echo "https://jrsoftware.org/isdl.php"
 echo "to generate the MSI, install MSIWrapper:"
 echo "https://www.exemsi.com/"
+echo "to generate the SBOM, install Python 3.12.x for MS Windows"
+echo "then install cyclonedx-py using pip"
 echo
 echo "for printing support, install libpdfium"
 echo "by downloading the plain x64 pdfium binary from"
