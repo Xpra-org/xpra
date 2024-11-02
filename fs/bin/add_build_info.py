@@ -136,7 +136,7 @@ def get_compiler_version() -> str:
         for line in lines:
             if line.startswith("Apple"):
                 return line
-        return None
+        return ""
     return get_first_line_output(cc_version)
 
 
@@ -147,7 +147,7 @@ def get_linker_version() -> str:
         for line in lines:
             if line.find("using: ")>0:
                 return line.split("using: ", 1)[1]
-        return None
+        return ""
     ld_version = "%s --version" % os.environ.get("LD", "ld")
     return get_first_line_output(ld_version)
 

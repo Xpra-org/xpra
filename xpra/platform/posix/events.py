@@ -131,9 +131,7 @@ def add_handler(event: str, handler: Callable) -> None:
         # same event via login1:
         if event in ("suspend", "resume"):
             def prepare_for_sleep(suspend) -> None:
-                if suspend and event == "suspend":
-                    forward(suspend)
-                elif not suspend and event == "resume":
+                if (suspend and event == "suspend") or (not suspend and event == "resume"):
                     forward(suspend)
             add(get_system_bus, prepare_for_sleep, "PrepareForSleep", LOGIN1_IFACE_NAME, LOGIN1_BUS_NAME)
 
