@@ -1068,6 +1068,7 @@ def rec_sbom() -> None:
 
     # summary: list of packages
     packages = tuple(sorted(set(sbom_data["package"] for sbom_data in sbom.values())))
+    debug(f"adding package info for {packages}")
     packages_info: dict[str, tuple] = {}
     for package_name in packages:
         # shorten the package name:
@@ -1087,12 +1088,12 @@ def rec_sbom() -> None:
         exported_info = {}
         for key in (
             "Name", "Version", "Description",
-            "Architecture", "URL", "Licenses", "Depends On", "Required By",
+            "Architecture", "URL", "Licenses", "Depends On", "Required By", "Provides",
         ):
             value = info.get(key)
             if str(value) == "None":
                 continue
-            if key in ("Depends On", "Required By"):
+            if key in ("Depends On", "Required By", "Provides"):
                 value = [x.strip() for x in str(value).split(" ") if x.strip()]
             exported_info[key] = value
         packages_info[package] = exported_info

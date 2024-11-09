@@ -54,11 +54,16 @@ for package_name, info in packages.items():
     bom.components.add(component)
     components[package_name] = component
     names[info.get("Name", package_name)] = package_name
+    provides = info.get("Provides", ())
+    for provided in provides:
+        if provided not in names:
+            names[provided] = package_name
     if not info.get("Required By"):
         bom.register_dependency(root_component, [component])
     deps = info.get("Depends On")
     if deps:
         dependencies[package_name] = deps
+
 
 # now resolve the intra component dependencies:
 for package_name, deps in dependencies.items():
@@ -79,7 +84,8 @@ for package_name, deps in dependencies.items():
             ):
                 continue
             sys.stderr.write(f"Warning: {dep!r} not found, dependency of {package_name}\n")
-    bom.register_dependency(component, dep_components)
+    if dep_components:
+        bom.register_dependency(component, dep_components)
 
 json = JsonV1Dot5(bom).output_as_string(indent=2)
 
