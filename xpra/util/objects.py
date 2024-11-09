@@ -134,24 +134,24 @@ class typedict(dict):
         from xpra.log import Logger
         Logger("util").warn(msg, *args)
 
-    def conv_get(self, strkey: str, default=None, conv=None):
-        if strkey in self:
-            v = super().get(strkey)
+    def conv_get(self, key: str | int, default=None, conv=None):
+        if key in self or not isinstance(key, str):
+            v = super().get(key)
         else:
             # try harder by recursing:
             d = self
-            while strkey.find(".") > 0:
-                prefix, k = strkey.split(".", 1)
+            while key.find(".") > 0:
+                prefix, k = key.split(".", 1)
                 if prefix not in d:
                     return default
                 v = d[prefix]
                 if not isinstance(v, dict):
                     return default
                 d = v
-                strkey = k
-            if strkey not in d:
+                key = k
+            if key not in d:
                 return default
-            v = dict.get(d, strkey)
+            v = dict.get(d, key)
         if isinstance(v, dict) and conv and conv in (bytestostr, strtobytes, int, bool):
             d = typedict(v)
             if "" in d:
@@ -159,7 +159,7 @@ class typedict(dict):
         try:
             return conv(v)
         except (TypeError, ValueError, AssertionError) as e:
-            self._warn(f"Warning: failed to convert {strkey!r}")
+            self._warn(f"Warning: failed to convert {key!r}")
             self._warn(f" from {type(v)} using {conv}: {e}")
             return default
 
