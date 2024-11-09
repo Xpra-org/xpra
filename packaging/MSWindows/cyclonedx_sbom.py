@@ -78,8 +78,13 @@ for package_name, deps in dependencies.items():
             if package_name.find("gst") >= 0:
                 continue
             if any(dep.endswith(f"-{suffix}") for suffix in (
+                # only needed at build time:
                 "cc", "python-build", "python-installer", "python-packaging",
-                "tcl", "tk", "headers",
+                # gtk dependencies we don't need:
+                "gtk-update-icon-cache", "shared-mime-info", "json-glib",
+                "adwaita-icon-theme",
+                # python dependencies we don't want:
+                "tcl", "tk", "headers", "tzdata",
             )
             ):
                 continue
