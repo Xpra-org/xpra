@@ -1519,7 +1519,7 @@ def clean() -> None:
 
 def add_build_info(*args) -> None:
     cmd = [sys.executable, "./fs/bin/add_build_info.py"]+list(args)
-    r = subprocess.Popen(cmd).wait(TIMEOUT)
+    r = subprocess.Popen(cmd).wait(TIMEOUT * (1 + 10 * OSX))
     assert r==0, "'%s' returned %s" % (" ".join(cmd), r)
 
 
