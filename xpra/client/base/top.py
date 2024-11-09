@@ -205,8 +205,10 @@ class TopClient:
     def update_loop(self):
         while self.exit_code is None:
             self.update_screen()
+            # elapsed is in milliseconds:
             elapsed = int(1000 * monotonic() - self.last_getch)
-            delay = 1 + max(999, min(1000, 1000 - elapsed)) // 100
+            # delay is in tenths of a second (1 to 10 here):
+            delay = max(1, min(1000, 1000 - elapsed) // 100)
             curses.halfdelay(delay)
             try:
                 v = self.stdscr.getch()
