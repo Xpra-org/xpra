@@ -1,0 +1,6 @@
+--- a/OpenGL/version.py	2024-11-10 00:15:51.762734061 +0700
++++ b/OpenGL/version.py	2024-11-10 00:15:58.159686979 +0700
+@@ -1,2 +1,2 @@
+ """Declares the current version for use in setuptools and the like"""
+-__version__ = "3.1.7"
++__version__ = "3.1.8"
