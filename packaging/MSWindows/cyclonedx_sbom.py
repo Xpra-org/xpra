@@ -85,6 +85,13 @@ for package_name, deps in dependencies.items():
                 "adwaita-icon-theme",
                 # python dependencies we don't want:
                 "tcl", "tk", "headers", "tzdata",
+                # webp tools can use this, but we don't ship them:
+                "giflib",
+                # cairo, why?
+                "lzo2",
+                # could this be due to outdated dependencies?
+                # paramiko and pyu2f work just fine without it:
+                "python-six",
             )
             ):
                 continue
