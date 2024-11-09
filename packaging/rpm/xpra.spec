@@ -59,7 +59,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.2.1
+Version:			6.2.2
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -905,6 +905,8 @@ fi
 
 
 %changelog
+* Sat Nov 09 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
+- TODO
 * Tue Oct 29 2024 Antoine Martin <antoine@xpra.org> 6.2.1-10
 - System tray:
    paint errors with `mmap` mode

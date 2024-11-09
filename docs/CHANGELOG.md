@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.2.2] 2024-11-09
+* TODO
+
 ## [6.2.1] 2024-10-29
 * System tray:
     * [paint errors with `mmap` mode](https://github.com/Xpra-org/xpra/commit/42e039eb3b5ab256a926f6be530ce5e54be96742)
