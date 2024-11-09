@@ -670,6 +670,7 @@ def install_repo(repo_variant="") -> None:
             raise ValueError(f"Debian / Ubuntu variant {variant} is not supported by this subcommand")
         to = "/etc/apt/sources.list.d/"
         setup_cmds.append(["wget", "-O", "/usr/share/keyrings/xpra.asc", "https://xpra.org/xpra.asc"])
+        setup_cmds.append(["chmod", "644", "/usr/share/keyrings/xpra.asc"])
         setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra.sources", to])
         if repo_variant == "-beta":
             setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra-beta.sources", to])
