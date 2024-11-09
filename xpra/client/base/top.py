@@ -58,15 +58,16 @@ def curses_init():
     curses.noecho()
     curses.raw()
     curses.start_color()
-    try:
-        curses.use_default_colors()
-        curses.init_pair(WHITE, curses.COLOR_WHITE, curses.COLOR_BLACK)
-        curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
-        curses.init_pair(YELLOW, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-        curses.init_pair(RED, curses.COLOR_RED, curses.COLOR_BLACK)
-    except Exception:
-        # this can fail on some terminals, ie: mingw
-        pass
+    if curses.can_change_color():
+        try:
+            curses.use_default_colors()
+            curses.init_pair(WHITE, curses.COLOR_WHITE, curses.COLOR_BLACK)
+            curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
+            curses.init_pair(YELLOW, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+            curses.init_pair(RED, curses.COLOR_RED, curses.COLOR_BLACK)
+        except Exception:
+            # this can fail on some terminals, ie: mingw
+            pass
     # for i in range(0, curses.COLORS):
     #    curses.init_pair(i+1, i, -1)
     return stdscr
@@ -212,6 +213,7 @@ class TopClient:
             except Exception:
                 v = -1
             self.last_getch = int(1000 * monotonic())
+            print(f"getch()={v}")
             if v in EXIT_KEYS:
                 self.exit_code = 0
             if v in SIGNAL_KEYS:
