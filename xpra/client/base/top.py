@@ -647,10 +647,9 @@ class TopSessionClient(InfoTimerClient):
             gui_clients = []
             nclients = 0
             while True:
-                ci = client_info.dictget(nclients)
-                if not ci:
+                if nclients not in client_info:
                     break
-                ci = self.td(ci)
+                ci = self.td(client_info.dictget(nclients))
                 session_id = ci.strget("session-id")
                 if session_id != self.session_id and ci.boolget("windows", True) and ci.strget("type") != "top":
                     gui_clients.append(nclients)
