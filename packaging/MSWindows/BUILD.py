@@ -481,13 +481,16 @@ def fixups(light: bool) -> None:
     if os.path.exists(gen):
         rmrf(gen)
     debug("gdk loaders")
-    if light:
-        lpath = os.path.join(LIB_DIR, "gdk-pixbuf-2.0", "2.10.0", "loaders")
-        KEEP_LOADERS = ("jpeg", "png", "xpm", "svg", "wmf")
-        for filename in os.listdir(lpath):
-            if not any(filename.find(keep) for keep in KEEP_LOADERS):
-                debug(f"removing {filename!r}")
-                os.unlink(os.path.join(lpath, filename))
+    lpath = os.path.join(LIB_DIR, "gdk-pixbuf-2.0", "2.10.0", "loaders")
+    KEEP_LOADERS = ["jpeg", "png", "xpm", "svg", "wmf", "ico"]
+    if not light:
+        KEEP_LOADERS += ["pnm", "tiff", "icns"]
+    loaders = os.listdir(lpath)
+    debug(f"loaders({lpath})={loaders}")
+    for filename in loaders:
+        if not filename.endswith(".dll") or not any(filename.find(keep) >= 0 for keep in KEEP_LOADERS):
+            debug(f"removing {filename!r}")
+            os.unlink(os.path.join(lpath, filename))
     debug("remove ffmpeg libraries")
     for libname in ("avcodec", "avformat", "avutil", "swscale", "swresample", "zlib1", "xvidcore"):
         find_delete(LIB_DIR, libname)
