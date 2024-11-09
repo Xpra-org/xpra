@@ -269,6 +269,7 @@ printing_ENABLED        = DEFAULT
 crypto_ENABLED          = DEFAULT
 mdns_ENABLED            = DEFAULT
 websockets_ENABLED      = DEFAULT
+websockets_browser_cookie_ENABLED = DEFAULT
 
 codecs_ENABLED          = DEFAULT
 encoders_ENABLED        = codecs_ENABLED
@@ -410,7 +411,7 @@ SWITCHES += [
     "shadow", "proxy", "rfb", "quic", "http", "ssh",
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
-    "win32_tools",
+    "win32_tools", "websockets_browser_cookie",
 ]
 SWITCHES = list(sorted(set(SWITCHES)))
 
@@ -849,7 +850,7 @@ external_excludes = [
     # formats we don't use:
     "GimpGradientFile", "GimpPaletteFile", "BmpImagePlugin", "TiffImagePlugin",
     # not used:
-    "curses", "pdb",
+    "pdb",
     "tty",
     "setuptools", "doctest",
     "nose", "pytest", "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
@@ -1810,9 +1811,12 @@ if WIN32:
                 "shlex",                # for parsing "open-command"
                 "ftplib", "fileinput",  # for version check
                 "urllib", "http.cookiejar", "http.client",
-                # for websocket browser cookie:
-                "browser_cookie3", "pyaes", "pbkdf2", "keyring",
             ]
+            if websockets_browser_cookie_ENABLED:
+                # for websocket browser cookie:
+                external_includes += ["browser_cookie3", "pyaes", "pbkdf2", "keyring"]
+            else:
+                remove_packages("keyring")
 
         # hopefully, cx_Freeze will fix this horror:
         #(we shouldn't have to deal with DLL dependencies)
