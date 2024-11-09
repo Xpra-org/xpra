@@ -18,16 +18,15 @@
 %global srcname PyOpenGL
 
 Name:           %{python3}-pyopengl
-Version:        3.1.7
-Release:        8%{?dist}
+Version:        3.1.8
+Release:        1%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
-Source0:        https://files.pythonhosted.org/packages/source/P/%{srcname}/%{srcname}-%{version}.tar.gz
-Source1:        https://files.pythonhosted.org/packages/source/P/%{srcname}-accelerate/%{srcname}-accelerate-%{version}.tar.gz
+Source0:        https://github.com/mcfletch/pyopengl/archive/refs/tags/release-%{version}.tar.gz
 Patch0:         pyopengl-egl-open-warning.patch
 Patch1:         pyopengl-py3.13-nonumpy.patch
-Patch2:         pyopengl-py3.12-ctypes.patch
+Patch2:         pyopengl-version.patch
 
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
@@ -64,40 +63,30 @@ Requires:       %{python3}-tkinter
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "eef31a3888e6984fd4d8e6c9961b184c9813ca82604d37fe3da80eb000a76c86" ]; then
+if [ "${sha256}" != "78f4016f13705d66dc89d5d046eee660c2f5f0915e5ecfeeed79dffac741bc97" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-sha256=`sha256sum %{SOURCE1} | awk '{print $1}'`
-if [ "${sha256}" != "2b123621273a939f7fd2ec227541e399f9b5d4e815d69ae0bdb1b6c70a293680" ]; then
-	echo "invalid checksum for %{SOURCE1}"
-	exit 1
-fi
-%setup -q -c -n %{srcname}-%{version} -T -a0 -a1
-pushd %{srcname}-%{version}
+%setup -q -c -n %{srcname}-%{version}
+pushd pyopengl-release-%{version}
 %patch -p1 -P 0
-# doesn't hurt to apply in all cases:
+%patch -p1 -P 1
 %patch -p1 -P 2
 popd
-%if 0%{?fedora}>39
-pushd %{srcname}-accelerate-%{version}
-%patch -p1 -P 1
-popd
-%endif
 
 
 %build
-for dir in %{srcname}-%{version} %{srcname}-accelerate-%{version} ; do
-    pushd $dir
-	%{python3} setup.py build
+for srcdir in pyopengl-release-%{version} pyopengl-release-%{version}/accelerate; do
+    pushd $srcdir
+    %{python3} setup.py build
     popd
 done
 
 
 %install
-for dir in %{srcname}-%{version} %{srcname}-accelerate-%{version} ; do
-    pushd $dir
-	%{python3} setup.py install -O1 --skip-build --root %{buildroot}
+for srcdir in pyopengl-release-%{version} pyopengl-release-%{version}/accelerate; do
+    pushd $srcdir
+    %{python3} setup.py install -O1 --skip-build --root %{buildroot}
     popd
 done
 
@@ -113,12 +102,12 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %files
-%license %{srcname}-%{version}/license.txt
-%{python3_sitelib}/%{srcname}-%{version}-py*.egg-info
+%license pyopengl-release-%{version}/license.txt
 %{python3_sitelib}/OpenGL/
+%{python3_sitelib}/PyOpenGL*.egg-info
 %exclude %{python3_sitelib}/OpenGL/Tk
 %{python3_sitearch}/OpenGL_accelerate/
-%{python3_sitearch}/%{srcname}_accelerate-%{version}-py*.egg-info/
+%{python3_sitearch}/PyOpenGL_accelerate*.egg-info
 
 
 %files -n %{python3}-pyopengl-tk
@@ -126,6 +115,9 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Sat Nov 09 2024 Antoine Martin <antoine@xpra.org> - 3.1.8-1
+- build new release from github archive, match merged layout
+
 * Sat Aug 17 2024 Antoine Martin <antoine@xpra.org> - 3.1.7-8
 - added cython dependency to re-generate the C bindings
 
