@@ -48,8 +48,9 @@ def load_dbus() -> bool:
         return True
     except ImportError as e:
         log("system_bus()", exc_info=True)
-        log.warn("Warning: cannot setup dbus signals")
-        log.warn(f" {e}")
+        if first_time("no-dbus"):
+            log.warn("Warning: cannot setup dbus signals")
+            log.warn(f" {e}")
     return False
 
 
