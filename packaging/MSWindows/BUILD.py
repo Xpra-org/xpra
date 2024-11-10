@@ -492,6 +492,16 @@ def fixups(light: bool) -> None:
         if not filename.endswith(".dll") or not any(filename.find(keep) >= 0 for keep in KEEP_LOADERS):
             debug(f"removing {filename!r}")
             os.unlink(os.path.join(lpath, filename))
+    debug("gio modules")
+    BUNDLE_GIO = ["libproxy", "openssl"]
+    if not light:
+        BUNDLE_GIO += ["gnutls"]
+    os.mkdir(f"{LIB_DIR}/gio")
+    os.mkdir(f"{LIB_DIR}/gio/modules")
+    for modname in BUNDLE_GIO:
+        gio_filename = f"gio/modules/libgio{modname}.dll"
+        copyfile(f"{MINGW_PREFIX}/lib/{gio_filename}", f"{LIB_DIR}/{gio_filename}")
+    log_command(f"gio-querymodules.exe {LIB_DIR}/gio/modules", "gio-cache.log")
     debug("remove ffmpeg libraries")
     for libname in ("avcodec", "avformat", "avutil", "swscale", "swresample", "zlib1", "xvidcore"):
         find_delete(LIB_DIR, libname)
