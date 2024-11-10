@@ -131,11 +131,14 @@ if [ "$?" != "0" ]; then
 fi
 echo "py2app forgets AVFoundation, do it by hand:"
 rsync -rplogt ${JHBUILD_PREFIX}/lib/python3.${PYTHON_MINOR_VERSION}/site-packages/AVFoundation ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
-echo "fixup pkg_resources.py2_warn and gi: force include the whole packages"
-for m in pkg_resources gi; do
+echo "fixup pkg_resources.py2_warn, gi, cffi: force include the whole packages"
+for m in pkg_resources gi cffi; do
 	mpath=`python3 -c "import os;import $m;print(os.path.dirname($m.__file__))"`
 	cp -r $mpath ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
 done
+mpath=`python3 -c "import _cffi_backend;print(_cffi_backend.__file__)"`
+cp $mpath ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/lib-dynload/
+
 echo "OK"
 popd
 echo "py2app forgets uvloop._noop"
