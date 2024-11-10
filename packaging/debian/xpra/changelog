@@ -7,7 +7,9 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - match `comtypes` module changes
    - run CI on Ubuntu 22.04 image
    - generate SBOM for MS Windows builds
+   - record which repository is targeted
   * Major:
+   - `xpra top` corrupted output, initialization failure
    - verify ssl certificates can be accessed - not just the parent directory
    - automatic re-connection path errors with MS Windows clients
    - ssl redirection errors
@@ -20,12 +22,13 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - support pointer polling
    - version update dialog cannot be closed
    - prevent missing menu data from causing connection errors
+   - redirection context errors should not propagate
   * Cosmetic:
    - silence http timeouts
    - typo in manpage
    - remove unused logger]
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 28 Sep 2024 22:40:31 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 11 Nov 2024 01:26:27 +0700
 
 xpra (5.0.10-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

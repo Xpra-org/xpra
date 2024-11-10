@@ -785,7 +785,7 @@ fi
 
 
 %changelog
-* Mon Oct 28 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
+* Mon Nov 11 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:
    don't build ffmpeg encoder on MacOS
    RPM builds without nvidia codecs failed
@@ -794,7 +794,9 @@ fi
    match `comtypes` module changes
    run CI on Ubuntu 22.04 image
    generate SBOM for MS Windows builds
+   record which repository is targeted
 - Major:
+   `xpra top` corrupted output, initialization failure
    verify ssl certificates can be accessed - not just the parent directory
    automatic re-connection path errors with MS Windows clients
    ssl redirection errors
@@ -807,6 +809,7 @@ fi
    support pointer polling
    version update dialog cannot be closed
    prevent missing menu data from causing connection errors
+   redirection context errors should not propagate
 - Cosmetic:
    silence http timeouts
    typo in manpage
