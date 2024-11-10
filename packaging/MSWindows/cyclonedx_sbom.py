@@ -96,6 +96,8 @@ for package_name, deps in dependencies.items():
                 "ca-certificates",
                 # we skip the gnome bits of glib-networking:
                 "gsettings-desktop-schemas",
+                # libproxy wants this package, but we don't:
+                "duktape",
             )
             ):
                 continue

@@ -601,9 +601,9 @@ def delete_dlls(light: bool) -> None:
     # remove codecs we don't need:
     delete_libs("libx265*", "libjxl*", "libde265*", "libkvazaar*")
     if light:
+        # let's keep kerberos / gss libs because clients can use them:
+        # "libshishi*", "libgss*"
         delete_libs(
-            # kerberos / gss libs:
-            "libshishi*", "libgss*",
             # no dbus:
             "libdbus*",
             # no AV1:
@@ -613,7 +613,7 @@ def delete_dlls(light: bool) -> None:
             # remove h264 encoder:
             "libx264*",
             # should not be needed:
-            "libsqlite*", "libp11-kit*",
+            "libp11-kit*",
             # extra audio codecs (we just keep vorbis and opus):
             "libmp3*", "libwavpack*", "libmpdec*", "libFLAC*", "libmpg123*", "libfaad*", "libfaac*",
         )

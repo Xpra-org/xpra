@@ -1764,7 +1764,7 @@ if WIN32:
             add_DLLs("qrencode")
             # python-gssapi authentication:
             add_DLLs("gss")
-            packages.append("decorator")
+            add_modules("decorator")
 
         # only really used by sqlite auth:
         # (but also potentially by python itself)
