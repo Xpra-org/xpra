@@ -610,11 +610,10 @@ class TopSessionClient(MonitorXpraClient):
             client_info = self.slidictget("client")
             client_no = 0
             while True:
-                ci = client_info.dictget(client_no)
-                if not ci:
+                if nclients not in client_info:
                     break
+                ci = self.td(client_info.dictget(nclients))
                 client_no +=1
-                ci = typedict(ci)
                 session_id = ci.strget("session-id")
                 if session_id:
                     #don't show ourselves:
