@@ -1,0 +1,1 @@
+deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/xpra.gpg] https://xpra.org/lts/ jammy main
