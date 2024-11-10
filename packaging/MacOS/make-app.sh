@@ -136,7 +136,7 @@ for m in pkg_resources gi cffi; do
 	mpath=`python3 -c "import os;import $m;print(os.path.dirname($m.__file__))"`
 	cp -r $mpath ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/
 done
-mpath=`python3 -c "import _cffi_backend;print($m.__file__)"`
+mpath=`python3 -c "import _cffi_backend;print(_cffi_backend.__file__)"`
 cp $mpath ./dist/xpra.app/Contents/Resources/lib/python3.${PYTHON_MINOR_VERSION}/lib-dynload/
 
 echo "OK"
