@@ -92,6 +92,10 @@ for package_name, deps in dependencies.items():
                 # could this be due to outdated dependencies?
                 # paramiko and pyu2f work just fine without it:
                 "python-six",
+                # libcurl may use them, instead we only rely on the OS:
+                "ca-certificates",
+                # we skip the gnome bits of glib-networking:
+                "gsettings-desktop-schemas",
             )
             ):
                 continue
