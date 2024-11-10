@@ -1,7 +1,16 @@
 # Changelog
 
 ## [6.2.2] 2024-11-09
-* TODO
+* Platforms, build and packaging:
+    * [`install-repo` file permission on Debian](https://github.com/Xpra-org/xpra/commit/d6ed81dfce74283c8ad8f772e3a3269164cbf84e)
+    * [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/fe83ee09b17c2a7e26b228a1d5fc208aa347c2aa)
+    * [`libproxy` support for MS Windows clients](https://github.com/Xpra-org/xpra/commit/1e9e6ac3983ea23c1ce3e3114b62f8cdaa30a5f0)
+    * [`PyOpenGL 3.1.8`](https://github.com/Xpra-org/xpra/commit/eb5f228919fadfed7a52ab6124f219e385645448)
+    * [missing MacOS AES library](https://github.com/Xpra-org/xpra/commit/25b568965ddb388f3d21d666a722043dbf02351b)
+* Major:
+    * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/129c5b1f2695ce2f085268134b1273cf94c4e56f), [initialization failure](https://github.com/Xpra-org/xpra/commit/fc8638d436fa09e98f2ecb324d249b4145763955)
+* Cosmetic:
+    * [add `pyopenssl` to dependencies documenation](https://github.com/Xpra-org/xpra/commit/4e7941fa8d18e6b90fa257bad34401a5aad5c81f)
 
 ## [6.2.1] 2024-10-29
 * System tray:
