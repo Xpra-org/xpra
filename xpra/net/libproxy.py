@@ -23,13 +23,19 @@
 A library for proxy configuration and autodetection.
 """
 
+import os
+
 from ctypes import POINTER, cast, c_void_p, c_char_p
 import ctypes.util
 
 def _load(name, *versions):
     for ver in versions:
+        if os.name == "nt":
+            libname = f"lib{name}-{ver}"
+        else:
+            libname = f"lib{name}.so.{ver}"
         try:
-            return ctypes.cdll.LoadLibrary(f'lib{name}.so.{ver}')
+            return ctypes.cdll.LoadLibrary(libname)
         except Exception:
             pass
     name_ver = ctypes.util.find_library(name)

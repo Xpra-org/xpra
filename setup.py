@@ -1505,6 +1505,8 @@ if WIN32:
         if client_ENABLED:
             #svg pixbuf loader:
             add_DLLs("rsvg", "croco")
+            # gio module and `xpra.net.libproxy`:
+            add_DLLs("proxy-1")
 
         if client_ENABLED or server_ENABLED:
             add_DLLs("qrencode")
