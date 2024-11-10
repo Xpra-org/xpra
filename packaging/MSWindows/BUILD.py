@@ -725,7 +725,7 @@ def zip_modules(light: bool) -> None:
     ZIPPED = [
         "OpenGL", "encodings", "future", "paramiko", "html",
         "pyasn1", "asn1crypto", "async_timeout",
-        "certifi", "OpenSSL", "pkcs11", "keyring",
+        "certifi", "OpenSSL", "keyring",
         "ifaddr", "pyaes", "service_identity",
         "re", "platformdirs", "attr", "setproctitle", "pyvda", "zipp",
         "distutils", "comtypes", "email", "multiprocessing", "packaging",
@@ -1049,8 +1049,9 @@ def rec_sbom() -> None:
         cuda_version = version_data["cuda"]["version"]
         sbom[path] = (0, "", "cuda", cuda_version)
 
-    debug("adding DLLs and EXEs")
-    for globbed_path in find_glob_paths(DIST, "*.dll") + find_glob_paths(LIB_DIR, "*.exe"):
+    globbed_paths = find_glob_paths(DIST, "*.dll") + find_glob_paths(LIB_DIR, "*.exe")
+    debug(f"adding DLLs and EXEs: {globbed_paths}")
+    for globbed_path in globbed_paths:
         path = globbed_path[len(DIST)+1:]
         if path.startswith("lib/PyQt6"):
             rec_pyqt_lib(path)
@@ -1296,6 +1297,8 @@ def build(args) -> None:
         trim_python_libs()
         trim_pillow()
         fixup_zeroconf()
+        if args.light:
+            delete_libs(*EXTRA_PYTHON_MODULES)
         rm_empty_dirs()
 
     add_cuda(args.cuda)
@@ -1324,9 +1327,6 @@ def build(args) -> None:
     if args.sbom:
         rec_sbom()
         export_sbom()
-
-    if args.light:
-        delete_libs(EXTRA_PYTHON_MODULES)
 
     if args.zip_modules:
         zip_modules(args.light)
