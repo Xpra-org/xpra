@@ -1758,10 +1758,17 @@ if WIN32:
             # svg pixbuf loader:
             add_DLLs("rsvg", "croco")
             # gio module and `xpra.net.libproxy`:
-            add_DLLs("proxy-1")
+            add_DLLs("proxy")
 
         if client_ENABLED or server_ENABLED:
             add_DLLs("qrencode")
+            # python-gssapi authentication:
+            add_DLLs("gss")
+            packages.append("decorator")
+
+        # only really used by sqlite auth:
+        # (but also potentially by python itself)
+        add_DLLs("sqlite3")
 
         if audio_ENABLED:
             add_dir("share", ["gst-plugins-base", "gstreamer-1.0"])
