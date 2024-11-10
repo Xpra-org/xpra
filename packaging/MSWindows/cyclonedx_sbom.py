@@ -85,6 +85,11 @@ for package_name, deps in dependencies.items():
                 "adwaita-icon-theme",
                 # python dependencies we don't want:
                 "tcl", "tk", "headers", "tzdata",
+                # python works fine without `mpdec` so perhaps the current builds of Python
+                # do not yet use the unbundled mpdec library and the MSYS2 package dependencies are therefore wrong?
+                # in any case, it will become a hard dependency in python 3.13: /mingw64/bin/libmpdec-4.dll
+                # at which point this workaround can be removed:
+                "mpdecimal",
                 # webp tools can use this, but we don't ship them:
                 "giflib",
                 # cairo, why?
@@ -98,6 +103,10 @@ for package_name, deps in dependencies.items():
                 "gsettings-desktop-schemas",
                 # libproxy wants this package, but we don't:
                 "duktape",
+                # ncurses works just fine without it:
+                "libsystre",
+                # sqlite tools use this, but we don't ship them:
+                "readline",
             )
             ):
                 continue

@@ -54,6 +54,12 @@ NPROCS = int(os.environ.get("NPROCS", os.cpu_count()))
 
 BUILD_CUDA_KERNEL = "packaging\\MSWindows\\BUILD_CUDA_KERNEL.BAT"
 
+EXTRA_PYTHON_MODULES = [
+    "unittest", "psutil", "pynvml",
+    "browser_cookie3",
+    "gssapi", "ldap", "ldap3", "pyu2f", "sqlite3",
+]
+
 
 def parse_command_line(argv: list[str]):
     from argparse import ArgumentParser, BooleanOptionalAction
@@ -589,6 +595,7 @@ def delete_dist_files(*exps: str) -> None:
 
 
 def delete_libs(*exps: str) -> None:
+    debug(f"deleting libraries: {exps}")
     delete_dist_files(*(f"lib/{exp}" for exp in exps))
 
 
@@ -729,11 +736,8 @@ def zip_modules(light: bool) -> None:
         "concurrent", "collections",
         "asyncio",
     ]
-    EXTRAS = ["unittest", "gssapi", "browser_cookie3", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
-    if light:
-        delete_libs(*EXTRAS)
-    else:
-        ZIPPED += EXTRAS
+    if not light:
+        ZIPPED += EXTRA_PYTHON_MODULES
     log_command(["zip", "--move", "-ur", "library.zip"] + ZIPPED, "zip.log", cwd=LIB_DIR)
 
 
@@ -1071,7 +1075,7 @@ def rec_sbom() -> None:
     debug("adding python modules")
     SKIP_DIRS = (
         "xpra", "tlb",
-        "gi", "girepository-1.0", "gstreamer-1.0", "gtk-3.0", "gdk-pixbuf-2.0",
+        "gi", "gio", "pkcs11", "girepository-1.0", "gstreamer-1.0", "gtk-3.0", "gdk-pixbuf-2.0",
     )
     for child in os.listdir(LIB_DIR):
         if child in SKIP_DIRS or child.endswith(".dll"):
@@ -1079,6 +1083,10 @@ def rec_sbom() -> None:
         path = os.path.join(LIB_DIR, child)
         if os.path.isdir(path) or path.endswith(".py") or path.endswith(".pyd"):
             rec_py_lib(os.path.join("lib", child))
+    # add this one by hand because cx_Freeze hides it in `library.zip`,
+    # and we don't want to start unpacking a large ZIP file and converting .pyc to .py
+    # just for one filename:
+    rec_py_lib(os.path.join("lib", "decorator.py"))
 
     # summary: list of packages
     packages = tuple(sorted(set(sbom_data["package"] for sbom_data in sbom.values())))
@@ -1316,6 +1324,9 @@ def build(args) -> None:
     if args.sbom:
         rec_sbom()
         export_sbom()
+
+    if args.light:
+        delete_libs(EXTRA_PYTHON_MODULES)
 
     if args.zip_modules:
         zip_modules(args.light)
