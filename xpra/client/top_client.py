@@ -46,8 +46,9 @@ EXIT_KEYS = (ord("q"), ord("Q"))
 PAUSE_KEYS = (ord("p"), ord("P"))
 SIGNAL_KEYS = {
     3 : signal.SIGINT,
-    26 : signal.SIGSTOP,
-    }
+}
+if hasattr(signal, "SIGSTOP"):
+    SIGNAL_KEYS[26] = signal.SIGSTOP
 
 
 def get_title():
@@ -62,13 +63,15 @@ def curses_init():
     curses.noecho()
     curses.raw()
     curses.start_color()
-    curses.use_default_colors()
-    #for i in range(0, curses.COLORS):
-    #    curses.init_pair(i+1, i, -1)
-    curses.init_pair(WHITE, curses.COLOR_WHITE, curses.COLOR_BLACK)
-    curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    curses.init_pair(YELLOW, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-    curses.init_pair(RED, curses.COLOR_RED, curses.COLOR_BLACK)
+    try:
+        curses.use_default_colors()
+        curses.init_pair(WHITE, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(YELLOW, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(RED, curses.COLOR_RED, curses.COLOR_BLACK)
+    except Exception:
+        # this can fail on some terminals, ie: mingw
+        pass
     return stdscr
 
 def curses_clean(stdscr):
