@@ -61,12 +61,12 @@ def full_version_str() -> str:
         if BRANCH == "master":
             rstr += " beta"
     try:
-        from xpra.build_info import BUILD_TYPE
-    except ImportError:
-        pass
-    else:
-        if BUILD_TYPE.lower() == "light":
+        from xpra.build_info import build
+        btype = build["type"]
+        if btype == "light":
             rstr += " (light build)"
+    except (ImportError, KeyError):
+        pass
     return rstr
 
 

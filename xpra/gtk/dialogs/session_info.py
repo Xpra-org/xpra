@@ -199,9 +199,11 @@ def get_server_builddate(client) -> str:
 
 def get_local_builddate() -> str:
     try:
-        from xpra.build_info import BUILD_DATE, BUILD_TIME
-        return make_datetime(BUILD_DATE, BUILD_TIME)
-    except ImportError:
+        from xpra.build_info import build
+        date = build["date"]
+        time = build["time"]
+        return make_datetime(date, time)
+    except (ImportError, KeyError):
         return ""
 
 
