@@ -465,7 +465,7 @@ class FileTransferHandler(FileTransferAttributes):
 
         # check file size and digest then process it:
         if chunk_state.written != chunk_state.filesize:
-            error("expected a file of %i bytes, got %i", chunk_state.filesize, chunk_state.written)
+            error(f"expected a file of {chunk_state.filesize} bytes, got {chunk_state.written}")
             return
 
         progress(chunk_state.written)

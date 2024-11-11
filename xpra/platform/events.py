@@ -6,12 +6,12 @@
 # later version. See the file COPYING for details.
 
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.platform import platform_import
 
 
-EVENTS: tuple[str] = ("suspend", "resume", )
+EVENTS: Sequence[str] = ("suspend", "resume", )
 
 
 def add_handler(event: str, handler: Callable) -> None:

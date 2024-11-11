@@ -17,7 +17,7 @@ import os.path
 import sys
 import traceback
 from typing import Any
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.gtk.signals import register_os_signals
@@ -1138,7 +1138,7 @@ def main(argv) -> int:
         return do_main(argv)
 
 
-def do_main(argv: Sequence[str]) -> int:
+def do_main(argv: list[str]) -> int:
     from xpra.util.system import SIGNAMES
     from xpra.scripts.main import InitExit, InitInfo
     from xpra.platform.gui import init as gui_init, ready as gui_ready

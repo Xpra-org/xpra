@@ -1259,7 +1259,7 @@ pkgconfig = exec_pkgconfig
 #*******************************************************************************
 
 
-def get_base_conf_dir(install_dir: str, stripbuildroot=True) -> Sequence[str]:
+def get_base_conf_dir(install_dir: str, stripbuildroot=True) -> list[str]:
     # in some cases we want to strip the buildroot (to generate paths in the config file)
     # but in other cases we want the buildroot path (when writing out the config files)
     # and in some cases, we don't have the install_dir specified (called from detect_xorg_setup, and that's fine too)

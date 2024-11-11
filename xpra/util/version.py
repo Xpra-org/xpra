@@ -235,11 +235,11 @@ def get_build_info(full: int = 1) -> dict[str, Any]:
 
 def parse_version(v) -> tuple[Any]:
     if isinstance(v, str) and v:
-        def maybeint(v):
+        def maybeint(value: str) -> int | str:
             try:
-                return int(v)
+                return int(value)
             except ValueError:
-                return v
+                return value
 
         v = tuple(maybeint(x) for x in v.split("-")[0].split("."))
     return tuple(v or ())
@@ -362,12 +362,12 @@ def get_latest_version(branch: str) -> bool | None | tuple[int, ...]:
         if len(branch_parts) >= 2:
             branch_strs.append("_" + branch_parts[0])           # ie: "_v6"
     branch_strs.append("")
-    platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
+    platname = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
     arch = get_platform_info().get("machine")
     for branch_str in branch_strs:
         for url in (
-            f"{CURRENT_VERSION_URL}{branch_str}_{platform_name}_{arch}?{XPRA_VERSION}",
-            f"{CURRENT_VERSION_URL}{branch_str}_{platform_name}?{XPRA_VERSION}",
+            f"{CURRENT_VERSION_URL}{branch_str}_{platname}_{arch}?{XPRA_VERSION}",
+            f"{CURRENT_VERSION_URL}{branch_str}_{platname}?{XPRA_VERSION}",
             f"{CURRENT_VERSION_URL}{branch_str}?{XPRA_VERSION}",
         ):
             latest_version_no = get_version_from_url(url)
