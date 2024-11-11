@@ -122,6 +122,8 @@ def csv(values: Iterable) -> str:
 
 
 def du(path: str) -> int:
+    if os.path.isfile(path):
+        return os.path.getsize(path)
     return sum(os.path.getsize(f) for f in glob(f"{path}/**", recursive=True) if os.path.isfile(f))
 
 
