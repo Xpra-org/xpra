@@ -151,11 +151,12 @@ def is_RH():
         pass
     return False
 
+argv = sys.argv + list(filter(len, os.environ.get("XPRA_EXTRA_BUILD_ARGS", "").split(" ")))
 DEFAULT = True
 if "--minimal" in sys.argv:
-    sys.argv.remove("--minimal")
+    argv.remove("--minimal")
     DEFAULT = False
-skip_build = "--skip-build" in sys.argv
+skip_build = "--skip-build" in argv
 ARCH = get_status_output(["uname", "-m"])[1].strip("\n\r")
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 
@@ -306,7 +307,7 @@ ssl_key = None
 minifier = None
 share_xpra = None
 filtered_args = []
-for arg in sys.argv:
+for arg in argv:
     matched = False
     for x in ("rpath", "ssl-cert", "ssl-key", "install", "share-xpra"):
         varg = "--%s=" % x
