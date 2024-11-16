@@ -79,7 +79,7 @@ ABSTRACT_SOCKET_PREFIX: Final[str] = "xpra/"
 
 SOCKET_TYPES: Sequence[str] = (
     "tcp", "ws", "wss", "ssl", "ssh", "rfb",
-    "vsock", "hyperv" "socket",
+    "vsock", "hyperv", "socket",
     "named-pipe",
     "quic",
 )
