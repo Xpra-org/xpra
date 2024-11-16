@@ -777,6 +777,9 @@ class ServerCore(ControlHandler):
     # authentication:
     def init_auth(self, opts) -> None:
         for x in SOCKET_TYPES:
+            if x == "hyperv":
+                # we don't support listening on hyperv sockets yet
+                continue
             if x in ("socket", "named-pipe"):
                 # use local-auth for these:
                 opts_value = opts.auth

@@ -516,7 +516,6 @@ def parse_display_name(error_cb, opts, display_name: str, cmdline=(),
                 "hyperv": (vmid, service),
             }
         )
-        print("hyperv1")
         opts.display = display_name
         return desc
 
