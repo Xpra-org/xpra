@@ -10,10 +10,11 @@ import threading
 from typing import Any, Union, TypeAlias, Final
 from collections.abc import Callable, Sequence
 
+from xpra.exit_codes import ExitCode
 from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop, SizedBuffer
 from xpra.os_util import LINUX, FREEBSD, WIN32
-from xpra.scripts.config import str_to_bool
+from xpra.scripts.config import str_to_bool, InitExit
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
 
@@ -76,7 +77,12 @@ SSL_UPGRADE: bool = envbool("XPRA_SSL_UPGRADE", False)
 AUTO_ABSTRACT_SOCKET = envbool("XPRA_AUTO_ABSTRACT_SOCKET", LINUX)
 ABSTRACT_SOCKET_PREFIX: Final[str] = "xpra/"
 
-SOCKET_TYPES: Sequence[str] = ("tcp", "ws", "wss", "ssl", "ssh", "rfb", "vsock", "socket", "named-pipe", "quic")
+SOCKET_TYPES: Sequence[str] = (
+    "tcp", "ws", "wss", "ssl", "ssh", "rfb",
+    "vsock", "hyperv" "socket",
+    "named-pipe",
+    "quic",
+)
 
 IP_SOCKTYPES: Sequence[str] = ("tcp", "ssl", "ws", "wss", "ssh", "quic")
 TCP_SOCKTYPES: Sequence[str] = ("tcp", "ssl", "ws", "wss", "ssh")
@@ -96,6 +102,8 @@ URL_MODES: dict[str, str] = {
     "xpraws": "ws",
     "xpra+wss": "wss",
     "xprawss": "wss",
+    "xpra+hyperv": "hyperv",
+    "xprahyperv": "hyperv",
     "rfb": "vnc",
 }
 
@@ -256,3 +264,14 @@ HTTP_UNSUPORTED = b"""HTTP/1.1 400 Bad request syntax or unsupported method
 <p>Error code explanation: 400 = Bad request syntax or unsupported method.
 </body>
 """
+
+
+def verify_hyperv_available() -> None:
+    try:
+        import socket
+        s = socket.socket(socket.AF_HYPERV, socket.SOCK_STREAM, socket.HV_PROTOCOL_RAW)
+    except (AttributeError, OSError) as e:
+        raise InitExit(ExitCode.UNSUPPORTED,
+                       f"hyperv sockets are not supported on this platform: {e}") from None
+    else:
+        s.close()

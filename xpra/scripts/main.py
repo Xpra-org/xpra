@@ -57,7 +57,10 @@ from xpra.scripts.config import (
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
     make_defaults_struct, str_to_bool, parse_bool_or, has_audio_support, name_to_field,
 )
-from xpra.net.common import DEFAULT_PORTS, SOCKET_TYPES, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
+from xpra.net.common import (
+    DEFAULT_PORTS, SOCKET_TYPES, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX,
+    verify_hyperv_available,
+)
 from xpra.log import is_debug_enabled, Logger, get_debug_args
 
 assert callable(error), "used by modules importing this function from here"
@@ -429,7 +432,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
     ) and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
 
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
     if mode.startswith("shadow") and WIN32 and not envbool("XPRA_PAEXEC_WRAP", False):
         # are we started from a non-interactive context?
         from xpra.platform.win32.gui import get_desktop_name
@@ -551,7 +554,7 @@ def DotXpra(*args, **kwargs):
 def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "quic")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
     if args and mode in ("seamless", "desktop", "monitor"):
         # all args that aren't specifying a connection will be interpreted as a start-child command:
         # ie: "xpra" "start" "xterm"
@@ -933,9 +936,12 @@ def display_desc_to_uri(display_desc: dict[str, Any]) -> str:
         port = display_desc.get("port")
         if port and port != DEFAULT_PORTS.get(dtype):
             uri += f":{port:d}"
-    elif dtype == "vsock":
-        cid, iport = display_desc["vsock"]
-        uri += f"{cid}:{iport}"
+        elif dtype == "vsock":
+            cid, iport = display_desc["vsock"]
+            uri += f"{cid}:{iport}"
+        elif dtype == "hyperv":
+            vmid, service = display_desc["hyperv"]
+            uri += f"{vmid}:{service}"
     else:
         raise NotImplementedError(f"{dtype} is not implemented yet")
     uri += "/" + display_desc_to_display_path(display_desc)
@@ -1300,6 +1306,17 @@ def connect_to(display_desc, opts=None, debug_cb=noop, ssh_fail_cb=noop):
             "any" if cid == CID_ANY else cid,
             "any" if iport == PORT_ANY else iport,
         )
+        return conn
+
+    if dtype == "hyperv":
+        vmid, service = display_desc["hyperv"]
+        verify_hyperv_available()
+        sock = socket.socket(socket.AF_HYPERV, socket.SOCK_STREAM, socket.HV_PROTOCOL_RAW)
+        sock.connect((vmid, service))
+        sock.timeout = VSOCK_TIMEOUT
+        sock.settimeout(None)
+        conn = SocketConnection(sock, "local", "host", (vmid, service), dtype)
+        conn.target = f"hyperv://{vmid}.{service}"
         return conn
 
     if dtype == "quic":

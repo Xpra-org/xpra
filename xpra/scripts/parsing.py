@@ -9,6 +9,7 @@
 # pylint: disable=import-outside-toplevel
 
 import re
+import uuid
 import shlex
 import os.path
 import optparse
@@ -23,7 +24,7 @@ from xpra.util.version import full_version_str
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
-from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS
+from xpra.net.common import DEFAULT_PORT, DEFAULT_PORTS, verify_hyperv_available
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
 from xpra.scripts.config import (
@@ -499,6 +500,23 @@ def parse_display_name(error_cb, opts, display_name: str, cmdline=(),
                 "vsock": (cid, port),
             }
         )
+        opts.display = display_name
+        return desc
+
+    if protocol == "hyperv":
+        add_credentials()
+        add_query()
+        vmid = parse_hyperv_vmid(parsed.hostname)
+        service = parse_hyperv_serviceid(parsed.port)
+        verify_hyperv_available()
+        desc.update(
+            {
+                "local": False,
+                "display": display_name,
+                "hyperv": (vmid, service),
+            }
+        )
+        print("hyperv1")
         opts.display = display_name
         return desc
 
@@ -2080,6 +2098,46 @@ def parse_vsock_cid(cid_str: str) -> int:
         if cid is None:
             raise InitException(f"invalid vsock cid {cid_str!r}") from None
         return cid
+
+
+def parse_uuid(name: str, value: str) -> str:
+    try:
+        return str(uuid.UUID(value))
+    except ValueError as e:
+        raise ValueError(f"{name} {value!r} is not a valid uuid: {e}") from None
+
+
+def parse_hyperv_serviceid(serviceid: str | int) -> str:
+    # we support plain port numbers,
+    # as used with linux servers vsock style interfaces
+    # or uuid strings for hyper-v native addresses
+    if isinstance(serviceid, int) or len(serviceid) < 6:
+        # ie: "20000"
+        try:
+            port = int(serviceid)
+        except ValueError:
+            raise ValueError(f"short serviceid {serviceid!r} is not numeric") from None
+        if port < 0 or port > 65535:
+            raise ValueError(f"short serviceid {port} is out of range")
+        # assume that this is a Linux vsock port:
+        return f"{port:08x}-facb-11e6-bd58-64006a7986d3"
+    return parse_uuid("serviceid", serviceid)
+
+
+def parse_hyperv_vmid(vmid: str) -> str:
+    import socket
+    if vmid in ("0", ""):
+        # cannot be used for connecting!
+        return socket.HV_GUID_ZERO
+    if vmid == "*":
+        return socket.HV_GUID_BROADCAST
+    if vmid.lower() == "children":
+        return socket.HV_GUID_CHILDREN
+    if vmid.lower() in ("lo", "loopback"):
+        return socket.HV_GUID_LOOPBACK
+    if vmid.lower() == "parent":
+        return socket.HV_GUID_PARENT
+    return parse_uuid("vmid", vmid)
 
 
 def is_local(host: str) -> bool:
