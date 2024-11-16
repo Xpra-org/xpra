@@ -142,10 +142,11 @@ def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
                 log("FPDF_LoadPage()=%s page %i loaded", page, i)
                 StartPage(hdc)
                 FPDF_RenderPage(hdc, page, x, y, w, h, rotate, flags)
-                FPDF_ClosePage(hdc)
                 EndPage(hdc)
+                FPDF_ClosePage(page)
                 log("FPDF_RenderPage page %i rendered", i)
         finally:
+            FPDF_CloseDocument(doc)
             EndDoc(hdc)
     finally:
         FPDF_DestroyLibrary()
