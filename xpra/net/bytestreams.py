@@ -676,8 +676,6 @@ def log_new_connection(conn, socket_info="") -> None:
 def get_socket_config() -> dict[str, Any]:
     config = {}
     try:
-        # pylint: disable=import-outside-toplevel
-        from xpra.net.bytestreams import VSOCK_TIMEOUT, SOCKET_TIMEOUT, SOCKET_NODELAY
         config = {
             "vsocket.timeout": VSOCK_TIMEOUT,
             "socket.timeout": SOCKET_TIMEOUT,
