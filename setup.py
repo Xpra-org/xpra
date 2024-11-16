@@ -212,11 +212,12 @@ def pkg_config_version(req_version, pkgname):
         return LooseVersion(out)>=LooseVersion(req_version)
 
 
+argv = sys.argv + list(filter(len, os.environ.get("XPRA_EXTRA_BUILD_ARGS", "").split(" ")))
 DEFAULT = True
-if "--minimal" in sys.argv:
-    sys.argv.remove("--minimal")
+if "--minimal" in argv:
+    argv.remove("--minimal")
     DEFAULT = False
-skip_build = "--skip-build" in sys.argv
+skip_build = "--skip-build" in argv
 ARCH = get_status_output(["uname", "-m"])[1].strip("\n\r")
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 RISCV = ARCH.startswith("riscv")
@@ -481,7 +482,7 @@ filtered_args = []
 
 
 def filter_argv():
-    for arg in sys.argv:
+    for arg in argv:
         matched = False
         for x in ("rpath", "ssl-cert", "ssl-key", "install", "share-xpra", "dummy-driver-version"):
             varg = f"--{x}="
