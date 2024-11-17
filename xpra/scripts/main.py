@@ -1299,9 +1299,9 @@ def connect_to(display_desc, opts=None, debug_cb=noop, ssh_fail_cb=noop):
             CID_TYPES, CID_ANY, PORT_ANY,
         )
         sock = connect_vsocket(cid=cid, port=iport)
-        sock.timeout = VSOCK_TIMEOUT
         sock.settimeout(None)
         conn = SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
+        conn.timeout = VSOCK_TIMEOUT
         conn.target = "vsock://%s:%s" % (
             "any" if cid == CID_ANY else cid,
             "any" if iport == PORT_ANY else iport,
@@ -1313,9 +1313,9 @@ def connect_to(display_desc, opts=None, debug_cb=noop, ssh_fail_cb=noop):
         verify_hyperv_available()
         sock = socket.socket(socket.AF_HYPERV, socket.SOCK_STREAM, socket.HV_PROTOCOL_RAW)
         sock.connect((vmid, service))
-        sock.timeout = VSOCK_TIMEOUT
         sock.settimeout(None)
         conn = SocketConnection(sock, "local", "host", (vmid, service), dtype)
+        conn.timeout = VSOCK_TIMEOUT
         conn.target = f"hyperv://{vmid}.{service}"
         return conn
 
