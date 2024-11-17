@@ -209,7 +209,7 @@ def setup_console_event_listener(handler, enable: bool) -> bool:
 
 
 def do_init() -> None:
-    if not REDIRECT_OUTPUT:
+    if not REDIRECT_OUTPUT or is_terminal():
         # figure out if we want to wait for input at the end:
         global _wait_for_input
         _wait_for_input = should_wait_for_input()
