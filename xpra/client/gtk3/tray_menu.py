@@ -10,7 +10,7 @@ from collections.abc import Sequence, Callable, Iterable
 
 from xpra.util.objects import typedict, reverse_dict
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized, bytestostr
-from xpra.util.env import envbool
+from xpra.util.env import envbool, IgnoreWarningsContext
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.common import RESOLUTION_ALIASES, ConnectionMessage
 from xpra.client.gtk3.menu_helper import (
@@ -1658,7 +1658,8 @@ class GTKTrayMenu(MenuHelper):
         if icondata:
             image = get_appimage(title, icondata, self.menu_icon_size)
             if image:
-                smi.set_image(image)
+                with IgnoreWarningsContext():
+                    smi.set_image(image)
         return smi
 
     def make_applaunch_menu_item(self, app_name: str, command_props: typedict) -> Gtk.ImageMenuItem:
