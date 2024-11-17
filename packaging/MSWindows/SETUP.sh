@@ -79,3 +79,8 @@ echo "* install 'NVidia_Capture' into '$MINGW_PREFIX/lib/nvenc'"
 echo "* add the pkg-config files:"
 echo " 'cp pkgconfig/*.pc $MINGW_PREFIX/lib/pkgconfig/'"
 echo "* install python-setuptools python-numpy python-pip"
+echo
+echo "for SBOM"
+echo "* install Python 3.12 into 'C:\Program Files'"
+echo "* add cyclonedx to it: 'Python.exe -m pip install cyclonedx-bom'"
+echo
