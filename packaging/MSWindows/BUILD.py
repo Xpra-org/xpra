@@ -788,7 +788,8 @@ def gen_caches() -> None:
     with Popen(cmd, cwd=os.path.abspath(DIST), stdout=PIPE, text=True) as proc:
         cache, err = proc.communicate(None)
     if proc.returncode != 0:
-        raise RuntimeError(f"gdk-pixbuf-query-loaders.exe failed and returned {proc.returncode}: {err}")
+        raise RuntimeError(f"gdk-pixbuf-query-loaders.exe failed and returned {proc.returncode}: {err}"
+                           " - you may need to run `chcp.com 65001`")
     # replace absolute paths:
     cache = re.sub(r'".*xpra/dist/lib/', '"lib/', cache)
     with open(f"{LIB_DIR}/gdk-pixbuf-2.0/2.10.0/loaders.cache", "w") as cache_file:
