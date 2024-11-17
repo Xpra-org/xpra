@@ -1284,9 +1284,9 @@ def connect_to(display_desc, opts=None, debug_cb=noop, ssh_fail_cb=noop):
             CID_TYPES, CID_ANY, PORT_ANY,
         )
         sock = connect_vsocket(cid=cid, port=iport)
-        sock.timeout = VSOCK_TIMEOUT
         sock.settimeout(None)
         conn = SocketConnection(sock, "local", "host", (CID_TYPES.get(cid, cid), iport), dtype)
+        conn.timeout = VSOCK_TIMEOUT
         conn.target = "vsock://%s:%s" % (
             "any" if cid == CID_ANY else cid,
             "any" if iport == PORT_ANY else iport,
