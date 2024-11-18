@@ -785,7 +785,7 @@ fi
 
 
 %changelog
-* Mon Nov 11 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
+* Mon Nov 18 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:
    don't build ffmpeg encoder on MacOS
    RPM builds without nvidia codecs failed
@@ -795,15 +795,19 @@ fi
    run CI on Ubuntu 22.04 image
    generate SBOM for MS Windows builds
    record which repository is targeted
+   support providing build arguments using environment
+   syntax errors in the MS Windows build setup script
 - Major:
    `xpra top` corrupted output, initialization failure
+   focus lost
+   automatic port assignment error
+   keycode mapping for Wayland clients
+- Network:
    verify ssl certificates can be accessed - not just the parent directory
    automatic re-connection path errors with MS Windows clients
    ssl redirection errors
-   focus lost
    raise maximum number of AES key stretching iterations
-   automatic port assignment error
-   keycode mapping for Wayland clients
+   vsock connection errors
 - Minor:
    quality and speed options can be used with generic encodings
    support pointer polling

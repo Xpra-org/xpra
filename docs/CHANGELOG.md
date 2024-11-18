@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.11] 2024-11-11
+## [5.0.11] 2024-11-18
 * Platforms, build and packaging:
     * [don't build ffmpeg encoder on MacOS](https://github.com/Xpra-org/xpra/commit/bf2f1a3f4927428da0ae4c5d40e5125c4c8617d0)
     * [RPM builds without nvidia codecs failed](https://github.com/Xpra-org/xpra/commit/eeb6fd4cfb7c9c486b0c5649a993c4dc79099f34)
@@ -10,15 +10,21 @@
     * [run CI on Ubuntu 22.04 image](https://github.com/Xpra-org/xpra/commit/37cbdc2ca3f6991f792ae40786f84da3109db197)
     * [generate SBOM for MS Windows builds](https://github.com/Xpra-org/xpra/commit/3a060d5adfbedc48b71f8fb5ab7cebc610eeb0a8)
     * [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/ad17c3b1fe6428769d232ea645b1e8849810c698)
+    * [support providing build arguments using environment](https://github.com/Xpra-org/xpra/commit/986d88119348db767aaccd008cc145416898fb8d)
+    * [syntax errors in the MS Windows build setup script](https://github.com/Xpra-org/xpra/commit/92e6cb9fc0c23ad3696620bdcd63aafabe7eaa55)
 * Major:
+    * [`run_scaled` syntax error](https://github.com/Xpra-org/xpra/commit/75d25ef615b8782f221eeacb3d424f6aabbb9b93)
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/d631793d0c1f8d35593aa51c749af4ac70871c3c), [initialization failure](https://github.com/Xpra-org/xpra/commit/be38d098da0302a37e1ef108ad28d44b97472617)
+    * [focus lost](https://github.com/Xpra-org/xpra/commit/2551a32bac64aee8354c4962426e80eb9fe3a298)
+    * [keycode mapping for Wayland clients](https://github.com/Xpra-org/xpra/commit/1b7a4ea01a964a0a249c1121d89568b1587852cb)
+    * [printing errors on MS Windows](https://github.com/Xpra-org/xpra/commit/bb0bd50d37c98a2e2002ba642a4c3d165b5ac62c)
+* Network:
     * [verify ssl certificates can be accessed - not just the parent directory](https://github.com/Xpra-org/xpra/commit/f6e1caf75025a9f9354b587262d1350f7f915944)
     * [automatic re-connection path errors with MS Windows clients](https://github.com/Xpra-org/xpra/commit/6bfd2dc03bf5a6253f389f32525bef4b3bbb255a)
     * [ssl redirection errors](https://github.com/Xpra-org/xpra/commit/4e64fb776f4e14f6929dd1faa2a68202705883e5)
-    * [focus lost](https://github.com/Xpra-org/xpra/commit/2551a32bac64aee8354c4962426e80eb9fe3a298)
     * [raise maximum number of AES key stretching iterations](https://github.com/Xpra-org/xpra/commit/c6c055490605a85bfb02fbff7ac9c3f8e4867989), [and default](https://github.com/Xpra-org/xpra/commit/a296babb5020f1f78232cb8142005fcb44c8831f)
     * [automatic port assignment error](https://github.com/Xpra-org/xpra/commit/cc6582e6c5a61c6a05107c3fd2f9a11f338683c0)
-    * [keycode mapping for Wayland clients](https://github.com/Xpra-org/xpra/commit/1b7a4ea01a964a0a249c1121d89568b1587852cb)
+    * [`vsock` connection errors](https://github.com/Xpra-org/xpra/commit/74cef58753b66b9f24f3252a03b6cbed8e17d4da)
 * Minor:
     * [quality and speed options can be used with generic encodings](https://github.com/Xpra-org/xpra/commit/28034bef38b8b675fd802c55643b443669a63991)
     * [support pointer polling](https://github.com/Xpra-org/xpra/commit/8a7df98a6683f3af958df74308090e5734306b75)
