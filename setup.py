@@ -2414,9 +2414,16 @@ toggle_packages(spng_decoder_ENABLED or spng_encoder_ENABLED, "xpra.codecs.spng"
 tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", "spng")
 tace(spng_encoder_ENABLED, "xpra.codecs.spng.encoder", "spng")
 toggle_packages(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg")
-tace(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.common", "cuda,nvjpeg")
-tace(nvjpeg_encoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.encoder", "cuda,nvjpeg")
-tace(nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.decoder","cuda,nvjpeg")
+cuda = "cuda"
+if nvjpeg_decoder_ENABLED or nvjpeg_decoder_ENABLED:
+    # try to find a platform specific pkg-config file for cuda:
+    cuda_arch = f"cuda-{ARCH}"
+    for pcdir in os.environ.get("PKG_CONFIG_PATH", "/usr/lib/pkgconfig:/usr/lib64/pkgconfig").split(":"):
+        if os.path.exists(f"{pcdir}/cuda-{ARCH}.pc"):
+            cuda = cuda_arch
+tace(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.common", f"{cuda},nvjpeg")
+tace(nvjpeg_encoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.encoder", f"{cuda},nvjpeg")
+tace(nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.decoder",f"{cuda},nvjpeg")
 toggle_packages(jpeg_decoder_ENABLED or jpeg_encoder_ENABLED, "xpra.codecs.jpeg")
 tace(jpeg_encoder_ENABLED, "xpra.codecs.jpeg.encoder", "libturbojpeg")
 tace(jpeg_decoder_ENABLED, "xpra.codecs.jpeg.decoder", "libturbojpeg")
