@@ -1,7 +1,21 @@
 xpra (6.2.2-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+    `install-repo` file permission on Debian
+    record which repository is targeted
+    `libproxy` support for MS Windows clients
+    `PyOpenGL 3.1.8`
+    missing MacOS AES library
+    support providing build arguments using environment
+    syntax errors in the MS Windows build setup script
+  * Major:
+    `xpra top` corrupted output, initialization failure
+    `vsock` connection errors
+    printing errors on MS Windows
+  * Cosmetic:
+    add `pyopenssl` to dependencies documentation
+    unnecessary import
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 09 Nov 2024 23:43:18 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 18 Nov 2024 20:34:26 +0700
 
 xpra (6.2.1-1) UNRELEASED; urgency=low
   * System tray:

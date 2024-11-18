@@ -1,16 +1,21 @@
 # Changelog
 
-## [6.2.2] 2024-11-09
+## [6.2.2] 2024-11-18
 * Platforms, build and packaging:
     * [`install-repo` file permission on Debian](https://github.com/Xpra-org/xpra/commit/d6ed81dfce74283c8ad8f772e3a3269164cbf84e)
     * [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/fe83ee09b17c2a7e26b228a1d5fc208aa347c2aa)
     * [`libproxy` support for MS Windows clients](https://github.com/Xpra-org/xpra/commit/1e9e6ac3983ea23c1ce3e3114b62f8cdaa30a5f0)
     * [`PyOpenGL 3.1.8`](https://github.com/Xpra-org/xpra/commit/eb5f228919fadfed7a52ab6124f219e385645448)
     * [missing MacOS AES library](https://github.com/Xpra-org/xpra/commit/25b568965ddb388f3d21d666a722043dbf02351b)
+    * [support providing build arguments using environment](https://github.com/Xpra-org/xpra/commit/cc345e3bb76349d9900dd391bca9e07c80f83cea)
+    * [syntax errors in the MS Windows build setup script](https://github.com/Xpra-org/xpra/commit/121c33de3d8fe54ede6c7ca30f478b5e0a1823eb)
 * Major:
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/129c5b1f2695ce2f085268134b1273cf94c4e56f), [initialization failure](https://github.com/Xpra-org/xpra/commit/fc8638d436fa09e98f2ecb324d249b4145763955)
+    * [`vsock` connection errors](https://github.com/Xpra-org/xpra/commit/c0448d2988d5497aac72d528ed1edc9a13514a6e)
+    * [printing errors on MS Windows](https://github.com/Xpra-org/xpra/commit/fbf1c7a3e393974fe8c7d7fc8bf266639f2d9731)
 * Cosmetic:
-    * [add `pyopenssl` to dependencies documenation](https://github.com/Xpra-org/xpra/commit/4e7941fa8d18e6b90fa257bad34401a5aad5c81f)
+    * [add `pyopenssl` to dependencies documentation](https://github.com/Xpra-org/xpra/commit/4e7941fa8d18e6b90fa257bad34401a5aad5c81f)
+    * [unnecessary import](https://github.com/Xpra-org/xpra/commit/6e389e0b1292897d46f46f39a33eb0b9551d5c2b)
 
 ## [6.2.1] 2024-10-29
 * System tray:

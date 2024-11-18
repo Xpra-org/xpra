@@ -905,8 +905,23 @@ fi
 
 
 %changelog
-* Sat Nov 09 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
-- TODO
+* Mon Nov 18 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
+- Platforms, build and packaging:
+   `install-repo` file permission on Debian
+   record which repository is targeted
+   `libproxy` support for MS Windows clients
+   `PyOpenGL 3.1.8`
+   missing MacOS AES library
+   support providing build arguments using environment
+   syntax errors in the MS Windows build setup script
+- Major:
+   `xpra top` corrupted output, initialization failure
+   `vsock` connection errors
+   printing errors on MS Windows
+- Cosmetic:
+   add `pyopenssl` to dependencies documentation
+   unnecessary import
+
 * Tue Oct 29 2024 Antoine Martin <antoine@xpra.org> 6.2.1-10
 - System tray:
    paint errors with `mmap` mode
