@@ -2397,7 +2397,12 @@ if webp_encoder_ENABLED or webp_decoder_ENABLED:
 
 toggle_packages(nvjpeg_ENABLED, "xpra.codecs.nvjpeg")
 if nvjpeg_ENABLED:
-    nvjpeg_pkgconfig = pkgconfig("cuda", "nvjpeg")
+    cuda = "cuda"
+    cuda_arch = "cuda-%s" % ARCH
+    for pcdir in os.environ.get("PKG_CONFIG_PATH", "/usr/lib/pkgconfig:/usr/lib64/pkgconfig").split(":"):
+        if os.path.exists("%s/cuda-%s.pc" % (pcdir, ARCH)):
+            cuda = cuda_arch
+    nvjpeg_pkgconfig = pkgconfig(cuda, "nvjpeg")
     assert skip_build or nvjpeg_pkgconfig, "failed to locate nvjpeg pkgconfig"
     if WIN32:
         add_to_keywords(nvjpeg_pkgconfig, 'extra_compile_args', "-Wno-error=address")
