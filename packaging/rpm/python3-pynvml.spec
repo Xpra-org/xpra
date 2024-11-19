@@ -11,7 +11,7 @@ Autoreq: 0
 %define debug_package %{nil}
 
 Name:           python3-pynvml
-Version:        12.555.43
+Version:        12.560.30
 Release:        1
 URL:            http://pythonhosted.org/nvidia-ml-py/
 Summary:        Python3 wrapper for NVML
@@ -21,6 +21,7 @@ Source0:        https://files.pythonhosted.org/packages/source/n/nvidia-ml-py/nv
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python-pynvml
 BuildRequires:  python3-devel
+BuildRequires:  python3-setuptools
 
 %description
 Python Bindings for the NVIDIA Management Library
@@ -52,7 +53,13 @@ rm -rf %{buildroot}
 %{python3_sitelib}/nvidia_ml_py-%{version}*-py*.egg-info
 
 %changelog
+* Tue Sep 03 2024 Antoine Martin <antoine@xpra.org> - 12.560.30-1
+- new upstream release
+
 * Mon Jun 03 2024 Antoine Martin <antoine@xpra.org> - 12.555.43-1
+- new upstream release
+
+* Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> - 12.550.52-1
 - new upstream release
 
 * Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> - 12.535.133-1
