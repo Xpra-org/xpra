@@ -800,6 +800,8 @@ fi
    aioquic 1.2.0 build fix
    use arch specific pkg-config for cuda, if found
    pynvml 12.560.30
+   pyuinput 1.0.1
+   don't try to build ffmpeg encoder with ffmpeg >= 7
 - Major:
    `xpra top` corrupted output, initialization failure
    focus lost

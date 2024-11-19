@@ -15,6 +15,8 @@
     * [aioquic 1.2.0 build fix](https://github.com/Xpra-org/xpra/commit/da8b51531850cd4e584d6e62dd8d8a993e505aa2)
     * [use arch specific pkg-config for cuda, if found](https://github.com/Xpra-org/xpra/commit/eca3def0b05f2b690f32a2bdf2c35865e006734a)
     * [pynvml 12.560.30](https://github.com/Xpra-org/xpra/commit/963bfd306d30a422996adbcc67e57ca0df6b240d)
+    * [pyuinput 1.0.1](https://github.com/Xpra-org/xpra/commit/2b9d5486692e6f72ee96d35e5fde5a09d8c05073)
+    * [don't try to build ffmpeg encoder with ffmpeg >= 7](https://github.com/Xpra-org/xpra/commit/6122a4dd8bf0ae1e8674da47590338e949e12dd1)
 * Major:
     * [`run_scaled` syntax error](https://github.com/Xpra-org/xpra/commit/75d25ef615b8782f221eeacb3d424f6aabbb9b93)
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/d631793d0c1f8d35593aa51c749af4ac70871c3c), [initialization failure](https://github.com/Xpra-org/xpra/commit/be38d098da0302a37e1ef108ad28d44b97472617)
