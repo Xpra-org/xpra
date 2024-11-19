@@ -4,12 +4,12 @@
 Autoreq: 0
 
 Name:           python3-uinput
-Version:        0.11.2
-Release:        6%{?dist}
+Version:        1.0.1
+Release:        1%{?dist}
 Summary:        Pythonic API to the Linux uinput kernel module
 License:        GPLv3
 URL:            http://pypi.python.org/pypi/python-uinput/
-Source0:        https://pypi.python.org/packages/54/b7/be7d0e8bbbbd440fef31242974d92d4edd21eb95ed96078b18cf207c7ccb/python-uinput-0.11.2.tar.gz
+Source0:        https://pypi.python.org/packages/source/p/python-uinput/python-uinput-%{version}.tar.gz
 
 BuildRequires:  gcc
 BuildRequires:  python3-devel
@@ -28,7 +28,7 @@ which allows attaching userspace device drivers into kernel.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "99392b676c77b5795b86b7d75274db33fe754fd1e06fb3d58b167c797dc47f0c" ]; then
+if [ "${sha256}" != "853697344b64df5537d4ae32ba6fbcf0515d51a9010910f5d5019959038b6eba" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -59,6 +59,9 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Tue Nov 19 2024 Antoine Martin <antoine@xpra.org> - 1.0.1-1
+- new upstream release
+
 * Wed Feb 17 2021 Antoine Martin <antoine@xpra.org> - 0.11.2-6
 - verify source checksum
 
