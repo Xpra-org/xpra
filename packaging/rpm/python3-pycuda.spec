@@ -38,6 +38,7 @@ Patch0:         pycuda-py3.13.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       %{python3}-pycuda
 
+BuildRequires:	coreutils
 BuildRequires:  make
 BuildRequires:  gcc-c++
 BuildRequires:  %{python3}-devel
@@ -83,7 +84,8 @@ CUDA=/opt/cuda
 %endif
 	--no-cuda-enable-curand
 #	--boost-thread-libname=boost_thread
-LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{python3} setup.py build
+NPROCS=${NPROCS:-`nproc`}
+LDFLAGS=-L$CUDA/%{STUBS_DIR} CXXFLAGS=-L$CUDA/%{STUBS_DIR} %{python3} setup.py build -j ${NPROCS}
 #make
 
 %install

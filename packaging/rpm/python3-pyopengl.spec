@@ -28,6 +28,7 @@ Patch0:         pyopengl-egl-open-warning.patch
 Patch1:         pyopengl-py3.13-nonumpy.patch
 Patch2:         pyopengl-version.patch
 
+BuildRequires:	coreutils
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-cython
@@ -76,9 +77,10 @@ popd
 
 
 %build
+NPROCS=${NPROCS:-`nproc`}
 for srcdir in pyopengl-release-%{version} pyopengl-release-%{version}/accelerate; do
     pushd $srcdir
-    %{python3} setup.py build
+    %{python3} setup.py build -j ${NPROCS}
     popd
 done
 

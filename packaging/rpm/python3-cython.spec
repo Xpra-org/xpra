@@ -25,6 +25,7 @@ Provides:   %{python3}-Cython = %{version}-%{release}
 Obsoletes:  %{python3}-Cython < %{version}-%{release}
 Conflicts:  %{python3}-Cython < %{version}-%{release}
 
+BuildRequires:	coreutils
 BuildRequires:	%{python3}-devel
 BuildRequires:	%{python3}-setuptools
 BuildRequires:	gcc
@@ -42,7 +43,8 @@ fi
 %setup -q -n cython-%{version}
 
 %build
-CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build
+NPROCS=${NPROCS:-`nproc`}
+CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build -j ${NPROCS}
 
 %install
 rm -rf %{buildroot}
