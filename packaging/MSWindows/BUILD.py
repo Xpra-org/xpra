@@ -11,6 +11,8 @@ import json
 import os.path
 import shlex
 import hashlib
+from typing import Any
+
 from sysconfig import get_path
 from datetime import datetime
 from collections import namedtuple
@@ -44,12 +46,19 @@ SYSTEM32 = "C:\\Windows\\System32"
 
 SRC_INFO = "xpra/src_info.py"
 BUILD_INFO = "xpra/build_info.py"
+SBOM_JSON = "sbom.json"
 
 LOG_DIR = "packaging/MSWindows/"
 
 NPROCS = int(os.environ.get("NPROCS", os.cpu_count()))
 
 BUILD_CUDA_KERNEL = "packaging\\MSWindows\\BUILD_CUDA_KERNEL.BAT"
+
+EXTRA_PYTHON_MODULES = [
+    "unittest", "psutil", "pynvml",
+    "browser_cookie3",
+    "gssapi", "ldap", "ldap3", "pyu2f", "sqlite3",
+]
 
 
 def parse_command_line(argv: list[str]):
@@ -113,6 +122,8 @@ def csv(values: Iterable) -> str:
 
 
 def du(path: str) -> int:
+    if os.path.isfile(path):
+        return os.path.getsize(path)
     return sum(os.path.getsize(f) for f in glob(f"{path}/**", recursive=True) if os.path.isfile(f))
 
 
@@ -129,6 +140,7 @@ def get_build_args(args) -> list[str]:
             "win32_tools",
             "docs",
             "qt6_client",
+            "websockets_browser_cookie",
         ):
             xpra_args.append(f"--without-{option}")
         xpra_args.append("--with-Os")
@@ -370,6 +382,10 @@ def set_version_info(light: bool):
         delfile(path)
     log_command([PYTHON, "fs/bin/add_build_info.py", "src", "build"], "add-build-info.log")
     print("    Python " + sys.version)
+    load_version_info(light)
+
+
+def load_version_info(light: bool):
 
     def load_module(src: str):
         spec = spec_from_file_location("xpra", src)
@@ -474,13 +490,26 @@ def fixups(light: bool) -> None:
     if os.path.exists(gen):
         rmrf(gen)
     debug("gdk loaders")
-    if light:
-        lpath = os.path.join(LIB_DIR, "gdk-pixbuf-2.0", "2.10.0", "loaders")
-        KEEP_LOADERS = ("jpeg", "png", "xpm", "svg", "wmf")
-        for filename in os.listdir(lpath):
-            if not any(filename.find(keep) for keep in KEEP_LOADERS):
-                debug(f"removing {filename!r}")
-                os.unlink(os.path.join(lpath, filename))
+    lpath = os.path.join(LIB_DIR, "gdk-pixbuf-2.0", "2.10.0", "loaders")
+    KEEP_LOADERS = ["jpeg", "png", "xpm", "svg", "wmf", "ico"]
+    if not light:
+        KEEP_LOADERS += ["pnm", "tiff", "icns"]
+    loaders = os.listdir(lpath)
+    debug(f"loaders({lpath})={loaders}")
+    for filename in loaders:
+        if not filename.endswith(".dll") or not any(filename.find(keep) >= 0 for keep in KEEP_LOADERS):
+            debug(f"removing {filename!r}")
+            os.unlink(os.path.join(lpath, filename))
+    debug("gio modules")
+    BUNDLE_GIO = ["libproxy", "openssl"]
+    if not light:
+        BUNDLE_GIO += ["gnutls"]
+    os.mkdir(f"{LIB_DIR}/gio")
+    os.mkdir(f"{LIB_DIR}/gio/modules")
+    for modname in BUNDLE_GIO:
+        gio_filename = f"gio/modules/libgio{modname}.dll"
+        copyfile(f"{MINGW_PREFIX}/lib/{gio_filename}", f"{LIB_DIR}/{gio_filename}")
+    log_command(f"gio-querymodules.exe {LIB_DIR}/gio/modules", "gio-cache.log")
     debug("remove ffmpeg libraries")
     for libname in ("avcodec", "avformat", "avutil", "swscale", "swresample", "zlib1", "xvidcore"):
         find_delete(LIB_DIR, libname)
@@ -568,6 +597,7 @@ def delete_dist_files(*exps: str) -> None:
 
 
 def delete_libs(*exps: str) -> None:
+    debug(f"deleting libraries: {exps}")
     delete_dist_files(*(f"lib/{exp}" for exp in exps))
 
 
@@ -580,9 +610,9 @@ def delete_dlls(light: bool) -> None:
     # remove codecs we don't need:
     delete_libs("libx265*", "libjxl*", "libde265*", "libkvazaar*")
     if light:
+        # let's keep kerberos / gss libs because clients can use them:
+        # "libshishi*", "libgss*"
         delete_libs(
-            # kerberos / gss libs:
-            "libshishi*", "libgss*",
             # no dbus:
             "libdbus*",
             # no AV1:
@@ -592,7 +622,7 @@ def delete_dlls(light: bool) -> None:
             # remove h264 encoder:
             "libx264*",
             # should not be needed:
-            "libsqlite*", "libp11-kit*",
+            "libp11-kit*",
             # extra audio codecs (we just keep vorbis and opus):
             "libmp3*", "libwavpack*", "libmpdec*", "libFLAC*", "libmpg123*", "libfaad*", "libfaac*",
         )
@@ -697,7 +727,7 @@ def zip_modules(light: bool) -> None:
     ZIPPED = [
         "OpenGL", "encodings", "future", "paramiko", "html",
         "pyasn1", "asn1crypto", "async_timeout",
-        "certifi", "OpenSSL", "pkcs11", "keyring",
+        "certifi", "OpenSSL", "keyring",
         "ifaddr", "pyaes", "service_identity",
         "re", "platformdirs", "attr", "setproctitle", "pyvda", "zipp",
         "distutils", "comtypes", "email", "multiprocessing", "packaging",
@@ -708,11 +738,8 @@ def zip_modules(light: bool) -> None:
         "concurrent", "collections",
         "asyncio",
     ]
-    EXTRAS = ["unittest", "gssapi", "browser_cookie3", "pynvml", "ldap", "ldap3", "pyu2f", "sqlite3", "psutil"]
-    if light:
-        delete_libs(*EXTRAS)
-    else:
-        ZIPPED += EXTRAS
+    if not light:
+        ZIPPED += EXTRA_PYTHON_MODULES
     log_command(["zip", "--move", "-ur", "library.zip"] + ZIPPED, "zip.log", cwd=LIB_DIR)
 
 
@@ -761,7 +788,8 @@ def gen_caches() -> None:
     with Popen(cmd, cwd=os.path.abspath(DIST), stdout=PIPE, text=True) as proc:
         cache, err = proc.communicate(None)
     if proc.returncode != 0:
-        raise RuntimeError(f"gdk-pixbuf-query-loaders.exe failed and returned {proc.returncode}: {err}")
+        raise RuntimeError(f"gdk-pixbuf-query-loaders.exe failed and returned {proc.returncode}: {err}"
+                           " - you may need to run `chcp.com 65001`")
     # replace absolute paths:
     cache = re.sub(r'".*xpra/dist/lib/', '"lib/', cache)
     with open(f"{LIB_DIR}/gdk-pixbuf-2.0/2.10.0/loaders.cache", "w") as cache_file:
@@ -950,21 +978,24 @@ def get_py_lib_dirs() -> list[str]:
     return py_lib_dirs
 
 
-def sbom_rec(path: str) -> tuple:
+def sbom_rec(path: str) -> dict[str, Any]:
     package, version = get_package(path)
     if not (package and version):
         print(f"Warning: no package data found for {path!r}")
-        return ()
+        return {}
+    rec = {
+        "package": package,
+        "version": version,
+    }
     dist_path = os.path.join(DIST, path)
     if os.path.isdir(dist_path):
-        size = du(dist_path)
-        csum = ""
+        rec["size"] = du(dist_path)
     else:
-        size = os.stat(dist_path).st_size
+        rec["size"] = os.stat(dist_path).st_size
         with open(dist_path, "rb") as f:
             data = f.read()
-        csum = hashlib.sha256(data).hexdigest()
-    return size, csum, package, version
+        rec["checksum"] = hashlib.sha256(data).hexdigest()
+    return rec
 
 
 def find_glob_paths(dirname: str, glob_str: str) -> list[str]:
@@ -979,13 +1010,15 @@ def rec_sbom() -> None:
     sbom: dict[str, tuple[str, str]] = {}
     py_lib_dirs: list[str] = get_py_lib_dirs()
 
-    def find_prefixed_sbom_rec(filename: str, prefixes: list[str]) -> tuple:
+    def find_prefixed_sbom_rec(filename: str, prefixes: list[str]) -> dict[str, Any]:
         for prefix in prefixes:
             src_path = os.path.join(prefix, filename)
             if os.path.exists(src_path):
                 rec = sbom_rec(src_path)
                 if rec:
-                    debug(f" * {filename!r}: {rec[-2]!r}, {rec[-1]!r}")
+                    package = rec["package"]
+                    version = rec["version"]
+                    debug(f" * {filename!r}: {package!r}, {version!r}")
                     return rec
         print(f"Warning: unknown source for filename {filename!r}, tried {prefixes}")
         return ()
@@ -1019,8 +1052,9 @@ def rec_sbom() -> None:
         cuda_version = version_data["cuda"]["version"]
         sbom[path] = (0, "", "cuda", cuda_version)
 
-    debug("adding DLLs and EXEs")
-    for globbed_path in find_glob_paths(DIST, "*.dll") + find_glob_paths(LIB_DIR, "*.exe"):
+    globbed_paths = find_glob_paths(DIST, "*.dll") + find_glob_paths(LIB_DIR, "*.exe")
+    debug(f"adding DLLs and EXEs: {globbed_paths}")
+    for globbed_path in globbed_paths:
         path = globbed_path[len(DIST)+1:]
         if path.startswith("lib/PyQt6"):
             rec_pyqt_lib(path)
@@ -1036,14 +1070,16 @@ def rec_sbom() -> None:
         else:
             rec = sbom_rec(path)
             if rec:
-                debug(f" * {path!r}: {rec[-2]!r}, {rec[-1]!r}")
+                package = rec["package"]
+                version = rec["version"]
+                debug(f" * {path!r}: {package!r}, {version!r}")
                 sbom[path] = rec
 
     # python modules:
     debug("adding python modules")
     SKIP_DIRS = (
         "xpra", "tlb",
-        "gi", "girepository-1.0", "gstreamer-1.0", "gtk-3.0", "gdk-pixbuf-2.0",
+        "gi", "gio", "pkcs11", "girepository-1.0", "gstreamer-1.0", "gtk-3.0", "gdk-pixbuf-2.0",
     )
     for child in os.listdir(LIB_DIR):
         if child in SKIP_DIRS or child.endswith(".dll"):
@@ -1051,9 +1087,14 @@ def rec_sbom() -> None:
         path = os.path.join(LIB_DIR, child)
         if os.path.isdir(path) or path.endswith(".py") or path.endswith(".pyd"):
             rec_py_lib(os.path.join("lib", child))
+    # add this one by hand because cx_Freeze hides it in `library.zip`,
+    # and we don't want to start unpacking a large ZIP file and converting .pyc to .py
+    # just for one filename:
+    rec_py_lib(os.path.join("lib", "decorator.py"))
 
     # summary: list of packages
-    packages = tuple(sorted(set(sbom_data[2] for sbom_data in sbom.values())))
+    packages = tuple(sorted(set(sbom_data["package"] for sbom_data in sbom.values())))
+    debug(f"adding package info for {packages}")
     packages_info: dict[str, tuple] = {}
     for package_name in packages:
         # shorten the package name:
@@ -1070,9 +1111,18 @@ def rec_sbom() -> None:
             debug(f"unexpected package prefix: {package!r}")
         # keep only the keys relevant to the sbom:
         info = get_package_info(package_name)
-        packages_info[package] = {key: info.get(key, "") for key in (
-            "Name", "Version", "Description", "Architecture", "URL", "Licenses",
-        ) if key in info}
+        exported_info = {}
+        for key in (
+            "Name", "Version", "Description",
+            "Architecture", "URL", "Licenses", "Depends On", "Required By", "Provides",
+        ):
+            value = info.get(key)
+            if str(value) == "None":
+                continue
+            if key in ("Depends On", "Required By", "Provides"):
+                value = [x.strip() for x in str(value).split(" ") if x.strip()]
+            exported_info[key] = value
+        packages_info[package] = exported_info
 
     debug(f"recording sbom data: {len(sbom)} paths, {len(packages)} packages")
     with open(BUILD_INFO, "a") as f:
@@ -1083,6 +1133,20 @@ def rec_sbom() -> None:
     # also replace it in the target directory:
     find_delete(LIB_DIR, os.path.basename(BUILD_INFO))
     copyfile(BUILD_INFO, f"{LIB_DIR}/{BUILD_INFO}")
+
+
+def export_sbom() -> None:
+    WIN_PYTHON = "C:\\Program Files\\Python312\\python.exe"
+    SBOM_SCRIPT = "packaging\\MSWindows\\cyclonedx_sbom.py"
+    output = f"{DIST}/{SBOM_JSON}"
+    delfile(output)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = "."
+    log_command([WIN_PYTHON, SBOM_SCRIPT, output], "export-sbom.log", env=env)
+    # make a copy that can be distributed separately:
+    SBOM_FILENAME = f"Xpra{version_info.extra}{version_info.arch_info}_{version_info.full_string}.json"
+    delfile(SBOM_FILENAME)
+    copyfile(output, SBOM_FILENAME)
 
 
 def verpatch() -> None:
@@ -1236,6 +1300,8 @@ def build(args) -> None:
         trim_python_libs()
         trim_pillow()
         fixup_zeroconf()
+        if args.light:
+            delete_libs(*EXTRA_PYTHON_MODULES)
         rm_empty_dirs()
 
     add_cuda(args.cuda)
@@ -1263,6 +1329,7 @@ def build(args) -> None:
     rec_options(args)
     if args.sbom:
         rec_sbom()
+        export_sbom()
 
     if args.zip_modules:
         zip_modules(args.light)
@@ -1301,6 +1368,9 @@ def main(argv):
         arg = unknownargs[1]
         if arg == "sbom":
             rec_sbom()
+        elif arg == "export-sbom":
+            load_version_info(args.light)
+            export_sbom()
         elif arg == "gen-caches":
             gen_caches()
         elif arg == "zip":
