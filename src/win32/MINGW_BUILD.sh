@@ -18,7 +18,7 @@ DO_SIGN=${DO_SIGN:-1}
 DO_TESTS=${DO_TESTS:-0}
 DO_FFMPEG=${DO_FFMPEG:-1}
 DO_SBOM=${DO_SBOM:-1}
-￼
+
 # these are only enabled for "full" builds:
 DO_CUDA=${DO_CUDA:-$DO_FULL}
 DO_SERVICE=${DO_SERVICE:-$DO_FULL}
