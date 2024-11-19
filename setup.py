@@ -600,7 +600,6 @@ def install_dev_env() -> None:
             "tests": ("gstreamer1", "gstreamer1-plugins-good", "pulseaudio", "pulseaudio-utils", "desktop-file-utils", "xclip", ),
             "x11": ("pkgconfig(xkbfile)", "pkgconfig(xtst)", "pkgconfig(xcomposite)",
                     "pkgconfig(xdamage)", "pkgconfig(xres)", "pkgconfig(xfixes)", "pkgconfig(xrandr)",
-                    "xorg-x11-drv-dummy",
                     ),
             "Xdummy": ("xorg-x11-drv-dummy", ),
             "proc": ("procps-ng-devel" if is_Fedora() else "pkgconfig(libprocps)", ),
