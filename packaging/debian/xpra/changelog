@@ -7,6 +7,9 @@ xpra (6.2.2-1) UNRELEASED; urgency=low
     missing MacOS AES library
     support providing build arguments using environment
     syntax errors in the MS Windows build setup script
+    `openh264` 2.5.0
+    `python-pillow` 11.0.0
+    use arch specific pkg-config for cuda, if found
   * Major:
     `xpra top` corrupted output, initialization failure
     `vsock` connection errors
@@ -15,7 +18,7 @@ xpra (6.2.2-1) UNRELEASED; urgency=low
     add `pyopenssl` to dependencies documentation
     unnecessary import
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 18 Nov 2024 20:34:26 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 19 Nov 2024 08:33:19 +0700
 
 xpra (6.2.1-1) UNRELEASED; urgency=low
   * System tray:

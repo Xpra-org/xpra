@@ -905,7 +905,7 @@ fi
 
 
 %changelog
-* Mon Nov 18 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
+* Tue Nov 19 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:
    `install-repo` file permission on Debian
    record which repository is targeted
@@ -914,6 +914,9 @@ fi
    missing MacOS AES library
    support providing build arguments using environment
    syntax errors in the MS Windows build setup script
+   `openh264` 2.5.0
+   `python-pillow` 11.0.0
+   use arch specific pkg-config for cuda, if found
 - Major:
    `xpra top` corrupted output, initialization failure
    `vsock` connection errors

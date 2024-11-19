@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.2] 2024-11-18
+## [6.2.2] 2024-11-19
 * Platforms, build and packaging:
     * [`install-repo` file permission on Debian](https://github.com/Xpra-org/xpra/commit/d6ed81dfce74283c8ad8f772e3a3269164cbf84e)
     * [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/fe83ee09b17c2a7e26b228a1d5fc208aa347c2aa)
@@ -9,6 +9,9 @@
     * [missing MacOS AES library](https://github.com/Xpra-org/xpra/commit/25b568965ddb388f3d21d666a722043dbf02351b)
     * [support providing build arguments using environment](https://github.com/Xpra-org/xpra/commit/cc345e3bb76349d9900dd391bca9e07c80f83cea)
     * [syntax errors in the MS Windows build setup script](https://github.com/Xpra-org/xpra/commit/121c33de3d8fe54ede6c7ca30f478b5e0a1823eb)
+    * [`openh264` 2.5.0](https://github.com/Xpra-org/xpra/commit/580822e4a035e0a1a559b443f2392bce374eb979)
+    * [`python-pillow` 11.0.0](https://github.com/Xpra-org/xpra/commit/03f6306a2b2a734fa1479fa50b02f7dca9f1c8bb)
+    * [use arch specific pkg-config for cuda, if found](https://github.com/Xpra-org/xpra/commit/423e9d353ef57cee93f913cd8d9e6582ac640d62)
 * Major:
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/129c5b1f2695ce2f085268134b1273cf94c4e56f), [initialization failure](https://github.com/Xpra-org/xpra/commit/fc8638d436fa09e98f2ecb324d249b4145763955)
     * [`vsock` connection errors](https://github.com/Xpra-org/xpra/commit/c0448d2988d5497aac72d528ed1edc9a13514a6e)
