@@ -59,3 +59,9 @@ VirtualGL and Xwayland will tie the OpenGL application to a secondary context (X
 Please refer to the extensive [documentation](https://github.com/VirtualGL/virtualgl/tree/master/doc). \
 Some applications may require workarounds, ie: [12: Using VirtualGL with setuid/setgid Executables
 ](https://github.com/VirtualGL/virtualgl/blob/master/doc/setuid.txt).
+
+## Mesa configuration
+Unless you are using the nvidia drivers, chances are that you will be using [mesa](https://www.mesa3d.org/).
+Software rendering uses the [llvmpipe](https://docs.mesa3d.org/drivers/llvmpipe.html) driver.
+
+Mesa's [documentation](https://docs.mesa3d.org/index.html) is extensive, in particular the [environment variables](https://docs.mesa3d.org/envvars.html) can be very useful.
