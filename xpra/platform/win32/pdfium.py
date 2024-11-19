@@ -23,11 +23,11 @@ except WindowsError as e:		#@UndefinedVariable
 
 class FPDF_LIBRARY_CONFIG(Structure):
 	_fields_ = [
-		("version",				c_int),
+		("version",                c_int),
 		("m_pUserFontPaths", POINTER(POINTER(c_char))),
-		("m_pIsolate", c_void_p),
-		("m_v8EmbedderSlot",	c_uint),
-		]
+		("m_pIsolate", POINTER(None)),
+		("m_v8EmbedderSlot",    c_uint),
+	]
 
 FPDF_DOCUMENT = c_void_p
 FPDF_PAGE = c_void_p
@@ -139,11 +139,12 @@ def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
 				log("FPDF_LoadPage()=%s page %i loaded", page, i)
 				StartPage(hdc)
 				FPDF_RenderPage(hdc, page, x, y, w, h, rotate, flags)
-				log("FPDF_RenderPage page %i rendered", i)
-				FPDF_ClosePage(hdc)
 				EndPage(hdc)
+				FPDF_ClosePage(page)
+				log("FPDF_RenderPage page %i rendered", i)
 		finally:
-			EndDoc(hdc)
+				FPDF_CloseDocument(doc)
+				EndDoc(hdc)
 	finally:
 		FPDF_DestroyLibrary()
 	return jobid
