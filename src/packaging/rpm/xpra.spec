@@ -926,22 +926,37 @@ fi
 
 
 %changelog
-* Wed Sep 04 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
+* Tue Nov 19 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
 - build and packaging:
      libyuv 0.1878.20231004
      packaging updates for CentOS7: libyuv, skip pycuda
      python-netifaces missing gcc build dependency
      remove outdated numpy packaging workaround on MS Windows
-     ffmpeg v7 compatibility for decoder and swscale
-     remove ffmpeg encoder from MS Windows builds
+     ffmpeg v7 compatibility for decoder and swscale, skip encoder
+     remove ffmpeg encoder from MS Windows and MacOS builds
+     never bundle any Qt components
+     match `comtypes` module changes
+     support build arguments specified using an environment variable
+     support new repository build script target file
+     cffi packaging workaround for MacOS
+     produce an SBOM file on MS Windows
+     use arch specific pkg-config for cuda, if found
+     pynvml 12.560.30
+     pyuinput 1.0.1
+     require clang to build the CUDA kernels, instead of GCC >= 14
 - encodings:
      avoid slow modules (ie: csc_cython)
      stick to the same video scaling setting longer, avoid big swings
      handle decoding of padded frames
+     quality and speed can be used with all generic encodings
 - major:
+     MS Windows printing crash
      system tray cleanup crash
+     automatic port assignment error
+     raise AES key derivation limits
      missing start menu
      try harder to find the matching key, using the keyval, key name - lowercase if needed, use default modifiers if that's all we have
+     only preserve keycodes for native X11 clients
      context errors with sync-xvfb switch
      print all pages on MS Windows
      errors when the connection is closed whilst we process it
@@ -954,7 +969,14 @@ fi
      ignore framerate when parsing vfb resolutions
      expose all clipboard targets
      authentication aborted due to encryption not detected
+     error redirection failures should not propagate
+     xpra top failures on some platforms (ie: MS Windows)
+     xpra top corrupted output
+     vsock connection errors
 - minor and cosmetic fixes:
+     MS Windows setup script syntax errors
+     proxy servers should respond to `id` requests
+     encoding speed and quality menus not sticking
      map missing modifiers using defaults
      don't assume that zlib is available
      handle invalid dbus-launch command options
@@ -963,7 +985,9 @@ fi
      try to handle missing python pillow slightly more gracefully
      log opengl probe command
      confusing X11 display message
+     avoid X11 client message format warnings
      use correct type for numlock modifier
+
 
 * Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> 3.1.8-10.1xpra1
 - major:
