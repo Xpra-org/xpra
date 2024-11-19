@@ -17,7 +17,8 @@ DO_MSI=${DO_MSI:-0}
 DO_SIGN=${DO_SIGN:-1}
 DO_TESTS=${DO_TESTS:-0}
 DO_FFMPEG=${DO_FFMPEG:-1}
-
+DO_SBOM=${DO_SBOM:1}
+￼
 # these are only enabled for "full" builds:
 DO_CUDA=${DO_CUDA:-$DO_FULL}
 DO_SERVICE=${DO_SERVICE:-$DO_FULL}
@@ -468,6 +469,20 @@ find xpra -name "*.cu" -exec rm {} \;
 rmdir xpra/*/*/* 2> /dev/null
 rmdir xpra/*/* 2> /dev/null
 rmdir xpra/* 2> /dev/null
+
+# workaround for zeroconf - just copy it wholesale
+# since I have no idea why cx_Freeze struggles with it:
+rm -fr zeroconf
+ZEROCONF_DIR=`$PYTHON -c "import zeroconf,os;print(os.path.dirname(zeroconf.__file__))"`
+cp -apr $ZEROCONF_DIR ./
+#leave ./lib
+popd > /dev/null
+#leave ./dist
+popd > /dev/null
+if [ "${DO_SBOM}" != "0" ]; then
+  ./packaging/MSWindows/BUILD.py sbom
+fi
+pushd dist/lib > /dev/null
 #zip up some modules:
 if [ "${PYTHON_MAJOR_VERSION}" != "3" ]; then
 	rm -fr gtk-3.0 lib2to3
@@ -492,14 +507,9 @@ if [ "${ZIP_MODULES}" == "1" ]; then
 			http importlib \
 			logging queue urllib xml xmlrpc concurrent collections
 fi
-# workaround for zeroconf - just copy it wholesale
-# since I have no idea why cx_Freeze struggles with it:
-rm -fr zeroconf
-ZEROCONF_DIR=`$PYTHON -c "import zeroconf,os;print(os.path.dirname(zeroconf.__file__))"`
-cp -apr $ZEROCONF_DIR ./
-
 popd > /dev/null
 
+pushd dist > /dev/null
 rm -fr share/xml
 rm -fr share/glib-2.0/codegen share/glib-2.0/gdb share/glib-2.0/gettext
 rm -fr share/themes/Default/gtk-2.0*
