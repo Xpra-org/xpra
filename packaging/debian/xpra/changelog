@@ -10,6 +10,9 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - record which repository is targeted
    - support providing build arguments using environment
    - syntax errors in the MS Windows build setup script
+   - aioquic 1.2.0 build fix
+   - use arch specific pkg-config for cuda, if found
+   - pynvml 12.560.30
   * Major:
    - `xpra top` corrupted output, initialization failure
    - focus lost
@@ -32,7 +35,7 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - typo in manpage
    - remove unused logger]
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 18 Nov 2024 20:27:03 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 19 Nov 2024 09:29:52 +0700
 
 xpra (5.0.10-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.11] 2024-11-18
+## [5.0.11] 2024-11-19
 * Platforms, build and packaging:
     * [don't build ffmpeg encoder on MacOS](https://github.com/Xpra-org/xpra/commit/bf2f1a3f4927428da0ae4c5d40e5125c4c8617d0)
     * [RPM builds without nvidia codecs failed](https://github.com/Xpra-org/xpra/commit/eeb6fd4cfb7c9c486b0c5649a993c4dc79099f34)
@@ -12,6 +12,9 @@
     * [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/ad17c3b1fe6428769d232ea645b1e8849810c698)
     * [support providing build arguments using environment](https://github.com/Xpra-org/xpra/commit/986d88119348db767aaccd008cc145416898fb8d)
     * [syntax errors in the MS Windows build setup script](https://github.com/Xpra-org/xpra/commit/92e6cb9fc0c23ad3696620bdcd63aafabe7eaa55)
+    * [aioquic 1.2.0 build fix](https://github.com/Xpra-org/xpra/commit/da8b51531850cd4e584d6e62dd8d8a993e505aa2)
+    * [use arch specific pkg-config for cuda, if found](https://github.com/Xpra-org/xpra/commit/eca3def0b05f2b690f32a2bdf2c35865e006734a)
+    * [pynvml 12.560.30](https://github.com/Xpra-org/xpra/commit/963bfd306d30a422996adbcc67e57ca0df6b240d)
 * Major:
     * [`run_scaled` syntax error](https://github.com/Xpra-org/xpra/commit/75d25ef615b8782f221eeacb3d424f6aabbb9b93)
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/d631793d0c1f8d35593aa51c749af4ac70871c3c), [initialization failure](https://github.com/Xpra-org/xpra/commit/be38d098da0302a37e1ef108ad28d44b97472617)

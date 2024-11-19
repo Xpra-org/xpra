@@ -785,7 +785,7 @@ fi
 
 
 %changelog
-* Mon Nov 18 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
+* Tue Nov 19 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:
    don't build ffmpeg encoder on MacOS
    RPM builds without nvidia codecs failed
@@ -797,6 +797,9 @@ fi
    record which repository is targeted
    support providing build arguments using environment
    syntax errors in the MS Windows build setup script
+   aioquic 1.2.0 build fix
+   use arch specific pkg-config for cuda, if found
+   pynvml 12.560.30
 - Major:
    `xpra top` corrupted output, initialization failure
    focus lost
