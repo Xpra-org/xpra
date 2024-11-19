@@ -421,6 +421,8 @@ external_excludes = [
                     ]
 if not PYTHON3:
     external_excludes.append("cpuinfo")
+else:
+    unicode = str
 if not html5_ENABLED and not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl"]
 if not html5_ENABLED:
@@ -674,7 +676,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
         for package_options in pkgs_options:
             #for this package options, find the ones that work
             valid_option = None
-            if isinstance(package_options, str):
+            if isinstance(package_options, (str, unicode)):
                 options = [package_options]     #got given just one string
             else:
                 assert isinstance(package_options, list)
