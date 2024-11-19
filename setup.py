@@ -274,7 +274,7 @@ vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS=
 vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
 ffmpeg_ENABLED          = DEFAULT and BITS==64
-enc_ffmpeg_ENABLED      = ffmpeg_ENABLED and pkg_config_version("58.18", "libavcodec")
+enc_ffmpeg_ENABLED      = ffmpeg_ENABLED and pkg_config_version("58.18", "libavcodec") and not pkg_config_version("59.0", "libavcodec")
 #opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
