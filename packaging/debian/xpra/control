@@ -40,6 +40,10 @@ Build-Depends: debhelper (>= 8)
               ,python3-cairo-dev
               ,python-gi-dev
               ,gcc
+# only needed for building the CUDA kernels instead of gcc >= 14:
+#oracular:              ,clang-19
+#trixie:              ,clang-16
+#sid:              ,clang-19
               ,dh-python
               ,libsystemd-dev
               ,libpam0g-dev
