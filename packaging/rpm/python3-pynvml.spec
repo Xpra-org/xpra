@@ -59,6 +59,9 @@ rm -rf %{buildroot}
 %{python3_sitelib}/nvidia_ml_py-%{version}*-py*.egg-info
 
 %changelog
+* Tue Sep 03 2024 Antoine Martin <antoine@xpra.org> - 12.560.30-1
+- new upstream release
+
 * Mon Jun 03 2024 Antoine Martin <antoine@xpra.org> - 12.555.43-1
 - new upstream release
 
