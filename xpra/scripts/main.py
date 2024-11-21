@@ -1322,7 +1322,7 @@ def exec_reconnect(script_file: str, cmdline) -> ExitCode:
     if is_debug_enabled("client"):
         log = Logger("client")
         log.info(f"reconnecting using script file {script_file!r}")
-        log.info(f" and {cmdline=}")
+        log.info(f" and cmdline={cmdline}")
     try:
         if WIN32:
             return win32_reconnect(script_file, cmdline)
