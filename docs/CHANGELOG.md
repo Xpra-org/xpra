@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.11] 2024-11-19
+## [5.0.11] 2024-11-21
 * Platforms, build and packaging:
     * [don't build ffmpeg encoder on MacOS](https://github.com/Xpra-org/xpra/commit/bf2f1a3f4927428da0ae4c5d40e5125c4c8617d0)
     * [RPM builds without nvidia codecs failed](https://github.com/Xpra-org/xpra/commit/eeb6fd4cfb7c9c486b0c5649a993c4dc79099f34)
@@ -17,6 +17,8 @@
     * [pynvml 12.560.30](https://github.com/Xpra-org/xpra/commit/963bfd306d30a422996adbcc67e57ca0df6b240d)
     * [pyuinput 1.0.1](https://github.com/Xpra-org/xpra/commit/2b9d5486692e6f72ee96d35e5fde5a09d8c05073)
     * [don't try to build ffmpeg encoder with ffmpeg >= 7](https://github.com/Xpra-org/xpra/commit/6122a4dd8bf0ae1e8674da47590338e949e12dd1)
+    * [install clang++ on Debian distros that need it](https://github.com/Xpra-org/xpra/commit/97f1b03aefd3c39c2714ce8d24b91ad47ff79b1f) [but not on riscv64](https://github.com/Xpra-org/xpra/commit/f33422cd5248d92ba3f58f07da842ec2465e9962)
+    * [newer libyuv needed newer patches](https://github.com/Xpra-org/xpra/commit/ada3a90820121f9957bd7406386738649d029fcd)
 * Major:
     * [`run_scaled` syntax error](https://github.com/Xpra-org/xpra/commit/75d25ef615b8782f221eeacb3d424f6aabbb9b93)
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/d631793d0c1f8d35593aa51c749af4ac70871c3c), [initialization failure](https://github.com/Xpra-org/xpra/commit/be38d098da0302a37e1ef108ad28d44b97472617)

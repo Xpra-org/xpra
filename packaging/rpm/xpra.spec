@@ -785,7 +785,7 @@ fi
 
 
 %changelog
-* Tue Nov 19 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
+* Wed Nov 21 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:
    don't build ffmpeg encoder on MacOS
    RPM builds without nvidia codecs failed
@@ -802,6 +802,8 @@ fi
    pynvml 12.560.30
    pyuinput 1.0.1
    don't try to build ffmpeg encoder with ffmpeg >= 7
+   install clang++ on Debian distros that need it but not on riscv64
+   newer libyuv needed newer patches
 - Major:
    `xpra top` corrupted output, initialization failure
    focus lost

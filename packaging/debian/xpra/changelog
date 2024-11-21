@@ -15,6 +15,8 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - pynvml 12.560.30
    - pyuinput 1.0.1
    - don't try to build ffmpeg encoder with ffmpeg >= 7
+   - install clang++ on Debian distros that need it but not on riscv64
+   - newer libyuv needed newer patches
   * Major:
    - `xpra top` corrupted output, initialization failure
    - focus lost
@@ -37,7 +39,7 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - typo in manpage
    - remove unused logger]
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 19 Nov 2024 21:04:03 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 21 Nov 2024 21:57:13 +0700
 
 xpra (5.0.10-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
