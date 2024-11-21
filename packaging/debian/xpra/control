@@ -54,9 +54,9 @@ Build-Depends: debhelper (>= 8)
 #              ,cython3
               ,gcc
 # only needed for building the CUDA kernels instead of gcc >= 14:
-#oracular:              ,clang-19 [!riscv64]
-#trixie:              ,clang-16 [!riscv64]
-#sid:              ,clang-19 [!riscv64]
+#oracular:              ,clang [!riscv64]
+#trixie:              ,clang [!riscv64]
+#sid:              ,clang [!riscv64]
               ,libavcodec-dev [!i386]
               ,libavformat-dev [!i386]
               ,libavutil-dev [!i386]
