@@ -174,12 +174,10 @@ class YUVImageWrapper(ImageWrapper):
             free(<void *> buf)
 
 
-def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilterNone):
+def argb_scale(image, int src_width, int src_height, int dst_width, int dst_height, FilterMode filtermode=kFilterNone):
     cdef iplanes = image.get_planes()
     pixels = image.get_pixels()
     cdef int stride = image.get_rowstride()
-    cdef int width = image.get_width()
-    cdef int height = image.get_height()
     cdef int bpp = image.get_bytesperpixel()
     assert bpp in (3, 4), "invalid bytes per pixel: %s" % bpp
     assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
@@ -189,15 +187,15 @@ def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilt
 
     cdef uint8_t* buf = <uint8_t*> memalign(dst_stride*dst_height)
     if not buf:
-        raise RuntimeError("failed to allocate %i bytes for output buffer" % (dst_stride*height, ))
+        raise RuntimeError("failed to allocate %i bytes for output buffer" % (dst_stride*dst_height, ))
     cdef int result = -1
     cdef const uint8_t* src
     cdef Py_ssize_t pic_buf_len = 0
     assert object_as_buffer(pixels, <const void**> &src, &pic_buf_len)==0
-    assert pic_buf_len >= stride*height
+    assert pic_buf_len >= stride*src_height
     with nogil:
         result = ARGBScale(src,
-                           stride, width, height,
+                           stride, src_width, src_height,
                            buf, dst_stride, dst_width, dst_height,
                            filtermode)
     assert result==0, "libyuv ARGBScale failed and returned %i" % result
@@ -410,13 +408,13 @@ cdef class ColorspaceConverter:
     def convert_yuv420p_image(self, image):
         cdef double start = monotonic_time()
         cdef int iplanes = image.get_planes()
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
+        cdef int width = self.dst_width
+        cdef int height = self.dst_height
         if iplanes!=3:
             raise ValueError("invalid number of planes: %s for %s" % (iplanes, self.src_format))
         if self.dst_format not in ("RGB", "XBGR", "RGBX"):
             raise ValueError("invalid dst format %s" % (self.dst_format, ))
-        if self.rgb_scaling:
+        if self.rgb_scaling or self.yuv_scaling:
             raise ValueError("cannot scale %s" % (self.src_format, ))
         pixels = image.get_pixels()
         strides = image.get_rowstride()
@@ -481,13 +479,13 @@ cdef class ColorspaceConverter:
         cdef int i
         cdef double start = monotonic_time()
         cdef int iplanes = image.get_planes()
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
+        cdef int width = self.src_width
+        cdef int height = self.src_height
         if iplanes!=ImageWrapper.PACKED:
             raise ValueError("invalid plane input format: %s" % (iplanes, ))
         if self.rgb_scaling:
             #first downscale:
-            image = argb_scale(image, self.dst_width, self.dst_height, self.filtermode)
+            image = argb_scale(image, self.src_width, self.src_height, self.dst_width, self.dst_height, self.filtermode)
             width = self.dst_width
             height = self.dst_height
         cdef int stride = image.get_rowstride()
