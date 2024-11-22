@@ -7,6 +7,8 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - match `comtypes` module changes
    - run CI on Ubuntu 22.04 image
    - generate SBOM for MS Windows builds
+   - missing SVG loader on MS Windows
+   - loaders cache not populated
    - record which repository is targeted
    - support providing build arguments using environment
    - syntax errors in the MS Windows build setup script
@@ -19,6 +21,8 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - install clang++ on Debian distros that need it but not on riscv64
    - newer libyuv needed newer patches
   * Major:
+   - prevent buffer overflows in `libyuv` converter
+   - handle padded video streams (ie: from NVENC)
    - `xpra top` corrupted output, initialization failure
    - focus lost
    - keycode mapping for Wayland clients
@@ -35,12 +39,14 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - version update dialog cannot be closed
    - prevent missing menu data from causing connection errors
    - redirection context errors should not propagate
+   - the `openh264` home page states that 4k is the encoder limit
   * Cosmetic:
    - silence http timeouts
    - typo in manpage
    - remove unused logger]
+   - handle missing `python-pillow` more gracefully
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 22 Nov 2024 12:01:37 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 22 Nov 2024 20:59:25 +0700
 
 xpra (5.0.10-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

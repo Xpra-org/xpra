@@ -9,6 +9,8 @@
     * [match `comtypes` module changes](https://github.com/Xpra-org/xpra/commit/51c589e30159e2d3559e144d8f6e64fd3644b869)
     * [run CI on Ubuntu 22.04 image](https://github.com/Xpra-org/xpra/commit/37cbdc2ca3f6991f792ae40786f84da3109db197)
     * [generate SBOM for MS Windows builds](https://github.com/Xpra-org/xpra/commit/3a060d5adfbedc48b71f8fb5ab7cebc610eeb0a8)
+    * [missing SVG loader on MS Windows](https://github.com/Xpra-org/xpra/commit/3e98a4a5bbc510dc12f567776350c67514ecd7c9)
+    * [loaders cache not populated](https://github.com/Xpra-org/xpra/commit/9923f1597a4841d70ed710a1fd7152e28a4f4960)
     * [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/ad17c3b1fe6428769d232ea645b1e8849810c698)
     * [support providing build arguments using environment](https://github.com/Xpra-org/xpra/commit/986d88119348db767aaccd008cc145416898fb8d)
     * [syntax errors in the MS Windows build setup script](https://github.com/Xpra-org/xpra/commit/92e6cb9fc0c23ad3696620bdcd63aafabe7eaa55)
@@ -21,6 +23,8 @@
     * [install clang++ on Debian distros that need it](https://github.com/Xpra-org/xpra/commit/97f1b03aefd3c39c2714ce8d24b91ad47ff79b1f) [but not on riscv64](https://github.com/Xpra-org/xpra/commit/f33422cd5248d92ba3f58f07da842ec2465e9962)
     * [newer libyuv needed newer patches](https://github.com/Xpra-org/xpra/commit/ada3a90820121f9957bd7406386738649d029fcd)
 * Major:
+    * [prevent buffer overflows in `libyuv` converter](https://github.com/Xpra-org/xpra/commit/b34f986035b7164860fb762f12351d5d2a2c5ee4)
+    * [handle padded video streams (ie: from NVENC)](https://github.com/Xpra-org/xpra/commit/b5da77b7386af6737dad7a6053f86f2899da8a91)
     * [`run_scaled` syntax error](https://github.com/Xpra-org/xpra/commit/75d25ef615b8782f221eeacb3d424f6aabbb9b93)
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/d631793d0c1f8d35593aa51c749af4ac70871c3c), [initialization failure](https://github.com/Xpra-org/xpra/commit/be38d098da0302a37e1ef108ad28d44b97472617)
     * [focus lost](https://github.com/Xpra-org/xpra/commit/2551a32bac64aee8354c4962426e80eb9fe3a298)
@@ -39,10 +43,12 @@
     * [version update dialog cannot be closed](https://github.com/Xpra-org/xpra/commit/7643e477bf57dda71e137e73fe51f9ebe7ccbd60)
     * [prevent missing menu data from causing connection errors](https://github.com/Xpra-org/xpra/commit/deab47e10cc95005ca13d13afdc9e0f3e05a7c6e)
     * [redirection context errors should not propagate](https://github.com/Xpra-org/xpra/commit/0011ee06954a71b1a8aab9bd43ff0e0ed46578e4)
+    * [the `openh264` home page states that 4k is the encoder limit](https://github.com/Xpra-org/xpra/commit/1f0b5aaf811c2eed631387d6832e17cab5edca16)
 * Cosmetic:
     * [silence http timeouts](https://github.com/Xpra-org/xpra/commit/892f8de2b8c50928d30c27889350b46be000e83b)
     * [typo in manpage](https://github.com/Xpra-org/xpra/commit/233c8ddca6ceae90fe59ad326ff20f864c658b83)
     * [remove unused logger](https://github.com/Xpra-org/xpra/commit/a2e14564ee7cf349b408e20b51d9e4f0ca8c2c5e)
+    * [handle missing `python-pillow` more gracefully](https://github.com/Xpra-org/xpra/commit/01c2f4ac050173f519a9de1b88ae5e4c67fcd17f)
 
 ## [5.0.10] 2024-09-10
 * Platforms, build and packaging:

@@ -794,6 +794,8 @@ fi
    match `comtypes` module changes
    run CI on Ubuntu 22.04 image
    generate SBOM for MS Windows builds
+   missing SVG loader on MS Windows
+   loaders cache not populated
    record which repository is targeted
    support providing build arguments using environment
    syntax errors in the MS Windows build setup script
@@ -806,6 +808,8 @@ fi
    install clang++ on Debian distros that need it but not on riscv64
    newer libyuv needed newer patches
 - Major:
+   prevent buffer overflows in `libyuv` converter
+   handle padded video streams (ie: from NVENC)
    `xpra top` corrupted output, initialization failure
    focus lost
    automatic port assignment error
@@ -822,10 +826,12 @@ fi
    version update dialog cannot be closed
    prevent missing menu data from causing connection errors
    redirection context errors should not propagate
+   the `openh264` home page states that 4k is the encoder limit
 - Cosmetic:
    silence http timeouts
    typo in manpage
-   remove unused logger]
+   remove unused logger
+   handle missing `python-pillow` more gracefully
 
 * Tue Sep 10 2024 Antoine Martin <antoine@xpra.org> 5.0.10-10
 - Platforms, build and packaging:
