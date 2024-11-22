@@ -133,14 +133,10 @@ def get_build_args(args) -> list[str]:
         for option in (
             "shadow", "server", "proxy", "rfb",
             "dbus",
-            "encoders", "avif", "gstreamer_video",
             "nvfbc", "cuda_kernels",
             "csc_cython",
             "webcam",
             "win32_tools",
-            "docs",
-            "qt6_client",
-            "websockets_browser_cookie",
         ):
             xpra_args.append(f"--without-{option}")
         xpra_args.append("--with-Os")
