@@ -140,7 +140,6 @@ def get_build_args(args) -> list[str]:
             "win32_tools",
             "docs",
             "qt6_client",
-            "websockets_browser_cookie",
         ):
             xpra_args.append(f"--without-{option}")
         xpra_args.append("--with-Os")
