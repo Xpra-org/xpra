@@ -128,8 +128,8 @@ def get_appimage(app_name, icondata=b"", menu_icon_size=24) -> Gtk.Image | None:
                     # there is almost no chance pillow will be able to load it
                     # (it doesn't even have svg support at time of writing)
                     # so don't bother showing another error for the same data:
-                    icondata = None
                     err(e)
+                    icondata = None
     if not pixbuf and icondata:
         # let's try pillow:
         try:
