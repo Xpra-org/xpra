@@ -346,7 +346,7 @@ find lib/ -name "*dll.a" -exec rm {} \;
 
 #only keep the actual loaders, not all the other crap cx_Freeze put there:
 mkdir lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp
-mv lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-*.dll lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp/
+mv lib/gdk-pixbuf-2.0/2.10.0/loaders/*pixbufloader*.dll lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp/
 rm -fr lib/gdk-pixbuf-2.0/2.10.0/loaders
 mv lib/gdk-pixbuf-2.0/2.10.0/loaders.tmp lib/gdk-pixbuf-2.0/2.10.0/loaders
 if [ "${DO_FULL}" == "0" ]; then
