@@ -1,7 +1,10 @@
 # Changelog
 
-## [6.2.2] 2024-11-19
+## [6.2.2] 2024-11-22
 * Platforms, build and packaging:
+    * [SBOM support on MS Windows](https://github.com/Xpra-org/xpra/commit/78a6e04cd39f694a38200dc059996ce02beb7ac1), [use it](https://github.com/Xpra-org/xpra/commit/4042c8355a6a9225bb9891d56b53931f4264a525), [fix it](https://github.com/Xpra-org/xpra/commit/ac7a860264680615db570a5e4ad4a014bf852952)
+    * [missing SVG loader on MS Windows](https://github.com/Xpra-org/xpra/commit/33f59f2126ccf6c26b7c1d28c1f35677b51986ac)
+    * [loaders cache not populated on MS Windows](https://github.com/Xpra-org/xpra/commit/5985efd29669624b70d2e64add09a0809d651e91)
     * [`install-repo` file permission on Debian](https://github.com/Xpra-org/xpra/commit/d6ed81dfce74283c8ad8f772e3a3269164cbf84e)
     * [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/fe83ee09b17c2a7e26b228a1d5fc208aa347c2aa)
     * [`libproxy` support for MS Windows clients](https://github.com/Xpra-org/xpra/commit/1e9e6ac3983ea23c1ce3e3114b62f8cdaa30a5f0)
@@ -12,13 +15,19 @@
     * [`openh264` 2.5.0](https://github.com/Xpra-org/xpra/commit/580822e4a035e0a1a559b443f2392bce374eb979)
     * [`python-pillow` 11.0.0](https://github.com/Xpra-org/xpra/commit/03f6306a2b2a734fa1479fa50b02f7dca9f1c8bb)
     * [use arch specific pkg-config for cuda, if found](https://github.com/Xpra-org/xpra/commit/423e9d353ef57cee93f913cd8d9e6582ac640d62)
+    * [require `clang++` for building CUDA kernels on some Debian distributions](https://github.com/Xpra-org/xpra/commit/85a5462819a511a660792a8e25b1ad2d0d662c67) + [fixup](https://github.com/Xpra-org/xpra/commit/6966b65df8a1968ce687d2e68bf96bc3d2261c54)
+    * [`install-dev` to honour Xdummy flag](https://github.com/Xpra-org/xpra/commit/759e2d7e18006ca20d62339b021ebe72e0da5a0e)
 * Major:
+    * [prevent padded image overflows](https://github.com/Xpra-org/xpra/commit/6d952d483299017ece05dd9b47b4913d14696967)
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/129c5b1f2695ce2f085268134b1273cf94c4e56f), [initialization failure](https://github.com/Xpra-org/xpra/commit/fc8638d436fa09e98f2ecb324d249b4145763955)
     * [`vsock` connection errors](https://github.com/Xpra-org/xpra/commit/c0448d2988d5497aac72d528ed1edc9a13514a6e)
     * [printing errors on MS Windows](https://github.com/Xpra-org/xpra/commit/fbf1c7a3e393974fe8c7d7fc8bf266639f2d9731)
 * Cosmetic:
     * [add `pyopenssl` to dependencies documentation](https://github.com/Xpra-org/xpra/commit/4e7941fa8d18e6b90fa257bad34401a5aad5c81f)
     * [unnecessary import](https://github.com/Xpra-org/xpra/commit/6e389e0b1292897d46f46f39a33eb0b9551d5c2b)
+    * [broken OpenGL drivers documentation link](https://github.com/Xpra-org/xpra/commit/0248d7db2845727b5f307fc64d76a9fb91d5f705)
+    * [handle missing pillow more gracefully](https://github.com/Xpra-org/xpra/commit/631a5b2d7a5d4352ec2bda7e2fd6cf149ae4565f)
+    * [show full icondata error](https://github.com/Xpra-org/xpra/commit/4e7d1194e9f29969b5f0f9b62a607454d2a0bb50)
 
 ## [6.2.1] 2024-10-29
 * System tray:

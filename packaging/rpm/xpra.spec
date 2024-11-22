@@ -905,8 +905,11 @@ fi
 
 
 %changelog
-* Tue Nov 19 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
+* Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:
+   SBOM support on MS Windows
+   missing SVG loader on MS Windows
+   loaders cache not populated on MS Windows
    `install-repo` file permission on Debian
    record which repository is targeted
    `libproxy` support for MS Windows clients
@@ -917,13 +920,19 @@ fi
    `openh264` 2.5.0
    `python-pillow` 11.0.0
    use arch specific pkg-config for cuda, if found
+   require `clang++` for building CUDA kernels on some Debian distributions
+   `install-dev` to honour Xdummy flag
 - Major:
+   prevent padded image overflows
    `xpra top` corrupted output, initialization failure
    `vsock` connection errors
    printing errors on MS Windows
 - Cosmetic:
    add `pyopenssl` to dependencies documentation
    unnecessary import
+   broken OpenGL drivers documentation link
+   handle missing pillow more gracefully
+   show full icondata error
 
 * Tue Oct 29 2024 Antoine Martin <antoine@xpra.org> 6.2.1-10
 - System tray:

@@ -1,5 +1,8 @@
 xpra (6.2.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
+    SBOM support on MS Windows
+    missing SVG loader on MS Windows
+    loaders cache not populated on MS Windows
     `install-repo` file permission on Debian
     record which repository is targeted
     `libproxy` support for MS Windows clients
@@ -10,15 +13,20 @@ xpra (6.2.2-1) UNRELEASED; urgency=low
     `openh264` 2.5.0
     `python-pillow` 11.0.0
     use arch specific pkg-config for cuda, if found
+    require `clang++` for building CUDA kernels on some Debian distributions
+    `install-dev` to honour Xdummy flag
   * Major:
+    prevent padded image overflows
     `xpra top` corrupted output, initialization failure
     `vsock` connection errors
     printing errors on MS Windows
   * Cosmetic:
     add `pyopenssl` to dependencies documentation
     unnecessary import
+    handle missing pillow more gracefully
+    show full icondata error
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 19 Nov 2024 08:33:19 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 22 Nov 2024 21:10:49 +0700
 
 xpra (6.2.1-1) UNRELEASED; urgency=low
   * System tray:
