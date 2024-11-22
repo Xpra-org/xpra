@@ -402,7 +402,7 @@ def get_output_colorspaces(encoding, input_colorspace) -> Sequence[str]:
 
 #actual limits (which we cannot reach because we hit OOM):
 #MAX_WIDTH, MAX_HEIGHT = (16384, 16384)
-MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
+MAX_WIDTH, MAX_HEIGHT = (3840, 2160)
 
 def get_specs(encoding, colorspace) -> Sequence[VideoSpec]:
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
