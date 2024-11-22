@@ -105,19 +105,23 @@ def load_icon_from_file(filename):
             log.error("Error loading '%s':", filename)
             log.error(" %s", e)
         #try PIL:
-        from PIL import Image
         try:
-            img = Image.open(filename)
-        except Exception as e:
-            log("Image.open(%s)", filename, exc_info=True)
-            log.error("Error loading '%s':", filename)
-            log.error(" %s", e)
-            return None
-        buf = BytesIO()
-        img.save(buf, "PNG")
-        pngicondata = buf.getvalue()
-        buf.close()
-        return pngicondata, "png"
+            from PIL import Image
+        except ImportError:
+            pass
+        else:
+            try:
+                img = Image.open(filename)
+            except Exception as e:
+                log("Image.open(%s)", filename, exc_info=True)
+                log.error("Error loading '%s':", filename)
+                log.error(" %s", e)
+                return None
+            buf = BytesIO()
+            img.save(buf, "PNG")
+            pngicondata = buf.getvalue()
+            buf.close()
+            return pngicondata, "png"
     icondata = load_binary_file(filename)
     if not icondata:
         return None
