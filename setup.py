@@ -444,21 +444,24 @@ def filter_argv() -> None:
         for x in SWITCHES:
             with_str = f"--with-{x}"
             without_str = f"--without-{x}"
+            yes_str = f"--{x}"
+            no_str = f"--no-{x}"
             var_names = list(SWITCH_ALIAS.get(x, [x]))
             # recurse once, so an alias can container aliases:
             for v in tuple(var_names):
                 var_names += list(SWITCH_ALIAS.get(v, []))
-            if arg.startswith(with_str+"="):
-                for var in var_names:
-                    globals()[f"{var}_ENABLED"] = arg[len(with_str)+1:]
-                matched = True
-                break
-            if arg==with_str:
+            for with_value_str in (with_str, yes_str):
+                if arg.startswith(with_value_str+"="):
+                    for var in var_names:
+                        globals()[f"{var}_ENABLED"] = arg[len(with_value_str)+1:]
+                    matched = True
+                    break
+            if arg in (with_str, yes_str):
                 for var in var_names:
                     globals()[f"{var}_ENABLED"] = True
                 matched = True
                 break
-            if arg==without_str:
+            if arg in (without_str, no_str):
                 for var in var_names:
                     globals()[f"{var}_ENABLED"] = False
                 matched = True
