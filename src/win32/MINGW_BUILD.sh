@@ -529,7 +529,7 @@ done
 rm dist/qt.conf
 
 echo "* Generating gdk pixbuf loaders.cache"
-gdk-pixbuf-query-loaders.exe "dist/lib/gdk-pixbuf-2.0/2.10.0/loaders/*" | sed 's+".*dist/+"+g' > dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
+gdk-pixbuf-query-loaders.exe dist/lib/gdk-pixbuf-2.0/2.10.0/loaders/* | sed 's+".*dist/+"+g' > dist/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
 
 if [ "${BUNDLE_MANUAL}" == "1" ]; then
   echo "* Generating HTML Manual Page"
