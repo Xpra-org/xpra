@@ -33,6 +33,7 @@ License:        MIT
 Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/source/p/pycuda/pycuda-%{version}.tar.gz
 Patch0:         pycuda-oldcompute.patch
+Patch1:         pycuda-py3.13.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -69,6 +70,7 @@ fi
 %if 0%{?el8}
 %patch -p1 -P 0
 %endif
+%patch -P 1 -p1
 
 %build
 CUDA=/opt/cuda
