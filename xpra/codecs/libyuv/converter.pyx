@@ -560,20 +560,21 @@ cdef class Converter:
 
         if self.src_format in ("BGRX", "BGRA"):
             return self.convert_bgrx_image(image)
-        elif self.src_format=="NV12":
+        if self.src_format=="NV12":
             return self.convert_nv12_image(image)
-        elif self.src_format in ("YUV420P", "YUV444P"):
+        if self.src_format in ("YUV420P", "YUV444P"):
             return self.convert_yuv_image(image)
-        elif self.src_format == "YUYV":
+        if self.src_format == "YUYV":
             return self.convert_yuyv_image(image)
-        else:
-            raise RuntimeError(f"invalid source format {self.src_format}")
+        raise RuntimeError(f"invalid source format {self.src_format}")
 
     def convert_nv12_image(self, image: ImageWrapper) -> ImageWrapper:
+        self.validate_image_dst_size(image)
+        assert not self.yuv_scaling
         cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
+        cdef int width = self.dst_width
+        cdef int height = self.dst_height
         if iplanes!=2:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.dst_format not in ("RGB", "BGRX", "RGBX"):
@@ -635,7 +636,24 @@ cdef class Converter:
         return ImageWrapper(0, 0, self.dst_width, self.dst_height,
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
 
+    def validate_image_dst_size(self, image: ImageWrapper) -> None:
+        # ensure that the image fits:
+        # (it can be bigger if padded)
+        if image.get_width() < self.dst_width or image.get_height() < self.dst_height:
+            raise ValueError("image is too small for target: expected at least %ix%i but got %ix%i" % (
+                self.dst_width, self.dst_height, image.get_width(), image.get_height(),
+            ))
+
+    def validate_image_src_size(self, image: ImageWrapper) -> None:
+        # ensure that the image fits:
+        # (it can be bigger if padded)
+        if image.get_width() < self.src_width or image.get_height() < self.src_height:
+            raise ValueError("image source is too small for source: expected at least %ix%i but got %ix%i" % (
+                self.src_width, self.src_height, image.get_width(), image.get_height(),
+            ))
+
     def scale_yuv_image(self, image: ImageWrapper) -> ImageWrapper:
+        self.validate_image_src_size(image)
         assert self.scaled_buffer_size
         start = monotonic()
         cdef uint8_t *scaled_buffer = <unsigned char*> memalign(self.scaled_buffer_size)
@@ -650,8 +668,7 @@ cdef class Converter:
         yuv_format = image.get_pixel_format()
         cdef int nplanes = image.get_planes()
         divs = get_subsampling_divs(yuv_format)
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
+
         cdef int src_width = 0
         cdef int src_height = 0
         cdef uintptr_t plane
@@ -661,8 +678,8 @@ cdef class Converter:
         for i in range(nplanes):
             stride = strides[i]
             x_div, y_div = divs[i]
-            src_width = width // x_div
-            src_height = height // y_div
+            src_width = self.src_width // x_div
+            src_height = self.src_height // y_div
             with buffer_context(pixels[i]) as plane_buffer:
                 plane = <uintptr_t> int(plane_buffer)
                 scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]
@@ -686,6 +703,7 @@ cdef class Converter:
         return out_image
 
     def convert_yuyv_image(self, image: ImageWrapper) -> ImageWrapper:
+        self.validate_image_dst_size(image)
         assert not self.yuv_scaling
         assert image.get_pixel_format() == "YUYV"
         cdef double start = monotonic()
@@ -694,8 +712,8 @@ cdef class Converter:
         if self.dst_format != "BGRX":
             raise ValueError(f"invalid dst format {self.dst_format!r}")
 
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
+        cdef int width = self.dst_width
+        cdef int height = self.dst_height
         if width < self.src_width:
             raise ValueError(f"source image width {width} is smaller than context {self.src_width}")
         if height < self.src_height:
@@ -734,10 +752,11 @@ cdef class Converter:
     def convert_yuv_image(self, image: ImageWrapper) -> ImageWrapper:
         if self.yuv_scaling:
             image = self.scale_yuv_image(image)
+        self.validate_image_dst_size(image)
         cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
+        cdef int width = self.dst_width
+        cdef int height = self.dst_height
         cdef int full_range = image.get_full_range()
         if iplanes!=3:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
