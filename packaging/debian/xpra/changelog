@@ -12,6 +12,7 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - syntax errors in the MS Windows build setup script
    - aioquic 1.2.0 build fix
    - use arch specific pkg-config for cuda, if found
+   - patch pycuda for Python 3.13
    - pynvml 12.560.30
    - pyuinput 1.0.1
    - don't try to build ffmpeg encoder with ffmpeg >= 7
@@ -39,7 +40,7 @@ xpra (5.0.11-1) UNRELEASED; urgency=low
    - typo in manpage
    - remove unused logger]
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 21 Nov 2024 21:57:13 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 22 Nov 2024 12:01:37 +0700
 
 xpra (5.0.10-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

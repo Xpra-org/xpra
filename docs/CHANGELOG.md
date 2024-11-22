@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.11] 2024-11-21
+## [5.0.11] 2024-11-22
 * Platforms, build and packaging:
     * [don't build ffmpeg encoder on MacOS](https://github.com/Xpra-org/xpra/commit/bf2f1a3f4927428da0ae4c5d40e5125c4c8617d0)
     * [RPM builds without nvidia codecs failed](https://github.com/Xpra-org/xpra/commit/eeb6fd4cfb7c9c486b0c5649a993c4dc79099f34)
@@ -14,6 +14,7 @@
     * [syntax errors in the MS Windows build setup script](https://github.com/Xpra-org/xpra/commit/92e6cb9fc0c23ad3696620bdcd63aafabe7eaa55)
     * [aioquic 1.2.0 build fix](https://github.com/Xpra-org/xpra/commit/da8b51531850cd4e584d6e62dd8d8a993e505aa2)
     * [use arch specific pkg-config for cuda, if found](https://github.com/Xpra-org/xpra/commit/eca3def0b05f2b690f32a2bdf2c35865e006734a)
+    * [patch pycuda for Python 3.13](https://github.com/Xpra-org/xpra/commit/76716a23a19ad5e3d945db01dafbd33289e3d85a)
     * [pynvml 12.560.30](https://github.com/Xpra-org/xpra/commit/963bfd306d30a422996adbcc67e57ca0df6b240d)
     * [pyuinput 1.0.1](https://github.com/Xpra-org/xpra/commit/2b9d5486692e6f72ee96d35e5fde5a09d8c05073)
     * [don't try to build ffmpeg encoder with ffmpeg >= 7](https://github.com/Xpra-org/xpra/commit/6122a4dd8bf0ae1e8674da47590338e949e12dd1)

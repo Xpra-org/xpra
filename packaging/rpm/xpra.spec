@@ -785,7 +785,7 @@ fi
 
 
 %changelog
-* Wed Nov 21 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
+* Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:
    don't build ffmpeg encoder on MacOS
    RPM builds without nvidia codecs failed
@@ -799,6 +799,7 @@ fi
    syntax errors in the MS Windows build setup script
    aioquic 1.2.0 build fix
    use arch specific pkg-config for cuda, if found
+   patch pycuda for Python 3.13
    pynvml 12.560.30
    pyuinput 1.0.1
    don't try to build ffmpeg encoder with ffmpeg >= 7
