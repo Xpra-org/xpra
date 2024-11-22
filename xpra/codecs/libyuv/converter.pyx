@@ -311,12 +311,17 @@ def argb_to_gray(image: ImageWrapper) -> ImageWrapper:
     return gray_image
 
 
-def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilterNone) -> ImageWrapper:
+def argb_scale(image, int src_width, int src_height,
+                      int dst_width, int dst_height, FilterMode filtermode=kFilterNone) -> ImageWrapper:
     cdef iplanes = image.get_planes()
     pixels = image.get_pixels()
     cdef int stride = image.get_rowstride()
     cdef int width = image.get_width()
     cdef int height = image.get_height()
+    if width<src_width or height<src_height:
+        raise ValueError("image is too small to be scaled: %ix%i, expected at least %ix%i" % (
+            width, height, src_width, src_height,
+        ))
     cdef int bpp = image.get_bytesperpixel()
     assert bpp in (3, 4), "invalid bytes per pixel: %s" % bpp
     assert iplanes==ImageWrapper.PACKED, "invalid plane input format: %s" % iplanes
@@ -333,7 +338,7 @@ def argb_scale(image, int dst_width, int dst_height, FilterMode filtermode=kFilt
         src = <const uint8_t *> (<uintptr_t> int(bc))
         with nogil:
             result = ARGBScale(src,
-                               stride, width, height,
+                               stride, src_width, src_height,
                                buf, dst_stride, dst_width, dst_height,
                                filtermode)
     assert result==0, "libyuv ARGBScale failed and returned %i" % result
@@ -909,6 +914,7 @@ cdef class Converter:
         return img
 
     def convert_bgrx_image(self, image: ImageWrapper) -> ImageWrapper:
+        self.validate_image_src_size(image)
         cdef uint8_t *output_buffer
         cdef uint8_t *out_planes[3]
         cdef uint8_t *scaled_buffer
@@ -922,9 +928,10 @@ cdef class Converter:
             raise ValueError(f"invalid plane input format: {iplanes}")
         if self.rgb_scaling:
             #first downscale:
-            image = argb_scale(image, self.dst_width, self.dst_height, self.filtermode)
+            image = argb_scale(image, self.src_width, self.src_height, self.dst_width, self.dst_height, self.filtermode)
             width = self.dst_width
             height = self.dst_height
+            self.validate_image_dst_size(image)
         cdef int stride = image.get_rowstride()
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
