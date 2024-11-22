@@ -109,7 +109,7 @@ def get_appimage(app_name, icondata=b"", menu_icon_size=24) -> Gtk.Image | None:
         if os.path.exists(icon_filename):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=icon_filename)
 
-    def err(e):
+    def err(e) -> None:
         log("failed to load icon", exc_info=True)
         log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))
         log.estr(e)
@@ -133,13 +133,14 @@ def get_appimage(app_name, icondata=b"", menu_icon_size=24) -> Gtk.Image | None:
     if not pixbuf and icondata:
         # let's try pillow:
         try:
-            from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
-            img = open_only(icondata)
-            has_alpha = img.mode == "RGBA"
-            width, height = img.size
-            rowstride = width * (3 + int(has_alpha))
-            pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
-            return scaled_image(pixbuf, icon_size=menu_icon_size)
+            from xpra.codecs.pillow.decoder import open_only, is_svg  # pylint: disable=import-outside-toplevel
+            if not is_svg(icondata):
+                img = open_only(icondata)
+                has_alpha = img.mode == "RGBA"
+                width, height = img.size
+                rowstride = width * (3 + int(has_alpha))
+                pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
+                return scaled_image(pixbuf, icon_size=menu_icon_size)
         except Exception as e:
             err(e)
     if pixbuf:
