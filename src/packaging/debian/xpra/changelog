@@ -16,12 +16,15 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - pynvml 12.560.30
    - pyuinput 1.0.1
    - require clang to build the CUDA kernels, instead of GCC >= 14
+   - missing SVG loader on MS Windows
+   - pixbuf loaders cache not populated
   * encodings:
    - avoid slow modules (ie: csc_cython)
    - stick to the same video scaling setting longer, avoid big swings
    - handle decoding of padded frames
    - quality and speed can be used with all generic encodings
   * major:
+   - protect against potential buffer overflows
    - MS Windows printing crash
    - system tray cleanup crash
    - automatic port assignment error
@@ -59,8 +62,9 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - confusing X11 display message
    - avoid X11 client message format warnings
    - use correct type for numlock modifier
+   - handle missing python-pillow more gracefully
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 19 Nov 2024 23:45:29 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 22 Nov 2024 22:04:16 +0700
 
 xpra (3.1.8-1) UNRELEASED; urgency=low
   * major:

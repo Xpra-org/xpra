@@ -926,7 +926,7 @@ fi
 
 
 %changelog
-* Tue Nov 19 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
+* Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
 - build and packaging:
      libyuv 0.1878.20231004
      packaging updates for CentOS7: libyuv, skip pycuda
@@ -944,12 +944,15 @@ fi
      pynvml 12.560.30
      pyuinput 1.0.1
      require clang to build the CUDA kernels, instead of GCC >= 14
+     missing SVG loader on MS Windows
+     pixbuf loaders cache not populated
 - encodings:
      avoid slow modules (ie: csc_cython)
      stick to the same video scaling setting longer, avoid big swings
      handle decoding of padded frames
      quality and speed can be used with all generic encodings
 - major:
+     protect against potential buffer overflows
      MS Windows printing crash
      system tray cleanup crash
      automatic port assignment error
@@ -987,7 +990,7 @@ fi
      confusing X11 display message
      avoid X11 client message format warnings
      use correct type for numlock modifier
-
+     handle missing python-pillow more gracefully
 
 * Fri Jul 12 2024 Antoine Martin <antoine@xpra.org> 3.1.8-10.1xpra1
 - major:
