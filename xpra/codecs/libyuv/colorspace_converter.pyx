@@ -459,22 +459,34 @@ cdef class ColorspaceConverter:
     def convert_image(self, image):
         if self.src_format in ("BGRX", "BGRA"):
             return self.convert_bgrx_image(image)
-        elif self.src_format=="NV12":
+        if self.src_format=="NV12":
             return self.convert_nv12_image(image)
-        elif self.src_format=="YUV420P":
+        if self.src_format=="YUV420P":
             return self.convert_yuv420p_image(image)
-        else:
-            raise RuntimeError(f"invalid source format {self.src_format}")
+        raise RuntimeError(f"invalid source format {self.src_format}")
+
+    def validate_image_dst_size(self, image):
+        # ensure that the image fits:
+        # (it can be bigger if padded)
+        if image.get_width() < self.dst_width or image.get_height() < self.dst_height:
+            raise ValueError("image is too small for target: expected at least %ix%i but got %ix%i" % (
+                self.dst_width, self.dst_height, image.get_width(), image.get_height(),
+            ))
+
+    def validate_image_src_size(self, image):
+        # ensure that the image fits:
+        # (it can be bigger if padded)
+        if image.get_width() < self.src_width or image.get_height() < self.src_height:
+            raise ValueError("image source is too small for source: expected at least %ix%i but got %ix%i" % (
+                self.src_width, self.src_height, image.get_width(), image.get_height(),
+            ))
 
     def convert_nv12_image(self, image):
+        self.validate_image_src_size(image)
         cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
-        if width<self.src_width:
-            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
-        if height<self.src_height:
-            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
+        cdef int width = self.src_width
+        cdef int height = self.src_height
         if iplanes!=2:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.dst_format not in ("RGB", "BGRX", "RGBX"):
@@ -529,14 +541,11 @@ cdef class ColorspaceConverter:
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
 
     def convert_yuv420p_image(self, image):
+        self.validate_image_src_size(image)
         cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
-        if width<self.src_width:
-            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
-        if height<self.src_height:
-            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
+        cdef int width = self.src_width
+        cdef int height = self.src_height
         if iplanes!=3:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.dst_format not in ("RGB", "XBGR", "RGBX"):
@@ -597,6 +606,7 @@ cdef class ColorspaceConverter:
                             rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
 
     def convert_bgrx_image(self, image):
+        self.validate_image_src_size(image)
         cdef uint8_t *output_buffer
         cdef uint8_t *out_planes[3]
         cdef uint8_t *scaled_buffer
@@ -604,19 +614,16 @@ cdef class ColorspaceConverter:
         cdef int i
         cdef double start = monotonic()
         cdef int iplanes = image.get_planes()
-        cdef int width = image.get_width()
-        cdef int height = image.get_height()
         if iplanes!=ImageWrapper.PACKED:
             raise ValueError(f"invalid plane input format: {iplanes}")
-        if width<self.src_width:
-            raise ValueError(f"invalid image width: {width} (minimum is {self.src_width})")
-        if height<self.src_height:
-            raise ValueError(f"invalid image height: {height} (minimum is {self.src_height})")
+        cdef int width = self.src_width
+        cdef int height = self.src_height
         if self.rgb_scaling:
             #first downscale:
             image = argb_scale(image, self.dst_width, self.dst_height, self.filtermode)
             width = self.dst_width
             height = self.dst_height
+            self.validate_image_dst_size(image)
         cdef int stride = image.get_rowstride()
         pixels = image.get_pixels()
         assert pixels, "failed to get pixels from %s" % image
