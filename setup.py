@@ -680,9 +680,10 @@ def install_repo(repo_variant="") -> None:
         to = "/etc/apt/sources.list.d/"
         setup_cmds.append(["wget", "-O", "/usr/share/keyrings/xpra.asc", "https://xpra.org/xpra.asc"])
         setup_cmds.append(["chmod", "644", "/usr/share/keyrings/xpra.asc"])
-        setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra.sources", to])
-        if repo_variant == "-beta":
-            setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra-beta.sources", to])
+        if repo_variant != "-lts":
+            setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra.sources", to])
+        if repo_variant:
+            setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra{repo_variant}.sources", to])
 
     else:
         # assume RPM
@@ -714,9 +715,10 @@ def install_repo(repo_variant="") -> None:
         else:
             raise ValueError(f"unsupported distribution {distro}")
         to = "/etc/yum.repos.d/"
-        setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra.repo", to])
-        if repo_variant == "-beta":
-            setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra-beta.repo", to])
+        if repo_variant != "-lts":
+            setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra.repo", to])
+        if repo_variant:
+            setup_cmds.append(["cp", f"packaging/repos/{variant}/xpra{repo_variant}.repo", to])
 
     for cmd in setup_cmds:
         if os.geteuid() != 0:
@@ -763,6 +765,10 @@ if "install-repo" in sys.argv:
 
 if "install-beta-repo" in sys.argv:
     install_repo("-beta")
+    sys.exit(0)
+
+if "install-lts-repo" in sys.argv:
+    install_repo("-lts")
     sys.exit(0)
 
 if len(sys.argv) < 2:
