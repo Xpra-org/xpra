@@ -75,6 +75,10 @@ OPENGL_MIN_SIZE = envint("XPRA_OPENGL_MIN_SIZE", 32)
 NO_OPENGL_WINDOW_TYPES = os.environ.get("XPRA_NO_OPENGL_WINDOW_TYPES",
                                         "DOCK,TOOLBAR,MENU,UTILITY,SPLASH,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND").split(",")
 
+VREFRESH = envint("XPRA_VREFRESH", 0)
+MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 10)
+MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 60)
+
 inject_css_overrides()
 
 
@@ -255,7 +259,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             rate = round(min(rates.values())/1000)
         if rate<30 or rate>250:
             rate = super().get_vrefresh()
-        return rate
+        if rate < 0:
+            return -1
+        return max(MIN_VREFRESH, min(MAX_VREFRESH, rate))
 
 
     def _process_startup_complete(self, packet : PacketType) -> None:
