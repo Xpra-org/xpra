@@ -304,16 +304,34 @@ def version_update_check():
         "darwin"    : "OSX",
         }
     our_version_no = tuple(int(y) for y in XPRA_VERSION.split("."))
+
+    BRANCH = os.environ.get("XPRA_CURRENT_VERSION_BRANCH", "")
+    if not BRANCH:
+        try:
+            from xpra.src_info import BRANCH
+        except ImportError as e:
+            log(f"unknown branch: {e}")
+    branch_strs = []
+    if BRANCH not in ("", "master"):
+        branch_parts = BRANCH.split(".")            # ie: "v6.2.x" -> ["v6", "2", "x"]
+        if branch_parts[-1] == "x":
+            branch_parts = branch_parts[:-1]        # ie: ["v6", "2"]
+        branch_strs.append("_" + "_".join(branch_parts[:2]))    # ie: "_v6_2"
+        if len(branch_parts) >= 2:
+            branch_strs.append("_" + branch_parts[0])           # ie: "_v6"
+    branch_strs.append("")
+
     platform_name = PLATFORM_FRIENDLY_NAMES.get(sys.platform, sys.platform)
     arch = get_platform_info().get("machine")
-    for url in (
-        f"{CURRENT_VERSION_URL}_{platform_name}_{arch}?{XPRA_VERSION}",
-        f"{CURRENT_VERSION_URL}_{platform_name}?{XPRA_VERSION}",
-        f"{CURRENT_VERSION_URL}?{XPRA_VERSION}",
+    for branch_str in branch_strs:
+        for url in (
+            f"{CURRENT_VERSION_URL}{branch_str}_{platform_name}_{arch}?{XPRA_VERSION}",
+            f"{CURRENT_VERSION_URL}{branch_str}_{platform_name}?{XPRA_VERSION}",
+            f"{CURRENT_VERSION_URL}{branch_str}?{XPRA_VERSION}",
         ):
-        latest_version_no = get_version_from_url(url)
-        if latest_version_no:
-            break
+            latest_version_no = get_version_from_url(url)
+            if latest_version_no:
+                break
     if latest_version_no is None:
         log("version_update_check() failed to contact version server")
         return None
