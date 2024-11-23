@@ -76,6 +76,10 @@ NO_OPENGL_WINDOW_TYPES = os.environ.get(
 ).split(",")
 WINDOW_GROUPING = os.environ.get("XPRA_WINDOW_GROUPING", "group-leader-xid,class-instance,pid,command").split(",")
 
+VREFRESH = envint("XPRA_VREFRESH", 0)
+MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 10)
+MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 60)
+
 inject_css_overrides()
 init_display_source()
 # must come after init_display_source()
@@ -264,7 +268,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             rate = round(min(rates.values()) / 1000)
         if rate < 30 or rate > 250:
             rate = super().get_vrefresh()
-        return rate
+        if rate < 0:
+            return -1
+        return max(MIN_VREFRESH, min(MAX_VREFRESH, rate))
 
     def _process_startup_complete(self, packet: PacketType) -> None:
         super()._process_startup_complete(packet)
