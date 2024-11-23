@@ -1007,7 +1007,7 @@ def find_glob_paths(dirname: str, glob_str: str) -> list[str]:
 
 def rec_sbom() -> None:
     step("Recording SBOM")
-    sbom: dict[str, tuple[str, str]] = {}
+    sbom: dict[str, dict[str, Any]] = {}
     py_lib_dirs: list[str] = get_py_lib_dirs()
 
     def find_prefixed_sbom_rec(filename: str, prefixes: list[str]) -> dict[str, Any]:
@@ -1021,7 +1021,7 @@ def rec_sbom() -> None:
                     debug(f" * {filename!r}: {package!r}, {version!r}")
                     return rec
         print(f"Warning: unknown source for filename {filename!r}, tried {prefixes}")
-        return ()
+        return {}
 
     def rec_py_lib(path: str) -> None:
         assert path.startswith("lib/"), f"invalid path {path!r}"
@@ -1050,7 +1050,10 @@ def rec_sbom() -> None:
         with open(version_json, "r") as f:
             version_data = json.loads(f.read())
         cuda_version = version_data["cuda"]["version"]
-        sbom[path] = (0, "", "cuda", cuda_version)
+        sbom[path] = {
+            "package": "cuda",
+            "version": cuda_version,
+        }
 
     globbed_paths = find_glob_paths(DIST, "*.dll") + find_glob_paths(LIB_DIR, "*.exe")
     debug(f"adding DLLs and EXEs: {globbed_paths}")
@@ -1093,7 +1096,7 @@ def rec_sbom() -> None:
     rec_py_lib(os.path.join("lib", "decorator.py"))
 
     # summary: list of packages
-    packages = tuple(sorted(set(sbom_data["package"] for sbom_data in sbom.values())))
+    packages = tuple(sorted(set(rec["package"] for rec in sbom.values())))
     debug(f"adding package info for {packages}")
     packages_info: dict[str, tuple] = {}
     for package_name in packages:
