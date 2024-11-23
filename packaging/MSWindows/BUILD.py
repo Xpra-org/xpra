@@ -437,7 +437,7 @@ def build_cuda_kernels() -> None:
                 continue
             debug(f"need to rebuild: {fatbin!r} ({ftime}) is older than {cupath!r} ({ctime})")
             os.unlink(fatbin)
-        log_command([BUILD_CUDA_KERNEL, kname], f"nvcc-{kname}.log")
+        log_command([BUILD_CUDA_KERNEL, kname], f"nvcc-{kname}.log", shell=True)
 
 
 def build_ext(args) -> None:
