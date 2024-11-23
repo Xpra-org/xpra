@@ -133,19 +133,14 @@ def get_build_args(args) -> list[str]:
         for option in (
             "shadow", "server", "proxy", "rfb",
             "dbus",
-            "encoders", "avif", "gstreamer_video",
+            "avif", "gstreamer_video",
             "nvfbc", "cuda_kernels",
             "csc_cython",
             "webcam",
             "win32_tools",
             "docs",
-            "qt6_client",
-            "websockets_browser_cookie",
         ):
             xpra_args.append(f"--without-{option}")
-        xpra_args.append("--with-Os")
-    else:
-        xpra_args.append("--with-qt6_client")
     if not args.cuda:
         xpra_args.append("--without-nvidia")
     # we can't do 'docs' this way :(
@@ -770,18 +765,6 @@ def setup_share(light: bool) -> None:
         rm_empty_dir(f"{DIST}/share/icons")
 
 
-def add_manifests() -> None:
-    step("Adding EXE manifests")
-    EXES = [
-        "Bug_Report", "Xpra-Launcher", "Xpra", "Xpra_cmd",
-        # these are only included in full builds:
-        "GTK_info", "NativeGUI_info", "Screenshot", "Xpra-Shadow",
-    ]
-    for exe in EXES:
-        if os.path.exists(f"{DIST}/{exe}.exe"):
-            copyfile("packaging/MSWindows/exe.manifest", f"{DIST}/{exe}.exe.manifest")
-
-
 def gen_caches() -> None:
     step("Generating gdk pixbuf loaders cache")
     cmd = ["gdk-pixbuf-query-loaders.exe", "lib/gdk-pixbuf-2.0/2.10.0/loaders/*"]
@@ -1308,7 +1291,6 @@ def build(args) -> None:
     add_numpy(args.numpy)
 
     setup_share(args.light)
-    add_manifests()
     gen_caches()
 
     if args.docs:
