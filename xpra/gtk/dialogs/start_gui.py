@@ -433,7 +433,9 @@ class StartSession(Gtk.Window):
                 self.category_box.hide()
                 self.entry_label.set_text("Command:" if seamless else "Desktop Environment:")
                 self.entry_box.show_all()
-                self.exit_with_children_cb.set_sensitive(bool(self.entry.get_text()))
+                has_entry = bool(self.entry.get_text())
+                self.exit_with_children_cb.set_active(has_entry)
+                self.exit_with_children_cb.set_sensitive(has_entry)
 
     def populate_category(self) -> None:
         self.categories = {}
