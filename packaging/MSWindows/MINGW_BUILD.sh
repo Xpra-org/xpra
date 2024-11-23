@@ -500,6 +500,7 @@ popd > /dev/null
 
 if [ "${DO_SBOM}" != "0" ]; then
   ./packaging/MSWindows/BUILD.py sbom
+  ./packaging/MSWindows/BUILD.py export-sbom
 fi
 
 pushd dist/lib > /dev/null
