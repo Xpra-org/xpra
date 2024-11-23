@@ -4,4 +4,4 @@ enabled=1
 metadata_expire=1d
 gpgcheck=1
 gpgkey=https://xpra.org/gpg.asc
-baseurl=https://xpra.org/dists/oraclelinux/$releasever/$basearch/
+baseurl=https://xpra.org/stable/oraclelinux/$releasever/$basearch/
