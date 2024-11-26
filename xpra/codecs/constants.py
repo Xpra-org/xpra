@@ -66,7 +66,9 @@ HELP_ORDER: Sequence[str] = (
 LOSSY_PIXEL_FORMATS: dict[str, float | int] = {
     "NV12": 2,
     "YUV420P": 2,
+    "YUVA420P": 2,
     "YUV422P": 1.5,
+    "YUVA422P": 1.5,
 }
 
 CSC_ALIAS: dict[str, str] = {"NV12": "YUV420P"}
@@ -83,8 +85,11 @@ PIXEL_SUBSAMPLING : dict[str, Sequence[tuple[int, int]]] = {
     # (but combines U and V planes so the resulting rowstride for the UV plane is the same as the Y plane):
     "NV12"      : ((1, 1), (1, 2)),
     "YUV420P"   : ((1, 1), (2, 2), (2, 2)),
+    "YUVA420P"  : ((1, 1), (2, 2), (2, 2), (1, 1)),
     "YUV422P"   : ((1, 1), (2, 1), (2, 1)),
+    "YUVA422P"  : ((1, 1), (2, 1), (2, 1), (1, 1)),
     "YUV444P"   : ((1, 1), (1, 1), (1, 1)),
+    "YUVA444P"  : ((1, 1), (1, 1), (1, 1), (1, 1)),
     "YUV400P"   : ((1, 1), ),
     "GBRP"      : ((1, 1), (1, 1), (1, 1)),
     "GBRP9LE"   : ((1, 1), (1, 1), (1, 1)),

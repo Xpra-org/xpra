@@ -167,6 +167,8 @@ def decompress_to_yuv(data: bytes, options: typedict, unsigned char nplanes=3) -
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
     if nplanes==3:
         pixel_format = "YUV%sP" % subsamp_str
+    elif nplanes == 4:
+        pixel_format = "YUVA%sP" % subsamp_str
     elif nplanes==1:
         pixel_format = "YUV400P"
     else:
@@ -174,8 +176,8 @@ def decompress_to_yuv(data: bytes, options: typedict, unsigned char nplanes=3) -
         raise ValueError("invalid number of planes: %i" % nplanes)
     #allocate YUV buffers:
     cdef unsigned long plane_size
-    cdef unsigned char *planes[3]
-    cdef int strides[3]
+    cdef unsigned char *planes[4]
+    cdef int strides[4]
     cdef int i, stride
     cdef MemBuf membuf
     cdef MemBuf empty
@@ -184,7 +186,7 @@ def decompress_to_yuv(data: bytes, options: typedict, unsigned char nplanes=3) -
     pyplanes = []
     cdef unsigned long total_size = 0
     cdef double start, elapsed
-    for i in range(3):
+    for i in range(4):
         strides[i] = 0
         planes[i] = NULL
     try:
@@ -192,7 +194,7 @@ def decompress_to_yuv(data: bytes, options: typedict, unsigned char nplanes=3) -
             stride = tjPlaneWidth(i, w, subsamp)
             if stride<=0:
                 if subsamp!=TJSAMP_GRAY or i==0:
-                    raise ValueError("cannot get size for plane %r for mode %r" % ("YUV"[i], subsamp_str))
+                    raise ValueError("cannot get size for plane %r for mode %r" % ("YUVA"[i], subsamp_str))
                 stride = roundup(w//2, ALIGN)
                 plane_size = stride * roundup(h, 2)//2
                 if i==1:

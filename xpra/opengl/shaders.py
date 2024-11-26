@@ -64,7 +64,15 @@ def gen_YUV_to_RGB(fmt="YUV420P", cs="bt601", full_range=True) -> str:
 
     divs = get_subsampling_divs(fmt)
     for i, div in enumerate(divs):
-        add_div("YUV"[i], *div)
+        add_div("YUVA"[i], *div)
+
+    has_alpha = fmt.find("A") >= 0
+    if has_alpha:
+        alphasampler = "uniform sampler2DRect A;"
+        alpha = "texture(A, pos/Adiv).r"
+    else:
+        alphasampler = ""
+        alpha = "1.0"
 
     defines_str = "\n".join(f"#define {define}" for define in defines)
     return f"""
@@ -76,6 +84,7 @@ uniform vec2 scaling;
 uniform sampler2DRect Y;
 uniform sampler2DRect U;
 uniform sampler2DRect V;
+{alphasampler}
 layout(location = 0) out vec4 frag_color;
 
 void main()
@@ -84,12 +93,13 @@ void main()
     highp float y = (texture(Y, pos/Ydiv).r{yoffset}){ymult};
     highp float u = (texture(U, pos/Udiv).r - 0.5){uvmult};
     highp float v = (texture(V, pos/Vdiv).r - 0.5){uvmult};
+    highp float a = {alpha};
 
     highp float r = y +           {e} * v;
     highp float g = y + {f} * u + {g} * v;
     highp float b = y + {d} * u;
 
-    frag_color = vec4(r, g, b, 1.0);
+    frag_color = vec4(r, g, b, a);
 }}
 """
 
@@ -175,7 +185,10 @@ for full in (False, True):
     suffix = "_FULL" if full else ""
     SOURCE[f"NV12_to_RGB{suffix}"] = gen_NV12_to_RGB(full_range=full)
 
-    for fmt in ("YUV420P", "YUV422P", "YUV444P"):
+    for fmt in (
+        "YUV420P", "YUV422P", "YUV444P",
+        "YUVA420P", "YUVA422P", "YUVA444P",
+    ):
         SOURCE[f"{fmt}_to_RGB{suffix}"] = gen_YUV_to_RGB(fmt, full_range=full)
 
 
