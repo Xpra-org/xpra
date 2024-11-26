@@ -175,9 +175,11 @@ cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 
-def decompress_to_rgb(rgb_format: str, data: bytes, has_alpha: bool=True) -> ImageWrapper:
+def decompress_to_rgb(data: bytes, options: typedict) -> ImageWrapper:
+    cdef int has_alpha = options.boolget("has_alpha", False)
+    rgb_format = options.strget("rgb_format", "BGRA" if has_alpha else "BGRX")
     if rgb_format not in ("RGBX", "RGBA", "BGRA", "BGRX", "RGB", "BGR"):
-        raise ValueError(f"unsupported rgb format {rgb_format}")
+        raise ValueError(f"unsupported rgb format {rgb_format!r}")
     cdef WebPDecoderConfig config
     config.options.use_threads = 1
     WebPInitDecoderConfig(&config)
@@ -236,7 +238,7 @@ class WebpImageWrapper(ImageWrapper):
             free(<void *> buf)
 
 
-def decompress_to_yuv(data: bytes, options: typedict, has_alpha=False) -> WebpImageWrapper:
+def decompress_to_yuv(data: bytes, options: typedict) -> WebpImageWrapper:
     """
         This returns a WebpBufferWrapper, you MUST call free() on it
         once the pixel buffer can be freed.
@@ -248,6 +250,7 @@ def decompress_to_yuv(data: bytes, options: typedict, has_alpha=False) -> WebpIm
     log("webp decompress_to_yuv found features: width=%4i, height=%4i, has_alpha=%-5s", config.input.width, config.input.height, bool(config.input.has_alpha))
 
     config.output.colorspace = MODE_YUV
+    cdef int has_alpha = options.boolget("has_alpha", False)
     cdef int alpha = has_alpha and config.input.has_alpha
     if alpha:
         log.warn("Warning: webp YUVA colorspace not supported yet")
@@ -325,14 +328,20 @@ def selftest(full=False) -> None:
     for size, samples in TEST_PICTURES["webp"].items():
         w, h = size
         for bdata in samples:
-            for alpha in (True, False):
-                rgb_format = "BGRA" if alpha else "BGRX"
-                img = decompress_to_rgb(rgb_format, bdata, alpha)
-                assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format().find("A")>=0) == alpha
+            for alpha in (False, True):
+                options = typedict({"has_alpha": alpha})
+                img = decompress_to_rgb(bdata, options)
+                iw = img.get_width()
+                ih = img.get_height()
+                pf = img.get_pixel_format()
+                got_alpha = pf.find("A") >= 0
+                assert iw==w and ih==h, f"expected {w}x{h} but got {iw}x{ih}"
+                if not alpha:
+                    assert not got_alpha, f"expected {alpha=}, got {pf}"
                 assert len(img.get_pixels())>0
                 img.free()
 
-            img = decompress_to_yuv(bdata, typedict(), False)
+            img = decompress_to_yuv(bdata, typedict())
             assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format() == "YUV420P")
             assert len(img.get_pixels())>0
             img.free()

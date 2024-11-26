@@ -175,7 +175,8 @@ class TestColorRange(unittest.TestCase):
             # print(f"testing {fmt} rgb decoding using {decompress_to_rgb}")
             if not decompress_to_rgb:
                 continue
-            rimage = decompress_to_rgb(self.rgb_format, data)
+            dec_options = typedict({"rgb_format": self.rgb_format})
+            rimage = decompress_to_rgb(data, dec_options)
             tolerance = enc_options["tolerance"]
             if dec_name == "dec_jpeg":
                 tolerance += 1

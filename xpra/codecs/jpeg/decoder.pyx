@@ -228,7 +228,11 @@ def decompress_to_yuv(data: bytes, options: typedict, unsigned char nplanes=3) -
     return ImageWrapper(0, 0, w, h, pyplanes, pixel_format, 24, pystrides, planes=ImageWrapper.PLANAR_3)
 
 
-def decompress_to_rgb(rgb_format: str, data: bytes, unsigned long alpha_offset=0) -> ImageWrapper:
+def decompress_to_rgb(data: bytes, options: typedict) -> ImageWrapper:
+    cdef unsigned int alpha_offset = options.intget("alpha-offset", 0)
+    rgb_format = "BGRA" if alpha_offset else "BGRX"
+
+    rgb_format = options.strget("rgb_format", "BGRX")
     assert rgb_format in TJPF_VAL
     cdef TJPF pixel_format = TJPF_VAL[rgb_format]
 
@@ -337,7 +341,7 @@ def selftest(full=False) -> None:
     log("jpeg selftest")
 
     def test_rgbx(bdata):
-        return decompress_to_rgb("RGBX", bdata)
+        return decompress_to_rgb(bdata, typedict())
 
     def test_yuv(bdata):
         return decompress_to_yuv(bdata, typedict())

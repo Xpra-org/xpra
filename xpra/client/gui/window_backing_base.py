@@ -506,17 +506,10 @@ class WindowBackingBase:
 
     def do_paint_jpeg(self, encoding: str, img_data, x: int, y: int, width: int, height: int,
                       options: typedict, callbacks: PaintCallbacks) -> None:
-        alpha_offset = options.intget("alpha-offset", 0)
         img = self.nv_decode(encoding, img_data, width, height, options)
         if img is None:
-            if encoding == "jpeg":
-                rgb_format = "BGRX"
-            elif encoding == "jpega":
-                rgb_format = "BGRA"
-            else:
-                raise ValueError(f"invalid encoding {encoding!r}")
             assert self.jpeg_decoder is not None
-            img = self.jpeg_decoder.decompress_to_rgb(rgb_format, img_data, alpha_offset)
+            img = self.jpeg_decoder.decompress_to_rgb(img_data, options)
         self.paint_image_wrapper(encoding, img, x, y, width, height, options, callbacks)
 
     def paint_avif(self, img_data, x: int, y: int, width: int, height: int,
@@ -549,9 +542,7 @@ class WindowBackingBase:
             img = self.webp_decoder.decompress_to_yuv(img_data, options, has_alpha)
             self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
             return
-        rgb_format = options.strget("rgb_format", "BGRX")
-        has_alpha = options.boolget("has_alpha", False)
-        img = self.webp_decoder.decompress_to_rgb(rgb_format, img_data, has_alpha)
+        img = self.webp_decoder.decompress_to_rgb(img_data, options)
         self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
 
     def paint_rgb(self, rgb_format: str, raw_data, x: int, y: int, width: int, height: int, rowstride: int,

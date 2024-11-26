@@ -93,6 +93,11 @@ FORCE_SPINNER = envbool("XPRA_OPENGL_FORCE_SPINNER", False)
 
 CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
+PLANAR_FORMATS = (
+    "YUV420P", "YUV422P", "YUV444P", "NV12", "YUV444P16",
+    "GBRP", "GBRP16",
+)
+
 PIXEL_FORMAT_TO_CONSTANT: dict[str, IntConstant] = {
     "r210": GL_BGRA,
     "R210": GL_RGBA,
@@ -1137,13 +1142,8 @@ class GLWindowBackingBase(WindowBackingBase):
                 return
         if JPEG_YUV and width >= 2 and height >= 2 and encoding == "jpeg":
             img = self.jpeg_decoder.decompress_to_yuv(img_data, options)
-        elif encoding == "jpeg":
-            img = self.jpeg_decoder.decompress_to_rgb("BGRX", img_data)
-        elif encoding == "jpega":
-            alpha_offset = options.intget("alpha-offset", 0)
-            img = self.jpeg_decoder.decompress_to_rgb("BGRA", img_data, alpha_offset)
         else:
-            raise ValueError(f"invalid encoding {encoding}")
+            img = self.jpeg_decoder.decompress_to_rgb(img_data, options)
         self.paint_image_wrapper(encoding, img, x, y, width, height, options, callbacks)
 
     def cuda_buffer_to_pbo(self, gl_context, cuda_buffer, rowstride: int, src_y: int, height: int, stream):
@@ -1403,7 +1403,7 @@ class GLWindowBackingBase(WindowBackingBase):
                      x: int, y: int, enc_width: int, enc_height: int, width: int, height: int,
                      options: typedict, callbacks: PaintCallbacks) -> None:
         pixel_format = img.get_pixel_format()
-        if pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
+        if pixel_format not in PLANAR_FORMATS:
             img.free()
             raise ValueError(f"the GL backing does not handle pixel format {pixel_format!r} yet!")
         if not context:
