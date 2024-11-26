@@ -299,7 +299,7 @@ class Encodings(StubClientMixin):
     def set_encoding(self, encoding: str) -> None:
         log("set_encoding(%s)", encoding)
         if encoding == "auto":
-            self.encoding = ""
+            self.encoding = "auto"
         else:
             encodings = self.get_encodings()
             if encoding not in encodings:
