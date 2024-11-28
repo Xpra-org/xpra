@@ -180,14 +180,14 @@ if "--minimal" in argv:
     argv.remove("--minimal")
     DEFAULT = False
 skip_build = "--skip-build" in argv
-ARCH = get_status_output(["uname", "-m"])[1].strip("\n\r")
+ARCH = os.environ.get("MSYSTEM_CARCH", "") or get_status_output(["uname", "-m"])[1].strip("\n\r")
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 RISCV = ARCH.startswith("riscv")
 print(f"ARCH={ARCH}")
 TIMEOUT = 60
 if ARM or RISCV:
     # arm64 and riscv builds run on emulated CPU, very slowly
-    TIMEOUT = 300
+    TIMEOUT = 600
 
 
 INCLUDE_DIRS = os.environ.get("INCLUDE_DIRS", os.path.join(sys.prefix, "include")).split(os.pathsep)
