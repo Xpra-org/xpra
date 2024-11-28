@@ -327,19 +327,18 @@ def selftest(full=False) -> None:
     from xpra.codecs.checks import TEST_PICTURES   # pylint: disable=import-outside-toplevel
     for size, samples in TEST_PICTURES["webp"].items():
         w, h = size
-        for bdata in samples:
-            for alpha in (False, True):
-                options = typedict({"has_alpha": alpha})
-                img = decompress_to_rgb(bdata, options)
-                iw = img.get_width()
-                ih = img.get_height()
-                pf = img.get_pixel_format()
-                got_alpha = pf.find("A") >= 0
-                assert iw==w and ih==h, f"expected {w}x{h} but got {iw}x{ih}"
-                if not alpha:
-                    assert not got_alpha, f"expected {alpha=}, got {pf}"
-                assert len(img.get_pixels())>0
-                img.free()
+        for bdata, options in samples:
+            alpha = typedict(options).boolget("has_alpha")
+            img = decompress_to_rgb(bdata, typedict(options))
+            iw = img.get_width()
+            ih = img.get_height()
+            pf = img.get_pixel_format()
+            got_alpha = pf.find("A") >= 0
+            assert iw==w and ih==h, f"expected {w}x{h} but got {iw}x{ih}"
+            if not alpha:
+                assert not got_alpha, f"expected {alpha=}, got {pf}"
+            assert len(img.get_pixels())>0
+            img.free()
 
             img = decompress_to_yuv(bdata, typedict())
             assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format() == "YUV420P")

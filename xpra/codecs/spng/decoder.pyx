@@ -7,6 +7,7 @@
 from typing import Tuple, Dict
 from collections.abc import Sequence
 
+from xpra.util.objects import typedict
 from xpra.log import Logger
 log = Logger("decoder", "spng")
 
@@ -68,7 +69,7 @@ def log_error(int r, msg) -> None:
     log.error(" code %i: %s", r, get_error_str(r))
 
 
-def decompress(data) -> Tuple[memoryview, str, int, int]:
+def decompress(data, options: typedict) -> Tuple[memoryview, str, int, int]:
     cdef spng_ctx *ctx = spng_ctx_new(0)
     if ctx==NULL:
         raise RuntimeError("failed to instantiate an spng context")
@@ -145,5 +146,5 @@ def selftest(full=False) -> None:
     log("spng version %s selftest" % (get_version(),))
     from xpra.codecs.checks import TEST_PICTURES   # pylint: disable=import-outside-toplevel
     for size, samples in TEST_PICTURES["png"].items():
-        for cdata in samples:
-            assert decompress(cdata), f"failed to decompress {size} png"
+        for cdata, options in samples:
+            assert decompress(cdata, typedict(options)), f"failed to decompress {size} png"

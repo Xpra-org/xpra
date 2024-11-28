@@ -129,9 +129,9 @@ else:
 
 
 def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    if encoding=="jpeg":
+    if encoding == "jpeg":
         return JPEG_INPUT_COLORSPACES
-    assert encoding=="jpega"
+    assert encoding == "jpega"
     return ("BGRA", "RGBA", )
 
 
@@ -186,7 +186,7 @@ cdef class Encoder:
     def __init__(self):
         self.width = self.height = self.quality = self.frames = 0
         self.compressor = tjInitCompress()
-        if self.compressor==NULL:
+        if self.compressor == NULL:
             raise RuntimeError("Error: failed to instantiate a JPEG compressor")
 
     def init_context(self, encoding: str, width : int, height : int, src_format: str, options: typedict) -> None:
@@ -194,7 +194,7 @@ cdef class Encoder:
         assert src_format in get_input_colorspaces(encoding)
         scaled_width = options.intget("scaled-width", width)
         scaled_height = options.intget("scaled-height", height)
-        assert scaled_width==width and scaled_height==height, "jpeg encoder does not handle scaling"
+        assert scaled_width == width and scaled_height == height, "jpeg encoder does not handle scaling"
         self.encoding = encoding
         self.width = width
         self.height = height
@@ -206,7 +206,7 @@ cdef class Encoder:
         return self.compressor!=NULL
 
     def is_closed(self) -> bool:
-        return self.compressor==NULL
+        return self.compressor == NULL
 
     def clean(self) -> None:
         self.width = self.height = self.quality = 0
@@ -263,7 +263,7 @@ cdef class Encoder:
         client_options = {
             "full-range": image.get_full_range(),
         }
-        if self.encoding=="jpega":
+        if self.encoding == "jpega":
             from xpra.codecs.argb.argb import alpha
             a = alpha(image)
             planes = (a, )
@@ -293,7 +293,7 @@ JPEGA_INPUT_FORMATS = ("RGBA", "BGRA", "ABGR", "ARGB")
 def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
     assert coding in ("jpeg", "jpega")
     rgb_format = image.get_pixel_format()
-    if coding=="jpega" and rgb_format.find("A")<0:
+    if coding == "jpega" and rgb_format.find("A")<0:
         #why did we select 'jpega' then!?
         coding = "jpeg"
     cdef int quality = options.intget("quality", 50)
@@ -304,7 +304,7 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
     cdef int scaled_height = options.intget("scaled-height", height)
     cdef char resize = scaled_width!=width or scaled_height!=height
     log("encode%s", (coding, image, options))
-    input_formats = JPEG_INPUT_FORMATS if coding=="jpeg" else JPEGA_INPUT_FORMATS
+    input_formats = JPEG_INPUT_FORMATS if coding == "jpeg" else JPEGA_INPUT_FORMATS
     if rgb_format not in input_formats or resize and len(rgb_format)!=4:
         from xpra.codecs.argb.argb import argb_swap
         if not argb_swap(image, input_formats):
@@ -321,7 +321,7 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
         "quality"   : quality
     }
     cdef tjhandle compressor = tjInitCompress()
-    if compressor==NULL:
+    if compressor == NULL:
         log.error("Error: failed to instantiate a JPEG compressor")
         return ()
     cdef int r
@@ -332,7 +332,7 @@ def encode(coding, image: ImageWrapper, options: typedict) -> Tuple:
         now = monotonic()
         may_save_image("jpeg", cdata, now)
         bpp = 24
-        if coding=="jpega":
+        if coding == "jpega":
             from xpra.codecs.argb.argb import alpha
             a = alpha(image)
             planes = (a, )
@@ -394,7 +394,7 @@ cdef object do_encode_rgb(tjhandle compressor, pfstr, pixels,
         assert len(bc)>=stride*height, "%s buffer is too small: %i bytes, %ix%i=%i bytes required" % (
             pfstr, len(bc), stride, height, stride*height)
         src = <const unsigned char *> (<uintptr_t> int(bc))
-        if src==NULL:
+        if src == NULL:
             raise ValueError("missing pixel buffer address from context %s" % bc)
         with nogil:
             r = tjCompress2(compressor, src,
@@ -417,11 +417,11 @@ cdef object encode_yuv(tjhandle compressor, image, int quality, int grayscale=0)
     cdef TJSAMP subsamp
     if grayscale:
         subsamp = TJSAMP_GRAY
-    elif pfstr=="YUV420P":
+    elif pfstr == "YUV420P":
         subsamp = TJSAMP_420
-    elif pfstr=="YUV422P":
+    elif pfstr == "YUV422P":
         subsamp = TJSAMP_422
-    elif pfstr=="YUV444P":
+    elif pfstr == "YUV444P":
         subsamp = TJSAMP_444
     else:
         raise ValueError("invalid yuv pixel format %s" % pfstr)
@@ -461,7 +461,7 @@ cdef object do_encode_yuv(tjhandle compressor, pfstr, planes,
                 raise ValueError("plane %r is only %i bytes, %ix%i=%i bytes required" % (
                 "YUV"[i], len(bc), strides[i], height, strides[i]*height//ydiv))
             src[i] = <const unsigned char *> (<uintptr_t> int(bc))
-            if src[i]==NULL:
+            if src[i] == NULL:
                 raise ValueError("missing plane %s from context %s" % ("YUV"[i], bc))
         log("jpeg.encode_yuv with subsampling=%s for pixel format=%s with quality=%s",
             TJSAMP_STR.get(subsamp, subsamp), pfstr, quality)
@@ -489,7 +489,9 @@ cdef object do_encode_yuv(tjhandle compressor, pfstr, planes,
 def selftest(full=False) -> None:
     log("jpeg selftest")
     from xpra.codecs.checks import make_test_image
-    img = make_test_image("BGRA", 32, 32)
     for q in (0, 50, 100):
-        v = encode("jpeg", img, typedict({"quality" : q}))
-        assert v, "encode output was empty!"
+        for encoding in ("jpeg", "jpega"):
+            img = make_test_image("BGRA", 32, 32)
+            v = encode(encoding, img, typedict({"quality" : q}))
+            assert v, "encode output was empty!"
+            from xpra.util.str_fn import hexstr

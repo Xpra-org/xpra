@@ -23,7 +23,7 @@ from OpenGL.GL import (
     GL_TEXTURE_MAG_FILTER, GL_TEXTURE_MIN_FILTER, GL_NEAREST,
     GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT,
     GL_LINEAR, GL_RED, GL_R8, GL_R16, GL_LUMINANCE, GL_LUMINANCE_ALPHA,
-    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_COLOR_BUFFER_BIT,
+    GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_TEXTURE3, GL_COLOR_BUFFER_BIT,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER,
     GL_DEPTH_TEST, GL_SCISSOR_TEST, GL_DITHER,
     GL_RGB, GL_RGBA, GL_BGR, GL_BGRA, GL_RGBA8, GL_RGB8, GL_RGB10_A2, GL_RGB565, GL_RGB5_A1, GL_RGBA4, GL_RGBA16,
@@ -95,6 +95,7 @@ CURSOR_IDLE_TIMEOUT: int = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 
 PLANAR_FORMATS = (
     "YUV420P", "YUV422P", "YUV444P", "NV12", "YUV444P16",
+    "YUVA420P", "YUVA422P", "YUVA444P",
     "GBRP", "GBRP16",
 )
 
@@ -111,8 +112,8 @@ PIXEL_FORMAT_TO_CONSTANT: dict[str, IntConstant] = {
     "RGB565": GL_RGB,
 }
 PIXEL_INTERNAL_FORMAT: dict[str, Sequence[IntConstant]] = {
-    # defaults to: GL_R8, GL_R8, GL_R8
-    # (meaning: 3 planes, 8 bits each)
+    # defaults to: GL_R8, GL_R8, GL_R8, GL_R8
+    # (meaning: up to 4 planes, 8 bits each)
     # override for formats that use 16 bit per channel:
     "NV12": (GL_LUMINANCE, GL_LUMINANCE_ALPHA),
     "GBRP": (GL_LUMINANCE, GL_LUMINANCE, GL_LUMINANCE),  # invalid according to the spec! (only value that works)
@@ -121,7 +122,7 @@ PIXEL_INTERNAL_FORMAT: dict[str, Sequence[IntConstant]] = {
     "YUV444P16": (GL_R16, GL_R16, GL_R16),
 }
 PIXEL_DATA_FORMAT: dict[str, Sequence[IntConstant]] = {
-    # defaults to: (GL_RED, GL_RED, GL_RED))
+    # defaults to: (GL_RED, GL_RED, GL_RED, GL_RED))
     # (meaning: uploading one channel at a time)
     "NV12": (GL_LUMINANCE, GL_LUMINANCE_ALPHA),  # Y is one channel, UV contains two channels
 }
@@ -141,6 +142,9 @@ PIXEL_UPLOAD_FORMAT: dict[str, Any] = {
     "YUV420P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
     "YUV422P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
     "YUV444P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "YUVA420P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "YUVA422P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
+    "YUVA444P": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
     "GBRP": (GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE),
     "GBRP16": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
     "YUV444P10": (GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT),
@@ -176,12 +180,13 @@ DATATYPE_TO_STR: dict[IntConstant, str] = {
 TEX_Y = 0
 TEX_U = 1
 TEX_V = 2
-TEX_RGB = 3
-TEX_FBO = 4  # FBO texture (guaranteed up-to-date window contents)
-TEX_TMP_FBO = 5
-TEX_CURSOR = 6
-TEX_FPS = 7
-N_TEXTURES = 8
+TEX_A = 3
+TEX_RGB = 4
+TEX_FBO = 5  # FBO texture (guaranteed up-to-date window contents)
+TEX_TMP_FBO = 6
+TEX_CURSOR = 7
+TEX_FPS = 8
+N_TEXTURES = 9
 
 
 class TemporaryViewport:
@@ -1140,7 +1145,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
                 self.with_gfx_context(paint_nvdec)
                 return
-        if JPEG_YUV and width >= 2 and height >= 2 and encoding == "jpeg":
+        if JPEG_YUV and width >= 2 and height >= 2:
             img = self.jpeg_decoder.decompress_to_yuv(img_data, options)
         else:
             img = self.jpeg_decoder.decompress_to_rgb(img_data, options)
@@ -1273,7 +1278,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if WEBP_YUV > 0 and webp_decoder and not WEBP_PILLOW and not has_alpha and width >= 2 and height >= 2:
             # webp only uses 'YUV420P' at present, but we can support all of these YUV formats:
             if WEBP_YUV > 1 or subsampling in ("YUV420P", "YUV422P", "YUV444P"):
-                img = webp_decoder.decompress_to_yuv(img_data, options, has_alpha)
+                img = webp_decoder.decompress_to_yuv(img_data, options)
                 self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
                 return
         super().paint_webp(img_data, x, y, width, height, options, callbacks)
@@ -1440,15 +1445,16 @@ class GLWindowBackingBase(WindowBackingBase):
         if len(self.textures) == 0:
             raise RuntimeError("no OpenGL textures")
         upload_formats = PIXEL_UPLOAD_FORMAT[pixel_format]
-        internal_formats = PIXEL_INTERNAL_FORMAT.get(pixel_format, (GL_R8, GL_R8, GL_R8))
-        data_formats = PIXEL_DATA_FORMAT.get(pixel_format, (GL_RED, GL_RED, GL_RED))
+        internal_formats = PIXEL_INTERNAL_FORMAT.get(pixel_format, (GL_R8, GL_R8, GL_R8, GL_R8))
+        data_formats = PIXEL_DATA_FORMAT.get(pixel_format, (GL_RED, GL_RED, GL_RED, GL_RED))
         divs = get_subsampling_divs(pixel_format)
         bytespp = 2 if (pixel_format.endswith("P16") or pixel_format.endswith("P10")) else 1
-        # textures: usually 3, but only 2 for "NV12"
+        # textures: usually 3 for "YUV", but only 2 for "NV12", 4 for "YUVA"
         textures = (
             (GL_TEXTURE0, TEX_Y),
             (GL_TEXTURE1, TEX_U),
             (GL_TEXTURE2, TEX_V),
+            (GL_TEXTURE3, TEX_A),
         )[:len(divs)]
         log("%s.update_planar_textures%s textures=%s", self, (width, height, img, pixel_format, scaling, pbo), textures)
         if self.planar_pixel_format != pixel_format or self.texture_size != (width, height):
@@ -1481,6 +1487,7 @@ class GLWindowBackingBase(WindowBackingBase):
             raise RuntimeError(f"invalid number of planes for {pixel_format}")
         for texture, index in textures:
             # "YUV420P" -> ("Y", "U", "V")
+            # "YUVA420P" -> ("Y", "U", "V", "A")
             # "GBRP16" -> ("GG", "BB", "RR")
             # "NV12" -> ("Y", "UV")
             tex_name = get_plane_name(pixel_format, index) * bytespp
@@ -1529,7 +1536,11 @@ class GLWindowBackingBase(WindowBackingBase):
                              shader="YUV420P_to_RGB") -> None:
         log("%s.render_planar_update%s pixel_format=%s",
             self, (rx, ry, rw, rh, width, height, shader), self.planar_pixel_format)
-        if self.planar_pixel_format not in ("YUV420P", "YUV422P", "YUV444P", "GBRP", "NV12", "GBRP16", "YUV444P16"):
+        if self.planar_pixel_format not in (
+            "YUV420P", "YUV422P", "YUV444P",
+            "YUVA420P", "YUVA422P", "YUVA444P",
+            "GBRP", "NV12", "GBRP16", "YUV444P16",
+        ):
             # not ready to render yet
             return
         divs = get_subsampling_divs(self.planar_pixel_format)
@@ -1537,6 +1548,7 @@ class GLWindowBackingBase(WindowBackingBase):
             (GL_TEXTURE0, TEX_Y),
             (GL_TEXTURE1, TEX_U),
             (GL_TEXTURE2, TEX_V),
+            (GL_TEXTURE3, TEX_A),
         )[:len(divs)]
         gl_marker("painting planar update, format %s", self.planar_pixel_format)
 

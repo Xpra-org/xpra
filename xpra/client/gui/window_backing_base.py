@@ -526,7 +526,7 @@ class WindowBackingBase:
 
     def paint_spng(self, img_data, x: int, y: int, width: int, height: int,
                    options: typedict, callbacks: PaintCallbacks) -> None:
-        rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data)
+        rgba, rgb_format, iwidth, iheight = self.spng_decoder.decompress(img_data, options)
         rowstride = iwidth * len(rgb_format)
         self.ui_paint_rgb("png", rgb_format, rgba,
                           x, y, iwidth, iheight, width, height, rowstride, options, callbacks)
@@ -538,8 +538,7 @@ class WindowBackingBase:
             self.paint_pillow("webp", img_data, x, y, width, height, options, callbacks)
             return
         if WEBP_YUV:
-            has_alpha = options.boolget("has_alpha")
-            img = self.webp_decoder.decompress_to_yuv(img_data, options, has_alpha)
+            img = self.webp_decoder.decompress_to_yuv(img_data, options)
             self.paint_image_wrapper("webp", img, x, y, width, height, options, callbacks)
             return
         img = self.webp_decoder.decompress_to_rgb(img_data, options)

@@ -167,13 +167,11 @@ def decompress(data: bytes, options: typedict, yuv=False) -> ImageWrapper:
 
 
 def selftest(full=False) -> None:
-    w, h = (24, 16)       #hard coded size of test data
     from xpra.codecs.checks import TEST_PICTURES
     for size, samples in TEST_PICTURES["avif"].items():
         w, h = size
-        for bdata in samples:
-            options = typedict()
-            img = decompress(bdata, options)
+        for bdata, options in samples:
+            img = decompress(bdata, typedict(options))
             assert img.get_width()==w and img.get_height()==h
             assert len(img.get_pixels())>0
             #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

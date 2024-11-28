@@ -216,7 +216,7 @@ def selftest(_full=False) -> None:
             continue
         for size, samples in test_data.items():
             log(f"testing {encoding} at size {size} with {len(samples)} samples")
-            for i, cdata in enumerate(samples):
+            for i, (cdata, options) in enumerate(samples):
                 try:
                     log(f"testing sample {i}: {len(cdata):5} bytes")
                     buf = BytesIO(cdata)
@@ -229,7 +229,7 @@ def selftest(_full=False) -> None:
                     buf = BytesIO(cdata)
                     try:
                         img = PIL.Image.open(buf)
-                        log.warn(f"Pillow failed to generate an error parsing invalid input: {img}")
+                        log.warn(f"Pillow failed to generate an error parsing invalid input: {img}, {options=}")
                     except Exception as e:
                         log("correctly raised exception for invalid input: %s", e)
                 except Exception as e:
