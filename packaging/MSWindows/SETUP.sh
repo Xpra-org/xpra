@@ -1,48 +1,54 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 # This file is part of Xpra.
-# Copyright (C) 2017-2022 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2017-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 set -e
 
 export XPKG="${MINGW_PACKAGE_PREFIX}-"
-PACMAN=${PACMAN:-pacman}
+PACMAN=${PACMAN:-"pacman --noconfirm --needed -S"}
 #PACMAN="echo pacman"
 
 #most packages get installed here: (python, gtk, etc):
-$PACMAN --noconfirm --needed -S ${XPKG}python ${XPKG}libnotify ${XPKG}gtk3
+$PACMAN ${XPKG}python ${XPKG}libnotify ${XPKG}gtk3
 #media libraries (more than we actually need):
-$PACMAN --noconfirm --needed -S ${XPKG}libspng ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
+$PACMAN ${XPKG}libspng ${XPKG}libavif ${XPKG}libyuv-git ${XPKG}gst-plugins-good ${XPKG}gst-plugins-bad ${XPKG}gst-plugins-ugly
 #network layer libraries:
-$PACMAN --noconfirm --needed -S ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium ${XPKG}qrencode ${XPKG}pinentry
+$PACMAN ${XPKG}lz4 ${XPKG}xxhash heimdal-libs openssh sshpass ${XPKG}libsodium
+#pinentry is not available for aarch64 yet:
+$PACMAN ${XPKG}pinentry
 #not strictly needed:
-$PACMAN --noconfirm --needed -S ${XPKG}dbus-glib
+$PACMAN ${XPKG}dbus-glib
 #python GStreamer bindings:
-$PACMAN --noconfirm --needed -S ${XPKG}gst-python
+$PACMAN ${XPKG}gst-python
 #development tools and libs for building extra packages:
-$PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm gcc groff subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks pyopenssl importlib_resources pylsqpack aioquic service_identity pyvda; do
-	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
+$PACMAN base-devel ${XPKG}yasm ${XPKG}nasm gcc groff subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
+#python extensions:
+for x in cryptography cffi pycparser numpy pillow appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos coverage psutil oauthlib pysocks pyopenssl importlib_resources pylsqpack aioquic service_identity pyvda; do
+	$PACMAN ${XPKG}python-${x}
 done
-#dependencies of browser_cookie3 and pycuda,
-#best to manage them via pacman rather than have them installed via pip
-for x in mako markupsafe typing_extensions platformdirs; do
-	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
+#not yet available for aarch64?:
+for x in cx_Freeze gssapi; do
+	$PACMAN ${XPKG}python-${x}
 done
-$PACMAN --noconfirm --needed -S ${XPKG}cython
 
+#dependencies of browser_cookie3 and pycuda,
+#best to manage them via pacman rather than have them installed via pip,
+#so we get automatic updates:
+#(pycryptodome* is not yet available for aarch64?)
+for x in mako markupsafe typing_extensions platformdirs pip pycryptodome pycryptodomex keyring idna; do
+	$PACMAN ${XPKG}python-${x}
+done
+$PACMAN ${XPKG}cython
+$PACMAN openssl-devel
 #these need to be converted to PKGBUILD:
-$PACMAN --noconfirm --needed -S ${XPKG}python-pip ${XPKG}python-pycryptodome ${XPKG}python-pycryptodomex ${XPKG}python-keyring ${XPKG}python-idna openssl-devel
 for x in browser-cookie3 pyaes pbkdf2 pytools; do
 	pip3 install $x
 done
 # to keep these libraries updated, you may need:
 # SETUPTOOLS_USE_DISTUTILS=stdlib pip install --upgrade $PACKAGE
-
-#for webcam support:
-#$PACMAN --noconfirm --needed -S ${XPKG}opencv ${XPKG}hdf5 ${XPKG}tesseract-ocr
 
 echo "to package the EXE, install verpatch:"
 echo "https://github.com/pavel-a/ddverpatch/releases"
