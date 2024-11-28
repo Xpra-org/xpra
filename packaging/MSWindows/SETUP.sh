@@ -7,12 +7,8 @@
 
 set -e
 
-if [ ! -z "$MSYSTEM_CARCH" ]; then
-	MSYSTEM_ARCH=$MSYSTEM_CARCH
-fi
-
-export XPKG="mingw-w64-${MSYSTEM_ARCH}-"
-PACMAN="pacman"
+export XPKG="${MINGW_PACKAGE_PREFIX}-"
+PACMAN=${PACMAN:-pacman}
 #PACMAN="echo pacman"
 
 #most packages get installed here: (python, gtk, etc):
