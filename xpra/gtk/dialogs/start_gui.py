@@ -252,7 +252,7 @@ class StartSession(Gtk.Window):
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox, False, True, 20)
 
-        def btn(text, tooltip, callback, default=False):
+        def btn(text, tooltip, callback, default=False) -> Gtk.Button:
             ib = imagebutton(text, tooltip=tooltip, clicked_callback=callback, icon_size=32,
                              default=default, label_font="sans 16")
             hbox.pack_start(ib)
