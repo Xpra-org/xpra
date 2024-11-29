@@ -299,9 +299,13 @@ def get_build_info() -> list[str]:
     info.append(build.get("type", "") + " build")
     info.insert(0, "")
     einfo = "Python " + ".".join(str(v) for v in sys.version_info[:2])
-    bit = build.get("bit")
-    if bit:
-        einfo += ", "+bit
+    machine = build.get("machine", "")
+    if machine:
+        einfo += ", "+machine
+    else:
+        bit = build.get("bit")
+        if bit:
+            einfo += ", "+bit
     info.insert(0, einfo)
     by = build.get("by", "")
     on = build.get("on", "")
