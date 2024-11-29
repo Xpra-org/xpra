@@ -905,6 +905,8 @@ fi
 
 
 %changelog
+* Fri Nov 29 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
+- TODO
 * Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:
    SBOM support on MS Windows

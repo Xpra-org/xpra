@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.2.2] 2024-11-29
+* TODO
+
 ## [6.2.2] 2024-11-22
 * Platforms, build and packaging:
     * [SBOM support on MS Windows](https://github.com/Xpra-org/xpra/commit/78a6e04cd39f694a38200dc059996ce02beb7ac1), [use it](https://github.com/Xpra-org/xpra/commit/4042c8355a6a9225bb9891d56b53931f4264a525), [fix it](https://github.com/Xpra-org/xpra/commit/ac7a860264680615db570a5e4ad4a014bf852952)
