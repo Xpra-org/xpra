@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.0.11
+%define version 5.0.12
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -785,6 +785,8 @@ fi
 
 
 %changelog
+* Fri Nov 29 2024 Antoine Martin <antoine@xpra.org> 5.0.12-10
+- TODO
 * Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:
    don't build ffmpeg encoder on MacOS

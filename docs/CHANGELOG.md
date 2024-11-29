@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.0.12] 2024-11-29
+* TODO
+
 ## [5.0.11] 2024-11-22
 * Platforms, build and packaging:
     * [don't build ffmpeg encoder on MacOS](https://github.com/Xpra-org/xpra/commit/bf2f1a3f4927428da0ae4c5d40e5125c4c8617d0)

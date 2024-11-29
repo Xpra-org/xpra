@@ -4,5 +4,5 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-__version__ = "5.0.11"
-__version_info__ = (5, 0, 11)
+__version__ = "5.0.12"
+__version_info__ = (5, 0, 12)
