@@ -1,7 +1,19 @@
 # Changelog
 
 ## [5.0.12] 2024-11-29
-* TODO
+* Platforms, build and packaging:
+    * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/fab8d9f02de9b4ca57d7fa88b8031a2c29a77d91) and [prefix detection](https://github.com/Xpra-org/xpra/commit/8166eee7d2f5e4b00327763627b33987edd5e0c7)
+* SBOM:
+    * [minor fixes](https://github.com/Xpra-org/xpra/commit/5cb8451158a7070a3c44c0b7715b135ea17e6683)
+    * [record CUDA](https://github.com/Xpra-org/xpra/commit/ecd20b6a0523aa8c3b07192f35ca694a03a30280)
+    * [record 'Light' builds](https://github.com/Xpra-org/xpra/commit/bd604bf45db130f9066acef98424edd4bca5b854)
+    * [export to JSON](https://github.com/Xpra-org/xpra/commit/558ceb8d6cd9e6a6da830909355ba1f1b356649a)
+* Major:
+    * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/2b0539dd4292235d30ddd3ac2f985c0a735467b9)
+* Minor:
+    * [`start-gui` fails if no application is selected](https://github.com/Xpra-org/xpra/commit/7a662155c4546642ccc08b5b1d2662bdc3ec863d)
+    * [check for latest version from current branch](https://github.com/Xpra-org/xpra/commit/783d2ca9ae7af299f5ef54a83b27bc0017cf8b1c)
+    * [clamp `vrefresh` to a useful range](https://github.com/Xpra-org/xpra/commit/62a958b6255c1f1884cfb1b71b88e2c8a95094a1)
 
 ## [5.0.11] 2024-11-22
 * Platforms, build and packaging:
