@@ -784,7 +784,9 @@ def add_manifests() -> None:
 
 def gen_caches() -> None:
     step("Generating gdk pixbuf loaders cache")
-    cmd = ["gdk-pixbuf-query-loaders.exe", "lib/gdk-pixbuf-2.0/2.10.0/loaders/*"]
+    cmd = ["gdk-pixbuf-query-loaders.exe"]
+    for loader in glob(f"{DIST}/lib/gdk-pixbuf-2.0/2.10.0/loaders/*"):
+        cmd.append(loader.split(f"{DIST}/", 1)[1])
     with Popen(cmd, cwd=os.path.abspath(DIST), stdout=PIPE, text=True) as proc:
         cache, err = proc.communicate(None)
     if proc.returncode != 0:
