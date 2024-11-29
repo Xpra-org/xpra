@@ -928,11 +928,11 @@ def find_source(path: str) -> str:
     return ""
 
 
-def get_package_info(name: str) -> dict[str, str]:
-    cmd = command_args(["pacman", "-Qi", name])
+def get_command_info(*args: str) -> dict[str, str]:
+    cmd = command_args(list(args))
     r, output = getstatusoutput(cmd)
     if r:
-        debug(f"pacman failed for {name!r} and returned {r}")
+        debug(f"{args} failed and returned {r}")
         return {}
     props: dict[str, str] = {}
     for line in output.split("\n"):
@@ -940,6 +940,14 @@ def get_package_info(name: str) -> dict[str, str]:
         if len(parts) == 2:
             props[parts[0].strip()] = parts[1].strip()
     return props
+
+
+def get_pacman_package_info(name: str) -> dict[str, str]:
+    return get_command_info("pacman", "-Qi", name)
+
+
+def get_pip_package_info(name: str) -> dict[str, str]:
+    return get_command_info("pip", "show", name)
 
 
 def get_package(path: str) -> tuple[str, str]:
@@ -978,16 +986,34 @@ def get_py_lib_dirs() -> list[str]:
     return py_lib_dirs
 
 
+def pip_sbom_rec(prefix: str, filename: str) -> dict[str, Any]:
+    pip_rec = get_pip_package_info(filename)
+    if not pip_rec:
+        return {}
+    rec = {
+        "package": "python-" + pip_rec["Name"],
+        "version": pip_rec["Version"],
+        "pip": True,
+    }
+    dist_path = os.path.join(prefix, filename)
+    add_size_checksum(rec, dist_path)
+    return rec
+
+
 def sbom_rec(path: str) -> dict[str, Any]:
     package, version = get_package(path)
     if not (package and version):
-        print(f"Warning: no package data found for {path!r}")
         return {}
     rec = {
         "package": package,
         "version": version,
     }
     dist_path = os.path.join(DIST, path)
+    add_size_checksum(rec, dist_path)
+    return rec
+
+
+def add_size_checksum(rec: dict[str, Any], dist_path: str) -> None:
     if os.path.isdir(dist_path):
         rec["size"] = du(dist_path)
     else:
@@ -995,7 +1021,6 @@ def sbom_rec(path: str) -> dict[str, Any]:
         with open(dist_path, "rb") as f:
             data = f.read()
         rec["checksum"] = hashlib.sha256(data).hexdigest()
-    return rec
 
 
 def find_glob_paths(dirname: str, glob_str: str) -> list[str]:
@@ -1011,10 +1036,11 @@ def rec_sbom() -> None:
     py_lib_dirs: list[str] = get_py_lib_dirs()
 
     def find_prefixed_sbom_rec(filename: str, prefixes: list[str]) -> dict[str, Any]:
+        rec = None
         for prefix in prefixes:
             src_path = os.path.join(prefix, filename)
             if os.path.exists(src_path):
-                rec = sbom_rec(src_path)
+                rec = sbom_rec(src_path) or pip_sbom_rec(prefix, filename)
                 if rec:
                     package = rec["package"]
                     version = rec["version"]
@@ -1077,6 +1103,8 @@ def rec_sbom() -> None:
                 version = rec["version"]
                 debug(f" * {path!r}: {package!r}, {version!r}")
                 sbom[path] = rec
+            else:
+                print(f"Warning: no package data found for {path!r}")
 
     # python modules:
     debug("adding python modules")
@@ -1113,7 +1141,7 @@ def rec_sbom() -> None:
         else:
             debug(f"unexpected package prefix: {package!r}")
         # keep only the keys relevant to the sbom:
-        info = get_package_info(package_name)
+        info = get_pacman_package_info(package_name) or get_pip_package_info(package_name)
         exported_info = {}
         for key in (
             "Name", "Version", "Description",
