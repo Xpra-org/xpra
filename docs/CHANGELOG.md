@@ -1,7 +1,20 @@
 # Changelog
 
 ## [6.2.2] 2024-11-29
-* TODO
+* Platforms, build and packaging:
+    * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/d4b078ee67e4024cb2c8a6aea69dba0fe7400c14) and [prefix detection](https://github.com/Xpra-org/xpra/commit/9161b51b82cc89347fd317513d1fdba463c85208)
+* SBOM:
+    * [record for CUDA](https://github.com/Xpra-org/xpra/commit/055d564d55f5bdd912af1402f8d1999cfb089bd8)
+    * [record 'Light' builds](https://github.com/Xpra-org/xpra/commit/b4d43a6a2c1c95fd875f4881eaf64e4a00f38fb7)
+    * [export to JSON](https://github.com/Xpra-org/xpra/commit/752294b7b8e58657196503afc2ed4dac6e311dbe)
+* Encodings:
+    * [honour `openh264` maximum dimensions](https://github.com/Xpra-org/xpra/commit/fc79af387508ec63e8ccc572306aef47d8bdbfbc)
+    * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/7796b6b8e72f37c68a44ac5ecfccd88cf3b0e680)
+* Major:
+    * [disable workspace support on MS Windows to prevent crashes](https://github.com/Xpra-org/xpra/commit/e95d8674009145747af49f5b491a100d72051c6e)
+    * [`start-gui` fails if no application is selected](https://github.com/Xpra-org/xpra/commit/fbc0a66451d5c1818e67a8097ff522b222802857)
+* Minor:
+    * [clamp 'vrefresh' to a useful range](https://github.com/Xpra-org/xpra/commit/e289ac6094f45d0ba020642775d96b14e61a2575)
 
 ## [6.2.2] 2024-11-22
 * Platforms, build and packaging:
