@@ -41,6 +41,8 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
         rgb_formats = options.get("rgb_formats", ("BGRX", "BGRA", "RGBA", "RGBX"))
     elif pixel_format in ("RGB", "BGR"):
         rgb_formats = options.get("rgb_formats", ("RGB", "BGR"))
+    elif pixel_format in ("r210", "BGR565"):
+        rgb_formats = options.get("rgb_formats", (pixel_format, ))
     else:
         raise ValueError(f"unsupported pixel format {pixel_format!r}")
     supports_transparency = options.get("alpha", True)
