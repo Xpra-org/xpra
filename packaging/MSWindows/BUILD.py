@@ -31,7 +31,7 @@ DEBUG = os.environ.get("XPRA_DEBUG", "0") != "0"
 PYTHON = os.environ.get("PYTHON", "python%i.%i" % sys.version_info[:2])
 MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
 MSYSTEM_CARCH = os.environ.get("MSYSTEM_CARCH", "x86_64")
-PACKAGE_PREFIX = f"mingw-w64-{MSYSTEM_CARCH}-"
+PACKAGE_PREFIX = os.environ.get("MINGW_PACKAGE_PREFIX", f"mingw-w64-{MSYSTEM_CARCH}") + "-"
 MSYS2_PACKAGE_PREFIX = "msys2-"
 MSYS_DLL_PREFIX = "msys-"
 
