@@ -506,7 +506,13 @@ popd > /dev/null
 #leave ./dist
 popd > /dev/null
 if [ "${DO_SBOM}" != "0" ]; then
-  ./packaging/MSWindows/BUILD.py sbom
+	if [ "${DO_FULL}" == "1" ]; then
+		./packaging/MSWindows/BUILD.py sbom --no-light
+		./packaging/MSWindows/BUILD.py export-sbom --no-light
+	else
+		./packaging/MSWindows/BUILD.py sbom
+		./packaging/MSWindows/BUILD.py export-sbom
+	fi
 fi
 pushd dist/lib > /dev/null
 
