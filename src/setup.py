@@ -157,7 +157,7 @@ if "--minimal" in sys.argv:
     argv.remove("--minimal")
     DEFAULT = False
 skip_build = "--skip-build" in argv
-ARCH = get_status_output(["uname", "-m"])[1].strip("\n\r")
+ARCH = os.environ.get("MSYSTEM_CARCH", "") or get_status_output(["uname", "-m"])[1].strip("\n\r")
 ARM = ARCH.startswith("arm") or ARCH.startswith("aarch")
 
 from xpra.platform.features import LOCAL_SERVERS_SUPPORTED, SHADOW_SUPPORTED
