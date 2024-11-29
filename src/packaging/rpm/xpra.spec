@@ -926,7 +926,7 @@ fi
 
 
 %changelog
-* Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
+* Fri Nov 29 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
 - build and packaging:
      libyuv 0.1878.20231004
      packaging updates for CentOS7: libyuv, skip pycuda
@@ -946,11 +946,13 @@ fi
      require clang to build the CUDA kernels, instead of GCC >= 14
      missing SVG loader on MS Windows
      pixbuf loaders cache not populated
+     initial arm64 build support for MS Windows
 - encodings:
      avoid slow modules (ie: csc_cython)
      stick to the same video scaling setting longer, avoid big swings
      handle decoding of padded frames
      quality and speed can be used with all generic encodings
+     clamp vrefresh to a useful range
 - major:
      protect against potential buffer overflows
      MS Windows printing crash

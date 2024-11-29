@@ -18,11 +18,13 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - require clang to build the CUDA kernels, instead of GCC >= 14
    - missing SVG loader on MS Windows
    - pixbuf loaders cache not populated
+   - initial arm64 build support for MS Windows
   * encodings:
    - avoid slow modules (ie: csc_cython)
    - stick to the same video scaling setting longer, avoid big swings
    - handle decoding of padded frames
    - quality and speed can be used with all generic encodings
+   - clamp vrefresh to a useful range
   * major:
    - protect against potential buffer overflows
    - MS Windows printing crash
@@ -64,7 +66,7 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - use correct type for numlock modifier
    - handle missing python-pillow more gracefully
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 22 Nov 2024 22:04:16 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 29 Nov 2024 20:55:40 +0700
 
 xpra (3.1.8-1) UNRELEASED; urgency=low
   * major:
