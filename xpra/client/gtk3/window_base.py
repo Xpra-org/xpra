@@ -68,7 +68,7 @@ prop_get, prop_set, prop_del = None, None, None
 NotifyInferior = None
 X11Window = X11Core = None
 
-WIN32_WORKSPACE = WIN32 and envbool("XPRA_WIN32_WORKSPACE", True)
+WIN32_WORKSPACE = WIN32 and envbool("XPRA_WIN32_WORKSPACE", False)
 
 
 def use_x11_bindings() -> bool:
