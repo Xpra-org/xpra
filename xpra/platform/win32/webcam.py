@@ -13,8 +13,10 @@ log = Logger("webcam")
 
 def get_all_video_devices(capture_only=True):
     try:
-        from xpra.platform.win32.comtypes_webcam import get_video_devices
-        return get_video_devices()
+        from xpra.platform.win32.comtypes_util import COMTYPES_ENABLED
+        if COMTYPES_ENABLED:
+            from xpra.platform.win32.comtypes_webcam import get_video_devices
+            return get_video_devices()
     except Exception as e:
         log("get_all_video_devices(%s)", capture_only, exc_info=True)
         log.warn("Warning: failed to load native webcam support:")

@@ -15,8 +15,12 @@ if SILENCE_COMTYPES:
     logging.getLogger("comtypes").setLevel(logging.INFO)
 COMTYPES_NOGENDIR = envbool("XPRA_COMTYPES_NOGENDIR", False)
 
+COMTYPES_ENABLED = envbool("XPRA_COMTYPES", True)
+
 
 def comtypes_init() -> None:
+    if not COMTYPES_ENABLED:
+        raise RuntimeError("comtypes is disabled")
     # pylint: disable=import-outside-toplevel
     from comtypes import client
     if COMTYPES_NOGENDIR:

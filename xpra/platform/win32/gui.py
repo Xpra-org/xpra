@@ -1013,7 +1013,9 @@ def getTaskbar():
     if TaskbarLib is None:
         taskbar_tlb = ""
         try:
-            from xpra.platform.win32.comtypes_util import QuietenLogging, find_tlb_file, comtypes_init
+            from xpra.platform.win32.comtypes_util import COMTYPES_ENABLED, QuietenLogging, find_tlb_file, comtypes_init
+            if not COMTYPES_ENABLED:
+                return None
             taskbar_tlb = find_tlb_file("TaskbarLib.tlb")
             if not taskbar_tlb:
                 log.warn("Warning: 'TaskbarLib.tlb' was not found")
