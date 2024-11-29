@@ -31,7 +31,7 @@ DEBUG = os.environ.get("XPRA_DEBUG", "0") != "0"
 PYTHON = os.environ.get("PYTHON", "python%i.%i" % sys.version_info[:2])
 MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
 MSYSTEM_CARCH = os.environ.get("MSYSTEM_CARCH", "x86_64")
-PACKAGE_PREFIX = f"mingw-w64-{MSYSTEM_CARCH}-"
+PACKAGE_PREFIX = os.environ.get("MINGW_PACKAGE_PREFIX", f"mingw-w64-{MSYSTEM_CARCH}") + "-"
 MSYS2_PACKAGE_PREFIX = "msys2-"
 MSYS_DLL_PREFIX = "msys-"
 
@@ -139,9 +139,6 @@ def get_build_args(args) -> list[str]:
             "win32_tools",
         ):
             xpra_args.append(f"--without-{option}")
-        xpra_args.append("--with-Os")
-    else:
-        xpra_args.append("--with-qt6_client")
     if not args.cuda:
         xpra_args.append("--without-nvidia")
     # we can't do 'docs' this way :(
@@ -766,18 +763,6 @@ def setup_share(light: bool) -> None:
         rm_empty_dir(f"{DIST}/share/icons")
 
 
-def add_manifests() -> None:
-    step("Adding EXE manifests")
-    EXES = [
-        "Bug_Report", "Xpra-Launcher", "Xpra", "Xpra_cmd",
-        # these are only included in full builds:
-        "GTK_info", "NativeGUI_info", "Screenshot", "Xpra-Shadow",
-    ]
-    for exe in EXES:
-        if os.path.exists(f"{DIST}/{exe}.exe"):
-            copyfile("packaging/MSWindows/exe.manifest", f"{DIST}/{exe}.exe.manifest")
-
-
 def gen_caches() -> None:
     step("Generating gdk pixbuf loaders cache")
     cmd = ["gdk-pixbuf-query-loaders.exe", "lib/gdk-pixbuf-2.0/2.10.0/loaders/*"]
@@ -1307,7 +1292,6 @@ def build(args) -> None:
     add_numpy(args.numpy)
 
     setup_share(args.light)
-    add_manifests()
     gen_caches()
 
     if args.docs:
