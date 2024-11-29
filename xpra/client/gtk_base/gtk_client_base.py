@@ -70,6 +70,9 @@ EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", True)
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 CLIPBOARD_NOTIFY = envbool("XPRA_CLIPBOARD_NOTIFY", True)
 
+MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 10)
+MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 60)
+
 
 class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     __gsignals__ = {}
@@ -228,7 +231,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             rate = iround(min(rates.values())/1000)
         if rate<30 or rate>250:
             rate = UIXpraClient.get_vrefresh(self)
-        return rate
+        if rate < 0:
+            return -1
+        return max(MIN_VREFRESH, min(MAX_VREFRESH, rate))
 
 
     def get_notifier_classes(self):
