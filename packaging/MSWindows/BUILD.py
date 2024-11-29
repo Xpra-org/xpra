@@ -604,7 +604,7 @@ def delete_libs(*exps: str) -> None:
 def delete_dlls(light: bool) -> None:
     step("Deleting unnecessary DLLs")
     delete_libs(
-        "libjasper*", "lib2to3*", "xdg*", "olefile*", "pygtkcompat*", "jaraco*",
+        "libjasper*", "xdg*", "olefile*", "pygtkcompat*", "jaraco*",
         "p11-kit*", "lz4",
     )
     # remove codecs we don't need:
@@ -1038,7 +1038,6 @@ def rec_sbom() -> None:
     py_lib_dirs: list[str] = get_py_lib_dirs()
 
     def find_prefixed_sbom_rec(filename: str, prefixes: list[str]) -> dict[str, Any]:
-        rec = None
         for prefix in prefixes:
             src_path = os.path.join(prefix, filename)
             if os.path.exists(src_path):
