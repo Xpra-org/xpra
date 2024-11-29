@@ -1951,9 +1951,16 @@ def make_progress_process(title="Xpra") -> Popen | None:
 
 
 def run_opengl_probe() -> tuple[str, dict]:
+    log = Logger("opengl")
+    if not find_spec("OpenGL"):
+        log("OpenGL module not found!")
+        error = "missing OpenGL module"
+        return f"error:{error}", {
+            "error": error,
+            "success": False,
+        }
     from xpra.platform.paths import get_nodock_command
     from xpra.net.subprocess_wrapper import exec_kwargs
-    log = Logger("opengl")
     cmd = get_nodock_command() + ["opengl"]
     env = get_exec_env()
     if is_debug_enabled("opengl"):
@@ -2850,25 +2857,33 @@ def do_run_glcheck(opts, show=False) -> dict[str, Any]:
 
 
 def run_glcheck(opts) -> ExitValue:
+    # cheap easy check first:
     log = Logger("opengl")
-    check_gtk_client()
-    if POSIX and not OSX and not is_Wayland():
-        log("forcing x11 Gdk backend")
-        with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
-            try:
-                from xpra.x11.gtk.display_source import init_gdk_display_source
-                init_gdk_display_source()
-            except ImportError as e:
-                log(f"no bindings x11 bindings: {e}")
-            except Exception:
-                log("error initializing gdk display source", exc_info=True)
-    try:
-        props = do_run_glcheck(opts)
-    except Exception as e:
+    if not find_spec("OpenGL"):
+        log("OpenGL module not found!")
         props = {
-            "error": str(e).replace("\n", " "),
+            "error": "missing OpenGL module",
             "success": False,
         }
+    else:
+        check_gtk_client()
+        if POSIX and not OSX and not is_Wayland():
+            log("forcing x11 Gdk backend")
+            with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
+                try:
+                    from xpra.x11.gtk.display_source import init_gdk_display_source
+                    init_gdk_display_source()
+                except ImportError as e:
+                    log(f"no bindings x11 bindings: {e}")
+                except Exception:
+                    log("error initializing gdk display source", exc_info=True)
+        try:
+            props = do_run_glcheck(opts)
+        except Exception as e:
+            props = {
+                "error": str(e).replace("\n", " "),
+                "success": False,
+            }
     log("run_glcheck(..) props=%s", props)
     for k in sorted(props.keys()):
         v = props[k]
