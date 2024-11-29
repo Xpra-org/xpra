@@ -480,7 +480,7 @@ popd > /dev/null
 #leave ./dist
 popd > /dev/null
 if [ "${DO_SBOM}" != "0" ]; then
-  ./packaging/MSWindows/BUILD.py sbom
+  ./win32/BUILD.py sbom
 fi
 pushd dist/lib > /dev/null
 #zip up some modules:
