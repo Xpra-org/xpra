@@ -20,7 +20,7 @@ Release:        2%{?dist}
 %if 0%{python3_minor} < 7
 Version:        0.33.6
 %else
-Version:        0.43.0
+Version:        0.45.1
 %endif
 Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
@@ -48,7 +48,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 %if 0%{python3_minor} < 7
 if [ "${sha256}" != "10c9da68765315ed98850f8e048347c3eb06dd81822dc2ab1d4fde9dc9702646" ]; then
 %else
-if [ "${sha256}" != "465ef92c69fa5c5da2d1cf8ac40559a8c940886afcef87dcf14b9470862f1d85" ]; then
+if [ "${sha256}" != "661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729" ]; then
 %endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
