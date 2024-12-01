@@ -1295,7 +1295,7 @@ class ClientExtras:
             c.screen_size_changed()
 
     def end_session(self, wParam: int, lParam: int) -> None:
-        log("WM_ENDSESSION")
+        log(f"WM_ENDSESSION({wParam}, {lParam})")
         c = self.client
         if not c:
             return

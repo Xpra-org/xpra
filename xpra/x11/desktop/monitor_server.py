@@ -373,7 +373,7 @@ class XpraMonitorServer(DesktopServerBase):
                 continue
             self.send_new_desktop_model(model, ss)
 
-    def _process_configure_monitor(self, proto, packet: PacketType) -> None:
+    def _process_configure_monitor(self, _proto, packet: PacketType) -> None:
         action = str(packet[1])
         if action == "remove":
             identifier = str(packet[2])

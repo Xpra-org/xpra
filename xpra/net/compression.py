@@ -242,7 +242,7 @@ def get_compression_type(level) -> str:
     return "zlib"
 
 
-def decompress(data: bytes, level: int):
+def decompress(data: bytes, level: int) -> SizedBuffer:
     from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
     if level & LZ4_FLAG:
         algo = "lz4"
@@ -253,7 +253,7 @@ def decompress(data: bytes, level: int):
     return decompress_by_name(data, algo)
 
 
-def decompress_by_name(data: bytes, algo: str):
+def decompress_by_name(data: bytes, algo: str) -> SizedBuffer:
     c = COMPRESSION.get(algo)
     if c is None:
         raise InvalidCompressionException(f"{algo} is not available")

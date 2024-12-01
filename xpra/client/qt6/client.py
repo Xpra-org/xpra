@@ -141,7 +141,7 @@ class Qt6Client:
         setting = packet[1]
         netlog.info(f"ignoring setting-change for {setting!r}")
 
-    def _process_startup_complete(self, packet: tuple):
+    def _process_startup_complete(self, _packet: tuple):
         netlog.info("client is connected")
 
     def _process_encodings(self, packet: tuple):

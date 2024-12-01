@@ -197,7 +197,7 @@ class DBUS_Notifier(NotifierBase):
         log("close_notify(%i) actual id=%s", nid, actual_id)
         self.do_close(nid, actual_id)
 
-    def do_close(self, nid: NID, actual_id: int) -> None:
+    def do_close(self, _nid: NID, actual_id: int) -> None:
         log("do_close_notify(%i)", actual_id)
         if not self.dbusnotify:
             return

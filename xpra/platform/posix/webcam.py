@@ -147,7 +147,7 @@ def add_video_device_change_callback(callback: Callable) -> None:
     log(f"add_video_device_change_callback({callback})")
     global device_timetamps, device_monitor
 
-    def dev_directory_changed(*args):
+    def dev_directory_changed(*_args) -> None:
         old = dict(device_timetamps)
         update_device_timestamps()
         if set(old.keys()) != set(device_timetamps.keys()):
