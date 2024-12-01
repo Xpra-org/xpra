@@ -1370,7 +1370,7 @@ def build(args) -> None:
         verpatch()
 
     size = du(DIST) // 1024 // 1024
-    print(f"{size}MB")
+    print(f"installed size: {size}MB")
     if args.zip:
         create_zip()
     if args.installer:
