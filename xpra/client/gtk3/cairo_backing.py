@@ -8,11 +8,11 @@ from collections.abc import Sequence
 
 from cairo import Format
 
-from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.client.gtk3.cairo_backing_base import CairoBackingBase, FORMATS
+from xpra.gtk.cairo_image import make_image_surface, CAIRO_FORMATS
 from xpra.log import Logger
 
 log = Logger("paint", "cairo")
@@ -21,18 +21,6 @@ GLib = gi_import("GLib")
 GdkPixbuf = gi_import("GdkPixbuf")
 
 CAIRO_USE_PIXBUF = envbool("XPRA_CAIRO_USE_PIXBUF", False)
-make_image_surface = noop
-CAIRO_FORMATS: dict[int, Sequence[str]] = {}
-try:
-    from xpra.gtk import cairo_image
-    make_image_surface = cairo_image.make_image_surface
-    CAIRO_FORMATS.update(cairo_image.CAIRO_FORMATS)
-except ImportError as e:
-    log.warn("Warning: failed to load the bindings cairo workaround:")
-    log.warn(" %s", e)
-    log.warn(" rendering will be slow!")
-    CAIRO_USE_PIXBUF = True
-    del e
 
 
 class CairoBacking(CairoBackingBase):
