@@ -89,12 +89,6 @@ class UpdateStatusWindow:
             self.progress = 0
 
     def update_label(self) -> bool:
-        try:
-            from xpra.src_info import BRANCH
-        except ImportError:
-            BRANCH = "master"
-        if BRANCH == "master":
-            BRANCH = ""
         if self.newer_version is False:
             from xpra import __version__ as version_str
             self.label.set_label("Version %s is up to date" % version_str)

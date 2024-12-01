@@ -345,14 +345,9 @@ def get_branch() -> str:
     return ""
 
 
-def get_latest_version(branch: str) -> bool | None | tuple[int, ...]:
+def get_latest_version() -> bool | None | tuple[int, ...]:
     CURRENT_VERSION_URL = ("https" if CHECK_SSL else "http") + "://xpra.org/CURRENT_VERSION"
-    BRANCH = os.environ.get("XPRA_CURRENT_VERSION_BRANCH", "")
-    if not BRANCH:
-        try:
-            from xpra.src_info import BRANCH
-        except ImportError as e:
-            log(f"unknown branch: {e}")
+    BRANCH = get_branch()
     branch_strs = []
     if BRANCH not in ("", "master"):
         branch_parts = BRANCH.split(".")            # ie: "v6.2.x" -> ["v6", "2", "x"]
@@ -378,8 +373,7 @@ def get_latest_version(branch: str) -> bool | None | tuple[int, ...]:
 
 def version_update_check() -> bool | None | tuple[int, ...]:
     FAKE_NEW_VERSION = envbool("XPRA_FAKE_NEW_VERSION", False)
-    branch = get_branch()
-    latest_version_no = get_latest_version(branch)
+    latest_version_no = get_latest_version()
     if not latest_version_no:
         log("version_update_check() failed to contact version server")
         return None

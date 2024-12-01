@@ -129,7 +129,6 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         return self._updateprop("wm-name", wm_name)
 
     def update_icon(self) -> bool:
-        icons = None
         wm_name = self.get_property("wm-name")
         if not wm_name:
             return False

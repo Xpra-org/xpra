@@ -1248,7 +1248,6 @@ def connect_to(display_desc, opts=None, debug_cb=noop, ssh_fail_cb=noop):
                 except Exception as e:
                     get_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
                     noerr(sock.close)
-                    sock = None
                     raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {sockpath!r}:\n {e}") from None
         try:
             sock.settimeout(None)
@@ -1263,7 +1262,6 @@ def connect_to(display_desc, opts=None, debug_cb=noop, ssh_fail_cb=noop):
             return conn
         except OSError:
             noerr(sock.close)
-            sock = None
             raise
 
     if dtype == "named-pipe":  # pragma: no cover
@@ -1758,7 +1756,7 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode: str):
 
 def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
     try:
-        app = make_client(error_cb, opts)
+        app = make_client(opts)
     except RuntimeError as e:
         log = get_logger()
         log("failed to create the client", exc_info=True)
@@ -2111,7 +2109,7 @@ def enforce_client_features() -> None:
     })
 
 
-def make_client(error_cb: Callable, opts):
+def make_client(opts):
     backend = opts.backend or "gtk"
     BACKENDS = ("qt", "gtk", "auto")
     if backend == "qt":
@@ -2122,8 +2120,8 @@ def make_client(error_cb: Callable, opts):
                     raise RuntimeError(f"Gtk module {mod!r} is already loaded!")
                 # noinspection PyTypeChecker
                 sys.modules[mod_path] = None
-            from xpra.client.qt6.client import make_client
-            return make_client()
+            from xpra.client.qt6.client import make_client as make_qt6_client
+            return make_qt6_client()
         except ImportError as e:
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the qt6 client component is missing: {e}")
     elif backend not in ("gtk", "auto"):
@@ -2272,7 +2270,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
             scaled_h = round(root_h / scaling_y)
             options.resize_display = f"{scaled_w}x{scaled_h}"
 
-    r = start_server_via_proxy(script_file, cmdline, error_cb, options, args, full_mode)
+    r = start_server_via_proxy(cmdline, error_cb, options, args, full_mode)
     if isinstance(r, int):
         return r
 
@@ -2313,7 +2311,7 @@ def get_current_root_size(display_is_remote: bool):
     return root_w, root_h
 
 
-def start_server_via_proxy(script_file: str, cmdline, error_cb, options, args, mode: str) -> int | ExitCode | None:
+def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> int | ExitCode | None:
     start_via_proxy = parse_bool_or("start-via-proxy", options.start_via_proxy)
     if start_via_proxy is False:
         return None
@@ -2469,7 +2467,7 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
             app.hello_extra = {"connect": False}
             opts.reconnect = False
         else:
-            app = make_client(error_cb, opts)
+            app = make_client(opts)
             app.show_progress(30, "client configuration")
             app.init(opts)
             app.show_progress(40, "loading user interface")
@@ -2626,7 +2624,7 @@ def stat_display_socket(socket_path: str, timeout=VERIFY_SOCKET_TIMEOUT) -> dict
     return {}
 
 
-def guess_display(dotxpra, current_display, uid: int = getuid(), gid: int = getgid(), sessions_dir="") -> str:
+def guess_display(current_display, uid: int = getuid(), gid: int = getgid(), sessions_dir="") -> str:
     """
     try to find the one "real" active display
     either X11 or wayland displays used by real user sessions
@@ -2800,7 +2798,7 @@ def run_glprobe(opts, show=False) -> ExitValue:
         init()
     import signal
 
-    def signal_handler(signum, frame) -> NoReturn:
+    def signal_handler(signum, _frame) -> NoReturn:
         force_quit(128 - signum)
 
     for name in ("ABRT", "BUS", "FPE", "HUP", "ILL", "INT", "PIPE", "SEGV", "TERM"):
@@ -2902,7 +2900,7 @@ def run_glcheck(opts) -> ExitValue:
     return 0
 
 
-def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid(), sessions_dir=""):
+def pick_shadow_display(args, uid=getuid(), gid=getgid(), sessions_dir=""):
     if len(args) == 1 and args[0]:
         if OSX or WIN32:
             return args[0]
@@ -2912,7 +2910,7 @@ def pick_shadow_display(dotxpra, args, uid=getuid(), gid=getgid(), sessions_dir=
     if OSX or WIN32:
         # no need for a specific display
         return "Main"
-    return guess_display(dotxpra, None, uid, gid, sessions_dir)
+    return guess_display(None, uid, gid, sessions_dir)
 
 
 def start_macos_shadow(cmd, env, cwd) -> None:
@@ -3005,7 +3003,6 @@ def start_server_subprocess(script_file, args, mode, opts,
     if env is None:
         env = os.environ.copy()
     log("start_server_subprocess%s", (script_file, args, mode, opts, uid, gid, env, cwd))
-    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     # we must use a subprocess to avoid messing things up - yuk
     mode = MODE_ALIAS.get(mode, mode)
     if mode not in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen"):
@@ -3022,7 +3019,7 @@ def start_server_subprocess(script_file, args, mode, opts,
     else:
         if mode not in ("expand", "shadow", "shadow-screen"):
             raise ValueError(f"invalid mode {mode!r}")
-        display_name = pick_shadow_display(dotxpra, args, uid, gid, opts.sessions_dir)
+        display_name = pick_shadow_display(args, uid, gid, opts.sessions_dir)
         # we now know the display name, so add it:
         args = [display_name]
         opts.exit_with_client = True
@@ -3035,6 +3032,8 @@ def start_server_subprocess(script_file, args, mode, opts,
             matching_display = display_name.split(",", 1)[0]
         else:
             matching_display = display_name
+
+    dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs, username, uid=uid, gid=gid)
     if WIN32:
         if not mode.startswith("shadow"):
             raise ValueError(f"invalid mode {mode!r} for MS Windows")
@@ -3237,7 +3236,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
             dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
             if not args and server_mode in ("shadow", "shadow-screen", "expand"):
                 try:
-                    display_name = pick_shadow_display(dotxpra, args, sessions_dir=opts.sessions_dir)
+                    display_name = pick_shadow_display(args, sessions_dir=opts.sessions_dir)
                     args = [display_name]
                 except Exception:
                     # failed to guess!
@@ -4394,8 +4393,8 @@ def run_version_check(args) -> ExitValue:
         return update_status.main(args)
     # text version:
     from xpra.util.version import get_latest_version, get_branch
+    version = get_latest_version()
     branch = get_branch()
-    version = get_latest_version(branch)
     vstr = ".".join(str(x) for x in version)
     branch_info = f" for {branch} branch" if branch not in ("", "master") else ""
     print(f"latest version{branch_info} is v{vstr}")

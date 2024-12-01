@@ -44,7 +44,6 @@ def parse_resolution(res_str, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -
             if sep != "@":
                 res_part += sep
             break
-    w = h = 0
     if res_part in RESOLUTION_ALIASES:
         w, h = RESOLUTION_ALIASES[res_part]
     else:

@@ -248,7 +248,7 @@ class ApplicationWindow:
         hb.props.title = "Session Launcher"
         self.window.set_titlebar(hb)
 
-        def show_about(*args):
+        def show_about(*_args):
             about(parent=self.window)
 
         hb.add(hb_button("About", "help-about", show_about))
@@ -807,7 +807,7 @@ class ApplicationWindow:
             raise RuntimeError(*args)
 
         bypass_no_gtk()
-        self.client = make_client(raise_exception, self.config)
+        self.client = make_client(self.config)
         self.client.show_progress(30, "client configuration")
         self.client.init(self.config)
         self.client.show_progress(40, "loading user interface")

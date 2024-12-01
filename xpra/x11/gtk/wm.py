@@ -180,7 +180,7 @@ class Wm(GObject.GObject):
         "x11-xkb-event": one_arg_signal,
     }
 
-    def __init__(self, replace_other_wm: bool, wm_name: str, display=None):
+    def __init__(self, replace_other_wm: bool, wm_name: str):
         super().__init__()
 
         self._wm_name = wm_name

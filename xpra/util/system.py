@@ -229,12 +229,11 @@ def get_loaded_kernel_modules(*modlist):
 def is_WSL() -> bool:
     if not POSIX:
         return False
-    r = b""
     for f in ("/proc/sys/kernel/osrelease", "/proc/version"):
         r = load_binary_file(f)
         if r:
-            break
-    return r.find(b"Microsoft") >= 0
+            return r.find(b"Microsoft") >= 0
+    return False
 
 
 def get_generic_os_name() -> str:
@@ -306,11 +305,12 @@ def get_frame_info(ignore_threads: Sequence[Thread] = ()) -> dict[str | int, Any
             sanestack = []
             for entry in stack:
                 sanestack.append(tuple(nn(x) for x in entry))
+            del stack
             info[i] = {
                 "": tident,
                 "stack": sanestack,
             }
-        del frames, stack
+        del frames
     except Exception as e:
         get_util_logger().error("failed to get frame info: %s", e)
     return info
