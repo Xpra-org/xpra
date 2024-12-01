@@ -47,8 +47,8 @@ class Win32Hooks:
     def __init__(self, hwnd: int):
         self._hwnd = hwnd
         self._message_map: dict[int, Callable[[int, int, int, int], int]] = {}
-        self.max_size = ()
-        self.min_size = ()
+        self.max_size = (0, 0)
+        self.min_size = (0, 0)
         self.frame_width = 4
         self.frame_height = 4
         self.caption_height = 26
@@ -78,7 +78,7 @@ class Win32Hooks:
             log.error(f"Error setting up window hook for {self._hwnd}", exc_info=True)
 
     def on_getminmaxinfo(self, hwnd: int, msg, wparam: int, lparam: int) -> int:
-        if (self.min_size or self.max_size) and lparam:
+        if (self.min_size > (0, 0) or self.max_size > (0, 0)) and lparam:
             info = cast(lparam, POINTER(MINMAXINFO)).contents
             style = GetWindowLongW(hwnd, win32con.GWL_STYLE)
             dw, dh = 0, 0
@@ -88,7 +88,7 @@ class Win32Hooks:
                 dh = self.caption_height + fh * 2
                 log("on_getminmaxinfo window=%#x min_size=%s, max_size=%s, frame=%sx%s",
                     hwnd, self.min_size, self.max_size, fw, fh)
-            if self.min_size:
+            if self.min_size > (0, 0):
                 minw, minh = self.min_size  # pylint: disable=unpacking-non-sequence
                 minw += dw
                 minh += dh
@@ -106,7 +106,7 @@ class Win32Hooks:
                 info.ptMinSize = point
                 info.ptMinTrackSize = point
                 log("on_getminmaxinfo actual min_size=%ix%i", minw, minh)
-            if self.max_size:
+            if self.max_size > (0, 0):
                 maxw, maxh = self.max_size  # pylint: disable=unpacking-non-sequence
                 maxw += dw
                 maxh += dh
