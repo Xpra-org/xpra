@@ -33,7 +33,7 @@ autoprov: no
 %define qt6 0
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild
-%if 0%{?fedora}>=39
+%if 0%{?fedora}
 %global debug_package %{nil}
 %endif
 %if 0%{?fedora}
@@ -72,7 +72,7 @@ Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 %define cuda_arch %(arch)
 %{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda || pkg-config --exists cuda-%{cuda_arch} && echo 1)}
 #Fedora 38+ cannot build the cuda kernels:
-%if 0%{?fedora}>=38
+%if 0%{?fedora}
 %if 0%{nvidia_codecs}
 %define fatbin %(tar -Jtf %{SOURCE0} xpra-%{version}/fs/share/xpra/cuda | grep .fatbin | wc -l 2> /dev/null)
 #we can only include cuda if we have pre-built fatbin kernels:
@@ -95,7 +95,7 @@ BuildRequires:		tar
 BuildRequires:		grep
 BuildRequires:		gawk
 BuildRequires:		gcc
-%if 0%{?fedora}>=40
+%if 0%{?fedora}
 BuildRequires:		clang
 %endif
 BuildRequires:		gcc-c++
