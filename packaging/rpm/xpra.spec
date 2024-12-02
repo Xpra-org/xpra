@@ -69,7 +69,8 @@ Vendor:				https://xpra.org/
 Source:				https://xpra.org/src/xpra-%{version}.tar.xz
 #grab the full revision number from the source archive's src_info.py file:
 %define revision_no %(tar -OJxf %{SOURCE0} xpra-%{version}/xpra/src_info.py | sed 's/ //g' | grep -e "^REVISION=" | awk -F= '{print ".r"$2}' 2> /dev/null)
-%{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda && echo 1)}
+%define cuda_arch %(arch)
+%{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda || pkg-config --exists cuda-%{cuda_arch} && echo 1)}
 #Fedora 38+ cannot build the cuda kernels:
 %if 0%{?fedora}>=38
 %if 0%{nvidia_codecs}
