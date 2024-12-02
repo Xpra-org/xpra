@@ -803,9 +803,6 @@ class ApplicationWindow:
         self.start_client(params)
 
     def start_client(self, display_desc):
-        def raise_exception(*args):
-            raise RuntimeError(*args)
-
         bypass_no_gtk()
         self.client = make_client(self.config)
         self.client.show_progress(30, "client configuration")
