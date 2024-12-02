@@ -959,54 +959,57 @@ def display_desc_to_display_path(display_desc: dict[str, Any]) -> str:
     return uri
 
 
-def pick_vnc_display(error_cb, opts, extra_args) -> dict[str, Any]:
-    if extra_args and len(extra_args) == 1:
+def pick_vnc_display(error_cb, vnc_arg: str) -> dict[str, Any]:
+    assert vnc_arg.startswith("vnc")
+    display = vnc_arg.split("vnc", 1)[1]
+    if display.lstrip(":"):
         try:
-            display = extra_args[0].lstrip(":")
-            display_no = int(display)
+            display_no = int(display.lstrip(":"))
         except (ValueError, TypeError):
-            pass
-        else:
+            raise ValueError(f"invalid vnc display number {display!r}") from None
+        return {
+            "display": f":{display_no}",
+            "display_name": display,
+            "host": "localhost",
+            "port": 5900 + display_no,
+            "local": True,
+            "type": "tcp",
+        }
+    # can't identify vnc displays with xpra sockets
+    # try the first N standard vnc ports:
+    # (we could use threads to port scan more quickly)
+    N = 100
+    from xpra.net.socket_util import socket_connect
+    for i in range(N):
+        if not os.path.exists(f"{X11_SOCKET_DIR}/X{i}"):
+            # no X11 socket, assume no VNC server
+            continue
+        port = 5900 + i
+        sock = socket_connect("localhost", port, timeout=0.1)
+        if sock:
             return {
-                "display": f":{display_no}",
-                "display_name": display,
-                "host": "localhost",
-                "port": 5900 + display_no,
+                "type": "vnc",
                 "local": True,
-                "type": "tcp",
+                "host": "localhost",
+                "port": port,
+                "display": f":{i}",
+                "display_name": f":{i}",
             }
     error_cb("cannot find vnc displays yet")
     return {}
 
 
-def pick_display(error_cb, opts, extra_args, cmdline=()):
+def pick_display(error_cb, opts, extra_args, cmdline=()) -> dict[str, Any]:
     if len(extra_args) == 1 and extra_args[0].startswith("vnc"):
-        # can't identify vnc displays with xpra sockets
-        # try the first N standard vnc ports:
-        # (we could use threads to port scan more quickly)
-        N = 100
-        from xpra.net.socket_util import socket_connect
-        for i in range(N):
-            if not os.path.exists(f"{X11_SOCKET_DIR}/X{i}"):
-                # no X11 socket, assume no VNC server
-                continue
-            port = 5900 + i
-            sock = socket_connect("localhost", port, timeout=0.1)
-            if sock:
-                return {
-                    "type": "vnc",
-                    "local": True,
-                    "host": "localhost",
-                    "port": port,
-                    "display": f":{i}",
-                    "display_name": f":{i}",
-                }
+        vnc_display = pick_vnc_display(error_cb, extra_args[0])
+        if vnc_display:
+            return vnc_display
         # if not, then fall through and hope that the xpra server supports vnc:
+    return do_pick_display(error_cb, opts, extra_args, cmdline)
+
+
+def do_pick_display(error_cb, opts, extra_args, cmdline=()) -> dict[str, Any]:
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
-    return do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline)
-
-
-def do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline=()):
     if not extra_args:
         # Pick a default server
         dir_servers = dotxpra.socket_details()
@@ -1662,7 +1665,6 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode: str):
             "show-menu", "show-about", "show-session-info",
     ) and extra_args:
         socket_dirs += opts.client_socket_dirs or []
-    dotxpra = DotXpra(opts.socket_dir, socket_dirs)
     if mode == "screenshot":
         from xpra.client.base.command import ScreenshotXpraClient
         if not extra_args:
@@ -1731,7 +1733,7 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode: str):
             server_socket = os.environ.get("XPRA_SERVER_SOCKET")
             if server_socket:
                 extra_args = [f"socket://{server_socket}"]
-        display_desc = do_pick_display(dotxpra, error_cb, opts, extra_args, cmdline)
+        display_desc = do_pick_display(error_cb, opts, extra_args, cmdline)
         if len(extra_args) == 1 and opts.password:
             uri = extra_args[0]
             if uri in cmdline and opts.password in uri:
