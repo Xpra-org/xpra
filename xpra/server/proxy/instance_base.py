@@ -579,7 +579,7 @@ class ProxyInstance:
         # empty the encode queue:
         q = self.encode_queue
         if q:
-            q.put_nowait(())
+            q.put_nowait(("closed", ))
             q = SimpleQueue()
             q.put(("closed", ))
             self.encode_queue = q
