@@ -6,6 +6,7 @@
 import sys
 
 from xpra.exit_codes import ExitValue
+from xpra.scripts.config import XpraConfig
 from xpra.gtk.dialogs.sessions_gui import SessionsGUI
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
 from xpra.util.env import envbool
@@ -83,7 +84,7 @@ class mdns_sessions(SessionsGUI):
         GLib.idle_add(self.populate_table)
 
 
-def do_main(opts) -> ExitValue:
+def do_main(opts: XpraConfig) -> ExitValue:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context, command_error
     from xpra.log import enable_color

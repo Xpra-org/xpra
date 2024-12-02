@@ -1195,7 +1195,7 @@ def host_target_string(dtype: str, username: str, host: str, port: int, display:
     return target
 
 
-def connect_to(display_desc, opts=None, debug_cb=noop, ssh_fail_cb=noop):
+def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=noop):
     from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT, SocketConnection
     display_name = display_desc["display_name"]
     dtype = display_desc["type"]
