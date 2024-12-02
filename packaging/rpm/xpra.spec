@@ -25,7 +25,8 @@
 %if 0%{?with_cuda}%{?nvidia_codecs}
 %define nvidia_codecs 1
 %else
-%{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda && echo 1)}
+%define cuda_arch %(arch)
+%{!?nvidia_codecs: %define nvidia_codecs %(pkg-config --exists cuda || pkg-config --exists cuda-%{cuda_arch} && echo 1)}
 %endif
 
 %if 0%{?fedora}%{?el10}
