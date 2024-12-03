@@ -1034,19 +1034,18 @@ class GTKTrayMenuBase(object):
 
     def set_qualitymenu(self, *_args):
         if self.quality:
-            can_use = not self.client.mmap_enabled and \
-            (self.client.encoding in self.client.server_encodings_with_quality or self.client.encoding in GENERIC_ENCODINGS)
-            set_sensitive(self.quality, can_use)
+            enc = self.client.encoding
+            with_speed = enc in self.client.server_encodings_with_speed or enc in GENERIC_ENCODINGS
+            set_sensitive(self.speed, with_speed and not self.client.mmap_enabled)
             if self.client.mmap_enabled:
-                self.quality.set_tooltip_text("Speed is always 100% with mmap")
-                return
-            if not can_use:
-                self.quality.set_tooltip_text("Not supported with %s encoding" % self.client.encoding)
-                return
-            self.quality.set_tooltip_text("Minimum picture quality")
+                self.speed.set_tooltip_text("Quality is always 100% with mmap")
+            elif not with_speed:
+                self.speed.set_tooltip_text("Not supported with %s encoding" % enc)
+            else:
+                self.speed.set_tooltip_text("Encoding latency vs size")
             #now check if lossless is supported:
             if self.quality.get_submenu():
-                can_lossless = self.client.encoding in self.client.server_encodings_with_lossless_mode
+                can_lossless = enc in self.client.server_encodings_with_lossless_mode
                 for q,item in self.quality.get_submenu().menu_items.items():
                     set_sensitive(item, q<100 or can_lossless)
 
