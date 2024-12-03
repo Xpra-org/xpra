@@ -81,7 +81,7 @@ CLIPBOARD_DIRECTION_NAME_TO_LABEL = reverse_dict(CLIPBOARD_DIRECTION_LABEL_TO_NA
 
 SERVER_NOT_SUPPORTED = "Not supported by the server"
 
-GENERIC_ENCODINGS = ("", "stream", "grayscale")
+GENERIC_ENCODINGS = ("", "auto", "stream", "grayscale")
 
 
 
