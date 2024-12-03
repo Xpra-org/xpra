@@ -298,9 +298,7 @@ class Encodings(StubClientMixin):
 
     def set_encoding(self, encoding: str) -> None:
         log("set_encoding(%s)", encoding)
-        if encoding == "auto":
-            self.encoding = ""
-        else:
+        if encoding != "auto":
             encodings = self.get_encodings()
             if encoding not in encodings:
                 raise ValueError(f"encoding {encoding} is not supported - only {csv(encodings)!r}")
@@ -309,7 +307,7 @@ class Encodings(StubClientMixin):
                 log.error(" the only encodings allowed are:")
                 log.error(" " + csv(self.server_encodings))
                 return
-            self.encoding = encoding
+        self.encoding = encoding
         self.send("encoding", self.encoding)
 
     def send_quality(self) -> None:
