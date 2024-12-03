@@ -1636,7 +1636,15 @@ class ServerCore(ControlHandler):
                                     redirect_https)
             return
         except (OSError, ValueError) as e:
-            httplog("start_http%s", (socktype, conn, is_ssl, req_info, frominfo), exc_info=True)
+            # don't log a full backtrace for `SSLV3_ALERT_CERTIFICATE_UNKNOWN`
+            # and detect it without importing the ssl module
+            exc_info = True
+            if type(e).__name__ == "SSLError":
+                reason = getattr(e, "reason", "")
+                log(f"ssl socket error: {e}, library=%s, reason=%s", getattr(e, "library", ""), reason)
+                if reason == "SSLV3_ALERT_CERTIFICATE_UNKNOWN":
+                    exc_info = False
+            httplog("start_http%s", (socktype, conn, is_ssl, req_info, frominfo), exc_info=exc_info)
             err = e.args[0]
             if err == 1 and line1 and line1[0] == 0x16:
                 log_fn = httplog.debug
