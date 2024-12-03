@@ -87,7 +87,7 @@ class Encodings(StubClientMixin):
     def __init__(self):
         super().__init__()
         self.allowed_encodings = []
-        self.encoding = None
+        self.encoding = ""
         self.quality = -1
         self.min_quality = 0
         self.speed = 0
