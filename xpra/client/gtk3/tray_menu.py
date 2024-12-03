@@ -869,7 +869,7 @@ class GTKTrayMenu(MenuHelper):
             set_sensitive(self.speed, with_speed and not self.client.mmap_enabled)
             if self.client.mmap_enabled:
                 self.speed.set_tooltip_text("Quality is always 100% with mmap")
-            elif self.client.encoding != "h264":
+            elif not with_speed:
                 self.speed.set_tooltip_text(f"Not supported with {enc!r} encoding")
             else:
                 self.speed.set_tooltip_text("Encoding latency vs size")
