@@ -96,7 +96,7 @@ SPEED_OPTIONS[1]    = "Lowest Bandwidth"
 SPEED_OPTIONS[100]  = "Lowest Latency"
 
 # 'auto' is recorded as '' unfortunately:
-GENERIC_ENCODINGS = ("", "grayscale")
+GENERIC_ENCODINGS = ("", "auto", "grayscale")
 
 CLIPBOARD_LABELS = ["Clipboard", "Primary", "Secondary"]
 CLIPBOARD_LABEL_TO_NAME = {
