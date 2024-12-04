@@ -85,7 +85,7 @@ def gendigest(digest: str, password_in, salt_in: SizedBuffer) -> bytes:
         return b""
         # warn_server_and_exit(ExitCode.UNSUPPORTED,
         #    "server requested digest '%s' but it is not supported" % digest, "invalid digest")
-    return strtobytes(hmac.HMAC(password, salt, digestmod=digestmod).hexdigest())
+    return strtobytes(hmac.new(password, salt, digestmod=digestmod).hexdigest())
 
 
 def verify_digest(digest: str, password: str, salt, challenge_response: bytes) -> bool:
