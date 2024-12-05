@@ -12,6 +12,7 @@ from collections.abc import Sequence
 import PIL
 from PIL import Image, ImagePalette, __version__ as pil_version
 
+from xpra.common import roundup
 from xpra.codecs.debug import may_save_image
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, hexstr
@@ -102,12 +103,14 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
     if pixel_format == "r210":
         stride = image.get_rowstride()
         from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb  # pylint: disable=import-outside-toplevel
-        if supports_transparency:
+        has_alpha = options.intget("depth", 24) == 32
+        if has_alpha and supports_transparency:
+            rowstride = w * 4
             pixels = r210_to_rgba(pixels, w, h, stride, w * 4)
             pixel_format = "RGBA"
         else:
-            rowstride = rowstride * 3 // 4
-            pixels = r210_to_rgb(pixels, w, h, stride, w * 3)
+            rowstride = roundup(w * 3, 2)
+            pixels = r210_to_rgb(pixels, w, h, stride, rowstride)
             pixel_format = "RGB"
             bpp = 24
     elif pixel_format == "BGR565":
