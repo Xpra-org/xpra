@@ -13,7 +13,8 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import obsc, strtobytes
 from xpra.util.env import envint
 from xpra.util.io import stderr_print
-from xpra.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
+from xpra.auth.sys_auth_base import SysAuthenticatorBase, log
+from xpra.auth.common import parse_uid, parse_gid
 from xpra.log import is_debug_enabled, consume_verbose_argv
 
 LDAP_REFERRALS = envint("XPRA_LDAP_REFERRALS", 0)

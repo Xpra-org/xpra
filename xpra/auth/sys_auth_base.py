@@ -34,40 +34,6 @@ def xor(s1, s2) -> bytes:
     return b"".join(b"%c" % (a ^ b) for a, b in zip(s1, s2))
 
 
-def parse_uid(v) -> int:
-    if v:
-        try:
-            return int(v)
-        except (TypeError, ValueError):
-            log(f"uid {v!r} is not an integer")
-    if POSIX:
-        try:
-            import pwd  # pylint: disable=import-outside-toplevel
-            return pwd.getpwnam(v or DEFAULT_UID).pw_uid
-        except Exception as e:
-            log(f"parse_uid({v})", exc_info=True)
-            log.error(f"Error: cannot find uid of {v!r}: {e}")
-        return os.getuid()
-    return -1
-
-
-def parse_gid(v) -> int:
-    if v:
-        try:
-            return int(v)
-        except (TypeError, ValueError):
-            log(f"gid {v!r} is not an integer")
-    if POSIX:
-        try:
-            import grp  # pylint: disable=import-outside-toplevel
-            return grp.getgrnam(v or DEFAULT_GID).gr_gid
-        except Exception as e:
-            log(f"parse_gid({v})", exc_info=True)
-            log.error(f"Error: cannot find gid of {v!r}: {e}")
-        return os.getgid()
-    return -1
-
-
 class SysAuthenticatorBase:
     USED_SALT: Deque[bytes] = deque(maxlen=USED_SALT_CACHE_SIZE)
     DEFAULT_PROMPT = "password for user '{username}'"

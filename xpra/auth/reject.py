@@ -5,7 +5,7 @@
 
 from collections.abc import Sequence
 
-from xpra.auth.sys_auth_base import SessionData
+from xpra.auth.common import SessionData
 from xpra.net.digest import get_salt, choose_digest
 from xpra.util.objects import typedict
 

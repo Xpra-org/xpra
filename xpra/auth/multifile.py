@@ -6,7 +6,7 @@
 # authentication from a file containing a list of entries of the form:
 # username|password|uid|gid|displays|env_options|session_options
 
-from xpra.auth.sys_auth_base import parse_uid, parse_gid, SessionData
+from xpra.auth.common import SessionData, parse_uid, parse_gid
 from xpra.auth.file_auth_base import log, FileAuthenticatorBase
 from xpra.util.str_fn import hexstr
 from xpra.util.parsing import parse_str_dict

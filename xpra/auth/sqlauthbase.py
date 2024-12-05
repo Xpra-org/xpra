@@ -9,7 +9,8 @@ from collections.abc import Sequence
 from xpra.util.str_fn import csv
 from xpra.util.parsing import parse_str_dict
 from xpra.os_util import getuid, getgid
-from xpra.auth.sys_auth_base import SysAuthenticator, SessionData, log
+from xpra.auth.common import SessionData
+from xpra.auth.sys_auth_base import SysAuthenticator, log
 
 
 class SQLAuthenticator(SysAuthenticator):

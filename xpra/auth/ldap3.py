@@ -11,7 +11,8 @@ from collections.abc import Sequence
 from xpra.util.io import stderr_print
 from xpra.util.objects import typedict
 from xpra.util.str_fn import obsc
-from xpra.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
+from xpra.auth.sys_auth_base import SysAuthenticatorBase, log
+from xpra.auth.common import parse_uid, parse_gid
 from xpra.log import is_debug_enabled
 
 assert log  # tests will disable logging from here

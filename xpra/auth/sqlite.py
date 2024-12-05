@@ -8,7 +8,8 @@ import os
 import sys
 
 from xpra.util.parsing import parse_str_dict
-from xpra.auth.sys_auth_base import log, parse_uid, parse_gid, SessionData
+from xpra.auth.common import SessionData, parse_uid, parse_gid
+from xpra.auth.sys_auth_base import log
 from xpra.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
 
 
