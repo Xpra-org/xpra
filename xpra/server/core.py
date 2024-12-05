@@ -1118,34 +1118,38 @@ class ServerCore(ControlHandler):
 
     def new_conn_err(self, conn, sock, socktype: str, socket_info, packet_type: str, msg=None) -> None:
         # not an xpra client
-        netlog.error("Error: %s connection failed:", socktype)
+        log_fn = netlog.debug if packet_type == "http" else netlog.error
+        log_fn("Error: %s connection failed:", socktype)
         if conn.remote:
-            netlog.error(" packet from %s", pretty_socket(conn.remote))
+            log_fn(" packet from %s", pretty_socket(conn.remote))
         if socket_info:
-            netlog.error(" received on %s", pretty_socket(socket_info))
+            log_fn(" received on %s", pretty_socket(socket_info))
         if packet_type:
-            netlog.error(" this packet looks like a '%s' packet", packet_type)
+            log_fn(" this packet looks like a '%s' packet", packet_type, backtrace=True)
         else:
-            netlog.error(" invalid packet format, not an xpra client?")
-        packet_data = b"disconnect: connection setup failed"
+            log_fn(" invalid packet format, not an xpra client?")
         if msg:
-            netlog.error(" %s", msg)
-            packet_data += b", %s?" % strtobytes(msg)
-        packet_data += b"\n"
+            log_fn(" %s", msg)
+
+        if packet_type == "xpra":
+            # try xpra packet format:
+            from xpra.net.packet_encoding import pack_one_packet
+            packet_data = pack_one_packet(("disconnect", "invalid protocol for this port"))
+        elif packet_type == "http":
+            # HTTP 400 error:
+            packet_data = HTTP_UNSUPORTED
+        else:
+            packet_data = b"disconnect: connection setup failed"
+            if msg:
+                packet_data += b", %s?" % strtobytes(msg)
+            packet_data += b"\n"
         try:
             # default to plain text:
             sock.settimeout(1)
-            if packet_type == "xpra":
-                # try xpra packet format:
-                from xpra.net.packet_encoding import pack_one_packet
-                packet_data = pack_one_packet(("disconnect", "invalid protocol for this port")) or packet_data
-            elif packet_type == "http":
-                # HTTP 400 error:
-                packet_data = HTTP_UNSUPORTED
             conn.write(packet_data)
-            GLib.timeout_add(500, force_close_connection, conn)
-        except Exception as e:
+        except IOError as e:
             netlog("error sending %r: %s", packet_data, e)
+        GLib.timeout_add(500, force_close_connection, conn)
 
     def handle_new_connection(self, conn, socket_info, socket_options: dict) -> None:
         """
