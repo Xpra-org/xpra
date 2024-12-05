@@ -244,7 +244,7 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
             # convert to 255 indexed colour if:
             # * we're not in palette mode yet (source is >8bpp)
             # * we need space for the mask (256 -> 255)
-            if palette is None or mask:
+            if mask or not palette:
                 # I wanted to use the "better" adaptive method,
                 # but this does NOT work (produces a black image instead):
                 # im.convert("P", palette=Image.ADAPTIVE)
