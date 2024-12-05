@@ -1659,12 +1659,11 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode: str):
     if opts.quality != -1 and (opts.quality < 0 or opts.quality > 100):
         error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
-    socket_dirs = opts.socket_dirs
     if mode in (
             "info", "id", "connect-test", "control", "version", "detach",
             "show-menu", "show-about", "show-session-info",
     ) and extra_args:
-        socket_dirs += opts.client_socket_dirs or []
+        opts.socket_dirs += opts.client_socket_dirs or []
     if mode == "screenshot":
         from xpra.client.base.command import ScreenshotXpraClient
         if not extra_args:
