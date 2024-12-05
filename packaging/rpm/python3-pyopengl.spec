@@ -19,7 +19,7 @@
 
 Name:           %{python3}-pyopengl
 Version:        3.1.8
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
@@ -117,6 +117,9 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Thu Dec 05 2024 Antoine Martin <antoine@xpra.org> - 3.1.8-2
+- also patch accelerate version number
+
 * Sat Nov 09 2024 Antoine Martin <antoine@xpra.org> - 3.1.8-1
 - build new release from github archive, match merged layout
 
