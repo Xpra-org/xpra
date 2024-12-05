@@ -9,11 +9,11 @@ import unittest
 from collections import defaultdict
 from xpra.net import net_util
 from xpra.net.net_util import (
-    get_info, get_interfaces, get_interfaces_addresses, #get_interface,
+    get_info, get_interfaces, get_interfaces_addresses,
     get_gateways, get_bind_IPs, do_get_bind_ifacemask,
     get_ssl_info, get_interface,
     get_iface,
-    )
+)
 from unit.test_util import silence_error
 
 
@@ -30,7 +30,7 @@ class TestVersionUtilModule(unittest.TestCase):
                 ip_ifaces[ip].append(iface)
         for ip, ifaces in ip_ifaces.items():
             assert get_iface(ip) in ifaces, "expected interface for ip %s to be one of %s but got %s" % (
-                    ip, ifaces, get_iface(ip))
+                ip, ifaces, get_iface(ip))
         ia = get_interfaces_addresses()
         assert ia
         #for iface, address in ia.items():
@@ -54,7 +54,7 @@ class TestVersionUtilModule(unittest.TestCase):
         invalid_iface("10.0.0")
         get_iface("localhost")
 
-        assert get_interface("invalid") is None
+        assert not get_interface("invalid")
 
     def test_ssl_info(self):
         assert get_ssl_info(True)
@@ -62,6 +62,7 @@ class TestVersionUtilModule(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

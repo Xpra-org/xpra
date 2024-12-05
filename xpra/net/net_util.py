@@ -60,7 +60,7 @@ def get_interfaces_addresses() -> dict:
     return d
 
 
-def get_interface(address):
+def get_interface(address) -> str:
     for iface, idefs in get_interfaces_addresses().items():
         # ie: {
         #    17: [{'broadcast': u'ff:ff:ff:ff:ff:ff', 'addr': u'00:e0:4c:68:46:a6'}],
@@ -72,7 +72,7 @@ def get_interface(address):
             for props in defs:
                 if props.get("addr") == address:
                     return iface
-    return None
+    return ""
 
 
 def get_gateways() -> dict:
@@ -97,7 +97,7 @@ def get_gateways() -> dict:
         return {}
 
 
-def get_bind_IPs():
+def get_bind_IPs() -> Sequence[str]:
     global bind_IPs
     if not bind_IPs:
         netifaces = import_netifaces()
@@ -108,7 +108,7 @@ def get_bind_IPs():
     return bind_IPs
 
 
-def do_get_bind_IPs():
+def do_get_bind_IPs() -> Sequence[str]:
     ips = []
     netifaces = import_netifaces()
     assert netifaces
@@ -134,7 +134,7 @@ def do_get_bind_IPs():
     return ips
 
 
-def do_get_bind_ifacemask(iface):
+def do_get_bind_ifacemask(iface) -> Sequence[tuple[str, str]]:
     ipmasks = []
     netifaces = import_netifaces()
     assert netifaces
@@ -253,10 +253,10 @@ def get_net_sys_config() -> dict[str, Any]:
     if net_sys_config or not os.path.exists("/proc"):
         return net_sys_config
 
-    def stripnl(v):
+    def stripnl(v) -> str:
         return str(v).rstrip("\r").rstrip("\n")
 
-    def addproc(procpath: str, subsystem: str, name: str, conv: Callable = stripnl):
+    def addproc(procpath: str, subsystem: str, name: str, conv: Callable = stripnl) -> None:
         assert name
         try:
             with open(procpath, encoding="latin1") as f:
@@ -476,7 +476,7 @@ def main():  # pragma: no cover
 
         from xpra.util.str_fn import bytestostr
 
-        def pver(v):
+        def pver(v) -> str:
             if isinstance(v, (tuple, list)):
                 s = ""
                 lastx = None

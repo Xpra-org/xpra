@@ -1432,8 +1432,8 @@ class ServerCore(ControlHandler):
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
         protocol.authenticators = ()
-        protocol.encryption = socket_options.get("encryption", None)
-        protocol.keyfile = socket_options.get("encryption-keyfile") or socket_options.get("keyfile")
+        protocol.encryption = socket_options.get("encryption", "")
+        protocol.keyfile = socket_options.get("encryption-keyfile", "") or socket_options.get("keyfile", "")
         raw_keydata = socket_options.get("encryption-keydata", "") or socket_options.get("keydata", "")
         protocol.keydata = parse_encoded_bin_data(raw_keydata)
         if socktype in ENCRYPTED_SOCKET_TYPES:

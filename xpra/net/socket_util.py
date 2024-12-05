@@ -215,7 +215,7 @@ def accept_connection(socktype: str, listener, timeout=None, socket_options=None
     sock.settimeout(timeout)
     sockname = sock.getsockname()
     conn = SocketConnection(sock, sockname, address, peername, socktype, None, socket_options)
-    log("accept_connection(%s, %s, %s)=%s", listener, socktype, timeout, conn)
+    log("accept_connection%s=%s", (listener, socktype, timeout, socket_options), conn)
     return conn
 
 
@@ -547,7 +547,7 @@ def setup_udp_socket(host: str, iport: int, socktype: str) -> tuple[str, socket.
     return socktype, udp_socket, (host, iport), cleanup_udp_socket
 
 
-def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[tuple[str, int], dict]:
+def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[tuple[str, int], dict[str, Any]]:
     ip_sockets: dict[tuple[str, int], dict] = {}
     if bind_ip:
         for spec in bind_ip:
