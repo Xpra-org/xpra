@@ -1164,7 +1164,7 @@ class ServerCore(ControlHandler):
             ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
             if ssl_sock is None:
                 return None
-            ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype)
+            ssl_conn = SSLSocketConnection(ssl_sock, sockname, address, target, socktype, socket_options=socket_options)
             ssllog("ssl_wrap()=%s", ssl_conn)
             return ssl_conn
 
