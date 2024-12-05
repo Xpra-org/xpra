@@ -2741,6 +2741,9 @@ class WindowSource(WindowIconSource):
         if w <= 0 or h <= 0:
             raise RuntimeError(f"invalid dimensions: {w}x{h}")
 
+        # ugly workaround for r210 vs r210-with-alpha:
+        options["depth"] = self.image_depth
+
         # more useful is the actual number of bytes (assuming 32bpp)
         # since we generally don't send the padding with it:
         psize = w*h*4

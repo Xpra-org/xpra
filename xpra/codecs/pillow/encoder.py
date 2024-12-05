@@ -12,6 +12,7 @@ from collections.abc import Sequence
 import PIL
 from PIL import Image, ImagePalette, __version__ as pil_version
 
+from xpra.common import roundup
 from xpra.codecs.debug import may_save_image
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, hexstr
@@ -89,19 +90,11 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
     supports_transparency = options.boolget("alpha", True)
     grayscale = options.boolget("grayscale", False)
     pixel_format: str = image.get_pixel_format()
-    palette = None
+    palette: list[int] = []
     w: int = image.get_width()
     h: int = image.get_height()
-    rgb: str = {
-        "RLE8": "P",
-        "XRGB": "RGB",
-        "BGRX": "RGB",
-        "RGBX": "RGB",
-        "RGBA": "RGBA",
-        "BGRA": "RGBA",
-        "BGR": "RGB",
-    }.get(pixel_format, pixel_format)
     bpp = 32
+    rowstride = image.get_rowstride()
     pixels = image.get_pixels()
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
@@ -110,28 +103,26 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
     if pixel_format == "r210":
         stride = image.get_rowstride()
         from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb  # pylint: disable=import-outside-toplevel
-        if supports_transparency:
+        has_alpha = options.intget("depth", 24) == 32
+        if has_alpha and supports_transparency:
+            rowstride = w * 4
             pixels = r210_to_rgba(pixels, w, h, stride, w * 4)
             pixel_format = "RGBA"
-            rgb = "RGBA"
         else:
-            image.set_rowstride(image.get_rowstride() * 3 // 4)
-            pixels = r210_to_rgb(pixels, w, h, stride, w * 3)
+            rowstride = roundup(w * 3, 2)
+            pixels = r210_to_rgb(pixels, w, h, stride, rowstride)
             pixel_format = "RGB"
-            rgb = "RGB"
             bpp = 24
     elif pixel_format == "BGR565":
         from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb  # pylint: disable=import-outside-toplevel
         if supports_transparency:
-            image.set_rowstride(image.get_rowstride() * 2)
+            rowstride = rowstride * 2
             pixels = bgr565_to_rgbx(pixels)
             pixel_format = "RGBA"
-            rgb = "RGBA"
         else:
-            image.set_rowstride(image.get_rowstride() * 3 // 2)
+            rowstride = rowstride * 3 // 2
             pixels = bgr565_to_rgb(pixels)
             pixel_format = "RGB"
-            rgb = "RGB"
             bpp = 24
     elif pixel_format == "RLE8":
         pixel_format = "P"
@@ -145,7 +136,15 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
         bpp = 8
     else:
         if pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"):
-            raise ValueError(f"invalid pixel format {pixel_format}")
+            raise ValueError(f"invalid pixel format {pixel_format!r}")
+    rgb: str = {
+        "XRGB": "RGB",
+        "BGRX": "RGB",
+        "RGBX": "RGB",
+        "RGBA": "RGBA",
+        "BGRA": "RGBA",
+        "BGR": "RGB",
+    }.get(pixel_format, pixel_format)
     pil_import_format = pixel_format.replace("A", "a")
     try:
         # PIL cannot use the memoryview directly:
@@ -154,16 +153,16 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
         # it is safe to use frombuffer() here since the convert()
         # calls below will not convert and modify the data in place,
         # and we save the compressed data then discard the image
-        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pil_import_format, image.get_rowstride(), 1)
+        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pil_import_format, rowstride, 1)
     except Exception as e:
         log("Image.frombuffer%s", (
             rgb, (w, h), len(pixels),
-            "raw", pil_import_format, image.get_rowstride(), 1),
+            "raw", pil_import_format, rowstride, 1),
             exc_info=True)
-        log.error("Error: pillow failed to import image:")
+        log.error(f"Error: pillow failed to import image as {pil_import_format}:")
         log.estr(e)
         log.error(" for %s", image)
-        log.error(" pixel data: %i %s", len(pixels), type(pixels))
+        log.error(f" pixel data: %i %s, with {rowstride=}", len(pixels), type(pixels))
         raise
     try:
         if palette:
@@ -245,7 +244,7 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
             # convert to 255 indexed colour if:
             # * we're not in palette mode yet (source is >8bpp)
             # * we need space for the mask (256 -> 255)
-            if palette is None or mask:
+            if mask or not palette:
                 # I wanted to use the "better" adaptive method,
                 # but this does NOT work (produces a black image instead):
                 # im.convert("P", palette=Image.ADAPTIVE)
