@@ -427,7 +427,7 @@ class WindowSource(WindowIconSource):
                     log.warn("Warning: cannot use mmap, no write method support")
             else:
                 self.insert_encoder("mmap", "mmap", self.mmap_encode)
-        if not FORCE_PILLOW or not pillow:
+        if (not FORCE_PILLOW or not pillow) and self.image_depth != 30:
             # prefer these native encoders over the Pillow version:
             add("enc_spng")
             add("enc_webp")
