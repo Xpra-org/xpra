@@ -7,8 +7,8 @@
 import re
 import sys
 
-from xpra.server.auth.sys_auth_base import log
-from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
+from xpra.auth.sys_auth_base import log
+from xpra.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
 
 
 def url_path_to_dict(path: str) -> dict[str, str]:

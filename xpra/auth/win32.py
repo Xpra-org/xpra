@@ -7,7 +7,7 @@
 from collections.abc import Sequence
 
 from xpra.platform.win32.auth import check
-from xpra.server.auth.sys_auth_base import SysAuthenticator, log
+from xpra.auth.sys_auth_base import SysAuthenticator, log
 
 
 class Authenticator(SysAuthenticator):

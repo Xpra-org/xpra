@@ -61,7 +61,7 @@ from xpra.util.system import get_frame_info, get_env_info, get_sysconfig_info, p
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf, which
 from xpra.server.background_worker import add_work_item, quit_worker
-from xpra.server.auth.auth_helper import get_auth_module, AuthDef
+from xpra.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, DEFAULT_XDG_DATA_DIRS, ConnectionMessage, noerr
 from xpra.util.pysystem import dump_all_frames

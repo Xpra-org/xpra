@@ -26,7 +26,7 @@ from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server import features
 from xpra.server.core import ServerCore
 from xpra.server.control_command import ArgsControlCommand, ControlError
-from xpra.server.auth.sys_auth_base import SessionData
+from xpra.auth import SessionData
 from xpra.util.child_reaper import getChildReaper
 from xpra.scripts.parsing import str_to_bool, MODE_ALIAS
 from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES

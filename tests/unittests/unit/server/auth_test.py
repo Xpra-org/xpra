@@ -51,7 +51,7 @@ class TempFileContext:
 class TestAuth(unittest.TestCase):
 
     def a(self, name: str):
-        pmod = "xpra.server.auth"
+        pmod = "xpra.auth"
         auth_module = __import__(pmod, globals(), locals(), [name], 0)
         mod = getattr(auth_module, name, None)
         assert mod, f"cannot load {name} from {pmod}"
@@ -313,7 +313,7 @@ class TestAuth(unittest.TestCase):
             raise Exception("authentication with no data should have failed")
 
     def test_sqlite(self):
-        from xpra.server.auth.sqlite import main as sqlite_main
+        from xpra.auth.sqlite import main as sqlite_main
         filename = temp_filename("sqlite")
         password = "hello"
 
@@ -470,7 +470,7 @@ def main():
     else:
         set_default_level(logging.CRITICAL)
     try:
-        from xpra.server import auth
+        from xpra import auth
         assert auth
     except ImportError as e:
         print("non server build, skipping auth module test: %s" % e)

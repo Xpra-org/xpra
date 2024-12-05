@@ -11,7 +11,7 @@ from xpra.util.env import envbool
 from xpra.os_util import getuid
 from xpra.util.str_fn import strtobytes
 from xpra.scripts.config import str_to_bool
-from xpra.server.auth.sys_auth_base import SysAuthenticator, log
+from xpra.auth.sys_auth_base import SysAuthenticator, log
 
 PAM_AUTH_SERVICE = os.environ.get("XPRA_PAM_AUTH_SERVICE", "login")
 PAM_CHECK_ACCOUNT = envbool("XPRA_PAM_CHECK_ACCOUNT", False)

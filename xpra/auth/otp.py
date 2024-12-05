@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from xpra.util.str_fn import obsc
 from xpra.util.env import envbool
 from xpra.net.digest import get_salt
-from xpra.server.auth.sys_auth_base import SysAuthenticator, log
+from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.log import enable_color
 
 SHOW = envbool("XPRA_OTP_SHOW", False)

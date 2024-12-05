@@ -636,6 +636,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/%{package_prefix}
 %endif
 %endif
+%{python3_sitearch}/xpra/auth/
 %{python3_sitearch}/xpra/buffers/
 %{python3_sitearch}/xpra/clipboard/
 %{python3_sitearch}/xpra/gstreamer/

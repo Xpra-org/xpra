@@ -4378,7 +4378,7 @@ def run_auth(_options, args) -> ExitValue:
     if not args:
         raise InitException("missing module argument")
     auth_str = args[0]
-    from xpra.server.auth.auth_helper import get_auth_module
+    from xpra.auth.auth_helper import get_auth_module
     auth, auth_module = get_auth_module(auth_str)[:2]
     # see if the module has a "main" entry point:
     main_fn = getattr(auth_module, "main", None)

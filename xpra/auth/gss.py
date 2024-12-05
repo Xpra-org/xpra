@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from xpra.util.io import stderr_print
 from xpra.util.objects import typedict
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
+from xpra.auth.sys_auth_base import SysAuthenticatorBase, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
 
 

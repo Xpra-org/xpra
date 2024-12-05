@@ -19,7 +19,7 @@ from xpra.os_util import getuid, POSIX
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
 from xpra.net.digest import get_salt
-from xpra.server.auth.sys_auth_base import SysAuthenticator, log
+from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.paths import get_user_conf_dirs
 
 PUB_KEY_DER_PREFIX = binascii.a2b_hex("3059301306072a8648ce3d020106082a8648ce3d030107034200")

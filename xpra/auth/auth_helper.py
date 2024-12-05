@@ -44,7 +44,7 @@ def get_auth_module(auth_str: str, cwd=os.getcwd(), **auth_options) -> AuthDef:
             log("will try to use sys auth module '%s' for %s", auth, sys.platform)
         else:
             auth_modname = auth.replace("-", "_")
-        auth_mod_name = "xpra.server.auth." + auth_modname
+        auth_mod_name = "xpra.auth." + auth_modname
         log("auth module name for '%s': '%s'", auth, auth_mod_name)
         auth_module = __import__(auth_mod_name, {}, {}, ["Authenticator"])
     except ImportError as e:

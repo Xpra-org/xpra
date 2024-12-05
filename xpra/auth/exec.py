@@ -14,7 +14,7 @@ from xpra.util.env import envint, shellsub, first_time
 from xpra.os_util import OSX, gi_import
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.util.child_reaper import getChildReaper
-from xpra.server.auth.sys_auth_base import SysAuthenticator, log
+from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.platform.features import EXECUTABLE_EXTENSION
 
 GLib = gi_import("GLib")

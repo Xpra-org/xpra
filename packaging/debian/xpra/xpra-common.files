@@ -17,6 +17,7 @@ etc/xpra/conf.d/15_file_transfers.conf
 etc/xpra/conf.d/16_printing.conf
 etc/xpra/conf.d/30_picture.conf
 etc/xpra/conf.d/35_webcam.conf
+usr/lib/python3*/*/xpra/auth/
 usr/lib/python3*/*/xpra/buffers/
 usr/lib/python3*/*/xpra/clipboard/
 usr/lib/python3*/*/xpra/notifications/

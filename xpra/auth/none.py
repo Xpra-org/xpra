@@ -5,7 +5,7 @@
 
 from collections.abc import Sequence
 
-from xpra.server.auth.sys_auth_base import SysAuthenticator
+from xpra.auth.sys_auth_base import SysAuthenticator
 from xpra.util.objects import typedict
 
 

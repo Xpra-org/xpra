@@ -7,8 +7,8 @@
 import os
 import sys
 
-from xpra.server.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
-from xpra.server.auth.sys_auth_base import log
+from xpra.auth.sqlauthbase import SQLAuthenticator, DatabaseUtilBase, run_dbutil
+from xpra.auth.sys_auth_base import log
 
 
 class Authenticator(SQLAuthenticator):

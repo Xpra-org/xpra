@@ -7,7 +7,7 @@
 import sys
 from collections.abc import Sequence
 
-from xpra.server.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
+from xpra.auth.sys_auth_base import SysAuthenticatorBase, xor, log, parse_uid, parse_gid
 from xpra.net.digest import get_salt, get_digests, gendigest
 from xpra.util.objects import typedict
 from xpra.os_util import WIN32

@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.server.auth.sys_auth_base import SysAuthenticator
+from xpra.auth.sys_auth_base import SysAuthenticator
 
 
 class Authenticator(SysAuthenticator):

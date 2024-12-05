@@ -7,7 +7,7 @@ import os.path
 from collections.abc import Sequence
 
 from xpra.net.digest import get_salt, choose_digest
-from xpra.server.auth.sys_auth_base import SysAuthenticator
+from xpra.auth.sys_auth_base import SysAuthenticator
 from xpra.log import Logger
 
 log = Logger("auth")

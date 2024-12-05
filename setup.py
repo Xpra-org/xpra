@@ -1937,11 +1937,11 @@ if WIN32:
                 add_gui_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_gui")
                 add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
             if server_ENABLED:
-                add_console_exe("xpra/server/auth/sqlite.py",  "sqlite.ico",        "SQLite_auth_tool")
-                add_console_exe("xpra/server/auth/sql.py",     "sql.ico",           "SQL_auth_tool")
-                add_console_exe("xpra/server/auth/win32.py",   "authentication.ico", "System-Auth-Test")
-                add_console_exe("xpra/server/auth/ldap.py",    "authentication.ico", "LDAP-Auth-Test")
-                add_console_exe("xpra/server/auth/ldap3.py",   "authentication.ico", "LDAP3-Auth-Test")
+                add_console_exe("xpra/auth/sqlite.py",  "sqlite.ico",        "SQLite_auth_tool")
+                add_console_exe("xpra/auth/sql.py",     "sql.ico",           "SQL_auth_tool")
+                add_console_exe("xpra/auth/win32.py",   "authentication.ico", "System-Auth-Test")
+                add_console_exe("xpra/auth/ldap.py",    "authentication.ico", "LDAP-Auth-Test")
+                add_console_exe("xpra/auth/ldap3.py",   "authentication.ico", "LDAP3-Auth-Test")
                 add_console_exe("xpra/platform/win32/scripts/proxy.py", "xpra_txt.ico",     "Xpra-Proxy_cmd")
                 add_gui_exe("xpra/platform/win32/scripts/proxy.py", "xpra.ico",         "Xpra-Proxy")
                 add_console_exe("xpra/platform/win32/lsa_logon_lib.py", "xpra_txt.ico",     "System-Logon-Test")
@@ -2431,7 +2431,8 @@ if cython_ENABLED:
             extra_link_args="-lcityhash")
 
 toggle_packages(dbus_ENABLED, "xpra.dbus")
-toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server", "xpra.server.auth")
+toggle_packages(server_ENABLED or client_ENABLED, "xpra.auth")
+toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and rfb_ENABLED, "xpra.server.rfb")
@@ -2756,8 +2757,9 @@ if cythonize_more_ENABLED:
         ax("xpra.scripts")
     if WIN32:
         ace("xpra.platform.win32.service")
+    if server_ENABLED or client_ENABLED:
+        ax("xpra.auth")
     if server_ENABLED:
-        ax("xpra.server.auth")
         if dbus_ENABLED:
             ax("xpra.server.dbus")
         ax("xpra.server.mixins")

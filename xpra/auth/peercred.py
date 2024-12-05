@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.server.auth.sys_auth_base import SysAuthenticator, log
+from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.os_util import get_group_id, getuid, POSIX
 from xpra.util.env import osexpand
 from xpra.net.common import get_peercred

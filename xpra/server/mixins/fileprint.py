@@ -17,7 +17,7 @@ from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
 from xpra.util.str_fn import repr_ellipsized, bytestostr, csv
 from xpra.common import NotificationID
-from xpra.server.auth.auth_helper import AuthDef
+from xpra.auth.auth_helper import AuthDef
 from xpra.net.common import PacketType
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
