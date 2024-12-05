@@ -1,43 +1,44 @@
 # Changelog
 
-## [6.2.2] 2024-11-29
+## [6.2.2] 2024-12-05
 * Platforms, build and packaging:
     * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/d4b078ee67e4024cb2c8a6aea69dba0fe7400c14) and [prefix detection](https://github.com/Xpra-org/xpra/commit/9161b51b82cc89347fd317513d1fdba463c85208)
-* SBOM:
-    * [record for CUDA](https://github.com/Xpra-org/xpra/commit/055d564d55f5bdd912af1402f8d1999cfb089bd8)
-    * [record 'Light' builds](https://github.com/Xpra-org/xpra/commit/b4d43a6a2c1c95fd875f4881eaf64e4a00f38fb7)
-    * [export to JSON](https://github.com/Xpra-org/xpra/commit/752294b7b8e58657196503afc2ed4dac6e311dbe)
-* Encodings:
-    * [honour `openh264` maximum dimensions](https://github.com/Xpra-org/xpra/commit/fc79af387508ec63e8ccc572306aef47d8bdbfbc)
-    * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/7796b6b8e72f37c68a44ac5ecfccd88cf3b0e680)
-* Major:
-    * [disable workspace support on MS Windows to prevent crashes](https://github.com/Xpra-org/xpra/commit/e95d8674009145747af49f5b491a100d72051c6e)
-    * [`start-gui` fails if no application is selected](https://github.com/Xpra-org/xpra/commit/fbc0a66451d5c1818e67a8097ff522b222802857)
-* Minor:
-    * [clamp 'vrefresh' to a useful range](https://github.com/Xpra-org/xpra/commit/e289ac6094f45d0ba020642775d96b14e61a2575)
-
-## [6.2.2] 2024-11-22
-* Platforms, build and packaging:
-    * [SBOM support on MS Windows](https://github.com/Xpra-org/xpra/commit/78a6e04cd39f694a38200dc059996ce02beb7ac1), [use it](https://github.com/Xpra-org/xpra/commit/4042c8355a6a9225bb9891d56b53931f4264a525), [fix it](https://github.com/Xpra-org/xpra/commit/ac7a860264680615db570a5e4ad4a014bf852952)
+    * [RPM support](https://github.com/Xpra-org/xpra/commit/9710928f2ee99ee7e0a2c6ecbbc82e3961eba9d2) for [per arch pkgconfig](https://github.com/Xpra-org/xpra/commit/423e9d353ef57cee93f913cd8d9e6582ac640d62)
     * [missing SVG loader on MS Windows](https://github.com/Xpra-org/xpra/commit/33f59f2126ccf6c26b7c1d28c1f35677b51986ac)
     * [loaders cache not populated on MS Windows](https://github.com/Xpra-org/xpra/commit/5985efd29669624b70d2e64add09a0809d651e91)
     * [`install-repo` file permission on Debian](https://github.com/Xpra-org/xpra/commit/d6ed81dfce74283c8ad8f772e3a3269164cbf84e)
     * [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/fe83ee09b17c2a7e26b228a1d5fc208aa347c2aa)
     * [`libproxy` support for MS Windows clients](https://github.com/Xpra-org/xpra/commit/1e9e6ac3983ea23c1ce3e3114b62f8cdaa30a5f0)
-    * [`PyOpenGL 3.1.8`](https://github.com/Xpra-org/xpra/commit/eb5f228919fadfed7a52ab6124f219e385645448)
+    * [`PyOpenGL 3.1.8`](https://github.com/Xpra-org/xpra/commit/eb5f228919fadfed7a52ab6124f219e385645448) + [force upgrade](https://github.com/Xpra-org/xpra/commit/c9efad7907e5b309882023e32de21ab695a82e10)
     * [missing MacOS AES library](https://github.com/Xpra-org/xpra/commit/25b568965ddb388f3d21d666a722043dbf02351b)
     * [support providing build arguments using environment](https://github.com/Xpra-org/xpra/commit/cc345e3bb76349d9900dd391bca9e07c80f83cea)
     * [syntax errors in the MS Windows build setup script](https://github.com/Xpra-org/xpra/commit/121c33de3d8fe54ede6c7ca30f478b5e0a1823eb)
     * [`openh264` 2.5.0](https://github.com/Xpra-org/xpra/commit/580822e4a035e0a1a559b443f2392bce374eb979)
     * [`python-pillow` 11.0.0](https://github.com/Xpra-org/xpra/commit/03f6306a2b2a734fa1479fa50b02f7dca9f1c8bb)
-    * [use arch specific pkg-config for cuda, if found](https://github.com/Xpra-org/xpra/commit/423e9d353ef57cee93f913cd8d9e6582ac640d62)
     * [require `clang++` for building CUDA kernels on some Debian distributions](https://github.com/Xpra-org/xpra/commit/85a5462819a511a660792a8e25b1ad2d0d662c67) + [fixup](https://github.com/Xpra-org/xpra/commit/6966b65df8a1968ce687d2e68bf96bc3d2261c54)
     * [`install-dev` to honour Xdummy flag](https://github.com/Xpra-org/xpra/commit/759e2d7e18006ca20d62339b021ebe72e0da5a0e)
+* SBOM:
+    * [SBOM support on MS Windows](https://github.com/Xpra-org/xpra/commit/78a6e04cd39f694a38200dc059996ce02beb7ac1), [use it](https://github.com/Xpra-org/xpra/commit/4042c8355a6a9225bb9891d56b53931f4264a525), [fix it](https://github.com/Xpra-org/xpra/commit/ac7a860264680615db570a5e4ad4a014bf852952)
+    * [record for CUDA](https://github.com/Xpra-org/xpra/commit/055d564d55f5bdd912af1402f8d1999cfb089bd8)
+    * [record 'Light' builds](https://github.com/Xpra-org/xpra/commit/b4d43a6a2c1c95fd875f4881eaf64e4a00f38fb7)
+    * [export to JSON](https://github.com/Xpra-org/xpra/commit/752294b7b8e58657196503afc2ed4dac6e311dbe)
+    * [record pip packages](https://github.com/Xpra-org/xpra/commit/f2e321d14a8a2377a6bffb74e8bf22a7e5b3fa93) + [minor fixup](https://github.com/Xpra-org/xpra/commit/9ed57a446871897ef53509248f258076c4a9d12f)
+* Encodings:
+    * [honour `openh264` maximum dimensions](https://github.com/Xpra-org/xpra/commit/fc79af387508ec63e8ccc572306aef47d8bdbfbc)
+    * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/7796b6b8e72f37c68a44ac5ecfccd88cf3b0e680)
+* System Tray Menu:
+    * [options disabled once 'auto' is selected](https://github.com/Xpra-org/xpra/commit/6d4e6334179bc143107d5eac6463ae29d42f7d17)
+    * [speed tuning disabled](https://github.com/Xpra-org/xpra/commit/f41a9f64fad92fa7a8c737011c98122e5c4aa6bf)
 * Major:
+    * [authentication options not honoured with some bind options](https://github.com/Xpra-org/xpra/commit/60e1377ac48d3de4e35819f4347666a343967cb4)
+    * [disable workspace support on MS Windows to prevent crashes](https://github.com/Xpra-org/xpra/commit/e95d8674009145747af49f5b491a100d72051c6e)
+    * [`start-gui` fails if no application is selected](https://github.com/Xpra-org/xpra/commit/fbc0a66451d5c1818e67a8097ff522b222802857)
     * [prevent padded image overflows](https://github.com/Xpra-org/xpra/commit/6d952d483299017ece05dd9b47b4913d14696967)
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/129c5b1f2695ce2f085268134b1273cf94c4e56f), [initialization failure](https://github.com/Xpra-org/xpra/commit/fc8638d436fa09e98f2ecb324d249b4145763955)
     * [`vsock` connection errors](https://github.com/Xpra-org/xpra/commit/c0448d2988d5497aac72d528ed1edc9a13514a6e)
     * [printing errors on MS Windows](https://github.com/Xpra-org/xpra/commit/fbf1c7a3e393974fe8c7d7fc8bf266639f2d9731)
+* Minor:
+    * [clamp 'vrefresh' to a useful range](https://github.com/Xpra-org/xpra/commit/e289ac6094f45d0ba020642775d96b14e61a2575)
 * Cosmetic:
     * [add `pyopenssl` to dependencies documentation](https://github.com/Xpra-org/xpra/commit/4e7941fa8d18e6b90fa257bad34401a5aad5c81f)
     * [unnecessary import](https://github.com/Xpra-org/xpra/commit/6e389e0b1292897d46f46f39a33eb0b9551d5c2b)

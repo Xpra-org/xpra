@@ -906,30 +906,45 @@ fi
 
 
 %changelog
-* Fri Nov 29 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
-- TODO
-* Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
+* Thu Dec 05 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:
-   SBOM support on MS Windows
+   MSYS2 aarch64 build fix and prefix detection
+   RPM support for per arch pkgconfig
    missing SVG loader on MS Windows
    loaders cache not populated on MS Windows
    `install-repo` file permission on Debian
    record which repository is targeted
    `libproxy` support for MS Windows clients
-   `PyOpenGL 3.1.8`
+   `PyOpenGL 3.1.8` + force upgrade
    missing MacOS AES library
    support providing build arguments using environment
    syntax errors in the MS Windows build setup script
    `openh264` 2.5.0
    `python-pillow` 11.0.0
-   use arch specific pkg-config for cuda, if found
-   require `clang++` for building CUDA kernels on some Debian distributions
+   require `clang++` for building CUDA kernels on some Debian distributions + fixup
    `install-dev` to honour Xdummy flag
+- SBOM:
+   SBOM support on MS Windows
+   record for CUDA
+   record 'Light' builds
+   export to JSON
+   record pip packages
+- Encodings:
+   honour `openh264` maximum dimensions
+   `rgb` errors at unusual bit depths
+- System Tray Menu:
+   options disabled once 'auto' is selected
+   speed tuning disabled
 - Major:
+   authentication options not honoured with some bind options
+   disable workspace support on MS Windows to prevent crashes
+   `start-gui` fails if no application is selected
    prevent padded image overflows
-   `xpra top` corrupted output, initialization failure
+   `xpra top` corrupted output
    `vsock` connection errors
    printing errors on MS Windows
+- Minor:
+   clamp 'vrefresh' to a useful range
 - Cosmetic:
    add `pyopenssl` to dependencies documentation
    unnecessary import

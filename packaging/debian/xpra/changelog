@@ -1,7 +1,50 @@
 xpra (6.2.2-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+    MSYS2 aarch64 build fix and prefix detection
+    RPM support for per arch pkgconfig
+    missing SVG loader on MS Windows
+    loaders cache not populated on MS Windows
+    `install-repo` file permission on Debian
+    record which repository is targeted
+    `libproxy` support for MS Windows clients
+    `PyOpenGL 3.1.8` + force upgrade
+    missing MacOS AES library
+    support providing build arguments using environment
+    syntax errors in the MS Windows build setup script
+    `openh264` 2.5.0
+    `python-pillow` 11.0.0
+    require `clang++` for building CUDA kernels on some Debian distributions + fixup
+    `install-dev` to honour Xdummy flag
+  * SBOM:
+    SBOM support on MS Windows
+    record for CUDA
+    record 'Light' builds
+    export to JSON
+    record pip packages
+  * Encodings:
+    honour `openh264` maximum dimensions
+    `rgb` errors at unusual bit depths
+  * System Tray Menu:
+    options disabled once 'auto' is selected
+    speed tuning disabled
+  * Major:
+    authentication options not honoured with some bind options
+    disable workspace support on MS Windows to prevent crashes
+    `start-gui` fails if no application is selected
+    prevent padded image overflows
+    `xpra top` corrupted output
+    `vsock` connection errors
+    printing errors on MS Windows
+  * Minor:
+    clamp 'vrefresh' to a useful range
+  * Cosmetic:
+    add `pyopenssl` to dependencies documentation
+    unnecessary import
+    broken OpenGL drivers documentation link
+    handle missing pillow more gracefully
+    show full icondata error
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 29 Nov 2024 20:11:13 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 05 Dec 2024 20:33:23 +0700
 
 xpra (6.2.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
