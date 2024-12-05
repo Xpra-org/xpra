@@ -461,7 +461,7 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("xid", self.xid)
         self._updateprop("pid", pid)
         self._updateprop("ppid", ppid)
-        self._updateprop("has-alpha", depth in (30, 32))
+        self._updateprop("has-alpha", depth == 32)
         self._updateprop("allowed-actions", self._DEFAULT_NET_WM_ALLOWED_ACTIONS)
         self._updateprop("shape", self._read_xshape())
         self._updateprop("parent", get_pywindow(parent))
