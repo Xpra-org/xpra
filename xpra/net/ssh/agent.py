@@ -132,7 +132,7 @@ def setup_proxy_ssh_socket(
     try:
         os.symlink(auth_sock, agent_uuid_sockpath)
     except OSError as e:
-        log(f"os.link({auth_sock}, {agent_uuid_sockpath})", exc_info=True)
+        log(f"os.symlink({auth_sock}, {agent_uuid_sockpath})", exc_info=True)
         log.error("Error creating ssh agent socket symlink")
         log.estr(e)
         return ""
@@ -163,9 +163,9 @@ def setup_client_ssh_agent_socket(uuid: str, ssh_auth_sock: str) -> str:
                 ssh_auth_sock):  # noqa: E501
             try:
                 # ie: /run/user/1000/xpra/10/$UUID -> /tmp/ssh-XXXXvjt4hN/agent.766599
-                os.link(ssh_auth_sock, sockpath, follow_symlinks=False)
+                os.symlink(ssh_auth_sock, sockpath)
             except OSError as e:
-                log(f"os.link({ssh_auth_sock}, {sockpath})", exc_info=True)
+                log(f"os.symlink({ssh_auth_sock}, {sockpath})", exc_info=True)
                 log.error("Error setting up ssh agent socket symlink")
                 log.estr(e)
                 sockpath = ""
