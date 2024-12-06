@@ -1,14 +1,14 @@
 # This file is part of Xpra.
-# Copyright (C) 2014-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
 import os
-import time
 from io import BytesIO
 from PIL import Image, ImagePalette     #@UnresolvedImport
+from typing import Dict, Tuple, List, Any
 
-from xpra.util import envbool
+from xpra.util import roundup, csv, typedict, envbool
 from xpra.os_util import bytestostr
 from xpra.net.compression import Compressed
 from xpra.log import Logger
@@ -18,6 +18,28 @@ log = Logger("encoder", "pillow")
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,jpeg,webp").split(",")
+
+Image.init()
+
+try:
+    pil_major = int(PIL_VERSION.split(".")[0])
+except ValueError:
+    pil_version = 0
+    pil_major = 0
+
+try:
+    # pylint: disable=ungrouped-imports
+    from PIL.Image import Palette, Resampling
+    ADAPTIVE = Palette.ADAPTIVE
+    WEB = Palette.WEB
+    NEAREST = Resampling.NEAREST
+    BILINEAR = Resampling.BILINEAR
+    BICUBIC = Resampling.BICUBIC
+    LANCZOS = Resampling.LANCZOS
+except ImportError:
+    #location for older versions:
+    from PIL.Image import ADAPTIVE, WEB # type: ignore
+    from PIL.Image import NEAREST, BILINEAR, BICUBIC, LANCZOS   # type: ignore
 
 
 def get_version():
@@ -52,6 +74,8 @@ def get_info():
 def encode(coding, image, quality, speed, supports_transparency):
     log("pillow.encode%s", (coding, image, quality, speed, supports_transparency))
     pixel_format = bytestostr(image.get_pixel_format())
+    if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
+        raise ValueError(f"unsupported encoding: %s", coding)
     palette = None
     w = image.get_width()
     h = image.get_height()
@@ -65,32 +89,36 @@ def encode(coding, image, quality, speed, supports_transparency):
         "BGR"   : "RGB",
         }.get(pixel_format, pixel_format)
     bpp = 32
+    rowstride = image.get_rowstride()
+    pixels = image.get_pixels()
+    if not pixels:
+        raise RuntimeError("failed to get pixels from %s" % image)
     #remove transparency if it cannot be handled,
     #and deal with non 24-bit formats:
     try:
-        pixels = image.get_pixels()
-        assert pixels, "failed to get pixels from %s" % image
         if pixel_format=="r210":
+            stride = image.get_rowstride()
             from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport
             if supports_transparency:
-                pixels = r210_to_rgba(pixels)
+                rowstride = w * 4
+                pixels = r210_to_rgba(pixels, w, h, stride, rowstride)
                 pixel_format = "RGBA"
                 rgb = "RGBA"
             else:
-                image.set_rowstride(image.get_rowstride()*3//4)
-                pixels = r210_to_rgb(pixels)
+                rowstride = roundup(w * 3, 2)
+                pixels = r210_to_rgb(pixels, w, h, stride, rowstride)
                 pixel_format = "RGB"
                 rgb = "RGB"
                 bpp = 24
         elif pixel_format=="BGR565":
             from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb    #@UnresolvedImport
             if supports_transparency:
-                image.set_rowstride(image.get_rowstride()*2)
+                rowstride = rowstride * 2
                 pixels = bgr565_to_rgbx(pixels)
                 pixel_format = "RGBA"
                 rgb = "RGBA"
             else:
-                image.set_rowstride(image.get_rowstride()*3//2)
+                rowstride = rowstride * 3 // 2
                 pixels = bgr565_to_rgb(pixels)
                 pixel_format = "RGB"
                 rgb = "RGB"
@@ -105,17 +133,33 @@ def encode(coding, image, quality, speed, supports_transparency):
                 palette.append((g>>8) & 0xFF)
                 palette.append((b>>8) & 0xFF)
             bpp = 8
-        pil_import_format = pixel_format.replace("A", "a")
-        #PIL cannot use the memoryview directly:
-        if isinstance(pixels, memoryview):
+        else:
+            if pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"):
+                raise ValueError(f"invalid pixel format {pixel_format}")
+            pil_import_format = pixel_format.replace("A", "a")
+    except Exception:
+        log.error("Error converting source image", exc_info=True)
+        raise
+    try:
+        if pil_major < 10 and isinstance(pixels, memoryview):
             pixels = pixels.tobytes()
         #it is safe to use frombuffer() here since the convert()
-        #calls below will not convert and modify the data in place
+        #calls below will not convert and modify the data in place,
         #and we save the compressed data then discard the image
-        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pil_import_format, image.get_rowstride(), 1)
+        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pil_import_format, rowstride, 1)
+    except Exception:
+        log("Image.frombuffer%s", (
+            rgb, (w, h), len(pixels),
+            "raw", pil_import_format, rowstride, 1),
+            exc_info=True)
+        log.error("Error: pillow failed to import image")
+        log.error(" for %s", image)
+        log.error(" pixel data: %i %s", len(pixels), type(pixels))
+        raise
+    try:
         if palette:
             im.putpalette(palette)
-            im.palette = ImagePalette.ImagePalette("RGB", palette = palette, size = len(palette))
+            im.palette = ImagePalette.ImagePalette("RGB", palette = palette)
         if coding.startswith("png") and not supports_transparency and rgb=="RGBA":
             im = im.convert("RGB")
             rgb = "RGB"
@@ -163,7 +207,7 @@ def encode(coding, image, quality, speed, supports_transparency):
             #no transparency
             mask = None
         if coding=="png/L":
-            im = im.convert("L", palette=Image.ADAPTIVE, colors=255)
+            im = im.convert("L", palette=ADAPTIVE, colors=255)
             bpp = 8
         elif coding=="png/P":
             #convert to 255 indexed colour if:
@@ -173,7 +217,7 @@ def encode(coding, image, quality, speed, supports_transparency):
                 #I wanted to use the "better" adaptive method,
                 #but this does NOT work (produces a black image instead):
                 #im.convert("P", palette=Image.ADAPTIVE)
-                im = im.convert("P", palette=Image.WEB, colors=255)
+                im = im.convert("P", palette=WEB, colors=255)
             bpp = 8
         kwargs = im.info
         if mask:

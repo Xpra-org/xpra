@@ -331,18 +331,19 @@ class WindowSource(WindowIconSource):
             for x in self.enc_pillow.get_encodings():
                 if x in self.server_core_encodings:
                     self._encoders[x] = self.pillow_encode
-        #prefer these native encoders over the Pillow version:
-        if "webp" in self.server_core_encodings:
-            self._encoders["webp"] = self.webp_encode
-        self.enc_jpeg = get_codec("enc_jpeg")
-        if "jpeg" in self.server_core_encodings and self.enc_jpeg:
-            self._encoders["jpeg"] = self.jpeg_encode
-        #prefer nvjpeg over all the other jpeg encoders:
-        self.enc_nvjpeg = None
-        if self.cuda_device_context:
-            self.enc_nvjpeg = get_codec("enc_nvjpeg")
-            if self.enc_nvjpeg:
-                self._encoders["jpeg"] = self.nvjpeg_encode
+        if self.image_depth != 30:
+            #prefer these native encoders over the Pillow version:
+            if "webp" in self.server_core_encodings:
+                self._encoders["webp"] = self.webp_encode
+            self.enc_jpeg = get_codec("enc_jpeg")
+            if "jpeg" in self.server_core_encodings and self.enc_jpeg:
+                self._encoders["jpeg"] = self.jpeg_encode
+            #prefer nvjpeg over all the other jpeg encoders:
+            self.enc_nvjpeg = None
+            if self.cuda_device_context:
+                self.enc_nvjpeg = get_codec("enc_nvjpeg")
+                if self.enc_nvjpeg:
+                    self._encoders["jpeg"] = self.nvjpeg_encode
         if self._mmap_size>0:
             self._encoders["mmap"] = self.mmap_encode
         self.full_csc_modes = typedict()
@@ -2552,7 +2553,7 @@ class WindowSource(WindowIconSource):
         assert coding in self.server_core_encodings
         q = options.get("quality") or self.get_quality(coding)
         s = options.get("speed") or self.get_speed(coding)
-        transparency = self.supports_transparency and options.get("transparency", True)
+        transparency = self.supports_transparency and options.get("transparency", True) and self.image_depth == 32
         return self.enc_pillow.encode(coding, image, q, s, transparency)
 
     def mmap_encode(self, coding, image, _options):
