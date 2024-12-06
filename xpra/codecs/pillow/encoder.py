@@ -101,26 +101,26 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
     # remove transparency if it cannot be handled,
     # and deal with non-24-bit formats:
     if pixel_format == "r210":
-        stride = image.get_rowstride()
+        in_stride = rowstride
         from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb  # pylint: disable=import-outside-toplevel
         has_alpha = options.intget("depth", 24) == 32
         if has_alpha and supports_transparency:
             rowstride = w * 4
-            pixels = r210_to_rgba(pixels, w, h, stride, w * 4)
+            pixels = r210_to_rgba(pixels, w, h, in_stride, w * 4)
             pixel_format = "RGBA"
         else:
             rowstride = roundup(w * 3, 2)
-            pixels = r210_to_rgb(pixels, w, h, stride, rowstride)
+            pixels = r210_to_rgb(pixels, w, h, in_stride, rowstride)
             pixel_format = "RGB"
             bpp = 24
     elif pixel_format == "BGR565":
         from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb  # pylint: disable=import-outside-toplevel
         if supports_transparency:
-            rowstride = rowstride * 2
+            rowstride = in_stride * 2
             pixels = bgr565_to_rgbx(pixels)
             pixel_format = "RGBA"
         else:
-            rowstride = rowstride * 3 // 2
+            rowstride = in_stride * 3 // 2
             pixels = bgr565_to_rgb(pixels)
             pixel_format = "RGB"
             bpp = 24
