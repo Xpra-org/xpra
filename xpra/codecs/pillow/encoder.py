@@ -9,6 +9,7 @@ import PIL
 from PIL import Image, ImagePalette     #@UnresolvedImport
 from typing import Dict, Tuple, List, Any
 
+from xpra.util import roundup
 from xpra.codecs.codec_debug import may_save_image
 from xpra.util import csv, typedict
 from xpra.net.compression import Compressed
@@ -19,6 +20,12 @@ log = Logger("encoder", "pillow")
 ENCODE_FORMATS = os.environ.get("XPRA_PILLOW_ENCODE_FORMATS", "png,png/L,png/P,jpeg,webp").split(",")
 
 Image.init()
+
+try:
+    from PIL import __version__ as pil_version
+    pil_major = int(pil_version.split(".")[0])
+except ValueError:
+    pil_major = 0
 
 try:
     # pylint: disable=ungrouped-imports
@@ -87,6 +94,7 @@ def encode(coding : str, image, options=None) -> Tuple[str,Compressed,Dict[str,A
         "BGR"   : "RGB",
         }.get(pixel_format, pixel_format)
     bpp = 32
+    rowstride = image.get_rowstride()
     pixels = image.get_pixels()
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
@@ -95,25 +103,27 @@ def encode(coding : str, image, options=None) -> Tuple[str,Compressed,Dict[str,A
     if pixel_format=="r210":
         stride = image.get_rowstride()
         from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb #@UnresolvedImport pylint: disable=import-outside-toplevel
-        if supports_transparency:
-            pixels = r210_to_rgba(pixels, w, h, stride, w*4)
+        has_alpha = options.intget("depth", 24) == 32
+        if has_alpha and supports_transparency:
+            rowstride = w * 4
+            pixels = r210_to_rgba(pixels, w, h, stride, rowstride)
             pixel_format = "RGBA"
             rgb = "RGBA"
         else:
-            image.set_rowstride(image.get_rowstride()*3//4)
-            pixels = r210_to_rgb(pixels, w, h, stride, w*3)
+            rowstride = roundup(w * 3, 2)
+            pixels = r210_to_rgb(pixels, w, h, stride, rowstride)
             pixel_format = "RGB"
             rgb = "RGB"
             bpp = 24
     elif pixel_format=="BGR565":
         from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb    #@UnresolvedImport pylint: disable=import-outside-toplevel
         if supports_transparency:
-            image.set_rowstride(image.get_rowstride()*2)
+            rowstride = rowstride * 2
             pixels = bgr565_to_rgbx(pixels)
             pixel_format = "RGBA"
             rgb = "RGBA"
         else:
-            image.set_rowstride(image.get_rowstride()*3//2)
+            rowstride = rowstride * 3 // 2
             pixels = bgr565_to_rgb(pixels)
             pixel_format = "RGB"
             rgb = "RGB"
@@ -133,17 +143,18 @@ def encode(coding : str, image, options=None) -> Tuple[str,Compressed,Dict[str,A
             raise ValueError(f"invalid pixel format {pixel_format}")
     pil_import_format = pixel_format.replace("A", "a")
     try:
-        #PIL cannot use the memoryview directly:
-        if isinstance(pixels, memoryview):
+        # PIL cannot use the memoryview directly:
+        if pil_major < 10 and isinstance(pixels, memoryview):
             pixels = pixels.tobytes()
         # it is safe to use frombuffer() here since the convert()
         # calls below will not convert and modify the data in place,
         # and we save the compressed data then discard the image
-        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pil_import_format, image.get_rowstride(), 1)
+        im = Image.frombuffer(rgb, (w, h), pixels, "raw", pil_import_format, rowstride, 1)
     except Exception as e:
-        log("Image.frombuffer%s", (rgb, (w, h), len(pixels),
-                                   "raw", pil_import_format, image.get_rowstride(), 1),
-                                   exc_info=True)
+        log("Image.frombuffer%s", (
+            rgb, (w, h), len(pixels),
+            "raw", pil_import_format, rowstride, 1),
+            exc_info=True)
         log.error("Error: pillow failed to import image:")
         log.estr(e)
         log.error(" for %s", image)
