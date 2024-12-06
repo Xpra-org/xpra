@@ -94,14 +94,14 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
     w: int = image.get_width()
     h: int = image.get_height()
     bpp = 32
-    rowstride = image.get_rowstride()
+    in_stride = image.get_rowstride()
+    rowstride = in_stride
     pixels = image.get_pixels()
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
     # remove transparency if it cannot be handled,
     # and deal with non-24-bit formats:
     if pixel_format == "r210":
-        in_stride = rowstride
         from xpra.codecs.argb.argb import r210_to_rgba, r210_to_rgb  # pylint: disable=import-outside-toplevel
         has_alpha = options.intget("depth", 24) == 32
         if has_alpha and supports_transparency:
