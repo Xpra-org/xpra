@@ -127,7 +127,7 @@ def setup_proxy_ssh_socket(cmdline:Iterable[str], auth_sock:str=os.environ.get("
     try:
         os.symlink(auth_sock, agent_uuid_sockpath)
     except OSError as e:
-        log(f"os.link({auth_sock}, {agent_uuid_sockpath})", exc_info=True)
+        log(f"os.symlink({auth_sock}, {agent_uuid_sockpath})", exc_info=True)
         log.error("Error creating ssh agent socket symlink")
         log.estr(e)
         return ""
@@ -157,9 +157,9 @@ def setup_client_ssh_agent_socket(uuid:str, ssh_auth_sock:str) -> str:
         if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):
             try:
                 #ie: /run/user/1000/xpra/10/$UUID -> /tmp/ssh-XXXXvjt4hN/agent.766599
-                os.link(ssh_auth_sock, sockpath, follow_symlinks=False)
+                os.symlink(ssh_auth_sock, sockpath, follow_symlinks=False)
             except OSError as e:
-                log(f"os.link({ssh_auth_sock}, {sockpath})", exc_info=True)
+                log(f"os.symlink({ssh_auth_sock}, {sockpath})", exc_info=True)
                 log.error("Error setting up ssh agent socket symlink")
                 log.estr(e)
                 sockpath = ""
