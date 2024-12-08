@@ -191,7 +191,7 @@ class SocketProtocol:
         return self._closed
 
     def is_sending_encrypted(self) -> bool:
-        return bool(self.cipher_out) or self._conn.socktype in ("ssl", "wss", "ssh")
+        return bool(self.cipher_out) or self._conn.socktype in ("ssl", "wss", "ssh", "quic")
 
     def wait_for_io_threads_exit(self, timeout=None) -> bool:
         io_threads = (self._read_thread, self._write_thread, self._read_parser_thread, self._read_parser_thread)
