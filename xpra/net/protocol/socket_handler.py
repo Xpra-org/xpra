@@ -25,6 +25,7 @@ from xpra.util.str_fn import (
 from xpra.util.env import envint, envbool
 from xpra.util.thread import make_thread, start_thread
 from xpra.common import noop, SizedBuffer
+from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
 from xpra.net.protocol.header import (
     unpack_header, pack_header, find_xpra_header,
@@ -221,6 +222,10 @@ class SocketProtocol:
         return self._closed
 
     def is_sending_encrypted(self) -> bool:
+        options = getattr(self._conn, "options", {})
+        trusted = options.get("trusted")
+        if trusted:
+            return trusted.lower() in TRUE_OPTIONS
         return bool(self.cipher_out_name) or self._conn.socktype in ("ssl", "wss", "ssh", "quic")
 
     def wait_for_io_threads_exit(self, timeout=None) -> bool:
