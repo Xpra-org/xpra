@@ -369,7 +369,7 @@ def remove_icons(menu_data):
     return filt
 
 
-def load_menu():
+def load_menu() -> dict:
     if not check_xdg():
         return {}
     icon_util.large_icons.clear()
@@ -391,7 +391,7 @@ def load_menu():
     return xdg_menu_data
 
 
-def load_xdg_menu_data():
+def load_xdg_menu_data() -> dict:
     try:
         from xdg.Menu import parse, Menu  # pylint: disable=import-outside-toplevel
     except ImportError:
@@ -399,8 +399,8 @@ def load_xdg_menu_data():
         if first_time("no-python-xdg"):
             log.warn("Warning: cannot use application menu data:")
             log.warn(" no python-xdg module")
-        return None
-    menu = None
+        return {}
+    menu: dict | None = None
     error = None
     # see ticket #2340,
     # invalid values for XDG_CONFIG_DIRS can cause problems,
@@ -462,7 +462,7 @@ def load_xdg_menu_data():
             log.error(" or an invalid system menu configuration")
             log.error(" for more information, please see:")
             log.error(" https://github.com/Xpra-org/xpra/issues/2174")
-        return None
+        return {}
     menu_data = {}
     entries = tuple(menu.getEntries())
     log(f"{menu}.getEntries()={entries}")
