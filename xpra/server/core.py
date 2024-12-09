@@ -1281,7 +1281,7 @@ class ServerCore(ControlHandler):
 
         # get the new socket object as we may have wrapped it with ssl:
         sock = getattr(conn, "_socket", sock)
-        pre_read = None
+        pre_read = []
         if socktype == "socket" and not peek_data:
             # try to read from this socket,
             # so short-lived probes don't go through the whole protocol instantiation
@@ -1292,8 +1292,8 @@ class ServerCore(ControlHandler):
                     netlog("%s connection already closed", socktype)
                     force_close_connection(conn)
                     return
-                pre_read = [data, ]
                 netlog("pre_read data=%r", data)
+                pre_read.append(data)
             except OSError:
                 netlog.error("Error reading from %s", conn, exc_info=True)
                 return
