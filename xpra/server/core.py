@@ -1415,8 +1415,9 @@ class ServerCore(ControlHandler):
         if t:
             GLib.source_remove(t)
 
-    def make_protocol(self, socktype: str, conn, socket_options, protocol_class=SocketProtocol, pre_read=None):
+    def make_protocol(self, socktype: str, conn, socket_options, protocol_class=SocketProtocol, pre_read=()):
         """ create a new xpra Protocol instance and start it """
+        log("make_protocol%s", (socktype, conn, socket_options, protocol_class, pre_read))
 
         def xpra_protocol_class(conn):
             """ adds xpra protocol tweaks after creating the instance """
@@ -1427,12 +1428,13 @@ class ServerCore(ControlHandler):
 
         return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class, pre_read)
 
-    def do_make_protocol(self, socktype: str, conn, socket_options, protocol_class, pre_read=None) -> SocketProtocol:
+    def do_make_protocol(self, socktype: str, conn, socket_options, protocol_class,
+                         pre_read: Iterable[bytes] = ()) -> SocketProtocol:
         """ create a new Protocol instance and start it """
         netlog("make_protocol%s", (socktype, conn, socket_options, protocol_class, pre_read))
         socktype = socktype.lower()
         protocol = protocol_class(conn)
-        protocol._pre_read = pre_read
+        protocol._pre_read = list(pre_read)
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
         protocol.authenticators = ()

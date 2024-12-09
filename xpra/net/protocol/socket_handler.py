@@ -133,7 +133,7 @@ class SocketProtocol:
         self.make_frame_header: Callable[[str | int, list[SizedBuffer]], SizedBuffer] = self.noframe_header
         self._write_queue: Queue[tuple[Sequence, str, bool, bool] | None] = Queue(1)
         self._read_queue: Queue[SizedBuffer] = Queue(20)
-        self._pre_read = None
+        self._pre_read = []
         self._process_read: Callable[[SizedBuffer], None] = self.read_queue_put
         self._read_queue_put: Callable[[SizedBuffer], None] = self.read_queue_put
         self._get_packet_cb: Callable[[], tuple[PacketType, bool, bool]] = get_packet_cb
