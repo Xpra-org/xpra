@@ -37,6 +37,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
         self.new_websocket_client: Callable = new_websocket_client
         self.only_upgrade = WEBSOCKET_ONLY_UPGRADE
         self.redirect_https = redirect_https
+        self.finish = self.finish_and_close
         super().__init__(sock, addr,
                          web_root, http_headers_dir, script_paths,
                          username, password)
@@ -142,7 +143,7 @@ class WebSocketRequestHandler(HTTPRequestHandler):
             return
         super().handle_request()
 
-    def finish(self) -> None:
+    def finish_and_close(self) -> None:
         super().finish()
         log(f"finish() close_connection={self.close_connection}, connection={self.connection}")
         if self.close_connection:
