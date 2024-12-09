@@ -226,6 +226,13 @@ class SocketProtocol:
         trusted = options.get("trusted")
         if trusted:
             return trusted.lower() in TRUE_OPTIONS
+        http_headers = options.get("http-headers", {})
+        if http_headers and isinstance(http_headers, dict):
+            forwarded_proto = http_headers.get("X-Forwarded-Proto", "")
+            trust_proxy_headers = options.get("trust-proxy-headers", "no")
+            log(f"is_sending_encrypted() trust-proxy-headers={trust_proxy_headers}, http-headers={http_headers}")
+            if forwarded_proto and trust_proxy_headers.lower() in TRUE_OPTIONS:
+                return forwarded_proto == "https"
         return bool(self.cipher_out_name) or self._conn.socktype in ("ssl", "wss", "ssh", "quic")
 
     def wait_for_io_threads_exit(self, timeout=None) -> bool:

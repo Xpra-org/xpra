@@ -1627,8 +1627,9 @@ class ServerCore(ControlHandler):
 
             def new_websocket_client(wsh):
                 from xpra.net.websockets.protocol import WebSocketProtocol
-                wslog("new_websocket_client(%s) socket=%s", wsh, sock)
+                wslog("new_websocket_client(%s) socket=%s, headers=%s", wsh, sock, wsh.headers)
                 newsocktype = "wss" if is_ssl else "ws"
+                socket_options["http-headers"] = dict(wsh.headers)
                 self.make_protocol(newsocktype, conn, socket_options, WebSocketProtocol)
 
             scripts = self.get_http_scripts()
