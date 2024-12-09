@@ -77,7 +77,7 @@ xdg-open http://localhost/
 ```
 Or even via https if the certificates are configured correctly:
 ```shell
-xdg-open http://localhost/
+xdg-open https://localhost/
 ```
 </details>
 
@@ -113,9 +113,9 @@ http {
 		proxy_http_version 1.1;
 		proxy_buffering off;
 		proxy_cache_bypass $http_upgrade;
-			proxy_set_header Upgrade $http_upgrade;
-			proxy_set_header Connection "Upgrade";
-			proxy_set_header Host $host;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection "Upgrade";
+		proxy_set_header Host $host;
 		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 		proxy_set_header X-Forwarded-Proto $scheme;
 
