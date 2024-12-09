@@ -107,6 +107,7 @@ tests/unittests/test-file*
 
 # Cython files:
 /xpra/util/*.c
+/xpra/auth/*.c
 /xpra/buffers/new_buffers.c
 /xpra/buffers/membuf.c
 /xpra/buffers/xxh.c
@@ -146,6 +147,7 @@ tests/unittests/test-file*
 /xpra/x11/gtk/composite.c
 /xpra/x11/gtk/damage.c
 /xpra/x11/gtk/keys.c
+/xpra/x11/gtk/native_window.c
 /xpra/x11/gtk/prop.c
 /xpra/x11/gtk/selection.c
 /xpra/x11/gtk/tray.c
