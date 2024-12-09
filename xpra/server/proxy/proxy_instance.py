@@ -565,9 +565,9 @@ class ProxyInstance:
                 if salt_digest=="xor":
                     #with xor, we have to match the size
                     if l<16:
-                        raise ValueError("server salt is too short: only {l} bytes, minimum is 16")
+                        raise ValueError(f"server salt is too short: only {l} bytes, minimum is 16")
                     if l>256:
-                        raise ValueError("server salt is too long: {l} bytes, maximum is 256")
+                        raise ValueError(f"server salt is too long: {l} bytes, maximum is 256")
                 else:
                     #other digest, 32 random bytes is enough:
                     l = 32
