@@ -185,7 +185,7 @@ def load_entry_icon(props: dict):
     return props
 
 
-def find_icon(*names) -> str:
+def find_icon(*names: str) -> str:
     if not EXPORT_ICONS:
         return ""
     return find_resources_icon(*names) or \
@@ -194,7 +194,7 @@ def find_icon(*names) -> str:
         find_glob_icon("apps", *names)
 
 
-def find_resources_icon(*names) -> str:
+def find_resources_icon(*names: str) -> str:
     if not LOAD_FROM_RESOURCES:
         return ""
     # loads the icon from our own list of icons:
@@ -205,7 +205,7 @@ def find_resources_icon(*names) -> str:
     return ""
 
 
-def find_pixmap_icon(*names) -> str:
+def find_pixmap_icon(*names: str) -> str:
     if not LOAD_FROM_PIXMAPS:
         return ""
     pixmaps_dirs = [d + '/icons' for d in os.environ.get("XDG_DATA_DIRS", "").split(":") if d]
@@ -223,7 +223,7 @@ def find_pixmap_icon(*names) -> str:
     return ""
 
 
-def find_theme_icon(*names) -> str:
+def find_theme_icon(*names: str) -> str:
     if not LOAD_FROM_THEME:
         return ""
     if not (IconTheme and Config and themes):
@@ -245,7 +245,7 @@ def find_theme_icon(*names) -> str:
     return ""
 
 
-def find_glob_icon(*names, category: str = "categories"):
+def find_glob_icon(*names: str, category: str = "categories"):
     if not LOAD_GLOB:
         return None
     icondirs = getattr(IconTheme, "icondirs", [])
@@ -331,7 +331,7 @@ def load_xdg_menu(submenu) -> dict[str, Any]:
     entries_data = submenu_data.setdefault("Entries", {})
     from xdg.Menu import Menu, MenuEntry  # pylint: disable=import-outside-toplevel
 
-    def add_entries(entries):
+    def add_entries(entries) -> None:
         for i, entry in enumerate(entries):
             if isinstance(entry, MenuEntry):
                 de = entry.DesktopEntry
