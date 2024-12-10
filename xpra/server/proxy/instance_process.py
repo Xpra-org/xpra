@@ -367,11 +367,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
             return True
         return False
 
-    def handle_control(self, command: Sequence[str]) -> bool:
-        log.info(f"handle_control({command})")
-
-        return False
-
     def get_session_id_info(self) -> dict[str, Any]:
         # minimal information for identifying the session
         return {
