@@ -164,6 +164,7 @@ The following options should not need to be modified:
 * [`proxy_intercept_errors`](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_intercept_errors) - once a WebSocket connection is established, http error codes are not used
 * [`keepalive_timeout`](https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout) - see `proxy_socket_keepalive` above
 * [`send_timeout`](https://nginx.org/en/docs/http/ngx_http_core_module.html#send_timeout) - see `proxy_send_timeout` above
-
+* [`proxy_buffering`](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering) - should not affect WebSocket connections
+* [`proxy_buffering`](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering) [`proxy_request_buffering`](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_request_buffering) - let nginx handle http requests, this does not affect connections upgraded to WebSocket
 
 </details>
