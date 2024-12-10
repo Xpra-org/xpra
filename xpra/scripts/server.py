@@ -304,7 +304,7 @@ def set_server_features(opts) -> None:
 
     # turn off some server mixins:
     from xpra.server import features
-    features.control = impcheck("server.control_command") and envbool("XPRA_CONTROL_CHANNEL", True)
+    features.control = impcheck("net.control") and envbool("XPRA_CONTROL_CHANNEL", True)
     features.notifications = opts.notifications and impcheck("notifications")
     features.webcam = b(opts.webcam) and impcheck("codecs")
     features.clipboard = b(opts.clipboard) and impcheck("clipboard")
@@ -335,7 +335,8 @@ def enforce_server_features() -> None:
     from xpra.util.pysystem import enforce_features
     from xpra.server import features
     enforce_features(features, {
-        "control": "xpra.server.control_command,xpra.server.mixins.controlcommands",
+        "control": "xpra.net.control,xpra.server.mixins.controlcommands",
+        "commands": "xpra.net.control,xpra.server.mixins.controlcommands",
         "notifications": "xpra.notifications,xpra.server.mixins.notification,xpra.server.source.notification",
         "webcam": "xpra.server.mixins.webcam,xpra.server.source.webcam",
         "clipboard": "xpra.clipboard,xpra.server.mixins.clipboard,xpra.server.source.clipboard",
@@ -346,7 +347,6 @@ def enforce_server_features() -> None:
         "ssl": "ssl,xpra.net.ssl_util",
         "ssh": "paramiko,xpra.net.ssh",
         "input_devices": "xpra.server.mixins.input,xpra.server.source.input",
-        "commands": "xpra.server.control_command",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
         "dbus": "xpra.dbus,xpra.server.dbus,xpra.server.source.dbus",

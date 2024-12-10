@@ -16,7 +16,7 @@ from xpra.util.io import load_binary_file
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
 from xpra.scripts.config import str_to_bool, FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.server.control_command import ArgsControlCommand, ControlError
+from xpra.net.control import ArgsControlCommand, ControlError
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 

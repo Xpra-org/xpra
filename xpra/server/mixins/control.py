@@ -21,7 +21,7 @@ class ControlHandler(StubServerMixin):
     def add_default_control_commands(self, enabled=True):
         # for things that can take longer:
         try:
-            from xpra.server.control_command import HelloCommand, HelpCommand, DebugControl, DisabledCommand
+            from xpra.net.control import HelloCommand, HelpCommand, DebugControl, DisabledCommand
         except ImportError:
             return
         self.control_commands = {
@@ -53,7 +53,7 @@ class ControlHandler(StubServerMixin):
             err = "control commands are not enabled on this connection"
             log.warn(f"Warning: {err}")
             return 6, err
-        from xpra.server.control_command import ControlError
+        from xpra.net.control import ControlError
         if not args:
             err = "control command must have arguments"
             log.warn(f"Warning: {err}")

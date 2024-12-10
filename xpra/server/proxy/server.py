@@ -25,7 +25,7 @@ from xpra.net.common import PacketType, is_request_allowed
 from xpra.net.socket_util import SOCKET_DIR_MODE, SOCKET_DIR_GROUP
 from xpra.server import features
 from xpra.server.core import ServerCore
-from xpra.server.control_command import ArgsControlCommand, ControlError
+from xpra.net.control import ArgsControlCommand, ControlError
 from xpra.auth.common import SessionData
 from xpra.util.child_reaper import getChildReaper
 from xpra.scripts.parsing import str_to_bool, MODE_ALIAS
