@@ -24,6 +24,7 @@ xpra (6.2.2-1) UNRELEASED; urgency=low
   * Encodings:
     honour `openh264` maximum dimensions
     `rgb` errors at unusual bit depths
+    10 bits per channel issues: use pillow, detect alpha channel correctly and encode it properly
   * System Tray Menu:
     options disabled once 'auto' is selected
     speed tuning disabled
@@ -35,16 +36,20 @@ xpra (6.2.2-1) UNRELEASED; urgency=low
     `xpra top` corrupted output
     `vsock` connection errors
     printing errors on MS Windows
+    use symlinks to prevent ssh agent forwarding setup errors
   * Minor:
     clamp 'vrefresh' to a useful range
+    quic` connections are safe for authentication
   * Cosmetic:
+    add missing autentication modules to documentation
     add `pyopenssl` to dependencies documentation
     unnecessary import
     broken OpenGL drivers documentation link
     handle missing pillow more gracefully
     show full icondata error
+    proxy error messages formatting
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 05 Dec 2024 20:33:23 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 10 Dec 2024 20:52:39 +0700
 
 xpra (6.2.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

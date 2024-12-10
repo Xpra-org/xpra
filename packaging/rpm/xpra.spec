@@ -906,7 +906,7 @@ fi
 
 
 %changelog
-* Thu Dec 05 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
+* Tue Dec 10 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection
    RPM support for per arch pkgconfig
@@ -932,6 +932,7 @@ fi
 - Encodings:
    honour `openh264` maximum dimensions
    `rgb` errors at unusual bit depths
+   10 bits per channel issues: use pillow, detect alpha channel correctly and encode it properly
 - System Tray Menu:
    options disabled once 'auto' is selected
    speed tuning disabled
@@ -943,14 +944,18 @@ fi
    `xpra top` corrupted output
    `vsock` connection errors
    printing errors on MS Windows
+   use symlinks to prevent ssh agent forwarding setup errors
 - Minor:
    clamp 'vrefresh' to a useful range
+   `quic` connections are safe for authentication
 - Cosmetic:
+   add missing autentication modules to documentation
    add `pyopenssl` to dependencies documentation
    unnecessary import
    broken OpenGL drivers documentation link
    handle missing pillow more gracefully
    show full icondata error
+   proxy error messages formatting
 
 * Tue Oct 29 2024 Antoine Martin <antoine@xpra.org> 6.2.1-10
 - System tray:

@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.2] 2024-12-05
+## [6.2.2] 2024-12-10
 * Platforms, build and packaging:
     * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/d4b078ee67e4024cb2c8a6aea69dba0fe7400c14) and [prefix detection](https://github.com/Xpra-org/xpra/commit/9161b51b82cc89347fd317513d1fdba463c85208)
     * [RPM support](https://github.com/Xpra-org/xpra/commit/9710928f2ee99ee7e0a2c6ecbbc82e3961eba9d2) for [per arch pkgconfig](https://github.com/Xpra-org/xpra/commit/423e9d353ef57cee93f913cd8d9e6582ac640d62)
@@ -26,6 +26,7 @@
 * Encodings:
     * [honour `openh264` maximum dimensions](https://github.com/Xpra-org/xpra/commit/fc79af387508ec63e8ccc572306aef47d8bdbfbc)
     * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/7796b6b8e72f37c68a44ac5ecfccd88cf3b0e680)
+    * 10 bits per channel issues: [use pillow](https://github.com/Xpra-org/xpra/commit/c179eb4b24f884953dbc11e610fad6adece407be), [detect alpha channel correctly](https://github.com/Xpra-org/xpra/commit/e2c2f87a893fc0c46ae612b418824191729bfce8) [and encode it properly](https://github.com/Xpra-org/xpra/commit/e0ae9ee74380649d6587561f104d213365143199)
 * System Tray Menu:
     * [options disabled once 'auto' is selected](https://github.com/Xpra-org/xpra/commit/6d4e6334179bc143107d5eac6463ae29d42f7d17)
     * [speed tuning disabled](https://github.com/Xpra-org/xpra/commit/f41a9f64fad92fa7a8c737011c98122e5c4aa6bf)
@@ -37,14 +38,18 @@
     * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/129c5b1f2695ce2f085268134b1273cf94c4e56f), [initialization failure](https://github.com/Xpra-org/xpra/commit/fc8638d436fa09e98f2ecb324d249b4145763955)
     * [`vsock` connection errors](https://github.com/Xpra-org/xpra/commit/c0448d2988d5497aac72d528ed1edc9a13514a6e)
     * [printing errors on MS Windows](https://github.com/Xpra-org/xpra/commit/fbf1c7a3e393974fe8c7d7fc8bf266639f2d9731)
+    * [use symlinks to prevent ssh agent forwarding setup errors](https://github.com/Xpra-org/xpra/commit/a6e1d44edff4202240de1d61e3aaf154e7417d56)
 * Minor:
     * [clamp 'vrefresh' to a useful range](https://github.com/Xpra-org/xpra/commit/e289ac6094f45d0ba020642775d96b14e61a2575)
+    * [`quic` connections are safe for authentication](https://github.com/Xpra-org/xpra/commit/aa7bd5adf0835d875020737d655f3bfae7faacac)
 * Cosmetic:
+    * [add missing autentication modules to documentation](https://github.com/Xpra-org/xpra/commit/3aa90b898e427fb4a3f4ade3be3e650848f4073c)
     * [add `pyopenssl` to dependencies documentation](https://github.com/Xpra-org/xpra/commit/4e7941fa8d18e6b90fa257bad34401a5aad5c81f)
     * [unnecessary import](https://github.com/Xpra-org/xpra/commit/6e389e0b1292897d46f46f39a33eb0b9551d5c2b)
     * [broken OpenGL drivers documentation link](https://github.com/Xpra-org/xpra/commit/0248d7db2845727b5f307fc64d76a9fb91d5f705)
     * [handle missing pillow more gracefully](https://github.com/Xpra-org/xpra/commit/631a5b2d7a5d4352ec2bda7e2fd6cf149ae4565f)
     * [show full icondata error](https://github.com/Xpra-org/xpra/commit/4e7d1194e9f29969b5f0f9b62a607454d2a0bb50)
+    * [proxy error messages formatting](https://github.com/Xpra-org/xpra/commit/8df110bb8010aa48c3c062fc9614753232e57f68)
 
 ## [6.2.1] 2024-10-29
 * System tray:
