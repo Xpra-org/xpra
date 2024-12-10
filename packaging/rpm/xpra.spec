@@ -786,8 +786,33 @@ fi
 
 
 %changelog
-* Fri Nov 29 2024 Antoine Martin <antoine@xpra.org> 5.0.12-10
-- TODO
+* Tue Dec 10 2024 Antoine Martin <antoine@xpra.org> 5.0.12-10
+- Platforms, build and packaging:
+   MSYS2 aarch64 build fix and prefix detection
+   RPM support for per-arch cuda pkgconfig
+- SBOM:
+   minor fixes
+   record CUDA
+   record 'Light' builds
+   export to JSON
+   fallback to `pip` package data
+- Major:
+   `SSL` upgrades discard options
+   use symlinks to prevent ssh agent forwarding setup errors
+- Encodings:
+   `rgb` errors at unusual bit depths
+   transparency detection with 10-bit per channel windows
+   use `pillow` encoder for 10-bit per channel pictures
+   pillow encoder fixes
+   missing options when encoding is set to `auto` from the system tray menu
+   system tray speed control not available
+- Minor:
+   `quic` connections are safe for authentication
+   `start-gui` fails if no application is selected
+   check for latest version from current branch
+   clamp `vrefresh` to a useful range
+   proxy error messages formatting
+
 * Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:
    don't build ffmpeg encoder on MacOS

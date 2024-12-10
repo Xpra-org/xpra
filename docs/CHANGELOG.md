@@ -1,19 +1,32 @@
 # Changelog
 
-## [5.0.12] 2024-11-29
+## [5.0.12] 2024-12-10
 * Platforms, build and packaging:
     * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/fab8d9f02de9b4ca57d7fa88b8031a2c29a77d91) and [prefix detection](https://github.com/Xpra-org/xpra/commit/8166eee7d2f5e4b00327763627b33987edd5e0c7)
+    * [RPM support for per-arch cuda pkgconfig](https://github.com/Xpra-org/xpra/commit/fa614d8672658f26d4094834dda89d5ee2d79038)
 * SBOM:
     * [minor fixes](https://github.com/Xpra-org/xpra/commit/5cb8451158a7070a3c44c0b7715b135ea17e6683)
     * [record CUDA](https://github.com/Xpra-org/xpra/commit/ecd20b6a0523aa8c3b07192f35ca694a03a30280)
     * [record 'Light' builds](https://github.com/Xpra-org/xpra/commit/bd604bf45db130f9066acef98424edd4bca5b854)
     * [export to JSON](https://github.com/Xpra-org/xpra/commit/558ceb8d6cd9e6a6da830909355ba1f1b356649a)
+    * [fallback to `pip` package data](https://github.com/Xpra-org/xpra/commit/19842b615760b0a2ab3e504d4c99c204c421c3f6)
 * Major:
+    * [`SSL` upgrades discard options](https://github.com/Xpra-org/xpra/commit/b6b396c2188f651f994809177368d0c74e4781bb)
+    * [use symlinks to prevent ssh agent forwarding setup errors](https://github.com/Xpra-org/xpra/commit/3805cbdfe02244d6ece591acc642b67f6e57b109)
+* Encodings:
     * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/2b0539dd4292235d30ddd3ac2f985c0a735467b9)
+    * [transparency detection with 10-bit per channel windows](https://github.com/Xpra-org/xpra/commit/25b03183a9246a2b9c95f5b110e0a86f5dad0fb5)
+    * [use `pillow` encoder for 10-bit per channel pictures](https://github.com/Xpra-org/xpra/commit/8db730382934f53f5dd0ae78278358c577b26231)
+    * [pillow encoder fixes](https://github.com/Xpra-org/xpra/commit/3e2d7ad77d328bb5aaab1b9099657ca59e41332b)
+    * [missing options when encoding is set to `auto` from the system tray menu](https://github.com/Xpra-org/xpra/commit/0319aaa209300b1aa5725c12fe9c561d32a08f6f)
+    * [system tray speed control not available](https://github.com/Xpra-org/xpra/commit/aaf99601c6f2f20bccb226e42e4e19a323e915cf)
 * Minor:
+    * [`quic` connections are safe for authentication](https://github.com/Xpra-org/xpra/commit/0355808d3b33a068ace81a82d51ab4ef9b77251c)
     * [`start-gui` fails if no application is selected](https://github.com/Xpra-org/xpra/commit/7a662155c4546642ccc08b5b1d2662bdc3ec863d)
     * [check for latest version from current branch](https://github.com/Xpra-org/xpra/commit/783d2ca9ae7af299f5ef54a83b27bc0017cf8b1c)
     * [clamp `vrefresh` to a useful range](https://github.com/Xpra-org/xpra/commit/62a958b6255c1f1884cfb1b71b88e2c8a95094a1)
+* Cosmetic:
+    * [proxy error messages formatting](https://github.com/Xpra-org/xpra/commit/b62ea90467389e7c03b84f4bf474653ade3a6f07)
 
 ## [5.0.11] 2024-11-22
 * Platforms, build and packaging:
