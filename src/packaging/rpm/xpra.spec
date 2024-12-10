@@ -926,7 +926,7 @@ fi
 
 
 %changelog
-* Fri Nov 29 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
+* Tue Dec 10 2024 Antoine Martin <antoine@xpra.org> 3.1.9-10.1xpra1
 - build and packaging:
      libyuv 0.1878.20231004
      packaging updates for CentOS7: libyuv, skip pycuda
@@ -953,6 +953,9 @@ fi
      handle decoding of padded frames
      quality and speed can be used with all generic encodings
      clamp vrefresh to a useful range
+     quality and speed disabled when encoding set to 'auto'
+     support newer versions of python-pillow
+     10 bit per channel issues
 - major:
      protect against potential buffer overflows
      MS Windows printing crash

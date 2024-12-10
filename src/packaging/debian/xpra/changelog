@@ -25,6 +25,9 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - handle decoding of padded frames
    - quality and speed can be used with all generic encodings
    - clamp vrefresh to a useful range
+   - quality and speed disabled when encoding set to 'auto'
+   - support newer versions of python-pillow
+   - 10 bit per channel issues
   * major:
    - protect against potential buffer overflows
    - MS Windows printing crash
@@ -66,7 +69,7 @@ xpra (3.1.9-1) UNRELEASED; urgency=low
    - use correct type for numlock modifier
    - handle missing python-pillow more gracefully
 
- -- Antoine Martin <antoine@nagafix.co.uk>  Fri, 29 Nov 2024 20:55:40 +0700
+ -- Antoine Martin <antoine@nagafix.co.uk>  Tue, 10 Dec 2024 21:04:38 +0700
 
 xpra (3.1.8-1) UNRELEASED; urgency=low
   * major:
