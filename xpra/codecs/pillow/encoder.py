@@ -6,7 +6,6 @@
 import os
 from io import BytesIO
 from PIL import Image, ImagePalette     #@UnresolvedImport
-from typing import Dict, Tuple, List, Any
 
 from xpra.util import roundup, csv, typedict, envbool
 from xpra.os_util import bytestostr
