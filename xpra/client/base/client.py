@@ -136,6 +136,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position_delay = MOUSE_DELAY
         self._mouse_position_timer = 0
         self._aliases = {}
+        # control channel for requests coming from either a client socket, or the server connection:
+        self.control_commands = {}
         # server state and caps:
         self.server_packet_types = ()
         self.connection_established = False
@@ -1105,6 +1107,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             return False
         netlog("server_connection_established(..) adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
+        self.add_control_commands()
         return True
 
     def parse_server_capabilities(self, c: typedict) -> bool:
@@ -1202,6 +1205,36 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.quit(exit_code)
 
     ######################################################################
+    # generic control command methods
+    # the actual hooking of "control" requests is done in:
+    # * `NetworkListener` for local sockets
+    # * `UIXpraClient` for server connections
+    def add_control_commands(self) -> None:
+        try:
+            from xpra.net.control.common import HelloCommand, HelpCommand, DisabledCommand
+            from xpra.net.control.debug import DebugControl
+        except ImportError:
+            return
+        self.control_commands |= {
+            "hello": HelloCommand(),
+            "debug": DebugControl(),
+            "help": HelpCommand(self.control_commands),
+            "*": DisabledCommand(),
+        }
+
+    def add_control_command(self, name: str, control) -> None:
+        self.control_commands[name] = control
+
+    def _process_control(self, packet: PacketType) -> None:
+        args = packet[1:]
+        code, msg = self.process_control_command(self._protocol, *args)
+        log.warn(f"{code}, {msg!r}")
+
+    def process_control_command(self, proto, *args) -> tuple[int, str]:
+        from xpra.net.control.common import process_control_command
+        return process_control_command(proto, self.control_commands, *args)
+
+    ######################################################################
     # packets:
     def remove_packet_handlers(self, *keys) -> None:
         for k in keys:
@@ -1218,6 +1251,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             "challenge": self._process_challenge,
             "disconnect": self._process_disconnect,
             "startup-complete": self._process_startup_complete,
+            "control": self._process_control,
             CONNECTION_LOST: self._process_connection_lost,
             GIBBERISH: self._process_gibberish,
             INVALID: self._process_invalid,

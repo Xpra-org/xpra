@@ -2667,7 +2667,7 @@ tace(v4l2_ENABLED, "xpra.codecs.v4l2.virtual")
 #   'long unsigned int' and 'long int' [-Wsign-compare]"
 # simply adding -Wno-error=sign-compare is not enough:
 ECA_WIN32SIGN = ["-Wno-error"] if WIN32 else []
-toggle_packages(client_ENABLED or server_ENABLED, "xpra.net.protocol")
+toggle_packages(client_ENABLED or server_ENABLED, "xpra.net.protocol", "xpra.net.control")
 toggle_packages(websockets_ENABLED, "xpra.net.websockets", "xpra.net.websockets.headers")
 tace(websockets_ENABLED, "xpra.net.websockets.mask", optimize=3, extra_compile_args=ECA_WIN32SIGN)
 toggle_packages(rencodeplus_ENABLED, "xpra.net.rencodeplus.rencodeplus")
@@ -2734,6 +2734,7 @@ if cythonize_more_ENABLED:
     if mdns_ENABLED:
         ax("xpra.net.mdns")
     ax("xpra.net.protocol")
+    ax("xpra.net.control")
     if qrencode_ENABLED and gtk3_ENABLED:
         ace("xpra.gtk.dialogs.qrcode")
     if quic_ENABLED:

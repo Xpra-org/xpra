@@ -35,12 +35,13 @@ MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 5)
 REQUEST_TIMEOUT = envint("XPRA_CLIENT_REQUEST_TIMEOUT", 10)
 
 
-class Networklistener(StubClientMixin):
+class NetworkListener(StubClientMixin):
     """
     Mixin for adding listening sockets to the client,
     those can be used for
     - requesting disconnection
     - info request
+    - control commands
     """
 
     def __init__(self):
@@ -253,11 +254,9 @@ class Networklistener(StubClientMixin):
             command = caps.strtupleget("command_request")
             log("command request: %s", command)
 
-            def process_control():
+            def process_control() -> None:
                 try:
-                    self._process_control(["control"] + list(command))
-                    code = ExitCode.OK
-                    response = "done"
+                    code, response = self.process_control_command(proto, *command)
                 except Exception as e:
                     code = ExitCode.FAILURE
                     response = str(e)
@@ -266,6 +265,11 @@ class Networklistener(StubClientMixin):
             GLib.idle_add(process_control)
             return True
         return False
+
+    def get_caps(self) -> dict[str, Any]:
+        return {
+            "control_commands": tuple(self.control_commands.keys()),
+        }
 
     def get_id_info(self) -> dict[str, Any]:
         # minimal information for identifying the session

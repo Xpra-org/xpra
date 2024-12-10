@@ -14,7 +14,6 @@ from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
 from xpra.common import FULL_INFO, noop, NotificationID, ConnectionMessage, noerr
-from xpra.net import compression, packet_encoding
 from xpra.net.common import PacketType
 from xpra.keyboard.common import KeyEvent
 from xpra.os_util import POSIX, WIN32, OSX, gi_import
@@ -23,7 +22,7 @@ from xpra.util.version import full_version_str, get_platform_info
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
-from xpra.util.str_fn import std, csv, Ellipsizer, repr_ellipsized
+from xpra.util.str_fn import std, Ellipsizer, repr_ellipsized
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool
 from xpra.exit_codes import ExitCode, ExitValue
@@ -68,9 +67,9 @@ if features.network_state:
 
     CLIENT_BASES.append(NetworkState)
 if features.network_listener:
-    from xpra.client.mixins.network_listener import Networklistener
+    from xpra.client.mixins.network_listener import NetworkListener
 
-    CLIENT_BASES.append(Networklistener)
+    CLIENT_BASES.append(NetworkListener)
 if features.encoding:
     from xpra.client.mixins.encodings import Encodings
 
@@ -408,7 +407,6 @@ class UIXpraClient(ClientBaseClass):
         caps.update(self.get_keyboard_caps())
         for c in CLIENT_BASES:
             caps.update(c.get_caps(self))
-        caps["control_commands"] = self.get_control_commands()
         if FULL_INFO > 0:
             def skipkeys(d, *keys):
                 return {k: v for k, v in d.items() if k not in keys}
@@ -437,6 +435,7 @@ class UIXpraClient(ClientBaseClass):
             return False
         # process the rest from the UI thread:
         GLib.idle_add(self.process_ui_capabilities, caps)
+        self.add_control_commands()
         return True
 
     def parse_server_capabilities(self, c: typedict) -> bool:
@@ -621,95 +620,23 @@ class UIXpraClient(ClientBaseClass):
                 log("setting_changed(%s, %s) calling %s", setting, Ellipsizer(value, limit=200), cb)
                 cb(setting, value)
 
-    # noinspection PyMethodMayBeStatic
-    def get_control_commands(self) -> list[str]:
-        commands = ["show_session_info", "show_bug_report", "show_menu", "name", "debug"]
-        for x in compression.get_enabled_compressors():
-            commands.append("enable_" + x)
-        for x in packet_encoding.get_enabled_encoders():
-            commands.append("enable_" + x)
-        log("get_control_commands()=%s", commands)
-        return commands
-
-    def _process_control(self, packet: PacketType) -> None:
-        command = str(packet[1])
-        args = packet[2:]
-        log("_process_control(%s)", packet)
-        if command == "show_session_info":
-            log("calling %s%s on server request", self.show_session_info, args)
-            self.show_session_info(*args)
-        elif command == "show_bug_report":
-            self.show_bug_report()
-        elif command == "show_menu":
-            self.show_menu()
-        elif command in ("enable_%s" % x for x in compression.get_enabled_compressors()):
-            compressor = command.split("_")[1]
-            log.info("switching to %s on server request", compressor)
-            self._protocol.enable_compressor(compressor)
-        elif command in ("enable_%s" % x for x in packet_encoding.get_enabled_encoders()):
-            pe = command.split("_")[1]
-            log.info("switching to %s on server request", pe)
-            self._protocol.enable_encoder(pe)
-        elif command == "name":
-            assert len(args) >= 1
-            self.server_session_name = str(args[0])
-            log.info("session name updated from server: %s", self.server_session_name)
-            # TODO: reset tray tooltip, session info title, etc..
-        elif command == "debug":
-            if not args:
-                log.warn("not enough arguments for debug control command")
-                return
-            from xpra.log import (
-                add_debug_category, add_disabled_category,
-                enable_debug_for, disable_debug_for,
-                add_backtrace, remove_backtrace,
-                get_all_loggers,
-            )
-            log_cmd = str(args[0])
-            if log_cmd == "status":
-                dloggers = [x for x in get_all_loggers() if x.is_debug_enabled()]
-                if dloggers:
-                    log.info("logging is enabled for:")
-                    for logger in dloggers:
-                        log.info(" - %s", logger)
-                else:
-                    log.info("logging is not enabled for any loggers")
-                return
-            if len(args) < 2:
-                log.warn(f"not enough arguments for {log_cmd!r} debug control command")
-                return
-            if log_cmd == "add-backtrace":
-                add_backtrace(*args[1:])
-                return
-            if log_cmd == "remove-backtrace":
-                remove_backtrace(*args[1:])
-                return
-            if log_cmd not in ("enable", "disable"):
-                log.warn("invalid debug control mode: '%s' (must be 'enable' or 'disable')", log_cmd)
-                return
-            loggers = []
-            # each argument is a group
-            groups = [str(x) for x in args[1:]]
-            for group in groups:
-                # and each group is a list of categories
-                # preferably separated by "+",
-                # but we support "," for backwards compatibility:
-                categories = [v.strip() for v in group.replace("+", ",").split(",")]
-                if log_cmd == "enable":
-                    add_debug_category(*categories)
-                    loggers += enable_debug_for(*categories)
-                else:
-                    assert log_cmd == "disable"
-                    add_disabled_category(*categories)
-                    loggers += disable_debug_for(*categories)
-            if not loggers:
-                log.info("%s debugging, no new loggers matching: %s", log_cmd, csv(groups))
-            else:
-                log.info("%sd debugging for:", log_cmd)
-                for logger in loggers:
-                    log.info(" - %s", logger)
+    def add_control_commands(self) -> None:
+        super().add_control_commands()
+        try:
+            from xpra.net.control.common import ControlCommand, ArgsControlCommand
+        except ImportError as e:
+            log(f"control commands are not available: {e}")
         else:
-            log.warn("received invalid control command from server: %s", command)
+            self.control_commands |= {
+                "show_session_info": ControlCommand("show-session-info", "Shows the session info dialog", self.show_session_info),
+                "show_bug_report": ControlCommand("show-bug-report", "Shows the bug report dialog", self.show_bug_report),
+                "name": ArgsControlCommand("name", "Sets the server session name", self.set_server_session_name,
+                                           min_args=1, max_args=1),
+            }
+
+    def set_server_session_name(self, name: str):
+        self.server_session_name = name
+        log.info("session name updated from server: %s", self.server_session_name)
 
     def may_notify_audio(self, summary: str, body: str) -> None:
         self.may_notify(NotificationID.AUDIO, summary, body, icon_name="audio")

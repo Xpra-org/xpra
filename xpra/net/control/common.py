@@ -6,12 +6,9 @@
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.log import (
-    Logger,
-    add_debug_category, add_disabled_category, enable_debug_for, disable_debug_for, get_all_loggers,
-    add_backtrace, remove_backtrace,
-)
+from xpra.log import Logger
 from xpra.util.str_fn import csv
+from xpra.scripts.config import str_to_bool
 from xpra.common import noop
 
 log = Logger("util", "command")
@@ -50,17 +47,17 @@ class ArgsControlCommand(ControlCommand):
     """ Adds very basic argument validation """
     __slots__ = ("validation", "min_args", "max_args")
 
-    def __init__(self, name: str, help_text: str = "", run: Callable = noop, validation=(), min_args=None,
-                 max_args=None):
+    def __init__(self, name: str, help_text: str = "", run: Callable = noop, validation=(),
+                 min_args=-1, max_args=-1):
         super().__init__(name, help_text, run)
         self.validation = validation
         self.min_args = min_args
         self.max_args = max_args
 
     def run(self, *args):
-        if self.min_args is not None and len(args) < self.min_args:
+        if self.min_args != -1 and len(args) < self.min_args:
             self.raise_error(f"not enough arguments for control command {self.name!r}, minimum is {self.min_args}")
-        if self.max_args is not None and len(args) > self.max_args:
+        if self.max_args != -1 and len(args) > self.max_args:
             self.raise_error(f"too many arguments for control command {self.name!r}, maximum is {self.max_args}")
         args = self.get_validated_args(*args)
         return super().run(*args)
@@ -113,7 +110,7 @@ class HelpCommand(ArgsControlCommand):
     """ The help command looks at the 'help' definition of other commands """
     __slots__ = ("control_commands",)
 
-    def __init__(self, control_commands):
+    def __init__(self, control_commands: Sequence[str]):
         super().__init__("help", max_args=1)
         self.control_commands = control_commands
 
@@ -129,59 +126,39 @@ class HelpCommand(ArgsControlCommand):
         return f"control command {name!r}: {command.help}"
 
 
-class DebugControl(ArgsControlCommand):
-    def __init__(self):
-        subcommands = csv(f"'debug {subc}'" for subc in (
-            "enable category", "disable category", "status", "mark", "add-backtrace", "remove-backtrace",
-        ))
-        super().__init__("debug", f"usage: {subcommands}", min_args=1)
-
-    def run(self, *args):
-        if len(args) == 1 and args[0] == "status":
-            return "logging is enabled for: " + csv(str(x) for x in get_all_loggers() if x.is_debug_enabled())
-        log_cmd = args[0]
-        if log_cmd == "mark":
-            for _ in range(10):
-                log.info("*" * 80)
-            if len(args) > 1:
-                log.info("mark: %s", " ".join(args[1:]))
-            else:
-                log.info("mark")
-            for _ in range(10):
-                log.info("*" * 80)
-            return "mark inserted into logfile"
-        if len(args) < 2:
-            self.raise_error("not enough arguments")
-        if log_cmd == "add-backtrace":
-            expressions = args[1:]
-            add_backtrace(*expressions)
-            return f"added backtrace expressions {expressions}"
-        if log_cmd == "remove-backtrace":
-            expressions = args[1:]
-            remove_backtrace(*expressions)
-            return f"removed backtrace expressions {expressions}"
-        if log_cmd not in ("enable", "disable"):
-            self.raise_error("only 'enable' and 'disable' verbs are supported")
-        # each argument is a group
-        loggers = []
-        groups = args[1:]
-        for group in groups:
-            # and each group is a list of categories
-            # preferably separated by "+",
-            # but we support "," for backwards compatibility:
-            categories = [v.strip() for v in group.replace("+", ",").split(",")]
-            if log_cmd == "enable":
-                add_debug_category(*categories)
-                loggers += enable_debug_for(*categories)
-            elif log_cmd == "disable":
-                add_disabled_category(*categories)
-                loggers += disable_debug_for(*categories)
-            else:
-                raise ValueError(f"invalid log command {log_cmd}")
-        if not loggers:
-            log.info("%s debugging, no new loggers matching: %s", log_cmd, csv(groups))
-        else:
-            log.info("%sd debugging for:", log_cmd)
-            for logger in loggers:
-                log.info(" - %s", logger)
-        return f"logging {log_cmd}d for " + (csv(loggers) or "<no match found>")
+def process_control_command(protocol, commands: dict[str, Callable], *args) -> tuple[int, str]:
+    try:
+        options = protocol._conn.options
+        control = options.get("control", "yes")
+    except AttributeError:
+        control = "no"
+    if not str_to_bool(control):
+        err = "control commands are not enabled on this connection"
+        log.warn(f"Warning: {err}")
+        return 6, err
+    if not args:
+        err = "control command must have arguments"
+        log.warn(f"Warning: {err}")
+        return 6, err
+    name = args[0]
+    try:
+        command = commands.get(name) or commands.get("*")
+        log(f"process_control_command control_commands[{name!r}]={command}")
+        if not command:
+            log.warn(f"Warning: invalid command: {name!r}")
+            log.warn(f" must be one of: {csv(commands)}")
+            return 6, "invalid command"
+        log(f"process_control_command calling {command.run}({args[1:]})")
+        v = command.run(*args[1:])
+        return 0, v
+    except ControlError as e:
+        log.error(f"Error {e.code} processing control command {name!r}")
+        msgs = [f" {e}"]
+        if e.help:
+            msgs.append(f" {name!r}: {e.help}")
+        for msg in msgs:
+            log.error(msg)
+        return e.code, "\n".join(msgs)
+    except Exception as e:
+        log.error(f"error processing control command {name!r}", exc_info=True)
+        return 127, f"error processing control command: {e}"
