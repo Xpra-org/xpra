@@ -38,7 +38,7 @@ class ControlHandler(StubServerMixin):
     def handle_command_request(self, proto, *args) -> None:
         """ client sent a command request as part of the hello packet """
         assert args, "no arguments supplied"
-        from xpra.net.control import process_control_command
+        from xpra.net.control.common import process_control_command
         code, response = process_control_command(proto, self.control_commands, *args)
         hello = {"command_response": (code, response)}
         proto.send_now(("hello", hello))

@@ -661,7 +661,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if not features.control:
             return
         super().add_control_commands()
-        from xpra.net.control import ArgsControlCommand
+        from xpra.net.control.common import ArgsControlCommand
         cmd = ArgsControlCommand("show-all-windows", "make all the windows visible", validation=[])
 
         def control_cb() -> str:
