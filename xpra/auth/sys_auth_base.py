@@ -164,7 +164,7 @@ class SysAuthenticatorBase:
         if salt in SysAuthenticator.USED_SALT:
             raise RuntimeError("danger: an attempt was made to re-use the same computed salt")
         log("combined salt using %r: (%s, %s)=%r", self.salt_digest, hexstr(server_salt), hexstr(client_salt), salt)
-        log("hexsalt=%s", hexstr(salt))
+        log("salt=%r", salt)
         SysAuthenticator.USED_SALT.append(salt)
         return salt
 
