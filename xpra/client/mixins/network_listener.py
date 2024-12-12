@@ -9,11 +9,11 @@ import sys
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util.version import version_str
+from xpra.util.version import version_str, XPRA_NUMERIC_VERSION
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envfloat
-from xpra.common import ConnectionMessage
+from xpra.common import ConnectionMessage, FULL_INFO
 from xpra.os_util import get_machine_id, gi_import, POSIX, OSX
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
@@ -279,4 +279,5 @@ class NetworkListener(StubClientMixin):
             "platform": sys.platform,
             "pid": os.getpid(),
             "machine-id": get_machine_id(),
+            "version": XPRA_NUMERIC_VERSION[:FULL_INFO+1],
         }
