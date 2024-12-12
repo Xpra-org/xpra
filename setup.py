@@ -556,7 +556,7 @@ def install_dev_env() -> None:
     if not LINUX:
         print(f"'dev-env' subcommand is not supported on {sys.platform!r}")
         sys.exit(1)
-    elif is_RPM() and not is_openSUSE():
+    if is_RPM() and not is_openSUSE():
         py3 = os.environ.get("PYTHON3", "")
         if not py3:
             py3 = "python3"
@@ -572,6 +572,11 @@ def install_dev_env() -> None:
                     if len(default_python_version) >= 2 and sys.version_info[:2] != default_python_version[:2]:
                         # this is not the default python interpreter!
                         py3 = "python%i.%i" % sys.version_info[:2]
+        if any(is_distribution_variant(x) for x in (
+            "RedHat", "AlmaLinux", "Rocky Linux", "CentOS", "Oracle Linux",
+        )):
+            print("Note: you may need to enable the 'crb' and 'powertools' repositories, ie:")
+            print(" dnf-3 config-manager --set-enabled crb")
 
         flag_to_pkgs = {
             "modules": (
