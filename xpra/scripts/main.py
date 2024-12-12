@@ -156,11 +156,11 @@ def main(script_file: str, cmdline) -> ExitValue:
         return 0
     except InitException as e:
         debug_exc()
-        command_error(f"xpra initialization error:\n {e}")
+        command_error(f"xpra initialization error:\n{e}")
         return 1
     except AssertionError as e:
         debug_exc()
-        command_error(f"xpra initialization error:\n {e}")
+        command_error(f"xpra initialization error:\n{e}")
         traceback.print_tb(sys.exc_info()[2])
         return 1
     except Exception:
@@ -1083,7 +1083,7 @@ def single_display_match(dir_servers, error_cb, nomatch="cannot find any live se
             # they all point to the same display, use the first one:
             allservers = noproxy[:1]
     if len(allservers) > 1:
-        error_cb("there are multiple servers running, please specify")
+        error_cb("there are multiple servers running,\nplease specify.\nYou can see the list using `xpra list`")
     assert len(allservers) == 1
     sockdir, name, path = allservers[0]
     # ie: ("/tmp", "desktop-10", "/tmp/desktop-10")
