@@ -8,6 +8,7 @@ import struct
 from typing import List, Dict, Tuple, Iterable, Callable, Any
 from gi.repository import GLib, GObject, Gdk  # @UnresolvedImport
 
+from xpra.util import envbool
 from xpra.gtk_common.error import xsync, xswallow
 from xpra.gtk_common.gobject_util import one_arg_signal, n_arg_signal
 from xpra.gtk_common.gtk_util import get_default_root_window
@@ -47,6 +48,8 @@ StructureNotifyMask : int = constants["StructureNotifyMask"]
 sizeof_long = struct.calcsize(b'@L')
 
 MAX_DATA_SIZE : int = 4*1024*1024
+
+RECLAIM = envbool("XPRA_CLIPBOARD_RECLAIM", True)
 
 BLACKLISTED_CLIPBOARD_CLIENTS: List[str] = os.environ.get(
     "XPRA_BLACKLISTED_CLIPBOARD_CLIENTS",
@@ -187,15 +190,14 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         try:
             with xsync:
                 owner = X11Window.XGetSelectionOwner(self._selection)
-                if owner==self.xid:
-                    self.owned = True
-                    log("claim() we already own the '%s' selection", self._selection)
-                    return
-                setsel = X11Window.XSetSelectionOwner(self.xid, self._selection, time)
-                owner = X11Window.XGetSelectionOwner(self._selection)
-                self.owned = owner==self.xid
-                log("claim_selection: set selection owner returned %s, owner=%#x, owned=%s",
-                    setsel, owner, self.owned)
+                if RECLAIM or not self.owned:
+                    setsel = X11Window.XSetSelectionOwner(self.xid, self._selection, time)
+                    owner = X11Window.XGetSelectionOwner(self._selection)
+                    self.owned = owner == self.xid
+                    log("claim_selection: set selection owner returned %s, owner=%#x, owned=%s",
+                        setsel, owner, self.owned)
+                else:
+                    log("we already owned the %r selection", self._selection)
                 if not self.owned:
                     log.warn("Warning: we failed to get ownership of the '%s' clipboard selection", self._selection)
                     return
