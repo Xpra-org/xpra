@@ -10,9 +10,10 @@ from collections.abc import Iterable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
-from xpra.gtk.error import xsync, xswallow
+from xpra.gtk.error import xsync
 from xpra.gtk.gobject import n_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
+from xpra.x11.gtk.common import get_wininfo
 from xpra.x11.gtk.native_window import GDKX11Window
 from xpra.x11.gtk.bindings import (
     add_event_receiver,
@@ -24,7 +25,6 @@ from xpra.gtk.error import XError
 from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
 from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
 from xpra.x11.bindings.window import constants, PropertyError, X11WindowBindings
-from xpra.x11.bindings.res import ResBindings
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, memoryview_to_bytes
 from xpra.log import Logger
@@ -34,9 +34,6 @@ Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
-XRes = ResBindings()
-if not XRes.check_xres():
-    XRes = None
 
 log = Logger("x11", "clipboard")
 
@@ -113,39 +110,6 @@ def strings_to_xatoms(data: Iterable[str]) -> bytes:
     with xsync:
         atom_array = tuple(X11Window.get_xatom(atom) for atom in data if atom)
     return struct.pack(b"@" + b"L" * len(atom_array), *atom_array)
-
-
-def get_wintitle(xid: int) -> str:
-    with xswallow:
-        data = X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING")
-        if data:
-            return data.decode("latin1")
-    with xswallow:
-        data = X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "UTF8_STRING")
-        if data:
-            return data.decode("utf8")
-    return ""
-
-
-def get_wininfo(xid: int) -> str:
-    wininfo = [f"xid={xid:x}"]
-    if XRes:
-        with xswallow:
-            pid = XRes.get_pid(xid)
-            if pid:
-                wininfo.append(f"pid={pid}")
-    title = get_wintitle(xid)
-    if title:
-        wininfo.insert(0, repr(title))
-        return csv(wininfo)
-    while xid:
-        title = get_wintitle(xid)
-        if title:
-            wininfo.append(f"child of {title!r}")
-            return csv(wininfo)
-        with xswallow:
-            xid = X11Window.getParent(xid)
-    return csv(wininfo)
 
 
 class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
