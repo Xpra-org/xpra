@@ -2,7 +2,7 @@
 # Copyright (C) 2010-2024 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-import os
+
 from typing import Any
 
 from xpra.os_util import gi_import
@@ -75,16 +75,30 @@ class DisplayManager(StubServerMixin):
         if self.opengl.lower() == "noprobe" or self.opengl.lower() in FALSE_OPTIONS:
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props
-        try:
-            with OSEnvContext():
-                os.environ["XPRA_VERIFY_MAIN_THREAD"] = "0"
+        with OSEnvContext(XPRA_VERIFY_MAIN_THREAD="0"):
+            try:
+                # import OpenGL directly
+                import OpenGL
+                assert OpenGL
+                gllog("found pyopengl version %s", OpenGL.__version__)
+                # this may trigger an `AttributeError` if libGLX / libOpenGL are not installed:
+                from OpenGL import GL
+                assert GL
+                gllog("loaded `GL` bindings")
+            except (ImportError, AttributeError) as e:
+                return {
+                    'error': f'OpenGL is not available: {e}',
+                    'success': False,
+                }
+
+            try:
                 from xpra.opengl import backing
-            assert backing
-        except ImportError:
-            return {
-                'error': '`xpra-client-gtk` is not installed',
-                'success': False,
-            }
+                assert backing
+            except ImportError:
+                return {
+                    'error': '`xpra-client-gtk` is not installed',
+                    'success': False,
+                }
         try:
             # pylint: disable=import-outside-toplevel
             from subprocess import Popen, PIPE
