@@ -8,7 +8,7 @@ from typing import Final
 from collections.abc import Iterable
 
 from xpra.os_util import gi_import
-from xpra.gtk.gobject import SIGNAL_RUN_LAST, one_arg_signal
+from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.error import xsync
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
@@ -26,7 +26,7 @@ X11Window = X11WindowBindings()
 
 class XRootPropWatcher(GObject.GObject):
     __gsignals__ = {
-        "root-prop-changed": (SIGNAL_RUN_LAST, GObject.TYPE_NONE, (GObject.TYPE_STRING, )),
+        "root-prop-changed": (GObject.SignalFlags.RUN_LAST, GObject.TYPE_NONE, (GObject.TYPE_STRING, )),
         "x11-property-notify-event": one_arg_signal,
     }
 

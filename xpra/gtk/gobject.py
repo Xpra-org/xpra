@@ -8,11 +8,8 @@ from xpra.os_util import gi_import
 GObject = gi_import("GObject")
 
 
-SIGNAL_RUN_LAST = GObject.SignalFlags.RUN_LAST
-
-
-def n_arg_signal(n):
-    return SIGNAL_RUN_LAST, GObject.TYPE_NONE, (GObject.TYPE_PYOBJECT,) * n
+def n_arg_signal(n: int) -> tuple:
+    return GObject.SignalFlags.RUN_LAST, GObject.TYPE_NONE, (GObject.TYPE_PYOBJECT,) * n
 
 
 no_arg_signal = n_arg_signal(0)
