@@ -479,6 +479,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         log("do_owner_changed()")
         self.target_data = {}
         self.targets = ()
+        super().do_owner_changed()
 
     def get_contents(self, target:str, got_contents:Callable) -> None:
         log("get_contents(%s, %s) owned=%s, have-token=%s",
