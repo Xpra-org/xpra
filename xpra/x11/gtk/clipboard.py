@@ -88,6 +88,15 @@ TRANSLATED_TARGETS = parse_translated_targets(os.environ.get(
 )
 log("TRANSLATED_TARGETS=%s", TRANSLATED_TARGETS)
 
+IGNORED_PROPERTIES = (
+    "_NET_WM_NAME", "WM_NAME", "_NET_WM_ICON_NAME", "WM_ICON_NAME",
+    "WM_PROTOCOLS", "WM_NORMAL_HINTS", "WM_CLIENT_MACHINE", "WM_LOCALE_NAME",
+    "_NET_WM_PID", "WM_CLIENT_LEADER", "_NET_WM_USER_TIME_WINDOW",
+)
+IGNORED_MESSAGES = (
+    "_GTK_LOAD_ICONTHEMES",
+)
+
 
 def xatoms_to_strings(data: bytes) -> Sequence[str]:
     length = len(data)
@@ -106,7 +115,7 @@ def strings_to_xatoms(data: Iterable[str]) -> bytes:
     return struct.pack(b"@" + b"L" * len(atom_array), *atom_array)
 
 
-def get_wintitle(xid) -> str:
+def get_wintitle(xid: int) -> str:
     with xswallow:
         data = X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING")
         if data:
@@ -118,7 +127,7 @@ def get_wintitle(xid) -> str:
     return ""
 
 
-def get_wininfo(xid) -> str:
+def get_wininfo(xid: int) -> str:
     wininfo = [f"xid={xid:x}"]
     if XRes:
         with xswallow:
@@ -434,11 +443,11 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         # we need the targets, and the target data for greedy clients:
 
         def send_token_with_targets() -> None:
-            token_data = (self.targets,)
+            token_data = (self.targets, )
             self._have_token = False
             self.emit("send-clipboard-token", token_data)
 
-        def with_targets(otargets) -> None:
+        def with_targets(otargets: Sequence[str]) -> None:
             if not self._greedy_client:
                 send_token_with_targets()
                 return
@@ -723,20 +732,16 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
 
     def do_x11_client_message_event(self, event) -> None:
         message_type = event.message_type
-        if message_type == "_GTK_LOAD_ICONTHEMES":
+        if message_type in IGNORED_MESSAGES:
             log("ignored clipboard client message: %s", message_type)
             return
         log.info(f"Unexpected X11 message received by clipboard window {event.window:x}")
         log.info(f" {event}")
 
     def do_x11_property_notify_event(self, event) -> None:
-        if event.atom in (
-                "_NET_WM_NAME", "WM_NAME", "_NET_WM_ICON_NAME", "WM_ICON_NAME",
-                "WM_PROTOCOLS", "WM_NORMAL_HINTS", "WM_CLIENT_MACHINE", "WM_LOCALE_NAME",
-                "_NET_WM_PID", "WM_CLIENT_LEADER", "_NET_WM_USER_TIME_WINDOW",
-        ):
+        if event.atom in IGNORED_PROPERTIES:
             # these properties are populated by GTK when we create the window,
-            # no need to log them:
+            # no need to log them
             return
         log("do_x11_property_notify_event(%s)", event)
         # ie: atom=PRIMARY-TARGETS
