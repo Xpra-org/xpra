@@ -65,6 +65,7 @@ DISCARD_TARGETS = tuple(re.compile(dt) for dt in get_discard_targets(
         r"^dyn\.",
         r"^resource-transfer-format",  # eclipse
         r"^x-special/",  # ie: gnome file copy
+        r"^application/vnd.portal.",  # portal uses dbus, which is not forwarded
     )
 ))
 # targets some applications are known to request,
@@ -103,7 +104,7 @@ def must_discard_extra(target: str) -> bool:
 
 def _filter_targets(targets: Iterable[str]) -> Sequence[str]:
     targets_strs = tuple(bytestostr(x) for x in targets)
-    f = tuple(target for target in targets_strs if not must_discard(target))
+    f = tuple(target for target in targets_strs if not (must_discard(target) or must_discard_extra(target)))
     log("_filter_targets(%s)=%s", csv(targets_strs), f)
     return f
 
@@ -529,9 +530,11 @@ class ClipboardProtocolHelperCore:
         proxy.got_token(targets, target_data, claim, synchronous_client)
 
     def local_targets(self, remote_targets: Iterable[str]) -> Sequence[str]:
+        """ filter remote targets to values that can be used locally """
         return _filter_targets(remote_targets)
 
     def remote_targets(self, local_targets: Iterable[str]) -> Sequence[str]:
+        """ export local targets """
         return _filter_targets(local_targets)
 
     def _munge_raw_selection_to_wire(self, target: str, dtype: str, dformat: int, data) -> tuple[Any, Any]:
