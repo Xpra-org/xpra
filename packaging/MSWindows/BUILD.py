@@ -770,13 +770,33 @@ def setup_share(light: bool) -> None:
         rm_empty_dir(f"{DIST}/share/icons")
 
 
-def add_manifests() -> None:
+def add_manifests(light: bool) -> None:
     step("Adding EXE manifests")
     EXES = [
-        "Bug_Report", "Xpra-Launcher", "Xpra", "Xpra_cmd",
-        # these are only included in full builds:
-        "GTK_info", "NativeGUI_info", "Screenshot", "Xpra-Shadow",
+        "Bug_Report", "Xpra-Launcher", "Xpra", "Xpra_cmd", "Configure", "PDFIUM_Print",
     ]
+    if not light:
+        EXES += [
+            "Xpra-Shadow", "Xpra-Proxy_cmd", "Xpra-Proxy",
+            "Python_exec_cmd", "Python_exec_gui",
+            "Xpra-Launcher-Debug",
+            "Config_info",
+            "Python_execfile_cmd", "Python_execfile_gui",
+            "Print", "NVidia_info", "NvFBC_capture", "CUDA_info",
+            "Auth_Dialog",
+            "OpenGL_check",
+            "GTK_info", "NativeGUI_info", "Screenshot",
+            "Version_info", "Network_info", "Keymap_info", "Keyboard_info",
+            "SystemTray_Test", "U2F_Tool",
+            "SQLite_auth_tool", "SQL_auth_tool",
+            "Encoding_info", "Path_info", "Feature_info", "NativeGUI_info",
+            "Xpra_Audio",
+            "GStreamer_info", "Audio_Devices",
+            "gst-launch-1.0", "gst-inspect-1.0",
+            "Webcam_info", "Webcam_Test",
+            "System-Auth-Test", "LDAP-Auth-Test", "LDAP3-Auth-Test",
+            "System-Logon-Test", "Events_Test", "GTK_Keyboard_Test",
+        ]
     with open('packaging/MSWindows/exe.manifest', 'r') as file:
         xml_file_content = file.read()
     zero_padded_version = version_info.padded
@@ -784,8 +804,7 @@ def add_manifests() -> None:
     with open('packaging/MSWindows/exe.manifest.tmp', 'w') as file:
         file.write(xml_file_content)
     for exe in EXES:
-        if os.path.exists(f"{DIST}/{exe}.exe"):
-            copyfile("packaging/MSWindows/exe.manifest.tmp", f"{DIST}/{exe}.exe.manifest")
+        copyfile("packaging/MSWindows/exe.manifest.tmp", f"{DIST}/{exe}.exe.manifest")
     os.remove('packaging/MSWindows/exe.manifest.tmp')
 
 
@@ -1329,6 +1348,7 @@ def build(args) -> None:
     if args.tests:
         run_tests()
     if args.install:
+        add_manifests(args.light)
         install_exe(args)
 
     if args.fixups:
@@ -1347,7 +1367,6 @@ def build(args) -> None:
     add_numpy(args.numpy)
 
     setup_share(args.light)
-    add_manifests()
     gen_caches()
 
     if args.docs:

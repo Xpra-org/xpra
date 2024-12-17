@@ -1917,9 +1917,10 @@ if WIN32:
             add_gui_exe("fs/libexec/xpra/auth_dialog",          "authentication.ico", "Auth_Dialog")
         # Console: provide an Xpra_cmd.exe we can run from the cmd.exe shell
         add_console_exe("fs/bin/xpra",                     "xpra_txt.ico",     "Xpra_cmd")
-        add_console_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_cmd")
-        add_gui_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_gui")
-        if gstreamer_ENABLED:
+        if win32_tools_ENABLED:
+            add_console_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_cmd")
+            add_gui_exe("xpra/platform/win32/scripts/exec.py",     "python.ico", "Python_exec_gui")
+        if gstreamer_ENABLED and win32_tools_ENABLED:
             add_console_exe("packaging/MSWindows/tools/lib_delegate.py", "gstreamer.ico", "gst-launch-1.0")
             add_data_files("lib/", (shutil.which("gst-launch-1.0.exe"), ))
             add_console_exe("packaging/MSWindows/tools/lib_delegate.py", "gstreamer.ico", "gst-inspect-1.0")
