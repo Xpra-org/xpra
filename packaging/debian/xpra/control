@@ -229,6 +229,18 @@ Description: tool to detach/reattach running X programs,
  this is the xpra client user interface using GTK3
 
 
+Package: xpra-client-qt6
+Architecture: any
+Conflicts: python2-xpra, python3-xpra, xpra (<< 5)
+Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
+Depends: xpra-client (= ${binary:Version})
+        ,${python3:Depends}
+        ,python3-pil
+        ,python3-pyqt6
+Description: tool to detach/reattach running X programs,
+ this is the xpra client user interface using PyQt6
+
+
 Package: xpra-client-gnome
 Architecture: any
 Depends: xpra-client-gtk3 (= ${binary:Version})
