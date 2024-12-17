@@ -2112,7 +2112,13 @@ class ServerCore(ControlHandler):
                 # as the authentication module is free to take its time
                 self.cancel_verify_connection_accepted(proto)
                 # note: we may have received a challenge_response from a previous auth module's challenge
-                salt, digest = authenticator.get_challenge(digest_modes)
+                try:
+                    salt, digest = authenticator.get_challenge(digest_modes)
+                except ValueError as e:
+                    authlog.warn("Warning: unable to generate an authentication challenge")
+                    authlog.warn(" %s", e)
+                    fail("authentication challenge processing error")
+                    return
                 if not (salt or digest):
                     if authenticator.requires_challenge():
                         fail("invalid state, unexpected challenge response")
