@@ -777,9 +777,16 @@ def add_manifests() -> None:
         # these are only included in full builds:
         "GTK_info", "NativeGUI_info", "Screenshot", "Xpra-Shadow",
     ]
+    with open('packaging/MSWindows/exe.manifest', 'r') as file:
+        xml_file_content = file.read()
+    zero_padded_version = version_info.padded
+    xml_file_content = xml_file_content.replace("XPRA_ZERO_PADDED_VERSION", zero_padded_version)
+    with open('packaging/MSWindows/exe.manifest.tmp', 'w') as file:
+        file.write(xml_file_content)
     for exe in EXES:
         if os.path.exists(f"{DIST}/{exe}.exe"):
-            copyfile("packaging/MSWindows/exe.manifest", f"{DIST}/{exe}.exe.manifest")
+            copyfile("packaging/MSWindows/exe.manifest.tmp", f"{DIST}/{exe}.exe.manifest")
+    os.remove('packaging/MSWindows/exe.manifest.tmp')
 
 
 def gen_caches() -> None:

@@ -571,14 +571,16 @@ popd > /dev/null
 
 
 echo "* Adding manifest"
+sed "s/XPRA_ZERO_PADDED_VERSION/$ZERO_PADDED_VERSION/" packaging/MSWindows/exe.manifest > packaging/MSWindows/exe.manifest.tmp
 for exe in Bug_Report Xpra-Launcher Xpra Xpra_cmd; do
-  cp packaging/MSWindows/exe.manifest ./dist/${exe}.exe.manifest
+  cp packaging/MSWindows/exe.manifest.tmp ./dist/${exe}.exe.manifest
 done
 if [ "${DO_FULL}" == "1" ]; then
 	for exe in GTK_info NativeGUI_info Screenshot Xpra-Shadow; do
-	  cp packaging/MSWindows/exe.manifest ./dist/${exe}.exe.manifest
+	  cp packaging/MSWindows/exe.manifest.tmp ./dist/${exe}.exe.manifest
 	done
 fi
+rm packaging/MSWindows/exe.manifest.tmp
 
 
 echo "* Generating gdk pixbuf loaders.cache"

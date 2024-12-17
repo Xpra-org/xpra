@@ -1887,6 +1887,7 @@ if WIN32:
                 # targetDir               = "dist",
                 icon=f"fs/share/xpra/icons/{icon}",
                 target_name=f"{base_name}.exe",
+                manifest=f"dist/{base_name}.exe.manifest",
                 base=base,
             ))
 
