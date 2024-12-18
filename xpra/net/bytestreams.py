@@ -166,14 +166,14 @@ class Connection:
         w = self.untilConcludes(*args)
         self.output_bytecount += w or 0
         self.output_writecount += int(w is not None)
-        return w
+        return w or 0
 
-    def _read(self, *args):
+    def _read(self, *args) -> bytes:
         """ wraps do_read with packet accounting """
         r = self.untilConcludes(*args)
-        self.input_bytecount += len(r or "")
+        self.input_bytecount += len(r or b"")
         self.input_readcount += 1
-        return r
+        return r or b""
 
     def get_info(self) -> dict[str, Any]:
         info = self.info.copy()
@@ -222,7 +222,7 @@ class TwoFileConnection(Connection):
         if w:
             w.flush()
 
-    def read(self, n):
+    def read(self, n) -> bytes:
         self.may_abort("read")
         return self._read(os.read, self._read_fd, n)
 
