@@ -109,7 +109,9 @@ class WindowPerformanceStatistics:
         if cdt:
             # the elapsed time recorded is in microseconds:
             decode_speed = tuple(
-                (event_time, size, int(size * 1000 * 1000 / elapsed)) for event_time, size, elapsed in cdt)
+                (event_time, size, int(size * 1000 * 1000 / elapsed))
+                for event_time, size, elapsed in cdt if elapsed > 0
+            )
             r = calculate_size_weighted_average(decode_speed)
             self.avg_decode_speed = int(r[0])
             self.recent_decode_speed = int(r[1])
