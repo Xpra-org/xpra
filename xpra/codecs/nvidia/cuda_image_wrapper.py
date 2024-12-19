@@ -48,9 +48,13 @@ class CUDAImageWrapper(ImageWrapper):
         self.wait_for_stream()
         self.pixels = host_buffer.tobytes()
         elapsed = monotonic()-start
+        if elapsed > 0:
+            mbs = self.buffer_size / elapsed / 1024 / 1024
+        else:
+            mbs = 9999
         log("may_download() from %#x to %s, size=%s, elapsed=%ims - %iMB/s",
             int(self.cuda_device_buffer), host_buffer, self.buffer_size,
-            int(1000*elapsed), self.buffer_size/elapsed/1024/1024)
+            int(1000*elapsed), mbs)
         self.free_cuda()
         ctx.pop()
 

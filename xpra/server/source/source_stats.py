@@ -285,10 +285,13 @@ class GlobalPerformanceStatistics:
             einfo["pixels_decoded_per_second"] = pixels_decoded_per_second
         if start_time:
             elapsed = now-start_time
-            pixels_per_second = int(total_pixels/elapsed)
-            einfo.update({
-                "pixels_per_second"     : pixels_per_second,
-                "regions_per_second"    : int(len(region_sizes)/elapsed),
-                "average_region_size"   : int(total_pixels/len(region_sizes)),
+            if elapsed:
+                pixels_per_second = int(total_pixels/elapsed)
+                einfo.update({
+                    "pixels_per_second"     : pixels_per_second,
+                    "regions_per_second"    : int(len(region_sizes)/elapsed),
+                })
+            if region_sizes:
+                einfo["average_region_size"] = int(total_pixels/len(region_sizes))
             })
         return info

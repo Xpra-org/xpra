@@ -1010,8 +1010,12 @@ class FileTransferHandler(FileTransferAttributes):
         if not chunk_state.data:
             #all sent!
             elapsed = monotonic()-chunk_state.start
+            if elapsed > 0:
+                bs = chunk * chunk_size / elapsed
+            else:
+                bs = 9999 * 1000 * 1000
             filelog("%i chunks of %i bytes sent in %ims (%sB/s)",
-                    chunk, chunk_size, elapsed*1000, std_unit(chunk*chunk_size/elapsed))
+                    chunk, chunk_size, elapsed*1000, std_unit(bs))
             self.cancel_sending(chunk_id)
             return
         assert chunk_size>0
