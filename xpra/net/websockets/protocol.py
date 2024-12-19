@@ -117,6 +117,9 @@ class WebSocketProtocol(SocketProtocol):
                     self.ws_payload.append(payload)
                     continue
             if opcode==OPCODE_BINARY:
+                if not full_payload:
+                    log.warn("Warning: empty websocket binary payload")
+                    continue
                 self._read_queue_put(full_payload)
             elif opcode==OPCODE_TEXT:
                 if first_time(f"ws-text-frame-from-{self._conn}"):
