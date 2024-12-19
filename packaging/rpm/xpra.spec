@@ -59,7 +59,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.2.2
+Version:			6.2.3
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -906,6 +906,8 @@ fi
 
 
 %changelog
+* Thu Dec 19 2024 Antoine Martin <antoine@xpra.org> 6.2.3-10
+- TODO
 * Tue Dec 10 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection

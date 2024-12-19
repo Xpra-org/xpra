@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.2.3] 2024-12-19
+* TODO
+
 ## [6.2.2] 2024-12-10
 * Platforms, build and packaging:
     * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/d4b078ee67e4024cb2c8a6aea69dba0fe7400c14) and [prefix detection](https://github.com/Xpra-org/xpra/commit/9161b51b82cc89347fd317513d1fdba463c85208)
