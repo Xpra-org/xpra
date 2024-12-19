@@ -385,7 +385,12 @@ def do_check_PyOpenGL_support(force_enable) -> Dict[str,Any]:
                 format_handler = format_handler[:p]
                 missing_handlers.append(format_handler)
         if missing_handlers:
-            log.warn("PyOpenGL warning: missing array format handlers: %s", csv(missing_handlers))
+            missing_str = csv(missing_handlers)
+            if missing_str == "numpy_formathandler":
+                log_fn = log.debug
+            else:
+                log_fn = log.info
+            log.warn("PyOpenGL warning: missing array format handlers: %s", missing_str)
 
         for msg in recs("extensions"):
             #ignore extension messages:
