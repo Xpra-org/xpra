@@ -77,6 +77,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
         })
 
     def send_close(self, code=QuicErrorCode.NO_ERROR, reason="") -> None:
+        log(f"send_close({code}, {reason})")
         wscode = 1000 if code == QuicErrorCode.NO_ERROR else 4000 + int(code)
         self.send_ws_close(wscode, reason)
         super().send_close(code, reason)

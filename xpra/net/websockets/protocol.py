@@ -46,6 +46,7 @@ class WebSocketProtocol(SocketProtocol):
         self.ws_payload = []
 
     def send_ws_close(self, code: int = 1000, reason: str = "closing") -> None:
+        log(f"send_ws_close({code}, {reason})")
         data = close_packet(code, reason)
         self.flush_then_close(None, data)
 
