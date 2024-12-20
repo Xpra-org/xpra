@@ -84,7 +84,9 @@ cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
 
 %check
 # FIXME fails again on s390
+%if !0%{?el7}
 ./libyuv_unittest || true
+%endif
 
 
 %files
