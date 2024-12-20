@@ -94,7 +94,7 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Mon Jun 03 2023 Antoine Martin <antoine@xpra.org> 1.4.0-1
+* Mon Jun 03 2024 Antoine Martin <antoine@xpra.org> 1.4.0-1
 - new upstream release
 
 * Sat Nov 11 2023 Antoine Martin <antoine@xpra.org> 1.3.2-1
