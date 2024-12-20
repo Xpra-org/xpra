@@ -134,7 +134,7 @@ def encode(coding, image, quality, speed, supports_transparency):
             bpp = 8
         else:
             if pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"):
-                raise ValueError(f"invalid pixel format {pixel_format}")
+                raise ValueError("invalid pixel format %r" % pixel_format)
             pil_import_format = pixel_format.replace("A", "a")
     except Exception:
         log.error("Error converting source image", exc_info=True)
