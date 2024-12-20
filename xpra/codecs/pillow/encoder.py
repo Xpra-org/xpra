@@ -74,7 +74,7 @@ def encode(coding, image, quality, speed, supports_transparency):
     log("pillow.encode%s", (coding, image, quality, speed, supports_transparency))
     pixel_format = bytestostr(image.get_pixel_format())
     if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
-        raise ValueError(f"unsupported encoding: %s", coding)
+        raise ValueError("unsupported encoding: %s" % coding)
     palette = None
     w = image.get_width()
     h = image.get_height()
