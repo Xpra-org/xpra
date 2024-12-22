@@ -1,7 +1,7 @@
 %define _disable_source_fetch 0
 
 Name:	     libwebp-xpra
-Version:     1.4.0
+Version:     1.5.0
 Release:     1%{?dist}
 Summary:     WebP library and conversion tools for xpra
 
@@ -33,7 +33,7 @@ WebP images.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "61f873ec69e3be1b99535634340d5bde750b2e4447caa1db9f61be3fd49ab1e5" ]; then
+if [ "${sha256}" != "7d6fab70cf844bf6769077bd5d7a74893f8ffd4dfb42861745750c63c2a5c92c" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -75,18 +75,14 @@ rm -rf %{buildroot}
 %files devel
 %defattr(-,root,root,-)
 %{_includedir}/xpra/webp/
-%{_libdir}/xpra/libwebp.a
-%{_libdir}/xpra/libwebp.la
+%{_libdir}/xpra/libwebp.*a
 %{_libdir}/xpra/libwebp.so
-%{_libdir}/xpra/libwebpdemux.a
-%{_libdir}/xpra/libwebpdemux.la
+%{_libdir}/xpra/libwebpdemux.*a
 %{_libdir}/xpra/libwebpdemux.so*
-%{_libdir}/xpra/libwebpmux.a
-%{_libdir}/xpra/libwebpmux.la
+%{_libdir}/xpra/libwebpmux.*a
 %{_libdir}/xpra/libwebpmux.so*
+%{_libdir}/xpra/libsharpyuv.*a
 %{_libdir}/xpra/libsharpyuv.so*
-%{_libdir}/xpra/libsharpyuv.a
-%{_libdir}/xpra/libsharpyuv.la
 %{_libdir}/xpra/pkgconfig/libwebp.pc
 %{_libdir}/xpra/pkgconfig/libwebpdemux.pc
 %{_libdir}/xpra/pkgconfig/libwebpmux.pc
@@ -94,6 +90,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Sun Dec 22 2024 Antoine Martin <antoine@xpra.org> 1.5.0-1
+- new upstream release
+
 * Mon Jun 03 2024 Antoine Martin <antoine@xpra.org> 1.4.0-1
 - new upstream release
 
