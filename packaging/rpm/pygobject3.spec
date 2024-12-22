@@ -109,13 +109,7 @@ fi
 %{python3_sitearch}/gi/_gi_cairo*.so
 
 %files -n %{python3}-gobject-base
-%dir %{python3_sitearch}/gi/
-%if 0%{?fedora}%{?el9}%{?el8_10}
-%pycached %{python3_sitearch}/gi/*.py
-%else
-%{python3_sitearch}/gi/*.py
-%endif
-%{python3_sitearch}/gi/_gi.*.so
+%{python3_sitearch}/gi
 %{python3_sitearch}/PyGObject-*.egg-info
 
 %files -n %{python3}-gobject-base-noarch
