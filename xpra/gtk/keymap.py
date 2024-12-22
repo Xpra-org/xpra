@@ -36,7 +36,7 @@ def get_gtk_keymap(ignore_keys=("", "VoidSymbol", "0xffffff")) -> Sequence[tuple
     keymap = get_default_keymap()
     if not keymap:
         return ()
-    log("get_default_keymap()=%s, direction=%s, bidirectional layouts: %s",
+    log("get_default_keymap(%s)=%s, direction=%s, bidirectional layouts: %s",
         ignore_keys, keymap, keymap.get_direction(), keymap.have_bidi_layouts())
     keycodes: list[tuple[int, str, int, int, int]] = []
     for i in range(0, 2 ** 8):
