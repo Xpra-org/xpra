@@ -23,6 +23,13 @@ X11Keyboard = X11KeyboardBindings()
 log = Logger("x11", "keyboard")
 
 XKB = envbool("XPRA_XKB", True)
+
+DEFAULT_RULES = os.environ.get("XKB_DEFAULT_RULES", "")
+DEFAULT_MODEL = os.environ.get("XKB_DEFAULT_MODEL", "")
+DEFAULT_LAYOUT = os.environ.get("XKB_DEFAULT_LAYOUT", "")
+DEFAULT_VARIANT = os.environ.get("XKB_DEFAULT_VARIANT", "")
+DEFAULT_OPTIONS = os.environ.get("XKB_DEFAULT_OPTIONS", "")
+
 DEBUG_KEYSYMS = [x for x in os.environ.get("XPRA_DEBUG_KEYSYMS", "").split(",") if len(x) > 0]
 
 # keys we choose not to map if the free space in the keymap is too limited
@@ -85,15 +92,20 @@ def do_set_keymap(layout: str, variant: str, options, query_struct) -> None:
         #    b"options"     : b"grp:shift_caps_toggle",
         #    }
         # parse the data into a dict:
-        rules = query_struct.strget("rules")
-        model = query_struct.strget("model")
-        layout = query_struct.strget("layout")
-        variant = query_struct.strget("variant")
-        options = query_struct.strget("options")
+        rules = query_struct.strget("rules", DEFAULT_RULES)
+        model = query_struct.strget("model", DEFAULT_MODEL)
+        layout = query_struct.strget("layout", DEFAULT_LAYOUT)
+        variant = query_struct.strget("variant", DEFAULT_VARIANT)
+        options = query_struct.strget("options", DEFAULT_OPTIONS)
         if layout:
             log.info("setting keymap: %s",
-                     csv(f"{std(k)}={std(v)}" for k, v in query_struct.items()
-                         if k in ("rules", "model", "layout", "variant", "options") and v))
+                     csv(f"{k}={std(v)}" for k, v in {
+                         "rules": rules,
+                         "model": model,
+                         "layout": layout,
+                         "variant": variant,
+                         "options": options,
+                     }.items() if v))
             if safe_setxkbmap(rules, model, layout, variant, options):
                 return
         else:
