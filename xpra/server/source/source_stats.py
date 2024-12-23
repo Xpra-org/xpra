@@ -293,5 +293,4 @@ class GlobalPerformanceStatistics:
                 })
             if region_sizes:
                 einfo["average_region_size"] = int(total_pixels/len(region_sizes))
-            })
         return info
