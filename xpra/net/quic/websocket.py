@@ -5,7 +5,7 @@
 
 import os
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from aioquic.h3.events import HeadersReceived, H3Event
 from aioquic.h3.exceptions import NoAvailablePushIDError
@@ -16,7 +16,7 @@ from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.common import SERVER_NAME, http_date, binary_headers
 from xpra.net.websockets.header import close_packet
 from xpra.util.env import first_time
-from xpra.util.str_fn import Ellipsizer
+from xpra.util.str_fn import Ellipsizer, std
 from xpra.log import Logger
 
 log = Logger("quic")
@@ -26,6 +26,10 @@ SUBSTREAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_SUBSTREAM_PACKET_TYPES",
     ""
 ).split(",") if x.strip())
+
+
+def filterpath(path: str) -> str:
+    return std(path, "-+=&;%@._/")
 
 
 # SUBSTREAM_PACKET_LOSS_PCT = envint("XPRA_QUIC_SUBSTREAM_PACKET_LOSS_PCT", 0)
@@ -107,16 +111,22 @@ class ServerWebSocketConnection(XpraQuicConnection):
         self._packet_type_streams[stream_type] = stream_id
         return stream_id
 
+    def scopestr(self, key: str, default: str, values: Sequence[str] = ()) -> str:
+        value = self.scope.get(key, default)
+        if values and value not in values:
+            raise ValueError(f"invalid value for {key!r}: {value!r}")
+        return value
+
     def allocate_new_stream_id(self, stream_type: str) -> int:
         log(f"allocate_new_stream_id({stream_type!r})")
         # should use more "correct" values here
         # (we don't need those headers,
         # but the client would drop the packet without them..)
         headers = binary_headers({
-            ":method": self.scope.get("method", "CONNECT"),
-            ":scheme": self.scope.get("scheme", "wss"),
-            ":authority": self.scope.get("transport-info", {}).get("sockname", ("localhost",))[0],
-            ":path": self.scope.get("path", "/"),
+            ":method": self.scopestr("method", "CONNECT", ("CONNECT", "CONNECT-UDP")),
+            ":scheme": self.scopestr("scheme", "wss", ("wss", "https")),
+            ":authority": self.scope.get("transport-info", {}).get("sockname", ("localhost", ))[0],
+            ":path": filterpath(self.scopestr("path", "/")),
         })
         try:
             stream_id = self.connection.send_push_promise(self.stream_id, headers)
