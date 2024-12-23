@@ -62,7 +62,7 @@ class KeyboardStateInfoWindow:
         if icon:
             self.window.set_icon(icon)
 
-    def init_constants(self):
+    def init_constants(self) -> None:
         self.modifier_names = {
             Gdk.ModifierType.SHIFT_MASK: "Shift",
             Gdk.ModifierType.LOCK_MASK: "Lock",
@@ -84,7 +84,7 @@ class KeyboardStateInfoWindow:
             Gdk.ModifierType.MOD5_MASK: "5"
         }
 
-    def populate_modifiers(self, *_args):
+    def populate_modifiers(self, *_args) -> bool:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             x, y, current_mask = self.window.get_root_window().get_pointer()[-3:]
@@ -93,28 +93,29 @@ class KeyboardStateInfoWindow:
         self.modifiers.set_text(str(modifiers))
         return True
 
-    def mask_to_names(self, mask, names_dict):
+    def mask_to_names(self, mask, names_dict: dict[int, str]) -> list[str]:
         names = []
         for m, name in names_dict.items():
             if mask & m:
                 names.append(name)
         return names
 
-    def keymap_changed(self, *args):
+    def keymap_changed(self, *args) -> None:
         log.info("keymap_changed%s" % (args,))
         if not self.keymap_change_timer:
             self.keymap_change_timer = GLib.timeout_add(500, self.show_keymap)
 
-    def show_keymap(self, msg="keymap changed:"):
+    def show_keymap(self, msg="keymap changed:") -> None:
         self.keymap_change_timer = 0
         from xpra.platform.keyboard import Keyboard
         if not Keyboard:
             log.warn("no keyboard support!")
             return
         keyboard = Keyboard()  # pylint: disable=not-callable
-        layout, layouts, variant, variants, options = keyboard.get_layout_spec()
+        model, layout, layouts, variant, variants, options = keyboard.get_layout_spec()
         self.add_event_text(msg)
         for k, v in {
+            "model": model,
             "layout": layout,
             "variant": variant,
             "layouts": layouts,
@@ -128,13 +129,13 @@ class KeyboardStateInfoWindow:
         log.info(f"do_keymap_changed: {msg}")
         log.info("do_keymap_changed: " + csv((layout, layouts, variant, variants, options)))
 
-    def key_press(self, _, event):
+    def key_press(self, _, event) -> None:
         self.add_key_event("down", event)
 
-    def key_release(self, _, event):
+    def key_release(self, _, event) -> None:
         self.add_key_event("up", event)
 
-    def add_key_event(self, etype, event):
+    def add_key_event(self, etype, event) -> None:
         modifiers = self.mask_to_names(event.state, self.short_modifier_names)
         name = Gdk.keyval_name(event.keyval)
         text = ""
@@ -148,14 +149,14 @@ class KeyboardStateInfoWindow:
             text += s
         self.add_event_text(text)
 
-    def add_event_text(self, text):
+    def add_event_text(self, text) -> None:
         self.key_events.append(text)
         self.keys.set_text("\n".join(self.key_events))
 
-    def destroy(self, *_args):
+    def destroy(self, *_args) -> None:
         Gtk.main_quit()
 
-    def show_with_focus(self):
+    def show_with_focus(self) -> None:
         force_focus()
         self.window.show_all()
         self.window.present()

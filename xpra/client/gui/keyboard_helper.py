@@ -25,7 +25,7 @@ class KeyboardHelper:
 
     def __init__(self, net_send: Callable, keyboard_sync=True,
                  shortcut_modifiers="auto", key_shortcuts=(),
-                 raw=False, layout="", layouts=(),
+                 raw=False, model="", layout="", layouts=(),
                  variant="", variants=(), options=""):
         self.reset_state()
         self.send = net_send
@@ -38,6 +38,7 @@ class KeyboardHelper:
         self.key_shortcuts: dict[str, list[str]] = {}
         # command line overrides:
         self.raw = raw
+        self.model_option = model
         self.layout_option = layout if (layout or "").lower() not in ("client", "auto") else ""
         self.variant_option = variant
         self.layouts_option = layouts
@@ -48,7 +49,7 @@ class KeyboardHelper:
         self.keyboard = Keyboard()  # pylint: disable=not-callable
         log("KeyboardHelper(%s) keyboard=%s",
             (net_send, keyboard_sync, key_shortcuts,
-             raw, layout, layouts, variant, variants, options), self.keyboard)
+             raw, model, layout, layouts, variant, variants, options), self.keyboard)
         key_repeat = self.keyboard.get_keyboard_repeat()
         if key_repeat:
             self.key_repeat_delay, self.key_repeat_interval = key_repeat
@@ -69,6 +70,7 @@ class KeyboardHelper:
         self.mod_meanings: dict[str, Any] = {}
         self.mod_managed: list[str] = []
         self.mod_pointermissing: list[str] = []
+        self.model = ""
         self.layout = ""
         self.layouts: list[str] = []
         self.variant = ""
@@ -226,9 +228,9 @@ class KeyboardHelper:
         self.debug_key_event(wid, key_event)
         self.send(*packet)
 
-    def get_layout_spec(self) -> tuple[str, list[str], str, list[str], str]:
+    def get_layout_spec(self) -> tuple[str, str, Sequence[str], str, Sequence[str], str]:
         """ add / honour overrides """
-        layout, layouts, variant, variants, options = self.keyboard.get_layout_spec()
+        model, layout, layouts, variant, variants, options = self.keyboard.get_layout_spec()
         log("%s.get_layout_spec()=%s", self.keyboard, (layout, layouts, variant, variants, options))
 
         def inl(v, l) -> list:
@@ -246,10 +248,11 @@ class KeyboardHelper:
         variant = self.variant_option or variant
         variants = inl(variant, self.variants_option or variants)
         val = (
+            self.model_option or model,
             layout,
             layouts,
-            self.variant_option or variant,
-            self.variants_option or variants,
+            variant,
+            variants,
             self.options or options,
         )
         log("get_layout_spec()=%s", val)
@@ -258,6 +261,8 @@ class KeyboardHelper:
     def get_keymap_spec(self) -> dict[str, Any]:
         query_struct = self.keyboard.get_keymap_spec()
         if query_struct:
+            if self.model_option:
+                query_struct["model"] = self.model_option
             if self.layout_option:
                 query_struct["layout"] = self.layout_option
             if self.layouts_option:
@@ -273,9 +278,9 @@ class KeyboardHelper:
                     query_struct["options"] = self.options
         return query_struct
 
-    def query_xkbmap(self):
+    def query_xkbmap(self) -> None:
         log("query_xkbmap()")
-        self.layout, self.layouts, self.variant, self.variants, self.options = self.get_layout_spec()
+        self.model, self.layout, self.layouts, self.variant, self.variants, self.options = self.get_layout_spec()
         self.query_struct = self.get_keymap_spec()
         log(f"query_xkbmap() query_struct={self.query_struct}")
         self.keycodes = self.get_full_keymap()
@@ -352,16 +357,18 @@ class KeyboardHelper:
         return props
 
     def log_keyboard_info(self) -> None:
-        # show the user a summary of what we have detected:
-        kb_info = {}
+        # show the user a summary of the settings used
+        # (values detected with overrides applied)
+        model, layout, layouts, variant, variants, options = self.get_layout_spec()
+        kb_info = {
+            "model": model,
+            "layout": layout,
+            "variant": variant,
+            "options": options,
+        }
         if self.query_struct:
-            for x in ("rules", "model", "layout"):
-                v = self.query_struct.get(x)
-                if v:
-                    kb_info[x] = v
-        if self.layout:
-            kb_info["layout"] = self.layout
+            kb_info["rules"] = self.query_struct.get("rules", "")
         if not kb_info:
             log.info(" using default keyboard settings")
         else:
-            log.info(" keyboard settings: %s", csv("{}={}".format(std(k), std(v)) for k, v in kb_info.items()))
+            log.info(" keyboard settings: %s", csv(f"{k}={std(v)}" for k, v in kb_info.items() if v))

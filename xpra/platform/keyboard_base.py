@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.keyboard.common import KeyEvent
 from xpra.keyboard.mask import mask_to_names, MODIFIER_MAP
@@ -94,8 +94,8 @@ class KeyboardBase:
     def get_x11_keymap(self) -> dict[int, list[str]]:
         return {}
 
-    def get_layout_spec(self) -> tuple[str, list[str], str, list[str], str]:
-        return "", [], "", [], ""
+    def get_layout_spec(self) -> tuple[str, str, Sequence[str], str, Sequence[str], str]:
+        return "", "", (), "", (), ""
 
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
         return None

@@ -12,7 +12,7 @@ from collections.abc import Callable, Mapping
 from xpra.util.env import envbool
 
 
-def std(v, extras="-,./: ") -> str:
+def std(v, extras="-+,./: ") -> str:
     def f(c):
         return str.isalnum(c) or c in extras
 

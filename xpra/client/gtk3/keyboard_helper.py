@@ -100,12 +100,13 @@ class GTKKeyboardHelper(KeyboardHelper):
 def main() -> None:
     # use gtk as display source:
     # pylint: disable=import-outside-toplevel
+    from xpra.common import noop
     from xpra.gtk.util import init_display_source
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("GTK-Keyboard", "GTK Keyboard"):
         init_display_source()
-        x = GTKKeyboardHelper(None, True, "")
+        x = GTKKeyboardHelper(noop)
         x.query_xkbmap()
         print_nested_dict(x.get_keymap_properties())
 

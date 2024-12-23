@@ -183,12 +183,13 @@ class Keyboard(KeyboardBase):
             x11_layouts[x11_layout] = name
         return x11_layouts
 
-    def get_layout_spec(self) -> tuple[str, list[str], str, list[str], str]:
+    def get_layout_spec(self) -> tuple[str, str, list[str], str, list[str], str]:
         KMASKS = {
             0xffffffff: (0, 16),
             0xffff: (0,),
             0x3ff: (0,),
         }
+        model = ""
         layout = ""
         layouts_defs = {}
         variant = ""
@@ -287,7 +288,7 @@ class Keyboard(KeyboardBase):
             else:
                 log.info(f"keyboard layout {layout!r} ({layout_code:#x})")
             self.last_layout_message = layout
-        return layout, layouts, variant, list(variants), options
+        return model, layout, layouts, variant, list(variants), options
 
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
         try:

@@ -211,7 +211,7 @@ class UIXpraClient(ClientBaseClass):
             return val
 
         overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
-            "layout", "layouts", "variant", "variants", "options",
+            "model", "layout", "layouts", "variant", "variants", "options",
         )]
         send_keyboard = noop
         if not self.readonly:

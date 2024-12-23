@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.platform.keyboard_base import KeyboardBase, log
@@ -96,7 +96,8 @@ class Keyboard(KeyboardBase):
             x11_layouts[layout] = name
         return x11_layouts
 
-    def get_layout_spec(self):
+    def get_layout_spec(self) -> tuple[str, str, Sequence[str], str, Sequence[str], str]:
+        model = ""
         layout = "us"
         layouts = ["us"]
         variant = ""
@@ -131,7 +132,7 @@ class Keyboard(KeyboardBase):
             log("get_layout_spec()", exc_info=True)
             log.error("Error querying keyboard layout:")
             log.estr(e)
-        return layout, layouts, variant, variants, options
+        return model, layout, layouts, variant, variants, options
 
     def get_keymap_modifiers(self) -> tuple[dict, list[str], list[str]]:
         """

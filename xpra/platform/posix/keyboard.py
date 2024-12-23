@@ -270,15 +270,17 @@ class Keyboard(KeyboardBase):
     def get_all_x11_layouts(self):
         return get_all_x11_layouts()
 
-    def get_layout_spec(self):
+    def get_layout_spec(self) -> tuple[str, str, Sequence[str], str, Sequence[str], str]:
+        model = ""
         layout = ""
-        layouts = []
+        layouts = ()
         variant = ""
         options = ""
         if self.keyboard_bindings:
             from xpra.gtk.error import xsync
             with xsync:
                 props = self.keyboard_bindings.getXkbProperties()
+            model = props.get("model", "")
             v = props.get("layout")
             variant = props.get("variant", "")
             options = props.get("options", "")
@@ -294,7 +296,7 @@ class Keyboard(KeyboardBase):
         if v:
             layouts = v.split(",")
             layout = v
-        return layout, [x for x in layouts], variant, [], options
+        return model, layout, layouts, variant, (), options
 
     def get_keyboard_repeat(self) -> tuple[int, int] | None:
         if self.keyboard_bindings:

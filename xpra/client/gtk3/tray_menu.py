@@ -1218,12 +1218,12 @@ class GTKTrayMenu(MenuHelper):
                 self.layout_submenu.append(kbitem(f"{layout} - {variant}", layout, variant))
 
         kh = self.client.keyboard_helper
-        layout, layouts, variant, variants, _ = kh.get_layout_spec()
+        model, layout, layouts, variant, variants, _ = kh.get_layout_spec()
         layout = bytestostr(layout)
         layouts = tuple(bytestostr(x) for x in layouts)
         variant = bytestostr(variant or b"")
         variants = tuple(bytestostr(x) for x in variants)
-        log(f"make_layoutsmenuitem() layout={layout}, layouts={layouts}, variant={variant}, variants={variants}")
+        log(f"make_layoutsmenuitem() {model=}, {layout=}, {layouts=}, {variant=}, {variants=}")
         if len(layouts) > 1:
             log("keyboard layouts: %s", ",".join(bytestostr(x) for x in layouts))
 

@@ -550,6 +550,7 @@ OPTION_TYPES: dict[str, Any] = {
     "tray-icon"         : str,
     "window-icon"       : str,
     "keyboard-raw"      : bool,
+    "keyboard-model"    : str,
     "keyboard-layout"   : str,
     "keyboard-layouts"  : list,
     "keyboard-variant"  : str,
@@ -779,6 +780,7 @@ BIND_OPTIONS : list[str] = [
 # so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V5: list[str] = [
     "minimal", "dbus", "gstreamer",
+    "keyboard-model",
 ]
 OPTIONS_COMPAT_NAMES: dict[str, str] = {
     "--compression_level=": "-z"
@@ -1034,6 +1036,7 @@ def get_defaults() -> dict[str, Any]:
         "tray-icon"         : "",
         "window-icon"       : "",
         "keyboard-raw"      : False,
+        "keyboard-model"    : "",
         "keyboard-layout"   : "",
         "keyboard-layouts"  : [],
         "keyboard-variant"  : "",

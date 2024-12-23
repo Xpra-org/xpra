@@ -1674,6 +1674,9 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--keyboard-raw", action="store", metavar="yes|no",
                      dest="keyboard_raw", default=defaults.keyboard_raw,
                      help="Send raw keyboard keycodes. Default: %s." % enabled_str(defaults.keyboard_raw))
+    group.add_option("--keyboard-model", action="store", metavar="MODEL",
+                     dest="keyboard_model", default=defaults.keyboard_model,
+                     help="The keyboard model to use. Default: %s." % nonedefault(defaults.keyboard_model))
     group.add_option("--keyboard-layout", action="store", metavar="LAYOUT",
                      dest="keyboard_layout", default=defaults.keyboard_layout,
                      help="The keyboard layout to use. Default: %s." % nonedefault(defaults.keyboard_layout))
