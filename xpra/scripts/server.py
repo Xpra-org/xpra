@@ -1611,7 +1611,7 @@ def _do_run_server(script_file: str, cmdline,
         log("%s failed to start", app, exc_info=True)
         log.error("xpra server initialization error:")
         for m in str(e).split("\n"):
-            log.info(" %s", m)
+            log.error(" %s", m)
         server_not_started(str(e))
         return ExitCode.FAILURE
     except Exception as e:
