@@ -2071,6 +2071,8 @@ else:
             libexec_scripts += ["xdg-open", "gnome-open", "gvfs-open"]
         if server_ENABLED:
             libexec_scripts.append("auth_dialog")
+    if x11_ENABLED:
+        libexec_scripts.append("xpra_weston_xvfb")
 
     def add_data_files(target_dir: str, files) -> None:
         assert isinstance(target_dir, str)
@@ -2252,6 +2254,9 @@ else:
             if data_ENABLED:
                 for etc_dir in ("http-headers", "content-type", "content-categories", "content-parent"):
                     dirtodir(f"fs/etc/xpra/{etc_dir}", f"/etc/xpra/{etc_dir}")
+
+            for libexec_script in libexec_scripts:
+                copytodir(f"fs/libexec/xpra/{libexec_script}", libexec_dir+"/xpra/", chmod=0o755)
 
     # add build_conf to build step
     cmdclass |= {
