@@ -218,9 +218,11 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
         # RHEL 10 needs to use `xpra_weston_xvfb` instead of Xorg:
         if os.path.exists("/etc/redhat-release"):
             with open("/etc/redhat-release") as f:
-                relinfo = f.read()
-            if relinfo.find("release 10") >= 0:
-                return ["/usr/libexec/xpra/xpra_weston_xvfb"]
+                relinfo = f.read().rstrip("\n\r")
+                debug(f" found redhat-release: {relinfo!r}")
+                if relinfo.find("release 10") >= 0:
+                    debug(" using `xpra_weston_xvfb` on RHEL 10")
+                    return ["/usr/libexec/xpra/xpra_weston_xvfb"]
     return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn)
 
 
