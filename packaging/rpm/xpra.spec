@@ -42,7 +42,7 @@ autoprov: no
 %endif
 %if 0%{?el10}
 %global debug_package %{nil}
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --without-docs
+%define DEFAULT_BUILD_ARGS --without-evdi --without-cuda_rebuild --with-qt6_client --without-docs
 %endif
 
 %global gnome_shell_extension input-source-manager@xpra_org
@@ -401,9 +401,16 @@ Suggests:			xmodmap
 Suggests:			xrandr
 Recommends:			xrdb
 %else
+%if ! 0%{?el10}
 Requires:			xorg-x11-server-utils
 %endif
+%endif
+%if 0%{?el10}
+Requires:			weston
+Requires:			xorg-x11-server-Xwayland
+%else
 Requires:			xorg-x11-drv-dummy
+%endif
 Requires:			xorg-x11-xauth
 Recommends:			xterm
 Recommends:			mesa-dri-drivers
@@ -452,8 +459,10 @@ BuildRequires:		pkgconfig(libsystemd)
 BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
 BuildRequires:		pam-devel
+%if ! 0%{?el10}
 #for detecting the path to the Xorg binary (not the wrapper):
 BuildRequires:		xorg-x11-server-Xorg
+%endif
 Requires:			selinux-policy
 Requires(post):		openssl
 %if 0%{update_firewall}
@@ -575,8 +584,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -n xpra-filesystem
 %defattr(-,root,root)
-%{_bindir}/xpra
-%{_bindir}/xpra_launcher
+%{_bindir}/xpra*
 %{_bindir}/run_scaled*
 %{_prefix}/lib/cups/backend/xpraforwarder
 %if ! 0%{?el10}
@@ -728,11 +736,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 %{_datadir}/xpra/css
 %{_datadir}/applications/xpra-shadow.desktop
-%{_libexecdir}/xpra/xpra_udev_product_version
 %{_libexecdir}/xpra/xdg-open
 %{_libexecdir}/xpra/gnome-open
 %{_libexecdir}/xpra/gvfs-open
 %{_libexecdir}/xpra/auth_dialog
+%{_libexecdir}/xpra/xpra*
 
 %check
 /usr/bin/desktop-file-validate %{buildroot}%{_datadir}/applications/xpra-launcher.desktop
