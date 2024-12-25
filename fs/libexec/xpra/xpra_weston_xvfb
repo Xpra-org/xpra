@@ -1,0 +1,6 @@
+#!/bin/sh
+
+unset DISPLAY
+export WAYLAND_DISPLAY=headless-$$
+weston --backend=headless-backend.so --socket=$WAYLAND_DISPLAY &
+Xwayland -noreset $@
