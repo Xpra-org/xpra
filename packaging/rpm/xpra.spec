@@ -7,7 +7,7 @@
 %define version 5.0.12
 
 %define CFLAGS -O2
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild
+%define DEFAULT_BUILD_ARGS --without-csc_cython --without-evdi --without-cuda_rebuild
 %global __requires_exclude ^(libnvjpeg|libnvidia-).*\\.so.*$
 
 %{!?nthreads: %global nthreads %(nproc)}
@@ -351,9 +351,16 @@ Suggests:			xmodmap
 Suggests:			xrandr
 Recommends:			xrdb
 %else
+%if ! 0%{?el10}
 Requires:			xorg-x11-server-utils
 %endif
+%endif
+%if 0%{?el10}
+Requires:			weston
+Requires:			xorg-x11-server-Xwayland
+%else
 Requires:			xorg-x11-drv-dummy
+%endif
 Requires:			xorg-x11-xauth
 Recommends:			xterm
 BuildRequires:		libfakeXinerama
@@ -396,7 +403,9 @@ BuildRequires:		checkpolicy
 BuildRequires:		selinux-policy-devel
 BuildRequires:		pam-devel
 #for detecting the path to the Xorg binary (not the wrapper):
+%if ! 0%{?el10}
 BuildRequires:		xorg-x11-server-Xorg
+%endif
 %if 0%{?fedora}
 %if 0%{?fedora}>=39
 # looks like they forgot to expose the pkgconfig?
@@ -613,11 +622,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
 %{_datadir}/xpra/css
 %{_datadir}/applications/xpra-shadow.desktop
-%{_libexecdir}/xpra/xpra_udev_product_version
 %{_libexecdir}/xpra/xdg-open
 %{_libexecdir}/xpra/gnome-open
 %{_libexecdir}/xpra/gvfs-open
 %{_libexecdir}/xpra/auth_dialog
+%{_libexecdir}/xpra/xpra*
 %config(noreplace) %{_sysconfdir}/sysconfig/xpra
 %config %{_prefix}/lib/tmpfiles.d/xpra.conf
 %config %{_prefix}/lib/sysusers.d/xpra.conf
