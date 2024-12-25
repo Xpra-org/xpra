@@ -41,6 +41,7 @@ autoprov: no
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client
 %endif
 %if 0%{?el10}
+%define qt6 1
 %global debug_package %{nil}
 %define DEFAULT_BUILD_ARGS --without-evdi --without-cuda_rebuild --with-qt6_client --without-docs
 %endif
