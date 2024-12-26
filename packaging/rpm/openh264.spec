@@ -4,7 +4,7 @@ Name:           openh264
 Version:        2.5.0
 Release:        1
 Summary:        H.264 codec library
-License:        BSD
+License:        BSD-2-Clause
 URL:            https://www.openh264.org/
 Source0:        https://github.com/cisco/openh264/archive/v%{version}/openh264-%{version}.tar.gz
 
