@@ -2,7 +2,7 @@
 
 Name:           openh264
 Version:        2.5.0
-Release:        1
+Release:        2
 Summary:        H.264 codec library
 License:        BSD-2-Clause
 URL:            https://www.openh264.org/
@@ -69,6 +69,9 @@ rm $RPM_BUILD_ROOT%{_libdir}/*.a
 %{_libdir}/pkgconfig/openh264.pc
 
 %changelog
+* Wed Dec 26 2024 Antoine Martin <antoine@xpra.org> - 2.5.0-2
+- replace 'noopenh264'
+
 * Sat Nov 09 2024 Antoine Martin <antoine@xpra.org> - 2.5.0-1
 - new upstream release
 
