@@ -12,6 +12,9 @@ BuildRequires:  gcc-c++
 BuildRequires:  make
 BuildRequires:  nasm
 
+# Replace the stub package
+Obsoletes:      noopenh264 < 1:0
+
 %description
 OpenH264 is a codec library which supports H.264 encoding and decoding. It is
 suitable for use in real time applications such as WebRTC.
@@ -20,6 +23,8 @@ suitable for use in real time applications such as WebRTC.
 %package        devel
 Summary:        Development files for %{name}
 Requires:       %{name}%{?_isa} = %{version}-%{release}
+# Replace the stub package
+Obsoletes:      noopenh264-devel < 1:0
 
 %description    devel
 The %{name}-devel package contains libraries and header files for
