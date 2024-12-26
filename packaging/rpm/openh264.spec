@@ -69,7 +69,7 @@ rm $RPM_BUILD_ROOT%{_libdir}/*.a
 %{_libdir}/pkgconfig/openh264.pc
 
 %changelog
-* Wed Dec 26 2024 Antoine Martin <antoine@xpra.org> - 2.5.0-2
+* Thu Dec 26 2024 Antoine Martin <antoine@xpra.org> - 2.5.0-2
 - replace 'noopenh264'
 
 * Sat Nov 09 2024 Antoine Martin <antoine@xpra.org> - 2.5.0-1
