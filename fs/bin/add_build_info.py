@@ -78,7 +78,7 @@ def get_cpuinfo() -> str:
     return "unknown"
 
 
-def get_status_output(*args, **kwargs) -> tuple[int, str | bytes, str | bytes]:
+def get_status_output(*args, **kwargs) -> tuple[int, bytes, bytes]:
     kwargs["stdout"] = PIPE
     kwargs["stderr"] = STDOUT
     try:

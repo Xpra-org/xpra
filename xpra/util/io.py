@@ -50,7 +50,7 @@ def filedata_nocrlf(filename: str) -> bytes:
     return v.strip(b"\n\r")
 
 
-def is_socket(sockpath: str, check_uid: int | None = None) -> bool:
+def is_socket(sockpath: str, check_uid: int = -1) -> bool:
     try:
         s = os.stat(sockpath)
     except OSError as e:
@@ -59,10 +59,11 @@ def is_socket(sockpath: str, check_uid: int | None = None) -> bool:
         return False
     if not stat.S_ISSOCK(s.st_mode):
         return False
-    if check_uid is not None and s.st_uid != check_uid:
-        # socket uid does not match
-        get_util_logger().debug(f"is_socket({sockpath}) uid {s.st_uid} does not match {check_uid}")
-        return False
+    if check_uid >= 0:
+        if s.st_uid != check_uid:
+            # socket uid does not match
+            get_util_logger().debug(f"is_socket({sockpath}) uid {s.st_uid} does not match {check_uid}")
+            return False
     return True
 
 
@@ -97,19 +98,19 @@ def stderr_print(msg: str = "") -> bool:
     return False
 
 
-def info(msg: str):
+def info(msg: str) -> None:
     if not stderr_print(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_INFO, msg)
 
 
-def warn(msg: str):
+def warn(msg: str) -> None:
     if not stderr_print(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_WARNING, msg)
 
 
-def error(msg: str):
+def error(msg: str) -> None:
     if not stderr_print(msg) and POSIX:
         import syslog
         syslog.syslog(syslog.LOG_ERR, msg)
@@ -169,7 +170,7 @@ def path_permission_info(filename: str, ftype="") -> Sequence[str]:
     return tuple(pinfo)
 
 
-def disable_stdout_buffering():
+def disable_stdout_buffering() -> None:
     import gc
     # Appending to gc.garbage is a way to stop an object from being
     # destroyed.  If the old sys.stdout is ever collected, it will
@@ -178,7 +179,7 @@ def disable_stdout_buffering():
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 
-def setbinarymode(fd: int):
+def setbinarymode(fd: int) -> None:
     from xpra.os_util import WIN32
     if WIN32:
         # turn on binary mode:
