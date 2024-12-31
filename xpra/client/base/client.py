@@ -40,9 +40,9 @@ from xpra.net.net_util import get_info as get_net_info
 from xpra.log import Logger, get_info as get_log_info
 from xpra.platform.info import get_name, get_username, get_sys_info
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, BITS
-from xpra.util.system import SIGNAMES, register_SIGUSR_signals, get_frame_info, get_env_info, get_sysconfig_info
+from xpra.util.system import SIGNAMES, register_SIGUSR_signals, get_env_info, get_sysconfig_info
 from xpra.util.io import filedata_nocrlf, stderr_print, use_gui_prompt
-from xpra.util.pysystem import dump_all_frames, detect_leaks
+from xpra.util.pysystem import dump_all_frames, detect_leaks, get_frame_info
 from xpra.util.objects import typedict
 from xpra.util.str_fn import (
     std, obsc, csv, Ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
