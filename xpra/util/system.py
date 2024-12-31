@@ -8,15 +8,11 @@ import os
 import re
 import sys
 import signal
-import threading
 from typing import Any
 from subprocess import Popen, PIPE
-from threading import Thread
-from collections.abc import Sequence
 
 from xpra.os_util import POSIX, LINUX, OSX, WIN32
 from xpra.util.env import _saved_env, envbool
-from xpra.util.thread import main_thread
 from xpra.util.io import load_binary_file, get_util_logger
 
 
@@ -275,45 +271,6 @@ def nn(x) -> str:
     if x is None:
         return ""
     return str(x)
-
-
-def get_frame_info(ignore_threads: Sequence[Thread] = ()) -> dict[str | int, Any]:
-    info: dict[str | int, Any] = {
-        "count": threading.active_count() - len(ignore_threads),
-        "native-id": threading.get_native_id(),
-    }
-    try:
-        import traceback
-        thread_ident: dict[int | None, str | None] = {}
-        for t in threading.enumerate():
-            if t not in ignore_threads:
-                thread_ident[t.ident] = t.name
-            else:
-                thread_ident[t.ident] = None
-        thread_ident |= {
-            threading.current_thread().ident: "info",
-            main_thread.ident: "main",
-        }
-        frames = sys._current_frames()  # pylint: disable=protected-access
-        stack = None
-        for i, frame_pair in enumerate(frames.items()):
-            stack = traceback.extract_stack(frame_pair[1])
-            tident = thread_ident.get(frame_pair[0], "unknown")
-            if tident is None:
-                continue
-            # sanitize stack to prevent None values (which cause encoding errors with the bencoder)
-            sanestack = []
-            for entry in stack:
-                sanestack.append(tuple(nn(x) for x in entry))
-            del stack
-            info[i] = {
-                "": tident,
-                "stack": sanestack,
-            }
-        del frames
-    except Exception as e:
-        get_util_logger().error("failed to get frame info: %s", e)
-    return info
 
 
 def get_env_info() -> dict[str, str]:

@@ -5,7 +5,14 @@
 
 import os
 import sys
+import threading
 from collections.abc import Callable
+from threading import Thread
+from typing import Sequence, Any
+
+from xpra.util.io import get_util_logger
+from xpra.util.system import nn
+from xpra.util.thread import main_thread
 
 
 def dump_all_frames(logger=None) -> None:
@@ -116,3 +123,42 @@ def enforce_features(features, feature_map: dict[str, str]) -> None:
                 else:
                     # noinspection PyTypeChecker
                     sys.modules[module] = None
+
+
+def get_frame_info(ignore_threads: Sequence[Thread] = ()) -> dict[str | int, Any]:
+    info: dict[str | int, Any] = {
+        "count": threading.active_count() - len(ignore_threads),
+        "native-id": threading.get_native_id(),
+    }
+    try:
+        import traceback
+        thread_ident: dict[int | None, str | None] = {}
+        for t in threading.enumerate():
+            if t not in ignore_threads:
+                thread_ident[t.ident] = t.name
+            else:
+                thread_ident[t.ident] = None
+        thread_ident |= {
+            threading.current_thread().ident: "info",
+            main_thread.ident: "main",
+        }
+        frames = sys._current_frames()  # pylint: disable=protected-access
+        stack = None
+        for i, frame_pair in enumerate(frames.items()):
+            stack = traceback.extract_stack(frame_pair[1])
+            tident = thread_ident.get(frame_pair[0], "unknown")
+            if tident is None:
+                continue
+            # sanitize stack to prevent None values (which cause encoding errors with the bencoder)
+            sanestack = []
+            for entry in stack:
+                sanestack.append(tuple(nn(x) for x in entry))
+            del stack
+            info[i] = {
+                "": tident,
+                "stack": sanestack,
+            }
+        del frames
+    except Exception as e:
+        get_util_logger().error("failed to get frame info: %s", e)
+    return info

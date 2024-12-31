@@ -57,14 +57,14 @@ from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf
 from xpra.platform.events import add_handler, remove_handler
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, gi_import, POSIX, OSX
-from xpra.util.system import get_frame_info, get_env_info, get_sysconfig_info, platform_name, register_SIGUSR_signals
+from xpra.util.system import get_env_info, get_sysconfig_info, platform_name, register_SIGUSR_signals
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf, which
 from xpra.server.background_worker import add_work_item, quit_worker
 from xpra.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, DEFAULT_XDG_DATA_DIRS, ConnectionMessage, noerr
-from xpra.util.pysystem import dump_all_frames
+from xpra.util.pysystem import dump_all_frames, get_frame_info
 from xpra.util.objects import typedict, notypedict, merge_dicts
 from xpra.util.str_fn import (
     csv, Ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, bytestostr, hexstr,
