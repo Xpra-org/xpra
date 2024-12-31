@@ -12,7 +12,6 @@ from typing import Final, Protocol, TypeAlias, Any
 from collections.abc import Callable, Sized, MutableSequence
 
 from xpra.util.env import envint, envbool
-from xpra.util.str_fn import nicestr
 
 
 try:
@@ -130,6 +129,7 @@ class ConnectionMessage(StrEnum):
 
 # convenience method based on the strings above:
 def disconnect_is_an_error(reason) -> bool:
+    from xpra.util.str_fn import nicestr
     rstr = nicestr(reason)
     return rstr.find("error") >= 0 or (rstr.find("timeout") >= 0 and rstr != ConnectionMessage.IDLE_TIMEOUT.value)
 
