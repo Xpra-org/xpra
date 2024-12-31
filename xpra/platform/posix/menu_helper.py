@@ -245,7 +245,18 @@ def find_theme_icon(*names: str) -> str:
     return ""
 
 
-def find_glob_icon(*names: str, category: str = "categories"):
+def find_entry_icon(entry_props: dict[str, Any], category: str) -> tuple | None:
+    if not entry_props:
+        return None
+    names = []
+    for prop in ("Name", "GenericName", "Exec", "TryExec"):
+        value = entry_props.get(prop, "")
+        if value:
+            names.append(str(value))
+    return find_glob_icon(*names, category)
+
+
+def find_glob_icon(*names: str, category: str = "categories") -> tuple | None:
     if not LOAD_GLOB:
         return None
     icondirs = getattr(IconTheme, "icondirs", [])
@@ -304,14 +315,11 @@ def load_xdg_entry(de) -> dict[str, Any]:
         return {}
     if not EXPORT_TERMINAL_APPLICATIONS and props.get("Terminal", False):
         return {}
-    icondata = props.get("IconData")
-    if not icondata:
-        # try harder:
-        icondata = find_glob_icon(de, category="apps")
-        if icondata:
-            bdata, ext = icondata
-            props["IconData"] = bdata
-            props["IconType"] = ext
+    icondata = props.get("IconData") or find_entry_icon(props, category="apps")
+    if icondata:
+        bdata, ext = icondata
+        props["IconData"] = bdata
+        props["IconType"] = ext
     return props
 
 
@@ -320,14 +328,11 @@ def load_xdg_menu(submenu) -> dict[str, Any]:
         "Name", "GenericName", "Comment",
         "Path", "Icon",
     ))
-    icondata = submenu_data.get("IconData")
-    if not icondata:
-        # try harder:
-        icondata = find_glob_icon(submenu_data, category="categories")
-        if icondata:
-            bdata, ext = icondata
-            submenu_data["IconData"] = bdata
-            submenu_data["IconType"] = ext
+    icondata = submenu_data.get("IconData") or find_entry_icon(submenu_data, category="categories")
+    if icondata:
+        bdata, ext = icondata
+        submenu_data["IconData"] = bdata
+        submenu_data["IconType"] = ext
     entries_data = submenu_data.setdefault("Entries", {})
     from xdg.Menu import Menu, MenuEntry  # pylint: disable=import-outside-toplevel
 
