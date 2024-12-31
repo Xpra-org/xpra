@@ -221,7 +221,7 @@ class DotXpra:
             # ie: /run/user/1000/xpra/10/socket
             sockpath = os.path.join(session_dir, "socket")
             if os.path.exists(sockpath):
-                state = self.is_socket_match(sockpath, None, matching_state)
+                state = self.is_socket_match(sockpath, matching_state=matching_state)
                 debug("add_session_dir(%s) state(%s)=%s", (session_dir, display), sockpath, state)
                 if state:
                     add_result(session_dir, (state, local(display), sockpath))
@@ -257,7 +257,7 @@ class DotXpra:
                     add_result(d, (state, display, sockpath))
         return sd
 
-    def is_socket_match(self, sockpath: str, check_uid=None, matching_state=None) -> SocketState | None:
+    def is_socket_match(self, sockpath: str, check_uid=-1, matching_state=None) -> SocketState | None:
         if not is_socket(sockpath, check_uid):
             return None
         state = self.get_server_state(sockpath)
