@@ -178,7 +178,7 @@ def find_icon(*names):
     return find_resources_icon(*names) or \
         find_pixmap_icon(*names) or \
         find_theme_icon(*names) or \
-        find_glob_icon("apps", *names)
+        find_glob_icon(*names, category="apps")
 
 def find_resources_icon(*names):
     if not LOAD_FROM_RESOURCES:
