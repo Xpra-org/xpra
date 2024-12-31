@@ -245,15 +245,21 @@ def find_theme_icon(*names: str) -> str:
     return ""
 
 
-def find_entry_icon(entry_props: dict[str, Any], category: str) -> tuple | None:
+def add_entry_icon(entry_props: dict[str, Any], category: str):
+    """ adds 'IconData' and 'IconType' to `entry_props` if we find a matching icon """
     if not entry_props:
-        return None
+        return
     names = []
     for prop in ("Name", "GenericName", "Exec", "TryExec"):
         value = entry_props.get(prop, "")
         if value:
             names.append(str(value))
-    return find_glob_icon(*names, category)
+    eicon = find_glob_icon(*names, category)
+    if not eicon:
+        return
+    bdata, ext = eicon
+    entry_props["IconData"] = bdata
+    entry_props["IconType"] = ext
 
 
 def find_glob_icon(*names: str, category: str = "categories") -> tuple | None:
@@ -315,11 +321,9 @@ def load_xdg_entry(de) -> dict[str, Any]:
         return {}
     if not EXPORT_TERMINAL_APPLICATIONS and props.get("Terminal", False):
         return {}
-    icondata = props.get("IconData") or find_entry_icon(props, category="apps")
-    if icondata:
-        bdata, ext = icondata
-        props["IconData"] = bdata
-        props["IconType"] = ext
+    icondata = props.get("IconData")
+    if not icondata:
+        add_entry_icon(props, category="apps")
     return props
 
 
@@ -328,11 +332,9 @@ def load_xdg_menu(submenu) -> dict[str, Any]:
         "Name", "GenericName", "Comment",
         "Path", "Icon",
     ))
-    icondata = submenu_data.get("IconData") or find_entry_icon(submenu_data, category="categories")
-    if icondata:
-        bdata, ext = icondata
-        submenu_data["IconData"] = bdata
-        submenu_data["IconType"] = ext
+    icondata = submenu_data.get("IconData")
+    if not icondata:
+        add_entry_icon(submenu_data, category="categories")
     entries_data = submenu_data.setdefault("Entries", {})
     from xdg.Menu import Menu, MenuEntry  # pylint: disable=import-outside-toplevel
 
