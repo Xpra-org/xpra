@@ -2,7 +2,7 @@
 
 Name:           openh264
 Version:        2.5.0
-Release:        1
+Release:        2
 Summary:        H.264 codec library
 License:        BSD-2-Clause
 URL:            https://www.openh264.org/
@@ -12,6 +12,9 @@ BuildRequires:  gcc-c++
 BuildRequires:  make
 BuildRequires:  nasm
 
+# Replace the stub package
+Obsoletes:      noopenh264 < 1:0
+
 %description
 OpenH264 is a codec library which supports H.264 encoding and decoding. It is
 suitable for use in real time applications such as WebRTC.
@@ -20,6 +23,8 @@ suitable for use in real time applications such as WebRTC.
 %package        devel
 Summary:        Development files for %{name}
 Requires:       %{name}%{?_isa} = %{version}-%{release}
+# Replace the stub package
+Obsoletes:      noopenh264-devel < 1:0
 
 %description    devel
 The %{name}-devel package contains libraries and header files for
@@ -64,6 +69,9 @@ rm $RPM_BUILD_ROOT%{_libdir}/*.a
 %{_libdir}/pkgconfig/openh264.pc
 
 %changelog
+* Thu Dec 26 2024 Antoine Martin <antoine@xpra.org> - 2.5.0-2
+- replace 'noopenh264'
+
 * Sat Nov 09 2024 Antoine Martin <antoine@xpra.org> - 2.5.0-1
 - new upstream release
 
