@@ -1,4 +1,5 @@
 fake-cuda
+libfakeXinerama
 gstreamer1-plugin-timestamp
 libyuv
 python3-Cython
