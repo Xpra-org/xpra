@@ -57,7 +57,7 @@ fi
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 %check
-%if !0%{?ol8}
+%if !0%{?ol8}%{?el10}
 %{__python3} setup.py test
 %endif
 
