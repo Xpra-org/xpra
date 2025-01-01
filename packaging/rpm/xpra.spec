@@ -402,10 +402,8 @@ Requires:			gtk3
 Suggests:			xmodmap
 Suggests:			xrandr
 Recommends:			xrdb
-%else
-%if ! 0%{?el10}
+%if 0%{?el9}%{?el8}
 Requires:			xorg-x11-server-utils
-%endif
 %endif
 %if 0%{?el10}
 Requires:			weston
