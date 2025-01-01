@@ -60,10 +60,12 @@ def is_socket(sockpath: str, check_uid: int = -1) -> bool:
     if not stat.S_ISSOCK(s.st_mode):
         return False
     if check_uid >= 0:
+        logger = get_util_logger()
         if s.st_uid != check_uid:
             # socket uid does not match
-            get_util_logger().debug(f"is_socket({sockpath}) uid {s.st_uid} does not match {check_uid}")
+            logger.debug(f"is_socket({sockpath}, {check_uid}) uid {s.st_uid} does not match {check_uid}")
             return False
+        logger.debug(f"is_socket({sockpath}, {check_uid}) uid matches")
     return True
 
 
