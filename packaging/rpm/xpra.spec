@@ -111,7 +111,9 @@ Conflicts:			xpra-filesystem >= 6.0
 Obsoletes:			xpra-common-client < 5.0-10.r32075
 Obsoletes:			xpra-common-server < 5.0-10.r32075
 Obsoletes:			python3-xpra < 5.0-10.r32075
+%if ! 0%{?el10}
 BuildRequires:		pandoc
+%endif
 BuildRequires:		which
 Requires:			python3
 Requires:			python3-gobject
@@ -215,7 +217,9 @@ Recommends:			libavcodec-free
 Recommends:			libavcodec-freeworld
 Recommends:			libavformat
 Recommends:			libswscale-free
+%if ! 0%{?el10}
 BuildRequires:		pkgconfig(x264)
+%endif
 %endif
 Recommends:			ffmpeg
 BuildRequires:		pkgconfig(libavutil)
