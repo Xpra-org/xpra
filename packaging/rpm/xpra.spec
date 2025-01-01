@@ -581,7 +581,9 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %files codecs-extras
+%if ! 0%{?el10}
 %{python3_sitearch}/xpra/codecs/x26?
+%endif
 %{python3_sitearch}/xpra/codecs/ffmpeg
 %{python3_sitearch}/xpra/codecs/gstreamer
 
