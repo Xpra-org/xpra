@@ -2083,7 +2083,7 @@ else:
         libexec_dir = "__LIBEXECDIR__"
     else:
         libexec_dir = "libexec"
-    add_data_files(libexec_dir+"/xpra/", [f"fs/libexec/xpra/{x}" for x in libexec_scripts])
+
     if data_ENABLED:
         man_path = "share/man"
         icons_dir = "icons"
