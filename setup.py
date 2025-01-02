@@ -2612,7 +2612,7 @@ tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", "spng")
 tace(spng_encoder_ENABLED, "xpra.codecs.spng.encoder", "spng")
 toggle_packages(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg")
 cuda = "cuda"
-if nvjpeg_decoder_ENABLED or nvjpeg_decoder_ENABLED:
+if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
     # try to find a platform specific pkg-config file for cuda:
     cuda_arch = f"cuda-{ARCH}"
     for pcdir in os.environ.get("PKG_CONFIG_PATH", "/usr/lib/pkgconfig:/usr/lib64/pkgconfig").split(":"):
