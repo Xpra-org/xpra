@@ -1407,7 +1407,7 @@ def main(argv):
         elif arg == "zip":
             create_zip()
         elif arg == "exe":
-            create_installer()
+            create_installer(args)
         else:
             raise ValueError(f"unknown argument {arg!r}")
     else:
