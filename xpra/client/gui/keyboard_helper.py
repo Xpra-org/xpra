@@ -359,7 +359,7 @@ class KeyboardHelper:
     def log_keyboard_info(self) -> None:
         # show the user a summary of the settings used
         # (values detected with overrides applied)
-        model, layout, layouts, variant, _, options = self.get_layout_spec()
+        model, layout, _, variant, _, options = self.get_layout_spec()
         kb_info = {
             "model": model,
             "layout": layout,
