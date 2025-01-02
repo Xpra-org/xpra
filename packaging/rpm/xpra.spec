@@ -402,6 +402,7 @@ Requires:			gtk3
 Suggests:			xmodmap
 Suggests:			xrandr
 Recommends:			xrdb
+%endif
 %if 0%{?el9}%{?el8}
 Requires:			xorg-x11-server-utils
 %endif
