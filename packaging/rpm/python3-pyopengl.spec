@@ -32,12 +32,8 @@ BuildRequires:	coreutils
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-cython
-BuildRequires:  %{python3}-numpy
 BuildRequires:  gcc
 Requires:       freeglut
-%if 0%{?fedora}<40
-Suggests:       %{python3}-numpy
-%endif
 Obsoletes:      %{python3}-PyOpenGL < 3.1.5
 Obsoletes:      %{python3}-PyOpenGL-accelerate < 3.1.5
 Provides:       %{python3}-PyOpenGL = %{version}-%{release}
