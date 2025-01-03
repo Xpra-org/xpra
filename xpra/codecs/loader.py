@@ -92,6 +92,28 @@ def should_warn(name: str) -> bool:
     return True
 
 
+def pillow_import_block() -> None:
+    for image_plugin in (
+        # "Bmp",
+        "Gif", "Ppm",
+        "Blp", "Cur", "Pcx", "Dcx", "Dds", "Eps", "Fits", "Fli",
+        "Fpx", "Ftex", "Gbr", "Jpeg2K", "Icns", "Ico",
+        "Im", "Imt",
+        "Iptc", "McIdas", "Mic", "Mpeg", "Tiff", "Mpo", "Msp",
+        "Palm", "Pcd", "Pdf", "Pixar", "Psd", "Qoi",
+        "Sgi", "Spider", "Sun", "Tga",
+        "Wmf", "Xbm", "Xpm", "XVThumb",
+    ):
+        sys.modules[f"PIL.{image_plugin}ImagePlugin"] = None
+    for file_fmt in ("GimpGradient", "PaletteFile"):
+        sys.modules[f"PIL.{file_fmt}File"] = None
+
+
+PIL_BLOCK = envbool("XPRA_PIL_BLOCK", True)
+if PIL_BLOCK:
+    pillow_import_block()
+
+
 def codec_import_check(name: str, description: str, top_module, class_module, classnames):
     log(f"{name}:")
     log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
