@@ -13,7 +13,6 @@ from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.system import SIGNAMES
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import SPLASH_EXIT_DELAY
-from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import install_signal_handlers
@@ -312,6 +311,7 @@ def main(_args) -> ExitValue:
     with program_context("splash", "Splash"):
         Gtk.Window.set_auto_startup_notification(setting=False)
         w = SplashScreen()
+        from xpra.gtk.window import add_close_accel
         add_close_accel(w, Gtk.main_quit)
         return w.run()
 
