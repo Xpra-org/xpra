@@ -93,9 +93,9 @@ def should_warn(name: str) -> bool:
 
 
 def pillow_import_block() -> None:
+    # the only ones we want to keep:
+    # "Bmp", "Gif", "Ppm", "Png", "Jpeg"
     for image_plugin in (
-        # "Bmp",
-        "Gif", "Ppm",
         "Blp", "Cur", "Pcx", "Dcx", "Dds", "Eps", "Fits", "Fli",
         "Fpx", "Ftex", "Gbr", "Jpeg2K", "Icns", "Ico",
         "Im", "Imt",
@@ -105,8 +105,6 @@ def pillow_import_block() -> None:
         "Wmf", "Xbm", "Xpm", "XVThumb",
     ):
         sys.modules[f"PIL.{image_plugin}ImagePlugin"] = None
-    for file_fmt in ("GimpGradient", "PaletteFile"):
-        sys.modules[f"PIL.{file_fmt}File"] = None
 
 
 PIL_BLOCK = envbool("XPRA_PIL_BLOCK", True)
