@@ -390,11 +390,11 @@ class Logger:
     """
     __slots__ = ("categories", "level", "level_override", "_logger", "debug_enabled", "__weakref__", "__call__")
 
-    def __init__(self, *categories):
+    def __init__(self, *categories: str):
         self.__call__ = self.debug
         self.categories = list(categories)
         n = 1
-        caller = None
+        caller = ""
         while n < 10:
             try:
                 # noinspection PyProtectedMember
