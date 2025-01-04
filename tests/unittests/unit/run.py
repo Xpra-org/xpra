@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2014-2024 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2014 Antoine Martin <antoine@xpra.org>
 
 #runs all the files in "unit/" that end in "test.py"
 

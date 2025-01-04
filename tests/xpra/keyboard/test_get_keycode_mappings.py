@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2011-2021 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011 Antoine Martin <antoine@xpra.org>
 
 from xpra.x11.gtk.display_source import init_gdk_display_source
 

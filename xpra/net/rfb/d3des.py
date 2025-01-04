@@ -28,7 +28,7 @@
 #  Ferguson, Eric Young and Dana How for comparing notes; and Ray Lau,
 #  for humouring me on.
 #
-#  Copyright (c) 1988,1989,1990,1991,1992 by Richard Outerbridge.
+#  Copyright (c) 1988 by Richard Outerbridge.
 #  (GEnie : OUTER; CIS : [71755,204]) Graven Imagery, 1992.
 #
 

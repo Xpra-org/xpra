@@ -2,8 +2,8 @@
 #
 # gtkPopupNotify.py
 #
-# Copyright 2009 Daniel Woodhouse
-# Copyright 2013-2024 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2009 Daniel Woodhouse
+# Copyright (C) 2013 Antoine Martin <antoine@xpra.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

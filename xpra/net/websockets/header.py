@@ -1,8 +1,8 @@
 # This file is part of Xpra.
 # This file is based on websockify/websocket.py from the websockify project
-# Copyright 2019-2024 Antoine Martin <antoine@xpra.org>
-# Copyright 2011 Joel Martin
-# Copyright 2016 Pierre Ossman
+# Copyright (C) 2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2011 Joel Martin
+# Copyright (C) 2016 Pierre Ossman
 # Licensed under LGPL version 3 (see docs/LICENSE.LGPL-3)
 
 import struct

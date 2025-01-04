@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # This file is part of Xpra.
-# Copyright (C) 2016-2019 Antoine Martin <antoine@xpra.org>
+# Copyright (C) 2016 Antoine Martin <antoine@xpra.org>
 
 import gi
 gi.require_version('Gdk', '3.0')  # @UndefinedVariable
