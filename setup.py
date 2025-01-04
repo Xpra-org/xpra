@@ -29,11 +29,13 @@ try:
     from distutils.core import setup
     from distutils.command.build import build
     from distutils.command.install_data import install_data
+    setuptools = False
 except ImportError as e:
     print(f"no distutils: {e}, trying setuptools")
     from setuptools import setup
     from setuptools.command.build import build
     from setuptools.command.install import install as install_data
+    setuptools = True
 
 import xpra
 from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
@@ -95,6 +97,8 @@ setup_options = {
         "Source"        : "https://github.com/Xpra-org/xpra",
     },
 }
+if not setuptools:
+    setup_options["data_files"] = data_files
 
 
 if "pkg-info" in sys.argv:
@@ -1546,11 +1550,6 @@ if "install" in sys.argv or "build" in sys.argv:
         # ensure it is now included in the module list
         add_modules("xpra.src_info")
 
-if POSIX and ism_ext_ENABLED:
-    ism_dir = "share/gnome-shell/extensions/input-source-manager@xpra_org"
-    data_files.append((ism_dir, glob(f"fs/{ism_dir}/*")))
-    data_files.append((ism_dir, ["COPYING"]))
-
 if "clean" in sys.argv or "sdist" in sys.argv:
     clean()
     if "sdist" in sys.argv:
@@ -2110,12 +2109,13 @@ else:
         assert isinstance(target_dir, str)
         assert isinstance(files, (list, tuple))
         data_files.append((target_dir, files))
+
     if is_openSUSE():
         # basically need $(basename $(rpm -E '%{_libexecdir}'))
         libexec_dir = "__LIBEXECDIR__"
     else:
         libexec_dir = "libexec"
-    add_data_files(libexec_dir+"/xpra/", [f"fs/libexec/xpra/{x}" for x in libexec_scripts])
+
     if data_ENABLED:
         man_path = "share/man"
         icons_dir = "icons"
@@ -2290,6 +2290,12 @@ else:
             for libexec_script in libexec_scripts:
                 copytodir(f"fs/libexec/xpra/{libexec_script}", libexec_dir+"/xpra/", chmod=0o755)
 
+            if setuptools:
+                # process the data files ourselves,
+                # because setuptools is gradually removing the ability to do its job
+                for dirname, files in data_files:
+                    copytodir(dirname, files)
+
     # add build_conf to build step
     cmdclass |= {
         'build'        : build_override,
@@ -2405,6 +2411,10 @@ if WIN32 or OSX:
             "cryptography.exceptions",
         )
 
+if POSIX and ism_ext_ENABLED:
+    ism_dir = "share/gnome-shell/extensions/input-source-manager@xpra_org"
+    add_data_files(ism_dir, glob(f"fs/{ism_dir}/*"))
+    add_data_files(ism_dir, ["COPYING"])
 
 if scripts_ENABLED:
     scripts += ["fs/bin/xpra", "fs/bin/xpra_launcher"]
