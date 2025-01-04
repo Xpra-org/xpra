@@ -484,6 +484,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "auth", "showconfig", "showsetting",
             "applications-menu", "sessions-menu",
             "_proxy",
+            "configure",
     ):
         configure_network(options)
         verify_gir()
