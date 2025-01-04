@@ -9,7 +9,7 @@ import sys
 import warnings
 import traceback
 from contextlib import AbstractContextManager, nullcontext
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 from threading import RLock
 from typing import Any
 
@@ -68,7 +68,7 @@ def restore_script_env(env):
     return env
 
 
-def shellsub(s: str, subs=None) -> str:
+def shellsub(s: str, subs: dict) -> str:
     """ shell style string substitution using the dictionary given """
     if subs:
         for var, value in subs.items():
@@ -167,7 +167,7 @@ class IgnoreWarningsContext(AbstractContextManager):
         return "IgnoreWarningsContext"
 
 
-def ignorewarnings(fn, *args) -> Any:
+def ignorewarnings(fn: Callable, *args) -> Any:
     import warnings
     try:
         warnings.filterwarnings("ignore", category=DeprecationWarning)
