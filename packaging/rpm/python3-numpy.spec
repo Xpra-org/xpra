@@ -1,4 +1,4 @@
-    %define _disable_source_fetch 0
+%define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %else
