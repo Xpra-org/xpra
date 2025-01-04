@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from importlib import import_module
+from importlib.util import find_spec
 
 from xpra.gtk.configure.common import run_gui
 from xpra.os_util import LINUX
@@ -29,21 +30,26 @@ class HomeGUI(BaseGUIWindow):
         if LINUX:
             self.sub("Packages", "package.png", "Install or remove xpra packages", "packages")
         self.sub("Features", "features.png", "Enable or disable feature groups", "features")
-        self.sub("Picture compression", "encoding.png", "Encodings, speed and quality", "encodings")
+        self.sub("Picture compression", "encoding.png", "Encodings, speed and quality", "encodings", "xpra.codecs")
         # self.sub("GStreamer", "gstreamer.png", "Configure the GStreamer codecs", "gstreamer")
-        self.sub("Shadow Server", "shadow.png", "Configure the Shadow Server", "shadow")
+
+        self.sub("Shadow Server", "shadow.png", "Configure the Shadow Server", "shadow", "xpra.server")
         # self.sub("OpenGL acceleration", "opengl.png", "Test and validate OpenGL renderer", "opengl")
 
-    def sub(self, title="", icon_name="browse.png", tooltip="", configure: str = "") -> None:
+    def sub(self, title="", icon_name="browse.png", tooltip="", configure: str = "", req_module="xpra") -> None:
 
-        def callback(_btn):
+        def callback(_btn) -> None:
             dialog = self.dialogs.get(configure)
             if dialog is None:
                 mod = import_module(f"xpra.gtk.configure.{configure}")
                 dialog = mod.ConfigureGUI(self)
                 self.dialogs[configure] = dialog
             dialog.show()
-        self.ib(title, icon_name, tooltip, callback=callback)
+
+        sensitive = not req_module or bool(find_spec(req_module))
+        if not sensitive:
+            tooltip = f"not available: {tooltip}"
+        self.ib(title, icon_name, tooltip, callback=callback, sensitive=sensitive)
 
 
 def main(_args) -> int:
