@@ -99,7 +99,7 @@ class XpraDesktopServer(DesktopServerBase):
 
     def load_existing_windows(self) -> None:
         with xsync:
-            model = ScreenDesktopModel(self.randr_exact_size)
+            model = ScreenDesktopModel(self.randr, self.randr_exact_size)
             model.setup()
             screenlog("adding root window model %s", model)
             super().do_add_new_window_common(1, model)

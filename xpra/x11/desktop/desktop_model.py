@@ -70,8 +70,9 @@ class ScreenDesktopModel(DesktopModelBase):
     _property_names = DesktopModelBase._property_names + ["xid"]
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
-    def __init__(self, resize_exact=False):
+    def __init__(self, resize=True, resize_exact=False):
         super().__init__()
+        self.can_resize = resize
         self.resize_exact = resize_exact
 
     def __repr__(self):
@@ -145,7 +146,7 @@ class ScreenDesktopModel(DesktopModelBase):
                 "base-size": size,
             })
 
-        if RandR.has_randr():
+        if self.can_resize:
             if self.resize_exact:
                 # assume resize_exact is enabled
                 # no size restrictions
