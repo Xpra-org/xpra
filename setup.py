@@ -131,9 +131,7 @@ PKG_CONFIG = os.environ.get("PKG_CONFIG", "pkg-config")
 def check_pkgconfig() -> None:
     v = get_status_output([PKG_CONFIG, "--version"])
     has_pkg_config = v[0] == 0 and v[1]
-    if has_pkg_config:
-        print("found pkg-config version: %s" % v[1].strip("\n\r"))
-    else:
+    if not has_pkg_config:
         print("WARNING: pkg-config not found!")
 
 
@@ -200,12 +198,7 @@ if os.environ.get("INCLUDE_DIRS", None) is None and not WIN32:
         if os.path.isdir(d) and d not in INCLUDE_DIRS:
             INCLUDE_DIRS.append(d)
 
-print("using INCLUDE_DIRS=%s" % (INCLUDE_DIRS, ))
-
-CPP = os.environ.get("CPP", "cpp")
-CC = os.environ.get("CC", "gcc")
-print(f"CC={CC}")
-print(f"CPP={CPP}")
+print("INCLUDE_DIRS=%s" % (INCLUDE_DIRS, ))
 
 shadow_ENABLED = DEFAULT
 server_ENABLED = DEFAULT
@@ -970,6 +963,11 @@ if modules_ENABLED:
 
 #*******************************************************************************
 # Utility methods for building with Cython
+CPP = os.environ.get("CPP", "cpp")
+CC = os.environ.get("CC", "gcc")
+print(f"CC={CC}")
+print(f"CPP={CPP}")
+
 
 def do_add_cython_ext(*args, **kwargs) -> None:
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
@@ -1015,8 +1013,7 @@ def ace(modnames="xpra.x11.bindings.xxx", pkgconfig_names="", optimize=None, **k
                     if remove_from_keywords(pkgc, addto, f"-W{warning}"):
                         print(f"removed -W{warning} for {modname}")
     pkgc.update(kwargs)
-    CPP = kwargs.get("language", "")=="c++"
-    if CPP:
+    if kwargs.get("language", "") == "c++":
         # default to "-std=c++11" for c++
         if not any(v.startswith("-std=") for v in pkgc.get("extra_compile_args", ())):
             add_to_keywords(pkgc, "extra_compile_args", "-std=c++11")
