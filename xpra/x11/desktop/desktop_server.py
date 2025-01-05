@@ -39,11 +39,11 @@ class XpraDesktopServer(DesktopServerBase):
 
     def server_init(self) -> None:
         super().server_init()
-        from xpra.x11.vfb_util import set_initial_resolution, get_desktop_vfb_resolutions
+        from xpra.x11.vfb_util import set_initial_resolution
         screenlog(f"server_init() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
-        if not features.display:
+        if not RandR.has_randr() or not self.initial_resolutions or not features.display:
             return
-        res = self.initial_resolutions or get_desktop_vfb_resolutions(default_refresh_rate=self.refresh_rate)
+        res = self.initial_resolutions
         if len(res) > 1:
             log.warn(f"Warning: cannot set desktop resolution to {res}")
             log.warn(" multi monitor mode is not enabled")
