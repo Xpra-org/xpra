@@ -26,19 +26,14 @@ if sys.version_info < (3, 10):
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 try:
-    if sys.version_info >= (3, 12):
-        raise ImportError("prefer setuptools")
     from distutils.core import setup
     from distutils.command.build import build
     from distutils.command.install_data import install_data
-    handle_datafiles = False
 except ImportError as e:
     print(f"no distutils: {e}, trying setuptools")
     from setuptools import setup
     from setuptools.command.build import build
     from setuptools.command.install import install as install_data
-    # handle datafiles ourselves:
-    handle_datafiles = True
 
 import xpra
 from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
@@ -100,8 +95,6 @@ setup_options = {
         "Source"        : "https://github.com/Xpra-org/xpra",
     },
 }
-if not handle_datafiles:
-    setup_options["data_files"] = data_files
 
 
 if "pkg-info" in sys.argv:
@@ -428,7 +421,7 @@ install = ""
 rpath = ""
 ssl_cert = ""
 ssl_key = ""
-share_xpra = ""
+share_xpra = os.path.join("share", "xpra")
 filtered_args = []
 
 
@@ -492,8 +485,6 @@ sys.argv = filtered_args
 if not install and WIN32:
     MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
     install = MINGW_PREFIX or sys.prefix or "dist"
-if not share_xpra:
-    share_xpra = os.path.join("/share", "xpra")
 
 
 def should_rebuild(src_file: str, bin_file: str) -> str:
@@ -1346,8 +1337,7 @@ def detect_xorg_setup(install_dir="") -> Sequence[str]:
     from xpra.scripts import config
     config.debug = config.warn
     conf_dir = get_conf_dir(install_dir)
-    dummy = Xdummy_ENABLED
-    return config.detect_xvfb_command(conf_dir, None, dummy, Xdummy_wrapper_ENABLED)
+    return config.detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
 
 
 def detect_xdummy_setup(install_dir="") -> Sequence:
@@ -1423,8 +1413,8 @@ def build_xpra_conf(install_dir: str) -> None:
         'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),     # noqa: E501
         'conf_dir'              : conf_dir,
         'bind'                  : "auto",
-        'ssl_cert'              : ssl_cert,
-        'ssl_key'               : ssl_key,
+        'ssl_cert'              : ssl_cert or "",
+        'ssl_key'               : ssl_key or "",
         'systemd_run'           : get_default_systemd_run(),
         'socket_dirs'           : "".join(f"socket-dirs = {x}\n" for x in socket_dirs),
         'log_dir'               : "auto",
@@ -2113,8 +2103,8 @@ else:
         # basically need $(basename $(rpm -E '%{_libexecdir}'))
         libexec_dir = "__LIBEXECDIR__"
     else:
-        libexec_dir = "/libexec"
-
+        libexec_dir = "libexec"
+    add_data_files(libexec_dir+"/xpra/", [f"fs/libexec/xpra/{x}" for x in libexec_scripts])
     if data_ENABLED:
         man_path = "/share/man"
         icons_dir = "icons"
@@ -2153,34 +2143,33 @@ else:
             install_data.finalize_options(self)
 
         def run(self) -> None:
-            print("install_data_override.run()")
-            def get_root_prefix() -> str:
-                install_dir = getattr(self, "install_dir", "")
-                if install_dir:
-                    if install_dir.endswith("egg"):
-                        install_dir = install_dir.split("egg")[1] or sys.prefix
-                    return install_dir.rstrip("/")
-                for x in sys.argv:
-                    if x.startswith("--root="):
-                        return x[len("--root="):]
-                    if x.startswith("--prefix="):
-                        return x[len("--prefix="):]
-                return sys.prefix
-
-            root_prefix = get_root_prefix()
-            if root_prefix.endswith("/usr"):
-                # "/usr" -> "/etc"
-                etc_prefix = root_prefix[:-4]+"/etc"
+            install_dir = self.install_dir
+            if install_dir.endswith("egg"):
+                install_dir = install_dir.split("egg")[1] or sys.prefix
             else:
-                # "/usr/local" -> "/usr/local/etc"
-                etc_prefix = f"{root_prefix}/etc"
-            print(f"{root_prefix=!r}, {etc_prefix=!r}")
-            build_xpra_conf(etc_prefix)
+                install_data.run(self)
+            print("install_data_override.run()")
+            print(f"  install_dir={install_dir!r}")
+            root_prefix = None
+            for x in sys.argv:
+                if x.startswith("--prefix="):
+                    root_prefix = x[len("--prefix="):]
+            if not root_prefix:
+                root_prefix = install_dir.rstrip("/")
+            if root_prefix.endswith("/usr"):
+                # ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
+                root_prefix = root_prefix[:-4]
+            for x in sys.argv:
+                if x.startswith("--root="):
+                    root_prefix = x[len("--root="):]
+            print(f"  root_prefix={root_prefix!r}")
+            build_xpra_conf(root_prefix)
 
             def copytodir(src: str, dst_dir: str, dst_name="", chmod=0o644, subs: dict | None=None) -> None:
                 # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
                 # convert absolute paths:
-                dst_dir = root_prefix.rstrip("/")+"/"+dst_dir.lstrip("/")
+                dst_prefix = root_prefix if dst_dir.startswith("/") else install_dir
+                dst_dir = dst_prefix.rstrip("/")+"/"+dst_dir.lstrip("/")
                 # make sure the target directory exists:
                 self.mkpath(dst_dir)
                 # generate the target filename:
@@ -2205,9 +2194,9 @@ else:
 
             if printing_ENABLED and POSIX:
                 # install "/usr/lib/cups/backend" with 0700 permissions:
-                lib_cups = "/lib/cups"
+                lib_cups = "lib/cups"
                 if FREEBSD:
-                    lib_cups = "/libexec/cups"
+                    lib_cups = "libexec/cups"
                 copytodir("fs/lib/cups/backend/xpraforwarder", f"{lib_cups}/backend", chmod=0o700)
 
             etc_xpra_files = {}
@@ -2289,14 +2278,6 @@ else:
 
             for libexec_script in libexec_scripts:
                 copytodir(f"fs/libexec/xpra/{libexec_script}", libexec_dir+"/xpra/", chmod=0o755)
-
-            if handle_datafiles:
-                # process the data files ourselves,
-                # because setuptools is gradually removing the ability to do its job
-                # (and no, `--single-version-externally-managed is not acceptable)
-                for dirname, files in data_files:
-                    for file in files:
-                        copytodir(file, dirname)
 
     # add build_conf to build step
     cmdclass |= {
@@ -2422,10 +2403,6 @@ if scripts_ENABLED:
     scripts += ["fs/bin/xpra", "fs/bin/xpra_launcher"]
     if not OSX and not WIN32:
         scripts.append("fs/bin/run_scaled")
-    if handle_datafiles:
-        add_data_files("/bin", scripts)
-        scripts = []
-
 toggle_modules(WIN32, "xpra/platform/win32/service")
 
 if data_ENABLED:
