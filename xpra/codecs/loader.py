@@ -94,7 +94,7 @@ def should_warn(name: str) -> bool:
 
 def pillow_import_block() -> None:
     # the only ones we want to keep:
-    # "Bmp", "Gif", "Ppm", "Png", "Jpeg"
+    # "Bmp", "Gif", "Ppm", "Png", "Jpeg", "Xpm"
     for image_plugin in (
         "Blp", "Cur", "Pcx", "Dcx", "Dds", "Eps", "Fits", "Fli",
         "Fpx", "Ftex", "Gbr", "Jpeg2K", "Icns", "Ico",
@@ -102,7 +102,7 @@ def pillow_import_block() -> None:
         "Iptc", "McIdas", "Mic", "Mpeg", "Tiff", "Mpo", "Msp",
         "Palm", "Pcd", "Pdf", "Pixar", "Psd", "Qoi",
         "Sgi", "Spider", "Sun", "Tga",
-        "Wmf", "Xbm", "Xpm", "XVThumb",
+        "Wmf", "Xbm", "XVThumb",
     ):
         sys.modules[f"PIL.{image_plugin}ImagePlugin"] = None
 
