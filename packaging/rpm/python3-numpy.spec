@@ -8,6 +8,7 @@
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
+%define python3_version %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[0]}.{vi[1]}")' 2> /dev/null)
 
 %if 0%{?fedora} || 0%{?rhel} >= 9
 %global blaslib flexiblas
@@ -119,7 +120,6 @@ env OPENBLAS=%{_libdir} \
     %{python3} setup.py build
 
 %install
-%define python3_version %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[0]}.{vi[1]}")')
 #%%{python3} setup.py install -O1 --skip-build --root %%{buildroot}
 # skip-build currently broken, this works around it for now
 env OPENBLAS=%{_libdir} \
