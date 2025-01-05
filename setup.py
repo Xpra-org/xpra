@@ -2155,21 +2155,21 @@ else:
             install_data.finalize_options(self)
 
         def run(self) -> None:
-            install_dir = getattr(self, "install_dir", "")
-            if install_dir.endswith("egg"):
-                install_dir = install_dir.split("egg")[1] or sys.prefix
             print("install_data_override.run()")
-            print(f"  install_dir={install_dir!r}")
-
             def get_root_prefix() -> str:
+                install_dir = getattr(self, "install_dir", "")
+                if install_dir:
+                    if install_dir.endswith("egg"):
+                        install_dir = install_dir.split("egg")[1] or sys.prefix
+                    return install_dir.rstrip("/")
                 for x in sys.argv:
                     if x.startswith("--root="):
                         return x[len("--root="):]
                     if x.startswith("--prefix="):
                         return x[len("--prefix="):]
-                return install_dir.rstrip("/")
+                return sys.prefix
+
             root_prefix = get_root_prefix()
-            print(f"{root_prefix=!r}")
             if root_prefix.endswith("/usr"):
                 # "/usr" -> "/etc"
                 etc_prefix = root_prefix[:-4]+"/etc"
