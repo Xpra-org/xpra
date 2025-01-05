@@ -2425,6 +2425,10 @@ if scripts_ENABLED:
     scripts += ["fs/bin/xpra", "fs/bin/xpra_launcher"]
     if not OSX and not WIN32:
         scripts.append("fs/bin/run_scaled")
+    if handle_datafiles:
+        add_data_files("/bin", scripts)
+        scripts = []
+
 toggle_modules(WIN32, "xpra/platform/win32/service")
 
 if data_ENABLED:
