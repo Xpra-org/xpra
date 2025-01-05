@@ -26,6 +26,8 @@ if sys.version_info < (3, 10):
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 try:
+    if sys.version_info >= (3, 12):
+        raise ImportError("prefer setuptools")
     from distutils.core import setup
     from distutils.command.build import build
     from distutils.command.install_data import install_data
@@ -422,13 +424,11 @@ SWITCHES += [
 SWITCHES = list(sorted(set(SWITCHES)))
 
 
-install = None
-rpath = None
-ssl_cert = None
-ssl_key = None
-minifier = None
-share_xpra = None
-dummy_driver_version = None
+install = ""
+rpath = ""
+ssl_cert = ""
+ssl_key = ""
+share_xpra = ""
 filtered_args = []
 
 
@@ -489,11 +489,11 @@ for group, items in SWITCH_ALIAS.items():
             break
 sys.argv = filtered_args
 
-if install is None and WIN32:
+if not install and WIN32:
     MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
     install = MINGW_PREFIX or sys.prefix or "dist"
-if share_xpra is None:
-    share_xpra = os.path.join("share", "xpra")
+if not share_xpra:
+    share_xpra = os.path.join("/share", "xpra")
 
 
 def should_rebuild(src_file: str, bin_file: str) -> str:
@@ -1347,8 +1347,6 @@ def detect_xorg_setup(install_dir="") -> Sequence[str]:
     config.debug = config.warn
     conf_dir = get_conf_dir(install_dir)
     dummy = Xdummy_ENABLED
-    if bool(dummy_driver_version):
-        dummy = True
     return config.detect_xvfb_command(conf_dir, None, dummy, Xdummy_wrapper_ENABLED)
 
 
@@ -1425,8 +1423,8 @@ def build_xpra_conf(install_dir: str) -> None:
         'pulseaudio_configure_commands' : "\n".join(("pulseaudio-configure-commands = %s" % pretty_cmd(x)) for x in DEFAULT_PULSEAUDIO_CONFIGURE_COMMANDS),     # noqa: E501
         'conf_dir'              : conf_dir,
         'bind'                  : "auto",
-        'ssl_cert'              : ssl_cert or "",
-        'ssl_key'               : ssl_key or "",
+        'ssl_cert'              : ssl_cert,
+        'ssl_key'               : ssl_key,
         'systemd_run'           : get_default_systemd_run(),
         'socket_dirs'           : "".join(f"socket-dirs = {x}\n" for x in socket_dirs),
         'log_dir'               : "auto",
@@ -2118,7 +2116,7 @@ else:
         libexec_dir = "/libexec"
 
     if data_ENABLED:
-        man_path = "share/man"
+        man_path = "/share/man"
         icons_dir = "icons"
         if OPENBSD:
             man_path = "man"
@@ -2128,10 +2126,10 @@ else:
         if not OSX:
             man_pages.append("fs/share/man/man1/run_scaled.1")
         add_data_files(f"{man_path}/man1",  man_pages)
-        add_data_files("share/applications",  glob("fs/share/applications/*.desktop"))
-        add_data_files("share/mime/packages", ["fs/share/mime/packages/application-x-xpraconfig.xml"])
-        add_data_files(f"share/{icons_dir}", glob("fs/share/icons/*.png"))
-        add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
+        add_data_files("/share/applications",  glob("fs/share/applications/*.desktop"))
+        add_data_files("/share/mime/packages", ["fs/share/mime/packages/application-x-xpraconfig.xml"])
+        add_data_files(f"/share/{icons_dir}", glob("fs/share/icons/*.png"))
+        add_data_files("/share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
 
     # here, we override build and install so we can
     # generate /etc/xpra/conf.d/*.conf
@@ -2182,8 +2180,7 @@ else:
             def copytodir(src: str, dst_dir: str, dst_name="", chmod=0o644, subs: dict | None=None) -> None:
                 # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
                 # convert absolute paths:
-                dst_prefix = root_prefix if dst_dir.startswith("/") else install_dir
-                dst_dir = dst_prefix.rstrip("/")+"/"+dst_dir.lstrip("/")
+                dst_dir = root_prefix.rstrip("/")+"/"+dst_dir.lstrip("/")
                 # make sure the target directory exists:
                 self.mkpath(dst_dir)
                 # generate the target filename:
@@ -2208,9 +2205,9 @@ else:
 
             if printing_ENABLED and POSIX:
                 # install "/usr/lib/cups/backend" with 0700 permissions:
-                lib_cups = "lib/cups"
+                lib_cups = "/lib/cups"
                 if FREEBSD:
-                    lib_cups = "libexec/cups"
+                    lib_cups = "/libexec/cups"
                 copytodir("fs/lib/cups/backend/xpraforwarder", f"{lib_cups}/backend", chmod=0o700)
 
             etc_xpra_files = {}
@@ -2417,7 +2414,7 @@ if WIN32 or OSX:
         )
 
 if POSIX and ism_ext_ENABLED:
-    ism_dir = "share/gnome-shell/extensions/input-source-manager@xpra_org"
+    ism_dir = "/share/gnome-shell/extensions/input-source-manager@xpra_org"
     add_data_files(ism_dir, glob(f"fs/{ism_dir}/*"))
     add_data_files(ism_dir, ["COPYING"])
 
