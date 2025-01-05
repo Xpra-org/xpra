@@ -2106,7 +2106,7 @@ else:
         libexec_dir = "libexec"
     add_data_files(libexec_dir+"/xpra/", [f"fs/libexec/xpra/{x}" for x in libexec_scripts])
     if data_ENABLED:
-        man_path = "/share/man"
+        man_path = "share/man"
         icons_dir = "icons"
         if OPENBSD:
             man_path = "man"
@@ -2116,10 +2116,10 @@ else:
         if not OSX:
             man_pages.append("fs/share/man/man1/run_scaled.1")
         add_data_files(f"{man_path}/man1",  man_pages)
-        add_data_files("/share/applications",  glob("fs/share/applications/*.desktop"))
-        add_data_files("/share/mime/packages", ["fs/share/mime/packages/application-x-xpraconfig.xml"])
-        add_data_files(f"/share/{icons_dir}", glob("fs/share/icons/*.png"))
-        add_data_files("/share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
+        add_data_files("share/applications",  glob("fs/share/applications/*.desktop"))
+        add_data_files("share/mime/packages", ["fs/share/mime/packages/application-x-xpraconfig.xml"])
+        add_data_files(f"share/{icons_dir}", glob("fs/share/icons/*.png"))
+        add_data_files("share/metainfo",      ["fs/share/metainfo/xpra.appdata.xml"])
 
     # here, we override build and install so we can
     # generate /etc/xpra/conf.d/*.conf
@@ -2403,6 +2403,7 @@ if scripts_ENABLED:
     scripts += ["fs/bin/xpra", "fs/bin/xpra_launcher"]
     if not OSX and not WIN32:
         scripts.append("fs/bin/run_scaled")
+
 toggle_modules(WIN32, "xpra/platform/win32/service")
 
 if data_ENABLED:
