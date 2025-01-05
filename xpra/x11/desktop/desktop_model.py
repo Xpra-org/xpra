@@ -25,9 +25,10 @@ class ScreenDesktopModel(DesktopModelBase):
     _property_names         = DesktopModelBase._property_names+["xid"]
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
-    def __init__(self, resize_exact=False):
+    def __init__(self, resize=True, resize_exact=False):
         super().__init__()
         self.screen = Gdk.Screen.get_default()
+        self.can_resize = resize
         self.resize_exact = resize_exact
 
     def __repr__(self):
@@ -94,11 +95,12 @@ class ScreenDesktopModel(DesktopModelBase):
         def use_fixed_size():
             size = w, h
             size_hints.update({
-                "maximum-size"  : size,
-                "minimum-size"  : size,
-                "base-size"     : size,
-                })
-        if RandR.has_randr():
+                "maximum-size": size,
+                "minimum-size": size,
+                "base-size": size,
+            })
+
+        if self.can_resize:
             if self.resize_exact:
                 #assume resize_exact is enabled
                 #no size restrictions
