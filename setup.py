@@ -29,13 +29,14 @@ try:
     from distutils.core import setup
     from distutils.command.build import build
     from distutils.command.install_data import install_data
-    setuptools = False
+    handle_datafiles = False
 except ImportError as e:
     print(f"no distutils: {e}, trying setuptools")
     from setuptools import setup
     from setuptools.command.build import build
     from setuptools.command.install import install as install_data
-    setuptools = True
+    # handle datafiles ourselves:
+    handle_datafiles = True
 
 import xpra
 from xpra.os_util import BITS, WIN32, OSX, LINUX, POSIX, NETBSD, FREEBSD, OPENBSD, getuid
@@ -97,7 +98,7 @@ setup_options = {
         "Source"        : "https://github.com/Xpra-org/xpra",
     },
 }
-if not setuptools:
+if not handle_datafiles:
     setup_options["data_files"] = data_files
 
 
@@ -2114,7 +2115,7 @@ else:
         # basically need $(basename $(rpm -E '%{_libexecdir}'))
         libexec_dir = "__LIBEXECDIR__"
     else:
-        libexec_dir = "libexec"
+        libexec_dir = "/libexec"
 
     if data_ENABLED:
         man_path = "share/man"
@@ -2154,27 +2155,29 @@ else:
             install_data.finalize_options(self)
 
         def run(self) -> None:
-            install_dir = self.install_dir
+            install_dir = getattr(self, "install_dir", "")
             if install_dir.endswith("egg"):
                 install_dir = install_dir.split("egg")[1] or sys.prefix
-            else:
-                install_data.run(self)
             print("install_data_override.run()")
             print(f"  install_dir={install_dir!r}")
-            root_prefix = None
-            for x in sys.argv:
-                if x.startswith("--prefix="):
-                    root_prefix = x[len("--prefix="):]
-            if not root_prefix:
-                root_prefix = install_dir.rstrip("/")
+
+            def get_root_prefix() -> str:
+                for x in sys.argv:
+                    if x.startswith("--root="):
+                        return x[len("--root="):]
+                    if x.startswith("--prefix="):
+                        return x[len("--prefix="):]
+                return install_dir.rstrip("/")
+            root_prefix = get_root_prefix()
+            print(f"{root_prefix=!r}")
             if root_prefix.endswith("/usr"):
-                # ie: "/" or "/usr/src/rpmbuild/BUILDROOT/xpra-0.18.0-0.20160513r12573.fc23.x86_64/"
-                root_prefix = root_prefix[:-4]
-            for x in sys.argv:
-                if x.startswith("--root="):
-                    root_prefix = x[len("--root="):]
-            print(f"  root_prefix={root_prefix!r}")
-            build_xpra_conf(root_prefix)
+                # "/usr" -> "/etc"
+                etc_prefix = root_prefix[:-4]+"/etc"
+            else:
+                # "/usr/local" -> "/usr/local/etc"
+                etc_prefix = f"{root_prefix}/etc"
+            print(f"{root_prefix=!r}, {etc_prefix=!r}")
+            build_xpra_conf(etc_prefix)
 
             def copytodir(src: str, dst_dir: str, dst_name="", chmod=0o644, subs: dict | None=None) -> None:
                 # print("copytodir%s" % (src, dst_dir, dst_name, chmod, subs))
@@ -2290,11 +2293,13 @@ else:
             for libexec_script in libexec_scripts:
                 copytodir(f"fs/libexec/xpra/{libexec_script}", libexec_dir+"/xpra/", chmod=0o755)
 
-            if setuptools:
+            if handle_datafiles:
                 # process the data files ourselves,
                 # because setuptools is gradually removing the ability to do its job
+                # (and no, `--single-version-externally-managed is not acceptable)
                 for dirname, files in data_files:
-                    copytodir(dirname, files)
+                    for file in files:
+                        copytodir(file, dirname)
 
     # add build_conf to build step
     cmdclass |= {
