@@ -52,10 +52,10 @@ class XpraMonitorServer(DesktopServerBase):
         self.reconfigure_timer: int = 0
         self.reconfigure_locked: bool = False
 
-    def server_init(self) -> None:
-        super().server_init()
+    def init_randr(self) -> None:
+        super().init_randr()
         from xpra.x11.vfb_util import set_initial_resolution
-        screenlog(f"server_init() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
+        screenlog(f"init_randr() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
         if not RandR.has_randr() or not self.initial_resolutions:
             return
         res = self.initial_resolutions

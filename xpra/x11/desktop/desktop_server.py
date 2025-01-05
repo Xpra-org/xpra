@@ -37,10 +37,10 @@ class XpraDesktopServer(DesktopServerBase):
         self.root_prop_watcher = None
         self.resize_value = -1, -1
 
-    def server_init(self) -> None:
-        super().server_init()
+    def init_randr(self) -> None:
+        super().init_randr()
         from xpra.x11.vfb_util import set_initial_resolution
-        screenlog(f"server_init() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
+        screenlog(f"init_randr() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
         if not RandR.has_randr() or not self.initial_resolutions or not features.display:
             return
         res = self.initial_resolutions

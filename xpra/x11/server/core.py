@@ -164,8 +164,7 @@ class X11ServerCore(GTKServerBase):
         with xsync:
             self.init_x11_atoms()
         with xlog:
-            if self.randr:
-                self.init_randr()
+            self.init_randr()
         with xlog:
             self.init_cursor()
         with xlog:
@@ -178,8 +177,11 @@ class X11ServerCore(GTKServerBase):
         save_mode(self.get_server_mode())
 
     def init_randr(self) -> None:
-        self.randr = RandR.has_randr()
+        if self.randr and not RandR.has_randr():
+            self.randr = False
         screenlog("randr=%s", self.randr)
+        if not self.randr:
+            return
         # check the property first,
         # because we may be inheriting this display,
         # in which case the screen sizes list may be longer than 1
@@ -198,8 +200,7 @@ class X11ServerCore(GTKServerBase):
                 # xwayland?
                 self.randr = False
                 self.randr_exact_size = False
-        screenlog("randr=%s, exact size=%s", self.randr, self.randr_exact_size)
-        screenlog("randr enabled: %s", self.randr)
+        screenlog(f"randr enabled: {self.randr}, exact size={self.randr_exact_size}")
         if not self.randr:
             screenlog.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
 
