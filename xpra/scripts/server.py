@@ -35,6 +35,7 @@ from xpra.scripts.config import (
     FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
     parse_bool_or,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
+    xvfb_command,
 )
 from xpra.common import (
     CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH,
@@ -1066,6 +1067,8 @@ def _do_run_server(script_file: str, cmdline,
         # with the value supplied by the user:
         protected_env["XDG_RUNTIME_DIR"] = xrd
 
+    xvfb_cmd = xvfb_command(opts.xvfb, opts.pixel_depth, opts.dpi)
+
     sanitize_env()
     if not shadowing:
         os.environ.pop("WAYLAND_DISPLAY", None)
@@ -1081,7 +1084,7 @@ def _do_run_server(script_file: str, cmdline,
         os.environ["DISPLAY"] = display_name
         if POSIX:
             os.environ["CKCON_X11_DISPLAY"] = display_name
-    elif not start_vfb or opts.xvfb.find("Xephyr") < 0:
+    elif not start_vfb or xvfb_cmd[0].find("Xephyr") < 0:
         os.environ.pop("DISPLAY", None)
     os.environ.update(protected_env)
 
@@ -1152,7 +1155,7 @@ def _do_run_server(script_file: str, cmdline,
     if (starting or starting_desktop) and desktop_display and opts.notifications and not opts.dbus_launch:
         print_DE_warnings()
 
-    if start_vfb and opts.sync_xvfb is None and any(opts.xvfb.find(x) >= 0 for x in ("Xephyr", "Xnest")):
+    if start_vfb and opts.sync_xvfb is None and any(xvfb_cmd[0].find(x) >= 0 for x in ("Xephyr", "Xnest")):
         # automatically enable sync-xvfb for Xephyr and Xnest:
         opts.sync_xvfb = 50
 
@@ -1320,7 +1323,7 @@ def _do_run_server(script_file: str, cmdline,
                 sizes = opts.resize_display.split(":", 1)[-1]
                 vfb_geom = parse_resolutions(sizes, opts.refresh_rate)[0]
 
-            xvfb, display_name = start_Xvfb(opts.xvfb, vfb_geom, pixel_depth, display_name, cwd,
+            xvfb, display_name = start_Xvfb(xvfb_cmd, vfb_geom, pixel_depth, display_name, cwd,
                                             uid, gid, username, uinput_uuid)
             assert xauthority
             xauth_add(xauthority, display_name, xauth_data, uid, gid)
@@ -1333,7 +1336,7 @@ def _do_run_server(script_file: str, cmdline,
                 if xvfb_pidfile:
                     os.unlink(xvfb_pidfile)
 
-            getChildReaper().add_process(xvfb, "xvfb", opts.xvfb, ignore=True, callback=xvfb_terminated)
+            getChildReaper().add_process(xvfb, "xvfb", xvfb_cmd, ignore=True, callback=xvfb_terminated)
             # always update as we may now have the "real" display name:
             os.environ["DISPLAY"] = display_name
             os.environ["CKCON_X11_DISPLAY"] = display_name
@@ -1371,8 +1374,6 @@ def _do_run_server(script_file: str, cmdline,
                 uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
         if uinput_uuid:
             devices = create_input_devices(uinput_uuid, uid)
-
-    xvfb_cmd = opts.xvfb
 
     def check_xvfb(timeout=0) -> bool:
         if xvfb is None:

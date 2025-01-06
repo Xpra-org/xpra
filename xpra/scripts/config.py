@@ -155,31 +155,37 @@ def get_Xdummy_confdir() -> str:
 
 def get_Xdummy_command(xorg_cmd="Xorg",
                        log_dir="${XPRA_SESSION_DIR}",
-                       xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf") -> list[str]:
-    return [
+                       xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf",
+                       dpi=0) -> list[str]:
+    cmd = [
         # ie: "Xorg" or "xpra_Xdummy" or "./install/bin/xpra_Xdummy"
         xorg_cmd,
-        "-noreset", "-novtswitch",
-        "-nolisten", "tcp",
         "+extension", "GLX",
         "+extension", "RANDR",
         "+extension", "RENDER",
+        "-nolisten", "tcp",
+        "-noreset",
+        "-novtswitch",
         "-auth", "$XAUTHORITY",
         "-logfile", f"{log_dir}/Xorg.log",
         # must be specified with some Xorg versions (ie: arch linux)
         # this directory can store xorg config files, it does not need to be created:
-        "-configdir", f'"{get_Xdummy_confdir()}"',
-        "-config", f'"{xorg_conf}"',
+        "-configdir", f"{get_Xdummy_confdir()}",
+        "-config", f"{xorg_conf}",
     ]
+    if dpi > 0:
+        cmd += ["-dpi", f"{dpi}x{dpi}"]
+    return cmd
 
 
-def get_Xvfb_command(width=8192, height=4096, dpi=96) -> list[str]:
+def get_Xvfb_command(width=8192, height=4096, depth=24, dpi=96) -> list[str]:
     cmd = [
         "Xvfb",
         "+extension", "GLX",
         "+extension", "Composite",
-        "+extension", "RANDR", "+extension", "RENDER",
-        "-screen", "0", f"{width}x{height}x24+32",
+        "+extension", "RANDR",
+        "+extension", "RENDER",
+        "-screen", "0", f"{width}x{height}x{depth}+32",
         # better than leaving to vfb after a resize?
         "-nolisten", "tcp",
         "-noreset",
@@ -190,9 +196,61 @@ def get_Xvfb_command(width=8192, height=4096, dpi=96) -> list[str]:
     return cmd
 
 
+def get_Xephyr_command(width=1920, height=1080, depth=24, dpi=96) -> list[str]:
+    cmd = [
+        "Xephyr",
+        "+extension", "GLX",
+        "+extension", "Composite",
+        "-screen", f"{width}x{height}x{depth}+32",
+        "-nolisten", "tcp",
+        "-noreset",
+        "-auth", "$XAUTHORITY",
+    ]
+    if dpi > 0:
+        cmd += ["-dpi", f"{dpi}x{dpi}"]
+    return cmd
+
+
+def get_weston_Xwayland_command(dpi=96) -> list[str]:
+    cmd = [
+        "/usr/libexec/xpra/xpra_weston_xvfb",
+        "+extension", "GLX",
+        "+extension", "Composite",
+        "-nolisten", "tcp",
+        "-noreset",
+        "-auth", "$XAUTHORITY",
+    ]
+    if dpi > 0:
+        cmd += ["-dpi", f"{dpi}x{dpi}"]
+    return cmd
+
+
+def xvfb_command(cmd: str, depth=32, dpi=0) -> list[str]:
+    parts = shlex.split(cmd)
+    if len(parts) > 1:
+        return parts
+    exe = parts[0]
+    if os.path.isabs(exe):
+        return parts
+    if exe == "Xvfb":
+        return get_Xvfb_command(depth=depth, dpi=dpi)
+    if exe == "Xephyr":
+        return get_Xephyr_command(depth=depth, dpi=dpi)
+    if exe in ("weston", "weston+Xwayland"):
+        return get_weston_Xwayland_command(dpi=dpi)
+    if exe in ("Xorg", "Xdummy"):
+        xorg_bin = get_xorg_bin()
+        return get_Xdummy_command(xorg_bin, dpi=dpi)
+    if exe == "auto":
+        return detect_xvfb_command(dpi=dpi)
+    return parts
+
+
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
                         Xdummy_ENABLED: bool | None = None, Xdummy_wrapper_ENABLED: bool | None = None,
-                        warn_fn: Callable = warn) -> list[str]:
+                        warn_fn: Callable = warn,
+                        dpi=0,
+                        ) -> list[str]:
     """
     This function returns the xvfb command to use.
     It can either be an `Xvfb` command or one that uses `Xdummy`,
@@ -200,18 +258,22 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
     """
     if WIN32:   # pragma: no cover
         return []
+
+    def vfb_default() -> list[str]:
+        return get_Xvfb_command(dpi=dpi)
+
     if OSX:     # pragma: no cover
-        return get_Xvfb_command()
+        return vfb_default()
     if sys.platform.find("bsd") >= 0 and Xdummy_ENABLED is None:  # pragma: no cover
         warn_fn(f"Warning: sorry, no support for Xdummy on {sys.platform}")
-        return get_Xvfb_command()
+        return vfb_default()
     if is_DEB():
         # These distros do weird things and this can cause the real X11 server to crash
         # see ticket #2834
-        return get_Xvfb_command()
+        return vfb_default()
 
     if Xdummy_ENABLED is False:
-        return get_Xvfb_command()
+        return vfb_default()
 
     if Xdummy_ENABLED is None:
         debug("Xdummy support unspecified, will try to detect")
@@ -222,15 +284,16 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
                 debug(f" found redhat-release: {relinfo!r}")
                 if relinfo.find("release 10") >= 0:
                     debug(" using `xpra_weston_xvfb` on RHEL 10")
-                    return ["/usr/libexec/xpra/xpra_weston_xvfb"]
-    return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn)
+                    return get_weston_Xwayland_command(dpi)
+    return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn, dpi=dpi)
 
 
 def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
                           Xdummy_wrapper_ENABLED: bool | None = None,
-                          warn_fn: Callable = warn) -> list[str]:
+                          warn_fn: Callable = warn,
+                          dpi=0) -> list[str]:
     if not POSIX or OSX:
-        return get_Xvfb_command()
+        return get_Xvfb_command(dpi=dpi)
     xorg_bin = get_xorg_bin()
     if Xdummy_wrapper_ENABLED is not None:
         # honour what was specified:
@@ -245,7 +308,7 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
         if (xorg_stat.st_mode & stat.S_ISUID) != 0:
             if (xorg_stat.st_mode & stat.S_IROTH) == 0:
                 warn_fn(f"{xorg_bin} is suid and not readable, Xdummy support unavailable")
-                return get_Xvfb_command()
+                return get_Xvfb_command(dpi=dpi)
             debug(f"{xorg_bin} is suid and readable, using the xpra_Xdummy wrapper")
             use_wrapper = True
         else:
@@ -259,7 +322,7 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
     if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
         if bin_dir not in os.environ.get("PATH", "/bin:/usr/bin:/usr/local/bin").split(os.pathsep):
             xorg_cmd = os.path.join(bin_dir, xorg_cmd)
-    return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf)
+    return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf, dpi=dpi)
 
 
 def wrap_cmd_str(cmd) -> str:

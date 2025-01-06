@@ -12,7 +12,7 @@
 import os
 import signal
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.util.env import envint, envbool
 from xpra.os_util import POSIX, gi_import
@@ -103,7 +103,7 @@ class ChildReaper:
         self._proc_info = []
         self._quit = None
 
-    def add_process(self, process, name: str, command, ignore=False, forget=False, callback=None) -> ProcInfo:
+    def add_process(self, process, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None) -> ProcInfo:
         pid = process.pid
         if pid <= 0:
             raise RuntimeError(f"process {process} has no pid!")

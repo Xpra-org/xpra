@@ -19,7 +19,7 @@ import os.path
 from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
 from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
 from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env
+from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env, get_saved_env_var
 from xpra.os_util import getuid, getgid, POSIX, OSX
 from xpra.server.util import setuidgid
 from xpra.util.io import is_writable, pollwait
@@ -190,22 +190,22 @@ def get_xauthority_path(display_name: str) -> str:
     return os.path.join(d, filename)
 
 
-def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd,
+def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: str, cwd,
                uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
     if OSX:
         raise InitException("starting an Xvfb is not supported on MacOS")
-    if not xvfb_str:
+    if not xvfb_cmd:
         raise InitException("the 'xvfb' command is not defined")
 
     log = get_vfb_logger()
     log("start_Xvfb%s XVFB_EXTRA_ARGS=%s",
-        (xvfb_str, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid),
+        (xvfb_cmd, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid),
         XVFB_EXTRA_ARGS)
     use_display_fd = display_name[0] == 'S'
     if XVFB_EXTRA_ARGS:
-        xvfb_str += " "+XVFB_EXTRA_ARGS
+        xvfb_cmd += shlex.split(XVFB_EXTRA_ARGS)
 
     subs: dict[str, str] = {}
 
@@ -222,9 +222,6 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
 
     # identify logfile argument if it exists,
     # as we may have to rename it, or create the directory for it:
-    xvfb_cmd = shlex.split(xvfb_str)
-    if not xvfb_cmd:
-        raise InitException("cannot start Xvfb, the command definition is missing!")
     # make sure all path values are expanded:
     xvfb_cmd = [pathexpand(s) for s in xvfb_cmd]
 
@@ -295,9 +292,14 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth > 0:
         xvfb_cmd.append("-depth")
         xvfb_cmd.append(str(pixel_depth))
-    env = get_exec_env(keep=("SHELL", "HOSTNAME", "XMODIFIERS",
-                             "PWD", "HOME", "USERNAME", "LANG", "TERM", "USER",
-                             "XDG_RUNTIME_DIR", "XDG_DATA_DIR", "PATH"))
+    keep = [
+        "SHELL", "HOSTNAME", "XMODIFIERS",
+        "PWD", "HOME", "USERNAME", "LANG", "TERM", "USER",
+        "XDG_RUNTIME_DIR", "XDG_DATA_DIR", "PATH",
+    ]
+    env = get_exec_env(keep=keep)
+    if xvfb_executable.endswith("Xephyr"):
+        env["DISPLAY"] = get_saved_env_var("DISPLAY")
     log(f"xvfb env={env}")
     xvfb = None
     try:
@@ -492,7 +494,7 @@ def xauth_add(filename: str, display_name: str, xauth_data: str, uid: int, gid: 
         log.estr(e)
 
 
-def check_xvfb_process(xvfb=None, cmd: str = "Xvfb", timeout: int = 0, command=None) -> bool:
+def check_xvfb_process(xvfb=None, cmd: str = "Xvfb", timeout: int = 0, command=()) -> bool:
     if xvfb is None:
         # we don't have a process to check
         return True
@@ -503,9 +505,9 @@ def check_xvfb_process(xvfb=None, cmd: str = "Xvfb", timeout: int = 0, command=N
     log.error("")
     log.error("%s command has terminated! xpra cannot continue", cmd)
     log.error(" if the display is already running, try a different one,")
-    log.error(" or use the --use-display flag")
+    log.error(" if the `xvfb` command is invalid, try a different one")
     if command:
-        log.error(" full command: %s", command)
+        log.error(" full command: %r", shlex.join(command))
     log.error("")
     return False
 

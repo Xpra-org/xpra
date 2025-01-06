@@ -27,8 +27,16 @@ input-method=auto
 # sync-xvfb = 0
 sync-xvfb = auto
 
-# Virtual display command:
-# - Xvfb option (limited DPI support)
+# Virtual display command
+# common aliases are resolved to full commands at runtime:
+# xvfb = Xvfb
+# xvfb = Xorg
+# xvfb = Xephyr
+# xvfb = weston+Xwayland
+# xvfb = auto
+#
+# full commands:
+# Xvfb option (limited DPI support)
 # xvfb = Xvfb -nolisten tcp -noreset \
 #        +extension GLX +extension Composite \
 #        +extension RANDR +extension RENDER \
@@ -42,7 +50,7 @@ sync-xvfb = auto
 #        +extension GLX +extension Composite \
 #        -auth $XAUTHORITY \
 #        -screen 8192x4096x24+32
-# - Xdummy (better with version 0.4.0 or later):
+# - Xdummy:
 #xvfb = %(xdummy_command)s
 #
 # Selecting virtual X server:
