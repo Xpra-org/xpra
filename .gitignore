@@ -160,6 +160,7 @@ tests/unittests/test-file*
 /xpra/x11/models/*.c
 /xpra/x11/server/*.c
 /xpra/x11/*.c
+/xpra/wayland/wait_for_display.c
 /xpra/*.c
 
 /.mypy_cache/

@@ -200,6 +200,13 @@ BuildRequires:		pkgconfig(gobject-introspection-1.0)
 BuildRequires:		%{python3}-cryptography
 BuildRequires:		%{python3}-numpy
 %endif
+# for now, this is only used by the `xpra wait-for-wayland` subcommand:
+BuildRequires:      wayland-devel
+%if 0%{?el10}
+Recommends:         libwayland-client
+%else
+Suggests:           libwayland-client
+%endif
 %description -n %{package_prefix}-common
 This package contains the files which are shared between the xpra client and server packages.
 
@@ -669,6 +676,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/opengl/
 %{python3_sitearch}/xpra/platform/
 %{python3_sitearch}/xpra/scripts/
+%{python3_sitearch}/xpra/wayland/
 %{python3_sitearch}/xpra-*.egg-info
 
 %files -n %{package_prefix}-x11

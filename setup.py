@@ -233,6 +233,7 @@ def has_header_file(name, isdir=False) -> bool:
 
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
+wayland_ENABLED = not WIN32 and not OSX and pkg_config_ok("--exists", "wayland-client")
 xinput_ENABLED = x11_ENABLED
 uinput_ENABLED = x11_ENABLED
 dbus_ENABLED = DEFAULT and (x11_ENABLED or WIN32) and not OSX
@@ -2691,6 +2692,10 @@ tace(vsock_ENABLED, "xpra.net.vsock.vsock")
 toggle_packages(lz4_ENABLED, "xpra.net.lz4")
 tace(lz4_ENABLED, "xpra.net.lz4.lz4", "liblz4")
 
+toggle_packages(wayland_ENABLED, "xpra.wayland")
+tace(wayland_ENABLED, "xpra.wayland.wait_for_display", "wayland-client")
+
+
 if cythonize_more_ENABLED:
     def ax(base):
         dirname = base.replace(".", os.path.sep)
@@ -2784,6 +2789,9 @@ if cythonize_more_ENABLED:
         ax("xpra.x11.models")
         if server_ENABLED:
             ax("xpra.x11.server")
+    if wayland_ENABLED:
+        ax("xpra.wayland")
+
     ax("xpra.util")
     ace("xpra.common")
     ace("xpra.exit_codes")

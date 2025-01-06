@@ -485,6 +485,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "applications-menu", "sessions-menu",
             "_proxy",
             "configure",
+            "wait-for-x11", "wait-for-wayland",
     ):
         configure_network(options)
         verify_gir()
@@ -857,6 +858,12 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         return run_auth(options, args)
     if mode == "configure":
         from xpra.gtk.configure.main import main
+        return main(args)
+    if mode == "wait-for-x11":
+        from xpra.x11.wait import main
+        return main(args)
+    if mode == "wait-for-wayland":
+        from xpra.wayland.wait import main
         return main(args)
     if mode == "sbom":
         return run_sbom(args)

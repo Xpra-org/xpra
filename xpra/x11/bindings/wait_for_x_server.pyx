@@ -15,9 +15,9 @@ from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
 # timeout is in seconds
 def wait_for_x_server(display_name: str = "", int timeout = 10) -> None:
     cdef Display * d
-    bstr = display_name.encode("latin1")
     cdef char* name = NULL
     if display_name:
+        bstr = display_name.encode("latin1")
         name = bstr
     t = 100
     cdef double start = monotonic()

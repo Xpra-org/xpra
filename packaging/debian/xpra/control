@@ -52,6 +52,7 @@ Build-Depends: debhelper (>= 8)
               ,libbrotli-dev
               ,libxxhash-dev
               ,libqrencode-dev
+              ,libwayland-dev
               ,pandoc
 Standards-Version: 3.9.3
 Homepage: https://xpra.org/
@@ -117,6 +118,7 @@ Recommends: ${qrcode:Depends}
 # printer forwarding:
         ,python3-cups
 Suggests: openssh-server
+        ,libwayland-client0
 Description: tool to detach/reattach running X programs,
  this is the common components for all xpra sub-packages
 
