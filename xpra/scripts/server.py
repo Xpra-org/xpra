@@ -29,6 +29,7 @@ from xpra.scripts.main import (
     make_progress_process,
     load_pid,
     X11_SOCKET_DIR,
+    may_block_numpy,
 )
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
@@ -359,6 +360,7 @@ def enforce_server_features() -> None:
         "windows": "xpra.server.mixins.window,xpra.server.source.windows",
         "rfb": "xpra.net.rfb,xpra.server.rfb",
     })
+    may_block_numpy()
 
 
 def make_monitor_server():

@@ -2116,6 +2116,21 @@ def enforce_client_features() -> None:
         "network_listener": "xpra.client.mixins.network_listener",
         "encoding": "xpra.client.mixins.encodings",
     })
+    may_block_numpy()
+
+
+def may_block_numpy() -> None:
+    if envbool("XPRA_MAY_BLOCK_NUMPY", True) and "numpy" not in sys.modules:
+        reason = ""
+        try:
+            from xpra.codecs.nvidia.util import has_nvidia_hardware
+            if not has_nvidia_hardware():
+                reason = "no nvidia hardware"
+        except ImportError:
+            reason = "no nvidia codecs"
+        if reason:
+            get_logger().debug(f"{reason}, blocking `numpy` import")
+            sys.modules["numpy"] = None
 
 
 def make_client(opts):
