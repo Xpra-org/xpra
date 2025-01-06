@@ -12,16 +12,11 @@ exit
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 %define python3_version %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[0]}.{vi[1]}")' 2> /dev/null)
-%define python3_minor %(%{python3} -c 'import sys;vi=sys.version_info;print(f"{vi[1]}")' 2> /dev/null)
 
 %global pypi_name wheel
 Name:           %{python3}-%{pypi_name}
 Release:        2%{?dist}
-%if 0%{python3_minor} < 7
-Version:        0.33.6
-%else
 Version:        0.45.1
-%endif
 Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
 Provides:       bundled(python3dist(packaging)) = 20.9
@@ -45,11 +40,7 @@ It has two different roles:
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-%if 0%{python3_minor} < 7
-if [ "${sha256}" != "10c9da68765315ed98850f8e048347c3eb06dd81822dc2ab1d4fde9dc9702646" ]; then
-%else
 if [ "${sha256}" != "661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729" ]; then
-%endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -89,6 +80,9 @@ mv %{buildroot}%{_bindir}/%{pypi_name} %{buildroot}%{_bindir}/%{pypi_name}-%{pyt
 
 
 %changelog
+* Mon Jan 06 2025 Antoine Martin <antoine@xpra.org> - 0.45.1-2
+- new upstream release
+
 * Thu Apr 25 2024 Antoine Martin <antoine@xpra.org> - 0.43.0-1
 - new upstream release
 
