@@ -2393,7 +2393,7 @@ if WIN32 or OSX:
         )
 
 if POSIX and ism_ext_ENABLED:
-    ism_dir = "/share/gnome-shell/extensions/input-source-manager@xpra_org"
+    ism_dir = "share/gnome-shell/extensions/input-source-manager@xpra_org"
     add_data_files(ism_dir, glob(f"fs/{ism_dir}/*"))
     add_data_files(ism_dir, ["COPYING"])
 
