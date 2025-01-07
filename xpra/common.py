@@ -276,7 +276,7 @@ ScreenshotData = tuple[int, int, str, int, bytes]
 
 
 MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 5)
-MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 120)
+MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 144)
 
 
 def i(value, default: int) -> int:
