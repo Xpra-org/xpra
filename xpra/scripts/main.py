@@ -2787,12 +2787,16 @@ def run_example(args) -> ExitValue:
         "window-opacity", "window-overrideredirect",
         "window-states", "window-title",
         "window-transient",
+        "opengl",
+        "view-keyboard", "view-clipboard",
     )
     if not args or args[0] not in all_examples:
-        raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(all_examples)}")
-    classname = args[0].replace("-", "_")
+        raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(sorted(all_examples))}")
+    example = args[0]
+    modpath = "xpra.gtk.dialogs" if example in ("view-keyboard", "view-clipboard") else "xpra.gtk.examples"
+    classname = example.replace("-", "_")
     try:
-        ic = __import__(f"xpra.gtk.examples.{classname}", {}, {}, "main")
+        ic = __import__(f"{modpath}.{classname}", {}, {}, "main")
     except ImportError as e:
         raise InitException(f"failed to import example {classname}: {e}") from None
     return ic.main()

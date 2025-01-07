@@ -6,7 +6,6 @@
 # pylint: disable=wrong-import-position
 
 import sys
-import glob
 import os.path
 import subprocess
 from collections.abc import Iterable, Sequence
@@ -17,7 +16,8 @@ from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.dialogs.util import hb_button
-from xpra.platform.paths import get_python_execfile_command, get_python_exec_command
+from xpra.scripts.main import run_example
+from xpra.platform.paths import get_xpra_command
 from xpra.os_util import WIN32, gi_import
 from xpra.util.env import IgnoreWarningsContext
 from xpra.log import Logger
@@ -44,72 +44,47 @@ TITLE = "Xpra Toolbox"
 EPATH = "xpra.gtk.examples."
 BUTTON_GROUPS: dict[str, Iterable[tuple[str, str, str]]] = {
     "Colors": (
-        ("Squares", "Shows RGB+Grey squares in a window", EPATH + "colors_plain"),
-        ("Animated", "Shows RGB+Grey squares animated", EPATH + "colors"),
-        ("Bit Depth", "Shows color gradients and visualize bit depth clipping", EPATH + "colors_gradient"),
+        ("Squares", "Shows RGB+Grey squares in a window", "colors-plain"),
+        ("Animated", "Shows RGB+Grey squares animated", "colors"),
+        ("Bit Depth", "Shows color gradients and visualize bit depth clipping", "colors-gradient"),
     ),
     "Transparency and Rendering": (
-        ("Circle", "Shows a semi-opaque circle in a transparent window", EPATH + "transparent_window"),
-        ("RGB Squares", "RGB+Black shaded squares in a transparent window", EPATH + "transparent_colors"),
-        ("OpenGL", "OpenGL window - transparent on some platforms", EPATH + "opengl"),
+        ("Circle", "Shows a semi-opaque circle in a transparent window", "transparent-window"),
+        ("RGB Squares", "RGB+Black shaded squares in a transparent window", "transparent-colors"),
+        ("OpenGL", "OpenGL window - transparent on some platforms", "opengl"),
     ),
     "Widgets": (
-        ("Text Entry", "Simple text entry widget", EPATH + "text_entry"),
-        ("File Selector", "Open the file selector widget", EPATH + "file_chooser"),
-        ("Header Bar", "Window with a custom header bar", EPATH + "header_bar"),
+        ("Text Entry", "Simple text entry widget", "text-entry"),
+        ("File Selector", "Open the file selector widget", "file-chooser"),
+        ("Header Bar", "Window with a custom header bar", "header-bar"),
     ),
     "Events": (
-        ("Grabs", "Test keyboard and pointer grabs", EPATH + "grabs"),
-        ("Clicks", "Double and triple click events", EPATH + "clicks"),
-        ("Focus", "Shows window focus events", EPATH + "window_focus"),
+        ("Grabs", "Test keyboard and pointer grabs", "grabs"),
+        ("Clicks", "Double and triple click events", "clicks"),
+        ("Focus", "Shows window focus events", "window-focus"),
     ),
     "Windows": (
-        ("States", "Toggle various window attributes", EPATH + "window_states"),
-        ("Title", "Update the window title", EPATH + "window_title"),
-        ("Opacity", "Change window opacity", EPATH + "window_opacity"),
-        ("Transient", "Show transient windows", EPATH + "window_transient"),
-        ("Override Redirect", "Shows an override redirect window", EPATH + "window_overrideredirect"),
+        ("States", "Toggle various window attributes", "window-states"),
+        ("Title", "Update the window title", "window-title"),
+        ("Opacity", "Change window opacity", "window-opacity"),
+        ("Transient", "Show transient windows", "window-transient"),
+        ("Override Redirect", "Shows an override redirect window", "window-overrideredirect"),
     ),
     "Geometry": (
-        ("Size constraints", "Specify window geometry size constraints", EPATH + "window_geometry_hints"),
-        ("Move-Resize", "Initiate move resize from application", EPATH + "initiate_moveresize"),
+        ("Size constraints", "Specify window geometry size constraints", "window-geometry-hints"),
+        ("Move-Resize", "Initiate move resize from application", "initiate-moveresize"),
     ),
     "Keyboard and Clipboard": (
-        ("Keyboard", "Keyboard event viewer", "xpra.gtk.dialogs.view_keyboard"),
-        ("Clipboard", "Clipboard event viewer", "xpra.gtk.dialogs.view_clipboard"),
+        ("Keyboard", "Keyboard event viewer", "view-keyboard"),
+        ("Clipboard", "Clipboard event viewer", "view-clipboard"),
     ),
     "Misc": (
-        ("Tray", "Show a system tray icon", EPATH + "tray"),
-        ("Font Rendering", "Render characters with and without anti-aliasing", EPATH + "fontrendering"),
-        ("Bell", "Test system bell", EPATH + "bell"),
-        ("Cursors", "Show named cursors", EPATH + "cursors"),
+        ("Tray", "Show a system tray icon", "tray"),
+        ("Font Rendering", "Render characters with and without anti-aliasing", "fontrendering"),
+        ("Bell", "Test system bell", "bell"),
+        ("Cursors", "Show named cursors", "cursors"),
     ),
 }
-
-
-def get_cmd(modpath: str) -> list[str]:
-    cp = os.path.dirname(__file__)
-    script_path = os.path.join(cp, "../../../" + modpath.replace(".", "/"))
-    if WIN32 and os.path.sep == "/":
-        script_path = script_path.replace("/", "\\")
-    script_path = os.path.abspath(script_path)
-    script = script_path + ".py"
-    cmd = []
-    if os.path.exists(script):
-        cmd = get_python_execfile_command() + [script]
-    else:
-        for compiled_ext in (".pyc", ".*.pyd", ".*.so"):
-            script = script_path + compiled_ext
-            matches = glob.glob(script)
-            log(f"glob.glob({script})={matches}")
-            if matches and os.path.exists(matches[0]):
-                cmd = get_python_exec_command() + [f"from {modpath} import main;main()"]
-                break
-    if not cmd:
-        log.warn(f"Warning: cannot find '{modpath}'")
-    else:
-        log(f"{modpath!r} : {cmd}")
-    return cmd
 
 
 class ToolboxGUI(Gtk.Window):
@@ -161,15 +136,11 @@ class ToolboxGUI(Gtk.Window):
         self.vbox.show_all()
 
     @staticmethod
-    def button(label_str, tooltip, modpath, enabled=True) -> Gtk.Button:
-        cmd = get_cmd(modpath)
-        if not cmd:
-            enabled = False
-            log.warn(f"Warning: cannot find '{modpath}'")
-        else:
-            log(f"{label_str} : {cmd}")
+    def button(label_str, tooltip, example="", enabled=True) -> Gtk.Button:
+        log(f"{label_str} : {example}")
 
-        def cb(_btn):
+        def cb(_btn) -> None:
+            cmd = get_xpra_command() + ["example", example]
             proc = exec_command(cmd)
             getChildReaper().add_process(proc, label_str, cmd, ignore=True, forget=True)
 
@@ -197,12 +168,7 @@ def main(args) -> int:
     if len(args) == 1:
         # find a matching script or label:
         match = args[0].lower()
-        for category, button_defs in BUTTON_GROUPS.items():
-            for btn_label, tooltip, modpath in button_defs:
-                if btn_label.lower() == match or modpath.split(".")[-1] == match:
-                    cmd = get_cmd(modpath)
-                    proc = exec_command(cmd)
-                    return proc.wait()
+        return run_example(match)
 
     from xpra.platform import program_context
     from xpra.log import enable_color
