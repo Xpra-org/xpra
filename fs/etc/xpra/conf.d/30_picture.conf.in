@@ -85,7 +85,7 @@ pixel-depth = 0
 # in Hertz, as a percentage of the value detected, or as a range:
 # refresh-rate = auto
 # refresh-rate = 60
-# refresh-rate = 50%
+# refresh-rate = 50%%
 # refresh-rate = 10-144
 refresh-rate = auto
 
