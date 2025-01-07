@@ -42,6 +42,7 @@ def get_NM_adapter_type(device_name, ignore_inactive=True) -> str:
         log("NM.Client.new(None)", exc_info=True)
         log.warn("Warning: failed to query network manager")
         log.warn(" %s", e)
+        return ""
     if device_name:
         nmdevice = nmclient.get_device_by_iface(device_name)
     else:
