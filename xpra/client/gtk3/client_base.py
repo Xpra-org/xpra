@@ -437,6 +437,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return
         log(f"show_start_new_command{args} current {self.start_new_command=}, flag={self.server_start_new_commands}")
         if self.start_new_command is None:
+            log("server_xdg_menu=%s", Ellipsizer(self.server_xdg_menu))
             from xpra.gtk.dialogs.start_new_command import getStartNewCommand
 
             def run_command_cb(command, sharing=True):
