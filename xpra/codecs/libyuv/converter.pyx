@@ -311,8 +311,8 @@ def argb_to_gray(image: ImageWrapper) -> ImageWrapper:
     return gray_image
 
 
-def argb_scale(image, int src_width, int src_height,
-                      int dst_width, int dst_height, FilterMode filtermode=kFilterNone) -> ImageWrapper:
+def argb_scale(image: ImageWrapper, int src_width, int src_height,
+               int dst_width, int dst_height, FilterMode filtermode=kFilterNone) -> ImageWrapper:
     cdef iplanes = image.get_planes()
     pixels = image.get_pixels()
     cdef int stride = image.get_rowstride()
