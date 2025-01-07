@@ -478,7 +478,7 @@ class Logger:
         if LOG_PREFIX:
             msg = LOG_PREFIX+msg
         frame = kwargs.pop("frame", None)
-        backtrace = kwargs.pop("backtrace", level >= BACKTRACE_LEVEL) or frame
+        backtrace = kwargs.pop("backtrace", level >= BACKTRACE_LEVEL) or bool(frame)
         global_logging_handler(self._logger.log, self.level_override or level, msg, *args, **kwargs)
         if exc_info:
             return

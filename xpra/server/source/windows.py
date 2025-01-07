@@ -519,7 +519,7 @@ class WindowsMixin(StubSourceMixin):
         w, h = window.get_dimensions()
         self.damage(wid, window, 0, 0, w, h, opts)
 
-    def update_batch(self, wid: int, window, batch_props) -> None:
+    def update_batch(self, wid: int, window, batch_props: typedict) -> None:
         ws = self.window_sources.get(wid)
         if ws:
             if "reset" in batch_props:
