@@ -320,11 +320,16 @@ class DisplayManager(StubServerMixin):
 
     def apply_refresh_rate(self, ss) -> int:
         rrate = self.get_client_refresh_rate(ss)
+        log(f"apply_refresh_rate({ss}) rate={rrate}")
         if rrate > 0:
             self.set_window_refresh_rate(ss, rrate)
         return rrate
 
     def set_window_refresh_rate(self, ss, rrate: int):
+        if hasattr(ss, "default_batch_config"):
+            ss.default_batch_config.match_vrefresh(rrate)
+        if hasattr(ss, "global_batch_config"):
+            ss.global_batch_config.match_vrefresh(rrate)
         if hasattr(ss, "all_window_sources"):
             for window_source in ss.all_window_sources():
                 bc = window_source.batch_config
@@ -348,7 +353,7 @@ class DisplayManager(StubServerMixin):
         if vrefresh:
             rrate = min(vrefresh)
             if self.refresh_rate:
-                rrate = get_refresh_rate_for_value(self.refresh_rate, rrate)
+                rrate = get_refresh_rate_for_value(self.refresh_rate, rrate, multiplier=1000)
             rrate //= 1000
         log("get_client_refresh_rate(%s)=%s (from %s)", ss, rrate, vrefresh)
         return rrate
