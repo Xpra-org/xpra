@@ -15,12 +15,13 @@ gi.require_version("Gdk", "3.0")  # @UndefinedVariable
 from gi.repository import Gtk, Gio  # @UnresolvedImport
 
 from xpra.gtk_common.gobject_compat import register_os_signals
+from xpra.child_reaper import getChildReaper
 from xpra.gtk_common.gtk_util import (
     add_close_accel, get_icon_pixbuf,
     imagebutton,
     label,
     )
-from xpra.platform.paths import get_python_execfile_command
+from xpra.platform.paths import get_xpra_command
 from xpra.os_util import WIN32, OSX, is_X11
 from xpra.log import Logger
 
@@ -39,6 +40,50 @@ def exec_command(cmd):
 
 
 TITLE = "Xpra Toolbox"
+
+BUTTON_GROUPS = {
+    "Colors": (
+        ("Squares", "Shows RGB+Grey squares in a window", "colors-plain"),
+        ("Animated", "Shows RGB+Grey squares animated", "colors"),
+        ("Bit Depth", "Shows color gradients and visualize bit depth clipping", "colors-gradient"),
+    ),
+    "Transparency and Rendering": (
+        ("Circle", "Shows a semi-opaque circle in a transparent window", "transparent-window"),
+        ("RGB Squares", "RGB+Black shaded squares in a transparent window", "transparent-colors"),
+        ("OpenGL", "OpenGL window - transparent on some platforms", "opengl"),
+    ),
+    "Widgets": (
+        ("Text Entry", "Simple text entry widget", "text-entry"),
+        ("File Selector", "Open the file selector widget", "file-chooser"),
+        ("Header Bar", "Window with a custom header bar", "header-bar"),
+    ),
+    "Events": (
+        ("Grabs", "Test keyboard and pointer grabs", "grabs"),
+        ("Clicks", "Double and triple click events", "clicks"),
+        ("Focus", "Shows window focus events", "window-focus"),
+    ),
+    "Windows": (
+        ("States", "Toggle various window attributes", "window-states"),
+        ("Title", "Update the window title", "window-title"),
+        ("Opacity", "Change window opacity", "window-opacity"),
+        ("Transient", "Show transient windows", "window-transient"),
+        ("Override Redirect", "Shows an override redirect window", "window-overrideredirect"),
+    ),
+    "Geometry": (
+        ("Size constraints", "Specify window geometry size constraints", "window-geometry-hints"),
+        ("Move-Resize", "Initiate move resize from application", "initiate-moveresize"),
+    ),
+    "Keyboard and Clipboard": (
+        ("Keyboard", "Keyboard event viewer", "view-keyboard"),
+        ("Clipboard", "Clipboard event viewer", "view-clipboard"),
+    ),
+    "Misc": (
+        ("Tray", "Show a system tray icon", "tray"),
+        ("Font Rendering", "Render characters with and without anti-aliasing", "fontrendering"),
+        ("Bell", "Test system bell", "bell"),
+        ("Cursors", "Show named cursors", "cursors"),
+    ),
+}
 
 
 class ToolboxGUI(Gtk.Window):
@@ -82,62 +127,16 @@ class ToolboxGUI(Gtk.Window):
         self.vbox = Gtk.VBox(homogeneous=False, spacing=10)
         self.add(self.vbox)
 
-        epath = "example/"
-        cpath = "../"
-        gpath = "../../gtk_common/"
-
         def addhbox(blabel, buttons):
-            self.vbox.add(self.label(blabel))
+            self.vbox.add(label(blabel, font="sans 14"))
             hbox = Gtk.HBox(homogeneous=False, spacing=10)
             self.vbox.add(hbox)
             for button in buttons:
                 if button:
                     hbox.add(self.button(*button))
 
-        #some things don't work on wayland:
-        wox11 = WIN32 or OSX or (os.environ.get("GDK_BACKEND", "")=="x11" or is_X11())
-
-        addhbox("Colors:", (
-            ("Squares", "Shows RGB+Grey squares in a window", epath+"colors_plain.py"),
-            ("Animated", "Shows RGB+Grey squares animated", epath+"colors.py"),
-            ("Bit Depth", "Shows color gradients and visualize bit depth clipping", epath+"colors_gradient.py"),
-            ))
-        addhbox("Transparency and Rendering", (
-            ("Circle", "Shows a semi-opaque circle in a transparent window", epath+"transparent_window.py"),
-            ("RGB Squares", "RGB+Black shaded squares in a transparent window", epath+"transparent_colors.py"),
-            ("OpenGL", "OpenGL window - transparent on some platforms", cpath+"gl/window_backend.py", wox11),
-            ))
-        addhbox("Widgets:", (
-            ("Text Entry", "Simple text entry widget", epath+"text_entry.py"),
-            ("File Selector", "Open the file selector widget", epath+"file_chooser.py"),
-            ("Header Bar", "Window with a custom header bar", epath+"header_bar.py"),
-            ))
-        addhbox("Events:", (
-            ("Grabs", "Test keyboard and pointer grabs", epath+"grabs.py"),
-            ("Clicks", "Double and triple click events", epath+"clicks.py"),
-            ("Focus", "Shows window focus events", epath+"window_focus.py"),
-            ))
-        addhbox("Windows:", (
-            ("States", "Toggle various window attributes", epath+"window_states.py"),
-            ("Title", "Update the window title", epath+"window_title.py"),
-            ("Opacity", "Change window opacity", epath+"window_opacity.py"),
-            ("Transient", "Show transient windows", epath+"window_transient.py"),
-            ("Override Redirect", "Shows an override redirect window", epath+"window_overrideredirect.py"),
-            ))
-        addhbox("Geometry:", (
-            ("Size constraints", "Specify window geometry size constraints", epath+"window_geometry_hints.py"),
-            ("Move-Resize", "Initiate move resize from application", epath+"initiate_moveresize.py", wox11),
-            ))
-        addhbox("Keyboard and Clipboard:", (
-            ("Keyboard", "Keyboard event viewer", gpath+"gtk_view_keyboard.py"),
-            ("Clipboard", "Clipboard event viewer", gpath+"gtk_view_clipboard.py"),
-            ))
-        addhbox("Misc:", (
-                ("Tray", "Show a system tray icon", epath+"tray.py"),
-                ("Font Rendering", "Render characters with and without anti-aliasing", epath+"fontrendering.py"),
-                ("Bell", "Test system bell", epath+"bell.py"),
-                ("Cursors", "Show named cursors", epath+"cursors.py"),
-                ))
+        for category, button_defs in BUTTON_GROUPS.items():
+            addhbox(f"{category}:", button_defs)
         self.vbox.show_all()
 
     @staticmethod
@@ -145,23 +144,17 @@ class ToolboxGUI(Gtk.Window):
         return label(text, font="sans 14")
 
     @staticmethod
-    def button(label_str, tooltip, relpath, enabled=True):
-        def cb(_btn):
-            cp = os.path.dirname(__file__)
-            script = os.path.join(cp, relpath)
-            if WIN32 and os.path.sep=="/":
-                script = script.replace("/", "\\")
-            if not os.path.exists(script):
-                if os.path.exists(script+"c"):
-                    script += "c"
-                else:
-                    log.warn("Warning: cannot find '%s'", os.path.basename(relpath))
-                    return
-            cmd = get_python_execfile_command()+[script]
-            exec_command(cmd)
+    def button(label_str, tooltip, example="", enabled=True) -> Gtk.Button:
+        log(f"{label_str} : {example}")
+
+        def cb(_btn) -> None:
+            cmd = get_xpra_command() + ["example", example]
+            proc = exec_command(cmd)
+            getChildReaper().add_process(proc, label_str, cmd, ignore=True, forget=True)
+
         ib = imagebutton(label_str, None,
-                           tooltip, clicked_callback=cb,
-                           icon_size=48)
+                         tooltip, clicked_callback=cb,
+                         icon_size=48)
         ib.set_sensitive(enabled)
         return ib
 
@@ -180,7 +173,12 @@ class ToolboxGUI(Gtk.Window):
         about()
 
 
-def main():
+def main(args) -> int:
+    if len(args) == 1:
+        # find a matching script or label:
+        match = args[0].lower()
+        return run_example(match)
+
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.platform.gui import init, ready, set_default_icon
@@ -200,5 +198,5 @@ def main():
 
 
 if __name__ == "__main__":
-    r = main()
+    r = main(sys.argv[1:])
     sys.exit(r)

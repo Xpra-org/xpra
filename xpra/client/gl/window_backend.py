@@ -181,7 +181,7 @@ def test_gl_client_window(gl_client_window_class : Type, max_window_size=(1024, 
 
 
 
-def main(argv):
+def main(argv=()):
     from xpra.platform import program_context
     with program_context("opengl", "OpenGL"):
         try:

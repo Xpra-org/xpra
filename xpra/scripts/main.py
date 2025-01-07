@@ -710,7 +710,7 @@ def do_run_mode(script_file:str, cmdline, error_cb, options, args, mode:str, def
     if mode=="toolbox":
         check_gtk_client()
         from xpra.client.gtk3 import toolbox
-        return toolbox.main()
+        return toolbox.main(args)
     if mode == "initenv":
         if not POSIX:
             raise InitExit(ExitCode.UNSUPPORTED, "initenv is not supported on this OS")
@@ -2379,12 +2379,22 @@ def run_example(args) -> int:
         "window-opacity", "window-overrideredirect",
         "window-states", "window-title",
         "window-transient",
+        "opengl",
+        "view-keyboard", "view-clipboard",
         )
     if not args or args[0] not in all_examples:
         raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(all_examples)}")
-    classname = args[0].replace("-", "_")
+    example = args[0]
+    modpath = "xpra.client.gtk3.example"
+    if example in ("view-keyboard", "view-clipboard"):
+        example = f"gtk_{example}"
+        modpath = "xpra.gtk_common"
+    elif example == "opengl":
+        modpath = "xpra.client.gl"
+        example = "window_backend"
+    classname = example.replace("-", "_")
     try:
-        ic =  __import__(f"xpra.client.gtk3.example.{classname}", {}, {}, "main")
+        ic = __import__(f"{modpath}.{classname}", {}, {}, "main")
     except ImportError as e:
         raise InitException(f"failed to import example {classname}: {e}") from None
     return ic.main()
