@@ -11,7 +11,7 @@ from xpra.os_util import gi_import
 from xpra.util.env import envint
 from xpra.util.str_fn import csv
 from xpra.util.thread import start_thread
-from xpra.gtk.configure.common import DISCLAIMER, run_gui
+from xpra.gtk.configure.common import run_gui
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
 from xpra.platform.paths import get_image
@@ -208,3 +208,12 @@ def main(_args) -> int:
 if __name__ == "__main__":
     import sys
     sys.exit(main(sys.argv[1:]))
+DISCLAIMER = """
+IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES(INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT(INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+""".replace("\n", "")

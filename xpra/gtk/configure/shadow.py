@@ -7,7 +7,8 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.env import envint
-from xpra.gtk.configure.common import run_gui, get_config_env, update_config_env
+from xpra.gtk.configure.common import run_gui
+from xpra.util.config import update_config_env, get_config_env
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label, setfont
 from xpra.log import Logger

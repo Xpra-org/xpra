@@ -14,7 +14,8 @@ from xpra.util.objects import typedict
 from xpra.platform.paths import get_image, get_image_dir
 from xpra.util.io import load_binary_file
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
-from xpra.gtk.configure.common import sync, parse_user_config_file, save_user_config_file, get_user_config_file, run_gui
+from xpra.gtk.configure.common import sync, run_gui
+from xpra.util.config import get_user_config_file, parse_user_config_file, save_user_config_file
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
