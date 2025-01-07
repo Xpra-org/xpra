@@ -47,14 +47,15 @@ class Capture(Pipeline):
     __gsignals__ = Pipeline.__generic_signals__.copy()
     __gsignals__["new-image"] = n_arg_signal(3)
 
-    def __init__(self, element: str = "ximagesrc", pixel_format: str = "BGRX", width: int = 0, height: int = 0):
+    def __init__(self, element: str = "ximagesrc", pixel_format: str = "BGRX",
+                 width: int = 0, height: int = 0, framerate: int = 0):
         super().__init__()
         self.capture_element = element.split(" ")[0]
         self.pixel_format: str = pixel_format
         self.width: int = width
         self.height: int = height
         self.frames: int = 0
-        self.framerate: int = 10
+        self.framerate: int = framerate
         self.image: Queue[ImageWrapper] = Queue(maxsize=1)
         self.sink = None
         self.capture = None
@@ -65,7 +66,10 @@ class Capture(Pipeline):
     def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
         elements = [
             f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
-            # f"video/x-raw,framerate={self.framerate}/1",
+        ]
+        if self.framerate > 0:
+            elements.append(f"video/x-raw,framerate={self.framerate}/1")
+        elements += [
             "videoconvert",
             "appsink name=sink emit-signals=true max-buffers=10 drop=true sync=false async=false qos=false",
         ]
@@ -199,10 +203,10 @@ class CaptureAndEncode(Capture):
     """
 
     def __init__(self, element: str = "ximagesrc", encoding="vp8", encoder="vp8enc",
-                 pixel_format: str = "YUV420P", width: int = 0, height: int = 0):
+                 pixel_format: str = "YUV420P", width: int = 0, height: int = 0, framerate: int = 0):
         self.encoding = encoding
         self.encoder = encoder
-        super().__init__(element, pixel_format, width, height)
+        super().__init__(element, pixel_format, width, height, framerate)
 
     def create_pipeline(self, capture_element: str = "ximagesrc") -> None:
         options = typedict({
@@ -222,6 +226,10 @@ class CaptureAndEncode(Capture):
         gst_encoding = get_gst_encoding(self.encoding)  # ie: "hevc" -> "video/x-h265"
         elements = [
             f"{capture_element} name=capture",  # ie: ximagesrc or pipewiresrc
+        ]
+        if self.framerate > 0:
+            elements.append(f"video/x-raw,framerate={self.framerate}/1")
+        elements += [
             "queue leaky=2 max-size-buffers=1",
             "videoconvert",
             "video/x-raw,format=%s" % get_gst_rgb_format(self.pixel_format),

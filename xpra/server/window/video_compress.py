@@ -28,7 +28,7 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder, CSCSpec
 from xpra.codecs.loader import has_codec
-from xpra.common import roundup
+from xpra.common import roundup, MIN_VREFRESH, MAX_VREFRESH
 from xpra.util.parsing import parse_scaling_value
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, print_nested_dict, memoryview_to_bytes
@@ -695,7 +695,11 @@ class WindowVideoSource(WindowSource):
             attrs["xid"] = xid
         capture_element = plugin_str("ximagesrc", attrs)
         w, h = self.window_dimensions
-        self.gstreamer_pipeline = capture_and_encode(capture_element, self.encoding, self.full_csc_modes, w, h)
+        framerate = 0
+        if self.batch_config.min_delay > 20:
+            framerate = max(MIN_VREFRESH, min(MAX_VREFRESH, round(1000 / self.batch_config.min_delay)))
+        self.gstreamer_pipeline = capture_and_encode(capture_element, self.encoding, self.full_csc_modes,
+                                                     w, h, framerate)
         if not self.gstreamer_pipeline:
             return False
         self.gstreamer_pipeline.connect("new-image", self.new_gstreamer_frame)
