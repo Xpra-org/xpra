@@ -41,7 +41,6 @@ def exec_command(cmd: Sequence[str]) -> subprocess.Popen:
 
 TITLE = "Xpra Toolbox"
 
-EPATH = "xpra.gtk.examples."
 BUTTON_GROUPS: dict[str, Iterable[tuple[str, str, str]]] = {
     "Colors": (
         ("Squares", "Shows RGB+Grey squares in a window", "colors-plain"),
