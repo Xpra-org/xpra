@@ -915,8 +915,39 @@ fi
 
 
 %changelog
-* Thu Dec 19 2024 Antoine Martin <antoine@xpra.org> 6.2.3-10
-- TODO
+* Tue Jan 07 2025 Antoine Martin <antoine@xpra.org> 6.2.3-10
+- Platforms, build and packaging:
+   pillow 11.1.0
+   `exe` installer standalone step
+   handle diverging RHEL clone packaging behaviour
+   move default package list for newer build script default
+- RHEL 10 builds:
+   package Qt6 client
+   use `weston` + `Xwayland` as xvfb on RHEL 10
+   provide wrapper script for `weston` + `Xwayland`
+   replace `noopenh264` with `openh264`
+   `AlmaLinux` `10-kitten` package list
+   `CentOS` `stream10` package list
+- Major:
+   Network Manager API errors in some environments
+   websocket connection loss with some proxies sending empty payloads
+   handle broken `pyopengl-accelerate` installations more gracefully
+- Clipboard:
+   always claim the clipboard selection when updated
+   always update the peer when the owner changes
+- Desktop mode:
+   better compatibility with some window managers when resizing
+   handle fixed size desktops correctly
+- Minor:
+   hide 'configure shadow server' on light builds
+   typo in `nvjpeg` encoder / decoder build switches
+   `libexec` scripts installed twice
+   icon glob lookup mismatch
+   division by zero on MS Windows
+   update keyboard layout mapping for `ku` and `ir`
+- Cosmetic:
+   `openh264` license tag
+
 * Tue Dec 10 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection

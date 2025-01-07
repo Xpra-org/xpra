@@ -1,7 +1,37 @@
 # Changelog
 
-## [6.2.3] 2024-12-19
-* TODO
+## [6.2.3] 2025-01-07
+* Platforms, build and packaging:
+    * [pillow 11.1.0](https://github.com/Xpra-org/xpra/commit/e6891f9dffa6f6ab8cd2b78418870350a3d0d3f8)
+    * [`exe` installer standalone step](https://github.com/Xpra-org/xpra/commit/05ff96bfe332d5086ca1348984cee670e33cb18f)
+    * [handle diverging RHEL clone packaging behaviour](https://github.com/Xpra-org/xpra/commit/cbcaa56c822e56a609406358e85114c32dc23568)
+    * [move default package list for newer build script default](https://github.com/Xpra-org/xpra/commit/81a84f72bb2cdd500284cfb52f2fef16600819c2)
+* RHEL 10 builds:
+    * [package Qt6 client](https://github.com/Xpra-org/xpra/commit/dd9043eebc3a7c697baa1e25bcce3d27fcedaa72)
+    * [use `weston` + `Xwayland` as xvfb on RHEL 10](https://github.com/Xpra-org/xpra/commit/31f5ad2348e37c298996c7779956c8eb31e5a677)
+    * [provide wrapper script for `weston` + `Xwayland`](https://github.com/Xpra-org/xpra/commit/98f8f7011dfdaed45b36ba50acc8f0b9ac8e8cd8)
+    * [replace `noopenh264` with `openh264`](https://github.com/Xpra-org/xpra/commit/788456259fb3deae8b8361f814fd811dc35ab383)
+    * [`AlmaLinux` `10-kitten` package list](https://github.com/Xpra-org/xpra/commit/c9a9e2c7834f5a9e746d6c57224aa17488ac2f55)
+    * [`CentOS` `stream10` package list](https://github.com/Xpra-org/xpra/commit/745f3e8745277ad333b07776bc87c17e96be2ec2)
+* Major:
+    * [Network Manager API errors in some environments](https://github.com/Xpra-org/xpra/commit/ad855baecd62fc204c69508b59e0cfe908a0d634)
+    * [websocket connection loss with some proxies sending empty payloads](https://github.com/Xpra-org/xpra/commit/9c4a12e6a9b4639de9bc348623e20760e39a8814)
+    * [handle broken `pyopengl-accelerate` installations more gracefully](https://github.com/Xpra-org/xpra/commit/3d45e2986bb8fc962eaea4fea0e2b88ec2b9ee95)
+* Clipboard:
+    * [always claim the clipboard selection when updated](https://github.com/Xpra-org/xpra/commit/8b1fd56e7e5e0198f2aed0d89b329bd7c9bcbcf6)
+    * [always update the peer when the owner changes](https://github.com/Xpra-org/xpra/commit/e7e5f68ac6a2c89bcdf560b4d8ea02856f04cd12)
+* Desktop mode:
+    * [better compatibility with some window managers when resizing](https://github.com/Xpra-org/xpra/commit/bcfdec08695ae86d2e1cd96a385ed1b264057940)
+    * [handle fixed size desktops correctly](https://github.com/Xpra-org/xpra/commit/2a1854e3f2267c2bacce76bf0fe6d1900cf8e93a)
+* Minor:
+    * [hide 'configure shadow server' on light builds](https://github.com/Xpra-org/xpra/commit/7de653ee886aa9c5bab1eecb22ec481ee1db5f49)
+    * [typo in `nvjpeg` encoder / decoder build switches](https://github.com/Xpra-org/xpra/commit/8f88a0659ae05fd7469160e4706d1924d6297cc3)
+    * [`libexec` scripts installed twice](https://github.com/Xpra-org/xpra/commit/83825717f43800f49b47263f7d3024ffb0c9159a)
+    * [icon glob lookup mismatch](https://github.com/Xpra-org/xpra/commit/a68bf4e0cdee8c5e5453bbc6803cdad80892aca4)
+    * [division by zero on MS Windows](https://github.com/Xpra-org/xpra/commit/e55643b5e28bf4eee036f8378c0c15376f53565d)
+    * [update keyboard layout mapping for `ku` and `ir`](https://github.com/Xpra-org/xpra/commit/9713037378b8f3333396f54b2f54073eddef25fd)
+* Cosmetic:
+    * [`openh264` license tag](https://github.com/Xpra-org/xpra/commit/1a18f6e8b0f1b86f2cb36c1d31028b8ff0b863a5)
 
 ## [6.2.2] 2024-12-10
 * Platforms, build and packaging:
