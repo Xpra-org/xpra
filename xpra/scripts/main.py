@@ -56,6 +56,7 @@ from xpra.scripts.config import (
     find_docs_path, find_html5_path,
     dict_to_validated_config, get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
     make_defaults_struct, str_to_bool, parse_bool_or, has_audio_support, name_to_field,
+    xvfb_command,
 )
 from xpra.net.common import (
     DEFAULT_PORTS, SOCKET_TYPES, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX,
@@ -486,6 +487,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "_proxy",
             "configure",
             "wait-for-x11", "wait-for-wayland",
+            "xvfb-command", "xvfb",
     ):
         configure_network(options)
         verify_gir()
@@ -865,6 +867,9 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode == "wait-for-wayland":
         from xpra.wayland.wait import main
         return main(args)
+    if mode == "xvfb-command":
+        print(shlex.join(xvfb_command(options.xvfb, options.pixel_depth, options.dpi)))
+        return ExitCode.OK
     if mode == "sbom":
         return run_sbom(args)
     if mode == "showconfig":
