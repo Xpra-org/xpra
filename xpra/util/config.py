@@ -16,13 +16,16 @@ from xpra.util.parsing import parse_simple_dict
 from xpra.util.thread import start_thread
 
 
-def get_user_config_file() -> str:
+CONFIGURE_TOOL_CONFIG = "99_configure_tool.conf"
+
+
+def get_user_config_file(filename=CONFIGURE_TOOL_CONFIG) -> str:
     from xpra.platform.paths import get_user_conf_dirs
-    return osexpand(os.path.join(get_user_conf_dirs()[0], "conf.d", "99_configure_tool.conf"))
+    return osexpand(os.path.join(get_user_conf_dirs()[0], "conf.d", filename))
 
 
-def parse_user_config_file() -> dict[str, str | list[str] | dict[str, str]]:
-    filename = get_user_config_file()
+def parse_user_config_file(filename=CONFIGURE_TOOL_CONFIG) -> dict[str, str | list[str] | dict[str, str]]:
+    filename = get_user_config_file(filename)
     if not os.path.exists(filename):
         return {}
     with open(filename, "r", encoding="utf8") as f:
@@ -30,8 +33,8 @@ def parse_user_config_file() -> dict[str, str | list[str] | dict[str, str]]:
         return parse_simple_dict(data, sep="\n")
 
 
-def save_user_config_file(options: dict) -> None:
-    filename = get_user_config_file()
+def save_user_config_file(options: dict, filename=CONFIGURE_TOOL_CONFIG) -> None:
+    filename = get_user_config_file(filename)
     conf_dir = os.path.dirname(filename)
     if not os.path.exists(conf_dir):
         os.mkdir(conf_dir, mode=0o755)
@@ -48,30 +51,30 @@ def save_user_config_file(options: dict) -> None:
                 f.write(f"{k} = {item}\n")
 
 
-def update_config_attribute(attribute: str, value: str | int | float) -> None:
-    config = parse_user_config_file()
+def update_config_attribute(attribute: str, value: str | int | float, filename=CONFIGURE_TOOL_CONFIG) -> None:
+    config = parse_user_config_file(filename)
     value_str = str(value)
     if isinstance(value, bool):
         value_str = "yes" if bool(value) else "no"
     config[attribute] = value_str
     log(f"update config: {attribute}={value_str}")
-    save_user_config_file(config)
+    save_user_config_file(config, filename)
 
 
-def update_config_env(attribute: str, value) -> None:
+def update_config_env(attribute: str, value, filename=CONFIGURE_TOOL_CONFIG) -> None:
     # there can be many env attributes
     log(f"update config env: {attribute}={value}")
-    config = parse_user_config_file()
+    config = parse_user_config_file(filename)
     env = config.get("env")
     if not isinstance(env, dict):
         log.warn(f"Warning: env option was using invalid type {type(env)}")
         config["env"] = env = {}
     env[attribute] = str(value)
-    save_user_config_file(config)
+    save_user_config_file(config, filename)
 
 
-def get_config_env(var_name: str) -> str:
-    config = parse_user_config_file()
+def get_config_env(var_name: str, filename=CONFIGURE_TOOL_CONFIG) -> str:
+    config = parse_user_config_file(filename)
     env = config.get("env", {})
     if not isinstance(env, dict):
         log.warn(f"Warning: env option was using invalid type {type(env)}")
