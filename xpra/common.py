@@ -275,41 +275,55 @@ WINDOW_NOT_FOUND: Final[int] = -2
 ScreenshotData = tuple[int, int, str, int, bytes]
 
 
-def get_refresh_rate_for_value(refresh_rate_str: str, invalue: int) -> int:
-    def i(value) -> int:
-        try:
-            return int(value)
-        except ValueError:
-            return invalue
-    if refresh_rate_str.lower() in ("none", "auto"):
-        # just honour whatever the client supplied:
-        return i(invalue)
-    v = i(refresh_rate_str)
-    if v is not None:
-        # server specifies an absolute value:
-        if 0 < v < 1000:
-            return v*1000
-        if v >= 1000:
-            return v
-    if refresh_rate_str.endswith("%"):
-        # server specifies a percentage:
-        mult = i(refresh_rate_str[:-1])  # ie: "80%" -> 80
-        iv = i(invalue)
-        if mult and iv:
-            return iv*mult//100
-    # fallback to client supplied value, if any:
-    return i(invalue)
+MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 5)
+MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 120)
 
 
-def adjust_monitor_refresh_rate(refresh_rate_str, mdef) -> dict[int, dict]:
+def i(value, default: int) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+def get_refresh_rate_for_value(refresh_rate: str, invalue: int, multiplier=1) -> int:
+    if refresh_rate.lower() in ("none", "auto"):
+        # just leave it unchanged:
+        return invalue
+    # refresh rate can be a value (ie: 40), or a range (10-50)
+    parts = refresh_rate.split("-", 1)
+    if len(parts) > 1:
+        minvr = i(parts[0], MIN_VREFRESH) * multiplier
+        maxvr = i(parts[1], MAX_VREFRESH) * multiplier
+        if minvr > maxvr:
+            raise ValueError("the minimum refresh rate cannot be greater than the maximum")
+        return min(maxvr, max(minvr, invalue))
+
+    minvr = MIN_VREFRESH * multiplier
+    maxvr = MAX_VREFRESH * multiplier
+    if refresh_rate.endswith("%") > 0:
+        mult = int(refresh_rate[:-1])  # ie: "80%" -> 80
+        value = round(invalue * mult / 100)
+        return min(maxvr, max(minvr, value))
+
+    try:
+        value = int(refresh_rate) * multiplier
+        return min(maxvr, max(minvr, value))
+    except ValueError:
+        pass
+    # fallback to client supplied value:
+    return invalue
+
+
+def adjust_monitor_refresh_rate(refresh_rate: str, mdef) -> dict[int, dict]:
     adjusted = {}
     for i, monitor in mdef.items():
         # make a copy, don't modify in place!
         # (as this may be called multiple times on the same input dict)
         mprops = dict(monitor)
-        if refresh_rate_str != "auto":
+        if refresh_rate != "auto":
             value = int(monitor.get("refresh-rate", DEFAULT_REFRESH_RATE))
-            value = get_refresh_rate_for_value(refresh_rate_str, value)
+            value = get_refresh_rate_for_value(refresh_rate, value, 1000)
             if value:
                 mprops["refresh-rate"] = value
         adjusted[i] = mprops

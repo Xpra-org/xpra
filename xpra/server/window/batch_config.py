@@ -11,18 +11,14 @@ from typing import Any, Deque
 from collections.abc import Sequence
 
 from collections import deque
-from xpra.common import Self
+from xpra.common import Self, MIN_VREFRESH, MAX_VREFRESH
 from xpra.util.stats import get_list_stats
-from xpra.util.env import envint
 from xpra.log import Logger
 
 # how many historical records to keep
 # for the various statistics we collect:
 # (cannot be lower than DamageBatchConfig.MAX_EVENTS)
 NRECS: int = 100
-
-MIN_VREFRESH: int = envint("XPRA_MIN_VREFRESH", 1)
-MAX_VREFRESH: int = envint("XPRA_MAX_VREFRESH", 250)
 
 log = Logger("damage")
 

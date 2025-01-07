@@ -1595,8 +1595,9 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="refresh_rate", default=defaults.refresh_rate,
                      metavar="VREFRESH",
                      help="The vertical refresh rate to use, which is the target number of frames per second."
-                          " This value can be specified in absolute form: \"50\""
+                          " This value can be specified in absolute form: \"60\""
                           " or as a percentage of the value detected: \"50%\""
+                          " or as a range: \"20-60\""
                           " Default: '%default'.")
     group.add_option("--desktop-scaling", action="store",
                      dest="desktop_scaling", default=defaults.desktop_scaling,

@@ -13,7 +13,7 @@ from subprocess import Popen, PIPE
 from threading import Event
 from typing import Any
 
-from xpra.common import noop
+from xpra.common import noop, MIN_VREFRESH, MAX_VREFRESH
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
@@ -77,8 +77,6 @@ NO_OPENGL_WINDOW_TYPES = os.environ.get(
 WINDOW_GROUPING = os.environ.get("XPRA_WINDOW_GROUPING", "group-leader-xid,class-instance,pid,command").split(",")
 
 VREFRESH = envint("XPRA_VREFRESH", 0)
-MIN_VREFRESH = envint("XPRA_MIN_VREFRESH", 10)
-MAX_VREFRESH = envint("XPRA_MAX_VREFRESH", 60)
 
 inject_css_overrides()
 init_display_source()
