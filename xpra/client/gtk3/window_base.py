@@ -2039,7 +2039,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # the values we get are bogus!
         # x, y = x_root, y_root
         # use the current position instead:
-        p = self.get_root_window().get_pointer()[-3:-1]
+        with IgnoreWarningsContext():
+            p = self.get_root_window().get_pointer()[-3:-1]
         x, y = p[0], p[1]
         if MOVERESIZE_X11 and HAS_X11_BINDINGS:
             self.initiate_moveresize_x11(x, y, direction, button, source_indication)
