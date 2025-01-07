@@ -22,5 +22,5 @@ def scale_image(image: ImageWrapper, width: int, height: int) -> ImageWrapper:
         except ImportError as e:
             log("cannot downscale: %s", e)
         else:
-            return argb_scale(image, width, height)
+            return argb_scale(image, image.get_width(), image.get_height(), width, height)
     return image
