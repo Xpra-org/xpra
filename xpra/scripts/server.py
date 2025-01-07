@@ -61,7 +61,6 @@ from xpra.util.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
-CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
                                      "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)

@@ -7,9 +7,10 @@ import os
 import glob
 
 from xpra.os_util import POSIX, getuid
-from xpra.scripts.server import CLEAN_SESSION_FILES
-from xpra.util.env import osexpand
+from xpra.util.env import osexpand, envbool
 from xpra.util.io import load_binary_file
+
+CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 
 
 def get_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int) -> str:
