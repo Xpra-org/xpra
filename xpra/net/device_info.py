@@ -36,7 +36,12 @@ def get_NM_adapter_type(device_name, ignore_inactive=True) -> str:
     except (ImportError, ValueError):
         log("get_NM_adapter_type() no network-manager bindings")
         return ""
-    nmclient = NM.Client.new(None)
+    try:
+        nmclient = NM.Client.new(None)
+    except Exception as e:
+        log("NM.Client.new(None)", exc_info=True)
+        log.warn("Warning: failed to query network manager")
+        log.warn(" %s", e)
     if device_name:
         nmdevice = nmclient.get_device_by_iface(device_name)
     else:
