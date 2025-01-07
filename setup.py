@@ -1462,7 +1462,13 @@ def build_xpra_conf(install_dir: str) -> None:
             print(f"  {f!r:<50} -> {target_file!r}")
             with open(target_file, "w", encoding="latin1") as f_out:
                 if f.endswith(".in"):
-                    config_data = template % SUBS
+                    try:
+                        config_data = template % SUBS
+                    except ValueError:
+                        print(f"error applying substitutions from {filename!r} to {target_file!r}:")
+                        print(f"{config_data!r}")
+                        print(f"{SUBS!r}")
+                        raise
                 else:
                     config_data = template
                 f_out.write(config_data)
