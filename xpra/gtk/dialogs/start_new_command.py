@@ -12,6 +12,7 @@ from xpra.gtk.widget import scaled_image, label
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.signals import register_os_signals
 from xpra.util.objects import typedict
+from xpra.util.config import parse_user_config_file, update_config_attribute
 from xpra.exit_codes import ExitValue
 from xpra.os_util import gi_import
 from xpra.log import Logger, enable_debug_for
@@ -19,6 +20,17 @@ from xpra.log import Logger, enable_debug_for
 Gtk = gi_import("Gtk")
 
 log = Logger("exec")
+
+START_NEW_COMMAND_CONFIG = "start_new_command.conf"
+
+
+def update_config(prop: str, value: str) -> None:
+    update_config_attribute(prop, value, dirname="tools", filename=START_NEW_COMMAND_CONFIG)
+
+
+def load_config() -> dict:
+    return parse_user_config_file("tools", START_NEW_COMMAND_CONFIG)
+
 
 _instance = None
 
@@ -30,7 +42,7 @@ def getStartNewCommand(run_callback, can_share=False, xdg_menu=None):
     return _instance
 
 
-def btn(label, tooltip, callback, icon_name=None):
+def btn(label, tooltip, callback, icon_name="") -> Gtk.Button:
     b = Gtk.Button(label=label)
     b.set_tooltip_text(tooltip)
     b.connect("clicked", callback)
@@ -51,6 +63,8 @@ class StartNewCommand:
         self.window.set_default_size(400, 150)
         self.window.set_title("Start New Command")
 
+        self.prefs = load_config()
+
         icon_pixbuf = get_icon_pixbuf("forward.png")
         if icon_pixbuf:
             self.window.set_icon(icon_pixbuf)
@@ -70,9 +84,12 @@ class StartNewCommand:
             hbox.add(label("Category:"))
             self.category_combo = Gtk.ComboBoxText()
             hbox.add(self.category_combo)
-            for name in sorted(self.xdg_menu.keys()):
+            index = 0
+            for i, name in enumerate(sorted(self.xdg_menu.keys())):
                 self.category_combo.append_text(name)
-            self.category_combo.set_active(0)
+                if name == self.prefs.get("category", ""):
+                    index = i
+            self.category_combo.set_active(index)
             self.category_combo.connect("changed", self.category_changed)
 
             hbox = Gtk.HBox(homogeneous=False, spacing=20)
@@ -105,7 +122,7 @@ class StartNewCommand:
         hbox.pack_start(btn("Run", "Run this command", self.run_command, "forward.png"))
         hbox.pack_start(btn("Cancel", "", self.close, "quit.png"))
 
-        def accel_close(*_args):
+        def accel_close(*_args) -> None:
             self.close()
 
         add_close_accel(self.window, accel_close)
@@ -113,22 +130,28 @@ class StartNewCommand:
         self.window.vbox = vbox
         self.window.add(vbox)
 
-    def category_changed(self, *args):
+    def category_changed(self, *args) -> None:
         category = self.category_combo.get_active_text()
+        update_config("category", category)
         entries = typedict(typedict(self.xdg_menu.dictget(category, {})).dictget("Entries", {}))
         log("category_changed(%s) category=%s, entries=%s", args, category, entries)
         self.command_combo.get_model().clear()
-        for name in entries.keys():
+        index = -1
+        for i, name in enumerate(entries.keys()):
             self.command_combo.append_text(name)
-        if entries:
-            self.command_combo.set_active(0)
+            if name == self.prefs.get("command", ""):
+                index = i
+        if index >= 0:
+            self.command_combo.set_active(index)
 
-    def command_changed(self, *args):
+    def command_changed(self, *args) -> None:
         if not self.entry:
             return
         category = self.category_combo.get_active_text()
         entries = typedict(typedict(self.xdg_menu.dictget(category, {})).dictget("Entries", {}))
         command_name = self.command_combo.get_active_text()
+        if command_name:
+            update_config("command", command_name)
         log("command_changed(%s) category=%s, entries=%s, command_name=%s", args, category, entries, command_name)
         command = ""
         if entries and command_name:
@@ -137,22 +160,22 @@ class StartNewCommand:
             command = typedict(command_props).strget("command")
         self.entry.set_text(command)
 
-    def show(self):
+    def show(self) -> None:
         log("show()")
         self.window.show()
         self.window.present()
 
-    def hide(self):
+    def hide(self) -> None:
         log("hide()")
         if self.window:
             self.window.hide()
 
-    def close(self, *args):
+    def close(self, *args) -> bool:
         log("close%s", args)
         self.hide()
         return True
 
-    def destroy(self, *args):
+    def destroy(self, *args) -> None:
         log("close%s", args)
         if self.window:
             self.window.destroy()
@@ -164,12 +187,12 @@ class StartNewCommand:
         log("run() Gtk.main done")
         return 0
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
         self.close()
         Gtk.main_quit()
 
-    def run_command(self, *_args):
+    def run_command(self, *_args) -> None:
         self.hide()
         command = self.entry.get_text()
         log("command=%s", command)
@@ -177,7 +200,7 @@ class StartNewCommand:
             self.run_callback(command, self.share is None or self.share.get_active())
 
 
-def main():  # pragma: no cover
+def main() -> int:  # pragma: no cover
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     from xpra.platform import program_context
     gui_init()
