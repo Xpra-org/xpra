@@ -870,6 +870,17 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode == "xvfb-command":
         print(shlex.join(xvfb_command(options.xvfb, options.pixel_depth, options.dpi)))
         return ExitCode.OK
+    if mode == "xvfb":
+        if len(args) > 1:
+            raise ValueError("too many arguments")
+        display = "S" + str(os.getpid())
+        if args:
+            display = args[0]
+            if not display.startswith(":"):
+                raise ValueError(f"invalid display format {display!r}")
+        xvfb_cmd = xvfb_command(options.xvfb, options.pixel_depth, options.dpi)
+        from xpra.x11.vfb_util import start_xvfb_standalone
+        return start_xvfb_standalone(xvfb_cmd, options.sessions_dir, options.pixel_depth, display)
     if mode == "sbom":
         return run_sbom(args)
     if mode == "showconfig":
@@ -3044,7 +3055,7 @@ def start_server_subprocess(script_file, args, mode, opts,
         else:
             assert len(args) == 0
             # let the server get one from Xorg via displayfd:
-            display_name = 'S' + str(os.getpid())
+            display_name = "S" + str(os.getpid())
     else:
         if mode not in ("expand", "shadow", "shadow-screen"):
             raise ValueError(f"invalid mode {mode!r}")
@@ -3314,7 +3325,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
             pass
         else:
             try:
-                from xpra.scripts.server import get_session_dir
+                from xpra.scripts.session import get_session_dir
                 session_dir = get_session_dir("attach", opts.sessions_dir, display_name, getuid())
                 # ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
                 setup_proxy_ssh_socket(cmdline, session_dir=session_dir)
@@ -3667,7 +3678,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
         uid = int(opts.uid)
     except (ValueError, TypeError):
         uid = getuid()
-    from xpra.scripts.server import get_session_dir
+    from xpra.scripts.session import get_session_dir
     clean: dict[str, str] = {}
     if args:
         for display in args:
@@ -4023,7 +4034,9 @@ def get_x11_display_info(display, sessions_dir="") -> dict[str, Any]:
     xauthority: str = ""
     if sessions_dir:
         try:
-            from xpra.scripts.server import get_session_dir, load_session_file, session_file_path
+            from xpra.scripts.session import load_session_file
+            from xpra.scripts.session import session_file_path
+            from xpra.scripts.session import get_session_dir
         except ImportError as e:
             log(f"get_x11_display_info: {e}")
         else:

@@ -190,6 +190,20 @@ def get_xauthority_path(display_name: str) -> str:
     return os.path.join(d, filename)
 
 
+def get_xvfb_env(xvfb_executable: str) -> dict[str, str]:
+    keep = [
+        "SHELL", "HOSTNAME", "XMODIFIERS",
+        "PWD", "HOME", "USERNAME", "LANG", "TERM", "USER",
+        "XDG_RUNTIME_DIR", "XDG_DATA_DIR", "PATH",
+        "XAUTHORITY",
+        "XPRA_SESSION_DIR",
+    ]
+    env = get_exec_env(keep=keep)
+    if xvfb_executable.endswith("Xephyr"):
+        env["DISPLAY"] = get_saved_env_var("DISPLAY")
+    return env
+
+
 def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: str, cwd,
                uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
     if not POSIX:
@@ -198,12 +212,14 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
         raise InitException("starting an Xvfb is not supported on MacOS")
     if not xvfb_cmd:
         raise InitException("the 'xvfb' command is not defined")
+    if not display_name:
+        raise ValueError("no display name")
 
     log = get_vfb_logger()
     log("start_Xvfb%s XVFB_EXTRA_ARGS=%s",
         (xvfb_cmd, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid),
         XVFB_EXTRA_ARGS)
-    use_display_fd = display_name[0] == 'S'
+    use_display_fd = display_name[0] == "S"
     if XVFB_EXTRA_ARGS:
         xvfb_cmd += shlex.split(XVFB_EXTRA_ARGS)
 
@@ -226,7 +242,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
     xvfb_cmd = [pathexpand(s) for s in xvfb_cmd]
 
     # try to honour initial geometries if specified:
-    if vfb_geom and xvfb_cmd[0].endswith("Xvfb"):
+    if vfb_geom and xvfb_cmd[0].endswith("Xvfb") or xvfb_cmd[0].endswith("Xephyr"):
         # find the '-screen' arguments:
         # "-screen 0 8192x4096x24+32"
         try:
@@ -292,14 +308,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth > 0:
         xvfb_cmd.append("-depth")
         xvfb_cmd.append(str(pixel_depth))
-    keep = [
-        "SHELL", "HOSTNAME", "XMODIFIERS",
-        "PWD", "HOME", "USERNAME", "LANG", "TERM", "USER",
-        "XDG_RUNTIME_DIR", "XDG_DATA_DIR", "PATH",
-    ]
-    env = get_exec_env(keep=keep)
-    if xvfb_executable.endswith("Xephyr"):
-        env["DISPLAY"] = get_saved_env_var("DISPLAY")
+    env = get_xvfb_env(xvfb_executable)
     log(f"xvfb env={env}")
     xvfb = None
     try:
@@ -383,6 +392,27 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
     return xvfb, display_name
 
 
+def start_xvfb_standalone(xvfb_cmd: list[str], sessions_dir: str, pixel_depth=0, display_name="") -> int:
+    # we may have to tweak the environment to emulate having an xpra session
+    # as the default xvfb commands may refer to $XAUTHORITY and $XPRA_SESSION_DIR
+    xauthority = os.environ.get("XAUTHORITY", "")
+    if "$XAUTHORITY" in xvfb_cmd and not valid_xauth(xauthority):
+        xauthority = osexpand(get_xauthority_path(display_name))
+        os.environ["XAUTHORITY"] = xauthority
+    if "$XPRA_SESSION_DIR" in xvfb_cmd and "XPRA_SESSION_DIR" not in os.environ:
+        from xpra.scripts.session import make_session_dir
+        session_dir = make_session_dir("xvfb", sessions_dir, display_name)
+        os.environ["XPRA_SESSION_DIR"] = session_dir
+    vfb_geom = ()
+    cwd = os.getcwd()
+    xvfb, actual_display_name = start_Xvfb(xvfb_cmd, vfb_geom, pixel_depth, display_name,
+                                           cwd, uid=getuid(), gid=getgid(), username="", uinput_uuid="")
+    if actual_display_name != display_name:
+        print(f"display {actual_display_name!r} started")
+    print(f"xvfb pid: {xvfb.pid}")
+    return xvfb.wait()
+
+
 def kill_xvfb(xvfb_pid: int) -> None:
     log = get_vfb_logger()
     log.info("killing xvfb with pid %s", xvfb_pid)
@@ -391,7 +421,7 @@ def kill_xvfb(xvfb_pid: int) -> None:
     except OSError as e:
         log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
         log.info(" %s", e)
-    xauthority = os.environ.get("XAUTHORITY")
+    xauthority = os.environ.get("XAUTHORITY", "")
     if PRIVATE_XAUTH and xauthority and os.path.exists(xauthority):
         os.unlink(xauthority)
 

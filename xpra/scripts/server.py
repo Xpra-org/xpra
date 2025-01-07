@@ -19,6 +19,8 @@ from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence
 
 from xpra import __version__
+from xpra.scripts.session import get_session_dir, make_session_dir, session_file_path, load_session_file, \
+    save_session_file
 from xpra.util.io import info, warn
 from xpra.util.parsing import parse_str_dict
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
@@ -52,7 +54,7 @@ from xpra.os_util import (
 from xpra.server.util import setuidgid
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr
-from xpra.util.io import load_binary_file, is_writable, stderr_print, which
+from xpra.util.io import is_writable, stderr_print, which
 from xpra.util.env import unsetenv, envbool, osexpand, get_saved_env, get_saved_env_var
 from xpra.common import GROUP
 from xpra.util.child_reaper import getChildReaper
@@ -432,146 +434,6 @@ def write_displayfd(display_name: str, fd: int) -> None:
         log.estr(e)
 
 
-def get_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int) -> str:
-    session_dir = osexpand(os.path.join(sessions_dir, display_name.lstrip(":")), uid=uid)
-    if not os.path.exists(session_dir):
-        ROOT = POSIX and getuid() == 0
-        ROOT_FALLBACK = ("/run/xpra", "/var/run/xpra", "/tmp")
-        if ROOT and uid == 0 and not any(session_dir.startswith(x) for x in ROOT_FALLBACK):
-            # there is usually no $XDG_RUNTIME_DIR when running as root
-            # and even if there was, that's probably not a good path to use,
-            # so try to find a more suitable directory we can use:
-            for d in ROOT_FALLBACK:
-                if os.path.exists(d):
-                    if mode == "proxy" and (display_name or "").lstrip(":").split(",")[0] == "14500":
-                        # stash the system-wide proxy session files in a 'proxy' subdirectory:
-                        return os.path.join(d, "proxy")
-                    # otherwise just use the display as subdirectory name:
-                    return os.path.join(d, (display_name or "").lstrip(":"))
-    return session_dir
-
-
-def make_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int = 0, gid: int = 0) -> str:
-    session_dir = get_session_dir(mode, sessions_dir, display_name, uid)
-    if not os.path.exists(session_dir):
-        try:
-            os.makedirs(session_dir, 0o750, exist_ok=True)
-        except OSError:
-            import tempfile
-            session_dir = osexpand(os.path.join(tempfile.gettempdir(), display_name.lstrip(":")))
-            os.makedirs(session_dir, 0o750, exist_ok=True)
-        ROOT = POSIX and getuid() == 0
-        if ROOT and (session_dir.startswith("/run/user/") or session_dir.startswith("/run/xpra/")):
-            os.lchown(session_dir, uid, gid)
-    return session_dir
-
-
-def session_file_path(filename: str) -> str:
-    session_dir = os.environ.get("XPRA_SESSION_DIR")
-    if session_dir is None:
-        raise RuntimeError("'XPRA_SESSION_DIR' must be set to use this function")
-    return os.path.join(session_dir, filename)
-
-
-def load_session_file(filename: str) -> bytes:
-    return load_binary_file(session_file_path(filename))
-
-
-def save_session_file(filename: str, contents: str | bytes, uid: int = -1, gid: int = -1) -> str:
-    if not os.environ.get("XPRA_SESSION_DIR"):
-        return ""
-    if not isinstance(contents, bytes):
-        contents = str(contents).encode("utf8")
-    assert contents
-    path = session_file_path(filename)
-    try:
-        with open(path, "wb+") as f:
-            if POSIX:
-                os.fchmod(f.fileno(), 0o640)
-                if getuid() == 0 and uid >= 0 and gid >= 0:
-                    os.fchown(f.fileno(), uid, gid)
-            f.write(contents)
-    except OSError as e:
-        from xpra.log import Logger
-        log = Logger("server")
-        log("save_session_file", exc_info=True)
-        log.error(f"Error saving session file {path!r}")
-        log.estr(e)
-    return path
-
-
-def rm_session_dir(warn: bool = True) -> None:
-    session_dir = os.environ.get("XPRA_SESSION_DIR")
-    if not session_dir or not os.path.exists(session_dir):
-        return
-    from xpra.log import Logger
-    log = Logger("server")
-    try:
-        session_files = os.listdir(session_dir)
-    except OSError as e:
-        log("os.listdir(%s)", session_dir, exc_info=True)
-        if warn:
-            log.error(f"Error: cannot access {session_dir!r}")
-            log.estr(e)
-        return
-    if session_files:
-        if warn:
-            log.info(f"session directory {session_dir!r} was not removed")
-            log.info(" because it still contains some files:")
-            for f in session_files:
-                extra = " (directory)" if os.path.isdir(os.path.join(session_dir, f)) else ""
-                log.info(f" {f!r}{extra}")
-        return
-    try:
-        os.rmdir(session_dir)
-    except OSError as e:
-        log = Logger("server")
-        log(f"rmdir({session_dir})", exc_info=True)
-        log.error(f"Error: failed to remove session directory {session_dir!r}")
-        log.estr(e)
-
-
-def clean_session_files(*filenames) -> None:
-    if not CLEAN_SESSION_FILES:
-        return
-    for filename in filenames:
-        path = session_file_path(filename)
-        if filename.find("*") >= 0:
-            for p in glob.glob(path):
-                clean_session_path(p)
-        else:
-            clean_session_path(path)
-    rm_session_dir(False)
-
-
-def clean_session_path(path) -> None:
-    from xpra.log import Logger
-    log = Logger("server")
-    log(f"clean_session_path({path})")
-    if os.path.exists(path):
-        try:
-            if os.path.isdir(path):
-                os.rmdir(path)
-            else:
-                os.unlink(path)
-        except OSError as e:
-            log(f"clean_session_path({path})", exc_info=True)
-            log.error(f"Error removing session path {path}")
-            log.estr(e)
-            if os.path.isdir(path):
-                files = os.listdir(path)
-                if files:
-                    log.error(" this directory still contains some files:")
-                    for file in files:
-                        finfo = repr(file)
-                        try:
-                            if os.path.islink(file):
-                                finfo += " -> "+repr(os.readlink(file))
-                        except OSError:
-                            pass
-                        log.error(f" {finfo}")
-
-
 SERVER_SAVE_SKIP_OPTIONS: Sequence[str] = (
     "systemd-run",
     "daemon",
@@ -910,8 +772,8 @@ def _do_run_server(script_file: str, cmdline,
                 display_name = guess_xpra_display(opts.socket_dir, opts.socket_dirs)
             else:
                 # We will try to find one automatically
-                # Use the temporary magic value 'S' as marker:
-                display_name = 'S' + str(os.getpid())
+                # Use the temporary magic value "S" as marker:
+                display_name = "S" + str(os.getpid())
 
     if upgrading:
         assert display_name, "no display found to upgrade"
@@ -1082,7 +944,7 @@ def _do_run_server(script_file: str, cmdline,
             os.environ["XDG_SESSION_TYPE"] = "x11"
         if not starting_desktop:
             os.environ["XDG_CURRENT_DESKTOP"] = opts.wm_name
-    if display_name[0] != 'S':
+    if display_name[0] != "S":
         os.environ["DISPLAY"] = display_name
         if POSIX:
             os.environ["CKCON_X11_DISPLAY"] = display_name

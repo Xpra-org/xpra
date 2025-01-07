@@ -2529,6 +2529,7 @@ if client_ENABLED or server_ENABLED:
     )
 if server_ENABLED or proxy_ENABLED:
     add_modules("xpra.scripts.server")
+    add_modules("xpra.scripts.session")
 
 toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 toggle_packages(opengl_ENABLED, "xpra.opengl")

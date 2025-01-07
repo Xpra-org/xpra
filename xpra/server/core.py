@@ -24,7 +24,8 @@ from xpra.util.version import (
     XPRA_VERSION, XPRA_NUMERIC_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
     get_platform_info, get_host_info, parse_version,
 )
-from xpra.scripts.server import deadly_signal, clean_session_files, rm_session_dir
+from xpra.scripts.server import deadly_signal
+from xpra.scripts.session import rm_session_dir, clean_session_files
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
