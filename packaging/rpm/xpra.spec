@@ -803,19 +803,36 @@ fi
 
 
 %changelog
-* Tue Dec 10 2024 Antoine Martin <antoine@xpra.org> 5.0.12-10
+* Tue Jan 07 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection
    RPM support for per-arch cuda pkgconfig
+   `exe` installer standalone step
+   move default package list for newer build script default
 - SBOM:
    minor fixes
    record CUDA
    record 'Light' builds
    export to JSON
    fallback to `pip` package data
+- RHEL 10:
+   package list
+   provide wrapper script for `weston` + `Xwayland`
+   use `weston` + `Xwayland` as `xvfb` option
+   pycairo build fix
+   no `pandoc` or `x264`
+   do build `libfakeXinerama`
 - Major:
    `SSL` upgrades discard options
    use symlinks to prevent ssh agent forwarding setup errors
+   websocket connection loss with some proxies sending empty payloads
+   Network Manager API errors in some environments
+- Desktop mode:
+   better compatibility with some window managers when resizing
+   handle fixed size desktops correctly
+- Clipboard:
+   always claim the clipboard selection when updated
+   always update the peer when the owner changes
 - Encodings:
    `rgb` errors at unusual bit depths
    transparency detection with 10-bit per channel windows
@@ -828,7 +845,14 @@ fi
    `start-gui` fails if no application is selected
    check for latest version from current branch
    clamp `vrefresh` to a useful range
+   division by zero on MS Windows
+   typo in nvjpeg encoder / decoder build switches
+- Cosmetic:
    proxy error messages formatting
+   remove superfluous logging
+   don't log scary warning about missing `numpy_formathandler`
+   unset load-balancer CUDA option is valid
+   icon glob lookup mismatch
 
 * Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:

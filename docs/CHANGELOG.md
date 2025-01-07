@@ -1,18 +1,35 @@
 # Changelog
 
-## [5.0.12] 2024-12-10
+## [5.0.12] 2025-01-07
 * Platforms, build and packaging:
     * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/fab8d9f02de9b4ca57d7fa88b8031a2c29a77d91) and [prefix detection](https://github.com/Xpra-org/xpra/commit/8166eee7d2f5e4b00327763627b33987edd5e0c7)
     * [RPM support for per-arch cuda pkgconfig](https://github.com/Xpra-org/xpra/commit/fa614d8672658f26d4094834dda89d5ee2d79038)
+    * [`exe` installer standalone step](https://github.com/Xpra-org/xpra/commit/7d0c0c30e3d002f7468ec73f8fac6862b020ca6b)
+    * [move default package list for newer build script default](https://github.com/Xpra-org/xpra/commit/dc7e2c74fbdfc584c8a830f258b4608af3a20a8c)
 * SBOM:
     * [minor fixes](https://github.com/Xpra-org/xpra/commit/5cb8451158a7070a3c44c0b7715b135ea17e6683)
     * [record CUDA](https://github.com/Xpra-org/xpra/commit/ecd20b6a0523aa8c3b07192f35ca694a03a30280)
     * [record 'Light' builds](https://github.com/Xpra-org/xpra/commit/bd604bf45db130f9066acef98424edd4bca5b854)
     * [export to JSON](https://github.com/Xpra-org/xpra/commit/558ceb8d6cd9e6a6da830909355ba1f1b356649a)
     * [fallback to `pip` package data](https://github.com/Xpra-org/xpra/commit/19842b615760b0a2ab3e504d4c99c204c421c3f6)
+* RHEL 10:
+    * [package list](https://github.com/Xpra-org/xpra/commit/8a70cfa92e40bd000692c5b5012a0f5e0d1f8604) + [fixup](https://github.com/Xpra-org/xpra/commit/5efb705aaab52c96096a6d8060253d03336ecd7b)
+    * [provide wrapper script for `weston` + `Xwayland`](https://github.com/Xpra-org/xpra/commit/d96cdc84a71f8a6f895cee8a9a6a70872de4ba8a)
+    * [use `weston` + `Xwayland` as `xvfb` option](https://github.com/Xpra-org/xpra/commit/023870556484b97f35108fc798f79e6fce42ed08)
+    * [pycairo build fix](https://github.com/Xpra-org/xpra/commit/facee938bb3cd4891d3e4e8733fb45172126fc8f)
+    * [no `pandoc` or `x264`](https://github.com/Xpra-org/xpra/commit/183f9996cfb8b9cbb6176955dfbf37150cc8e56d) + fixups: [x264](https://github.com/Xpra-org/xpra/commit/e94acc7c0f8fcb8f65deafe506c444eb3d42efce), [docs](https://github.com/Xpra-org/xpra/commit/9b4c93b88ddb0136811de2192d4a74f2e039bf7a)
+    * [do build `libfakeXinerama`](https://github.com/Xpra-org/xpra/commit/d479991910311d55f9d81c305d4ff12f33a785ad)
 * Major:
     * [`SSL` upgrades discard options](https://github.com/Xpra-org/xpra/commit/b6b396c2188f651f994809177368d0c74e4781bb)
     * [use symlinks to prevent ssh agent forwarding setup errors](https://github.com/Xpra-org/xpra/commit/3805cbdfe02244d6ece591acc642b67f6e57b109)
+    * [websocket connection loss with some proxies sending empty payloads](https://github.com/Xpra-org/xpra/commit/9d679b30d940d70e8dbc6458b9ad2e3001f5d3b2)
+    * [Network Manager API errors in some environments](https://github.com/Xpra-org/xpra/commit/276f8c0f7ced293504286e651cfdf92ebdab11cf)
+* Desktop mode:
+    * [better compatibility with some window managers when resizing](https://github.com/Xpra-org/xpra/commit/cf39bb72de8fe53f3404b40c7bcf8c1630ec3e5b)
+    * [handle fixed size desktops correctly](https://github.com/Xpra-org/xpra/commit/2a440ae37db998d199e1975eff18861709d11f48)
+* Clipboard:
+    * [always claim the clipboard selection when updated](https://github.com/Xpra-org/xpra/commit/faf1e5c0a3413783d9c213ed8243732d771defe0)
+    * [always update the peer when the owner changes](https://github.com/Xpra-org/xpra/commit/885a52f5ebd27df39f3af41dbf749bb9a153db4a)
 * Encodings:
     * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/2b0539dd4292235d30ddd3ac2f985c0a735467b9)
     * [transparency detection with 10-bit per channel windows](https://github.com/Xpra-org/xpra/commit/25b03183a9246a2b9c95f5b110e0a86f5dad0fb5)
@@ -25,8 +42,14 @@
     * [`start-gui` fails if no application is selected](https://github.com/Xpra-org/xpra/commit/7a662155c4546642ccc08b5b1d2662bdc3ec863d)
     * [check for latest version from current branch](https://github.com/Xpra-org/xpra/commit/783d2ca9ae7af299f5ef54a83b27bc0017cf8b1c)
     * [clamp `vrefresh` to a useful range](https://github.com/Xpra-org/xpra/commit/62a958b6255c1f1884cfb1b71b88e2c8a95094a1)
+    * [division by zero on MS Windows](https://github.com/Xpra-org/xpra/commit/d873fd54cc6c5d202b3f278c76fe5b28a62dbcd6)
+    * [typo in nvjpeg encoder / decoder build switches](https://github.com/Xpra-org/xpra/commit/2726353d0751ee4f8da451149e62a0d9b8973989)
 * Cosmetic:
     * [proxy error messages formatting](https://github.com/Xpra-org/xpra/commit/b62ea90467389e7c03b84f4bf474653ade3a6f07)
+    * [remove superfluous logging](https://github.com/Xpra-org/xpra/commit/e045e44a643914114924fbbcae96124e3446c72d)
+    * [don't log scary warning about missing `numpy_formathandler`](https://github.com/Xpra-org/xpra/commit/3143698c630928f59d20780344e1c35dd4ffcc2a)
+    * [unset load-balancer CUDA option is valid](https://github.com/Xpra-org/xpra/commit/d4283a911949a5cbdd7e350bd0f31c516348bc19)
+    * [icon glob lookup mismatch](https://github.com/Xpra-org/xpra/commit/de9d565e3f43e21e933f6bf08177f5c076a794c3)
 
 ## [5.0.11] 2024-11-22
 * Platforms, build and packaging:
