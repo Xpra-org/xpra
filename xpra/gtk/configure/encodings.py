@@ -75,7 +75,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.add_widget(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
         self.add_widget(label("Auto Refresh Delay (milliseconds)", font="Sans 14"))
         self.add_widget(label("Longer delays may become noticeable but save bandwidth"))
-        adjust = Gtk.Adjustment(value=config.auto_refresh_delay, lower=0, upper=1000,
+        adjust = Gtk.Adjustment(value=round(config.auto_refresh_delay * 1000), lower=0, upper=1000,
                                 step_increment=50, page_increment=0, page_size=0)
         scale = make_scale(adjust, {
             0: "Disabled",
