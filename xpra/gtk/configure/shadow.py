@@ -80,6 +80,12 @@ def _set_labels_text(widgets, *messages):
 
 class ConfigureGUI(BaseGUIWindow):
 
+    # so we can call check_xshm()
+    from xpra.util.system import is_Wayland
+    if not is_Wayland():
+        from xpra.x11.gtk.display_source import init_gdk_display_source
+        init_gdk_display_source()
+
     def __init__(self, parent: Gtk.Window | None = None):
         self.buttons: list[Gtk.CheckButton] = []
         size = (800, 554)
