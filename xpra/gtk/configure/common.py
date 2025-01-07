@@ -66,10 +66,13 @@ def save_user_config_file(options: dict) -> None:
                 f.write(f"{k} = {item}\n")
 
 
-def update_config_attribute(attribute: str, value) -> None:
-    log(f"update config: {attribute}={value}")
+def update_config_attribute(attribute: str, value: str | int | float) -> None:
     config = parse_user_config_file()
-    config[attribute] = "yes" if bool(value) else "no"
+    value_str = str(value)
+    if isinstance(value, bool):
+        value_str = "yes" if bool(value) else "no"
+    config[attribute] = value_str
+    log(f"update config: {attribute}={value_str}")
     save_user_config_file(config)
 
 

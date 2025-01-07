@@ -102,7 +102,7 @@ class ConfigureGUI(BaseGUIWindow):
 
     @staticmethod
     def toggle_subsystem(_widget, state, subsystem):
-        update_config_attribute(subsystem, state)
+        update_config_attribute(subsystem, bool(state))
 
 
 def main(_args) -> int:
