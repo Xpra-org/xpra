@@ -7,7 +7,7 @@ You can find some example configuration files here: [sample /etc/xpra/ directory
 The configuration files use the exact same format as the command line options, which is documented in the [manual page](https://xpra.org/manual.html), just without the `--` prefix.\
 The manual is also shipped with all binary installations and should be easily accessible. (ie: `man xpra`)
 
-_(some more obscure features can be configured using environmentent variables)_
+_(some more obscure features can be configured using environment variables)_
 
 ***
 
