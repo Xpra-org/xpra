@@ -482,10 +482,10 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "compression", "packet-encoding", "path-info",
             "printing-info", "version-info", "version-check", "toolbox",
             "initenv", "setup-ssl", "show-ssl",
-            "auth", "showconfig", "showsetting",
+            "auth",
             "applications-menu", "sessions-menu",
             "_proxy",
-            "configure",
+            "configure", "showconfig", "showsetting", "setting",
             "wait-for-x11", "wait-for-wayland",
             "xvfb-command", "xvfb",
     ):
@@ -887,6 +887,8 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         return run_showconfig(options, args)
     if mode == "showsetting":
         return run_showsetting(args)
+    if mode == "setting":
+        return run_setting(args)
     # unknown subcommand:
     if mode != "help":
         print(f"Invalid subcommand {mode!r}")
@@ -4671,6 +4673,24 @@ def run_showsetting(args) -> ExitValue:
         log.info(f"* {d!r}:")
         show_settings()
     return 0
+
+
+def run_setting(args) -> ExitValue:
+    if len(args) < 2:
+        raise InitException("specify a setting to modify and its value")
+    setting = args[0]
+    otype = OPTION_TYPES.get(setting)
+    if not otype:
+        raise ValueError(f"{setting!r} is not a valid setting, see `xpra showconfig`")
+    if otype == list:
+        value = args[1:]
+    else:
+        if len(args) > 2:
+            raise ValueError(f"too many values for {setting!r} which is a {otype!r}")
+        value = args[1]
+    from xpra.util.config import update_config_attribute
+    update_config_attribute(setting, value)
+    return ExitCode.OK
 
 
 if __name__ == "__main__":  # pragma: no cover

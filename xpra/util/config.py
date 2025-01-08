@@ -55,7 +55,7 @@ def save_user_config_file(options: dict,
                 f.write(f"{k} = {item}\n")
 
 
-def update_config_attribute(attribute: str, value: str | int | float,
+def update_config_attribute(attribute: str, value: str | int | float | list,
                             dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
     config = parse_user_config_file(dirname, filename)
     value_str = str(value)
