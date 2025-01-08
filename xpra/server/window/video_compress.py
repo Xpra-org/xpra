@@ -1575,9 +1575,13 @@ class WindowVideoSource(WindowSource):
                         scaling = (1, 1)
                     score_delta = encoding_score_delta
                     lossy_csc = enc_in_format in ("NV12", "YUV420P", "YUV422P")
-                    if text_hint and (scaling != (1, 1) or lossy_csc):
-                        # we should not be using scaling or csc with text!
-                        score_delta -= 500
+                    if scaling != (1, 1) or lossy_csc:
+                        if text_hint:
+                            # we should not be using scaling or csc with text!
+                            score_delta -= 500
+                        elif target_q >= 100:
+                            # we want lossless, this would be far from it!
+                            score_delta -= 250
                     if self.is_shadow and lossy_csc and scaling == (1, 1):
                         # avoid subsampling with shadow servers:
                         score_delta -= 40
