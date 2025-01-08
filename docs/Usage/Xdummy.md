@@ -23,19 +23,19 @@ Xorg -noreset +extension GLX +extension RANDR +extension RENDER \
 ```
 This is roughly equivallent to running `Xvfb :10`. \
 You can find a sample configuration file for dummy here: [xorg.conf](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/xorg.conf).
+
+With distributions that have `Xdummy` support and xpra version 6.3 or later, you can also just run:
+```shell
+xpra xvfb :10
+```
 </details>
 <details>
   <summary>Xdummy with Xpra</summary>
 
-With Xpra, this should have been configured automatically for you when installing -  this is not enabled on Debian or Ubuntu. \
-You choose at [build time](../Build/README.md) whether or not to use `Xdummy` using the `--with[out]-Xdummy` build switch. \
-If your packages do not enable `Xdummy` by default, you may be able to switch to it by modifying the `xvfb` value in `/etc/xpra/conf.d/55_server_x11.conf`, something like:
-```
-xvfb=Xorg -dpi 96 -noreset -nolisten tcp \
-          +extension GLX +extension RANDR +extension RENDER \
-          -logfile ${HOME}/.xpra/Xvfb-10.log -config ${HOME}/xorg.conf
-```
-The `-noreset` option is only needed if the window manager is not the first application started on the display, for example if you use the `--start-child=` option, or if you want the display to survive once the window manager exits - generally, this is a good idea since xpra could crash and when it exits cleanly via `xpra stop` it already takes care of shutting down the X11 server.
+With the official Xpra packages, `Xdummy` should have been configured automatically for you when installing -  but this is not enabled on Debian or Ubuntu due to distribution bugs. \
+You can choose at [build time](../Build/README.md) whether or not to use `Xdummy` using the `--with[out]-Xdummy` build switch. \
+If your packages do not enable `Xdummy` by default,
+you may still be able to [change your settings at runtime](https://github.com/Xpra-org/xpra/issues/4456#issuecomment-2572596302).
 </details>
 
 
@@ -43,7 +43,6 @@ The `-noreset` option is only needed if the window manager is not the first appl
 
 By default, the configuration file shipped with xpra allocates 768MB of memory, and a maximum `virtual size` of `11520 6318`. \
 You may want to increase these values to use very high resolutions or many virtual monitors.
-
 
 ## Packaging
 
