@@ -1496,9 +1496,14 @@ class WindowVideoSource(WindowSource):
         min_q = self._fixed_min_quality
         target_s = int(self._current_speed)
         min_s = self._fixed_min_speed
+        text_hint = self.content_type.find("text") >= 0
+        if text_hint:
+            vmw = vmh = 16384
+        else:
+            vmw, vmh = self.video_max_size
         # tune quality target for (non-)video region:
         vr = self.matches_video_subregion(width, height)
-        if vr and target_q < 100:
+        if vr and target_q < 100 and not text_hint:
             if self.subregion_is_video():
                 # lower quality a bit more:
                 fps = self.video_subregion.fps
@@ -1511,11 +1516,6 @@ class WindowVideoSource(WindowSource):
                 scorelog("raising quality for video encoding of non-video region")
         scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)",
                  (encodings, width, height, src_format), target_s, min_s, target_q, min_q)
-        text_hint = self.content_type.find("text") >= 0
-        if text_hint:
-            vmw = vmh = 16384
-        else:
-            vmw, vmh = self.video_max_size
 
         ffps = self.get_video_fps(width, height)
         cached_w = cached_h = 4096
