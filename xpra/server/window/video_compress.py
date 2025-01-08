@@ -163,6 +163,38 @@ def get_pipeline_score_info(score, scaling,
     return pi
 
 
+def save_video_frame(wid: int, image: ImageWrapper) -> None:
+    from PIL import Image
+    w = image.get_width()
+    h = image.get_height()
+    stride = image.get_rowstride()
+    img_data = image.get_pixels()
+    rgb_format = image.get_pixel_format()  # ie: BGRA
+    rgba_format = rgb_format.replace("BGRX", "BGRA")
+    from PIL import __version__ as pil_version
+
+    try:
+        major = int(pil_version.split(".")[0])
+    except ValueError:
+        major = 0
+    if major < 10:
+        img_data = memoryview_to_bytes(img_data)
+    img = Image.frombuffer("RGBA", (w, h), img_data, "raw", rgba_format, stride)
+    kwargs = {}
+    if SAVE_VIDEO_FRAMES == "jpeg":
+        kwargs = {
+            "quality": 0,
+            "optimize": False,
+        }
+    t = monotonic()
+    tstr = time.strftime("%H-%M-%S", time.localtime(t))
+    filename = "W%i-VDO-%s.%03i.%s" % (wid, tstr, (t * 1000) % 1000, SAVE_VIDEO_FRAMES)
+    if SAVE_VIDEO_PATH:
+        filename = os.path.join(SAVE_VIDEO_PATH, filename)
+    videolog("do_video_encode: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride * h), filename)
+    img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
+
+
 class WindowVideoSource(WindowSource):
     """
         A WindowSource that handles video codecs.
@@ -2385,7 +2417,6 @@ class WindowVideoSource(WindowSource):
         videolog("do_video_encode(%s, %s, %s)", encoding, image, options)
         x, y, w, h = image.get_geometry()[:4]
         src_format = image.get_pixel_format()
-        stride = image.get_rowstride()
         if self.pixel_format != src_format:
             if self.is_cancelled():
                 return ()
@@ -2400,31 +2431,7 @@ class WindowVideoSource(WindowSource):
             src_format = src_format.replace("A", "X")
 
         if SAVE_VIDEO_FRAMES:
-            from PIL import Image
-            img_data = image.get_pixels()
-            rgb_format = image.get_pixel_format()   # ie: BGRA
-            rgba_format = rgb_format.replace("BGRX", "BGRA")
-            from PIL import __version__ as pil_version
-            try:
-                major = int(pil_version.split(".")[0])
-            except ValueError:
-                major = 0
-            if major < 10:
-                img_data = memoryview_to_bytes(img_data)
-            img = Image.frombuffer("RGBA", (w, h), img_data, "raw", rgba_format, stride)
-            kwargs = {}
-            if SAVE_VIDEO_FRAMES == "jpeg":
-                kwargs = {
-                    "quality": 0,
-                    "optimize": False,
-                }
-            t = monotonic()
-            tstr = time.strftime("%H-%M-%S", time.localtime(t))
-            filename = "W%i-VDO-%s.%03i.%s" % (self.wid, tstr, (t*1000) % 1000, SAVE_VIDEO_FRAMES)
-            if SAVE_VIDEO_PATH:
-                filename = os.path.join(SAVE_VIDEO_PATH, filename)
-            videolog("do_video_encode: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride*h), filename)
-            img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
+            save_video_frame(self.wid, image)
 
         if self.may_use_scrolling(image, options):
             # scroll encoding has dealt with this image
@@ -2450,6 +2457,7 @@ class WindowVideoSource(WindowSource):
             encodings = self.common_video_encodings
         else:
             encodings = (encoding, )
+
         if not self.check_pipeline(encodings, w, h, src_format):
             if self.is_cancelled():
                 return ()
