@@ -1860,7 +1860,52 @@ class WindowVideoSource(WindowSource):
         w = width & self.width_mask
         h = height & self.height_mask
         scores = self.get_video_pipeline_options(encodings, w, h, src_format)
-        return self.setup_pipeline(scores, width, height, src_format)
+        if not scores:
+            if not self.is_cancelled() and first_time(f"no-scores-{src_format}-{self.wid}"):
+                self.pipeline_setup_error(encodings, width, height, src_format,"no video pipeline options found")
+            return False
+
+        if self._current_quality == 100:
+            # discard options with negative scores (usually subsampled or downscaled)
+            positive_scores = filter(lambda option: option[0] >= 0, scores)
+            if not positive_scores:
+                videolog(f"no pipeline scores above 0 for quality={self._current_quality}, cannot use video")
+                return False
+            scores = positive_scores
+
+        if self.setup_pipeline(scores, width, height, src_format):
+            return True
+
+        if not self.is_cancelled() and first_time(f"novideo-{src_format}-{self.wid}"):
+            self.pipeline_setup_error(encodings, width, height, src_format,"failed to setup a video pipeline", scores)
+
+    def pipeline_setup_error(self, encodings: Sequence[str], width: int, height: int, src_format: str,
+                             message: str, scores=()):
+        vh = self.video_helper
+        if self.is_cancelled() or not vh:
+            return ()
+        # just for diagnostics:
+        supported_csc_modes = dict((encoding, self.full_csc_modes.strtupleget(encoding)) for encoding in encodings)
+        all_encs: set[str] = set()
+        for enc in encodings:
+            encoder_specs = vh.get_encoder_specs(enc)
+            for sublist in encoder_specs.values():
+                all_encs.update(es.codec_type for es in sublist)
+            for csc in supported_csc_modes:
+                if csc not in encoder_specs:
+                    continue
+        videolog.error(f"Error: {message}")
+        videolog.error(f" {csv(encodings)} encoding with source format {src_format!r}")
+        videolog.error(f" {width}x{height} {self.image_depth}-bit")
+        videolog.error(" all encoders: %s", csv(all_encs))
+        for enc, modes in supported_csc_modes.items():
+            videolog.error(f" client supported CSC modes for {enc!r}: %s", csv(modes))
+        if FORCE_CSC:
+            videolog.error(f" forced csc mode: {FORCE_CSC_MODE}")
+        if scores:
+            videolog.error(" tried the following options:")
+            for option in scores:
+                videolog.error(f" {option}")
 
     def do_check_pipeline(self, encodings: Sequence[str], width: int, height: int, src_format: str) -> bool:
         """
@@ -1940,11 +1985,6 @@ class WindowVideoSource(WindowSource):
         if width <= 0 or height <= 0:
             raise RuntimeError(f"invalid dimensions: {width}x{height}")
         start = monotonic()
-        if not scores:
-            if not self.is_cancelled() and first_time(f"no-scores-{src_format}-{self.wid}"):
-                videolog.error("Error: no video pipeline options found for %s %i-bit at %ix%i",
-                               src_format, self.image_depth, width, height)
-            return False
         videolog("setup_pipeline%s", (scores, width, height, src_format))
         for option in scores:
             try:
@@ -1970,12 +2010,7 @@ class WindowVideoSource(WindowSource):
             self.csc_clean(self._csc_encoder)
             self.ve_clean(self._video_encoder)
         end = monotonic()
-        if not self.is_cancelled() and first_time(f"novideo-{src_format}-{self.wid}"):
-            videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
-            videolog.error("Error: failed to setup a video pipeline for %s at %ix%i", src_format, width, height)
-            videolog.error(" tried the following options")
-            for option in scores:
-                videolog.error(" %s", option)
+        videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
         return False
 
     def setup_pipeline_option(self, width: int, height: int, src_format: str,
@@ -2463,25 +2498,6 @@ class WindowVideoSource(WindowSource):
             encodings = (encoding, )
 
         if not self.check_pipeline(encodings, w, h, src_format):
-            if self.is_cancelled():
-                return ()
-            # just for diagnostics:
-            supported_csc_modes = dict((encoding, self.full_csc_modes.strtupleget(encoding)) for encoding in encodings)
-            all_encs: set[str] = set()
-            for enc in encodings:
-                encoder_specs = vh.get_encoder_specs(enc)
-                for sublist in encoder_specs.values():
-                    all_encs.update(es.codec_type for es in sublist)
-                for csc in supported_csc_modes:
-                    if csc not in encoder_specs:
-                        continue
-            videolog.error("Error: failed to setup a video pipeline for %r encoding with source format %r",
-                           encoding, src_format)
-            videolog.error(f" all encoders for {encoding!r}: %s", csv(all_encs))
-            for enc, modes in supported_csc_modes.items():
-                videolog.error(f" client supported CSC modes for {enc!r}: %s", csv(modes))
-            if FORCE_CSC:
-                videolog.error(" forced csc mode: %s", FORCE_CSC_MODE)
             return self.video_fallback(image, options)
         ve = self._video_encoder
         if not ve:
