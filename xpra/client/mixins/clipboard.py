@@ -132,13 +132,13 @@ class ClipboardClient(StubClientMixin):
                 log.warn("Warning: incompatible clipboard direction settings")
                 log.warn(" server setting: %s, client setting: %s",
                          self.server_clipboard_direction, self.client_clipboard_direction)
-        clipboards : Tuple[str, ...] = ()
+        all_clipboards : Tuple[str, ...] = ()
         try:
             from xpra.clipboard.clipboard_core import ALL_CLIPBOARDS
-            clipboards = ALL_CLIPBOARDS
+            all_clipboards = ALL_CLIPBOARDS
         except ImportError:
             log("no clipboard core!")
-        self.server_clipboards = c.strtupleget("clipboards", clipboards)
+        self.server_clipboards = c.strtupleget("clipboards", all_clipboards)
         log("server clipboard: supported=%s, direction=%s",
                      self.server_clipboard, self.server_clipboard_direction)
         log("client clipboard: supported=%s, direction=%s",
@@ -146,7 +146,7 @@ class ClipboardClient(StubClientMixin):
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
         self.server_clipboard_greedy = c.boolget("clipboard.greedy")
         self.server_clipboard_want_targets = c.boolget("clipboard.want_targets")
-        self.server_clipboard_selections = c.strtupleget("clipboard.selections", CLIPBOARDS)
+        self.server_clipboard_selections = c.strtupleget("clipboard.selections", all_clipboards)
         self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
         log("server clipboard: greedy=%s, want_targets=%s, selections=%s",
             self.server_clipboard_greedy, self.server_clipboard_want_targets, self.server_clipboard_selections)
