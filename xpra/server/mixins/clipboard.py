@@ -233,7 +233,7 @@ class ClipboardServer(StubServerMixin):
         if not clipboard_enabled:
             ch.enable_selections()
 
-    def clipboard_progress(self, local_requests, _remote_requests) -> None:
+    def clipboard_progress(self, local_requests: int, _remote_requests: int) -> None:
         assert self.clipboard
         if self._clipboard_client:
             self._clipboard_client.send_clipboard_progress(local_requests)

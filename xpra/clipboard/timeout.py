@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.os_util import gi_import
+from xpra.common import noop
 from xpra.clipboard.core import ClipboardProtocolHelperCore, ClipboardProxyCore
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized
 from xpra.util.env import envint
@@ -29,7 +30,7 @@ if not 0 < REMOTE_TIMEOUT <= 5000:
 class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     # a clipboard superclass that handles timeouts
 
-    def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
+    def __init__(self, send_packet_cb, progress_cb=noop, **kwargs):
         super().__init__(send_packet_cb, progress_cb, **kwargs)
         self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
 

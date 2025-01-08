@@ -10,6 +10,7 @@ from collections.abc import Iterable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.env import envbool
+from xpra.common import noop
 from xpra.gtk.error import xsync
 from xpra.gtk.gobject import n_arg_signal, one_arg_signal
 from xpra.gtk.util import get_default_root_window
@@ -624,7 +625,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         "x11-xfixes-selection-notify-event": one_arg_signal,
     }
 
-    def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
+    def __init__(self, send_packet_cb, progress_cb=noop, **kwargs):
         GObject.GObject.__init__(self)
         self.init_window()
         init_x11_filter()

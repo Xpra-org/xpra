@@ -36,7 +36,7 @@ from xpra.clipboard.timeout import ClipboardTimeoutHelper
 from xpra.clipboard.core import (
     ClipboardProxyCore, log, _filter_targets, TEXT_TARGETS, MAX_CLIPBOARD_PACKET_SIZE, ClipboardCallback,
 )
-from xpra.common import roundup
+from xpra.common import roundup, noop
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.util.env import envint, envbool
 from xpra.platform.win32.constants import PROCESS_QUERY_INFORMATION
@@ -706,7 +706,7 @@ class Win32Clipboard(ClipboardTimeoutHelper):
         Use Native win32 API to access the clipboard
     """
 
-    def __init__(self, send_packet_cb, progress_cb=None, **kwargs):
+    def __init__(self, send_packet_cb, progress_cb=noop, **kwargs):
         self.init_window()
         super().__init__(send_packet_cb, progress_cb, **kwargs)
 

@@ -388,10 +388,10 @@ class Logger:
     * we bypass the logging system unless debugging is enabled for the logger,
         which is much faster than relying on the python logging code
     """
-    __slots__ = ("categories", "level", "level_override", "_logger", "debug_enabled", "__weakref__", "__call__")
+    __slots__ = ("categories", "level", "level_override", "_logger", "debug_enabled", "__weakref__", "debug")
 
     def __init__(self, *categories: str):
-        self.__call__ = self.debug
+        self.debug = self.__call__
         self.categories = list(categories)
         n = 1
         caller = ""
@@ -499,7 +499,7 @@ class Logger:
                     for rec in frame_summary.splitlines():
                         global_logging_handler(self._logger.log, self.level_override or level, rec)
 
-    def debug(self, msg: str, *args, **kwargs) -> None:
+    def __call__(self, msg: str, *args, **kwargs) -> None:
         if self.debug_enabled:
             self.log(logging.DEBUG, msg, *args, **kwargs)
 

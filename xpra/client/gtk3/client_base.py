@@ -1451,14 +1451,14 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log("last window for refs %s is gone, destroying the group leader %s", refs, group_leader)
         group_leader.close()
 
-    def setup_clipboard_helper(self, helperClass):
+    def setup_clipboard_helper(self, helper_class, options: dict):
         from xpra.client.mixins.clipboard import ClipboardClient
-        ch = ClipboardClient.setup_clipboard_helper(self, helperClass)
+        ch = ClipboardClient.setup_clipboard_helper(self, helper_class, options)
 
         # check for loops after handshake:
 
-        def register_clipboard_toggled(*_args):
-            def clipboard_toggled(*_args):
+        def register_clipboard_toggled(*_args) -> None:
+            def clipboard_toggled(*_args) -> None:
                 # reset tray icon:
                 self.local_clipboard_requests = 0
                 self.remote_clipboard_requests = 0

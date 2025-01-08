@@ -735,11 +735,11 @@ class ClipboardProtocolHelperCore:
         raise NotImplementedError()
 
     def progress(self) -> None:
-        self.progress_cb(len(self._clipboard_outstanding_requests), None)
+        self.progress_cb(len(self._clipboard_outstanding_requests), -1)
 
     def _process_clipboard_pending_requests(self, packet: PacketType) -> None:
         pending = packet[1]
-        self.progress_cb(None, pending)
+        self.progress_cb(-1, pending)
 
     def _process_clipboard_enable_selections(self, packet: PacketType) -> None:
         selections = tuple(packet[1])
