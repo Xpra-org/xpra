@@ -255,7 +255,7 @@ class X11ServerCore(GTKServerBase):
             return
         if grp<0:
             grp = 0
-        if self.current_keyboard_group!=grp:
+        if self.current_keyboard_group == grp:
             keylog(f"set_keyboard_layout_group({grp}) ignored, value unchanged")
             return
         keylog(f"set_keyboard_layout_group({grp}) config={self.keyboard_config}, current keyboard group={self.current_keyboard_group}")
