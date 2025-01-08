@@ -8,6 +8,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.common import ALL_CLIPBOARDS
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
 from xpra.platform.gui import get_clipboard_native_class
@@ -77,7 +78,6 @@ class ClipboardClient(StubClientMixin):
         self.server_clipboard_direction: str = "both"
         self.server_clipboard: bool = False
         self.server_clipboard_preferred_targets: Sequence[str] = ()
-        self.server_clipboards: Sequence[str] = ()
         self.server_clipboard_greedy: bool = False
         self.server_clipboard_want_targets: bool = False
         self.server_clipboard_selections: Sequence[str] = ()
@@ -115,7 +115,7 @@ class ClipboardClient(StubClientMixin):
             {
                 "enabled": self.server_clipboard,
                 "direction": self.server_clipboard_direction,
-                "selections": self.server_clipboards,
+                "selections": self.server_clipboard_selections,
             },
             "requests":
             {
@@ -164,21 +164,14 @@ class ClipboardClient(StubClientMixin):
                 log.warn("Warning: incompatible clipboard direction settings")
                 log.warn(" server setting: %s, client setting: %s",
                          self.server_clipboard_direction, self.client_clipboard_direction)
-        all_clipboards: Sequence[str] = ()
-        try:
-            from xpra.clipboard.core import ALL_CLIPBOARDS
-            all_clipboards = ALL_CLIPBOARDS
-        except ImportError:
-            log("no clipboard core!")
-        self.server_clipboards = c.strtupleget("clipboards", all_clipboards)
-        log("server clipboard: supported=%s, direction=%s",
-            self.server_clipboard, self.server_clipboard_direction)
-        log("client clipboard: supported=%s, direction=%s",
-            self.client_supports_clipboard, self.client_clipboard_direction)
+        self.server_clipboard_selections = c.strtupleget("clipboard.selections", ALL_CLIPBOARDS)
+        log("server clipboard: supported=%s, selections=%s, direction=%s",
+            self.server_clipboard, self.server_clipboard_selections, self.server_clipboard_direction)
+        log("client clipboard: supported=%s, selections=%s, direction=%s",
+            self.client_supports_clipboard, CLIPBOARDS, self.client_clipboard_direction)
         self.clipboard_enabled = self.client_supports_clipboard and self.server_clipboard
         self.server_clipboard_greedy = c.boolget("clipboard.greedy")
         self.server_clipboard_want_targets = c.boolget("clipboard.want_targets")
-        self.server_clipboard_selections = c.strtupleget("clipboard.selections", all_clipboards)
         self.server_clipboard_preferred_targets = c.strtupleget("clipboard.preferred-targets", ())
         log("server clipboard: greedy=%s, want_targets=%s, selections=%s",
             self.server_clipboard_greedy, self.server_clipboard_want_targets, self.server_clipboard_selections)
@@ -276,7 +269,7 @@ class ClipboardClient(StubClientMixin):
             # all the local clipboards supported:
             "clipboards.local": CLIPBOARDS,
             # all the remote clipboards supported:
-            "clipboards.remote": self.server_clipboards,
+            "clipboards.remote": self.server_clipboard_selections,
             "can-send": self.client_clipboard_direction in ("to-server", "both"),
             "can-receive": self.client_clipboard_direction in ("to-client", "both"),
             # the local clipboard we want to sync to (with the translated clipboard only):

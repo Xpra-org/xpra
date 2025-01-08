@@ -33,7 +33,6 @@ MAX_CLIPBOARD_PACKET_SIZE: Final[int] = 16 * 1024 * 1024
 MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 
-ALL_CLIPBOARDS: Sequence[str] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
 CLIPBOARDS: list[str] = list(PLATFORM_CLIPBOARDS)
 CLIPBOARDS_ENV: str | None = os.environ.get("XPRA_CLIPBOARDS")
 if CLIPBOARDS_ENV is not None:
@@ -501,7 +500,7 @@ class ClipboardProtocolHelperCore:
             # this can happen if the server has fewer clipboards than the client,
             # ie: with win32 shadow servers
             log_fn: Callable = log.debug
-            if name in ALL_CLIPBOARDS:
+            if name in CLIPBOARDS:
                 log_fn = log.warn
             log_fn("ignoring token for clipboard '%s' (no proxy)", name)
             return

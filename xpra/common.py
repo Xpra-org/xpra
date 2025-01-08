@@ -38,6 +38,9 @@ PaintCallback: TypeAlias = Callable[[int | bool, str], None]
 PaintCallbacks: TypeAlias = MutableSequence[PaintCallback]
 
 
+ALL_CLIPBOARDS: Final[tuple[str]] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
+
+
 # noinspection PyPep8
 RESOLUTION_ALIASES: dict[str, tuple[int, int]] = {
     "QVGA"  : (320, 240),
