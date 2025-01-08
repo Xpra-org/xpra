@@ -337,7 +337,7 @@ class OSXMenuHelper(GTKTrayMenu):
         self._clipboard_change_pending = False
         return label
 
-    def set_clipboard_menu(self, _clipboard_menu):
+    def set_clipboard_menu(self, clipboard_menu) -> None:
         # find the menu item matching the current settings,
         # and select it
         try:
@@ -346,11 +346,13 @@ class OSXMenuHelper(GTKTrayMenu):
             if len(ch._local_to_remote) == 1:
                 rc_setting = tuple(ch._local_to_remote.values())[0]
             label = CLIPBOARD_NAME_TO_LABEL.get(rc_setting)
+            clipboardlog(f"set_clipboard_menu(%s) setting={rc_setting!r}, {label=}", clipboard_menu)
             self.select_clipboard_menu_option(None, label, CLIPBOARD_LABELS)
-        except Exception:
+        except RuntimeError:
             clipboardlog("failed to select remote clipboard option in menu", exc_info=True)
-        direction_label = CLIPBOARD_DIRECTION_NAME_TO_LABEL.get(self.client.client_clipboard_direction, "Disabled")
-        clipboardlog("direction(%s)=%s", self.client.client_clipboard_direction, direction_label)
+        direction = self.client.client_clipboard_direction
+        direction_label = CLIPBOARD_DIRECTION_NAME_TO_LABEL.get(direction, "Disabled")
+        clipboardlog("direction(%s)=%s", direction, direction_label)
         self.select_clipboard_menu_option(None, direction_label, CLIPBOARD_DIRECTION_LABELS)
 
     # these methods are called by the superclass,

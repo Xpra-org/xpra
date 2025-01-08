@@ -113,6 +113,19 @@ def get_format_size(dformat: int) -> int:
     return max(8, {32: CARD32_SIZE}.get(dformat, dformat))
 
 
+def compile_filters(filter_res: Iterable[str]) -> list[re.Pattern]:
+    filters = []
+    for x in filter_res:
+        if not x:
+            continue
+        try:
+            filters.append(re.compile(x))
+        except Exception as e:
+            log.error("Error: invalid clipboard filter regular expression")
+            log.error(f" {x}: {e}")
+    return filters
+
+
 class ClipboardProxyCore:
     def __init__(self, selection):
         self._selection: str = selection
@@ -327,7 +340,7 @@ class ClipboardProxyCore:
 
 
 class ClipboardProtocolHelperCore:
-    def __init__(self, send_packet_cb, progress_cb: Callable = noop, **kwargs):
+    def __init__(self, send_packet_cb: Callable, progress_cb: Callable = noop, **kwargs):
         d = typedict(kwargs)
         self.send: Callable = send_packet_cb
         self.progress_cb: Callable = progress_cb
@@ -336,14 +349,7 @@ class ClipboardProtocolHelperCore:
         self.max_clipboard_packet_size: int = d.intget("max-packet-size", MAX_CLIPBOARD_PACKET_SIZE)
         self.max_clipboard_receive_size: int = d.intget("max-receive-size", MAX_CLIPBOARD_RECEIVE_SIZE)
         self.max_clipboard_send_size: int = d.intget("max-send-size", MAX_CLIPBOARD_SEND_SIZE)
-        self.filter_res = []
-        filter_res: Iterable[str] = d.strtupleget("filters")
-        for x in filter_res:
-            try:
-                self.filter_res.append(re.compile(x))
-            except Exception as e:
-                log.error("Error: invalid clipboard filter regular expression")
-                log.error(" '%s': %s", x, e)
+        self.filter_res = compile_filters(d.strtupleget("filters"))
         self._clipboard_request_counter: int = 0
         self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
         self._local_to_remote: dict[str, str] = {}
@@ -362,10 +368,10 @@ class ClipboardProtocolHelperCore:
         log("%s.init_proxies : %s", self, self._clipboard_proxies)
 
     def init_translation(self, kwargs: dict) -> None:
-        def getselection(name) -> str:
+        def getselection(name: str) -> str:
             v = kwargs.get(f"clipboard.{name}")  # ie: clipboard.remote
             env_value = os.environ.get(f"XPRA_TRANSLATEDCLIPBOARD_{name.upper()}_SELECTION")
-            selections = kwargs.get(f"clipboards.{name}")  # ie: clipboards.remote
+            selections = kwargs.get(f"clipboards.{name}", ())  # ie: clipboards.remote
             if not selections:
                 return ""
             for x in (env_value, v):
@@ -375,6 +381,7 @@ class ClipboardProtocolHelperCore:
 
         local = getselection("local")
         remote = getselection("remote")
+        log(f"init_translation({kwargs}) {local=!r} {remote=!r}")
         if local and remote:
             self._local_to_remote[local] = remote
             self._remote_to_local[remote] = local

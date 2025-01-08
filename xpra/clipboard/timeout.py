@@ -17,14 +17,19 @@ GLib = gi_import("GLib")
 
 log = Logger("clipboard")
 
-CONVERT_TIMEOUT = envint("XPRA_CLIPBOARD_CONVERT_TIMEOUT", 100)
-if not 0 < CONVERT_TIMEOUT <= 5000:
-    log.warn("Warning: invalid value for 'XPRA_CLIPBOARD_CONVERT_TIMEOUT'")
-    CONVERT_TIMEOUT = max(0, min(5000, CONVERT_TIMEOUT))
-REMOTE_TIMEOUT = envint("XPRA_CLIPBOARD_REMOTE_TIMEOUT", 2500)
-if not 0 < REMOTE_TIMEOUT <= 5000:
-    log.warn("Warning: invalid value for 'XPRA_CLIPBOARD_REMOTE_TIMEOUT'")
-    REMOTE_TIMEOUT = max(0, min(5000, REMOTE_TIMEOUT))
+
+def env_timeout(name, default: int, min_time=0, max_time=5000) -> int:
+    env_name = f"XPRA_CLIPBOARD_{name}_TIMEOUT"
+    value = envint(env_name, default)
+    if not min_time < value <= max_time:
+        log.warn(f"Warning: invalid value for {env_name!r}")
+        log.warn(f" valid range is from {min_time} to {max_time}")
+        value = max(min_time, min(max_time, value))
+    return value
+
+
+CONVERT_TIMEOUT = env_timeout("CONVERT", 100)
+REMOTE_TIMEOUT = env_timeout("REMOTE", 2500)
 
 
 class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
