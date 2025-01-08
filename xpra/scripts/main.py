@@ -485,7 +485,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "auth",
             "applications-menu", "sessions-menu",
             "_proxy",
-            "configure", "showconfig", "showsetting", "setting",
+            "configure", "showconfig", "showsetting", "setting", "unset",
             "wait-for-x11", "wait-for-wayland",
             "xvfb-command", "xvfb",
     ):
@@ -888,7 +888,9 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode == "showsetting":
         return run_showsetting(args)
     if mode == "setting":
-        return run_setting(args)
+        return run_setting(True, args)
+    if mode == "unset":
+        return run_setting(False, args)
     # unknown subcommand:
     if mode != "help":
         print(f"Invalid subcommand {mode!r}")
@@ -4675,20 +4677,40 @@ def run_showsetting(args) -> ExitValue:
     return 0
 
 
-def run_setting(args) -> ExitValue:
-    if len(args) < 2:
-        raise InitException("specify a setting to modify and its value")
+def run_setting(setunset: bool, args) -> ExitValue:
+    from xpra.util.config import update_config_attribute, unset_config_attribute
     setting = args[0]
     otype = OPTION_TYPES.get(setting)
     if not otype:
         raise ValueError(f"{setting!r} is not a valid setting, see `xpra showconfig`")
+    if not setunset:
+        if len(args) != 1:
+            raise InitException("too many arguments")
+        unset_config_attribute(setting)
+        return ExitCode.OK
+
+    if len(args) < 2:
+        raise InitException("specify a setting to modify and its value")
     if otype == list:
         value = args[1:]
     else:
         if len(args) > 2:
             raise ValueError(f"too many values for {setting!r} which is a {otype!r}")
-        value = args[1]
-    from xpra.util.config import update_config_attribute
+
+        def parse_bool(value: str):
+            v = value.lower()
+            if v in TRUE_OPTIONS:
+                return True
+            if v in FALSE_OPTIONS:
+                return False
+            raise ValueError("not a boolean")
+        parse_fn = {
+            bool: parse_bool,
+        }.get(otype, otype)
+        try:
+            value = parse_fn(args[1])
+        except (ValueError, TypeError):
+            raise ValueError(f"{setting} not modified: unable to convert value {args[1]!r} to {otype!r}")
     update_config_attribute(setting, value)
     return ExitCode.OK
 

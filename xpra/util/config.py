@@ -66,6 +66,12 @@ def update_config_attribute(attribute: str, value: str | int | float | list,
     save_user_config_file(config, dirname, filename)
 
 
+def unset_config_attribute(attribute: str, dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
+    config = parse_user_config_file(dirname, filename)
+    if config.pop(attribute, None) is not None:
+        save_user_config_file(config, dirname, filename)
+
+
 def update_config_env(attribute: str, value,
                       dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
     # there can be many env attributes
