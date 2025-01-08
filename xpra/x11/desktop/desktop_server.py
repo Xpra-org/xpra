@@ -39,7 +39,7 @@ class XpraDesktopServer(DesktopServerBase):
         super().server_init()
         from xpra.x11.vfb_util import set_initial_resolution
         screenlog(f"server_init() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
-        if not RandR.has_randr() or not self.initial_resolutions or not features.display:
+        if not RandR.has_randr() or not self.initial_resolutions or not server_features.display:
             return
         res = self.initial_resolutions
         if len(res) > 1:
