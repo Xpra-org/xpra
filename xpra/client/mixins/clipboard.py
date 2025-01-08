@@ -15,7 +15,6 @@ from xpra.net.common import PacketType
 from xpra.net import compression
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.util.objects import typedict
-from xpra.util.system import is_Wayland
 from xpra.log import Logger
 
 log = Logger("clipboard")
@@ -153,8 +152,6 @@ class ClipboardClient(StubClientMixin):
             ch = self.make_clipboard_helper()
             if not ch:
                 log.warn("Warning: no clipboard support")
-                if is_Wayland():
-                    log.warn(" (wayland display)")
             self.clipboard_helper = ch
             self.clipboard_enabled = ch is not None
             log("clipboard helper=%s", ch)
