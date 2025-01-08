@@ -50,12 +50,12 @@ class DrawingArea(QLabel):
         self.wid = wid
         self.seq = 0
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         pos = get_pointer_position(event)
         self.send("pointer", -1, self.seq, self.wid, pos, {})
         self.seq += 1
 
-    def send_mouse_button_event(self, event, pressed=True):
+    def send_mouse_button_event(self, event, pressed=True) -> None:
         props = {
             # "modifiers": (),
             # "buttons": (),
@@ -71,17 +71,17 @@ class DrawingArea(QLabel):
         self.send("pointer-button", -1, self.seq, self.wid, button, pressed, pos, props)
         self.seq += 1
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         self.send_mouse_button_event(event, True)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         self.send_mouse_button_event(event, False)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event) -> None:
         self.send_mouse_button_event(event, True)
         self.send_mouse_button_event(event, True)
 
-    def wheelEvent(self, event):
+    def wheelEvent(self, event) -> None:
         pos = get_pointer_position(event)
         delta = event.pixelDelta()
         props = {}
@@ -124,7 +124,7 @@ class ClientWindow(QMainWindow):
         size = self.label.size()
         return size.width(), size.height()
 
-    def eventFilter(self, obj, event):
+    def eventFilter(self, obj, event) -> bool:
         etype = event.type()
         if etype == QEvent.Type.WindowDeactivate:
             self.client.update_focus(0)
@@ -181,18 +181,18 @@ class ClientWindow(QMainWindow):
         log(f"{obj}: {event} {event.type().name}")
         return False
 
-    def keyPressEvent(self, event: QKeyEvent):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
         self.send_key_event(event, True)
 
-    def keyReleaseEvent(self, event: QKeyEvent):
+    def keyReleaseEvent(self, event: QKeyEvent) -> None:
         self.send_key_event(event, False)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         log(f"close: {event}")
         self.send("close-window", self.wid)
         event.ignore()
 
-    def send_key_event(self, event, pressed=True):
+    def send_key_event(self, event, pressed=True) -> None:
         keyval = event.key()
         name = key_names.get(keyval, event.text())
         keycode = event.nativeScanCode()
@@ -204,7 +204,7 @@ class ClientWindow(QMainWindow):
         log(f"key: {name!r}, {keyval=}, {keycode=}, {modifiers=} {native_modifiers=}, {vk=}")
         self.send("key-action", self.wid, name, pressed, modifiers, keyval, string, keycode, group)
 
-    def draw(self, x, y, w, h, coding, data, stride):
+    def draw(self, x, y, w, h, coding, data, stride) -> None:
         if coding in ("png", "jpg", "webp"):
             from PIL import Image
             from io import BytesIO

@@ -15,7 +15,8 @@ from PyQt6.QtNetwork import QTcpSocket
 from PyQt6.QtWidgets import QApplication
 
 from xpra import __version__
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
+from xpra.net.common import PacketType
 from xpra.net.rencodeplus.rencodeplus import dumps, loads
 from xpra.net.protocol.header import pack_header, unpack_header, FLAGS_RENCODEPLUS
 
@@ -43,35 +44,35 @@ class Qt6Client:
         socket.readyRead.connect(self.socket_read)
         return socket
 
-    def connect(self, host: str, port: int):
+    def connect(self, host: str, port: int) -> None:
         log(f"connect({host}, {port})")
         self.socket.connectToHost(host, port)
         self.socket.connected.connect(self.socket_connected)
 
-    def socket_error(self, *args):
+    def socket_error(self, *args) -> None:
         netlog(f"socket_error{args}")
 
-    def socket_hostfound(self, *args):
+    def socket_hostfound(self, *args) -> None:
         netlog(f"socket_hostfound{args}")
 
-    def socket_statechanged(self, *args):
+    def socket_statechanged(self, *args) -> None:
         netlog(f"socket_statechanged{args}")
 
-    def socket_disconnected(self, *args):
+    def socket_disconnected(self, *args) -> None:
         netlog(f"socket_disconnected{args}")
         self.quit(ExitCode.CONNECTION_LOST)
 
-    def quit(self, exit_code):
+    def quit(self, exit_code: ExitValue):
         QApplication.exit(int(exit_code))
 
-    def socket_connected(self, *args):
+    def socket_connected(self, *args) -> None:
         netlog(f"socket_connected{args}")
         self.send_hello()
 
     def get_encodings(self) -> Sequence[str]:
         return "rgb", "png", "jpg", "webp"
 
-    def send_hello(self):
+    def send_hello(self) -> None:
         hello = {
             "version": __version__,
             "client_type": "qt6",
@@ -85,7 +86,7 @@ class Qt6Client:
         }
         self.send("hello", hello)
 
-    def send(self, packet_type: str, *args):
+    def send(self, packet_type: str, *args) -> None:
         packet = (packet_type, *args)
         data = dumps(packet)
         header = pack_header(FLAGS_RENCODEPLUS, 0, 0, len(data))
@@ -94,7 +95,7 @@ class Qt6Client:
         self.socket.flush()
         netlog(f"sent {packet_type!r}: {bin_packet!r}")
 
-    def socket_read(self, *args):
+    def socket_read(self, *args) -> None:
         netlog(f"socket_read{args}")
         while avail := self.socket.bytesAvailable():
             need = 8 if not self.header else self.header[4]
@@ -124,7 +125,7 @@ class Qt6Client:
                 self.raw_packets = {}
             self.process_packet(packet)
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: PacketType) -> None:
         packet_type_fn_name = str(packet[0]).replace("-", "_")
         meth = getattr(self, f"_process_{packet_type_fn_name}", None)
         if not meth:
@@ -133,27 +134,27 @@ class Qt6Client:
             return
         meth(packet)
 
-    def _process_hello(self, packet: tuple):
+    def _process_hello(self, packet: PacketType) -> None:
         self.hello = packet[1]
         netlog.info("got hello from %s server" % self.hello.get("version", ""))
 
-    def _process_setting_change(self, packet: tuple):
+    def _process_setting_change(self, packet: PacketType) -> None:
         setting = packet[1]
         netlog.info(f"ignoring setting-change for {setting!r}")
 
-    def _process_startup_complete(self, _packet: tuple):
+    def _process_startup_complete(self, _packet: PacketType) -> None:
         netlog.info("client is connected")
 
-    def _process_encodings(self, packet: tuple):
+    def _process_encodings(self, packet: PacketType) -> None:
         log(f"server encodings: {packet[1]}")
 
-    def _process_new_window(self, packet):
+    def _process_new_window(self, packet: PacketType) -> None:
         self.new_window(packet)
 
-    def _process_new_override_redirect(self, packet):
+    def _process_new_override_redirect(self, packet: PacketType) -> None:
         self.new_window(packet, True)
 
-    def new_window(self, packet, is_or=False):
+    def new_window(self, packet: PacketType, is_or=False) -> None:
         from xpra.client.qt6.window import ClientWindow
         wid, x, y, w, h = (int(item) for item in packet[1:6])
         metadata = packet[6]
@@ -163,20 +164,20 @@ class Qt6Client:
         self.windows[wid] = window
         window.show()
 
-    def _process_lost_window(self, packet):
+    def _process_lost_window(self, packet: PacketType) -> None:
         wid = int(packet[1])
         window = self.windows.get(wid)
         if window:
             window.close()
             del self.windows[wid]
 
-    def _process_raise_window(self, packet):
+    def _process_raise_window(self, packet: PacketType) -> None:
         wid = int(packet[1])
         window = self.windows.get(wid)
         if window:
             window.raise_()
 
-    def _process_draw(self, packet):
+    def _process_draw(self, packet: PacketType) -> None:
         wid, x, y, width, height, coding, data, packet_sequence, rowstride = packet[1:10]
         window = self.windows.get(wid)
         now = monotonic()
@@ -190,12 +191,12 @@ class Qt6Client:
             decode_time = -1
         self.send("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
 
-    def _process_window_metadata(self, packet):
+    def _process_window_metadata(self, packet: PacketType) -> None:
         wid = packet[1]
         metadata = packet[2]
         log.info(f"window {wid}: {metadata}")
 
-    def update_focus(self, wid=0):
+    def update_focus(self, wid=0) -> None:
         if self.focused == wid:
             return
         self.focused = wid
@@ -205,7 +206,7 @@ class Qt6Client:
                 self.send("focus", wid, ())
         QTimer.singleShot(10, recheck_focus)
 
-    def state_changed(self, state):
+    def state_changed(self, state) -> None:
         log(f"state changed: {state}")
         if state == Qt.ApplicationState.ApplicationInactive:
             self.focused = 0
@@ -218,19 +219,19 @@ class XpraQt6Client(Qt6Client):
     as these exist in the GTK3 client class.
     """
 
-    def show_progress(self, pct: int, msg):
+    def show_progress(self, pct: int, msg) -> None:
         log(f"show_progress({pct}, {msg})")
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         """ we don't handle any options yet! """
 
-    def init_ui(self, opts):
+    def init_ui(self, opts) -> None:
         """ we don't handle any options yet! """
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """ client classes must define this method """
 
-    def setup_connection(self, conn):
+    def setup_connection(self, conn) -> None:
         """
         Warnings:
             * this only works for plain `tcp` sockets
@@ -249,7 +250,7 @@ class XpraQt6Client(Qt6Client):
 
         class FakeProtocol:
 
-            def start(self):
+            def start(self) -> None:
                 log("FakeProtocol.start()")
                 conn.close()
         return FakeProtocol()

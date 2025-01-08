@@ -5,7 +5,7 @@
 
 from PyQt6.QtCore import Qt
 
-key_names = {}
+key_names: dict[Qt.Key, str] = {}
 
 for attr in dir(Qt.Key):
     if attr.startswith("Key_"):
