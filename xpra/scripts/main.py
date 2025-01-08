@@ -16,6 +16,7 @@ import time
 import logging
 from math import ceil
 from time import monotonic
+from importlib import import_module
 from importlib.util import find_spec
 
 from shutil import rmtree, which
@@ -2797,13 +2798,14 @@ def run_example(args) -> ExitValue:
     if not args or args[0] not in all_examples:
         raise InitInfo(f"usage: xpra example testname\nvalid names: {csv(sorted(all_examples))}")
     example = args[0]
-    modpath = "xpra.gtk.dialogs" if example in ("view-keyboard", "view-clipboard") else "xpra.gtk.examples"
     classname = example.replace("-", "_")
+    modpath = f"xpra.gtk.dialogs.{classname}" if example in ("view-keyboard", "view-clipboard")\
+        else f"xpra.gtk.examples.{classname}"
     try:
-        ic = __import__(f"{modpath}.{classname}", {}, {}, "main")
+        module = import_module(modpath)
     except ImportError as e:
         raise InitException(f"failed to import example {classname}: {e}") from None
-    return ic.main()
+    return module.main()
 
 
 def run_autostart(script_file, args) -> ExitValue:

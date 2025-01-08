@@ -6,6 +6,7 @@
 
 import os
 from typing import Any
+from importlib import import_module
 from collections.abc import Sequence
 
 from xpra.common import ALL_CLIPBOARDS
@@ -49,15 +50,16 @@ def get_clipboard_helper_classes(clipboard_type: str) -> list[type]:
     for co in clipboard_classes:
         if not co:
             continue
+        parts = co.split(".")
+        mod = ".".join(parts[:-1])
+        class_name = parts[-1]
         try:
-            parts = co.split(".")
-            mod = ".".join(parts[:-1])
-            module = __import__(mod, {}, {}, [parts[-1]])
-            helperclass = getattr(module, parts[-1])
-            loadable.append(helperclass)
+            module = import_module(mod)
+            helper_class = getattr(module, class_name)
+            loadable.append(helper_class)
         except ImportError:
             log("cannot load %s", co, exc_info=True)
-            log.warn(f"Warning: cannot load clipboard backend {co!r}")
+            log.warn(f"Warning: cannot load clipboard class {class_name!r} from {mod!r}")
             continue
     log("get_clipboard_helper_classes()=%s", loadable)
     return loadable

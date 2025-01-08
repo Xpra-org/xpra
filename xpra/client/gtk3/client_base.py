@@ -8,6 +8,7 @@
 import os
 import weakref
 from time import monotonic
+from importlib import import_module
 from collections.abc import Callable, Sequence, Iterable
 from subprocess import Popen, PIPE
 from threading import Event
@@ -1215,7 +1216,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             self.opengl_props["info"] = "enabled despite: %s" % csv(warnings)
         try:
             opengllog("init_opengl: going to import xpra.opengl")
-            __import__("xpra.opengl", {}, {}, [])
+            import_module("xpra.opengl")
             from xpra.opengl.window import get_gl_client_window_module, test_gl_client_window
             self.opengl_props, gl_client_window_module = get_gl_client_window_module(enable_opengl)
             if not gl_client_window_module:

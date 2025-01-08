@@ -5,6 +5,7 @@
 
 import os
 import sys
+from importlib import import_module
 from typing import Any, TypeAlias
 
 from xpra.util.parsing import parse_simple_dict
@@ -46,7 +47,8 @@ def get_auth_module(auth_str: str, cwd=os.getcwd(), **auth_options) -> AuthDef:
             auth_modname = auth.replace("-", "_")
         auth_mod_name = "xpra.auth." + auth_modname
         log("auth module name for '%s': '%s'", auth, auth_mod_name)
-        auth_module = __import__(auth_mod_name, {}, {}, ["Authenticator"])
+        auth_module = import_module(auth_mod_name)
+        auth_module = getattr(auth_module, "Authenticator")
     except ImportError as e:
         log("cannot load %s auth for %r", auth, auth_str, exc_info=True)
         raise InitException(f"cannot load authentication module '{auth}' for {auth_str!r}: {e}") from None

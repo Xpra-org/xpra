@@ -7,6 +7,7 @@
 import os.path
 from typing import Any
 from collections.abc import Sequence
+from importlib import import_module
 
 from xpra.platform.features import (
     CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS,
@@ -115,8 +116,9 @@ class ClipboardServer(StubServerMixin):
                 raise RuntimeError("no native clipboard support on this platform")
             parts = clipboard_class.split(".")
             mod = ".".join(parts[:-1])
-            module = __import__(mod, {}, {}, [parts[-1]])
-            ClipboardClass = getattr(module, parts[-1])
+            class_name = parts[-1]
+            module = import_module(mod)
+            ClipboardClass = getattr(module, class_name)
             log("ClipboardClass for %s: %s", clipboard_class, ClipboardClass)
             kwargs = {
                 "filters": clipboard_filter_res,

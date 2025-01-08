@@ -13,6 +13,7 @@ import string
 from time import monotonic
 from typing import Any, NoReturn
 from types import FrameType
+from importlib import import_module
 from collections.abc import Callable
 
 from xpra.scripts.config import InitExit
@@ -207,7 +208,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         auth_mod_name = f"xpra.client.auth.{mod_name}"
         authlog(f"auth module name for {auth!r}: {auth_mod_name!r}")
         try:
-            auth_module = __import__(auth_mod_name, {}, {}, ["Handler"])
+            auth_module = import_module(auth_mod_name)
             auth_class = auth_module.Handler
             instance = auth_class(self, **kwargs)
             return instance

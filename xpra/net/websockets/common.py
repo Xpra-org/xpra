@@ -12,6 +12,7 @@ from urllib.parse import quote
 from typing import Any
 from enum import IntEnum
 from collections.abc import Callable
+from importlib import import_module
 
 from xpra.util.str_fn import strtobytes
 from xpra.log import Logger
@@ -54,7 +55,7 @@ def get_headers(host: str, port: int) -> dict[bytes, bytes]:
     headers = {}
     for mod_name in HEADERS_MODULES:
         try:
-            header_module = __import__(f"xpra.net.websockets.headers.{mod_name}", {}, {}, ["get_headers"])
+            header_module = import_module(f"xpra.net.websockets.headers.{mod_name}")
             v = header_module.get_headers(host, port)
             log(f"{mod_name}.get_headers({host}, {port})={v}")
             headers.update(v)

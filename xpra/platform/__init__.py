@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from importlib import import_module
 
 
 _init_done = False
@@ -198,12 +199,11 @@ def platform_import(where: dict, pm="", required=False, *imports) -> None:
     # log = Logger("platform", "import")
     # log("importing %s from %s (required=%s)" % (imports, module, required))
     try:
-        platform_module = __import__(module, {}, {}, imports)
+        platform_module = import_module(module)
     except ImportError:
         if required:
             raise
         return
-    assert platform_module
     for x in imports:
         found = hasattr(platform_module, x)
         if not found:

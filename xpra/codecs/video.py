@@ -8,6 +8,7 @@ import sys
 import traceback
 from threading import Lock
 from typing import Any
+from importlib.util import find_spec
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.common import Self
@@ -43,8 +44,8 @@ CODEC_TO_MODULE: dict[str, str] = {
 def has_codec_module(module_name: str) -> bool:
     top_module = f"xpra.codecs.{module_name}"
     try:
-        __import__(top_module, {}, {}, [])
-        log("codec module %s is installed", module_name)
+        found = bool(find_spec(top_module))
+        log("%s found: %s", module_name, found)
         return True
     except Exception as e:
         log("codec module %s cannot be loaded: %s", module_name, e)

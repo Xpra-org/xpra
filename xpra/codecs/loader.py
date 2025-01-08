@@ -8,8 +8,10 @@ import sys
 import os.path
 from types import ModuleType
 from typing import Any
+from importlib import import_module
 from collections.abc import Sequence, Iterable
 
+from xpra.common import noop
 from xpra.util.str_fn import csv, print_nested_dict, pver
 from xpra.util.env import envbool, numpy_import_context
 from xpra.os_util import OSX, WIN32
@@ -83,7 +85,6 @@ def should_warn(name: str) -> bool:
         return False
     if name in ("csc_cython", "dec_avif") or name.find("enc") >= 0 or name.startswith("nv"):
         try:
-            from importlib import import_module
             import_module("xpra.server")
         except ImportError:
             # no server support,
@@ -112,7 +113,7 @@ if PIL_BLOCK:
     pillow_import_block()
 
 
-def codec_import_check(name: str, description: str, top_module, class_module, classnames):
+def codec_import_check(name: str, description: str, top_module: str, class_module: str, classnames: Sequence[str]):
     log(f"{name}:")
     log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
     if any(name.find(s) >= 0 for s in SKIP_LIST):
@@ -122,7 +123,7 @@ def codec_import_check(name: str, description: str, top_module, class_module, cl
         try:
             if name in CODEC_FAIL_IMPORT:
                 raise ImportError("codec found in fail import list")
-            __import__(top_module, {}, {}, [])
+            module = import_module(top_module)
         except ImportError as e:
             log(f"failed to import {name} ({description})")
             log("", exc_info=True)
@@ -136,13 +137,12 @@ def codec_import_check(name: str, description: str, top_module, class_module, cl
     try:
         try:
             log(f" {top_module} found, will check for {classnames} in {class_module}")
-            ic: ModuleType = __import__(class_module, {}, {}, classnames)
+            ic = import_module(class_module)
             try:
                 # run init_module?
-                init_module = getattr(ic, "init_module", None)
-                log(f"{class_module}.init_module={init_module}")
-                if init_module:
-                    init_module()
+                init_module = getattr(module, "init_module", noop)
+                log(f"{ic}.init_module={init_module}")
+                init_module()
 
                 if log.is_debug_enabled():
                     # try to enable debugging on the codec's own logger:
@@ -174,10 +174,9 @@ def codec_import_check(name: str, description: str, top_module, class_module, cl
                                 log.warn(f" {x}")
                         return None
             finally:
-                cleanup_module = getattr(ic, "cleanup_module", None)
+                cleanup_module = getattr(ic, "cleanup_module", noop)
                 log(f"{class_module} cleanup_module={cleanup_module}")
-                if cleanup_module:
-                    cleanup_module()
+                cleanup_module()
             log(f" found {name} : {ic}")
             codecs[name] = ic
             return ic
@@ -208,7 +207,7 @@ def add_codec_version(name: str, top_module, version: str = "get_version()", alt
             f = fieldname
             if f.endswith("()"):
                 f = version[:-2]
-            module = __import__(top_module, {}, {}, [f])
+            module = import_module(top_module)
             if not hasattr(module, f):
                 continue
             v = getattr(module, f)
