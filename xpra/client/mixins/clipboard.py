@@ -106,11 +106,13 @@ class ClipboardClient(StubClientMixin):
                 log.warn(" server setting: %s, client setting: %s",
                          self.server_clipboard_direction, self.client_clipboard_direction)
         self.server_clipboard_enable_selections = c.boolget("clipboard.enable-selections")
+        all_clipboards = []
         try:
             from xpra.clipboard.clipboard_core import ALL_CLIPBOARDS
+            all_clipboards = ALL_CLIPBOARDS
         except ImportError:
             ALL_CLIPBOARDS = []
-        self.server_clipboards = c.strlistget("clipboards", ALL_CLIPBOARDS)
+        self.server_clipboards = c.strlistget("clipboards", all_clipboards)
         log("server clipboard: supported=%s, direction=%s, supports enable selection=%s",
                      self.server_clipboard, self.server_clipboard_direction, self.server_clipboard_enable_selections)
         log("client clipboard: supported=%s, direction=%s",
