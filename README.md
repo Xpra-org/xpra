@@ -95,5 +95,5 @@ For more generic version-agnostic information, checkout [the wiki](https://githu
 # Help
 Make sure to check the [FAQ](https://github.com/Xpra-org/xpra/blob/master/docs/FAQ.md), your question may already be answered there.
 You can ask your questions on the [github discussions](https://github.com/orgs/Xpra-org/discussions), or on the IRC channel `#xpra` on [`libera.chat`](https://libera.chat)
-or [using discord](https://discord.gg/2mtC6cDv6Q).
+or [using discord](https://discord.gg/w53cmb34rd).
 If you have hit a bug (sorry about that!), please see [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs).

@@ -18,6 +18,6 @@ Before creating a new ticket, please:
 
 #### **Do you have questions about the source code?**
 
-The best places are the #xpra IRC channel on [libera.chat](https://libera.chat/) and the [discord channel](https://discord.gg/2mtC6cDv6Q).
+The best places are the #xpra IRC channel on [libera.chat](https://libera.chat/) and the [discord channel](https://discord.gg/w53cmb34rd).
 
 Alternatively, you can create a [github discussion](https://github.com/Xpra-org/xpra/discussions).
