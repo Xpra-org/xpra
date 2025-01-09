@@ -486,7 +486,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "auth",
             "applications-menu", "sessions-menu",
             "_proxy",
-            "configure", "showconfig", "showsetting", "setting", "unset",
+            "configure", "showconfig", "showsetting", "setting", "set", "unset",
             "wait-for-x11", "wait-for-wayland",
             "xvfb-command", "xvfb",
     ):
@@ -888,7 +888,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         return run_showconfig(options, args)
     if mode == "showsetting":
         return run_showsetting(args)
-    if mode == "setting":
+    if mode in ("set", "setting"):
         return run_setting(True, args)
     if mode == "unset":
         return run_setting(False, args)
