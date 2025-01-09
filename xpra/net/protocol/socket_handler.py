@@ -117,6 +117,7 @@ class SocketProtocol:
             if not callable(getattr(conn, fn)):
                 raise ValueError(f"{fn!r} is not callable")
         if scheduler is None:
+            log(f"using {scheduler=}")
             from xpra.os_util import gi_import
             GLib = gi_import("GLib")
             scheduler = GLib
@@ -453,6 +454,7 @@ class SocketProtocol:
 
     def start(self) -> None:
         def start_network_read_thread() -> None:
+            log(f"start_network_read_thread() closed={self._closed}")
             if not self._closed:
                 self._read_thread.start()
 

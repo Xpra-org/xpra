@@ -1609,10 +1609,12 @@ def win32_reconnect(script_file: str, cmdline) -> ExitCode:
 def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
     log = Logger("network")
     backend = opts.backend or "gtk"
-    if backend == "qt":
 
-        def call(fn: Callable, *args) -> None:
-            fn(*args)
+    def direct_call(fn: Callable, *args) -> None:
+        fn(*args)
+    call = direct_call
+
+    if backend in ("qt", "pyglet"):
 
         def setup_connection() -> None:
             do_setup_connection()
@@ -2154,21 +2156,34 @@ def may_block_numpy() -> None:
             sys.modules["numpy"] = None
 
 
+def no_gi_gtk_modules() -> None:
+    for mod in ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication"):
+        mod_path = f"gi.repository.{mod}"
+        if sys.modules.get(mod_path):
+            raise RuntimeError(f"Gtk module {mod!r} is already loaded!")
+        # noinspection PyTypeChecker
+        sys.modules[mod_path] = None
+
+
 def make_client(opts):
     backend = opts.backend or "gtk"
-    BACKENDS = ("qt", "gtk", "auto")
+    BACKENDS = ("qt", "gtk", "pyglet", "auto")
     if backend == "qt":
+        no_gi_gtk_modules()
         try:
-            for mod in ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication"):
-                mod_path = f"gi.repository.{mod}"
-                if sys.modules.get(mod_path):
-                    raise RuntimeError(f"Gtk module {mod!r} is already loaded!")
-                # noinspection PyTypeChecker
-                sys.modules[mod_path] = None
             from xpra.client.qt6.client import make_client as make_qt6_client
             return make_qt6_client()
         except ImportError as e:
-            raise InitExit(ExitCode.COMPONENT_MISSING, f"the qt6 client component is missing: {e}")
+            get_logger().debug("importing qt6 client", exc_info=True)
+            raise InitExit(ExitCode.COMPONENT_MISSING, f"the qt6 client component is missing: {e}") from None
+    elif backend == "pyglet":
+        no_gi_gtk_modules()
+        try:
+            from xpra.client.pyglet.client import make_client as make_pyglet_client
+            return make_pyglet_client()
+        except ImportError as e:
+            get_logger().debug("importing qt6 client", exc_info=True)
+            raise InitExit(ExitCode.COMPONENT_MISSING, f"the pyglet client component is missing: {e}") from None
     elif backend not in ("gtk", "auto"):
         raise ValueError(f"invalid gui backend {backend!r}, must be one of: "+csv(BACKENDS))
 

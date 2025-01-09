@@ -201,7 +201,7 @@ class Qt6Client:
             return
         self.focused = wid
 
-        def recheck_focus():
+        def recheck_focus() -> None:
             if self.focused == wid:
                 self.send("focus", wid, ())
         QTimer.singleShot(10, recheck_focus)
