@@ -48,7 +48,8 @@ def get_auth_module(auth_str: str, cwd=os.getcwd(), **auth_options) -> AuthDef:
         auth_mod_name = "xpra.auth." + auth_modname
         log("auth module name for '%s': '%s'", auth, auth_mod_name)
         auth_module = import_module(auth_mod_name)
-        auth_module = getattr(auth_module, "Authenticator")
+        if not hasattr(auth_module, "Authenticator"):
+            raise ImportError(f"no 'Authenticator' class in {auth_mod_name!r}")
     except ImportError as e:
         log("cannot load %s auth for %r", auth, auth_str, exc_info=True)
         raise InitException(f"cannot load authentication module '{auth}' for {auth_str!r}: {e}") from None
