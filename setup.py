@@ -212,6 +212,7 @@ proxy_ENABLED  = DEFAULT
 client_ENABLED = DEFAULT
 qt6_client_ENABLED = False
 pyglet_client_ENABLED = False
+tk_client_ENABLED = False
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
 cythonize_more_ENABLED = False
@@ -398,7 +399,7 @@ SWITCHES += [
     "server", "client", "dbus", "x11", "xinput", "uinput", "sd_listen",
     "gtk_x11", "service",
     "gtk3", "example",
-    "qt6_client", "pyglet_client",
+    "qt6_client", "pyglet_client", "tk_client",
     "ism_ext",
     "pam", "xdg_open",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
@@ -876,6 +877,8 @@ if not qt6_client_ENABLED:
     excludes += ["PyQt6"]
 if not pyglet_client_ENABLED:
     excludes += ["pyglet"]
+if not tk_client_ENABLED:
+    excludes += ["tkinter"]
 
 
 # because of differences in how we specify packages and modules
@@ -2045,6 +2048,11 @@ if WIN32:
     else:
         remove_packages("pyglet")
 
+    if tk_client_ENABLED:
+        external_includes.append("tkinter")
+    else:
+        remove_packages("tkinter")
+
     if shadow_ENABLED:
         external_includes.append("watchdog")
 
@@ -2525,6 +2533,8 @@ if client_ENABLED:
         add_modules("xpra.client.qt6")
     if pyglet_client_ENABLED:
         add_modules("xpra.client.pyglet")
+    if tk_client_ENABLED:
+        add_modules("xpra.client.tk")
 toggle_packages(gtk3_ENABLED, "xpra.gtk", "xpra.gtk.examples", "xpra.gtk.dialogs", "xpra.gtk.configure")
 toggle_packages(client_ENABLED and gtk3_ENABLED, "xpra.client.gtk3", "xpra.client.gui")
 toggle_packages((client_ENABLED and gtk3_ENABLED) or (audio_ENABLED and WIN32 and MINGW_PREFIX), "gi")
@@ -2737,6 +2747,8 @@ if cythonize_more_ENABLED:
             ax("xpra.client.qt6")
         if pyglet_client_ENABLED:
             ax("xpra.client.pyglet")
+        if tk_client_ENABLED:
+            ax("xpra.client.tk")
     if clipboard_ENABLED:
         ax("xpra.clipboard")
     if codecs_ENABLED:

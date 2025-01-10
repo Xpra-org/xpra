@@ -1614,7 +1614,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
         fn(*args)
     call = direct_call
 
-    if backend in ("qt", "pyglet"):
+    if backend in ("qt", "pyglet", "tk", ):
 
         def setup_connection() -> None:
             do_setup_connection()
@@ -2167,7 +2167,7 @@ def no_gi_gtk_modules() -> None:
 
 def make_client(opts):
     backend = opts.backend or "gtk"
-    BACKENDS = ("qt", "gtk", "pyglet", "auto")
+    BACKENDS = ("qt", "gtk", "pyglet", "tk", "auto")
     if backend == "qt":
         no_gi_gtk_modules()
         try:
@@ -2176,7 +2176,7 @@ def make_client(opts):
         except ImportError as e:
             get_logger().debug("importing qt6 client", exc_info=True)
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the qt6 client component is missing: {e}") from None
-    elif backend == "pyglet":
+    if backend == "pyglet":
         no_gi_gtk_modules()
         try:
             from xpra.client.pyglet.client import make_client as make_pyglet_client
@@ -2184,7 +2184,15 @@ def make_client(opts):
         except ImportError as e:
             get_logger().debug("importing qt6 client", exc_info=True)
             raise InitExit(ExitCode.COMPONENT_MISSING, f"the pyglet client component is missing: {e}") from None
-    elif backend not in ("gtk", "auto"):
+    if backend == "tk":
+        no_gi_gtk_modules()
+        try:
+            from xpra.client.tk.client import make_client as make_tk_client
+            return make_tk_client()
+        except ImportError as e:
+            get_logger().debug("importing qt6 client", exc_info=True)
+            raise InitExit(ExitCode.COMPONENT_MISSING, f"the tk client component is missing: {e}") from None
+    if backend not in ("gtk", "auto"):
         raise ValueError(f"invalid gui backend {backend!r}, must be one of: "+csv(BACKENDS))
 
     progress_process = None
