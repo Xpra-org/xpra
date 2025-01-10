@@ -38,7 +38,9 @@ autoprov: no
 %endif
 %if 0%{?fedora}
 %define qt6 1
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client
+%define pyglet 1
+%define tk 1
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --with-pyglet_client --with-tk_client
 %endif
 %if 0%{?el10}
 %define qt6 1
@@ -116,6 +118,8 @@ Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
 Suggests:           %{package_prefix}-client-qt6 = %{version}-%{release}
+Suggests:           %{package_prefix}-client-tk = %{version}-%{release}
+Suggests:           %{package_prefix}-client-pyglet = %{version}-%{release}
 Conflicts:			python3-xpra < 6
 Obsoletes:			python3-xpra < 6
 %if "%{package_prefix}"!="xpra"
@@ -366,6 +370,27 @@ Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-pyqt6
 %description -n%{package_prefix}-client-qt6
 This package contains an experimental client using the Qt6 toolkit.
+%endif
+
+
+%if %{pyglet}
+%package -n %{package_prefix}-client-pyglet
+Summary:			Experimental xpra pyglet client
+Requires:			%{package_prefix}-client = %{version}-%{release}
+Requires:			%{python3}-pyglet
+%description -n%{package_prefix}-client-pyglet
+This package contains an experimental client using the pyglet toolkit.
+%endif
+
+
+%if %{tk}
+%package -n %{package_prefix}-client-tk
+Summary:			Experimental xpra tk client
+Requires:			%{package_prefix}-client = %{version}-%{release}
+Requires:			%{python3}-tkinter
+Requires:			%{python3}-pillow-tk
+%description -n%{package_prefix}-client-tk
+This package contains an experimental client using the tkinter toolkit.
 %endif
 
 
@@ -724,6 +749,16 @@ rm -rf $RPM_BUILD_ROOT
 %if %{qt6}
 %files -n %{package_prefix}-client-qt6
 %{python3_sitearch}/xpra/client/qt6/
+%endif
+
+%if %{pyglet}
+%files -n %{package_prefix}-client-pyglet
+%{python3_sitearch}/xpra/client/pyglet/
+%endif
+
+%if %{tk}
+%files -n %{package_prefix}-client-tk
+%{python3_sitearch}/xpra/client/tk/
 %endif
 
 %files -n %{package_prefix}-client-gtk3
