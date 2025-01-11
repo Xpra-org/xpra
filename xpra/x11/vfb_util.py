@@ -204,6 +204,34 @@ def get_xvfb_env(xvfb_executable: str) -> dict[str, str]:
     return env
 
 
+def patch_xvfb_command(xvfb_cmd: list[str], w: int, h: int, pixel_depth: int) -> list[str]:
+    # find the ["-screen"] or ["screen", "0"] arguments:
+    try:
+        screen_arg = xvfb_cmd.index("-screen")
+    except ValueError:
+        # not found!
+        screen_arg = -1
+    if screen_arg > 0:
+        # remove the screen number if specified:
+        try:
+            no_arg = xvfb_cmd.index("0")
+        except ValueError:
+            no_arg = -1
+        if no_arg > 0:
+            if no_arg == screen_arg + 1:
+                xvfb_cmd.pop(no_arg)
+        # remove the "-screen" argument and the geometry that follows:
+        xvfb_cmd.pop(screen_arg)
+        xvfb_cmd.pop(screen_arg)
+    # this is the geometry we want to add:
+    if xvfb_cmd[0].endswith("Xvfb"):
+        # ie: "-screen 0 8192x4096x32"
+        xvfb_cmd += ["-screen", "0", f"{w}x{h}x{pixel_depth}"]
+    else:
+        # play it safe, don't specify the screen number:
+        xvfb_cmd += ["-screen", f"{w}x{h}x{pixel_depth}"]
+
+
 def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: str, cwd,
                uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
     if not POSIX:
@@ -242,21 +270,12 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
     xvfb_cmd = [pathexpand(s) for s in xvfb_cmd]
 
     # try to honour initial geometries if specified:
-    if vfb_geom and xvfb_cmd[0].endswith("Xvfb") or xvfb_cmd[0].endswith("Xephyr"):
-        # find the '-screen' arguments:
-        # "-screen 0 8192x4096x24+32"
-        try:
-            no_arg = xvfb_cmd.index("0")
-        except ValueError:
-            no_arg = -1
-        geom_str = "%sx%s" % ("x".join(str(x) for x in vfb_geom[:2]), pixel_depth)
-        if no_arg > 0 and xvfb_cmd[no_arg-1] == "-screen" and len(xvfb_cmd) > (no_arg+1):
-            # found an existing "-screen" argument for this screen number,
-            # replace it:
-            xvfb_cmd[no_arg+1] = geom_str
-        else:
-            # append:
-            xvfb_cmd += ["-screen", "0", geom_str]
+    xvfb_executable = xvfb_cmd[0]
+    if len(vfb_geom) >= 2 and xvfb_executable.endswith("Xvfb") or xvfb_executable.endswith("Xephyr"):
+        w, h = vfb_geom[:2]
+        log.info("patch_xvfb_command%s", (xvfb_cmd, w, h, pixel_depth or 32))
+        patch_xvfb_command(xvfb_cmd, w, h, pixel_depth or 32)
+        log.info(f"{xvfb_cmd=!r}")
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
         if logfile_argindex+1 >= len(xvfb_cmd):
@@ -304,7 +323,6 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
             xorg_conf_dir = pathexpand(get_Xdummy_confdir())
             create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
 
-    xvfb_executable = xvfb_cmd[0]
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth > 0:
         xvfb_cmd.append("-depth")
         xvfb_cmd.append(str(pixel_depth))
