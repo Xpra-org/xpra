@@ -253,6 +253,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "libyuv"        : "libyuv CSC module",
         "decoder"       : "All decoders",
         "encoder"       : "All encoders",
+        "argb"          : "ARGB encoder",
         "pillow"        : "Pillow encoder and decoder",
         "spng"          : "spng codec",
         "jpeg"          : "JPEG codec",

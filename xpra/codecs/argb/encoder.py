@@ -11,7 +11,7 @@ from xpra.codecs import rgb_transform
 from xpra.net.compression import Compressed, LevelCompressed, compressed_wrapper
 from xpra.log import Logger
 
-log = Logger("encoder")
+log = Logger("encoder", "argb")
 
 
 def get_version() -> tuple[int, int]:

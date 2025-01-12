@@ -12,7 +12,7 @@ from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
-log = Logger("encoding")
+log = Logger("encoding", "argb")
 
 
 def noswap(image, rgb_formats, _supports_transparency) -> NoReturn:
