@@ -82,9 +82,8 @@ def has_audio_support() -> bool:
     return bool(_has_audio_support)
 
 
-def find_html5_path() -> str:
+def find_html5_path(page="connect.html") -> str:
     from xpra.platform.paths import get_resources_dir, get_app_dir
-    page = "connect.html"
     return valid_html_path(
         os.path.join(get_resources_dir(), "html5", page),
         os.path.join(get_resources_dir(), "www", page),
