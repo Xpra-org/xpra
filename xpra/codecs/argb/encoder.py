@@ -76,7 +76,6 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
 
     # compression stage:
     level = 0
-    algo = "not"
     size = len(pixels)
     lz4 = options.get("lz4", False)
     if lz4 and size >= 512 and speed < 100:
@@ -87,6 +86,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
             # and use a lower level (max=3)
             level = max(0, min(3, int(125 - speed) // 35))
     if level > 0:
+        algo = "lz4"
         can_inline = size <= 32768
         cwrapper = compressed_wrapper(coding, pixels, level=level,
                                       lz4=lz4,
@@ -104,6 +104,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
             # and `memoryview` pixel data cannot be handled by the packet encoders,
             # so we have to convert it to bytes:
             cwrapper.data = rgb_transform.pixels_to_bytes(pixels)
+            algo = "inlined lz4"
     else:
         # can't pass a raw buffer to rencodeplus,
         # and even if we could, the image containing those pixels may be freed by the time we get to the encoder
