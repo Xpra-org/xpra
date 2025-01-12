@@ -262,6 +262,7 @@ class WindowSource(WindowIconSource):
         self.is_tray: bool = window.is_tray()
         self.is_shadow: bool = window.is_shadow()
         self.has_alpha: bool = HAS_ALPHA and window.has_alpha()
+        self.has_shape = False
         self.window_dimensions = ww, wh
         # where the window is mapped on the client:
         self.mapped_at = None
@@ -287,6 +288,10 @@ class WindowSource(WindowIconSource):
         if "fullscreen" in window.get_dynamic_property_names():
             sid = window.connect("notify::fullscreen", self._fullscreen_changed)
             self.window_signal_handlers.append(sid)
+        if "shape" in window.get_dynamic_property_names():
+            sid = window.connect("notify::shape", self._shape_changed)
+            self.window_signal_handlers.append(sid)
+            self.has_shape = bool(window.get("shape"))
         if "children" in window.get_internal_property_names():
             # we just copy the value to an attribute of window-source,
             # so that we can access it from any thread
@@ -740,6 +745,11 @@ class WindowSource(WindowIconSource):
         self.reconfigure(True)
         return True
 
+    def _shape_changed(self, _window, *_args) -> bool:
+        self.has_shape = bool(self.window.get_property("shape"))
+        log("window has shape changed: %s", self.has_shape)
+        return True
+
     def _iconic_changed(self, _window, *_args) -> bool:
         self.iconic = self.window.get_property("iconic")
         if self.iconic:
@@ -884,7 +894,7 @@ class WindowSource(WindowIconSource):
     def update_encoding_selection(self, encoding="", exclude=(), init: bool = False) -> None:
         # now we have the real list of encodings we can use:
         # "rgb32" and "rgb24" encodings are both aliased to "rgb"
-        if self._mmap_size > 0 and self.encoding != "grayscale":
+        if self._mmap_size > 0 and self.encoding != "grayscale" and not self.has_shape:
             self.auto_refresh_encodings = ()
             self.encoding = "mmap"
             self.encodings = ("mmap", )
@@ -1045,7 +1055,7 @@ class WindowSource(WindowIconSource):
             # choose an alpha encoding and keep it?
             log("using transparent encoding")
             return self.get_transparent_encoding
-        if self.encoding == "rgb":
+        if self.encoding == "rgb" and not self.has_shape:
             # if we're here we don't need alpha, so try rgb24 first:
             if "rgb24" in self.common_encodings:
                 log("using rgb24 for rgb encoding")
@@ -1114,7 +1124,7 @@ class WindowSource(WindowIconSource):
             return current_encoding
         quality = options.get("quality", self._current_quality)
         lossy = quality < 100
-        if "rgb32" in co:
+        if "rgb32" in co and not self.has_shape:
             if pixel_count < self._rgb_auto_threshold:
                 return "rgb32"
             if not lossy and depth > 24 and self.client_bit_depth > 24:
@@ -1147,7 +1157,7 @@ class WindowSource(WindowIconSource):
         quality = options.get("quality", 0)
         if self._lossless_threshold_base < quality < 100 and self._fixed_quality <= 0:
             quality = self._fixed_max_quality
-        if w*h < self._rgb_auto_threshold and not grayscale:
+        if w*h < self._rgb_auto_threshold and not grayscale and not self.has_shape:
             if depth > 24 and self.client_bit_depth > 24 and "rgb32" in co:
                 return "rgb32"
             if "rgb24" in co:
@@ -1187,7 +1197,7 @@ class WindowSource(WindowIconSource):
             return co[0]
 
     def get_current_or_rgb(self, pixel_count: int, *_args) -> str:
-        if pixel_count < self._rgb_auto_threshold:
+        if pixel_count < self._rgb_auto_threshold and not self.has_shape:
             if self.image_depth <= 24:
                 return "rgb24"
             return "rgb32"
