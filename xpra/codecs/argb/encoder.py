@@ -8,6 +8,7 @@ from collections.abc import Sequence
 
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs import rgb_transform
+from xpra.codecs.debug import SAVE_TO_FILE, may_save_image
 from xpra.net.compression import Compressed, LevelCompressed, compressed_wrapper
 from xpra.log import Logger
 
@@ -116,6 +117,16 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
         bpp = 24
     log("rgb_encode using level=%s for %5i bytes at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s",
         level, size, speed, algo, width, height, coding, pixel_format, len(pixels), len(cwrapper.data))
+    if SAVE_TO_FILE and pixel_format in ("BGRX", "BGRA", ):
+        from io import BytesIO
+        from PIL import Image
+        img = Image.frombuffer("RGB" if pixel_format == "BGRX" else "BGRA",
+                               (width, height), pixels, "raw", pixel_format, stride)
+        buf = BytesIO()
+        img.save(buf, "png")
+        data = buf.getvalue()
+        may_save_image("png", data)
+
     # wrap it using "Compressed" so the network layer receiving it
     # won't decompress it (leave it to the client's draw thread)
     return coding, cwrapper, client_options, width, height, stride, bpp
