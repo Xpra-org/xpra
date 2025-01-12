@@ -921,6 +921,7 @@ fi
    `exe` installer standalone step
    handle diverging RHEL clone packaging behaviour
    move default package list for newer build script default
+   invalid refresh rate detected on some MS Windows configurations
 - RHEL 10 builds:
    package Qt6 client
    use `weston` + `Xwayland` as xvfb on RHEL 10
@@ -932,21 +933,29 @@ fi
    Network Manager API errors in some environments
    websocket connection loss with some proxies sending empty payloads
    handle broken `pyopengl-accelerate` installations more gracefully
+   keyboard layout group regression
 - Clipboard:
    always claim the clipboard selection when updated
    always update the peer when the owner changes
+   remote clipboard option not honoured on some platorms
+   allow all clipboards by default
 - Desktop mode:
    better compatibility with some window managers when resizing
    handle fixed size desktops correctly
 - Minor:
+   toolbox examples do not run on some platforms
+   `configure` tool incorrectly saves some options
    hide 'configure shadow server' on light builds
    typo in `nvjpeg` encoder / decoder build switches
    `libexec` scripts installed twice
    icon glob lookup mismatch
    division by zero on MS Windows
    update keyboard layout mapping for `ku` and `ir`
+   avoid lowering quality for `text` content type, avoid scaling and subsampling
 - Cosmetic:
    `openh264` license tag
+   remove outdated Wayland clipboard warning
+   typo
 
 * Tue Dec 10 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:

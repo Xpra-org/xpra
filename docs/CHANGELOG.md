@@ -6,6 +6,7 @@
     * [`exe` installer standalone step](https://github.com/Xpra-org/xpra/commit/05ff96bfe332d5086ca1348984cee670e33cb18f)
     * [handle diverging RHEL clone packaging behaviour](https://github.com/Xpra-org/xpra/commit/cbcaa56c822e56a609406358e85114c32dc23568)
     * [move default package list for newer build script default](https://github.com/Xpra-org/xpra/commit/81a84f72bb2cdd500284cfb52f2fef16600819c2)
+    * [invalid refresh rate detected on some MS Windows configurations](https://github.com/Xpra-org/xpra/commit/b9f1226888e296801313079edccf0315bd6156f0)
 * RHEL 10 builds:
     * [package Qt6 client](https://github.com/Xpra-org/xpra/commit/dd9043eebc3a7c697baa1e25bcce3d27fcedaa72)
     * [use `weston` + `Xwayland` as xvfb on RHEL 10](https://github.com/Xpra-org/xpra/commit/31f5ad2348e37c298996c7779956c8eb31e5a677)
@@ -17,21 +18,29 @@
     * [Network Manager API errors in some environments](https://github.com/Xpra-org/xpra/commit/ad855baecd62fc204c69508b59e0cfe908a0d634)
     * [websocket connection loss with some proxies sending empty payloads](https://github.com/Xpra-org/xpra/commit/9c4a12e6a9b4639de9bc348623e20760e39a8814)
     * [handle broken `pyopengl-accelerate` installations more gracefully](https://github.com/Xpra-org/xpra/commit/3d45e2986bb8fc962eaea4fea0e2b88ec2b9ee95)
+    * [keyboard layout group regression](https://github.com/Xpra-org/xpra/commit/0e7dfbfd3b806fa723002d364238b1fdbeef1514)
 * Clipboard:
     * [always claim the clipboard selection when updated](https://github.com/Xpra-org/xpra/commit/8b1fd56e7e5e0198f2aed0d89b329bd7c9bcbcf6)
     * [always update the peer when the owner changes](https://github.com/Xpra-org/xpra/commit/e7e5f68ac6a2c89bcdf560b4d8ea02856f04cd12)
+    * [remote clipboard option not honoured on some platorms](https://github.com/Xpra-org/xpra/commit/188a218edd1f719a81c64f038f48efa017ba49f7)
+    * [allow all clipboards by default](https://github.com/Xpra-org/xpra/commit/c1bc57569eef7fa59796b9849c86d5e39b2e07bf)
 * Desktop mode:
     * [better compatibility with some window managers when resizing](https://github.com/Xpra-org/xpra/commit/bcfdec08695ae86d2e1cd96a385ed1b264057940)
     * [handle fixed size desktops correctly](https://github.com/Xpra-org/xpra/commit/2a1854e3f2267c2bacce76bf0fe6d1900cf8e93a)
 * Minor:
+    * [toolbox examples do not run on some platforms](https://github.com/Xpra-org/xpra/commit/6bacd61ebc505a4de9d92f8cc166b466a390950a)
+    * [`configure` tool incorrectly saves some options](https://github.com/Xpra-org/xpra/commit/d0959a3c2295b9b3f7fe8e6d0e963b1d8ffae1cf), [refresh-delay](https://github.com/Xpra-org/xpra/commit/ede996657aebd3acf9e4e9eeae8c08f6181edebd)
     * [hide 'configure shadow server' on light builds](https://github.com/Xpra-org/xpra/commit/7de653ee886aa9c5bab1eecb22ec481ee1db5f49)
     * [typo in `nvjpeg` encoder / decoder build switches](https://github.com/Xpra-org/xpra/commit/8f88a0659ae05fd7469160e4706d1924d6297cc3)
     * [`libexec` scripts installed twice](https://github.com/Xpra-org/xpra/commit/83825717f43800f49b47263f7d3024ffb0c9159a)
     * [icon glob lookup mismatch](https://github.com/Xpra-org/xpra/commit/a68bf4e0cdee8c5e5453bbc6803cdad80892aca4)
     * [division by zero on MS Windows](https://github.com/Xpra-org/xpra/commit/e55643b5e28bf4eee036f8378c0c15376f53565d)
     * [update keyboard layout mapping for `ku` and `ir`](https://github.com/Xpra-org/xpra/commit/9713037378b8f3333396f54b2f54073eddef25fd)
+    * [avoid lowering quality for `text` content type](https://github.com/Xpra-org/xpra/commit/d6de44ee4a83acd1d6b6ee8ff4bd614831b2d81d), [avoid scaling and subsampling](https://github.com/Xpra-org/xpra/commit/f20feb96ec42f20e337b9c64d2a02b710208fa72)
 * Cosmetic:
     * [`openh264` license tag](https://github.com/Xpra-org/xpra/commit/1a18f6e8b0f1b86f2cb36c1d31028b8ff0b863a5)
+    * [remove outdated Wayland clipboard warning](https://github.com/Xpra-org/xpra/commit/8d046ff38d4f15ed9a6df8191bce312076b158cd)
+    * [typo](https://github.com/Xpra-org/xpra/commit/76cbf4d484a55b5f58f444a1e0cb7b6d73053bc9)
 
 ## [6.2.2] 2024-12-10
 * Platforms, build and packaging:
