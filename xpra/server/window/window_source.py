@@ -1614,9 +1614,6 @@ class WindowSource(WindowIconSource):
         delay = max(0, delay-elapsed)
         actual_encoding = options.get("encoding", self.encoding)
         self._damage_delayed = DelayedRegions(now, regions, actual_encoding, options)
-        lad = (now, delay)
-        self.batch_config.last_delays.append(lad)
-        self.batch_config.last_delay = lad
         expire_delay = min(self.batch_config.expire_delay, delay)
         #weighted average with the last delays:
         #(so when we end up delaying a lot for some reason,
@@ -1634,6 +1631,9 @@ class WindowSource(WindowIconSource):
             expire_delay += inc
         except IndexError:
             pass
+        lad = (now, delay)
+        self.batch_config.last_delays.append(lad)
+        self.batch_config.last_delay = lad
         damagelog("do_damage%-24s wid=%s, scheduling batching expiry for sequence %4i in %3i ms",
                   (x, y, w, h, options), self.wid, self._sequence, expire_delay)
         damagelog(" delay=%i, elapsed=%i, resize_elapsed=%i, congestion_elapsed=%i, batch=%i, min=%i, inc=%i",
