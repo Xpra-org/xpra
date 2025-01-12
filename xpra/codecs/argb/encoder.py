@@ -79,9 +79,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
     algo = "not"
     size = len(pixels)
     lz4 = options.get("lz4", False)
-    if not lz4:
-        level = 0
-    elif size >= 512 and (lz4 or speed < 100):
+    if lz4 and size >= 512 and speed < 100:
         if size >= 4096:
             level = 1 + max(0, min(7, int(100 - speed) // 14))
         else:
