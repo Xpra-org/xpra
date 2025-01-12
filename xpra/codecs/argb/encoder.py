@@ -118,6 +118,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
     log("rgb_encode using level=%s for %5i bytes at %3i speed, %s compressed %4sx%-4s in %s/%s: %5s bytes down to %5s",
         level, size, speed, algo, width, height, coding, pixel_format, len(pixels), len(cwrapper.data))
     if SAVE_TO_FILE and pixel_format in ("BGRX", "BGRA", ):
+        may_save_image(coding, pixels)
         from io import BytesIO
         from PIL import Image
         img = Image.frombuffer("RGB" if pixel_format == "BGRX" else "BGRA",
