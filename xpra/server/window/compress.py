@@ -1618,8 +1618,8 @@ class WindowSource(WindowIconSource):
                         continue
                     if override or k not in existing_options:
                         existing_options[k] = options[k]
-            damagelog("do_damage%-24s wid=%s, using existing %i delayed regions created %.1fms ago",
-                      (x, y, w, h, options), self.wid, len(regions), now-delayed.damage_time)
+            damagelog("do_damage%-24s wid=%s, using existing %i delayed regions created %ims ago",
+                      (x, y, w, h, options), self.wid, len(regions), 1000*(now-delayed.damage_time))
             if not self.expire_timer and not self.soft_timer and self.soft_expired == 0:
                 log.error("Error: bug, found a delayed region without a timer!")
                 self.expire_timer = GLib.timeout_add(0, self.expire_delayed_region, now)
