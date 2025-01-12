@@ -1596,7 +1596,9 @@ class WindowSource(WindowIconSource):
         if delayed:
             # use existing delayed region:
             regions = delayed.regions
-            if not self.full_frames_only:
+            if self.full_frames_only or len(regions) >= self.max_small_regions:
+                delayed.regions = regions = [rectangle(0, 0, ww, wh)]
+            else:
                 region = rectangle(x, y, w, h)
                 add_rectangle(regions, region)
             # merge/override options
