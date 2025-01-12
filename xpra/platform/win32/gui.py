@@ -855,6 +855,10 @@ def get_vrefresh() -> int:
         log.warn("Warning: failed to query the display vertical refresh rate:")
         log.warn(" %s", e)
         v = -1
+    if v in (0, 1):
+        # as per the docs:
+        # "A vertical refresh rate value of 0 or 1 represents the display hardware's default refresh rate"
+        return -1
     screenlog("get_vrefresh()=%s", v)
     return v
 
