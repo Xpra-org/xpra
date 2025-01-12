@@ -152,6 +152,7 @@ UNICODE_KEYNAMES = envbool("XPRA_UNICODE_KEYNAMES", False)
 SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
 POLL_WORKSPACE = envbool("XPRA_POLL_WORKSPACE", WIN32)
 ICONIFY_LATENCY = envint("XPRA_ICONIFY_LATENCY", 150)
+SMOOTH_SCROLL_NORM = envint("XPRA_SMOOTH_SCROLL_NORM", 50 if OSX else 100)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
@@ -2632,7 +2633,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             mouselog("smooth scroll event: %s", event)
             pointer = self.get_pointer_data(event)
             device_id = -1
-            self._client.wheel_event(device_id, self.wid, event.delta_x, -event.delta_y, pointer)
+            norm_x = math.pow(event.delta_x, SMOOTH_SCROLL_NORM/100)
+            norm_y = math.pow(event.delta_y, SMOOTH_SCROLL_NORM/100)
+            self._client.wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
             return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
         mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s",
