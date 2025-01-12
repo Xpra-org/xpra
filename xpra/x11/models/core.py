@@ -11,7 +11,7 @@ from typing import Any, Final
 from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
-from xpra.util.env import envbool, first_time
+from xpra.util.env import envbool, envint, first_time
 from xpra.util.io import get_proc_cmdline
 from xpra.util.str_fn import bytestostr
 from xpra.x11.common import Unmanageable
@@ -36,6 +36,7 @@ framelog = Logger("x11", "window", "frame")
 geomlog = Logger("x11", "window", "geometry")
 
 GObject = gi_import("GObject")
+GLib = gi_import("GLib")
 
 X11Window = X11WindowBindings()
 
@@ -106,6 +107,7 @@ PROPERTIES_DEBUG = [
 X11PROPERTY_SYNC = envbool("XPRA_X11PROPERTY_SYNC", True)
 X11PROPERTY_SYNC_BLOCKLIST = os.environ.get("XPRA_X11PROPERTY_SYNC_BLOCKLIST",
                                             "_GTK,WM_,_NET,Xdnd").split(",")
+SHAPE_DELAY = envint("XPRA_SHAPE_DELAY", 100)
 
 
 def sanestr(s: str) -> str:
@@ -303,6 +305,8 @@ class CoreX11WindowModel(WindowModelStub):
         self._damage_forward_handle = None
         self._setup_done = False
         self._kill_count = 0
+        self._shape_timer = 0
+        self._shape_timer_serial = 0
 
     def __repr__(self) -> str:  # pylint: disable=arguments-differ
         try:
@@ -499,6 +503,24 @@ class CoreX11WindowModel(WindowModelStub):
     #########################################
     # XShape
     #########################################
+
+    def read_xshape(self):
+        shapelog("read_xshape()")
+        self._shape_timer = 0
+        cur_shape = self.get_property("shape") or {}
+        # remove serial before comparing dicts:
+        cur_shape.pop("serial", None)
+        # read new xshape:
+        with xlog:
+            # should we pass the x and y offsets here?
+            # v = self._read_xshape(event.x, event.y)
+            v = self._read_xshape()
+            if cur_shape == v:
+                shapelog("xshape unchanged")
+                return
+            v["serial"] = int(self._shape_timer_serial)
+            shapelog("xshape updated with serial %#x", self._shape_timer_serial)
+            self._internal_set_property("shape", v)
 
     def _read_xshape(self, x: int = 0, y: int = 0) -> dict[str, Any]:
         if not X11Window.displayHasXShape() or not XSHAPE:
@@ -773,27 +795,19 @@ class CoreX11WindowModel(WindowModelStub):
         self._updateprop("geometry", geom)
 
     def do_x11_shape_event(self, event) -> None:
-        shapelog("shape event: %s, kind=%s", event, SHAPE_KIND.get(event.kind, event.kind))  # @UndefinedVariable
+        shapelog("shape event: %s, kind=%s, timer=%s",
+                 event, SHAPE_KIND.get(event.kind, event.kind), self._shape_timer)
         cur_shape = self.get_property("shape")
-        if cur_shape and cur_shape.get("serial", 0) >= event.serial:
-            shapelog("same or older xshape serial no: %#x (current=%#x)", event.serial, cur_shape.get("serial", 0))
+        if not event.shaped and not cur_shape:
+            shapelog("no shape")
             return
-        # remove serial before comparing dicts:
-        cur_shape.pop("serial", None)
-        # read new xshape:
-        with xswallow:
-            # should we pass the x and y offsets here?
-            # v = self._read_xshape(event.x, event.y)
-            if event.shaped:
-                v = self._read_xshape()
-            else:
-                v = {}
-            if cur_shape == v:
-                shapelog("xshape unchanged")
-                return
-            v["serial"] = int(event.serial)
-            shapelog("xshape updated with serial %#x", event.serial)
-            self._internal_set_property("shape", v)
+        serial = event.serial
+        if cur_shape and cur_shape.get("serial", 0) >= serial:
+            shapelog("same or older xshape serial no: %#x (current=%#x)", serial, cur_shape.get("serial", 0))
+            return
+        if not self._shape_timer:
+            self._shape_timer = GLib.timeout_add(SHAPE_DELAY, self.read_xshape)
+        self._shape_timer_serial = max(self._shape_timer_serial, serial)
 
     def do_x11_xkb_event(self, event) -> None:
         # X11: XKBNotify
