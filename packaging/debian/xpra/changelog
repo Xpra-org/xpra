@@ -4,6 +4,7 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - RPM support for per-arch cuda pkgconfig
    - `exe` installer standalone step
    - move default package list for newer build script default
+   - invalid refresh rate detected on some MS Windows configurations
   * SBOM:
    - minor fixes
    - record CUDA
@@ -22,12 +23,15 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - use symlinks to prevent ssh agent forwarding setup errors
    - websocket connection loss with some proxies sending empty payloads
    - Network Manager API errors in some environments
+   - keyboard layout group regression
   * Desktop mode:
    - better compatibility with some window managers when resizing
    - handle fixed size desktops correctly
   * Clipboard:
    - always claim the clipboard selection when updated
    - always update the peer when the owner changes
+   - remote clipboard option not honoured on some platorms
+   - allow all clipboards by default
   * Encodings:
    - `rgb` errors at unusual bit depths
    - transparency detection with 10-bit per channel windows
@@ -36,6 +40,7 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - missing options when encoding is set to `auto` from the system tray menu
    - system tray speed control not available
   * Minor:
+   - toolbox examples do not run on some platforms
    - `quic` connections are safe for authentication
    - `start-gui` fails if no application is selected
    - check for latest version from current branch
@@ -48,8 +53,9 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - don't log scary warning about missing `numpy_formathandler`
    - unset load-balancer CUDA option is valid
    - icon glob lookup mismatch
+   - typo
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 07 Jan 2025 14:27:23 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 12 Jan 2025 14:00:26 +0700
 
 xpra (5.0.11-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

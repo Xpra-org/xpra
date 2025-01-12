@@ -803,12 +803,13 @@ fi
 
 
 %changelog
-* Tue Jan 07 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
+* Sun Jan 12 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection
    RPM support for per-arch cuda pkgconfig
    `exe` installer standalone step
    move default package list for newer build script default
+   invalid refresh rate detected on some MS Windows configurations
 - SBOM:
    minor fixes
    record CUDA
@@ -827,12 +828,15 @@ fi
    use symlinks to prevent ssh agent forwarding setup errors
    websocket connection loss with some proxies sending empty payloads
    Network Manager API errors in some environments
+   keyboard layout group regression
 - Desktop mode:
    better compatibility with some window managers when resizing
    handle fixed size desktops correctly
 - Clipboard:
    always claim the clipboard selection when updated
    always update the peer when the owner changes
+   remote clipboard option not honoured on some platorms
+   allow all clipboards by default
 - Encodings:
    `rgb` errors at unusual bit depths
    transparency detection with 10-bit per channel windows
@@ -841,6 +845,7 @@ fi
    missing options when encoding is set to `auto` from the system tray menu
    system tray speed control not available
 - Minor:
+   toolbox examples do not run on some platforms
    `quic` connections are safe for authentication
    `start-gui` fails if no application is selected
    check for latest version from current branch
@@ -853,6 +858,7 @@ fi
    don't log scary warning about missing `numpy_formathandler`
    unset load-balancer CUDA option is valid
    icon glob lookup mismatch
+   typo
 
 * Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:

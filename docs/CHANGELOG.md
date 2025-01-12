@@ -6,6 +6,7 @@
     * [RPM support for per-arch cuda pkgconfig](https://github.com/Xpra-org/xpra/commit/fa614d8672658f26d4094834dda89d5ee2d79038)
     * [`exe` installer standalone step](https://github.com/Xpra-org/xpra/commit/7d0c0c30e3d002f7468ec73f8fac6862b020ca6b)
     * [move default package list for newer build script default](https://github.com/Xpra-org/xpra/commit/dc7e2c74fbdfc584c8a830f258b4608af3a20a8c)
+    * [invalid refresh rate detected on some MS Windows configurations](https://github.com/Xpra-org/xpra/commit/fa3b06de8a9d8737e9af5ea89a17b806b2f9fff5)
 * SBOM:
     * [minor fixes](https://github.com/Xpra-org/xpra/commit/5cb8451158a7070a3c44c0b7715b135ea17e6683)
     * [record CUDA](https://github.com/Xpra-org/xpra/commit/ecd20b6a0523aa8c3b07192f35ca694a03a30280)
@@ -24,12 +25,15 @@
     * [use symlinks to prevent ssh agent forwarding setup errors](https://github.com/Xpra-org/xpra/commit/3805cbdfe02244d6ece591acc642b67f6e57b109)
     * [websocket connection loss with some proxies sending empty payloads](https://github.com/Xpra-org/xpra/commit/9d679b30d940d70e8dbc6458b9ad2e3001f5d3b2)
     * [Network Manager API errors in some environments](https://github.com/Xpra-org/xpra/commit/276f8c0f7ced293504286e651cfdf92ebdab11cf)
+    * [keyboard layout group regression](https://github.com/Xpra-org/xpra/commit/8068e18bee6a8d74b87084ead15984e63b5ee855)
 * Desktop mode:
     * [better compatibility with some window managers when resizing](https://github.com/Xpra-org/xpra/commit/cf39bb72de8fe53f3404b40c7bcf8c1630ec3e5b)
     * [handle fixed size desktops correctly](https://github.com/Xpra-org/xpra/commit/2a440ae37db998d199e1975eff18861709d11f48)
 * Clipboard:
     * [always claim the clipboard selection when updated](https://github.com/Xpra-org/xpra/commit/faf1e5c0a3413783d9c213ed8243732d771defe0)
     * [always update the peer when the owner changes](https://github.com/Xpra-org/xpra/commit/885a52f5ebd27df39f3af41dbf749bb9a153db4a)
+    * [remote clipboard option not honoured on some platorms](https://github.com/Xpra-org/xpra/commit/1e093325a00c25c185f105edfc7bcf233923722b)
+    * [allow all clipboards by default](https://github.com/Xpra-org/xpra/commit/9c48ccb4e5b08aeaade4c774a708ee51682e2522)
 * Encodings:
     * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/2b0539dd4292235d30ddd3ac2f985c0a735467b9)
     * [transparency detection with 10-bit per channel windows](https://github.com/Xpra-org/xpra/commit/25b03183a9246a2b9c95f5b110e0a86f5dad0fb5)
@@ -38,6 +42,7 @@
     * [missing options when encoding is set to `auto` from the system tray menu](https://github.com/Xpra-org/xpra/commit/0319aaa209300b1aa5725c12fe9c561d32a08f6f)
     * [system tray speed control not available](https://github.com/Xpra-org/xpra/commit/aaf99601c6f2f20bccb226e42e4e19a323e915cf)
 * Minor:
+    * [toolbox examples do not run on some platforms](https://github.com/Xpra-org/xpra/commit/066b159a986ae5e184b0e3a06592f21f73a2386f)
     * [`quic` connections are safe for authentication](https://github.com/Xpra-org/xpra/commit/0355808d3b33a068ace81a82d51ab4ef9b77251c)
     * [`start-gui` fails if no application is selected](https://github.com/Xpra-org/xpra/commit/7a662155c4546642ccc08b5b1d2662bdc3ec863d)
     * [check for latest version from current branch](https://github.com/Xpra-org/xpra/commit/783d2ca9ae7af299f5ef54a83b27bc0017cf8b1c)
@@ -50,6 +55,7 @@
     * [don't log scary warning about missing `numpy_formathandler`](https://github.com/Xpra-org/xpra/commit/3143698c630928f59d20780344e1c35dd4ffcc2a)
     * [unset load-balancer CUDA option is valid](https://github.com/Xpra-org/xpra/commit/d4283a911949a5cbdd7e350bd0f31c516348bc19)
     * [icon glob lookup mismatch](https://github.com/Xpra-org/xpra/commit/de9d565e3f43e21e933f6bf08177f5c076a794c3)
+    * [typo](https://github.com/Xpra-org/xpra/commit/ee1dfcc16ef8768517c7202a4fad94e9e029391c)
 
 ## [5.0.11] 2024-11-22
 * Platforms, build and packaging:
