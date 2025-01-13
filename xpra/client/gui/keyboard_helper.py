@@ -36,6 +36,7 @@ class KeyboardHelper:
         self.shortcut_modifiers: list[str] = []
         self.key_shortcuts_strs = key_shortcuts
         self.key_shortcuts: dict[str, list[str]] = {}
+        self.server_ibus = {}
         # command line overrides:
         self.raw = raw
         self.model_option = model
@@ -76,6 +77,8 @@ class KeyboardHelper:
         self.variant = ""
         self.variants: list[str] = []
         self.options = ""
+        self.backend = ""
+        self.name = ""
         self.query = ""
         self.query_struct: dict[str, Any] = {}
         self.layout_groups = LAYOUT_GROUPS
@@ -306,16 +309,20 @@ class KeyboardHelper:
             self.parse_shortcuts()
 
     def layout_str(self) -> str:
+        if self.backend and self.name:
+            return f"{self.backend} {self.name!r}"
         return " / ".join(str(x) for x in (
             self.layout_option or self.layout, self.variant_option or self.variant) if bool(x))
 
     def send_layout(self) -> None:
-        log("send_layout() layout_option=%s, layout=%s, variant_option=%s, variant=%s, options=%s",
+        log("send_layout() layout_option=%r, layout=%r, variant_option=%r, variant=%r, options=%r",
             self.layout_option, self.layout, self.variant_option, self.variant, self.options)
+        log(f"send_layout() backend={self.backend!r}, name={self.name!r}")
         self.send("layout-changed",
                   self.layout_option or self.layout or "",
                   self.variant_option or self.variant or "",
-                  self.options or "")
+                  self.options or "",
+                  self.backend, self.name)
 
     def send_keymap(self) -> None:
         log("send_keymap()")

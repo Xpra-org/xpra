@@ -9,7 +9,7 @@ import os
 import binascii
 from enum import Enum, IntEnum
 from typing import Final, Protocol, TypeAlias, Any
-from collections.abc import Callable, Sized, MutableSequence
+from collections.abc import Callable, Sized, MutableSequence, Iterable
 
 from xpra.util.env import envint, envbool
 
@@ -361,3 +361,8 @@ def noerr(fn: Callable, *args):
 
 def roundup(n: int, m: int) -> int:
     return (n + m - 1) & ~(m - 1)
+
+
+def uniq(seq: Iterable) -> list:
+    seen = set()
+    return [x for x in seq if not (x in seen or seen.add(x))]

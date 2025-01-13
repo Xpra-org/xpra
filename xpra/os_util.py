@@ -35,6 +35,7 @@ GIR_VERSIONS: dict[str, str] = {
     "GLib": "2.0",
     "GObject": "2.0",
     "GdkPixbuf": "2.0",
+    "IBus": "1.0",
     "Gio": "2.0",
     "Rsvg": "2.0",
     "Gst": "1.0",

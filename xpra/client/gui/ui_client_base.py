@@ -469,10 +469,7 @@ class UIXpraClient(ClientBaseClass):
             self.readonly = True
         if not self.server_keyboard and self.keyboard_helper:
             # swallow packets:
-            def nosend(*_args):
-                pass
-
-            self.keyboard_helper.send = nosend
+            self.keyboard_helper.send = noop
 
         i = platform_name(self._remote_platform,
                           c.strtupleget("platform.linux_distribution") or c.strget("platform.release"))
@@ -525,6 +522,7 @@ class UIXpraClient(ClientBaseClass):
             modifier_keycodes = caps.dictget("modifier_keycodes", {})
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
+            self.keyboard_helper.server_ibus = caps.dictget("ibus")
         self.key_repeat_delay, self.key_repeat_interval = caps.intpair("key_repeat", (-1, -1))
         self.handshake_complete()
 

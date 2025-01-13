@@ -6,12 +6,15 @@
 
 from typing import Any
 
+from xpra.util.env import envbool
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("keyboard")
+
+EXPOSE_IBUS_LAYOUTS = envbool("XPRA_EXPOSE_IBUS_LAYOUTS", True)
 
 
 class InputMixin(StubSourceMixin):
@@ -66,12 +69,16 @@ class InputMixin(StubSourceMixin):
         return info
 
     def get_caps(self) -> dict[str, Any]:
+        caps: dict[str, Any] = {}
         # expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         # so clients can figure out which modifiers map to which keys:
         mck = getattr(self.keyboard_config, "modifier_client_keycodes", None)
         if mck:
-            return {"modifier_keycodes": mck}
-        return {}
+            caps["modifier_keycodes"] = mck
+        if EXPOSE_IBUS_LAYOUTS:
+            from xpra.keyboard.ibus import query_ibus
+            caps["ibus"] = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
+        return caps
 
     def set_layout(self, layout: str, variant: str, options):
         if not self.keyboard_config:

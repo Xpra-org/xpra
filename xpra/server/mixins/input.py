@@ -136,13 +136,22 @@ class InputServer(StubServerMixin):
     def _process_layout_changed(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
         layout, variant = packet[1:3]
+        options = backend = name = ""
         if len(packet) >= 4:
             options = packet[3]
-        else:
-            options = ""
-        ss = self.get_server_source(proto)
-        if ss and ss.set_layout(layout, variant, options):
+        if len(packet) >= 6:
+            backend = packet[4]
+            name = packet[5]
+        if backend == "ibus" and name:
+            from xpra.keyboard.ibus import set_engine
+            if set_engine(name):
+                keylog(f"ibus set engine to {name!r}")
+                return
+        if ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
     def _process_keymap_changed(self, proto, packet: PacketType) -> None:
