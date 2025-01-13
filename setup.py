@@ -892,13 +892,14 @@ def remove_packages(*mods: str) -> None:
         removes them from the "modules" and "packages" list and adds them to "excludes" list
     """
     for m in list(modules):
-        for x in mods:
-            if m.startswith(x):
-                modules.remove(m)
-                break
+        if any(m.startswith(x) for x in mods):
+            modules.remove(m)
+            break
+    for p in list(packages):
+        if any(p.startswith(x) for x in mods):
+            packages.remove(p)
+            break
     for x in mods:
-        if x in packages:
-            packages.remove(x)
         if x not in excludes:
             excludes.append(x)
 
@@ -907,15 +908,16 @@ def add_packages(*pkgs: str) -> None:
     """ adds the given packages to the packages list,
         and adds all the modules found in this package (including the package itself)
     """
-    for x in pkgs:
+    filtered_pkgs = tuple(pkg for pkg in pkgs if not any(pkg.startswith(exclude) for exclude in excludes))
+    for x in filtered_pkgs:
         if x not in packages:
             packages.append(x)
-    add_modules(*pkgs)
+    add_modules(*filtered_pkgs)
 
 
 def add_modules(*mods: str) -> None:
     def add(v):
-        if v not in modules:
+        if v not in modules and not any(v.startswith(exclude) for exclude in excludes):
             modules.append(v)
     do_add_modules(add, *mods)
 
