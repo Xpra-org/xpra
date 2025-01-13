@@ -39,8 +39,9 @@ xpra (6.2.3-1) UNRELEASED; urgency=low
     `openh264` license tag
     remove outdated Wayland clipboard warning
     typo
+    strict mode type mismatch
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 07 Jan 2025 14:11:08 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 13 Jan 2025 22:05:18 +0700
 
 xpra (6.2.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

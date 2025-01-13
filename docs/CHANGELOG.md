@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.3] 2025-01-07
+## [6.2.3] 2025-01-13
 * Platforms, build and packaging:
     * [pillow 11.1.0](https://github.com/Xpra-org/xpra/commit/e6891f9dffa6f6ab8cd2b78418870350a3d0d3f8)
     * [`exe` installer standalone step](https://github.com/Xpra-org/xpra/commit/05ff96bfe332d5086ca1348984cee670e33cb18f)
@@ -41,6 +41,7 @@
     * [`openh264` license tag](https://github.com/Xpra-org/xpra/commit/1a18f6e8b0f1b86f2cb36c1d31028b8ff0b863a5)
     * [remove outdated Wayland clipboard warning](https://github.com/Xpra-org/xpra/commit/8d046ff38d4f15ed9a6df8191bce312076b158cd)
     * [typo](https://github.com/Xpra-org/xpra/commit/76cbf4d484a55b5f58f444a1e0cb7b6d73053bc9)
+    * [strict mode type mismatch](https://github.com/Xpra-org/xpra/commit/43d6b1daa621511eff19b0a12de159f8ffe139b9)
 
 ## [6.2.2] 2024-12-10
 * Platforms, build and packaging:

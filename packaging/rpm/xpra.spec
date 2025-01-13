@@ -915,7 +915,7 @@ fi
 
 
 %changelog
-* Tue Jan 07 2025 Antoine Martin <antoine@xpra.org> 6.2.3-10
+* Mon Jan 13 2025 Antoine Martin <antoine@xpra.org> 6.2.3-10
 - Platforms, build and packaging:
    pillow 11.1.0
    `exe` installer standalone step
@@ -956,6 +956,7 @@ fi
    `openh264` license tag
    remove outdated Wayland clipboard warning
    typo
+   strict mode type mismatch
 
 * Tue Dec 10 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:
