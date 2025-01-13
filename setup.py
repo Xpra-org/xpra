@@ -208,7 +208,7 @@ ssh_ENABLED = DEFAULT
 http_ENABLED = DEFAULT
 service_ENABLED = LINUX and server_ENABLED
 sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
-proxy_ENABLED  = DEFAULT
+proxy_ENABLED = DEFAULT
 client_ENABLED = DEFAULT
 qt6_client_ENABLED = False
 pyglet_client_ENABLED = False
@@ -950,16 +950,6 @@ def do_add_modules(op, *mods: str) -> None:
 def toggle_packages(enabled: bool, *module_names: str) -> None:
     if enabled:
         add_packages(*module_names)
-    else:
-        remove_packages(*module_names)
-
-
-def toggle_modules(enabled: bool, *module_names: str) -> None:
-    if enabled:
-        def op(v):
-            if v not in modules:
-                modules.append(v)
-        do_add_modules(op, *module_names)
     else:
         remove_packages(*module_names)
 
@@ -2425,7 +2415,7 @@ if scripts_ENABLED:
     if not OSX and not WIN32:
         scripts.append("fs/bin/run_scaled")
 
-toggle_modules(WIN32, "xpra/platform/win32/service")
+toggle_packages(WIN32, "xpra/platform/win32/service")
 
 if data_ENABLED:
     if not is_openSUSE():
@@ -2562,8 +2552,8 @@ toggle_packages(not WIN32, "xpra.platform.pycups_printing")
 toggle_packages(opengl_ENABLED, "xpra.opengl")
 toggle_packages(client_ENABLED and opengl_ENABLED and gtk3_ENABLED, "xpra.client.gtk3.opengl")
 
-toggle_modules(audio_ENABLED, "xpra.audio")
-toggle_modules(audio_ENABLED and not (OSX or WIN32), "xpra.audio.pulseaudio")
+toggle_packages(audio_ENABLED, "xpra.audio")
+toggle_packages(audio_ENABLED and not (OSX or WIN32), "xpra.audio.pulseaudio")
 
 toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 toggle_packages(clipboard_ENABLED or gtk3_ENABLED, "xpra.gtk.bindings")
