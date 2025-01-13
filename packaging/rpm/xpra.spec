@@ -352,6 +352,7 @@ Recommends:			%{package_prefix}-audio
 Recommends:			%{python3}-pyopengl
 Recommends:			%{python3}-pyu2f
 Recommends:         %{python3}-psutil
+Recommends:         ibus-libs
 Suggests:			sshpass
 Suggests:           %{package_prefix}-client-gnome
 %if 0%{?run_tests}
@@ -448,6 +449,7 @@ Requires:			xorg-x11-xauth
 Recommends:			xterm
 Recommends:			mesa-dri-drivers
 Recommends:         %{python3}-lxml
+Recommends:         ibus-libs
 %description -n %{package_prefix}-x11
 This package contains the x11 bindings
 

@@ -162,6 +162,8 @@ Recommends: xpra-codecs (= ${binary:Version})
         ,python3-watchdog
 # to be able to resize large svg icons:
         ,gir1.2-rsvg-2.0
+# keyboard mapping:
+        ,gir1.2-ibus-1.0
 # printer forwarding:
         ,cups-filters
         ,cups-common
@@ -219,6 +221,8 @@ Recommends: xpra-codecs (= ${binary:Version})
         ,python3-opengl
 # hope that this will allow our status icon to be shown:
         ,gir1.2-ayatanaappindicator3-0.1
+# keyboard mapping:
+        ,gir1.2-ibus-1.0
 Suggests: xpra-codecs-nvidia (= ${binary:Version})
 # for CPU percentage in "xpra top"
         ,python-psutil
