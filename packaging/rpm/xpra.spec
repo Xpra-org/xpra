@@ -30,7 +30,9 @@ autoprov: no
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
-%define qt6 0
+%define qt6 1
+%define tk 1
+%define pyglet 1
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild
 %if 0%{?fedora}
@@ -38,8 +40,6 @@ autoprov: no
 %endif
 %if 0%{?fedora}
 %define qt6 1
-%define pyglet 1
-%define tk 1
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --with-pyglet_client --with-tk_client
 %endif
 %if 0%{?el10}
@@ -364,7 +364,7 @@ BuildRequires:		xclip
 This package contains the GTK3 xpra client.
 
 
-%if %{qt6}
+%if 0%{qt6}
 %package -n %{package_prefix}-client-qt6
 Summary:			Experimental xpra Qt6 client
 Requires:			%{package_prefix}-client = %{version}-%{release}
@@ -374,7 +374,7 @@ This package contains an experimental client using the Qt6 toolkit.
 %endif
 
 
-%if %{pyglet}
+%if 0%{?pyglet}
 %package -n %{package_prefix}-client-pyglet
 Summary:			Experimental xpra pyglet client
 Requires:			%{package_prefix}-client = %{version}-%{release}
@@ -384,7 +384,7 @@ This package contains an experimental client using the pyglet toolkit.
 %endif
 
 
-%if %{tk}
+%if 0%{?tk}
 %package -n %{package_prefix}-client-tk
 Summary:			Experimental xpra tk client
 Requires:			%{package_prefix}-client = %{version}-%{release}
@@ -748,17 +748,17 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/client/base/
 %pycached %{python3_sitearch}/xpra/client/__init__.py
 
-%if %{qt6}
+%if 0%{?qt6}
 %files -n %{package_prefix}-client-qt6
 %{python3_sitearch}/xpra/client/qt6/
 %endif
 
-%if %{pyglet}
+%if 0%{?pyglet}
 %files -n %{package_prefix}-client-pyglet
 %{python3_sitearch}/xpra/client/pyglet/
 %endif
 
-%if %{tk}
+%if 0%{?tk}
 %files -n %{package_prefix}-client-tk
 %{python3_sitearch}/xpra/client/tk/
 %endif
