@@ -133,7 +133,7 @@ class InputServer(StubServerMixin):
         keylog("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
 
-    def _process_layout(self, proto, packet: PacketType) -> None:
+    def _process_layout_changed(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         layout, variant = packet[1:3]
@@ -145,7 +145,7 @@ class InputServer(StubServerMixin):
         if ss and ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
-    def _process_keymap(self, proto, packet: PacketType) -> None:
+    def _process_keymap_changed(self, proto, packet: PacketType) -> None:
         if self.readonly:
             return
         props = typedict(packet[1])
@@ -506,8 +506,8 @@ class InputServer(StubServerMixin):
             "set-keyboard-sync-enabled": self._process_keyboard_sync_enabled_status,
             "key-action": self._process_key_action,
             "key-repeat": self._process_key_repeat,
-            "layout-changed": self._process_layout,
-            "keymap-changed": self._process_keymap,
+            "layout-changed": self._process_layout_changed,
+            "keymap-changed": self._process_keymap_changed,
             # mouse:
             "pointer-button": self._process_pointer_button,  # v5
             "button-action": self._process_button_action,  # pre v5
