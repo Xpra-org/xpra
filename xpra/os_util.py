@@ -50,7 +50,10 @@ def gi_import(mod="Gtk", version="") -> ModuleType:
     from xpra.util.env import SilenceWarningsContext
     with SilenceWarningsContext(DeprecationWarning, ImportWarning):
         import gi
-        gi.require_version(mod, version)
+        try:
+            gi.require_version(mod, version)
+        except ValueError as e:
+            raise ImportError(f"unable to import {mod!r} {version=!r}: {e}") from None
         import importlib
         return importlib.import_module(f"gi.repository.{mod}")
 
