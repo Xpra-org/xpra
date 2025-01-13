@@ -748,6 +748,8 @@ class WindowSource(WindowIconSource):
     def _shape_changed(self, _window, *_args) -> bool:
         self.has_shape = bool(self.window.get_property("shape"))
         log("window has shape changed: %s", self.has_shape)
+        ww, wh = self.window_dimensions
+        self.damage(0, 0, ww, wh)
         return True
 
     def _iconic_changed(self, _window, *_args) -> bool:
