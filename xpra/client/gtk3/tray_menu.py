@@ -1191,14 +1191,12 @@ class GTKTrayMenu(MenuHelper):
             self.populate_keyboard_helper_layouts()
 
     def kbitem(self, title: str, layout: str, variant: str, backend="", name="", active=False) -> Gtk.CheckMenuItem:
-        log.warn("kbitem%s", (title, layout, variant, backend, name))
 
         def set_layout(item) -> None:
             """ this callback updates the client (and server) if needed """
             ensure_item_selected(self.layout_submenu, item)
             layout = item.keyboard_layout
             variant = item.keyboard_variant
-            log.warn(f"new kbitem: {layout=}, {variant=}, {backend}, {name}")
             kh = self.client.keyboard_helper
             kh.locked = layout != "Auto"
             if layout != kh.layout_option or variant != kh.variant_option or kh.backend != backend or kh.name != name:
