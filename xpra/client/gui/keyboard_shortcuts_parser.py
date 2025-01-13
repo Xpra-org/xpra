@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from collections.abc import Sequence
 
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.os_util import POSIX
@@ -74,8 +75,8 @@ def parse_shortcut_modifiers(s: str, modifier_names: dict[str, str]) -> list[str
     return shortcut_modifiers
 
 
-def parse_shortcuts(strs: list[str],
-                    shortcut_modifiers: list[str],
+def parse_shortcuts(strs: Sequence[str],
+                    shortcut_modifiers: Sequence[str],
                     modifier_names: dict[str, str],
                     ) -> dict[str, list[tuple[list[str], str, list[str | float | bool | int | None]]]]:
     """
