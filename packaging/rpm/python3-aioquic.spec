@@ -8,7 +8,7 @@ Autoreq: 0
 %else
 %global python3 %{getenv:PYTHON3}
 %endif
-%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))")
+%define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 
 Name:           %{python3}-aioquic
 Version:        1.2.0
