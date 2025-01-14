@@ -803,7 +803,7 @@ fi
 
 
 %changelog
-* Sun Jan 12 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
+* Tue Jan 14 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection
    RPM support for per-arch cuda pkgconfig
@@ -838,6 +838,8 @@ fi
    remote clipboard option not honoured on some platorms
    allow all clipboards by default
 - Encodings:
+   batch delay increase compounded
+   avoid damage storms: switch to full frames earlier
    `rgb` errors at unusual bit depths
    transparency detection with 10-bit per channel windows
    use `pillow` encoder for 10-bit per channel pictures
@@ -852,6 +854,7 @@ fi
    clamp `vrefresh` to a useful range
    division by zero on MS Windows
    typo in nvjpeg encoder / decoder build switches
+   avoid potential remote logging loop
 - Cosmetic:
    proxy error messages formatting
    remove superfluous logging
@@ -859,6 +862,7 @@ fi
    unset load-balancer CUDA option is valid
    icon glob lookup mismatch
    typo
+   value in debug logging is incorrect
 
 * Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:

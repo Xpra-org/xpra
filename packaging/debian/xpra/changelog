@@ -33,6 +33,8 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - remote clipboard option not honoured on some platorms
    - allow all clipboards by default
   * Encodings:
+   - batch delay increase compounded
+   - avoid damage storms: switch to full frames earlier
    - `rgb` errors at unusual bit depths
    - transparency detection with 10-bit per channel windows
    - use `pillow` encoder for 10-bit per channel pictures
@@ -47,6 +49,7 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - clamp `vrefresh` to a useful range
    - division by zero on MS Windows
    - typo in nvjpeg encoder / decoder build switches
+   - avoid potential remote logging loop
   * Cosmetic:
    - proxy error messages formatting
    - remove superfluous logging
@@ -54,8 +57,9 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - unset load-balancer CUDA option is valid
    - icon glob lookup mismatch
    - typo
+   - value in debug logging is incorrect
 
- -- Antoine Martin <antoine@xpra.org>  Sun, 12 Jan 2025 14:00:26 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 14 Jan 2025 14:15:21 +0700
 
 xpra (5.0.11-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

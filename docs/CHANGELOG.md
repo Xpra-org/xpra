@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.12] 2025-01-07
+## [5.0.12] 2025-01-14
 * Platforms, build and packaging:
     * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/fab8d9f02de9b4ca57d7fa88b8031a2c29a77d91) and [prefix detection](https://github.com/Xpra-org/xpra/commit/8166eee7d2f5e4b00327763627b33987edd5e0c7)
     * [RPM support for per-arch cuda pkgconfig](https://github.com/Xpra-org/xpra/commit/fa614d8672658f26d4094834dda89d5ee2d79038)
@@ -35,6 +35,8 @@
     * [remote clipboard option not honoured on some platorms](https://github.com/Xpra-org/xpra/commit/1e093325a00c25c185f105edfc7bcf233923722b)
     * [allow all clipboards by default](https://github.com/Xpra-org/xpra/commit/9c48ccb4e5b08aeaade4c774a708ee51682e2522)
 * Encodings:
+    * [batch delay increase compounded](https://github.com/Xpra-org/xpra/commit/46cc6bdf4e2763f4f3ca9e6be3df605e1a57d707)
+    * [avoid damage storms: switch to full frames earlier](https://github.com/Xpra-org/xpra/commit/f488150bc8ae227f71e4d6b7bbd38371b9db4243)
     * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/2b0539dd4292235d30ddd3ac2f985c0a735467b9)
     * [transparency detection with 10-bit per channel windows](https://github.com/Xpra-org/xpra/commit/25b03183a9246a2b9c95f5b110e0a86f5dad0fb5)
     * [use `pillow` encoder for 10-bit per channel pictures](https://github.com/Xpra-org/xpra/commit/8db730382934f53f5dd0ae78278358c577b26231)
@@ -49,6 +51,7 @@
     * [clamp `vrefresh` to a useful range](https://github.com/Xpra-org/xpra/commit/62a958b6255c1f1884cfb1b71b88e2c8a95094a1)
     * [division by zero on MS Windows](https://github.com/Xpra-org/xpra/commit/d873fd54cc6c5d202b3f278c76fe5b28a62dbcd6)
     * [typo in nvjpeg encoder / decoder build switches](https://github.com/Xpra-org/xpra/commit/2726353d0751ee4f8da451149e62a0d9b8973989)
+    * [avoid potential remote logging loop](https://github.com/Xpra-org/xpra/commit/d8754afd2e15eee00638c06a5e70ef92135dbb17)
 * Cosmetic:
     * [proxy error messages formatting](https://github.com/Xpra-org/xpra/commit/b62ea90467389e7c03b84f4bf474653ade3a6f07)
     * [remove superfluous logging](https://github.com/Xpra-org/xpra/commit/e045e44a643914114924fbbcae96124e3446c72d)
@@ -56,6 +59,7 @@
     * [unset load-balancer CUDA option is valid](https://github.com/Xpra-org/xpra/commit/d4283a911949a5cbdd7e350bd0f31c516348bc19)
     * [icon glob lookup mismatch](https://github.com/Xpra-org/xpra/commit/de9d565e3f43e21e933f6bf08177f5c076a794c3)
     * [typo](https://github.com/Xpra-org/xpra/commit/ee1dfcc16ef8768517c7202a4fad94e9e029391c)
+    * [value in debug logging is incorrect](https://github.com/Xpra-org/xpra/commit/55c63aa2c9bdcc4625065d09052b684ef751dabf)
 
 ## [5.0.11] 2024-11-22
 * Platforms, build and packaging:
