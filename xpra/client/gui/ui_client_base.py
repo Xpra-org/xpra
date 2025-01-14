@@ -181,7 +181,7 @@ class UIXpraClient(ClientBaseClass):
 
         # state:
         self._on_handshake: Sequence[tuple[Callable, Sequence[Any]]] | None = []
-        self._on_server_setting_changed: dict[str, Sequence[Callable]] = {}
+        self._on_server_setting_changed: dict[str, Sequence[Callable[[str, Any], None]]] = {}
 
     def init(self, opts) -> None:
         """ initialize variables from configuration """
@@ -580,7 +580,7 @@ class UIXpraClient(ClientBaseClass):
     def _process_server_event(self, packet: PacketType) -> None:
         log(": ".join(str(x) for x in packet[1:]))
 
-    def on_server_setting_changed(self, setting: str, cb: Callable) -> None:
+    def on_server_setting_changed(self, setting: str, cb: Callable[[str, Any], None]) -> None:
         self._on_server_setting_changed.setdefault(setting, []).append(cb)
 
     def _process_setting_change(self, packet: PacketType) -> None:
@@ -606,7 +606,7 @@ class UIXpraClient(ClientBaseClass):
             return
         log("_process_setting_change: %s=%s", setting, Ellipsizer(value))
         # these are too big to log
-        if setting not in ("xdg-menu", "monitors"):
+        if setting not in ("xdg-menu", "monitors", "ibus-layouts"):
             log.info("server setting changed: %s=%s", setting, repr_ellipsized(value))
         self.server_setting_changed(setting, value)
 
