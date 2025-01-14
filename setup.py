@@ -912,13 +912,24 @@ def add_packages(*pkgs: str) -> None:
     for x in filtered_pkgs:
         if x not in packages:
             packages.append(x)
+    excluded = tuple(pkg for pkg in pkgs if any(pkg.startswith(exclude) for exclude in excludes))
+    if excluded:
+        print(f"add_packages({pkgs}) {excluded=} using {excludes=}")
     add_modules(*filtered_pkgs)
 
 
 def add_modules(*mods: str) -> None:
-    def add(v):
-        if v not in modules and not any(v.startswith(exclude) for exclude in excludes):
-            modules.append(v)
+    def add(v: str) -> None:
+        if v in modules:
+            return
+        excluded = tuple(exclude for exclude in excludes if v.startswith(exclude))
+        if excluded:
+            print(f"not adding {v!r}, excluded by {excluded}")
+            return
+        modules.append(v)
+    excluded = tuple(mod for mod in mods if any(mod.startswith(exclude) for exclude in excludes))
+    if excluded:
+        print(f"add_modules({mods}) {excluded=} using {excludes=}")
     do_add_modules(add, *mods)
 
 
@@ -2417,7 +2428,7 @@ if scripts_ENABLED:
     if not OSX and not WIN32:
         scripts.append("fs/bin/run_scaled")
 
-toggle_packages(WIN32, "xpra/platform/win32/service")
+toggle_packages(WIN32 and service_ENABLED, "xpra/platform/win32/service")
 
 if data_ENABLED:
     if not is_openSUSE():
@@ -2452,7 +2463,7 @@ if cython_ENABLED:
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.auth")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server")
-toggle_packages(proxy_ENABLED, "xpra.server.proxy")
+toggle_packages(proxy_ENABLED, "xpra.server.proxy", "xpra.scripts.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and rfb_ENABLED, "xpra.server.rfb")
 toggle_packages(server_ENABLED or shadow_ENABLED, "xpra.server.mixins", "xpra.server.source")
@@ -2788,7 +2799,7 @@ if cythonize_more_ENABLED:
         ace("xpra.platform.posix.shadow_server")
     if scripts_ENABLED:
         ax("xpra.scripts")
-    if WIN32:
+    if WIN32 and service_ENABLED:
         ace("xpra.platform.win32.service")
     if server_ENABLED or client_ENABLED:
         ax("xpra.auth")
@@ -2798,6 +2809,7 @@ if cythonize_more_ENABLED:
         ax("xpra.server.mixins")
         if proxy_ENABLED:
             ax("xpra.server.proxy")
+            ax("xpra.scripts.proxy")
         if rfb_ENABLED:
             ax("xpra.server.rfb")
         if shadow_ENABLED:
