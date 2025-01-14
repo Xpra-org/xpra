@@ -635,7 +635,7 @@ def install_dev_env() -> None:
             "gtk3": ("libgtk-3-dev", "python3-cairo-dev", "python-gi-dev"),
             "sd_listen": ("python-gi-dev", ),
             "pam": ("libpam0g-dev", ),
-            "proc": ("libproc2-dev | libprocps-dev", ),
+            "proc": ("libproc2-dev", ),
             "lz4": ("liblz4-dev", ),
             "brotli": ("libbrotli-dev", ),
             "qrencode": ("libqrencode-dev", ),
