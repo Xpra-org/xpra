@@ -2463,7 +2463,7 @@ if cython_ENABLED:
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.auth")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server")
-toggle_packages(proxy_ENABLED, "xpra.server.proxy", "xpra.scripts.proxy")
+toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and rfb_ENABLED, "xpra.server.rfb")
 toggle_packages(server_ENABLED or shadow_ENABLED, "xpra.server.mixins", "xpra.server.source")
@@ -2809,7 +2809,6 @@ if cythonize_more_ENABLED:
         ax("xpra.server.mixins")
         if proxy_ENABLED:
             ax("xpra.server.proxy")
-            ax("xpra.scripts.proxy")
         if rfb_ENABLED:
             ax("xpra.server.rfb")
         if shadow_ENABLED:
