@@ -1176,19 +1176,21 @@ class GTKTrayMenu(MenuHelper):
     def make_layoutsmenuitem(self) -> Gtk.ImageMenuItem:
         keyboard = self.menuitem("Layout", "keyboard.png", "Select your keyboard layout")
         set_sensitive(keyboard, False)
-        self.layout_submenu = Gtk.Menu()
-        keyboard.set_submenu(self.layout_submenu)
         self.keyboard_layout_item = keyboard
         self.after_handshake(self.populate_keyboard_layouts)
         return keyboard
 
     def populate_keyboard_layouts(self) -> None:
+        # by default, use keyboard helper values:
+        self.populate_keyboard_helper_layouts()
         set_sensitive(self.keyboard_layout_item, True)
-        kh = self.client.keyboard_helper
-        if kh.server_ibus and kh.layout and PREFER_IBUS_LAYOUTS:
-            self.populate_ibus_keyboard_layouts()
-        else:
-            self.populate_keyboard_helper_layouts()
+
+        if PREFER_IBUS_LAYOUTS:
+            def got_ibus_layouts(setting: str, ibus_layouts) -> None:
+                kh = self.client.keyboard_helper
+                if ibus_layouts and kh.layout and PREFER_IBUS_LAYOUTS:
+                    self.populate_ibus_keyboard_layouts(ibus_layouts)
+            self.client.on_server_setting_changed("ibus-layouts", got_ibus_layouts)
 
     def kbitem(self, title: str, layout: str, variant: str, backend="", name="", active=False) -> Gtk.CheckMenuItem:
 
@@ -1225,14 +1227,16 @@ class GTKTrayMenu(MenuHelper):
         l.keyboard_variant = variant
         return l
 
-    def populate_ibus_keyboard_layouts(self) -> None:
+    def populate_ibus_keyboard_layouts(self, ibus_layouts: dict) -> None:
+        self.layout_submenu = Gtk.Menu()
+        self.keyboard_layout_item.set_submenu(self.layout_submenu)
         kh = self.client.keyboard_helper
         # use csv and back to get every single layout string:
         layouts = uniq((kh.layout_option or csv(kh.layouts)).split(","))
         log(f"populate_ibus_keyboard_layouts() {layouts}")
         # find the "engines" matching the layouts:
         engines = {}
-        for i, engine in enumerate(kh.server_ibus.get("engines", ())):
+        for i, engine in enumerate(ibus_layouts.get("engines", ())):
             layout = engine.get("layout", "")
             if not layout or layout not in layouts:
                 continue
@@ -1242,11 +1246,13 @@ class GTKTrayMenu(MenuHelper):
             engine = engines[rank]
             layout = engine.get("layout", "")
             name = engine.get("name", layout)
-            descr = engine.get("description", layout)
+            descr = engine.get("description", layout).split("\n")[0]
             variant = engine.get("variant", "")
             self.layout_submenu.append(self.kbitem(descr, layout, variant, "ibus", name))
 
     def populate_keyboard_helper_layouts(self) -> None:
+        self.layout_submenu = Gtk.Menu()
+        self.keyboard_layout_item.set_submenu(self.layout_submenu)
 
         def disable(message: str) -> None:
             self.keyboard_layout_item.set_tooltip_text(message)

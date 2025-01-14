@@ -6,15 +6,13 @@
 
 from typing import Any
 
-from xpra.util.env import envbool
+from xpra.util.str_fn import Ellipsizer
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("keyboard")
-
-EXPOSE_IBUS_LAYOUTS = envbool("XPRA_EXPOSE_IBUS_LAYOUTS", True)
 
 
 class InputMixin(StubSourceMixin):
@@ -32,6 +30,7 @@ class InputMixin(StubSourceMixin):
 
     def init_state(self) -> None:
         self.keyboard_config = None
+        self.ibus = False
         self.double_click_time: int = -1
         self.double_click_distance: tuple[int, int] | None = None
         # mouse echo:
@@ -51,6 +50,7 @@ class InputMixin(StubSourceMixin):
             self.double_click_time = c.intget("double_click.time")
             self.double_click_distance = c.intpair("double_click.distance")
         self.mouse_last_position = c.intpair("mouse.initial-position")
+        self.ibus = c.boolget("ibus")
 
     def get_info(self) -> dict[str, Any]:
         dc_info: dict[str, Any] = {}
@@ -75,10 +75,12 @@ class InputMixin(StubSourceMixin):
         mck = getattr(self.keyboard_config, "modifier_client_keycodes", None)
         if mck:
             caps["modifier_keycodes"] = mck
-        if EXPOSE_IBUS_LAYOUTS:
-            from xpra.keyboard.ibus import query_ibus
-            caps["ibus"] = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
         return caps
+
+    def send_ibus_layouts(self, ibus_layouts: dict) -> None:
+        log(f"send_ibus_layouts(%s) {self.ibus=}", Ellipsizer(ibus_layouts))
+        if self.ibus and ibus_layouts:
+            self.send_setting_change("ibus-layouts", ibus_layouts)
 
     def set_layout(self, layout: str, variant: str, options):
         if not self.keyboard_config:

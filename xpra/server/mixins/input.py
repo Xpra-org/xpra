@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+import threading
 from time import monotonic
 from typing import Any
 
@@ -22,6 +23,8 @@ keylog = Logger("keyboard")
 mouselog = Logger("mouse")
 
 INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
+
+EXPOSE_IBUS_LAYOUTS = envbool("XPRA_EXPOSE_IBUS_LAYOUTS", True)
 
 
 class InputServer(StubServerMixin):
@@ -51,6 +54,14 @@ class InputServer(StubServerMixin):
         self.key_repeat_timer = 0
 
         self.last_mouse_user = None
+        self.ibus_layouts = {}
+
+    def get_ibus_layouts(self):
+        if EXPOSE_IBUS_LAYOUTS and not self.ibus_layouts:
+            from xpra.keyboard.ibus import query_ibus
+            self.ibus_layouts = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
+            keylog.info("loaded ibus layouts from %s: %s", threading.current_thread(), self.ibus_layouts)
+        return self.ibus_layouts
 
     def init(self, opts) -> None:
         props = typedict()
@@ -95,6 +106,14 @@ class InputServer(StubServerMixin):
         if send_ui:
             self.parse_hello_ui_keyboard(ss, caps)
 
+    def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
+        if not send_ui:
+            return
+        ibus_layouts = self.get_ibus_layouts()
+        if ibus_layouts and hasattr(ss, "send_ibus_layouts"):
+            keylog("calling %s", ss.send_ibus_layouts)
+            ss.send_ibus_layouts(ibus_layouts)
+
     def watch_keymap_changes(self) -> None:
         """ GTK servers will start listening for the 'keys-changed' signal """
 
@@ -130,6 +149,8 @@ class InputServer(StubServerMixin):
         kc = self.keyboard_config
         if kc:
             info.update(kc.get_info())
+        if EXPOSE_IBUS_LAYOUTS:
+            info["ibus"] = self.get_ibus_layouts()
         keylog("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
 

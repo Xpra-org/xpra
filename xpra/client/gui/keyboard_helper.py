@@ -36,7 +36,6 @@ class KeyboardHelper:
         self.shortcut_modifiers: list[str] = []
         self.key_shortcuts_strs = key_shortcuts
         self.key_shortcuts: dict[str, list[str]] = {}
-        self.server_ibus = {}
         # command line overrides:
         self.raw = raw
         self.model_option = model

@@ -522,7 +522,6 @@ class UIXpraClient(ClientBaseClass):
             modifier_keycodes = caps.dictget("modifier_keycodes", {})
             if modifier_keycodes:
                 self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
-            self.keyboard_helper.server_ibus = caps.dictget("ibus")
         self.key_repeat_delay, self.key_repeat_interval = caps.intpair("key_repeat", (-1, -1))
         self.handshake_complete()
 
@@ -599,6 +598,7 @@ class UIXpraClient(ClientBaseClass):
                 "start-new-commands", "client-shutdown", "webcam",
                 "bandwidth-limit", "clipboard-limits",
                 "xdg-menu", "monitors",
+                "ibus-layouts",
         ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:
@@ -679,6 +679,7 @@ class UIXpraClient(ClientBaseClass):
             caps["keyboard"] = False
         else:
             caps["keyboard"] = True
+            caps["ibus"] = True
             caps["modifiers"] = self.get_current_modifiers()
             skip = ("keycodes", "x11_keycodes") if DELAY_KEYBOARD_DATA else ()
             caps["keymap"] = kh.get_keymap_properties(skip)
