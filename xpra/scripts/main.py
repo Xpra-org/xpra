@@ -4704,7 +4704,7 @@ def run_showsetting(args) -> ExitValue:
 
 def run_setting(setunset: bool, args) -> ExitValue:
     from xpra.util.config import update_config_attribute, unset_config_attribute
-    if args:
+    if not args:
         raise ValueError("missing setting argument")
     setting = args[0]
     otype = OPTION_TYPES.get(setting)
