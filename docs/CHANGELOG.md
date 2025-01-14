@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.3] 2025-01-13
+## [6.2.3] 2025-01-14
 * Platforms, build and packaging:
     * [pillow 11.1.0](https://github.com/Xpra-org/xpra/commit/e6891f9dffa6f6ab8cd2b78418870350a3d0d3f8)
     * [`exe` installer standalone step](https://github.com/Xpra-org/xpra/commit/05ff96bfe332d5086ca1348984cee670e33cb18f)
@@ -37,6 +37,7 @@
     * [division by zero on MS Windows](https://github.com/Xpra-org/xpra/commit/e55643b5e28bf4eee036f8378c0c15376f53565d)
     * [update keyboard layout mapping for `ku` and `ir`](https://github.com/Xpra-org/xpra/commit/9713037378b8f3333396f54b2f54073eddef25fd)
     * [avoid lowering quality for `text` content type](https://github.com/Xpra-org/xpra/commit/d6de44ee4a83acd1d6b6ee8ff4bd614831b2d81d), [avoid scaling and subsampling](https://github.com/Xpra-org/xpra/commit/f20feb96ec42f20e337b9c64d2a02b710208fa72)
+    * [avoid potential logging loop](https://github.com/Xpra-org/xpra/commit/ac9dda62adfa03e4110f61a3cbf8dcef3b6256ad)
 * Cosmetic:
     * [`openh264` license tag](https://github.com/Xpra-org/xpra/commit/1a18f6e8b0f1b86f2cb36c1d31028b8ff0b863a5)
     * [remove outdated Wayland clipboard warning](https://github.com/Xpra-org/xpra/commit/8d046ff38d4f15ed9a6df8191bce312076b158cd)

@@ -35,13 +35,14 @@ xpra (6.2.3-1) UNRELEASED; urgency=low
     division by zero on MS Windows
     update keyboard layout mapping for `ku` and `ir`
     avoid lowering quality for `text` content type, avoid scaling and subsampling
+    avoid potential logging loop
   * Cosmetic:
     `openh264` license tag
     remove outdated Wayland clipboard warning
     typo
     strict mode type mismatch
 
- -- Antoine Martin <antoine@xpra.org>  Mon, 13 Jan 2025 22:05:18 +0700
+ -- Antoine Martin <antoine@xpra.org>  Tue, 14 Jan 2025 13:53:12 +0700
 
 xpra (6.2.2-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

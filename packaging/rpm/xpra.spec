@@ -915,7 +915,7 @@ fi
 
 
 %changelog
-* Mon Jan 13 2025 Antoine Martin <antoine@xpra.org> 6.2.3-10
+* Tue Jan 14 2025 Antoine Martin <antoine@xpra.org> 6.2.3-10
 - Platforms, build and packaging:
    pillow 11.1.0
    `exe` installer standalone step
@@ -952,6 +952,7 @@ fi
    division by zero on MS Windows
    update keyboard layout mapping for `ku` and `ir`
    avoid lowering quality for `text` content type, avoid scaling and subsampling
+   avoid potential logging loop
 - Cosmetic:
    `openh264` license tag
    remove outdated Wayland clipboard warning
