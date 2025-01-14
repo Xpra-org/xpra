@@ -37,6 +37,10 @@ def _get_data_dir(roaming=True) -> str:
     # if not running from a binary, return current directory:
     if not getattr(sys, 'frozen', ''):
         return os.getcwd()
+    return get_appdata_dir(roaming)
+
+
+def get_appdata_dir(roaming=True) -> str:
     appdata = sh_get_folder_path(CSIDL_APPDATA if roaming else CSIDL_LOCAL_APPDATA)
     if not appdata:
         # on win32 we must send stdout to a logfile to prevent an alert box on exit shown by `py2exe`

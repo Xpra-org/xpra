@@ -209,20 +209,30 @@ def setup_console_event_listener(handler, enable: bool) -> bool:
 
 
 def do_init() -> None:
+    def datadir() -> str:
+        from xpra.platform.win32.paths import get_appdata_dir
+        appdatadir = get_appdata_dir(False)
+        if not os.path.exists(appdatadir):
+            os.mkdir(appdatadir)
+        return appdatadir
+
+    if FROZEN:
+        if envbool("PYTHONDONTWRITEBYTECODE", False):
+            sys.dont_write_bytecode = True
+        if not os.environ.get("PYTHONPYCACHEPREFIX"):
+            sys.pycache_prefix = os.path.join(datadir(), "pycache-%i.%i" % (sys.version_info[:2]))
+
     if not REDIRECT_OUTPUT or is_terminal():
         # figure out if we want to wait for input at the end:
         global _wait_for_input
         _wait_for_input = should_wait_for_input()
         return
+
     if envbool("XPRA_LOG_TO_FILE", True):
         log_filename = os.environ.get("XPRA_LOG_FILENAME")
         if not log_filename:
-            from xpra.platform.win32.paths import _get_data_dir
             from xpra.platform import get_prgname
-            data_dir = _get_data_dir(False)
-            if not os.path.exists(data_dir):
-                os.mkdir(data_dir)
-            log_filename = os.path.join(data_dir, (get_prgname() or "Xpra")+".log")
+            log_filename = os.path.join(datadir(), (get_prgname() or "Xpra")+".log")
         sys.stdout = open(log_filename, "a", encoding="utf8")
         sys.stderr = sys.stdout
         os.environ["XPRA_LOG_FILENAME"] = log_filename
