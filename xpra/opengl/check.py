@@ -505,7 +505,10 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
     if safe and match_list(props, GREYLIST, "greylist"):
         props["enable"] = False
         props["message"] = "driver found in greylist"
-    props.update(get_context_info())
+    try:
+        props.update(get_context_info())
+    except Exception as e:
+        unsafe(f"error querying context flags: {e}")
     return props
 
 
