@@ -13,7 +13,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger, set_global_logging_handler
-from xpra.net.common import PacketType
+from xpra.net.common import PacketType, LOG_PACKET_TYPE
 from xpra.net.compression import Compressed
 
 log = Logger("client")
@@ -62,6 +62,10 @@ class RemoteLogging(StubClientMixin):
             if conflict:
                 log.warn("Warning: cannot enable remote logging")
                 log.warn(" because debug logging is enabled for: %s", csv(conflict))
+                return True
+            if LOG_PACKET_TYPE:
+                log.warn("Warning: cannot enable remote logging")
+                log.warn(f" because {LOG_PACKET_TYPE=}")
                 return True
             log.info("enabled remote logging")
             if not self.log_both:
