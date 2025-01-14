@@ -1,9 +1,35 @@
 # Changelog
 
-## [6.3] 2024-10-13
+## [6.3] 2025-01-14
+* Platforms, build and packaging:
+    * [rewritten MS Windows build script](https://github.com/Xpra-org/xpra/issues/4394)
+    * [`RHEL` 10 and clones](https://github.com/Xpra-org/xpra/issues/4282)
+    * [`weston` + `Xwayland` option for `xvfb`](https://github.com/Xpra-org/xpra/issues/4450)
+    * [per-branch version check](https://github.com/Xpra-org/xpra/issues/4386)
+    * [test tk client](https://github.com/Xpra-org/xpra/issues/4469)
+    * [test pyglet client](https://github.com/Xpra-org/xpra/issues/4467)
+    * [remove copyright end years](https://github.com/Xpra-org/xpra/issues/4455)
+* Configuration:
+    * [`xvfb` aliases](https://github.com/Xpra-org/xpra/issues/4456)
+    * [easily modify settings](https://github.com/Xpra-org/xpra/issues/4461)
 * Features:
     * [server power events](https://github.com/Xpra-org/xpra/issues/4382)
-    * [per-branch version check](https://github.com/Xpra-org/xpra/issues/4386)
+    * [ibus keyboard layouts](https://github.com/Xpra-org/xpra/issues/4449)
+    * [specify refresh rate range](https://github.com/Xpra-org/xpra/issues/3735)
+    * [save selection in run dialog](https://github.com/Xpra-org/xpra/issues/4432)
+    * [`OpenGL` `YUVA` support for `jpeg` with alpha](https://github.com/Xpra-org/xpra/issues/1765)
+* Network:
+    * [`hyperv` connections](https://github.com/Xpra-org/xpra/issues/3666)
+    * [`nginx` proxy documentation](https://github.com/Xpra-org/xpra/issues/4435)
+    * [`http-header` authentication module](https://github.com/Xpra-org/xpra/issues/4438)
+    * [option for trusting connections](https://github.com/Xpra-org/xpra/issues/4436)
+    * [reusable authentication modules](https://github.com/Xpra-org/xpra/issues/4434)
+    * [reusable control commands](https://github.com/Xpra-org/xpra/issues/4363)
+    * [validate quic headers](https://github.com/Xpra-org/xpra/issues/3618)
+    * [`AES` fixes](https://github.com/Xpra-org/xpra/issues/4375)
+* Improvements:
+    * [skip unused slow imports](https://github.com/Xpra-org/xpra/issues/4454)
+    * [avoid loading `numpy` unnecessarily](https://github.com/Xpra-org/xpra/issues/4457)
 
 ## [6.2.0] 2024-10-09
 * Platforms, build and packaging:

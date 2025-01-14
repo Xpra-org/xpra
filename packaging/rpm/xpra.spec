@@ -940,8 +940,37 @@ fi
 
 
 %changelog
-* Sun Oct 13 2024 Antoine Martin <antoine@xpra.org> 6.3-10
-- TODO
+* Tue Jan 14 2025 Antoine Martin <antoine@xpra.org> 6.3-10
+- Platforms, build and packaging:
+   rewritten MS Windows build script
+   `RHEL` 10 and clones
+   `weston` + `Xwayland` option for `xvfb`
+   per-branch version check
+   test tk client
+   test pyglet client
+   remove copyright end years
+- Configuration:
+   `xvfb` aliases
+   easily modify settings
+- Features:
+   server power events
+   ibus keyboard layouts
+   specify refresh rate range
+   save selection in run dialog
+   `OpenGL` `YUVA` support for `jpeg` with alpha
+- Network:
+   `hyperv` connections
+   `nginx` proxy documentation
+   `http-header` authentication module
+   option for trusting connections
+   reusable authentication modules
+   reusable control commands
+   validate quic headers
+   `AES` fixes
+- Improvements:
+   skip unused slow imports
+   avoid loading `numpy` unnecessarily
+
 * Wed Oct 09 2024 Antoine Martin <antoine@xpra.org> 6.2-10
 - Platforms, build and packaging:
    pycuda for Fedora 41
