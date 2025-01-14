@@ -726,7 +726,7 @@ def zip_modules(light: bool) -> None:
     ZIPPED = [
         "OpenGL", "encodings", "future", "paramiko", "html",
         "pyasn1", "asn1crypto", "async_timeout",
-        "certifi", "OpenSSL", "keyring",
+        "OpenSSL", "keyring",
         "ifaddr", "pyaes", "service_identity",
         "re", "platformdirs", "attr", "setproctitle", "pyvda", "zipp",
         "distutils", "comtypes", "email", "multiprocessing", "packaging",
@@ -735,7 +735,6 @@ def zip_modules(light: bool) -> None:
         "builtins", "importlib",
         "logging", "queue", "urllib", "xml", "xmlrpc", "pyasn1_modules",
         "concurrent", "collections",
-        "asyncio",
     ]
     if not light:
         ZIPPED += EXTRA_PYTHON_MODULES
