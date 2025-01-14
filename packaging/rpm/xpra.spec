@@ -922,6 +922,7 @@ fi
    handle diverging RHEL clone packaging behaviour
    move default package list for newer build script default
    invalid refresh rate detected on some MS Windows configurations
+   normalize smooth scroll wheel values on macos
 - RHEL 10 builds:
    package Qt6 client
    use `weston` + `Xwayland` as xvfb on RHEL 10
@@ -934,6 +935,9 @@ fi
    websocket connection loss with some proxies sending empty payloads
    handle broken `pyopengl-accelerate` installations more gracefully
    keyboard layout group regression
+- Encodings:
+   batch delay increase compounded
+   avoid damage storms: switch to full frames earlier
 - Clipboard:
    always claim the clipboard selection when updated
    always update the peer when the owner changes
@@ -953,11 +957,14 @@ fi
    update keyboard layout mapping for `ku` and `ir`
    avoid lowering quality for `text` content type, avoid scaling and subsampling
    avoid potential logging loop
+   close splash screen on server start error
 - Cosmetic:
    `openh264` license tag
    remove outdated Wayland clipboard warning
    typo
    strict mode type mismatch
+   incorrect compression debug logging
+   incorrect damage elapsed time in debug logging
 
 * Tue Dec 10 2024 Antoine Martin <antoine@xpra.org> 6.2.2-10
 - Platforms, build and packaging:

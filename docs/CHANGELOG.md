@@ -7,6 +7,7 @@
     * [handle diverging RHEL clone packaging behaviour](https://github.com/Xpra-org/xpra/commit/cbcaa56c822e56a609406358e85114c32dc23568)
     * [move default package list for newer build script default](https://github.com/Xpra-org/xpra/commit/81a84f72bb2cdd500284cfb52f2fef16600819c2)
     * [invalid refresh rate detected on some MS Windows configurations](https://github.com/Xpra-org/xpra/commit/b9f1226888e296801313079edccf0315bd6156f0)
+    * [normalize smooth scroll wheel values on macos](https://github.com/Xpra-org/xpra/commit/63d114716dce01beabcf7a49783f72404a7b3ca7)
 * RHEL 10 builds:
     * [package Qt6 client](https://github.com/Xpra-org/xpra/commit/dd9043eebc3a7c697baa1e25bcce3d27fcedaa72)
     * [use `weston` + `Xwayland` as xvfb on RHEL 10](https://github.com/Xpra-org/xpra/commit/31f5ad2348e37c298996c7779956c8eb31e5a677)
@@ -19,6 +20,9 @@
     * [websocket connection loss with some proxies sending empty payloads](https://github.com/Xpra-org/xpra/commit/9c4a12e6a9b4639de9bc348623e20760e39a8814)
     * [handle broken `pyopengl-accelerate` installations more gracefully](https://github.com/Xpra-org/xpra/commit/3d45e2986bb8fc962eaea4fea0e2b88ec2b9ee95)
     * [keyboard layout group regression](https://github.com/Xpra-org/xpra/commit/0e7dfbfd3b806fa723002d364238b1fdbeef1514)
+* Encodings:
+    * [batch delay increase compounded](https://github.com/Xpra-org/xpra/commit/6363c98caaaa5cb45769afdacb02e1eaf6530c64)
+    * [avoid damage storms: switch to full frames earlier](https://github.com/Xpra-org/xpra/commit/eaf614d9976401da7352c99ffd341a07476baef0)
 * Clipboard:
     * [always claim the clipboard selection when updated](https://github.com/Xpra-org/xpra/commit/8b1fd56e7e5e0198f2aed0d89b329bd7c9bcbcf6)
     * [always update the peer when the owner changes](https://github.com/Xpra-org/xpra/commit/e7e5f68ac6a2c89bcdf560b4d8ea02856f04cd12)
@@ -38,11 +42,14 @@
     * [update keyboard layout mapping for `ku` and `ir`](https://github.com/Xpra-org/xpra/commit/9713037378b8f3333396f54b2f54073eddef25fd)
     * [avoid lowering quality for `text` content type](https://github.com/Xpra-org/xpra/commit/d6de44ee4a83acd1d6b6ee8ff4bd614831b2d81d), [avoid scaling and subsampling](https://github.com/Xpra-org/xpra/commit/f20feb96ec42f20e337b9c64d2a02b710208fa72)
     * [avoid potential logging loop](https://github.com/Xpra-org/xpra/commit/ac9dda62adfa03e4110f61a3cbf8dcef3b6256ad)
+    * [close splash screen on server start error](https://github.com/Xpra-org/xpra/commit/b0d73d180762ee150124eb244ac6c591ee9b583f)
 * Cosmetic:
     * [`openh264` license tag](https://github.com/Xpra-org/xpra/commit/1a18f6e8b0f1b86f2cb36c1d31028b8ff0b863a5)
     * [remove outdated Wayland clipboard warning](https://github.com/Xpra-org/xpra/commit/8d046ff38d4f15ed9a6df8191bce312076b158cd)
     * [typo](https://github.com/Xpra-org/xpra/commit/76cbf4d484a55b5f58f444a1e0cb7b6d73053bc9)
     * [strict mode type mismatch](https://github.com/Xpra-org/xpra/commit/43d6b1daa621511eff19b0a12de159f8ffe139b9)
+    * [incorrect compression debug logging](https://github.com/Xpra-org/xpra/commit/7fcf253b5091bb06fe88393a2fa27a020c97e162)
+    * [incorrect damage elapsed time in debug logging](https://github.com/Xpra-org/xpra/commit/61a63d3665e74547f048b3d80af0b1df33a46281)
 
 ## [6.2.2] 2024-12-10
 * Platforms, build and packaging:
