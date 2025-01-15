@@ -39,8 +39,8 @@ looks like when attached from an MS Windows 11 desktop client:
 * MacOS `x86_64` [DMG](https://xpra.org/stable/MacOS/x86_64/Xpra.dmg) / [PKG](https://xpra.org/stable/MacOS/x86_64/Xpra.pkg), `arm64` [DMG](https://xpra.org/stable/MacOS/arm64/Xpra.dmg) / [PKG](https://xpra.org/stable/MacOS/arm64/Xpra.pkg)
 * Linux: [RPM](https://github.com/Xpra-org/xpra/wiki/Download#-for-rpm-distributions), [DEB](https://github.com/Xpra-org/xpra/wiki/Download#-for-debian-based-distributions)
 
-All the packages are signed. There are also [beta builds](https://xpra.org/beta) available.
-For more information, see [xpra downloads](https://github.com/Xpra-org/xpra/wiki/Download)
+All the packages are signed. There are also [LTS](https://xpra.org/lts) and [beta builds](https://xpra.org/beta) available. \
+For more information and more build architecture options, see [xpra downloads](https://github.com/Xpra-org/xpra/wiki/Download)
 
 ## Build from source
 ```sh
