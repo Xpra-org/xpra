@@ -341,6 +341,8 @@ def guess_packet_type(buf: SizedBuffer) -> str:
         return "ssl"
     if data[:4] == b"RFB ":
         return "vnc"
+    if len(data) >= 7 and data[:2] == b"\x03\x00":
+        return "rdp"
     line1 = bytes(data).splitlines()[0]
     if line1.find(b"HTTP/") > 0 or line1.split(b" ")[0] in (b"GET", b"POST"):
         return "http"
