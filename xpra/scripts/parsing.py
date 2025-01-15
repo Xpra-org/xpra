@@ -649,20 +649,21 @@ def parse_ssh_option(ssh_setting: str) -> list[str]:
     ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
     if ssh_cmd[0] == "auto":
         # try paramiko:
+        from xpra.platform.features import DEFAULT_SSH_COMMAND
         from xpra.log import is_debug_enabled, Logger
         try:
             import paramiko
             assert paramiko, "paramiko not found"
-            ssh_cmd = ["paramiko"]
             if is_debug_enabled("ssh"):
                 Logger("ssh").info("using paramiko ssh backend")
-        except (ImportError, AssertionError):
+            return ["paramiko"]
+        except (ImportError, AssertionError, AttributeError) as e:
             log = Logger("ssh")
             log(f"parse_ssh_option({ssh_setting})", exc_info=True)
-            from xpra.platform.features import DEFAULT_SSH_COMMAND
-            if is_debug_enabled("ssh"):
+            if is_debug_enabled("ssh") or isinstance(e, AttributeError):
+                log.info(f"{e}")
                 log.info(f"paramiko not found, using {DEFAULT_SSH_COMMAND}")
-            ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
+        ssh_cmd = shlex.split(DEFAULT_SSH_COMMAND)
     return ssh_cmd
 
 
