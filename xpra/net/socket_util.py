@@ -342,7 +342,9 @@ def guess_packet_type(buf: SizedBuffer) -> str:
     if data[:4] == b"RFB ":
         return "vnc"
     if len(data) >= 7 and data[:2] == b"\x03\x00":
-        return "rdp"
+        size = data[2] * 256 + data[3]
+        if len(data) >= size:
+            return "rdp"
     line1 = bytes(data).splitlines()[0]
     if line1.find(b"HTTP/") > 0 or line1.split(b" ")[0] in (b"GET", b"POST"):
         return "http"
@@ -359,6 +361,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0,
     bind_ws = parse_bind_ip(opts.bind_ws, 80)
     bind_wss = parse_bind_ip(opts.bind_wss, 443)
     bind_rfb = parse_bind_ip(opts.bind_rfb, 5900)
+    bind_rdp = parse_bind_ip(opts.bind_rdp, 3389)
     bind_quic = parse_bind_ip(opts.bind_quic, 14500)
     bind_vsock = parse_bind_vsock(opts.bind_vsock)
 
@@ -391,6 +394,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0,
         "ws": bind_ws,
         "wss": bind_wss,
         "rfb": bind_rfb,
+        "rdp": bind_rdp,
     }.items():
         log("setting up %s sockets: %s", socktype, csv(defs.items()))
         for (host, iport), options in defs.items():

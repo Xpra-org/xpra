@@ -1026,6 +1026,9 @@ def _do_run_server(script_file: str, cmdline,
         if opts.bind_rfb:
             get_logger().warn(f"Warning: bind-rfb sockets cannot be used with {mode!r} mode")
             opts.bind_rfb = []
+        if opts.bind_rdp:
+            get_logger().warn(f"Warning: bind-rdp sockets cannot be used with {mode!r} mode")
+            opts.bind_rdp = []
 
     progress(30, "creating sockets")
     from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets

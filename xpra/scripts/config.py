@@ -723,6 +723,7 @@ OPTION_TYPES: dict[str, Any] = {
     "gid"               : int,
     "min-port"          : int,
     "rfb-upgrade"       : int,
+    "rdp-upgrade"       : bool,
     # float options:
     "auto-refresh-delay": float,
     # boolean options:
@@ -803,6 +804,7 @@ OPTION_TYPES: dict[str, Any] = {
     "bind-ssl"          : list,
     "bind-ssh"          : list,
     "bind-rfb"          : list,
+    "bind-rdp"          : list,
     "bind-quic"         : list,
     "auth"              : list,
     "vsock-auth"        : list,
@@ -812,6 +814,7 @@ OPTION_TYPES: dict[str, Any] = {
     "ssl-auth"          : list,
     "ssh-auth"          : list,
     "rfb-auth"          : list,
+    "rdp-auth"          : list,
     "quic-auth"         : list,
     "password-file"     : list,
     "start-env"         : list,
@@ -843,7 +846,7 @@ START_COMMAND_OPTIONS : list[str] = [
     "start-on-last-client-exit", "start-child-on-last-client-exit",
 ]
 BIND_OPTIONS : list[str] = [
-    "bind", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb", "bind-quic",
+    "bind", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-vsock", "bind-rfb", "bind-rdp", "bind-quic",
 ]
 
 # keep track of the options added since v5,
@@ -851,6 +854,7 @@ BIND_OPTIONS : list[str] = [
 OPTIONS_ADDED_SINCE_V5: list[str] = [
     "minimal", "dbus", "gstreamer",
     "keyboard-model",
+    "bind-rdp", "rdp-auth", "rdp-upgrade",
 ]
 OPTIONS_COMPAT_NAMES: dict[str, str] = {
     "--compression_level=": "-z"
@@ -930,9 +934,9 @@ PROXY_START_OVERRIDABLE_OPTIONS: list[str] = [
     "x11",
     "printing", "file-transfer", "open-command", "open-files", "open-url", "start-new-commands",
     "mmap", "mmap-group", "mdns",
-    "auth", "vsock-auth", "tcp-auth", "ws-auth", "wss-auth", "ssl-auth", "ssh-auth", "rfb-auth", "quic-auth",
-    "bind", "bind-vsock", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-ssh", "bind-rfb", "bind-quic",
-    "rfb-upgrade", "bandwidth-limit",
+    "auth", "vsock-auth", "tcp-auth", "ws-auth", "wss-auth", "ssl-auth", "ssh-auth", "rfb-auth", "rdp-auth", "quic-auth",
+    "bind", "bind-vsock", "bind-tcp", "bind-ssl", "bind-ws", "bind-wss", "bind-ssh", "bind-rfb", "bind-rdp", "bind-quic",
+    "rfb-upgrade", "rdp-upgrade", "bandwidth-limit",
     "start", "start-child",
     "start-late", "start-child-late",
     "source", "source-start",
@@ -1200,6 +1204,7 @@ def get_defaults() -> dict[str, Any]:
         "gid"               : getgid(),
         "min-port"          : 1024,
         "rfb-upgrade"       : 5,
+        "rdp-upgrade"       : False,
         "auto-refresh-delay": 0.15,
         "minimal"           : False,
         "daemon"            : CAN_DAEMONIZE,
@@ -1274,6 +1279,7 @@ def get_defaults() -> dict[str, Any]:
         "bind-ssl"          : [],
         "bind-ssh"          : [],
         "bind-rfb"          : [],
+        "bind-rdp"          : [],
         "bind-quic"         : [],
         "auth"              : [],
         "vsock-auth"        : [],
@@ -1283,6 +1289,7 @@ def get_defaults() -> dict[str, Any]:
         "ssl-auth"          : [],
         "ssh-auth"          : [],
         "rfb-auth"          : [],
+        "rdp-auth"          : [],
         "quic-auth"         : [],
         "password-file"     : [],
         "source"            : SOURCE,

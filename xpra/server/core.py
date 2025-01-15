@@ -188,6 +188,7 @@ class ServerCore(ControlHandler):
         self.ssl_upgrade = False
         self.websocket_upgrade = has_websocket_handler()
         self.ssh_upgrade = False
+        self.rdp_upgrade = False
         self._html: bool = False
         self._http_scripts: dict[str, Callable[[str], HttpResponse]] = {}
         self._www_dir: str = ""
@@ -280,6 +281,7 @@ class ServerCore(ControlHandler):
         self.ssl_upgrade = opts.ssl_upgrade
         self.websocket_upgrade = opts.websocket_upgrade
         self.ssh_upgrade = opts.ssh_upgrade
+        self.rdp_upgrade = opts.rdp_upgrade
         self.dbus_control = opts.dbus_control
         self.mdns = opts.mdns
         if opts.start_new_commands:
@@ -902,6 +904,8 @@ class ServerCore(ControlHandler):
         if tosocktype == "rfb":
             # only available with the RFBServer
             return getattr(self, "_rfb_upgrade", False)
+        if tosocktype == "rdp":
+            return self.rdp_upgrade
         if socktype in ("tcp", "socket", "vsock", "named-pipe"):
             if tosocktype == "ssl":
                 if to_option_str:
@@ -939,7 +943,7 @@ class ServerCore(ControlHandler):
             return "quic", "webtransport"
         socktypes = [socktype]
         if socktype == "tcp":
-            for tosocktype in ("ssl", "ws", "wss", "ssh", "rfb"):
+            for tosocktype in ("ssl", "ws", "wss", "ssh", "rfb", "rdp"):
                 if self.can_upgrade(socktype, tosocktype, options):
                     socktypes.append(tosocktype)
         elif socktype in ("ws", "ssl") and self.can_upgrade(socktype, "wss", options):
@@ -1255,6 +1259,13 @@ class ServerCore(ControlHandler):
                 self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
                 return
             self.handle_rfb_connection(conn)
+            return
+
+        if socktype == "rdp":
+            if peek_data and peek_data[:2] != b"\x03\x00":
+                self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
+                return
+            self.handle_rdp_connection(conn)
             return
 
         if socktype == "ssh":
@@ -2681,4 +2692,9 @@ class ServerCore(ControlHandler):
     def handle_rfb_connection(self, conn, data: bytes = b"") -> None:
         log.error("Error: RFB protocol is not supported by this server")
         log("handle_rfb_connection%s", (conn, data))
+        force_close_connection(conn)
+
+    def handle_rdp_connection(self, conn, data: bytes = b"") -> None:
+        log.error("Error: RDP protocol is not supported by this server")
+        log("handle_rdp_connection%s", (conn, data))
         force_close_connection(conn)

@@ -905,6 +905,7 @@ def do_parse_cmdline(cmdline: list[str], defaults):
         defaults.websocket_upgrade = False
         defaults.ssh_upgrade = False
         defaults.rfb_upgrade = False
+        defaults.rdp_upgrade = False
         # input / output:
         defaults.cursors = defaults.bell = "no"
         defaults.webcam = False
@@ -1322,6 +1323,12 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      metavar="[HOST]:PORT",
                      help="listen for RFB connections."
                           " Use --rfb-auth to secure it."
+                          " You may specify this option multiple times with different host and port combinations")
+    group.add_option("--bind-rdp", action="append",
+                     dest="bind_rdp", default=list(defaults.bind_rdp or []),
+                     metavar="[HOST]:PORT",
+                     help="listen for RDP connections."
+                          " Use --rdp-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-quic", action="append",
                      dest="bind_quic", default=list(defaults.bind_quic or []),
@@ -1863,6 +1870,9 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="rfb_upgrade", default=defaults.rfb_upgrade,
                      help="Upgrade TCP sockets to send a RFB handshake after this delay"
                           " (in seconds). Default: %default.")
+    group.add_option("--rdp-upgrade", action="store",
+                     dest="rdp_upgrade", default=defaults.rdp_upgrade,
+                     help="Upgrade TCP sockets handle RDP connections. Default: %default.")
     group.add_option("-d", "--debug", action="store",
                      dest="debug", default=defaults.debug, metavar="FILTER1,FILTER2,...",
                      help="list of categories to enable debugging for"
@@ -1907,6 +1917,10 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="rfb_auth", default=list(defaults.rfb_auth or []),
                      help="The authentication module to use for RFB sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.rfb_auth))
+    group.add_option("--rdp-auth", action="append",
+                     dest="rdp_auth", default=list(defaults.rdp_auth or []),
+                     help="The authentication module to use for RDP sockets - deprecated, use per socket syntax"
+                          " (default: %s)" % dcsv(defaults.rdp_auth))
     group.add_option("--quic-auth", action="append",
                      dest="quic_auth", default=list(defaults.quic_auth or []),
                      help="The authentication module to use for QUIC sockets - deprecated, use per socket syntax"
