@@ -60,7 +60,7 @@ class InputServer(StubServerMixin):
         if EXPOSE_IBUS_LAYOUTS and not self.ibus_layouts:
             from xpra.keyboard.ibus import query_ibus
             self.ibus_layouts = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
-            keylog.info("loaded ibus layouts from %s: %s", threading.current_thread(), self.ibus_layouts)
+            keylog("loaded ibus layouts from %s: %s", threading.current_thread(), self.ibus_layouts)
         return self.ibus_layouts
 
     def init(self, opts) -> None:
