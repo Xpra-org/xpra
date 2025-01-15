@@ -1119,6 +1119,7 @@ class ServerCore(ControlHandler):
 
     def new_conn_err(self, conn, sock, socktype: str, socket_info, packet_type: str, msg=None) -> None:
         # not an xpra client
+        netlog("new_conn_err", exc_info=True)
         log_fn = netlog.debug if packet_type == "http" else netlog.error
         log_fn("Error: %s connection failed:", socktype)
         if conn.remote:
@@ -1126,7 +1127,7 @@ class ServerCore(ControlHandler):
         if socket_info:
             log_fn(" received on %s", pretty_socket(socket_info))
         if packet_type:
-            log_fn(" this packet looks like a '%s' packet", packet_type, backtrace=True)
+            log_fn(" this packet looks like a '%s' packet", packet_type)
         else:
             log_fn(" invalid packet format, not an xpra client?")
         if msg:
