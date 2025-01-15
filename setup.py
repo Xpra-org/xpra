@@ -545,10 +545,83 @@ def convert_docs(fmt="html") -> None:
         convert_doc_dir("docs", "build/docs", fmt=fmt)
 
 
-def install_dev_env() -> None:
+def du(path: str) -> int:
+    if os.path.isfile(path):
+        return os.path.getsize(path)
+    return sum(os.path.getsize(f) for f in glob(f"{path}/**", recursive=True) if os.path.isfile(f))
+
+
+def build_package() -> None:
+    if not LINUX:
+        raise RuntimeError("packaging is not implemented here yet, use platform specific scripts instead")
+    print("* installing beta repository tools and libraries")
+    install_repo("-beta")
+    print("* installing dev-env")
+    from subprocess import run
+    cmd = install_dev_env_command()
+    if not cmd:
+        return 1
+    if os.geteuid() != 0:
+        cmd.insert(0, "sudo")
+    if run(cmd).returncode != 0:
+        raise RuntimeError("failed to install dev-env using %r" % shlex.join(cmd))
+    print("* creating source archive")
+    cmd = ["python3", "./setup.py", "sdist", "--formats=xztar"]
+    if run(cmd).returncode != 0:
+        raise RuntimeError("failed to install create sdist source using %r" % shlex.join(cmd))
+    src_xz = f"./dist/xpra-{XPRA_VERSION}.tar.xz"
+    if not os.path.exists(src_xz):
+        raise RuntimeError(f"cannot find {src_xz!r}")
+    size = du(src_xz)
+    print(f"{src_xz}: {size}B")
+
+    if is_RPM():
+        rpmbuild_dir = os.path.expanduser("~/rpmbuild")
+        if not os.path.exists(rpmbuild_dir):
+            os.mkdir(rpmbuild_dir)
+        sources_dir = os.path.join(rpmbuild_dir, "SOURCES")
+        if not os.path.exists(sources_dir):
+            os.mkdir(sources_dir)
+        shutil.copy(src_xz, sources_dir)
+        cmd = ["rpmbuild", "-ba", "./packaging/rpm/xpra.spec"]
+        if run(cmd).returncode != 0:
+            raise RuntimeError("failed to generate RPM package with %r" % shlex.join(cmd))
+        return 0
+
+    if is_DEB():
+        deb_src = f"../xpra-{XPRA_VERSION}.orig.tar.xz"
+        shutil.copy(src_xz, deb_src)
+        cmd = ["debuild", "-us", "-uc", "-b"]
+        if run(cmd).returncode != 0:
+            raise RuntimeError("failed to generate RPM package with %r" % shlex.join(cmd))
+        return 0
+    print("sorry, your distribution is not supported by this subcommand")
+    return 1
+
+
+def install_dev_env() -> int:
+    cmd = install_dev_env_command()
+    if not cmd:
+        return 1
+    if os.geteuid() != 0:
+        cmd.insert(0, "sudo")
+    from shutil import which
+    exe = which(cmd[0])
+    os.execv(exe, cmd)
+
+
+def install_dev_env_command() -> list[str]:
     if not LINUX:
         print(f"'dev-env' subcommand is not supported on {sys.platform!r}")
-        sys.exit(1)
+        return []
+
+    def add_flags(cmd: list[str], flag_to_pkgs: dict[str, Sequence[str]]) -> list[str]:
+        for flag_str, pkg_names in flag_to_pkgs.items():
+            flags = flag_str.split("|")
+            if any(globals()[f"{flag}_ENABLED"] for flag in flags):
+                cmd += list(set(pkg_names))
+        return cmd
+
     if is_RPM() and not is_openSUSE():
         py3 = os.environ.get("PYTHON3", "")
         if not py3:
@@ -610,8 +683,8 @@ def install_dev_env() -> None:
         if py3 == "python3":
             # we don't have a spec file for this one, can only install the default python3 package:
             flag_to_pkgs["printing"] = (f"{py3}-cups", )
-        cmd = ["dnf", "install"]
-    elif is_DEB():
+        return add_flags(["dnf", "install"], flag_to_pkgs)
+    if is_DEB():
         flag_to_pkgs = {
             "modules": (
                 "python3-dev",
@@ -641,22 +714,12 @@ def install_dev_env() -> None:
             "qrencode": ("libqrencode-dev", ),
             "docs": ("pandoc", ),
         }
-        cmd = ["apt", "install"]
-    else:
-        distro = get_linux_distribution()
-        print("'dev-env' subcommand is not supported on your distribution")
-        print(" %s" % " ".join(distro))
-        print(" please submit a patch")
-        sys.exit(1)
-    if os.geteuid() != 0:
-        cmd.insert(0, "sudo")
-    for flag_str, pkg_names in flag_to_pkgs.items():
-        flags = flag_str.split("|")
-        if any(globals()[f"{flag}_ENABLED"] for flag in flags):
-            cmd += list(set(pkg_names))
-    from shutil import which
-    exe = which(cmd[0])
-    os.execv(exe, cmd)
+        return add_flags(["apt", "install"], flag_to_pkgs)
+    distro = get_linux_distribution()
+    print("'dev-env' subcommand is not supported on your distribution")
+    print(" %s" % " ".join(distro))
+    print(" please submit a patch")
+    return []
 
 
 def install_repo(repo_variant="") -> None:
@@ -757,6 +820,10 @@ if "dev-env" in sys.argv:
     install_dev_env()
     sys.exit(0)
 
+if "package" in sys.argv:
+    build_package()
+    sys.exit(0)
+
 if "install-repo" in sys.argv:
     install_repo()
     sys.exit(0)
@@ -782,6 +849,7 @@ if len(sys.argv) < 2:
         "doc",
         "pdf-doc",
         "dev-env",
+        "package",
         "install-repo",
         "install-beta-repo",
         "unittests",
