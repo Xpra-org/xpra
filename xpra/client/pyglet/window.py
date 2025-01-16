@@ -132,7 +132,7 @@ class ClientWindow(Window):
             image = ImageData(w, h, "RGBA", data, pitch=stride or w*4)
         else:
             raise ValueError(f"invalid encoding {coding!r}")
-        bw, bh = self.get_size()
+        bh = self.get_size()[1]
         self.sprite = Sprite(image, x=x, y=bh - y - h)
         self.sprite.draw()
         self.flip()

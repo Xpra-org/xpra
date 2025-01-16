@@ -27,7 +27,7 @@ def main(args) -> ExitValue:
         try:
             wait_for_x_server(display)
             return ExitCode.OK
-        except SystemExit as e:
+        except SystemExit as e:  # NOSONAR @SuppressWarnings("python:S5727")
             return e.code
         except RuntimeError as e:
             sys.stderr.write(f"{e}\n")

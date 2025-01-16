@@ -217,9 +217,8 @@ def patch_xvfb_command(xvfb_cmd: list[str], w: int, h: int, pixel_depth: int) ->
             no_arg = xvfb_cmd.index("0")
         except ValueError:
             no_arg = -1
-        if no_arg > 0:
-            if no_arg == screen_arg + 1:
-                xvfb_cmd.pop(no_arg)
+        if no_arg > 0 and no_arg == screen_arg + 1:
+            xvfb_cmd.pop(no_arg)
         # remove the "-screen" argument and the geometry that follows:
         xvfb_cmd.pop(screen_arg)
         xvfb_cmd.pop(screen_arg)
