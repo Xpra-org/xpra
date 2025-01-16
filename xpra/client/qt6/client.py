@@ -231,7 +231,7 @@ class XpraQt6Client(Qt6Client):
     def cleanup(self) -> None:
         """ client classes must define this method """
 
-    def setup_connection(self, conn) -> None:
+    def setup_connection(self, conn):
         """
         Warnings:
             * this only works for plain `tcp` sockets

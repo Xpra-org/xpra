@@ -85,7 +85,7 @@ class XpraPygletClient:
     def cleanup(self) -> None:
         """ client classes must define this method """
 
-    def setup_connection(self, conn) -> None:
+    def setup_connection(self, conn):
         protocol_class = get_client_protocol_class(conn.socktype)
         protocol = protocol_class(conn, self.process_packet, self.next_packet, scheduler=PygletScheduler())
         log(f"setup_connection({conn}) {protocol=}")

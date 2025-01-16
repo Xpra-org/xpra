@@ -551,7 +551,7 @@ def du(path: str) -> int:
     return sum(os.path.getsize(f) for f in glob(f"{path}/**", recursive=True) if os.path.isfile(f))
 
 
-def build_package() -> None:
+def build_package() -> int:
     if not LINUX:
         raise RuntimeError("packaging is not implemented here yet, use platform specific scripts instead")
     print("* installing beta repository tools and libraries")
@@ -821,8 +821,7 @@ if "dev-env" in sys.argv:
     sys.exit(0)
 
 if "package" in sys.argv:
-    build_package()
-    sys.exit(0)
+    sys.exit(build_package())
 
 if "install-repo" in sys.argv:
     install_repo()
