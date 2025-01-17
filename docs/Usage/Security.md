@@ -160,7 +160,7 @@ The MS Windows libraries are maintained by [MSYS2](https://www.msys2.org/), the 
 
 ### Anti-viruses
 Because of the way xpra intercepts and injects pointer and keyboard events - and the API it uses to perform these tasks, it is regularly misidentified as malware:
-[f-secure and bitdefender false-positive](https://github.com/Xpra-org/xpra/issues/2088#issuecomment-765511350), [Microsoft AI](https://github.com/Xpra-org/xpra/issues/2781#issuecomment-765546100)
+[f-secure and bitdefender false-positive](https://github.com/Xpra-org/xpra/issues/2088#issuecomment-765511350), [Microsoft AI](https://github.com/Xpra-org/xpra/issues/2781#issuecomment-765546100), [Windows Defender: Trojan](https://github.com/Xpra-org/xpra/issues/4477)
 
 ### [HTML5](https://github.com/Xpra-org/xpra-html5)
 The builtin web server ships with fairly restrictive [http headers and content security policy](https://github.com/Xpra-org/xpra/issues/1741), even [blocking some valid use cases by default](https://github.com/Xpra-org/xpra/issues/3442) - though we could [go even further](https://github.com/Xpra-org/xpra/issues/3100).
