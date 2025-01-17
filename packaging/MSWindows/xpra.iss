@@ -36,9 +36,7 @@ Source: dist\*; Excludes: "etc\xpra"; DestDir: {app}; Flags: ignoreversion recur
 Source: dist\etc\xpra\*; DestDir: "{commonappdata}\Xpra"; Flags: recursesubdirs createallsubdirs uninsneveruninstall;
 
 [InstallDelete]
-Type: filesandordirs; Name: "{app}\lib\*.py*"
-Type: filesandordirs; Name: "{app}\lib\library.zip"
-Type: filesandordirs; Name: "{app}\lib\xpra"
+Type: filesandordirs; Name: "{app}\lib"
 
 [Icons]
 Name: "{group}\Xpra"; Filename: {app}\Xpra.exe; WorkingDir: {app}
