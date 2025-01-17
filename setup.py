@@ -1050,6 +1050,9 @@ CC = os.environ.get("CC", "gcc")
 print(f"CC={CC}")
 print(f"CPP={CPP}")
 
+if verbose_ENABLED and not os.environ.get("DISTUTILS_DEBUG"):
+    os.environ["DISTUTILS_DEBUG"] = "1"
+
 
 def do_add_cython_ext(*args, **kwargs) -> None:
     if "--no-compile" in sys.argv and not ("build" in sys.argv and "install" in sys.argv):
@@ -1209,6 +1212,8 @@ def vernum(s) -> tuple[int, ...]:
 
 # Tweaked from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/502261
 def exec_pkgconfig(*pkgs_options, **ekw):
+    if verbose_ENABLED:
+        print(f"exec_pkgconfig({pkgs_options}, {ekw})")
     kw = dict(ekw)
     if "INCLUDE_DIRS" in os.environ:
         for d in INCLUDE_DIRS:
@@ -1265,6 +1270,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     def addldflags(*s: str):
         add_to_keywords(kw, "extra_link_args", *s)
 
+    if verbose_ENABLED:
+        print(f"exec_pkg_config will try to add {pkgs_options}")
     if pkgs_options:
         for pc_arg, add_to in {
             "--libs" : "extra_link_args",
@@ -1277,7 +1284,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
             if r!=0:
                 sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(pkg_config_cmd), err))
             if verbose_ENABLED:
-                print(f"pkg-config output: {pkg_config_out}")
+                print(f"pkg-config output: {pkg_config_out!r}")
             add_tokens(pkg_config_out, add_to)
             if verbose_ENABLED:
                 print(f"pkg-config kw={kw}")
