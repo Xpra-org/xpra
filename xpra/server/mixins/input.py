@@ -20,6 +20,7 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 keylog = Logger("keyboard")
+ibuslog = Logger("keyboard", "ibus")
 mouselog = Logger("mouse")
 
 INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
@@ -60,7 +61,7 @@ class InputServer(StubServerMixin):
         if EXPOSE_IBUS_LAYOUTS and not self.ibus_layouts:
             from xpra.keyboard.ibus import query_ibus
             self.ibus_layouts = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
-            keylog("loaded ibus layouts from %s: %s", threading.current_thread(), self.ibus_layouts)
+            ibuslog("loaded ibus layouts from %s: %s", threading.current_thread(), self.ibus_layouts)
         return self.ibus_layouts
 
     def init(self, opts) -> None:
@@ -111,7 +112,7 @@ class InputServer(StubServerMixin):
             return
         ibus_layouts = self.get_ibus_layouts()
         if ibus_layouts and hasattr(ss, "send_ibus_layouts"):
-            keylog("calling %s", ss.send_ibus_layouts)
+            ibuslog("calling %s", ss.send_ibus_layouts)
             ss.send_ibus_layouts(ibus_layouts)
 
     def watch_keymap_changes(self) -> None:
@@ -170,7 +171,7 @@ class InputServer(StubServerMixin):
         if backend == "ibus" and name:
             from xpra.keyboard.ibus import set_engine
             if set_engine(name):
-                keylog(f"ibus set engine to {name!r}")
+                ibuslog(f"ibus set engine to {name!r}")
                 return
         if ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)

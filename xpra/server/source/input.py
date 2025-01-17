@@ -13,6 +13,7 @@ from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("keyboard")
+ibuslog = Logger("ibus")
 
 
 class InputMixin(StubSourceMixin):
@@ -51,6 +52,7 @@ class InputMixin(StubSourceMixin):
             self.double_click_distance = c.intpair("double_click.distance")
         self.mouse_last_position = c.intpair("mouse.initial-position")
         self.ibus = c.boolget("ibus")
+        ibuslog(f"client ibus support: {self.ibus}")
 
     def get_info(self) -> dict[str, Any]:
         dc_info: dict[str, Any] = {}
@@ -78,7 +80,7 @@ class InputMixin(StubSourceMixin):
         return caps
 
     def send_ibus_layouts(self, ibus_layouts: dict) -> None:
-        log(f"send_ibus_layouts(%s) {self.ibus=}", Ellipsizer(ibus_layouts))
+        ibuslog(f"send_ibus_layouts(%s) {self.ibus=}", Ellipsizer(ibus_layouts))
         if self.ibus and ibus_layouts:
             self.send_setting_change("ibus-layouts", ibus_layouts)
 

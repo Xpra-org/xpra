@@ -208,6 +208,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "printing"      : "Printing",
         "file"          : "File transfers",
         "keyboard"      : "Keyboard mapping and key event handling",
+        "ibus"          : "IBus keyboard layouts",
         "screen"        : "Screen and workarea dimension",
         "fps"           : "Frames per second",
         "xsettings"     : "XSettings synchronization",

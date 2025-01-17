@@ -1060,7 +1060,7 @@ def _do_run_server(script_file: str, cmdline,
             # maybe we are inheriting one from a dead session?
             ibus_daemon_pid = load_pid(session_dir, "ibus-daemon.pid")
             if not ibus_daemon_pid or not os.path.exists("/proc") or not os.path.exists(f"/proc/{ibus_daemon_pid}"):
-                log("adding ibus-daemon to late startup")
+                Logger("ibus").debug("adding ibus-daemon to late startup")
                 opts.start_late.insert(0, IBUS_DAEMON_COMMAND)
 
     # Start the Xvfb server first to get the display_name if needed

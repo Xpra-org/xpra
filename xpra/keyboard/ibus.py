@@ -5,6 +5,10 @@
 
 from typing import Any
 
+from xpra.log import Logger
+
+log = Logger("ibus")
+
 
 def noemptyvalues(d: dict) -> dict:
     return dict((k, v) for k, v in d.items() if v)
@@ -45,17 +49,21 @@ def query_ibus() -> dict[str, Any]:
         engines = bus.list_engines()
         if engines:
             info["engines"] = tuple(query_engine(engine) for engine in engines)
+    log(f"query_ibus()={info}")
     return info
 
 
 def set_engine(name: str) -> bool:
+    log(f"ibus.set_engine({name!r})")
     try:
         from xpra.os_util import gi_import
         IBus = gi_import("IBus")
-    except ImportError:
+    except ImportError as e:
+        log(f"failed to import ibus: {e}")
         return False
     bus = IBus.Bus()
     if not bus.is_connected():
+        log(f"bus {bus} is not connected")
         return False
     return bus.set_global_engine(name)
 
