@@ -1852,12 +1852,17 @@ if WIN32:
         setup_options["executables"] = executables
 
         def add_exe(script, icon, base_name, base="Console") -> None:
+            kwargs = {}
+            manifest = f"dist/{base_name}.exe.manifest"
+            if os.path.exists(manifest):
+                kwargs["manifest"] = manifest
             executables.append(Executable(
                 script=script, init_script=None,
                 # targetDir               = "dist",
                 icon=f"fs/share/xpra/icons/{icon}",
                 target_name=f"{base_name}.exe",
                 base=base,
+                **kwargs
             ))
 
         def add_console_exe(script, icon, base_name) -> None:
