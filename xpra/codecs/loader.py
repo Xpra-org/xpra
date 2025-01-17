@@ -124,6 +124,7 @@ def codec_import_check(name: str, description: str, top_module: str, class_modul
             if name in CODEC_FAIL_IMPORT:
                 raise ImportError("codec found in fail import list")
             module = import_module(top_module)
+            log(f"imported {module!r}")
         except ImportError as e:
             log(f"failed to import {name} ({description})")
             log("", exc_info=True)
@@ -140,7 +141,7 @@ def codec_import_check(name: str, description: str, top_module: str, class_modul
             ic = import_module(class_module)
             try:
                 # run init_module?
-                init_module = getattr(module, "init_module", noop)
+                init_module = getattr(ic, "init_module", noop)
                 log(f"{ic}.init_module={init_module}")
                 init_module()
 
