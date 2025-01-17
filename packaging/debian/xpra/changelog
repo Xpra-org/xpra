@@ -29,7 +29,6 @@ xpra (6.3-1) UNRELEASED; urgency=low
     skip unused slow imports
     avoid loading `numpy` unnecessarily
 
-
  -- Antoine Martin <antoine@xpra.org>  Sun, 13 Oct 2024 18:49:42 +0700
 
 xpra (6.2.0-1) UNRELEASED; urgency=low
@@ -54,7 +53,7 @@ xpra (6.2.0-1) UNRELEASED; urgency=low
     inline more data in network packets
     SSL setup made easy
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 09 Oct 2024 18:0:27 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 09 Oct 2024 18:00:27 +0700
 
 xpra (6.1-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
