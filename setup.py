@@ -295,7 +295,7 @@ avif_decoder_ENABLED    = avif_ENABLED
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
 vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
-amf_ENABLED             = has_header_file("AMF/components/VideoEncoderVCE.h")
+amf_ENABLED             = pkg_config_version("amf", "1.0") or has_header_file("AMF/components/VideoEncoderVCE.h")
 amf_encoder_ENABLED     = amf_ENABLED
 # opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
@@ -1282,7 +1282,7 @@ def exec_pkgconfig(*pkgs_options, **ekw):
                 print(f"pkg_config_cmd={pkg_config_cmd}")
             r, pkg_config_out, err = get_status_output(pkg_config_cmd)
             if r!=0:
-                sys.exit("ERROR: call to '%s' failed (err=%s)" % (" ".join(pkg_config_cmd), err))
+                raise ValueError("ERROR: call to %r failed (err=%s)" % (shlex.join(pkg_config_cmd), err))
             if verbose_ENABLED:
                 print(f"pkg-config output: {pkg_config_out!r}")
             add_tokens(pkg_config_out, add_to)
@@ -2769,11 +2769,17 @@ toggle_packages(vpx_encoder_ENABLED or vpx_decoder_ENABLED, "xpra.codecs.vpx")
 tace(vpx_encoder_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_decoder_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
 toggle_packages(amf_ENABLED, "xpra.codecs.amf")
-amf_kwargs = {
-    "extra_compile_args": "-I" + find_header_file("/AMF", isdir=True),
-    # "extra_link_args": ("-lpam", "-lpam_misc"),
-}
-tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
+if amf_ENABLED:
+    try:
+        amf_kwargs = pkgconfig("amf")
+        print(f"amf: pkgconfig('amf')={amf_kwargs}")
+    except ValueError:
+        amf_kwargs = pkgconfig("amf") or {
+            "extra_compile_args": "-I" + find_header_file("/AMF", isdir=True) + "/AMF",
+            # "extra_link_args": ("-lpam", "-lpam_misc"),
+        }
+        print(f"default amf args: {amf_kwargs}")
+    tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
 toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
 

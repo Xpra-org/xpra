@@ -32,7 +32,7 @@ cdef extern from "Python.h":
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
 
-cdef extern from "AMF/components/VideoEncoderVCE.h":
+cdef extern from "components/VideoEncoderVCE.h":
     pass
 
 
