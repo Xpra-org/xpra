@@ -259,6 +259,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "spng"          : "spng codec",
         "jpeg"          : "JPEG codec",
         "vpx"           : "libvpx encoder and decoder",
+        "amf"           : "amf encoder",
         "nvjpeg"        : "nvidia nvjpeg hardware encoder",
         "nvenc"         : "nvidia nvenc video hardware encoder",
         "nvdec"         : "nvidia nvdec video hardware decoder",

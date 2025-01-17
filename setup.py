@@ -295,6 +295,8 @@ avif_decoder_ENABLED    = avif_ENABLED
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
 vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
+amf_ENABLED             = has_header_file("AMF/components/VideoEncoderVCE.h")
+amf_encoder_ENABLED     = amf_ENABLED
 # opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
@@ -338,6 +340,7 @@ ENCODER_SWITCHES = [
     "enc_proxy",
     "enc_x264", "openh264_encoder", "nvenc", "nvjpeg_encoder",
     "vpx_encoder", "webp_encoder", "pillow_encoder",
+    "amf_encoder",
     "spng_encoder", "jpeg_encoder", "avif_encoder",
     "argb_encoder",
 ]
@@ -366,6 +369,7 @@ SWITCH_ALIAS = {
     "argb" : ("argb_encoder", ),
     "pillow": ("pillow_encoder", "pillow_decoder"),
     "vpx" : ("vpx_encoder", "vpx_decoder"),
+    "amf": ("amf_encoder", ),
     "webp" : ("webp_encoder", "webp_decoder"),
     "avif": ("avif_encoder", "avif_decoder"),
     "openh264": ("openh264", "openh264_decoder", "openh264_encoder"),
@@ -2757,6 +2761,12 @@ tace(csc_cython_ENABLED, "xpra.codecs.csc_cython.converter", optimize=3)
 toggle_packages(vpx_encoder_ENABLED or vpx_decoder_ENABLED, "xpra.codecs.vpx")
 tace(vpx_encoder_ENABLED, "xpra.codecs.vpx.encoder", "vpx")
 tace(vpx_decoder_ENABLED, "xpra.codecs.vpx.decoder", "vpx")
+toggle_packages(amf_ENABLED, "xpra.codecs.amf")
+amf_kwargs = {
+    "extra_compile_args": "-I" + find_header_file("/AMF", isdir=True),
+    # "extra_link_args": ("-lpam", "-lpam_misc"),
+}
+tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
 toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
 
