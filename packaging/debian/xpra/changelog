@@ -58,8 +58,9 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - icon glob lookup mismatch
    - typo
    - value in debug logging is incorrect
+   - log spam with rpd connection attempts
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 14 Jan 2025 14:15:21 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 17 Jan 2025 14:37:21 +0700
 
 xpra (5.0.11-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

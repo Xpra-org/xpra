@@ -803,7 +803,7 @@ fi
 
 
 %changelog
-* Tue Jan 14 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
+* Fri Jan 17 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection
    RPM support for per-arch cuda pkgconfig
@@ -863,6 +863,7 @@ fi
    icon glob lookup mismatch
    typo
    value in debug logging is incorrect
+   log spam with rpd connection attempts
 
 * Fri Nov 22 2024 Antoine Martin <antoine@xpra.org> 5.0.11-10
 - Platforms, build and packaging:

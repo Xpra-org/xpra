@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.0.12] 2025-01-14
+## [5.0.12] 2025-01-17
 * Platforms, build and packaging:
     * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/fab8d9f02de9b4ca57d7fa88b8031a2c29a77d91) and [prefix detection](https://github.com/Xpra-org/xpra/commit/8166eee7d2f5e4b00327763627b33987edd5e0c7)
     * [RPM support for per-arch cuda pkgconfig](https://github.com/Xpra-org/xpra/commit/fa614d8672658f26d4094834dda89d5ee2d79038)
@@ -60,6 +60,7 @@
     * [icon glob lookup mismatch](https://github.com/Xpra-org/xpra/commit/de9d565e3f43e21e933f6bf08177f5c076a794c3)
     * [typo](https://github.com/Xpra-org/xpra/commit/ee1dfcc16ef8768517c7202a4fad94e9e029391c)
     * [value in debug logging is incorrect](https://github.com/Xpra-org/xpra/commit/55c63aa2c9bdcc4625065d09052b684ef751dabf)
+    * [log spam with rpd connection attempts](https://github.com/Xpra-org/xpra/commit/cde5b9da87f755961d594af339a3aafef3af9336)
 
 ## [5.0.11] 2024-11-22
 * Platforms, build and packaging:
