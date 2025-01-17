@@ -296,9 +296,12 @@ def record_build_info() -> None:
     props = get_properties(BUILD_INFO_FILE)
     props.update({
         "build": get_build_props(),
-        "libs": get_libs(),
-        "python_libs": get_python_libs(),
     })
+    if os.environ.get("RECORD_LIBS", "1") == "1":
+        props.update({
+            "libs": get_libs(),
+            "python_libs": get_python_libs(),
+        })
     if sys.platform == "darwin":
         sbom = {}
         packages = {}
