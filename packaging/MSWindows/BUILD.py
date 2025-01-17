@@ -94,6 +94,7 @@ def parse_command_line(argv: list[str]):
     add("openssl", help="bundle the openssl tools")
     add("paexec", help="bundle `paexec`")
     add("desktop-logon", help="build `desktop-logon` tool")
+    ap.add_argument("--build-args", default="", help="extra build arguments")
 
     args, unknown_args = ap.parse_known_args(argv)
     if args.light:
@@ -143,6 +144,8 @@ def get_build_args(args) -> list[str]:
             xpra_args.append(f"--without-{option}")
     if not args.cuda:
         xpra_args.append("--without-nvidia")
+    if args.build_args:
+        xpra_args += shlex.split(args.build_args)
     # we can't do 'docs' this way :(
     # for arg in ("docs", ):
     #    value = getattr(args, arg)
