@@ -512,22 +512,26 @@ def do_testencoding(encoder_module, encoding, W: int, H: int, full: bool = False
 def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out: str, W:int, H:int, full:bool=False,
                       limit_w: int = TEST_LIMIT_W, limit_h: int = TEST_LIMIT_H) -> None:
     log(f"testing {encoding} using {encoder_class}: {cs_in} to {cs_out}")
-    e = None
+    e = encoder_class()
     try:
-        e = encoder_class()
-        etype = e.get_type()
         options = typedict({
             # "b-frames": True,
             "dst-formats": [cs_out],
             "quality": 50,
             "speed": 50,
         })
+        log("calling %s%s", e.init_context, (encoding, W, H, cs_in, options))
         e.init_context(encoding, W, H, cs_in, options)
+    except Exception:
+        log("encoder context initialization failed", exc_info=True)
+        raise
+    try:
         N = 5
         data = meta = None
         for i in range(N):
             options = typedict()
             image = make_test_image(cs_in, W, H)
+            log(f"test {i}/{N} with {image}")
             v = e.compress_image(image, options)
             if v is None:
                 raise RuntimeError(f"{encoding} compression failed on image {i+1} of {N}")
@@ -539,6 +543,7 @@ def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out
                     # now we should get one:
                     data, meta = e.flush(delayed)
         del image
+        etype = e.get_type()
         if data is None:
             raise RuntimeError(f"None data for {etype} using {encoding} encoding with {cs_in} / {cs_out}")
         if not data:
