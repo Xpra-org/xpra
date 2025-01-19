@@ -803,13 +803,15 @@ fi
 
 
 %changelog
-* Fri Jan 17 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
+* Sun Jan 19 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection
    RPM support for per-arch cuda pkgconfig
    `exe` installer standalone step
    move default package list for newer build script default
    invalid refresh rate detected on some MS Windows configurations
+   MS Windows EXE upgrades conflict with left-over files
+   MS Windows build script support for custom arguments
 - SBOM:
    minor fixes
    record CUDA

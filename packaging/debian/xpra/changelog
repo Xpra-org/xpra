@@ -5,6 +5,8 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - `exe` installer standalone step
    - move default package list for newer build script default
    - invalid refresh rate detected on some MS Windows configurations
+   - MS Windows EXE upgrades conflict with left-over files
+   - MS Windows build script support for custom arguments
   * SBOM:
    - minor fixes
    - record CUDA
@@ -60,7 +62,7 @@ xpra (5.0.12-1) UNRELEASED; urgency=low
    - value in debug logging is incorrect
    - log spam with rpd connection attempts
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 17 Jan 2025 14:37:21 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 19 Jan 2025 22:04:56 +0700
 
 xpra (5.0.11-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

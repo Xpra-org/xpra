@@ -1,12 +1,14 @@
 # Changelog
 
-## [5.0.12] 2025-01-17
+## [5.0.12] 2025-01-19
 * Platforms, build and packaging:
     * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/fab8d9f02de9b4ca57d7fa88b8031a2c29a77d91) and [prefix detection](https://github.com/Xpra-org/xpra/commit/8166eee7d2f5e4b00327763627b33987edd5e0c7)
     * [RPM support for per-arch cuda pkgconfig](https://github.com/Xpra-org/xpra/commit/fa614d8672658f26d4094834dda89d5ee2d79038)
     * [`exe` installer standalone step](https://github.com/Xpra-org/xpra/commit/7d0c0c30e3d002f7468ec73f8fac6862b020ca6b)
     * [move default package list for newer build script default](https://github.com/Xpra-org/xpra/commit/dc7e2c74fbdfc584c8a830f258b4608af3a20a8c)
     * [invalid refresh rate detected on some MS Windows configurations](https://github.com/Xpra-org/xpra/commit/fa3b06de8a9d8737e9af5ea89a17b806b2f9fff5)
+    * [MS Windows EXE upgrades conflict with left-over files](https://github.com/Xpra-org/xpra/commit/047c6e0d7b66c436e005629a504a2ff188cb1d62)
+    * [MS Windows build script support for custom arguments](https://github.com/Xpra-org/xpra/commit/7bf6d970f6b43d3b077182d783aee76b4a8a4e9f)
 * SBOM:
     * [minor fixes](https://github.com/Xpra-org/xpra/commit/5cb8451158a7070a3c44c0b7715b135ea17e6683)
     * [record CUDA](https://github.com/Xpra-org/xpra/commit/ecd20b6a0523aa8c3b07192f35ca694a03a30280)
