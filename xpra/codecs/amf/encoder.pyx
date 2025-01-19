@@ -6,7 +6,6 @@
 import os
 import math
 
-from collections import deque
 from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
@@ -16,25 +15,27 @@ log = Logger("encoder", "amf")
 
 from xpra.codecs.constants import VideoSpec, get_subsampling_divs
 from xpra.codecs.image import ImageWrapper
-from xpra.os_util import WIN32, OSX, POSIX
-from xpra.util.env import envint, envbool
+from xpra.os_util import WIN32
+from xpra.util.env import envbool
 from xpra.util.objects import typedict
 
 from libc.stddef cimport wchar_t
 from libc.stdint cimport uint8_t, uint64_t, uintptr_t
-from libc.stdlib cimport free, malloc
 from libc.string cimport memset
 
 from xpra.codecs.amf.amf cimport (
     AMF_RESULT,
-    amf_handle, amf_long,
-    amf_int32,
-    AMFDataAllocatorCB,
-    AMFComponentOptimizationCallback,
     AMF_DX11_0,
     AMF_MEMORY_TYPE,
     AMF_MEMORY_DX11,
     AMF_SURFACE_FORMAT, AMF_SURFACE_YUV420P, AMF_SURFACE_NV12, AMF_SURFACE_BGRA,
+    amf_handle, amf_long, amf_int32,
+    AMFDataAllocatorCB,
+    AMFComponentOptimizationCallback,
+    AMFData,
+    AMFTrace,
+    AMFVariantStruct,
+    AMFVariantAssignInt64,
     AMFSurface,
     AMFContext,
     AMFComponent,
@@ -64,11 +65,18 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
     # cdef extern from "unicodeobject.h":
     wchar_t* PyUnicode_AsWideCharString(object unicode, Py_ssize_t *size)
+    object PyUnicode_FromWideChar(wchar_t *w, Py_ssize_t size)
     # cdef extern from "pymem.h":
     void PyMem_Free(void *ptr)
 
 
+cdef extern from "string.h":
+    size_t wcslen(const wchar_t *str)
+
+
 AMF_ENCODINGS : Dict[str, str] = {
+    # AMFVideoEncoderVCE_SVC?
+    "h264": "AMFVideoEncoderVCE_AVC",
     "hevc": "AMFVideoEncoder_HEVC",
     "av1": "AMFVideoEncoder_AV1",
 }
@@ -80,11 +88,15 @@ cdef AMFFactory *factory = NULL
 def init_module() -> None:
     log("amf.encoder.init_module() info=%s", get_info())
     version = get_c_version()
-    res = AMFInit(version, <uintptr_t> &factory)
+    cdef AMF_RESULT res = AMFInit(version, <uintptr_t> &factory)
     log(f"AMFInit: {res=}, factory=%s", <uintptr_t> factory)
-    if res:
-        raise RuntimeError(f"AMF initialization failed and returned {res}")
-
+    check(res, "AMF initialization")
+    cdef AMFTrace *trace = NULL
+    res = factory.pVtbl.GetTrace(factory, &trace)
+    log(f"amf_encoder_init() GetTrace()={res}")
+    if res == 0:
+        log(f"Trace.GetGlobalLevel=%i", trace.pVtbl.GetGlobalLevel(trace))
+        trace.pVtbl.SetGlobalLevel(trace, 0)
 
 def cleanup_module() -> None:
     log("amf.encoder.cleanup_module()")
@@ -105,6 +117,25 @@ cdef uint64_t get_c_version():
     return int(version.value)
 
 
+def check(res: AMF_RESULT, message: str):
+    if res == 0:
+        return
+    error = error_str(res) or f"error {res}"
+    raise RuntimeError(f"{message}: {error}")
+
+
+def error_str(AMF_RESULT result) -> str:
+    if result == 0:
+        return ""
+    cdef AMFTrace *trace = NULL
+    cdef AMF_RESULT res = factory.pVtbl.GetTrace(factory, &trace)
+    if res != 0:
+        return ""
+    cdef const wchar_t *text = trace.pVtbl.GetResultText(trace, result)
+    cdef size_t size = wcslen(text)
+    return PyUnicode_FromWideChar(text, size)
+
+
 def get_version() -> Sequence[int]:
     version = get_c_version()
     return version >> 48, (version >> 32) & 0xffff, (version >> 16) & 0xffff, version & 0xffff
@@ -120,19 +151,19 @@ def get_encodings() -> Sequence[str]:
     return CODECS
 
 
-def get_input_colorspaces(encoding: str):
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     assert encoding in get_encodings(), "invalid encoding: %s" % encoding
     # return ("YUV420P", "NV12", "BGRA")
-    return ("BGRA", )
+    return ("NV12", )
 
 
-def get_output_colorspaces(encoding: str, input_colorspace: str):
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     assert encoding in get_encodings(), "invalid encoding: %s" % encoding
     assert input_colorspace in get_input_colorspaces(encoding)
     return ("YUV420P", )
 
 
-def get_info() -> Dict[str,Any]:
+def get_info() -> Dict[str, Any]:
     info = {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
@@ -203,35 +234,52 @@ cdef class Encoder:
         self.speed = options.intget("speed", 50)
         self.frames = 0
 
+        self.context = NULL
+        self.encoder = NULL
+        self.surface = NULL
+        self.device_context = NULL
+
         self.amf_context_init()
-        self.amf_encoder_init()
         self.amf_surface_init()
+        self.amf_encoder_init()
 
         if SAVE_TO_FILE is not None:
             filename = SAVE_TO_FILE+f"amf-{self.generation}.{encoding}"
             self.file = open(filename, "wb")
             log.info(f"saving {encoding} stream to {filename!r}")
 
-    cdef amf_context_init(self):
+    def check(self, res: AMF_RESULT, message: str):
+        if res:
+            check(res, message)
+            self.clean()
+
+    def amf_context_init(self) -> None:
         assert factory
         cdef AMF_RESULT res = factory.pVtbl.CreateContext(factory, &self.context)
         log(f"amf_context_init() CreateContext()={res}")
-        if res:
-            raise RuntimeError(f"AMF context initialization failed and returned {res}")
+        self.check(res, "AMF context initialization")
         if DX11:
             res = self.context.pVtbl.InitDX11(self.context, NULL, AMF_DX11_0)
             log(f"amf_context_init() InitDX11()={res}")
-            if res:
-                raise RuntimeError(f"AMF DX11 device initialization failed and returned {res}")
+            self.check(res, "AMF DX11 device initialization")
             self.device_context = self.context.pVtbl.GetDX11Device(self.context, AMF_DX11_0)
         else:
             res = self.context.pVtbl.InitOpenGL(self.context, 0, 0, 0)
             log(f"amf_context_init() InitOpenGL()={res}")
-            if res:
-                raise RuntimeError(f"AMF OpenGL device initialization failed and returned {res}")
+            self.check(res, "AMF OpenGL device initialization")
             self.device_context = <void *> self.context.pVtbl.GetOpenGLContext(self.context)
+        log(f"amf_context_init() device_context=%#x", <uintptr_t> self.device_context)
 
-    cdef amf_encoder_init(self):
+    def amf_surface_init(self) -> None:
+        log("amf_surface_init()")
+        assert DX11
+        cdef AMF_MEMORY_TYPE memory = AMF_MEMORY_DX11
+
+        cdef AMF_RESULT res = self.context.pVtbl.AllocSurface(self.context, memory, self.surface_format, self.width, self.height, &self.surface)
+        self.check(res, "AMF surface initialization for {self.width}x{self.height} {self.src_format}")
+        log(f"amf_surface_init() surface=%#x", <uintptr_t> self.surface)
+
+    def amf_encoder_init(self) -> None:
         assert factory and self.context
         log(f"amf_encoder_init() for encoding={self.encoding}")
 
@@ -240,38 +288,30 @@ cdef class Encoder:
         cdef AMF_RESULT res = factory.pVtbl.CreateComponent(factory, self.context, amf_codec, &self.encoder)
         PyMem_Free(amf_codec)
         log(f"amf_encoder_init() CreateComponent()={res}")
-        if not res:
-            raise RuntimeError(f"AMF failed to create {self.encoding!r} encoder and returned {res}")
+        self.check(res, f"AMF {self.encoding!r} encoder creation")
 
         # tune encoder:
-        if self.encoding == "AV1":
+        if self.encoding == "h264":
             pass
-        elif self.encoding == "HEVC":
+        elif self.encoding == "av1":
+            pass
+        elif self.encoding == "hevc":
             pass
         else:
-            raise RuntimeError("unexpected encoding {self.encoding!r}")
+            raise RuntimeError(f"unexpected encoding {self.encoding!r}")
 
         # init:
         res = self.encoder.pVtbl.Init(self.encoder, self.surface_format, self.width, self.height)
-        if not res:
-            raise RuntimeError(f"AMF failed to initialize {self.encoding!r} {self.width}x{self.height} {self.src_format} encoder context and returned {res}")
-
-    cdef amf_surface_init(self):
-        log("amf_surface_init()")
-        assert DX11
-        cdef AMF_MEMORY_TYPE memory = AMF_MEMORY_DX11
-
-        cdef AMF_RESULT res = self.context.pVtbl.AllocSurface(self.context, memory, self.surface_format, self.width, self.height, &self.surface)
-        if res:
-            raise RuntimeError(f"AMF failed to initialize surface {self.width}x{self.height} {self.src_format} and returned {res}")
+        self.check(res, "AMF {self.encoding!r} encoder initialization for {self.width}x{self.height} {self.src_format}")
+        log(f"amf_encoder_init() {self.encoding} encoder initialized at %#x", <uintptr_t> self.encoder)
 
     def is_ready(self) -> bool:
-        return True
+        return self.encoder != NULL
 
     def __repr__(self):
         return "amf.Encoder(%s)" % self.encoding
 
-    def get_info(self) -> Dict[str,Any]:
+    def get_info(self) -> Dict[str, Any]:
         info = get_info()
         info |= {
             "frames"    : int(self.frames),
@@ -305,15 +345,18 @@ cdef class Encoder:
         self.clean()
 
     def clean(self) -> None:
+        log("clean() surface=%s", <uintptr_t> self.surface)
         cdef AMFSurface* surface = self.surface
         if surface:
             self.surface = NULL
             surface.pVtbl.Release(surface)
+        log("clean() encoder=%s", <uintptr_t> self.encoder)
         cdef AMFComponent* encoder = self.encoder
         if encoder:
             self.encoder = NULL
             encoder.pVtbl.Terminate(encoder)
             encoder.pVtbl.Release(encoder)
+        log("clean() context=%s", <uintptr_t> self.context)
         cdef AMFContext *context = self.context
         if context:
             self.context = NULL
@@ -379,6 +422,16 @@ cdef class Encoder:
                     PyBuffer_Release(&py_buf[i])
 
     cdef bytes do_compress_image(self, uint8_t *pic_in[3], int strides[3], int full_range):
+        cdef unsigned long start_time = 0    # nanoseconds!
+        cdef AMFVariantStruct var
+        AMFVariantAssignInt64(&var, start_time)
+
+        START_TIME_PROPERTY = "StartTimeProperty"
+        cdef wchar_t *time_prop = PyUnicode_AsWideCharString(START_TIME_PROPERTY, NULL)
+        self.surface.pVtbl.SetProperty(self.surface, time_prop, var)
+        PyMem_Free(time_prop)
+        cdef AMF_RESULT res = self.encoder.pVtbl.SubmitInput(self.encoder, <AMFData*> self.surface)
+        self.check(res, "AMF submitting input to the encoder")
         return b""
 
     def set_encoding_speed(self, int pct) -> None:

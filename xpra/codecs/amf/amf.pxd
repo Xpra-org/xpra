@@ -9,13 +9,41 @@ ctypedef int AMF_RESULT
 ctypedef unsigned long amf_handle
 ctypedef long amf_long
 ctypedef int amf_int32
+ctypedef long amf_int64
 ctypedef void* AMFDataAllocatorCB
 ctypedef void* AMFComponentOptimizationCallback
 
 
+cdef extern from "stdarg.h":
+    ctypedef struct va_list:
+        pass
+
+
 cdef extern from "core/Variant.h":
+    ctypedef enum AMF_VARIANT_TYPE:
+        AMF_VARIANT_EMPTY           # 0
+        AMF_VARIANT_BOOL            # 1
+        AMF_VARIANT_INT64           # 2
+        AMF_VARIANT_DOUBLE          # 3
+        AMF_VARIANT_RECT            # 4
+        AMF_VARIANT_SIZE            # 5
+        AMF_VARIANT_POINT           # 6
+        AMF_VARIANT_RATE            # 7
+        AMF_VARIANT_RATIO           # 8
+        AMF_VARIANT_COLOR           # 9
+        AMF_VARIANT_STRING          # 10  // value is char*
+        AMF_VARIANT_WSTRING         # 11  // value is wchar_t*
+        AMF_VARIANT_INTERFACE       # 12  // value is AMFInterface*
+        AMF_VARIANT_FLOAT           # 13
+        AMF_VARIANT_FLOAT_SIZE      # 14
+        AMF_VARIANT_FLOAT_POINT2D   # 15
+        AMF_VARIANT_FLOAT_POINT3D   # 16
+        AMF_VARIANT_FLOAT_VECTOR4D  # 17
+
     ctypedef struct AMFVariantStruct:
         pass
+
+    AMF_RESULT AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value)
 
 
 cdef extern from "core/Data.h":
@@ -44,6 +72,27 @@ cdef extern from "core/Data.h":
 
     ctypedef struct AMFData:
         const AMFDataVtbl *pVtbl
+
+
+cdef extern from "core/Trace.h":
+
+    ctypedef void (*TRACEW)(AMFTrace* pThis, const wchar_t* src_path, amf_int32 line, amf_int32 level, const wchar_t* scope,amf_int32 countArgs, const wchar_t* format, ...)
+    ctypedef void (*TRACE)(AMFTrace* pThis, const wchar_t* src_path, amf_int32 line, amf_int32 level, const wchar_t* scope, const wchar_t* message, va_list* pArglist)
+    ctypedef amf_int32 (*SETGLOBALLEVEL)(AMFTrace* pThis, amf_int32 level)
+    ctypedef amf_int32 (*GETGLOBALLEVEL)(AMFTrace* pThis)
+
+    ctypedef const wchar_t* (*GETRESULTTEXT)(AMFTrace* pThis, AMF_RESULT res)
+
+
+    ctypedef struct AMFTraceVtbl:
+        TRACEW TraceW
+        TRACE Trace
+        SETGLOBALLEVEL SetGlobalLevel
+        GETGLOBALLEVEL GetGlobalLevel
+        GETRESULTTEXT GetResultText
+
+    ctypedef struct AMFTrace:
+        const AMFTraceVtbl *pVtbl
 
 
 cdef extern from "core/Surface.h":
@@ -185,8 +234,6 @@ cdef extern from "components/Component.h":
 
 cdef extern from "core/Factory.h":
     ctypedef struct AMFDebug:
-        pass
-    ctypedef struct AMFTrace:
         pass
     ctypedef struct AMFPrograms:
         pass
