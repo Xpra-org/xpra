@@ -4,12 +4,18 @@
 # later version. See the file COPYING for details.
 
 from libc.stddef cimport wchar_t
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, int64_t
 
-ctypedef int AMF_RESULT
-ctypedef unsigned long amf_handle
+ctypedef void *amf_handle
 ctypedef long amf_long
-ctypedef int amf_int32
-ctypedef long amf_int64
+ctypedef uint8_t amf_bool
+ctypedef uint8_t amf_uint8
+ctypedef uint16_t amf_uint16
+ctypedef uint32_t amf_uint32
+ctypedef int32_t amf_int32
+ctypedef int64_t amf_int64
+ctypedef int64_t amf_pts
+ctypedef size_t amf_size
 ctypedef void* AMFDataAllocatorCB
 ctypedef void* AMFComponentOptimizationCallback
 
@@ -17,6 +23,65 @@ ctypedef void* AMFComponentOptimizationCallback
 cdef extern from "stdarg.h":
     ctypedef struct va_list:
         pass
+
+
+cdef extern from "core/Result.h":
+    enum AMF_RESULT:
+        AMF_OK
+        AMF_FAIL
+        # common errors
+        AMF_UNEXPECTED
+        AMF_ACCESS_DENIED
+        AMF_INVALID_ARG
+        AMF_OUT_OF_RANGE
+        AMF_OUT_OF_MEMORY
+        AMF_INVALID_POINTER
+        AMF_NO_INTERFACE
+        AMF_NOT_IMPLEMENTED
+        AMF_NOT_SUPPORTED
+        AMF_NOT_FOUND
+        AMF_ALREADY_INITIALIZED
+        AMF_NOT_INITIALIZED
+        AMF_INVALID_FORMAT
+        AMF_WRONG_STATE
+        AMF_FILE_NOT_OPEN
+        # device common codes
+        AMF_NO_DEVICE
+        AMF_DIRECTX_FAILED
+        AMF_OPENCL_FAILED
+        AMF_GLX_FAILED
+        AMF_XV_FAILED
+        AMF_ALSA_FAILED
+        # result codes
+        AMF_EOF
+        AMF_REPEAT
+        AMF_INPUT_FULL
+        AMF_RESOLUTION_CHANGED
+        AMF_RESOLUTION_UPDATED
+        # error codes
+        AMF_INVALID_DATA_TYPE
+        AMF_INVALID_RESOLUTION
+        AMF_CODEC_NOT_SUPPORTED
+        AMF_SURFACE_FORMAT_NOT_SUPPORTED
+        AMF_SURFACE_MUST_BE_SHARED
+        # component video decoder
+        AMF_DECODER_NOT_PRESENT
+        AMF_DECODER_SURFACE_ALLOCATION_FAILED
+        AMF_DECODER_NO_FREE_SURFACES
+        # component video encoder
+        AMF_ENCODER_NOT_PRESENT
+        # component dem
+        AMF_DEM_ERROR
+        AMF_DEM_PROPERTY_READONLY
+        AMF_DEM_REMOTE_DISPLAY_CREATE_FAILED
+        AMF_DEM_START_ENCODING_FAILED
+        AMF_DEM_QUERY_OUTPUT_FAILED
+        # component TAN
+        AMF_TAN_CLIPPING_WAS_REQUIRED           # Resulting data was truncated to meet output type's value limits.
+        AMF_TAN_UNSUPPORTED_VERSION             # Not supported version requested, solely for TANCreateContext().
+        AMF_NEED_MORE_INPUT                     # returned by AMFComponent::SubmitInput did not produce a buffer because more input submissions are required.
+        # device vulkan
+        AMF_VULKAN_FAILED
 
 
 cdef extern from "core/Variant.h":
@@ -67,11 +132,139 @@ cdef extern from "core/Data.h":
         AMF_MEMORY_VULKAN           # 10
         AMF_MEMORY_DX12             # 11
 
+    ctypedef amf_long (*DATA_ACQUIRE)(AMFData* pThis)
+    ctypedef amf_long (*DATA_RELEASE)(AMFData* pThis)
+    ctypedef AMF_RESULT (*DATA_QUERYINTERFACE)(AMFData* pThis, const AMFGuid *interfaceID, void** ppInterface)
+    ctypedef amf_size (*DATA_GETPROPERTYCOUNT)(AMFData* pThis)
+    ctypedef AMF_MEMORY_TYPE (*DATA_GETMEMORYTYPE)(AMFData* pThis);
+    ctypedef AMF_DATA_TYPE (*DATA_GETDATATYPE)(AMFData* pThis);
+
+
     ctypedef struct AMFDataVtbl:
-        pass
+        DATA_ACQUIRE Acquire
+        DATA_RELEASE Release
+        DATA_QUERYINTERFACE QueryInterface
+        DATA_GETPROPERTYCOUNT GetPropertyCount
+        DATA_GETMEMORYTYPE GetMemoryType
+        DATA_GETDATATYPE GetDataType
 
     ctypedef struct AMFData:
         const AMFDataVtbl *pVtbl
+
+cdef extern from "core/Platform.h":
+    ctypedef struct AMFGuid:
+        amf_uint32 data1
+        amf_uint16 data2
+        amf_uint16 data3
+        amf_uint8 data41
+        amf_uint8 data42
+        amf_uint8 data43
+        amf_uint8 data44
+        amf_uint8 data45
+        amf_uint8 data46
+        amf_uint8 data47
+        amf_uint8 data48
+    ctypedef struct AMFRect:
+        amf_int32 left
+        amf_int32 top
+        amf_int32 right
+        amf_int32 bottom
+
+cdef extern from "core/Plane.h":
+    ctypedef enum AMF_PLANE_TYPE:
+        AMF_PLANE_UNKNOWN       # 0
+        AMF_PLANE_PACKED        # 1 for all packed formats: BGRA, YUY2, etc
+        AMF_PLANE_Y             # 2
+        AMF_PLANE_UV            # 3
+        AMF_PLANE_U             # 4
+        AMF_PLANE_V             # 5
+
+    ctypedef amf_long (*PLANE_ACQUIRE)(AMFPlane* pThis)
+    ctypedef amf_long (*PLANE_RELEASE)(AMFPlane* pThis)
+    ctypedef AMF_RESULT (*PLANE_QUERYINTERFACE)(AMFPlane* pThis, const AMFGuid *interfaceID, void** ppInterface)
+
+    ctypedef AMF_PLANE_TYPE (*PLANE_GETTYPE)(AMFPlane* pThis)
+    ctypedef void* (*PLANE_GETNATIVE)(AMFPlane* pThis)
+    ctypedef amf_int32 (*PLANE_GETPIXELSIZEINBYTES)(AMFPlane* pThis)
+    ctypedef amf_int32 (*PLANE_GETOFFSETX)(AMFPlane* pThis)
+    ctypedef amf_int32 (*PLANE_GETOFFSETY)(AMFPlane* pThis)
+    ctypedef amf_int32 (*PLANE_GETWIDTH)(AMFPlane* pThis)
+    ctypedef amf_int32 (*PLANE_GETHEIGHT)(AMFPlane* pThis)
+    ctypedef amf_int32 (*PLANE_GETHPITCH)(AMFPlane* pThis)
+    ctypedef amf_int32 (*PLANE_GETVPITCH)(AMFPlane* pThis)
+    ctypedef amf_bool (*PLANE_ISTILED)(AMFPlane* pThis)
+
+    ctypedef struct AMFPlaneVtbl:
+        PLANE_ACQUIRE Acquire
+        PLANE_RELEASE Release
+        PLANE_QUERYINTERFACE QueryInterface
+
+        PLANE_GETTYPE GetType
+        PLANE_GETNATIVE GetNative
+        PLANE_GETPIXELSIZEINBYTES GetPixelSizeInBytes
+        PLANE_GETOFFSETX GetOffsetX
+        PLANE_GETOFFSETY GetOffsetY
+        PLANE_GETWIDTH GetWidth
+        PLANE_GETHEIGHT GetHeight
+        PLANE_GETHPITCH GetHPitch
+        PLANE_GETVPITCH GetVPitch
+        PLANE_ISTILED IsTiled
+
+    ctypedef struct AMFPlane:
+        const AMFPlaneVtbl *pVtbl
+
+
+cdef extern from "core/Buffer.h":
+    enum AMF_BUFFER_USAGE_BITS:
+        AMF_BUFFER_USAGE_DEFAULT
+        AMF_BUFFER_USAGE_NONE
+        AMF_BUFFER_USAGE_CONSTANT
+        AMF_BUFFER_USAGE_SHADER_RESOURCE
+        AMF_BUFFER_USAGE_UNORDERED_ACCESS
+        AMF_BUFFER_USAGE_TRANSFER_SRC
+        AMF_BUFFER_USAGE_TRANSFER_DST
+        AMF_BUFFER_USAGE_NOSYNC
+        AMF_BUFFER_USAGE_DECODER_SRC
+
+    ctypedef amf_long (*BUFFER_ACQUIRE)(AMFBuffer* pThis)
+    ctypedef amf_long (*BUFFER_RELEASE)(AMFBuffer* pThis)
+    ctypedef AMF_RESULT (*BUFFER_QUERYINTERFACE)(AMFBuffer* pThis, const AMFGuid *interfaceID, void** ppInterface)
+    ctypedef AMF_RESULT (*BUFFER_SETPROPERTY)(AMFBuffer* pThis, const wchar_t *pName, AMFVariantStruct value)
+    ctypedef AMF_RESULT (*BUFFER_GETPROPERTY)(AMFBuffer* pThis, const wchar_t *pName, AMFVariantStruct* pValue)
+    ctypedef amf_bool (*BUFFER_HASPROPERTY)(AMFBuffer* pThis, const wchar_t *pName, AMFVariantStruct* pValue)
+    ctypedef amf_size (*BUFFER_GETPROPERTYCOUNT)(AMFBuffer* pThis)
+    ctypedef AMF_MEMORY_TYPE (*BUFFER_GETMEMORYTYPE)(AMFBuffer* pThis)
+    ctypedef AMF_DATA_TYPE (*BUFFER_GETDATATYPE)(AMFBuffer* pThis)
+    ctypedef amf_bool (*BUFFER_ISREUSABLE)(AMFBuffer* pThis)
+    ctypedef void (*BUFFER_SETPTS)(AMFBuffer* pThis, amf_pts pts)
+    ctypedef amf_pts (*BUFFER_GETPTS)(AMFBuffer* pThis)
+    ctypedef void (*BUFFER_SETDURATION)(AMFBuffer* pThis, amf_pts duration)
+    ctypedef amf_pts (*BUFFER_GETDURATION)(AMFBuffer* pThis)
+    # AMFBuffer interface
+    ctypedef AMF_RESULT (*BUFFER_SETSIZE)(AMFBuffer* pThis, amf_size newSize)
+    ctypedef AMF_RESULT (*BUFFER_GETSIZE)(AMFBuffer* pThis)
+    ctypedef void* (*BUFFER_GETNATIVE)(AMFBuffer* pThis)
+
+    ctypedef struct AMFBufferVtbl:
+        BUFFER_ACQUIRE Acquire
+        BUFFER_RELEASE Release
+        BUFFER_QUERYINTERFACE QueryInterface
+        BUFFER_SETPROPERTY SetProperty
+        BUFFER_GETPROPERTY GetProperty
+        BUFFER_GETPROPERTYCOUNT GetPropertyCount
+        BUFFER_GETMEMORYTYPE GetMemoryType
+        BUFFER_GETDATATYPE GetDataType
+        BUFFER_ISREUSABLE IsReusable
+        BUFFER_SETPTS SetPts
+        BUFFER_GETPTS GetPts
+        BUFFER_SETDURATION SetDuration
+        BUFFER_GETDURATION GetDuration
+        BUFFER_SETSIZE SetSize
+        BUFFER_GETSIZE GetSize
+        BUFFER_GETNATIVE GetNative
+
+    ctypedef struct AMFBuffer:
+        const AMFBufferVtbl *pVtbl
 
 
 cdef extern from "core/Trace.h":
@@ -121,11 +314,17 @@ cdef extern from "core/Surface.h":
     ctypedef AMF_RESULT (*SURFACE_SETPROPERTY)(AMFSurface* pThis, const wchar_t* name, AMFVariantStruct value)
     ctypedef amf_long (*SURFACE_ACQUIRE)(AMFSurface* pThis)
     ctypedef amf_long (*SURFACE_RELEASE)(AMFSurface* pThis)
+    ctypedef amf_size (*SURFACE_GETPLANESCOUNT)(AMFSurface* pThis)
+    ctypedef AMFPlane* (*SURFACE_GETPLANEAT)(AMFSurface* pThis, amf_size index)
+    ctypedef AMFPlane* (*SURFACE_GETPLANE)(AMFSurface* pThis, AMF_PLANE_TYPE type)
 
     ctypedef struct AMFSurfaceVtbl:
         SURFACE_SETPROPERTY SetProperty
         SURFACE_ACQUIRE Acquire
         SURFACE_RELEASE Release
+        SURFACE_GETPLANESCOUNT GetPlanesCount
+        SURFACE_GETPLANEAT GetPlaneAt
+        SURFACE_GETPLANE GetPlane
 
     ctypedef struct AMFSurface:
         const AMFSurfaceVtbl *pVtbl
@@ -198,6 +397,12 @@ cdef extern from "components/Component.h":
 
     ctypedef amf_long (*COMPONENT_ACQUIRE)(AMFComponent* pThis)
     ctypedef amf_long (*COMPONENT_RELEASE)(AMFComponent* pThis)
+
+    ctypedef AMF_RESULT (*COMPONENT_SETPROPERTY)(AMFComponent* pThis, const wchar_t *pName, AMFVariantStruct value)
+    ctypedef AMF_RESULT (*COMPONENT_GETPROPERTY)(AMFComponent* pThis, const wchar_t *pName, AMFVariantStruct* pValue)
+    ctypedef amf_bool (*COMPONENT_HASPROPERTY)(AMFComponent* pThis, const wchar_t *pName, AMFVariantStruct* pValue)
+    ctypedef amf_size (*COMPONENT_GETPROPERTYCOUNT)(AMFComponent* pThis)
+
     ctypedef AMF_RESULT (*COMPONENT_INIT)(AMFComponent* pThis, AMF_SURFACE_FORMAT format,amf_int32 width,amf_int32 height)
     ctypedef AMF_RESULT (*COMPONENT_REINIT)(AMFComponent* pThis, amf_int32 width,amf_int32 height)
     ctypedef AMF_RESULT (*COMPONENT_TERMINATE)(AMFComponent* pThis)
@@ -214,6 +419,12 @@ cdef extern from "components/Component.h":
         # AMFInterface interface
         COMPONENT_ACQUIRE Acquire
         COMPONENT_RELEASE Release
+
+        # AMFPropertyStorage
+        COMPONENT_SETPROPERTY SetProperty
+        COMPONENT_GETPROPERTY GetProperty
+        COMPONENT_HASPROPERTY HasProperty
+        COMPONENT_GETPROPERTYCOUNT GetPropertyCount
 
         # AMFComponent interface
         COMPONENT_INIT Init
@@ -258,19 +469,189 @@ cdef extern from "core/Factory.h":
     ctypedef struct AMFFactory:
         const AMFFactoryVtbl *pVtbl
 
-# cdef extern from "components/VideoEncoderVCE.h":
-#    # int AMFVideoEncoderHW_AVC
-#    int AMFVideoEncoderVCE_AVC
-#    int AMFVideoEncoderVCE_SVC
+
+cdef extern from "components/VideoEncoderVCE.h":
+    enum AMF_VIDEO_ENCODER_USAGE_ENUM:
+        AMF_VIDEO_ENCODER_USAGE_TRANSCODING
+        AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY
+        AMF_VIDEO_ENCODER_USAGE_LOW_LATENCY
+        AMF_VIDEO_ENCODER_USAGE_WEBCAM
+        AMF_VIDEO_ENCODER_USAGE_HIGH_QUALITY
+        AMF_VIDEO_ENCODER_USAGE_LOW_LATENCY_HIGH_QUALITY
+
+    enum AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM:
+        AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED
+        AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED
+        AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY
+
+    enum AMF_VIDEO_ENCODER_PROFILE_ENUM:
+        AMF_VIDEO_ENCODER_PROFILE_BASELINE
+        AMF_VIDEO_ENCODER_PROFILE_MAIN
+        AMF_VIDEO_ENCODER_PROFILE_HIGH
+        AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_BASELINE
+        AMF_VIDEO_ENCODER_PROFILE_CONSTRAINED_HIGH
+
+    enum AMF_VIDEO_ENCODER_H264_LEVEL_ENUM:
+        AMF_H264_LEVEL__1
+        AMF_H264_LEVEL__1_1
+        AMF_H264_LEVEL__1_2
+        AMF_H264_LEVEL__1_3
+        AMF_H264_LEVEL__2
+        AMF_H264_LEVEL__2_1
+        AMF_H264_LEVEL__2_2
+        AMF_H264_LEVEL__3
+        AMF_H264_LEVEL__3_1
+        AMF_H264_LEVEL__3_2
+        AMF_H264_LEVEL__4
+        AMF_H264_LEVEL__4_1
+        AMF_H264_LEVEL__4_2
+        AMF_H264_LEVEL__5
+        AMF_H264_LEVEL__5_1
+        AMF_H264_LEVEL__5_2
+        AMF_H264_LEVEL__6
+        AMF_H264_LEVEL__6_1
+        AMF_H264_LEVEL__6_2
+
+    enum AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_ENUM:
+        AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_NONE
+        AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_FRAME
+        AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_TOP_FIELD
+        AMF_VIDEO_ENCODER_PICTURE_STRUCTURE_BOTTOM_FIELD
+
+    enum AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM:
+        AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_IDR
+        AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_I
+        AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_P
+        AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_B
+
+    enum AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_ENUM:
+        AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_FRAME
+        AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_TILE
+        AMF_VIDEO_ENCODER_OUTPUT_BUFFER_TYPE_TILE_LAST
+
+    enum AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE:
+        AMF_VIDEO_ENCODER_PICTURE_TYPE_NONE
+        AMF_VIDEO_ENCODER_PICTURE_TYPE_SKIP
+        AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR
+        AMF_VIDEO_ENCODER_PICTURE_TYPE_I
+        AMF_VIDEO_ENCODER_PICTURE_TYPE_P
+        AMF_VIDEO_ENCODER_PICTURE_TYPE_B
+
+
+OUTPUT_DATA_TYPES: Dict[int, str] = {
+    AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_IDR: "IDR",
+    AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_I: "I",
+    AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_P: "P",
+    AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_B: "B",
+}
+
 
 cdef extern from "components/VideoEncoderHEVC.h":
-    int AMFVideoEncoder_HEVC
+    enum AMF_VIDEO_ENCODER_HEVC_USAGE_ENUM:
+        AMF_VIDEO_ENCODER_HEVC_USAGE_TRANSCODING
+        AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY
+        AMF_VIDEO_ENCODER_HEVC_USAGE_LOW_LATENCY
+        AMF_VIDEO_ENCODER_HEVC_USAGE_WEBCAM
+        AMF_VIDEO_ENCODER_HEVC_USAGE_HIGH_QUALITY
+        AMF_VIDEO_ENCODER_HEVC_USAGE_LOW_LATENCY_HIGH_QUALITY
+
+    enum AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM:
+        AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY
+        AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED
+        AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED
+
+    enum AMF_VIDEO_ENCODER_HEVC_PROFILE_ENUM:
+        AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN
+        AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN_10
+
+    enum AMF_VIDEO_ENCODER_HEVC_TIER_ENUM:
+        AMF_VIDEO_ENCODER_HEVC_TIER_MAIN
+        AMF_VIDEO_ENCODER_HEVC_TIER_HIGH
+
+    enum AMF_VIDEO_ENCODER_LEVEL_ENUM:
+        AMF_LEVEL_1
+        AMF_LEVEL_2
+        AMF_LEVEL_2_1
+        AMF_LEVEL_3
+        AMF_LEVEL_3_1
+        AMF_LEVEL_4
+        AMF_LEVEL_4_1
+        AMF_LEVEL_5
+        AMF_LEVEL_5_1
+        AMF_LEVEL_5_2
+        AMF_LEVEL_6
+        AMF_LEVEL_6_1
+        AMF_LEVEL_6_2
+
 
 cdef extern from "components/VideoEncoderAV1.h":
-    int AMFVideoEncoder_AV1
+    enum AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_ENUM:
+        AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_NONE
+        AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_POWER_SAVING_REAL_TIME
+        AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_REAL_TIME
+        AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_LOWEST_LATENCY
+
+    enum AMF_VIDEO_ENCODER_AV1_USAGE_ENUM:
+        AMF_VIDEO_ENCODER_AV1_USAGE_TRANSCODING
+        AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY
+        AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY
+        AMF_VIDEO_ENCODER_AV1_USAGE_WEBCAM
+        AMF_VIDEO_ENCODER_AV1_USAGE_HIGH_QUALITY
+        AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY_HIGH_QUALITY
+
+    enum AMF_VIDEO_ENCODER_AV1_PROFILE_ENUM:
+        AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN
+
+    enum AMF_VIDEO_ENCODER_AV1_LEVEL_ENUM:
+        AMF_VIDEO_ENCODER_AV1_LEVEL_2_0
+        AMF_VIDEO_ENCODER_AV1_LEVEL_2_1
+        AMF_VIDEO_ENCODER_AV1_LEVEL_2_2
+        AMF_VIDEO_ENCODER_AV1_LEVEL_2_3
+        AMF_VIDEO_ENCODER_AV1_LEVEL_3_0
+        AMF_VIDEO_ENCODER_AV1_LEVEL_3_1
+        AMF_VIDEO_ENCODER_AV1_LEVEL_3_2
+        AMF_VIDEO_ENCODER_AV1_LEVEL_3_3
+        AMF_VIDEO_ENCODER_AV1_LEVEL_4_0
+        AMF_VIDEO_ENCODER_AV1_LEVEL_4_1
+        AMF_VIDEO_ENCODER_AV1_LEVEL_4_2
+        AMF_VIDEO_ENCODER_AV1_LEVEL_4_3
+        AMF_VIDEO_ENCODER_AV1_LEVEL_5_0
+        AMF_VIDEO_ENCODER_AV1_LEVEL_5_1
+        AMF_VIDEO_ENCODER_AV1_LEVEL_5_2
+        AMF_VIDEO_ENCODER_AV1_LEVEL_5_3
+        AMF_VIDEO_ENCODER_AV1_LEVEL_6_0
+        AMF_VIDEO_ENCODER_AV1_LEVEL_6_1
+        AMF_VIDEO_ENCODER_AV1_LEVEL_6_2
+        AMF_VIDEO_ENCODER_AV1_LEVEL_6_3
+        AMF_VIDEO_ENCODER_AV1_LEVEL_7_0
+        AMF_VIDEO_ENCODER_AV1_LEVEL_7_1
+        AMF_VIDEO_ENCODER_AV1_LEVEL_7_2
+        AMF_VIDEO_ENCODER_AV1_LEVEL_7_3
+
+    enum AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_ENUM:
+        AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_HIGH_QUALITY
+        AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY
+        AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_BALANCED
+        AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED
+
+    enum AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_ENUM:
+        AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_ONLY
+        AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_1080P_CODED_1082
+        AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS
 
 
-AMF_ENCODINGS : Dict[str, str] = {
-    "hevc": "AMFVideoEncoder_HEVC",
-    "av1": "AMFVideoEncoder_AV1",
-}
+cdef inline set_guid(AMFGuid *guid,
+                     amf_uint32 _data1, amf_uint16 _data2, amf_uint16 _data3,
+                     amf_uint8 _data41, amf_uint8 _data42, amf_uint8 _data43, amf_uint8 _data44,
+                     amf_uint8 _data45, amf_uint8 _data46, amf_uint8 _data47, amf_uint8 _data48):
+    guid.data1 = _data1
+    guid.data2 = _data2
+    guid.data3 = _data3
+    guid.data41 = _data41
+    guid.data42 = _data42
+    guid.data43 = _data43
+    guid.data44 = _data44
+    guid.data45 = _data45
+    guid.data46 = _data46
+    guid.data47 = _data47
+    guid.data48 = _data48

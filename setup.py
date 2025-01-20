@@ -2784,6 +2784,8 @@ if amf_ENABLED:
         }
         print(f"default amf args: {amf_kwargs}")
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
+    toggle_packages(WIN32, "xpra.platform.win32.d3d11")
+    tace(WIN32, "xpra.platform.win32.d3d11.device")
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
 toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
 

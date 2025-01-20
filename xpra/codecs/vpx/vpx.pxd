@@ -7,7 +7,7 @@
 
 from libc.stdint cimport uintptr_t, uint8_t
 
-ctypedef long vpx_img_fmt_t
+ctypedef unsigned long vpx_img_fmt_t
 ctypedef void vpx_codec_iface_t
 
 
