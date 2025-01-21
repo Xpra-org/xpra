@@ -21,11 +21,12 @@ from xpra.util.env import envbool
 from xpra.util.objects import typedict
 
 from libc.stddef cimport wchar_t
-from libc.stdint cimport uint8_t, uint64_t, uintptr_t
+from libc.stdint cimport uint8_t, uint64_t, int64_t, uintptr_t
 from libc.string cimport memset
 
 from xpra.codecs.amf.amf cimport (
     set_guid,
+    AMF_PLANE_TYPE_STR, AMF_SURFACE_FORMAT_STR, AMF_FRAME_TYPE_STR,
     AMF_RESULT, AMF_EOF, AMF_REPEAT,
     AMF_DX11_0,
     AMF_MEMORY_TYPE,
@@ -51,12 +52,12 @@ from xpra.codecs.amf.amf cimport (
     AMFGuid,
     AMFBuffer,
     AMFComponentOptimizationCallback,
-    AMFPlane,
-    AMFData,
+    AMFPlane, AMFPlaneVtbl,
+    AMFData, AMFDataVtbl,
     AMFTrace,
     AMFVariantStruct,
     AMFVariantAssignInt64,
-    AMFSurface,
+    AMFSurface, AMFSurfaceVtbl,
     AMFContext,
     AMFComponent,
     AMFFactory,
@@ -264,7 +265,7 @@ cdef class Encoder:
         self.amf_surface_init()
         self.amf_encoder_init(options)
 
-        if SAVE_TO_FILE is not None:
+        if SAVE_TO_FILE:
             filename = SAVE_TO_FILE+f"amf-{self.generation}.{encoding}"
             self.file = open(filename, "wb")
             log.info(f"saving {encoding} stream to {filename!r}")
@@ -458,7 +459,6 @@ cdef class Encoder:
     def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple[bytes, Dict]:
         cdef uint8_t *pic_in[2]
         cdef int strides[2]
-        cdef int sizes[2]
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
@@ -493,8 +493,7 @@ cdef class Encoder:
                     py_buf[i].len, "YUV"[i], istrides[i]*(self.height//ydiv))
                 pic_in[i] = <uint8_t *> py_buf[i].buf
                 strides[i] = istrides[i]
-                sizes[i] = istrides[i] * (self.height // ydiv)
-            return self.do_compress_image(pic_in, strides, sizes), {
+            return self.do_compress_image(pic_in, strides), {
                 "csc"       : self.src_format,
                 "frame"     : int(self.frames),
                 "full-range" : bool(full_range),
@@ -513,7 +512,7 @@ cdef class Encoder:
         self.surface.pVtbl.SetProperty(self.surface, prop, var)
         PyMem_Free(prop)
 
-    cdef bytes do_compress_image(self, uint8_t *pic_in[2], int strides[2], int sizes[2]):
+    cdef bytes do_compress_image(self, uint8_t *pic_in[2], int strides[2]):
         cdef unsigned long start_time = 0    # nanoseconds!
         cdef AMFPlane *plane
         cdef uintptr_t dst_texture
@@ -527,6 +526,7 @@ cdef class Encoder:
         with device.get_device_context() as dc:
             log("device: %s", device.get_info())
             log("device context: %s", dc.get_info())
+            log("surface: %s", self.get_surface_info(self.surface))
             for plane_index in range(2):
                 # get the D3D11 destination surface pointer for this plane:
                 plane = self.surface.pVtbl.GetPlaneAt(self.surface, plane_index)
@@ -536,9 +536,8 @@ cdef class Encoder:
                 dst_texture = <uintptr_t> plane.pVtbl.GetNative(plane)
                 log("texture=%#x, source=%#x", dst_texture, <uintptr_t> pic_in[plane_index])
                 assert dst_texture
-                box = ()
-                #dc.update_subresource(dst_texture, 0, box,
-                #                      <uintptr_t> pic_in[plane_index], strides[plane_index], sizes[plane_index])
+                #dc.update_2dtexture(dst_texture, self.width, self.height,
+                #                    <uintptr_t> pic_in[plane_index], strides[plane_index])
             dc.flush()
 
         ns = round(1000 * 1000 * monotonic())
@@ -577,12 +576,14 @@ cdef class Encoder:
             size = buffer.pVtbl.GetSize(buffer)
             log(f"output=%#x, size=%i", <uintptr_t> output, size)
             assert output and size
-            return output[:size]
+            bdata = output[:size]
+            if self.file:
+                self.file.write(bdata)
+            return bdata
         finally:
             if buffer != NULL:
                 buffer.pVtbl.Release(buffer)
             data.pVtbl.Release(data)
-        return b""
 
     def flush(self, unsigned long frame_no) -> None:
         cdef AMF_RESULT res = self.encoder.pVtbl.Drain(self.encoder)
@@ -593,23 +594,40 @@ cdef class Encoder:
             self.check(res, "AMF encoder flush")
 
     cdef get_data_info(self, AMFData *data):
+        assert data
+        cdef const AMFDataVtbl *dfn = data.pVtbl
         return {
-            "property-count": data.pVtbl.GetPropertyCount(data),
-            "memory-type": data.pVtbl.GetMemoryType(data),
-            "data-type": data.pVtbl.GetDataType(data),
+            "property-count": dfn.GetPropertyCount(data),
+            "memory-type": dfn.GetMemoryType(data),
+            "data-type": dfn.GetDataType(data),
         }
 
     cdef get_plane_info(self, AMFPlane *plane):
+        assert plane
+        ptype = plane.pVtbl.GetType(plane)
+        cdef const AMFPlaneVtbl *pfn = plane.pVtbl
         return {
-            "native": <uintptr_t> plane.pVtbl.GetNative(plane),
-            "size": plane.pVtbl.GetPixelSizeInBytes(plane),
-            "offset-x": plane.pVtbl.GetOffsetX(plane),
-            "offset-y": plane.pVtbl.GetOffsetY(plane),
-            "width": plane.pVtbl.GetWidth(plane),
-            "height": plane.pVtbl.GetHeight(plane),
-            "h-pitch": plane.pVtbl.GetHPitch(plane),
-            "v-pitch": plane.pVtbl.GetVPitch(plane),
-            "is-tiled": plane.pVtbl.IsTiled(plane),
+            "type": AMF_PLANE_TYPE_STR(ptype),
+            "native": <uintptr_t> pfn.GetNative(plane),
+            "size": pfn.GetPixelSizeInBytes(plane),
+            "offset-x": pfn.GetOffsetX(plane),
+            "offset-y": pfn.GetOffsetY(plane),
+            "width": pfn.GetWidth(plane),
+            "height": pfn.GetHeight(plane),
+            "h-pitch": pfn.GetHPitch(plane),
+            "v-pitch": pfn.GetVPitch(plane),
+            "is-tiled": pfn.IsTiled(plane),
+        }
+
+    cdef get_surface_info(self, AMFSurface *surface):
+        assert surface
+        cdef const AMFSurfaceVtbl *sfn = surface.pVtbl
+        fmt = sfn.GetFormat(surface)
+        ftype = sfn.GetFrameType(surface)
+        return {
+            "format": AMF_SURFACE_FORMAT_STR(fmt),
+            "planes": sfn.GetPlanesCount(surface),
+            "frame-type": AMF_FRAME_TYPE_STR(ftype),
         }
 
     def set_encoding_speed(self, int pct) -> None:

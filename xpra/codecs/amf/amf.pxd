@@ -139,7 +139,6 @@ cdef extern from "core/Data.h":
     ctypedef AMF_MEMORY_TYPE (*DATA_GETMEMORYTYPE)(AMFData* pThis);
     ctypedef AMF_DATA_TYPE (*DATA_GETDATATYPE)(AMFData* pThis);
 
-
     ctypedef struct AMFDataVtbl:
         DATA_ACQUIRE Acquire
         DATA_RELEASE Release
@@ -267,6 +266,17 @@ cdef extern from "core/Buffer.h":
         const AMFBufferVtbl *pVtbl
 
 
+cdef inline AMF_PLANE_TYPE_STR(AMF_PLANE_TYPE ptype):
+    return {
+        AMF_PLANE_UNKNOWN: "UNKNOWN",
+        AMF_PLANE_PACKED: "PACKED",
+        AMF_PLANE_Y: "Y",
+        AMF_PLANE_UV: "UV",
+        AMF_PLANE_U: "U",
+        AMF_PLANE_V: "V",
+    }.get(ptype, "unknown")
+
+
 cdef extern from "core/Trace.h":
 
     ctypedef void (*TRACEW)(AMFTrace* pThis, const wchar_t* src_path, amf_int32 line, amf_int32 level, const wchar_t* scope,amf_int32 countArgs, const wchar_t* format, ...)
@@ -289,6 +299,37 @@ cdef extern from "core/Trace.h":
 
 
 cdef extern from "core/Surface.h":
+    ctypedef enum AMF_FRAME_TYPE:
+        AMF_FRAME_STEREO_FLAG
+        AMF_FRAME_LEFT_FLAG
+        AMF_FRAME_RIGHT_FLAG
+        AMF_FRAME_BOTH_FLAG
+        AMF_FRAME_INTERLEAVED_FLAG
+        AMF_FRAME_FIELD_FLAG
+        AMF_FRAME_EVEN_FLAG
+        AMF_FRAME_ODD_FLAG
+
+        # values
+        AMF_FRAME_UNKNOWN
+        AMF_FRAME_PROGRESSIVE
+
+        AMF_FRAME_INTERLEAVED_EVEN_FIRST
+        AMF_FRAME_INTERLEAVED_ODD_FIRST
+        AMF_FRAME_FIELD_SINGLE_EVEN
+        AMF_FRAME_FIELD_SINGLE_ODD
+
+        AMF_FRAME_STEREO_LEFT
+        AMF_FRAME_STEREO_RIGHT
+        AMF_FRAME_STEREO_BOTH
+
+        AMF_FRAME_INTERLEAVED_EVEN_FIRST_STEREO_LEFT
+        AMF_FRAME_INTERLEAVED_EVEN_FIRST_STEREO_RIGHT
+        AMF_FRAME_INTERLEAVED_EVEN_FIRST_STEREO_BOTH
+
+        AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_LEFT
+        AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_RIGHT
+        AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_BOTH
+
     ctypedef enum AMF_SURFACE_FORMAT:
         AMF_SURFACE_NV12    # 1  - planar 4:2:0 Y width x height + packed UV width/2 x height/2 - 8 bit per component
         AMF_SURFACE_YV12    # 2  - planar 4:2:0 Y width x height + V width/2 x height/2 + U width/2 x height/2 - 8 bit per component
@@ -314,20 +355,83 @@ cdef extern from "core/Surface.h":
     ctypedef AMF_RESULT (*SURFACE_SETPROPERTY)(AMFSurface* pThis, const wchar_t* name, AMFVariantStruct value)
     ctypedef amf_long (*SURFACE_ACQUIRE)(AMFSurface* pThis)
     ctypedef amf_long (*SURFACE_RELEASE)(AMFSurface* pThis)
+    ctypedef AMF_SURFACE_FORMAT (*SURFACE_GETFORMAT)(AMFSurface* pThis)
     ctypedef amf_size (*SURFACE_GETPLANESCOUNT)(AMFSurface* pThis)
     ctypedef AMFPlane* (*SURFACE_GETPLANEAT)(AMFSurface* pThis, amf_size index)
     ctypedef AMFPlane* (*SURFACE_GETPLANE)(AMFSurface* pThis, AMF_PLANE_TYPE type)
+    ctypedef AMF_FRAME_TYPE (*SURFACE_GETFRAMETYPE)(AMFSurface* pThis)
 
     ctypedef struct AMFSurfaceVtbl:
         SURFACE_SETPROPERTY SetProperty
         SURFACE_ACQUIRE Acquire
         SURFACE_RELEASE Release
+        SURFACE_GETFORMAT GetFormat
         SURFACE_GETPLANESCOUNT GetPlanesCount
         SURFACE_GETPLANEAT GetPlaneAt
         SURFACE_GETPLANE GetPlane
+        SURFACE_GETFRAMETYPE GetFrameType
 
     ctypedef struct AMFSurface:
         const AMFSurfaceVtbl *pVtbl
+
+
+cdef inline AMF_SURFACE_FORMAT_STR(AMF_SURFACE_FORMAT fmt):
+    return {
+        AMF_SURFACE_NV12: "NV12",
+        AMF_SURFACE_YV12: "YV12",
+        AMF_SURFACE_BGRA: "BGRA",
+        AMF_SURFACE_ARGB: "ARGB",
+        AMF_SURFACE_RGBA: "RGBA",
+        AMF_SURFACE_GRAY8: "GRAY8",
+        AMF_SURFACE_YUV420P: "YUV420P",
+        AMF_SURFACE_U8V8: "U8V8",
+        AMF_SURFACE_YUY2: "YUY2",
+        AMF_SURFACE_P010: "P010",
+        AMF_SURFACE_RGBA_F16: "RGBA_F16",
+        AMF_SURFACE_UYVY: "UYVY",
+        AMF_SURFACE_R10G10B10A2: "R10G10B10A2",
+        AMF_SURFACE_Y210: "Y210",
+        AMF_SURFACE_AYUV: "AYUV",
+        AMF_SURFACE_Y410: "Y410",
+        AMF_SURFACE_Y416: "Y416",
+        AMF_SURFACE_GRAY32: "GRAY32",
+        AMF_SURFACE_P012: "P012",
+        AMF_SURFACE_P016: "P016",
+    }.get(fmt, "unknown")
+
+
+cdef inline AMF_FRAME_TYPE_STR(AMF_FRAME_TYPE ftype):
+    return {
+        AMF_FRAME_STEREO_FLAG: "STEREO_FLAG",
+        AMF_FRAME_LEFT_FLAG: "LEFT_FLAG",
+        AMF_FRAME_RIGHT_FLAG: "RIGHT_FLAG",
+        AMF_FRAME_BOTH_FLAG: "BOTH_FLAG",
+        AMF_FRAME_INTERLEAVED_FLAG: "INTERLEAVED_FLAG",
+        AMF_FRAME_FIELD_FLAG: "FIELD_FLAG",
+        AMF_FRAME_EVEN_FLAG: "EVEN_FLAG",
+        AMF_FRAME_ODD_FLAG: "ODD_FLAG",
+
+        # values
+        AMF_FRAME_UNKNOWN: "UNKNOWN",
+        AMF_FRAME_PROGRESSIVE: "PROGRESSIVE",
+
+        AMF_FRAME_INTERLEAVED_EVEN_FIRST: "INTERLEAVED_EVEN_FIRST",
+        AMF_FRAME_INTERLEAVED_ODD_FIRST: "INTERLEAVED_ODD_FIRST",
+        AMF_FRAME_FIELD_SINGLE_EVEN: "FIELD_SINGLE_EVEN",
+        AMF_FRAME_FIELD_SINGLE_ODD: "FIELD_SINGLE_ODD",
+
+        AMF_FRAME_STEREO_LEFT: "STEREO_LEFT",
+        AMF_FRAME_STEREO_RIGHT: "STEREO_RIGHT",
+        AMF_FRAME_STEREO_BOTH: "STEREO_BOTH",
+
+        AMF_FRAME_INTERLEAVED_EVEN_FIRST_STEREO_LEFT: "INTERLEAVED_EVEN_FIRST_STEREO_LEFT",
+        AMF_FRAME_INTERLEAVED_EVEN_FIRST_STEREO_RIGHT: "INTERLEAVED_EVEN_FIRST_STEREO_RIGHT",
+        AMF_FRAME_INTERLEAVED_EVEN_FIRST_STEREO_BOTH: "INTERLEAVED_EVEN_FIRST_STEREO_BOTH",
+
+        AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_LEFT: "INTERLEAVED_ODD_FIRST_STEREO_LEFT",
+        AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_RIGHT: "INTERLEAVED_ODD_FIRST_STEREO_RIGHT",
+        AMF_FRAME_INTERLEAVED_ODD_FIRST_STEREO_BOTH: "INTERLEAVED_ODD_FIRST_STEREO_BOTH",
+    }.get(ftype, "unknown")
 
 
 cdef extern from "core/Context.h":
@@ -538,12 +642,13 @@ cdef extern from "components/VideoEncoderVCE.h":
         AMF_VIDEO_ENCODER_PICTURE_TYPE_B
 
 
-OUTPUT_DATA_TYPES: Dict[int, str] = {
-    AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_IDR: "IDR",
-    AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_I: "I",
-    AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_P: "P",
-    AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_B: "B",
-}
+cdef inline AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_STR(AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_ENUM dtype):
+    return {
+        AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_IDR: "IDR",
+        AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_I: "I",
+        AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_P: "P",
+        AMF_VIDEO_ENCODER_OUTPUT_DATA_TYPE_B: "B",
+    }.get(dtype, "unknown")
 
 
 cdef extern from "components/VideoEncoderHEVC.h":
