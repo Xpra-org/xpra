@@ -339,6 +339,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "import"        : "Platform support import code",
         "osx"           : "Mac OS X platform support code",
         "win32"         : "Microsoft Windows platform support code",
+        "d3d11"         : "Microsoft Direct 3D 11",
         "posix"         : "Posix platform code",
     },
 }

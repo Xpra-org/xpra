@@ -10,17 +10,149 @@ from time import monotonic
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
 
-from libc.stdint cimport uintptr_t
+from xpra.log import Logger
+
+from libc.stddef cimport wchar_t, size_t
+from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t
+
+log = Logger("win32", "d3d11")
 
 ctypedef unsigned int UINT
 ctypedef unsigned int HRESULT
 ctypedef unsigned long ULONG
+ctypedef long LONG
+ctypedef unsigned int DWORD
+
+
+VENDORS: Dict[int, str] = {
+    0x1002: "AMD",
+    0x1022: "AMD",
+    0x1010: "ImgTec",
+    0x10DE: "NVIDIA",
+    0x13B5: "ARM",
+    0x5143: "Qualcomm",
+    0x163C: "Intel",
+    0x8086: "Intel",
+    0x8087: "Intel",
+}
+
+
+ctypedef struct LUID:
+    DWORD LowPart
+    LONG HighPart
 
 
 cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
+
+
+cdef extern from "guiddef.h":
+    ctypedef struct GUID:
+        unsigned long  Data1
+        unsigned short Data2
+        unsigned short Data3
+        unsigned char  Data4[8]
+
+    ctypedef GUID REFIID
+
+
+cdef extern from "winerror.h":
+    int DXGI_STATUS_OCCLUDED
+    int DXGI_STATUS_CLIPPED
+    int DXGI_STATUS_NO_REDIRECTION
+    int DXGI_STATUS_NO_DESKTOP_ACCESS
+    int DXGI_STATUS_GRAPHICS_VIDPN_SOURCE_IN_USE
+    int DXGI_STATUS_MODE_CHANGED
+    int DXGI_STATUS_MODE_CHANGE_IN_PROGRESS
+    int DXGI_ERROR_INVALID_CALL
+    int DXGI_ERROR_NOT_FOUND
+    int DXGI_ERROR_MORE_DATA
+    int DXGI_ERROR_UNSUPPORTED
+    int DXGI_ERROR_DEVICE_REMOVED
+    int DXGI_ERROR_DEVICE_HUNG
+    int DXGI_ERROR_DEVICE_RESET
+    int DXGI_ERROR_WAS_STILL_DRAWING
+    int DXGI_ERROR_FRAME_STATISTICS_DISJOINT
+    int DXGI_ERROR_GRAPHICS_VIDPN_SOURCE_IN_USE
+    int DXGI_ERROR_DRIVER_INTERNAL_ERROR
+    int DXGI_ERROR_NONEXCLUSIVE
+    int DXGI_ERROR_NOT_CURRENTLY_AVAILABLE
+    int DXGI_ERROR_REMOTE_CLIENT_DISCONNECTED
+    int DXGI_ERROR_REMOTE_OUTOFMEMORY
+    int D3D11_ERROR_TOO_MANY_UNIQUE_STATE_OBJECTS
+    int D3D11_ERROR_FILE_NOT_FOUND
+    int D3D11_ERROR_TOO_MANY_UNIQUE_VIEW_OBJECTS
+    int D3D11_ERROR_DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD
+    int D3D10_ERROR_TOO_MANY_UNIQUE_STATE_OBJECTS
+    int D3D10_ERROR_FILE_NOT_FOUND
+    int E_NOINTERFACE
+    int E_POINTER
+
+
+ERRORS = {
+    DXGI_STATUS_OCCLUDED: "STATUS_OCCLUDED",
+    DXGI_STATUS_CLIPPED: "STATUS_CLIPPED",
+    DXGI_STATUS_NO_REDIRECTION: "STATUS_NO_REDIRECTION",
+    DXGI_STATUS_NO_DESKTOP_ACCESS: "STATUS_NO_DESKTOP_ACCESS",
+    DXGI_STATUS_GRAPHICS_VIDPN_SOURCE_IN_USE: "STATUS_GRAPHICS_VIDPN_SOURCE_IN_USE",
+    DXGI_STATUS_MODE_CHANGED: "STATUS_MODE_CHANGED",
+    DXGI_STATUS_MODE_CHANGE_IN_PROGRESS: "STATUS_MODE_CHANGE_IN_PROGRESS",
+    DXGI_ERROR_INVALID_CALL: "INVALID_CALL",
+    DXGI_ERROR_NOT_FOUND: "NOT_FOUND",
+    DXGI_ERROR_MORE_DATA: "MORE_DATA",
+    DXGI_ERROR_UNSUPPORTED: "UNSUPPORTED",
+    DXGI_ERROR_DEVICE_REMOVED: "DEVICE_REMOVED",
+    DXGI_ERROR_DEVICE_HUNG: "DEVICE_HUNG",
+    DXGI_ERROR_DEVICE_RESET: "DEVICE_RESET",
+    DXGI_ERROR_WAS_STILL_DRAWING: "WAS_STILL_DRAWING",
+    DXGI_ERROR_FRAME_STATISTICS_DISJOINT: "FRAME_STATISTICS_DISJOINT",
+    DXGI_ERROR_GRAPHICS_VIDPN_SOURCE_IN_USE: "GRAPHICS_VIDPN_SOURCE_IN_USE",
+    DXGI_ERROR_DRIVER_INTERNAL_ERROR: "DRIVER_INTERNAL_ERROR",
+    DXGI_ERROR_NONEXCLUSIVE: "NONEXCLUSIVE",
+    DXGI_ERROR_NOT_CURRENTLY_AVAILABLE: "NOT_CURRENTLY_AVAILABLE",
+    DXGI_ERROR_REMOTE_CLIENT_DISCONNECTED: "REMOTE_CLIENT_DISCONNECTED",
+    DXGI_ERROR_REMOTE_OUTOFMEMORY: "REMOTE_OUTOFMEMORY",
+    D3D11_ERROR_TOO_MANY_UNIQUE_STATE_OBJECTS: "TOO_MANY_UNIQUE_STATE_OBJECTS",
+    D3D11_ERROR_FILE_NOT_FOUND: "FILE_NOT_FOUND",
+    D3D11_ERROR_TOO_MANY_UNIQUE_VIEW_OBJECTS: "TOO_MANY_UNIQUE_VIEW_OBJECTS",
+    D3D11_ERROR_DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD: "DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD",
+    D3D10_ERROR_TOO_MANY_UNIQUE_STATE_OBJECTS: "TOO_MANY_UNIQUE_STATE_OBJECTS",
+    D3D10_ERROR_FILE_NOT_FOUND: "FILE_NOT_FOUND",
+    E_NOINTERFACE: "NOINTERFACE",
+    E_POINTER: "POINTER",
+}
+
+
+cdef extern from "dxgi.h":
+    ctypedef struct DXGI_ADAPTER_DESC:
+        wchar_t  Description[128]
+        UINT   VendorId
+        UINT   DeviceId
+        UINT   SubSysId
+        UINT   Revision
+        size_t DedicatedVideoMemory
+        size_t DedicatedSystemMemory
+        size_t SharedSystemMemory
+        LUID   AdapterLuid
+
+    # DEFINE_GUID(IID_IDXGIAdapter, 0x2411e7e1, 0x12ac, 0x4ccf, 0xbd, 0x14, 0x97, 0x9b, 0xe2, 0x52, 0x12, 0x20)
+    ctypedef HRESULT (*ADAPTER_GETDESC)(IDXGIAdapter *this, DXGI_ADAPTER_DESC *desc)
+
+    ctypedef struct IDXGIAdapterVtbl:
+        ADAPTER_GETDESC GetDesc
+
+    ctypedef struct IDXGIAdapter:
+        const IDXGIAdapterVtbl *lpVtbl
+
+    # DEFINE_GUID(IID_IDXGIDevice, 0x54ec77fa, 0x1377, 0x44e6, 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c)
+    ctypedef HRESULT (*DEVICE_GETADAPTER)(IDXGIDevice *this, IDXGIAdapter** adapter)
+    ctypedef struct IDXGIDeviceVtbl:
+        DEVICE_GETADAPTER GetAdapter
+
+    ctypedef struct IDXGIDevice:
+        const IDXGIDeviceVtbl *lpVtbl
 
 
 cdef extern from "d3d11.h":
@@ -97,11 +229,31 @@ cdef extern from "d3d11.h":
         D3D11_BUS_IMPL_MODIFIER_DAUGHTER_BOARD_CONNECTOR_INSIDE_OF_NUAE
         D3D11_BUS_IMPL_MODIFIER_NON_STANDARD
 
+    ctypedef struct ID3D11Device:
+        ID3D11DeviceVtbl *lpVtbl
+
+    enum D3D11_RESOURCE_DIMENSION:
+        D3D11_RESOURCE_DIMENSION_UNKNOWN
+        D3D11_RESOURCE_DIMENSION_BUFFER
+        D3D11_RESOURCE_DIMENSION_TEXTURE1D
+        D3D11_RESOURCE_DIMENSION_TEXTURE2D
+        D3D11_RESOURCE_DIMENSION_TEXTURE3D
+
+    ctypedef void (*RESOURCE_GETTYPE)(ID3D11Resource *rsc, D3D11_RESOURCE_DIMENSION *dim)
+
+    ctypedef struct ID3D11ResourceVtbl:
+        RESOURCE_GETTYPE GetType
+
     ctypedef struct ID3D11Resource:
-        pass
+        const ID3D11ResourceVtbl* lpVtbl
 
     ctypedef struct D3D11_BOX:
-        pass
+        UINT left
+        UINT top
+        UINT front
+        UINT right
+        UINT bottom
+        UINT back
 
     ctypedef ULONG (*DC_ADDREF)(ID3D11DeviceContext *context)
     ctypedef ULONG (*DC_RELEASE)(ID3D11DeviceContext *context)
@@ -138,6 +290,7 @@ cdef extern from "d3d11.h":
 
     ctypedef ULONG (*DEVICE_ADDREF)(ID3D11Device *context)
     ctypedef ULONG (*DEVICE_RELEASE)(ID3D11Device *context)
+    ctypedef HRESULT (*DEVICE_QUERYINTERFACE)(ID3D11Device* pThis, REFIID *interfaceID, void** ppInterface)
     ctypedef HRESULT (*DEVICE_CREATEBUFFER)(ID3D11Device *this, void *desc, void *initialData, void **buffer)
     ctypedef HRESULT (*DEVICE_CREATETEXTURE1D)(ID3D11Device *this, void *desc, void *initialData, void **texture)
     ctypedef HRESULT (*DEVICE_CREATETEXTURE2D)(ID3D11Device *this, void *desc, void *initialData, void **texture)
@@ -151,6 +304,7 @@ cdef extern from "d3d11.h":
     ctypedef struct ID3D11DeviceVtbl:
         DEVICE_ADDREF AddRef
         DEVICE_RELEASE Release
+        DEVICE_QUERYINTERFACE QueryInterface
         DEVICE_CREATEBUFFER CreateBuffer
         DEVICE_CREATETEXTURE1D CreateTexture1D
         DEVICE_CREATETEXTURE2D CreateTexture2D
@@ -163,6 +317,38 @@ cdef extern from "d3d11.h":
 
     ctypedef struct ID3D11Device:
         ID3D11DeviceVtbl *lpVtbl
+
+    ctypedef enum D3D11_QUERY:
+        D3D11_QUERY_EVENT
+        D3D11_QUERY_OCCLUSION
+        D3D11_QUERY_TIMESTAMP
+        D3D11_QUERY_TIMESTAMP_DISJOINT
+        D3D11_QUERY_PIPELINE_STATISTICS
+        D3D11_QUERY_OCCLUSION_PREDICATE
+        D3D11_QUERY_SO_STATISTICS
+        D3D11_QUERY_SO_OVERFLOW_PREDICATE
+        D3D11_QUERY_SO_STATISTICS_STREAM0
+        D3D11_QUERY_SO_OVERFLOW_PREDICATE_STREAM0
+        D3D11_QUERY_SO_STATISTICS_STREAM1
+        D3D11_QUERY_SO_OVERFLOW_PREDICATE_STREAM1
+        D3D11_QUERY_SO_STATISTICS_STREAM2
+        D3D11_QUERY_SO_OVERFLOW_PREDICATE_STREAM2
+        D3D11_QUERY_SO_STATISTICS_STREAM3
+        D3D11_QUERY_SO_OVERFLOW_PREDICATE_STREAM3
+
+    ctypedef struct D3D11_QUERY_DESC:
+        D3D11_QUERY Query
+        UINT MiscFlags
+
+    # DEFINE_GUID(IID_ID3D11Query, 0xd6c00747, 0x87b7, 0x425e, 0xb8, 0x4d, 0x44, 0xd1, 0x08, 0x56, 0x0a, 0xfd)
+
+    ctypedef void (*QUERY_GETDESC)(ID3D11Query this, D3D11_QUERY_DESC *desc)
+
+    ctypedef struct ID3D11QueryVtbl:
+        QUERY_GETDESC GetDesc
+
+    ctypedef struct ID3D11Query:
+        const ID3D11QueryVtbl *lpVtbl
 
 
 FEATURE_LEVELS: Dict[int, str] = {
@@ -241,19 +427,32 @@ cdef class D3D11DeviceContext:
         return "ImmediateContext(%s)" % self.d3d11device
 
     def flush(self) -> None:
+        assert self.context
         self.context.lpVtbl.Flush(self.context)
 
     def copy_resource(self, dst: int, src: int) -> None:
+        assert self.context
         assert dst and src
         cdef ID3D11Resource *r_dst = <ID3D11Resource*> dst
         cdef ID3D11Resource *r_src = <ID3D11Resource*> src
         self.context.lpVtbl.CopyResource(self.context, r_dst, r_src)
 
-    def update_subresource(self, dst: int, dst_sub: int, box: tuple, src: int, stride: int, depth_pitch: int) -> None:
+    def update_2dtexture(self, dst: int, width: int, height: int, src: int, stride: int) -> None:
+        log("d3d11.update_resource")
+        assert self.context
         assert dst
-        cdef ID3D11Resource *dstr = <ID3D11Resource*> dst
+        cdef ID3D11Resource *r_dst = <ID3D11Resource*> dst
+        cdef D3D11_RESOURCE_DIMENSION dim
+        r_dst.lpVtbl.GetType(r_dst, &dim)
+        log("d3d11.update_resource dimension(%#x)=%i", dst, dim)
         cdef void *data = <void *> src
-        self.context.lpVtbl.UpdateSubresource(self.context, dstr, dst_sub, NULL, data, stride, depth_pitch)
+        cdef D3D11_BOX box
+        box.left = box.top = box.front = box.back = 0
+        box.right = width
+        box.bottom = height
+        cdef int dst_sub = 0
+        log("dst=%#x, src=%#x, stride=%i", <uintptr_t> r_dst, <uintptr_t> data, stride)
+        self.context.lpVtbl.UpdateSubresource(self.context, r_dst, dst_sub, &box, data, stride, 0)
 
     def get_info(self) -> Dict[str, Any]:
         assert self.context
@@ -290,8 +489,62 @@ cdef class D3D11Device:
         level = self.device.lpVtbl.GetFeatureLevel(self.device)
         emode = self.device.lpVtbl.GetExceptionMode(self.device)
         # D3D11_CREATE_DEVICE_SINGLETHREADED
-        return {
+        info = {
             "address": <uintptr_t> self.device,
             "feature-level": FEATURE_LEVELS.get(level, level),
             "exception-mode": emode,
         }
+        # get a IDXGIDevice interface from this device:
+        cdef GUID device_guid               # IID_IDXGIDevice
+        set_GUID(&device_guid, 0x54ec77fa, 0x1377, 0x44e6, 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c)
+        cdef IDXGIDevice *dxgi_device = NULL
+        cdef HRESULT res = self.device.lpVtbl.QueryInterface(self.device, &device_guid, <void**> &dxgi_device)
+        log("D3D11Device.QueryInterface(DXGIDevice)=%i, dxgi_device=%#x", res, <uintptr_t> dxgi_device)
+        if res:
+            log.warn("Warning: failed to get DXGIDevice interface: %s", ERRORS.get(res, res))
+            return info
+        assert dxgi_device
+        # get the adapter interface:
+        cdef GUID adapter_guid     # IID_IDXGIAdapter
+        set_GUID(&adapter_guid, 0x2411e7e1, 0x12ac, 0x4ccf, 0xbd, 0x14, 0x97, 0x9b, 0xe2, 0x52, 0x12, 0x20)
+        cdef IDXGIAdapter *adapter
+        res = dxgi_device.lpVtbl.GetAdapter(dxgi_device, &adapter)
+        if res:
+            log.warn("Warning: failed to get IDXGIAdapter: %s", ERRORS.get(res, res))
+            return info
+        assert adapter
+        # get the adapter description:
+        cdef DXGI_ADAPTER_DESC desc
+        res = adapter.lpVtbl.GetDesc(adapter, &desc)
+        if res:
+            log.warn("Warning: failed to get adapter description: %s", ERRORS.get(res, res))
+            return info
+        info.update({
+            "vendor": VENDORS.get(desc.VendorId, desc.VendorId),
+            "device": desc.DeviceId,
+            "subsystem": desc.SubSysId,
+            "revision": desc.Revision,
+            "memory": {
+                "video": desc.DedicatedVideoMemory,
+                "system": desc.DedicatedSystemMemory,
+                "shared": desc.SharedSystemMemory,
+            },
+            "luid": hex(desc.AdapterLuid.HighPart) + ":" + hex(desc.AdapterLuid.LowPart),
+        })
+        return info
+
+
+cdef void set_GUID(GUID* guid, uint32_t data1, uint16_t data2, uint16_t data3,
+                   uint8_t data40, uint8_t data41, uint8_t data42, uint8_t data43,
+                   uint8_t data44, uint8_t data45, uint8_t data46, uint8_t data47):
+    guid.Data1 = data1
+    guid.Data2 = data2
+    guid.Data3 = data3
+    guid.Data4[0] = data40
+    guid.Data4[1] = data41
+    guid.Data4[2] = data42
+    guid.Data4[3] = data43
+    guid.Data4[4] = data44
+    guid.Data4[5] = data45
+    guid.Data4[6] = data46
+    guid.Data4[7] = data47
