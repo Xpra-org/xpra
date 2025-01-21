@@ -46,6 +46,11 @@ cdef extern from "Python.h":
     int PyObject_GetBuffer(object obj, Py_buffer *view, int flags)
     void PyBuffer_Release(Py_buffer *view)
     int PyBUF_ANY_CONTIGUOUS
+    object PyUnicode_FromWideChar(wchar_t *w, Py_ssize_t size)
+
+
+cdef extern from "string.h":
+    size_t wcslen(const wchar_t *str)
 
 
 cdef extern from "guiddef.h":
@@ -519,7 +524,11 @@ cdef class D3D11Device:
         if res:
             log.warn("Warning: failed to get adapter description: %s", ERRORS.get(res, res))
             return info
+
+        cdef size_t size = wcslen(desc.Description)
+        description = PyUnicode_FromWideChar(desc.Description, size)
         info.update({
+            "description": description,
             "vendor": VENDORS.get(desc.VendorId, desc.VendorId),
             "device": desc.DeviceId,
             "subsystem": desc.SubSysId,
