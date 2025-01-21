@@ -135,33 +135,6 @@ cdef inline RESULT_STR(AMF_RESULT res):
     }.get(res, "")
 
 
-cdef extern from "core/Variant.h":
-    ctypedef enum AMF_VARIANT_TYPE:
-        AMF_VARIANT_EMPTY           # 0
-        AMF_VARIANT_BOOL            # 1
-        AMF_VARIANT_INT64           # 2
-        AMF_VARIANT_DOUBLE          # 3
-        AMF_VARIANT_RECT            # 4
-        AMF_VARIANT_SIZE            # 5
-        AMF_VARIANT_POINT           # 6
-        AMF_VARIANT_RATE            # 7
-        AMF_VARIANT_RATIO           # 8
-        AMF_VARIANT_COLOR           # 9
-        AMF_VARIANT_STRING          # 10  // value is char*
-        AMF_VARIANT_WSTRING         # 11  // value is wchar_t*
-        AMF_VARIANT_INTERFACE       # 12  // value is AMFInterface*
-        AMF_VARIANT_FLOAT           # 13
-        AMF_VARIANT_FLOAT_SIZE      # 14
-        AMF_VARIANT_FLOAT_POINT2D   # 15
-        AMF_VARIANT_FLOAT_POINT3D   # 16
-        AMF_VARIANT_FLOAT_VECTOR4D  # 17
-
-    ctypedef struct AMFVariantStruct:
-        pass
-
-    AMF_RESULT AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value)
-
-
 cdef extern from "core/Data.h":
     ctypedef enum AMF_DATA_TYPE:
         AMF_DATA_BUFFER         # 0
@@ -187,8 +160,8 @@ cdef extern from "core/Data.h":
     ctypedef amf_long (*DATA_RELEASE)(AMFData* pThis)
     ctypedef AMF_RESULT (*DATA_QUERYINTERFACE)(AMFData* pThis, const AMFGuid *interfaceID, void** ppInterface)
     ctypedef amf_size (*DATA_GETPROPERTYCOUNT)(AMFData* pThis)
-    ctypedef AMF_MEMORY_TYPE (*DATA_GETMEMORYTYPE)(AMFData* pThis);
-    ctypedef AMF_DATA_TYPE (*DATA_GETDATATYPE)(AMFData* pThis);
+    ctypedef AMF_MEMORY_TYPE (*DATA_GETMEMORYTYPE)(AMFData* pThis)
+    ctypedef AMF_DATA_TYPE (*DATA_GETDATATYPE)(AMFData* pThis)
 
     ctypedef struct AMFDataVtbl:
         DATA_ACQUIRE Acquire
@@ -202,6 +175,14 @@ cdef extern from "core/Data.h":
         const AMFDataVtbl *pVtbl
 
 cdef extern from "core/Platform.h":
+    ctypedef struct AMFSize:
+        amf_int32 width
+        amf_int32 height
+
+    ctypedef struct AMFRate:
+        amf_uint32 num
+        amf_uint32 den
+
     ctypedef struct AMFGuid:
         amf_uint32 data1
         amf_uint16 data2
@@ -219,6 +200,39 @@ cdef extern from "core/Platform.h":
         amf_int32 top
         amf_int32 right
         amf_int32 bottom
+
+
+cdef extern from "core/Variant.h":
+    ctypedef enum AMF_VARIANT_TYPE:
+        AMF_VARIANT_EMPTY           # 0
+        AMF_VARIANT_BOOL            # 1
+        AMF_VARIANT_INT64           # 2
+        AMF_VARIANT_DOUBLE          # 3
+        AMF_VARIANT_RECT            # 4
+        AMF_VARIANT_SIZE            # 5
+        AMF_VARIANT_POINT           # 6
+        AMF_VARIANT_RATE            # 7
+        AMF_VARIANT_RATIO           # 8
+        AMF_VARIANT_COLOR           # 9
+        AMF_VARIANT_STRING          # 10  // value is char*
+        AMF_VARIANT_WSTRING         # 11  // value is wchar_t*
+        AMF_VARIANT_INTERFACE       # 12  // value is AMFInterface*
+        AMF_VARIANT_FLOAT           # 13
+        AMF_VARIANT_FLOAT_SIZE      # 14
+        AMF_VARIANT_FLOAT_POINT2D   # 15
+        AMF_VARIANT_FLOAT_POINT3D   # 16
+        AMF_VARIANT_FLOAT_VECTOR4D  # 17
+
+
+    ctypedef struct AMFVariantStruct:
+        AMF_VARIANT_TYPE type
+        AMFSize sizeValue
+        AMFRate rateValue
+
+    AMF_RESULT AMFVariantInit(AMFVariantStruct* pDest)
+    AMF_RESULT AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value)
+    AMF_RESULT AMFVariantAssignSize(AMFVariantStruct* pDest, const AMFSize &value)
+    AMF_RESULT AMFVariantAssignRate(AMFVariantStruct* pDest, const AMFRate &value)
 
 cdef extern from "core/Plane.h":
     ctypedef enum AMF_PLANE_TYPE:

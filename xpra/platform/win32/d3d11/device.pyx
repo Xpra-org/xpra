@@ -538,7 +538,7 @@ cdef class D3D11Device:
                 "system": desc.DedicatedSystemMemory,
                 "shared": desc.SharedSystemMemory,
             },
-            "luid": hex(desc.AdapterLuid.HighPart) + ":" + hex(desc.AdapterLuid.LowPart),
+            "luid": "%#x:%#x" % (desc.AdapterLuid.HighPart, desc.AdapterLuid.LowPart),
         })
         return info
 

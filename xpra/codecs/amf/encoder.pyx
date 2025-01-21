@@ -17,8 +17,8 @@ log = Logger("encoder", "amf")
 from xpra.codecs.constants import VideoSpec, get_subsampling_divs
 from xpra.codecs.image import ImageWrapper
 from xpra.os_util import WIN32
-from xpra.util.env import envbool
-from xpra.util.objects import typedict
+from xpra.util.env import envbool, first_time
+from xpra.util.objects import AtomicInteger, typedict
 
 from libc.stddef cimport wchar_t
 from libc.stdint cimport uint8_t, uint64_t, int64_t, uintptr_t
@@ -27,37 +27,46 @@ from libc.string cimport memset
 from xpra.codecs.amf.amf cimport (
     set_guid,
     RESULT_STR,
-    AMF_PLANE_TYPE_STR, AMF_SURFACE_FORMAT_STR, AMF_FRAME_TYPE_STR,
+    AMF_PLANE_TYPE_STR, AMF_SURFACE_FORMAT_STR,
+    AMF_FRAME_TYPE, AMF_FRAME_TYPE_STR,
     AMF_RESULT, AMF_EOF, AMF_REPEAT,
     AMF_DX11_0,
     AMF_MEMORY_TYPE,
     AMF_MEMORY_DX11,
     AMF_INPUT_FULL,
     AMF_SURFACE_FORMAT, AMF_SURFACE_YUV420P, AMF_SURFACE_NV12, AMF_SURFACE_BGRA,
-    AMF_VARIANT_TYPE, AMF_VARIANT_INT64, AMF_VARIANT_RECT,
+    AMF_VARIANT_TYPE, AMF_VARIANT_INT64, AMF_VARIANT_SIZE, AMF_VARIANT_RATE,
+    AMF_VIDEO_ENCODER_USAGE_ENUM,
     AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY,
+    AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM,
     AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY,
     AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED,
     AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED,
     AMF_VIDEO_ENCODER_AV1_LEVEL_5_1,
     AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN,
     AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY,
+    AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_ENUM,
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_HIGH_QUALITY,
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY,
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED,
     AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_BALANCED,
+    AMF_VIDEO_ENCODER_HEVC_USAGE_ENUM,
     AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY,
+    AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM,
+    AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY,
     AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED,
+    AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED,
     amf_handle, amf_long, amf_int32,
     AMFDataAllocatorCB,
+    AMFSize, AMFRate,
     AMFGuid,
     AMFBuffer,
     AMFComponentOptimizationCallback,
     AMFPlane, AMFPlaneVtbl,
     AMFData, AMFDataVtbl,
     AMFTrace,
-    AMFVariantStruct,
-    AMFVariantAssignInt64,
+    AMFVariantStruct, AMFVariantInit,
+    AMFVariantAssignInt64, AMFVariantAssignSize, AMFVariantAssignRate,
     AMFSurface, AMFSurfaceVtbl,
     AMFContext,
     AMFComponent,
@@ -139,6 +148,31 @@ cdef uint64_t get_c_version():
         return 0
     return int(version.value)
 
+cdef inline AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM get_h264_preset(int quality, int speed):
+    if quality >= 80:
+        return AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY
+    if speed >= 80:
+        return AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED
+    return AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED
+
+
+cdef inline AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_ENUM get_av1_preset(int quality, int speed):
+    if quality >= 90:
+        return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_HIGH_QUALITY
+    if quality >= 90:
+        return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY
+    if speed >= 80:
+        return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED
+    return AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_BALANCED
+
+
+cdef inline AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM get_hevc_preset(int quality, int speed):
+    if quality >= 80:
+        return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_QUALITY
+    if speed >= 80:
+        return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED
+    return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED
+
 
 def check(res: AMF_RESULT, message: str):
     if res == 0:
@@ -218,6 +252,9 @@ def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
         )
 
 
+generation = AtomicInteger()
+
+
 cdef class Encoder:
     cdef AMFContext *context
     cdef AMFComponent* encoder
@@ -231,6 +268,7 @@ cdef class Encoder:
     cdef object src_format
     cdef int speed
     cdef int quality
+    cdef unsigned int generation
     cdef object file
 
     cdef object __weakref__
@@ -239,7 +277,7 @@ cdef class Encoder:
                      unsigned int width, unsigned int height,
                      src_format: str,
                      options: typedict) -> None:
-        log("amf init_context%s", (encoding, width, height, src_format, options))
+        log(f"amf init_context%s {SAVE_TO_FILE=}", (encoding, width, height, src_format, options))
         assert encoding in get_encodings(), "invalid encoding: %s" % encoding
         assert options.get("scaled-width", width)==width, "amf encoder does not handle scaling"
         assert options.get("scaled-height", height)==height, "amf encoder does not handle scaling"
@@ -271,6 +309,7 @@ cdef class Encoder:
         self.amf_surface_init()
         self.amf_encoder_init(options)
 
+        self.generation = generation.increase()
         if SAVE_TO_FILE:
             filename = SAVE_TO_FILE+f"amf-{self.generation}.{encoding}"
             self.file = open(filename, "wb")
@@ -291,6 +330,14 @@ cdef class Encoder:
             log(f"amf_context_init() InitDX11()={res}")
             self.check(res, "AMF DX11 device initialization")
             self.device = self.context.pVtbl.GetDX11Device(self.context, AMF_DX11_0)
+            assert self.device
+            from xpra.platform.win32.d3d11.device import D3D11Device
+            device = D3D11Device(<uintptr_t> self.device)
+            device_info = device.get_info()
+            log("device: %s", device_info)
+            descr = device_info.get("description", "")
+            if descr and first_time(f"GPU:{descr}"):
+                log.info(f"AMF initialized using DX11 device {descr!r}")
         else:
             res = self.context.pVtbl.InitOpenGL(self.context, NULL, NULL, NULL)
             log(f"amf_context_init() InitOpenGL()={res}")
@@ -303,14 +350,12 @@ cdef class Encoder:
         cdef AMF_MEMORY_TYPE memory = AMF_MEMORY_DX11
         cdef AMF_RESULT res = self.context.pVtbl.AllocSurface(self.context, memory, self.surface_format, self.width, self.height, &self.surface)
         self.check(res, "AMF surface initialization for {self.width}x{self.height} {self.src_format}")
-        log(f"amf_surface_init() surface=%#x", <uintptr_t> self.surface)
+        log(f"amf_surface_init() surface=%s", self.get_surface_info(self.surface))
 
-    cdef void set_encoder_property(self, name: str, variant: AMF_VARIANT_TYPE, value):
-        cdef AMFVariantStruct var
-        AMFVariantAssignInt64(&var, value)
+    cdef void set_encoder_property(self, name: str, AMFVariantStruct var):
         cdef wchar_t *prop = PyUnicode_AsWideCharString(name, NULL)
         ret = self.encoder.pVtbl.SetProperty(self.encoder, prop, var)
-        self.check(ret, f"AMF encoder setting property {name} to {value}")
+        self.check(ret, f"AMF encoder setting property {name} to {var!r}")
         PyMem_Free(prop)
 
     def amf_encoder_init(self, options: typedict) -> None:
@@ -328,68 +373,62 @@ cdef class Encoder:
         quality = options.intget("quality", 50)
         bwlimit = options.intget("bandwidth-limit", 0)
 
+        cdef AMFVariantStruct var
+        cdef AMFSize size
+        cdef AMFRate rate
         def setint64(prop: str, value: int) -> None:
-            self.set_encoder_property(prop, AMF_VARIANT_INT64, value)
+            self.check(AMFVariantInit(&var), "AMF variant initialization")
+            AMFVariantAssignInt64(&var, value)
+            self.set_encoder_property(prop, var)
+        def setsize(prop: str) -> None:
+            self.check(AMFVariantInit(&var), "AMF variant initialization")
+            var.type = AMF_VARIANT_SIZE
+            var.sizeValue.width = self.width
+            var.sizeValue.height = self.height
+            self.set_encoder_property(prop, var)
+        def setframerate(prop: str) -> None:
+            self.check(AMFVariantInit(&var), "AMF variant initialization")
+            var.type = AMF_VARIANT_RATE
+            var.rateValue.num = 25
+            var.rateValue.den = 1
+            self.set_encoder_property(prop, var)
+        def setbitrate(prop: str) -> None:
+            if bwlimit:
+                setint64(prop, value=bwlimit)
 
         # tune encoder:
         if self.encoding == "h264":
+            setsize("FrameSize")
+            setframerate("FrameRate")
+            setbitrate("TargetBitrate")
             setint64("Usage", value=AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY)
-            if quality >= 80:
-                setint64("QualityPreset", value=AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY)
-            elif speed >= 80:
-                setint64("QualityPreset", value=AMF_VIDEO_ENCODER_QUALITY_PRESET_SPEED)
-            else:
-                setint64("QualityPreset", value=AMF_VIDEO_ENCODER_QUALITY_PRESET_BALANCED)
-
-            if bwlimit:
-                setint64("TargetBitrate", value=bwlimit)
-
+            setint64("QualityPreset", get_h264_preset(quality, speed))
             if False:
-                #AMFRect(w, h)
-                #self.set_encoder_property("FrameSize", AMF_VARIANT_RECT, rect)
-                #AMFRate(1, rate)
-                #self.set_encoder_property("FrameRate", AMF_VARIANT_RATE, rate)
-                #4K:
                 setint64("Profile", value=AMF_VIDEO_ENCODER_PROFILE_HIGH)
                 setint64("ProfileLevel", value=AMF_H264_LEVEL__5_1)
-
             if not options.boolget("b-frames", False):
                 setint64("BPicturesPattern", value=0)
                 # can be not supported - check Capability Manager sample
         elif self.encoding == "av1":
+            setsize("Av1FrameSize")
+            setframerate("Av1FrameRate")
+            setbitrate("Av1TargetBitrate")
             setint64("Av1Usage", value=AMF_VIDEO_ENCODER_AV1_USAGE_ULTRA_LOW_LATENCY)
+            setint64("Av1QualityPreset", get_av1_preset(quality, speed))
             setint64("Av1Profile", AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN)
             setint64("Av1Level", AMF_VIDEO_ENCODER_AV1_LEVEL_5_1)
-
-            if bwlimit:
-                setint64("Av1TargetBitrate", bwlimit)
-
-            if quality >= 90:
-                setint64("Av1QualityPreset", value=AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_HIGH_QUALITY)
-            elif quality >= 90:
-                setint64("Av1QualityPreset", value=AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY)
-            elif speed >= 80:
-                setint64("Av1QualityPreset", value=AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED)
-            else:
-                setint64("Av1QualityPreset", value=AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_BALANCED)
-
-            #"Av1FrameSize", size)
-            #"Av1FrameRate, rate)
             if False:
                 setint64("Av1AlignmentMode", AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS)
         elif self.encoding == "hevc":
             setint64("HevcUsage", AMF_VIDEO_ENCODER_HEVC_USAGE_ULTRA_LOW_LATENCY)
-            setint64("HevcQualityPreset", AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED)
-            #"HevcFrameRate", framerate)
-            #"HevcFrameSize", size)
-            if bwlimit:
-                setint64("HevcTargetBitrate", bwlimit)
-
-            #AMF_ASSIGN_PROPERTY_INT64(res, encoder, AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH)
-            #AMF_ASSIGN_PROPERTY_INT64(res, encoder, AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1)
+            setint64("HevcQualityPreset", get_hevc_preset(quality, speed))
+            setsize("HevcFrameSize")
+            setframerate("HevcFrameRate")
+            setbitrate("HevcTargetBitrate")
+            # setint64(AMF_VIDEO_ENCODER_HEVC_TIER, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH)
+            # setint64(AMF_VIDEO_ENCODER_HEVC_PROFILE_LEVEL, AMF_LEVEL_5_1)
         else:
             raise RuntimeError(f"unexpected encoding {self.encoding!r}")
-
         # init:
         res = self.encoder.pVtbl.Init(self.encoder, self.surface_format, self.width, self.height)
         self.check(res, "AMF {self.encoding!r} encoder initialization for {self.width}x{self.height} {self.src_format}")
@@ -542,7 +581,7 @@ cdef class Encoder:
                 dst_texture = <uintptr_t> plane.pVtbl.GetNative(plane)
                 log("texture=%#x, source=%#x", dst_texture, <uintptr_t> pic_in[plane_index])
                 assert dst_texture
-                #dc.update_2dtexture(dst_texture, self.width, self.height,
+                # dc.update_2dtexture(dst_texture, self.width, self.height,
                 #                    <uintptr_t> pic_in[plane_index], strides[plane_index])
             dc.flush()
 
@@ -629,7 +668,7 @@ cdef class Encoder:
         assert surface
         cdef const AMFSurfaceVtbl *sfn = surface.pVtbl
         fmt = sfn.GetFormat(surface)
-        ftype = sfn.GetFrameType(surface)
+        cdef AMF_FRAME_TYPE ftype = sfn.GetFrameType(surface)
         return {
             "format": AMF_SURFACE_FORMAT_STR(fmt),
             "planes": sfn.GetPlanesCount(surface),
