@@ -26,6 +26,7 @@ from libc.string cimport memset
 
 from xpra.codecs.amf.amf cimport (
     set_guid,
+    RESULT_STR,
     AMF_PLANE_TYPE_STR, AMF_SURFACE_FORMAT_STR, AMF_FRAME_TYPE_STR,
     AMF_RESULT, AMF_EOF, AMF_REPEAT,
     AMF_DX11_0,
@@ -149,6 +150,11 @@ def check(res: AMF_RESULT, message: str):
 def error_str(AMF_RESULT result) -> str:
     if result == 0:
         return ""
+    # try direct code lookup:
+    err = RESULT_STR(result)
+    if err:
+        return err
+    # fallback to API call:
     cdef AMFTrace *trace = NULL
     cdef AMF_RESULT res = factory.pVtbl.GetTrace(factory, &trace)
     if res != 0:
