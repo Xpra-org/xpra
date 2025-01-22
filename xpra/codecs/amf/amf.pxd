@@ -92,6 +92,23 @@ cdef extern from "core/Result.h":
         AMF_VULKAN_FAILED
 
 
+cdef inline MEMORY_TYPE_STR(AMF_MEMORY_TYPE memory):
+    return {
+        AMF_MEMORY_UNKNOWN: "UNKNOWN",
+        AMF_MEMORY_HOST: "HOST",
+        AMF_MEMORY_DX9: "DX9",
+        AMF_MEMORY_DX11: "DX11",
+        AMF_MEMORY_OPENCL: "OPENCL",
+        AMF_MEMORY_OPENGL: "OPENGL",
+        AMF_MEMORY_XV: "XV",
+        AMF_MEMORY_GRALLOC: "GRALLOC",
+        AMF_MEMORY_COMPUTE_FOR_DX9: "COMPUTE_FOR_DX9",
+        AMF_MEMORY_COMPUTE_FOR_DX11: "COMPUTE_FOR_DX11",
+        AMF_MEMORY_VULKAN: "VULKAN",
+        AMF_MEMORY_DX12: "DX12",
+    }.get(memory, "unknown")
+
+
 cdef inline RESULT_STR(AMF_RESULT res):
     return {
         AMF_OK: "OK",
@@ -170,6 +187,8 @@ cdef extern from "core/Data.h":
     ctypedef amf_size (*DATA_GETPROPERTYCOUNT)(AMFData* pThis)
     ctypedef AMF_MEMORY_TYPE (*DATA_GETMEMORYTYPE)(AMFData* pThis)
     ctypedef AMF_DATA_TYPE (*DATA_GETDATATYPE)(AMFData* pThis)
+    ctypedef AMF_RESULT (*DATA_CONVERT)(AMFData* pThis, AMF_MEMORY_TYPE type)
+    ctypedef AMF_RESULT (*DATA_INTEROP)(AMFData* pThis, AMF_MEMORY_TYPE type)
 
     ctypedef struct AMFDataVtbl:
         DATA_ACQUIRE Acquire
@@ -178,6 +197,8 @@ cdef extern from "core/Data.h":
         DATA_GETPROPERTYCOUNT GetPropertyCount
         DATA_GETMEMORYTYPE GetMemoryType
         DATA_GETDATATYPE GetDataType
+        DATA_CONVERT Convert
+        DATA_INTEROP Interop
 
     ctypedef struct AMFData:
         const AMFDataVtbl *pVtbl
@@ -433,6 +454,8 @@ cdef extern from "core/Surface.h":
     ctypedef AMFPlane* (*SURFACE_GETPLANEAT)(AMFSurface* pThis, amf_size index)
     ctypedef AMFPlane* (*SURFACE_GETPLANE)(AMFSurface* pThis, AMF_PLANE_TYPE type)
     ctypedef AMF_FRAME_TYPE (*SURFACE_GETFRAMETYPE)(AMFSurface* pThis)
+    ctypedef AMF_RESULT (*SURFACE_CONVERT)(AMFSurface* pThis, AMF_MEMORY_TYPE type)
+    ctypedef AMF_RESULT (*SURFACE_INTEROP)(AMFSurface* pThis, AMF_MEMORY_TYPE type)
 
     ctypedef struct AMFSurfaceVtbl:
         SURFACE_SETPROPERTY SetProperty
@@ -443,6 +466,8 @@ cdef extern from "core/Surface.h":
         SURFACE_GETPLANEAT GetPlaneAt
         SURFACE_GETPLANE GetPlane
         SURFACE_GETFRAMETYPE GetFrameType
+        SURFACE_CONVERT Convert
+        SURFACE_INTEROP Interop
 
     ctypedef struct AMFSurface:
         const AMFSurfaceVtbl *pVtbl

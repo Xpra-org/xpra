@@ -7,11 +7,12 @@ from ctypes import CDLL, c_uint64, c_int, c_void_p, byref, POINTER
 
 from libc.stddef cimport wchar_t
 from libc.stdint cimport uint64_t, uintptr_t
+from libc.string cimport memset
 
 from xpra.codecs.amf.amf cimport (
     AMF_RESULT, AMF_OK,
-    AMFFactory, AMFGuid, AMFTrace,
-    amf_uint32, amf_uint16, amf_uint8,
+    AMFFactory, AMFGuid, AMFTrace, AMFSurface, AMFPlane,
+    amf_uint32, amf_uint16, amf_uint8, amf_int32,
     RESULT_STR,
 )
 
@@ -121,3 +122,26 @@ cdef uint64_t get_c_version():
         return 0
     return int(version.value)
 
+
+cdef void fill_nv12_surface(AMFSurface *surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V):
+    cdef AMFPlane *planeY = surface.pVtbl.GetPlaneAt(surface, 0)
+    cdef amf_int32 widthY = planeY.pVtbl.GetWidth(planeY)
+    cdef amf_int32 heightY = planeY.pVtbl.GetHeight(planeY)
+    cdef amf_int32 lineY = planeY.pVtbl.GetHPitch(planeY)
+    cdef amf_uint8 *Ydata = <amf_uint8 *> planeY.pVtbl.GetNative(planeY)
+    cdef amf_int32 y
+    cdef amf_uint8 *line
+    for y in range(heightY):
+        line = Ydata + y * lineY
+        memset(line, Y, widthY)
+    cdef AMFPlane *planeUV = surface.pVtbl.GetPlaneAt(surface, 1)
+    cdef amf_int32 widthUV = planeUV.pVtbl.GetWidth(planeUV)
+    cdef amf_int32 heightUV = planeUV.pVtbl.GetHeight(planeUV)
+    cdef amf_int32 lineUV = planeUV.pVtbl.GetHPitch(planeUV)
+    cdef amf_uint8 *UVdata = <amf_uint8 *> planeUV.pVtbl.GetNative(planeUV)
+    cdef amf_int32 x
+    for y in range(heightUV):
+        line = UVdata + y * lineUV
+        for x in range(widthUV):
+            line[x] = U
+            line[x+1] = V

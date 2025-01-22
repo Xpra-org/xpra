@@ -20,15 +20,14 @@ from xpra.log import Logger
 
 from libc.stddef cimport wchar_t
 from libc.stdint cimport uint8_t, int64_t, uintptr_t
-from libc.string cimport memset
+from libc.string cimport memset, memcpy
 
 from xpra.codecs.amf.amf cimport (
-    AMF_PLANE_TYPE_STR, AMF_SURFACE_FORMAT_STR,
-    AMF_FRAME_TYPE, AMF_FRAME_TYPE_STR,
+    amf_uint8,
+    AMF_PLANE_TYPE_STR, AMF_SURFACE_FORMAT_STR, AMF_FRAME_TYPE, AMF_FRAME_TYPE_STR, MEMORY_TYPE_STR,
     AMF_RESULT, AMF_EOF, AMF_REPEAT,
     AMF_DX11_0,
-    AMF_MEMORY_TYPE,
-    AMF_MEMORY_DX11,
+    AMF_MEMORY_TYPE, AMF_MEMORY_DX11, AMF_MEMORY_HOST,
     AMF_INPUT_FULL,
     AMF_SURFACE_FORMAT, AMF_SURFACE_YUV420P, AMF_SURFACE_NV12, AMF_SURFACE_BGRA,
     AMF_VARIANT_TYPE, AMF_VARIANT_INT64, AMF_VARIANT_SIZE, AMF_VARIANT_RATE,
@@ -230,11 +229,9 @@ cdef class Encoder:
 
         self.context = NULL
         self.encoder = NULL
-        self.surface = NULL
         self.device = NULL
 
         self.amf_context_init()
-        self.amf_surface_init()
         self.amf_encoder_init(options)
 
         self.generation = generation.increase()
@@ -272,13 +269,6 @@ cdef class Encoder:
             self.check(res, "AMF OpenGL device initialization")
             self.device = <void *> self.context.pVtbl.GetOpenGLContext(self.context)
         log(f"amf_context_init() device=%#x", <uintptr_t> self.device)
-
-    def amf_surface_init(self) -> None:
-        assert DX11
-        cdef AMF_MEMORY_TYPE memory = AMF_MEMORY_DX11
-        cdef AMF_RESULT res = self.context.pVtbl.AllocSurface(self.context, memory, self.surface_format, self.width, self.height, &self.surface)
-        self.check(res, "AMF surface initialization for {self.width}x{self.height} {self.src_format}")
-        log(f"amf_surface_init() surface=%s", self.get_surface_info(self.surface))
 
     cdef void set_encoder_property(self, name: str, AMFVariantStruct var):
         cdef wchar_t *prop = PyUnicode_AsWideCharString(name, NULL)
@@ -403,11 +393,6 @@ cdef class Encoder:
         self.clean()
 
     def clean(self) -> None:
-        log("clean() surface=%s", <uintptr_t> self.surface)
-        cdef AMFSurface* surface = self.surface
-        if surface:
-            self.surface = NULL
-            surface.pVtbl.Release(surface)
         log("clean() encoder=%s", <uintptr_t> self.encoder)
         cdef AMFComponent* encoder = self.encoder
         if encoder:
@@ -479,17 +464,42 @@ cdef class Encoder:
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
 
-    cdef void set_surface_property(self, name: str, variant: AMF_VARIANT_TYPE, value: int64_t):
+    cdef void alloc_surface(self, AMFSurface **surface, AMF_MEMORY_TYPE memory=AMF_MEMORY_HOST):
+        assert self.context
+        memtype = MEMORY_TYPE_STR(memory)
+        cdef AMF_RESULT res = self.context.pVtbl.AllocSurface(self.context, memory, self.surface_format,
+                                                             self.width, self.height, surface)
+        if res:
+            self.check(res, f"AMF {memtype} surface initialization for {self.width}x{self.height} {self.src_format}")
+        cdef AMFSurface *ptr = surface[0]
+        assert ptr != NULL
+        log(f"{memtype} surface: %s", self.get_surface_info(ptr))
+
+    cdef void set_surface_property(self, AMFSurface *surface, name: str, variant: AMF_VARIANT_TYPE, value: int64_t):
         cdef AMFVariantStruct var
         AMFVariantAssignInt64(&var, value)
         cdef wchar_t *prop = PyUnicode_AsWideCharString(name, NULL)
-        self.surface.pVtbl.SetProperty(self.surface, prop, var)
+        surface.pVtbl.SetProperty(surface, prop, var)
         PyMem_Free(prop)
+
+    cdef uintptr_t get_native_plane(self, AMFSurface *surface, unsigned int plane_index):
+        # get the D3D11 host destination surface pointer for this plane:
+        plane = surface.pVtbl.GetPlaneAt(surface, plane_index)
+        assert plane
+        log("plane=%s", self.get_plane_info(plane))
+        # texture is a `ID3D11Texture2D`:
+        cdef uintptr_t texture = <uintptr_t> plane.pVtbl.GetNative(plane)
+        assert texture
+        return texture
 
     cdef bytes do_compress_image(self, uint8_t *pic_in[2], int strides[2]):
         cdef unsigned long start_time = 0    # nanoseconds!
         cdef AMFPlane *plane
-        cdef uintptr_t dst_texture
+        cdef uintptr_t host_texture
+        cdef uintptr_t gpu_texture
+        cdef AMFSurface *host_surface
+        cdef AMFSurface *gpu_surface
+        cdef AMF_RESULT res
 
         if not WIN32:
             raise ImportError("amf encoder needs porting to this platform")
@@ -500,24 +510,36 @@ cdef class Encoder:
         with device.get_device_context() as dc:
             log("device: %s", device.get_info())
             log("device context: %s", dc.get_info())
-            log("surface: %s", self.get_surface_info(self.surface))
+
+            self.alloc_surface(&host_surface, AMF_MEMORY_HOST)
+
             for plane_index in range(2):
-                # get the D3D11 destination surface pointer for this plane:
-                plane = self.surface.pVtbl.GetPlaneAt(self.surface, plane_index)
-                assert plane
-                log("plane %s=%s", ["Y", "UV"][plane_index], self.get_plane_info(plane))
-                # texture is a `ID3D11Texture2D`:
-                dst_texture = <uintptr_t> plane.pVtbl.GetNative(plane)
-                log("texture=%#x, source=%#x", dst_texture, <uintptr_t> pic_in[plane_index])
-                assert dst_texture
-                # dc.update_2dtexture(dst_texture, self.width, self.height,
-                #                    <uintptr_t> pic_in[plane_index], strides[plane_index])
+                log("plane %s src data=%#x", ["Y", "UV"][plane_index], <uintptr_t> pic_in[plane_index])
+                host_texture = self.get_native_plane(host_surface, plane_index)
+                memcpy(<void *> host_texture, <void *> pic_in[plane_index], strides[plane_index] * (self.height//2))
+
+            # make it accessible by the GPU:
+            res = host_surface.pVtbl.Convert(host_surface, AMF_MEMORY_DX11)
+            self.check(res, "AMF Convert to DX11 memory")
+
+            self.alloc_surface(&gpu_surface, AMF_MEMORY_DX11)
+
+            for plane_index in range(2):
+                log("plane %s", ["Y", "UV"][plane_index])
+                host_texture = self.get_native_plane(host_surface, plane_index)
+                gpu_texture = self.get_native_plane(gpu_surface, plane_index)
+                dc.copy_resource(gpu_texture, host_texture)
+            log("flush()")
             dc.flush()
+            log("freeing host surface=%s", <uintptr_t> host_surface)
+            host_surface.pVtbl.Release(host_surface)
 
         ns = round(1000 * 1000 * monotonic())
-        self.set_surface_property(START_TIME_PROPERTY, AMF_VARIANT_INT64, ns)
+        self.set_surface_property(gpu_surface, START_TIME_PROPERTY, AMF_VARIANT_INT64, ns)
 
-        cdef AMF_RESULT res = self.encoder.pVtbl.SubmitInput(self.encoder, <AMFData*> self.surface)
+        log("encoder.SubmitInput()")
+        res = self.encoder.pVtbl.SubmitInput(self.encoder, <AMFData*> gpu_surface)
+        gpu_surface.pVtbl.Release(gpu_surface)
         if res == AMF_INPUT_FULL:
             raise RuntimeError("AMF encoder input is full!")
         self.check(res, "AMF submitting input to the encoder")
@@ -542,7 +564,7 @@ cdef class Encoder:
         cdef size_t size = 0
         try:
             res = data.pVtbl.QueryInterface(data, &guid, <void**> &buffer)
-            log(f"QueryInterface()={res}")
+            log(f"QueryInterface()={res} AMFBuffer=%#x", <uintptr_t> buffer)
             self.check(res, "AMF data query interface")
             assert buffer != NULL
             output = <uint8_t*> buffer.pVtbl.GetNative(buffer)
