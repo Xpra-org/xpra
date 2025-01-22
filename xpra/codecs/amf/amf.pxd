@@ -360,7 +360,7 @@ cdef extern from "core/Buffer.h":
         const AMFBufferVtbl *pVtbl
 
 
-cdef inline AMF_PLANE_TYPE_STR(AMF_PLANE_TYPE ptype):
+cdef inline PLANE_TYPE_STR(AMF_PLANE_TYPE ptype):
     return {
         AMF_PLANE_UNKNOWN: "UNKNOWN",
         AMF_PLANE_PACKED: "PACKED",
@@ -473,7 +473,7 @@ cdef extern from "core/Surface.h":
         const AMFSurfaceVtbl *pVtbl
 
 
-cdef inline AMF_SURFACE_FORMAT_STR(AMF_SURFACE_FORMAT fmt):
+cdef inline SURFACE_FORMAT_STR(AMF_SURFACE_FORMAT fmt):
     return {
         AMF_SURFACE_NV12: "NV12",
         AMF_SURFACE_YV12: "YV12",
@@ -498,7 +498,16 @@ cdef inline AMF_SURFACE_FORMAT_STR(AMF_SURFACE_FORMAT fmt):
     }.get(fmt, "unknown")
 
 
-cdef inline AMF_FRAME_TYPE_STR(AMF_FRAME_TYPE ftype):
+cdef inline DATA_TYPE_STR(AMF_DATA_TYPE dtype):
+    return {
+        AMF_DATA_BUFFER: "BUFFER",
+        AMF_DATA_SURFACE: "SURFACE",
+        AMF_DATA_AUDIO_BUFFER: "AUDIO_BUFFER",
+        AMF_DATA_USER: "USER",
+    }.get(dtype, "unknown")
+
+
+cdef inline FRAME_TYPE_STR(AMF_FRAME_TYPE ftype):
     return {
         AMF_FRAME_STEREO_FLAG: "STEREO_FLAG",
         AMF_FRAME_LEFT_FLAG: "LEFT_FLAG",
