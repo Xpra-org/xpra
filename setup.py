@@ -2783,6 +2783,7 @@ if amf_ENABLED:
             # "extra_link_args": ("-lpam", "-lpam_misc"),
         }
         print(f"default amf args: {amf_kwargs}")
+    tace(amf_encoder_ENABLED, "xpra.codecs.amf.common", **amf_kwargs)
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
     toggle_packages(WIN32, "xpra.platform.win32.d3d11")
     tace(WIN32, "xpra.platform.win32.d3d11.device")

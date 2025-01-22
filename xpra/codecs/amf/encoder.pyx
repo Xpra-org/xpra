@@ -4,29 +4,25 @@
 # later version. See the file COPYING for details.
 
 import os
-import math
-import time
 
-from time import monotonic
+from time import monotonic, sleep
 from typing import Any, Dict, Tuple
 from collections.abc import Sequence
-
-from xpra.log import Logger
-log = Logger("encoder", "amf")
+from ctypes import c_uint64, c_int, c_void_p, byref, POINTER
+from ctypes import CDLL
 
 from xpra.codecs.constants import VideoSpec, get_subsampling_divs
 from xpra.codecs.image import ImageWrapper
 from xpra.os_util import WIN32
 from xpra.util.env import envbool, first_time
 from xpra.util.objects import AtomicInteger, typedict
+from xpra.log import Logger
 
 from libc.stddef cimport wchar_t
-from libc.stdint cimport uint8_t, uint64_t, int64_t, uintptr_t
+from libc.stdint cimport uint8_t, int64_t, uintptr_t
 from libc.string cimport memset
 
 from xpra.codecs.amf.amf cimport (
-    set_guid,
-    RESULT_STR,
     AMF_PLANE_TYPE_STR, AMF_SURFACE_FORMAT_STR,
     AMF_FRAME_TYPE, AMF_FRAME_TYPE_STR,
     AMF_RESULT, AMF_EOF, AMF_REPEAT,
@@ -72,22 +68,15 @@ from xpra.codecs.amf.amf cimport (
     AMFComponent,
     AMFFactory,
 )
+from xpra.codecs.amf.common cimport (
+    set_guid, get_factory, get_version, check,
+)
 
-from ctypes import c_uint64, c_int, c_void_p, byref, POINTER
-from ctypes import CDLL
 
-amf = CDLL("amfrt64")
-AMFQueryVersion = amf.AMFQueryVersion
-AMFQueryVersion.argtypes = [POINTER(c_uint64)]
-AMFQueryVersion.restype = c_int
-AMFInit = amf.AMFInit
-AMFInit.argtypes = [c_uint64, c_void_p]
-AMFQueryVersion.restype = c_int
+log = Logger("encoder", "amf")
 
 DX11 = envbool("XPRA_AMF_DX11", WIN32)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
-
-AMF_DLL_NAME = "amfrt64.dll" if WIN32 else "libamf.so"
 
 
 AMF_ENCODINGS : Dict[str, str] = {
@@ -105,48 +94,16 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
     # cdef extern from "unicodeobject.h":
     wchar_t* PyUnicode_AsWideCharString(object unicode, Py_ssize_t *size)
-    object PyUnicode_FromWideChar(wchar_t *w, Py_ssize_t size)
     # cdef extern from "pymem.h":
     void PyMem_Free(void *ptr)
 
 
-cdef extern from "string.h":
-    size_t wcslen(const wchar_t *str)
-
-
-cdef AMFFactory *factory = NULL
-
-
 def init_module() -> None:
-    log("amf.encoder.init_module() info=%s", get_info())
-    version = get_c_version()
-    cdef AMF_RESULT res = AMFInit(version, <uintptr_t> &factory)
-    log(f"AMFInit: {res=}, factory=%s", <uintptr_t> factory)
-    check(res, "AMF initialization")
-    cdef AMFTrace *trace = NULL
-    res = factory.pVtbl.GetTrace(factory, &trace)
-    log(f"amf_encoder_init() GetTrace()={res}")
-    if res == 0:
-        log(f"Trace.GetGlobalLevel=%i", trace.pVtbl.GetGlobalLevel(trace))
-        trace.pVtbl.SetGlobalLevel(trace, 0)
+    get_factory()
 
 def cleanup_module() -> None:
     log("amf.encoder.cleanup_module()")
-    factory = NULL
 
-
-cdef uint64_t get_c_version():
-    from ctypes import c_uint64, c_int, byref, POINTER
-    from ctypes import CDLL
-    amf = CDLL("amfrt64")
-    version = c_uint64()
-    AMFQueryVersion = amf.AMFQueryVersion
-    AMFQueryVersion.argtypes = [POINTER(c_uint64)]
-    AMFQueryVersion.restype = c_int
-    res = AMFQueryVersion(byref(version))
-    if res:
-        return 0
-    return int(version.value)
 
 cdef inline AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM get_h264_preset(int quality, int speed):
     if quality >= 80:
@@ -172,35 +129,6 @@ cdef inline AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_ENUM get_hevc_preset(int quali
     if speed >= 80:
         return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_SPEED
     return AMF_VIDEO_ENCODER_HEVC_QUALITY_PRESET_BALANCED
-
-
-def check(res: AMF_RESULT, message: str):
-    if res == 0:
-        return
-    error = error_str(res) or f"error {res}"
-    raise RuntimeError(f"{message}: {error}")
-
-
-def error_str(AMF_RESULT result) -> str:
-    if result == 0:
-        return ""
-    # try direct code lookup:
-    err = RESULT_STR(result)
-    if err:
-        return err
-    # fallback to API call:
-    cdef AMFTrace *trace = NULL
-    cdef AMF_RESULT res = factory.pVtbl.GetTrace(factory, &trace)
-    if res != 0:
-        return ""
-    cdef const wchar_t *text = trace.pVtbl.GetResultText(trace, result)
-    cdef size_t size = wcslen(text)
-    return PyUnicode_FromWideChar(text, size)
-
-
-def get_version() -> Sequence[int]:
-    version = get_c_version()
-    return version >> 48, (version >> 32) & 0xffff, (version >> 16) & 0xffff, version & 0xffff
 
 
 def get_type() -> str:
@@ -321,7 +249,7 @@ cdef class Encoder:
             self.clean()
 
     def amf_context_init(self) -> None:
-        assert factory
+        cdef AMFFactory *factory = get_factory()
         cdef AMF_RESULT res = factory.pVtbl.CreateContext(factory, &self.context)
         log(f"amf_context_init() CreateContext()={res}")
         self.check(res, "AMF context initialization")
@@ -359,12 +287,13 @@ cdef class Encoder:
         PyMem_Free(prop)
 
     def amf_encoder_init(self, options: typedict) -> None:
+        cdef AMFFactory *factory = get_factory()
         assert factory and self.context
         log(f"amf_encoder_init() for encoding {self.encoding!r}")
 
         amf_codec_name = str(AMF_ENCODINGS[self.encoding])
         cdef wchar_t *amf_codec = PyUnicode_AsWideCharString(amf_codec_name, NULL)
-        cdef AMF_RESULT res = factory.pVtbl.CreateComponent(factory, self.context, amf_codec, &self.encoder)
+        cdef AMF_RESULT res = get_factory().pVtbl.CreateComponent(factory, self.context, amf_codec, &self.encoder)
         PyMem_Free(amf_codec)
         log(f"amf_encoder_init() CreateComponent()={res}")
         self.check(res, f"AMF {self.encoding!r} encoder creation")
@@ -590,11 +519,10 @@ cdef class Encoder:
 
         cdef AMF_RESULT res = self.encoder.pVtbl.SubmitInput(self.encoder, <AMFData*> self.surface)
         if res == AMF_INPUT_FULL:
-            # wait!
-            pass
+            raise RuntimeError("AMF encoder input is full!")
         self.check(res, "AMF submitting input to the encoder")
         cdef AMFData* data = NULL
-        for i in range(100):
+        for i in range(200):
             res = self.encoder.pVtbl.QueryOutput(self.encoder, &data)
             log(f"QueryOutput()={res}, data=%#x", <uintptr_t> data)
             if res == 0:
@@ -602,7 +530,7 @@ cdef class Encoder:
             if res == AMF_EOF:
                 return b""
             if res == AMF_REPEAT:
-                time.sleep(0.001)
+                sleep(0.001)
                 continue
             self.check(res, "AMF query output")
         assert data
@@ -631,12 +559,13 @@ cdef class Encoder:
             data.pVtbl.Release(data)
 
     def flush(self, unsigned long frame_no) -> None:
-        cdef AMF_RESULT res = self.encoder.pVtbl.Drain(self.encoder)
-        if res == AMF_INPUT_FULL:
-            # wait!
-            pass
-        else:
-            self.check(res, "AMF encoder flush")
+        cdef AMF_RESULT res
+        for _ in range(200):
+            res = self.encoder.pVtbl.Drain(self.encoder)
+            if res != AMF_INPUT_FULL:
+                break
+            sleep(0.001)
+        self.check(res, "AMF encoder flush")
 
     cdef get_data_info(self, AMFData *data):
         assert data

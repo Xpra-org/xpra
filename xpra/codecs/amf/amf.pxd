@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from libc.stddef cimport wchar_t
-from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, int64_t
+from libc.stdint cimport uint8_t, uint16_t, uint32_t, int32_t, int64_t, uint64_t
 
 ctypedef void *amf_handle
 ctypedef long amf_long
@@ -18,6 +18,14 @@ ctypedef int64_t amf_pts
 ctypedef size_t amf_size
 ctypedef void* AMFDataAllocatorCB
 ctypedef void* AMFComponentOptimizationCallback
+
+
+cdef extern from "Python.h":
+    object PyUnicode_FromWideChar(wchar_t *w, Py_ssize_t size)
+
+
+cdef extern from "string.h":
+    size_t wcslen(const wchar_t *str)
 
 
 cdef extern from "stdarg.h":
@@ -808,20 +816,3 @@ cdef extern from "components/VideoEncoderAV1.h":
         AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_ONLY
         AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_1080P_CODED_1082
         AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS
-
-
-cdef inline set_guid(AMFGuid *guid,
-                     amf_uint32 _data1, amf_uint16 _data2, amf_uint16 _data3,
-                     amf_uint8 _data41, amf_uint8 _data42, amf_uint8 _data43, amf_uint8 _data44,
-                     amf_uint8 _data45, amf_uint8 _data46, amf_uint8 _data47, amf_uint8 _data48):
-    guid.data1 = _data1
-    guid.data2 = _data2
-    guid.data3 = _data3
-    guid.data41 = _data41
-    guid.data42 = _data42
-    guid.data43 = _data43
-    guid.data44 = _data44
-    guid.data45 = _data45
-    guid.data46 = _data46
-    guid.data47 = _data47
-    guid.data48 = _data48
