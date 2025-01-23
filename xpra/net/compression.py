@@ -88,7 +88,7 @@ def init_none() -> Compression:
     return Compression("none", "0", nocompress, nodecompress)
 
 
-def init_compressors(*names) -> None:
+def init_compressors(*names: str) -> None:
     for x in names:
         assert x not in ("compressors", "all"), "attempted to recurse!"
         if not envbool("XPRA_" + x.upper(), True):
@@ -138,7 +138,7 @@ def get_enabled_compressors(order=TRY_COMPRESSORS) -> Sequence[str]:
     return tuple(x for x in order if x in COMPRESSION)
 
 
-def get_compressor(name) -> Callable:
+def get_compressor(name: str) -> Callable:
     c = COMPRESSION.get(name)
     if c is not None:
         return c.compress
@@ -233,7 +233,7 @@ class InvalidCompressionException(Exception):
     pass
 
 
-def get_compression_type(level) -> str:
+def get_compression_type(level: int) -> str:
     from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG
     if level & LZ4_FLAG:
         return "lz4"

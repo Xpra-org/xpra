@@ -69,7 +69,7 @@ def init_none() -> PacketEncoder:
     return PacketEncoder("none", FLAGS_NOHEADER, "0", none_encode, none_decode)
 
 
-def init_encoders(*names) -> None:
+def init_encoders(*names: str) -> None:
     for x in names:
         if x not in TRY_ENCODERS:
             logger = Logger("network", "protocol")
