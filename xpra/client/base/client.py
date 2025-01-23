@@ -1152,6 +1152,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.completed_startup = packet
 
     def _process_gibberish(self, packet: PacketType) -> None:
+        log.enable_debug()
         log("process_gibberish(%s)", Ellipsizer(packet))
         message, bdata = packet[1:3]
         from xpra.net.socket_util import guess_packet_type  # pylint: disable=import-outside-toplevel
@@ -1177,12 +1178,12 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         else:
             parts = message.split(" read buffer=", 1)
             netlog.error(" received uninterpretable nonsense:")
-            netlog.error(f" {parts[0]}")
-            if len(parts) == 2:
-                text = bytestostr(parts[1])
-                netlog.error(" %s", text)
-                show_as_text = not data.startswith(text)
-            netlog.error(" not from an xpra server?")
+            if not show_as_text:
+                netlog.error(f" {parts[0]}")
+                if len(parts) == 2:
+                    text = bytestostr(parts[1])
+                    netlog.error(" %s", text)
+                    show_as_text = not data.startswith(text)
         if data.strip("\n\r \0"):
             if show_as_text:
                 if data.find("\n") >= 0:
@@ -1190,7 +1191,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                     for x in data.split("\n"):
                         netlog.error("  %r", x.split("\0")[0])
                 else:
-                    netlog.error(f" data: {data!r}")
+                    netlog.error(f" {data!r}")
             else:
                 netlog.error(f" packet no {pcount} data: {repr_ellipsized(data)}")
         self.quit(exit_code)
