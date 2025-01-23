@@ -15,13 +15,13 @@ FLAGS_BENCODE = 0x0  # assume bencode if not other flag is set
 FLAGS_RENCODE = 0x1
 FLAGS_YAML = 0x4
 FLAGS_RENCODEPLUS = 0x10
+
 # these flags can actually be combined with the encoders above:
 FLAGS_FLUSH = 0x8
 FLAGS_CIPHER = 0x2
 
 # compression flags are carried in the "level" field,
 # the low bits contain the compression level, the high bits the compression algo:
-ZLIB_FLAG = 0x0  # assume zlib if no other compression flag is set
 LZ4_FLAG = 0x10
 # LZO_FLAG        = 0x20
 BROTLI_FLAG = 0x40

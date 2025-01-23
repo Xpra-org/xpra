@@ -5,22 +5,23 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-#pylint: disable=line-too-long
+# pylint: disable=line-too-long
 
 import unittest
 
 from xpra.net.protocol.header import (
     unpack_header, pack_header,
     FLAGS_BENCODE, FLAGS_RENCODE, FLAGS_CIPHER, FLAGS_YAML,
-    ZLIB_FLAG, LZ4_FLAG, BROTLI_FLAG,
-    )
+    LZ4_FLAG, BROTLI_FLAG,
+)
+
 
 class TestPacketHeader(unittest.TestCase):
 
     def test_roundtrip(self):
         print("hello")
         for encode_flag in (FLAGS_BENCODE, FLAGS_RENCODE, FLAGS_YAML):
-            for comp_flag in (ZLIB_FLAG, LZ4_FLAG, BROTLI_FLAG):
+            for comp_flag in (0, LZ4_FLAG, BROTLI_FLAG):
                 for cipher in (0, FLAGS_CIPHER):
                     for level in (0, 1, 10):
                         for index in (0, 1, 255):
@@ -41,8 +42,10 @@ class TestPacketHeader(unittest.TestCase):
                                     else:
                                         raise Exception("header unpacking should have failed for size %i" % i)
 
+
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
