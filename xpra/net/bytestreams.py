@@ -433,7 +433,7 @@ class SocketConnection(Connection):
                 info["fileno"] = fd
             #ie: self.local = ("192.168.1.7", "14500")
             log("do_get_socket_info(%s) fd=%s, local=%s", s, fd, self.local)
-            if self.local and len(self.local)==2:
+            if self.local and len(self.local)==2 and FULL_INFO > 1:
                 from xpra.net.net_util import get_interface
                 iface = get_interface(self.local[0])
                 #ie: iface = "eth0"
