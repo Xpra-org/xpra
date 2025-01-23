@@ -97,9 +97,18 @@ def svg_to_png(filename:str, icondata, w:int=128, h:int=128) -> Optional[bytes]:
         img = ImageSurface(FORMAT_ARGB32, w, h)
         ctx = Context(img)
         handle = Rsvg.Handle.new_from_data(data=icondata)
-        dim = handle.get_dimensions()
-        ctx.scale(w/dim.width, h/dim.height)
-        handle.render_cairo(ctx)
+        if hasattr(handle, "render_document"):
+            # Rsvg version 2.46 and later:
+            rect = rsvg.Rectangle()
+            rect.x = rect.y = 0
+            rect.width = w
+            rect.height = h
+            if not handle.render_document(ctx, rect):
+                raise RuntimeError(f"{handle}.render_document failed")
+        else:
+            dim = handle.get_dimensions()
+            ctx.scale(w/dim.width, h/dim.height)
+            handle.render_cairo(ctx)
         del handle
         img.flush()
         buf = BytesIO()
