@@ -52,11 +52,18 @@ def init_rencodeplus() -> PacketEncoder:
 def init_yaml() -> PacketEncoder:
     import yaml
 
+    class TupleLoader(yaml.SafeLoader):
+        def construct_tuple(self, node):
+            # print(f"construct_tuple({loader}, {node!r})")
+            return tuple(yaml.Loader.construct_sequence(self, node))
+
+    TupleLoader.add_constructor("tag:yaml.org,2002:python/tuple", TupleLoader.construct_tuple)
+
     def yaml_encode(value) -> tuple[SizedBuffer, int]:
         return yaml.dump(value).encode("utf-8"), FLAGS_YAML
 
     def yaml_decode(value) -> Any:
-        return yaml.full_load(value.decode("utf-8"))
+        return yaml.load(value.decode("utf-8"), Loader=TupleLoader)
 
     return PacketEncoder("yaml", FLAGS_YAML, yaml.__version__, yaml_encode, yaml_decode)
 
