@@ -8,7 +8,8 @@ from typing import Dict, List, Tuple, Callable
 from gi.repository import GObject
 
 from xpra.util import WORKSPACE_UNSET, WORKSPACE_ALL, first_time
-from xpra.x11.models.core import CoreX11WindowModel, xswallow, Above, RESTACKING_STR
+from xpra.gtk_common.error import xsync, xlog
+from xpra.x11.models.core import CoreX11WindowModel, Above, RESTACKING_STR
 from xpra.x11.bindings.window import X11WindowBindings, constants      #@UnresolvedImport
 from xpra.server.window.content_guesser import guess_content_type, get_content_type_properties
 from xpra.server.background_worker import add_work_item
@@ -265,7 +266,7 @@ class BaseWindowModel(CoreX11WindowModel):
             workspacelog("move_to_workspace(%s) unchanged", workspacestr(workspace))
             return
         workspacelog("move_to_workspace(%s) current=%s", workspacestr(workspace), workspacestr(current))
-        with xswallow:
+        with xlog:
             if workspace==WORKSPACE_UNSET:
                 workspacelog("removing _NET_WM_DESKTOP property from window %#x", self.xid)
                 self.prop_del("_NET_WM_DESKTOP")
@@ -281,13 +282,13 @@ class BaseWindowModel(CoreX11WindowModel):
     def _sync_state(self, *_args) -> None:
         state = self.get_property("state")
         metalog("sync_state: setting _NET_WM_STATE=%s on %#x", state, self.xid)
-        with xswallow:
+        with xlog:
             self.prop_set("_NET_WM_STATE", ["atom"], state)
 
     def _sync_iconic(self, *_args) -> None:
         def set_state(state):
             log("_handle_iconic_update: set_state(%s)", state)
-            with xswallow:
+            with xlog:
                 self.prop_set("WM_STATE", "state", state)
 
         if self.get("iconic"):
@@ -360,7 +361,7 @@ class BaseWindowModel(CoreX11WindowModel):
         self._updateprop("opacity", opacity)
 
     def _handle_wm_hints_change(self) -> None:
-        with xswallow:
+        with xlog:
             wm_hints = X11Window.getWMHints(self.xid)
         metalog("getWMHints(%#x)=%s", self.xid, wm_hints)
         if wm_hints is None:
