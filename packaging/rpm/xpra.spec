@@ -60,7 +60,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.2.3
+Version:			6.2.4
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -915,6 +915,16 @@ fi
 
 
 %changelog
+- Thu Jan 23 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
+- Platforms, build and packaging:
+   MS Windows custom build arguments
+   EXE manigests optional
+   EXE installer must overwrite previous version, all libraries
+   `rpmspec` warnings
+   `dev-env` subcommand errors on Debian systems
+- Network:
+   scary warnings when RDP clients attempt to connect
+
 * Tue Jan 14 2025 Antoine Martin <antoine@xpra.org> 6.2.3-10
 - Platforms, build and packaging:
    pillow 11.1.0

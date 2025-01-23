@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.2.4] 2025-01-23
+* Platforms, build and packaging:
+    * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
+    * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
+    * [EXE installer must overwrite previous version](https://github.com/Xpra-org/xpra/commit/8c4ec6b645f523a0989f4f565cf0654fa2b7906f), [all libraries](https://github.com/Xpra-org/xpra/commit/6c5234d4fa3bb4b92cd9d01cee4abc08db5fc5f1)
+    * [`rpmspec` warnings](https://github.com/Xpra-org/xpra/commit/3bcf48f9dfb092e775cfa9e24c208dbd050774a6)
+    * [`dev-env` subcommand errors on Debian systems](https://github.com/Xpra-org/xpra/commit/a80b4e5ba00940a5fbce0b647e7d4d5ad4b3e3a8)
+* Network:
+    * [scary warnings when RDP clients attempt to connect](https://github.com/Xpra-org/xpra/commit/5f6b4454a59952822362f204dc75f84ac9f17a23)
+
 ## [6.2.3] 2025-01-14
 * Platforms, build and packaging:
     * [pillow 11.1.0](https://github.com/Xpra-org/xpra/commit/e6891f9dffa6f6ab8cd2b78418870350a3d0d3f8)
