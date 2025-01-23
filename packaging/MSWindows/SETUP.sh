@@ -26,7 +26,7 @@ $PACMAN ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN base-devel ${XPKG}yasm ${XPKG}nasm gcc groff subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
 #python extensions:
-for x in cryptography cffi pycparser numpy pillow appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos coverage psutil oauthlib pysocks pyopenssl importlib_resources pylsqpack aioquic service_identity pyvda watchdog; do
+for x in cryptography cffi pycparser numpy pillow appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos coverage psutil oauthlib pysocks pyopenssl importlib_resources pylsqpack aioquic service_identity pyvda watchdog yaml; do
 	$PACMAN ${XPKG}python-${x}
 done
 #not yet available for aarch64?:

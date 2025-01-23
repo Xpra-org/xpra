@@ -119,6 +119,8 @@ Recommends: ${qrcode:Depends}
         ,python3-cups
 Suggests: openssh-server
         ,libwayland-client0
+# yaml connections:
+        ,python3-yaml
 Description: tool to detach/reattach running X programs,
  this is the common components for all xpra sub-packages
 

@@ -163,6 +163,7 @@ Recommends:			%{python3}-netifaces
 Recommends:			%{python3}-dbus
 Recommends:			%{python3}-dns
 Recommends:			%{python3}-paramiko
+Suggests:			%{python3}-pyyaml
 Suggests:			%{python3}-kerberos
 Suggests:			%{python3}-gssapi
 Suggests:			%{python3}-ldap

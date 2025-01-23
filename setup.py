@@ -267,6 +267,7 @@ crypto_ENABLED          = DEFAULT
 mdns_ENABLED            = DEFAULT
 websockets_ENABLED      = DEFAULT
 websockets_browser_cookie_ENABLED = DEFAULT
+yaml_ENABLED            = DEFAULT
 
 codecs_ENABLED          = DEFAULT
 encoders_ENABLED        = codecs_ENABLED
@@ -2141,6 +2142,9 @@ if WIN32:
     if shadow_ENABLED:
         external_includes.append("watchdog")
 
+    if yaml_ENABLED:
+        external_includes.append("yaml")
+
     external_includes.append("cairo")
     external_includes.append("certifi")
 
@@ -2396,6 +2400,8 @@ else:
         # pyobjc needs email.parser
         external_includes += ["email", "uu", "urllib", "objc", "cups", "six"]
         external_includes += ["kerberos", "future", "pyu2f", "paramiko", "nacl"]
+        if yaml_ENABLED:
+            external_includes.append("yaml")
         # OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
         add_packages("xpra.platform.darwin")
         remove_packages("xpra.platform.win32", "xpra.platform.posix")
