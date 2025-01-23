@@ -20,11 +20,11 @@ from xpra.util.env import envbool
 # all the encoders we know about:
 ALL_ENCODERS: Sequence[str] = ("rencodeplus", "rencode", "bencode", "yaml", "none")
 
-VALID_ENCODERS: Sequence[str] = ("rencodeplus", "none")
+VALID_ENCODERS: Sequence[str] = ("rencodeplus", "yaml", "none")
 # the encoders we may have, in the best compatibility order
-TRY_ENCODERS: Sequence[str] = ("rencodeplus", "none")
+TRY_ENCODERS: Sequence[str] = ("rencodeplus", "yaml", "none")
 # order for performance:
-PERFORMANCE_ORDER: Sequence[str] = ("rencodeplus",)
+PERFORMANCE_ORDER: Sequence[str] = ("rencodeplus", "yaml", )
 
 
 @dataclass
@@ -41,12 +41,24 @@ ENCODERS: dict[str, PacketEncoder] = {}
 
 def init_rencodeplus() -> PacketEncoder:
     from xpra.net.rencodeplus import rencodeplus  # type: ignore[attr-defined]
-    rencodeplus_dumps = rencodeplus.dumps  # @UndefinedVariable
+    rencodeplus_dumps = rencodeplus.dumps
 
     def do_rencodeplus(value) -> tuple[SizedBuffer, int]:
         return rencodeplus_dumps(value), FLAGS_RENCODEPLUS
 
     return PacketEncoder("rencodeplus", FLAGS_RENCODEPLUS, rencodeplus.__version__, do_rencodeplus, rencodeplus.loads)
+
+
+def init_yaml() -> PacketEncoder:
+    import yaml
+
+    def yaml_encode(value) -> tuple[SizedBuffer, int]:
+        return yaml.dump(value).encode("utf-8"), FLAGS_YAML
+
+    def yaml_decode(value) -> Any:
+        return yaml.full_load(value.decode("utf-8"))
+
+    return PacketEncoder("yaml", FLAGS_YAML, yaml.__version__, yaml_encode, yaml_decode)
 
 
 def b(value) -> bytes:
