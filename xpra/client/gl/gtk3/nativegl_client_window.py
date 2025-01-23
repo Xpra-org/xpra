@@ -7,7 +7,6 @@ import sys
 from gi.repository import GObject               #@UnresolvedImport @UnusedImport
 
 from xpra.client.gl.gtk3.gl_client_window import GLClientWindowBase
-from xpra.client.gl.gtk3.gl_drawing_area import GLDrawingArea
 from xpra.platform.gl_context import GLContext
 if not GLContext:
     raise ImportError("no OpenGL context implementation for %s" % sys.platform)
@@ -25,6 +24,7 @@ class GLClientWindow(GLClientWindowBase):
     __gsignals__ = GLClientWindowBase.__common_gsignals__
 
     def get_backing_class(self):
+        from xpra.client.gl.gtk3.gl_drawing_area import GLDrawingArea
         return GLDrawingArea
 
 
