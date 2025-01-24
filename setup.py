@@ -2725,12 +2725,20 @@ if cuda_kernels_ENABLED:
 if cuda_kernels_ENABLED or is_DEB():
     add_data_files(CUDA_BIN, ["fs/share/xpra/cuda/README.md"])
 
+cuda = "cuda"
+if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED or nvdec_ENABLED:
+    # try to find a platform specific pkg-config file for cuda:
+    cuda_arch = f"cuda-{ARCH}"
+    for pcdir in os.environ.get("PKG_CONFIG_PATH", "/usr/lib/pkgconfig:/usr/lib64/pkgconfig").split(":"):
+        if os.path.exists(f"{pcdir}/cuda-{ARCH}.pc"):
+            cuda = cuda_arch
+
 toggle_packages(nvfbc_ENABLED, "xpra.codecs.nvidia.nvfbc")
 # platform: ie: `linux2` -> `linux`, `win32` -> `win`
 fbcplatform = sys.platform.rstrip("0123456789")
 tace(nvfbc_ENABLED, f"xpra.codecs.nvidia.nvfbc.capture_{fbcplatform}", "nvfbc", language="c++")
 tace(nvenc_ENABLED, "xpra.codecs.nvidia.nvenc.encoder", "nvenc")
-tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", "nvdec,cuda")
+tace(nvdec_ENABLED, "xpra.codecs.nvidia.nvdec.decoder", f"nvdec,{cuda}")
 
 toggle_packages(argb_ENABLED, "xpra.codecs.argb")
 toggle_packages(argb_encoder_ENABLED, "xpra.codecs.argb.encoder")
@@ -2755,13 +2763,6 @@ toggle_packages(spng_decoder_ENABLED or spng_encoder_ENABLED, "xpra.codecs.spng"
 tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", "spng")
 tace(spng_encoder_ENABLED, "xpra.codecs.spng.encoder", "spng")
 toggle_packages(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg")
-cuda = "cuda"
-if nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED:
-    # try to find a platform specific pkg-config file for cuda:
-    cuda_arch = f"cuda-{ARCH}"
-    for pcdir in os.environ.get("PKG_CONFIG_PATH", "/usr/lib/pkgconfig:/usr/lib64/pkgconfig").split(":"):
-        if os.path.exists(f"{pcdir}/cuda-{ARCH}.pc"):
-            cuda = cuda_arch
 tace(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.common", f"{cuda},nvjpeg")
 tace(nvjpeg_encoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.encoder", f"{cuda},nvjpeg")
 tace(nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.decoder",f"{cuda},nvjpeg")
