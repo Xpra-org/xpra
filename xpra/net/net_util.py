@@ -361,11 +361,6 @@ def get_net_config() -> Dict[str,Any]:
     return config
 
 
-SSL_CONV : Dict[str, Tuple[str,Callable]] = {
-    ""           : ("version-str", str),
-    "_INFO"      : ("version", parse_version),
-    "_NUMBER"    : ("version-number", int),
-    }
 def get_ssl_info(show_constants=False) -> Dict[str,Any]:
     try:
         import ssl  # pylint: disable=import-outside-toplevel
@@ -392,12 +387,14 @@ def get_ssl_info(show_constants=False) -> Dict[str,Any]:
         v = getattr(ssl, k, None)
         if v is not None:
             info[name] = v
-    for k, idef in SSL_CONV.items():
-        v = getattr(ssl, f"OPENSSL_VERSION{k}", None)
-        if v is not None:
-            name, conv = idef
-            sslinfo = info.setdefault("openssl", {})
-            sslinfo[name] = conv(v)
+
+    vnum = getattr(ssl, "OPENSSL_VERSION_NUMBER", 0)
+    if vnum:
+        vparts = []
+        for i in range(4):
+            vparts.append((vnum & 0xff) >> 4)
+            vnum = vnum >> 8
+        info["openssl-version"] = tuple(reversed(vparts))[:FULL_INFO+1]
     return info
 
 
