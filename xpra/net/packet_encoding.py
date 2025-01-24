@@ -54,7 +54,6 @@ def init_yaml() -> PacketEncoder:
 
     class TupleLoader(yaml.SafeLoader):
         def construct_tuple(self, node):
-            # print(f"construct_tuple({loader}, {node!r})")
             return tuple(yaml.Loader.construct_sequence(self, node))
 
     TupleLoader.add_constructor("tag:yaml.org,2002:python/tuple", TupleLoader.construct_tuple)
