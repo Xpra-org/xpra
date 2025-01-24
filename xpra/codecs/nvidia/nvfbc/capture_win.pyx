@@ -347,7 +347,7 @@ cdef extern from "NvFBC/nvFBCCuda.h":
         NVFBCCUDARELEASE NvFBCCudaRelease
 
 
-ERRORS = {
+ERRORS: Dict[int, str] = {
     NVFBC_SUCCESS                       : "SUCCESS",
     NVFBC_ERROR_GENERIC                 : "GENERIC",
     NVFBC_ERROR_INVALID_PARAM           : "INVALID_PARAM",
@@ -384,6 +384,7 @@ class NvFBCException(Exception):
         self.code = code
         msg = "%s - returned %s" % (fn, ERRORS.get(code, code))
         super().__init__(msg)
+
 
 cdef inline raiseNvFBC(NVFBCRESULT ret, msg):
     if ret!=0:
@@ -423,17 +424,20 @@ def init_nvfbc_library():
     raiseNvFBC(res, "NvFBC_GetSDKVersion")
     return NvFBC
 
-def unload_library():
+
+def unload_library() -> None:
     global NvFBC
     NvFBC = None
 
-def set_enabled(enabled : bool=True):
+
+def set_enabled(enabled : bool=True) -> None:
     lib = init_nvfbc_library()
     r = lib.NvFBC_Enable(int(enabled))
     raiseNvFBC(r, "NvFBC_Enable")
 
 
-def get_status(int adapter=0):
+
+def get_status(int adapter=0) -> Dict[str, Any]:
     global NvFBC
     assert NvFBC
     cdef NvFBCStatusEx status
@@ -451,11 +455,12 @@ def get_status(int adapter=0):
         "support-diffmap"       : bool(status.bSupportConfigurableDiffMap),
         "version"               : int(status.dwNvFBCVersion),
         "adapter"               : int(status.dwAdapterIdx),
-        }
+    }
     log("get_status()=%s", s)
     return s
 
-def check_status():
+
+def check_status() -> None:
     status = get_status()
     if not status.get("capture-possible"):
         try:
@@ -474,14 +479,16 @@ def check_status():
     if not status.get("can-create-now"):
         raise TransientCodecException("NvFBC status error: cannot create now")
 
-def set_global_flags(DWORD flags):
+
+def set_global_flags(DWORD flags) -> None:
     global NvFBC
     assert NvFBC
     cdef NVFBCRESULT res = NvFBC.NvFBC_SetGlobalFlags(flags)
     log("NvFBC_SetGlobalFlags(%i)=%i", flags, res)
     raiseNvFBC(res, "NvFBC_SetGlobalFlags")
 
-def create_context(int width=-1, int height=-1, interface_type=NVFBC_TO_SYS):
+
+def create_context(int width=-1, int height=-1, interface_type=NVFBC_TO_SYS) -> Dict[str, Any]:
     log("create_context(%i, %i, %s)", width, height, {NVFBC_TO_SYS : "SYS", NVFBC_SHARED_CUDA : "CUDA"}.get(interface_type))
     check_status()
     cdef NvFBCCreateParams create
@@ -520,6 +527,7 @@ def create_context(int width=-1, int height=-1, interface_type=NVFBC_TO_SYS):
     log("NvFBC_CreateEx: %s", info)
     return info
 
+
 cdef dict get_frame_grab_info(NvFBCFrameGrabInfo *grab_info):
     return {
         "width"             : int(grab_info.dwWidth),
@@ -536,11 +544,14 @@ cdef dict get_frame_grab_info(NvFBCFrameGrabInfo *grab_info):
         "wait-mode"         : int(grab_info.dwWaitModeUsed),
         }
 
-def get_version():
+
+def get_version() -> Sequence[int]:
     return (version, )
 
-def get_type():
+
+def get_type() -> str:
     return "nvfbc"
+
 
 def get_info() -> Dict[str,Any]:
     info = {
@@ -557,7 +568,7 @@ def get_info() -> Dict[str,Any]:
     return info
 
 
-SYS_PIXEL_FORMAT_CONST = {
+SYS_PIXEL_FORMAT_CONST: Dict[str, int] = {
     "BGRX"      : NVFBC_TOSYS_ARGB,
     "RGB"       : NVFBC_TOSYS_RGB,
     #"YUV420P"   : NVFBC_TOSYS_YYYYUV420p,
@@ -565,7 +576,7 @@ SYS_PIXEL_FORMAT_CONST = {
     #NVFBC_TOSYS_XOR,
     #"YUV444P"   : NVFBC_TOSYS_YUV444p,
     "r210"      : NVFBC_TOSYS_ARGB10,
-    }
+}
 
 
 cdef class NvFBC_SysCapture:
@@ -578,7 +589,7 @@ cdef class NvFBC_SysCapture:
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1, pixel_format=DEFAULT_PIXEL_FORMAT):
+    def init_context(self, int width=-1, int height=-1, pixel_format=DEFAULT_PIXEL_FORMAT) -> None:
         log("init_context(%i, %i, %s)", width, height, pixel_format)
         global SYS_PIXEL_FORMAT_CONST
         if pixel_format not in SYS_PIXEL_FORMAT_CONST:
@@ -608,7 +619,7 @@ cdef class NvFBC_SysCapture:
         info["pixel-format"] = self.pixel_format
         return info
 
-    def get_type(self):
+    def get_type(self) -> str:
         return  "nvfbc-sys"
 
     def __repr__(self):
@@ -617,7 +628,7 @@ cdef class NvFBC_SysCapture:
     def __dealloc__(self):
         self.clean()
 
-    def refresh(self):
+    def refresh(self) -> bool:
         assert self.context
         cdef double start = monotonic()
         memset(&self.grab_info, 0, sizeof(NvFBCFrameGrabInfo))
@@ -643,7 +654,7 @@ cdef class NvFBC_SysCapture:
         log("NvFBCToSysGrabFrame() info=%s", get_frame_grab_info(&self.grab_info))
         return True
 
-    def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
+    def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0) -> ImageWrapper:
         assert self.context
         log("nvfbc sys get_image%s", (x, y, width, height))
         if width==0:
@@ -710,7 +721,7 @@ cdef class NvFBC_CUDACapture:
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1, pixel_format="BGRX"):
+    def init_context(self, int width=-1, int height=-1, pixel_format="BGRX") -> None:
         log("init_context(%i, %i, %s)", width, height, pixel_format)
         if pixel_format not in ("BGRX", "r210"):
             raise ValueError(f"unsupported pixel format {pixel_format!r}")
@@ -751,7 +762,7 @@ cdef class NvFBC_CUDACapture:
         info["pixel-format"] = self.pixel_format
         return info
 
-    def get_type(self):
+    def get_type(self) -> str:
         return  "nvfbc-cuda"
 
     def __repr__(self):
@@ -760,10 +771,10 @@ cdef class NvFBC_CUDACapture:
     def __dealloc__(self):
         self.clean()
 
-    def refresh(self):
+    def refresh(self) -> bool:
         return True
 
-    def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
+    def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0) -> SharedCUDAImageWrapper:
         assert self.context
         log("nvfbc cuda get_image%s", (x, y, width, height))
         if width==0:
@@ -804,7 +815,7 @@ cdef class NvFBC_CUDACapture:
         image.buffer_size = self.max_buffer_size
         return image
 
-    def clean(self):
+    def clean(self) -> None:
         log("clean()")
         cuda_context = self.cuda_context
         self.cuda_context = None
@@ -826,19 +837,21 @@ cdef class NvFBC_CUDACapture:
 
 class SharedCUDAImageWrapper(CUDAImageWrapper):
 
-    def free_cuda_device_buffer(self):
-        #override so we only clear the reference,
-        #the buffer is going to be re-used so we cannot free it
+    def free_cuda_device_buffer(self) -> None:
+        # override so we only clear the reference,
+        # the buffer is going to be re-used so we cannot free it
         self.cuda_device_buffer = None
 
 
-def init_module():
+def init_module() -> None:
     log("nvfbc.init_module()")
     init_nvfbc_library()
 
-def cleanup_module():
+
+def cleanup_module() -> None:
     log("nvfbc.cleanup_module()")
     unload_library()
 
-def selftest(full=False):
+
+def selftest(full=False) -> None:
     pass

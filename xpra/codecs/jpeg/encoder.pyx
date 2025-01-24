@@ -244,8 +244,7 @@ cdef class Encoder:
         }
         return info
 
-    def compress_image(self, image: ImageWrapper, options=None) -> Tuple:
-        options = options or {}
+    def compress_image(self, image: ImageWrapper, options: typedict) -> Tuple:
         quality = options.get("quality", -1)
         if quality>0:
             self.quality = quality

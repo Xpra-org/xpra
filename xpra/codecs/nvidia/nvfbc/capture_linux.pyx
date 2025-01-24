@@ -498,7 +498,7 @@ cdef class NvFBC_SysCapture:
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1, pixel_format=SYS_PIXEL_FORMAT):
+    def init_context(self, int width=-1, int height=-1, pixel_format=SYS_PIXEL_FORMAT) -> None:
         log("init_context(%i, %i, %s)", width, height, pixel_format)
         global PIXEL_FORMAT_CONST, INIT_DONE
         assert INIT_DONE, "module not initialized"
@@ -625,7 +625,7 @@ cdef class NvFBC_CUDACapture:
 
     cdef object __weakref__
 
-    def init_context(self, int width=-1, int height=-1, pixel_format=CUDA_PIXEL_FORMAT):
+    def init_context(self, int width=-1, int height=-1, pixel_format=CUDA_PIXEL_FORMAT) -> None:
         log("init_context(%i, %i, %s)", width, height, pixel_format)
         self.images = WeakSet()
         self.frames = 0
@@ -673,7 +673,7 @@ cdef class NvFBC_CUDACapture:
     def __dealloc__(self):
         self.clean()
 
-    def refresh(self):
+    def refresh(self) -> bool:
         cdef double start = monotonic()
         memset(&self.grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
         memset(&self.grab, 0, sizeof(NVFBC_TOCUDA_GRAB_FRAME_PARAMS))
@@ -692,7 +692,7 @@ cdef class NvFBC_CUDACapture:
         log("NvFBCCudaGrabFrame: cuDevicePtr=%#x, info=%s, elapsed=%ims", <uintptr_t> self.cuDevicePtr, get_frame_grab_info(&self.grab_info), int((end-start)*1000))
         return bool(self.grab_info.bIsNewFrame)
 
-    def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0):
+    def get_image(self, unsigned int x=0, unsigned int y=0, unsigned int width=0, unsigned int height=0) -> CUDAImageWrapper:
         assert self.context
         log("nvfbc cuda get_image%s", (x, y, width, height))
         if width==0:
@@ -735,7 +735,7 @@ cdef class NvFBC_CUDACapture:
         self.images.add(image)
         return image
 
-    def clean(self):
+    def clean(self) -> None:
         cuda_context = self.cuda_context
         self.cuda_context = None
         cdef NVFBC_SESSION_HANDLE context = self.context
@@ -763,15 +763,17 @@ cdef class NvFBC_CUDACapture:
                 log("%s.pop() or detach()", cuda_context, exc_info=True)
 
 
-def init_module():
+def init_module() -> None:
     log("nvfbc.init_module()")
     init_nvfbc_library()
 
-def cleanup_module():
+
+def cleanup_module() -> None:
     log("nvfbc.cleanup_module()")
     unload_library()
 
-def selftest(full=False):
+
+def selftest(full=False) -> None:
     from xpra.codecs.nvidia.util import has_nvidia_hardware
     if not has_nvidia_hardware():
         raise ImportError("no nvidia GPU device found")

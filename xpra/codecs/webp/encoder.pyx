@@ -462,7 +462,7 @@ cdef class Encoder:
     def __init__(self):
         self.width = self.height = self.quality = self.frames = 0
 
-    def init_context(self, encoding: str, width : int, height : int, src_format: str, options: typedict):
+    def init_context(self, encoding: str, width : int, height : int, src_format: str, options: typedict) -> None:
         assert encoding=="webp", "invalid encoding: %s" % encoding
         assert src_format in get_input_colorspaces(encoding)
         self.width = width
@@ -485,7 +485,6 @@ cdef class Encoder:
         configure_encoder(&self.config, self.quality, self.speed, self.alpha)
         configure_image_hint(&self.config, self.content_type)
         validate_config(&self.config)
-
 
     def is_ready(self) -> bool:
         return self.width>0 and self.height>0

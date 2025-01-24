@@ -46,8 +46,7 @@ class Encoder:
         the raw pixels and the metadata that goes with it.
     """
 
-    def init_context(self, encoding: str, width: int, height: int, src_format: str, options=None) -> None:
-        options = typedict(options or {})
+    def init_context(self, encoding: str, width: int, height: int, src_format: str, options: typedict) -> None:
         self.encoding = encoding
         self.width = width
         self.height = height
@@ -121,7 +120,7 @@ class Encoder:
         self.time = 0
         self.first_frame_timestamp = 0
 
-    def compress_image(self, image: ImageWrapper, options=None) -> tuple[bytes, dict]:
+    def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         log("compress_image(%s, %s)", image, options)
         # pass the pixels as they are
         if image.get_planes() != ImageWrapper.PACKED:
