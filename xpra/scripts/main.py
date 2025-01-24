@@ -216,6 +216,7 @@ def configure_logging(options, mode) -> None:
     if mode in (
             "seamless", "desktop", "monitor", "expand",
             "shadow", "shadow-screen",
+            "encoder",
             "recover",
             "attach", "listen", "proxy",
             "version", "info", "id",
@@ -453,6 +454,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
     if mode in (
             "seamless", "desktop", "shadow", "shadow-screen", "expand",
             "upgrade", "upgrade-seamless", "upgrade-desktop",
+            "encoder",
     ) and not display_is_remote and options.daemon and use_systemd_run(options.systemd_run):
         # make sure we run via the same interpreter,
         # inject it into the command line if we have to:
@@ -522,6 +524,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
     if mode in (
             "seamless", "desktop", "shadow", "shadow-screen", "expand",
             "recover",
+            "encoder",
     ) or mode.startswith("upgrade") or mode.startswith("request-"):
         options.encodings = validated_encodings(options.encodings)
     try:
@@ -615,6 +618,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
             "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
             "upgrade", "upgrade-seamless", "upgrade-desktop",
             "proxy",
+            "encoder",
     ):
         return run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
     if mode in (
@@ -2302,6 +2306,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
     if mode in (
             "seamless", "desktop", "monitor", "expand",
             "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
+            "encoder",
     ):
         if OSX or WIN32:
             raise InitException(f"{mode} is not supported on this platform")
@@ -2338,9 +2343,10 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
             scaled_h = round(root_h / scaling_y)
             options.resize_display = f"{scaled_w}x{scaled_h}"
 
-    r = start_server_via_proxy(cmdline, error_cb, options, args, full_mode)
-    if isinstance(r, int):
-        return r
+    if mode != "encoder":
+        r = start_server_via_proxy(cmdline, error_cb, options, args, full_mode)
+        if isinstance(r, int):
+            return r
 
     try:
         from xpra import server

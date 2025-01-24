@@ -394,6 +394,11 @@ def make_expand_server(attrs: dict[str, str]):
     return ExpandServer(attrs)
 
 
+def make_encoder_server():
+    from xpra.server.encoder_server import EncoderServer
+    return EncoderServer()
+
+
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> bool:
     # check that we can access the X11 display:
     from xpra.log import Logger
@@ -629,6 +634,7 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mo
         "seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen",
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "proxy",
+        "encoder",
     )
     validate_encryption(opts)
     if opts.encoding == "help" or "help" in opts.encodings:
@@ -694,6 +700,7 @@ def _do_run_server(script_file: str, cmdline,
     upgrading = mode.startswith("upgrade")
     shadowing = mode.startswith("shadow")
     proxying = mode == "proxy"
+    encoder = mode == "encoder"
     use_display = parse_bool_or("use-display", opts.use_display)
     if shadowing or expanding:
         use_display = True
@@ -751,7 +758,7 @@ def _do_run_server(script_file: str, cmdline,
             if not shadowing and not upgrading and not use_display:
                 display_name_check(display_name)
         else:
-            if proxying:
+            if proxying or encoder:
                 # find a free display number:
                 dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
                 all_displays = dotxpra.sockets()
@@ -796,7 +803,7 @@ def _do_run_server(script_file: str, cmdline,
             else:
                 warn(f"server for {display_name} is not exiting")
 
-    if not (shadowing or proxying or upgrading) and opts.exit_with_children and not has_child_arg:
+    if not (shadowing or proxying or upgrading or encoder) and opts.exit_with_children and not has_child_arg:
         error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
 
     # Generate the script text now, because os.getcwd() will
@@ -864,7 +871,7 @@ def _do_run_server(script_file: str, cmdline,
             del e
 
     clobber = int(upgrading) * CLOBBER_UPGRADE | int(use_display or 0) * CLOBBER_USE_DISPLAY
-    start_vfb: bool = not (shadowing or proxying or clobber or expanding)
+    start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder)
     xauth_data: str = get_hex_uuid() if start_vfb else ""
 
     # if pam is present, try to create a new session:
@@ -929,7 +936,9 @@ def _do_run_server(script_file: str, cmdline,
         # with the value supplied by the user:
         protected_env["XDG_RUNTIME_DIR"] = xrd
 
-    xvfb_cmd = xvfb_command(opts.xvfb, opts.pixel_depth, opts.dpi)
+    xvfb_cmd: list[str] = []
+    if start_vfb:
+        xvfb_cmd = xvfb_command(opts.xvfb, opts.pixel_depth, opts.dpi)
 
     sanitize_env()
     if not shadowing:
@@ -1052,7 +1061,9 @@ def _do_run_server(script_file: str, cmdline,
             commands += list(getattr(opts, start_prop.replace("-", "_")))
         if not commands:
             opts.start.append("xpra desktop-greeter")
-    if POSIX and configure_imsettings_env(opts.input_method) == "ibus" and not (upgrading or shadowing or proxying):
+    if POSIX and not (
+            upgrading or shadowing or proxying or encoder
+    ) and configure_imsettings_env(opts.input_method) == "ibus":
         # start ibus-daemon unless already specified in 'start':
         if IBUS_DAEMON_COMMAND and not (any(x.find("ibus-daemon") >= 0 for x in opts.start) or any(
             x.find("ibus-daemon") >= 0 for x in opts.start_late)
@@ -1129,7 +1140,7 @@ def _do_run_server(script_file: str, cmdline,
             log(f"using XAUTHORITY file {xauthority!r}")
         os.environ["XAUTHORITY"] = xauthority
         # resolve use-display='auto':
-        if (use_display is None or upgrading) and not proxying:
+        if (use_display is None or upgrading) and not proxying and not encoder:
             # figure out if we have to start the vfb or not
             # bail out if we need a display that is not running
             if not display_name:
@@ -1171,7 +1182,7 @@ def _do_run_server(script_file: str, cmdline,
     if POSIX and not OSX:
         from xpra.server.util import has_uinput, UINPUT_UUID_LEN
         uinput_uuid = ""
-        use_uinput = not (shadowing or proxying) and opts.input_devices.lower() in ("uinput", "auto") and has_uinput()
+        use_uinput = not (shadowing or proxying or encoder) and opts.input_devices.lower() in ("uinput", "auto") and has_uinput()
         if start_vfb:
             progress(40, "starting a virtual display")
             from xpra.x11.vfb_util import start_Xvfb, parse_resolutions, xauth_add
@@ -1335,7 +1346,7 @@ def _do_run_server(script_file: str, cmdline,
         if dbus_env:
             os.environ.update(dbus_env)
 
-    if SSH_AGENT_DISPATCH and not (shadowing or proxying) and opts.ssh.lower() not in FALSE_OPTIONS:
+    if SSH_AGENT_DISPATCH and not (shadowing or proxying or encoder) and opts.ssh.lower() not in FALSE_OPTIONS:
         progress(50, "setup ssh agent forwarding")
         try:
             from xpra.net.ssh.agent import setup_ssh_auth_sock
@@ -1346,7 +1357,7 @@ def _do_run_server(script_file: str, cmdline,
             log.error("Error setting up ssh agent forwarding", exc_info=True)
             progress(50, f"error setting up ssh agent forwarding: {e}")
 
-    if not proxying:
+    if not (proxying or encoder):
         if POSIX and not OSX:
             no_gtk()
             if starting or starting_desktop or starting_monitor:
@@ -1389,7 +1400,7 @@ def _do_run_server(script_file: str, cmdline,
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()
 
-    if not (proxying or shadowing) and POSIX and not OSX:
+    if not (proxying or shadowing or encoder) and POSIX and not OSX:
         if not check_xvfb():
             return 1
         from xpra.x11.gtk.display_source import init_gdk_display_source
@@ -1422,6 +1433,8 @@ def _do_run_server(script_file: str, cmdline,
         app = make_proxy_server()
     elif expanding:
         app = make_expand_server(mode_attrs)
+    elif encoder:
+        app = make_encoder_server()
     else:
         if starting or upgrading_seamless:
             app = make_seamless_server(clobber)
@@ -1456,7 +1469,7 @@ def _do_run_server(script_file: str, cmdline,
         init_local_sockets()
         app.init_sockets(sockets)
         app.init_dbus(dbus_pid, dbus_env)
-        if not shadowing and not proxying and not expanding:
+        if not (shadowing or proxying or expanding or encoder):
             app.init_display_pid(xvfb_pid)
             app.save_pid()
         app.original_desktop_display = desktop_display

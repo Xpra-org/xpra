@@ -250,7 +250,7 @@ class ServerCore(ControlHandler):
         self._default_packet_handlers: dict[str, Callable] = {}
 
     def get_server_mode(self) -> str:
-        return "core"
+        return self.session_type
 
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)
