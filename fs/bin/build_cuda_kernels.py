@@ -92,7 +92,7 @@ def get_nvcc_args(nvcc: str, nvcc_version=(0, 0)) -> list[str]:
     nvcc_cmd = [
         nvcc,
         "-fatbin",
-        "-std=c++11",
+        "-std=c++14",
         "-arch=all",
         "-Wno-deprecated-gpu-targets",
         "-Xnvlink",
