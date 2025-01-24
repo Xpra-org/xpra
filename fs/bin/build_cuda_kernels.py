@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
+import shlex
 import sys
 import glob
 import shutil
@@ -134,7 +135,8 @@ def main(args) -> int:
         if c != 0:
             nvcc_errors.append(c)
             print(f"Error: failed to compile CUDA kernel {kernel}")
-            print(f" using command: {nvcc_cmd}")
+            print(" using command:")
+            print(f" {shlex.join(nvcc_cmd)}")
             print(stdout or "")
             print(stderr or "")
 
