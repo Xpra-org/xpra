@@ -526,7 +526,7 @@ cdef class Decoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding: str, width: int, height: int, colorspace: str) -> None:
+    def init_context(self, encoding: str, width: int, height: int, colorspace: str, options: typedict) -> None:
         log("nvdec.Decoder.init_context%s", (encoding, width, height, colorspace))
         if encoding not in CODEC_MAP:
             raise ValueError(f"invalid encoding {encoding} for nvdec")
@@ -570,7 +570,7 @@ cdef class Decoder:
     cdef sequence_callback(self, CUVIDEOFORMAT *vf):
         encoding = CODEC_NAMES.get(vf.codec, vf.codec)
         log("sequence_callback codec=%s", encoding)
-    #print(" frame_rate=%s", vf.frame_rate.)
+        #log(" frame_rate=%s", vf.frame_rate)
         log(" progressive_sequence=%s", vf.progressive_sequence)
         log(" bit_depth_luma_minus8=%s, bit_depth_chroma_minus8=%s",
             vf.bit_depth_luma_minus8, vf.bit_depth_chroma_minus8)
