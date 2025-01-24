@@ -488,7 +488,7 @@ cdef class Decoder:
 
     cdef object __weakref__
 
-    def init_context(self, encoding, width, height, colorspace):
+    def init_context(self, encoding, width, height, colorspace, options=None):
         log("nvdec.Decoder.init_context%s", (encoding, width, height, colorspace))
         if encoding not in CODEC_MAP:
             raise ValueError(f"invalid encoding {encoding} for nvdec")
