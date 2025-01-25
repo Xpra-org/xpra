@@ -111,6 +111,6 @@ cdef class ResBindingsInstance(X11CoreBindingsInstance):
         log("found XRes extension version %i.%i", cmajor, cminor)
         return (cmajor, cminor) >= min_version
 
-    def get_pid(self, Window xid) -> int:
+    def get_pid(self, Window xid) -> long:
         self.context_check("get_pid")
         return get_pid(self.display, xid)

@@ -20,7 +20,7 @@ cdef Display* get_display() noexcept:
     return display
 
 
-def get_display_ptr() -> int:
+def get_display_ptr() -> long:
     return int(<uintptr_t> display)
 
 

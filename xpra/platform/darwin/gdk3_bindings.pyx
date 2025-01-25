@@ -61,7 +61,7 @@ cdef NSView *get_nsview(pywindow):
     cdef NSView *nsview = gdk_quartz_window_get_nsview(gdkwindow)
     return nsview
 
-def get_nsview_ptr(pywindow) -> int:
+def get_nsview_ptr(pywindow) -> long:
     cdef NSView *nsview = get_nsview(pywindow)
     return <uintptr_t> nsview
 
