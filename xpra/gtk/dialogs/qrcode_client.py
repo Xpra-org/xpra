@@ -46,7 +46,7 @@ def dpath(caps: typedict, *path) -> Any:
 
 class QRCodeClient(InfoXpraClient):
 
-    def do_command(self, caps: typedict):
+    def do_command(self, caps: typedict) -> None:
         sockets = dpath(caps, "network", "sockets")
         if not sockets:
             log.error("Error: network.sockets path not found in server info response")
@@ -95,10 +95,10 @@ class QRCodeClient(InfoXpraClient):
             noerr(sys.stdout.flush)
             super().quit(ExitCode.OK)
 
-    def exit_loop(self):
+    def exit_loop(self) -> None:
         Gtk.main_quit()
 
-    def quit(self, exit_code: ExitValue = 0):
+    def quit(self, exit_code: ExitValue = 0) -> None:
         # only exit if we encountered an error
         # InfoXpraClient calls quit(ExitCode.OK) on `connection-lost`,
         # but we don't want to exit then
