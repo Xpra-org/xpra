@@ -127,7 +127,9 @@ def env_from_sourcing(file_to_source_path:str, include_unexported_variables:bool
     env.update(decode(proc_str(out, "stdout")))
     env.update(decode_dict(proc_str(err, "stderr")))
     log("env_from_sourcing%s=%s", (file_to_source_path, include_unexported_variables), env)
-    return env
+    # ensure we never expose empty keys:
+    # (see ticket #4485)
+    return dict(filter(lambda item: bool(item[0]), env.items()))
 
 
 def sh_quotemeta(s:str) -> str:
