@@ -187,14 +187,14 @@ class TopClient:
         self.cleanup()
         return self.exit_code or 0
 
-    def signal_handler(self, signum, *_args):
+    def signal_handler(self, signum: int, *_args) -> None:
         self.exit_code = 128 + signum
 
-    def setup(self):
+    def setup(self) -> None:
         self.stdscr = curses_init()
         curses.cbreak()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         scr = self.stdscr
         if scr:
             curses.nocbreak()
@@ -202,7 +202,7 @@ class TopClient:
             curses_clean(scr)
             self.stdscr = None
 
-    def update_loop(self):
+    def update_loop(self) -> None:
         while self.exit_code is None:
             self.update_screen()
             # elapsed is in milliseconds:
@@ -233,7 +233,7 @@ class TopClient:
             elif v in (ord("d"), ord("D")):
                 self.run_subcommand("detach")
 
-    def show_selected_session(self):
+    def show_selected_session(self) -> None:
         # show this session:
         try:
             self.cleanup()
@@ -260,10 +260,10 @@ class TopClient:
         finally:
             self.setup()
 
-    def run_subcommand(self, subcommand):
+    def run_subcommand(self, subcommand: str) -> Popen | None:
         return self.do_run_subcommand(subcommand, stdout=DEVNULL, stderr=DEVNULL)
 
-    def do_run_subcommand(self, subcommand, **kwargs):
+    def do_run_subcommand(self, subcommand: str, **kwargs) -> Popen | None:
         cmd = get_nodock_command() + [subcommand, self.selected_session]
         try:
             return Popen(cmd, **kwargs)

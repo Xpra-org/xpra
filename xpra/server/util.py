@@ -66,7 +66,7 @@ def env_from_sourcing(file_to_source_path: str, include_unexported_variables: bo
     log = Logger("exec")
     cmd: list[str] = shlex.split(file_to_source_path)
 
-    def abscmd(s: str):
+    def abscmd(s: str) -> str:
         if os.path.isabs(s):
             return s
         c = which(s)
@@ -123,7 +123,7 @@ def env_from_sourcing(file_to_source_path: str, include_unexported_variables: bo
     log(f"stdout({filename})={out!r}")
     log(f"stderr({filename})={err!r}")
 
-    def proc_str(b, fdname="stdout"):
+    def proc_str(b: bytes, fdname="stdout") -> str:
         try:
             return (b or b"").decode()
         except UnicodeDecodeError:
