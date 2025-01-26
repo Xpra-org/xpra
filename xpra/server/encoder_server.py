@@ -6,6 +6,9 @@
 from typing import Any
 from collections.abc import Callable
 
+from xpra.net.common import PacketType
+from xpra.net.protocol.socket_handler import SocketProtocol
+
 from xpra.os_util import gi_import
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.server.mixins.encoding import EncodingServer
@@ -25,7 +28,7 @@ class EncoderServer(ServerCore, EncodingServer):
         self.session_type = "encoder"
         self.loop = GLib.MainLoop()
 
-    def init(self, opts):
+    def init(self, opts) -> None:
         opts.start_new_commands = False
         ServerCore.init(self, opts)
         EncodingServer.init(self, opts)
@@ -55,7 +58,7 @@ class EncoderServer(ServerCore, EncodingServer):
         info.update(EncodingServer.get_info(self, proto))
         return info
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         EncodingServer.cleanup(self)
         ServerCore.cleanup(self)
 
@@ -64,3 +67,12 @@ class EncoderServer(ServerCore, EncodingServer):
         if "features" in source.wants:
             capabilities.update(EncoderServer.get_server_features(source))
         return capabilities
+
+    def init_packet_handlers(self) -> None:
+        ServerCore.init_packet_handlers(self)
+        EncodingServer.init_packet_handlers(self)
+        self.add_packet_handler("encode", self._process_encode)
+
+    def _process_encode(self, proto: SocketProtocol, packet: PacketType) -> None:
+
+        pass

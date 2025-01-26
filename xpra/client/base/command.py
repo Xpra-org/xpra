@@ -753,3 +753,33 @@ class RequestStartClient(HelloRequestClient):
             self.displayfd = int(opts.displayfd)
         except (ValueError, TypeError):
             self.displayfd = 0
+
+
+class EncodeClient(HelloRequestClient):
+    """
+    Sends the file(s) to the server for encoding,
+    saves the result in the current working directory
+    this requires a server version 6.3 or later
+    """
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.add_packet_handler("encode-response", self._process_encode_response, False)
+
+    def _process_encode_response(self, packet: PacketType) -> None:
+        log.warn(f"encode-response: {packet!r}")
+
+    def hello_request(self) -> dict[str, Any]:
+        return {
+            "request": "encode",
+        }
+
+    def do_command(self, caps: typedict) -> None:
+
+        v = caps.strget("version")
+        if not v:
+            self.warn_and_quit(ExitCode.FAILURE, "server did not provide the version information")
+        else:
+            sys.stdout.write(f"{v}\n")
+            sys.stdout.flush()
+            self.quit(ExitCode.OK)
