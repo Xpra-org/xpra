@@ -120,7 +120,7 @@ class ClientConnection(StubSourceMixin):
         # what we send back in hello packet:
         self.ui_client = True
         # default 'wants' is not including "events" or "default_cursor":
-        self.wants = ["aliases", "encodings", "versions", "features", "display", "packet-types"]
+        self.wants = ["encodings", "versions", "features", "display", "packet-types"]
         # these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
 

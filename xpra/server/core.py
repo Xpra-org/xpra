@@ -33,7 +33,7 @@ from xpra.server.mixins.control import ControlHandler
 from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
-    SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE,
+    SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PACKET_TYPES,
     may_log_packet, is_request_allowed, PacketType, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
 )
 from xpra.net.socket_util import (
@@ -193,7 +193,6 @@ class ServerCore(ControlHandler):
         self._http_scripts: dict[str, Callable[[str], HttpResponse]] = {}
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
-        self._aliases: dict = {}
         self.socket_info: dict[Any, dict] = {}
         self.socket_options: dict[Any, dict] = {}
         self.socket_cleanup: list[Callable] = []
@@ -315,7 +314,6 @@ class ServerCore(ControlHandler):
     def setup(self) -> None:
         self.init_control_commands()
         self.init_packet_handlers()
-        self.init_aliases()
         self.init_dbus_server()
         # for things that can take longer:
         self.init_thread = start_thread(target=self.threaded_init, name="server-init-thread")
@@ -1048,15 +1046,6 @@ class ServerCore(ControlHandler):
             INVALID: self._process_invalid,
         }
 
-    def init_aliases(self) -> None:
-        self.do_init_aliases(self._default_packet_handlers.keys())
-
-    def do_init_aliases(self, packet_types) -> None:
-        i = 1
-        for key in packet_types:
-            self._aliases[i] = key
-            i += 1
-
     def cleanup_all_protocols(self, reason: str | ConnectionMessage = "", force=False) -> None:
         protocols = self.get_all_protocols()
         self.cleanup_protocols(protocols, reason=reason, force=force)
@@ -1436,7 +1425,6 @@ class ServerCore(ControlHandler):
             """ adds xpra protocol tweaks after creating the instance """
             protocol = protocol_class(conn, self.process_packet)
             protocol.large_packets.append("info-response")
-            protocol.set_receive_aliases(self._aliases)
             return protocol
 
         return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class, pre_read)
@@ -2411,7 +2399,7 @@ class ServerCore(ControlHandler):
                 "server-log": os.environ.get("XPRA_SERVER_LOG", ""),
             }
         if source and "packet-types" in source.wants:
-            capabilities["packet-types"] = tuple(self._aliases.values())
+            capabilities["packet-types"] = PACKET_TYPES
         if source is None or "versions" in source.wants:
             capabilities["uuid"] = get_user_uuid()
             mid = get_machine_id()

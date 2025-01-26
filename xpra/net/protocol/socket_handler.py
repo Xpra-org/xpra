@@ -152,8 +152,6 @@ class SocketProtocol:
             "hello", "window-metadata", "sound-data", "notify_show", "setting-change",
             "shell-reply", "configure-display",
         ]
-        self.send_aliases: dict[str, int] = {}
-        self.receive_aliases: dict[int, str] = {}
         self._log_stats = None  # None here means auto-detect
         if "XPRA_LOG_SOCKET_STATS" in os.environ:
             self._log_stats = envbool("XPRA_LOG_SOCKET_STATS")
@@ -196,7 +194,7 @@ class SocketProtocol:
         self.flush_then_close = self.do_flush_then_close
 
     STATE_FIELDS: Sequence[str] = (
-        "max_packet_size", "large_packets", "send_aliases", "receive_aliases",
+        "max_packet_size", "large_packets",
         "cipher_in", "cipher_in_name", "cipher_in_block_size", "cipher_in_padding",
         "cipher_in_always_pad", "cipher_in_stream", "cipher_in_key",
         "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
@@ -385,12 +383,7 @@ class SocketProtocol:
         ) if x is not None)
 
     def parse_remote_caps(self, caps: typedict) -> None:
-        for k, v in caps.dictget("aliases", {}).items():
-            self.send_aliases[k] = int(v)
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
-
-    def set_receive_aliases(self, aliases: dict[int, str]) -> None:
-        self.receive_aliases = aliases
 
     def get_info(self, alias_info: bool = ALIAS_INFO) -> dict[str, Any]:
         shm = self._source_has_more
@@ -398,7 +391,6 @@ class SocketProtocol:
             "large_packets": self.large_packets,
             "compression_level": self.compression_level,
             "max_packet_size": self.max_packet_size,
-            "aliases": USE_ALIASES,
             "has_more": shm and shm.is_set(),
             "receive-pending": self.receive_pending,
             "closed": self._closed,
@@ -409,9 +401,6 @@ class SocketProtocol:
         encoder = self.encoder
         if encoder:
             info["encoder"] = encoder
-        if alias_info:
-            info["send_alias"] = self.send_aliases
-            info["receive_alias"] = self.receive_aliases
         conn = self._conn
         if conn:
             with log.trap_error("Error collecting connection information on %s", conn):
@@ -743,19 +732,12 @@ class SocketProtocol:
                 log.warn(f" in {packet_type!r} packet at position {i}: {repr_ellipsized(item)}")
         # now the main packet (or what is left of it):
         self.output_stats[packet_type] = self.output_stats.get(packet_type, 0) + 1
-        if USE_ALIASES:
-            alias = self.send_aliases.get(packet_type)
-            if alias:
-                # replace the packet type with the alias:
-                packet[0] = alias
         try:
             main_packet, proto_flags = self._encoder(packet)
         except Exception:
             if self._closed:
                 return []
             log.error(f"Error: failed to encode packet: {packet}", exc_info=True)
-            # make the error a bit nicer to parse: undo aliases:
-            packet[0] = packet_type
             from xpra.net.protocol.check import verify_packet
             verify_packet(packet)
             raise
@@ -1200,15 +1182,7 @@ class SocketProtocol:
                         payload_size += len(raw_data)
                     raw_packets = {}
 
-                packet_type = packet[0]
-                if self.receive_aliases and isinstance(packet_type, int):
-                    packet_type = self.receive_aliases.get(packet_type)
-                    if packet_type:
-                        packet[0] = packet_type
-                    else:
-                        raise ValueError(f"receive alias not found for packet type {packet_type}")
-                else:
-                    packet_type = str(packet_type)
+                packet_type = str(packet[0])
                 self.input_stats[packet_type] = self.output_stats.get(packet_type, 0) + 1
                 if LOG_RAW_PACKET_SIZE and packet_type != "logging":
                     log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)

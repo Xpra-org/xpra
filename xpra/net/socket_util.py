@@ -305,8 +305,7 @@ def looks_like_xpra_packet(data: bytes) -> bool:
     _, protocol_flags, compression_level, packet_index, data_size = unpack_header(header)
     # this normally used on the first packet, so the packet index should be 0,
     # and I don't think we can make packets smaller than 8 bytes,
-    # even with packet name aliases and rencode
-    # (and aliases should not be defined for the initial packet anyway)
+    # even with rencode
     if packet_index != 0:
         return False
     if data_size < 8 or data_size >= 256 * 1024 * 1024:

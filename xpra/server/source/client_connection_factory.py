@@ -161,7 +161,6 @@ def get_client_connection_class(caps: typedict):
                 "encodings": self.ui_client,
                 "display": self.ui_client,
                 "events": False,
-                "aliases": True,
                 "versions": True,
                 "features": True,
                 "default_cursor": False,

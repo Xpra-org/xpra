@@ -206,12 +206,6 @@ class ProxyServer(ServerCore):
     def get_server_mode(self) -> str:
         return "proxy"
 
-    def init_aliases(self) -> None:
-        """
-        It is a lot less confusing if proxy servers don't use packet aliases at all.
-        So we override the aliases initialization and skip it.
-        """
-
     def do_run(self) -> None:
         self.main_loop = GLib.MainLoop()
         self.main_loop.run()

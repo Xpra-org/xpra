@@ -107,7 +107,6 @@ URL_MODES: dict[str, str] = {
     "rfb": "vnc",
 }
 
-# this is used for generating aliases:
 PACKET_TYPES: list[str] = [
     # generic:
     "hello",

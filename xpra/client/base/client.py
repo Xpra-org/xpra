@@ -23,7 +23,7 @@ from xpra.common import (
 )
 from xpra.util.child_reaper import getChildReaper, reaper_cleanup
 from xpra.net import compression
-from xpra.net.common import may_log_packet, PacketHandlerType, PacketType, PacketElement, PACKET_TYPES, SSL_UPGRADE
+from xpra.net.common import may_log_packet, PacketHandlerType, PacketType, PacketElement, SSL_UPGRADE
 from xpra.util.thread import start_thread
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
@@ -136,7 +136,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self._mouse_position_send_time = 0
         self._mouse_position_delay = MOUSE_DELAY
         self._mouse_position_timer = 0
-        self._aliases = {}
         # control channel for requests coming from either a client socket, or the server connection:
         self.control_commands = {}
         # server state and caps:
@@ -165,8 +164,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.init_challenge_handlers(opts.challenge_handlers)
         self.install_signal_handlers()
-        # we need this to expose the 'packet-types' capability,
-        self.init_aliases()
 
     def show_progress(self, pct: int, text="") -> None:
         pp = self.progress_process
@@ -345,7 +342,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             for x in ("keymap-changed", "server-settings", "logging", "input-devices"):
                 protocol.large_packets.append(x)
             protocol.set_compression_level(1)
-            protocol.set_receive_aliases(self._aliases)
             protocol.enable_default_encoder()
             protocol.enable_default_compressor()
             encryption = self.get_encryption()
@@ -364,12 +360,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 getChildReaper().add_process(proc, name, command, ignore=True, forget=False)
         netlog("setup_connection(%s) protocol=%s", conn, protocol)
         return protocol
-
-    def init_aliases(self) -> None:
-        i = 1
-        for key in PACKET_TYPES:
-            self._aliases[i] = key
-            i += 1
 
     def has_password(self) -> bool:
         return self.password or self.password_file or os.environ.get('XPRA_PASSWORD')
@@ -431,7 +421,6 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             "uuid": self.uuid,
             "compression_level": self.compression_level,
             "version": vparts(XPRA_VERSION, FULL_INFO + 1),
-            "packet-types": tuple(self._aliases.values()),
         }
         if self.display:
             capabilities["display"] = self.display
@@ -508,10 +497,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return get_version_info(FULL_INFO)
 
     def make_hello(self) -> dict[str, Any]:
-        return {"aliases": self.get_network_aliases()}
-
-    def get_network_aliases(self) -> dict:
-        return {v: k for k, v in self._aliases.items()}
+        return {}
 
     def compressed_wrapper(self, datatype, data, level=5, **kwargs) -> compression.Compressed:
         if level > 0 and len(data) >= 256:

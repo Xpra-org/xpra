@@ -134,7 +134,6 @@ class ServerBase(ServerBaseClass):
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
 
         self.init_packet_handlers()
-        self.init_aliases()
 
     def suspend_event(self, args):
         ServerCore.suspend_event(self, args)
@@ -549,8 +548,6 @@ class ServerBase(ServerBaseClass):
                 "actual_desktop_size": root_size,
                 "root_window_size": root_size,
             }
-        if "aliases" in self._aliases and server_source.wants:
-            capabilities["aliases"] = {v: k for k, v in self._aliases.items()}
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.send_hello(capabilities)
@@ -917,12 +914,6 @@ class ServerBase(ServerBaseClass):
             "exit-server": self._process_exit_server,
             "info-request": self._process_info_request,
         })
-
-    def init_aliases(self) -> None:
-        packet_types = list(self._default_packet_handlers.keys())
-        packet_types += list(self._authenticated_packet_handlers.keys())
-        packet_types += list(self._authenticated_ui_packet_handlers.keys())
-        self.do_init_aliases(packet_types)
 
     def process_packet(self, proto, packet) -> None:
         packet_type = ""
