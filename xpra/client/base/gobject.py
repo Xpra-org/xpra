@@ -7,7 +7,6 @@
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.net.common import PacketType
 from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.log import Logger
@@ -46,24 +45,6 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
     def client_type(self) -> str:
         # overridden in subclasses!
         return "Python3/GObject"
-
-    def init_packet_handlers(self) -> None:
-        XpraClientBase.init_packet_handlers(self)
-
-        def noop_handler(packet: PacketType) -> None:  # pragma: no cover
-            log("ignoring packet: %s", packet)
-
-        # ignore the following packet types without error:
-        # (newer servers should avoid sending us any of those)
-        for t in (
-                "new-window", "new-override-redirect",
-                "draw", "cursor", "bell",
-                "notify_show", "notify_close",
-                "ping", "ping_echo",
-                "window-metadata", "configure-override-redirect",
-                "lost-window",
-        ):
-            self.add_packet_handler(t, noop_handler, False)
 
     def run(self) -> ExitValue:
         XpraClientBase.run(self)
