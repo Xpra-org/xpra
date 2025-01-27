@@ -18,15 +18,14 @@
 %global srcname PyOpenGL
 
 Name:           %{python3}-pyopengl
-Version:        3.1.8
-Release:        2%{?dist}
+Version:        3.1.9
+Release:        1%{?dist}
 Summary:        Python 3 bindings for OpenGL
 License:        BSD
 URL:            http://pyopengl.sourceforge.net/
-Source0:        https://github.com/mcfletch/pyopengl/archive/refs/tags/release-%{version}.tar.gz
-Patch0:         pyopengl-egl-open-warning.patch
-Patch1:         pyopengl-py3.13-nonumpy.patch
-Patch2:         pyopengl-version.patch
+Source0:        https://files.pythonhosted.org/packages/source/p/pyopengl_accelerate/pyopengl_accelerate-%{version}.tar.gz
+Source1:        https://files.pythonhosted.org/packages/source/p/pyopengl/pyopengl-%{version}.tar.gz
+Patch0:         pyopengl-py3.13-nonumpy.patch
 
 BuildRequires:	coreutils
 BuildRequires:  %{python3}-devel
@@ -60,21 +59,24 @@ Requires:       %{python3}-tkinter
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "78f4016f13705d66dc89d5d046eee660c2f5f0915e5ecfeeed79dffac741bc97" ]; then
+if [ "${sha256}" != "85957c7c76975818ff759ec9243f9dc7091ef6f373ea37a2eb50c320fd9a86f3" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -c -n %{srcname}-%{version}
-pushd pyopengl-release-%{version}
+sha256=`sha256sum %{SOURCE1} | awk '{print $1}'`
+if [ "${sha256}" != "28ebd82c5f4491a418aeca9672dffb3adbe7d33b39eada4548a5b4e8c03f60c8" ]; then
+	echo "invalid checksum for %{SOURCE1}"
+	exit 1
+fi
+%setup -q -c -n %{srcname}-%{version} -T -a0 -a1
+pushd pyopengl_accelerate-%{version}
 %patch -p1 -P 0
-%patch -p1 -P 1
-%patch -p1 -P 2
 popd
 
 
 %build
 NPROCS=${NPROCS:-`nproc`}
-for srcdir in pyopengl-release-%{version} pyopengl-release-%{version}/accelerate; do
+for srcdir in pyopengl-%{version} pyopengl_accelerate-%{version}; do
     pushd $srcdir
     %{python3} setup.py build -j ${NPROCS}
     popd
@@ -82,7 +84,7 @@ done
 
 
 %install
-for srcdir in pyopengl-release-%{version} pyopengl-release-%{version}/accelerate; do
+for srcdir in pyopengl-%{version} pyopengl_accelerate-%{version}; do
     pushd $srcdir
     %{python3} setup.py install -O1 --skip-build --root %{buildroot}
     popd
@@ -100,7 +102,7 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %files
-%license pyopengl-release-%{version}/license.txt
+%license pyopengl-%{version}/license.txt
 %{python3_sitelib}/OpenGL/
 %{python3_sitelib}/PyOpenGL*.egg-info
 %exclude %{python3_sitelib}/OpenGL/Tk
@@ -113,6 +115,10 @@ rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 
 
 %changelog
+* Mon Jan 27 2025 Antoine Martin <antoine@xpra.org> - 3.1.9-1
+- new upstream release
+- switch back to pypi
+
 * Thu Dec 05 2024 Antoine Martin <antoine@xpra.org> - 3.1.8-2
 - also patch accelerate version number
 
