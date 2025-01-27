@@ -415,6 +415,7 @@ SWITCHES += [
     "debug", "PIC",
     "Xdummy", "Xdummy_wrapper", "verbose", "tests", "bundle_tests",
     "win32_tools", "websockets_browser_cookie",
+    "yaml",
 ]
 SWITCHES = list(sorted(set(SWITCHES)))
 
