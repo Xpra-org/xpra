@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.0.13] 2025-01-28
+* Platforms, build and packaging:
+    * [CUDA kernels build errors on recent distros](https://github.com/Xpra-org/xpra/commit/104e22b1bb2782e1b2917cb335f91ff6431d9737)
+    * [`nvdec` build errors](https://github.com/Xpra-org/xpra/commit/77c29677c3e7018666b5444aba5d944947cae383)
+* Major:
+    * [integer overflow in X11 Cython bindings](https://github.com/Xpra-org/xpra/commit/131799b32d9a579c8eb16524d218343667f34a07) and [other platform code](https://github.com/Xpra-org/xpra/commit/2c0590b5c80ac895ed25474b70db7d033ed3635c)
+    * [server `--source[-start]` parsing error](https://github.com/Xpra-org/xpra/commit/0aa18f7aa0ab2b0837c0e01bea73b0cca226c1d2)
+* Minor:
+    * [don't expose full OpenSSL version number](https://github.com/Xpra-org/xpra/commit/1308a27af8dc75c472ac6642444d1a755cbb9377)
+    * [prevent codec interface confusion](https://github.com/Xpra-org/xpra/commit/a4e8de09fb21455719456330bb89aff42f14ba55)
+    * [avoid importing unused proxy codec](https://github.com/Xpra-org/xpra/commit/4d0d9b9b4fcf9a72fa686e604d505dff95cbab05)
+
 ## [5.0.12] 2025-01-19
 * Platforms, build and packaging:
     * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/fab8d9f02de9b4ca57d7fa88b8031a2c29a77d91) and [prefix detection](https://github.com/Xpra-org/xpra/commit/8166eee7d2f5e4b00327763627b33987edd5e0c7)

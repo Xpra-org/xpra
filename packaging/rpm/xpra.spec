@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.0.12
+%define version 5.0.13
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -803,6 +803,8 @@ fi
 
 
 %changelog
+* Tue Jan 28 2025 Antoine Martin <antoine@xpra.org> 5.0.13-10
+- TODO
 * Sun Jan 19 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection
