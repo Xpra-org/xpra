@@ -585,7 +585,7 @@ class ServerBase(ServerBaseClass):
         if len(packet) >= 4:
             categories = [bytestostr(x) for x in packet[3]]
 
-        def info_callback(_proto, info):
+        def info_callback(_proto, info) -> None:
             assert proto == _proto
             if categories:
                 info = {k: v for k, v in info.items() if k in categories}
@@ -597,7 +597,7 @@ class ServerBase(ServerBaseClass):
         self.wait_for_threaded_init()
         start = monotonic()
 
-        def cb(iproto, info):
+        def cb(iproto, info) -> None:
             self.do_send_info(iproto, info)
             end = monotonic()
             log.info("processed info request from %s in %ims",
@@ -652,7 +652,7 @@ class ServerBase(ServerBaseClass):
         start = monotonic()
         info: dict[str, Any] = {}
 
-        def up(prefix, d):
+        def up(prefix, d) -> None:
             merge_dicts(info, {prefix: d})
 
         for c in SERVER_BASES:

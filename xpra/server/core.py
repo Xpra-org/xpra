@@ -155,6 +155,11 @@ def force_close_connection(conn) -> None:
         log("close_connection()", exc_info=True)
 
 
+def invalid_path(uri: str) -> HttpResponse:
+    httplog(f"invalid request path {uri!r}")
+    return 404, {}, b""
+
+
 # noinspection PyMethodMayBeStatic
 class ServerCore(ControlHandler):
     """
@@ -372,7 +377,7 @@ class ServerCore(ControlHandler):
         raise NotImplementedError()
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
-        def os_signal(signum: signal.Signals | int, _frame: FrameType | None = None):
+        def os_signal(signum: signal.Signals | int, _frame: FrameType | None = None) -> None:
             callback(signum)
 
         signal.signal(signal.SIGINT, os_signal)
@@ -613,13 +618,13 @@ class ServerCore(ControlHandler):
         url += "/"
         from subprocess import Popen, SubprocessError
 
-        def exec_open(*cmd):
+        def exec_open(*cmd) -> None:
             httplog(f"exec_open{cmd}")
             proc = Popen(args=cmd, env=get_saved_env())
             from xpra.util.child_reaper import getChildReaper
             getChildReaper().add_process(proc, "open-html5-client", " ".join(cmd), True, True)
 
-        def webbrowser_open():
+        def webbrowser_open() -> None:
             httplog.info(f"opening html5 client using URL {url!r}")
             if POSIX and not OSX:
                 saved_env = get_saved_env()
@@ -644,7 +649,7 @@ class ServerCore(ControlHandler):
             import webbrowser
             webbrowser.open_new_tab(url)
 
-        def open_url():
+        def open_url() -> None:
             if html.lower() not in ("open", "connect"):
                 # is a command?
                 open_cmd = which(html)
@@ -893,7 +898,7 @@ class ServerCore(ControlHandler):
                 ap.start()
                 self.mdns_publishers[ap] = mdns_mode
 
-    def can_upgrade(self, socktype: str, tosocktype: str, options: dict[str, str]):
+    def can_upgrade(self, socktype: str, tosocktype: str, options: dict[str, str]) -> bool:
         to_option_str = options.get(tosocktype, "")
         to_option = to_option_str.lower() in TRUE_OPTIONS
         netlog(f"can_upgrade%s {to_option_str=}, {to_option}", (socktype, tosocktype, options))
@@ -1182,7 +1187,7 @@ class ServerCore(ControlHandler):
             netlog("socket peek line1=%s", Ellipsizer(line1))
             netlog("guess_packet_type(..)=%s", packet_type)
 
-        def ssl_wrap():
+        def ssl_wrap() -> SSLSocketConnection | None:
             ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
             ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
             if ssl_sock is None:
@@ -1191,7 +1196,7 @@ class ServerCore(ControlHandler):
             ssllog("ssl_wrap()=%s", ssl_conn)
             return ssl_conn
 
-        def can_upgrade_to(to_socktype: str):
+        def can_upgrade_to(to_socktype: str) -> bool:
             return self.can_upgrade(socktype, to_socktype, socket_options)
 
         if socktype in ("ssl", "wss"):
@@ -1571,7 +1576,7 @@ class ServerCore(ControlHandler):
             # try again to wrap this socket:
             bufs = [data]
 
-            def addbuf(buf):
+            def addbuf(buf) -> None:
                 bufs.append(buf)
 
             conn = proto.steal_connection(addbuf)
@@ -1626,7 +1631,7 @@ class ServerCore(ControlHandler):
             sock = conn._socket
             sock.settimeout(self._ws_timeout)
 
-            def new_websocket_client(wsh):
+            def new_websocket_client(wsh) -> None:
                 from xpra.net.websockets.protocol import WebSocketProtocol
                 wslog("new_websocket_client(%s) socket=%s, headers=%s", wsh, sock, wsh.headers)
                 newsocktype = "wss" if is_ssl else "ws"
@@ -1694,7 +1699,7 @@ class ServerCore(ControlHandler):
             icon: list[tuple[bytes, str]] = [(icon_data, icon_type)]
             event = threading.Event()
 
-            def convert():
+            def convert() -> None:
                 icon[0] = svg_to_png("", icon_data, 48, 48), "png"
                 event.set()
 
@@ -1716,14 +1721,10 @@ class ServerCore(ControlHandler):
         return self.send_json_response(xsessions or "not available")
 
     def http_menu_icon_request(self, uri: str) -> HttpResponse:
-        def invalid_path() -> HttpResponse:
-            httplog(f"invalid menu-icon request path {uri!r}")
-            return 404, {}, b""
-
         parts = unquote(uri).split("/MenuIcon/", 1)
         # ie: "/menu-icon/a/b" -> ['', 'a/b']
         if len(parts) < 2:
-            return invalid_path()
+            return invalid_path(uri)
         path = parts[1].split("/")
         # ie: "a/b" -> ['a', 'b']
         category_name = path[0]
@@ -1737,14 +1738,10 @@ class ServerCore(ControlHandler):
         return self.send_icon(icon_type, icon_data)
 
     def http_desktop_menu_icon_request(self, uri: str):
-        def invalid_path():
-            httplog(f"invalid desktop menu-icon request path {uri!r}")
-            return 404, None, None
-
         parts = unquote(uri).split("/DesktopMenuIcon/", 1)
         # ie: "/menu-icon/wmname" -> ['', 'sessionname']
         if len(parts) < 2:
-            return invalid_path()
+            return invalid_path(uri)
         # in case the sessionname is followed by a slash:
         sessionname = parts[1].split("/")[0]
         httplog(f"http_desktop_menu_icon_request: {sessionname=}")
@@ -2439,7 +2436,7 @@ class ServerCore(ControlHandler):
             self.do_send_info(proto, {"error": "`info` requests are not enabled for this connection"})
             return
 
-        def cb(proto, info):
+        def cb(proto, info) -> None:
             self.do_send_info(proto, info)
 
         self.get_all_info(cb, proto)
@@ -2527,7 +2524,7 @@ class ServerCore(ControlHandler):
         # this function is for non UI thread info
         info = {}
 
-        def up(prefix, d):
+        def up(prefix, d) -> None:
             info[prefix] = d
 
         authenticated = proto and proto.authenticators
