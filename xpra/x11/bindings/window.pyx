@@ -1143,7 +1143,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if xactual_type == XNone:
             return None
         if xreq_type and xreq_type != xactual_type:
-            raise BadPropertyType("expected %s but got %s" % (req_type, self.XGetAtomName(xactual_type)))
+            raise BadPropertyType("expected %s but got %s" % (req_type, self.get_atom_name(xactual_type)))
         # This should only occur for bad property types:
         assert not (bytes_after and not nitems)
         if bytes_after and not incr:
@@ -1167,7 +1167,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(prop)
         return data
 
-    def GetWindowPropertyType(self, Window xwindow, property, incr=False) -> Tuple[bytes, int]:
+    def GetWindowPropertyType(self, Window xwindow, property, incr=False) -> Tuple[str, int]:
         #as above, but for any property type
         #and returns the type found
         self.context_check("GetWindowPropertyType")
@@ -1198,7 +1198,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             raise BadPropertyType("incomplete data: %i bytes after" % bytes_after)
         assert actual_format in (8, 16, 32)
         XFree(prop)
-        return self.XGetAtomName(xactual_type), actual_format
+        return self.get_atom_name(xactual_type), actual_format
 
     def XDeleteProperty(self, Window xwindow, property) -> None:
         self.context_check("XDeleteProperty")
@@ -1417,8 +1417,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         protocols = []
         if XGetWMProtocols(self.display, xwindow, &protocols_return, &count_return):
             while i<count_return:
-                protocol = self.XGetAtomName(protocols_return[i])
-                protocols.append(protocol.decode("latin1"))
+                protocols.append(self.get_atom_name(protocols_return[i]))
                 i += 1
         return protocols
 

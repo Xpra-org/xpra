@@ -8,7 +8,7 @@ import re
 from collections.abc import Callable
 from collections.abc import Sequence
 
-from xpra.util.str_fn import repr_ellipsized, bytestostr
+from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool, IgnoreWarningsContext
 from xpra.os_util import OSX, gi_import
 from xpra.codecs.icon_util import INKSCAPE_RE
@@ -100,18 +100,18 @@ def load_pixbuf(data) -> GdkPixbuf.Pixbuf:
     return loader.get_pixbuf()
 
 
-def get_appimage(app_name, icondata=b"", menu_icon_size=24) -> Gtk.Image | None:
+def get_appimage(app_name: str, icondata=b"", menu_icon_size=24) -> Gtk.Image | None:
     pixbuf = None
     if app_name and not icondata:
         # try to load from our icons:
-        nstr = bytestostr(app_name).lower()
+        nstr = app_name.lower()
         icon_filename = os.path.join(get_icon_dir(), "%s.png" % nstr)
         if os.path.exists(icon_filename):
             pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=icon_filename)
 
     def err(e) -> None:
         log("failed to load icon", exc_info=True)
-        log.error("Error: failed to load icon data for '%s':", bytestostr(app_name))
+        log.error(f"Error: failed to load icon data for {app_name!r}:")
         log.estr(e)
         log.error(" data=%s", repr_ellipsized(icondata))
 

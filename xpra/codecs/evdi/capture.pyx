@@ -8,6 +8,9 @@
 import select
 import binascii
 from time import monotonic
+from typing import Tuple, List
+from collections.abc import Sequence
+
 from xpra.util.env import envbool
 from xpra.util.str_fn import bytestostr, strtobytes, memoryview_to_bytes
 
@@ -132,39 +135,39 @@ cdef extern from "evdi_lib.h":
     void evdi_enable_cursor_events(evdi_handle handle, bint enable)
 
 
-
 STATUS_STR = {
     AVAILABLE       : "available",
     UNRECOGNIZED    : "unrecognized",
     NOT_PRESENT     : "not-present",
-    }
+}
 
 MODE_STR = {
     DRM_MODE_DPMS_ON        : "ON",
     DRM_MODE_DPMS_STANDBY   : "STANDBY",
     DRM_MODE_DPMS_SUSPEND   : "SUSPEND",
     DRM_MODE_DPMS_OFF       : "OFF",
-    }
+}
 
 
-def get_version():
+def get_version() -> Sequence[int]:
     cdef evdi_lib_version version
     evdi_get_lib_version(&version)
     return (version.version_major, version.version_minor, version.version_patchlevel)
 
 
 cdef void evdi_logging_function(void *user_data, const char *fmt, ...) noexcept:
-    s = bytestostr(fmt)
-    log(f"evdi: {s}")
+    pybytes = fmt[:]
+    log(f"evdi: %s", pybytes.decode("latin1"))
 
 
-def capture_logging():
+def capture_logging() -> None:
     cdef evdi_logging log_config
     log_config.function = &evdi_logging_function
     log_config.user_data = NULL
     evdi_set_logging(log_config)
 
-def reset_logging():
+
+def reset_logging() -> None:
     cdef evdi_logging log_config
     log_config.function = NULL
     log_config.user_data = NULL
@@ -252,14 +255,14 @@ cdef class EvdiDevice:
     def __repr__(self):
         return f"EvdiDevice({self.device} - {self.mode.width}x{self.mode.height})"
 
-    def open(self):  # @ReservedAssignment
+    def open(self) -> None:
         if self.handle:
             raise RuntimeError("this evdi device is already open")
         self.handle = evdi_open(self.device)
         if not self.handle:
             raise ValueError(f"cannot open {self.device}")
 
-    def close(self):
+    def close(self) -> None:
         h = self.handle
         if h:
             self.handle = NULL
@@ -294,7 +297,7 @@ cdef class EvdiDevice:
         log(f"update_ready_handler({buffer_to_be_updated})")
         self.grab_pixels(buffer_to_be_updated)
 
-    def grab_pixels(self, buf_id):
+    def grab_pixels(self, buf_id) -> Tuple:
         if not self.handle:
             raise RuntimeError("no device handle")
         buf = self.buffers.get(buf_id)
@@ -361,11 +364,11 @@ cdef class EvdiDevice:
     cdef void ddcci_data_handler(self, evdi_ddcci_data ddcci_data):
         log("ddcci_data_handler(%#x)", ddcci_data.address)
 
-    def enable_cursor_events(self, enable=True):
+    def enable_cursor_events(self, enable=True) -> None:
         evdi_enable_cursor_events(self.handle, int(enable))
 
 
-    def connect(self, edid=DEFAULT_EDID):
+    def connect(self, edid=DEFAULT_EDID) -> None:
         if not self.handle:
             raise RuntimeError("no device handle")
         if self.edid:
@@ -409,18 +412,17 @@ cdef class EvdiDevice:
             self.edid = None
             evdi_disconnect(self.handle)
 
-    def get_event_fd(self):
+    def get_event_fd(self) -> int:
         return evdi_get_event_ready(self.handle)
 
-
-    def handle_events(self):
+    def handle_events(self) -> None:
         if not self.handle:
             raise RuntimeError("no device handle")
         if not self.edid:
             raise RuntimeError("device is not connected")
         evdi_handle_events(self.handle, &self.event_context)
 
-    def handle_all_events(self):
+    def handle_all_events(self) -> None:
         if not self.handle:
             raise RuntimeError("no device handle")
         if not self.edid:
@@ -434,7 +436,7 @@ cdef class EvdiDevice:
                 break
             evdi_handle_events(self.handle, &self.event_context)
 
-    def event_loop(self, run_time=10):
+    def event_loop(self, run_time=10) -> None:
         cdef evdi_selectable fd = evdi_get_event_ready(self.handle)
         log(f"handle_events() fd={fd}")
         start = monotonic()
@@ -449,7 +451,7 @@ cdef class EvdiDevice:
             if self.buffers and self.export_buffer:
                 self.refresh()
 
-    def refresh(self):
+    def refresh(self) -> Tuple | None:
         buf_id = self.export_buffer
         #log(f"refresh() export_buffer={buf_id}")
         if buf_id in (1, 2):
@@ -458,7 +460,7 @@ cdef class EvdiDevice:
                 return self.grab_pixels(buf_id)
         return None
 
-    def register_buffer(self, int buf_id):
+    def register_buffer(self, int buf_id) -> None:
         cdef evdi_buffer buf
         buf.id = buf_id
         buf.width = self.mode.width
@@ -472,19 +474,19 @@ cdef class EvdiDevice:
         log(f"register_buffer({buf_id}) pybuf={pybuf}")
         self.buffers[buf_id] = pybuf
 
-    def request_update(self, buf_id):
+    def request_update(self, buf_id) -> int:
         cdef bint update = evdi_request_update(self.handle, buf_id)
         log(f"evdi_request_update(%#x, {buf_id})={update}", <uintptr_t> self.handle)
         return update
 
-    def unregister_buffers(self):
+    def unregister_buffers(self) -> None:
         for buf_id in self.buffers.keys():
             log(f"unregister_buffer {buf_id}")
             evdi_unregister_buffer(self.handle, buf_id)
         self.buffers = {}
         self.export_buffer = 0
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.unregister_buffers()
         self.disconnect()
         self.close()
@@ -493,7 +495,7 @@ cdef class EvdiDevice:
         self.cleanup()
 
 
-def test_device(int device):
+def test_device(int device) -> bool:
     log(f"opening card {device}")
     cdef EvdiDevice d = EvdiDevice(device)
     d.open()
@@ -504,7 +506,7 @@ def test_device(int device):
     return True
 
 
-def find_evdi_devices():
+def find_evdi_devices() -> List[str]:
     import os
     devices = []
     for f in sorted(os.listdir("/dev/dri")):
@@ -522,7 +524,7 @@ def find_evdi_devices():
     return devices
 
 
-def selftest(full=False):
+def selftest(full=False) -> None:
     from xpra.log import LOG_FORMAT, enable_color
     format_string = LOG_FORMAT
     enable_color(format_string=format_string)

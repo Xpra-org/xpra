@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.x11.bindings.xlib cimport (
     Display, Time, Bool, Status,
@@ -63,7 +63,7 @@ cdef class X11CoreBindingsInstance:
         self.display = get_display()
         if self.display == NULL:
             raise RuntimeError("X11 display is not set")
-        bstr = strtobytes(get_display_name())
+        bstr = get_display_name().encode("latin1")
         self.display_name = bstr
         self.XSynchronize(envbool("XPRA_X_SYNC", False))
 
@@ -103,14 +103,14 @@ cdef class X11CoreBindingsInstance:
             return <Atom> str_or_int
         return self.str_to_atom(str_or_int)
 
-    def intern_atoms(self, atom_names) -> None:
+    def intern_atoms(self, atom_names: Sequence[str]) -> None:
         cdef int count = len(atom_names)
         cdef char** names = <char **> malloc(sizeof(uintptr_t)*(count+1))
         assert names!=NULL
         cdef Atom* atoms_return = <Atom*> malloc(sizeof(Atom)*(count+1))
         assert atoms_return!=NULL
         from ctypes import create_string_buffer, addressof
-        str_names = [create_string_buffer(strtobytes(x)) for x in atom_names]
+        str_names = [create_string_buffer(x.encode("latin1")) for x in atom_names]
         cdef uintptr_t ptr
         for i, x in enumerate(str_names):
             ptr = addressof(x)
@@ -123,14 +123,18 @@ cdef class X11CoreBindingsInstance:
     def get_xatom(self, str_or_int) -> Atom:
         return self.xatom(str_or_int)
 
-    def XGetAtomName(self, Atom atom):
+    def XGetAtomName(self, Atom atom) -> bytes:
         self.context_check("XGetAtomName")
         cdef char *v = XGetAtomName(self.display, atom)
         if v == NULL:
-            return ""
+            return b""
         r = v[:]
         XFree(v)
         return r
+
+    def get_atom_name(self, Atom atom) -> str:
+        bin_name = self.XGetAtomName(atom)
+        return bin_name.decode("latin1")
 
     def get_error_text(self, code) -> str:
         if self.display == NULL:

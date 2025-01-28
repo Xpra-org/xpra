@@ -31,14 +31,11 @@ def _get_atom(d) -> str | None:
         log.warn("Warning: invalid zero atom value")
         return None
     with xsync:
-        pyatom = X11WindowBindings().XGetAtomName(unpacked)
-    if not pyatom:
+        name = X11WindowBindings().get_atom_name(unpacked)
+    if not name:
         log.error("invalid atom: %s - %s", repr(d), repr(unpacked))
         return None
-    if not isinstance(pyatom, str):
-        # py3k:
-        return pyatom.decode()
-    return pyatom
+    return name
 
 
 def _get_xatom(str_or_int):

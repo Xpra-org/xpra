@@ -598,7 +598,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         for i in range(nprops):
             value = self.get_device_property(deviceid, atoms[i])
             if value is not None:
-                prop_name = self.XGetAtomName(atoms[i])
+                prop_name = self.get_atom_name(atoms[i])
                 props[prop_name] = value
         return props
 
@@ -625,7 +625,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         if xactual_type == XNone:
             return None
         if xreq_type and xreq_type != xactual_type:
-            raise RuntimeError("expected %s but got %s" % (req_type, self.XGetAtomName(xactual_type)))
+            raise RuntimeError("expected %s but got %s" % (req_type, self.get_atom_name(xactual_type)))
         # This should only occur for bad property types:
         assert not (bytes_after and not nitems)
         if bytes_after:
@@ -636,7 +636,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         cdef int nbytes = bytes_per_item * nitems
         data = (<char *> prop)[:nbytes]
         XFree(prop)
-        prop_type = self.XGetAtomName(xactual_type)
+        prop_type = self.get_atom_name(xactual_type)
         log("hex=%s (type=%s, nitems=%i, bytes per item=%i, actual format=%i)",
             hexstr(data), prop_type, nitems, bytes_per_item, actual_format)
         fmt = None
@@ -677,7 +677,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
             buttons = []
             for i in range(button.num_buttons):
                 if button.labels[i]>0:
-                    buttons.append(self.XGetAtomName(button.labels[i]))
+                    buttons.append(self.get_atom_name(button.labels[i]))
             info["buttons"] = buttons
             #XIButtonState state
         elif class_info.type==XIKeyClass:
@@ -696,7 +696,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 "mode"      : valuator.mode,
             }
             if valuator.label:
-                info["label"] = self.XGetAtomName(valuator.label)
+                info["label"] = self.get_atom_name(valuator.label)
         elif class_info.type==XIScrollClass:
             scroll = <XIScrollClassInfo*> class_info
             info |= {

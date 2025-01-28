@@ -140,8 +140,8 @@ def xsettings_to_bytes(d: tuple[int, list[tuple[int, str, Any, int]]]) -> bytes:
         setting_type, prop_name, value, last_change_serial = setting
         prop_name = strtobytes(prop_name)
         try:
-            log("xsettings_to_bytes(..) processing property %s of type %s",
-                bytestostr(prop_name), XSettingsNames.get(setting_type, "INVALID!"))
+            log("xsettings_to_bytes(..) processing property %r of type %s",
+                prop_name, XSettingsNames.get(setting_type, "INVALID!"))
             x = struct.pack(b"=BBH", setting_type, 0, len(prop_name))
             x += prop_name
             pad_len = ((len(prop_name) + 0x3) & ~0x3) - len(prop_name)

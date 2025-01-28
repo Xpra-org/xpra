@@ -183,7 +183,7 @@ class Keyboard(KeyboardBase):
             x11_layouts[x11_layout] = name
         return x11_layouts
 
-    def get_layout_spec(self) -> tuple[str, str, list[str], str, list[str], str]:
+    def get_layout_spec(self) -> tuple[str, str, Sequence[str], str, Sequence[str], str]:
         KMASKS = {
             0xffffffff: (0, 16),
             0xffff: (0,),

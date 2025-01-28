@@ -13,7 +13,7 @@ from xpra.log import Logger
 log = Logger("encoder", "x264")
 
 from xpra.util.env import envint, envbool
-from xpra.util.str_fn import csv, bytestostr, strtobytes
+from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import VideoSpec, get_profile, get_x264_quality, get_x264_preset
@@ -404,6 +404,10 @@ if SUPPORT_24BPP:
     }
 
 
+cdef inline bytes b(value: str):
+    return value.encode("latin1")
+
+
 def init_module() -> None:
     log("enc_x264.init_module()")
 
@@ -497,6 +501,14 @@ X264_LOG_MAP: Dict[str, int] = {
 LOG_LEVEL: int = X264_LOG_MAP.get(LOGGING.upper(), X264_LOG_WARNING)
 
 
+cdef str s(const char *v):
+    pytmp = v[:]
+    try:
+        return pytmp.decode()
+    except:
+        return str(v[:])
+
+
 # the static logging function we want x264 to use:
 cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) noexcept with gil:
     cdef char buf[256]
@@ -504,9 +516,9 @@ cdef void X264_log(void *p_unused, int level, const char *psz_fmt, va_list arg) 
     if r < 0:
         log.error("X264_log: vsnprintf returned %s on format string '%s'", r, psz_fmt)
         return
-    s = bytestostr(buf[:r]).rstrip("\n\r")
+    pystr = s(buf[:r]).rstrip("\n\r")
     logger = LOGGERS.get(level, log.info)
-    logger("X264: %r", s)
+    logger("X264: %r", pystr)
 
 
 cdef class Encoder:
@@ -625,8 +637,8 @@ cdef class Encoder:
         cdef x264_param_t param
         cdef const char *preset = get_preset_names()[self.preset]
         self.tune = self.get_tune()
-        x264_param_default_preset(&param, strtobytes(preset), strtobytes(self.tune))
-        profile = strtobytes(self.profile)
+        x264_param_default_preset(&param, preset, self.tune)
+        profile = b(self.profile)
         x264_param_apply_profile(&param, profile)
         self.tune_param(&param, options)
 
@@ -1001,7 +1013,7 @@ cdef class Encoder:
         slice_type = SLICE_TYPES.get(pic_out.i_type, pic_out.i_type)
         self.frame_types[slice_type] = self.frame_types.get(slice_type, 0)+1
         log("x264 encode %7s frame %5i as %4s slice with %i nals, tune=%s, total %7i bytes, keyframe=%-5s, delayed=%i",
-            self.src_format, self.frames, slice_type, i_nals, bytestostr(self.tune), frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
+            self.src_format, self.frames, slice_type, i_nals, s(self.tune), frame_size, bool(pic_out.b_keyframe), self.delayed_frames)
         bnals = []
         nal_indexes = []
         cdef unsigned int index = 0

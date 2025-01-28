@@ -10,7 +10,6 @@ from collections.abc import Sequence
 from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util.env import envint
 from xpra.os_util import OSX
-from xpra.util.str_fn import bytestostr
 from xpra.net.common import PacketType
 from xpra.util.version import vtrim
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENCODINGS
@@ -224,7 +223,7 @@ class EncodingServer(StubServerMixin):
             self.default_encoding = self.encoding
 
     def _process_encoding(self, proto, packet: PacketType) -> None:
-        encoding = bytestostr(packet[1])
+        encoding = str(packet[1])
         ss = self.get_server_source(proto)
         if ss is None:
             return
@@ -250,7 +249,7 @@ class EncodingServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if not ss:
             return
-        ptype = bytestostr(packet[0])
+        ptype = packet[0]
         assert ptype in (
             "quality", "min-quality", "max-quality",
             "speed", "min-speed", "max-speed",

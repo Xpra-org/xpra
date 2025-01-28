@@ -103,8 +103,7 @@ def xatoms_to_strings(data: bytes) -> Sequence[str]:
     natoms = length // sizeof_long
     atoms = struct.unpack(b"@" + b"L" * natoms, data)
     with xsync:
-        return tuple(bytestostr(name) for name in (X11Window.XGetAtomName(atom)
-                                                   for atom in atoms if atom) if name is not None)
+        return tuple(name for name in (X11Window.get_atom_name(atom) for atom in atoms if atom) if name)
 
 
 def strings_to_xatoms(data: Iterable[str]) -> bytes:
@@ -542,7 +541,6 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         try:
             with xsync:
                 dtype, dformat = X11Window.GetWindowPropertyType(self.xid, event.atom, True)
-                dtype = bytestostr(dtype)
                 data = X11Window.XGetWindowProperty(self.xid, event.atom, dtype, buffer_size=MAX_DATA_SIZE, incr=True)
                 # all the code below deals with INCRemental transfers:
                 if dtype == "INCR" and not self.incr_data_size:

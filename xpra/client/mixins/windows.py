@@ -428,7 +428,8 @@ class WindowClient(StubClientMixin):
     def set_windows_cursor(self, client_windows, new_cursor) -> None:
         raise NotImplementedError()
 
-    def window_bell(self, window, device, percent, pitch, duration, bell_class, bell_id, bell_name) -> None:
+    def window_bell(self, window, device, percent: int, pitch: int, duration: int, bell_class,
+                    bell_id: int, bell_name: str) -> None:
         raise NotImplementedError()
 
     def get_info(self) -> dict[str, Any]:
@@ -1438,9 +1439,9 @@ class WindowClient(StubClientMixin):
     def _process_bell(self, packet: PacketType) -> None:
         if not self.bell_enabled:
             return
-        (wid, device, percent, pitch, duration, bell_class, bell_id, bell_name) = packet[1:9]
+        wid, device, percent, pitch, duration, bell_class, bell_id, bell_name = packet[1:9]
         window = self._id_to_window.get(wid)
-        self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bytestostr(bell_name))
+        self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
     ######################################################################
     # focus:
@@ -1625,7 +1626,7 @@ class WindowClient(StubClientMixin):
         """ this runs from the draw thread above """
         wid = packet[1]
         window = self._id_to_window.get(wid)
-        if bytestostr(packet[0]) == "eos":
+        if packet[0] == "eos":
             if window:
                 window.eos()
             return

@@ -985,7 +985,7 @@ def main():
     print(out_line)
     out_lines.append(out_line)
 
-    def s(x):
+    def s(x) -> str:
         if x is None:
             return ""
         if isinstance(x, (list, tuple, set)):

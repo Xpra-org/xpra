@@ -5,18 +5,25 @@
 
 import sys
 
-from xpra.util.str_fn import bytestostr
-from xpra.x11.gtk import gdk_display_source  #@UnresolvedImport, @Reimport
 
-gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
+def main():
+    from xpra.platform import program_context
+    with program_context("Print-Atoms", "Print Atoms"):
+        from xpra.x11.gtk import gdk_display_source  # @UnresolvedImport, @Reimport
 
-from xpra.x11.bindings.window import X11WindowBindings  #@UnresolvedImport
+        gdk_display_source.init_gdk_display_source()  # @UndefinedVariable
 
-X11Window = X11WindowBindings()
+        from xpra.x11.bindings.core import X11CoreBindings  # @UnresolvedImport
 
-for s in sys.argv[1:]:
-    if s.lower().startswith("0x"):
-        v = int(s, 16)
-    else:
-        v = int(s)
-    print("%s : %s" % (s, bytestostr(X11Window.XGetAtomName(v))))
+        X11Core = X11CoreBindings()
+
+        for s in sys.argv[1:]:
+            if s.lower().startswith("0x"):
+                v = int(s, 16)
+            else:
+                v = int(s)
+            print("%s : %s" % (s, X11Core.get_atom_name(v)))
+
+
+if __name__ == "__main__":
+    main()

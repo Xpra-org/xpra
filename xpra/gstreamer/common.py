@@ -130,7 +130,7 @@ def get_caps_str(ctype: str = "video/x-raw", caps=None) -> str:
     if not caps:
         return ctype
 
-    def s(v):
+    def s(v) -> str:
         if isinstance(v, str):
             return f"(string){v}"
         if isinstance(v, tuple):

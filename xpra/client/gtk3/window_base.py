@@ -1231,7 +1231,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def do_set_x11_property(self, prop_name: str, dtype: str, value) -> None:
         xid = self.get_window().get_xid()
         metalog(f"do_set_x11_property({prop_name!r}, {dtype!r}, {value!r}) xid={xid}")
-        dtype = bytestostr(dtype)
         if dtype == "latin1":
             value = bytestostr(value)
         if isinstance(value, (list, tuple)) and not isinstance(dtype, (list, tuple)):

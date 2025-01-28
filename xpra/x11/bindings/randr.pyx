@@ -21,7 +21,7 @@ from xpra.x11.bindings.xlib cimport (
 )
 from xpra.common import DEFAULT_REFRESH_RATE
 from xpra.util.env import envint, envbool, first_time
-from xpra.util.str_fn import csv, decode_str, strtobytes, bytestostr
+from xpra.util.str_fn import csv, decode_str, strtobytes
 from xpra.util.screen import prettify_plug_name
 
 
@@ -320,7 +320,7 @@ cdef dict get_mode_info(XRRModeInfo *mi, with_sync: bool):
         "height"        : mi.height,
     }
     if mi.name and mi.nameLength:
-        info["name"] = bytestostr(mi.name[:mi.nameLength])
+        info["name"] = s(mi.name[:mi.nameLength])
     if with_sync:
         info |= {
             "dot-clock"     : mi.dotClock,
@@ -359,7 +359,7 @@ cdef dict get_output_info(Display *display, XRRScreenResources *rsc, RROutput ou
             info["clones"] = tuple(int(oi.clones[i] for i in range(oi.nclone)))
         info["properties"] = get_output_properties(display, output)
     if oi.name and oi.nameLen:
-        info["name"] = bytestostr(oi.name[:oi.nameLen])
+        info["name"] = s(oi.name[:oi.nameLen])
     XRRFreeOutputInfo(oi)
     return info
 
@@ -371,6 +371,14 @@ cdef str get_XAtom(Display *display, Atom atom):
     r = v[:]
     XFree(v)
     return r.decode()
+
+
+cdef str s(const char *v):
+    pytmp = v[:]
+    try:
+        return pytmp.decode()
+    except:
+        return str(v[:])
 
 
 cdef dict get_output_properties(Display *display, RROutput output):
@@ -883,7 +891,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         cdef double timeVBack = 0.06            #0.031901; 0.055664; // Adjust this to move picture up/down
         cdef double yFactor = 1                 #no interlace (0.5) or doublescan (2)
 
-        bname = strtobytes(name)
+        bname = name.encode("latin1")
         cdef XRRModeInfo *mode = XRRAllocModeInfo(bname, len(bname))
         assert mode!=NULL
 
@@ -1110,7 +1118,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                     if not output_info:
                         log.error(f"Error: output {i} not found ({output:#x})")
                         continue
-                    output_names.append(bytestostr(output_info.name[:output_info.nameLen]))
+                    output_names.append(s(output_info.name[:output_info.nameLen]))
                     if crtc_info.noutput==0 and output_info.connection==RR_Disconnected and not m:
                         #crtc is not enabled and the corresponding output is not connected,
                         #which is exactly what we want, so just leave it alone
@@ -1141,7 +1149,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                     rsc.modes[k].dotClock==match_mode.dotClock
                                     ):
                                     mode = output_info.modes[j]
-                                    mode_name = bytestostr(rsc.modes[j].name)
+                                    mode_name = s(rsc.modes[j].name)
                                     log("using existing output mode %r (%#x) for %ix%i",
                                         mode_name, mode, width, height)
                                     break
@@ -1156,7 +1164,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                                     rsc.modes[j].dotClock==match_mode.dotClock
                                     ):
                                     mode = rsc.modes[j].id
-                                    mode_name = bytestostr(rsc.modes[j].name)
+                                    mode_name = s(rsc.modes[j].name)
                                     log(f"using screen mode {mode_name!r} ({mode:#x}) for {width}x{height}")
                                     break
                             if not mode:
@@ -1221,7 +1229,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
                 #we only need as many monitors as we have crtcs,
                 for mi in range(len(monitor_defs), nmonitors):
                     name_atom = monitors[mi].name
-                    log(f"deleting monitor {mi}: %s", bytestostr(self.XGetAtomName(name_atom)))
+                    log(f"deleting monitor {mi}: %s", self.get_atom_name(name_atom))
                     XRRDeleteMonitor(self.display, window, name_atom)
             finally:
                 XRRFreeMonitors(monitors)
@@ -1245,7 +1253,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             try:
                 names = {}
                 for mi in range(nmonitors):
-                    names[mi] = bytestostr(self.XGetAtomName(monitors[mi].name))
+                    names[mi] = self.get_atom_name(monitors[mi].name)
                 log(f"found {nmonitors} monitors still active: %s", csv(names.values()))
                 active_names = {}
                 mi = 0

@@ -9,7 +9,7 @@ from typing import Any
 from collections.abc import Sequence, Callable, Iterable
 
 from xpra.util.objects import typedict, reverse_dict
-from xpra.util.str_fn import Ellipsizer, repr_ellipsized, bytestostr, csv
+from xpra.util.str_fn import Ellipsizer, repr_ellipsized, csv
 from xpra.util.env import envbool, IgnoreWarningsContext
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.common import RESOLUTION_ALIASES, ConnectionMessage, uniq
@@ -1111,7 +1111,7 @@ class GTKTrayMenu(MenuHelper):
                 virt_devices = get_virtual_video_devices()
                 non_virtual = {k: v for k, v in all_video_devices.items() if k not in virt_devices}
                 for device_no, info in non_virtual.items():
-                    label = bytestostr(info.get("card", info.get("device", str(device_no))))
+                    label = str(info.get("card", info.get("device", str(device_no))))
                     item = deviceitem(label, start_webcam, device_no)
                     menu.append(item)
                 if not non_virtual:
@@ -1272,15 +1272,11 @@ class GTKTrayMenu(MenuHelper):
 
         kh = self.client.keyboard_helper
         model, layout, layouts, variant, variants, _ = kh.get_layout_spec()
-        layout = bytestostr(layout)
-        layouts = tuple(bytestostr(x) for x in layouts)
-        variant = bytestostr(variant or b"")
-        variants = tuple(bytestostr(x) for x in variants)
         log(f"make_layoutsmenuitem() {model=}, {layout=}, {layouts=}, {variant=}, {variants=}")
         if len(layouts) > 1:
-            log("keyboard layouts: %s", ",".join(bytestostr(x) for x in layouts))
+            log("keyboard layouts: %s", ",".join(layouts))
             # log after removing dupes:
-            log("keyboard layouts: %s", ",".join(bytestostr(x) for x in uniq(layouts)))
+            log("keyboard layouts: %s", ",".join(uniq(layouts)))
             auto = self.kbitem("Auto", "Auto", "", True)
             self.layout_submenu.append(auto)
             if layout:

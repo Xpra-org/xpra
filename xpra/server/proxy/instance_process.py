@@ -30,7 +30,7 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.scripts.config import str_to_bool
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title
 from xpra.util.objects import typedict
-from xpra.util.str_fn import Ellipsizer, bytestostr
+from xpra.util.str_fn import Ellipsizer
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
 from xpra.util.version import full_version_str
@@ -299,7 +299,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
 
     def do_process_control_packet(self, proto, packet: PacketType) -> None:
         log("process_control_packet(%s, %s)", proto, packet)
-        packet_type = bytestostr(packet[0])
+        packet_type = str(packet[0])
         if packet_type == CONNECTION_LOST:
             log.info("Connection lost")
             if proto in self.potential_protocols:

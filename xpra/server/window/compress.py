@@ -2691,7 +2691,7 @@ class WindowSource(WindowIconSource):
         # don't print error code -1, which is just a generic code for error
         emsg = {-1: ""}.get(error, error)
 
-        def s(v):
+        def s(v) -> str:
             return decode_str(v or b"")
         if emsg:
             emsg = " "+s(emsg).replace("\n", "").replace("\r", "")

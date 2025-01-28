@@ -20,7 +20,7 @@ def get_x11_window_value(prop, window):
             x11type = window_bindings.GetWindowPropertyType(xid, prop)[0]
     except Exception:
         log("get_x11_window_value(%s, %s)", prop, window, exc_info=True)
-        x11type = None
+        x11type = ""
     if x11type:
         ptype = get_python_type(x11type)
         # log("%s: %s (%s)", filter_object.property_name, x11type, ptype)

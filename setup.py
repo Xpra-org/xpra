@@ -2784,13 +2784,12 @@ toggle_packages(amf_ENABLED, "xpra.codecs.amf")
 if amf_ENABLED:
     try:
         amf_kwargs = pkgconfig("amf")
-        print(f"amf: pkgconfig('amf')={amf_kwargs}")
     except ValueError:
         amf_kwargs = pkgconfig("amf") or {
             "extra_compile_args": "-I" + find_header_file("/AMF", isdir=True) + "/AMF",
             # "extra_link_args": ("-lpam", "-lpam_misc"),
         }
-        print(f"default amf args: {amf_kwargs}")
+        print(f"using default amf args: {amf_kwargs}")
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.common", **amf_kwargs)
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
     toggle_packages(WIN32, "xpra.platform.win32.d3d11")

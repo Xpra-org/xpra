@@ -20,7 +20,7 @@ from xpra.codecs.constants import VideoSpec
 from xpra.net.compression import use
 from xpra.server.background_worker import add_work_item
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.util.env import envint
 from xpra.log import Logger
 
@@ -316,7 +316,6 @@ class EncodingsMixin(StubSourceMixin):
                 self.encoding_options[ek] = c.boolget(k)
         # 2: standardized encoding options:
         for k in c.keys():
-            k = bytestostr(k)
             if k.startswith("theme.") or k.startswith("encoding.icons."):
                 self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c.get(k)
             elif k.startswith("encoding."):

@@ -11,6 +11,7 @@ import time
 import tempfile
 import unittest
 import subprocess
+from typing import NoReturn
 
 from xpra.util.str_fn import repr_ellipsized, bytestostr
 from xpra.util.env import envint, envbool, osexpand, OSEnvContext
@@ -34,15 +35,15 @@ SHOW_XORG_OUTPUT = envbool("XPRA_SHOW_XORG_OUTPUT", False)
 TEST_XVFB_COMMAND = os.environ.get("XPRA_TEST_VFB_COMMAND", "Xvfb")
 
 
-def show_proc_pipes(proc):
-    def showfile(fileobj, filetype="stdout"):
+def show_proc_pipes(proc) -> None:
+    def showfile(fileobj, filetype="stdout") -> None:
         if fileobj and fileobj.name and os.path.exists(fileobj.name):
             log.warn("contents of %s file '%s':", filetype, fileobj.name)
             try:
                 with fileobj as f:
                     f.seek(0)
                     for line in f:
-                        log.warn(" %s", bytestostr(line.rstrip(b"\n\r")))
+                        log.warn(" %s", line.decode("latin1").rstrip("\n\r"))
             except Exception as e:
                 log.error("Error: failed to read '%s': %s", fileobj.name, e)
         else:
@@ -52,7 +53,7 @@ def show_proc_pipes(proc):
     showfile(proc.stderr_file, "stderr")
 
 
-def show_proc_error(proc, msg):
+def show_proc_error(proc, msg) -> NoReturn:
     if not proc:
         raise Exception("command failed to start: %s" % msg)
     log.warn("%s failed:", proc.command)

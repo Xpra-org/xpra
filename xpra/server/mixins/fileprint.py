@@ -15,7 +15,7 @@ from xpra.util.stats import to_std_unit, std_unit
 from xpra.os_util import WIN32, POSIX
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
-from xpra.util.str_fn import repr_ellipsized, bytestostr, csv
+from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.common import NotificationID
 from xpra.auth.auth_helper import AuthDef
 from xpra.net.common import PacketType
@@ -164,13 +164,13 @@ class FilePrintServer(StubServerMixin):
         file_data = packet[2]
         mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
         if len(packet) >= 4:
-            mimetype = bytestostr(packet[3])
+            mimetype = str(packet[3])
         if len(packet) >= 5:
-            source_uuid = bytestostr(packet[4])
+            source_uuid = str(packet[4])
         if len(packet) >= 6:
             title = str(packet[5])
         if len(packet) >= 7:
-            printer = bytestostr(packet[6])
+            printer = str(packet[6])
         if len(packet) >= 8:
             no_copies = int(packet[7])
         if len(packet) >= 9:
@@ -181,7 +181,7 @@ class FilePrintServer(StubServerMixin):
             printlog.error(" %s", repr_ellipsized(mimetype))
             return
         if not isinstance(print_options, dict):
-            s = bytestostr(print_options)
+            s = str(print_options)
             print_options = {}
             for x in s.split(" "):
                 parts = x.split("=", 1)
@@ -225,7 +225,7 @@ class FilePrintServer(StubServerMixin):
             if printer not in ss.printers:
                 printlog.warn("Warning: client %s does not have a '%s' printer", ss.uuid, printer)
                 continue
-            printlog("'%s' sent to %s for printing on '%s'", bytestostr(title or filename), ss, printer)
+            printlog("'%s' sent to %s for printing on '%s'", title or filename, ss, printer)
             if ss.send_file(filename, mimetype, file_data, len(file_data), True, True, options):
                 sent += 1
         # warn if not sent:

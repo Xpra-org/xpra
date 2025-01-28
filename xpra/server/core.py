@@ -67,9 +67,7 @@ from xpra.util.thread import start_thread
 from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, DEFAULT_XDG_DATA_DIRS, ConnectionMessage, noerr
 from xpra.util.pysystem import dump_all_frames, get_frame_info
 from xpra.util.objects import typedict, notypedict, merge_dicts
-from xpra.util.str_fn import (
-    csv, Ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, bytestostr, hexstr,
-)
+from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, hexstr
 from xpra.util.env import envint, envbool, envfloat, osexpand, first_time, get_saved_env
 from xpra.log import Logger, get_info as get_log_info
 
@@ -258,7 +256,7 @@ class ServerCore(ControlHandler):
 
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)
-        self.session_name = bytestostr(opts.session_name)
+        self.session_name = str(opts.session_name)
         set_name("Xpra", self.session_name or "Xpra")
         self.pidfile = osexpand(opts.pidfile)
         if self.pidfile:
@@ -563,7 +561,7 @@ class ServerCore(ControlHandler):
             return
         dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
         dbuslog("init_dbus_server() env: %s", {k: v for k, v in os.environ.items()
-                                               if bytestostr(k).startswith("DBUS_")})
+                                               if k.startswith("DBUS_")})
         if not self.dbus_control:
             return
         try:
@@ -590,7 +588,7 @@ class ServerCore(ControlHandler):
         # Define a server UUID if needed:
         self.uuid = os.environ.get("XPRA_PROXY_START_UUID") or self.get_uuid()
         if not self.uuid:
-            self.uuid = bytestostr(get_hex_uuid())
+            self.uuid = get_hex_uuid()
             self.save_uuid()
         log(f"server uuid is {self.uuid}")
 
@@ -1606,9 +1604,9 @@ class ServerCore(ControlHandler):
         line1 = peek_data.split(b"\n")[0]
         http_proto = "http" + ["", "s"][int(is_ssl)]
         netlog("start_http_socket(%s, %s, %s, %s, ..) http proto=%s, line1=%r",
-               socktype, conn, socket_options, is_ssl, http_proto, bytestostr(line1))
+               socktype, conn, socket_options, is_ssl, http_proto, line1)
         if line1.startswith(b"GET ") or line1.startswith(b"POST "):
-            parts = bytestostr(line1).split(" ")
+            parts = line1.decode("latin1").split(" ")
             httplog("New %s %s request received from %s for '%s'", http_proto, parts[0], frominfo, parts[1])
             tname = parts[0] + "-request"
             req_info = http_proto + " " + parts[0]
@@ -1671,7 +1669,7 @@ class ServerCore(ControlHandler):
             if line1 and line1[0] >= 128 or line1[0] == 0x16:
                 log_fn(" request as hex: '%s'", hexstr(line1))
             else:
-                log_fn(" request: %r", bytestostr(line1))
+                log_fn(" request: %r", line1)
             log_fn(" %s", e)
         force_close_connection(conn)
 
@@ -1889,9 +1887,9 @@ class ServerCore(ControlHandler):
         """ some subclasses perform extra cleanup here """
 
     def _process_disconnect(self, proto: SocketProtocol, packet: PacketType) -> None:
-        info = bytestostr(packet[1])
+        info = str(packet[1])
         if len(packet) > 2:
-            info += " (%s)" % csv(bytestostr(x) for x in packet[2:])
+            info += " (%s)" % csv(str(x) for x in packet[2:])
         # only log protocol info if there is more than one client:
         proto_info = self._disconnect_proto_info(proto)
         self._log_disconnect(proto, "client%s has requested disconnection: %s", proto_info, info)
@@ -2263,7 +2261,7 @@ class ServerCore(ControlHandler):
         if key_hash not in key_hashes:
             return auth_failed(f"unsupported key hash algorithm {key_hash!r}")
         cryptolog("setting output cipher using %s-%s encryption key '%s'",
-                  cipher, cipher_mode, repr_ellipsized(bytestostr(encryption_key)))
+                  cipher, cipher_mode, repr_ellipsized(encryption_key))
         key_size = c.intget("key_size", DEFAULT_KEYSIZE)
         try:
             proto.set_cipher_out(cipher + "-" + cipher_mode, strtobytes(cipher_iv),
@@ -2658,7 +2656,7 @@ class ServerCore(ControlHandler):
         packet_type = None
         handler = None
         try:
-            packet_type = bytestostr(packet[0])
+            packet_type = str(packet[0])
             may_log_packet(False, packet_type, packet)
             handler = self._default_packet_handlers.get(packet_type)
             if handler:

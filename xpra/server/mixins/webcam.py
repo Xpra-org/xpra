@@ -9,7 +9,6 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX
-from xpra.util.str_fn import bytestostr
 from xpra.net.common import PacketType
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -146,7 +145,7 @@ class WebcamServer(StubServerMixin):
             log.warn("Warning: invalid client source for webcam frame")
             return
         device_id, frame_no, encoding, w, h, data = packet[1:7]
-        ss.process_webcam_frame(device_id, frame_no, bytestostr(encoding), w, h, data)
+        ss.process_webcam_frame(device_id, frame_no, encoding, w, h, data)
 
     def init_packet_handlers(self) -> None:
         if self.webcam_enabled:

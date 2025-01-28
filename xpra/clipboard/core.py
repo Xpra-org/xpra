@@ -493,7 +493,7 @@ class ClipboardProtocolHelperCore:
         self.send_tokens(tuple(self._clipboard_proxies.keys()))
 
     def _process_clipboard_token(self, packet: PacketType) -> None:
-        selection = bytestostr(packet[1])
+        selection = str(packet[1])
         name = self.remote_to_local(selection)
         proxy = self._clipboard_proxies.get(name)
         if proxy is None:
@@ -752,7 +752,7 @@ class ClipboardProtocolHelperCore:
         self.enable_selections(selections)
 
     def process_clipboard_packet(self, packet: PacketType) -> None:
-        packet_type = bytestostr(packet[0])
+        packet_type = str(packet[0])
         handler = self._packet_handlers.get(packet_type)
         if handler:
             handler(packet)

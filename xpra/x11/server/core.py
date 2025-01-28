@@ -24,7 +24,6 @@ from xpra.x11.gtk.prop import prop_get, prop_set, prop_del
 from xpra.x11.gtk.display_source import close_gdk_display_source
 from xpra.x11.gtk.bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID
-from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, first_time
 from xpra.net.compression import Compressed
@@ -841,9 +840,8 @@ class X11ServerCore(GTKServerBase):
         # so we use wid=0 for that:
         wid = 0
         for ss in self.window_sources():
-            name = bytestostr(event.bell_name or b"")
             ss.bell(wid, event.device, event.percent,
-                    event.pitch, event.duration, event.bell_class, event.bell_id, name)
+                    event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name)
 
     def _bell_signaled(self, wm, event) -> None:
         log("bell signaled on window %#x", event.window)
@@ -855,9 +853,8 @@ class X11ServerCore(GTKServerBase):
             wid = self._window_to_id.get(event.window_model, 0)
         log("_bell_signaled(%s,%r) wid=%s", wm, event, wid)
         for ss in self.window_sources():
-            name = bytestostr(event.bell_name or b"")
             ss.bell(wid, event.device, event.percent,
-                    event.pitch, event.duration, event.bell_class, event.bell_id, name)
+                    event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name)
 
     def setup_input_devices(self) -> None:
         xinputlog("setup_input_devices() input_devices feature=%s", features.input_devices)

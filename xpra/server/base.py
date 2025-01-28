@@ -21,7 +21,7 @@ from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict, merge_dicts
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import features, ServerExitMode
@@ -218,7 +218,7 @@ class ServerBase(ServerBaseClass):
         reason: ConnectionMessage | str = ConnectionMessage.SERVER_EXIT
         message = "Exiting in response to client request"
         if len(packet) > 1:
-            reason = bytestostr(packet[1])
+            reason = str(packet[1])
             message += ": " + reason
         log.info(message)
         self.cleanup_all_protocols(reason=reason)
@@ -582,7 +582,7 @@ class ServerBase(ServerBaseClass):
         # if len(packet>=2):
         #    uuid = packet[1]
         if len(packet) >= 4:
-            categories = [bytestostr(x) for x in packet[3]]
+            categories = [str(x) for x in packet[3]]
 
         def info_callback(_proto, info) -> None:
             assert proto == _proto
@@ -711,7 +711,7 @@ class ServerBase(ServerBaseClass):
                 if v is None:
                     log.warn("removing invalid None property for %s", k)
                     continue
-                k = bytestostr(k)
+                k = str(k)
                 if k == "event":
                     # event is used as a workaround in _process_map_window,
                     # it isn't a real client property and should not be stored:
@@ -918,7 +918,7 @@ class ServerBase(ServerBaseClass):
         packet_type = ""
         handler: Callable | None = None
         try:
-            packet_type = bytestostr(packet[0])
+            packet_type = str(packet[0])
 
             def call_handler() -> None:
                 may_log_packet(False, packet_type, packet)

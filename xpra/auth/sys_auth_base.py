@@ -13,7 +13,7 @@ from xpra.platform.info import get_username
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.paths import get_socket_dirs
 from xpra.util.objects import typedict
-from xpra.util.str_fn import std, obsc, bytestostr, hexstr
+from xpra.util.str_fn import std, obsc, hexstr
 from xpra.util.env import envint
 from xpra.scripts.config import TRUE_OPTIONS
 from xpra.net.digest import get_salt, choose_digest, verify_digest, gendigest
@@ -115,7 +115,7 @@ class SysAuthenticatorBase:
         try:
             password = value.decode("utf8")
         except UnicodeDecodeError:
-            password = bytestostr(value)
+            password = value.decode("latin1")
         return self.check_password(password)
 
     def check_password(self, password: str) -> bool:

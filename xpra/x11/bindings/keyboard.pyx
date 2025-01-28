@@ -12,7 +12,7 @@ from collections.abc import Iterable
 from xpra.log import Logger
 log = Logger("x11", "bindings", "keyboard")
 
-from xpra.util.str_fn import bytestostr, strtobytes, csv
+from xpra.util.str_fn import csv
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, KeySym, KeyCode, Atom, Window, Status, Time, XRectangle, CARD32,
     XModifierKeymap,
@@ -226,12 +226,17 @@ cdef object NS(char *v):
     b = v
     return b.decode("latin1")
 
-cdef object s(const char *v):
+
+cdef str s(const char *v):
     pytmp = v[:]
     try:
         return pytmp.decode()
     except:
         return str(v[:])
+
+
+cdef inline bytes b(value: str):
+    return value.encode("latin1")
 
 
 # xmodmap's "keycode" action done implemented in python
@@ -288,17 +293,17 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         log("setxkbmap: using locale=%s", NS(locale))
 
         # e have to use a temporary value for older versions of Cython:
-        bmodel = strtobytes(model)
+        bmodel = b(model)
         rdefs.model = bmodel
-        blayout = strtobytes(layout)
+        blayout = b(layout)
         rdefs.layout = blayout
         if variant:
-            bvariant = strtobytes(variant)
+            bvariant = b(variant)
             rdefs.variant = bvariant
         else:
             rdefs.variant = NULL
         if options:
-            boptions = strtobytes(options)
+            boptions = b(options)
             rdefs.options = boptions
         else:
             rdefs.options = NULL
@@ -306,7 +311,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             rules_name = DFLT_XKB_RULES_FILE
 
         log("setxkbmap: using %s", {
-            "rules" : bytestostr(rules_name),
+            "rules" : rules_name,
             "model" : NS(rdefs.model),
             "layout" : NS(rdefs.layout),
             "variant" : NS(rdefs.variant),
@@ -321,13 +326,13 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 log.warn("Warning: rules path too long: %. Ignored.", rules_path)
                 continue
             log("setxkbmap: trying to load rules file %s...", rules_path)
-            rules_path = strtobytes(rules_path)
+            rules_path = b(rules_path)
             rules = XkbRF_Load(rules_path, locale, True, True)
             if rules:
-                log("setxkbmap: loaded rules from %s", bytestostr(rules_path))
+                log("setxkbmap: loaded rules from %r", s(rules_path))
                 break
         if rules==NULL:
-            log.error("Error: cannot find rules file '%s'", bytestostr(rules_name))
+            log.error("Error: cannot find rules file %r", s(rules_name))
             return False
 
         # Let the rules file do the magic:
@@ -336,21 +341,21 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         assert r, "failed to get components"
         props = self.getXkbProperties()
         if rnames.keycodes:
-            props["keycodes"] = bytestostr(rnames.keycodes)
+            props["keycodes"] = s(rnames.keycodes)
         if rnames.symbols:
-            props["symbols"] = bytestostr(rnames.symbols)
+            props["symbols"] = s(rnames.symbols)
         if rnames.types:
-            props["types"] = bytestostr(rnames.types)
+            props["types"] = s(rnames.types)
         if rnames.compat:
-            props["compat"] = bytestostr(rnames.compat)
+            props["compat"] = s(rnames.compat)
         if rnames.geometry:
-            props["geometry"] = bytestostr(rnames.geometry)
+            props["geometry"] = s(rnames.geometry)
         if rnames.keymap:
-            props["keymap"] = bytestostr(rnames.keymap)
+            props["keymap"] = s(rnames.keymap)
         # ote: this value is from XkbRF_VarDefsRec as XkbComponentNamesRec has no layout attribute
         #(and we want to make sure we don't use the default value from getXkbProperties above)
         if rdefs.layout:
-            props["layout"] = bytestostr(rdefs.layout)
+            props["layout"] = s(rdefs.layout)
         log("setxkbmap: properties=%s", props)
         # trip out strings inside parenthesis if any:
         filtered_props = {}
@@ -369,7 +374,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             return False
         # update the XKB root property:
         if rules_name and (model or layout):
-            brules = strtobytes(rules_name)
+            brules = b(rules_name)
             if not XkbRF_SetNamesProp(self.display, brules, &rdefs):
                 log.error("Error updating the XKB names property")
                 return False
@@ -440,7 +445,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 nohost = self.display_name.split(b":")[-1]
                 if nohost.find(b".")>0:
                     display_name = self.display_name[:self.display_name.rfind(b".")]
-                    log("getXkbProperties retrying on '%s'", bytestostr(display_name))
+                    log("getXkbProperties retrying on %r", s(display_name))
                     display = XOpenDisplay(display_name)
                     if display:
                         r = XkbRF_GetNamesProp(display, &tmp, &vd)
@@ -543,7 +548,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         self.work_keymap = new_keymap
 
     cdef KeySym _parse_keysym(self, symbol):
-        s = strtobytes(symbol)
+        s = b(symbol)
         if s in [b"NoSymbol", b"VoidSymbol"]:
             return  NoSymbol
         cdef KeySym keysym = XStringToKeysym(s)
@@ -560,19 +565,16 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             return NoSymbol
         return keysym
 
-    def parse_keysym(self, symbol):
+    def parse_keysym(self, symbol) -> int:
         self.context_check("parse_keysym")
         return int(self._parse_keysym(symbol))
 
-    cdef _keysym_str(self, keysym_val):
+    def keysym_str(self, keysym_val) -> str:
         cdef KeySym keysym = int(keysym_val)
-        cdef char *s = XKeysymToString(keysym)
-        if s==NULL:
+        cdef char *bin = XKeysymToString(keysym)
+        if bin==NULL:
             return ""
-        return bytestostr(s)
-
-    def keysym_str(self, keysym_val):
-        return self._keysym_str(keysym_val)
+        return s(bin)
 
     def get_keysym_list(self, symbols) -> List[KeySym]:
         """ convert a list of key symbols into a list of KeySym values
@@ -720,7 +722,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             if keysym!=NoSymbol:
                 keyname = XKeysymToString(keysym)
                 if keyname!=NULL:
-                    key = bytestostr(keyname)
+                    key = s(keyname)
             keynames.append(key)
         # now remove trailing empty entries:
         while len(keynames)>0 and keynames[-1]=="":
@@ -819,7 +821,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 if keyname==NULL:
                     log.warn("Warning: cannot convert keysym %i to a string", keysym)
                     continue
-                kstr = bytestostr(keyname)
+                kstr = s(keyname)
                 if kstr not in keynames:
                     keynames.append((keycode, kstr))
             mappings[modifier] = keynames
@@ -843,7 +845,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         success = True
         log("add modifier: modifier %s=%s", modifier, keysyms)
         for keysym_str in keysyms:
-            kss = strtobytes(keysym_str)
+            kss = b(keysym_str)
             keysym = XStringToKeysym(kss)
             log("add modifier: keysym(%s)=%s", keysym_str, keysym)
             keycodes = self.KeysymToKeycodes(keysym)
@@ -895,7 +897,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                         continue
                     key = XKeysymToString(keysym)
                     if key!=NULL:
-                        keysyms.append(bytestostr(key))
+                        keysyms.append(s(key))
             return keysyms
         for keycode in keycodes:
             keys[keycode] = get_keysyms(keycode)
@@ -986,7 +988,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         cdef Window root_window = XDefaultRootWindow(self.display)
         XUngrabKey(self.display, AnyKey, AnyModifier, root_window)
 
-    def device_bell(self, xwindow, deviceSpec, bellClass, bellID, percent, name) -> Bool:
+    def device_bell(self, Window xwindow, deviceSpec, bellClass, bellID: int, percent: int, name: str) -> Bool:
         self.context_check("device_bell")
         if not self.hasXkb():
             return
@@ -1104,7 +1106,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 pixels[i*4+3]   = a
                 i += 1
             return [image.x, image.y, image.width, image.height, image.xhot, image.yhot,
-                int(image.cursor_serial), bytes(pixels), bytes(image.name)]
+                int(image.cursor_serial), bytes(pixels), s(image.name)]
         finally:
             if image!=NULL:
                 XFree(image)

@@ -8,10 +8,10 @@ import sys
 import os.path
 import subprocess
 from time import monotonic
+from collections.abc import Callable
 
 from xpra.util.env import envint
 from xpra.os_util import gi_import, WIN32, OSX
-from xpra.util.str_fn import bytestostr
 from xpra.gtk.signals import register_os_signals
 from xpra.util.child_reaper import getChildReaper
 from xpra.exit_codes import ExitValue
@@ -156,12 +156,11 @@ class OpenRequestsWindow:
             expires_label = l()
             self.expire_labels[send_id] = (expires_label, expires)
             buttons = self.action_buttons(cb_answer, send_id, dtype, printit, openit)
-            s = bytestostr(url)
-            main_label = l(s)
-            if dtype == "url" and s.find("?") > 0 and len(s) > 48:
-                parts = s.split("?", 1)
+            main_label = l(url)
+            if dtype == "url" and url.find("?") > 0 and len(url) > 48:
+                parts = url.split("?", 1)
                 main_label.set_label(parts[0] + "?..")
-                main_label.set_tooltip_text(s)
+                main_label.set_tooltip_text(url)
             main_label.set_line_wrap(True)
             main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)  # @UndefinedVariable
             main_label.set_size_request(URI_MAX_WIDTH, -1)
@@ -185,7 +184,7 @@ class OpenRequestsWindow:
             self.populate_table()
             self.window.resize(1, 1)
 
-    def action_buttons(self, cb_answer, send_id, dtype, printit, openit):
+    def action_buttons(self, cb_answer: Callable, send_id: str, dtype: str, printit: bool, openit: bool):
         hbox = Gtk.HBox()
 
         def remove_entry(can_close=False):
@@ -217,27 +216,27 @@ class OpenRequestsWindow:
                 pb.set_text("%sB of %s" % (std_unit(position), std_unit(total)))
             self.progress_bars[send_id] = [stop_btn, pb, position, total]
 
-        def cancel(*args):
+        def cancel(*args) -> None:
             log(f"cancel{args}")
             remove_entry(True)
             cb_answer(DENY)
 
-        def accept(*args):
+        def accept(*args) -> None:
             log(f"accept{args}")
             remove_entry(False)
             cb_answer(ACCEPT, True)
 
-        def remote(*args):
+        def remote(*args) -> None:
             log(f"remote{args}")
             remove_entry(True)
             cb_answer(OPEN)
 
-        def progress(*args):
+        def progress(*args) -> None:
             log(f"progress{args}")
             cb_answer(ACCEPT, False)
             show_progressbar()
 
-        def progressaccept(*args):
+        def progressaccept(*args) -> None:
             log(f"progressaccept{args}")
             cb_answer(ACCEPT, True)
             show_progressbar()
@@ -249,7 +248,7 @@ class OpenRequestsWindow:
             return hbox
         cancel_btn = self.btn("Cancel", cancel, "close.png")
         hbox.pack_start(cancel_btn)
-        if bytestostr(dtype) == "url":
+        if dtype == "url":
             hbox.pack_start(self.btn("Open Locally", accept, "open.png"))
             hbox.pack_start(self.btn("Open on server", remote))
         elif printit:

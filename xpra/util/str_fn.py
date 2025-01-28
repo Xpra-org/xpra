@@ -202,7 +202,7 @@ def pver(v, numsep: str = ".", strsep: str = ", ") -> str:
             if types[0] is str:
                 return strsep.join(str(x) for x in v)
             if types[0] is bytes:
-                def s(x):
+                def s(x) -> str:
                     try:
                         return x.decode("utf8")
                     except UnicodeDecodeError:

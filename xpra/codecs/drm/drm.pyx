@@ -7,8 +7,6 @@
 
 from typing import Dict, Tuple, Any
 
-from xpra.util.str_fn import bytestostr
-
 from xpra.log import Logger
 log = Logger("drm")
 
@@ -60,8 +58,17 @@ cdef extern from "xf86drm.h":
 #    int drmIsKMS(int fd)
 
 
+cdef str s(const char *v):
+    pytmp = v[:]
+    try:
+        return pytmp.decode()
+    except:
+        return str(v[:])
+
+
 def get_version() -> Tuple[int, int]:
     return 4, 4
+
 
 def query() -> Dict[str, Any]:
     info = {}
@@ -85,8 +92,8 @@ def query() -> Dict[str, Any]:
             continue
         dev_info = info.setdefault(i, {})
         path = devices[i].nodes[DRM_NODE_PRIMARY]
-        log(f"{i} at {bytestostr(path)}")
-        dev_info["path"] = bytestostr(path)
+        log(f"{i} at {s(path)}")
+        dev_info["path"] = s(path)
         try:
             with open(path, "rb") as drm_device:
                 fd = drm_device.fileno()
@@ -96,9 +103,9 @@ def query() -> Dict[str, Any]:
                 if version:
                     dev_info |= {
                         "version"   : (version.version_major, version.version_minor, version.version_patchlevel),
-                        "name"      : bytestostr(version.name[:version.name_len]),
-                        "date"      : bytestostr(version.date[:version.date_len]),
-                        "desc"      : bytestostr(version.desc[:version.desc_len]),
+                        "name"      : s(version.name[:version.name_len]),
+                        "date"      : s(version.date[:version.date_len]),
+                        "desc"      : s(version.desc[:version.desc_len]),
                     }
                     drmFreeVersion(version)
                     #drmModeGetResources

@@ -125,6 +125,10 @@ PAM_ITEMS: Dict[str, int] = {
 }
 
 
+cdef inline bytes b(value: str):
+    return value.encode("latin1")
+
+
 cdef int password_conv(int n_msg, const pam_message **msg, pam_response **resp, void *appdata_ptr):
     if appdata_ptr==NULL:
         return 1
@@ -183,7 +187,7 @@ cdef class pam_session:
             conv.appdata_ptr = NULL
         cdef int r = 0
         try:
-            r = pam_start(strtobytes(self.service_name), strtobytes(self.username), &conv, &self.pam_handle)
+            r = pam_start(b(self.service_name), b(self.username), &conv, &self.pam_handle)
         finally:
             if view.buf!=NULL:
                 PyBuffer_Release(&view)
@@ -200,7 +204,7 @@ cdef class pam_session:
         cdef int r
         for k,v in env.items():
             name_value = "%s=%s\0" % (k, v)
-            r = pam_putenv(self.pam_handle, strtobytes(name_value))
+            r = pam_putenv(self.pam_handle, b(name_value))
             if r != PAM_SUCCESS:
                 log.error("Error %i: failed to add '%s' to pam environment", r, name_value)
                 log.error(" %r", self.pam_strerror(r))
@@ -216,7 +220,8 @@ cdef class pam_session:
         if envlist!=NULL:
             i = 0
             while envlist[i]!=NULL:
-                s = bytestostr(envlist[i])
+                bstr = envlist[i]
+                s = bstr.decode("latin1")
                 parts = s.split("=", 1)
                 if len(parts)==2:
                     env[parts[0]] = parts[1]
@@ -230,7 +235,7 @@ cdef class pam_session:
         cdef int r
         assert self.pam_handle!=NULL
         for k,v in items.items():
-            v = strtobytes(v)
+            v = b(v)
             item_type = PAM_ITEMS.get(k.upper())
             log("item_type(%s)=%s", k, item_type)
             if item_type is None or item_type in (PAM_CONV, PAM_FAIL_DELAY):

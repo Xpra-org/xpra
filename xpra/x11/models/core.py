@@ -13,7 +13,6 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.env import envbool, envint, first_time
 from xpra.util.io import get_proc_cmdline
-from xpra.util.str_fn import bytestostr
 from xpra.x11.common import Unmanageable
 from xpra.gtk.gobject import one_arg_signal, n_arg_signal
 from xpra.gtk.error import XError, xsync, xswallow, xlog
@@ -638,7 +637,7 @@ class CoreX11WindowModel(WindowModelStub):
                     metalog("_handle_property_change(%s) property type=%s", name, prop_type)
                     if prop_type:
                         dtype, dformat = prop_type
-                        ptype = PYTHON_TYPES.get(bytestostr(dtype))
+                        ptype = PYTHON_TYPES.get(dtype, "")
                         if ptype:
                             value = self.prop_get(name, ptype, ignore_errors=True)
                             if value is None:

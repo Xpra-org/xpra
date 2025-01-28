@@ -9,7 +9,6 @@ from typing import Any, Dict
 
 from libc.stdint cimport uint32_t, uint16_t, uint8_t   # pylint: disable=syntax-error
 
-from xpra.util.str_fn import strtobytes, bytestostr
 from xpra.os_util import load_binary_file, LINUX
 from xpra.log import Logger
 
@@ -143,7 +142,16 @@ ARPHRD : Dict[int,str] = {
     820 : "phonet",
     821 : "phonet_pipe",
     822 : "caif",
-    }
+}
+
+
+cdef str s(const char *v):
+    pytmp = v[:]
+    try:
+        return pytmp.decode()
+    except:
+        return str(v[:])
+
 
 def get_interface_info(int sockfd, ifname) -> Dict[str,Any]:
     if sockfd==0:
@@ -154,7 +162,7 @@ def get_interface_info(int sockfd, ifname) -> Dict[str,Any]:
     if os.path.exists(sysnetfs) and os.path.isdir(sysnetfs):
         type_file = os.path.join(sysnetfs, "type")
         if os.path.exists(type_file):
-            dev_type = bytestostr(load_binary_file(type_file).rstrip(b"\n\r"))
+            dev_type = s(load_binary_file(type_file).rstrip(b"\n\r"))
             if dev_type:
                 try:
                     idev_type = int(dev_type)
@@ -187,7 +195,7 @@ def get_ethtool_info(int sockfd, ifname:str) -> Dict[str,Any]:
         return {}
     cdef ifreq ifr
     cdef ethtool_cmd edata
-    bifname = strtobytes(ifname)
+    bifname = ifname.encode("latin1")
     cdef char *cifname = bifname
     ifr.ifr_ifrn.ifrn_name = cifname
     ifr.ifr_ifru.ifru_data = <void*> &edata
@@ -205,10 +213,10 @@ def get_ethtool_info(int sockfd, ifname:str) -> Dict[str,Any]:
     ifr.ifr_ifru.ifru_data = <void *> &drvinfo
     r = ioctl(sockfd, SIOCETHTOOL, &ifr)
     if r>=0:
-        info["driver"] = bytestostr(drvinfo.driver)
-        info["version"] = bytestostr(drvinfo.version)
-        info["firmware-version"] = bytestostr(drvinfo.fw_version)
-        info["bus-info"] = bytestostr(drvinfo.bus_info)
+        info["driver"] = s(drvinfo.driver)
+        info["version"] = s(drvinfo.version)
+        info["firmware-version"] = s(drvinfo.fw_version)
+        info["bus-info"] = s(drvinfo.bus_info)
     else:
         log.info("no driver information for %s", ifname)
     return info

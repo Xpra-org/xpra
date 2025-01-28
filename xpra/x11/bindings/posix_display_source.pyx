@@ -7,7 +7,6 @@
 # This module can be used to open the local $DISPLAY and hook it into the X11 bindings
 
 import os
-from xpra.util.str_fn import strtobytes
 from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
 from xpra.x11.bindings.display_source cimport set_display, get_display   # pylint: disable=syntax-error
 from xpra.x11.bindings.display_source import set_display_name  # @UnresolvedImport
@@ -21,10 +20,11 @@ def init_posix_display_source() -> None:
     return do_init_posix_display_source(display_name)
 
 
-cdef uintptr_t do_init_posix_display_source(display_name):
+cdef uintptr_t do_init_posix_display_source(display_name: str):
     if not display_name:
         raise ValueError("display name not provided")
-    cdef Display * display = XOpenDisplay(strtobytes(display_name))
+    bin_name = display_name.encode("latin1")
+    cdef Display * display = XOpenDisplay(bin_name)
     if display==NULL:
         raise ValueError("failed to open X11 display '%s'" % display_name)
     set_display(display)

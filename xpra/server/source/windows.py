@@ -20,7 +20,7 @@ from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.net.compression import Compressed
-from xpra.util.str_fn import bytestostr, memoryview_to_bytes
+from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED, force_size_constraint
@@ -303,7 +303,7 @@ class WindowsMixin(StubSourceMixin):
                 return
             cursor_data[7] = cpixels
         cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
-                  w, h, (encoding or "empty"), bytestostr(name), serial, delay, self.cursor_encodings)
+                  w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
         args = [encoding_prefix + encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
         self.send_more("cursor", *args)
 

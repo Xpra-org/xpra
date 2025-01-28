@@ -134,7 +134,7 @@ def pinentry_getpin(pinentry_proc, title: str, description: str, pin_cb: Callabl
         # log(f"process_output({message}, {output})")
         if message == "GETPIN":
             if output.startswith(b"S "):
-                log("getpin message: %s", bytestostr(output[2:]))
+                log("getpin message: %s", output[2:].decode())
                 # ie: 'S PASSWORD_FROM_CACHE'
                 return True  # read more data
             if output.startswith(b"D "):
