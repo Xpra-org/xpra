@@ -186,12 +186,10 @@ class ServerBase(ServerBaseClass):
             log("%3ims in %s.setup", 1000 * (end - start), c)
 
     def threaded_init(self) -> None:
-        super().do_threaded_init()
         log("threaded_init() serverbase start")
         for c in SERVER_BASES:
-            if c != ServerCore:
-                with log.trap_error("Error during threaded setup of %s", c):
-                    c.threaded_setup(self)
+            with log.trap_error("Error during threaded setup of %s", c):
+                c.threaded_setup(self)
         log("threaded_init() serverbase end")
         super().call_init_thread_callbacks()
 

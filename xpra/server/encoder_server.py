@@ -50,6 +50,10 @@ class EncoderServer(EncoderServerBaseClass):
         for bc in SERVER_BASES:
             bc.init(self, opts)
 
+    def setup(self) -> None:
+        for c in SERVER_BASES:
+            c.setup(self)
+
     def threaded_init(self) -> None:
         for bc in SERVER_BASES:
             bc.threaded_setup(self)
@@ -92,4 +96,5 @@ class EncoderServer(EncoderServerBaseClass):
         self.add_packet_handler("encode", self._process_encode)
 
     def _process_encode(self, proto: SocketProtocol, packet: PacketType) -> None:
-        pass
+        packet = ["encoded"] + packet[1:]
+        proto.send_now(packet)

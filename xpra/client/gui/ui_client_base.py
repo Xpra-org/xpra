@@ -13,12 +13,12 @@ from xpra.client.base.client import XpraClientBase
 from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
-from xpra.common import FULL_INFO, noop, NotificationID, ConnectionMessage, noerr
+from xpra.common import FULL_INFO, noop, NotificationID, ConnectionMessage, noerr, get_run_info
 from xpra.net.common import PacketType
 from xpra.keyboard.common import KeyEvent
 from xpra.os_util import POSIX, WIN32, OSX, gi_import
 from xpra.util.child_reaper import reaper_cleanup
-from xpra.util.version import full_version_str, get_platform_info
+from xpra.util.version import get_platform_info
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
@@ -111,7 +111,12 @@ class UIXpraClient(ClientBaseClass):
     def __init__(self):  # pylint: disable=super-init-not-called
         # try to ensure we start on a new line (see #4023):
         noerr(sys.stdout.write, "\n")
-        log.info(f"Xpra {self.client_toolkit()} client version {full_version_str()}")
+        run_info = get_run_info(f"{self.client_toolkit()} client")
+        wm = get_wm_name()  # pylint: disable=assignment-from-none
+        if wm:
+            run_info.append(f" window manager is {wm!r}")
+        for info in run_info:
+            log.info(info)
         # mmap_enabled belongs in the MmapClient mixin,
         # but it is used outside it, so make sure we define it:
         self.mmap_enabled: bool = False
@@ -120,18 +125,6 @@ class UIXpraClient(ClientBaseClass):
         for c in CLIENT_BASES:
             log("calling %s.__init__()", c)
             c.__init__(self)  # pylint: disable=non-parent-init-called
-        try:
-            pinfo = get_platform_info()
-            osinfo = "%s" % platform_name(sys.platform, pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
-            log.info(f" running on {osinfo}")
-            vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO + 1])
-            log.info(f" {sys.implementation.name} {vinfo}")
-        except (OSError, TypeError, AttributeError):
-            log("platform name error:", exc_info=True)
-        wm = get_wm_name()  # pylint: disable=assignment-from-none
-        if wm:
-            log.info(f" window manager is {wm!r}")
-
         self._ui_events: int = 0
         self.title: str = ""
         self.session_name: str = ""

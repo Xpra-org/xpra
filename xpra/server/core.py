@@ -20,7 +20,7 @@ from typing import Any, NoReturn
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.util.version import (
-    XPRA_VERSION, XPRA_NUMERIC_VERSION, vparts, version_str, full_version_str, version_compat_check, get_version_info,
+    XPRA_VERSION, XPRA_NUMERIC_VERSION, vparts, version_str, version_compat_check, get_version_info,
     get_platform_info, get_host_info, parse_version,
 )
 from xpra.scripts.server import deadly_signal
@@ -57,7 +57,7 @@ from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf
 from xpra.platform.events import add_handler, remove_handler
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, gi_import, POSIX
-from xpra.util.system import get_env_info, get_sysconfig_info, platform_name, register_SIGUSR_signals
+from xpra.util.system import get_env_info, get_sysconfig_info, register_SIGUSR_signals
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf
 from xpra.server.background_worker import add_work_item, quit_worker
@@ -359,18 +359,21 @@ class ServerCore(ControlHandler):
         register_SIGUSR_signals(GLib.idle_add)
 
     def threaded_init(self) -> None:
-        self.do_threaded_init()
+        log.warn("threaded_init() servercore start")
+        self.threaded_setup()
         self.call_init_thread_callbacks()
 
-    def do_threaded_init(self) -> None:
-        log("do_threaded_init() servercore start")
+    def threaded_setup(self) -> None:
+        log("threaded_setup() servercore start")
         # platform specific init:
         threaded_server_init()
         # populate the platform info cache:
         get_platform_info()
         if self.menu_provider:
             self.menu_provider.setup()
-        log("threaded_init() servercore end")
+        add_work_item(self.print_run_info)
+        GLib.idle_add(self.reset_server_timeout)
+        log("threaded_setup() servercore end")
 
     def call_init_thread_callbacks(self) -> None:
         # run the init callbacks:
@@ -413,9 +416,7 @@ class ServerCore(ControlHandler):
     def run(self) -> ExitValue:
         self.install_signal_handlers(self.signal_quit)
         GLib.idle_add(self.register_power_events)
-        GLib.idle_add(self.reset_server_timeout)
         GLib.idle_add(self.server_is_ready)
-        GLib.idle_add(self.print_run_info)
         self.stop_splash_process()
         self.do_run()
         log("run()")
@@ -632,32 +633,9 @@ class ServerCore(ControlHandler):
         return tuple(get_auth_module(auth_str) for auth_str in auth_strs)
 
     def print_run_info(self) -> None:
-        add_work_item(self.do_print_run_info)
-
-    def do_print_run_info(self) -> None:
-        log.info("xpra %s server version %s", self.get_server_mode(), full_version_str())
-        try:
-            pinfo = get_platform_info()
-            osinfo = " on " + platform_name(sys.platform,
-                                            pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
-        except OSError:
-            log("platform name error:", exc_info=True)
-            osinfo = ""
-        if POSIX:
-            uid = os.getuid()
-            gid = os.getgid()
-            try:
-                import pwd
-                import grp
-                user = pwd.getpwuid(uid)[0]
-                group = grp.getgrgid(gid)[0]
-                log.info(" uid=%i (%s), gid=%i (%s)", uid, user, gid, group)
-            except (TypeError, KeyError):
-                log("failed to get user and group information", exc_info=True)
-                log.info(" uid=%i, gid=%i", uid, gid)
-        log.info(" running with pid %s%s", os.getpid(), osinfo)
-        vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO + 1])
-        log.info(f" {sys.implementation.name} {vinfo}")
+        from xpra.common import get_run_info
+        for run_info in get_run_info(f"{self.get_server_mode()} server"):
+            log.info(run_info)
         GLib.idle_add(self.print_screen_info)
 
     def notify_new_user(self, ss) -> None:

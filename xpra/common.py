@@ -6,10 +6,11 @@
 # noinspection PyPep8
 
 import os
+import sys
 import binascii
 from enum import Enum, IntEnum
 from typing import Final, Protocol, TypeAlias, Any
-from collections.abc import Callable, Sized, MutableSequence, Iterable
+from collections.abc import Callable, Sized, MutableSequence, Iterable, Sequence
 
 from xpra.util.env import envint, envbool
 
@@ -366,3 +367,36 @@ def roundup(n: int, m: int) -> int:
 def uniq(seq: Iterable) -> list:
     seen = set()
     return [x for x in seq if not (x in seen or seen.add(x))]
+
+
+def get_run_info(subcommand="server") -> Sequence[str]:
+    from xpra.os_util import POSIX
+    from xpra.util.version import full_version_str, get_platform_info
+    from xpra.util.system import platform_name
+    from xpra.log import Logger
+    log = Logger("util")
+    run_info = [f"xpra {subcommand} version {full_version_str()}"]
+    try:
+        pinfo = get_platform_info()
+        osinfo = " on " + platform_name(sys.platform,
+                                        pinfo.get("linux_distribution") or pinfo.get("sysrelease", ""))
+    except OSError:
+        log("platform name error:", exc_info=True)
+        osinfo = ""
+    if POSIX:
+        uid = os.getuid()
+        gid = os.getgid()
+        try:
+            import pwd
+            import grp
+
+            user = pwd.getpwuid(uid)[0]
+            group = grp.getgrgid(gid)[0]
+            run_info.append(f" {uid=} ({user}), {gid=} ({group})")
+        except (TypeError, KeyError):
+            log("failed to get user and group information", exc_info=True)
+            run_info.append(f" {uid=}, {gid=}")
+    run_info.append(" running with pid %s%s" % (os.getpid(), osinfo))
+    vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO + 1])
+    run_info.append(f" {sys.implementation.name} {vinfo}")
+    return run_info

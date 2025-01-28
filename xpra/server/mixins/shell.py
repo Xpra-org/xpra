@@ -16,7 +16,7 @@ class ShellServer(StubServerMixin):
     Mixin for adding `shell` support
     """
 
-    def init(self, _opts) -> None:
+    def __init__(self):
         self.counter = 0
         self.commands: Deque[str] = deque(maxlen=10)
 
