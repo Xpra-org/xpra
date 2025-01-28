@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
 import socket
 import struct
 import threading
@@ -274,3 +275,63 @@ def verify_hyperv_available() -> None:
                        f"hyperv sockets are not supported on this platform: {e}") from None
     else:
         s.close()
+
+
+def open_html_url(html: str = "open", mode: str = "tcp", bind: str = "127.0.0.1") -> None:
+    from xpra.log import Logger
+    log = Logger("http", "network")
+    log("open_html_url%s", (html, mode, bind))
+    import urllib
+    result = urllib.parse.urlsplit(f"//{bind}")
+    host = result.hostname
+    if host in ("0.0.0.0", "*"):
+        host = "localhost"
+    elif host == "::":
+        host = "::1"
+    port = result.port or DEFAULT_PORTS.get(mode)
+    ssl = mode in ("wss", "ssl")
+    url = "https" if ssl else "http"
+    url += f"://{host}"
+    if (ssl and port != 443) or (not ssl and port != 80):
+        url += f":{port}"
+    url += "/"
+    from subprocess import Popen, SubprocessError
+    from xpra.util.env import get_saved_env
+
+    def exec_open(*cmd) -> None:
+        log(f"exec_open{cmd}")
+        proc = Popen(args=cmd, env=get_saved_env())
+        from xpra.util.child_reaper import getChildReaper
+        getChildReaper().add_process(proc, "open-html5-client", " ".join(cmd), True, True)
+
+    def webbrowser_open() -> None:
+        log.info(f"opening html5 client using URL {url!r}")
+        from xpra.os_util import POSIX, OSX
+        if POSIX and not OSX:
+            saved_env = get_saved_env()
+            if not (saved_env.get("DISPLAY") or saved_env.get("WAYLAND_DISPLAY")):
+                log.warn(" no display, cannot open a browser window")
+                return
+            # run using a subprocess,
+            # so we can specify the environment:
+            # (which will run it against the correct X11 display!)
+            try:
+                exec_open(f"python{sys.version_info.major}", "-m", "webbrowser", "-t", url)
+            except SubprocessError:
+                log("failed exec_open:", exc_info=True)
+            else:
+                return
+        import webbrowser
+        webbrowser.open_new_tab(url)
+
+    if html.lower() not in ("open", "connect"):
+        # is a command?
+        from xpra.util.io import which
+        open_cmd = which(html)
+        if open_cmd:
+            log.info(f"opening html5 client using {html!r} at URL {url!r}")
+            exec_open(open_cmd, url)
+            return
+        # fall through to webbrowser:
+        log.warn(f"Warning: {html!r} is not a valid command")
+    webbrowser_open()

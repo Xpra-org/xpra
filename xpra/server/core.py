@@ -33,7 +33,7 @@ from xpra.server.mixins.control import ControlHandler
 from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
-    SOCKET_TYPES, MAX_PACKET_SIZE, DEFAULT_PORTS, SSL_UPGRADE, PACKET_TYPES,
+    SOCKET_TYPES, MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
     may_log_packet, is_request_allowed, PacketType, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
 )
 from xpra.net.socket_util import (
@@ -57,10 +57,10 @@ from xpra.platform.info import get_username
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs, get_icon_filename
 from xpra.platform.events import add_handler, remove_handler
 from xpra.platform.dotxpra import DotXpra
-from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, gi_import, POSIX, OSX
+from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, gi_import, POSIX
 from xpra.util.system import get_env_info, get_sysconfig_info, platform_name, register_SIGUSR_signals
 from xpra.util.parsing import parse_encoded_bin_data
-from xpra.util.io import load_binary_file, filedata_nocrlf, which
+from xpra.util.io import load_binary_file, filedata_nocrlf
 from xpra.server.background_worker import add_work_item, quit_worker
 from xpra.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.thread import start_thread
@@ -68,7 +68,7 @@ from xpra.common import LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, DEFAULT_XDG_DA
 from xpra.util.pysystem import dump_all_frames, get_frame_info
 from xpra.util.objects import typedict, notypedict, merge_dicts
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, hexstr
-from xpra.util.env import envint, envbool, envfloat, osexpand, first_time, get_saved_env
+from xpra.util.env import envint, envbool, envfloat, osexpand, first_time
 from xpra.log import Logger, get_info as get_log_info
 
 # pylint: disable=import-outside-toplevel
@@ -536,71 +536,6 @@ class ServerCore(ControlHandler):
     def save_uuid(self) -> None:
         """ X11 servers use this method to save the uuid as a root window property """
 
-    def open_html_url(self, html: str = "open", mode: str = "tcp", bind: str = "127.0.0.1") -> None:
-        httplog("open_html_url%s", (html, mode, bind))
-        import urllib
-        result = urllib.parse.urlsplit(f"//{bind}")
-        host = result.hostname
-        if host in ("0.0.0.0", "*"):
-            host = "localhost"
-        elif host == "::":
-            host = "::1"
-        port = result.port or DEFAULT_PORTS.get(mode)
-        ssl = mode in ("wss", "ssl")
-        url = "https" if ssl else "http"
-        url += f"://{host}"
-        if (ssl and port != 443) or (not ssl and port != 80):
-            url += f":{port}"
-        url += "/"
-        from subprocess import Popen, SubprocessError
-
-        def exec_open(*cmd) -> None:
-            httplog(f"exec_open{cmd}")
-            proc = Popen(args=cmd, env=get_saved_env())
-            from xpra.util.child_reaper import getChildReaper
-            getChildReaper().add_process(proc, "open-html5-client", " ".join(cmd), True, True)
-
-        def webbrowser_open() -> None:
-            httplog.info(f"opening html5 client using URL {url!r}")
-            if POSIX and not OSX:
-                saved_env = get_saved_env()
-                if not (saved_env.get("DISPLAY") or saved_env.get("WAYLAND_DISPLAY")):
-                    httplog.warn(" no display, cannot open a browser window")
-                    return
-                # run using a subprocess,
-                # so we can specify the environment:
-                # (which will run it against the correct X11 display!)
-                try:
-                    exec_open(f"python{sys.version_info.major}", "-m", "webbrowser", "-t", url)
-                except SubprocessError:
-                    log("failed exec_open:", exc_info=True)
-                else:
-                    return
-                # racy alternative to subprocess:
-                # with OSEnvContext():
-                #    os.environ.clear()
-                #    os.environ.update(get_saved_env())
-                #    import webbrowser
-                #    webbrowser.open_new_tab(url)
-            import webbrowser
-            webbrowser.open_new_tab(url)
-
-        def open_url() -> None:
-            if html.lower() not in ("open", "connect"):
-                # is a command?
-                open_cmd = which(html)
-                if open_cmd:
-                    httplog.info(f"opening html5 client using {html!r} at URL {url!r}")
-                    exec_open(open_cmd, url)
-                    return
-                # fall through to webbrowser:
-                log.warn(f"Warning: {html!r} is not a valid command")
-            webbrowser_open()
-
-        # open via timeout_add so that the server is running by then,
-        # plus a slight delay so that it can settle down:
-        GLib.timeout_add(1000, open_url)
-
     def init_html_proxy(self, opts) -> None:
         httplog(f"init_html_proxy(..) options: html={opts.html!r}")
         # opts.html can contain a boolean, "auto" or the path to the webroot
@@ -622,7 +557,12 @@ class ServerCore(ControlHandler):
                 "ssl": opts.bind_ssl,
             }.items():
                 if bind:  # ie: ["0.0.0.0:10000", "127.0.0.1:20000"]
-                    self.open_html_url(html, mode, bind[0])
+                    def open_url() -> None:
+                        from xpra.net.common import open_html_url
+                        open_html_url(html, mode, bind[0])
+                    # open via timeout_add so that the server is running by then,
+                    # plus a slight delay so that it can settle down:
+                    GLib.timeout_add(1000, open_url)
                     break
             else:
                 log.warn("Warning: cannot open html client in a browser")
