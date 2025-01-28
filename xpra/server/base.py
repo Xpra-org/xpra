@@ -114,7 +114,6 @@ class ServerBase(ServerBaseClass):
         self._authenticated_packet_handlers: dict[str, Callable] = {}
         self._authenticated_ui_packet_handlers: dict[str, Callable] = {}
 
-        self.display_pid: int = 0
         self._server_sources: dict = {}
         self.client_properties: dict[int, dict] = {}
         self.ui_driver = None
