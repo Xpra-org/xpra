@@ -143,7 +143,7 @@ def get_proxy_server_base_classes() -> tuple[type, ...]:
 
 
 SERVER_BASES = get_proxy_server_base_classes()
-ProxyServerBaseClass = type('ProxyServerBaseClass', SERVER_BASES, {})
+ProxyServerBaseClass = type("ProxyServerBaseClass", SERVER_BASES, {})
 
 
 class ProxyServer(ProxyServerBaseClass):

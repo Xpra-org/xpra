@@ -10,6 +10,7 @@ from xpra.net.common import PacketType
 from xpra.net.protocol.socket_handler import SocketProtocol
 
 from xpra.os_util import gi_import
+from xpra.server import features
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.server.mixins.encoding import EncodingServer
 from xpra.server.core import ServerCore
@@ -20,21 +21,38 @@ GLib = gi_import("GLib")
 log = Logger("server")
 
 
-class EncoderServer(ServerCore, EncodingServer):
+def get_encoder_server_base_classes() -> tuple[type, ...]:
+    classes: list[type] = [ServerCore, EncodingServer]
+    if features.dbus:
+        from xpra.server.mixins.dbus import DbusServer
+        classes.append(DbusServer)
+    if features.http:
+        from xpra.server.mixins.http import HttpServer
+        classes.append(HttpServer)
+    return tuple(classes)
+
+
+SERVER_BASES = get_encoder_server_base_classes()
+EncoderServerBaseClass = type('EncoderServerBaseClass', SERVER_BASES, {})
+
+
+class EncoderServer(EncoderServerBaseClass):
 
     def __init__(self):
         log("EncoderServer.__init__()")
-        super().__init__()
+        for bc in SERVER_BASES:
+            bc.__init__(self)
         self.session_type = "encoder"
         self.loop = GLib.MainLoop()
 
     def init(self, opts) -> None:
         opts.start_new_commands = False
-        ServerCore.init(self, opts)
-        EncodingServer.init(self, opts)
+        for bc in SERVER_BASES:
+            bc.init(self, opts)
 
     def threaded_init(self) -> None:
-        EncoderServer.threaded_setup(self)
+        for bc in SERVER_BASES:
+            bc.threaded_setup(self)
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
         sstr = self.get_server_mode() + " server"
@@ -59,8 +77,8 @@ class EncoderServer(ServerCore, EncodingServer):
         return info
 
     def cleanup(self) -> None:
-        EncodingServer.cleanup(self)
-        ServerCore.cleanup(self)
+        for bc in SERVER_BASES:
+            bc.cleanup(self)
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
@@ -74,5 +92,4 @@ class EncoderServer(ServerCore, EncodingServer):
         self.add_packet_handler("encode", self._process_encode)
 
     def _process_encode(self, proto: SocketProtocol, packet: PacketType) -> None:
-
         pass
