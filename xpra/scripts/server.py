@@ -1468,7 +1468,9 @@ def _do_run_server(script_file: str, cmdline,
             return 1
         init_local_sockets()
         app.init_sockets(sockets)
-        app.init_dbus(dbus_pid, dbus_env)
+        from xpra.server import features
+        if features.dbus:
+            app.init_dbus(dbus_pid, dbus_env)
         if not (shadowing or proxying or expanding or encoder):
             app.init_display_pid(xvfb_pid)
             app.save_pid()

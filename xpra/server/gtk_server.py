@@ -91,10 +91,10 @@ class GTKServerBase(ServerBase):
         from xpra.util.system import register_SIGUSR_signals
         register_SIGUSR_signals()
 
-    def late_cleanup(self) -> None:
-        log("GTKServerBase.late_cleanup()")
+    def late_cleanup(self, stop=True) -> None:
+        log("GTKServerBase.late_cleanup(%s)", stop)
         self.stop_keymap_timer()
-        super().late_cleanup()
+        super().late_cleanup(stop)
         self.stop_ui_watcher()
         self.close_gtk_display()
 

@@ -131,7 +131,19 @@ def get_proxy_env() -> dict[str, str]:
     return env
 
 
-class ProxyServer(ServerCore):
+def get_proxy_server_base_classes() -> tuple[type, ...]:
+    classes: list[type] = [ServerCore]
+    if features.dbus:
+        from xpra.server.mixins.dbus import DbusServer
+        classes.append(DbusServer)
+    return tuple(classes)
+
+
+SERVER_BASES = get_proxy_server_base_classes()
+ProxyServerBaseClass = type('ProxyServerBaseClass', SERVER_BASES, {})
+
+
+class ProxyServer(ProxyServerBaseClass):
     """
         This is the proxy server you can launch with "xpra proxy",
         once authenticated, it will dispatch the connection

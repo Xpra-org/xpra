@@ -53,6 +53,13 @@ class StubServerMixin:
         Free up any resources.
         """
 
+    def late_cleanup(self, stop=True) -> None:
+        """
+        Free up any resources, after main cleanup.
+        `stop` is set to True when we are meant to stop all subprocesses we are responsible for.
+        (ie: `Xvfb` and such)
+        """
+
     def setup(self) -> None:
         """
         After initialization, prepare to run.
@@ -150,5 +157,6 @@ class StubServerMixin:
     def add_packet_handlers(self, defs: dict[str, ServerPacketHandlerType], main_thread=True) -> None:
         """ register multiple packet handlers """
 
-    def get_server_source(self, proto):
+    def get_server_source(self, _proto):
+        """ returns the client connection source object for the given protocol """
         return None

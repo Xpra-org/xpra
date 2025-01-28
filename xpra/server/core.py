@@ -84,7 +84,6 @@ proxylog = Logger("proxy")
 authlog = Logger("auth")
 cryptolog = Logger("crypto")
 timeoutlog = Logger("timeout")
-dbuslog = Logger("dbus")
 mdnslog = Logger("mdns")
 
 main_thread = threading.current_thread()
@@ -178,7 +177,6 @@ class ServerCore(ControlHandler):
         self.display_name: str = ""
         self.display_options = ""
         self.dotxpra = None
-
         self._closing: bool = False
         self._exit_mode = ServerExitMode.UNSET
         # networking bits:
@@ -206,10 +204,6 @@ class ServerCore(ControlHandler):
         self._ws_timeout: int = 5
         self._socket_dir: str = ""
         self._socket_dirs: list = []
-        self.dbus_pid: int = 0
-        self.dbus_env: dict[str, str] = {}
-        self.dbus_control: bool = False
-        self.dbus_server = None
         self.unix_socket_paths: list[str] = []
         self.touch_timer: int = 0
         self.exec_cwd = os.getcwd()
@@ -284,7 +278,6 @@ class ServerCore(ControlHandler):
         self.websocket_upgrade = opts.websocket_upgrade
         self.ssh_upgrade = opts.ssh_upgrade
         self.rdp_upgrade = opts.rdp_upgrade
-        self.dbus_control = opts.dbus_control
         self.mdns = opts.mdns
         if opts.start_new_commands:
             # must be initialized before calling init_html_proxy
@@ -317,7 +310,6 @@ class ServerCore(ControlHandler):
     def setup(self) -> None:
         self.init_control_commands()
         self.init_packet_handlers()
-        self.init_dbus_server()
         # for things that can take longer:
         self.init_thread = start_thread(target=self.threaded_init, name="server-init-thread")
 
@@ -354,7 +346,7 @@ class ServerCore(ControlHandler):
             self._exit_mode = exit_mode
         self.closing()
         noerr(sys.stdout.flush)
-        self.late_cleanup()
+        self.late_cleanup(stop=self._exit_mode not in (ServerExitMode.EXIT, ServerExitMode.UPGRADE))
         if self._exit_mode not in (ServerExitMode.EXIT, ServerExitMode.UPGRADE):
             self.clean_session_files()
             rm_session_dir()
@@ -476,7 +468,6 @@ class ServerCore(ControlHandler):
         self.cleanup_all_protocols()
         self.do_cleanup()
         self.cleanup_sockets()
-        self.cleanup_dbus_server()
         self.cleanup_menu_provider()
         netlog("cleanup() done for server core")
 
@@ -484,9 +475,7 @@ class ServerCore(ControlHandler):
         # allow just a bit of time for the protocol packet flush
         sleep(0.1)
 
-    def late_cleanup(self) -> None:
-        if self._exit_mode not in (ServerExitMode.EXIT, ServerExitMode.UPGRADE):
-            self.stop_dbus_server()
+    def late_cleanup(self, stop=True) -> None:
         self.cleanup_all_protocols(force=True)
         self._potential_protocols = []
         if self.pidfile:
@@ -532,57 +521,6 @@ class ServerCore(ControlHandler):
                 cleanup()
             except OSError:
                 log("cleanup error on %s", cleanup, exc_info=True)
-
-    ######################################################################
-    # dbus:
-    def init_dbus(self, dbus_pid: int, dbus_env: dict[str, str]) -> None:
-        if not POSIX:
-            return
-        self.dbus_pid = dbus_pid
-        self.dbus_env = dbus_env
-
-    def stop_dbus_server(self) -> None:
-        dbuslog("stop_dbus_server() dbus_pid=%s", self.dbus_pid)
-        if not self.dbus_pid:
-            return
-        try:
-            os.kill(self.dbus_pid, signal.SIGINT)
-            self.do_clean_session_files("dbus.pid", "dbus.env")
-        except ProcessLookupError:
-            dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
-            dbuslog.warn(f"Warning: dbus process not found (pid={self.dbus_pid})")
-        except Exception as e:
-            dbuslog("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
-            dbuslog.warn(f"Warning: error trying to stop dbus with pid {self.dbus_pid}:")
-            dbuslog.warn(" %s", e)
-
-    def init_dbus_server(self) -> None:
-        if not POSIX:
-            return
-        dbuslog("init_dbus_server() dbus_control=%s", self.dbus_control)
-        dbuslog("init_dbus_server() env: %s", {k: v for k, v in os.environ.items()
-                                               if k.startswith("DBUS_")})
-        if not self.dbus_control:
-            return
-        try:
-            from xpra.server.dbus.common import dbus_exception_wrap
-            self.dbus_server = dbus_exception_wrap(self.make_dbus_server, "setting up server dbus instance")
-        except Exception as e:
-            log("init_dbus_server()", exc_info=True)
-            log.error("Error: cannot load dbus server:")
-            log.estr(e)
-            self.dbus_server = None
-
-    def cleanup_dbus_server(self) -> None:
-        ds = self.dbus_server
-        netlog(f"cleanup_dbus_server() dbus_server={ds}")
-        if ds:
-            ds.cleanup()
-            self.dbus_server = None
-
-    def make_dbus_server(self):  # pylint: disable=useless-return
-        dbuslog(f"make_dbus_server() no dbus server for {self}")
-        return None
 
     def init_uuid(self) -> None:
         # Define a server UUID if needed:
@@ -2564,11 +2502,6 @@ class ServerCore(ControlHandler):
             up("env", get_env_info())
             if self.child_reaper:
                 info.update(self.child_reaper.get_info())
-            if self.dbus_pid:
-                up("dbus", {
-                    "pid": self.dbus_pid,
-                    "env": self.dbus_env,
-                })
         end = monotonic()
         log("ServerCore.get_info took %ims", (end - start) * 1000)
         return info

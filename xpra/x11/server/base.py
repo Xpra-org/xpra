@@ -126,9 +126,9 @@ class X11ServerBase(X11ServerCore):
                 "xorg.conf.d"
             )
 
-    def late_cleanup(self) -> None:
+    def late_cleanup(self, stop=True) -> None:
         self.kill_display()
-        super().late_cleanup()
+        super().late_cleanup(stop)
 
     def configure_best_screen_size(self) -> tuple[int, int]:
         root_w, root_h = super().configure_best_screen_size()

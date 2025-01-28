@@ -32,6 +32,9 @@ GLib = gi_import("GLib")
 
 def get_server_base_classes() -> tuple[type, ...]:
     classes: list[type] = [ServerCore]
+    if features.dbus:
+        from xpra.server.mixins.dbus import DbusServer
+        classes.append(DbusServer)
     if features.control:
         from xpra.server.mixins.controlcommands import ServerBaseControlCommands
         classes.append(ServerBaseControlCommands)
@@ -81,7 +84,7 @@ def get_server_base_classes() -> tuple[type, ...]:
 
 
 SERVER_BASES = get_server_base_classes()
-ServerBaseClass = type('ServerBaseClass', SERVER_BASES, {})
+ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
 
 log = Logger("server")
 netlog = Logger("network")
@@ -197,10 +200,15 @@ class ServerBase(ServerBaseClass):
         self.server_event("exit")
         self.wait_for_threaded_init()
         log("do_cleanup() calling on %s", SERVER_BASES)
-        for c in SERVER_BASES:
+        for c in reversed(SERVER_BASES):
             if c != ServerCore:
                 log("%s", c.cleanup)
                 c.cleanup(self)
+
+    def late_cleanup(self, stop=True) -> None:
+        for c in reversed(SERVER_BASES):
+            log("%s", c.late_cleanup)
+            c.late_cleanup(self, stop)
 
     ######################################################################
     # override http scripts to expose just the current session / display
