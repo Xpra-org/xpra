@@ -136,6 +136,9 @@ def get_proxy_server_base_classes() -> tuple[type, ...]:
     if features.dbus:
         from xpra.server.mixins.dbus import DbusServer
         classes.append(DbusServer)
+    if features.http:
+        from xpra.server.mixins.http import HttpServer
+        classes.append(HttpServer)
     return tuple(classes)
 
 
@@ -153,7 +156,8 @@ class ProxyServer(ProxyServerBaseClass):
 
     def __init__(self):
         log("ProxyServer.__init__()")
-        super().__init__()
+        for bc in SERVER_BASES:
+            bc.__init__(self)
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False
         self.session_type = "proxy"
@@ -178,7 +182,8 @@ class ProxyServer(ProxyServerBaseClass):
         self.pings = int(opts.pings)
         self.video_encoders = opts.proxy_video_encoders
         self._start_sessions = opts.proxy_start_sessions
-        super().init(opts)
+        for bc in SERVER_BASES:
+            bc.init(self, opts)
         # ensure we cache the platform info before intercepting SIGCHLD
         # as this will cause a fork and SIGCHLD to be emitted:
         from xpra.util.version import get_platform_info
@@ -268,7 +273,8 @@ class ProxyServer(ProxyServerBaseClass):
 
     def cleanup(self) -> None:
         self.stop_all_proxies()
-        super().cleanup()
+        for bc in SERVER_BASES:
+            bc.cleanup(self)
         start = monotonic()
         live = True
         log("cleanup() proxy instances: %s", self.instances)

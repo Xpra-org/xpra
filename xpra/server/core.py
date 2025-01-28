@@ -12,7 +12,6 @@ import socket
 import signal
 import platform
 import threading
-from urllib.parse import urlparse, parse_qsl, unquote
 from weakref import WeakKeyDictionary
 from time import sleep, time, monotonic
 from threading import Lock
@@ -54,7 +53,7 @@ from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.digest import get_salt, gendigest, choose_digest
 from xpra.platform import set_name, threaded_server_init
 from xpra.platform.info import get_username
-from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs, get_icon_filename
+from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
 from xpra.platform.events import add_handler, remove_handler
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, gi_import, POSIX
@@ -137,24 +136,11 @@ def proto_crypto_caps(proto) -> dict[str, Any]:
     return {}
 
 
-def _filter_display_dict(display_dict, *whitelist):
-    displays_info = {}
-    for display, info in display_dict.items():
-        displays_info[display] = {k: v for k, v in info.items() if k in whitelist}
-    httplog("_filter_display_dict(%s)=%s", display_dict, displays_info)
-    return displays_info
-
-
 def force_close_connection(conn) -> None:
     try:
         conn.close()
     except OSError:
         log("close_connection()", exc_info=True)
-
-
-def invalid_path(uri: str) -> HttpResponse:
-    httplog(f"invalid request path {uri!r}")
-    return 404, {}, b""
 
 
 # noinspection PyMethodMayBeStatic
@@ -191,7 +177,6 @@ class ServerCore(ControlHandler):
         self.ssh_upgrade = False
         self.rdp_upgrade = False
         self._html: bool = False
-        self._http_scripts: dict[str, Callable[[str], HttpResponse]] = {}
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
         self.socket_info: dict[Any, dict] = {}
@@ -284,7 +269,6 @@ class ServerCore(ControlHandler):
             from xpra.server.menu_provider import get_menu_provider
             self.menu_provider = get_menu_provider()
         self.init_html_proxy(opts)
-        self.init_http_scripts(opts.http_scripts)
         self.init_auth(opts)
         self.init_ssl(opts)
         self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
@@ -625,35 +609,6 @@ class ServerCore(ControlHandler):
                     self._http_headers_dirs.append(os.path.join(d, "http-headers"))
             self._http_headers_dirs.append(os.path.abspath(os.path.join(self._www_dir, "../http-headers")))
             self._html = True
-
-    def init_http_scripts(self, http_scripts: str):
-        if http_scripts.lower() not in FALSE_OPTIONS:
-            script_options: dict[str, Callable[[str], HttpResponse]] = {
-                "/Status": self.http_status_request,
-                "/Info": self.http_info_request,
-                "/Sessions": self.http_sessions_request,
-                "/Displays": self.http_displays_request,
-            }
-            if self.menu_provider:
-                # we have menu data we can expose:
-                script_options |= {
-                    "/Menu": self.http_menu_request,
-                    "/MenuIcon": self.http_menu_icon_request,
-                    "/DesktopMenu": self.http_desktop_menu_request,
-                    "/DesktopMenuIcon": self.http_desktop_menu_icon_request,
-                }
-            if http_scripts.lower() in ("all", "*"):
-                self._http_scripts = script_options
-            else:
-                for script in http_scripts.split(","):
-                    if not script.startswith("/"):
-                        script = "/" + script
-                    handler = script_options.get(script)
-                    if not handler:
-                        httplog.warn(f"Warning: unknown script {script!r}")
-                    else:
-                        self._http_scripts[script] = handler
-        httplog("init_http_scripts(%s)=%s", http_scripts, self._http_scripts)
 
     ######################################################################
     # authentication:
@@ -1552,118 +1507,8 @@ class ServerCore(ControlHandler):
         force_close_connection(conn)
 
     def get_http_scripts(self) -> dict[str, Callable[[str], HttpResponse]]:
-        return self._http_scripts
-
-    def http_query_dict(self, path) -> dict:
-        return dict(parse_qsl(urlparse(path).query))
-
-    def send_json_response(self, data) -> HttpResponse:
-        import json  # pylint: disable=import-outside-toplevel
-        return self.http_response(json.dumps(data), "application/json")
-
-    def send_icon(self, icon_type: str, icon_data: bytes) -> HttpResponse:
-        httplog("send_icon%s", (icon_type, Ellipsizer(icon_data)))
-        if not icon_data:
-            icon_filename = get_icon_filename("noicon.png")
-            icon_data = load_binary_file(icon_filename)
-            icon_type = "png"
-            httplog("using fallback transparent icon")
-        if icon_type == "svg" and icon_data:
-            from xpra.codecs.icon_util import svg_to_png  # pylint: disable=import-outside-toplevel
-            # call svg_to_png via the main thread,
-            # and wait for it to complete via an Event:
-            icon: list[tuple[bytes, str]] = [(icon_data, icon_type)]
-            event = threading.Event()
-
-            def convert() -> None:
-                icon[0] = svg_to_png("", icon_data, 48, 48), "png"
-                event.set()
-
-            GLib.idle_add(convert)
-            event.wait()
-            icon_data, icon_type = icon[0]
-        if icon_type in ("png", "jpeg", "svg", "webp"):
-            mime_type = "image/" + icon_type
-        else:
-            mime_type = "application/octet-stream"
-        return self.http_response(icon_data, mime_type)
-
-    def http_menu_request(self, _uri: str) -> HttpResponse:
-        xdg_menu = self.menu_provider.get_menu_data(remove_icons=True)
-        return self.send_json_response(xdg_menu or "not available")
-
-    def http_desktop_menu_request(self, _uri: str) -> HttpResponse:
-        xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)
-        return self.send_json_response(xsessions or "not available")
-
-    def http_menu_icon_request(self, uri: str) -> HttpResponse:
-        parts = unquote(uri).split("/MenuIcon/", 1)
-        # ie: "/menu-icon/a/b" -> ['', 'a/b']
-        if len(parts) < 2:
-            return invalid_path(uri)
-        path = parts[1].split("/")
-        # ie: "a/b" -> ['a', 'b']
-        category_name = path[0]
-        if len(path) < 2:
-            # only the category is present
-            app_name = ""
-        else:
-            app_name = path[1]
-        httplog("http_menu_icon_request: category_name=%s, app_name=%s", category_name, app_name)
-        icon_type, icon_data = self.menu_provider.get_menu_icon(category_name, app_name)
-        return self.send_icon(icon_type, icon_data)
-
-    def http_desktop_menu_icon_request(self, uri: str):
-        parts = unquote(uri).split("/DesktopMenuIcon/", 1)
-        # ie: "/menu-icon/wmname" -> ['', 'sessionname']
-        if len(parts) < 2:
-            return invalid_path(uri)
-        # in case the sessionname is followed by a slash:
-        sessionname = parts[1].split("/")[0]
-        httplog(f"http_desktop_menu_icon_request: {sessionname=}")
-        icon_type, icon_data = self.menu_provider.get_desktop_menu_icon(sessionname)
-        return self.send_icon(icon_type, icon_data)
-
-    def http_displays_request(self, _uri: str):
-        displays = self.get_displays()
-        displays_info = _filter_display_dict(displays, "state", "wmname", "xpra-server-mode")
-        return self.send_json_response(displays_info)
-
-    def get_displays(self) -> dict[str, Any]:
-        from xpra.scripts.main import get_displays_info  # pylint: disable=import-outside-toplevel
-        return get_displays_info(self.dotxpra)
-
-    def http_sessions_request(self, _uri):
-        sessions = self.get_xpra_sessions()
-        sessions_info = _filter_display_dict(sessions, "state", "username", "session-type", "session-name", "uuid")
-        return self.send_json_response(sessions_info)
-
-    def get_xpra_sessions(self) -> dict[str, Any]:
-        from xpra.scripts.main import get_xpra_sessions  # pylint: disable=import-outside-toplevel
-        return get_xpra_sessions(self.dotxpra)
-
-    def http_info_request(self, _uri: str):
-        return self.send_json_response(self.get_http_info())
-
-    def get_http_info(self) -> dict[str, Any]:
-        return {
-            "mode": self.get_server_mode(),
-            "type": "Python",
-            "uuid": self.uuid,
-        }
-
-    def http_status_request(self, _uri: str) -> HttpResponse:
-        return self.http_response("ready")
-
-    def http_response(self, content, content_type: str = "text/plain") -> HttpResponse:
-        if not content:
-            return 404, {}, b""
-        if isinstance(content, str):
-            content = content.encode("latin1")
-        return 200, {
-            "Content-type": content_type,
-            "Content-Length": len(content),
-        }, content
+        # loose coupling with xpra.server.mixins.http:
+        return getattr(self, "_http_scripts", {})
 
     def is_timedout(self, protocol: SocketProtocol) -> bool:
         # subclasses may override this method (ServerBase does)

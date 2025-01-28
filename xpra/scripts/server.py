@@ -329,6 +329,7 @@ def set_server_features(opts) -> None:
     features.display = opts.windows
     features.windows = opts.windows and impcheck("codecs")
     features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
+    features.http = opts.http_scripts.lower() not in FALSE_OPTIONS
 
 
 def enforce_server_features() -> None:
@@ -360,6 +361,7 @@ def enforce_server_features() -> None:
         "display": "xpra.server.mixins.display,xpra.server.source.display",
         "windows": "xpra.server.mixins.window,xpra.server.source.windows",
         "rfb": "xpra.net.rfb,xpra.server.rfb",
+        "http": "xpra.server.mixins.http",
     })
     may_block_numpy()
 

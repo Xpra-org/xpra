@@ -15,7 +15,7 @@ from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
 from xpra.net.common import (
     may_log_packet, is_request_allowed,
-    ServerPacketHandlerType, PacketType, PacketElement, HttpResponse,
+    ServerPacketHandlerType, PacketType, PacketElement,
 )
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
@@ -68,6 +68,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.network_state:
         from xpra.server.mixins.networkstate import NetworkStateServer
         classes.append(NetworkStateServer)
+    if features.http:
+        from xpra.server.mixins.http import HttpServer
+        classes.append(HttpServer)
     if features.shell:
         from xpra.server.mixins.shell import ShellServer
         classes.append(ShellServer)
@@ -760,18 +763,11 @@ class ServerBase(ServerBaseClass):
             log("lock set to %s for client %i", ss.lock, ss.counter)
 
     ######################################################################
-    # http server and http audio stream:
+    # add clients to http server info:
     def get_http_info(self) -> dict[str, Any]:
-        info = ServerCore.get_http_info(self)
+        info = super().get_http_info()
         info["clients"] = len(self._server_sources)
         return info
-
-    def get_http_scripts(self) -> dict[str, Callable[[str], HttpResponse]]:
-        scripts = {}
-        for c in SERVER_BASES:
-            scripts.update(c.get_http_scripts(self))
-        httplog("scripts=%s", scripts)
-        return scripts
 
     ######################################################################
     # client connections:

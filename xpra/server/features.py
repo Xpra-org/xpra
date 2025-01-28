@@ -25,3 +25,4 @@ shell = False
 display = True
 windows = True
 rfb = True
+http = True
