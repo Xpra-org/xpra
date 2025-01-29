@@ -7,7 +7,7 @@
 
 import sys
 from typing import Any, TypeAlias
-from collections.abc import Callable, Sequence, Iterable
+from collections.abc import Callable, Sequence
 from time import sleep, monotonic
 from threading import Event
 from collections import deque
@@ -54,16 +54,12 @@ class ClientConnection(StubSourceMixin):
     and added to the damage_packet_queue.
     """
 
-    def __init__(self, protocol, disconnect_cb: Callable, session_name: str,
-                 setting_changed: Callable[[str, Any], None],
-                 socket_dir: str, unix_socket_paths: Iterable[str],
-                 ):
+    def __init__(self, protocol, disconnect_cb: Callable, setting_changed: Callable[[str, Any], None]):
         self.counter = counter.increase()
         self.protocol = protocol
         self.connection_time = monotonic()
         self.close_event = Event()
         self.disconnect = disconnect_cb
-        self.session_name = session_name
 
         # holds actual packets ready for sending (already encoded)
         # these packets are picked off by the "protocol" via 'next_packet()'
@@ -78,8 +74,6 @@ class ClientConnection(StubSourceMixin):
         self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, Sequence[Any]]] = SimpleQueue()
         self.encode_thread = None
         self.ordinary_packets: list[tuple[PacketType, bool, bool]] = []
-        self.socket_dir = socket_dir
-        self.unix_socket_paths = unix_socket_paths
 
         self.client_packet_types = ()
         self.setting_changed = setting_changed

@@ -320,11 +320,7 @@ class ServerBase(ServerBaseClass):
             self.disconnect_client(proto, reason, *args)
 
         cc_class = self.get_client_connection_class(c)
-        ss = cc_class(proto, drop_client,
-                      self.session_name, self,
-                      self.setting_changed,
-                      self._socket_dir, self.unix_socket_paths,
-                      )
+        ss = cc_class(proto, drop_client, self, self.setting_changed)
         log("process_hello clientconnection=%s", ss)
         try:
             ss.parse_hello(c)

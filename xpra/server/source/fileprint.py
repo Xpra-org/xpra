@@ -68,6 +68,7 @@ class FilePrintMixin(FileTransferHandler, StubSourceMixin):
 
     def init_from(self, _protocol, server) -> None:
         self.init_attributes()
+        self.unix_socket_paths: list[str] = server.unix_socket_paths
         # copy attributes
         for x in (
                 "file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",

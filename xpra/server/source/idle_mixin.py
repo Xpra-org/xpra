@@ -36,6 +36,7 @@ class IdleMixin(StubSourceMixin):
 
     def init_from(self, _protocol, server) -> None:
         self.idle_timeout = server.idle_timeout
+        self.session_name = server.session_name
 
     def init_state(self) -> None:
         self.last_user_event = monotonic()
@@ -110,7 +111,7 @@ class IdleMixin(StubSourceMixin):
         if self.send_notifications_actions:
             actions = ("cancel", "Cancel Timeout")
         if self.session_name != "Xpra":
-            summary = f"The Xpra session {self.session_name}"
+            summary = f"The Xpra session {self.session_name!r}"
         else:
             summary = "Xpra session"
         summary += " is about to timeout"

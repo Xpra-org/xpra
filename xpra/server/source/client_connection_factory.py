@@ -86,15 +86,15 @@ def get_client_connection_class(caps: typedict):
 
     class ClientConnectionMuxer(ClientConnectionClass):
 
-        def __init__(self, protocol, disconnect_cb, session_name, server, *args):
+        def __init__(self, protocol, disconnect_cb, server, setting_changed):
             self.hello_sent = False
             from xpra.server.source.client_connection import ClientConnection
             for bc in CC_BASES:
                 try:
                     if bc == ClientConnection:
-                        initargs = [protocol, disconnect_cb, session_name] + list(args)
+                        initargs = (protocol, disconnect_cb, setting_changed)
                     else:
-                        initargs = []
+                        initargs = ()
                     bc.__init__(self, *initargs)
                     bc.init_from(self, protocol, server)
                 except Exception as e:
