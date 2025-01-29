@@ -71,10 +71,6 @@ class X11ServerBase(X11ServerCore):
         super().__init__()
         self._default_xsettings: tuple[int, list[tuple]] = (0, [])
         self._settings: dict[str, Any] = {}
-        self.double_click_time: int = 0
-        self.double_click_distance: int = 0
-        self.dpi: int = 0
-        self.default_dpi: int = 0
         self._xsettings_manager = None
         self._xsettings_enabled: bool = False
         self.display_pid: int = 0
