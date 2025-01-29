@@ -697,7 +697,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 toplevel = self._wm.get_property("toplevel")
             focuslog("reset_focus() %s / %s had focus (toplevel=%s)", hfid, had_focus, toplevel)
             # this will call clear_keys_pressed() if the server is an InputServer:
-            self.reset_focus()
+            if hasattr(self, "reset_focus"):
+                self.reset_focus()
             # FIXME: kind of a hack:
             self._has_focus = 0
             # toplevel may be None during cleanup!

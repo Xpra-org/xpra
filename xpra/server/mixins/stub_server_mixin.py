@@ -37,11 +37,6 @@ class StubServerMixin:
         after the init thread has completed.
         """
 
-    def reset_focus(self) -> None:
-        """
-        Called when we reset the focus.
-        """
-
     def last_client_exited(self) -> None:
         """
         Called when the last client has exited,

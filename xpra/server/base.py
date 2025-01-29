@@ -795,11 +795,6 @@ class ServerBase(ServerBaseClass):
             if c != ServerCore:
                 c.set_session_driver(self, source)
 
-    def reset_focus(self) -> None:
-        for c in SERVER_BASES:
-            if c != ServerCore:
-                c.reset_focus(self)
-
     def get_all_protocols(self) -> list:
         return list(self._potential_protocols) + list(self._server_sources.keys())
 
