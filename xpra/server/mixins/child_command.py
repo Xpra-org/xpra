@@ -47,6 +47,7 @@ class ChildCommandServer(StubServerMixin):
         self.start_child_commands = []
         self.start_child_late_commands = []
         self.start_after_connect = []
+        self.start_after_connect_done = False
         self.start_child_after_connect = []
         self.start_on_connect = []
         self.start_child_on_connect = []
@@ -245,6 +246,10 @@ class ChildCommandServer(StubServerMixin):
         self._exec_commands(self.start_after_connect, self.start_child_after_connect)
 
     def exec_on_connect_commands(self) -> None:
+        log("exec_on_connect_commands() start_after_connect_done=%s", self.start_after_connect_done)
+        if not self.start_after_connect_done:  # pylint: disable=access-member-before-definition
+            self.start_after_connect_done = True
+            self.exec_after_connect_commands()
         log("exec_on_connect_commands() start=%s, start_child=%s", self.start_on_connect, self.start_child_on_connect)
         self._exec_commands(self.start_on_connect, self.start_child_on_connect)
 

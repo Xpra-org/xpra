@@ -69,7 +69,6 @@ class ServerBase(ServerBaseClass):
         self.sharing: bool | None = None
         self.lock: bool | None = None
 
-        self.start_after_connect_done = False
         self.bandwidth_detection = False
         self.dpi = self.xdpi = self.ydpi = 0
         self.double_click_time = -1
@@ -433,9 +432,6 @@ class ServerBase(ServerBaseClass):
     def client_startup_complete(self, ss) -> None:
         ss.startup_complete()
         self.server_event("startup-complete", ss.uuid)
-        if not self.start_after_connect_done:  # pylint: disable=access-member-before-definition
-            self.start_after_connect_done = True
-            self.exec_after_connect_commands()
         self.exec_on_connect_commands()
 
     def sanity_checks(self, proto, c: typedict) -> bool:
