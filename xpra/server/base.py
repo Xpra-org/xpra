@@ -13,7 +13,7 @@ from collections.abc import Callable
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
-from xpra.net.common import may_log_packet, is_request_allowed, ServerPacketHandlerType, PacketType, PacketElement
+from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType, PacketElement
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
 from xpra.util.io import is_socket
@@ -188,14 +188,14 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # handle new connections:
-    def handle_sharing(self, proto, ui_client: bool = True, detach_request: bool = False, share: bool = False,
+    def handle_sharing(self, proto, ui_client: bool = True, share: bool = False,
                        uuid="") -> tuple[bool, int, int]:
         share_count = 0
         disconnected = 0
         existing_sources = set(ss for p, ss in self._server_sources.items() if p != proto)
         is_existing_client = uuid and any(ss.uuid == uuid for ss in existing_sources)
         authlog("handle_sharing%s lock=%s, sharing=%s, existing sources=%s, is existing client=%s",
-                (proto, ui_client, detach_request, share, uuid),
+                (proto, ui_client, share, uuid),
                 self.lock, self.sharing, existing_sources, is_existing_client)
         # if other clients are connected, verify we can steal or share:
         if existing_sources and not is_existing_client:
@@ -212,11 +212,7 @@ class ServerBase(ServerBaseClass):
                 return False, 0, 0
         # we're either sharing, or the only client:
         for p, ss in tuple(self._server_sources.items()):
-            if detach_request and p != proto:
-                authlog("handle_sharing: detaching %s", ss)
-                self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
-                disconnected += 1
-            elif uuid and ss.uuid == uuid and ui_client and ss.ui_client:
+            if uuid and ss.uuid == uuid and ui_client and ss.ui_client:
                 authlog("uuid %s is the same as %s", uuid, ss)
                 authlog("existing sources: %s", existing_sources)
                 self.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "new connection from the same uuid")
@@ -259,9 +255,6 @@ class ServerBase(ServerBaseClass):
         if not c.boolget("steal", True) and self._server_sources:
             self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is already active")
             return
-        if c.boolget("screenshot_request"):
-            self.send_screenshot(proto)
-            return
         request = c.strget("request")
         if not request:
             # "normal" connection, so log welcome message:
@@ -275,26 +268,9 @@ class ServerBase(ServerBaseClass):
         ui_client = c.boolget("ui_client", True)
         share = c.boolget("share")
         uuid = c.strget("uuid")
-        detach_request = request == "detach"
-        accepted, share_count, disconnected = self.handle_sharing(proto, ui_client, detach_request, share, uuid)
+        accepted, share_count, disconnected = self.handle_sharing(proto, ui_client, share, uuid)
         if not accepted:
             return
-
-        if request:
-            if not is_request_allowed(request):
-                msg = f"`{request}` requests are not enabled for this connection"
-                log.warn(f"Warning: {msg}")
-                self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
-                return
-            if request == "detach":
-                self.disconnect_client(proto, ConnectionMessage.DONE,
-                                       f"{disconnected} other clients have been disconnected")
-            if request == "exit":
-                self._process_exit_server(proto)
-                return
-            if request == "stop":
-                self._process_shutdown_server(proto)
-                return
 
         send_ui = ui_client and not request
         if send_ui:
@@ -365,6 +341,39 @@ class ServerBase(ServerBaseClass):
             self.accept_client_ssh_agent(uuid, c.strget("ssh-auth-sock"))
         # process ui half in ui thread:
         GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
+
+    def do_handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
+        if super().do_handle_hello_request(request, proto, caps):
+            return True
+        if request == "detach":
+            self.detach_server(proto)
+            return True
+        if request == "exit":
+            self._process_exit_server(proto)
+            return True
+        if request == "stop":
+            self._process_shutdown_server(proto)
+            return True
+        return False
+
+    def detach_server(self, proto) -> None:
+        if self.lock is True:
+            authlog("cannot detach: session is locked")
+            self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
+            return
+        count = locked = 0
+        for p, ss in tuple(self._server_sources.items()):
+            if p != proto:
+                if ss.lock:
+                    locked += 1
+                else:
+                    authlog("handle_sharing: detaching %s", ss)
+                    self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
+                    count += 1
+        message = f"{count} clients have been disconnected"
+        if locked:
+            message += f", {locked} still have it locked"
+        self.disconnect_client(proto, ConnectionMessage.DONE, message)
 
     @staticmethod
     def get_client_connection_class(caps: typedict) -> type:

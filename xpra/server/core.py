@@ -2027,6 +2027,9 @@ class ServerCore(ControlHandler):
             msg = f"`{request}` requests are not enabled for this connection"
             self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
             return True
+        return self.do_handle_hello_request(request, proto, caps)
+
+    def do_handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
         if request == "connect_test":
             ctr = caps.strget("connect_test_request")
             response = {"connect_test_response": ctr}
