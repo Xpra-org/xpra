@@ -13,10 +13,7 @@ from collections.abc import Callable
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
-from xpra.net.common import (
-    may_log_packet, is_request_allowed,
-    ServerPacketHandlerType, PacketType, PacketElement,
-)
+from xpra.net.common import may_log_packet, is_request_allowed, ServerPacketHandlerType, PacketType, PacketElement
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
 from xpra.util.io import is_socket
@@ -192,7 +189,7 @@ class ServerBase(ServerBaseClass):
     ######################################################################
     # handle new connections:
     def handle_sharing(self, proto, ui_client: bool = True, detach_request: bool = False, share: bool = False,
-                       uuid=None) -> tuple[bool, int, int]:
+                       uuid="") -> tuple[bool, int, int]:
         share_count = 0
         disconnected = 0
         existing_sources = set(ss for p, ss in self._server_sources.items() if p != proto)
@@ -213,6 +210,7 @@ class ServerBase(ServerBaseClass):
                     ss for ss in existing_sources if ss.lock))
                 self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "a client has locked this session")
                 return False, 0, 0
+        # we're either sharing, or the only client:
         for p, ss in tuple(self._server_sources.items()):
             if detach_request and p != proto:
                 authlog("handle_sharing: detaching %s", ss)
@@ -338,6 +336,7 @@ class ServerBase(ServerBaseClass):
             # if we're not sharing, reset all the settings:
             reset = share_count == 0
             self.update_all_server_settings(reset)
+
         self.accept_client(proto, c)
         # use blocking sockets from now on:
         if not WIN32:
