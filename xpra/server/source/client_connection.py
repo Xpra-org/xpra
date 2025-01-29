@@ -57,7 +57,6 @@ class ClientConnection(StubSourceMixin):
     def __init__(self, protocol, disconnect_cb: Callable, session_name: str,
                  setting_changed: Callable[[str, Any], None],
                  socket_dir: str, unix_socket_paths: Iterable[str],
-                 log_disconnect: bool,
                  ):
         self.counter = counter.increase()
         self.protocol = protocol
@@ -81,7 +80,6 @@ class ClientConnection(StubSourceMixin):
         self.ordinary_packets: list[tuple[PacketType, bool, bool]] = []
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
-        self.log_disconnect = log_disconnect
 
         self.client_packet_types = ()
         self.setting_changed = setting_changed

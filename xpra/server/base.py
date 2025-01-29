@@ -323,7 +323,7 @@ class ServerBase(ServerBaseClass):
         ss = cc_class(proto, drop_client,
                       self.session_name, self,
                       self.setting_changed,
-                      self._socket_dir, self.unix_socket_paths, not request,
+                      self._socket_dir, self.unix_socket_paths,
                       )
         log("process_hello clientconnection=%s", ss)
         try:
@@ -807,16 +807,6 @@ class ServerBase(ServerBaseClass):
         v = ServerCore.is_timedout(self, protocol) and protocol not in self._server_sources
         netlog("is_timedout(%s)=%s", protocol, v)
         return v
-
-    def _log_disconnect(self, proto, *args) -> None:
-        # skip logging of disconnection events for server sources
-        # we have tagged during hello ("info_request", "exit_request", etc..)
-        ss = self.get_server_source(proto)
-        if ss and not ss.log_disconnect:
-            # log at debug level only:
-            netlog(*args)
-            return
-        ServerCore._log_disconnect(self, proto, *args)
 
     def _disconnect_proto_info(self, proto) -> str:
         # only log protocol info if there is more than one client:
