@@ -22,17 +22,17 @@ class StubSourceMixin:
         """
         return True
 
-    def init_state(self):
+    def init_state(self) -> None:
         """
         Initialize state attributes.
         """
 
-    def init_from(self, _protocol, _server):
+    def init_from(self, _protocol, _server) -> None:
         """
         Initialize setting inherited from the server or connection.
         """
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Free up any resources.
         """
@@ -43,7 +43,7 @@ class StubSourceMixin:
         """
         return False
 
-    def parse_client_caps(self, c: typedict):
+    def parse_client_caps(self, c: typedict) -> None:
         """
         Parse client attributes specified in the hello capabilities.
         """
@@ -68,19 +68,19 @@ class StubSourceMixin:
         """
         return {}
 
-    def user_event(self):
+    def user_event(self) -> None:
         """
         This method is called every time a user action (keyboard, mouse, etc) is being handled.
         """
 
-    def may_notify(self, *args, **kwargs):
+    def may_notify(self, *args, **kwargs) -> None:
         """
         The actual source implementation will handle these notification requests
         by forwarding them to the client.
         This dummy implementation makes it easier to test without a network connection.
         """
 
-    def queue_encode(self, item: None | tuple[bool, Callable, tuple]):
+    def queue_encode(self, item: None | tuple[bool, Callable, tuple]) -> None:
         """
         Used by the window source to send data to be processed in the encode thread
         """
@@ -91,7 +91,7 @@ class StubSourceMixin:
         the `will_have_more` argument will be set to `True`
         """
 
-    def send_async(self, packet_type: str, *parts: PacketElement, **kwargs):
+    def send_async(self, packet_type: str, *parts: PacketElement, **kwargs) -> None:
         """
         Send a packet to the client,
         the `synchronous` and `will_have_more` arguments will be set to `False`
