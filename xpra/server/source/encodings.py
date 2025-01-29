@@ -148,7 +148,7 @@ class EncodingsMixin(StubSourceMixin):
         if stats:
             stats.bytes_sent.append((now, conn.output_bytecount))
             stats.update_averages()
-        self.update_bandwidth_limits()
+        self.may_update_bandwidth_limits()
         wids = tuple(self.calculate_window_ids)  # make a copy so we don't clobber new wids
         focus = self.get_focus()
         sources = self.window_sources.items()

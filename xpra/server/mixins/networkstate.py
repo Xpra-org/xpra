@@ -45,6 +45,7 @@ class NetworkStateServer(StubServerMixin):
         self.pings = False
         self.ping_timer: int = 0
         self.bandwidth_limit = 0
+        self.bandwidth_detection = False
         self.mem_bytes = 0
         self.cpu_info: dict = {}
         self.print_memleaks: Callable | None = None
@@ -53,6 +54,7 @@ class NetworkStateServer(StubServerMixin):
     def init(self, opts) -> None:
         self.pings = opts.pings
         self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
+        self.bandwidth_detection = opts.bandwidth_detection
         bandwidthlog("bandwidth-limit(%s)=%s", opts.bandwidth_limit, self.bandwidth_limit)
         self.init_cpuinfo()
 

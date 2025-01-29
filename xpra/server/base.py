@@ -66,7 +66,6 @@ class ServerBase(ServerBaseClass):
         self.sharing: bool | None = None
         self.lock: bool | None = None
 
-        self.bandwidth_detection = False
         self.dpi = self.xdpi = self.ydpi = 0
         self.double_click_time = -1
         self.double_click_distance = (-1, -1)
@@ -114,7 +113,6 @@ class ServerBase(ServerBaseClass):
         self.sharing = opts.sharing
         self.lock = opts.lock
         self.idle_timeout = opts.idle_timeout
-        self.bandwidth_detection = opts.bandwidth_detection
 
     def setup(self) -> None:
         log("starting component init")
@@ -326,7 +324,6 @@ class ServerBase(ServerBaseClass):
                       self.session_name, self,
                       self.setting_changed,
                       self._socket_dir, self.unix_socket_paths, not request,
-                      self.bandwidth_limit, self.bandwidth_detection,
                       )
         log("process_hello clientconnection=%s", ss)
         try:

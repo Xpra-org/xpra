@@ -41,7 +41,7 @@ class InputMixin(StubSourceMixin):
     def cleanup(self) -> None:
         self.keyboard_config = None
 
-    def parse_client_caps(self, c: typedict):
+    def parse_client_caps(self, c: typedict) -> None:
         dc = c.dictget("double_click")
         if dc:
             dc = typedict(dc)

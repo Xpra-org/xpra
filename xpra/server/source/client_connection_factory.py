@@ -105,7 +105,7 @@ def get_client_connection_class(caps: typedict):
                 c.init_state(self)
             self.run()
 
-        def close(self):
+        def close(self) -> None:
             log("%s.close()", self)
             for bc in reversed(CC_BASES):
                 log("%s.cleanup()", bc)
@@ -118,7 +118,7 @@ def get_client_connection_class(caps: typedict):
                     log.estr(e)
                     raise RuntimeError(f"failed to close {bc}: {e}") from None
 
-        def send_hello(self, server_capabilities: dict):
+        def send_hello(self, server_capabilities: dict) -> None:
             capabilities = server_capabilities.copy()
             for bc in CC_BASES:
                 log("%s.get_caps()", bc)
@@ -154,7 +154,7 @@ def get_client_connection_class(caps: typedict):
                     log.estr(e)
             return info
 
-        def parse_hello(self, c: typedict):
+        def parse_hello(self, c: typedict) -> None:
             self.ui_client = c.boolget("ui_client", True)
             self.wants: list[str] = list(c.strtupleget("wants", self.wants))
             for x, enabled in {

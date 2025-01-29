@@ -14,9 +14,9 @@ from collections import deque
 from queue import SimpleQueue
 
 from xpra.util.thread import start_thread
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, noop
 from xpra.util.objects import AtomicInteger, typedict, notypedict
-from xpra.util.env import envint, envbool
+from xpra.util.env import envbool
 from xpra.net.common import PacketType, PacketElement
 from xpra.net.compression import compressed_wrapper, Compressed, LevelCompressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
@@ -25,12 +25,7 @@ from xpra.log import Logger
 
 log = Logger("server")
 notifylog = Logger("notify")
-bandwidthlog = Logger("bandwidth")
 
-BANDWIDTH_DETECTION = envbool("XPRA_BANDWIDTH_DETECTION", True)
-MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5 * 1024 * 1024)
-AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
-assert 1 < AUTO_BANDWIDTH_PCT <= 100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 YIELD = envbool("XPRA_YIELD", False)
 
 counter = AtomicInteger()
@@ -62,7 +57,7 @@ class ClientConnection(StubSourceMixin):
     def __init__(self, protocol, disconnect_cb: Callable, session_name: str,
                  setting_changed: Callable[[str, Any], None],
                  socket_dir: str, unix_socket_paths: Iterable[str],
-                 log_disconnect: bool, bandwidth_limit: int, bandwidth_detection: bool,
+                 log_disconnect: bool,
                  ):
         self.counter = counter.increase()
         self.protocol = protocol
@@ -90,9 +85,6 @@ class ClientConnection(StubSourceMixin):
 
         self.client_packet_types = ()
         self.setting_changed = setting_changed
-        # network constraints:
-        self.server_bandwidth_limit = bandwidth_limit
-        self.bandwidth_detection = bandwidth_detection
         self.queue_encode: Callable[[ENCODE_WORK_ITEM], None] = self.start_queue_encode
 
     def run(self) -> None:
@@ -109,13 +101,6 @@ class ClientConnection(StubSourceMixin):
         self.lock = False
         self.client_control_commands: Sequence[str] = ()
         self.xdg_menu = True
-        self.bandwidth_limit = self.server_bandwidth_limit
-        self.soft_bandwidth_limit = self.bandwidth_limit
-        self.bandwidth_warnings = True
-        self.bandwidth_warning_time = 0
-        self.client_connection_data = {}
-        self.adapter_type = ""
-        self.jitter = 0
         self.ssh_auth_sock = ""
         # what we send back in hello packet:
         self.ui_client = True
@@ -147,48 +132,11 @@ class ClientConnection(StubSourceMixin):
         kw.update(kwargs)
         return compressed_wrapper(datatype, data, can_inline=False, **kw)
 
-    def update_bandwidth_limits(self) -> None:
-        if not self.bandwidth_detection:
-            return
-        mmap_size = getattr(self, "mmap_size", 0)
-        if mmap_size > 0:
-            return
-        # calculate soft bandwidth limit based on send congestion data:
-        bandwidth_limit = 0
-        if BANDWIDTH_DETECTION:
-            bandwidth_limit = self.statistics.avg_congestion_send_speed
-            bandwidthlog("avg_congestion_send_speed=%s", bandwidth_limit)
-            if bandwidth_limit > 20 * 1024 * 1024:
-                # ignore congestion speed if greater 20Mbps
-                bandwidth_limit = 0
-        if (self.bandwidth_limit or 0) > 0:
-            # command line options could overrule what we detect?
-            bandwidth_limit = min(self.bandwidth_limit, bandwidth_limit)
-        if bandwidth_limit > 0:
-            bandwidth_limit = max(MIN_BANDWIDTH, bandwidth_limit)
-        self.soft_bandwidth_limit = bandwidth_limit
-        bandwidthlog("update_bandwidth_limits() bandwidth_limit=%s, soft bandwidth limit=%s",
-                     self.bandwidth_limit, bandwidth_limit)
-        # figure out how to distribute the bandwidth amongst the windows,
-        # we use the window size,
-        # (we should use the number of bytes actually sent: framerate, compression, etc..)
-        window_weight = {}
-        for wid, ws in self.window_sources.items():
-            weight = 0
-            if not ws.suspended:
-                ww, wh = ws.window_dimensions
-                # try to reserve bandwidth for at least one screen update,
-                # and add the number of pixels damaged:
-                weight = ww * wh + ws.statistics.get_damage_pixels()
-            window_weight[wid] = weight
-        bandwidthlog("update_bandwidth_limits() window weights=%s", window_weight)
-        total_weight = max(1, sum(window_weight.values()))
-        for wid, ws in self.window_sources.items():
-            if bandwidth_limit == 0:
-                ws.bandwidth_limit = 0
-            else:
-                weight = window_weight.get(wid, 0)
-                ws.bandwidth_limit = max(MIN_BANDWIDTH // 10, bandwidth_limit * weight // total_weight)
+    def may_update_bandwidth_limits(self):
+        # this method is only available when the NetworkState mixin is enabled:
+        update_bandwidth_limits = getattr(self, "update_bandwidth_limits", noop)
+        if update_bandwidth_limits != noop:
+            update_bandwidth_limits()
 
     def parse_client_caps(self, c: typedict) -> None:
         # general features:
@@ -196,37 +144,7 @@ class ClientConnection(StubSourceMixin):
         self.lock = c.boolget("lock")
         self.client_control_commands = c.strtupleget("control_commands")
         self.xdg_menu = c.boolget("xdg-menu", False)
-        bandwidth_limit = c.intget("bandwidth-limit", 0)
-        server_bandwidth_limit = self.server_bandwidth_limit
-        if self.server_bandwidth_limit is None:
-            server_bandwidth_limit = self.get_socket_bandwidth_limit() or bandwidth_limit
-        self.bandwidth_limit = min(server_bandwidth_limit, bandwidth_limit)
-        if self.bandwidth_detection:
-            self.bandwidth_detection = c.boolget("bandwidth-detection", False)
-        self.client_connection_data = c.dictget("connection-data", {})
-        ccd = typedict(self.client_connection_data)
-        self.adapter_type = ccd.strget("adapter-type")
-        self.jitter = ccd.intget("jitter", 0)
-        bandwidthlog("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s",
-                     server_bandwidth_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
         self.ssh_auth_sock = c.strget("ssh-auth-sock")
-
-        if getattr(self, "mmap_size", 0) > 0:
-            log("mmap enabled, ignoring bandwidth-limit")
-            self.bandwidth_limit = 0
-
-    def get_socket_bandwidth_limit(self) -> int:
-        p = self.protocol
-        if not p:
-            return 0
-        # auto-detect:
-        pinfo = p.get_info()
-        socket_speed = pinfo.get("socket", {}).get("device", {}).get("speed")
-        if not socket_speed:
-            return 0
-        bandwidthlog("get_socket_bandwidth_limit() socket_speed=%s", socket_speed)
-        # auto: use 80% of socket speed if we have it:
-        return socket_speed * AUTO_BANDWIDTH_PCT // 100 or 0
 
     def startup_complete(self) -> None:
         log("startup_complete()")
@@ -348,14 +266,8 @@ class ClientConnection(StubSourceMixin):
             "elapsed_time": int(monotonic() - self.connection_time),
             "counter": self.counter,
             "hello-sent": self.hello_sent,
-            "jitter": self.jitter,
-            "adapter-type": self.adapter_type,
             "ssh-auth-sock": self.ssh_auth_sock,
             "packet-types": self.client_packet_types,
-            "bandwidth-limit": {
-                "detection": self.bandwidth_detection,
-                "actual": self.soft_bandwidth_limit or 0,
-            }
         }
         p = self.protocol
         if p:

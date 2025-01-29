@@ -577,7 +577,7 @@ class WindowsMixin(StubSourceMixin):
             self.window_sources[wid] = ws
             if len(self.window_sources) > 1:
                 # re-distribute bandwidth:
-                self.update_bandwidth_limits()
+                self.may_update_bandwidth_limits()
         return ws
 
     def damage(self, wid: int, window, x: int, y: int, w: int, h: int, options=None) -> None:
