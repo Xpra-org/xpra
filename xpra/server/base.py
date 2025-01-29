@@ -59,7 +59,6 @@ class ServerBase(ServerBaseClass):
         for c in SERVER_BASES:
             c.__init__(self)
         log("ServerBase.__init__()")
-        self.init_uuid()
 
         self._authenticated_packet_handlers: dict[str, Callable] = {}
         self._authenticated_ui_packet_handlers: dict[str, Callable] = {}
