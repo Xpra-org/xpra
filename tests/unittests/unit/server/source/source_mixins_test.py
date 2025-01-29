@@ -42,6 +42,10 @@ class SourceMixinsTest(unittest.TestCase):
         #test the instance:
         #fake server object:
         server = AdHocStruct()
+        server.session_name = "foo"
+        server.unix_socket_paths = ["/some/path"]
+        server.bandwidth_limit = 0
+        server.bandwidth_detection = False
         if server_props:
             for k,v in server_props.items():
                 setattr(server, k, v)

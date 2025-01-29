@@ -66,8 +66,6 @@ class NetworkStateMixin(StubSourceMixin):
         self.bandwidth_warning_time = 0
 
     def init_from(self, _protocol, server) -> None:
-        from xpra.server.mixins.networkstate import NetworkStateServer
-        assert isinstance(server, NetworkStateServer)
         self.server_bandwidth_limit = server.bandwidth_limit
         self.bandwidth_detection = server.bandwidth_detection
 
