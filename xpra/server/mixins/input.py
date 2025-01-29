@@ -10,9 +10,10 @@ from time import monotonic
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.util.str_fn import bytestostr
+from xpra.util.str_fn import bytestostr, Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
+from xpra.common import noop
 from xpra.net.common import PacketType
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -55,13 +56,17 @@ class InputServer(StubServerMixin):
         self.key_repeat_timer = 0
 
         self.last_mouse_user = None
-        self.ibus_layouts = {}
+        self.ibus_layouts: dict[str, Any] = {}
 
-    def get_ibus_layouts(self):
+    def get_ibus_layouts(self) -> dict[str, Any]:
         if EXPOSE_IBUS_LAYOUTS and not self.ibus_layouts:
-            from xpra.keyboard.ibus import query_ibus
-            self.ibus_layouts = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
-            ibuslog("loaded ibus layouts from %s: %s", threading.current_thread(), self.ibus_layouts)
+            try:
+                from xpra.keyboard.ibus import query_ibus
+            except ImportError as e:
+                ibuslog(f"no ibus module: {e}")
+            else:
+                self.ibus_layouts = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
+                ibuslog("loaded ibus layouts from %s: %s", threading.current_thread(), self.ibus_layouts)
         return self.ibus_layouts
 
     def init(self, opts) -> None:
@@ -110,10 +115,13 @@ class InputServer(StubServerMixin):
     def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
         if not send_ui:
             return
-        ibus_layouts = self.get_ibus_layouts()
-        if ibus_layouts and hasattr(ss, "send_ibus_layouts"):
-            ibuslog("calling %s", ss.send_ibus_layouts)
-            ss.send_ibus_layouts(ibus_layouts)
+        send_ibus_layouts = getattr(ss, "send_ibus_layouts", noop)
+        ibuslog(f"{send_ibus_layouts=}")
+        if send_ibus_layouts != noop:
+            ibus_layouts = self.get_ibus_layouts()
+            if ibus_layouts:
+                ibuslog("calling %s(%s)", send_ibus_layouts, Ellipsizer(ibus_layouts))
+                send_ibus_layouts(ibus_layouts)
 
     def watch_keymap_changes(self) -> None:
         """ GTK servers will start listening for the 'keys-changed' signal """
