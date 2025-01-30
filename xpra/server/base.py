@@ -260,46 +260,6 @@ class ServerBase(ServerBaseClass):
         if not accepted:
             return
 
-        if ui_client:
-            # a bit of explanation:
-            # normally these things are synchronized using xsettings, which we handle already,
-            # but non-posix clients have no such thing,
-            # and we don't want to expose that as an interface
-            # (it's not very nice, and it is very X11 specific)
-            # also, clients may want to override what is in their xsettings..
-            # so if the client specifies what it wants to use, we patch the xsettings with it
-            # (the actual xsettings part is done in `update_all_server_settings` in the X11 specific subclasses)
-            if share_count > 0:
-                log.info("sharing with %s other client(s)", share_count)
-                self.dpi = 0
-                self.xdpi = 0
-                self.ydpi = 0
-                self.double_click_time = -1
-                self.double_click_distance = -1, -1
-                self.antialias = {}
-                self.cursor_size = 24
-            else:
-                dpi_caps = c.get("dpi")
-                if isinstance(dpi_caps, int):
-                    # legacy mode, ie: html5 client
-                    self.dpi = self.xpdi = self.ydpi = int(dpi_caps)
-                else:
-                    tdpi = typedict(c.dictget("dpi") or {})
-                    self.dpi = tdpi.intget("", 0)
-                    self.xdpi = tdpi.intget("x", self.xdpi)
-                    self.ydpi = tdpi.intget("y", self.ydpi)
-                self.double_click_time = c.intget("double_click.time", -1)
-                self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
-                self.antialias = c.dictget("antialias", {})
-                self.cursor_size = c.intget("cursor.size", 0)
-            # FIXME: this belongs in DisplayManager!
-            screenlog("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s, cursor_size=%s",
-                      self.dpi, self.xdpi, self.ydpi, self.antialias, self.cursor_size)
-            log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
-            # if we're not sharing, reset all the settings:
-            reset = share_count == 0
-            self.update_all_server_settings(reset)
-
         self.accept_client(proto, c)
         # use blocking sockets from now on:
         if not WIN32:

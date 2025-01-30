@@ -7,6 +7,7 @@
 import os
 
 from xpra.util.io import is_socket
+from xpra.util.objects import typedict
 from xpra.common import SSH_AGENT_DISPATCH
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.net.ssh.agent import set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket
@@ -48,7 +49,7 @@ class SshAgent(StubServerMixin):
                 return
         set_ssh_agent("")
 
-    def add_new_client(self, ss, c, send_ui, share_count: int) -> None:
+    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         if not SSH_AGENT_DISPATCH:
             return
         assert ss

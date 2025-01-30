@@ -115,7 +115,7 @@ class StubServerMixin:
         Parse capabilities from a new connection.
         """
 
-    def add_new_client(self, ss, c, send_ui, share_count: int) -> None:
+    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         """
         A new client is being handled, take any action needed.
         """
