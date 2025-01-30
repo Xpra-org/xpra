@@ -182,7 +182,7 @@ class ServerBase(ServerBaseClass):
     ######################################################################
     # handle new connections:
     def handle_sharing(self, proto, ui_client: bool = True, share: bool = False,
-                       uuid="") -> tuple[bool, int, int]:
+                       uuid="") -> tuple[bool, int]:
         share_count = 0
         disconnected = 0
         existing_sources = set(ss for p, ss in self._server_sources.items() if p != proto)
@@ -197,12 +197,12 @@ class ServerBase(ServerBaseClass):
             elif self.lock is True:
                 authlog("handle_sharing: session is locked")
                 self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
-                return False, 0, 0
+                return False, 0
             elif self.lock is not False and any(ss.lock for ss in existing_sources):
                 authlog("handle_sharing: another client has locked the session: " + csv(
                     ss for ss in existing_sources if ss.lock))
                 self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "a client has locked this session")
-                return False, 0, 0
+                return False, 0
         # we're either sharing, or the only client:
         for p, ss in tuple(self._server_sources.items()):
             if uuid and ss.uuid == uuid and ui_client and ss.ui_client:
@@ -233,7 +233,7 @@ class ServerBase(ServerBaseClass):
         if disconnected > 0 and share_count == 0 and self.exit_with_client:
             self.disconnect_client(proto, ConnectionMessage.SERVER_SHUTDOWN, "last client has exited")
             accepted = False
-        return accepted, share_count, disconnected
+        return accepted, share_count
 
     def hello_oked(self, proto, c: typedict, auth_caps: dict) -> None:
         if self._server_sources.get(proto):
@@ -261,7 +261,7 @@ class ServerBase(ServerBaseClass):
         ui_client = c.boolget("ui_client", True)
         share = c.boolget("share")
         uuid = c.strget("uuid")
-        accepted, share_count, disconnected = self.handle_sharing(proto, ui_client, share, uuid)
+        accepted, share_count = self.handle_sharing(proto, ui_client, share, uuid)
         if not accepted:
             return
 
