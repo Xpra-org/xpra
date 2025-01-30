@@ -248,12 +248,7 @@ class ServerBase(ServerBaseClass):
         if not c.boolget("steal", True) and self._server_sources:
             self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is already active")
             return
-        request = c.strget("request")
-        if not request:
-            # "normal" connection, so log welcome message:
-            log.info("Handshake complete; enabling connection")
-        else:
-            log("handling request %s", request)
+        log.info("Handshake complete; enabling connection")
         self.server_event("handshake-complete")
 
         # Things are okay, we accept this connection, and may disconnect previous one(s)
@@ -265,8 +260,7 @@ class ServerBase(ServerBaseClass):
         if not accepted:
             return
 
-        send_ui = ui_client and not request
-        if send_ui:
+        if ui_client:
             # a bit of explanation:
             # normally these things are synchronized using xsettings, which we handle already,
             # but non-posix clients have no such thing,
@@ -326,7 +320,7 @@ class ServerBase(ServerBaseClass):
         self._server_sources[proto] = ss
         add_work_item(self.mdns_update)
         # process ui half in ui thread:
-        GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
+        GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, ui_client, share_count)
 
     def do_handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
         if super().do_handle_hello_request(request, proto, caps):
