@@ -544,12 +544,10 @@ class ServerCore(ControlHandler, GLibPacketHandler):
                 "ssl": opts.bind_ssl,
             }.items():
                 if bind:  # ie: ["0.0.0.0:10000", "127.0.0.1:20000"]
-                    def open_url() -> None:
-                        from xpra.net.common import open_html_url
-                        open_html_url(html, mode, bind[0])
+                    from xpra.net.common import open_html_url
                     # open via timeout_add so that the server is running by then,
                     # plus a slight delay so that it can settle down:
-                    GLib.timeout_add(1000, open_url)
+                    GLib.timeout_add(1000, open_html_url, html, mode, bind[0])
                     break
             else:
                 log.warn("Warning: cannot open html client in a browser")
