@@ -6,7 +6,6 @@
 
 import unittest
 
-from xpra.common import noop
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.thread import start_thread
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
@@ -24,13 +23,6 @@ class EncodingMixinTest(unittest.TestCase):
         t = start_thread(x.threaded_setup, "threaded setup")
         t.join()
         x.init_packet_handlers()
-        x.add_packet_handler("foo", noop, main_thread=True)
-        x.add_packet_handler("bar", noop, main_thread=False)
-        x.add_packet_handlers({
-            "hello": noop,
-            "world": noop,
-        }, main_thread=True)
-
         x.get_server_source(None)
 
         assert isinstance(x.get_caps(None), dict)

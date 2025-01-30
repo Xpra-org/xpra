@@ -349,7 +349,7 @@ def enforce_server_features() -> None:
         "fileprint": "xpra.server.mixins.fileprint,xpra.server.source.fileprint",
         "mmap": "xpra.net.mmap,xpra.server.mixins.mmap,xpra.server.source.mmap",
         "ssl": "ssl,xpra.net.ssl_util",
-        "ssh": "paramiko,xpra.net.ssh",
+        "ssh": "paramiko,xpra.net.ssh,xpra.server.mixins.ssh_agent",
         "input_devices": "xpra.server.mixins.input,xpra.server.source.input",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
