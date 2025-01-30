@@ -358,7 +358,7 @@ def get_ssl_info(show_constants=False) -> dict[str, Any]:
     vnum = getattr(ssl, "OPENSSL_VERSION_NUMBER", 0)
     if vnum:
         vparts = []
-        for i in range(4):
+        for _ in range(4):
             vparts.append((vnum & 0xff) >> 4)
             vnum = vnum >> 8
         info["openssl-version"] = tuple(reversed(vparts))[:FULL_INFO+1]
