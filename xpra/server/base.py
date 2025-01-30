@@ -358,7 +358,7 @@ class ServerBase(ServerBaseClass):
                 dpi_caps = c.get("dpi")
                 if isinstance(dpi_caps, int):
                     # legacy mode, ie: html5 client
-                    self.dpi = self.xpdi = self.ydpi = int(dpi_caps)
+                    self.dpi = self.xdpi = self.ydpi = int(dpi_caps)
                 else:
                     tdpi = typedict(c.dictget("dpi") or {})
                     self.dpi = tdpi.intget("", 0)
