@@ -33,7 +33,7 @@ from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     SOCKET_TYPES, MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
-    may_log_packet, is_request_allowed, PacketType, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
+    is_request_allowed, PacketType, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
 )
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -47,6 +47,7 @@ from xpra.net.net_util import (
     get_network_caps, get_info as get_net_info,
     import_netifaces, get_interfaces_addresses,
 )
+from xpra.net.glib_handler import GLibPacketHandler
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
@@ -144,7 +145,7 @@ def force_close_connection(conn) -> None:
 
 
 # noinspection PyMethodMayBeStatic
-class ServerCore(ControlHandler):
+class ServerCore(ControlHandler, GLibPacketHandler):
     """
         This is the simplest base class for servers.
         It only handles the connection layer:
@@ -154,6 +155,7 @@ class ServerCore(ControlHandler):
     def __init__(self):
         log("ServerCore.__init__()")
         ControlHandler.__init__(self)
+        GLibPacketHandler.__init__(self)
         self.start_time = time()
         self.uuid = ""
         self.auth_classes: dict[str, Sequence[AuthDef]] = {}
@@ -2251,7 +2253,7 @@ class ServerCore(ControlHandler):
                 "encryption": self.encryption or "",
                 "tcp-encryption": self.tcp_encryption or "",
                 "bandwidth-limit": self.bandwidth_limit or 0,
-                "packet-handlers": self.get_packet_handlers_info(),
+                "packet-handlers": GLibPacketHandler.get_info(self),
                 "www": {
                     "": self._html,
                     "websocket-upgrade": self.websocket_upgrade,
@@ -2351,25 +2353,8 @@ class ServerCore(ControlHandler):
 
     ######################################################################
     # packet handling:
-    def process_packet(self, proto: SocketProtocol, packet) -> None:
-        packet_type = None
-        handler = None
-        try:
-            packet_type = str(packet[0])
-            may_log_packet(False, packet_type, packet)
-            handler = self._default_packet_handlers.get(packet_type)
-            if handler:
-                netlog("process packet %s", packet_type)
-                handler(proto, packet)
-                return
-            if not self._closing and not proto.is_closed():
-                netlog("invalid packet: %s", packet)
-                netlog.error(f"Error: unknown or invalid packet type {packet_type!r}")
-                netlog.error(f" received from {proto}")
-            proto.close()
-        except Exception:
-            netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
-                         packet_type, handler, exc_info=True)
+    def process_packet(self, proto, packet) -> None:
+        return super().dispatch_packet(proto, packet)
 
     def handle_rfb_connection(self, conn, data: bytes = b"") -> None:
         log.error("Error: RFB protocol is not supported by this server")

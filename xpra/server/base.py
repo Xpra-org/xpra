@@ -8,12 +8,11 @@
 import os
 from time import monotonic
 from typing import Any
-from collections.abc import Callable
 
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
-from xpra.net.common import may_log_packet, ServerPacketHandlerType, PacketType, PacketElement
+from xpra.net.common import PacketType, PacketElement
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
 from xpra.util.io import is_socket
@@ -56,9 +55,6 @@ class ServerBase(ServerBaseClass):
         for c in SERVER_BASES:
             c.__init__(self)
         log("ServerBase.__init__()")
-
-        self._authenticated_packet_handlers: dict[str, Callable] = {}
-        self._authenticated_ui_packet_handlers: dict[str, Callable] = {}
 
         self._server_sources: dict = {}
         self.client_properties: dict[int, dict] = {}
@@ -579,14 +575,6 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.get_info took %.1fms", 1000.0 * (monotonic() - start))
         return info
 
-    def get_packet_handlers_info(self) -> dict[str, Any]:
-        info = ServerCore.get_packet_handlers_info(self)
-        info |= {
-            "authenticated": sorted(self._authenticated_packet_handlers.keys()),
-            "ui": sorted(self._authenticated_ui_packet_handlers.keys()),
-        }
-        return info
-
     def get_features_info(self) -> dict[str, Any]:
         i = {
             "sharing": self.sharing is not False,
@@ -810,20 +798,6 @@ class ServerBase(ServerBaseClass):
             return " %s" % proto
         return ""
 
-    ######################################################################
-    # packets:
-    def add_packet_handlers(self, defs: dict[str, ServerPacketHandlerType], main_thread=True) -> None:
-        for packet_type, handler in defs.items():
-            self.add_packet_handler(packet_type, handler, main_thread)
-
-    def add_packet_handler(self, packet_type: str, handler: ServerPacketHandlerType, main_thread=True) -> None:
-        netlog("add_packet_handler%s", (packet_type, handler, main_thread))
-        if main_thread:
-            handlers = self._authenticated_ui_packet_handlers
-        else:
-            handlers = self._authenticated_packet_handlers
-        handlers[packet_type] = handler
-
     def init_packet_handlers(self) -> None:
         for c in SERVER_BASES:
             c.init_packet_handlers(self)
@@ -841,44 +815,17 @@ class ServerBase(ServerBaseClass):
             "info-request": self._process_info_request,
         })
 
+    # override so we can set the 'authenticated' flag:
     def process_packet(self, proto, packet) -> None:
-        packet_type = ""
-        handler: Callable | None = None
-        try:
+        authenticated = bool(self.get_server_source(proto))
+        return super().dispatch_packet(proto, packet, authenticated)
+
+    def handle_invalid_packet(self, proto, packet) -> None:
+        ss = self.get_server_source(proto)
+        if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
+            netlog("invalid packet: %s", packet)
             packet_type = str(packet[0])
-
-            def call_handler() -> None:
-                may_log_packet(False, packet_type, packet)
-                handler(proto, packet)
-
-            if proto in self._server_sources:
-                handler = self._authenticated_ui_packet_handlers.get(packet_type)
-                if handler:
-                    netlog("process ui packet %s", packet_type)
-                    GLib.idle_add(call_handler)
-                    return
-                handler = self._authenticated_packet_handlers.get(packet_type)
-                if handler:
-                    netlog("process non-ui packet %s", packet_type)
-                    call_handler()
-                    return
-            handler = self._default_packet_handlers.get(packet_type)
-            if handler:
-                netlog("process default packet %s", packet_type)
-                call_handler()
-                return
-
-            def invalid_packet() -> None:
-                ss = self.get_server_source(proto)
-                if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
-                    netlog("invalid packet: %s", packet)
-                    netlog.error(f"Error: unknown or invalid packet type {packet_type!r}")
-                    netlog.error(f" received from {proto}")
-                if not ss:
-                    proto.close()
-
-            GLib.idle_add(invalid_packet)
-        except Exception:
-            netlog.error(f"Error processing a {packet_type!r} packet")
-            netlog.error(f" received from {proto}:")
-            netlog.error(f" using {handler}", exc_info=True)
+            netlog.error(f"Error: unknown or invalid packet type {packet_type!r}")
+            netlog.error(f" received from {proto}")
+        if not ss:
+            proto.close()

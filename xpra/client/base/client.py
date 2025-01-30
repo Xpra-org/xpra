@@ -22,9 +22,10 @@ from xpra.common import (
     ConnectionMessage, disconnect_is_an_error, noerr, NotificationID, noop,
 )
 from xpra.util.child_reaper import getChildReaper, reaper_cleanup
-from xpra.net import compression
-from xpra.net.common import may_log_packet, PacketHandlerType, PacketType, PacketElement, SSL_UPGRADE
 from xpra.util.thread import start_thread
+from xpra.net import compression
+from xpra.net.common import PacketType, PacketElement, SSL_UPGRADE
+from xpra.net.glib_handler import GLibPacketHandler
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.net_util import get_network_caps
@@ -78,7 +79,7 @@ ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
                                         "uri,file,env,kerberos,gss,u2f,prompt,prompt,prompt,prompt").split(",")
 
 
-class XpraClientBase(ServerInfoMixin, FilePrintMixin):
+class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
     """
     Base class for Xpra clients.
     Provides the glue code for:
@@ -93,9 +94,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         # this may be called more than once,
         # skip doing internal init again:
         if not hasattr(self, "exit_code"):
+            GLibPacketHandler.__init__(self)
             self.defaults_init()
-        ServerInfoMixin.__init__(self)
-        FilePrintMixin.__init__(self)
+            ServerInfoMixin.__init__(self)
+            FilePrintMixin.__init__(self)
         self._init_done = False
 
     def defaults_init(self) -> None:
@@ -153,7 +155,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
             # from multiple parents, skip initializing twice
             return
         self._init_done = True
-        for c in XpraClientBase.__bases__:
+        for c in (ServerInfoMixin, FilePrintMixin):
             c.init(self, opts)
         self.compression_level = opts.compression_level
         self.display = opts.display
@@ -1098,7 +1100,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
         return True
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        for bc in XpraClientBase.__bases__:
+        for bc in (ServerInfoMixin, FilePrintMixin):
             if not bc.parse_server_capabilities(self, c):
                 log.info(f"server capabilities rejected by {bc}")
                 return False
@@ -1224,14 +1226,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
 
     ######################################################################
     # packets:
-    def remove_packet_handlers(self, *keys) -> None:
-        for k in keys:
-            for d in (self._packet_handlers, self._ui_packet_handlers):
-                d.pop(k, None)
-
     def init_packet_handlers(self) -> None:
-        self._packet_handlers: dict[str, PacketHandlerType] = {}
-        self._ui_packet_handlers: dict[str, PacketHandlerType] = {}
         self.add_packet_handler("hello", self._process_hello, False)
         if SSL_UPGRADE:
             self.add_packet_handler("ssl-upgrade", self._process_ssl_upgrade)
@@ -1248,41 +1243,8 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
     def init_authenticated_packet_handlers(self) -> None:
         FilePrintMixin.init_authenticated_packet_handlers(self)
 
-    def add_packet_handlers(self, defs: dict[str, PacketHandlerType], main_thread: bool = True) -> None:
-        for packet_type, handler in defs.items():
-            self.add_packet_handler(packet_type, handler, main_thread)
+    def process_packet(self, proto, packet) -> None:
+        self.dispatch_packet(proto, packet, True)
 
-    def add_packet_handler(self, packet_type: str, handler: PacketHandlerType, main_thread: bool = True) -> None:
-        netlog("add_packet_handler%s", (packet_type, handler, main_thread))
-        self.remove_packet_handlers(packet_type)
-        if main_thread:
-            handlers = self._ui_packet_handlers
-        else:
-            handlers = self._packet_handlers
-        handlers[packet_type] = handler
-
-    def process_packet(self, _proto, packet) -> None:
-        packet_type = ""
-        handler = None
-        # noinspection PyBroadException
-        try:
-            packet_type = packet[0]
-            if packet_type is not int:
-                packet_type = str(packet_type)
-
-            def call_handler() -> None:
-                may_log_packet(False, packet_type, packet)
-                handler(packet)
-
-            handler = self._packet_handlers.get(packet_type)
-            if handler:
-                call_handler()
-                return
-            handler = self._ui_packet_handlers.get(packet_type)
-            if not handler:
-                netlog.error("unknown packet type: %s", packet_type)
-                return
-            GLib.idle_add(call_handler)
-        except Exception:
-            netlog.error("Unhandled error while processing a '%s' packet from peer using %s",
-                         packet_type, handler, exc_info=True)
+    def call_packet_handler(self, handler: Callable, proto, packet) -> None:
+        handler(packet)

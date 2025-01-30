@@ -10,7 +10,6 @@ from collections.abc import Callable
 
 from xpra.util.objects import typedict
 from xpra.os_util import WIN32
-from xpra.net.common import ServerPacketHandlerType
 
 
 class StubServerMixin:
@@ -142,12 +141,6 @@ class StubServerMixin:
         if WIN32:  # pragma: no cover
             return [cmd]
         return shlex.split(str(cmd))
-
-    def add_packet_handler(self, packet_type: str, handler: ServerPacketHandlerType, main_thread=True) -> None:
-        """ register a packet handler """
-
-    def add_packet_handlers(self, defs: dict[str, ServerPacketHandlerType], main_thread=True) -> None:
-        """ register multiple packet handlers """
 
     def get_server_source(self, _proto):
         """ returns the client connection source object for the given protocol """

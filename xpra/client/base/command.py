@@ -54,7 +54,7 @@ class CommandConnectClient(GObjectXpraClient):
         self.hello_extra["wants"] = []
 
     def setup_connection(self, conn):
-        self._packet_handlers["setting-change"] = noop
+        self.add_packet_handler("setting-change", noop)
         protocol = super().setup_connection(conn)
         if conn.timeout > 0:
             self.command_timeout = GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
@@ -187,7 +187,7 @@ class ScreenshotXpraClient(HelloRequestClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self._ui_packet_handlers["screenshot"] = self._process_screenshot
+        self.add_packet_handler("screenshot", self._process_screenshot)
 
 
 class InfoXpraClient(CommandConnectClient):
@@ -328,8 +328,8 @@ class MonitorXpraClient(SendCommandConnectClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self._packet_handlers["server-event"] = self._process_server_event
-        self._packet_handlers["ping"] = self._process_ping
+        self.add_packet_handler("server-event", self._process_server_event, False)
+        self.add_packet_handler("ping", self._process_ping, False)
 
     def _process_ping(self, packet: PacketType) -> None:
         echotime = packet[1]
@@ -491,8 +491,8 @@ class ShellXpraClient(SendCommandConnectClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self._packet_handlers["shell-reply"] = self._process_shell_reply
-        self._packet_handlers["ping"] = self._process_ping
+        self.add_packet_handler("shell-reply", self._process_shell_reply, False)
+        self.add_packet_handler("ping", self._process_ping, False)
 
     def _process_ping(self, packet: PacketType) -> None:
         echotime = packet[1]

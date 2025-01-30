@@ -769,4 +769,4 @@ class UIXpraClient(ClientBaseClass):
 
     def process_packet(self, proto, packet) -> None:
         self.check_server_echo(0)
-        XpraClientBase.process_packet(self, proto, packet)
+        super().process_packet(proto, packet)
