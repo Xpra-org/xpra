@@ -856,7 +856,7 @@ class ServerBase(ServerBaseClass):
                     clean_agent_socket(source.uuid)
                 agent = ""
                 for ss in remaining_sources:
-                    ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
+                    ssh_auth_sock = getattr(ss, "ssh_auth_sock", "")
                     if ss.uuid and ssh_auth_sock:
                         agent = ss.uuid
                         break
