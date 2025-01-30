@@ -289,6 +289,9 @@ class X11ServerBase(X11ServerCore):
             self._xsettings_manager.set_settings(v)
 
     def init_all_server_settings(self) -> None:
+        from xpra.server import features
+        if not features.display:
+            return
         log("init_all_server_settings() dpi=%i, default_dpi=%i", self.dpi, self.default_dpi)
         # almost like update_all, except we use the default_dpi,
         # since this is called before the first client connects
