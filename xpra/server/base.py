@@ -11,11 +11,10 @@ from typing import Any
 
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
-from xpra.common import SSH_AGENT_DISPATCH, FULL_INFO, noop, ConnectionMessage
+from xpra.common import FULL_INFO, noop, ConnectionMessage
 from xpra.net.common import PacketType, PacketElement
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
-from xpra.util.io import is_socket
 from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
@@ -326,8 +325,6 @@ class ServerBase(ServerBaseClass):
             raise
         self._server_sources[proto] = ss
         add_work_item(self.mdns_update)
-        if uuid and send_ui and SSH_AGENT_DISPATCH:
-            self.accept_client_ssh_agent(uuid, c.strget("ssh-auth-sock"))
         # process ui half in ui thread:
         GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, send_ui, share_count)
 
@@ -369,16 +366,6 @@ class ServerBase(ServerBaseClass):
         # pylint: disable=import-outside-toplevel
         from xpra.server.source.client_connection_factory import get_client_connection_class
         return get_client_connection_class(caps)
-
-    def accept_client_ssh_agent(self, uuid: str, ssh_auth_sock: str) -> None:
-        try:
-            from xpra.net.ssh.agent import setup_client_ssh_agent_socket, set_ssh_agent
-        except ImportError as e:
-            log(f"no agent forwarding: {e}")
-            return
-        sockpath = setup_client_ssh_agent_socket(uuid, ssh_auth_sock)
-        if sockpath and os.path.exists(sockpath) and is_socket(sockpath):
-            set_ssh_agent(uuid)
 
     def process_hello_ui(self, ss, c: typedict, auth_caps: dict, send_ui: bool, share_count: int) -> None:
         def reject(message="server is shutting down") -> None:
@@ -728,21 +715,6 @@ class ServerBase(ServerBaseClass):
                 self.set_ui_driver(remaining_sources[0])
             else:
                 self.set_ui_driver(None)
-        if SSH_AGENT_DISPATCH:
-            try:
-                from xpra.net.ssh.agent import set_ssh_agent, clean_agent_socket
-            except ImportError:
-                pass
-            else:
-                if source.uuid:
-                    clean_agent_socket(source.uuid)
-                agent = ""
-                for ss in remaining_sources:
-                    ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
-                    if ss.uuid and ssh_auth_sock:
-                        agent = ss.uuid
-                        break
-                set_ssh_agent(agent)
         source.close()
         netlog("cleanup_source(%s) remaining sources: %s", source, remaining_sources)
         netlog.info("%s client %i disconnected.", ptype, source.counter)
@@ -772,14 +744,6 @@ class ServerBase(ServerBaseClass):
             self.ui_driver = None
         else:
             self.ui_driver = source.uuid
-        if SSH_AGENT_DISPATCH:
-            try:
-                from xpra.net.ssh.agent import set_ssh_agent
-            except ImportError:
-                pass
-            else:
-                ssh_auth_sock = getattr(source, "ssh_auth_sock", "")
-                set_ssh_agent(ssh_auth_sock)
         for c in SERVER_BASES:
             if c != ServerCore:
                 c.set_session_driver(self, source)

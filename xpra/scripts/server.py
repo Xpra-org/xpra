@@ -318,7 +318,7 @@ def set_server_features(opts) -> None:
     features.fileprint = b(opts.printing) or b(opts.file_transfer)
     features.mmap = b(opts.mmap)
     features.ssl = b(opts.ssl)
-    features.ssh = b(opts.ssh)
+    features.ssh = b(opts.ssh) and impcheck("net.ssh")
     features.input_devices = not opts.readonly and impcheck("keyboard")
     features.commands = envbool("XPRA_RUN_COMMANDS", True)
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")

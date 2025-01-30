@@ -44,6 +44,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.network_state:
         from xpra.server.mixins.networkstate import NetworkStateServer
         classes.append(NetworkStateServer)
+    if features.ssh:
+        from xpra.server.mixins.ssh_agent import SshAgent
+        classes.append(SshAgent)
     if features.http:
         from xpra.server.mixins.http import HttpServer
         classes.append(HttpServer)
