@@ -55,6 +55,8 @@ class NetworkState(StubClientMixin):
     - info request and response
     """
 
+    PACKET_TYPES = ("ping", "ping_echo", "info-response")
+
     def __init__(self):
         super().__init__()
         self.server_start_time: float = -1
@@ -321,6 +323,4 @@ class NetworkState(StubClientMixin):
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packet_handler("ping", self._process_ping, False)
-        self.add_packet_handler("ping_echo", self._process_ping_echo, False)
-        self.add_packet_handler("info-response", self._process_info_response, False)
+        self.add_packets(*NetworkState.PACKET_TYPES)

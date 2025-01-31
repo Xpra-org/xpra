@@ -44,7 +44,6 @@ class ClientMixinTest(unittest.TestCase):
         for x in self.packets:
             log.info("%s", x)
 
-
     def send(self, *args):
         self.packets.append(args)
 
@@ -60,21 +59,22 @@ class ClientMixinTest(unittest.TestCase):
     def verify_packet(self, index, expected):
         packet = self.get_packet(index)
         pslice = packet[:len(expected)]
-        assert pslice==expected, "invalid packet slice %s, expected %s" % (pslice, expected)
+        assert pslice == expected, "invalid packet slice %s, expected %s" % (pslice, expected)
 
-
-    def add_packet_handler(self, packet_type, handler, _main_thread=True):
+    def add_packet_handler(self, packet_type, handler, main_thread=False):
+        if not handler:
+            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
         self.packet_handlers[packet_type] = handler
 
-    def add_packet_handlers(self, defs, _main_thread=True):
-        self.packet_handlers.update(defs)
+    def add_packet_handlers(self, defs, main_thread=False):
+        for packet_type, handler in defs.items():
+            self.add_packet_handler(packet_type, handler)
 
     def handle_packet(self, packet):
         packet_type = packet[0]
         ph = self.packet_handlers.get(packet_type)
         assert ph is not None, "no packet handler for %s" % packet_type
         ph(packet)
-
 
     def fake_quit(self, code):
         self.exit_codes.append(code)

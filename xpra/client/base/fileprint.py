@@ -39,14 +39,11 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         FileTransferHandler.init_opts(self, opts)
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packet_handlers({
-            "open-url": self._process_open_url,
-            "send-file": self._process_send_file,
-            "send-data-request": self._process_send_data_request,
-            "send-data-response": self._process_send_data_response,
-            "ack-file-chunk": self._process_ack_file_chunk,
-            "send-file-chunk": self._process_send_file_chunk,
-        }, False)
+        self.add_packets(
+            "open-url", "send-file",
+            "send-data-request", "send-data-response",
+            "ack-file-chunk", "send-file-chunk",
+        )
 
     def get_caps(self) -> dict[str, Any]:
         return self.get_file_transfer_features()

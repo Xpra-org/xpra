@@ -187,7 +187,7 @@ class ScreenshotXpraClient(HelloRequestClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packet_handler("screenshot", self._process_screenshot)
+        self.add_packets("screenshot")
 
 
 class InfoXpraClient(CommandConnectClient):
@@ -328,8 +328,7 @@ class MonitorXpraClient(SendCommandConnectClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packet_handler("server-event", self._process_server_event, False)
-        self.add_packet_handler("ping", self._process_ping, False)
+        self.add_packets("server-event", "ping")
 
     def _process_ping(self, packet: PacketType) -> None:
         echotime = packet[1]
@@ -391,7 +390,7 @@ class InfoTimerClient(MonitorXpraClient):
 
     def init_packet_handlers(self) -> None:
         MonitorXpraClient.init_packet_handlers(self)
-        self.add_packet_handler("info-response", self._process_info_response, False)
+        self.add_packets("info-response")
 
     def _process_server_event(self, packet: PacketType) -> None:
         self.log("server event: %s" % (packet,))
@@ -491,8 +490,7 @@ class ShellXpraClient(SendCommandConnectClient):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packet_handler("shell-reply", self._process_shell_reply, False)
-        self.add_packet_handler("ping", self._process_ping, False)
+        self.add_packets("shell-reply", "ping")
 
     def _process_ping(self, packet: PacketType) -> None:
         echotime = packet[1]
@@ -764,7 +762,7 @@ class EncodeClient(HelloRequestClient):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self.add_packet_handler("encode-response", self._process_encode_response, False)
+        self.add_packets("encode-response")
 
     def _process_encode_response(self, packet: PacketType) -> None:
         log.warn(f"encode-response: {packet!r}")

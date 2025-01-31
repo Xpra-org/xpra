@@ -206,7 +206,7 @@ class ClipboardClient(StubClientMixin):
             "pending-requests", "enable-selections",
             "status",
         ):
-            self.add_packet_handler("clipboard-%s" % x, self._process_clipboard_packet)
+            self.add_packet_handler(f"clipboard-{x}", self._process_clipboard_packet, True)
 
     def make_clipboard_helper(self):
         """

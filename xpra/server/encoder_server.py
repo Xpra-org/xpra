@@ -93,7 +93,7 @@ class EncoderServer(EncoderServerBaseClass):
     def init_packet_handlers(self) -> None:
         ServerCore.init_packet_handlers(self)
         EncodingServer.init_packet_handlers(self)
-        self.add_packet_handler("encode", self._process_encode)
+        self.add_packets("encode")
 
     def _process_encode(self, proto: SocketProtocol, packet: PacketType) -> None:
         packet = ["encoded"] + packet[1:]

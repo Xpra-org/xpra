@@ -42,11 +42,16 @@ class ServerMixinTest(unittest.TestCase):
         self.glib.timeout_add(1000, self.main_loop.quit)
 
     def wait_for_threaded_init(self):
-        #we don't do threading yet,
-        #so no need to wait
+        # we don't do threading yet,
+        # so no need to wait
         pass
 
-    def add_packet_handler(self, packet_type, handler, _main_thread=True):
+    def add_packets(self, *packet_types: str, main_thread=True):
+        for packet_type in packet_types:
+            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
+            self.add_packet_handler(packet_type, handler, main_thread)
+
+    def add_packet_handler(self, packet_type: str, handler=None, main_thread=True):
         self.packet_handlers[packet_type] = handler
 
     def add_packet_handlers(self, defs, _main_thread=True):
@@ -65,7 +70,6 @@ class ServerMixinTest(unittest.TestCase):
             pass
         else:
             raise Exception("invalid packet %s should cause an error" % (packet,))
-
 
     def get_server_source(self, proto):
         assert proto==self.protocol

@@ -546,10 +546,9 @@ class DisplayManager(StubServerMixin):
             self.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
-        self.add_packet_handlers({
-            "set-cursors": self._process_set_cursors,
-            "set-bell": self._process_set_bell,
-            "desktop_size": self._process_desktop_size,
-            "configure-display": self._process_configure_display,
-            "screenshot": self._process_screenshot,
-        })
+        self.add_packets(
+            "set-cursors", "set-bell",
+            "desktop_size",
+            "configure-display",
+            "screenshot",
+        )

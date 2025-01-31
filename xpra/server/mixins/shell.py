@@ -42,6 +42,4 @@ class ShellServer(StubServerMixin):
             ss.shell_exec(code)
 
     def init_packet_handlers(self) -> None:
-        self.add_packet_handlers({
-            "shell-exec": self._process_shell_exec,
-        }, False)
+        self.add_packets("shell-exec")

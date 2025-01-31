@@ -205,9 +205,4 @@ class NetworkStateServer(StubServerMixin):
             ss.process_ping(time_to_echo, sid)
 
     def init_packet_handlers(self) -> None:
-        self.add_packet_handlers({
-            "ping": self._process_ping,
-            "ping_echo": self._process_ping_echo,
-            "connection-data": self._process_connection_data,
-            "bandwidth-limit": self._process_bandwidth_limit,
-        }, False)
+        self.add_packets("ping", "ping_echo", "connection-data", "bandwidth-limit")

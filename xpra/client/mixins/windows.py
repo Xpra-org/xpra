@@ -1757,26 +1757,15 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # packets:
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packet_handlers(
-            {
-                "new-window": self._process_new_window,
-                "new-override-redirect": self._process_new_override_redirect,
-                "new-tray": self._process_new_tray,
-                "raise-window": self._process_raise_window,
-                "restack-window": self._process_restack_window,
-                "initiate-moveresize": self._process_initiate_moveresize,
-                "window-move-resize": self._process_window_move_resize,
-                "window-resized": self._process_window_resized,
-                "window-metadata": self._process_window_metadata,
-                "configure-override-redirect": self._process_configure_override_redirect,
-                "lost-window": self._process_lost_window,
-                "window-icon": self._process_window_icon,
-                "draw": self._process_draw,
-                "eos": self._process_eos,
-                "cursor": self._process_cursor,
-                "bell": self._process_bell,
-                "pointer-position": self._process_pointer_position,
-                "pointer-grab": self._process_pointer_grab,
-                "pointer-ungrab": self._process_pointer_ungrab,
-            }
-        )
+        self.add_packets(
+            "new-window", "new-override-redirect", "new-tray",
+            "raise-window", "restack-window",
+            "initiate-moveresize",
+            "window-move-resize", "window-resized", "window-metadata",
+            "configure-override-redirect",
+            "lost-window",
+            "window-icon",
+            "draw", "eos",
+            "cursor", "bell",
+            "pointer-position", "pointer-grab", "pointer-ungrab",
+            main_thread=True)

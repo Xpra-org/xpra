@@ -81,7 +81,7 @@ class RemoteLogging(StubClientMixin):
         return True
 
     def start_receiving_logging(self) -> None:
-        self.add_packet_handler("logging", self._process_logging, False)
+        self.add_packets("logging")
         self.send("logging-control", "start")
 
     def _process_logging(self, packet: PacketType) -> None:

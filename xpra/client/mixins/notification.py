@@ -77,10 +77,10 @@ class NotificationClient(StubClientMixin):
         }
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packet_handler("notification-show", self._process_notify_show)
-        self.add_packet_handler("notification-close", self._process_notify_close)
-        self.add_packet_handler("notify_show", self._process_notify_show)
-        self.add_packet_handler("notify_close", self._process_notify_close)
+        self.add_packets("notification-show", "notification-close")
+        # legacy name:
+        self.add_packet_handler("notify_show", self._process_notification_show)
+        self.add_packet_handler("notify_close", self._process_notification_close)
 
     def make_notifier(self):
         nc = self.get_notifier_classes()
@@ -145,7 +145,7 @@ class NotificationClient(StubClientMixin):
         else:
             GLib.idle_add(show_notification)
 
-    def _process_notify_show(self, packet: PacketType) -> None:
+    def _process_notification_show(self, packet: PacketType) -> None:
         if not self.notifications_enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
@@ -166,7 +166,7 @@ class NotificationClient(StubClientMixin):
             actions, hints = packet[10], packet[11]
         # note: if the server doesn't support notification forwarding,
         # it can still send us the messages (via xpra control or the dbus interface)
-        log("_process_notify_show(%s) notifier=%s, server_notifications=%s",
+        log("_process_notification_show(%s) notifier=%s, server_notifications=%s",
             repr_ellipsized(packet), self.notifier, self.server_notifications)
         log("notification actions=%s, hints=%s", actions, hints)
         assert self.notifier
@@ -177,12 +177,12 @@ class NotificationClient(StubClientMixin):
                                   app_name, replaces_nid, app_icon,
                                   summary, body, actions, hints, expire_timeout, icon)
 
-    def _process_notify_close(self, packet: PacketType) -> None:
+    def _process_notification_close(self, packet: PacketType) -> None:
         if not self.notifications_enabled:
             return
         assert self.notifier
         nid = packet[1]
-        log("_process_notify_close(%s)", nid)
+        log("_process_notification_close(%s)", nid)
         self.notifier.close_notify(nid)
 
     def get_tray_window(self, _app_name, _hints):

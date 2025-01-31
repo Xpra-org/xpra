@@ -139,7 +139,7 @@ class Encodings(StubClientMixin):
             getVideoHelper().cleanup()
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packet_handler("encodings", self._process_encodings, False)
+        self.add_packets("encodings")
 
     def _process_encodings(self, packet: PacketType) -> None:
         caps = typedict(packet[1])

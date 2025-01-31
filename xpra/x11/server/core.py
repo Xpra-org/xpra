@@ -259,8 +259,7 @@ class X11ServerCore(GTKServerBase):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packet_handler("force-ungrab", self._process_force_ungrab)
-        self.add_packet_handler("wheel-motion", self._process_wheel_motion)
+        self.add_packets("force-ungrab", "wheel-motion", main_thread=True)
 
     def init_virtual_devices(self, _devices) -> None:
         self.input_devices = "xtest"

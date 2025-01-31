@@ -757,15 +757,9 @@ class UIXpraClient(ClientBaseClass):
         for c in CLIENT_BASES:
             c.init_authenticated_packet_handlers(self)
         # run from the UI thread:
-        self.add_packet_handlers(
-            {
-                "startup-complete": self._process_startup_complete,
-                "setting-change": self._process_setting_change,
-                "control": self._process_control,
-            }
-        )
+        self.add_packets("startup-complete", "setting-change", "control", main_thread=True)
         # run directly from the network thread:
-        self.add_packet_handler("server-event", self._process_server_event, False)
+        self.add_packets("server-event")
 
     def process_packet(self, proto, packet) -> None:
         self.check_server_echo(0)

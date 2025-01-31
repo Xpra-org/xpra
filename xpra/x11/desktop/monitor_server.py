@@ -404,11 +404,7 @@ class XpraMonitorServer(DesktopServerBase):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packet_handlers(
-            {
-                "configure-monitor": self._process_configure_monitor,
-            }
-        )
+        self.add_packets("configure-monitor")
 
 
 GObject.type_register(XpraMonitorServer)

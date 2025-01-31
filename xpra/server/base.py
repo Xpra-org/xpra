@@ -720,18 +720,11 @@ class ServerBase(ServerBaseClass):
         for c in SERVER_BASES:
             c.init_packet_handlers(self)
         # no need for main thread:
-        self.add_packet_handlers({
-            "sharing-toggle": self._process_sharing_toggle,
-            "lock-toggle": self._process_lock_toggle,
-            "set_deflate": noop,  # removed in v6
-        }, False)
+        self.add_packets("sharing-toggle", "lock-toggle")
+        self.add_packet_handler("set_deflate", noop)  # removed in v6
         # attributes / settings:
-        self.add_packet_handlers({
-            "server-settings": self._process_server_settings,
-            "shutdown-server": self._process_shutdown_server,
-            "exit-server": self._process_exit_server,
-            "info-request": self._process_info_request,
-        })
+        self.add_packets("server-settings", "info-request", main_thread=True)
+        self.add_packets("shutdown-server", "exit-server")
 
     # override so we can set the 'authenticated' flag:
     def process_packet(self, proto, packet) -> None:

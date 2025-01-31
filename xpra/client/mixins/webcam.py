@@ -33,6 +33,7 @@ class WebcamForwarder(StubClientMixin):
     Mixin for clients that forward webcams
     """
 
+    PACKET_TYPES = ("webcam-ack", "webcam-stop")
     __signals__ = ["webcam-changed"]
 
     def __init__(self):
@@ -319,6 +320,4 @@ class WebcamForwarder(StubClientMixin):
                     self.webcam_send_timer = GLib.timeout_add(delay, self.may_send_webcam_frame)
 
     def init_authenticated_packet_handlers(self) -> None:
-        log("init_authenticated_packet_handlers()")
-        self.add_packet_handler("webcam-stop", self._process_webcam_stop)
-        self.add_packet_handler("webcam-ack", self._process_webcam_ack)
+        self.add_packets(*WebcamForwarder.PACKET_TYPES)

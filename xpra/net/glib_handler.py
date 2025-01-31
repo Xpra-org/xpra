@@ -41,17 +41,22 @@ class GLibPacketHandler:
             ):
                 d.pop(k, None)
 
-    def add_packet_handlers(self, defs: dict[str, ServerPacketHandlerType], main_thread=True) -> None:
+    def add_packet_handlers(self, defs: dict[str, ServerPacketHandlerType], main_thread=False) -> None:
         for packet_type, handler in defs.items():
             self.add_packet_handler(packet_type, handler, main_thread)
 
-    def add_packet_handler(self, packet_type: str, handler: ServerPacketHandlerType, main_thread=True) -> None:
+    def add_packet_handler(self, packet_type: str, handler: ServerPacketHandlerType, main_thread=False) -> None:
         log("add_packet_handler%s", (packet_type, handler, main_thread))
         if main_thread:
             handlers = self._authenticated_ui_packet_handlers
         else:
             handlers = self._authenticated_packet_handlers
         handlers[packet_type] = handler
+
+    def add_packets(self, *packet_types: str, main_thread=False) -> None:
+        for packet_type in packet_types:
+            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
+            self.add_packet_handler(packet_type, handler, main_thread)
 
     def dispatch_packet(self, proto, packet, authenticated=False) -> None:
         packet_type = str(packet[0])

@@ -443,6 +443,6 @@ class ChildCommandServer(StubServerMixin):
         log("init_packet_handlers() COMMANDS_SIGNALS=%s, start new commands=%s",
             COMMAND_SIGNALS, self.start_new_commands)
         if COMMAND_SIGNALS:
-            self.add_packet_handler("command-signal", self._process_command_signal, False)
+            self.add_packets("command-signal")
         if self.start_new_commands:
-            self.add_packet_handler("start-command", self._process_start_command)
+            self.add_packets("start-command")

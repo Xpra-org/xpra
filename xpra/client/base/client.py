@@ -1227,18 +1227,13 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
     ######################################################################
     # packets:
     def init_packet_handlers(self) -> None:
-        self.add_packet_handler("hello", self._process_hello, False)
+        self.add_packets("hello")
         if SSL_UPGRADE:
-            self.add_packet_handler("ssl-upgrade", self._process_ssl_upgrade)
-        self.add_packet_handlers({
-            "challenge": self._process_challenge,
-            "disconnect": self._process_disconnect,
-            "startup-complete": self._process_startup_complete,
-            "control": self._process_control,
-            CONNECTION_LOST: self._process_connection_lost,
-            GIBBERISH: self._process_gibberish,
-            INVALID: self._process_invalid,
-        })
+            self.add_packets("ssl-upgrade")
+        self.add_packets(
+            "challenge", "disconnect", "startup-complete", "control",
+            CONNECTION_LOST, GIBBERISH, INVALID, main_thread=True
+        )
 
     def init_authenticated_packet_handlers(self) -> None:
         FilePrintMixin.init_authenticated_packet_handlers(self)

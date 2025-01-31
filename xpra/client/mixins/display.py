@@ -648,5 +648,4 @@ class DisplayClient(StubClientMixin):
         self.emit("scaling-changed")
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packet_handler("show-desktop", self._process_show_desktop)
-        self.add_packet_handler("desktop_size", self._process_desktop_size)
+        self.add_packets("show-desktop", "desktop_size", main_thread=True)

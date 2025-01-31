@@ -219,6 +219,6 @@ class LoggingServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         if self.remote_logging_receive:
-            self.add_packet_handler("logging", self._process_logging, False)
+            self.add_packets("logging")
         if self.remote_logging_send:
-            self.add_packet_handler("logging-control", self._process_logging_control, False)
+            self.add_packets("logging-control")

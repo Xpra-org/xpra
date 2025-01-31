@@ -257,7 +257,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
     def init_packet_handlers(self) -> None:
         X11ServerBase.init_packet_handlers(self)
-        self.add_packet_handler("window-signal", self._process_window_signal)
+        self.add_packets("window-signal", main_thread=True)
 
     def __repr__(self):
         return "X11-Seamless-Server(%s)" % self.display_name

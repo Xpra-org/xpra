@@ -149,8 +149,4 @@ class WebcamServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         if self.webcam_enabled:
-            self.add_packet_handlers({
-                "webcam-start": self._process_webcam_start,
-                "webcam-stop": self._process_webcam_stop,
-                "webcam-frame": self._process_webcam_frame,
-            }, False)
+            self.add_packets("webcam-start", "webcam-stop", "webcam-frame")

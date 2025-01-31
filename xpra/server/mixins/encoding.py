@@ -244,19 +244,35 @@ class EncodingServer(StubServerMixin):
         ss.set_encoding(encoding, wids)
         self._refresh_windows(proto, wid_windows, {})
 
-    def _modify_sq(self, proto, packet) -> None:
-        """ modify speed or quality """
+    def _process_quality(self, proto, packet) -> None:
+        self._modify_sq(proto, "quality", packet[1])
+
+    def _process_min_quality(self, proto, packet) -> None:
+        self._modify_sq(proto, "min-quality", packet[1])
+
+    def _process_max_quality(self, proto, packet) -> None:
+        self._modify_sq(proto, "max-quality", packet[1])
+
+    def _process_speed(self, proto, packet) -> None:
+        self._modify_sq(proto, "speed", packet[1])
+
+    def _process_min_speed(self, proto, packet) -> None:
+        self._modify_sq(proto, "min-speed", packet[1])
+
+    def _process_max_speed(self, proto, packet) -> None:
+        self._modify_sq(proto, "max-speed", packet[1])
+
+    def _modify_sq(self, proto, attr: str, value: int) -> None:
+        """ modify speed or quality attributes """
         ss = self.get_server_source(proto)
         if not ss:
             return
-        ptype = packet[0]
-        assert ptype in (
+        assert attr in (
             "quality", "min-quality", "max-quality",
             "speed", "min-speed", "max-speed",
-        ), f"invalid packet type {ptype}"
-        value = int(packet[1])
-        log("Setting %s to %s", ptype, value)
-        fn = getattr(ss, "set_%s" % ptype.replace("-", "_"))
+        ), f"invalid attribute {attr!r}"
+        log("Setting %s to %s", attr, value)
+        fn = getattr(ss, "set_%s" % attr.replace("-", "_"))
         fn(value)
         self.call_idle_refresh_all_windows(proto)
 
@@ -267,9 +283,8 @@ class EncodingServer(StubServerMixin):
             refresh(proto)  # pylint: disable=not-callable
 
     def init_packet_handlers(self) -> None:
-        self.add_packet_handler("encoding", self._process_encoding)
-        for ptype in (
-                "quality", "min-quality", "max-quality",
-                "speed", "min-speed", "max-speed",
-        ):
-            self.add_packet_handler(ptype, self._modify_sq)
+        self.add_packets(
+            "encoding",
+            "quality", "min-quality", "max-quality",
+            "speed", "min-speed", "max-speed",
+        )
