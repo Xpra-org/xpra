@@ -61,10 +61,6 @@ class ServerBase(ServerBaseClass):
         self.sharing: bool | None = None
         self.lock: bool | None = None
 
-        self.dpi = self.xdpi = self.ydpi = 0
-        self.double_click_time = -1
-        self.double_click_distance = (-1, -1)
-        self.antialias = {}
         self.cursor_size = 0
 
         self.idle_timeout: int = 0

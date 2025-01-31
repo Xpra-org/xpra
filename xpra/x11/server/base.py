@@ -17,6 +17,7 @@ from xpra.gtk.error import xswallow, xsync, xlog
 from xpra.scripts.config import str_to_bool
 from xpra.server import ServerExitMode
 from xpra.common import SYNC_ICC
+from xpra.server import features
 from xpra.x11.server.core import X11ServerCore, XTestPointerDevice
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.gtk.prop import prop_set, prop_del
@@ -289,7 +290,6 @@ class X11ServerBase(X11ServerCore):
             self._xsettings_manager.set_settings(v)
 
     def init_all_server_settings(self) -> None:
-        from xpra.server import features
         if not features.display:
             return
         log("init_all_server_settings() dpi=%i, default_dpi=%i", self.dpi, self.default_dpi)
@@ -309,6 +309,8 @@ class X11ServerBase(X11ServerCore):
             }, reset=reset)
 
     def update_server_settings(self, settings=None, reset=False) -> None:
+        if not features.display:
+            return
         self.do_update_server_settings(settings or self._settings, reset,
                                        self.dpi, self.double_click_time, self.double_click_distance,
                                        self.antialias, self.cursor_size)
