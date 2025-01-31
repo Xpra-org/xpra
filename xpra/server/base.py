@@ -25,16 +25,12 @@ from xpra.log import Logger
 
 GLib = gi_import("GLib")
 
-SERVER_BASES = get_server_base_classes()
-ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
-
 log = Logger("server")
 netlog = Logger("network")
 authlog = Logger("auth")
-httplog = Logger("http")
-timeoutlog = Logger("timeout")
-screenlog = Logger("screen")
 
+SERVER_BASES = get_server_base_classes()
+ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
 log("ServerBaseClass%s", SERVER_BASES)
 
 CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
@@ -64,8 +60,6 @@ class ServerBase(ServerBaseClass):
         self.idle_timeout: int = 0
         # duplicated from Server Source...
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
-
-        self.init_packet_handlers()
 
     def suspend_event(self, args):
         ServerCore.suspend_event(self, args)
