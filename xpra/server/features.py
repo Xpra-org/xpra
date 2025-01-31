@@ -24,5 +24,6 @@ network_state = True
 shell = False
 display = True
 windows = True
+cursors = True
 rfb = True
 http = True

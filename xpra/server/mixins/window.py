@@ -135,7 +135,6 @@ class WindowServer(StubServerMixin):
         if not isinstance(ss, WindowsMixin):
             return
         self.send_initial_windows(ss, share_count > 0)
-        self.send_initial_cursors(ss, share_count > 0)
 
     def is_shown(self, _window) -> bool:
         return True
@@ -379,9 +378,6 @@ class WindowServer(StubServerMixin):
 
     def send_initial_windows(self, ss, sharing=False) -> None:
         raise NotImplementedError()
-
-    def send_initial_cursors(self, ss, sharing=False) -> None:
-        pass
 
     ######################################################################
     # focus:

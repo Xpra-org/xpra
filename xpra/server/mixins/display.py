@@ -93,14 +93,12 @@ class DisplayManager(StubServerMixin):
     def __init__(self):
         self.randr = False
         self.bell = False
-        self.cursors = False
         self.default_dpi = 96
         self.bit_depth = 24
         self.dpi = 0
         self.xdpi = 0
         self.ydpi = 0
         self.antialias: dict[str, Any] = {}
-        self.cursor_size = 0
         self.double_click_time = -1
         self.double_click_distance = -1, -1
         self.opengl = "no"
@@ -110,7 +108,6 @@ class DisplayManager(StubServerMixin):
     def init(self, opts) -> None:
         self.opengl = opts.opengl
         self.bell = opts.bell
-        self.cursors = opts.cursors
         self.default_dpi = int(opts.dpi)
         self.bit_depth = self.get_display_bit_depth()
         self.refresh_rate = opts.refresh_rate
@@ -144,7 +141,6 @@ class DisplayManager(StubServerMixin):
             self.double_click_time = -1
             self.double_click_distance = -1, -1
             self.antialias = {}
-            self.cursor_size = 24
         else:
             dpi_caps = c.get("dpi")
             if isinstance(dpi_caps, int):
@@ -158,9 +154,8 @@ class DisplayManager(StubServerMixin):
             self.double_click_time = c.intget("double_click.time", -1)
             self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
             self.antialias = c.dictget("antialias", {})
-            self.cursor_size = c.intget("cursor.size", 0)
-        log("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s, cursor_size=%s",
-            self.dpi, self.xdpi, self.ydpi, self.antialias, self.cursor_size)
+        log("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s",
+            self.dpi, self.xdpi, self.ydpi, self.antialias)
         log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
         # if we're not sharing, reset all the settings:
         reset = share_count == 0
@@ -207,7 +202,6 @@ class DisplayManager(StubServerMixin):
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {
             "bell": self.bell,
-            "cursors": self.cursors,
         }
         root_size = self.get_root_window_size()
         if root_size:
@@ -220,10 +214,6 @@ class DisplayManager(StubServerMixin):
         i = {
             "randr": self.randr,
             "bell": self.bell,
-            "cursors": {
-                "": self.cursors,
-                "size": self.cursor_size,
-            },
             "double-click": {
                 "time": self.double_click_time,
                 "distance": self.double_click_distance,
@@ -243,12 +233,6 @@ class DisplayManager(StubServerMixin):
         return {
             "display": i,
         }
-
-    def _process_set_cursors(self, proto, packet: PacketType) -> None:
-        assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
-        ss = self.get_server_source(proto)
-        if ss:
-            ss.send_cursors = bool(packet[1])
 
     def _process_set_bell(self, proto, packet: PacketType) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
@@ -547,7 +531,7 @@ class DisplayManager(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         self.add_packets(
-            "set-cursors", "set-bell",
+            "set-bell",
             "desktop_size",
             "configure-display",
             "screenshot",

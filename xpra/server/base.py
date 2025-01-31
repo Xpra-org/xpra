@@ -61,8 +61,6 @@ class ServerBase(ServerBaseClass):
         self.sharing: bool | None = None
         self.lock: bool | None = None
 
-        self.cursor_size = 0
-
         self.idle_timeout: int = 0
         # duplicated from Server Source...
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN

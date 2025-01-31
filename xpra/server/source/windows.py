@@ -5,22 +5,14 @@
 # later version. See the file COPYING for details.
 
 import os
-from io import BytesIO
 from time import monotonic
 from typing import Any
 from collections.abc import Callable, Sequence
-
-try:
-    from PIL import Image
-except ImportError:
-    Image = None
 
 from xpra.os_util import gi_import
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
-from xpra.net.compression import Compressed
-from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED, force_size_constraint
@@ -30,7 +22,6 @@ GLib = gi_import("GLib")
 
 log = Logger("server")
 focuslog = Logger("focus")
-cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 bandwidthlog = Logger("bandwidth")
 eventslog = Logger("events")
@@ -59,7 +50,6 @@ class WindowsMixin(StubSourceMixin):
 
     def __init__(self):
         self.get_focus: Callable | None = None
-        self.get_cursor_data_cb: Callable | None = None
         self.get_window_id: Callable | None = None
         self.window_filters = []
         self.readonly = False
@@ -70,7 +60,6 @@ class WindowsMixin(StubSourceMixin):
 
     def init_from(self, _protocol, server) -> None:
         self.get_focus = server.get_focus
-        self.get_cursor_data_cb = server.get_cursor_data
         self.get_window_id = server.get_window_id
         self.window_filters = server.window_filters
         self.readonly = server.readonly
@@ -80,8 +69,6 @@ class WindowsMixin(StubSourceMixin):
         self.window_sources: dict[int, Any] = {}
         self.window_frame_sizes: dict = {}
         self.suspended = False
-        self.send_cursors = False
-        self.cursor_encodings: Sequence[str] = ()
         self.send_bell = False
         self.send_windows = True
         self.pointer_grabs = False
@@ -90,14 +77,11 @@ class WindowsMixin(StubSourceMixin):
         self.window_restack = False
         self.system_tray = False
         self.metadata_supported: Sequence[str] = ()
-        self.cursor_timer = 0
-        self.last_cursor_sent: tuple = ()
 
     def cleanup(self) -> None:
         for window_source in self.all_window_sources():
             window_source.cleanup()
         self.window_sources = {}
-        self.cancel_cursor_timer()
 
     def all_window_sources(self) -> tuple:
         return tuple(self.window_sources.values())
@@ -119,7 +103,6 @@ class WindowsMixin(StubSourceMixin):
             ws = self.window_sources.get(wid)
             if ws:
                 ws.resume()
-        self.send_cursor()
 
     def go_idle(self) -> None:
         # usually fires from the server's idle_grace_timeout_cb
@@ -140,9 +123,6 @@ class WindowsMixin(StubSourceMixin):
     def parse_client_caps(self, c: typedict) -> None:
         self.send_windows = c.boolget("ui_client", True) and c.boolget("windows", True)
         self.pointer_grabs = c.boolget("pointer.grabs")
-        self.send_cursors = self.send_windows and c.boolget("cursors")
-        self.cursor_encodings = c.strtupleget("encodings.cursor")
-        cursorlog(f"cursors={self.send_cursors}, cursor encodings={self.cursor_encodings}")
         self.send_bell = c.boolget("bell")
         self.system_tray = c.boolget("system_tray")
         self.metadata_supported = c.strtupleget("metadata.supported", DEFAULT_METADATA_SUPPORTED)
@@ -166,7 +146,6 @@ class WindowsMixin(StubSourceMixin):
     def get_info(self) -> dict[str, Any]:
         info = {
             "windows": self.send_windows,
-            "cursors": self.send_cursors,
             "bell": self.send_bell,
             "system-tray": self.system_tray,
             "suspended": self.suspended,
@@ -238,79 +217,6 @@ class WindowsMixin(StubSourceMixin):
     def pointer_ungrab(self, wid) -> None:
         if self.pointer_grabs and self.hello_sent:
             self.send("pointer-ungrab", wid)
-
-    ######################################################################
-    # cursors:
-    def send_cursor(self) -> None:
-        if not self.send_cursors or self.suspended or not self.hello_sent:
-            return
-        # if not pending already, schedule it:
-        gbc = self.global_batch_config
-        if not self.cursor_timer and gbc:
-            delay = max(10, int(gbc.delay / 4))
-
-            def do_send_cursor():
-                self.cursor_timer = 0
-                cd = self.get_cursor_data_cb()
-                if not cd or not cd[0]:
-                    self.send_empty_cursor()
-                    return
-                cursor_data = list(cd[0])
-                cursor_sizes = cd[1]
-                self.do_send_cursor(delay, cursor_data, cursor_sizes)
-
-            self.cursor_timer = GLib.timeout_add(delay, do_send_cursor)
-
-    def cancel_cursor_timer(self) -> None:
-        ct = self.cursor_timer
-        if ct:
-            self.cursor_timer = 0
-            GLib.source_remove(ct)
-
-    def do_send_cursor(self, delay, cursor_data, cursor_sizes, encoding_prefix="") -> None:
-        # copy to a new list we can modify (ie: compress):
-        cursor_data = list(cursor_data)
-        # skip first two fields (if present) as those are coordinates:
-        if self.last_cursor_sent and self.last_cursor_sent[2:9] == cursor_data[2:9]:
-            cursorlog("do_send_cursor(..) cursor identical to the last one we sent, nothing to do")
-            return
-        self.last_cursor_sent = cursor_data[:9]
-        w, h, _xhot, _yhot, serial, pixels, name = cursor_data[2:9]
-        # compress pixels if needed:
-        encoding = "raw"
-        if pixels is not None:
-            cpixels: bytes | Compressed = memoryview_to_bytes(pixels)
-            if "png" in self.cursor_encodings and Image:
-                cursorlog(f"do_send_cursor() got {len(cpixels)} bytes of pixel data for {w}x{h} cursor named {name!r}")
-                img = Image.frombytes("RGBA", (w, h), cpixels, "raw", "BGRA", w * 4, 1)
-                buf = BytesIO()
-                img.save(buf, "PNG")
-                pngdata = buf.getvalue()
-                buf.close()
-                cpixels = Compressed("png cursor", pngdata)
-                encoding = "png"
-                if SAVE_CURSORS:
-                    filename = f"raw-cursor-{serial:x}.png"
-                    with open(filename, "wb") as f:
-                        f.write(pngdata)
-                    cursorlog("cursor saved to %s", filename)
-            elif len(cpixels) >= 256 and ("raw" in self.cursor_encodings or not self.cursor_encodings):
-                cpixels = self.compressed_wrapper("cursor", pixels)
-                cursorlog("do_send_cursor(..) pixels=%s ", cpixels)
-                encoding = "raw"
-            else:
-                cursorlog("no supported cursor encodings")
-                return
-            cursor_data[7] = cpixels
-        cursorlog("do_send_cursor(..) %sx%s %s cursor name='%s', serial=%#x with delay=%s (cursor_encodings=%s)",
-                  w, h, (encoding or "empty"), name, serial, delay, self.cursor_encodings)
-        args = [encoding_prefix + encoding] + list(cursor_data[:9]) + [cursor_sizes[0]] + list(cursor_sizes[1])
-        self.send_more("cursor", *args)
-
-    def send_empty_cursor(self) -> None:
-        cursorlog("send_empty_cursor(..)")
-        self.last_cursor_sent = ()
-        self.send_more("cursor", "")
 
     def bell(self, wid: int, device, percent: int, pitch: int, duration: int,
              bell_class, bell_id: int, bell_name: str) -> None:

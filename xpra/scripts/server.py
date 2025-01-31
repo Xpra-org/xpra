@@ -327,7 +327,8 @@ def set_server_features(opts) -> None:
     # features.network_state   = ??
     features.shell = envbool("XPRA_SHELL", True)
     features.display = opts.windows
-    features.windows = opts.windows and impcheck("codecs")
+    features.windows = features.display and impcheck("codecs")
+    features.cursors = features.display and opts.cursors
     features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
     features.http = opts.http_scripts.lower() not in FALSE_OPTIONS
 
@@ -360,6 +361,7 @@ def enforce_server_features() -> None:
         "shell": "xpra.server.mixins.shell,xpra.server.source.shell",
         "display": "xpra.server.mixins.display,xpra.server.source.display",
         "windows": "xpra.server.mixins.window,xpra.server.source.windows",
+        "cursors": "xpra.server.mixins.cursors,xpra.server.source.cursors",
         "rfb": "xpra.net.rfb,xpra.server.rfb",
         "http": "xpra.server.mixins.http",
     })

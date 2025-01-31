@@ -52,6 +52,9 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.display:
         from xpra.server.source.display import ClientDisplayMixin
         mixins.append(ClientDisplayMixin)
+    if features.cursors:
+        from xpra.server.source.cursors import CursorsMixin
+        mixins.append(CursorsMixin)
     if features.windows:
         from xpra.server.source.windows import WindowsMixin
         mixins.append(WindowsMixin)

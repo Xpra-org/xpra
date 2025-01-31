@@ -56,6 +56,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.display:
         from xpra.server.mixins.display import DisplayManager
         classes.append(DisplayManager)
+    if features.cursors:
+        from xpra.server.mixins.cursors import CursorManager
+        classes.append(CursorManager)
     if features.windows:
         from xpra.server.mixins.window import WindowServer
         classes.append(WindowServer)

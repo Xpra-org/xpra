@@ -98,6 +98,14 @@ class XTestPointerDevice:
 
 
 # noinspection PyUnreachableCode
+def get_cursor_sizes() -> tuple[int, int]:
+    Gdk = gi_import("Gdk")
+    display = Gdk.Display.get_default()
+    if not display:
+        return 0, 0
+    return int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
+
+
 class X11ServerCore(GTKServerBase):
     """
         Base class for X11 servers,
@@ -359,7 +367,7 @@ class X11ServerCore(GTKServerBase):
             return
         cursorlog(f"default_cursor_image={dci}, {enabled=}, {encodings=}", )
         with cursorlog.trap_error("Error sending default cursor"):
-            ss.do_send_cursor(0, dci, self.get_cursor_sizes(), encoding_prefix="default:")
+            ss.do_send_cursor(0, dci, get_cursor_sizes(), encoding_prefix="default:")
 
     def do_get_info(self, proto, server_sources) -> dict[str, Any]:
         start = monotonic_ns()
@@ -523,7 +531,7 @@ class X11ServerCore(GTKServerBase):
         if skip_default and is_default:
             cursorlog("get_cursor_data(): default cursor - clearing it")
             cursor_image = None
-        cursor_sizes = self.get_cursor_sizes()
+        cursor_sizes = get_cursor_sizes()
         return cursor_image, cursor_sizes
 
     def get_all_screen_sizes(self) -> Sequence[tuple[int, int]]:
