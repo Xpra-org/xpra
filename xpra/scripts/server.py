@@ -285,8 +285,8 @@ def show_encoding_help(opts) -> int:
     return 0
 
 
-def set_server_features(opts) -> None:
-    def b(v):
+def set_server_features(opts, mode: str) -> None:
+    def b(v) -> bool:
         return str(v).lower() not in FALSE_OPTIONS
 
     impwarned: set[str] = set()
@@ -307,29 +307,39 @@ def set_server_features(opts) -> None:
 
     # turn off some server mixins:
     from xpra.server import features
+    if mode == "encoder":
+        # turn off all relevant features:
+        features.commands = False
+        features.notifications = features.webcam = features.clipboard = False
+        features.gstreamer = features.x11 = features.audio = features.av_sync = False
+        features.fileprint = features.input_devices = features.commands = False
+        features.logging = features.display = features.windows = False
+        features.cursors = features.rfb = False
+    else:
+        features.commands = envbool("XPRA_RUN_COMMANDS", True)
+        features.notifications = opts.notifications and impcheck("notifications")
+        features.webcam = b(opts.webcam) and impcheck("codecs")
+        features.clipboard = b(opts.clipboard) and impcheck("clipboard")
+        features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
+        features.x11 = b(opts.x11) and impcheck("x11")
+        features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
+        features.av_sync = features.audio and b(opts.av_sync)
+        features.fileprint = b(opts.printing) or b(opts.file_transfer)
+        features.input_devices = not opts.readonly and impcheck("keyboard")
+        features.logging = b(opts.remote_logging)
+        features.display = opts.windows
+        features.windows = features.display and impcheck("codecs")
+        features.cursors = features.display and opts.cursors
+        features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
+
     features.control = impcheck("net.control") and envbool("XPRA_CONTROL_CHANNEL", True)
-    features.notifications = opts.notifications and impcheck("notifications")
-    features.webcam = b(opts.webcam) and impcheck("codecs")
-    features.clipboard = b(opts.clipboard) and impcheck("clipboard")
-    features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
-    features.x11 = b(opts.x11) and impcheck("x11")
-    features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
-    features.av_sync = features.audio and b(opts.av_sync)
-    features.fileprint = b(opts.printing) or b(opts.file_transfer)
     features.mmap = b(opts.mmap)
     features.ssl = b(opts.ssl)
     features.ssh = b(opts.ssh) and impcheck("net.ssh")
-    features.input_devices = not opts.readonly and impcheck("keyboard")
-    features.commands = envbool("XPRA_RUN_COMMANDS", True)
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
-    features.logging = b(opts.remote_logging)
     # features.network_state   = ??
     features.shell = envbool("XPRA_SHELL", True)
-    features.display = opts.windows
-    features.windows = features.display and impcheck("codecs")
-    features.cursors = features.display and opts.cursors
-    features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
     features.http = opts.http_scripts.lower() not in FALSE_OPTIONS
 
 
@@ -341,7 +351,7 @@ def enforce_server_features() -> None:
     from xpra.server import features
     enforce_features(features, {
         "control": "xpra.net.control,xpra.server.mixins.controlcommands",
-        "commands": "xpra.net.control,xpra.server.mixins.controlcommands",
+        "commands": "xpra.server.mixins.child_command",
         "notifications": "xpra.notifications,xpra.server.mixins.notification,xpra.server.source.notification",
         "webcam": "xpra.server.mixins.webcam,xpra.server.source.webcam",
         "clipboard": "xpra.clipboard,xpra.server.mixins.clipboard,xpra.server.source.clipboard",
@@ -1400,7 +1410,7 @@ def _do_run_server(script_file: str, cmdline,
                     log.warn(" forward-xdg-open cannot be enabled")
                 log.warn(" non-embedded ssh connections will not be available")
 
-    set_server_features(opts)
+    set_server_features(opts, mode)
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()
 

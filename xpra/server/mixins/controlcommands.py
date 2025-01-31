@@ -11,7 +11,7 @@ from time import monotonic
 from xpra.util.parsing import parse_scaling_value, from0to100
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.common import ConnectionMessage
+from xpra.common import ConnectionMessage, noop
 from xpra.util.io import load_binary_file
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
@@ -143,16 +143,18 @@ class ServerBaseControlCommands(StubServerMixin):
                 ArgsControlCommand("remove-window-filters", "remove all window filters", min_args=0, max_args=0),
                 ArgsControlCommand("add-window-filter", "add a window filter", min_args=4, max_args=5),
         ):
-            cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"))
-            self.add_control_command(cmd.name, cmd)
+            cmd.do_run = getattr(self, "control_command_%s" % cmd.name.replace("-", "_"), noop)
+            if cmd.do_run != noop:
+                self.add_control_command(cmd.name, cmd)
         # encoding bits:
         for name in (
                 "quality", "min-quality", "max-quality",
                 "speed", "min-speed", "max-speed",
         ):
-            fn = getattr(self, "control_command_%s" % name.replace("-", "_"))
-            self.add_control_command(name, ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn,
-                                                              min_args=1, validation=[from0to100]))
+            fn = getattr(self, "control_command_%s" % name.replace("-", "_"), noop)
+            if fn != noop:
+                self.add_control_command(name, ArgsControlCommand(name, "set encoding %s (from 0 to 100)" % name, run=fn,
+                                                                  min_args=1, validation=[from0to100]))
 
     #########################################
     # Control Commands

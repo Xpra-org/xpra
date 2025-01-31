@@ -462,7 +462,7 @@ class ClipboardProtocolHelperCore:
         for proxy in self._clipboard_proxies.values():
             proxy.set_preferred_targets(preferred_targets)
 
-    def init_packet_handlers(self):
+    def init_packet_handlers(self) -> None:
         self._packet_handlers: dict[str, Callable] = {
             "clipboard-token": self._process_clipboard_token,
             "clipboard-request": self._process_clipboard_request,

@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from typing import Any
 
 from xpra.os_util import gi_import
@@ -209,6 +210,23 @@ class DisplayManager(StubServerMixin):
         if FULL_INFO and self.opengl_props:
             caps["opengl"] = dict_version_trim(self.opengl_props)
         return caps
+
+    def get_server_features(self, source) -> dict[str, Any]:
+        features: dict[str, Any] = {}
+        if source and "display" in source.wants:
+            max_size = self.get_max_screen_size()
+            if max_size:
+                features["max_desktop_size"] = max_size
+            display = os.environ.get("DISPLAY")
+            if display:
+                features["display"] = display
+        return features
+
+    def get_ui_info(self, proto, client_uuids=None, *args) -> dict[str, Any]:
+        max_size = self.get_max_screen_size()
+        if max_size:
+            return {"server": {"max_desktop_size": max_size}}
+        return {}
 
     def get_info(self, _proto) -> dict[str, Any]:
         i = {

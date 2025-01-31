@@ -393,13 +393,6 @@ class ServerBase(ServerBaseClass):
             if c != ServerCore:
                 merge_dicts(capabilities, c.get_caps(self, source))
         capabilities["server_type"] = "base"
-        if "display" in source.wants:
-            max_size = self.get_max_screen_size()
-            if max_size:
-                capabilities["max_desktop_size"] = max_size
-            display = os.environ.get("DISPLAY")
-            if display:
-                capabilities["display"] = display
         if "features" in source.wants:
             capabilities |= {
                 "client-shutdown": self.client_shutdown,
@@ -482,11 +475,7 @@ class ServerBase(ServerBaseClass):
         """ info that must be collected from the UI thread
             (ie: things that query the display)
         """
-        max_size = self.get_max_screen_size()
-        if max_size:
-            info = {"server": {"max_desktop_size": max_size}}
-        else:
-            info = {}
+        info: dict[str, Any] = {}
         for c in SERVER_BASES:
             with log.trap_error("Error collecting UI info from %s", c):
                 merge_dicts(info, c.get_ui_info(self, proto, client_uuids, *args))

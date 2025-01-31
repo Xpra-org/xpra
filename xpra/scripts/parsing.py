@@ -749,21 +749,17 @@ def get_ssh_proxy_args(desc, ssh) -> list[str]:
     return args
 
 
-def supports_x11_server() -> bool:
-    if OSX or WIN32:
-        return False
-    try:
-        from xpra.x11.bindings.wait_for_x_server import wait_for_x_server
-        return bool(wait_for_x_server)
-    except ImportError:
-        return False
-
-
 def has_module(name: str) -> bool:
     try:
         return bool(find_spec(name))
     except (ModuleNotFoundError, ValueError):
         return False
+
+
+def supports_x11() -> bool:
+    if OSX or WIN32:
+        return False
+    return has_module("xpra.x11")
 
 
 def supports_client() -> bool:
@@ -787,7 +783,7 @@ def get_subcommands() -> Sequence[str]:
 
 
 def get_usage() -> list[str]:
-    RDISPLAY = "REMOTE-DISPLAY" if not supports_x11_server() else "DISPLAY"
+    RDISPLAY = "REMOTE-DISPLAY" if not supports_x11() else "DISPLAY"
     SDISPLAY = "REMOTE-DISPLAY" if not supports_shadow() else "DISPLAY"
     command_options = [
         "",
@@ -797,7 +793,7 @@ def get_usage() -> list[str]:
         f"shadow [{SDISPLAY}]",
         f"shadow-screen [{SDISPLAY}]",
     ]
-    if supports_x11_server():
+    if supports_x11() and supports_server():
         command_options += [
             "upgrade [DISPLAY]",
             "upgrade-desktop [DISPLAY]",
