@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import shlex
 import unittest
 from time import sleep
 
@@ -73,8 +74,10 @@ class ServerAuthTest(ServerTestUtil):
             sleep(2)
             self.run_xpra(["clean-sockets"])
         if exit_code_error:
-            raise RuntimeError(f"{auth!r} test error: expected info client to return {estr(exit_code)}" +
-                               f" but got {estr(r)} for server with args={server_args} and client command: {cmd}")
+            raise RuntimeError(f"{auth!r} test error: expected info client to return {estr(exit_code)}"
+                               f" but got {estr(r)}"
+                               f" for server with args={shlex.join(server_args)}"
+                               f" and client command: {shlex.join(cmd)}")
 
     def test_fail(self):
         self._test_auth("fail", "", ExitCode.CONNECTION_FAILED)
