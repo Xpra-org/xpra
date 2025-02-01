@@ -100,9 +100,6 @@ class ClientMixinTest(unittest.TestCase):
         x._protocol = fake_protocol   # pylint: disable=protected-access
         x.add_packets = self.add_packets
         x.add_packet_handler = self.add_packet_handler
-        x.idle_add = self.glib.idle_add
-        x.timeout_add = self.glib.timeout_add
-        x.source_remove = self.glib.source_remove
         x.init(opts)
         conn = AdHocStruct()
         conn.filename = "/fake/path/to/nowhere"

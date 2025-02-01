@@ -82,9 +82,6 @@ class ServerMixinTest(unittest.TestCase):
         x.add_packets = self.add_packets
         x.add_packet_handler = self.add_packet_handler
         x.get_server_source = self.get_server_source
-        x.idle_add = self.glib.idle_add
-        x.timeout_add = self.glib.timeout_add
-        x.source_remove = self.glib.source_remove
         x.init_state()
         x.init(opts)
         x.auth_classes = {}
@@ -99,9 +96,6 @@ class ServerMixinTest(unittest.TestCase):
             self.source = source_mixin_class()
             self.protocol = AdHocStruct()
             self.protocol.TYPE = "xpra"
-            self.source.timeout_add = self.glib.timeout_add
-            self.source.idle_add = self.glib.idle_add
-            self.source.source_remove = self.glib.source_remove
             self.source.protocol = self.protocol
             self.source.init_from(self.protocol, x)
             self.source.init_state()

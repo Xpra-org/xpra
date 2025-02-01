@@ -8,8 +8,6 @@ import sys
 import unittest
 from io import BytesIO
 
-from gi.repository import GLib  # @UnresolvedImport
-
 from unit.test_util import LoggerSilencer, silence_error, silence_info
 
 from xpra.util.objects import typedict, AdHocStruct
@@ -56,9 +54,6 @@ class SourceMixinsTest(unittest.TestCase):
                 d[k] = v
         m = mixin_class()
         m.wants = ["encodings", "versions", "features", "display"]
-        m.source_remove = GLib.source_remove
-        m.idle_add = GLib.idle_add
-        m.timeout_add = GLib.timeout_add
         m.packet_queue = []
         m.protocol = protocol
 

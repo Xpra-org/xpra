@@ -26,19 +26,24 @@ class DisplayMixinTest(ServerMixinTest):
         opts.dpi = 144
         opts.opengl = "no"
         opts.refresh_rate = "auto"
-        def get_root_window_size():
+
+        def get_root_window_size() -> tuple[int, int]:
             return 1024, 768
-        def calculate_workarea(*_args):
+
+        def calculate_workarea(*_args) -> None:
             pass
-        def set_desktop_geometry(*_args):
+
+        def set_desktop_geometry(*_args) -> None:
             pass
-        def _DisplayManager():
+
+        def make_display_manager():
             dm = DisplayManager()
             dm.get_root_window_size = get_root_window_size
             dm.calculate_workarea = calculate_workarea
             dm.set_desktop_geometry = set_desktop_geometry
             return dm
-        self._test_mixin_class(_DisplayManager, opts, {}, ClientDisplayMixin)
+        self._test_mixin_class(make_display_manager, opts, {}, ClientDisplayMixin)
+
 
 def main():
     unittest.main()
