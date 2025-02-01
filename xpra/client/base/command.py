@@ -15,7 +15,7 @@ from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, sorted_nicely, by
 from xpra.util.env import envint, first_time
 from xpra.common import ConnectionMessage, disconnect_is_an_error, noop
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
-from xpra.util.io import stderr_print
+from xpra.util.io import stderr_print, load_binary_file
 from xpra.net.common import PacketType
 from xpra.util.stats import std_unit
 from xpra.client.base.client import EXTRA_TIMEOUT
@@ -593,7 +593,6 @@ class PrintClient(SendCommandConnectClient):
         else:
             if not self.validate_file_size(os.path.getsize(self.filename)):
                 return
-            from xpra.util.io import load_binary_file
             self.file_data = load_binary_file(self.filename)
             log("read %i bytes from %s", len(self.file_data), self.filename)
         if not self.validate_file_size(len(self.file_data)):
@@ -760,12 +759,19 @@ class EncodeClient(HelloRequestClient):
     this requires a server version 6.3 or later
     """
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, options, *filenames: str):
+        super().__init__(options)
+        if not filenames:
+            raise ValueError("please specify some filenames to encode")
+        self.filenames = list(filenames)
         self.add_packets("encode-response")
 
     def _process_encode_response(self, packet: PacketType) -> None:
         log.warn(f"encode-response: {packet!r}")
+        if self.filenames:
+            self.send_encode()
+        else:
+            self.quit(ExitCode.NO_DATA)
 
     def hello_request(self) -> dict[str, Any]:
         return {
@@ -773,11 +779,10 @@ class EncodeClient(HelloRequestClient):
         }
 
     def do_command(self, caps: typedict) -> None:
+        log(f"{caps=}")
+        self.send_encode()
 
-        v = caps.strget("version")
-        if not v:
-            self.warn_and_quit(ExitCode.FAILURE, "server did not provide the version information")
-        else:
-            sys.stdout.write(f"{v}\n")
-            sys.stdout.flush()
-            self.quit(ExitCode.OK)
+    def send_encode(self):
+        filename = self.filenames.pop(0)
+        data = load_binary_file(filename)
+        self.send("encode", data)

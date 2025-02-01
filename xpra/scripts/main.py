@@ -636,6 +636,9 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode == "top":
         no_gtk()
         return run_top(error_cb, options, args, cmdline)
+    if mode == "encode":
+        no_gtk()
+        return run_encode(error_cb, options, args, cmdline)
     if mode == "list":
         no_gtk()
         return run_list(error_cb, options, args)
@@ -3516,6 +3519,16 @@ def run_top(error_cb, options, args, cmdline) -> ExitValue:
             except Exception:
                 pass
     return TopClient(options).run()
+
+
+def run_encode(error_cb, options, args, cmdline) -> ExitValue:
+    from xpra.client.base.command import EncodeClient
+    if not args:
+        raise ValueError("please specify a display and at least one filename")
+    display_desc = pick_display(error_cb, options, args[:1], cmdline)
+    app = EncodeClient(options, args[1:])
+    connect_to_server(app, display_desc, options)
+    return app.run()
 
 
 def run_session_info(error_cb, options, args, cmdline) -> ExitValue:

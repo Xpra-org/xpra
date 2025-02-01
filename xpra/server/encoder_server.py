@@ -48,5 +48,8 @@ class EncoderServer(ServerBase):
         self.add_packets("encode")
 
     def _process_encode(self, proto: SocketProtocol, packet: PacketType) -> None:
-        packet = ["encoded"] + packet[1:]
-        proto.send_now(packet)
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
+        packet = ["encode-response"] + list(packet[1:])
+        ss.send_async(*packet)
