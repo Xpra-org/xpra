@@ -15,6 +15,10 @@ autoprov: no
 %global __requires_exclude ^(libnvjpeg|libnvidia-).*\\.so.*$
 %global __requires_exclude %__requires_exclude|^/usr/bin/python.*$
 
+%if 0%{?fedora}0%{?el10}
+%global debug_package %{nil}
+%endif
+
 #on RHEL, there is only one python>=3.10 build at present,
 #so this package can use the canonical name 'xpra',
 #but on Fedora, we only use the main package for the default python3
@@ -30,13 +34,28 @@ autoprov: no
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
+%define pyqt6 0
+%define pyglet 0
 %define CFLAGS -O2
+
+%if 0%{?fedora}
 %define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --with-pyglet_client --with-tk_client
-%if 0%{?fedora}0%{?el10}
-%global debug_package %{nil}
+%define pyglet 1
+%define pyqt6 1
 %endif
+
+%if 0%{?el8}
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-tk_client
+%endif
+
+%if 0%{?el9}
+%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-evdi --without-cuda_rebuild --with-qt6_client --with-tk_client
+%define pyqt6 1
+%endif
+
 %if 0%{?el10}
-%define DEFAULT_BUILD_ARGS --without-evdi --without-cuda_rebuild --with-qt6_client --with-pyglet_client --with-tk_client --without-docs
+%define DEFAULT_BUILD_ARGS --without-evdi --without-cuda_rebuild --with-qt6_client --with-tk_client --without-docs
+%define pyqt6 1
 %endif
 
 %global gnome_shell_extension input-source-manager@xpra_org
@@ -108,9 +127,13 @@ Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-server = %{version}-%{release}
 Recommends:			%{package_prefix}-audio = %{version}-%{release}
-Suggests:           %{package_prefix}-client-qt6 = %{version}-%{release}
 Suggests:           %{package_prefix}-client-tk = %{version}-%{release}
+%if 0%{?pyqt6}
+Suggests:           %{package_prefix}-client-qt6 = %{version}-%{release}
+%endif
+%if 0%{?pyglet}
 Suggests:           %{package_prefix}-client-pyglet = %{version}-%{release}
+%endif
 Conflicts:			python3-xpra < 6
 Obsoletes:			python3-xpra < 6
 %if "%{package_prefix}"!="xpra"
@@ -356,20 +379,23 @@ BuildRequires:		xclip
 This package contains the GTK3 xpra client.
 
 
+%if 0%{?pyqt6}
 %package -n %{package_prefix}-client-qt6
 Summary:			Experimental xpra Qt6 client
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-pyqt6
 %description -n%{package_prefix}-client-qt6
 This package contains an experimental client using the Qt6 toolkit.
+%endif
 
-
+%if 0%{?pyglet}
 %package -n %{package_prefix}-client-pyglet
 Summary:			Experimental xpra pyglet client
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{python3}-pyglet
 %description -n%{package_prefix}-client-pyglet
 This package contains an experimental client using the pyglet toolkit.
+%endif
 
 
 %package -n %{package_prefix}-client-tk
@@ -734,11 +760,15 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/client/base/
 %pycached %{python3_sitearch}/xpra/client/__init__.py
 
+%if 0%{?pyqt6}
 %files -n %{package_prefix}-client-qt6
 %{python3_sitearch}/xpra/client/qt6/
+%endif
 
+%if 0%{?pyglet}
 %files -n %{package_prefix}-client-pyglet
 %{python3_sitearch}/xpra/client/pyglet/
+%endif
 
 %files -n %{package_prefix}-client-tk
 %{python3_sitearch}/xpra/client/tk/
