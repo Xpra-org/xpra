@@ -7,6 +7,7 @@
 import sys
 import os
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.util.str_fn import csv, print_nested_dict, pver, strtobytes, bytestostr
 from xpra.util.env import envbool
@@ -112,7 +113,8 @@ def wrap_nvml_init(nvmlInit, warn=True) -> bool:
         return False
 
 
-def get_nvml_driver_version() -> tuple:
+def get_nvml_driver_version() -> Sequence[str]:
+    version = ()
     try:
         # pylint: disable=import-outside-toplevel
         from pynvml import nvmlInit, nvmlShutdown, nvmlSystemGetDriverVersion
@@ -127,15 +129,16 @@ def get_nvml_driver_version() -> tuple:
                 finally:
                     nvmlShutdown()
                 log(f"nvmlSystemGetDriverVersion={bytestostr(v)}")
-                return tuple(bytestostr(v).split("."))
+                version = bytestostr(v).split(".")
         except Exception as e:
             log("get_nvml_driver_version() pynvml error", exc_info=True)
             log.warn("Warning: failed to query the NVidia kernel module version using NVML:")
             log.warn(" %s", e)
-    return ()
+    log(f"get_nvml_driver_version()={version}")
+    return version
 
 
-def get_proc_driver_version() -> tuple:
+def get_proc_driver_version() -> Sequence[str]:
     if not POSIX:
         return ()
     v = load_binary_file(NVIDIA_PROC_FILE)
@@ -145,20 +148,24 @@ def get_proc_driver_version() -> tuple:
         return ()
     KSTR = b"Kernel Module"
     p = v.find(KSTR)
+    version = ()
     if not p:
         log.warn("Warning: unable to parse NVidia kernel module version")
         log_fn = log.warn
-        vtuple = ()
     else:
         log_fn = log.debug
-        vtuple = bytestostr(v[p + len(KSTR):].strip().split(b" ")[0]).split(".")
+        # ie: "NVRM version: NVIDIA UNIX x86_64 Kernel Module  565.77  Wed Nov 27 23:33:08 UTC 2024"
+        # -> "565.77"
+        kmodstr = bytestostr(v[p + len(KSTR):].strip().split(b" ", 1)[0])
+        version = kmodstr.split(".")
     log_fn(f" {NVIDIA_PROC_FILE!r} contents:")
     for line in v.splitlines():
         log_fn(f"  {bytestostr(line)!r}")
-    return vtuple
+    log(f"get_proc_driver_version()={version}")
+    return version
 
 
-def identify_nvidia_module_version() -> tuple:
+def identify_nvidia_module_version() -> Sequence[int]:
     v = get_nvml_driver_version() or get_proc_driver_version()
     # only keep numeric values:
     numver = []
