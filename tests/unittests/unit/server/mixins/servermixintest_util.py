@@ -96,6 +96,7 @@ class ServerMixinTest(unittest.TestCase):
             self.source = source_mixin_class()
             self.protocol = AdHocStruct()
             self.protocol.TYPE = "xpra"
+            self.source.wants = ("display", "foo")
             self.source.protocol = self.protocol
             self.source.init_from(self.protocol, x)
             self.source.init_state()
