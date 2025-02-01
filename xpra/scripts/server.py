@@ -309,6 +309,7 @@ def set_server_features(opts, mode: str) -> None:
     from xpra.server import features
     if mode == "encoder":
         # turn off all relevant features:
+        opts.start_new_commands = False
         features.commands = False
         features.notifications = features.webcam = features.clipboard = False
         features.gstreamer = features.x11 = features.audio = features.av_sync = False
