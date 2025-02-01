@@ -153,6 +153,9 @@ class ChildCommandServer(StubServerMixin):
             caps["subcommands"] = get_subcommands()
         return caps
 
+    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+        self.exec_on_connect_commands()
+
     def send_initial_data(self, ss, caps: typedict, send_ui: bool, share_count: int) -> None:
         xdg_menu = getattr(ss, "xdg_menu", False)
         log(f"send_initial_data(..) {xdg_menu=}")

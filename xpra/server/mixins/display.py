@@ -204,9 +204,14 @@ class DisplayManager(StubServerMixin):
         caps: dict[str, Any] = {
             "bell": self.bell,
         }
-        root_size = self.get_root_window_size()
-        if root_size:
-            caps["desktop_size"] = self._get_desktop_size_capability(source, *root_size)
+        if "display" in source.wants:
+            root_size = self.get_root_window_size()
+            if root_size:
+                caps |= {
+                    "actual_desktop_size": root_size,
+                    "root_window_size": root_size,
+                    "desktop_size": self._get_desktop_size_capability(source, *root_size),
+                }
         if FULL_INFO and self.opengl_props:
             caps["opengl"] = dict_version_trim(self.opengl_props)
         return caps

@@ -325,8 +325,8 @@ class ServerBase(ServerBaseClass):
 
             self.parse_hello(ss, c, send_ui)
             # send_hello will take care of sending the current and max screen resolutions
-            root_size = self.get_root_window_size()
-            self.send_hello(ss, root_size, auth_caps)
+
+            self.send_hello(ss, auth_caps)
             self.add_new_client(ss, c, send_ui, share_count)
             self.send_initial_data(ss, c, send_ui, share_count)
             self.client_startup_complete(ss)
@@ -358,7 +358,6 @@ class ServerBase(ServerBaseClass):
     def client_startup_complete(self, ss) -> None:
         ss.startup_complete()
         self.server_event("startup-complete", ss.uuid)
-        self.exec_on_connect_commands()
 
     def sanity_checks(self, proto, c: typedict) -> bool:
         server_uuid = c.strget("server_uuid")
@@ -407,13 +406,8 @@ class ServerBase(ServerBaseClass):
             capabilities.update(sf)
         return capabilities
 
-    def send_hello(self, server_source, root_size, server_cipher: dict) -> None:
+    def send_hello(self, server_source, server_cipher: dict) -> None:
         capabilities = self.make_hello(server_source)
-        if "display" in server_source.wants and root_size:
-            capabilities |= {
-                "actual_desktop_size": root_size,
-                "root_window_size": root_size,
-            }
         if server_cipher:
             capabilities.update(server_cipher)
         server_source.send_hello(capabilities)
