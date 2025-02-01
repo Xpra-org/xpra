@@ -678,7 +678,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
     def _process_disconnect(self, packet: PacketType) -> None:
         # ie: ("disconnect", "version error", "incompatible version")
         netlog("%s", packet)
-        info = tuple(repr(str(x)) for x in packet[1:])
+        info = tuple(str(x) for x in packet[1:])
         reason = info[0]
         if not self.connection_established:
             # server never sent hello to us - so disconnect is an error
@@ -693,10 +693,10 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
 
     def server_disconnect_warning(self, reason: str, *extra_info) -> None:
         log.warn("Warning: server connection failure:")
-        log.warn(f" {reason}")
+        log.warn(f" {reason!r}")
         for x in extra_info:
             if str(x).lower() != str(reason).lower():
-                log.warn(f" {x}")
+                log.warn(f" {x!r}")
         if ConnectionMessage.AUTHENTICATION_FAILED.value in extra_info:
             self.quit(ExitCode.AUTHENTICATION_FAILED)
         elif ConnectionMessage.CONNECTION_ERROR.value in extra_info or not self.completed_startup:
