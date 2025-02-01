@@ -48,14 +48,11 @@ class ServerMixinTest(unittest.TestCase):
 
     def add_packets(self, *packet_types: str, main_thread=True):
         for packet_type in packet_types:
-            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
+            handler = getattr(self.mixin, "_process_" + packet_type.replace("-", "_"))
             self.add_packet_handler(packet_type, handler, main_thread)
 
     def add_packet_handler(self, packet_type: str, handler=None, main_thread=True):
         self.packet_handlers[packet_type] = handler
-
-    def add_packet_handlers(self, defs, _main_thread=True):
-        self.packet_handlers.update(defs)
 
     def handle_packet(self, packet):
         packet_type = packet[0]
@@ -82,7 +79,7 @@ class ServerMixinTest(unittest.TestCase):
         x = self.mixin = mclass()
         x._server_sources = {}   # pylint: disable=protected-access
         x.wait_for_threaded_init = self.wait_for_threaded_init
-        x.add_packet_handlers = self.add_packet_handlers
+        x.add_packets = self.add_packets
         x.add_packet_handler = self.add_packet_handler
         x.get_server_source = self.get_server_source
         x.idle_add = self.glib.idle_add
