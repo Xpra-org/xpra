@@ -5,9 +5,18 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from gi.repository import GLib  # @UnresolvedImport
+from collections.abc import Callable
 
 from xpra.util.objects import typedict, AdHocStruct
+from xpra.log import Logger
+from xpra.os_util import gi_import
+
+GLib = gi_import("GLib")
+
+
+def debug_all() -> None:
+    from xpra.log import enable_debug_for
+    enable_debug_for("all")
 
 
 class ClientMixinTest(unittest.TestCase):
@@ -30,53 +39,54 @@ class ClientMixinTest(unittest.TestCase):
             self.mixin.cleanup()
             self.mixin = None
 
-    def stop(self):
+    def stop(self) -> None:
         self.glib.timeout_add(1000, self.main_loop.quit)
 
-    def debug_all(self):
-        from xpra.log import enable_debug_for
-        enable_debug_for("all")
-
-    def dump_packets(self):
+    def dump_packets(self) -> None:
         from xpra.util.io import get_util_logger
         log = get_util_logger()
         log.info("dump_packets() %i packets to send:", len(self.packets))
         for x in self.packets:
             log.info("%s", x)
 
-    def send(self, *args):
+    def send(self, *args) -> None:
         self.packets.append(args)
 
-    def get_packet(self, index):
-        if index<0:
+    def get_packet(self, index: int):
+        if index < 0:
             actual_index = len(self.packets)+index
         else:
             actual_index = index
-        assert actual_index>=0, "invalid actual index %i for index %i" % (actual_index, index)
-        assert len(self.packets)>actual_index, "not enough packets (%i) to access %i" % (len(self.packets), index)
+        assert actual_index >= 0, "invalid actual index %i for index %i" % (actual_index, index)
+        assert len(self.packets) > actual_index, "not enough packets (%i) to access %i" % (len(self.packets), index)
         return self.packets[actual_index]
 
-    def verify_packet(self, index, expected):
+    def verify_packet(self, index: int, expected) -> None:
         packet = self.get_packet(index)
         pslice = packet[:len(expected)]
-        assert pslice == expected, "invalid packet slice %s, expected %s" % (pslice, expected)
+        if pslice != expected:
+            log = Logger("test")
+            log.error(f"packet mismatch at index {index}")
+            for i, packet in enumerate(self.packets):
+                log.error("[%3i] %s", i, packet)
+            raise RuntimeError("invalid packet slice %s, expected %s" % (pslice, expected))
 
-    def add_packet_handler(self, packet_type, handler, main_thread=False):
-        if not handler:
-            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
+    def add_packet_handler(self, packet_type: str, handler: Callable, main_thread=False):
+        # log("add_packet_handler%s", (packet_type, handler, main_thread))
         self.packet_handlers[packet_type] = handler
 
-    def add_packet_handlers(self, defs, main_thread=False):
-        for packet_type, handler in defs.items():
-            self.add_packet_handler(packet_type, handler)
+    def add_packets(self, *packet_types: str, main_thread=False) -> None:
+        for packet_type in packet_types:
+            handler = getattr(self.mixin, "_process_" + packet_type.replace("-", "_"))
+            self.add_packet_handler(packet_type, handler, main_thread)
 
-    def handle_packet(self, packet):
+    def handle_packet(self, packet) -> None:
         packet_type = packet[0]
         ph = self.packet_handlers.get(packet_type)
         assert ph is not None, "no packet handler for %s" % packet_type
         ph(packet)
 
-    def fake_quit(self, code):
+    def fake_quit(self, code) -> None:
         self.exit_codes.append(code)
 
     def _test_mixin_class(self, mclass, opts, caps=None, protocol_type="xpra"):
@@ -84,11 +94,11 @@ class ClientMixinTest(unittest.TestCase):
         x.server_packet_types = ()
         x.quit = self.fake_quit
         fake_protocol = AdHocStruct()
-        fake_protocol.get_info = lambda : {}
-        fake_protocol.set_compression_level = lambda _x : None
+        fake_protocol.get_info = lambda: {}
+        fake_protocol.set_compression_level = lambda _x: None
         fake_protocol.TYPE = protocol_type
         x._protocol = fake_protocol   # pylint: disable=protected-access
-        x.add_packet_handlers = self.add_packet_handlers
+        x.add_packets = self.add_packets
         x.add_packet_handler = self.add_packet_handler
         x.idle_add = self.glib.idle_add
         x.timeout_add = self.glib.timeout_add
@@ -107,5 +117,5 @@ class ClientMixinTest(unittest.TestCase):
         assert x.get_info() is not None
         return x
 
-    def make_caps(self, caps=None):
+    def make_caps(self, caps=None) -> typedict:
         return typedict(caps or {})
