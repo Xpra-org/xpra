@@ -763,22 +763,41 @@ class EncodeClient(HelloRequestClient):
         super().__init__(options)
         if not filenames:
             raise ValueError("please specify some filenames to encode")
+        self.encoding = options.encoding
         self.filenames = list(filenames)
-        self.add_packets("encode-response")
+        self.add_packets("encode-response", "encodings")
         from xpra.codecs.pillow.decoder import get_encodings, decompress
         self.encodings = get_encodings()
         self.decompress = decompress
 
+    def _process_encodings(self, packet: PacketType) -> None:
+        log("server encodings: %s", packet[1:])
+
     def _process_encode_response(self, packet: PacketType) -> None:
-        log.warn(f"encode-response: {packet!r}")
-        if self.filenames:
-            self.send_encode()
-        else:
+        log("encode-response: %r", packet)
+        encoding, data, options, width, height, bpp, metadata = packet[1:8]
+        filename = typedict(metadata).strget("filename")
+        if not filename:
+            log.error("Error: 'filename' is missing from the metadata")
             self.quit(ExitCode.NO_DATA)
+            return
+        save_as = os.path.splitext(os.path.basename(filename))[0] + f".{encoding}"
+        with open(save_as, "wb") as f:
+            f.write(data)
+        log.info(f"saved %i bytes to {save_as!r}", len(data))
+        if not self.filenames:
+            self.quit(ExitCode.OK)
+            return
+        self.send_encode()
 
     def hello_request(self) -> dict[str, Any]:
+        encodings = ("png", "jpeg")
         return {
             "request": "encode",
+            "ui_client": True,
+            "encodings": encodings,
+            "encodings.core": encodings,
+            "encoding": self.encoding,
         }
 
     def do_command(self, caps: typedict) -> None:
@@ -797,5 +816,6 @@ class EncodeClient(HelloRequestClient):
         img_data = load_binary_file(filename)
         options = typedict()
         rgb_format, raw_data, width, height, rowstride = self.decompress(ext, img_data, options)
-        encode_options = {"filename": filename}
-        self.send("encode", rgb_format, raw_data, width, height, rowstride, encode_options)
+        encode_options = {}
+        metadata = {"filename": filename}
+        self.send("encode", rgb_format, raw_data, width, height, rowstride, encode_options, metadata)

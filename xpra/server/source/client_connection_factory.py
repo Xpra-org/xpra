@@ -58,13 +58,13 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.windows:
         from xpra.server.source.windows import WindowsMixin
         mixins.append(WindowsMixin)
-        # must be after windows mixin, so that it can assume "self.send_windows" is set
-        if features.encoding:
-            from xpra.server.source.encodings import EncodingsMixin
-            mixins.append(EncodingsMixin)
-        if features.audio and features.av_sync:
-            from xpra.server.source.avsync import AVSyncMixin
-            mixins.append(AVSyncMixin)
+    # must be after windows mixin, so that it can assume "self.send_windows" is set
+    if features.encoding:
+        from xpra.server.source.encodings import EncodingsMixin
+        mixins.append(EncodingsMixin)
+    if features.audio and features.av_sync:
+        from xpra.server.source.avsync import AVSyncMixin
+        mixins.append(AVSyncMixin)
     from xpra.server.source.idle_mixin import IdleMixin
     mixins.append(IdleMixin)
     return tuple(mixins)

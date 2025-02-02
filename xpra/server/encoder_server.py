@@ -5,7 +5,6 @@
 
 from collections.abc import Callable
 
-from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.net.common import PacketType
@@ -16,7 +15,7 @@ from xpra.log import Logger
 
 GLib = gi_import("GLib")
 
-log = Logger("server")
+log = Logger("server", "encoding")
 
 
 class EncoderServer(ServerBase):
@@ -26,7 +25,7 @@ class EncoderServer(ServerBase):
         super().__init__()
         self.session_type = "encoder"
         self.loop = GLib.MainLoop()
-        self.encode: Callable = noop
+        self.encode: Callable = None
 
     def init(self, opts) -> None:
         super().init(opts)
@@ -67,13 +66,15 @@ class EncoderServer(ServerBase):
         height = packet[4]
         rowstride = packet[5]
         options = typedict(packet[6])
+        metadata = packet[7]
         depth = 32
         bpp = 4
         full_range = True
-        encoding = "png" if self.encoding == "auto" else self.encoding
+        encoding = "png" if ss.encoding in ("auto", "") else ss.encoding
+        log("encode request from %s, encoding=%s from %s", ss, encoding, ss.encoding)
         from xpra.codecs.image import ImageWrapper, PlanarFormat
         image = ImageWrapper(0, 0, width, height, raw_data, rgb_format, depth, rowstride,
                              bpp, PlanarFormat.PACKED, True, None, full_range)
         coding, compressed, client_options, width, height, stride, bpp = self.encode(encoding, image, options)
-        packet = ["encode-response", coding, compressed.data, client_options, width, height, bpp]
+        packet = ["encode-response", coding, compressed.data, client_options, width, height, bpp, metadata]
         ss.send_async(*packet)
