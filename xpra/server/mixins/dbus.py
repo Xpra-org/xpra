@@ -7,6 +7,7 @@ import os.path
 import signal
 from typing import Any
 
+from xpra.server import ServerExitMode
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -28,6 +29,7 @@ class DbusServer(StubServerMixin):
         self.dbus_control = opts.dbus_control
 
     def init_dbus(self, dbus_pid: int, dbus_env: dict[str, str]) -> None:
+        log("init_dbus(%i, %s)", dbus_pid, dbus_env)
         self.dbus_pid = dbus_pid
         self.dbus_env = dbus_env
 
@@ -51,6 +53,8 @@ class DbusServer(StubServerMixin):
         if ds:
             ds.cleanup()
             self.dbus_server = None
+        if self._exit_mode not in (ServerExitMode.UPGRADE, ServerExitMode.EXIT):
+            self.stop_dbus_server()
 
     def stop_dbus_server(self) -> None:
         log("stop_dbus_server() dbus_pid=%s", self.dbus_pid)
