@@ -83,7 +83,7 @@ def get_info() -> dict[str, Any]:
 
 def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
     if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
-        raise ValueError(f"unsupported encoding: {coding}")
+        raise ValueError(f"unsupported encoding: {coding!r}")
     log("pillow.encode%s", (coding, image, options))
     quality = options.intget("quality", 50)
     speed = options.intget("speed", 50)
@@ -218,7 +218,7 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
             kwargs["quality"] = 0
         pil_fmt = coding.upper()
     else:
-        assert coding in ("png", "png/P", "png/L"), "unsupported encoding: %s" % coding
+        assert coding in ("png", "png/P", "png/L"), "unsupported encoding: %r" % coding
         if coding in ("png/L", "png/P") and supports_transparency and rgb == "RGBA":
             # grab alpha channel (the last one):
             # we use the last channel because we know it is RGBA,

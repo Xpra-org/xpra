@@ -98,14 +98,14 @@ def get_min_size(_encoding: str):
 
 def get_input_colorspaces(encoding: str) -> Sequence[str]:
     if encoding not in CODECS:
-        raise ValueError(f"unsupported encoding {encoding}")
+        raise ValueError(f"unsupported encoding {encoding!r}")
     return ("YUV420P",)
 
 
 def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     decoder = CODECS.get(encoding)
     if not decoder:
-        raise ValueError(f"unsupported encoding {encoding}")
+        raise ValueError(f"unsupported encoding {encoding!r}")
     assert input_colorspace in get_input_colorspaces(encoding)
     if decoder.startswith("nv"):
         return ("NV12", )
