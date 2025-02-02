@@ -46,6 +46,7 @@ class EncodingServer(StubServerMixin):
         self.default_min_quality = 0
         self.default_speed = -1
         self.default_min_speed = 0
+        self.encoding = ""
         self.allowed_encodings: Sequence[str] = ()
         self.core_encodings: Sequence[str] = ()
         self.encodings: Sequence[str] = ()

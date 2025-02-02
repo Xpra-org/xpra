@@ -759,12 +759,15 @@ class EncodeClient(HelloRequestClient):
     this requires a server version 6.3 or later
     """
 
-    def __init__(self, options, *filenames: str):
+    def __init__(self, options, filenames: Sequence[str]):
         super().__init__(options)
         if not filenames:
             raise ValueError("please specify some filenames to encode")
         self.filenames = list(filenames)
         self.add_packets("encode-response")
+        from xpra.codecs.pillow.decoder import get_encodings, decompress
+        self.encodings = get_encodings()
+        self.decompress = decompress
 
     def _process_encode_response(self, packet: PacketType) -> None:
         log.warn(f"encode-response: {packet!r}")
@@ -780,9 +783,19 @@ class EncodeClient(HelloRequestClient):
 
     def do_command(self, caps: typedict) -> None:
         log(f"{caps=}")
+        self._protocol.large_packets.append("encode")
         self.send_encode()
 
     def send_encode(self):
         filename = self.filenames.pop(0)
-        data = load_binary_file(filename)
-        self.send("encode", data)
+        ext = filename.split(".")[-1]
+        if ext not in self.encodings:
+            log.warn(f"Warning: {ext!r} format is not supported")
+            log.warn(" use %s", " or ".join(self.encodings))
+            self.quit(ExitCode.UNSUPPORTED)
+            return
+        img_data = load_binary_file(filename)
+        options = typedict()
+        rgb_format, raw_data, width, height, rowstride = self.decompress(ext, img_data, options)
+        encode_options = {"filename": filename}
+        self.send("encode", rgb_format, raw_data, width, height, rowstride, encode_options)

@@ -5,12 +5,13 @@
 
 from collections.abc import Callable
 
+from xpra.common import noop
+from xpra.os_util import gi_import
+from xpra.util.objects import typedict
 from xpra.net.common import PacketType
 from xpra.net.protocol.socket_handler import SocketProtocol
-
-from xpra.os_util import gi_import
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
-from xpra.server.base import ServerBase
+from xpra.server.base import ServerBase, SERVER_BASES
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -21,10 +22,19 @@ log = Logger("server")
 class EncoderServer(ServerBase):
 
     def __init__(self):
-        log("EncoderServer.__init__()")
+        log(f"EncoderServer.__init__() {SERVER_BASES=}")
         super().__init__()
         self.session_type = "encoder"
         self.loop = GLib.MainLoop()
+        self.encode: Callable = noop
+
+    def init(self, opts) -> None:
+        super().init(opts)
+        from xpra.codecs.pillow.encoder import get_encodings, encode
+        encodings = get_encodings()
+        self.encode = encode
+        if self.encoding not in ("auto", ) and self.encoding not in encodings:
+            raise ValueError(f"unsupported encoding {self.encoding!r}")
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
         sstr = self.get_server_mode() + " server"
@@ -51,5 +61,19 @@ class EncoderServer(ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
-        packet = ["encode-response"] + list(packet[1:])
+        rgb_format = packet[1]
+        raw_data = packet[2]
+        width = packet[3]
+        height = packet[4]
+        rowstride = packet[5]
+        options = typedict(packet[6])
+        depth = 32
+        bpp = 4
+        full_range = True
+        encoding = "png" if self.encoding == "auto" else self.encoding
+        from xpra.codecs.image import ImageWrapper, PlanarFormat
+        image = ImageWrapper(0, 0, width, height, raw_data, rgb_format, depth, rowstride,
+                             bpp, PlanarFormat.PACKED, True, None, full_range)
+        coding, compressed, client_options, width, height, stride, bpp = self.encode(encoding, image, options)
+        packet = ["encode-response", coding, compressed.data, client_options, width, height, bpp]
         ss.send_async(*packet)
