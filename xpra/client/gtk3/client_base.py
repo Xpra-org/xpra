@@ -1318,9 +1318,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def get_client_window_classes(self, w: int, h: int, metadata: typedict,
                                   override_redirect: bool) -> Sequence[type]:
         log("get_client_window_class%s", (w, h, metadata, override_redirect))
-        log(" ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, mmap_enabled=%s, encoding=%s",
-            self.ClientWindowClass, self.GLClientWindowClass,
-            self.opengl_enabled, self.mmap_enabled, self.encoding)
+        log(" ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, encoding=%s",
+            self.ClientWindowClass, self.GLClientWindowClass, self.opengl_enabled, self.encoding)
         window_classes: list[type] = []
         if self.GLClientWindowClass:
             if self.can_use_opengl(w, h, metadata, override_redirect):

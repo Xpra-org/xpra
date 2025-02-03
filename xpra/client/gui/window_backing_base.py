@@ -161,7 +161,6 @@ class WindowBackingBase:
         self.draw_needs_refresh: bool = True
         self.repaint_all: bool = REPAINT_ALL
         self.mmap = None
-        self.mmap_enabled: bool = False
         self.fps_events: deque = deque(maxlen=120)
         self.fps_buffer_size: tuple[int, int] = (0, 0)
         self.fps_buffer_update_time: float = 0
@@ -182,7 +181,7 @@ class WindowBackingBase:
         info = {
             "rgb-formats": self.get_rgb_formats(),
             "transparency": self._alpha_enabled,
-            "mmap": bool(self.mmap_enabled),
+            "mmap": bool(self.mmap),
             "size": self.size,
             "render-size": self.render_size,
             "offsets": self.offsets,
@@ -255,7 +254,6 @@ class WindowBackingBase:
 
     def enable_mmap(self, mmap_area) -> None:
         self.mmap = mmap_area
-        self.mmap_enabled = True
 
     def gravity_copy_coords(self, oldw: int, oldh: int, bw: int, bh: int) -> tuple[int, int, int, int, int, int]:
         sx = sy = dx = dy = 0
@@ -857,9 +855,9 @@ class WindowBackingBase:
 
     def paint_mmap(self, img_data, x: int, y: int, width: int, height: int, rowstride: int,
                    options: typedict, callbacks: PaintCallbacks) -> None:
-        assert self.mmap_enabled
+        assert self.mmap
         from xpra.net.mmap import mmap_read
-        data, free_cb = mmap_read(self.mmap, *img_data)
+        data, free_cb = mmap_read(self.mmap.mmap, *img_data)
         callbacks.append(free_cb)
         rgb_format = options.strget("rgb_format", "RGB")
         # Note: BGR(A) is only handled by gl.backing

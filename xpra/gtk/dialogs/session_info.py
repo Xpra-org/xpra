@@ -745,7 +745,7 @@ class SessionInfo(Gtk.Window):
             self.show_window_renderers()
 
         if features.mmap:
-            bool_icon(self.server_mmap_icon, self.client.mmap_enabled)
+            bool_icon(self.server_mmap_icon, bool(self.client.mmap))
         if features.clipboard:
             bool_icon(self.server_clipboard_icon, self.client.server_clipboard)
         if features.notifications:
@@ -1341,7 +1341,6 @@ class SessionInfoClient(InfoTimerClient):
 
     def setup_connection(self, conn):
         self.session_name = self.server_session_name = "session-info"
-        self.mmap_enabled = False
         self.windows_enabled = False
         self.send_ping = noop
         self.server_audio_send = self.server_audio_receive = True

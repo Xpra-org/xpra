@@ -384,7 +384,6 @@ class WindowClient(StubClientMixin):
         traylog("overlay_image=%s", self.overlay_image)
 
     def setup_connection(self, conn):
-        conn = super().setup_connection(conn)
         display_name = getattr(self, "display_desc", {}).get("display_name", "")
         if display_name:
             # now that we have display_desc, parse the border again:
@@ -782,7 +781,7 @@ class WindowClient(StubClientMixin):
         tray_widget.show()
         from xpra.client.gui.client_tray import ClientTray
         mmap = getattr(self, "mmap", None)
-        return ClientTray(client, wid, w, h, metadata, tray_widget, self.mmap_enabled, mmap)
+        return ClientTray(client, wid, w, h, metadata, tray_widget, mmap)
 
     def get_tray_window(self, app_name: str, hints):
         # try to identify the application tray that generated this notification,
@@ -1639,10 +1638,10 @@ class WindowClient(StubClientMixin):
 
             def draw_cleanup() -> None:
                 if coding == "mmap":
-                    assert self.mmap_enabled
+                    assert self.mmap_supported
                     from xpra.net.mmap import int_from_buffer
                     # we need to ack the data to free the space!
-                    data_start = int_from_buffer(self.mmap, 0)
+                    data_start = int_from_buffer(self.mmap_read_area, 0)
                     offset, length = data[-1]
                     data_start.value = offset + length
                     # clear the mmap area via idle_add so any pending draw requests

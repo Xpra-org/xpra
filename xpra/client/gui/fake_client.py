@@ -16,7 +16,6 @@ class FakeClient(AdHocStruct):
         self.cx = self.cy = self.no_scaling
         self.xscale = self.yscale = 1
         self.server_window_decorations = True
-        self.mmap_enabled = False
         self.mmap = None
         self.readonly = False
         self.encoding_defaults = {}

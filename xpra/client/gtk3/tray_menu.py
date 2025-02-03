@@ -143,6 +143,12 @@ class GTKTrayMenu(MenuHelper):
         log("setup_menu(%s) done", show_close)
         return menu
 
+    def is_mmap_enabled(self) -> bool:
+        if not getattr(self.client, "mmap_supported", False):
+            return False
+        mra = self.client.mmap_read_area
+        return mra and mra.enabled and mra.size > 0
+
     def make_infomenuitem(self) -> Gtk.ImageMenuItem:
         info_menu_item = self.menuitem("Information", "information.png")
         menu = Gtk.Menu()
@@ -592,7 +598,7 @@ class GTKTrayMenu(MenuHelper):
         bandwidth_limit_menu_item.show_all()
 
         def set_bwlimitmenu(*_args) -> None:
-            if self.client.mmap_enabled:
+            if self.is_mmap_enabled():
                 bandwidth_limit_menu_item.set_tooltip_text("memory mapped transfers are in use, "
                                                            "so bandwidth limits are disabled")
                 set_sensitive(bandwidth_limit_menu_item, False)
@@ -658,8 +664,8 @@ class GTKTrayMenu(MenuHelper):
 
         def set_encodingsmenuitem(*args) -> None:
             log("set_encodingsmenuitem%s", args)
-            set_sensitive(encodings, not self.client.mmap_enabled)
-            if self.client.mmap_enabled:
+            set_sensitive(encodings, not self.is_mmap_enabled())
+            if self.is_mmap_enabled():
                 # mmap disables encoding and uses raw rgb24
                 encodings.set_label("Encoding")
                 encodings.set_tooltip_text("memory mapped transfers are in use so picture encoding is disabled")
@@ -815,9 +821,9 @@ class GTKTrayMenu(MenuHelper):
         if self.quality:
             enc = self.client.encoding
             with_quality = enc in self.client.server_encodings_with_quality or enc in GENERIC_ENCODINGS
-            can_use = with_quality and not self.client.mmap_enabled
+            can_use = with_quality and not self.is_mmap_enabled()
             set_sensitive(self.quality, can_use)
-            if self.client.mmap_enabled:
+            if self.is_mmap_enabled():
                 self.quality.set_tooltip_text("Speed is always 100% with mmap")
                 return
             if not can_use:
@@ -867,8 +873,8 @@ class GTKTrayMenu(MenuHelper):
         if self.speed:
             enc = self.client.encoding
             with_speed = enc in self.client.server_encodings_with_speed or enc in GENERIC_ENCODINGS
-            set_sensitive(self.speed, with_speed and not self.client.mmap_enabled)
-            if self.client.mmap_enabled:
+            set_sensitive(self.speed, with_speed and not self.is_mmap_enabled())
+            if self.is_mmap_enabled():
                 self.speed.set_tooltip_text("Quality is always 100% with mmap")
             elif not with_speed:
                 self.speed.set_tooltip_text(f"Not supported with {enc!r} encoding")

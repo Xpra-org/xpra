@@ -25,7 +25,6 @@ class FakeApplication:
     def __init__(self):
         self.display_desc = {}
         self.session_name = "Test System Tray"
-        self.mmap_enabled = False
         self.windows_enabled = True
         self.readonly = False
         self.opengl_enabled = False

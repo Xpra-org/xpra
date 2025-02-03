@@ -60,8 +60,9 @@ class ClientWidgetBase:
             log("make_new_backing%s effective backing class=%s, server alpha=%s, window alpha=%s",
                 (backing_class, ww, wh, ww, wh), bc, self._has_alpha, self._window_alpha)
             backing = bc(self.wid, self._window_alpha, self.pixel_depth)
-            if self._client.mmap_enabled:
-                backing.enable_mmap(self._client.mmap)
+            mmap = getattr(self._client, "mmap_read_area", None)
+            if mmap:
+                backing.enable_mmap(mmap)
         backing.init(ww, wh, bw, bh)
         return backing
 

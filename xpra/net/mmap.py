@@ -79,7 +79,7 @@ def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128
     def rerr() -> tuple[bool, bool, Any, int, Any, str]:
         return False, False, None, 0, None, ""
 
-    log("init_mmap%s", (mmap_group, socket_filename, size, filename))
+    log("init_client_mmap%s", (mmap_group, socket_filename, size, filename))
     mmap_filename = filename
     mmap_temp_file = None
     delete = True
@@ -119,6 +119,7 @@ def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128
                     flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
                     try:
                         fd = os.open(filename, flags)
+                        log("os.open(%r, %s)=%i", filename, flags, fd)
                         mmap_temp_file = None  # os.fdopen(fd, 'w')
                         mmap_filename = filename
                     except FileExistsError:

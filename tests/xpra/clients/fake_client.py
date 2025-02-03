@@ -15,7 +15,6 @@ class FakeClient(FileTransferHandler):
         FileTransferHandler.__init__(self)
         self.supports_mmap = False
         self.mmap = None
-        self.mmap_enabled = False
         self.session_name = ""
         self._focused = None
         self.readonly = False

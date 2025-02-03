@@ -76,8 +76,8 @@ class MMAP_Connection(StubSourceMixin):
             from xpra.net.mmap import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_BYTES
             self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
             log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
-                self.mmap, self.mmap_size, self.min_mmap_size, mmap_filename)
-            if self.mmap_size > 0 and self.mmap is not None:
+                self.mmap, self.size, self.min_mmap_size, mmap_filename)
+            if self.size > 0 and self.mmap is not None:
                 index = c.intget("token_index", 0)
                 count = c.intget("token_bytes", DEFAULT_TOKEN_BYTES)
                 v = read_mmap_token(self.mmap, index, count)
@@ -105,7 +105,7 @@ class MMAP_Connection(StubSourceMixin):
                                      self.mmap_client_token_bytes)
         if self.mmap_size > 0:
             from xpra.util.stats import std_unit
-            log.info(" mmap is enabled using %sB area in %s", std_unit(self.mmap_size, unit=1024), mmap_filename)
+            log.info(" mmap is enabled using %sB area in %s", std_unit(self.size, unit=1024), mmap_filename)
 
     def get_caps(self) -> dict[str, Any]:
         mmap_caps: dict[str, Any] = {}
@@ -124,7 +124,7 @@ class MMAP_Connection(StubSourceMixin):
             "mmap": {
                 "supported": self.supports_mmap,
                 "enabled": self.mmap is not None,
-                "size": self.mmap_size,
+                "size": self.size,
                 "filename": self.mmap_filename,
             },
         }

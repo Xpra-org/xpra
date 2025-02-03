@@ -33,8 +33,8 @@ class ClientTray(ClientWidgetBase):
     DEFAULT_SIZE = [64, 64]
     DEFAULT_GEOMETRY = DEFAULT_LOCATION + DEFAULT_SIZE
 
-    def __init__(self, client, wid, w, h, metadata, tray_widget, mmap_enabled, mmap_area):
-        log("ClientTray%s", (client, wid, w, h, tray_widget, mmap_enabled, mmap_area))
+    def __init__(self, client, wid, w, h, metadata, tray_widget, mmap_area):
+        log("ClientTray%s", (client, wid, w, h, tray_widget, mmap_area))
         super().__init__(client, 0, wid, True)
         self._size = w, h
         self._metadata = metadata
@@ -44,7 +44,6 @@ class ClientTray(ClientWidgetBase):
         self._window_alpha = True
         self.group_leader = None
 
-        self.mmap_enabled = mmap_enabled
         self.mmap = mmap_area
         self.new_backing(w, h)
         GLib.idle_add(self.reconfigure)
@@ -147,7 +146,7 @@ class ClientTray(ClientWidgetBase):
         if self._backing:
             data = self._backing.data
         self._backing = TrayBacking(self.wid, w, h, self._has_alpha, data)
-        if self.mmap_enabled:
+        if self.mmap:
             self._backing.enable_mmap(self.mmap)
 
     def update_metadata(self, metadata) -> None:

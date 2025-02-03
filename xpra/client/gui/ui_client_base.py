@@ -117,9 +117,6 @@ class UIXpraClient(ClientBaseClass):
             run_info.append(f" window manager is {wm!r}")
         for info in run_info:
             log.info(info)
-        # mmap_enabled belongs in the MmapClient mixin,
-        # but it is used outside it, so make sure we define it:
-        self.mmap_enabled: bool = False
         # same for tray:
         self.tray = None
         for c in CLIENT_BASES:
