@@ -39,7 +39,7 @@ PaintCallback: TypeAlias = Callable[[int | bool, str], None]
 PaintCallbacks: TypeAlias = MutableSequence[PaintCallback]
 
 
-ALL_CLIPBOARDS: Final[tuple[str]] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
+ALL_CLIPBOARDS: Final[Sequence[str]] = ("CLIPBOARD", "PRIMARY", "SECONDARY")
 
 
 # noinspection PyPep8

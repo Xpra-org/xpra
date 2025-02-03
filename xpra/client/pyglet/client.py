@@ -70,8 +70,9 @@ class XpraPygletClient:
     def show_progress(self, pct: int, msg) -> None:
         log(f"show_progress({pct}, {msg})")
 
-    def run(self):
+    def run(self) -> int:
         app.run()
+        return 0
 
     def quit(self, exit_code: ExitValue):
         sys.exit(int(exit_code))

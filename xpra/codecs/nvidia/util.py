@@ -187,7 +187,7 @@ def identify_nvidia_module_version() -> Sequence[int]:
 nvidia_module_version = None
 
 
-def get_nvidia_module_version(probe=True):
+def get_nvidia_module_version(probe=True) -> Sequence[int] | None:
     global nvidia_module_version
     if nvidia_module_version is None and probe:
         nvidia_module_version = identify_nvidia_module_version()

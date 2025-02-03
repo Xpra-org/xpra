@@ -147,11 +147,12 @@ class EncodingServer(StubServerMixin):
         }
 
     def init_encodings(self) -> None:
-        encs, core_encs = [], []
-        lossless = []
+        encs: list[str] = []
+        core_encs: list[str] = []
+        lossless: list[str] = []
         log("init_encodings() allowed_encodings=%s", self.allowed_encodings)
 
-        def add_encoding(encoding):
+        def add_encoding(encoding: str) -> None:
             log("add_encoding(%s)", encoding)
             enc = {"rgb32": "rgb", "rgb24": "rgb"}.get(encoding, encoding)
             if self.allowed_encodings is not None:
@@ -165,7 +166,7 @@ class EncodingServer(StubServerMixin):
             if encoding in TRUE_LOSSLESS_ENCODINGS and encoding not in lossless:
                 lossless.append(encoding)
 
-        def add_encodings(*encodings):
+        def add_encodings(*encodings: str) -> None:
             log("add_encodings%s", encodings)
             for enc in encodings:
                 add_encoding(enc)

@@ -131,7 +131,7 @@ class ClientWindow(Toplevel):
         h = self.winfo_height()
         self.client.send("map-window", self.wid, x, y, w, h, {}, ())
 
-    def on_unmap(self) -> None:
+    def on_unmap(self, event) -> None:
         self.client.send("close-window", self.wid)
 
     def on_configure(self, event) -> None:

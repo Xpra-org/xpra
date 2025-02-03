@@ -74,6 +74,7 @@ def main(_argv) -> int:  # pragma: no cover
     engines = info.pop("engines", ())
     print_nested_dict(info)
     print_nested_dict({"engines": dict(enumerate(engines))})
+    return 0
 
 
 if __name__ == "__main__":

@@ -204,7 +204,7 @@ def get_xvfb_env(xvfb_executable: str) -> dict[str, str]:
     return env
 
 
-def patch_xvfb_command(xvfb_cmd: list[str], w: int, h: int, pixel_depth: int) -> list[str]:
+def patch_xvfb_command(xvfb_cmd: list[str], w: int, h: int, pixel_depth: int):
     # find the ["-screen"] or ["screen", "0"] arguments:
     try:
         screen_arg = xvfb_cmd.index("-screen")
