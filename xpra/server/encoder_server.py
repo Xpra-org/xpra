@@ -25,7 +25,7 @@ class EncoderServer(ServerBase):
         super().__init__()
         self.session_type = "encoder"
         self.loop = GLib.MainLoop()
-        self.encode: Callable = None
+        self.encode: Callable | None = None
 
     def init(self, opts) -> None:
         super().init(opts)

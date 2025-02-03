@@ -287,7 +287,7 @@ def mmap_read(mmap_area, *descr_data: tuple[int, int]) -> tuple[bytes | memoryvi
         offset, length = descr_data[0]
         end = offset + length
 
-        def free_mem(*_args):
+        def free_mem(*_args) -> None:
             data_start.value = end
 
         return mv[offset:end], free_mem

@@ -320,14 +320,12 @@ class EncodingsMixin(StubSourceMixin):
                 self.icons_encoding_options[k.replace("encoding.icons.", "").replace("theme.", "")] = c.get(k)
             elif k.startswith("encoding."):
                 stripped_k = k[len("encoding."):]
-                if stripped_k in ("transparency",
-                                  "rgb_lz4",
-                                  ):
+                if stripped_k in ("transparency", "rgb_lz4"):
                     v = c.boolget(k)
                 elif stripped_k in (
-                        "initial_quality", "initial_speed",
-                        "min-quality", "quality",
-                        "min-speed", "speed",
+                    "initial_quality", "initial_speed",
+                    "min-quality", "quality",
+                    "min-speed", "speed",
                 ):
                     v = c.intget(k)
                 else:
