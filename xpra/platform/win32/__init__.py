@@ -220,7 +220,7 @@ def do_init() -> None:
         if envbool("PYTHONDONTWRITEBYTECODE", False):
             sys.dont_write_bytecode = True
         if not os.environ.get("PYTHONPYCACHEPREFIX"):
-            sys.pycache_prefix = os.path.join(datadir(), "pycache-%i.%i" % (sys.version_info[:2]))
+            sys.pycache_prefix = os.path.join(datadir(), "pycache-%i.%i" % (sys.version_info[0], sys.version_info[1]))
 
     if not REDIRECT_OUTPUT or is_terminal():
         # figure out if we want to wait for input at the end:
