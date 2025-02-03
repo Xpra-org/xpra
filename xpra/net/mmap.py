@@ -449,8 +449,6 @@ class BaseMmapArea:
             log.error(f"Error: {self.name} mmap token verification failed!")
             log.error(f" expected {self.token:x}")
             log.error(f" found {token:x}")
-            if token:
-                raise ValueError("mmap token failure")
             log.error(" mmap is disabled")
             return False
         log.info("enabled fast %s mmap transfers using %sB shared memory area",

@@ -39,10 +39,10 @@ class MixinsTest(ClientMixinTest):
                     "mmap": {"enabled": True},
                 })
             x = self.mixin.mmap_read_area
-            fail = bool(x) and bool(x.filename) and x.filename.find("fail") >= 0
+            fail = mmap_option.find("fail") >= 0
             expected = mmap_option != "off" and not fail
-            assert bool(x and x.enabled) == expected, f"expected {expected} but got {bool(x)} for {mmap_option=}"
-            assert len(self.exit_codes) == int(fail)
+            got = bool(x and x.enabled)
+            assert got == expected, f"expected {expected} but got {got} for {mmap_option=}"
             m.cleanup()
             # no-op:
             m.cleanup()
