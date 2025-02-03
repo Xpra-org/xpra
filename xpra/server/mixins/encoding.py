@@ -135,7 +135,7 @@ class EncodingServer(StubServerMixin):
         return info
 
     def get_encoding_info(self) -> dict[str, Any]:
-        return {
+        info = {
             "": self.encodings,  # redundant since v6
             "core": self.core_encodings,
             "allowed": self.allowed_encodings,
@@ -145,6 +145,20 @@ class EncodingServer(StubServerMixin):
             "with_quality": tuple(x for x in self.core_encodings if x in ENCODINGS_WITH_QUALITY),
             "with_lossless_mode": self.lossless_mode_encodings,
         }
+        info.update(self.get_encoding_settings())
+        return info
+
+    def get_encoding_settings(self) -> dict[str, Any]:
+        info = {}
+        for prop, value in {
+            "quality": self.default_quality,
+            "min-quality": self.default_min_quality,
+            "speed": self.default_speed,
+            "min-speed": self.default_min_speed,
+        }.items():
+            if value > 0:
+                info[prop] = value
+        return info
 
     def init_encodings(self) -> None:
         encs: list[str] = []

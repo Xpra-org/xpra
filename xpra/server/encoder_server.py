@@ -65,16 +65,21 @@ class EncoderServer(ServerBase):
         width = packet[3]
         height = packet[4]
         rowstride = packet[5]
-        options = typedict(packet[6])
+        options = packet[6]
         metadata = packet[7]
         depth = 32
         bpp = 4
         full_range = True
         encoding = "png" if ss.encoding in ("auto", "") else ss.encoding
         log("encode request from %s, encoding=%s from %s", ss, encoding, ss.encoding)
+        # connection encoding options:
+        eo = dict(ss.default_encoding_options)
+        # the request can override:
+        eo.update(options)
+        log("using settings: %s", eo)
         from xpra.codecs.image import ImageWrapper, PlanarFormat
         image = ImageWrapper(0, 0, width, height, raw_data, rgb_format, depth, rowstride,
                              bpp, PlanarFormat.PACKED, True, None, full_range)
-        coding, compressed, client_options, width, height, stride, bpp = self.encode(encoding, image, options)
-        packet = ["encode-response", coding, compressed.data, client_options, width, height, bpp, metadata]
+        coding, compressed, client_options, width, height, stride, bpp = self.encode(encoding, image, typedict(eo))
+        packet = ["encode-response", coding, compressed.data, client_options, width, height, stride, bpp, metadata]
         ss.send_async(*packet)

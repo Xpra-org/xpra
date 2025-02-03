@@ -210,6 +210,8 @@ class Encodings(StubClientMixin):
             caps["scaling.control"] = self.video_scaling
         if self.encoding:
             caps[""] = self.encoding
+            # since v6.3:
+            caps["setting"] = self.encoding
         if FULL_INFO > 1:
             for k, v in codec_versions.items():
                 caps[f"{k}.version"] = v
@@ -261,6 +263,7 @@ class Encodings(StubClientMixin):
             h264_caps["fast-decode"] = envbool("XPRA_X264_FAST_DECODE", False)
             log("x264 encoding options: %s", h264_caps)
             caps["h264"] = h264_caps
+        caps["batch"] = get_batch_caps()
         log("encoding capabilities: %s", caps)
         return caps
 

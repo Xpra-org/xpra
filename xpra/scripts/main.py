@@ -216,7 +216,7 @@ def configure_logging(options, mode) -> None:
     if mode in (
             "seamless", "desktop", "monitor", "expand",
             "shadow", "shadow-screen",
-            "encoder",
+            "encoder", "encode",
             "recover",
             "attach", "listen", "proxy",
             "version", "info", "id",

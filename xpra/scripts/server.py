@@ -316,6 +316,7 @@ def set_server_features(opts, mode: str) -> None:
         features.fileprint = features.input_devices = features.commands = False
         features.logging = features.display = features.windows = False
         features.cursors = features.rfb = False
+        features.ssh = False
     else:
         features.commands = envbool("XPRA_RUN_COMMANDS", True)
         features.notifications = opts.notifications and impcheck("notifications")
@@ -332,11 +333,11 @@ def set_server_features(opts, mode: str) -> None:
         features.windows = features.display and impcheck("codecs")
         features.cursors = features.display and opts.cursors
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
+        features.ssh = b(opts.ssh) and impcheck("net.ssh")
 
     features.control = impcheck("net.control") and envbool("XPRA_CONTROL_CHANNEL", True)
     features.mmap = b(opts.mmap)
     features.ssl = b(opts.ssl)
-    features.ssh = b(opts.ssh) and impcheck("net.ssh")
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
     # features.network_state   = ??

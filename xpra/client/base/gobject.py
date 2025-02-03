@@ -44,7 +44,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def client_type(self) -> str:
         # overridden in subclasses!
-        return "Python3/GObject"
+        return "pygobject"
 
     def run(self) -> ExitValue:
         XpraClientBase.run(self)

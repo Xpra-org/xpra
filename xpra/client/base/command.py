@@ -496,7 +496,8 @@ class ShellXpraClient(SendCommandConnectClient):
         echotime = packet[1]
         self.send("ping_echo", echotime, 0, 0, 0, -1)
 
-    def _process_shell_reply(self, packet: PacketType) -> None:
+    @staticmethod
+    def _process_shell_reply(packet: PacketType) -> None:
         fd = int(packet[1])
         message = packet[2]
         if fd == 1:
@@ -763,19 +764,38 @@ class EncodeClient(HelloRequestClient):
         super().__init__(options)
         if not filenames:
             raise ValueError("please specify some filenames to encode")
-        self.encoding = options.encoding
         self.filenames = list(filenames)
         self.add_packets("encode-response", "encodings")
         from xpra.codecs.pillow.decoder import get_encodings, decompress
         self.encodings = get_encodings()
         self.decompress = decompress
+        encodings = ("png", "jpeg")
+        self.encoding_options = {
+            "options": encodings,
+            "core": encodings,
+            "encoding": options.encoding,
+        }
+        for attr, value in {
+            "quality": options.quality,
+            "min-quality": options.min_quality,
+            "speed": options.speed,
+            "min-speed": options.min_speed,
+        }.items():
+            if value > 0:
+                self.encoding_options[attr] = value
+
+    def client_type(self) -> str:
+        return "encoder"
 
     def _process_encodings(self, packet: PacketType) -> None:
-        log("server encodings: %s", packet[1:])
+        encodings = typedict(packet[1]).dictget("encodings", {}).get("core", ())
+        common = tuple(set(self.encodings) & set(encodings))
+        log("server encodings=%s, common=%s", encodings, common)
 
     def _process_encode_response(self, packet: PacketType) -> None:
-        log("encode-response: %r", packet)
-        encoding, data, options, width, height, bpp, metadata = packet[1:8]
+        encoding, data, options, width, height, bpp, stride, metadata = packet[1:9]
+        log("encode-response: %8s %6i bytes, %5ix-%5i %ibits, stride=%i, metadata=%s",
+            encoding, len(data), width, height, bpp, stride, metadata)
         filename = typedict(metadata).strget("filename")
         if not filename:
             log.error("Error: 'filename' is missing from the metadata")
@@ -791,13 +811,10 @@ class EncodeClient(HelloRequestClient):
         self.send_encode()
 
     def hello_request(self) -> dict[str, Any]:
-        encodings = ("png", "jpeg")
         return {
             "request": "encode",
             "ui_client": True,
-            "encodings": encodings,
-            "encodings.core": encodings,
-            "encoding": self.encoding,
+            "encoding": self.encoding_options,
         }
 
     def do_command(self, caps: typedict) -> None:

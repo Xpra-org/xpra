@@ -33,6 +33,15 @@ statslog = Logger("stats")
 MIN_PIXEL_RECALCULATE = envint("XPRA_MIN_PIXEL_RECALCULATE", 2000)
 
 
+def parse_batch_int(value, varname: str, default: int) -> int:
+    if value is not None:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            log.error("Error: invalid value '%s' for batch option %s", value, varname)
+    return default
+
+
 class EncodingsMixin(StubSourceMixin):
     """
     Store information about the client's support for encodings.
@@ -41,7 +50,7 @@ class EncodingsMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return bool(caps.strtupleget("encodings")) or caps.boolget("windows")
+        return bool(caps.dictget("encoding") or caps.strtupleget("encodings")) or caps.boolget("windows")
 
     def init_state(self) -> None:
         # contains default values, some of which may be supplied by the client:
@@ -229,32 +238,22 @@ class EncodingsMixin(StubSourceMixin):
     def parse_client_caps(self, c: typedict) -> None:
         # batch options:
 
-        def batch_value(prop, default, minv=None, maxv=None):
+        # since v6.3, we can have a "batch" dict in the "encoding" caps
+        # rather than having it at the top level:
+        batch_caps = c.get("batch", {})
+        enc_caps = c.dictget("encoding")
+        if isinstance(enc_caps, dict):
+            batch_caps = enc_caps.get("batch", {})
+
+        def batch_value(prop: str, default: int, minv=-1, maxv=-1) -> int:
             assert default is not None
-
-            def parse_batch_int(value, varname):
-                if value is not None:
-                    try:
-                        return int(value)
-                    except (TypeError, ValueError):
-                        log.error("Error: invalid value '%s' for batch option %s", value, varname)
-                return None
-
-            # from client caps first:
-            cpname = f"batch.{prop}"
-            v = parse_batch_int(c.get(cpname), cpname)
-            # try env:
-            if v is None:
-                evname = f"XPRA_BATCH_{prop.upper()}"
-                v = parse_batch_int(os.environ.get(evname), evname)
-            # fallback to default:
-            if v is None:
-                v = default
-            if minv is not None:
-                v = max(minv, v)
-            if maxv is not None:
-                v = min(maxv, v)
+            raw_value = os.environ.get(f"XPRA_BATCH_{prop.upper()}") or batch_caps.get(prop) or c.get(f"batch.{prop}")
+            v = parse_batch_int(raw_value, prop, default)
             assert v is not None
+            if minv >= 0:
+                v = max(minv, v)
+            if maxv >= 0:
+                v = min(maxv, v)
             return v
 
         # general features:
@@ -264,7 +263,7 @@ class EncodingsMixin(StubSourceMixin):
 
         delay = batch_config.START_DELAY
         dbc = self.default_batch_config
-        dbc.always = bool(batch_value("always", dbc.always))
+        dbc.always = bool(batch_value("always", int(dbc.always)))
         dbc.min_delay = batch_value("min_delay", dbc.min_delay, 0, 1000)
         dbc.max_delay = batch_value("max_delay", dbc.max_delay, 1, 15000)
         dbc.max_events = batch_value("max_events", dbc.max_events)
@@ -274,31 +273,32 @@ class EncodingsMixin(StubSourceMixin):
         log("default batch config: %s", dbc)
         self.vrefresh = c.intget("vrefresh", -1)
 
-        # encodings:
-        self.encodings = c.strtupleget("encodings")
-        self.core_encodings = c.strtupleget("encodings.core", self.encodings)
-        self.full_csc_modes = c.dictget("full_csc_modes") or {}
-        log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
         # we can't assume that the window mixin is loaded,
         # or that the ui_client flag exists:
         send_ui = getattr(self, "ui_client", True) and getattr(self, "send_windows", True)
-        if send_ui and not self.core_encodings:
-            raise ClientException("client failed to specify any supported encodings")
-        self.window_icon_encodings = c.strtupleget("encodings.window-icon", ())
-        # try both spellings for older versions:
-        for x in ("encodings", "encoding",):
-            self.rgb_formats = c.strtupleget(x + ".rgb_formats", self.rgb_formats)
-        # skip all other encoding related settings if we don't send pixels:
         if not send_ui:
             log("windows/pixels forwarding is disabled for this client")
-        else:
-            self.parse_encoding_caps(c)
+            return
+        self.parse_encoding_caps(c)
 
     def parse_encoding_caps(self, c: typedict) -> None:
-        v = c.get("encoding")
-        if isinstance(v, dict):
-            self.encoding_options.update(v)
-        self.set_encoding(c.strget("encoding"), None)
+        evalue = c.get("encoding")
+        if isinstance(evalue, dict):
+            eopts = typedict(evalue)
+        else:
+            eopts = typedict()
+        self.encoding_options.update(eopts)
+        self.encodings = eopts.strtupleget("options") or c.strtupleget("encodings")
+        self.core_encodings = eopts.strtupleget("core") or c.strtupleget("encodings.core", self.encodings)
+        if not self.core_encodings:
+            raise ClientException("client failed to specify any supported encodings")
+        self.full_csc_modes = eopts.dictget("full_csc_modes") or {}
+        log("encodings=%s, core_encodings=%s", self.encodings, self.core_encodings)
+
+        self.window_icon_encodings = eopts.strtupleget("window-icon") or c.strtupleget("encodings.window-icon")
+        self.rgb_formats = eopts.strtupleget("rgb_formats") or c.strtupleget("encodings.rgb_formats")
+
+        self.set_encoding(eopts.strget("setting") or eopts.strget(""), None)
         # encoding options (filter):
         # 1: these properties are special cased here because we
         # defined their name before the "encoding." prefix convention,
