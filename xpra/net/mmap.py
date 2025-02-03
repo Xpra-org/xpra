@@ -405,7 +405,18 @@ class BaseMmapArea:
         self.size = size
 
     def __repr__(self):
-        return "MmapArea(%s)" % self.name
+        return "MmapArea(%s:%s)" % (self.name, self.filename)
+
+    def close(self):
+        mmap = self.mmap
+        if mmap:
+            try:
+                mmap.close()
+            except OSError:
+                log("%s.close()", mmap, exc_info=True)
+                log.warn("Warning: failed to close %s mmap area", self.name)
+            self.mmap = None
+        self.enabled = False
 
     def get_caps(self) -> dict[str, Any]:
         return {
@@ -424,7 +435,7 @@ class BaseMmapArea:
         }
 
     def parse_caps(self, mmap_caps: typedict) -> None:
-        self.enabled = mmap_caps.boolget("enabled", False)
+        self.enabled = mmap_caps.boolget("enabled", True)
         self.token = mmap_caps.intget("token")
         self.token_index = mmap_caps.intget("token_index", 0)
         self.token_bytes = mmap_caps.intget("token_bytes", DEFAULT_TOKEN_BYTES)
@@ -435,7 +446,7 @@ class BaseMmapArea:
         token = read_mmap_token(self.mmap, self.token_index, self.token_bytes)
         if token != self.token:
             self.enabled = False
-            log.error("Error: mmap token verification failed!")
+            log.error(f"Error: {self.name} mmap token verification failed!")
             log.error(f" expected {self.token:x}")
             log.error(f" found {token:x}")
             if token:

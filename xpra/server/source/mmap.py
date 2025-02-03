@@ -58,7 +58,7 @@ class MMAP_Connection(StubSourceMixin):
             self.mmap_write_area = None
             mwa.close()
 
-    def mmap_path(self, index: int, filename: str) -> str:
+    def mmap_path(self, filename: str, index: int) -> str:
         if len(self.mmap_filenames) == 1 and os.path.isdir(self.mmap_filenames[0]):
             # server directory specified: use the client's filename, but at the server path
             mmap_dir = self.mmap_filenames[0]
@@ -71,13 +71,12 @@ class MMAP_Connection(StubSourceMixin):
         return filename
 
     def parse_area_caps(self, name: str, raw_caps: dict, index: int):
+        log("parse_area_caps(%r, %r, %i)", name, raw_caps, index)
         if not raw_caps:
             return None
         caps = typedict(raw_caps)
-        filename = self.mmap_path(caps.strget("filename"), index)
-        if not filename:
-            return None
-        if not os.path.exists(filename):
+        filename = self.mmap_path(caps.strget("file"), index)
+        if not filename or not os.path.exists(filename):
             log(f"mmap_file {filename!r} cannot be found!")
             return None
         size = caps.intget("size", 0)
@@ -87,8 +86,6 @@ class MMAP_Connection(StubSourceMixin):
         area = BaseMmapArea(name, filename, size)
         area.parse_caps(caps)
         if not area.enabled:
-            return None
-        if not area.verify_token():
             return None
         mmap, size = init_server_mmap(filename, size)
         log("found client mmap area: %s, %i bytes - min mmap size=%i in %r",
@@ -103,32 +100,33 @@ class MMAP_Connection(StubSourceMixin):
             return None
         area.mmap = mmap
         area.size = size
-        area.parse_caps(caps)
         if not area.verify_token():
             mmap.close()
             return None
         from xpra.util.stats import std_unit
-        log.info(" mmap is enabled using %sB area in %s", std_unit(self.size, unit=1024), filename)
+        log.info(" mmap is enabled using %sB area in %s", std_unit(size, unit=1024), filename)
         return area
 
     def parse_client_caps(self, caps: typedict) -> None:
         if not self.mmap_supported:
             log("mmap.parse_client_caps() mmap is disabled")
             return
-        mmap_caps = typedict(caps.get("mmap") or {})
+        mmap_caps = caps.get("mmap") or {}
         if not mmap_caps:
             log("mmap.parse_client_caps() client did not supply any mmap caps")
             self.mmap_supported = False
             return
-
-        self.mmap_write_area = self.parse_area_caps("write", mmap_caps.dictget("read"), 0)
-        self.mmap_read_area = self.parse_area_caps("read", mmap_caps.dictget("write"), 1)
+        tdcaps = typedict(mmap_caps)
+        self.mmap_read_area = self.parse_area_caps("read", tdcaps.dictget("read"), 1)
+        # also try legacy unprefixed lookup for 'read' area:
+        self.mmap_write_area = self.parse_area_caps("write", tdcaps.dictget("write") or mmap_caps, 0)
+        log("parse_client_caps() mmap-read=%s, mmap-write=%s", self.mmap_read_area, self.mmap_write_area)
 
     def get_caps(self) -> dict[str, Any]:
         mmap_caps: dict[str, Any] = {}
         for prefixes, area in (
             (("read", ""), self.mmap_write_area),
-            (("write", ), self.mmap_write_area),
+            (("write", ), self.mmap_read_area),
         ):
             if not area:
                 continue
@@ -141,13 +139,14 @@ class MMAP_Connection(StubSourceMixin):
                     mmap_caps[prefix] = caps
                 else:
                     mmap_caps.update(caps)
+        log(f"mmap caps={mmap_caps}")
         return {"mmap": mmap_caps}
 
     def get_info(self) -> dict[str, Any]:
         info = {}
         for name, area in {
             "read": self.mmap_write_area,
-            "write": self.mmap_write_area,
+            "write": self.mmap_read_area,
         }.items():
             if area:
                 info[name] = area.get_info()

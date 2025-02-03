@@ -27,11 +27,6 @@ class MmapArea(BaseMmapArea):
         self.tempfile = None
         self.delete: bool = False
 
-    def get_caps(self) -> dict[str, Any]:
-        caps = super().get_caps()
-        caps["group"] = self.group
-        return caps
-
     def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         info["group"] = self.group
@@ -54,9 +49,9 @@ class MmapArea(BaseMmapArea):
                 clean_mmap(self.filename)
                 self.filename = ""
 
-    def enable_from_caps(self, mmap_caps: typedict) -> bool:
+    def enable_from_caps(self, mmap_caps: dict) -> bool:
         try:
-            self.parse_caps(mmap_caps)
+            self.parse_caps(typedict(mmap_caps))
             if self.enabled:
                 self.verify_token()
             if not self.enabled:
@@ -145,8 +140,8 @@ class MmapClient(StubClientMixin):
         # parse each area
         # older versions don't use a prefix for "read" which used to be the default:
         for prefixes, area in (
-            (("read", ""), self.mmap_read_area),
-            (("write", ), self.mmap_write_area),
+            (("write", ""), self.mmap_read_area),
+            (("read", ), self.mmap_write_area),
         ):
             log(f"{prefixes} : {area}")
             if not area:
