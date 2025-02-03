@@ -1080,10 +1080,12 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             else:
                 self.connection_established = True
         except Exception as e:
-            netlog.info("error in hello packet", exc_info=True)
+            netlog.error("Error processing hello packet from server", exc_info=True)
+            netlog("hello data: %s", packet)
             self.warn_and_quit(ExitCode.FAILURE, f"error processing hello packet from server: {e}")
 
     def server_connection_established(self, caps: typedict) -> bool:
+        assert caps and self._protocol
         netlog("server_connection_established(..)")
         if not self.parse_encryption_capabilities(caps):
             netlog("server_connection_established(..) failed encryption capabilities")
@@ -1100,25 +1102,31 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         return True
 
     def parse_server_capabilities(self, c: typedict) -> bool:
+        netlog("parse_server_capabilities(..)")
         for bc in (ServerInfoMixin, FilePrintMixin):
             if not bc.parse_server_capabilities(self, c):
                 log.info(f"server capabilities rejected by {bc}")
                 return False
         self.server_client_shutdown = c.boolget("client-shutdown", True)
         self.server_compressors = c.strtupleget("compressors", )
+        netlog("parse_server_capabilities(..) done")
         return True
 
     def parse_network_capabilities(self, caps: typedict) -> bool:
+        netlog("parse_network_capabilities(..)")
         p = self._protocol
+        if not p:
+            log.warn("Warning: cannot parse network capabilities, no connection!")
+            return False
         if p.TYPE == "rfb":
             return True
-        if not p or not p.enable_encoder_from_caps(caps):
+        if not p.enable_encoder_from_caps(caps):
             return False
         p.set_compression_level(self.compression_level)
         p.enable_compressor_from_caps(caps)
         p.parse_remote_caps(caps)
         self.server_packet_types = caps.strtupleget("packet-types")
-        netlog(f"self.server_packet_types={self.server_packet_types}")
+        netlog(f"parse_network_capabilities(..) server_packet_types={self.server_packet_types}")
         return True
 
     def parse_encryption_capabilities(self, caps: typedict) -> bool:

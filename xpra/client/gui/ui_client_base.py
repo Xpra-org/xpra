@@ -433,8 +433,14 @@ class UIXpraClient(ClientBaseClass):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         for cb in CLIENT_BASES:
-            if not cb.parse_server_capabilities(self, c):
-                log.info(f"failed to parse server capabilities in {cb}")
+            log("%s.parse_server_capabilities(..)", cb)
+            try:
+                if not cb.parse_server_capabilities(self, c):
+                    log.info(f"failed to parse server capabilities in {cb}")
+                    return False
+            except Exception as e:
+                log("%s.parse_server_capabilities(%s)", cb, Ellipsizer(c), exc_info=True)
+                log.error("Error parsing server capabilities using %s: %s", cb, e)
                 return False
         self.server_session_name = c.strget("session_name")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
