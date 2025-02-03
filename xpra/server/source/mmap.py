@@ -3,11 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from random import randint
 from typing import Any
 
+from xpra.os_util import get_int_uuid, WIN32
 from xpra.util.objects import typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.net.mmap import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_BYTES
 
 from xpra.log import Logger
 
@@ -47,8 +50,6 @@ class MMAP_Connection(StubSourceMixin):
 
     def parse_client_caps(self, c: typedict) -> None:
         # pylint: disable=import-outside-toplevel
-        import os
-        from xpra.os_util import WIN32
         mmap_caps = c.dictget("mmap")
         c = typedict(mmap_caps or {})
         mmap_filename = c.strget("file")
@@ -73,7 +74,6 @@ class MMAP_Connection(StubSourceMixin):
         elif not os.path.exists(mmap_filename):
             log(f"mmap_file {mmap_filename!r} cannot be found!")
         else:
-            from xpra.net.mmap import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_BYTES
             self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
             log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
                 self.mmap, self.size, self.min_mmap_size, mmap_filename)
@@ -95,7 +95,6 @@ class MMAP_Connection(StubSourceMixin):
                     self.mmap = None
                     self.mmap_size = 0
                 else:
-                    from xpra.os_util import get_int_uuid
                     self.mmap_client_token = get_int_uuid()
                     self.mmap_client_token_bytes = DEFAULT_TOKEN_BYTES
                     self.mmap_client_token_index = randint(0, self.mmap_size - self.mmap_client_token_bytes)
