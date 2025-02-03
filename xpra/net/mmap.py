@@ -10,6 +10,7 @@ from typing import Any
 
 from xpra.common import roundup, noop, PaintCallback
 from xpra.util.env import envbool, shellsub
+from xpra.util.str_fn import csv
 from xpra.os_util import get_group_id, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.stats import std_unit
@@ -48,6 +49,22 @@ def xpra_group() -> int:
         except Exception:
             log("xpra_group()", exc_info=True)
     return 0
+
+
+def madvise(mmap_area) -> None:
+    import mmap
+    log(f"setting MADVISE_FLAGS={MADVISE_FLAGS}")
+    try:
+
+        for flag in MADVISE_FLAGS:
+            flag_value = getattr(mmap, f"MADV_{flag}", 0)
+            log(f"MADV_{flag}={flag_value}")
+            if flag_value:
+                mmap_area.madvise(flag_value)
+    except OSError as e:
+        log(f"{mmap_area}.madvise(..)")
+        log.error("Error: failed to set madvise flags %s", csv(MADVISE_FLAGS))
+        log.estr(e)
 
 
 def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128 * 1024 * 1024, filename: str = "") \
@@ -162,17 +179,7 @@ def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128
             os.lseek(fd, 0, os.SEEK_SET)
             mmap_area = mmap.mmap(fd, length=mmap_size)
             if MADVISE:
-                log(f"setting MADVISE_FLAGS={MADVISE_FLAGS}")
-                try:
-                    for flag in MADVISE_FLAGS:
-                        flag_value = getattr(mmap, f"MADV_{flag}", 0)
-                        log(f"MADV_{flag}={flag_value}")
-                        if flag_value:
-                            mmap_area.madvise(flag_value)
-                except OSError as e:
-                    log(f"{mmap_area}.madvise(..)")
-                    log.error("Error: failed to set madvise flags")
-                    log.estr(e)
+                madvise(mmap_area)
         return True, delete, mmap_area, mmap_size, mmap_temp_file, mmap_filename
     except Exception as e:
         log("failed to setup mmap: %s", e, exc_info=True)
