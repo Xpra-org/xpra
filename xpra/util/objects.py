@@ -253,10 +253,11 @@ class AdHocStruct:
                 % (type(self).__name__, self.__dict__))
 
 
-def checkdict(v):
+def checkdict(v) -> dict:
     if isinstance(v, typedict):
         return dict(v)
-    assert isinstance(v, dict)
+    if not isinstance(v, dict):
+        raise ValueError(f"expected a dict but got a {type(v)}")
     return v
 
 
