@@ -163,10 +163,8 @@ def get_client_connection_class(caps: typedict):
             for x, enabled in {
                 "encodings": self.ui_client,
                 "display": self.ui_client,
-                "events": False,
                 "versions": True,
                 "features": True,
-                "default_cursor": False,
             }.items():
                 if enabled:
                     self.wants.append(x)
