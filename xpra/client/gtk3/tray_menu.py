@@ -1265,7 +1265,7 @@ class GTKTrayMenu(MenuHelper):
 
         def variants_submenu(layout: str, variants: Iterable[str]) -> None:
             # just show all the variants to choose from this layout
-            default_layout = self.kbitem(f"{layout} - Default", layout, "", True)
+            default_layout = self.kbitem(f"{layout} - Default", layout, "", active=True)
             self.layout_submenu.append(default_layout)
             for variant in variants:
                 self.layout_submenu.append(self.kbitem(f"{layout} - {variant}", layout, variant))
@@ -1277,7 +1277,7 @@ class GTKTrayMenu(MenuHelper):
             log("keyboard layouts: %s", ",".join(layouts))
             # log after removing dupes:
             log("keyboard layouts: %s", ",".join(uniq(layouts)))
-            auto = self.kbitem("Auto", "Auto", "", True)
+            auto = self.kbitem("Auto", "Auto", "", active=True)
             self.layout_submenu.append(auto)
             if layout:
                 self.layout_submenu.append(self.kbitem(layout, layout, ""))
