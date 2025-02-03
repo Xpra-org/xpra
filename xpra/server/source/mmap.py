@@ -4,13 +4,12 @@
 # later version. See the file COPYING for details.
 
 import os
-from random import randint
 from typing import Any
+from collections.abc import Sequence
 
-from xpra.os_util import get_int_uuid, WIN32
 from xpra.util.objects import typedict
 from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.net.mmap import init_server_mmap, read_mmap_token, write_mmap_token, DEFAULT_TOKEN_BYTES
+from xpra.net.mmap import init_server_mmap, BaseMmapArea
 
 from xpra.log import Logger
 
@@ -21,109 +20,135 @@ class MMAP_Connection(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        v = typedict(caps.get("mmap") or {})
-        return v.intget("size", 0) > 0
+        mmap_caps = typedict(caps.get("mmap") or {})
+        for prefix in ("", "read", "write"):
+            if prefix:
+                area_caps = typedict(mmap_caps.dictget(prefix) or {})
+            else:
+                # older versions supply a single unprefixed area:
+                area_caps = mmap_caps
+            if area_caps.intget("size", 0) > 0:
+                return True
+        return False
 
     def __init__(self):
-        self.supports_mmap = False
-        self.mmap_filename = ""
-        self.min_mmap_size = 0
+        self.mmap_supported = False
+        self.mmap_read_area = None
+        self.mmap_write_area = None
+        self.mmap_min_size = 0
+        self.mmap_filenames: Sequence[str] = ()
 
     def init_from(self, _protocol, server) -> None:
-        self.supports_mmap = server.supports_mmap
-        self.mmap_filename = server.mmap_filename
-        self.min_mmap_size = server.min_mmap_size
+        self.mmap_supported = server.mmap_supported
+        if server.mmap_filename:
+            self.mmap_filenames = server.mmap_filename.split(os.path.pathsep)
+        self.mmap_min_size = server.mmap_min_size
 
     def init_state(self) -> None:
-        self.mmap = None
-        self.mmap_size = 0
-        self.mmap_client_token = 0  # the token we write that the client may check
-        self.mmap_client_token_index = 512
-        self.mmap_client_token_bytes = 0
+        self.mmap_read_area = None
+        self.mmap_write_area = None
 
     def cleanup(self) -> None:
-        mmap = self.mmap
-        if mmap:
-            self.mmap = None
-            self.mmap_size = 0
-            mmap.close()
+        mra = self.mmap_read_area
+        if mra:
+            self.mmap_read_area = None
+            mra.close()
+        mwa = self.mmap_write_area
+        if mwa:
+            self.mmap_write_area = None
+            mwa.close()
 
-    def parse_client_caps(self, c: typedict) -> None:
-        # pylint: disable=import-outside-toplevel
-        mmap_caps = c.dictget("mmap")
-        c = typedict(mmap_caps or {})
-        mmap_filename = c.strget("file")
-        if not mmap_filename:
+    def mmap_path(self, index: int, filename: str) -> str:
+        if len(self.mmap_filenames) == 1 and os.path.isdir(self.mmap_filenames[0]):
+            # server directory specified: use the client's filename, but at the server path
+            mmap_dir = self.mmap_filenames[0]
+            log(f"using global server specified mmap directory: {mmap_dir!r}")
+            return os.path.join(mmap_dir, os.path.basename(filename))
+        if self.mmap_filenames and len(self.mmap_filenames) > index:
+            # server command line option overrides the path:
+            filename = self.mmap_filenames[index]
+            log(f"using global server specified mmap file path: {filename!r}")
+        return filename
+
+    def parse_area_caps(self, name: str, raw_caps: dict, index: int):
+        if not raw_caps:
+            return None
+        caps = typedict(raw_caps)
+        filename = self.mmap_path(caps.strget("filename"), index)
+        if not filename:
+            return None
+        if not os.path.exists(filename):
+            log(f"mmap_file {filename!r} cannot be found!")
+            return None
+        size = caps.intget("size", 0)
+        log("client supplied mmap_file=%r, size=%i", filename, size)
+        if not size:
+            return None
+        area = BaseMmapArea(name, filename, size)
+        area.parse_caps(caps)
+        if not area.enabled:
+            return None
+        if not area.verify_token():
+            return None
+        mmap, size = init_server_mmap(filename, size)
+        log("found client mmap area: %s, %i bytes - min mmap size=%i in %r",
+            mmap, size, self.mmap_min_size, filename)
+        if size <= 0 or not mmap:
+            return None
+        if size < self.mmap_min_size:
+            mmap.close()
+            log.warn("Warning: client %s supplied mmap area is too small, discarding it", name)
+            log.warn(" at least %iMB are needed and this area is only %iMB",
+                     self.mmap_min_size // 1024 // 1024, size // 1024 // 1024)
+            return None
+        area.mmap = mmap
+        area.size = size
+        area.parse_caps(caps)
+        if not area.verify_token():
+            mmap.close()
+            return None
+        from xpra.util.stats import std_unit
+        log.info(" mmap is enabled using %sB area in %s", std_unit(self.size, unit=1024), filename)
+        return area
+
+    def parse_client_caps(self, caps: typedict) -> None:
+        if not self.mmap_supported:
+            log("mmap.parse_client_caps() mmap is disabled")
             return
-        mmap_size = c.intget("size", 0)
-        log("client supplied mmap_file=%s", mmap_filename)
-        mmap_token = c.intget("token")
-        log(f"mmap supported={self.supports_mmap}, token={mmap_token:x}")
-        if self.mmap_filename:
-            if os.path.isdir(self.mmap_filename):
-                # use the client's filename, but at the server path:
-                mmap_filename = os.path.join(self.mmap_filename, os.path.basename(mmap_filename))
-                log(f"using global server specified mmap directory: {self.mmap_filename!r}")
-            else:
-                log(f"using global server specified mmap file path: {self.mmap_filename!r}")
-                mmap_filename = self.mmap_filename
-        if not self.supports_mmap:
-            log("client enabled mmap but mmap mode is not supported")
-        elif WIN32 and mmap_filename.startswith("/"):
-            log(f"mmap_file {mmap_filename!r} is a unix path")
-        elif not os.path.exists(mmap_filename):
-            log(f"mmap_file {mmap_filename!r} cannot be found!")
-        else:
-            self.mmap, self.mmap_size = init_server_mmap(mmap_filename, mmap_size)
-            log("found client mmap area: %s, %i bytes - min mmap size=%i in '%s'",
-                self.mmap, self.size, self.min_mmap_size, mmap_filename)
-            if self.size > 0 and self.mmap is not None:
-                index = c.intget("token_index", 0)
-                count = c.intget("token_bytes", DEFAULT_TOKEN_BYTES)
-                v = read_mmap_token(self.mmap, index, count)
-                if v != mmap_token:
-                    log.warn("Warning: mmap token verification failed, not using mmap area!")
-                    log.warn(f" expected {mmap_token:x}, found {v:x}")
-                    self.mmap.close()
-                    self.mmap = None
-                    self.mmap_size = 0
-                elif self.mmap_size < self.min_mmap_size:
-                    log.warn("Warning: client supplied mmap area is too small, discarding it")
-                    log.warn(" we need at least %iMB and this area is %iMB",
-                             self.min_mmap_size // 1024 // 1024, self.mmap_size // 1024 // 1024)
-                    self.mmap.close()
-                    self.mmap = None
-                    self.mmap_size = 0
-                else:
-                    self.mmap_client_token = get_int_uuid()
-                    self.mmap_client_token_bytes = DEFAULT_TOKEN_BYTES
-                    self.mmap_client_token_index = randint(0, self.mmap_size - self.mmap_client_token_bytes)
-                    write_mmap_token(self.mmap,
-                                     self.mmap_client_token,
-                                     self.mmap_client_token_index,
-                                     self.mmap_client_token_bytes)
-        if self.mmap_size > 0:
-            from xpra.util.stats import std_unit
-            log.info(" mmap is enabled using %sB area in %s", std_unit(self.size, unit=1024), mmap_filename)
+        mmap_caps = typedict(caps.get("mmap") or {})
+        if not mmap_caps:
+            log("mmap.parse_client_caps() client did not supply any mmap caps")
+            self.mmap_supported = False
+            return
+
+        self.mmap_write_area = self.parse_area_caps("write", mmap_caps.dictget("read"), 0)
+        self.mmap_read_area = self.parse_area_caps("read", mmap_caps.dictget("write"), 1)
 
     def get_caps(self) -> dict[str, Any]:
         mmap_caps: dict[str, Any] = {}
-        if self.mmap_size > 0:
-            mmap_caps["enabled"] = True
-            if self.mmap_client_token:
-                mmap_caps.update({
-                    "token": self.mmap_client_token,
-                    "token_index": self.mmap_client_token_index,
-                    "token_bytes": self.mmap_client_token_bytes,
-                })
+        for prefixes, area in (
+            (("read", ""), self.mmap_write_area),
+            (("write", ), self.mmap_write_area),
+        ):
+            if not area:
+                continue
+            # write a new token that the client can verify:
+            area.gen_token()
+            area.write_token()
+            caps = area.get_caps()
+            for prefix in prefixes:
+                if prefix:
+                    mmap_caps[prefix] = caps
+                else:
+                    mmap_caps.update(caps)
         return {"mmap": mmap_caps}
 
     def get_info(self) -> dict[str, Any]:
-        return {
-            "mmap": {
-                "supported": self.supports_mmap,
-                "enabled": self.mmap is not None,
-                "size": self.size,
-                "filename": self.mmap_filename,
-            },
-        }
+        info = {}
+        for name, area in {
+            "read": self.mmap_write_area,
+            "write": self.mmap_write_area,
+        }.items():
+            if area:
+                info[name] = area.get_info()
+        return {"mmap": info}

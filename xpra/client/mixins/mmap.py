@@ -4,17 +4,14 @@
 # later version. See the file COPYING for details.
 
 import os
-from random import randint
 from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.os_util import get_int_uuid
 from xpra.exit_codes import ExitCode
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.util.stats import std_unit
 from xpra.client.base.stub_client_mixin import StubClientMixin
-from xpra.net.mmap import init_client_mmap, write_mmap_token, clean_mmap, read_mmap_token, DEFAULT_TOKEN_BYTES
+from xpra.net.mmap import init_client_mmap, clean_mmap, BaseMmapArea
 from xpra.log import Logger
 
 log = Logger("mmap")
@@ -22,44 +19,23 @@ log = Logger("mmap")
 KEEP_MMAP_FILE = envbool("XPRA_KEEP_MMAP_FILE", False)
 
 
-class MmapArea:
-    """
-    Represents an mmap area we can read from or write to
-    """
+class MmapArea(BaseMmapArea):
 
     def __init__(self, name: str, group="", filename="", size=0):
-        self.name = name
-        self.mmap = None
-        self.enabled = False
-        self.token: int = 0
-        self.token_index: int = 0
-        self.token_bytes: int = 0
-        self.filename = filename
-        self.size = size
+        super().__init__(name, filename, size)
         self.group = group
         self.tempfile = None
         self.delete: bool = False
 
-    def __repr__(self):
-        return "MmapArea(%s)" % self.name
-
     def get_caps(self) -> dict[str, Any]:
-        return {
-            "file": self.filename,
-            "size": self.size,
-            "token": self.token,
-            "token_index": self.token_index,
-            "token_bytes": self.token_bytes,
-            "group": self.group or "",
-        }
+        caps = super().get_caps()
+        caps["group"] = self.group
+        return caps
 
     def get_info(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "file": self.filename,
-            "size": self.size,
-            "group": self.group or "",
-        }
+        info = super().get_info()
+        info["group"] = self.group
+        return info
 
     def cleanup(self) -> None:
         self.clean_mmap()
@@ -79,40 +55,25 @@ class MmapArea:
                 self.filename = ""
 
     def enable_from_caps(self, mmap_caps: typedict) -> bool:
-        self.enabled = mmap_caps.boolget("enabled", False)
-        log("%s.enabled=%s", self, self.enabled)
-        if self.enabled:
-            assert self.mmap
-            mmap_token = mmap_caps.intget("token")
-            mmap_token_index = mmap_caps.intget("token_index", 0)
-            mmap_token_bytes = mmap_caps.intget("token_bytes", DEFAULT_TOKEN_BYTES)
-            token = read_mmap_token(self.mmap, mmap_token_index, mmap_token_bytes)
-            if token != mmap_token:
-                log.error("Error: mmap token verification failed!")
-                log.error(f" expected {token:x}")
-                log.error(f" found {mmap_token:x}")
-                self.enabled = False
-                if token:
-                    raise ValueError("mmap token failure")
-                log.error(" mmap is disabled")
-                return False
-            log.info("enabled fast %s mmap transfers using %sB shared memory area",
-                     self.name, std_unit(self.size, unit=1024))
-            return True
-        # the server will have a handle on the mmap file by now, safe to delete:
-        if not KEEP_MMAP_FILE:
-            self.clean_mmap()
-        return False
+        try:
+            self.parse_caps(mmap_caps)
+            if self.enabled:
+                self.verify_token()
+            if not self.enabled:
+                self.clean_mmap()
+            return self.enabled
+        finally:
+            # the server will have a handle on the mmap file by now, safe to delete:
+            if not KEEP_MMAP_FILE:
+                self.clean_mmap()
 
     def init_mmap(self, socket_filename: str) -> None:
         log("%s.init_mmap(%r)", self, socket_filename)
         self.enabled, self.delete, self.mmap, self.size, self.tempfile, self.filename = \
             init_client_mmap(self.group, socket_filename, self.size, self.filename)
         if self.enabled:
-            self.token = get_int_uuid()
-            self.token_bytes = DEFAULT_TOKEN_BYTES
-            self.token_index = randint(0, self.size - DEFAULT_TOKEN_BYTES)
-            write_mmap_token(self.mmap, self.token, self.token_index, self.token_bytes)
+            self.gen_token()
+            self.write_token()
 
 
 class MmapClient(StubClientMixin):

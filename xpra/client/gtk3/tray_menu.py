@@ -144,7 +144,7 @@ class GTKTrayMenu(MenuHelper):
         return menu
 
     def is_mmap_enabled(self) -> bool:
-        if not getattr(self.client, "mmap_supported", False):
+        if not getattr(self.client, "", False):
             return False
         mra = self.client.mmap_read_area
         return mra and mra.enabled and mra.size > 0

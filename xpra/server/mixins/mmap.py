@@ -16,21 +16,21 @@ class MMAP_Server(StubServerMixin):
     """
 
     def __init__(self):
-        self.supports_mmap = False
+        self.mmap_supported = False
         self.mmap_filename = ""
-        self.min_mmap_size = 64 * 1024 * 1024
+        self.mmap_min_size = 64 * 1024 * 1024
 
     def init(self, opts) -> None:
         if opts.mmap and os.path.isabs(opts.mmap):
-            self.supports_mmap = True
+            self.mmap_supported = True
             self.mmap_filename = opts.mmap
         else:
-            self.supports_mmap = str_to_bool(opts.mmap)
+            self.mmap_supported = str_to_bool(opts.mmap)
 
     def get_info(self, _proto=None) -> dict[str, Any]:
         return {
             "mmap": {
-                "supported": self.supports_mmap,
+                "supported": self.mmap_supported,
                 "filename": self.mmap_filename or "",
             },
         }

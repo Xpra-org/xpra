@@ -13,7 +13,6 @@ log = Logger()
 class FakeClient(FileTransferHandler):
     def __init__(self):
         FileTransferHandler.__init__(self)
-        self.supports_mmap = False
         self.mmap = None
         self.session_name = ""
         self._focused = None

@@ -446,13 +446,13 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.keyboard_config = server_source.set_default_keymap()
 
     def load_existing_windows(self) -> None:
-        self.min_mmap_size = 1024 * 1024 * 4 * 2
+        self.mmap_min_size = 1024 * 1024 * 4 * 2
         for i, model in enumerate(self.makeRootWindowModels()):
             log(f"load_existing_windows() root window model {i} : {model}")
             self._add_new_window(model)
             # at least big enough for 2 frames of BGRX pixel data:
             w, h = model.get_dimensions()
-            self.min_mmap_size = max(self.min_mmap_size, w * h * 4 * 2)
+            self.mmap_min_size = max(self.mmap_min_size, w * h * 4 * 2)
 
     def makeRootWindowModels(self) -> list:
         return [RootWindowModel(self.root)]

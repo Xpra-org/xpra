@@ -172,11 +172,11 @@ class SourceMixinsTest(unittest.TestCase):
         tmp = tempfile.NamedTemporaryFile(prefix="xpra-mmap-test")
         tmp.write(b"0"*1024*1024)
         for server_mmap_filename in (None, tmp.name, "/this-path/should-not-exist"):
-            for supports_mmap in (False, True):
+            for mmap_supported in (False, True):
                 for has_file in (True, False):
                     caps = {
                         "mmap.namespace"    : True,
-                        "min_mmap_size"     : 128*1024,
+                        "mmap_min_size"     : 128*1024,
                     }
                     if has_file:
                         caps["mmap.file"] = tmp.name
@@ -184,8 +184,8 @@ class SourceMixinsTest(unittest.TestCase):
                     with LoggerSilencer(mmap, ("error", "warn")):
                         self._test_mixin_class(mmap.MMAP_Connection, {
                             "mmap_filename" : server_mmap_filename,
-                            "supports_mmap" : supports_mmap,
-                            "min_mmap_size" : 10000,
+                            "mmap_supported" : mmap_supported,
+                            "mmap_min_size" : 10000,
                         }, caps)
 
     def test_networkstate(self):

@@ -1638,7 +1638,6 @@ class WindowClient(StubClientMixin):
 
             def draw_cleanup() -> None:
                 if coding == "mmap":
-                    assert self.mmap_supported
                     from xpra.net.mmap import int_from_buffer
                     # we need to ack the data to free the space!
                     data_start = int_from_buffer(self.mmap_read_area, 0)

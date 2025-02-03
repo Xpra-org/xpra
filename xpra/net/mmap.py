@@ -5,13 +5,15 @@
 
 import os
 import sys
+from random import randint
 from ctypes import c_ubyte, c_uint32
 from typing import Any
 
 from xpra.common import roundup, noop, PaintCallback
 from xpra.util.env import envbool, shellsub
 from xpra.util.str_fn import csv
-from xpra.os_util import get_group_id, WIN32, POSIX
+from xpra.util.objects import typedict
+from xpra.os_util import get_group_id, get_int_uuid, WIN32, POSIX
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.stats import std_unit
 from xpra.log import Logger
@@ -385,3 +387,69 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], 
             mmap_data_end.value = 8 + l2
     log("sending damage with mmap: %s bytes", len(data))
     return chunks, mmap_free_size
+
+
+class BaseMmapArea:
+    """
+    Represents an mmap area we can read from or write to
+    """
+
+    def __init__(self, name: str, filename="", size=0):
+        self.name = name
+        self.mmap = None
+        self.enabled = False
+        self.token: int = 0
+        self.token_index: int = 0
+        self.token_bytes: int = 0
+        self.filename = filename
+        self.size = size
+
+    def __repr__(self):
+        return "MmapArea(%s)" % self.name
+
+    def get_caps(self) -> dict[str, Any]:
+        return {
+            "file": self.filename,
+            "size": self.size,
+            "token": self.token,
+            "token_index": self.token_index,
+            "token_bytes": self.token_bytes,
+        }
+
+    def get_info(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "file": self.filename,
+            "size": self.size,
+        }
+
+    def parse_caps(self, mmap_caps: typedict) -> None:
+        self.enabled = mmap_caps.boolget("enabled", False)
+        self.token = mmap_caps.intget("token")
+        self.token_index = mmap_caps.intget("token_index", 0)
+        self.token_bytes = mmap_caps.intget("token_bytes", DEFAULT_TOKEN_BYTES)
+
+    def verify_token(self) -> bool:
+        if not self.mmap:
+            raise RuntimeError("mmap object is not defined")
+        token = read_mmap_token(self.mmap, self.token_index, self.token_bytes)
+        if token != self.token:
+            self.enabled = False
+            log.error("Error: mmap token verification failed!")
+            log.error(f" expected {self.token:x}")
+            log.error(f" found {token:x}")
+            if token:
+                raise ValueError("mmap token failure")
+            log.error(" mmap is disabled")
+            return False
+        log.info("enabled fast %s mmap transfers using %sB shared memory area",
+                 self.name, std_unit(self.size, unit=1024))
+        return True
+
+    def gen_token(self) -> None:
+        self.token = get_int_uuid()
+        self.token_bytes = DEFAULT_TOKEN_BYTES
+        self.token_index = randint(0, self.size - DEFAULT_TOKEN_BYTES)
+
+    def write_token(self) -> None:
+        write_mmap_token(self.mmap, self.token, self.token_index, self.token_bytes)
