@@ -7,7 +7,6 @@ import os.path
 import signal
 from typing import Any
 
-from xpra.server import ServerExitMode
 from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -53,7 +52,9 @@ class DbusServer(StubServerMixin):
         if ds:
             ds.cleanup()
             self.dbus_server = None
-        if self._exit_mode not in (ServerExitMode.UPGRADE, ServerExitMode.EXIT):
+
+    def late_cleanup(self, stop=True) -> None:
+        if stop:
             self.stop_dbus_server()
 
     def stop_dbus_server(self) -> None:
