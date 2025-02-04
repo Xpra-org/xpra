@@ -89,13 +89,16 @@ def gendigest(digest: str, password_in, salt_in: SizedBuffer) -> bytes:
 
 
 def verify_digest(digest: str, password: str, salt, challenge_response: bytes) -> bool:
-    if not password or not salt or not challenge_response:
+    log("verify_digest%s", (digest, "..", salt, challenge_response))
+    if not (digest and password and salt and challenge_response):
+        log("digest: missing argument")
         return False
     verify = gendigest(digest, password, salt)
-    if not hmac.compare_digest(verify, challenge_response):
+    verified = hmac.compare_digest(verify, challenge_response)
+    log("verify_digest(..) %r vs %r", verify, challenge_response)
+    if not verified:
         log(f"expected {verify!r} but got {challenge_response!r}")
-        return False
-    return True
+    return verified
 
 
 def get_salt(length: int = DEFAULT_SALT_LENGTH) -> bytes:

@@ -22,15 +22,16 @@ class Authenticator(FileAuthenticatorBase):
             return False
         salt = self.get_response_salt(client_salt)
         password = self.get_password()
-        log("authenticate_hmac() get_password()=" + obsc(password))
+        log("authenticate_hmac(..) get_password()=" + obsc(password))
         if not password:
             log.warn("Warning: authentication failed")
             log.warn(f" no password for {self.username!r} in {self.password_filename!r}")
             return False
-        if not verify_digest(self.digest, password, salt, challenge_response):
+        verified = verify_digest(self.digest, password, salt, challenge_response)
+        log(f"authenticate_hmac(..) {verified=}")
+        if not verified:
             log.warn(f"Warning: {self.digest!r} challenge for {self.username!r} does not match")
-            return False
-        return True
+        return verified
 
     def parse_filedata(self, data: str) -> str:
         return data
