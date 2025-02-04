@@ -30,7 +30,7 @@ from xpra.server import ServerExitMode
 from xpra.server import features
 from xpra.server.mixins.control import ControlHandler
 from xpra.server.util import write_pidfile, rm_pidfile
-from xpra.scripts.config import str_to_bool, parse_bool_or, parse_with_unit, TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     SOCKET_TYPES, MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
     is_request_allowed, PacketType, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
@@ -223,7 +223,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         self.exit_with_client = False
         self.server_idle_timeout = 0
         self.server_idle_timer = 0
-        self.bandwidth_limit = 0
 
         self.init_thread = None
         self.init_thread_callbacks: list[tuple[Callable, tuple]] = []
@@ -244,7 +243,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         if self.pidfile:
             self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
 
-        self.bandwidth_limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
         self.unix_socket_paths = []
         self._socket_dir = opts.socket_dir or ""
         if not self._socket_dir and opts.socket_dirs:
@@ -2249,7 +2247,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
                 "sockets": self.get_socket_info(),
                 "encryption": self.encryption or "",
                 "tcp-encryption": self.tcp_encryption or "",
-                "bandwidth-limit": self.bandwidth_limit or 0,
                 "packet-handlers": GLibPacketHandler.get_info(self),
                 "www": {
                     "": self._html,
