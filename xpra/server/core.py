@@ -160,7 +160,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         self.uuid = ""
         self.auth_classes: dict[str, Sequence[AuthDef]] = {}
         self.child_reaper = None
-        self.original_desktop_display = None
         self.session_type: str = "unknown"
         self.display_name: str = ""
         self.display_options = ""
@@ -2219,8 +2218,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         logfile = os.environ.get("XPRA_SERVER_LOG")
         if logfile:
             info["log-file"] = logfile
-        if self.original_desktop_display:
-            info["original-desktop-display"] = self.original_desktop_display
         return info
 
     def get_info(self, proto, *_args) -> dict[str, Any]:

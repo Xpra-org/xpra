@@ -105,6 +105,7 @@ class DisplayManager(StubServerMixin):
         self.opengl = "no"
         self.opengl_props: dict[str, Any] = {}
         self.refresh_rate = "auto"
+        self.original_desktop_display = None
 
     def init(self, opts) -> None:
         self.opengl = opts.opengl
@@ -251,6 +252,8 @@ class DisplayManager(StubServerMixin):
             "depth": self.bit_depth,
             "refresh-rate": self.refresh_rate,
         }
+        if self.original_desktop_display:
+            i["original-desktop-display"] = self.original_desktop_display
         if self.opengl_props:
             i["opengl"] = self.opengl_props
         return {
