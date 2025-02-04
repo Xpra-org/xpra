@@ -2048,7 +2048,7 @@ cdef class Encoder:
         QP_MAX_VALUE = 51       #255 for AV1!
 
         def qp(pct: float) -> int:
-            return QP_MAX_VALUE-max(0, min(QP_MAX_VALUE, round(QP_MAX_VALUE * pct)))
+            return QP_MAX_VALUE-max(0, min(QP_MAX_VALUE, round(QP_MAX_VALUE * pct / 100)))
         qpmin = qp(self.quality-10)
         qpmax = qp(self.quality+10)
         qp = min(QP_MAX_VALUE, max(0, round((qpmin + qpmax)//2)))
