@@ -118,7 +118,7 @@ def clean_session_files(*filenames) -> None:
         return
     for filename in filenames:
         path = session_file_path(filename)
-        if filename.find("*") >= 0:
+        if filename.find("*") >= 0 or filename.find("?") >= 0:
             for p in glob.glob(path):
                 clean_session_path(p)
         else:

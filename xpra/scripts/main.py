@@ -3367,6 +3367,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
     if not display:
         # use display specified on command line:
         display = pick_display(error_cb, opts, args, cmdline)
+    delpath = ""
     if display and not server_mode.startswith("shadow"):
         display_name = display_name or display.get("display") or display.get("display_name")
         try:
@@ -3378,7 +3379,7 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
                 from xpra.scripts.session import get_session_dir
                 session_dir = get_session_dir("attach", opts.sessions_dir, display_name, getuid())
                 # ie: "/run/user/$UID/xpra/$DISPLAY/ssh/$UUID
-                setup_proxy_ssh_socket(cmdline, session_dir=session_dir)
+                delpath = setup_proxy_ssh_socket(cmdline, session_dir=session_dir)
             except OSError:
                 sshlog = Logger("ssh")
                 sshlog.error("Error setting up client ssh agent forwarding socket", exc_info=True)
@@ -3387,8 +3388,11 @@ def run_proxy(error_cb, opts, script_file, cmdline, args, mode, defaults) -> Exi
     from xpra.net.bytestreams import TwoFileConnection
     pipe = TwoFileConnection(sys.stdout, sys.stdin, socktype="stdin/stdout")
     app = XpraProxy("xpra-pipe-proxy", pipe, server_conn)
-    app.run()
-    return 0
+    try:
+        return app.run()
+    finally:
+        if delpath:
+            noerr(os.unlink, delpath)
 
 
 def run_stopexit(mode: str, error_cb, opts, extra_args, cmdline) -> ExitValue:
