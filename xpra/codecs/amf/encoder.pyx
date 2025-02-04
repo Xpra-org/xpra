@@ -474,7 +474,7 @@ cdef class Encoder:
             self.check(res, f"AMF {memtype} surface initialization for {self.width}x{self.height} {self.src_format}")
         cdef AMFSurface *ptr = surface[0]
         assert ptr != NULL
-        if log.is_debug_enable():
+        if log.is_debug_enabled():
             log(f"{memtype} surface: %s", self.get_surface_info(ptr))
 
     cdef void set_surface_property(self, AMFSurface *surface, name: str, variant: AMF_VARIANT_TYPE, value: int64_t):
