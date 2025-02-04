@@ -31,6 +31,7 @@ from xpra.common import SocketState, noerr, noop
 from xpra.util.objects import typedict
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr, sort_human
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, OSEnvContext
+from xpra.util.parsing import parse_scaling
 from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
@@ -2303,6 +2304,18 @@ def strip_defaults_start_child(start_child, defaults_start_child):
     return start_child
 
 
+def match_client_display_size(options, display_is_remote=True) -> None:
+    if options.resize_display.lower() not in TRUE_OPTIONS:
+        return
+    # if possible, use the current display size as initial vfb size
+    root_w, root_h = get_current_root_size(display_is_remote)
+    if 0 < root_w < 16384 and 0 < root_h < 16384:
+        scaling_x, scaling_y = parse_scaling(options.desktop_scaling, root_w, root_h)
+        scaled_w = round(root_w / scaling_x)
+        scaled_h = round(root_h / scaling_y)
+        options.resize_display = f"{scaled_w}x{scaled_h}"
+
+
 def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
@@ -2336,15 +2349,8 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
                     options.csc_modules = ["none"]
                     options.video_decoders = ["none"]
                     return do_run_mode(script_file, cmdline, error_cb, options, args, "attach", defaults)
-    if mode == "seamless" and not display_is_remote and options.resize_display.lower() in TRUE_OPTIONS:
-        # if possible, use the current display size as initial vfb size
-        root_w, root_h = get_current_root_size(display_is_remote)
-        if root_w and root_h:
-            from xpra.util.parsing import parse_scaling
-            scaling_x, scaling_y = parse_scaling(options.desktop_scaling, root_w, root_h)
-            scaled_w = round(root_w / scaling_x)
-            scaled_h = round(root_h / scaling_y)
-            options.resize_display = f"{scaled_w}x{scaled_h}"
+    if mode == "seamless":
+        match_client_display_size(options, display_is_remote)
 
     if mode != "encoder":
         r = start_server_via_proxy(cmdline, error_cb, options, args, full_mode)
@@ -2474,6 +2480,8 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
         fn = x.replace("-", "_")
         v = strip_defaults_start_child(getattr(opts, fn), getattr(defaults, fn))
         setattr(opts, fn, v)
+    if mode == "seamless":
+        match_client_display_size(opts)
     if isdisplaytype(args, "ssh"):
         # add special flags to "display_as_args"
         proxy_args = params.get("display_as_args", [])
