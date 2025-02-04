@@ -65,7 +65,9 @@ def set_engine(name: str) -> bool:
     if not bus.is_connected():
         log(f"bus {bus} is not connected")
         return False
-    return bus.set_global_engine(name)
+    r = bus.set_global_engine(name)
+    log("%s.set_global_engine(%s)=%s", bus, name, r)
+    return r
 
 
 def main(_argv) -> int:  # pragma: no cover
