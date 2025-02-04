@@ -2327,7 +2327,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
         if OSX or WIN32:
             raise InitException(f"{mode} is not supported on this platform")
         if mode != "expand" and not find_spec("xpra.x11"):
-            raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use `{mode}")
+            raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
     display = None
     display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
     with_display = mode in ("seamless", "desktop", "monitor", "expand")

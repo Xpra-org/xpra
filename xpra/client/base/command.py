@@ -794,8 +794,8 @@ class EncodeClient(HelloRequestClient):
 
     def _process_encode_response(self, packet: PacketType) -> None:
         encoding, data, options, width, height, bpp, stride, metadata = packet[1:9]
-        log("encode-response: %8s %6i bytes, %5ix-%5i %ibits, stride=%i, metadata=%s",
-            encoding, len(data), width, height, bpp, stride, metadata)
+        log("encode-response: %8s %6i bytes, %5ix-%5i %ibits, stride=%i, options=%s, metadata=%s",
+            encoding, len(data), width, height, bpp, stride, options, metadata)
         filename = typedict(metadata).strget("filename")
         if not filename:
             log.error("Error: 'filename' is missing from the metadata")
