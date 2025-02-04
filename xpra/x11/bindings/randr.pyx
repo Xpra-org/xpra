@@ -1241,7 +1241,7 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             monitors = XRRGetMonitors(self.display, window, True, &nmonitors)
             try:
                 for mi in range(nmonitors):
-                    monitors[mi].name = self.str_to_atom("VFB%i-%s" % (mi, monotonic()))
+                    monitors[mi].name = self.str_to_atom(f"VFBTEMP{mi}")
                     XRRSetMonitor(self.display, window, &monitors[mi])
             finally:
                 XRRFreeMonitors(monitors)
