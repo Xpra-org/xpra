@@ -1226,7 +1226,8 @@ class GTKTrayMenu(MenuHelper):
                 kh.update()
                 kh.send_layout()
                 log.info(f"{msg}: {kh.layout_str()}")
-                kh.send_keymap()
+                if not backend:
+                    kh.send_keymap()
 
         l = self.checkitem(str(title), set_layout, active)
         l.set_draw_as_radio(True)

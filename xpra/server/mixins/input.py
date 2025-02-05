@@ -183,7 +183,6 @@ class InputServer(StubServerMixin):
                 ibuslog(f"ibus set engine to {name!r}")
                 layout, variant, options = get_engine_layout_spec()
                 ibuslog(f"ibus layout: {layout} {variant=}, {options=}")
-                return
         if ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
