@@ -1006,7 +1006,7 @@ def do_parse_cmdline(cmdline: list[str], defaults):
     return options, args
 
 
-def parse_window_size(v, attribute="max-size"):
+def parse_window_size(v, attribute="max-size") -> tuple[int, int]:
     def pws_fail():
         raise InitException(f"invalid {attribute}: {v}")
 
@@ -1032,14 +1032,18 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
         "wm-name": defaults.wm_name,
         "download-path": defaults.download_path,
     }
+    gettext = getattr(optparse, "gettext", lambda x: x)
+    parser.add_option("-V",
+                      action="version",
+                      help=gettext("show program's version number and exit"))
 
-    def replace_option(oldoption: str, newoption: str):
+    def replace_option(oldoption: str, newoption: str) -> None:
         do_replace_option(cmdline, oldoption, newoption)
 
-    def legacy_bool_parse(optionname: str, newoptionname: str = ""):
+    def legacy_bool_parse(optionname: str, newoptionname: str = "") -> None:
         do_legacy_bool_parse(cmdline, optionname, newoptionname)
 
-    def ignore(defaults):
+    def ignore(defaults) -> None:
         ignore_options(cmdline, defaults.keys())
         for k, v in defaults.items():
             hidden_options[k.replace("-", "_")] = v
