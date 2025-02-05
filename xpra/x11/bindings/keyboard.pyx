@@ -628,7 +628,8 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             for i in range(0, num_codes):
                 keycode = first_keycode+i
                 keysyms_strs = keycodes.get(keycode)
-                log("setting keycode %i: %s", keycode, keysyms_strs)
+                if keysyms_strs:
+                    log("setting keycode %i: %s", keycode, keysyms_strs)
                 if keysyms_strs is None:
                     if len(new_keysyms)>0:
                         # no keysyms for this keycode yet, assign one of the "new_keysyms"

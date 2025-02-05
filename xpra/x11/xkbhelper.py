@@ -25,9 +25,9 @@ verboselog = Logger("x11", "keyboard", "verbose")
 
 XKB = envbool("XPRA_XKB", True)
 
-DEFAULT_RULES = os.environ.get("XKB_DEFAULT_RULES", "")
-DEFAULT_MODEL = os.environ.get("XKB_DEFAULT_MODEL", "")
-DEFAULT_LAYOUT = os.environ.get("XKB_DEFAULT_LAYOUT", "")
+DEFAULT_RULES = os.environ.get("XKB_DEFAULT_RULES", "evdev")
+DEFAULT_MODEL = os.environ.get("XKB_DEFAULT_MODEL", "pc105")
+DEFAULT_LAYOUT = os.environ.get("XKB_DEFAULT_LAYOUT", "us")
 DEFAULT_VARIANT = os.environ.get("XKB_DEFAULT_VARIANT", "")
 DEFAULT_OPTIONS = os.environ.get("XKB_DEFAULT_OPTIONS", "")
 
@@ -83,6 +83,9 @@ def do_set_keymap(layout: str, variant: str, options, query_struct) -> None:
     # First we try to use data from setxkbmap -query,
     # preferably as structured data:
     query_struct = typedict(query_struct)
+    rules = DEFAULT_RULES
+    model = DEFAULT_MODEL
+    layout = layout or DEFAULT_LAYOUT
     if query_struct:
         log("do_set_keymap using xkbmap_query struct=%s", query_struct)
         # The query_struct data will look something like this:
@@ -113,9 +116,8 @@ def do_set_keymap(layout: str, variant: str, options, query_struct) -> None:
             if safe_setxkbmap(rules, model, "", "", ""):
                 return
     # fallback for non X11 clients:
-    layout = layout or "us"
-    log.info("setting keyboard layout to '%s'", std(layout))
-    safe_setxkbmap("evdev", "pc105", layout, variant, options)
+    log.info("setting keyboard layout to %r", std(layout))
+    safe_setxkbmap(rules, model, layout, variant, options)
 
 
 def safe_setxkbmap(rules: str, model: str, layout: str, variant: str, options: str):
@@ -172,10 +174,13 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
         keycodes = indexed_mappings(xkbmap_x11_keycodes)
     else:
         keycodes = gtk_keycodes_to_mappings(xkbmap_keycodes)
+    x11_keycodes = get_keycode_mappings()
     log("set_keycode_translation(%s, %s)", Ellipsizer(xkbmap_x11_keycodes), Ellipsizer(xkbmap_keycodes))
     log(" keycodes=%s", Ellipsizer(keycodes))
+    log(" x11_keycodes=%s", Ellipsizer(x11_keycodes))
     verboselog("set_keycode_translation(%s, %s)", xkbmap_x11_keycodes, xkbmap_keycodes)
     verboselog(" keycodes=%s", keycodes)
+    verboselog(" x11_keycodes=%s", x11_keycodes)
     """
     Example data:
     ```
@@ -183,13 +188,7 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
         9: set([('', 1), ('Escape', 4), ('', 3), ('Escape', 0), ('Escape', 2)]),
         10: set([('onesuperior', 4), ('onesuperior', 8), ('exclam', 1), ('1', 6),
                  ('exclam', 3), ('1', 2), ('exclamdown', 9), ('exclamdown', 5), ('1', 0), ('exclam', 7)]),
-    ```
-    """
-    x11_keycodes = get_keycode_mappings()
-    log(" x11_keycodes=%s", x11_keycodes)
-    """
-    Example:
-    ```
+
     x11_keycodes = {
        8: ['Mode_switch', '', 'Mode_switch', '', 'Mode_switch'],
        9: ['Escape', '', 'Escape', '', 'Escape'],

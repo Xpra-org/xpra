@@ -66,7 +66,7 @@ class InputServer(StubServerMixin):
                 ibuslog(f"no ibus module: {e}")
             else:
                 self.ibus_layouts = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
-                ibuslog("loaded ibus layouts from %s: %s", threading.current_thread(), self.ibus_layouts)
+                ibuslog("loaded ibus layouts from %s: %s", threading.current_thread(), Ellipsizer(self.ibus_layouts))
         return self.ibus_layouts
 
     def init(self, opts) -> None:
@@ -178,22 +178,23 @@ class InputServer(StubServerMixin):
             backend = packet[4]
             name = packet[5]
         if backend == "ibus" and name:
-            from xpra.keyboard.ibus import set_engine
+            from xpra.keyboard.ibus import set_engine, get_engine_layout_spec
             if set_engine(name):
                 ibuslog(f"ibus set engine to {name!r}")
+                layout, variant, options = get_engine_layout_spec()
+                ibuslog(f"ibus layout: {layout} {variant=}, {options=}")
                 return
         if ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
     def _process_keymap_changed(self, proto, packet: PacketType) -> None:
-        keylog(f"keymap-changed: {packet}")
         if self.readonly:
             return
         props = typedict(packet[1])
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        keylog("received new keymap from client")
+        keylog("received new keymap from client: %s", Ellipsizer(packet))
         other_ui_clients = [s.uuid for s in self._server_sources.values() if s != ss and s.ui_client]
         if other_ui_clients:
             keylog.warn("Warning: ignoring keymap change as there are %i other clients", len(other_ui_clients))
