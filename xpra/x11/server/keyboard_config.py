@@ -373,7 +373,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     # if the client does not provide a full native keymap with all the keycodes,
                     # try to preserve the initial server keycodes and translate the client keycodes instead:
                     # (used by non X11 clients like osx,win32 or HTML5)
-                    self.keycode_translation = set_keycode_translation(self.x11_keycodes, self.keycodes)
+                    self.keycode_translation.update(set_keycode_translation(self.x11_keycodes, self.keycodes))
                 else:
                     self.keycode_translation = {}
                 self.add_gtk_keynames()
@@ -390,6 +390,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 self.keycode_translation = {}
                 log("keyboard raw mode, keycode translation left empty")
                 self.compute_modifiers()
+
             self.compute_client_modifier_keycodes()
             log("keyname_for_mod=%s", self.keynames_for_mod)
             clean_keyboard_state()
