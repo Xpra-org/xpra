@@ -1193,7 +1193,7 @@ class GTKTrayMenu(MenuHelper):
 
         if PREFER_IBUS_LAYOUTS:
             def got_ibus_layouts(setting: str, ibus_layouts) -> None:
-                Logger("ibus").debug(f"got {setting!r}={ibus_layouts!r}")
+                Logger("ibus").debug(f"got {setting!r}=%s", Ellipsizer(ibus_layouts))
                 kh = self.client.keyboard_helper
                 if ibus_layouts and kh.layout and PREFER_IBUS_LAYOUTS:
                     self.populate_ibus_keyboard_layouts(ibus_layouts)

@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from xpra.x11.gtk.display_source import init_gdk_display_source
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
-from xpra.util.str_fn import std, csv, bytestostr
+from xpra.util.str_fn import std, csv, bytestostr, Ellipsizer
 from xpra.util.env import envbool
 from xpra.gtk.error import xsync, xlog
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -21,6 +21,7 @@ init_gdk_display_source()
 X11Keyboard = X11KeyboardBindings()
 
 log = Logger("x11", "keyboard")
+verboselog = Logger("x11", "keyboard", "verbose")
 
 XKB = envbool("XPRA_XKB", True)
 
@@ -171,8 +172,10 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
         keycodes = indexed_mappings(xkbmap_x11_keycodes)
     else:
         keycodes = gtk_keycodes_to_mappings(xkbmap_keycodes)
-    log("set_keycode_translation(%s, %s)", xkbmap_x11_keycodes, xkbmap_keycodes)
-    log(" keycodes=%s", keycodes)
+    log("set_keycode_translation(%s, %s)", Ellipsizer(xkbmap_x11_keycodes), Ellipsizer(xkbmap_keycodes))
+    log(" keycodes=%s", Ellipsizer(keycodes))
+    verboselog("set_keycode_translation(%s, %s)", xkbmap_x11_keycodes, xkbmap_keycodes)
+    verboselog(" keycodes=%s", keycodes)
     """
     Example data:
     ```
@@ -254,7 +257,8 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
                     if keysym in DEBUG_KEYSYMS:
                         log.info("x11 keycode %s: %s", keycode, key)
                     trans[key] = keycode
-    log("set_keycode_translation(..)=%s", trans)
+    log("set_keycode_translation(..)=%s", Ellipsizer(trans))
+    verboselog("set_keycode_translation(..)=%s", trans)
     return trans
 
 

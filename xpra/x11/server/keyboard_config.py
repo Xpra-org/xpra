@@ -9,7 +9,7 @@ import hashlib
 from typing import Any
 
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
 from xpra.gtk.keymap import get_gtk_keymap, get_default_keymap
@@ -30,6 +30,7 @@ from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
 
 log = Logger("keyboard")
+verboselog = Logger("keyboard", "verbose")
 
 Gdk = gi_import("Gdk")
 
@@ -146,7 +147,8 @@ class KeyboardConfig(KeyboardConfigBase):
         # info["state"] = {
         #    "modifiers" : self.get_current_mask(),
         #    }
-        log("keyboard info: %s", info)
+        log("keyboard info: %s", Ellipsizer(info))
+        verboselog("full keyboard info: %s", info)
         return info
 
     def parse_options(self, props: typedict) -> int:
@@ -177,7 +179,7 @@ class KeyboardConfig(KeyboardConfigBase):
             parse_option(x, keymap_dict.strtupleget, props.strtupleget)
         parse_option("raw", keymap_dict.boolget, props.boolget)
         parse_option("layout_groups", keymap_dict.boolget, props.boolget, True)
-        log("assign_keymap_options(..) modified %s", modded)
+        log("parse_options(..) modified %s", Ellipsizer(modded))
         return len(modded)
 
     def parse_layout(self, props: typedict) -> None:
@@ -206,6 +208,7 @@ class KeyboardConfig(KeyboardConfigBase):
         return "%s/%s/%s/%s" % (self.layout, self.variant, self.options, m.hexdigest())
 
     def compute_modifiers(self) -> None:
+        log("compute_modifiers() raw=%s", self.raw)
         if self.raw:
             with xsync:
                 mod_mappings = X11Keyboard.get_modifier_mappings()
@@ -222,8 +225,10 @@ class KeyboardConfig(KeyboardConfigBase):
                         if v not in l:
                             l.append(v)
         else:
-            log("compute_modifiers() mod_meanings=%s", self.mod_meanings)
-            log("compute_modifiers() keycodes=%s", self.keycodes)
+            verboselog("compute_modifiers() mod_meanings=%s, keycodes=%s",
+                       Ellipsizer(self.mod_meanings), Ellipsizer(self.keycodes))
+            verboselog("compute_modifiers() mod_meanings=%s", self.mod_meanings)
+            verboselog("compute_modifiers() keycodes=%s", self.keycodes)
             if self.mod_meanings:
                 # Unix-like OS provides modifier meanings:
                 self.keynames_for_mod = get_modifiers_from_meanings(self.mod_meanings)
@@ -395,8 +400,9 @@ class KeyboardConfig(KeyboardConfigBase):
         # add the keynames we find via gtk
         # since we may rely on finding those keynames from the client
         # (used with non-native keymaps)
-        log("add_gtk_keynames() gtk keymap=%s", get_gtk_keymap())
-        for _, keyname, keycode, _, _ in get_gtk_keymap():
+        keymap = get_gtk_keymap()
+        log("add_gtk_keynames() gtk keymap=%s", Ellipsizer(keymap))
+        for _, keyname, keycode, _, _ in keymap:
             if keyname not in self.keycode_translation:
                 self.keycode_translation[keyname] = keycode
                 if keyname in DEBUG_KEYSYMS:
@@ -636,7 +642,7 @@ class KeyboardConfig(KeyboardConfigBase):
                     log("modifier '%s' ignored (in ignored keynames=%s)", modifier, keynames)
                     continue
                 m.add(modifier)
-            log("filtered_modifiers_set(%s)=%s", modifiers, m)
+            verboselog("filtered_modifiers_set(%s)=%s", modifiers, m)
             return m
 
         def change_mask(modifiers: set[str], press: bool, info: str) -> list[str]:

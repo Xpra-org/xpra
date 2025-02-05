@@ -7,10 +7,12 @@
 
 from collections.abc import Sequence
 
+from xpra.util.str_fn import Ellipsizer
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("keyboard")
+verboselog = Logger("keyboard", "verbose")
 
 # this allows platforms to inject keyname workarounds
 # the key is a tuple (keyname, keyval, keycode)
@@ -45,7 +47,7 @@ def get_gtk_keymap(ignore_keys=("", "VoidSymbol", "0xffffff")) -> Sequence[tuple
             continue
         found, keys, keyvals = entries
         if not found:
-            log("get_entries_for_keycode(%s)=()", i)
+            verboselog("keycode %3i: ()", i)
             continue
         added = []
         for j, key in enumerate(keys):
@@ -58,8 +60,9 @@ def get_gtk_keymap(ignore_keys=("", "VoidSymbol", "0xffffff")) -> Sequence[tuple
                 kdef = keyval or 0, name or "", keycode or 0, group, key.level or 0
                 keycodes.append(kdef)
                 added.append(kdef)
-        log("keycode %3i: %s", i, added)
-    log("get_gtk_keymap(%s)=%s (keymap=%s)", ignore_keys, keycodes, keymap)
+        verboselog("keycode %3i: %s", i, added)
+    log("get_gtk_keymap(%s)=%s (keymap=%s)", ignore_keys, Ellipsizer(keycodes), Ellipsizer(keymap))
+    verboselog("get_gtk_keymap(%s)=%s (keymap=%s)", ignore_keys, keycodes, keymap)
     return tuple(keycodes)
 
 

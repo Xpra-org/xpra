@@ -84,9 +84,9 @@ class InputMixin(StubSourceMixin):
         if self.ibus and ibus_layouts:
             self.send_setting_change("ibus-layouts", ibus_layouts)
 
-    def set_layout(self, layout: str, variant: str, options):
+    def set_layout(self, layout: str, variant: str, options) -> bool:
         if not self.keyboard_config:
-            return
+            return False
         return self.keyboard_config.set_layout(layout, variant, options)
 
     def keys_changed(self) -> None:

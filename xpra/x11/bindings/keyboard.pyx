@@ -544,7 +544,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         return self.work_keymap
 
     cdef set_work_keymap(self, XModifierKeymap* new_keymap):
-        log("setting new work keymap: %#x", <unsigned long> new_keymap)
+        # log("setting new work keymap: %#x", <unsigned long> new_keymap)
         self.work_keymap = new_keymap
 
     cdef KeySym _parse_keysym(self, symbol):
@@ -624,6 +624,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             return False
         try:
             missing_keysyms = []
+            free_keycodes = []
             for i in range(0, num_codes):
                 keycode = first_keycode+i
                 keysyms_strs = keycodes.get(keycode)
@@ -636,7 +637,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                         log("assigned keycode %i to %s", keycode, keysyms[0])
                     else:
                         keysyms = []
-                        log("keycode %i is still free", keycode)
+                        free_keycodes.append(keycode)
                 else:
                     keysyms = []
                     for ks in keysyms_strs:
@@ -657,6 +658,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                     if keysyms and j<len(keysyms) and keysyms[j] is not None:
                         keysym = keysyms[j]
                     ckeysyms[i*keysyms_per_keycode+j] = keysym
+            log("free keycodes: %s", free_keycodes)
             if len(missing_keysyms)>0:
                 log.info("could not find the following keysyms: %s", " ".join(set(missing_keysyms)))
             return XChangeKeyboardMapping(self.display, first_keycode, keysyms_per_keycode, ckeysyms, num_codes)==0
@@ -847,9 +849,8 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         for keysym_str in keysyms:
             kss = b(keysym_str)
             keysym = XStringToKeysym(kss)
-            log("add modifier: keysym(%s)=%s", keysym_str, keysym)
             keycodes = self.KeysymToKeycodes(keysym)
-            log("add modifier: keycodes(%s)=%s", keysym, keycodes)
+            log("add modifier: keysym(%s)=%s, keycodes(%s)=%s", keysym_str, keysym, keysym, keycodes)
             if len(keycodes)==0:
                 log.error(f"Error: no keycodes found for keysym {keysym_str!r} ({keysym})")
                 success = False

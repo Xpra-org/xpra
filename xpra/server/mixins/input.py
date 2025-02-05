@@ -164,6 +164,7 @@ class InputServer(StubServerMixin):
         return info
 
     def _process_layout_changed(self, proto, packet: PacketType) -> None:
+        keylog(f"layout-changed: {packet}")
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -185,6 +186,7 @@ class InputServer(StubServerMixin):
             self.set_keymap(ss, force=True)
 
     def _process_keymap_changed(self, proto, packet: PacketType) -> None:
+        keylog(f"keymap-changed: {packet}")
         if self.readonly:
             return
         props = typedict(packet[1])
