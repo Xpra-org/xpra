@@ -50,6 +50,7 @@ AGENT_AUTH = envbool("XPRA_SSH_AGENT_AUTH", True)
 KEY_AUTH = envbool("XPRA_SSH_KEY_AUTH", True)
 PASSWORD_RETRY = envint("XPRA_SSH_PASSWORD_RETRY", 2)
 SSH_AGENT = envbool("XPRA_SSH_AGENT", False)
+BANNER = envbool("XPRA_SSH_BANNER", True)
 assert PASSWORD_RETRY >= 0
 LOG_FAILED_CREDENTIALS = envbool("XPRA_LOG_FAILED_CREDENTIALS", False)
 TEST_COMMAND_TIMEOUT = envint("XPRA_SSH_TEST_COMMAND_TIMEOUT", 10)
@@ -77,6 +78,28 @@ def keymd5(k) -> str:
         s += ":" + f[:2]
         f = f[2:]
     return s
+
+
+if BANNER:
+    from paramiko import auth_handler
+
+    class AuthHandlerOverride(auth_handler.AuthHandler):
+
+        def _parse_userauth_banner(self, m):
+            banner = m.get_string()
+            self.banner = banner
+            if banner:
+                try:
+                    text = banner.decode("utf8")
+                except UnicodeDecodeError:
+                    text = repr(banner)
+                log.info("SSH Authentication Banner:")
+                for msg in text.splitlines():
+                    log.info(f" {msg!r}")
+
+    auth_handler.AuthHandler = AuthHandlerOverride
+    from paramiko import transport
+    transport.AuthHandler = AuthHandlerOverride
 
 
 class SSHSocketConnection(SocketConnection):
