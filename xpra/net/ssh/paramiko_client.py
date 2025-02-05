@@ -185,18 +185,45 @@ class SSHProxyCommandConnection(SSHSocketConnection):
             log("SSHProxyCommandConnection.close()", exc_info=True)
 
 
-def safe_lookup(config_obj, host: str) -> dict:
+def safe_lookup(config_obj, hostname: str) -> dict:
     try:
-        return dict(config_obj.lookup(host) or {})
+        _lookup = getattr(config_obj, "_lookup", None)
+        if _lookup:
+            # completely duplicate the paramiko logic since they're unwilling to merge a trivial change :(
+            options = _lookup(hostname=hostname)
+            # Inject HostName if it was not set (this used to be done incidentally
+            # during tokenization, for some reason).
+            if "hostname" not in options:
+                options["hostname"] = hostname
+            # Handle canonicalization
+            canon = options.get("canonicalizehostname", None) in ("yes", "always")
+            maxdots = int(options.get("canonicalizemaxdots", 1))
+            if canon and hostname.count(".") <= maxdots:
+                # NOTE: OpenSSH manpage does not explicitly state this, but its
+                # implementation for CanonicalDomains is 'split on any whitespace'.
+                domains = options.get("canonicaldomains", "").split()
+                hostname = config_obj.canonicalize(hostname, options, domains)
+                # Overwrite HostName again here (this is also what OpenSSH does)
+                options["hostname"] = hostname
+                options = _lookup(
+                    hostname, options, canonical=True, final=True
+                )
+            else:
+                options = _lookup(
+                    hostname, options, canonical=False, final=True
+                )
+        else:
+            options = config_obj.lookup(hostname)
+        return dict(options or {})
     except ImportError as e:
-        log("%s.lookup(%s)", config_obj, host, exc_info=True)
-        log.warn(f"Warning: unable to load SSH host config for {host!r}:")
+        log("%s.lookup(%s)", config_obj, hostname, exc_info=True)
+        log.warn(f"Warning: unable to load SSH host config for {hostname!r}:")
         log.warn(f" {e}")
         if isinstance(e, ModuleNotFoundError):
             log.warn(" (looks like a 'paramiko' distribution packaging issue)")
     except KeyError as e:
-        log("%s.lookup(%s)", config_obj, host, exc_info=True)
-        log.info(f"paramiko ssh config lookup error for host {host!r}")
+        log("%s.lookup(%s)", config_obj, hostname, exc_info=True)
+        log.info(f"paramiko ssh config lookup error for host {hostname!r}")
         if first_time("paramiko-#2338"):
             log.info(" %s: %s", type(e), e)
             log.info(" the paramiko project looks unmaintained:")
