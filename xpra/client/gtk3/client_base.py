@@ -274,6 +274,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def _process_startup_complete(self, packet: PacketType) -> None:
         super()._process_startup_complete(packet)
         Gdk.notify_startup_complete()
+        self.remove_packet_handlers("startup-complete")
 
     def do_process_challenge_prompt(self, prompt="password"):
         self.stop_progress_process(f"showing {prompt} prompt")

@@ -91,6 +91,7 @@ class CommandConnectClient(GObjectXpraClient):
         # * we don't care about sending anything back after hello
         log("server_capabilities: %s", Ellipsizer(caps))
         log("protocol state: %s", self._protocol.save_state())
+        self.init_authenticated_packet_handlers()
         self.cancel_command_timeout()
         self.do_command(caps)
         return True
