@@ -125,7 +125,11 @@ class MmapClient(StubClientMixin):
         log("setup_connection(%s) mmap supported=%s", conn, self.mmap_supported)
         if not self.mmap_supported:
             return
-        for area in (self.mmap_read_area, self.mmap_write_area):
+        for name, area in {
+            "read": self.mmap_read_area,
+            "write": self.mmap_write_area,
+        }.items():
+            log(f"{name!r}={area}")
             if area:
                 area.init_mmap(conn.filename or "")
 

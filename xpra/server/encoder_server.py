@@ -5,6 +5,7 @@
 
 from collections.abc import Callable
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.net.common import PacketType
@@ -56,30 +57,41 @@ class EncoderServer(ServerBase):
         super().init_packet_handlers()
         self.add_packets("encode")
 
+    def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
+        super().add_new_client(ss, c, send_ui, share_count)
+        ss.protocol.large_packets.append("encode-response")
+
     def _process_encode(self, proto: SocketProtocol, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return
-        rgb_format = packet[1]
-        raw_data = packet[2]
-        width = packet[3]
-        height = packet[4]
-        rowstride = packet[5]
-        options = packet[6]
-        metadata = packet[7]
+        input_coding, rgb_format, raw_data, width, height, rowstride, options, metadata = packet[1:9]
         depth = 32
         bpp = 4
         full_range = True
         encoding = "png" if ss.encoding in ("auto", "") else ss.encoding
-        log("encode request from %s, encoding=%s from %s", ss, encoding, ss.encoding)
+        log("encode request from %s, %s to %s from %s", ss, input_coding, encoding, ss.encoding)
         # connection encoding options:
         eo = dict(ss.default_encoding_options)
         # the request can override:
         eo.update(options)
         log("using settings: %s", eo)
         from xpra.codecs.image import ImageWrapper, PlanarFormat
-        image = ImageWrapper(0, 0, width, height, raw_data, rgb_format, depth, rowstride,
+        if input_coding == "mmap":
+            if not ss.mmap_supported or not ss.mmap_read_area:
+                raise RuntimeError("mmap packet but mmap read is not available")
+            chunks = options["chunks"]
+            rgb_data, free = ss.mmap_read_area.mmap_read(*chunks)
+        else:
+            if options.get("lz4") > 0:
+                from xpra.net.lz4.lz4 import decompress
+                rgb_data = decompress(raw_data, max_size=64*1024*1024)
+            else:
+                rgb_data = raw_data
+            free = noop
+        image = ImageWrapper(0, 0, width, height, rgb_data, rgb_format, depth, rowstride,
                              bpp, PlanarFormat.PACKED, True, None, full_range)
         coding, compressed, client_options, width, height, stride, bpp = self.encode(encoding, image, typedict(eo))
+        free()
         packet = ["encode-response", coding, compressed.data, client_options, width, height, stride, bpp, metadata]
         ss.send_async(*packet)

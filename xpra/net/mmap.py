@@ -307,12 +307,17 @@ def mmap_read(mmap_area, *descr_data: tuple[int, int]) -> tuple[bytes | memoryvi
     return bdata, noop
 
 
-def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], int]:
+def mmap_write(mmap_area, mmap_size: int, data) -> list[tuple[int, int]]:
     """
         Sends 'data' to the client via the mmap shared memory region,
         returns the chunks of the mmap area used (or None if it failed)
         and the mmap area's free memory.
     """
+    size = len(data)
+    if size > (mmap_size - 8):
+        log.warn("Warning: mmap area is too small!")
+        log.warn(" we need to store %s bytes but the mmap area is limited to %i", size, (mmap_size - 8))
+        return []
     # This is best explained using diagrams:
     # mmap_area=[&S&E-------------data-------------]
     # The first pair of 4 bytes are occupied by:
@@ -326,7 +331,6 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], 
     mmap_data_end: c_uint32 = int_from_buffer(mmap_area, 4)
     start = max(8, mmap_data_start.value)
     end = max(8, mmap_data_end.value)
-    size = len(data)
     log("mmap: start=%i, end=%i, size of data to write=%i", start, end, size)
     if end < start:
         # we have wrapped around but the client hasn't yet:
@@ -342,16 +346,10 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], 
         # [****--------S++++++++++++E*********]
         chunk = mmap_size - end
         available = chunk + (start - 8)
-    # update global mmap stats:
-    mmap_free_size = available - size
-    if size > (mmap_size - 8):
-        log.warn("Warning: mmap area is too small!")
-        log.warn(" we need to store %s bytes but the mmap area is limited to %i", size, (mmap_size - 8))
-        return [], mmap_free_size
-    if mmap_free_size <= 0:
+    if size > available:
         log.warn("Warning: mmap area is full!")
         log.warn(" we need to store %s bytes but only have %s free space left", size, available)
-        return [], mmap_free_size
+        return []
     if size < chunk:
         # data fits in the first chunk:
         # ie: initially:
@@ -385,8 +383,24 @@ def mmap_write(mmap_area, mmap_size: int, data) -> tuple[list[tuple[int, int]], 
             l2 = size - chunk
             chunks = [(end, chunk), (8, l2)]
             mmap_data_end.value = 8 + l2
-    log("sending damage with mmap: %s bytes", len(data))
-    return chunks, mmap_free_size
+    log("mmap_write: %s bytes", len(data))
+    return chunks
+
+
+def mmap_free_size(mmap_area, mmap_size: int) -> int:
+    mmap_data_start: c_uint32 = int_from_buffer(mmap_area, 0)
+    mmap_data_end: c_uint32 = int_from_buffer(mmap_area, 4)
+    start = max(8, mmap_data_start.value)
+    end = min(mmap_size, max(8, mmap_data_end.value))
+    if end < start:
+        # we have wrapped around but the client hasn't yet:
+        # [++++++++E--------------------S+++++]
+        # so there is one chunk available (from E to S)
+        return start - end
+    # we have not wrapped around yet, or the client has wrapped around too:
+    # [------------S++++++++++++E---------]
+    # so there are two chunks available (from E to the end, from the start to S)
+    return (start - 8) + (mmap_size - end)
 
 
 class BaseMmapArea:
@@ -462,3 +476,9 @@ class BaseMmapArea:
 
     def write_token(self) -> None:
         write_mmap_token(self.mmap, self.token, self.token_index, self.token_bytes)
+
+    def write_data(self, data) -> list[tuple[int, int]]:
+        return mmap_write(self.mmap, self.size, data)
+
+    def mmap_read(self, *descr_data: tuple[int, int]) -> tuple[bytes | memoryview, PaintCallback]:
+        return mmap_read(self.mmap, *descr_data)

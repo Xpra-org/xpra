@@ -204,6 +204,7 @@ class WindowSource(WindowIconSource):
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
+        log.warn("mmap=%s, mmap-size=%s", self._mmap, self._mmap_size)
 
         self.init_vars()
 
@@ -2865,15 +2866,15 @@ class WindowSource(WindowIconSource):
         data = image.get_pixels()
         if not data:
             raise RuntimeError(f"failed to get pixels from {image}")
-        from xpra.net.mmap import mmap_write
-        mmap_data, mmap_free_size = mmap_write(self._mmap, self._mmap_size, data)
+        from xpra.net.mmap import mmap_write, mmap_free_size
+        mmap_data = mmap_write(self._mmap, self._mmap_size, data)
         # elapsed = monotonic()-start+0.000000001 # make sure never zero!
         # log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
         #    len(data), 1000*elapsed)
         if not mmap_data:
             return ()
         self.global_statistics.mmap_bytes_sent += len(data)
-        self.global_statistics.mmap_free_size = mmap_free_size
+        self.global_statistics.mmap_free_size = mmap_free_size(self._mmap, self._mmap_size)
         # the data we send is the index within the mmap area:
         return (
             "mmap", mmap_data, {"rgb_format": pf},

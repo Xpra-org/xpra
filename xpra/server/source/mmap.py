@@ -70,7 +70,7 @@ class MMAP_Connection(StubSourceMixin):
             log(f"using global server specified mmap file path: {filename!r}")
         return filename
 
-    def parse_area_caps(self, name: str, raw_caps: dict, index: int):
+    def parse_area_caps(self, name: str, raw_caps: dict, index: int) -> BaseMmapArea | None:
         log("parse_area_caps(%r, %r, %i)", name, raw_caps, index)
         if not raw_caps:
             return None

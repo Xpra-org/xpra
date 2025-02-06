@@ -3534,11 +3534,12 @@ def run_top(error_cb, options, args, cmdline) -> ExitValue:
 
 
 def run_encode(error_cb, options, args, cmdline) -> ExitValue:
-    from xpra.client.base.command import EncodeClient
+    from xpra.client.base.encode import EncodeClient
     if not args:
         raise ValueError("please specify a display and at least one filename")
     display_desc = pick_display(error_cb, options, args[:1], cmdline)
     app = EncodeClient(options, args[1:])
+    app.init(options)
     connect_to_server(app, display_desc, options)
     return app.run()
 
