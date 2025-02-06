@@ -857,7 +857,9 @@ class WindowBackingBase:
                    options: typedict, callbacks: PaintCallbacks) -> None:
         assert self.mmap
         from xpra.net.mmap import mmap_read
-        data, free_cb = mmap_read(self.mmap.mmap, *img_data)
+        # newer versions use the 'chunks' option, older versions overload the 'img_data'
+        chunks = options.tupleget("chunks") or img_data
+        data, free_cb = mmap_read(self.mmap.mmap, *chunks)
         callbacks.append(free_cb)
         rgb_format = options.strget("rgb_format", "RGB")
         # Note: BGR(A) is only handled by gl.backing

@@ -204,7 +204,6 @@ class WindowSource(WindowIconSource):
         # mmap:
         self._mmap = mmap
         self._mmap_size = mmap_size
-        log.warn("mmap=%s, mmap-size=%s", self._mmap, self._mmap_size)
 
         self.init_vars()
 
@@ -2875,8 +2874,11 @@ class WindowSource(WindowIconSource):
             return ()
         self.global_statistics.mmap_bytes_sent += len(data)
         self.global_statistics.mmap_free_size = mmap_free_size(self._mmap, self._mmap_size)
-        # the data we send is the index within the mmap area:
+        # the data we send is the index within the mmap area
+        # send the list of chunks as both:
+        # * 'chunks' metadata for newer versions
+        # * overloaded 'img_data' for older versions
         return (
-            "mmap", mmap_data, {"rgb_format": pf},
+            "mmap", mmap_data, {"rgb_format": pf, "chunks": mmap_data},
             image.get_width(), image.get_height(), image.get_rowstride(), len(pf)*8,
         )
