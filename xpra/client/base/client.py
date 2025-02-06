@@ -862,6 +862,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
             authlog("password read from tty via getpass: %s", obsc(password))
             return password
+        self.show_progress(100, "challenge prompt")
         from xpra.platform.paths import get_nodock_command
         cmd = get_nodock_command() + ["_pass", prompt]
         try:
