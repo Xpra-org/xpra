@@ -9,7 +9,7 @@ from collections.abc import Callable
 from xpra.challenge.handler import AuthenticationHandler
 
 
-PROMPT_FN_KEY = "challenge-prompt-function"
+PROMPT_FN_KEY = "challenge_prompt_function"
 
 
 def noprompt(prompt: str) -> str:

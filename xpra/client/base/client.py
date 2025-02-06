@@ -209,7 +209,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             kwargs["password"] = self.password
         if self.password_file:
             kwargs["password-files"] = self.password_file
-        kwargs["challenge-prompt-function"] = self.do_process_challenge_prompt
+        kwargs["challenge_prompt_function"] = self.do_process_challenge_prompt
 
         auth_mod_name = f"xpra.challenge.{mod_name}"
         authlog(f"auth module name for {auth!r}: {auth_mod_name!r}")
