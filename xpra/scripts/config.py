@@ -1215,7 +1215,7 @@ def get_defaults() -> dict[str, Any]:
         "reconnect"         : True,
         "tray"              : True,
         "pulseaudio"        : DEFAULT_PULSEAUDIO,
-        "mmap"              : "yes",
+        "mmap"              : "auto",
         "mmap-group"        : "auto",
         "video"             : True,
         "audio"             : True,

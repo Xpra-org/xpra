@@ -88,10 +88,14 @@ class MmapClient(StubClientMixin):
             self.mmap_supported = False
             return
         self.mmap_supported = True
-        if opts.mmap.lower() not in TRUE_OPTIONS:
-            filenames = opts.mmap.split(os.path.pathsep)
-        else:
+        if opts.mmap.lower() == "auto":
+            # by default, only enable mmap reads, not writes:
+            filenames = ("", )
+        elif opts.mmap.lower() in TRUE_OPTIONS:
             filenames = ("", "")
+        else:
+            # assume file path(s) have been specified:
+            filenames = opts.mmap.split(os.path.pathsep)
         group = opts.mmap_group
         root_w, root_h = self.get_root_size()
         # at least 256MB, or 8 fullscreen RGBX frames:

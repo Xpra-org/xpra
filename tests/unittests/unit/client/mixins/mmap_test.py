@@ -28,6 +28,7 @@ class MixinsTest(ClientMixinTest):
         for mmap_option, ctx in {
             "off": nullcontext(),
             "on": silence_info(mmap),
+            "auto": silence_info(mmap),
             tmp_dir+"/xpra-mmap-test-file-%i" % os.getpid(): silence_info(mmap),
             tmp_dir+"/xpra-fail-mmap-test-file-%i" % os.getpid(): silence_error(mmap),
         }.items():
