@@ -452,8 +452,12 @@ class WindowsMixin(StubSourceMixin):
             batch_config = self.make_batch_config(wid, window)
             ww, wh = window.get_dimensions()
             bandwidth_limit = self.bandwidth_limit
-            mmap = getattr(self, "mmap", None)
-            mmap_size = getattr(self, "mmap_size", 0)
+            mmap = None
+            mmap_size = 0
+            mmap_write_area = getattr(self, "mmap_write_area", None)
+            if mmap_write_area:
+                mmap = mmap_write_area.mmap
+                mmap_size = mmap_write_area.size
             av_sync = getattr(self, "av_sync", False)
             av_sync_delay = getattr(self, "av_sync_delay", 0)
             conn = getattr(self.protocol, "_conn", None)
