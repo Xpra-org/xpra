@@ -4,10 +4,13 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.client.auth.handler import AuthenticationHandler
+from xpra.challenge.handler import AuthenticationHandler
 
 
 class Handler(AuthenticationHandler):
+
+    def __init__(self, **kwargs):
+        self.password = kwargs.get("password", "")
 
     def __repr__(self):
         return "uri"
@@ -16,4 +19,4 @@ class Handler(AuthenticationHandler):
         return ""
 
     def handle(self, challenge: bytes, digest: str, prompt: str) -> str:  # pylint: disable=unused-argument
-        return self.client.password
+        return self.password

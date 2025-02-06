@@ -8,9 +8,6 @@ from abc import ABCMeta, abstractmethod
 
 class AuthenticationHandler(metaclass=ABCMeta):
 
-    def __init__(self, client, **_kwargs):
-        self.client = client
-
     @abstractmethod
     def get_digest(self) -> str:
         raise NotImplementedError()

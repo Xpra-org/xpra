@@ -53,14 +53,14 @@ class AuthHandlersTest(unittest.TestCase):
         return h
 
     def test_prompt(self):
-        from xpra.client.auth.prompt import Handler
+        from xpra.challenge.prompt import Handler
         client = FakeClient()
         password = "prompt-password"
         client.do_process_challenge_prompt = lambda *_args : password
         self.do_test_handler(client, True, password, Handler, digest="gss:token-type")
 
     def test_env_handler(self):
-        from xpra.client.auth.env import Handler
+        from xpra.challenge.env import Handler
         with OSEnvContext():
             os.environ["XPRA_PASSWORD"] = "password1"
             self._test_handler(True, "password1", Handler)
@@ -73,7 +73,7 @@ class AuthHandlersTest(unittest.TestCase):
             self._test_handler(False, None, Handler, name=name)
 
     def test_file_handler(self):
-        from xpra.client.auth.file import Handler
+        from xpra.challenge.file import Handler
         password = b"password"
         try:
             f = tempfile.NamedTemporaryFile(prefix="test-client-file-auth", delete=False)
@@ -91,7 +91,7 @@ class AuthHandlersTest(unittest.TestCase):
             self._test_handler(False, None, Handler, filename=f.name)
 
     def test_uri_handler(self):
-        from xpra.client.auth.uri import Handler
+        from xpra.challenge.uri import Handler
         password = "password"
         client = FakeClient()
         client.password = password

@@ -120,7 +120,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         self.challenge_handlers = []
         self.username = None
         self.password = None
-        self.password_file = ()
+        self.password_file: list[str] = []
         self.password_index = 0
         self.password_sent = False
         self.encryption = None
@@ -204,12 +204,20 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         kwargs = {}
         if len(parts) == 2:
             kwargs = parse_simple_dict(parts[1])
-        auth_mod_name = f"xpra.client.auth.{mod_name}"
+        kwargs["protocol"] = self._protocol
+        if "password" not in kwargs and self.password:
+            kwargs["password"] = self.password
+        if self.password_file:
+            kwargs["password-files"] = self.password_file
+        kwargs["challenge-prompt-function"] = self.do_process_challenge_prompt
+
+        auth_mod_name = f"xpra.challenge.{mod_name}"
         authlog(f"auth module name for {auth!r}: {auth_mod_name!r}")
         try:
             auth_module = import_module(auth_mod_name)
             auth_class = auth_module.Handler
-            instance = auth_class(self, **kwargs)
+            authlog(f"{auth_class}({kwargs})")
+            instance = auth_class(**kwargs)
             return instance
         except ImportError as e:
             import_error_logger(f"Error: authentication handler {mod_name!r} is not available")

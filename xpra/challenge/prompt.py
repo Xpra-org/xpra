@@ -4,10 +4,22 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.client.auth.handler import AuthenticationHandler
+from collections.abc import Callable
+
+from xpra.challenge.handler import AuthenticationHandler
+
+
+PROMPT_FN_KEY = "challenge-prompt-function"
+
+
+def noprompt(prompt: str) -> str:
+    return ""
 
 
 class Handler(AuthenticationHandler):
+
+    def __init__(self, **kwargs):
+        self.challenge_prompt_fn: Callable[[str], str] = kwargs.get(PROMPT_FN_KEY, noprompt)
 
     def __repr__(self):
         return "prompt"
@@ -19,4 +31,4 @@ class Handler(AuthenticationHandler):
         digest_type = digest.split(":", 1)[0]
         if not prompt and digest_type in ("gss", "kerberos"):
             prompt = f"{digest_type} token"
-        return self.client.do_process_challenge_prompt(prompt)
+        return self.challenge_prompt_fn(prompt)

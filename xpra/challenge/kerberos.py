@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.client.auth.handler import AuthenticationHandler
+from xpra.challenge.handler import AuthenticationHandler
 from xpra.util.str_fn import csv
 from xpra.os_util import WIN32
 from xpra.log import Logger
@@ -29,8 +29,7 @@ def log_kerberos_exception(e):
 
 class Handler(AuthenticationHandler):
 
-    def __init__(self, client, **kwargs):
-        super().__init__(client, **kwargs)
+    def __init__(self, **kwargs):
         services_str = kwargs.pop("kerberos-services", "") or os.environ.get("XPRA_KERBEROS_SERVICES", "") or "*"
         self.services = services_str.split(",")
 

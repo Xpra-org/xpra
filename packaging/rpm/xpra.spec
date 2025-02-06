@@ -691,6 +691,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 %{python3_sitearch}/xpra/auth/
+%{python3_sitearch}/xpra/challenge/
 %{python3_sitearch}/xpra/buffers/
 %{python3_sitearch}/xpra/clipboard/
 %{python3_sitearch}/xpra/gstreamer/
@@ -756,7 +757,6 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/audio/
 
 %files -n %{package_prefix}-client
-%{python3_sitearch}/xpra/client/auth/
 %{python3_sitearch}/xpra/client/base/
 %pycached %{python3_sitearch}/xpra/client/__init__.py
 

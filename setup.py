@@ -2619,7 +2619,7 @@ if bundle_tests_ENABLED:
 if client_ENABLED:
     add_modules("xpra.client")
     add_packages("xpra.client.base")
-    add_packages("xpra.client.mixins", "xpra.client.auth")
+    add_packages("xpra.client.mixins")
     add_modules("xpra.scripts.pinentry")
     if qt6_client_ENABLED:
         add_modules("xpra.client.qt6")
@@ -2637,6 +2637,7 @@ if client_ENABLED and WIN32 and MINGW_PREFIX:
 
 if client_ENABLED or server_ENABLED:
     add_modules("xpra.codecs")
+    add_modules("xpra.challenge")
 toggle_packages(keyboard_ENABLED, "xpra.keyboard")
 if client_ENABLED or server_ENABLED:
     add_modules(
@@ -2843,7 +2844,6 @@ if cythonize_more_ENABLED:
         ax("xpra.opengl")
     if client_ENABLED:
         ax("xpra.client.base")
-        ax("xpra.client.auth")
         if gtk3_ENABLED:
             ax("xpra.client.gtk3")
             if opengl_ENABLED:
@@ -2856,6 +2856,8 @@ if cythonize_more_ENABLED:
             ax("xpra.client.pyglet")
         if tk_client_ENABLED:
             ax("xpra.client.tk")
+    if client_ENABLED or server_ENABLED:
+        ax("xpra.challenge")
     if clipboard_ENABLED:
         ax("xpra.clipboard")
     if codecs_ENABLED:

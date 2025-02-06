@@ -109,15 +109,15 @@ xpra attach tcp://host:port/ --challenge-handlers=file:filename=./password.txt -
 <details>
   <summary>client challenge handlers</summary>
 
-| Module                                                                                | Behaviour and options                                                                                    |
-|---------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| [env](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/env.py)           | `name` specifies the environment variable containing the password<br/>defaults to `XPRA_PASSWORD`        |
-| [file](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/file.py)         | `filename` specifies the file containing the passowrd                                                    |
-| [gss](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/gss.py)           | use `gss-services` to specify the name of the security context                                           |
-| [kerberos](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/kerberos.py) | `kerberos-services` specifies the valid kerberos services to connect to<br/>the wildcard `*` may be used |
-| [prompt](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/prompt.py)     | GUI clients should see a dialog, console users a text prompt                                             |
-| [u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/u2f.py)           | `APP_ID` specifies the u2f authentication application ID                                                 |
-| [uri](https://github.com/Xpra-org/xpra/blob/master/xpra/client/auth/uri.py)           | Uses values parsed from the connection string, ie: `tcp://foo:bar@host`                                  |
+| Module                                                                              | Behaviour and options                                                                                    |
+|-------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| [env](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/env.py)           | `name` specifies the environment variable containing the password<br/>defaults to `XPRA_PASSWORD`        |
+| [file](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/file.py)         | `filename` specifies the file containing the passowrd                                                    |
+| [gss](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/gss.py)           | use `gss-services` to specify the name of the security context                                           |
+| [kerberos](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/kerberos.py) | `kerberos-services` specifies the valid kerberos services to connect to<br/>the wildcard `*` may be used |
+| [prompt](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/prompt.py)     | GUI clients should see a dialog, console users a text prompt                                             |
+| [u2f](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/u2f.py)           | `APP_ID` specifies the u2f authentication application ID                                                 |
+| [uri](https://github.com/Xpra-org/xpra/blob/master/xpra/challenge/uri.py)           | Uses values parsed from the connection string, ie: `tcp://foo:bar@host`                                  |
 </details>
 
 ***

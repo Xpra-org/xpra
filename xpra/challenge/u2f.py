@@ -7,7 +7,7 @@ import os
 import logging
 import binascii
 
-from xpra.client.auth.handler import AuthenticationHandler
+from xpra.challenge.handler import AuthenticationHandler
 from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
 from xpra.util.str_fn import strtobytes
@@ -18,8 +18,8 @@ log = Logger("auth")
 
 class Handler(AuthenticationHandler):
 
-    def __init__(self, client, **kwargs):
-        super().__init__(client, **kwargs)
+    def __init__(self, **kwargs):
+        self.protocol = kwargs["protocol"]
         self.app_id = kwargs.get("APP_ID", "") or os.environ.get("XPRA_U2F_APP_ID", "") or "Xpra"
 
     def __repr__(self):
@@ -64,7 +64,7 @@ class Handler(AuthenticationHandler):
         if not key_handle_str:
             # try to load the key handle from the user conf dir(s):
             from xpra.platform.paths import get_user_conf_dirs  # pylint: disable=import-outside-toplevel
-            info = self.client._protocol.get_info(False)
+            info = self.protocol.get_info(False)
             key_handle_filenames = []
             for hostinfo in ("-%s" % info.get("host", ""), ""):
                 for d in get_user_conf_dirs():
