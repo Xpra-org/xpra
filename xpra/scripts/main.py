@@ -538,7 +538,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
         return 128 + signal.SIGINT
 
 
-def is_connection_arg(mode, arg):
+def is_connection_arg(arg):
     if POSIX and (arg.startswith(":") or arg.startswith("wayland-")):
         return True
     if any(arg.startswith(f"{mode}://") for mode in SOCKET_TYPES):
@@ -571,7 +571,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         commands = []
         connargs = []
         for arg in tuple(args):
-            if is_connection_arg(mode, arg):
+            if is_connection_arg(arg):
                 # keep this one
                 connargs.append(arg)
             else:
