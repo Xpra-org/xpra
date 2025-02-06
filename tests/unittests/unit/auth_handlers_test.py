@@ -14,28 +14,20 @@ from xpra.util.env import OSEnvContext
 # pylint: disable=import-outside-toplevel
 
 
-class FakeClient:
-    def __init__(self):
-        self.challenge_reply_passwords = []
-
-    def send_challenge_reply(self, _packet, password):
-        self.challenge_reply_passwords.append(password)
-
-
 class AuthHandlersTest(unittest.TestCase):
 
-    def _test_handler(self, success, password, handler_class, **kwargs):
-        return self.do_test_handler(FakeClient(), success, password, handler_class, **kwargs)
+    def _test_handler(self, success, result, handler_class, **kwargs):
+        return self.do_test_handler(success, result, handler_class, **kwargs)
 
-    def do_test_handler(self, client, success, password, handler_class, **kwargs):
-        h = handler_class(client, **kwargs)
+    def do_test_handler(self, success, result, handler_class, **kwargs):
+        h = handler_class(**kwargs)
         assert repr(h)
         server_salt = kwargs.pop("server-salt", b"0"*32)
         digest = kwargs.pop("digest", "xor")
         kwargs = {
-            "challenge" : server_salt,
-            "digest" : digest,
-            "prompt" : "test",
+            "challenge": server_salt,
+            "digest": digest,
+            "prompt": "test",
         }
         try:
             r = h.handle(**kwargs)
@@ -45,19 +37,15 @@ class AuthHandlersTest(unittest.TestCase):
         if not success:
             assert not r, f"expected {h.handle}({kwargs}) to fail but it returned {r} (handler class={handler_class})"
         else:
-            assert r==password, f"expected password value {password} but got {r}"
+            assert r == result, f"expected password value {result!r} but got {r}"
             h.get_digest()
-        #client_salt = ""
-        #salt = gendigest(salt_digest, client_salt, server_salt)
-        #challenge_response = gendigest(actual_digest, password, salt)
         return h
 
     def test_prompt(self):
         from xpra.challenge.prompt import Handler
-        client = FakeClient()
         password = "prompt-password"
-        client.do_process_challenge_prompt = lambda *_args : password
-        self.do_test_handler(client, True, password, Handler, digest="gss:token-type")
+        self.do_test_handler(True, password, Handler, digest="gss:token-type",
+                             challenge_prompt_function=lambda *_args: password)
 
     def test_env_handler(self):
         from xpra.challenge.env import Handler
@@ -81,21 +69,15 @@ class AuthHandlersTest(unittest.TestCase):
             f.file.flush()
             f.close()
             self._test_handler(True, password, Handler, filename=f.name)
-            #using the default password file from the client:
-            client = FakeClient()
-            client.password_file = [f.name]
-            self.do_test_handler(client, True, password, Handler)
         finally:
-            #remove file, auth should fail:
+            # remove file, auth should fail:
             os.unlink(f.name)
             self._test_handler(False, None, Handler, filename=f.name)
 
     def test_uri_handler(self):
         from xpra.challenge.uri import Handler
-        password = "password"
-        client = FakeClient()
-        client.password = password
-        self.do_test_handler(client, True, password, Handler)
+        password = b"foo"
+        self.do_test_handler(True, password, Handler, password=password)
 
 
 def main():
