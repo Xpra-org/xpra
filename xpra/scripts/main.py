@@ -2568,8 +2568,7 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
         while True:
             try:
                 conn = connect_or_fail(params, opts)
-                proto = app.make_protocol(conn)
-                proto.start()
+                app.make_protocol(conn)
                 app.show_progress(80, "connecting to server")
                 break
             except InitExit as e:
