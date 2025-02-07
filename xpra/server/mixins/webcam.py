@@ -145,7 +145,10 @@ class WebcamServer(StubServerMixin):
             log.warn("Warning: invalid client source for webcam frame")
             return
         device_id, frame_no, encoding, w, h, data = packet[1:7]
-        ss.process_webcam_frame(device_id, frame_no, encoding, w, h, data)
+        options = {}
+        if len(packet) >= 8:
+            options = packet[7]
+        ss.process_webcam_frame(device_id, frame_no, encoding, w, h, data, options)
 
     def init_packet_handlers(self) -> None:
         if self.webcam_enabled:

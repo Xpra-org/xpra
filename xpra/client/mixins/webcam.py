@@ -43,6 +43,7 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_forwarding = False
         self.webcam_device = None
         self.webcam_device_no = -1
+        self.webcam_frame_no = 0
         self.webcam_last_ack = -1
         self.webcam_ack_check_timer = 0
         self.webcam_send_timer = 0
@@ -267,23 +268,40 @@ class WebcamForwarder(StubClientMixin):
             assert frame.ndim == 3, "invalid frame data"
             h, w, Bpp = frame.shape
             assert Bpp == 3 and frame.size == w * h * Bpp
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # @UndefinedVariable
             end = monotonic()
             log("webcam frame capture took %ims", (end - start) * 1000)
-            start = monotonic()
-            from PIL import Image  # @UnresolvedImport
-            from io import BytesIO
-            image = Image.fromarray(rgb)
-            buf = BytesIO()
-            image.save(buf, format=encoding)
-            data = buf.getvalue()
-            buf.close()
-            end = monotonic()
-            log("webcam frame compression to %s took %ims", encoding, (end - start) * 1000)
+
+            options = {}
+            # try to use mmap if available:
+            mmap_write_area = getattr(self, "mmap_write_area", None)
+            if mmap_write_area and mmap_write_area.enabled:
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
+                options["pixel-format"] = "BGRX"
+                mmap_data = mmap_write_area.write_data(rgb)
+                log("mmap_write_area=%s, mmap_data=%s", self.mmap_write_area.get_info(), mmap_data)
+                encoding = "mmap"
+                img_data = b""
+                options["chunks"] = mmap_data
+            else:
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # @UndefinedVariable
+                options["pixel-format"] = "BGR"
+                # slow via pillow:
+                start = monotonic()
+                from PIL import Image  # @UnresolvedImport
+                from io import BytesIO
+                image = Image.fromarray(rgb)
+                buf = BytesIO()
+                image.save(buf, format=encoding)
+                data = buf.getvalue()
+                buf.close()
+                img_data = compression.Compressed(encoding, data)
+                end = monotonic()
+                log("webcam frame compression to %s took %ims", encoding, (end - start) * 1000)
+
             frame_no = self.webcam_frame_no
             self.webcam_frame_no += 1
             self.send("webcam-frame", self.webcam_device_no, frame_no, encoding,
-                      w, h, compression.Compressed(encoding, data))
+                      w, h, img_data, options)
             self.cancel_webcam_check_ack_timer()
             self.webcam_ack_check_timer = GLib.timeout_add(10 * 1000, self.webcam_check_acks)
             return True

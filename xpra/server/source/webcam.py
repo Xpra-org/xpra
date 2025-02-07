@@ -6,6 +6,7 @@
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.common import noop
 from xpra.os_util import POSIX, OSX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -165,23 +166,35 @@ class WebcamMixin(StubSourceMixin):
             log.error("Error stopping virtual webcam device: %s", e)
             log("%s.clean()", exc_info=True)
 
-    def process_webcam_frame(self, device_id, frame_no: int, encoding: str, w: int, h: int, data) -> bool:
+    def process_webcam_frame(self, device_id, frame_no: int, encoding: str, w: int, h: int, data, options: dict) -> bool:
         webcam = self.webcam_forwarding_devices.get(device_id)
-        log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, webcam=%s",
-            device_id, frame_no, encoding, w, h, len(data), webcam)
-        assert encoding and w and h and data
+        log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, options=%s, webcam=%s",
+            device_id, frame_no, encoding, w, h, len(data), options, webcam)
+        if not (encoding and w and h and (data or (encoding == "mmap" and options))):
+            log.error("Error: webcam frame data is incomplete")
+            self.send_webcam_stop(device_id, "incomplete frame data")
+            return False
         if not webcam:
             log.error("Error: webcam forwarding is not active, dropping frame")
             self.send_webcam_stop(device_id, "not started")
             return False
+        free = noop
         try:
-            # pylint: disable=import-outside-toplevel
-            from xpra.codecs.pillow.decoder import open_only
-            if encoding not in self.webcam_encodings:
-                raise ValueError(f"invalid encoding specified: {encoding} (must be one of {self.webcam_encodings})")
-            rgb_pixel_format = "BGRX"  # BGRX
-            img = open_only(data, (encoding,))
-            pixels = img.tobytes("raw", rgb_pixel_format)
+            rgb_pixel_format = options.get("pixel-format", "BGRX")
+            if encoding == "mmap":
+                chunks = options["chunks"]
+                mmap_read_area = getattr(self, "mmap_read_area", None)
+                assert mmap_read_area, "no mmap read area!"
+                assert self.mmap_supported, "mmap is not supported, yet the client used it!?"
+                pixels, free = mmap_read_area.mmap_read(*chunks)
+            else:
+                # pylint: disable=import-outside-toplevel
+                from xpra.codecs.pillow.decoder import open_only
+                if encoding not in self.webcam_encodings:
+                    raise ValueError(f"invalid encoding specified: {encoding} (must be one of {self.webcam_encodings})")
+                img = open_only(data, (encoding,))
+                pixels = img.tobytes("raw", rgb_pixel_format)
+
             from xpra.codecs.image import ImageWrapper
             bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w * 4, planes=ImageWrapper.PACKED)
             src_format = webcam.get_src_format()
@@ -214,7 +227,7 @@ class WebcamMixin(StubSourceMixin):
             tw = webcam.get_width()
             th = webcam.get_height()
             csc = Converter()
-            csc.init_context(w, h, rgb_pixel_format, tw, th, src_format)
+            csc.init_context(w, h, rgb_pixel_format, tw, th, src_format, typedict())
             image = csc.convert_image(bgrx_image)
             webcam.push_image(image)
             # tell the client all is good:
@@ -231,3 +244,5 @@ class WebcamMixin(StubSourceMixin):
             self.send_webcam_stop(device_id, msg)
             self.stop_virtual_webcam(device_id)
             return False
+        finally:
+            free()
