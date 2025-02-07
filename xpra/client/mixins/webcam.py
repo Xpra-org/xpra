@@ -284,7 +284,6 @@ class WebcamForwarder(StubClientMixin):
                 options["chunks"] = mmap_data
             else:
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # @UndefinedVariable
-                options["pixel-format"] = "BGR"
                 # slow via pillow:
                 start = monotonic()
                 from PIL import Image  # @UnresolvedImport

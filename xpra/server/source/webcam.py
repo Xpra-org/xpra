@@ -180,20 +180,23 @@ class WebcamMixin(StubSourceMixin):
             return False
         free = noop
         try:
-            rgb_pixel_format = options.get("pixel-format", "BGRX")
             if encoding == "mmap":
                 chunks = options["chunks"]
                 mmap_read_area = getattr(self, "mmap_read_area", None)
                 assert mmap_read_area, "no mmap read area!"
                 assert self.mmap_supported, "mmap is not supported, yet the client used it!?"
                 pixels, free = mmap_read_area.mmap_read(*chunks)
+                rgb_pixel_format = options.get("pixel-format", "BGRX")
             else:
                 # pylint: disable=import-outside-toplevel
                 from xpra.codecs.pillow.decoder import open_only
                 if encoding not in self.webcam_encodings:
                     raise ValueError(f"invalid encoding specified: {encoding} (must be one of {self.webcam_encodings})")
                 img = open_only(data, (encoding,))
-                pixels = img.tobytes("raw", rgb_pixel_format)
+                if img.mode != "RGBA":
+                    img = img.convert("RGBA")
+                pixels = img.tobytes("raw", "RGBA")
+                rgb_pixel_format = "BGRX"
 
             from xpra.codecs.image import ImageWrapper
             bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w * 4, planes=ImageWrapper.PACKED)
