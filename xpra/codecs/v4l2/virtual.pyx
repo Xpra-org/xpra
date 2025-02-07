@@ -8,6 +8,7 @@
 
 import os
 from typing import Any, Dict
+from collections.abc import Sequence
 
 from xpra.log import Logger
 log = Logger("webcam")
@@ -152,7 +153,7 @@ V4L2_CAP_ASYNCIO                = 0x02000000
 V4L2_CAP_STREAMING              = 0x04000000
 V4L2_CAP_DEVICE_CAPS            = 0x80000000
 
-V4L2_CAPS = {
+V4L2_CAPS: Dict[int, str] = {
     V4L2_CAP_VIDEO_CAPTURE         : "VIDEO_CAPTURE",
     V4L2_CAP_VIDEO_CAPTURE_MPLANE  : "VIDEO_CAPTURE_MPLANE",
     V4L2_CAP_VIDEO_OUTPUT          : "VIDEO_OUTPUT",
@@ -193,7 +194,7 @@ FIELD_STR = {
     #V4L2_FIELD_INTERLACED_TB        : "INTERLACED TB",
     #V4L2_FIELD_INTERLACED_BT        : "INTERLACED BT",
 }
-COLORSPACE_STR = {
+COLORSPACE_STR: Dict[int, str] = {
     V4L2_COLORSPACE_SRGB            : "SRGB",
     V4L2_COLORSPACE_470_SYSTEM_M    : "470_SYSTEM_M",
     V4L2_COLORSPACE_470_SYSTEM_BG   : "470_SYSTEM_BG",
@@ -205,7 +206,7 @@ COLORSPACE_STR = {
 cdef int V4L2_PIX_FMT_H264 = v4l2_fourcc(b'H', b'2', b'6', b'4')
 cdef int V4L2_PIX_FMT_MPEG4 = v4l2_fourcc(b'M', b'P', b'G', b'4')
 
-FORMAT_STR = {
+FORMAT_STR: Dict[int, str] = {
     V4L2_PIX_FMT_GREY           : "GREY",
     V4L2_PIX_FMT_YUV422P        : "YUV422P",
     V4L2_PIX_FMT_YUV420         : "YUV420P",
@@ -223,8 +224,8 @@ FORMAT_STR = {
     V4L2_PIX_FMT_H264           : "H264",
     V4L2_PIX_FMT_MPEG4          : "MPEG4",
 }
-PIX_FMT = {}
-for k,v in FORMAT_STR.items():
+PIX_FMT: Dict[str, int] = {}
+for k, v in FORMAT_STR.items():
     PIX_FMT[v] = k
 
 
@@ -232,11 +233,21 @@ log("v4l2.virtual init")
 print_nested_dict({
     "FIELD_STR"      : FIELD_STR,
     "COLORSPACE_STR" : COLORSPACE_STR,
-    "FORMAT_STR"     : dict((hex(k),v) for k,v in FORMAT_STR.items()),
-    }, print_fn=log.debug)
+    "FORMAT_STR"     : dict((hex(k),v) for k, v in FORMAT_STR.items()),
+}, print_fn=log.debug)
 
 
-def query_video_device(device="/dev/video0") -> Dict[str,Any]:
+cdef object s(uint8_t* bstring):
+    if not bstring:
+        return ""
+    bdata = bstring
+    try:
+        return bdata.decode("utf8")
+    except UnicodeDecodeError:
+        return str(bdata)
+
+
+def query_video_device(device="/dev/video0") -> Dict[str, Any]:
     cdef v4l2_capability vid_caps
     try:
         log("v4l2 using device %s", device)
@@ -246,10 +257,10 @@ def query_video_device(device="/dev/video0") -> Dict[str,Any]:
             if r<0:
                 return {}
             info = {
-                "driver"        : vid_caps.driver,
-                "card"          : vid_caps.card,
-                "bus_info"      : vid_caps.bus_info,
-                "version"       : vid_caps.version,
+                "driver"        : s(vid_caps.driver),
+                "card"          : s(vid_caps.card),
+                "bus_info"      : s(vid_caps.bus_info),
+                "version"       : (vid_caps.version >> 16, (vid_caps.version >> 8) & 0xff, vid_caps.version & 0xff),
                 "capabilities"  : [v for k,v in V4L2_CAPS.items() if vid_caps.capabilities & k],
                 "device_caps"   : [v for k,v in V4L2_CAPS.items() if vid_caps.device_caps & k],
             }
@@ -263,19 +274,22 @@ def query_video_device(device="/dev/video0") -> Dict[str,Any]:
     return {}
 
 
-def get_version():
+def get_version() -> Sequence[int]:
     return (1, 0)
 
-def get_type():
+
+def get_type() -> str:
     return "v4l2"
+
 
 def get_info() -> Dict[str,Any]:
     global COLORSPACES, MAX_WIDTH, MAX_HEIGHT
     return {
         "version"   : get_version(),
-        }
+    }
 
-def get_input_colorspaces() -> tuple:
+
+def get_input_colorspaces() -> Sequence[str]:
     return ("YUV420P", )     #,"YUV422P"
 
 
@@ -370,7 +384,6 @@ cdef class VirtualWebcam:
         #log("vid_format.fmt.pix.quantization = %s (%i)", QUANTIZATION_STR.get(vid_format.fmt.pix.quantization, vid_format.fmt.pix.quantization), vid_format.fmt.pix.quantization)
         #log("vid_format.fmt.pix.xfer_func    = %s (%i)", XFER_FUNC_STR.get(vid_format.fmt.pix.xfer_func, vid_format.fmt.pix.xfer_func), vid_format.fmt.pix.xfer_func)
 
-
     def clean(self) -> None:                        #@DuplicatedSignature
         self.width = 0
         self.height = 0
@@ -391,7 +404,7 @@ cdef class VirtualWebcam:
             "height"    : self.height,
             "src_format": self.src_format,
             "device"    : self.device_name,
-            })
+        })
         return info
 
     def __repr__(self):
@@ -416,7 +429,6 @@ cdef class VirtualWebcam:
 
     def get_src_format(self) -> str:
         return self.src_format
-
 
     def push_image(self, image:ImageWrapper) -> None:
         cdef int i
