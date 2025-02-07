@@ -4,10 +4,11 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.os_util import POSIX, OSX
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import csv
 from xpra.util.env import envint
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -17,7 +18,7 @@ log = Logger("webcam")
 MAX_WEBCAM_DEVICES = envint("XPRA_MAX_WEBCAM_DEVICES", 1)
 
 
-def valid_encodings(args):
+def valid_encodings(args: Sequence[str]) -> list[str]:
     # ensure that the encodings specified can be validated using HEADERS
     try:
         from xpra.codecs.pillow.decoder import HEADERS  # pylint: disable=import-outside-toplevel
@@ -25,7 +26,6 @@ def valid_encodings(args):
         return []
     encodings = []
     for x in args:
-        x = bytestostr(x)
         if x not in HEADERS.values():
             log.warn("Warning: %s is not supported for webcam forwarding", x)
         else:
@@ -104,7 +104,7 @@ class WebcamMixin(StubSourceMixin):
             log.warn(" stopping it first")
             self.stop_virtual_webcam(device_id)
 
-        def fail(msg):
+        def fail(msg) -> None:
             log.error("Error: cannot start webcam forwarding")
             log.error(" %s", msg)
             self.send_webcam_stop(device_id, msg)
@@ -120,7 +120,7 @@ class WebcamMixin(StubSourceMixin):
             ndev = len(self.webcam_forwarding_devices)
             fail(f"too many virtual devices are already in use: {ndev}")
             return False
-        errs = {}
+        errs: dict[str, str] = {}
         for vid, device_info in devices.items():
             log("trying device %s: %s", vid, device_info)
             device_str = device_info.get("device")
