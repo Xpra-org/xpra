@@ -451,21 +451,22 @@ class WindowsMixin(StubSourceMixin):
         if ws is None:
             batch_config = self.make_batch_config(wid, window)
             ww, wh = window.get_dimensions()
-            bandwidth_limit = self.bandwidth_limit
             mmap = None
             mmap_size = 0
             mmap_write_area = getattr(self, "mmap_write_area", None)
             if mmap_write_area:
                 mmap = mmap_write_area.mmap
                 mmap_size = mmap_write_area.size
+            if mmap_size > 0:
+                bandwidth_limit = 0
+            else:
+                bandwidth_limit = getattr(self, "bandwidth_limit", 0)
             av_sync = getattr(self, "av_sync", False)
             av_sync_delay = getattr(self, "av_sync_delay", 0)
             conn = getattr(self.protocol, "_conn", None)
             socktype = getattr(conn, "socktype_wrapped", "")
             datagram = 1350 if socktype == "quic" else 0
             log(f"datagram({socktype=})={datagram}")
-            if mmap_size > 0:
-                bandwidth_limit = 0
             # pylint: disable=import-outside-toplevel
             from xpra.server.window.video_compress import WindowVideoSource
             ws = WindowVideoSource(
