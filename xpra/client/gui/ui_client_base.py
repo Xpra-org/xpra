@@ -364,12 +364,11 @@ class UIXpraClient(ClientBaseClass):
 
     ######################################################################
     # connection setup:
-    def setup_connection(self, conn):
-        protocol = super().setup_connection(conn)
+    def setup_connection(self, conn) -> None:
+        super().setup_connection(conn)
         for c in CLIENT_BASES:
             if c != XpraClientBase:
                 c.setup_connection(self, conn)
-        return protocol
 
     def server_connection_established(self, caps: typedict) -> bool:
         if not XpraClientBase.server_connection_established(self, caps):

@@ -48,21 +48,21 @@ class LoopbackConnection(Connection):
         # FIXME: we don't handle n...
         return self.queue.get(True)
 
-    def write(self, buf, packet_type: str = ""):
+    def write(self, buf, packet_type: str = "") -> int:
         self.may_abort("write")
         self.queue.put(buf)
         return len(buf)
 
-    def close(self):
+    def close(self) -> None:
         self.queue.put(None)
         Connection.close(self)
 
-    def may_abort(self, _action):
+    def may_abort(self, _action) -> None:
         assert self.active
 
 
 def loopback_protocol(process_packet_cb: Callable[[Any, PacketType], None],
-                      get_packet_cb: Callable[[], [PacketType, bool, bool]]):
+                      get_packet_cb: Callable[[], [PacketType, bool, bool]]) -> SocketProtocol:
     conn = LoopbackConnection("fake", "fake")
     protocol = SocketProtocol(conn, process_packet_cb, get_packet_cb=get_packet_cb)
     protocol.enable_encoder("rencodeplus")
@@ -75,13 +75,13 @@ class LoopbackProcess(SubprocessCaller):
     def exec_subprocess(self):
         return FakeSubprocess()
 
-    def make_protocol(self):
+    def make_protocol(self) -> SocketProtocol:
         return loopback_protocol(self.process_packet, self.get_packet)
 
 
 class LoopbackCallee(SubprocessCallee):
 
-    def make_protocol(self):
+    def make_protocol(self) -> SocketProtocol:
         return loopback_protocol(self.process_packet, self.get_packet)
 
 

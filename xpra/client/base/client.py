@@ -337,7 +337,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             info["sysconfig"] = get_sysconfig_info()
         return info
 
-    def setup_connection(self, conn):
+    def make_protocol(self, conn):
         if not conn:
             raise ValueError("no connection")
         protocol_class = get_client_protocol_class(conn.socktype)
@@ -369,7 +369,11 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             if proc:
                 getChildReaper().add_process(proc, name, command, ignore=True, forget=False)
         netlog("setup_connection(%s) protocol=%s", conn, protocol)
+        self.setup_connection(conn)
         return protocol
+
+    def setup_connection(self, conn) -> None:
+        pass
 
     def has_password(self) -> bool:
         return self.password or self.password_file or os.environ.get('XPRA_PASSWORD')
@@ -795,7 +799,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         authlog("ssl handshake complete")
         from xpra.net.bytestreams import SSLSocketConnection
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, new_socktype)
-        self._protocol = self.setup_connection(ssl_conn)
+        self._protocol = self.make_protocol(ssl_conn)
         self._protocol.start()
 
     ########################################

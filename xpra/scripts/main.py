@@ -1653,7 +1653,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
             app.password = opts.password
             app.display = opts.display
             app.display_desc = display_desc
-            protocol = app.setup_connection(conn)
+            protocol = app.make_protocol(conn)
             protocol.start()
         except InitInfo as e:
             log("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
@@ -1900,7 +1900,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
                 app.idle_add(do_handle_connection, conn)
 
             def do_handle_connection(conn) -> None:
-                protocol = app.setup_connection(conn)
+                protocol = app.make_protocol(conn)
                 protocol.start()
                 # stop listening for new connections:
                 run_socket_cleanups()
@@ -2568,7 +2568,8 @@ def run_remote_server(script_file: str, cmdline, error_cb, opts, args, mode: str
         while True:
             try:
                 conn = connect_or_fail(params, opts)
-                app.setup_connection(conn)
+                proto = app.make_protocol(conn)
+                proto.start()
                 app.show_progress(80, "connecting to server")
                 break
             except InitExit as e:

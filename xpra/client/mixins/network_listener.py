@@ -131,7 +131,7 @@ class NetworkListener(StubClientMixin):
             self.handle_new_connection(socktype, listener, handle)
         return self.exit_code is None
 
-    def handle_new_connection(self, socktype, listener, handle) -> None:
+    def handle_new_connection(self, socktype: str, listener, handle) -> None:
         assert socktype, "cannot find socket type for %s" % listener
         socket_options = self.socket_options.get(listener, {})
         if socktype == "named-pipe":
@@ -156,9 +156,9 @@ class NetworkListener(StubClientMixin):
         log("handle_new_connection%s sockname=%s", (socktype, listener, handle), sockname)
         socket_info = self.socket_info.get(listener)
         log_new_connection(conn, socket_info)
-        self.make_protocol(socktype, conn, listener)
+        self.accept_protocol(socktype, conn, listener)
 
-    def make_protocol(self, socktype, conn, listener) -> None:
+    def accept_protocol(self, socktype: str, conn, listener) -> None:
         socktype = socktype.lower()
         protocol = SocketProtocol(conn, self.process_network_packet)
         # protocol.large_packets.append(b"info-response")

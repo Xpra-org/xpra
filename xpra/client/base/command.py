@@ -53,9 +53,9 @@ class CommandConnectClient(GObjectXpraClient):
         # for newer versions, it is easier:
         self.hello_extra["wants"] = []
 
-    def setup_connection(self, conn):
+    def make_protocol(self, conn):
         self.add_packet_handler("setting-change", noop)
-        protocol = super().setup_connection(conn)
+        protocol = super().make_protocol(conn)
         if conn.timeout > 0:
             self.command_timeout = GLib.timeout_add((conn.timeout + self.COMMAND_TIMEOUT) * 1000, self.timeout)
         return protocol

@@ -56,11 +56,11 @@ class EncodeClient(HelloRequestClient, MmapClient):
         HelloRequestClient.init(self, opts)
         MmapClient.init(self, opts)
 
-    def setup_connection(self, conn):
+    def setup_connection(self, conn) -> None:
         # must do mmap first to ensure the mmap areas are initialized:
         MmapClient.setup_connection(self, conn)
         # because HelloRequestClient will call get_caps() to retrieve them
-        return HelloRequestClient.setup_connection(self, conn)
+        HelloRequestClient.setup_connection(self, conn)
 
     def client_type(self) -> str:
         return "encoder"

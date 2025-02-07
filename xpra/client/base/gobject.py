@@ -36,8 +36,8 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         from xpra.gtk.signals import install_signal_handlers
         install_signal_handlers("%s Client" % self.client_type(), self.handle_app_signal)
 
-    def setup_connection(self, conn):
-        protocol = super().setup_connection(conn)
+    def make_protocol(self, conn):
+        protocol = super().make_protocol(conn)
         protocol._log_stats = False
         GLib.idle_add(self.send_hello)
         return protocol

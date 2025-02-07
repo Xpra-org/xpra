@@ -1339,7 +1339,7 @@ class SessionInfo(Gtk.Window):
 class SessionInfoClient(InfoTimerClient):
     REFRESH_RATE = envint("XPRA_INFO_REFRESH_RATE", 2)
 
-    def setup_connection(self, conn):
+    def setup_connection(self, conn) -> None:
         self.session_name = self.server_session_name = "session-info"
         self.windows_enabled = False
         self.send_ping = noop
@@ -1347,9 +1347,8 @@ class SessionInfoClient(InfoTimerClient):
         self.server_audio_encoders = self.server_audio_decoders = []
         self.server_ping_latency = self.client_ping_latency = []
         self.server_start_time = 0
-        protocol = super().setup_connection(conn)
+        super().setup_connection(conn)
         self.window = None
-        return protocol
 
     def run_loop(self):
         Gtk.main()
