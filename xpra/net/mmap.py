@@ -458,9 +458,12 @@ class BaseMmapArea:
         if not self.mmap:
             raise RuntimeError("mmap object is not defined")
         token = read_mmap_token(self.mmap, self.token_index, self.token_bytes)
+        if token == 0:
+            log.info(f"the server is not using the {self.name!r} mmap area")
+            return False
         if token != self.token:
             self.enabled = False
-            log.error(f"Error: {self.name} mmap token verification failed!")
+            log.error(f"Error: {self.name!r} mmap token verification failed!")
             log.error(f" expected {self.token:x}")
             log.error(f" found {token:x}")
             log.error(" mmap is disabled")
