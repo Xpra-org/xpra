@@ -1640,7 +1640,7 @@ class WindowClient(StubClientMixin):
                 if coding == "mmap":
                     from xpra.net.mmap import int_from_buffer
                     # we need to ack the data to free the space!
-                    data_start = int_from_buffer(self.mmap_read_area, 0)
+                    data_start = int_from_buffer(self.mmap_read_area.mmap, 0)
                     offset, length = data[-1]
                     data_start.value = offset + length
                     # clear the mmap area via idle_add so any pending draw requests
