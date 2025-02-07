@@ -117,6 +117,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         self.hello_extra = {}
         self.compression_level = 0
         self.display = None
+        self.challenge_handlers_option = ()
         self.challenge_handlers = []
         self.username = None
         self.password = None
@@ -164,7 +165,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         self.password_file = opts.password_file
         self.encryption = opts.encryption or opts.tcp_encryption
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
-        self.init_challenge_handlers(opts.challenge_handlers)
+        self.challenge_handlers_option = opts.challenge_handlers
         self.install_signal_handlers()
 
     def show_progress(self, pct: int, text="") -> None:
@@ -175,10 +176,10 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         if pp:
             pp.progress(pct, text)
 
-    def init_challenge_handlers(self, challenge_handlers) -> None:
+    def init_challenge_handlers(self) -> None:
         # register the authentication challenge handlers:
-        authlog(f"init_challenge_handlers({challenge_handlers})")
-        ch = tuple(x.strip() for x in (challenge_handlers or ()))
+        authlog("init_challenge_handlers() %r", self.challenge_handlers_option)
+        ch = tuple(x.strip() for x in (self.challenge_handlers_option or ()))
         for ch_name in ch:
             if ch_name == "none":
                 continue
@@ -192,9 +193,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
                 instance = self.get_challenge_handler(auth, ierror)
                 if instance:
                     self.challenge_handlers.append(instance)
-        if DETECT_LEAKS:
-            print_leaks = detect_leaks()
-            GLib.timeout_add(10 * 1000, print_leaks)
+        authlog("challenge-handlers=%r", self.challenge_handlers)
 
     def get_challenge_handler(self, auth: str, import_error_logger: Callable):
         # the module may have attributes,
@@ -205,6 +204,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         if len(parts) == 2:
             kwargs = parse_simple_dict(parts[1])
         kwargs["protocol"] = self._protocol
+        kwargs["display-desc"] = self.display_desc
         if "password" not in kwargs and self.password:
             kwargs["password"] = self.password
         if self.password_file:
@@ -373,7 +373,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         return protocol
 
     def setup_connection(self, conn) -> None:
-        pass
+        self.init_challenge_handlers()
 
     def has_password(self) -> bool:
         return self.password or self.password_file or os.environ.get('XPRA_PASSWORD')
@@ -657,6 +657,9 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         register_SIGUSR_signals(GLib.idle_add)
 
     def run(self) -> ExitValue:
+        if DETECT_LEAKS:
+            print_leaks = detect_leaks()
+            GLib.timeout_add(10 * 1000, print_leaks)
         self.start_protocol()
         return 0
 

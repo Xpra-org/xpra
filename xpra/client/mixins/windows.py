@@ -383,12 +383,11 @@ class WindowClient(StubClientMixin):
                         self.overlay_image = Image.open(icon_filename)
         traylog("overlay_image=%s", self.overlay_image)
 
-    def setup_connection(self, conn):
+    def setup_connection(self, conn) -> None:
         display_name = getattr(self, "display_desc", {}).get("display_name", "")
         if display_name:
             # now that we have display_desc, parse the border again:
             self.border = parse_border(self.border_str, display_name)
-        return conn
 
     def run(self) -> ExitValue:
         # we decode pixel data in this thread
