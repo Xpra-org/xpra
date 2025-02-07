@@ -859,7 +859,6 @@ class WindowBackingBase:
         from xpra.net.mmap import mmap_read
         # newer versions use the 'chunks' option, older versions overload the 'img_data'
         chunks = options.tupleget("chunks") or img_data
-        log.warn(f"chunks={chunks}")
         data, free_cb = mmap_read(self.mmap.mmap, *chunks)
         callbacks.append(free_cb)
         rgb_format = options.strget("rgb_format", "RGB")
