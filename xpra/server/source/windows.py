@@ -14,7 +14,7 @@ from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint
 from xpra.common import NotificationID, DEFAULT_METADATA_SUPPORTED, force_size_constraint
 from xpra.log import Logger
 
@@ -29,7 +29,6 @@ filterslog = Logger("filters")
 
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 CONGESTION_REPEAT_DELAY = envint("XPRA_CONGESTION_REPEAT_DELAY", 60)
-SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5 * 1024 * 1024)
 
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
