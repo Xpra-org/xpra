@@ -83,15 +83,16 @@ class MmapClient(StubClientMixin):
         self.mmap_supported = True
 
     def init(self, opts) -> None:
-        log("mmap.init(..) mmap=%r", opts.mmap)
-        if opts.mmap.lower() in FALSE_OPTIONS:
+        mopt = opts.mmap.lower()
+        log("mmap.init(..) mmap=%r", mopt)
+        if mopt in FALSE_OPTIONS:
             self.mmap_supported = False
             return
         self.mmap_supported = True
-        if opts.mmap.lower() == "auto":
+        if mopt == "auto":
             # by default, only enable mmap reads, not writes:
             filenames = ("", )
-        elif opts.mmap.lower() in TRUE_OPTIONS:
+        elif mopt in TRUE_OPTIONS or mopt == "both":
             filenames = ("", "")
         else:
             # assume file path(s) have been specified:

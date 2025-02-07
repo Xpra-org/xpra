@@ -112,21 +112,21 @@ class MMAP_Connection(StubSourceMixin):
             log("mmap.parse_client_caps() mmap is disabled")
             return
         mmap_caps = caps.get("mmap") or {}
-        if not mmap_caps:
-            log("mmap.parse_client_caps() client did not supply any mmap caps")
+        if not mmap_caps or not isinstance(mmap_caps, dict):
+            log(f"mmap.parse_client_caps() client did not supply valid mmap caps: {mmap_caps!r}")
             self.mmap_supported = False
             return
         tdcaps = typedict(mmap_caps)
-        self.mmap_read_area = self.parse_area_caps("read", tdcaps.dictget("read"), 1)
+        self.mmap_read_area = self.parse_area_caps("read", tdcaps.dictget("write") or mmap_caps, 1)
         # also try legacy unprefixed lookup for 'read' area:
-        self.mmap_write_area = self.parse_area_caps("write", tdcaps.dictget("write") or mmap_caps, 0)
+        self.mmap_write_area = self.parse_area_caps("write", tdcaps.dictget("read"), 0)
         log("parse_client_caps() mmap-read=%s, mmap-write=%s", self.mmap_read_area, self.mmap_write_area)
 
     def get_caps(self) -> dict[str, Any]:
         mmap_caps: dict[str, Any] = {}
         for prefixes, area in (
-            (("read", ""), self.mmap_write_area),
-            (("write", ), self.mmap_read_area),
+            (("read", ""), self.mmap_read_area),
+            (("write", ), self.mmap_write_area),
         ):
             if not area:
                 continue
@@ -145,8 +145,8 @@ class MMAP_Connection(StubSourceMixin):
     def get_info(self) -> dict[str, Any]:
         info = {}
         for name, area in {
-            "read": self.mmap_write_area,
-            "write": self.mmap_read_area,
+            "read": self.mmap_read_area,
+            "write": self.mmap_write_area,
         }.items():
             if area:
                 info[name] = area.get_info()
