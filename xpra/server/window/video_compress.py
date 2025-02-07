@@ -2311,7 +2311,10 @@ class WindowVideoSource(WindowSource):
         # send the scrolls if we have any
         # (zero change scrolls have been removed - so maybe there are none)
         if scrolls:
-            client_options = {"flush": flush}
+            client_options = {
+                "flush": flush,
+                "scroll": scrolls,
+            }
             coding = "scroll"
             end = monotonic()
             packet = self.make_draw_packet(x, y, w, h,

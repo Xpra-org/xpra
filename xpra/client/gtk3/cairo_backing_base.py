@@ -240,7 +240,10 @@ class CairoBackingBase(WindowBackingBase):
         raise NotImplementedError()
 
     def paint_scroll(self, img_data, options: typedict, callbacks: PaintCallbacks) -> None:
-        GLib.idle_add(self.do_paint_scroll, img_data, callbacks)
+        # newer servers use an option,
+        # older ones overload the img_data:
+        scroll_data = options.tupleget("scroll", img_data)
+        GLib.idle_add(self.do_paint_scroll, scroll_data, callbacks)
 
     def do_paint_scroll(self, scrolls, callbacks: PaintCallbacks) -> None:
         old_backing = self._backing

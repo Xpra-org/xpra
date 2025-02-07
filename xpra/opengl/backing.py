@@ -658,7 +658,10 @@ class GLWindowBackingBase(WindowBackingBase):
             b.destroy()
         self.close_gl_config()
 
-    def paint_scroll(self, scroll_data, options: typedict, callbacks: PaintCallbacks) -> None:
+    def paint_scroll(self, img_data, options: typedict, callbacks: PaintCallbacks) -> None:
+        # newer servers use an option,
+        # older ones overload the img_data:
+        scroll_data = options.tupleget("scroll", img_data)
         flush = options.intget("flush", 0)
         self.with_gfx_context(self.do_scroll_paints, scroll_data, flush, callbacks)
 
