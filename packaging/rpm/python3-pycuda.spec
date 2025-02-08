@@ -27,14 +27,13 @@
 %endif
 
 Name:           %{python3}-pycuda
-Version:        2024.1.2
-Release:        2
+Version:        2025.1
+Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/source/p/pycuda/pycuda-%{version}.tar.gz
-Patch0:         pycuda-py3.13.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       %{python3}-pycuda
 
@@ -61,12 +60,11 @@ Suggests:       nvidia-driver-cuda-libs
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "d110b727cbea859da4b63e91b6fa1e9fc32c5bade02d89ff449975996e9ccfab" ]; then
+if [ "${sha256}" != "52738e9a941c295c0a5df6aa0d49ac89f66d835dacce9c9c8b84e7530fe4622f" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n pycuda-%{version}
-%patch -P 0 -p1
 
 %build
 CUDA=/opt/cuda
@@ -103,6 +101,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Sat Feb 08 2025 Antoine Martin <antoine@xpra.org> - 2025.1-1
+- new upstream release
+
 * Fri Aug 16 2024 Antoine Martin <antoine@xpra.org> - 2024.1.2-2
 - link against the system boost-python library for 'python3' builds
 - add patch for Python 3.13 compatibility: new buffer interface
