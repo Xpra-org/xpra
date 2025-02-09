@@ -450,15 +450,11 @@ class WindowsMixin(StubSourceMixin):
         if ws is None:
             batch_config = self.make_batch_config(wid, window)
             ww, wh = window.get_dimensions()
-            mmap = None
-            mmap_size = 0
             mmap_write_area = getattr(self, "mmap_write_area", None)
-            if mmap_write_area:
-                mmap = mmap_write_area.mmap
-                mmap_size = mmap_write_area.size
-            if mmap_size > 0:
+            if mmap_write_area and mmap_write_area.enabled:
                 bandwidth_limit = 0
             else:
+                mmap_write_area = None
                 bandwidth_limit = getattr(self, "bandwidth_limit", 0)
             av_sync = getattr(self, "av_sync", False)
             av_sync_delay = getattr(self, "av_sync_delay", 0)
@@ -482,7 +478,7 @@ class WindowsMixin(StubSourceMixin):
                 self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
                 self.rgb_formats,
                 self.default_encoding_options,
-                mmap, mmap_size, bandwidth_limit, self.jitter, datagram)
+                mmap_write_area, bandwidth_limit, self.jitter, datagram)
             ws.init_encoders()
             self.window_sources[wid] = ws
             if len(self.window_sources) > 1:

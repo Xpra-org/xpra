@@ -264,7 +264,7 @@ class WindowVideoSource(WindowSource):
             # need libyuv to be able to handle 'grayscale' video:
             # (to convert ARGB to grayscale)
             add("grayscale", self.video_encode)
-        if self._mmap_size > 0:
+        if self._mmap:
             self.non_video_encodings = ()
             self.common_video_encodings = ()
             return
@@ -678,7 +678,7 @@ class WindowVideoSource(WindowSource):
             return "png/P"
         if self.encoding == "png/L":
             return "png/L"
-        if self._mmap_size > 0:
+        if self._mmap:
             return "mmap"
         return super().do_get_auto_encoding(ww, wh, options, current_encoding or self.encoding, encoding_options)
 
@@ -1273,7 +1273,7 @@ class WindowVideoSource(WindowSource):
             not self.non_video_encodings,
             not self.common_video_encodings,
             self.content_type.find("text") >= 0 and not TEXT_USE_VIDEO,
-            self._mmap_size > 0,
+            self._mmap,
         )):
             # cannot use video subregions
             # FIXME: small race if a refresh timer is due when we change encoding - meh
@@ -1354,7 +1354,7 @@ class WindowVideoSource(WindowSource):
             Can be called from any thread.
         """
         # start with simple sanity checks:
-        if self._mmap_size > 0:
+        if self._mmap:
             scorelog("cannot score: mmap enabled")
             return
         if self.is_cancelled():
@@ -2153,7 +2153,7 @@ class WindowVideoSource(WindowSource):
         scrolllog("may_use_scrolling(%s, %s) supports_scrolling=%s, has_pixels=%s, content_type=%s, non-video=%s",
                   image, options, self.supports_scrolling, image.has_pixels(),
                   self.content_type, self.non_video_encodings)
-        if self._mmap_size > 0 and self.encoding != "scroll":
+        if self._mmap and self.encoding != "scroll":
             scrolllog("no scrolling: using mmap")
             return False
         if not self.supports_scrolling:

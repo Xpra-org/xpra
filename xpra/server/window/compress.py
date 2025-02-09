@@ -199,11 +199,10 @@ class WindowSource(WindowIconSource):
                  encoding_options:typedict, icons_encoding_options: typedict,
                  rgb_formats: Sequence[str],
                  default_encoding_options,
-                 mmap, mmap_size: int, bandwidth_limit: int, jitter: int, datagram=0):
+                 mmap_write_area: int, bandwidth_limit: int, jitter: int, datagram=0):
         super().__init__(window_icon_encodings, icons_encoding_options)
         # mmap:
-        self._mmap = mmap
-        self._mmap_size = mmap_size
+        self._mmap = mmap_write_area
 
         self.init_vars()
 
@@ -423,15 +422,8 @@ class WindowSource(WindowIconSource):
             log.warn("Warning: plain rgb encoder is missing!")
         # we need pillow for scaling and grayscale:
         pillow = add("enc_pillow")
-        if self._mmap_size > 0:
-            try:
-                from xpra.net.mmap import mmap_write
-                assert mmap_write
-            except ImportError:
-                if first_time("mmap_write missing"):
-                    log.warn("Warning: cannot use mmap, no write method support")
-            else:
-                self.insert_encoder("mmap", "mmap", self.mmap_encode)
+        if self._mmap:
+            self.insert_encoder("mmap", "mmap", self.mmap_encode)
         if (not FORCE_PILLOW or not pillow) and self.image_depth != 30:
             # prefer these native encoders over the Pillow version:
             add("enc_spng")
@@ -517,7 +509,7 @@ class WindowSource(WindowIconSource):
         log("encoding_totals for wid=%s with primary encoding=%s : %s",
             self.wid, self.encoding, self.statistics.encoding_totals)
         self.init_vars()
-        self._mmap_size = 0
+        self._mmap = None
         self.batch_config.cleanup()
         # we can only clear the encoders after clearing the whole encoding queue:
         # (because mmap cannot be cancelled once queued for encoding)
@@ -599,7 +591,7 @@ class WindowSource(WindowIconSource):
             },
             "encodings"             : esinfo,
             "rgb_threshold"         : self._rgb_auto_threshold,
-            "mmap"                  : self._mmap_size > 0,
+            "mmap"                  : bool(self._mmap),
             "last_used"             : self.encoding_last_used or "",
             "full-frames-only"      : self.full_frames_only,
             "supports-transparency" : self.supports_transparency,
@@ -896,7 +888,7 @@ class WindowSource(WindowIconSource):
     def update_encoding_selection(self, encoding="", exclude=(), init: bool = False) -> None:
         # now we have the real list of encodings we can use:
         # "rgb32" and "rgb24" encodings are both aliased to "rgb"
-        if self._mmap_size > 0 and self.encoding != "grayscale" and not self.has_shape:
+        if self._mmap and self.encoding != "grayscale" and not self.has_shape:
             self.auto_refresh_encodings = ()
             self.encoding = "mmap"
             self.encodings = ("mmap", )
@@ -980,7 +972,7 @@ class WindowSource(WindowIconSource):
         self.max_small_regions = 40
         self.max_bytes_percent = 60
         self.small_packet_cost = 1024
-        if self._mmap_size > 0:
+        if self._mmap:
             # with mmap, we can move lots of data around easily
             # so favour large screen updates over small packets
             self.max_small_regions = 10
@@ -1013,7 +1005,7 @@ class WindowSource(WindowIconSource):
             return self.encoding_is_hint
         # choose which method to use for selecting an encoding
         # first the easy ones (when there is no choice):
-        if self._mmap_size > 0 and self.encoding!="grayscale":
+        if self._mmap and self.encoding != "grayscale":
             log("using mmap")
             return self.encoding_is_mmap
         if self.encoding == "png/L":
@@ -1286,7 +1278,7 @@ class WindowSource(WindowIconSource):
         bc = self.batch_config
         if bc.locked:
             return
-        if self._mmap_size > 0:
+        if self._mmap:
             # mmap is so fast that we don't need to use the batch delay:
             bc.delay = bc.min_delay
             return
@@ -1313,7 +1305,7 @@ class WindowSource(WindowIconSource):
                 statslog("calculate_batch_delay for wid=%i, skipping - only %i pixels updated since the last update",
                          self.wid, pixel_count)
                 return
-            if self._mmap_size <= 0:
+            if not self._mmap:
                 statslog("calculate_batch_delay for wid=%i, %i pixels updated since the last update",
                          self.wid, pixel_count)
                 # if pixel_count < 8*ww*wh:
@@ -1343,13 +1335,13 @@ class WindowSource(WindowIconSource):
         if self.is_cancelled():
             return False
         statslog("update_speed() suspended=%s, mmap=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
-                 self.suspended, self._mmap_size > 0,
+                 self.suspended, self._mmap,
                  self._current_speed, self._speed_hint, self._fixed_speed,
                  self.encoding, self._sequence)
         if self.suspended:
             self._encoding_speed_info = {"suspended": True}
             return False
-        if self._mmap_size > 0:
+        if self._mmap:
             self._encoding_speed_info = {"mmap": True}
             return False
         cs = self._current_speed
@@ -1409,14 +1401,14 @@ class WindowSource(WindowIconSource):
     def update_quality(self) -> bool:
         if self.is_cancelled():
             return False
-        statslog("update_quality() suspended=%s, mmap_size=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
-                 self.suspended, self._mmap_size,
+        statslog("update_quality() suspended=%s, mmap=%s, current=%i, hint=%i, fixed=%i, encoding=%s, sequence=%i",
+                 self.suspended, self._mmap,
                  self._current_quality, self._quality_hint, self._fixed_quality,
                  self.encoding, self._sequence)
         if self.suspended:
             self._encoding_quality_info = {"suspended": True}
             return False
-        if self._mmap_size > 0:
+        if self._mmap:
             self._encoding_quality_info = {"mmap": True}
             return False
         cq = self._current_quality
@@ -1485,7 +1477,7 @@ class WindowSource(WindowIconSource):
             self.reconfigure(True)
 
     def update_refresh_attributes(self) -> None:
-        if self._mmap_size > 0:
+        if self._mmap:
             # not used since mmap is lossless
             return
         if self.auto_refresh_delay == 0:
@@ -1999,7 +1991,7 @@ class WindowSource(WindowIconSource):
             merged_packet_cost = merged_pixel_count+self.small_packet_cost*len(merged_rects)
             log("send_delayed_regions: merged=%s, merged_bytes_cost=%s, bytes_cost=%s, merged_pixel_count=%s, pixel_count=%s",
                 merged_rects, merged_packet_cost, packet_cost, merged_pixel_count, pixel_count)
-            if self._mmap_size > 0 or merged_packet_cost < packet_cost or merged_pixel_count < pixel_count:
+            if self._mmap or merged_packet_cost < packet_cost or merged_pixel_count < pixel_count:
                 # better, so replace with merged regions:
                 regions = merged_rects
 
@@ -2851,7 +2843,7 @@ class WindowSource(WindowIconSource):
 
     def mmap_encode(self, coding: str, image: ImageWrapper, _options) -> tuple:
         assert coding == "mmap"
-        assert self._mmap and self._mmap_size > 0
+        assert self._mmap
         # prepare the pixels in a format accepted by the client:
         pf = image.get_pixel_format()
         if pf not in self.rgb_formats:
@@ -2865,15 +2857,14 @@ class WindowSource(WindowIconSource):
         data = image.get_pixels()
         if not data:
             raise RuntimeError(f"failed to get pixels from {image}")
-        from xpra.net.mmap import mmap_write, mmap_free_size
-        mmap_data = mmap_write(self._mmap, self._mmap_size, data)
+        mmap_data = self._mmap.write_data(data)
         # elapsed = monotonic()-start+0.000000001 # make sure never zero!
         # log("%s MBytes/s - %s bytes written to mmap in %.1f ms", int(len(data)/elapsed/1024/1024),
         #    len(data), 1000*elapsed)
         if not mmap_data:
             return ()
         self.global_statistics.mmap_bytes_sent += len(data)
-        self.global_statistics.mmap_free_size = mmap_free_size(self._mmap, self._mmap_size)
+        self.global_statistics.mmap_free_size = self._mmap.get_free_size()
         # the data we send is the index within the mmap area
         # send the list of chunks as both:
         # * 'chunks' metadata for newer versions
