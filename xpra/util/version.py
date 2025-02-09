@@ -108,8 +108,8 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
 
 
 def version_compat_check(remote_version) -> str | None:
-    if remote_version is None:
-        msg = "remote version not available!"
+    if not remote_version:
+        msg = "remote version is not available"
         log(msg)
         return msg
     try:
@@ -127,18 +127,18 @@ def version_compat_check(remote_version) -> str | None:
     try:
         if rv[0:2] < (3, 0):
             # this is the oldest version we support
-            msg = f"remote version {rvstr} is too old, sorry"
+            msg = f"remote version {rvstr!r} is too old, sorry"
             log(msg)
             return msg
         if rv[0:2] < (3, 1, 9):
-            warn(f"Warning: remote version {rvstr} is outdated and buggy")
+            warn(f"Warning: remote version {rvstr!r} is outdated and buggy")
             return None
     except TypeError as e:
-        msg = f"invalid remote version {rvstr}: {e}"
+        msg = f"invalid remote version {rvstr!r}: {e}"
         log(msg)
         return msg
     if rv[0] > 0:
-        log(f"newer remote version {rvstr} should work, we'll see..")
+        log(f"newer remote version {rvstr!r} should work, we'll see..")
         return None
     log(f"local version {XPRA_VERSION!r} should be compatible with remote version {rvstr!r}")
     return None
