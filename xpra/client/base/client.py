@@ -344,9 +344,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         netlog("setup_connection(%s) timeout=%s, socktype=%s, protocol-class=%s",
                conn, conn.timeout, conn.socktype, protocol_class)
         protocol = protocol_class(conn, self.process_packet, self.next_packet)
-        # ssh channel may contain garbage initially,
-        # tell the protocol to wait for a valid header:
-        protocol.wait_for_header = conn.socktype == "ssh"
         self._protocol = protocol
         if protocol.TYPE != "rfb":
             for x in ("keymap-changed", "server-settings", "logging", "input-devices"):

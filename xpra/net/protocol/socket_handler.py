@@ -189,7 +189,9 @@ class SocketProtocol:
         self._write_format_thread: Thread | None = None  # started when needed
         self._source_has_more = Event()
         self.receive_pending = False
-        self.wait_for_header = False
+        # ssh channel may contain garbage initially,
+        # tell the protocol to wait for a valid header:
+        self.wait_for_header = conn.socktype == "ssh"
         self.source_has_more = self.source_has_more_start
         self.flush_then_close = self.do_flush_then_close
 
