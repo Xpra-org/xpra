@@ -731,6 +731,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/v4l2
 %{python3_sitearch}/xpra/codecs/vpx
 %{python3_sitearch}/xpra/codecs/webp
+%{python3_sitearch}/xpra/codecs/remote
 %ifnarch %{riscv}
 %{python3_sitearch}/xpra/codecs/openh264
 %endif

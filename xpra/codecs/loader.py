@@ -62,7 +62,7 @@ ENCODER_CODECS: Sequence[str] = gfilt(f"enc_{x}" for x in (
     "rgb", "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif",
 ))
 ENCODER_VIDEO_CODECS: Sequence[str] = gfilt(autoprefix("enc", x) for x in (
-    "vpx", "x264", "openh264", "nvenc", "gstreamer", "amf",
+    "vpx", "x264", "openh264", "nvenc", "gstreamer", "amf", "remote",
 ))
 DECODER_CODECS: Sequence[str] = gfilt(f"dec_{x}" for x in (
     "pillow", "spng", "webp", "jpeg", "nvjpeg", "avif", "gstreamer",
@@ -265,6 +265,7 @@ CODEC_OPTIONS: dict[str, tuple[str, str, str, str]] = {
     "nvenc"         : ("nvenc encoder",     "nvidia.nvenc", "encoder", "Encoder"),
     "enc_gstreamer" : ("gstreamer encoder", "gstreamer",    "encoder", "Encoder"),
     "enc_amf"       : ("amf encoder",       "amf",          "encoder", "Encoder"),
+    "enc_remote"    : ("remote encoder",    "remote",       "encoder", "Encoder"),
     # csc:
     "csc_libyuv"    : ("libyuv colorspace conversion", "libyuv", "converter", "Converter"),
     "csc_cython"    : ("cython colorspace conversion", "csc_cython", "converter", "Converter"),

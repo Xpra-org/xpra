@@ -9,3 +9,4 @@ usr/lib/python3*/*/xpra/codecs/v4l2
 usr/lib/python3*/*/xpra/codecs/vpx
 usr/lib/python3*/*/xpra/codecs/webp
 usr/lib/python3*/*/xpra/codecs/csc_cython
+usr/lib/python3*/*/xpra/codecs/remote

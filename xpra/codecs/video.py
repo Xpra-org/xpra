@@ -38,6 +38,7 @@ CODEC_TO_MODULE: dict[str, str] = {
     "dec_nvjpeg"    : "nvidia.nvjpeg.decoder",
     "dec_gstreamer" : "gstreamer.decoder",
     "enc_gstreamer" : "gstreamer.encoder",
+    "enc_remote"    : "remote.encoder",
 }
 
 

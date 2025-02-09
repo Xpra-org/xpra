@@ -298,6 +298,7 @@ vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
 amf_ENABLED             = pkg_config_version("amf", "1.0") or has_header_file("AMF/components/VideoEncoderVCE.h")
 amf_encoder_ENABLED     = amf_ENABLED
+remote_encoder_ENABLED  = DEFAULT
 # opencv currently broken on 32-bit windows (crashes on load):
 webcam_ENABLED          = DEFAULT and not OSX and not WIN32
 notifications_ENABLED   = DEFAULT
@@ -344,6 +345,7 @@ ENCODER_SWITCHES = [
     "amf_encoder",
     "spng_encoder", "jpeg_encoder", "avif_encoder",
     "argb_encoder",
+    "remote_encoder",
 ]
 DECODER_SWITCHES = [
     "openh264_decoder",
@@ -2797,6 +2799,7 @@ if amf_ENABLED:
     tace(WIN32, "xpra.platform.win32.d3d11.device")
 toggle_packages(gstreamer_ENABLED, "xpra.gstreamer")
 toggle_packages(gstreamer_video_ENABLED, "xpra.codecs.gstreamer")
+toggle_packages(remote_encoder_ENABLED, "xpra.codecs.remote")
 
 toggle_packages(v4l2_ENABLED, "xpra.codecs.v4l2")
 tace(v4l2_ENABLED, "xpra.codecs.v4l2.virtual")
@@ -2868,6 +2871,10 @@ if cythonize_more_ENABLED:
                 ax("xpra.codecs.pillow.encoder")
             if pillow_decoder_ENABLED:
                 ax("xpra.codecs.pillow.decoder")
+        if gstreamer_video_ENABLED:
+            ax("xpra.codecs.gstreamer")
+        if remote_encoder_ENABLED:
+            ax("xpra.codecs.remote")
     if gstreamer_ENABLED:
         ax("xpra.gstreamer")
     if gtk3_ENABLED:
