@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from threading import Event
 
 from xpra import __version__
+from xpra.util.env import envint
 from xpra.net.common import PacketElement
 from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict
@@ -20,6 +21,7 @@ from xpra.log import Logger
 log = Logger("encoder")
 
 ENCODER_SERVER_URI = os.environ.get("XPRA_ENCODER_SERVER_URI", "tcp://127.0.0.1:20000/")
+ENCODER_SERVER_SOCKET_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 1)
 
 
 class EncoderClient:
@@ -36,6 +38,8 @@ class EncoderClient:
         from xpra.scripts.config import make_defaults_struct
         opts = make_defaults_struct()
         desc = parse_display_name(error_handler, opts, self.uri)
+        if "timeout" not in desc:
+            desc["timeout"] = ENCODER_SERVER_SOCKET_TIMEOUT
         log(f"server desc={desc!r}")
         conn = connect_to(desc, opts)
         self.protocol = self.make_protocol(conn)

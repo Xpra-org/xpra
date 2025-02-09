@@ -1235,6 +1235,7 @@ def host_target_string(dtype: str, username: str, host: str, port: int, display:
 def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=noop):
     from xpra.net.bytestreams import SOCKET_TIMEOUT, VSOCK_TIMEOUT, SocketConnection
     display_name = display_desc["display_name"]
+    timeout = display_desc.get("timeout", SOCKET_TIMEOUT)
     dtype = display_desc["type"]
     if dtype in ("ssh", "vnc+ssh"):
         if display_desc.get("is_paramiko", False):
@@ -1275,15 +1276,15 @@ def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=no
             display_desc["socket_path"] = sockpath
             actual_path = "\0" + ABSTRACT_SOCKET_PREFIX + sockpath[1:] if sockpath.startswith("@") else sockpath
             sock = socket.socket(socket.AF_UNIX)
-            sock.settimeout(SOCKET_TIMEOUT)
+            sock.settimeout(timeout)
             start = monotonic()
-            while monotonic() - start < SOCKET_TIMEOUT:
+            while monotonic() - start < timeout:
                 try:
                     sock.connect(actual_path)
                     break
                 except ConnectionRefusedError as e:
                     elapsed = monotonic() - start
-                    get_logger().debug("%s, retrying %i < %i", e, elapsed, SOCKET_TIMEOUT)
+                    get_logger().debug("%s, retrying %i < %i", e, elapsed, timeout)
                     continue
                 except Exception as e:
                     get_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
@@ -1292,7 +1293,7 @@ def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=no
         try:
             sock.settimeout(None)
             conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, dtype)
-            conn.timeout = SOCKET_TIMEOUT
+            conn.timeout = timeout
             target = "socket://"
             username = display_desc.get("username")
             if username:
@@ -1326,7 +1327,7 @@ def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=no
                 pass
             raise InitException(f"failed to connect to the named pipe {pipe_name!r}:\n {e}") from None
         conn = NamedPipeConnection(pipe_name, pipe_handle, {})
-        conn.timeout = SOCKET_TIMEOUT
+        conn.timeout = timeout
         conn.target = f"namedpipe://{pipe_name}/"
         return conn
 
@@ -1397,7 +1398,7 @@ def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=no
             sock = ssl_handshake(sock)
             assert sock, f"failed to wrap socket {sock}"
             conn._socket = sock
-            conn.timeout = SOCKET_TIMEOUT
+            conn.timeout = timeout
 
         # wrap in a websocket:
         if dtype in ("ws", "wss"):
