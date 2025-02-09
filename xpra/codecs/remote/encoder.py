@@ -126,7 +126,10 @@ def get_encodings() -> Sequence[str]:
 def init_module() -> None:
     uri = ENCODER_SERVER_URI
     log(f"remote.init_module() attempting to connect to {uri!r}")
-    server.connect()
+    try:
+        server.connect()
+    except Exception:
+        log("failed to connect to server, no encodings available", exc_info=True)
 
 
 def cleanup_module() -> None:
