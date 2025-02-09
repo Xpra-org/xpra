@@ -5,10 +5,26 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     EXE installer must overwrite previous version, all libraries
     `rpmspec` warnings
     `dev-env` subcommand errors on Debian systems
+    also prefer the CUDA arch specific pkgconfig file for nvdec
+    CUDA kernel build errors with CUDA 12.8 and Fedora 41
+    PyOpenGL 3.1.9
+  * Major:
+    integer time overflow, prevent more
+    server fails to start when sourcing profile strings
+    qp calculation with nvenc
   * Network:
     scary warnings when RDP clients attempt to connect
+  * Minor:
+    limit openssl version details exposed
+    revert to other client's ssh agent socket on disconnection
+    partial dpi settings with some clients (ie: `html5`)
+  * Cosmetic:
+    make it easier to cut & paste the CUDA kernel compilation command
+    unnecessary import
+    linter warning
+    update module path in message
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 23 Jan 2025 10:20:39 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 09 Feb 2025 22:53:29 +0700
 
 xpra (6.2.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

@@ -1,14 +1,30 @@
 # Changelog
 
-## [6.2.4] 2025-01-23
+## [6.2.4] 2025-02-09
 * Platforms, build and packaging:
     * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
     * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
     * [EXE installer must overwrite previous version](https://github.com/Xpra-org/xpra/commit/8c4ec6b645f523a0989f4f565cf0654fa2b7906f), [all libraries](https://github.com/Xpra-org/xpra/commit/6c5234d4fa3bb4b92cd9d01cee4abc08db5fc5f1)
     * [`rpmspec` warnings](https://github.com/Xpra-org/xpra/commit/3bcf48f9dfb092e775cfa9e24c208dbd050774a6)
     * [`dev-env` subcommand errors on Debian systems](https://github.com/Xpra-org/xpra/commit/a80b4e5ba00940a5fbce0b647e7d4d5ad4b3e3a8)
+    * [also prefer the CUDA arch specific pkgconfig file for nvdec](https://github.com/Xpra-org/xpra/commit/f541e0be0a1e112fea2299701edad354fe9fe8a8)
+    * [CUDA kernel build errors with CUDA 12.8 and Fedora 41](https://github.com/Xpra-org/xpra/commit/4191dbffa4bdb071bae648dee1961331c592a32d)
+    * [PyOpenGL 3.1.9](https://github.com/Xpra-org/xpra/commit/7e7f17200fb40f7096e553a841c280491899fc12)
+* Major:
+    * [integer time overflow](https://github.com/Xpra-org/xpra/commit/dcc8be686c413fe289e284801b5203455ce82830), [prevent more](https://github.com/Xpra-org/xpra/commit/4c0acc83d4799fd945afe3084f6e653d9dbe02e6)
+    * [server fails to start when sourcing profile strings](https://github.com/Xpra-org/xpra/commit/3bd53a6e9e8c808aff025eb0cbe972f49f1f3191)
+    * [qp calculation with nvenc](https://github.com/Xpra-org/xpra/commit/299268b8a08b739c5f1ad51c837a82a96bd061df)
 * Network:
     * [scary warnings when RDP clients attempt to connect](https://github.com/Xpra-org/xpra/commit/5f6b4454a59952822362f204dc75f84ac9f17a23)
+* Minor:
+    * [limit openssl version details exposed](https://github.com/Xpra-org/xpra/commit/de983c867c743e04670e61a7bf6ef05ddf61fab2)
+    * [revert to other client's ssh agent socket on disconnection](https://github.com/Xpra-org/xpra/commit/d0acde606e8d79e06a6f8b3b8cab10def19add8a)
+    * [partial dpi settings with some clients (ie: `html5`)](https://github.com/Xpra-org/xpra/commit/5c891aff0205b5177f38f636b592fa6e4c0a04e8)
+* Cosmetic:
+    * [make it easier to cut & paste the CUDA kernel compilation command](https://github.com/Xpra-org/xpra/commit/51721cb26b6838e5ec5e662c2943048137ea2fd8)
+    * [unnecessary import](https://github.com/Xpra-org/xpra/commit/46e654861cca19fba32810c6f390b47470a80a2b)
+    * [linter warning](https://github.com/Xpra-org/xpra/commit/78baf27017ec29bc4bbc353d9080c722b88dfb8a)
+    * [update module path in message](https://github.com/Xpra-org/xpra/commit/6f8f06733bae5143d5e363c1b643c7acd5dedeca)
 
 ## [6.2.3] 2025-01-14
 * Platforms, build and packaging:

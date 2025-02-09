@@ -915,15 +915,31 @@ fi
 
 
 %changelog
-- Thu Jan 23 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
+- Sun Feb 09 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
 - Platforms, build and packaging:
    MS Windows custom build arguments
    EXE manigests optional
    EXE installer must overwrite previous version, all libraries
    `rpmspec` warnings
    `dev-env` subcommand errors on Debian systems
+   also prefer the CUDA arch specific pkgconfig file for nvdec
+   CUDA kernel build errors with CUDA 12.8 and Fedora 41
+   PyOpenGL 3.1.9
+- Major:
+   integer time overflow, prevent more
+   server fails to start when sourcing profile strings
+   qp calculation with nvenc
 - Network:
    scary warnings when RDP clients attempt to connect
+- Minor:
+   limit openssl version details exposed
+   revert to other client's ssh agent socket on disconnection
+   partial dpi settings with some clients (ie: `html5`)
+- Cosmetic:
+   make it easier to cut & paste the CUDA kernel compilation command
+   unnecessary import
+   linter warning
+   update module path in message
 
 * Tue Jan 14 2025 Antoine Martin <antoine@xpra.org> 6.2.3-10
 - Platforms, build and packaging:
