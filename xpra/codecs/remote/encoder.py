@@ -67,9 +67,8 @@ class EncoderClient:
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         packet = (packet_type, *parts)
         # direct mode:
-        # self.protocol._add_packet_to_queue(packet)
-        # while self.protocol._write_queue.qsize():
-        #    self.protocol._write()
+        # self.protocol.add_packet_to_queue(packet)
+        # self.protocol.flush_write_queue():
         self._ordinary_packets.append(packet)
         self.protocol.source_has_more()
 

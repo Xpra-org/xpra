@@ -408,34 +408,30 @@ class SocketProtocol:
             with log.trap_error("Error collecting connection information on %s", conn):
                 info.update(conn.get_info())
         # add stats to connection info:
-        info.setdefault("input", {}).update(
-            {
-                "buffer-size": self.read_buffer_size,
-                "hangup-delay": self.hangup_delay,
-                "packetcount": self.input_packetcount,
-                "raw_packetcount": self.input_raw_packetcount,
-                "count": self.input_stats,
-                "cipher": {
-                    "": self.cipher_in_name,
-                    "padding": self.cipher_in_padding,
-                },
-            }
-        )
-        info.setdefault("output", {}).update(
-            {
-                "packet-join-size": PACKET_JOIN_SIZE,
-                "large-packet-size": LARGE_PACKET_SIZE,
-                "inline-size": INLINE_SIZE,
-                "min-compress-size": MIN_COMPRESS_SIZE,
-                "packetcount": self.output_packetcount,
-                "raw_packetcount": self.output_raw_packetcount,
-                "count": self.output_stats,
-                "cipher": {
-                    "": self.cipher_out_name or "",
-                    "padding": self.cipher_out_padding
-                },
-            }
-        )
+        info["input"] = {
+            "buffer-size": self.read_buffer_size,
+            "hangup-delay": self.hangup_delay,
+            "packetcount": self.input_packetcount,
+            "raw_packetcount": self.input_raw_packetcount,
+            "count": self.input_stats,
+            "cipher": {
+                "": self.cipher_in_name,
+                "padding": self.cipher_in_padding,
+            },
+        }
+        info["output"] = {
+            "packet-join-size": PACKET_JOIN_SIZE,
+            "large-packet-size": LARGE_PACKET_SIZE,
+            "inline-size": INLINE_SIZE,
+            "min-compress-size": MIN_COMPRESS_SIZE,
+            "packetcount": self.output_packetcount,
+            "raw_packetcount": self.output_raw_packetcount,
+            "count": self.output_stats,
+            "cipher": {
+                "": self.cipher_out_name or "",
+                "padding": self.cipher_out_padding
+            },
+        }
         thread_info: dict[str, bool] = {}
         for t in (self._write_thread, self._read_thread, self._read_parser_thread, self._write_format_thread):
             if t:
@@ -499,13 +495,13 @@ class SocketProtocol:
                 gpc = self._get_packet_cb
                 if self._closed or not gpc:
                     return
-                self._add_packet_to_queue(*gpc())
+                self.add_packet_to_queue(*gpc())
         except Exception as e:
             if self._closed:
                 return
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
-    def _add_packet_to_queue(self, packet: PacketType, synchronous=True, more=False) -> None:
+    def add_packet_to_queue(self, packet: PacketType, synchronous=True, more=False) -> None:
         if not more:
             shm = self._source_has_more
             if shm:
@@ -795,6 +791,11 @@ class SocketProtocol:
             if not self._closed:
                 log.error(f"Error: {name} on {self._conn} failed: {type(e)}", exc_info=True)
                 self.close()
+
+    def flush_write_queue(self):
+        while self._write_queue.qsize() and not self._closed:
+            if not self._write():
+                return
 
     def _write_thread_loop(self) -> None:
         self._io_thread_loop("write", self._write)
