@@ -33,13 +33,15 @@ class EncoderClient:
         self._ordinary_packets = []
         self.event = Event()
 
-    def connect(self):
+    def connect(self, retry=False):
         from xpra.scripts.main import error_handler, parse_display_name, connect_to
         from xpra.scripts.config import make_defaults_struct
         opts = make_defaults_struct()
         desc = parse_display_name(error_handler, opts, self.uri)
         if "timeout" not in desc:
             desc["timeout"] = ENCODER_SERVER_SOCKET_TIMEOUT
+        if "retry" not in desc:
+            desc["retry"] = retry
         log(f"server desc={desc!r}")
         conn = connect_to(desc, opts)
         self.protocol = self.make_protocol(conn)

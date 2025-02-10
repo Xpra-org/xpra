@@ -1179,28 +1179,30 @@ def proxy_connect(options: dict):
 def retry_socket_connect(options: dict):
     host = options["host"]
     port = options["port"]
+    dtype = options["type"]
     if "proxy-host" in options:
         return proxy_connect(options)
     from xpra.net.socket_util import socket_connect
     start = monotonic()
-    retry = 0
+    retry = options.get("retry", True) in TRUE_OPTIONS
+    retry_count = 0
     timeout = options.get("timeout", CONNECT_TIMEOUT)
     while True:
         sock = socket_connect(host, port, timeout=timeout)
         if sock:
             return sock
+        if not retry:
+            break
         if monotonic() - start >= timeout:
             break
-        if retry == 0:
+        if retry_count == 0:
             log = Logger("network")
-            dtype = options["type"]
             log.info("")
             log.info(f"failed to connect to {dtype}://{host}:{port}/")
             log.info(f" retrying for {timeout} seconds")
             log.info("")
-        retry += 1
+        retry_count += 1
         time.sleep(1)
-    dtype = options["type"]
     raise InitExit(ExitCode.CONNECTION_FAILED, f"failed to connect to {dtype} socket {host}:{port}")
 
 
