@@ -29,9 +29,9 @@ Build-Depends: debhelper (>= 8)
               ,libopenh264-dev
               ,libwebp-dev
               ,libturbojpeg-dev
-#lunar:              ,libspng-dev
 #noble:              ,libspng-dev
 #oracular:              ,libspng-dev
+#plucky:              ,libspng-dev
 #bookworm:              ,libspng-dev
 #trixie:              ,libspng-dev
 #sid:              ,libspng-dev
@@ -293,15 +293,15 @@ Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
         ,libyuv0
 #jammy:              ,libopenh264-6
-#lunar:              ,libopenh264-7
 #noble:              ,libopenh264-7
 #oracular:              ,libopenh264-7
+#plucky:              ,libopenh264-7
 #bookworm:              ,libopenh264-7
 #trixie:              ,libopenh264-7
 #sid:              ,libopenh264-7
-#lunar:              ,libspng0
 #noble:              ,libspng0
 #oracular:              ,libspng0
+#plucky:              ,libspng0
 #bookworm:              ,libspng0
 #trixie:              ,libspng0
 #sid:              ,libspng0
@@ -321,9 +321,9 @@ Depends: xpra-codecs (= ${binary:Version})
         ,${codecsextras:Depends}
         ,${python3:Depends}
 #jammy:              ,libavif13
-#lunar:              ,libavif15
 #noble:              ,libavif16
 #oracular:              ,libavif16
+#plucky:              ,libavif16
 #bookworm:              ,libavif15
 #trixie:              ,libavif16
 #sid:              ,libavif16
