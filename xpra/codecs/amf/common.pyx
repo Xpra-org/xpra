@@ -19,10 +19,11 @@ from xpra.codecs.amf.amf cimport (
 from xpra.log import Logger
 
 log = Logger("amf")
+LIBNAME = "amfrt64"
 try:
-    amf = CDLL("amfrt64")
+    amf = CDLL(LIBNAME)
 except OSError as e:
-    raise ImportError(f"AMF library not found: {e}")
+    raise ImportError(f"AMF library {LIBNAME!r} not found: {e}") from None
 assert amf
 
 cdef extern from "Python.h":
