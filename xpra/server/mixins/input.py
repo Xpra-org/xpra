@@ -58,17 +58,6 @@ class InputServer(StubServerMixin):
         self.last_mouse_user = None
         self.ibus_layouts: dict[str, Any] = {}
 
-    def get_ibus_layouts(self) -> dict[str, Any]:
-        if EXPOSE_IBUS_LAYOUTS and not self.ibus_layouts:
-            try:
-                from xpra.keyboard.ibus import query_ibus
-            except ImportError as e:
-                ibuslog(f"no ibus module: {e}")
-            else:
-                self.ibus_layouts = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
-                ibuslog("loaded ibus layouts from %s: %s", threading.current_thread(), Ellipsizer(self.ibus_layouts))
-        return self.ibus_layouts
-
     def init(self, opts) -> None:
         props = typedict()
         keymap = props.setdefault("keymap", {})
@@ -79,7 +68,22 @@ class InputServer(StubServerMixin):
         self.keyboard_config = self.get_keyboard_config(props)
 
     def setup(self) -> None:
+        ibuslog(f"input.setup() {EXPOSE_IBUS_LAYOUTS=}")
         self.watch_keymap_changes()
+        if EXPOSE_IBUS_LAYOUTS:
+            # wait for ibus to be ready to query the layouts:
+            from xpra.keyboard.ibus import with_ibus_ready
+            with_ibus_ready(self.query_ibus_layouts)
+
+    def query_ibus_layouts(self) -> None:
+        try:
+            from xpra.keyboard.ibus import query_ibus
+        except ImportError as e:
+            ibuslog(f"no ibus module: {e}")
+        else:
+            self.ibus_layouts = dict((k, v) for k, v in query_ibus().items() if k.startswith("engine"))
+            ibuslog("loaded ibus layouts from %s: %s", threading.current_thread(),
+                    Ellipsizer(self.ibus_layouts))
 
     def cleanup(self) -> None:
         self.clear_keys_pressed()
@@ -113,15 +117,20 @@ class InputServer(StubServerMixin):
             self.parse_hello_ui_keyboard(ss, caps)
 
     def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
-        if not send_ui:
-            return
+        if send_ui:
+            self.send_ibus_layouts(ss)
+
+    def send_ibus_layouts(self, ss):
         send_ibus_layouts = getattr(ss, "send_ibus_layouts", noop)
         ibuslog(f"{send_ibus_layouts=}")
-        if send_ibus_layouts != noop:
-            ibus_layouts = self.get_ibus_layouts()
-            if ibus_layouts:
-                ibuslog("calling %s(%s)", send_ibus_layouts, Ellipsizer(ibus_layouts))
-                send_ibus_layouts(ibus_layouts)
+        if send_ibus_layouts == noop:
+            return
+
+        # wait for ibus, so we will have the layouts if they exist
+        def ibus_is_ready() -> None:
+            send_ibus_layouts(self.ibus_layouts)
+        from xpra.keyboard.ibus import with_ibus_ready
+        with_ibus_ready(ibus_is_ready)
 
     def watch_keymap_changes(self) -> None:
         """ GTK servers will start listening for the 'keys-changed' signal """
@@ -158,8 +167,8 @@ class InputServer(StubServerMixin):
         kc = self.keyboard_config
         if kc:
             info.update(kc.get_info())
-        if EXPOSE_IBUS_LAYOUTS:
-            info["ibus"] = self.get_ibus_layouts()
+        if EXPOSE_IBUS_LAYOUTS and self.ibus_layouts:
+            info["ibus"] = self.ibus_layouts
         keylog("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
 

@@ -4,11 +4,14 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Callable
 
 from xpra.util.str_fn import Ellipsizer
 from xpra.log import Logger
 
 log = Logger("ibus")
+
+BUSNAME = "org.freedesktop.IBus"
 
 
 def noemptyvalues(d: dict) -> dict:
@@ -52,6 +55,43 @@ def query_ibus() -> dict[str, Any]:
             info["engines"] = tuple(query_engine(engine) for engine in engines)
     log("query_ibus()=%s", Ellipsizer(info))
     return info
+
+
+def with_ibus_ready(callback: Callable[[], None]):
+    try:
+        from xpra.os_util import gi_import
+        IBus = gi_import("IBus")
+    except ImportError as e:
+        log(f"failed to import ibus: {e}")
+        return
+
+    # warning: this callback will not fire unless a GLib main loop is running!
+    def got_name(name) -> None:
+        log("got_name(%r) for %s", name, BUSNAME)
+        if not name:
+            return
+        bus = IBus.Bus()
+
+        def check_connected(delay: int) -> bool:
+            connected = bus.is_connected()
+            log("IBus.Bus.connected()=%s", connected)
+            if connected:
+                callback()
+                return False
+            if delay >= 10000:
+                log.warn("Warning: timeout waiting for IBus")
+                return False
+
+            delay += 1000
+            GLib = gi_import("GLib")
+            GLib.timeout_add(delay, check_connected, delay)
+            return False
+        check_connected(0)
+
+    log(f"waiting for {BUSNAME!r} to call {callback}")
+    from xpra.dbus.helper import DBusHelper
+    session_bus = DBusHelper().get_session_bus()
+    session_bus.watch_name_owner(BUSNAME, got_name)
 
 
 def set_engine(name: str) -> bool:
