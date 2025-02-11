@@ -139,8 +139,10 @@ class ServerBase(ServerBaseClass):
     def server_event(self, event_type: str, *args: PacketElement) -> None:
         for s in self._server_sources.values():
             s.send_server_event(event_type, *args)
-        if self.dbus_server:
-            self.dbus_server.Event(event_type, [str(x) for x in args[1:]])
+        # the bus mixin is optional:
+        dbus_server = getattr(self, "dbus_server", None)
+        if dbus_server:
+            dbus_server.Event(event_type, [str(x) for x in args[1:]])
 
     def get_server_source(self, proto):
         return self._server_sources.get(proto)
@@ -505,7 +507,9 @@ class ServerBase(ServerBaseClass):
         capabilities = super().make_hello(source)
         for c in SERVER_BASES:
             if c != ServerCore:
-                merge_dicts(capabilities, c.get_caps(self, source))
+                caps = c.get_caps(self, source)
+                log("%s.get_caps(%s)=%s", c, source, caps)
+                merge_dicts(capabilities, caps)
         capabilities["server_type"] = "base"
         if "display" in source.wants:
             max_size = self.get_max_screen_size()
