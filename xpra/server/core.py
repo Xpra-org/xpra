@@ -2088,14 +2088,17 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             "elapsed_time": int(now - self.start_time),
             "server_type": "core",
             "server.mode": self.get_server_mode(),
-            "hostname": socket.gethostname(),
         }
+        if FULL_INFO > 0:
+            capabilities["hostname"] = socket.gethostname()
         if source is None or "features" in source.wants:
             capabilities |= {
                 "readonly-server": True,
                 "readonly": self.readonly,
-                "server-log": os.environ.get("XPRA_SERVER_LOG", ""),
             }
+            server_log = os.environ.get("XPRA_SERVER_LOG", "")
+            if server_log:
+                capabilities["server-log"] = server_log
         if source and "packet-types" in source.wants:
             capabilities["packet-types"] = PACKET_TYPES
         if source is None or "versions" in source.wants:
