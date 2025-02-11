@@ -211,9 +211,11 @@ class CodecSpec:
     def get_instance_count(self) -> int:
         return len(self.instances)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self, *skip: str) -> dict[str, Any]:
         v = asdict(self)
         for k in self.skipped_fields:
+            v.pop(k, None)
+        for k in skip:
             v.pop(k, None)
         return v
 

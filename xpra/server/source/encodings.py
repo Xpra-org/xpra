@@ -131,7 +131,18 @@ class EncodingsMixin(StubSourceMixin):
             # codec_versions: dict[str, tuple[Any, ...]] = {}
             for codec, version in codec_versions.items():
                 d[codec] = {"version": version}
-        self.send_async("encodings", {"encodings": d})
+        video = {}
+        if "video" in self.wants:
+            # client wants the full video encoder caps:
+            for encoding in self.video_helper.get_encodings():
+                especs = self.video_helper.get_encoder_specs(encoding)
+                ecaps = {}
+                for csc, specs in especs.items():
+                    ecaps[csc] = tuple(spec.to_dict("codec_class") for spec in specs)
+                if ecaps:
+                    video[encoding] = ecaps
+            log(f"video specs={video}")
+        self.send_async("encodings", {"encodings": d, "video": video})
         # only print encoding info when not using mmap:
         if getattr(self, "mmap_size", 0) == 0:
             self.print_encoding_info()

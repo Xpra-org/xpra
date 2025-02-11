@@ -56,7 +56,7 @@ USE_ALIASES = envbool("XPRA_USE_ALIASES", True)
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 # merge header and packet if packet is smaller than:
 PACKET_JOIN_SIZE = envint("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE)
-LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 8192)
+LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 16384)
 LOG_RAW_PACKET_SIZE = envbool("XPRA_LOG_RAW_PACKET_SIZE", False)
 # inline compressed data in packet if smaller than:
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
@@ -151,6 +151,7 @@ class SocketProtocol:
         self.large_packets = [
             "hello", "window-metadata", "sound-data", "notify_show", "setting-change",
             "shell-reply", "configure-display",
+            "encodings",
         ]
         self._log_stats = None  # None here means auto-detect
         if "XPRA_LOG_SOCKET_STATS" in os.environ:

@@ -13,9 +13,9 @@ from threading import Event
 
 from xpra import __version__
 from xpra.util.env import envint
-from xpra.net.common import PacketElement
-from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict
+from xpra.net.common import PacketElement, PacketType
+from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
 log = Logger("encoder")
@@ -54,6 +54,8 @@ class EncoderClient:
             "session-id": uuid.uuid4().hex,
             "windows": False,
             "keyboard": False,
+            "wants": ("encodings", "video", ),
+            "encoding": {"core": ("rgb32", "rgb24", )},
             "mouse": False,
             "network-state": False,  # tell older server that we don't have "ping"
         }
@@ -84,13 +86,41 @@ class EncoderClient:
         protocol = protocol_class(conn, self._process_packet, self._next_packet)
         protocol.enable_default_encoder()
         protocol.enable_default_compressor()
+        protocol._log_stats = False
+        protocol.large_packets.append("encodings")
         # self.add_packet_handler("setting-change", noop)
         # if conn.timeout > 0:
         #    GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
         return protocol
 
-    def _process_packet(self, proto, packet):
-        log.warn(f"received {packet!r}")
+    def _process_packet(self, proto, packet: PacketType) -> None:
+        packet_type = packet[0]
+        if packet_type in ("hello", "encodings", "startup-complete", "setting-change", "connection-lost", "disconnect"):
+            fn = getattr(self, "_process_%s" % packet_type.replace("-", "_"))
+            fn(packet)
+        else:
+            log.warn(f"Warning: received unexpected {packet_type!r} from encoder server connection {proto}")
+
+    def _process_hello(self, packet: PacketType) -> None:
+        caps = packet[1]
+        log("got hello: %s", caps)
+
+    def _process_encodings(self, packet: PacketType) -> None:
+        log(f"{packet!r}")
+        self.encodings = tuple(typedict(packet[1]).dictget("video").keys())
+        log("got encodings=%s", self.encodings)
+
+    def _process_disconnect(self, packet: PacketType) -> None:
+        log("disconnected from server %s", self.protocol)
+        self.encodings = ()
+
+    def _process_connection_lost(self, packet: PacketType) -> None:
+        log("connection-lost for server %s", self.protocol)
+        self.encodings = ()
+
+    def _process_startup_complete(self, packet: PacketType) -> None:
+        log(f"{packet!r}")
+        self.event.set()
 
     def _next_packet(self):
         return self._ordinary_packets.pop(0), True, bool(self._ordinary_packets)
@@ -118,10 +148,11 @@ def get_info() -> dict[str, Any]:
 
 
 server = EncoderClient(ENCODER_SERVER_URI)
+encodings: Sequence[str] = ()
 
 
 def get_encodings() -> Sequence[str]:
-    return server.get_encodings()
+    return encodings
 
 
 def init_module() -> None:
@@ -129,6 +160,8 @@ def init_module() -> None:
     log(f"remote.init_module() attempting to connect to {uri!r}")
     try:
         server.connect()
+        global encodings
+        encodings = server.get_encodings()
     except Exception:
         log("failed to connect to server, no encodings available", exc_info=True)
 

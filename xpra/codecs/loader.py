@@ -17,7 +17,7 @@ from xpra.util.env import envbool, numpy_import_context
 from xpra.os_util import OSX, WIN32
 from xpra.util.version import parse_version
 from xpra.codecs.constants import HELP_ORDER
-from xpra.log import Logger
+from xpra.log import Logger, enable_color, LOG_FORMAT, NOPREFIX_FORMAT
 log = Logger("codec", "loader")
 
 
@@ -451,7 +451,6 @@ def encoding_help(encoding: str) -> str:
 def main(args) -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
-    from xpra.log import enable_color, LOG_FORMAT, NOPREFIX_FORMAT
     with program_context("Loader", "Encoding Info"):
         verbose = "-v" in args or "--verbose" in args
         args = [x for x in args if x not in ("-v", "--verbose")]
@@ -465,80 +464,97 @@ def main(args) -> int:
             check_log.enable_debug()
         enable_color(format_string=format_string)
 
-        if len(args) > 1:
-            names = []
-            for x in args[1:]:
-                name = x.lower().replace("-", "_")
-                if name not in CODEC_OPTIONS:
-                    loose_matches = tuple(o for o in (
-                        f"enc_{name}", f"dec_{name}", f"csc_{name}"
-                    ) if o in CODEC_OPTIONS)
-                    if len(loose_matches) == 1:
-                        name = loose_matches[0]
-                    elif len(loose_matches) > 1:
-                        log.warn(f"{x} matches: "+csv(loose_matches))
-                load_codec(name)
-                names.append(name)
-            list_codecs = tuple(names)
-        else:
-            try:
-                load_codecs(sources=True)
-            except KeyboardInterrupt:
-                return 1
-            list_codecs = ALL_CODECS
-            # not really a codec, but gets used by codecs, so include version info:
-            with numpy_import_context("codec loader"):
-                add_codec_version("numpy", "numpy")
+        from xpra.os_util import gi_import
+        GLib = gi_import("GLib")
+        main_loop = GLib.MainLoop()
 
-        # use another logger for printing the results,
-        # and use debug level by default, which shows up as green
-        out = Logger("encoding")
-        out.enable_debug()
-        enable_color(format_string=NOPREFIX_FORMAT)
-        out.info("modules found:")
-        for name in sorted(list_codecs):
-            mod : ModuleType | None = codecs.get(name)
-            f = str(mod)
-            if mod and hasattr(mod, "__file__"):
-                f = getattr(mod, "__file__", f)
-                if f.startswith(os.getcwd()):
-                    f = f[len(os.getcwd()):]
-                    if f.startswith(os.path.sep):
-                        f = f[1:]
-            if name in NOLOAD and not f:
-                # don't show codecs from the NOLOAD list
-                continue
-            if mod:
-                out.info(f"* {name.ljust(20)} : {f}")
-                if verbose:
+        def load_in_thread() -> None:
+            codecs = do_main_load(args)
+            print_codecs(codecs)
+            main_loop.quit()
+
+        from xpra.util.thread import start_thread
+        start_thread(load_in_thread, "threaded loader")
+
+        main_loop.run()
+        return 0
+
+
+def do_main_load(args) -> Sequence[str]:
+    if len(args) > 1:
+        names = []
+        for x in args[1:]:
+            name = x.lower().replace("-", "_")
+            if name not in CODEC_OPTIONS:
+                loose_matches = tuple(o for o in (
+                    f"enc_{name}", f"dec_{name}", f"csc_{name}"
+                ) if o in CODEC_OPTIONS)
+                if len(loose_matches) == 1:
+                    name = loose_matches[0]
+                elif len(loose_matches) > 1:
+                    log.warn(f"{x} matches: "+csv(loose_matches))
+            load_codec(name)
+            names.append(name)
+        return tuple(names)
+    try:
+        load_codecs(sources=True)
+    except KeyboardInterrupt:
+        return 1
+    # not really a codec, but gets used by codecs, so include version info:
+    with numpy_import_context("codec loader"):
+        add_codec_version("numpy", "numpy")
+    return ALL_CODECS
+
+
+def print_codecs(list_codecs: Sequence[str]) -> None:
+    # use another logger for printing the results,
+    # and use debug level by default, which shows up as green
+    out = Logger("encoding")
+    out.enable_debug()
+    enable_color(format_string=NOPREFIX_FORMAT)
+    out.info("modules found:")
+    for name in sorted(list_codecs):
+        mod : ModuleType | None = codecs.get(name)
+        f = str(mod)
+        if mod and hasattr(mod, "__file__"):
+            f = getattr(mod, "__file__", f)
+            if f.startswith(os.getcwd()):
+                f = f[len(os.getcwd()):]
+                if f.startswith(os.path.sep):
+                    f = f[1:]
+        if name in NOLOAD and not f:
+            # don't show codecs from the NOLOAD list
+            continue
+        if mod:
+            out.info(f"* {name.ljust(20)} : {f}")
+            if log.is_debug_enabled():
+                try:
+                    if name.find("csc") >= 0:
+                        cs = list(mod.get_input_colorspaces())
+                        for c in list(cs):
+                            cs += list(mod.get_output_colorspaces(c))
+                        out(f"                         colorspaces: {csv(list(set(cs)))}")
+                    elif name.find("enc") >= 0 or name.find("dec") >= 0:
+                        encodings = mod.get_encodings()
+                        out(f"                         encodings: {csv(encodings)}")
                     try:
-                        if name.find("csc") >= 0:
-                            cs = list(mod.get_input_colorspaces())
-                            for c in list(cs):
-                                cs += list(mod.get_output_colorspaces(c))
-                            out(f"                         colorspaces: {csv(list(set(cs)))}")
-                        elif name.find("enc") >= 0 or name.find("dec") >= 0:
-                            encodings = mod.get_encodings()
-                            out(f"                         encodings: {csv(encodings)}")
-                        try:
-                            i = mod.get_info()
-                            for k, v in sorted(i.items()):
-                                out(f"                         {k} = {v}")
-                        except Exception:
-                            pass
-                    except Exception as e:
-                        log(f"{mod}", exc_info=True)
-                        log.error(f"error getting extra information on {name}: {e}")
-            elif name in codec_errors:
-                write = out.error if should_warn(name) else out.debug
-                write(f"* {name.ljust(20)} : {codec_errors[name]}")
-        out("")
-        out.info("codecs versions:")
+                        i = mod.get_info()
+                        for k, v in sorted(i.items()):
+                            out(f"                         {k} = {v}")
+                    except Exception:
+                        pass
+                except Exception as e:
+                    log(f"{mod}", exc_info=True)
+                    log.error(f"error getting extra information on {name}: {e}")
+        elif name in codec_errors:
+            write = out.error if should_warn(name) else out.debug
+            write(f"* {name.ljust(20)} : {codec_errors[name]}")
+    out("")
+    out.info("codecs versions:")
 
-        def forcever(v) -> str:
-            return pver(v, numsep=".", strsep=".").lstrip("v")
-        print_nested_dict(codec_versions, vformat=forcever, print_fn=out.info)
-    return 0
+    def forcever(v) -> str:
+        return pver(v, numsep=".", strsep=".").lstrip("v")
+    print_nested_dict(codec_versions, vformat=forcever, print_fn=out.info)
 
 
 if __name__ == "__main__":
