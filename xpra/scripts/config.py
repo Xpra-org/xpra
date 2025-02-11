@@ -620,6 +620,7 @@ OPTION_TYPES: dict[str, Any] = {
     "tray-icon"         : str,
     "window-icon"       : str,
     "keyboard-raw"      : bool,
+    "keyboard-backend"  : str,
     "keyboard-model"    : str,
     "keyboard-layout"   : str,
     "keyboard-layouts"  : list,
@@ -853,7 +854,7 @@ BIND_OPTIONS : list[str] = [
 # so we can generate command lines that work with older supported versions:
 OPTIONS_ADDED_SINCE_V5: list[str] = [
     "minimal", "dbus", "gstreamer",
-    "keyboard-model",
+    "keyboard-backend", "keyboard-model",
     "bind-rdp", "rdp-auth", "rdp-upgrade",
 ]
 OPTIONS_COMPAT_NAMES: dict[str, str] = {
@@ -1110,6 +1111,7 @@ def get_defaults() -> dict[str, Any]:
         "tray-icon"         : "",
         "window-icon"       : "",
         "keyboard-raw"      : False,
+        "keyboard-backend"  : "",
         "keyboard-model"    : "",
         "keyboard-layout"   : "",
         "keyboard-layouts"  : [],
@@ -1709,6 +1711,8 @@ def fixup_keyboard(options) -> None:
             return r
         except Exception:
             return []
+
+    options.keyboard_backend = "" if options.keyboard_backend == "auto" else options.keyboard_backend
     options.keyboard_layouts = p(options.keyboard_layouts)
     options.keyboard_variants = p(options.keyboard_variants)
     options.keyboard_raw = str_to_bool(options.keyboard_raw)

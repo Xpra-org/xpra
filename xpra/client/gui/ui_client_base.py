@@ -103,6 +103,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_commands_info = False
         self.server_commands_signals: Sequence[str] = ()
         self.server_readonly = False
+        self.server_setting_updates: dict[str, Any] = {}
 
         self.client_supports_opengl: bool = False
         self.client_supports_sharing: bool = False
@@ -151,9 +152,6 @@ class UIXpraClient(ClientBaseClass):
                 return None
             return val
 
-        overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
-            "model", "layout", "layouts", "variant", "variants", "options",
-        )]
         send_keyboard = noop
         if not self.readonly:
             def do_send_keyboard(*parts):
@@ -161,10 +159,15 @@ class UIXpraClient(ClientBaseClass):
 
             send_keyboard = do_send_keyboard
         try:
+            kwargs = dict(
+                (x, noauto(getattr(opts, "keyboard_%s" % x))) for x in (
+                    "backend", "model", "layout", "layouts", "variant", "variants", "options",
+                )
+            )
             self.keyboard_helper = self.keyboard_helper_class(send_keyboard, opts.keyboard_sync,
                                                               opts.shortcut_modifiers,
                                                               opts.key_shortcut,
-                                                              opts.keyboard_raw, *overrides)
+                                                              opts.keyboard_raw, **kwargs)
             if DELAY_KEYBOARD_DATA and not self.readonly:
                 self.after_handshake(self.keyboard_helper.send_keymap)
         except ImportError as e:
@@ -527,13 +530,17 @@ class UIXpraClient(ClientBaseClass):
 
     def on_server_setting_changed(self, setting: str, cb: Callable[[str, Any], None]) -> None:
         self._on_server_setting_changed.setdefault(setting, []).append(cb)
+        # has the value already been updated:
+        value = self.server_setting_updates.get(setting)
+        if value is not None:
+            cb(setting, value)
 
     def _process_setting_change(self, packet: PacketType) -> None:
         setting = str(packet[1])
         value = packet[2]
         # convert "hello" / "setting" variable names to client variables:
         if setting in (
-                "clipboard-limits",
+            "clipboard-limits",
         ):
             # FIXME: this should update the limits?
             pass
@@ -557,12 +564,12 @@ class UIXpraClient(ClientBaseClass):
         self.server_setting_changed(setting, value)
 
     def server_setting_changed(self, setting: str, value) -> None:
-        log("setting_changed(%s, %s)", setting, Ellipsizer(value, limit=200))
-        cbs = self._on_server_setting_changed.get(setting)
-        if cbs:
-            for cb in cbs:
-                log("setting_changed(%s, %s) calling %s", setting, Ellipsizer(value, limit=200), cb)
-                cb(setting, value)
+        self.server_setting_updates[setting] = value
+        cbs: Sequence[Callable[[str, Any], None]] = self._on_server_setting_changed.get(setting, ())
+        log("setting_changed(%s, %s) callbacks=%s", setting, Ellipsizer(value, limit=200), cbs)
+        for cb in cbs:
+            log("setting_changed(%s, %s) calling %s", setting, Ellipsizer(value, limit=200), cb)
+            cb(setting, value)
 
     def add_control_commands(self) -> None:
         super().add_control_commands()

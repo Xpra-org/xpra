@@ -18,8 +18,8 @@ GLib = gi_import("GLib")
 
 class GTKKeyboardHelper(KeyboardHelper):
 
-    def __init__(self, *args):
-        KeyboardHelper.__init__(self, *args)
+    def __init__(self, *args, **kwargs):
+        KeyboardHelper.__init__(self, *args, **kwargs)
         # used for delaying the sending of keymap changes
         # (as we may be getting dozens of such events at a time)
         self._keymap_changing = False

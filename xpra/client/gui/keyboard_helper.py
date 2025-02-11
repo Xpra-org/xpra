@@ -25,7 +25,7 @@ class KeyboardHelper:
 
     def __init__(self, net_send: Callable, keyboard_sync=True,
                  shortcut_modifiers="auto", key_shortcuts=(),
-                 raw=False, model="", layout="", layouts=(),
+                 raw=False, backend="", model="", layout="", layouts=(),
                  variant="", variants=(), options=""):
         self.reset_state()
         self.send = net_send
@@ -38,6 +38,7 @@ class KeyboardHelper:
         self.key_shortcuts: dict[str, list[str]] = {}
         # command line overrides:
         self.raw = raw
+        self.backend = backend
         self.model_option = model
         self.layout_option = layout if (layout or "").lower() not in ("client", "auto") else ""
         self.variant_option = variant
@@ -70,6 +71,7 @@ class KeyboardHelper:
         self.mod_meanings: dict[str, Any] = {}
         self.mod_managed: list[str] = []
         self.mod_pointermissing: list[str] = []
+        self.backend = ""
         self.model = ""
         self.layout = ""
         self.layouts: list[str] = []
@@ -263,6 +265,8 @@ class KeyboardHelper:
     def get_keymap_spec(self) -> dict[str, Any]:
         query_struct = self.keyboard.get_keymap_spec()
         if query_struct:
+            if self.backend:
+                query_struct["backend"] = self.backend
             if self.model_option:
                 query_struct["model"] = self.model_option
             if self.layout_option:
@@ -349,7 +353,7 @@ class KeyboardHelper:
     def get_keymap_properties(self, skip=()) -> dict[str, Any]:
         props = {}
         for x in (
-                "layout", "layouts", "variant", "variants",
+                "backend", "layout", "layouts", "variant", "variants",
                 "raw", "layout_groups",
                 "sync",
                 "query_struct", "mod_meanings",
@@ -372,6 +376,8 @@ class KeyboardHelper:
             "variant": variant,
             "options": options,
         }
+        if self.backend:
+            kb_info["backend"] = self.backend
         if self.query_struct:
             kb_info["rules"] = self.query_struct.get("rules", "")
         if not kb_info:

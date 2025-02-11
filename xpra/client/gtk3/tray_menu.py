@@ -24,6 +24,7 @@ from xpra.client.gtk3.menu_helper import (
 )
 from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
+from xpra.util.config import unset_config_attributes, update_config_attributes
 from xpra.util.stats import std_unit_dec
 from xpra.client.gui import features
 from xpra.log import Logger
@@ -84,6 +85,16 @@ SERVER_NOT_SUPPORTED = "Not supported by the server"
 
 # 'auto' is recorded as '' unfortunately:
 GENERIC_ENCODINGS = ("", "auto", "stream", "grayscale")
+
+CONFIG = "91_tray.conf"
+
+
+def update_config(attributes: dict[str, str]) -> None:
+    update_config_attributes(attributes, filename=CONFIG)
+
+
+def unset_config(*names: str) -> None:
+    unset_config_attributes(names, filename=CONFIG)
 
 
 class GTKTrayMenu(MenuHelper):
@@ -1187,6 +1198,7 @@ class GTKTrayMenu(MenuHelper):
         return keyboard
 
     def populate_keyboard_layouts(self) -> None:
+        log(f"populate_keyboard_layouts() {PREFER_IBUS_LAYOUTS=}")
         # by default, use keyboard helper values:
         self.populate_keyboard_helper_layouts()
         set_sensitive(self.keyboard_layout_item, True)
@@ -1209,6 +1221,7 @@ class GTKTrayMenu(MenuHelper):
             kh = self.client.keyboard_helper
             kh.locked = layout != "Auto"
             if layout != kh.layout_option or variant != kh.variant_option or kh.backend != backend or kh.name != name:
+                kh.backend = backend
                 if layout == "Auto":
                     # re-detect everything:
                     msg = "keyboard automatic mode"
@@ -1216,6 +1229,7 @@ class GTKTrayMenu(MenuHelper):
                     kh.variant_option = ""
                     kh.backend = ""
                     kh.name = ""
+                    unset_config("keyboard-backend", "keyboard-layout", "keyboard-variant")
                 else:
                     # use layout specified and send it:
                     kh.layout_option = layout
@@ -1223,6 +1237,12 @@ class GTKTrayMenu(MenuHelper):
                     kh.backend = backend
                     kh.name = name
                     msg = "new keyboard layout selected"
+                    update_config({
+                        "# keyboard name": name,
+                        "keyboard-backend": backend,
+                        "keyboard-layout": layout,
+                        "keyboard-variant": variant,
+                    })
                 kh.update()
                 kh.send_layout()
                 log.info(f"{msg}: {kh.layout_str()}")
@@ -1250,13 +1270,17 @@ class GTKTrayMenu(MenuHelper):
                 continue
             rank = engine.get("rank", 0)
             engines[rank * 65536 + i] = engine
+        log(f"current settings: backend={kh.backend!r}, layout={kh.layout!r}, variant={kh.variant!r}")
         for rank in reversed(sorted(engines)):
             engine = engines[rank]
             layout = engine.get("layout", "")
             name = engine.get("name", layout)
             descr = engine.get("description", layout).split("\n")[0]
             variant = engine.get("variant", "")
-            self.layout_submenu.append(self.kbitem(descr, layout, variant, "ibus", name))
+            backend = "ibus"
+            active = kh.backend == backend and kh.layout == layout and kh.variant == variant
+            log(f"{engine=} : {active=}")
+            self.layout_submenu.append(self.kbitem(descr, layout, variant, backend, name, active))
 
     def populate_keyboard_helper_layouts(self) -> None:
         self.layout_submenu = Gtk.Menu()

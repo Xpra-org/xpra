@@ -7,6 +7,7 @@ import os
 
 from datetime import datetime
 from typing import Callable
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.scripts.config import make_defaults_struct
@@ -18,7 +19,7 @@ from xpra.log import Logger
 log = Logger("util")
 
 
-CONFIGURE_TOOL_CONFIG = "99_configure_tool.conf"
+CONFIGURE_TOOL_CONFIG = "90_configure_tool.conf"
 
 
 def get_user_config_file(dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> str:
@@ -57,18 +58,31 @@ def save_user_config_file(options: dict,
 
 def update_config_attribute(attribute: str, value: str | int | float | list,
                             dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
+    update_config_attributes({attribute: value}, dirname, filename)
+
+
+def update_config_attributes(attributes: dict[str, str | int | float | list],
+                             dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
     config = parse_user_config_file(dirname, filename)
-    value_str = str(value)
-    if isinstance(value, bool):
-        value_str = "yes" if bool(value) else "no"
-    config[attribute] = value_str
-    log(f"update config: {attribute}={value_str}")
+    for attribute, value in attributes.items():
+        value_str = str(value)
+        if isinstance(value, bool):
+            value_str = "yes" if bool(value) else "no"
+        config[attribute] = value_str
+        log(f"update config: {attribute}={value_str}")
     save_user_config_file(config, dirname, filename)
 
 
 def unset_config_attribute(attribute: str, dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
+    unset_config_attributes((attribute, ), dirname, filename)
+
+
+def unset_config_attributes(attributes: Sequence[str], dirname="conf.d", filename=CONFIGURE_TOOL_CONFIG) -> None:
     config = parse_user_config_file(dirname, filename)
-    if config.pop(attribute, None) is not None:
+    modified = False
+    for attribute in attributes:
+        modified |= config.pop(attribute, None) is not None
+    if modified:
         save_user_config_file(config, dirname, filename)
 
 
