@@ -1687,7 +1687,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Send raw keyboard keycodes. Default: %s." % enabled_str(defaults.keyboard_raw))
     group.add_option("--keyboard-backend", action="store", metavar="BACKEND",
                      dest="keyboard_backend", default=defaults.keyboard_backend,
-                     help="The keyboard backend to use. Default: %s." % autodefault(defaults.keyboard_model))
+                     help="The keyboard backend to use. Default: %s." % autodefault(defaults.keyboard_backend))
     group.add_option("--keyboard-model", action="store", metavar="MODEL",
                      dest="keyboard_model", default=defaults.keyboard_model,
                      help="The keyboard model to use. Default: %s." % nonedefault(defaults.keyboard_model))
