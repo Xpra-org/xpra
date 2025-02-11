@@ -124,8 +124,9 @@ def get_client_connection_class(caps: typedict):
         def send_hello(self, server_capabilities: dict) -> None:
             capabilities = server_capabilities.copy()
             for bc in CC_BASES:
-                log("%s.get_caps()", bc)
-                merge_dicts(capabilities, bc.get_caps(self))
+                caps = bc.get_caps(self)
+                log("%s.get_caps()=%s", bc, caps)
+                merge_dicts(capabilities, caps)
             if LOG_HELLO:
                 netlog = Logger("network")
                 netlog.info(f"sending hello to {self}:")
