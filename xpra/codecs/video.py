@@ -344,8 +344,9 @@ class VideoHelper:
         return self._video_decoder_specs.get(encoding, {})
 
     def init_video_encoders_options(self) -> None:
-        log("init_video_encoders_options()")
-        log(" will try video encoders: %s", csv(self.video_encoders))
+        log("init_video_encoders_options() will try video encoders: %s", csv(self.video_encoders) or "none")
+        if not self.video_encoders:
+            return
         for x in self.video_encoders:
             try:
                 mod = get_encoder_module_name(x)
@@ -389,8 +390,9 @@ class VideoHelper:
         self._video_encoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec)
 
     def init_csc_options(self) -> None:
-        log("init_csc_options()")
-        log(" will try csc modules: %s", csv(self.csc_modules))
+        log("init_csc_options() will try csc modules: %s", csv(self.csc_modules) or "none")
+        if not self.csc_modules:
+            return
         for x in self.csc_modules:
             try:
                 mod = get_csc_module_name(x)
@@ -416,7 +418,7 @@ class VideoHelper:
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
             out_cscs = csc_module.get_output_colorspaces(in_csc)
-            log("%9s output colorspaces for %7s: %s", csc_module.get_type(), in_csc, csv(out_cscs))
+            log("%9s output colorspaces for %10s: %s", csc_module.get_type(), in_csc, csv(out_cscs))
             for out_csc in out_cscs:
                 spec = csc_module.get_spec(in_csc, out_csc)
                 self.add_csc_spec(in_csc, out_csc, spec)
@@ -425,8 +427,9 @@ class VideoHelper:
         self._csc_encoder_specs.setdefault(in_csc, {}).setdefault(out_csc, []).append(spec)
 
     def init_video_decoders_options(self) -> None:
-        log("init_video_decoders_options()")
-        log(" will try video decoders: %s", csv(self.video_decoders))
+        log("init_video_decoders_options() will try video decoders: %s", csv(self.video_decoders) or "none")
+        if not self.video_decoders:
+            return
         for x in self.video_decoders:
             try:
                 mod = get_decoder_module_name(x)
