@@ -50,7 +50,7 @@ DEF AVIF_PLANE_COUNT_YUV = 3
 def get_type() -> str:
     return "avif"
 
-def get_encodings() -> Sequence[str, ...]:
+def get_encodings() -> Sequence[str]:
     return ("avif", )
 
 def get_version() -> Tuple[int, int, int]:

@@ -116,7 +116,7 @@ def get_input_colorspaces() -> Sequence[str]:
     return tuple(COLORSPACES.keys())
 
 
-def get_output_colorspaces(input_colorspace) -> Sequence[str]:
+def get_output_colorspaces(input_colorspace: str) -> Sequence[str]:
     return COLORSPACES[input_colorspace]
 
 

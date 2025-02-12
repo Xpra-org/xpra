@@ -452,11 +452,11 @@ def get_input_colorspaces(encoding) -> Sequence[str]:
     return ("YUV420P", )
 
 
-def get_output_colorspaces(encoding, csc) -> Sequence[str, ...]:
+def get_output_colorspaces(encoding, csc) -> Sequence[str]:
     return ("NV12", )
 
 
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec, ...]:
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
     assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in get_input_colorspaces(encoding), "invalid output colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
     return (

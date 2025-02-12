@@ -8,6 +8,7 @@
 import os
 from time import monotonic
 from typing import Any, Tuple, Dict
+from collections.abc import Sequence
 
 from xpra.log import Logger
 log = Logger("encoder", "x264")
@@ -441,12 +442,12 @@ def get_encodings() -> Tuple[str,...]:
     return ("h264", )
 
 
-def get_input_colorspaces(encoding: str):
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     assert encoding in get_encodings()
     return tuple(COLORSPACES.keys())
 
 
-def get_output_colorspaces(encoding: str, input_colorspace: str):
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
     return (COLORSPACES[input_colorspace],)
@@ -457,7 +458,7 @@ def get_output_colorspaces(encoding: str, input_colorspace: str):
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
 
-def get_specs(encoding: str, colorspace: str):
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
     assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
     assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
     #we can handle high quality and any speed

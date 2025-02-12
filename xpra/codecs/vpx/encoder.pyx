@@ -226,12 +226,12 @@ def get_encodings() -> Sequence[str]:
     return CODECS
 
 
-def get_input_colorspaces(encoding: str):
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     assert encoding in get_encodings(), "invalid encoding: %s" % encoding
     return COLORSPACES[encoding]
 
 
-def get_output_colorspaces(encoding: str, input_colorspace: str):
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     assert encoding in get_encodings(), "invalid encoding: %s" % encoding
     csoptions = COLORSPACES[encoding]
     assert input_colorspace in csoptions, "invalid input colorspace: %s, %s only supports %s" % (input_colorspace, encoding, csoptions)

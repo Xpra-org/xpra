@@ -389,12 +389,12 @@ def get_encodings() -> Sequence[str]:
     return ("h264", )
 
 
-def get_input_colorspaces(encoding) -> Sequence[str]:
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
     assert encoding in get_encodings()
     return tuple(COLORSPACES.keys())
 
 
-def get_output_colorspaces(encoding, input_colorspace) -> Sequence[str]:
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     assert encoding in get_encodings()
     assert input_colorspace in COLORSPACES
     return (COLORSPACES[input_colorspace],)
