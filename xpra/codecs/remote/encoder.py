@@ -5,21 +5,26 @@
 
 import os
 import uuid
+from queue import Queue
 from typing import Any
 from time import monotonic
 from collections import deque
 from collections.abc import Sequence
+from weakref import WeakValueDictionary
 from threading import Event
 
 from xpra import __version__
 from xpra.util.env import envint
-from xpra.util.objects import typedict
+from xpra.util.objects import typedict, AtomicInteger
 from xpra.net.common import PacketElement, PacketType
+from xpra.codecs.constants import VideoSpec
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
 
 log = Logger("encoder")
+log.enable_debug()
 
+ENCODER_SERVER_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 5)
 ENCODER_SERVER_URI = os.environ.get("XPRA_ENCODER_SERVER_URI", "tcp://127.0.0.1:20000/")
 ENCODER_SERVER_SOCKET_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 1)
 
@@ -29,11 +34,16 @@ class EncoderClient:
     def __init__(self, uri=""):
         self.uri = uri
         self.encodings: Sequence[str] = ()
+        self.specs: dict[str, dict[str, Sequence[VideoSpec]]] = {}
         self.protocol = None
         self._ordinary_packets = []
         self.event = Event()
+        self.encoders = WeakValueDictionary()
 
-    def connect(self, retry=False):
+    def connect(self, retry=False) -> None:
+        if self.protocol:
+            log("already connected")
+            return
         from xpra.scripts.main import error_handler, parse_display_name, connect_to
         from xpra.scripts.config import make_defaults_struct
         opts = make_defaults_struct()
@@ -47,7 +57,42 @@ class EncoderClient:
         self.protocol = self.make_protocol(conn)
         self.send_hello()
 
-    def send_hello(self):
+    def make_protocol(self, conn):
+        from xpra.net.packet_encoding import init_all
+        init_all()
+        from xpra.net.compression import init_all
+        init_all()
+        from xpra.net.protocol.factory import get_client_protocol_class
+        protocol_class = get_client_protocol_class(conn.socktype)
+        protocol = protocol_class(conn, self._process_packet, self._next_packet)
+        protocol.enable_default_encoder()
+        protocol.enable_default_compressor()
+        protocol._log_stats = False
+        protocol.large_packets += ["encodings", "context-compress", "context-data"]
+        # self.add_packet_handler("setting-change", noop)
+        # if conn.timeout > 0:
+        #    GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
+        return protocol
+
+    def send(self, packet_type: str, *parts: PacketElement) -> None:
+        packet = (packet_type, *parts)
+        self._ordinary_packets.append(packet)
+        self.protocol.source_has_more()
+
+    def _process_packet(self, proto, packet: PacketType) -> None:
+        packet_type = packet[0]
+        if packet_type in (
+                "hello", "encodings", "startup-complete",
+                "setting-change",
+                "connection-lost", "disconnect",
+                "context-response", "context-data",
+        ):
+            fn = getattr(self, "_process_%s" % packet_type.replace("-", "_"))
+            fn(packet)
+        else:
+            log.warn(f"Warning: received unexpected {packet_type!r} from encoder server connection {proto}")
+
+    def send_hello(self) -> None:
         caps = {
             "version": __version__,
             "client_type": "encode",
@@ -66,73 +111,78 @@ class EncoderClient:
         self.send("hello", caps)
         self.event.clear()
         self.protocol.start()
-        self.event.wait(1)
+        self.event.wait(ENCODER_SERVER_TIMEOUT)
 
-    def send(self, packet_type: str, *parts: PacketElement) -> None:
-        packet = (packet_type, *parts)
-        # direct mode:
-        # self.protocol.add_packet_to_queue(packet)
-        # self.protocol.flush_write_queue():
-        self._ordinary_packets.append(packet)
-        self.protocol.source_has_more()
-
-    def make_protocol(self, conn):
-        from xpra.net.packet_encoding import init_all
-        init_all()
-        from xpra.net.compression import init_all
-        init_all()
-        from xpra.net.protocol.factory import get_client_protocol_class
-        protocol_class = get_client_protocol_class(conn.socktype)
-        protocol = protocol_class(conn, self._process_packet, self._next_packet)
-        protocol.enable_default_encoder()
-        protocol.enable_default_compressor()
-        protocol._log_stats = False
-        protocol.large_packets.append("encodings")
-        # self.add_packet_handler("setting-change", noop)
-        # if conn.timeout > 0:
-        #    GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
-        return protocol
-
-    def _process_packet(self, proto, packet: PacketType) -> None:
-        packet_type = packet[0]
-        if packet_type in ("hello", "encodings", "startup-complete", "setting-change", "connection-lost", "disconnect"):
-            fn = getattr(self, "_process_%s" % packet_type.replace("-", "_"))
-            fn(packet)
-        else:
-            log.warn(f"Warning: received unexpected {packet_type!r} from encoder server connection {proto}")
-
-    def _process_hello(self, packet: PacketType) -> None:
+    @staticmethod
+    def _process_hello(packet: PacketType) -> None:
         caps = packet[1]
         log("got hello: %s", caps)
 
     def _process_encodings(self, packet: PacketType) -> None:
         log(f"{packet!r}")
-        self.encodings = tuple(typedict(packet[1]).dictget("video").keys())
+        self.specs = typedict(packet[1]).dictget("video") or {}
+        self.encodings = tuple(self.specs.keys())
         log("got encodings=%s", self.encodings)
+        log("from specs=%s", self.specs)
 
     def _process_disconnect(self, packet: PacketType) -> None:
         log("disconnected from server %s", self.protocol)
         self.encodings = ()
+        self.protocol = None
 
     def _process_connection_lost(self, packet: PacketType) -> None:
         log("connection-lost for server %s", self.protocol)
         self.encodings = ()
+        self.protocol = None
 
     def _process_startup_complete(self, packet: PacketType) -> None:
         log(f"{packet!r}")
         self.event.set()
 
-    def _next_packet(self):
+    def _next_packet(self) -> tuple[Any, bool, bool]:
         return self._ordinary_packets.pop(0), True, bool(self._ordinary_packets)
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         p = self.protocol
         if p:
             self.protocol = None
             p.close()
 
-    def get_encodings(self):
+    def get_encodings(self) -> Sequence[str]:
         return self.encodings
+
+    def request_context(self, encoder, encoding: str, width: int, height: int, src_format: str, options: dict):
+        seq = encoder.sequence
+        self.encoders[seq] = encoder
+        self.send("context-request", seq, encoding, width, height, src_format, options)
+
+    def _process_context_response(self, packet: PacketType):
+        seq = packet[1]
+        ok = packet[2]
+        encoder = self.encoders.get(seq)
+        log(f"context-response: {seq}={encoder}, {ok=}")
+        if not encoder:
+            log.error(f"Error: encoder {seq} not found!")
+            return
+        if ok:
+            encoder.ready = True
+        else:
+            encoder.closed = True
+
+    def compress(self, encoder, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
+        metadata = {}
+        for attr in ("x", "y", "width", "height", "pixel_format", "depth", "rowstride", "bytesperpixel", "planes", "full_range"):
+            metadata[attr] = getattr(image, f"get_{attr}")()
+        pixels = image.get_pixels()
+        self.send("context-compress", encoder.sequence, metadata, pixels, options)
+
+    def _process_context_data(self, packet: PacketType):
+        seq, bdata, client_options = packet[1:4]
+        encoder = self.encoders.get(seq)
+        if not encoder:
+            log.error(f"Error: encoder {seq} not found!")
+            return
+        encoder.compressed_data(bdata, client_options)
 
 
 def get_version() -> Sequence[int]:
@@ -171,12 +221,53 @@ def cleanup_module() -> None:
     server.disconnect()
 
 
+def get_input_colorspaces(encoding: str) -> Sequence[str]:
+    assert encoding in get_encodings()
+    return tuple(server.specs.get(encoding, {}).keys())
+
+
+def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
+    assert encoding in get_encodings()
+    especs = tuple(server.specs.get(encoding, {}).get(input_colorspace, ()))
+    output_colorspaces = []
+    for espec in especs:
+        for cs in espec.get("output_colorspaces", ()):
+            if cs not in output_colorspaces:
+                output_colorspaces.append(cs)
+    return tuple(output_colorspaces)
+
+
+def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
+    # the `server.specs` are dictionaries,
+    # which we need to convert to real `VideoSpec` objects:
+    specs = []
+    especs = tuple(server.specs.get(encoding, {}).get(colorspace, ()))
+    for espec in especs:
+        log(f"remote: {encoding} + {colorspace}: {espec}")
+        codec_type = espec.pop("codec_type", "")
+        if not codec_type:
+            continue
+        spec = VideoSpec(codec_class=Encoder, codec_type=f"remote-{codec_type}")
+        for k, v in espec.items():
+            if not hasattr(spec, k):
+                log.warn(f"Warning: unknown video spec attribute {k!r}")
+                continue
+            setattr(spec, k, v)
+        specs.append(spec)
+    log(f"remote.get_specs({encoding}, {colorspace}={specs}")
+    return tuple(specs)
+
+
+sequence = AtomicInteger()
+
+
 class Encoder:
     """
     This encoder connects to an encoder server and delegates to it
     """
 
     def init_context(self, encoding: str, width: int, height: int, src_format: str, options: typedict) -> None:
+        self.sequence = sequence.increase()
         self.encoding = encoding
         self.width = width
         self.height = height
@@ -184,6 +275,10 @@ class Encoder:
         self.dst_formats = options.strtupleget("dst-formats")
         self.last_frame_times: deque[float] = deque(maxlen=200)
         self.ready = False
+        self.closed = False
+        server.connect()
+        server.request_context(self, encoding, width, height, src_format, dict(options))
+        self.responses = Queue(maxsize=1)
 
     def is_ready(self) -> bool:
         return self.ready
@@ -218,7 +313,7 @@ class Encoder:
         return f"remote_encoder({self.src_format} - {self.width}x{self.height})"
 
     def is_closed(self) -> bool:
-        return self.src_format is None
+        return self.closed
 
     def get_encoding(self) -> str:
         return self.encoding
@@ -236,6 +331,7 @@ class Encoder:
         return self.src_format
 
     def clean(self) -> None:
+        self.closed = True
         self.width = 0
         self.height = 0
         self.src_format = ""
@@ -245,4 +341,9 @@ class Encoder:
         self.last_frame_times = deque()
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
-        pass
+        server.compress(self, image, options)
+        return self.responses.get(timeout=1)
+
+    def compressed_data(self, bdata, client_options: dict) -> None:
+        log(f"received compressed data: {len(bdata)}, {client_options=}")
+        self.responses.put((bdata, client_options))

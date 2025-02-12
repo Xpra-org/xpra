@@ -10,8 +10,10 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.net.common import PacketType
 from xpra.net.protocol.socket_handler import SocketProtocol
+from xpra.codecs.image import ImageWrapper
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.server.base import ServerBase, SERVER_BASES
+from xpra.codecs.video import getVideoHelper
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -27,6 +29,7 @@ class EncoderServer(ServerBase):
         self.session_type = "encoder"
         self.loop = GLib.MainLoop()
         self.encode: Callable | None = None
+        self.encoders = {}
 
     def init(self, opts) -> None:
         super().init(opts)
@@ -55,7 +58,7 @@ class EncoderServer(ServerBase):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("encode")
+        self.add_packets("encode", "context-request", "context-compress", )
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         super().add_new_client(ss, c, send_ui, share_count)
@@ -95,3 +98,37 @@ class EncoderServer(ServerBase):
         free()
         packet = ["encode-response", coding, compressed.data, client_options, width, height, stride, bpp, metadata]
         ss.send_async(*packet)
+
+    def _process_context_request(self, proto: SocketProtocol, packet: PacketType) -> None:
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
+        seq, encoding, width, height, src_format, options = packet[1:7]
+        vh = getVideoHelper()
+        specs = vh.get_encoder_specs(encoding).get(src_format, ())
+        if not specs:
+            ss.send("context-response", seq, False)
+            return
+        # we should be able to specify which one
+        # and verify dimensions
+        spec = specs[0]
+        encoder = spec.codec_class()
+        encoder.init_context(encoding, width, height, src_format, typedict(options))
+        self.encoders[seq] = encoder
+        log(f"new encoder: {encoder}")
+        ss.send("context-response", seq, True)
+
+    def _process_context_compress(self, proto: SocketProtocol, packet: PacketType) -> None:
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
+        seq, metadata, pixels, options = packet[1:5]
+        encoder = self.encoders[seq]
+        metadata["pixels"] = pixels
+        image = ImageWrapper(**metadata)
+        log(f"{encoder=} {image=}")
+        bdata, client_options = encoder.compress_image(image, typedict(options))
+        if bdata is None:
+            raise RuntimeError("no data!")
+        log(f"{len(bdata)} bytes, {client_options=}")
+        ss.send("context-data", seq, bdata, client_options)

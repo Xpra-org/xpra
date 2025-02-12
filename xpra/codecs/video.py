@@ -64,7 +64,7 @@ def try_import_modules(prefix: str, *codec_names: str) -> list[str]:
 
 
 # all the codecs we know about:
-ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("x264", "openh264", "vpx", "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer")
+ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("x264", "openh264", "vpx", "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer", "remote")
 HARDWARE_ENCODER_OPTIONS: Sequence[str] = ("nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS: Sequence[str] = ("cython", "libyuv")
 ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("openh264", "vpx", "gstreamer", "nvdec")
@@ -418,7 +418,7 @@ class VideoHelper:
         in_cscs = csc_module.get_input_colorspaces()
         for in_csc in in_cscs:
             out_cscs = csc_module.get_output_colorspaces(in_csc)
-            log("%9s output colorspaces for %10s: %s", csc_module.get_type(), in_csc, csv(out_cscs))
+            log("%10s output colorspaces for %10s: %s", csc_module.get_type(), in_csc, csv(out_cscs))
             for out_csc in out_cscs:
                 spec = csc_module.get_spec(in_csc, out_csc)
                 self.add_csc_spec(in_csc, out_csc, spec)
@@ -454,7 +454,7 @@ class VideoHelper:
         log(" %s encodings=%s", decoder_type, csv(encodings))
         for encoding in encodings:
             colorspaces = decoder_module.get_input_colorspaces(encoding)
-            log(" %s input colorspaces for %s: %s", decoder_type, encoding, csv(colorspaces))
+            log(" %10s input colorspaces for %s: %s", decoder_type, encoding, csv(colorspaces))
             for colorspace in colorspaces:
                 specs = decoder_module.get_specs(encoding, colorspace)
                 for spec in specs:
@@ -491,10 +491,12 @@ class VideoHelper:
             this will include the RGB modes themselves too.
         """
         log("get_server_full_csc_modes_for_rgb%s", target_rgb_modes)
-        supported_csc_modes = list(target_rgb_modes)
+        supported_csc_modes = list(filter(lambda rgb_mode: rgb_mode != "*", target_rgb_modes))
         for src_format, specs in self._csc_encoder_specs.items():
             for dst_format, csc_specs in specs.items():
-                if dst_format in target_rgb_modes and csc_specs:
+                if not csc_specs:
+                    continue
+                if dst_format in target_rgb_modes or "*" in target_rgb_modes:
                     supported_csc_modes.append(src_format)
                     break
         supported_csc_modes = sorted(supported_csc_modes)
