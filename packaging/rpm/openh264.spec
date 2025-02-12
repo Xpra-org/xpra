@@ -1,8 +1,8 @@
 %define _disable_source_fetch 0
 
 Name:           openh264
-Version:        2.5.0
-Release:        2
+Version:        2.6.0
+Release:        1
 Summary:        H.264 codec library
 License:        BSD-2-Clause
 URL:            https://www.openh264.org/
@@ -33,7 +33,7 @@ developing applications that use %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "94c8ca364db990047ec4ec3481b04ce0d791e62561ef5601443011bdc00825e3" ]; then
+if [ "${sha256}" != "558544ad358283a7ab2930d69a9ceddf913f4a51ee9bf1bfb9e377322af81a69" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -60,7 +60,7 @@ rm $RPM_BUILD_ROOT%{_libdir}/*.a
 %files
 %license LICENSE
 %doc README.md
-%{_libdir}/libopenh264.so.7
+%{_libdir}/libopenh264.so.8
 %{_libdir}/libopenh264.so.%{version}
 
 %files devel
@@ -69,6 +69,9 @@ rm $RPM_BUILD_ROOT%{_libdir}/*.a
 %{_libdir}/pkgconfig/openh264.pc
 
 %changelog
+* Wed Feb 12 2025 Antoine Martin <antoine@xpra.org> - 2.6.0-1
+- new upstream release
+
 * Thu Dec 26 2024 Antoine Martin <antoine@xpra.org> - 2.5.0-2
 - replace 'noopenh264'
 
