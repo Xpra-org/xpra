@@ -188,7 +188,9 @@ class SSHProxyCommandConnection(SSHSocketConnection):
 def safe_lookup(config_obj, hostname: str) -> dict:
     try:
         _lookup = getattr(config_obj, "_lookup", None)
-        if _lookup:
+        import paramiko
+        # older versions don't have the same signature for `_lookup`:
+        if _lookup and getattr(paramiko, "__version_info__", (0, )) >= (3, 3):
             # completely duplicate the paramiko logic since they're unwilling to merge a trivial change :(
             options = _lookup(hostname=hostname)
             # Inject HostName if it was not set (this used to be done incidentally
