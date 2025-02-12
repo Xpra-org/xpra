@@ -325,7 +325,7 @@ class KeyboardHelper:
                   self.layout_option or self.layout or "",
                   self.variant_option or self.variant or "",
                   self.options or "",
-                  self.backend, self.name)
+                  self.backend or "", self.name or "")
 
     def send_keymap(self) -> None:
         log("send_keymap()")
