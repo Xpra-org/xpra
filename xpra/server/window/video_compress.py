@@ -1867,7 +1867,7 @@ class WindowVideoSource(WindowSource):
 
         if self._current_quality == 100:
             # discard options with negative scores (usually subsampled or downscaled)
-            positive_scores = filter(lambda option: option[0] >= 0, scores)
+            positive_scores = tuple(filter(lambda option: option[0] >= 0, scores))
             if not positive_scores:
                 videolog(f"no pipeline scores above 0 for quality={self._current_quality}, cannot use video")
                 return False
