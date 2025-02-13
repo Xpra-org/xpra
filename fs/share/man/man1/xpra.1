@@ -1066,12 +1066,14 @@ xpra will not try to start a new one and it will just attach to it.
 .SS Options for start, start-desktop, upgrade, shadow
 .TP
 
-\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP
+\fB\-\-http\fP=\fIon\fP|\fIoff\fP
 Respond to HTTP requests on the TCP port(s) and local sockets.
 This requires at least one TCP or local socket to be configured
 using the matching \fBbind\fP option.
-The \fBauto\fP mode will enable support if possible.
-By default the server will provide access to the HTML5 client.
+.TP
+\fB\-\-html\fP=\fIon\fP|\fIoff\fP|\fIauto\fP|\fIwebrootpath\fP
+This enables access to the \fBhtml5\fP client via http.
+The \fBauto\fP mode will enable support if it is found.
 You can also specify your own web root path as argument.
 .TP
 \fB\-\-http\-scripts\fP=\fIoff\fP|\fIall\fP|\fISCRIPTS\fP

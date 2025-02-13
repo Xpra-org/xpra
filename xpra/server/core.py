@@ -177,6 +177,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         self.websocket_upgrade = has_websocket_handler()
         self.ssh_upgrade = False
         self.rdp_upgrade = False
+        self.http = False
         self._html: bool = False
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
@@ -260,6 +261,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         self.exit_with_client = opts.exit_with_client
         self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
+        self.http = opts.http
         self.ssl_upgrade = opts.ssl_upgrade
         self.websocket_upgrade = opts.websocket_upgrade
         self.ssh_upgrade = opts.ssh_upgrade
@@ -269,7 +271,8 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             # must be initialized before calling init_html_proxy
             from xpra.server.menu_provider import get_menu_provider
             self.menu_provider = get_menu_provider()
-        self.init_html_proxy(opts)
+        if self.http:
+            self.init_html_proxy(opts)
         self.init_auth(opts)
         self.init_ssl(opts)
         self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
@@ -1032,7 +1035,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
                         http = line1.find(b"HTTP/") > 0
                         netlog("looking for 'HTTP' in %r: %s", line1, http)
             if http:
-                if not self.websocket_upgrade:
+                if not self.http:
                     self.new_conn_err(conn, sock, socktype, socket_info, packet_type,
                                       "the builtin http server is not enabled")
                     return

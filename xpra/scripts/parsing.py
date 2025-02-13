@@ -1875,6 +1875,10 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--sessions-dir", action="store",
                      dest="sessions_dir", default=defaults.sessions_dir,
                      help="Directory to place/look for the sessions files in. Default: '%s'." % defaults.sessions_dir)
+    legacy_bool_parse("http")
+    group.add_option("--http", action="store", metavar="yes|no",
+                     dest="http", default=defaults.http,
+                     help="Respond to http requests")
     group.add_option("--ssl-upgrade", action="store",
                      dest="ssl_upgrade", default=defaults.ssl_upgrade,
                      help="Upgrade WebSocket and TCP sockets to handle SSL connections. Default: '%default'.")

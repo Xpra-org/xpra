@@ -335,14 +335,14 @@ def set_server_features(opts, mode: str) -> None:
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
         features.ssh = b(opts.ssh) and impcheck("net.ssh")
 
+    features.http = opts.http and impcheck("net.http")
     features.control = opts.control and impcheck("net.control")
-    features.mmap = b(opts.mmap)
+    features.mmap = b(opts.mmap) and impcheck("net.mmap")
     features.ssl = b(opts.ssl)
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
     # features.network_state   = ??
     features.shell = opts.shell
-    features.http = opts.http_scripts.lower() not in FALSE_OPTIONS
 
 
 def enforce_server_features() -> None:
@@ -375,7 +375,7 @@ def enforce_server_features() -> None:
         "windows": "xpra.server.mixins.window,xpra.server.source.windows",
         "cursors": "xpra.server.mixins.cursors,xpra.server.source.cursors",
         "rfb": "xpra.net.rfb,xpra.server.rfb",
-        "http": "xpra.server.mixins.http",
+        "http": "xpra.net.http,xpra.server.mixins.http",
     })
     may_block_numpy()
 
