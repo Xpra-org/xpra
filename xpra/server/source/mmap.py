@@ -27,6 +27,7 @@ class MMAP_Connection(StubSourceMixin):
             else:
                 # older versions supply a single unprefixed area:
                 area_caps = mmap_caps
+            log(f"is_needed(..) caps({prefix!r})={area_caps!r}")
             if area_caps.intget("size", 0) > 0:
                 return True
         return False
