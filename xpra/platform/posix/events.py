@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
@@ -23,12 +24,13 @@ bus_signal_match: dict[tuple[str, Callable], Callable[[], None]] = {}
 
 
 def load_dbus() -> bool:
+    loaded = "xpra.dbus" in sys.modules
     try:
         import xpra.dbus
         assert xpra.dbus
     except ImportError:
         log("setup_dbus_signals()", exc_info=True)
-        if first_time("dbus"):
+        if not loaded:
             log.info("no dbus support")
         return False
 
