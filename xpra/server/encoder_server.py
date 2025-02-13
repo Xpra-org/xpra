@@ -171,5 +171,11 @@ class EncoderServer(ServerBase):
                 free()
         if bdata is None:
             raise RuntimeError("no data!")
-        log(f"{len(bdata)} bytes, {client_options=}")
-        ss.send("context-data", seq, Compressed(encoding, bdata), client_options)
+        mmap_write_area = getattr(ss, "mmap_write_area", None)
+        log(f"{len(bdata)} bytes, {client_options=}, {mmap_write_area=}")
+        if mmap_write_area:
+            client_options["chunks"] = mmap_write_area.write_data(bdata)
+            data = b""
+        else:
+            data = Compressed(encoding, bdata)
+        ss.send("context-data", seq, data, client_options)

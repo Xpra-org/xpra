@@ -216,6 +216,13 @@ class EncoderClient(baseclass):
         if not encoder:
             log.error(f"Error: encoder {seq} not found!")
             return
+        chunks = client_options.pop("chunks", ())
+        if not bdata and chunks:
+            mmap_read_area = getattr(self, "mmap_read_area", None)
+            mmap_data, free = mmap_read_area.mmap_read(*chunks)
+            bdata = bytes(mmap_data)
+            free()
+        log("server replied with %i bytes", len(bdata))
         encoder.compressed_data(bdata, client_options)
 
 
