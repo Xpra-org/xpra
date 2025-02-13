@@ -57,7 +57,7 @@ class Encoder:
 
     def get_info(self) -> Dict[str,Any]:
         info = get_info()
-        if self.src_format is None:
+        if not self.src_format:
             return info
         info.update({
             "frames"    : self.frames,
@@ -108,7 +108,6 @@ class Encoder:
         self.height = 0
         self.src_format = ""
         self.encoding = ""
-        self.src_format = ""
         self.dst_formats = []
         self.last_frame_times = deque()
         self.frames = 0
