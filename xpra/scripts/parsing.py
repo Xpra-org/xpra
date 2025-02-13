@@ -1064,6 +1064,18 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     def dcsv(v) -> str:
         return csv(v or ["none"])
 
+    legacy_bool_parse("commands")
+    group.add_option("--commands", action="store", metavar="yes|no",
+                     dest="commands", default=defaults.commands,
+                     help="Control the ability to run commands")
+    legacy_bool_parse("shell")
+    group.add_option("--shell", action="store", metavar="yes|no",
+                     dest="shell", default=defaults.shell,
+                     help="Enable the shell debugging channel")
+    legacy_bool_parse("control")
+    group.add_option("--control", action="store", metavar="yes|no",
+                     dest="control", default=defaults.control,
+                     help="Enable `control` requests")
     group.add_option("--start", action="append",
                      dest="start", metavar="CMD", default=list(defaults.start or []),
                      help="program to spawn in server (may be repeated). Default: %s." % dcsv(defaults.start))
@@ -1177,11 +1189,12 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--systemd-run-args", action="store", metavar="ARGS",
                      dest="systemd_run_args", default=defaults.systemd_run_args,
                      help="Command line arguments passed to systemd-run. Default: '%default'.")
-    legacy_bool_parse("html")
+    legacy_bool_parse("http-scripts")
     group.add_option("--http-scripts", action="store",
                      dest="http_scripts", default=defaults.http_scripts,
                      metavar="off|all|SCRIPTS",
                      help="Enable the builtin web server scripts. Default: '%default'.")
+    legacy_bool_parse("html")
     group.add_option("--html", action="store",
                      dest="html", default=defaults.html,
                      metavar="on|off|[HOST:]PORT",

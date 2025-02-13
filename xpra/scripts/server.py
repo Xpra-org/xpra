@@ -318,7 +318,7 @@ def set_server_features(opts, mode: str) -> None:
         features.cursors = features.rfb = False
         features.ssh = False
     else:
-        features.commands = envbool("XPRA_RUN_COMMANDS", True)
+        features.commands = opts.commands
         features.notifications = opts.notifications and impcheck("notifications")
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
@@ -335,13 +335,13 @@ def set_server_features(opts, mode: str) -> None:
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
         features.ssh = b(opts.ssh) and impcheck("net.ssh")
 
-    features.control = impcheck("net.control") and envbool("XPRA_CONTROL_CHANNEL", True)
+    features.control = opts.control and impcheck("net.control")
     features.mmap = b(opts.mmap)
     features.ssl = b(opts.ssl)
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
     # features.network_state   = ??
-    features.shell = envbool("XPRA_SHELL", True)
+    features.shell = opts.shell
     features.http = opts.http_scripts.lower() not in FALSE_OPTIONS
 
 

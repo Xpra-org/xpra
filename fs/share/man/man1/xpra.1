@@ -442,6 +442,22 @@ You can also exclude a category with the '\fB-\fP' prefix.
 For example, to enable \fIshadow\fP debugging but not \fIclipboard\fP,
 use: \fI\-\-debug shadow,-clipboard\fP.
 .TP
+\fB\-\-commands\fP=\fIyes\fP|\fIno\fP
+Enable or disable the ability to run commands on the server.
+Generally, clients expect to be able to request new commands to be executed
+by the server, but this can be turned off to securely lock down the server.
+.TP
+\fB\-\-shell\fP=\fIyes\fP|\fIno\fP
+Enable or disable the ability to connect to an xpra socket with the \fBshell\fP
+subcommand.
+This is useful for debugging and is not enabled by default.
+When disabled, it can still be enable on a per-socket basis using bind options.
+.TP
+\fB\-\-control\fP=\fIyes\fP|\fIno\fP
+Enable or disable the control channel of xpra sockets.
+This channel is accessed using the \fBcontrol\fP subcommand to interact with
+an xpra process.
+.TP
 \fB\-\-mmap\fP=\fIyes\fP|\fIno\fP|\fIABSOLUTEFILENAME\fP|\fIDIRECTORY\fP
 Enable or disable memory mapped pixel data transfer.
 By default it is normally enabled automatically if the server and the
