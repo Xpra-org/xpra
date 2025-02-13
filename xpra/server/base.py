@@ -507,12 +507,15 @@ class ServerBase(ServerBaseClass):
         def up(prefix, d) -> None:
             merge_dicts(info, {prefix: d})
 
+        subsystems = []
         for c in SERVER_BASES:
+            subsystems.append(c.__name__.replace("Server", ""))
             with log.trap_error(f"Error collecting information from {c}"):
                 cstart = monotonic()
                 merge_dicts(info, c.get_info(self, proto))
                 cend = monotonic()
                 log("%s.get_info(%s) took %ims", c, proto, int(1000 * (cend - cstart)))
+        up("subsystems", subsystems)
 
         up("features", self.get_features_info())
         up("network", {
