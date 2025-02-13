@@ -395,9 +395,9 @@ cdef class Pusher:
         return info
 
     def __repr__(self):
-        if self.src_format is None:
-            return "v4l2.Pusher(uninitialized)"
-        return "v4l2.Pusher(%s:%s - %sx%s)" % (self.device_name, self.src_format, self.width, self.height)
+        if not self.src_format:
+            return "VirtualWebcam(uninitialized)"
+        return "VirtualWebcam(%s:%s - %sx%s)" % (self.device_name, self.src_format, self.width, self.height)
 
     def is_closed(self) -> bool:
         return not bool(self.src_format)
