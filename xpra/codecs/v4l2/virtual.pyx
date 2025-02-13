@@ -395,7 +395,7 @@ cdef class VirtualWebcam:
         return info
 
     def __repr__(self):
-        if self.src_format is None:
+        if not self.src_format:
             return "VirtualWebcam(uninitialized)"
         return "VirtualWebcam(%s:%s - %sx%s)" % (self.device_name, self.src_format, self.width, self.height)
 
