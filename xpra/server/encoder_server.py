@@ -45,6 +45,10 @@ class EncoderServer(ServerBase):
         register_os_signals(callback, sstr)
         register_SIGUSR_signals(sstr)
 
+    def print_screen_info(self):
+        # we don't use a display
+        pass
+
     def do_run(self) -> None:
         log("do_run() calling %s", self.loop.run)
         self.loop.run()
