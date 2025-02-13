@@ -84,8 +84,9 @@ def add_bus_handler(get_bus: Callable, callback: Callable, signal: str, iface: s
     # ie: add_bus_handler(system_bus, "Sleeping", UPOWER_IFACE_NAME, UPOWER_BUS_NAME)
     try:
         bus = get_bus()
-    except Exception:
-        log.warn(f"Warning: no bus for {signal!r}")
+    except Exception as e:
+        log("add_bus_handler%s", (get_bus, callback, signal, iface, bus_name), exc_info=True)
+        log.warn(f"Warning: no bus for {signal!r}: {e}")
         return None
     if not bus:
         return None
