@@ -5,7 +5,7 @@
 
 import os
 import uuid
-from queue import Queue
+from queue import Queue, Empty
 from typing import Any
 from time import monotonic
 from collections import deque
@@ -18,7 +18,7 @@ from xpra.util.env import envint
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.net.common import PacketElement, PacketType
 from xpra.codecs.constants import VideoSpec
-from xpra.codecs.image import ImageWrapper
+from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
 log = Logger("encoder")
@@ -28,8 +28,14 @@ ENCODER_SERVER_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 5)
 ENCODER_SERVER_URI = os.environ.get("XPRA_ENCODER_SERVER_URI", "tcp://127.0.0.1:20000/")
 ENCODER_SERVER_SOCKET_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 1)
 
+try:
+    from xpra.client.mixins.mmap import MmapClient
+    baseclass = MmapClient
+except ImportError:
+    baseclass = object
 
-class EncoderClient:
+
+class EncoderClient(baseclass):
 
     def __init__(self, uri=""):
         self.uri = uri
@@ -39,6 +45,12 @@ class EncoderClient:
         self._ordinary_packets = []
         self.event = Event()
         self.encoders = WeakValueDictionary()
+        if baseclass != object:
+            from xpra.scripts.config import XpraConfig
+            opts = XpraConfig()
+            opts.mmap = "both"
+            opts.mmap_group = ""
+            MmapClient.init(self, opts)
 
     def connect(self, retry=False) -> None:
         if self.protocol:
@@ -54,6 +66,8 @@ class EncoderClient:
             desc["retry"] = retry
         log(f"server desc={desc!r}")
         conn = connect_to(desc, opts)
+        if baseclass != object:
+            MmapClient.setup_connection(self, conn)
         self.protocol = self.make_protocol(conn)
         self.send_hello()
 
@@ -96,7 +110,7 @@ class EncoderClient:
         caps = {
             "version": __version__,
             "client_type": "encode",
-            "session-id": uuid.uuid4().hex,
+            "uuid": uuid.uuid4().hex,
             "windows": False,
             "keyboard": False,
             "wants": ("encodings", "video", ),
@@ -104,19 +118,23 @@ class EncoderClient:
             "mouse": False,
             "network-state": False,  # tell older server that we don't have "ping"
         }
+        if baseclass != object:
+            caps.update(MmapClient.get_caps(self))
         from xpra.net.packet_encoding import get_packet_encoding_caps
         caps.update(get_packet_encoding_caps(0))
         from xpra.net.compression import get_compression_caps
         caps.update(get_compression_caps(0))
+        log(f"sending hello={caps!r}")
         self.send("hello", caps)
         self.event.clear()
         self.protocol.start()
         self.event.wait(ENCODER_SERVER_TIMEOUT)
 
-    @staticmethod
-    def _process_hello(packet: PacketType) -> None:
+    def _process_hello(self, packet: PacketType) -> None:
         caps = packet[1]
         log("got hello: %s", caps)
+        if baseclass != object:
+            MmapClient.parse_server_capabilities(self, typedict(caps))
 
     def _process_encodings(self, packet: PacketType) -> None:
         log(f"{packet!r}")
@@ -171,10 +189,25 @@ class EncoderClient:
             encoder.closed = True
 
     def compress(self, encoder, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
+        log("compress%s", (encoder, image, options))
         metadata = {}
         for attr in ("x", "y", "width", "height", "pixel_format", "depth", "rowstride", "bytesperpixel", "planes", "full_range"):
             metadata[attr] = getattr(image, f"get_{attr}")()
         pixels = image.get_pixels()
+        mmap_write_area = getattr(self, "mmap_write_area", None)
+        if mmap_write_area:
+            nplanes = image.get_planes()
+            if nplanes == PlanarFormat.PACKED:
+                mmap_data = mmap_write_area.write_data(pixels)
+                log("sending image via mmap: %s", mmap_data)
+            else:
+                mmap_data = []
+                for plane in range(nplanes):
+                    plane_data = mmap_write_area.write_data(pixels[plane])
+                    log("sending plane %i via mmap: %s", plane, plane_data)
+                    mmap_data.append(plane_data)
+            options["chunks"] = tuple(mmap_data)
+            pixels = b""
         self.send("context-compress", encoder.sequence, metadata, pixels, options)
 
     def _process_context_data(self, packet: PacketType):
@@ -209,12 +242,14 @@ def get_encodings() -> Sequence[str]:
 def init_module() -> None:
     uri = ENCODER_SERVER_URI
     log(f"remote.init_module() attempting to connect to {uri!r}")
+    global encodings
     try:
         server.connect()
-        global encodings
-        encodings = server.get_encodings()
-    except Exception:
+    except (OSError, RuntimeError):
         log("failed to connect to server, no encodings available", exc_info=True)
+        encodings = ()
+    else:
+        encodings = server.get_encodings()
 
 
 def cleanup_module() -> None:
@@ -337,12 +372,16 @@ class Encoder:
         self.height = 0
         self.encoding = ""
         self.src_format = ""
-        self.dst_formats = []
+        self.dst_formats = ()
         self.last_frame_times = deque()
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         server.compress(self, image, options)
-        return self.responses.get(timeout=1)
+        try:
+            return self.responses.get(timeout=1)
+        except Empty:
+            log.warn("Warning: remote encoder timeout waiting for server response")
+            return None
 
     def compressed_data(self, bdata, client_options: dict) -> None:
         log(f"received compressed data: {len(bdata)}, {client_options=}")

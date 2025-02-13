@@ -11,7 +11,7 @@ from xpra.util.objects import typedict
 from xpra.net.common import PacketType
 from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.codecs.image import ImageWrapper
+from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.server.base import ServerBase, SERVER_BASES
 from xpra.codecs.video import getVideoHelper
@@ -86,7 +86,6 @@ class EncoderServer(ServerBase):
         # the request can override:
         eo.update(options)
         log("using settings: %s", eo)
-        from xpra.codecs.image import ImageWrapper, PlanarFormat
         if input_coding == "mmap":
             if not ss.mmap_supported or not ss.mmap_read_area:
                 raise RuntimeError("mmap packet but mmap read is not available")
@@ -99,10 +98,12 @@ class EncoderServer(ServerBase):
             else:
                 rgb_data = raw_data
             free = noop
-        image = ImageWrapper(0, 0, width, height, rgb_data, rgb_format, depth, rowstride,
-                             bpp, PlanarFormat.PACKED, True, None, full_range)
-        coding, compressed, client_options, width, height, stride, bpp = self.encode(encoding, image, typedict(eo))
-        free()
+        try:
+            image = ImageWrapper(0, 0, width, height, rgb_data, rgb_format, depth, rowstride,
+                                 bpp, PlanarFormat.PACKED, True, None, full_range)
+            coding, compressed, client_options, width, height, stride, bpp = self.encode(encoding, image, typedict(eo))
+        finally:
+            free()
         packet = ["encode-response", coding, compressed.data, client_options, width, height, stride, bpp, metadata]
         ss.send_async(*packet)
 
@@ -142,13 +143,32 @@ class EncoderServer(ServerBase):
         seq, metadata, pixels, options = packet[1:5]
         encoder = self.encoders[seq]
         encoding = encoder.get_encoding()
+        free_cb = []
+        chunks = options.get("chunks", ())
+        planes = metadata.get("planes", 0)
+        log("compress request with %i planes, mmap chunks=%s", planes, chunks)
+        if not pixels and chunks:
+            # get the pixels from the mmap chunks:
+            if planes == PlanarFormat.PACKED:
+                pixels, free = ss.mmap_read_area.mmap_read(*chunks)
+                free_cb.append(free)
+            else:
+                pixels = []
+                for plane in range(planes):
+                    plane_pixels, free = ss.mmap_read_area.mmap_read(*chunks[plane])
+                    free_cb.append(free)
+                    pixels.append(plane_pixels)
         metadata["pixels"] = pixels
-        image = ImageWrapper(**metadata)
-        log(f"{encoder=} {image=}")
-        device_context = ss.allocate_cuda_device_context()
-        if device_context:
-            options["cuda-device-context"] = device_context
-        bdata, client_options = encoder.compress_image(image, typedict(options))
+        try:
+            image = ImageWrapper(**metadata)
+            log(f"{encoder=} {image=}")
+            device_context = ss.allocate_cuda_device_context()
+            if device_context:
+                options["cuda-device-context"] = device_context
+            bdata, client_options = encoder.compress_image(image, typedict(options))
+        finally:
+            for free in free_cb:
+                free()
         if bdata is None:
             raise RuntimeError("no data!")
         log(f"{len(bdata)} bytes, {client_options=}")
