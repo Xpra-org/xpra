@@ -147,11 +147,11 @@ RGB_FORMATS: Sequence[str] = (
 )
 
 
-class TransientCodecException(Exception):
+class TransientCodecException(RuntimeError):
     pass
 
 
-class CodecStateException(Exception):
+class CodecStateException(RuntimeError):
     pass
 
 
