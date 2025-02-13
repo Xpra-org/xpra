@@ -78,8 +78,8 @@ class MmapClient(StubClientMixin):
 
     def __init__(self):
         super().__init__()
-        self.mmap_read_area = None
-        self.mmap_write_area = None
+        self.mmap_read_area: MmapArea | None = None
+        self.mmap_write_area: MmapArea | None = None
         self.mmap_supported = True
 
     def init(self, opts) -> None:
@@ -131,7 +131,7 @@ class MmapClient(StubClientMixin):
             "write": self.mmap_write_area,
         }.items():
             log(f"{name!r}={area}")
-            if area:
+            if area is not None:
                 area.init_mmap(conn.filename or "")
 
     @staticmethod
