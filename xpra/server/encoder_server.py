@@ -9,6 +9,7 @@ from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.net.common import PacketType
+from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
@@ -65,6 +66,8 @@ class EncoderServer(ServerBase):
         ss.protocol.large_packets.append("encode-response")
 
     def _process_encode(self, proto: SocketProtocol, packet: PacketType) -> None:
+        # this function is only used by the `encode` client,
+        # not the `remote` encoder
         ss = self.get_server_source(proto)
         if not ss:
             return
@@ -107,16 +110,26 @@ class EncoderServer(ServerBase):
         vh = getVideoHelper()
         specs = vh.get_encoder_specs(encoding).get(src_format, ())
         if not specs:
-            ss.send("context-response", seq, False)
+            ss.send("context-response", seq, False, "matching encoder not found")
             return
+        # ensure we have a cuda context,
+        # even if mmap is enabled!
+        device_context = ss.allocate_cuda_device_context()
+        log(f"request: {encoding}, cuda_device_context={device_context}")
+        if device_context:
+            options["cuda-device-context"] = device_context
         # we should be able to specify which one
         # and verify dimensions
-        spec = specs[0]
-        encoder = spec.codec_class()
-        encoder.init_context(encoding, width, height, src_format, typedict(options))
-        self.encoders[seq] = encoder
-        log(f"new encoder: {encoder}")
-        ss.send("context-response", seq, True)
+        spec = specs[-1]
+        try:
+            encoder = spec.codec_class()
+            encoder.init_context(encoding, width, height, src_format, typedict(options))
+            self.encoders[seq] = encoder
+            log(f"new encoder: {encoder}")
+            ss.send("context-response", seq, True)
+        except RuntimeError as e:
+            log("context request failed", exc_info=True)
+            ss.send("context-response", seq, False, f"initialization error: {e}")
 
     def _process_context_compress(self, proto: SocketProtocol, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
@@ -124,11 +137,15 @@ class EncoderServer(ServerBase):
             return
         seq, metadata, pixels, options = packet[1:5]
         encoder = self.encoders[seq]
+        encoding = encoder.get_encoding()
         metadata["pixels"] = pixels
         image = ImageWrapper(**metadata)
         log(f"{encoder=} {image=}")
+        device_context = ss.allocate_cuda_device_context()
+        if device_context:
+            options["cuda-device-context"] = device_context
         bdata, client_options = encoder.compress_image(image, typedict(options))
         if bdata is None:
             raise RuntimeError("no data!")
         log(f"{len(bdata)} bytes, {client_options=}")
-        ss.send("context-data", seq, bdata, client_options)
+        ss.send("context-data", seq, Compressed(encoding, bdata), client_options)

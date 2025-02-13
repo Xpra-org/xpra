@@ -159,8 +159,9 @@ class EncoderClient:
     def _process_context_response(self, packet: PacketType):
         seq = packet[1]
         ok = packet[2]
+        message = "" if len(packet) < 4 else packet[3]
         encoder = self.encoders.get(seq)
-        log(f"context-response: {seq}={encoder}, {ok=}")
+        log(f"context-response: {seq}={encoder}, {ok=}, {message=!r}")
         if not encoder:
             log.error(f"Error: encoder {seq} not found!")
             return

@@ -382,7 +382,12 @@ class EncodingsMixin(StubSourceMixin):
             "jpeg" in common_encodings and has_codec("enc_nvjpeg"),
         ))
         if want_cuda_device:
-            cudalog = Logger("cuda")
+            self.allocate_cuda_device_context()
+
+    def allocate_cuda_device_context(self):
+        cudalog = Logger("cuda")
+        cudalog(f"allocate_cuda_device_context() cuda_device_context={self.cuda_device_context}")
+        if not self.cuda_device_context:
             try:
                 # pylint: disable=import-outside-toplevel
                 from xpra.codecs.nvidia.cuda.context import get_device_context
@@ -394,6 +399,7 @@ class EncodingsMixin(StubSourceMixin):
                 cudalog.error("Error: failed to allocate a CUDA context:")
                 cudalog.estr(e)
                 cudalog.error(" NVJPEG and NVENC will not be available")
+        return self.cuda_device_context
 
     def print_encoding_info(self) -> None:
         log("print_encoding_info() core-encodings=%s, server-core-encodings=%s",
