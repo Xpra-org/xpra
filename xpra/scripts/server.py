@@ -601,7 +601,7 @@ def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str) -> bo
         # make sure that the display isn't the one we're running against,
         # unless we're shadowing it
         return xdisplay != display or mode.startswith("shadow")
-    if mode == "proxy":
+    if mode in ("proxy", "encoder"):
         return False
     if os.environ.get("XDG_SESSION_DESKTOP"):
         return True
