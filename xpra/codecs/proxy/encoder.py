@@ -62,7 +62,7 @@ class Encoder:
 
     def get_info(self) -> dict[str, Any]:
         info = get_info()
-        if self.src_format is None:
+        if not self.src_format:
             return info
         info.update({
             "frames": self.frames,
@@ -86,12 +86,12 @@ class Encoder:
         return info
 
     def __repr__(self):
-        if self.src_format is None:
+        if not self.src_format:
             return "proxy_encoder(uninitialized)"
         return f"proxy_encoder({self.src_format} - {self.width}x{self.height})"
 
     def is_closed(self) -> bool:
-        return self.src_format is None
+        return not bool(self.src_format)
 
     def get_encoding(self) -> str:
         return self.encoding

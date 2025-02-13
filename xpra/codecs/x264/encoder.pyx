@@ -869,7 +869,7 @@ cdef class Encoder:
         }
 
     def __repr__(self):
-        if self.src_format is None:
+        if not self.src_format:
             return "x264_encoder(uninitialized)"
         return "x264_encoder(%s - %sx%s)" % (self.src_format, self.width, self.height)
 

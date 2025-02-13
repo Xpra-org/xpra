@@ -286,7 +286,7 @@ class Encoder:
 
     def get_info(self) -> dict[str, Any]:
         info = get_info()
-        if self.src_format is None:
+        if not self.src_format:
             return info
         info.update({
             "width": self.width,
@@ -309,7 +309,7 @@ class Encoder:
         return info
 
     def __repr__(self):
-        if self.src_format is None:
+        if not self.src_format:
             return "remote_encoder(uninitialized)"
         return f"remote_encoder({self.src_format} - {self.width}x{self.height})"
 
@@ -335,7 +335,6 @@ class Encoder:
         self.closed = True
         self.width = 0
         self.height = 0
-        self.src_format = ""
         self.encoding = ""
         self.src_format = ""
         self.dst_formats = []
