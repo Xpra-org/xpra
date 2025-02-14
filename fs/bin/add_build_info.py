@@ -201,7 +201,10 @@ def get_platform_name():
     if sys.platform.startswith("win"):
         try:
             out = Popen('systeminfo', stdout=PIPE, text=True).communicate()[0]
-            return re.search(r"OS Name:\s*(.*)", out).group(1).strip()
+            match = re.search(r"OS Name:\s*(.*)", out)
+            if match:
+                return match.group(1).strip()
+            return "Windows unknown"
         except OSError:
             pass
         return "Microsoft Windows"
