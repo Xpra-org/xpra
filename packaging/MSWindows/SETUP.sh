@@ -30,7 +30,7 @@ for x in cryptography cffi pycparser numpy pillow appdirs paramiko comtypes neti
 	$PACMAN ${XPKG}python-${x}
 done
 #not yet available for aarch64?:
-for x in cx_Freeze gssapi; do
+for x in cx-Freeze gssapi; do
 	$PACMAN ${XPKG}python-${x}
 done
 
