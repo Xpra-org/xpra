@@ -499,7 +499,7 @@ def do_main_load(args) -> Sequence[str]:
     try:
         load_codecs(sources=True)
     except KeyboardInterrupt:
-        return 1
+        return ()
     # not really a codec, but gets used by codecs, so include version info:
     with numpy_import_context("codec loader"):
         add_codec_version("numpy", "numpy")

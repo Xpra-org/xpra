@@ -388,7 +388,7 @@ class Encoder:
             return self.responses.get(timeout=1)
         except Empty:
             log.warn("Warning: remote encoder timeout waiting for server response")
-            return None
+            return b"", {}
 
     def compressed_data(self, bdata, client_options: dict) -> None:
         log(f"received compressed data: {len(bdata)}, {client_options=}")
