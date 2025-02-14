@@ -194,7 +194,8 @@ def get_xvfb_env(xvfb_executable: str) -> dict[str, str]:
     keep = tuple(f"^{envname}$" for envname in (
         "SHELL", "HOSTNAME", "XMODIFIERS",
         "PWD", "HOME", "USERNAME", "LANG", "TERM", "USER",
-        "XDG_RUNTIME_DIR", "XDG_DATA_DIR", "PATH",
+        "XDG_RUNTIME_DIR", "XDG_DATA_DIR",
+        "PATH", "LD_LIBRARY_PATH",
         "XAUTHORITY",
         "XPRA_SESSION_DIR",
     ))
