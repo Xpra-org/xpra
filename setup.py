@@ -2389,9 +2389,6 @@ else:
                 for etc_dir in ("http-headers", "content-type", "content-categories", "content-parent"):
                     dirtodir(f"fs/etc/xpra/{etc_dir}", f"/etc/xpra/{etc_dir}")
 
-            for libexec_script in libexec_scripts:
-                copytodir(f"fs/libexec/xpra/{libexec_script}", libexec_dir+"/xpra/", chmod=0o755)
-
     # add build_conf to build step
     cmdclass |= {
         'build'        : build_override,
