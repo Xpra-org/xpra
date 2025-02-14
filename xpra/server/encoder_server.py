@@ -29,14 +29,12 @@ class EncoderServer(ServerBase):
         super().__init__()
         self.session_type = "encoder"
         self.loop = GLib.MainLoop()
-        self.encode: Callable | None = None
         self.encoders = {}
 
     def init(self, opts) -> None:
         super().init(opts)
-        from xpra.codecs.pillow.encoder import get_encodings, encode
+        from xpra.codecs.pillow.encoder import get_encodings
         encodings = get_encodings()
-        self.encode = encode
         if self.encoding not in ("auto", ) and self.encoding not in encodings:
             raise ValueError(f"unsupported encoding {self.encoding!r}")
 
@@ -99,9 +97,10 @@ class EncoderServer(ServerBase):
                 rgb_data = raw_data
             free = noop
         try:
+            from xpra.codecs.pillow.encoder import encode
             image = ImageWrapper(0, 0, width, height, rgb_data, rgb_format, depth, rowstride,
                                  bpp, PlanarFormat.PACKED, True, None, full_range)
-            coding, compressed, client_options, width, height, stride, bpp = self.encode(encoding, image, typedict(eo))
+            coding, compressed, client_options, width, height, stride, bpp = encode(encoding, image, typedict(eo))
         finally:
             free()
         packet = ["encode-response", coding, compressed.data, client_options, width, height, stride, bpp, metadata]
