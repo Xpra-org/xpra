@@ -1799,6 +1799,7 @@ else:
         libexec_dir = "__LIBEXECDIR__"
     else:
         libexec_dir = "libexec"
+    add_data_files(libexec_dir+"/xpra/", [f"fs/libexec/xpra/{x}" for x in libexec_scripts])
 
     if data_ENABLED:
         man_path = "share/man"
@@ -1969,9 +1970,6 @@ else:
             if data_ENABLED:
                 for etc_dir in ("http-headers", "content-type", "content-categories", "content-parent"):
                     dirtodir(f"fs/etc/xpra/{etc_dir}", f"/etc/xpra/{etc_dir}")
-
-            for libexec_script in libexec_scripts:
-                copytodir(f"fs/libexec/xpra/{libexec_script}", libexec_dir+"/xpra/", chmod=0o755)
 
     # add build_conf to build step
     cmdclass.update({
