@@ -200,12 +200,8 @@ def get_platform_name():
         return "OpenBSD"
     if sys.platform.startswith("win"):
         try:
-            o = Popen('systeminfo', stdout=PIPE).communicate()[0]
-            try:
-                o = str(o, "latin-1")  # Python 3+
-            except Exception:
-                pass
-            return re.search(r"OS Name:\s*(.*)", o).group(1).strip()
+            out = Popen('systeminfo', stdout=PIPE, text=True).communicate()[0]
+            return re.search(r"OS Name:\s*(.*)", out).group(1).strip()
         except OSError:
             pass
         return "Microsoft Windows"
