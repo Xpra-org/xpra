@@ -191,13 +191,13 @@ def get_xauthority_path(display_name: str) -> str:
 
 
 def get_xvfb_env(xvfb_executable: str) -> dict[str, str]:
-    keep = [
+    keep = tuple(f"^{envname}$" for envname in (
         "SHELL", "HOSTNAME", "XMODIFIERS",
         "PWD", "HOME", "USERNAME", "LANG", "TERM", "USER",
         "XDG_RUNTIME_DIR", "XDG_DATA_DIR", "PATH",
         "XAUTHORITY",
         "XPRA_SESSION_DIR",
-    ]
+    ))
     env = get_exec_env(keep=keep)
     if xvfb_executable.endswith("Xephyr"):
         env["DISPLAY"] = get_saved_env_var("DISPLAY")
