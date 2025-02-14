@@ -16,13 +16,13 @@ from threading import Event
 from xpra import __version__
 from xpra.util.env import envint
 from xpra.util.objects import typedict, AtomicInteger
+from xpra.scripts.config import InitExit
 from xpra.net.common import PacketElement, PacketType
 from xpra.codecs.constants import VideoSpec
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
-log = Logger("encoder")
-log.enable_debug()
+log = Logger("encoder", "remote")
 
 ENCODER_SERVER_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 5)
 ENCODER_SERVER_URI = os.environ.get("XPRA_ENCODER_SERVER_URI", "tcp://127.0.0.1:20000/")
@@ -252,7 +252,7 @@ def init_module() -> None:
     global encodings
     try:
         server.connect()
-    except (OSError, RuntimeError):
+    except (InitExit, OSError, RuntimeError):
         log("failed to connect to server, no encodings available", exc_info=True)
         encodings = ()
     else:
