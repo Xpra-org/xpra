@@ -9,13 +9,12 @@
 
 import datetime
 from shutil import which
-from subprocess import Popen, PIPE, STDOUT, getstatusoutput
+from subprocess import Popen, PIPE, STDOUT, getstatusoutput, run
 from typing import Any
 from collections.abc import Sequence
 import socket
 import platform
 import os.path
-import re
 import sys
 
 
@@ -171,11 +170,18 @@ def get_platform_name() -> str:
         return "OpenBSD"
     if sys.platform.startswith("win"):
         try:
-            out = Popen('systeminfo', stdout=PIPE, text=True).communicate()[0]
-            match = re.search(r"OS Name:\s*(.*)", out)
-            if match:
-                return match.group(1).strip()
-            return "Windows unknown"
+            out = run(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    "$OutputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; (Get-CimInstance Win32_OperatingSystem).Caption | Out-String",
+                 ],
+                 capture_output=True,
+                 text=True,
+                 encoding="utf-8",
+            ).stdout.strip()
+            return out
         except OSError:
             pass
         return "Microsoft Windows"
