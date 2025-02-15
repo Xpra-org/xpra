@@ -104,7 +104,7 @@ openssl s_client -connect 127.0.0.1:10000  -CAfile /path/to/ca.crt < /dev/null
 ```
 Connect the xpra client:
 ```
-xpra attach ssl:localhost:10000 --ssl-ca-cert=/path/to/ca.crt
+xpra attach ssl://localhost:10000 --ssl-ca-cert=/path/to/ca.crt
 ```
 
 ### Sending the CA data
