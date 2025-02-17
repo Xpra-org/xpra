@@ -17,7 +17,7 @@ from xpra.net.compression import Compressed, LargeStructure
 from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
 from xpra.codecs.image import ImageWrapper
 from xpra.server.window.compress import (
-    WindowSource, DelayedRegions, get_encoder_type,
+    WindowSource, DelayedRegions, get_encoder_type, free_image_wrapper,
     STRICT_MODE, LOSSLESS_WINDOW_TYPES,
     DOWNSCALE_THRESHOLD, DOWNSCALE, TEXT_QUALITY,
     COMPRESS_FMT_PREFIX, COMPRESS_FMT_SUFFIX, COMPRESS_FMT,
@@ -1097,7 +1097,7 @@ class WindowVideoSource(WindowSource):
 
         def call_encode(ew: int, eh: int, eimage: ImageWrapper, encoding: str, flush: int) -> None:
             if self.is_cancelled(sequence):
-                self.free_image_wrapper(image)
+                free_image_wrapper(image)
                 log("call_encode: sequence %s is cancelled", sequence)
                 return
             now = monotonic()
@@ -1175,7 +1175,7 @@ class WindowVideoSource(WindowSource):
         for item in eq:
             image = item[4]
             with log.trap_error(f"Error: cannot free image wrapper {image}"):
-                self.free_image_wrapper(image)
+                free_image_wrapper(image)
 
     def schedule_encode_from_queue(self, av_delay: int) -> None:
         # must be called from the UI thread for synchronization
@@ -1220,7 +1220,7 @@ class WindowVideoSource(WindowSource):
                 # item = (w, h, damage_time, now, image, coding, sequence, options, flush)
                 sequence = item[6]
                 if self.is_cancelled(sequence):
-                    self.free_image_wrapper(item[4])
+                    free_image_wrapper(item[4])
                     remove.append(index)
                     continue
                 ts = item[3]
@@ -2346,7 +2346,7 @@ class WindowVideoSource(WindowSource):
                     raise RuntimeError(f"no nonvideo encoding found for {w}x{sh} screen update")
                 encode_fn = self._encoders[encoding]
                 ret = encode_fn(encoding, sub, options)
-                self.free_image_wrapper(sub)
+                free_image_wrapper(sub)
                 if not ret:
                     scrolllog("no result for %s encoding of %s with options %s", encoding, sub, options)
                     # cancelled?
@@ -2382,7 +2382,7 @@ class WindowVideoSource(WindowSource):
             raise RuntimeError(f"flush counter mismatch: {flush}")
         self.last_scroll_time = monotonic()
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
-        self.free_image_wrapper(image)
+        free_image_wrapper(image)
 
     def do_schedule_auto_refresh(self, encoding: str, data, region, client_options: dict, options: typedict) -> None:
         # for scroll encoding, data is a LargeStructure wrapper:
@@ -2445,7 +2445,7 @@ class WindowVideoSource(WindowSource):
         try:
             return self.do_video_encode(encoding, image, options)
         finally:
-            self.free_image_wrapper(image)
+            free_image_wrapper(image)
 
     def do_video_encode(self, encoding: str, image: ImageWrapper, options: typedict) -> tuple:
         """
@@ -2544,7 +2544,7 @@ class WindowVideoSource(WindowSource):
             return self.video_fallback(image, options, warn=False)
         finally:
             if image != csc_image:
-                self.free_image_wrapper(csc_image)
+                free_image_wrapper(csc_image)
             del csc_image
         if not ret:
             if not self.is_cancelled():

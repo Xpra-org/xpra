@@ -174,6 +174,21 @@ def get_encoder_type(encoder) -> str:
     return mod
 
 
+def free_image_wrapper(image: ImageWrapper) -> None:
+    """ when not running in the UI thread,
+        call this method to free an image wrapper safely
+    """
+    # log("free_image_wrapper(%s) thread_safe=%s", image, image.is_thread_safe())
+    if image.is_thread_safe():
+        image.free()
+        return
+
+    def do_free_image():
+        with ui_context:
+            image.free()
+    GLib.idle_add(do_free_image)
+
+
 class WindowSource(WindowIconSource):
     """
     We create a Window Source for each window we send pixels for.
@@ -2080,19 +2095,6 @@ class WindowSource(WindowIconSource):
         # WindowVideoSource overrides this method
         return self.full_frames_only
 
-    def free_image_wrapper(self, image: ImageWrapper) -> None:
-        """ when not running in the UI thread,
-            call this method to free an image wrapper safely
-        """
-        # log("free_image_wrapper(%s) thread_safe=%s", image, image.is_thread_safe())
-        if image.is_thread_safe():
-            image.free()
-        else:
-            def do_free_image():
-                with ui_context:
-                    image.free()
-            GLib.idle_add(do_free_image)
-
     def get_damage_image(self, x: int, y: int, w: int, h: int) -> ImageWrapper | None:
         self.ui_thread_check()
 
@@ -2123,7 +2125,7 @@ class WindowSource(WindowIconSource):
         if w == 0 or h == 0:
             return nodata("invalid dimensions: %ix%i", w, h)
         if self.is_cancelled(sequence):
-            self.free_image_wrapper(image)
+            free_image_wrapper(image)
             return nodata("sequence %i is cancelled", sequence)
         pixel_format = image.get_pixel_format()
         image_depth = image.get_depth()
@@ -2210,7 +2212,7 @@ class WindowSource(WindowIconSource):
                 log.error("Error: failed to create data packet", exc_info=True)
             packet = None
         finally:
-            self.free_image_wrapper(image)
+            free_image_wrapper(image)
             del image
             # may have been cancelled whilst we processed it:
             self.statistics.encoding_pending.pop(sequence, None)
@@ -2727,7 +2729,7 @@ class WindowSource(WindowIconSource):
         """
         def nodata(msg: str, *args) -> None:
             log("make_data_packet: no data for window %s with sequence=%s: "+msg, self.wid, sequence, *args)
-            self.free_image_wrapper(image)
+            free_image_wrapper(image)
             return None
         if self.is_cancelled(sequence):
             return nodata("cancelled")
