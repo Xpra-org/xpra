@@ -496,7 +496,7 @@ class WindowBackingBase:
         except TransientCodecException as e:
             log(f"nv_decode failed: {e} - will retry")
             return None
-        except (CodecStateException, RuntimeError) as e:
+        except RuntimeError as e:
             self.nvdec_decode = self.nvjpeg_decode = None
             log(f"nv_decode {encoding=}", exc_info=True)
             log.warn("Warning: nv decode error, disabling hardware accelerated decoding for this window")
@@ -775,7 +775,7 @@ class WindowBackingBase:
                     except TransientCodecException as e:
                         log.warn(f"Warning: failed to initialize decoder {decoder_spec.codec_type}: {e}")
                         decoder_spec.setup_cost += 10
-                    except (RuntimeError, CodecStateException) as e:
+                    except RuntimeError as e:
                         log.warn(f"Warning: failed to initialize decoder {decoder_spec.codec_type}: {e}")
                         decoder_spec.setup_cost += 50
                     if decoder_spec.setup_cost > 100:
