@@ -16,6 +16,26 @@ from xpra.log import Logger
 log = Logger("mmap")
 
 
+def clean_mmap_area(area: BaseMmapArea) -> None:
+    if not area:
+        return
+    try:
+        area.close()
+    except RuntimeError:
+        # this can fail when handling a SIGINT signal,
+        # with the message: "cannot close exported pointers exist",
+        # so wait a little bit and try again:
+        from xpra.os_util import gi_import
+        GLib = gi_import("GLib")
+
+        def retry_close():
+            try:
+                area.close()
+            except RuntimeError as e:
+                log.warn(f"Warning: failed to close mmap area {area!r}: {e}")
+        GLib.timeout_add(100, retry_close)
+
+
 class MMAP_Connection(StubSourceMixin):
 
     @classmethod
@@ -50,14 +70,10 @@ class MMAP_Connection(StubSourceMixin):
         self.mmap_write_area = None
 
     def cleanup(self) -> None:
-        mra = self.mmap_read_area
-        if mra:
-            self.mmap_read_area = None
-            mra.close()
-        mwa = self.mmap_write_area
-        if mwa:
-            self.mmap_write_area = None
-            mwa.close()
+        clean_mmap_area(self.mmap_read_area)
+        self.mmap_read_area = None
+        clean_mmap_area(self.mmap_write_area)
+        self.mmap_write_area = None
 
     def mmap_path(self, filename: str, index: int) -> str:
         if len(self.mmap_filenames) == 1 and os.path.isdir(self.mmap_filenames[0]):
