@@ -81,7 +81,7 @@ DEF BROTLI_MAX_QUALITY = 11
 DEF BROTLI_DEFAULT_WINDOW = 22
 
 
-def compress(data, int quality=1) -> SizedBuffer:
+def compress(data, int quality=1) -> memoryview:
     #clamp to >2 so that we can use BrotliEncoderMaxCompressedSize:
     quality = max(2, min(BROTLI_MAX_QUALITY, quality))
     cdef size_t max_size = BrotliEncoderMaxCompressedSize(len(data))
