@@ -83,8 +83,10 @@ cdef class MemBuf:
         pass
 
     def __dealloc__(self):
-        if self.dealloc_cb_p != NULL:
-            self.dealloc_cb_p(self.p, self.l, self.dealloc_cb_arg)
+        cdef dealloc_callback *cb = self.dealloc_cb_p
+        if cb != NULL:
+            self.dealloc_cb_p = NULL
+            cb(self.p, self.l, self.dealloc_cb_arg)
 
 
 # Call this instead of constructing a MemBuf directly.  The __cinit__
