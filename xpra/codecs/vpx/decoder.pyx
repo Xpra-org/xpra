@@ -141,11 +141,6 @@ def get_min_size(encoding:str) -> Tuple[int, int]:
     return 16, 16
 
 
-def get_input_colorspaces(encoding:str) -> Sequence[str]:
-    assert encoding in CODECS
-    return COLORSPACES.get(encoding)
-
-
 def get_output_colorspaces(encoding:str, csc:str) -> Sequence[str]:
     #same as input
     assert encoding in CODECS
@@ -154,20 +149,22 @@ def get_output_colorspaces(encoding:str, csc:str) -> Sequence[str]:
     return (csc, )
 
 
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
-    assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in get_input_colorspaces(encoding), "invalid output colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
-    return (
-        VideoSpec(
-            encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_output_colorspaces(encoding, colorspace),
-            has_lossless_mode=encoding == "vp9" and colorspace == "YUV444P",
-            codec_class=Decoder, codec_type=get_type(),
-            quality=50, speed=50,
-            size_efficiency=60,
-            setup_cost=20,
-            max_w=8192,
-            max_h=4096),
-        )
+def get_specs() -> Sequence[VideoSpec]:
+    specs: Sequence[VideoSpec] = []
+    for encoding, in_css in COLORSPACES.items():
+        for colorspace in in_css:
+            specs.append(VideoSpec(
+                    encoding=encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ),
+                    has_lossless_mode=encoding == "vp9" and colorspace == "YUV444P",
+                    codec_class=Decoder, codec_type=get_type(),
+                    quality=50, speed=50,
+                    size_efficiency=60,
+                    setup_cost=20,
+                    max_w=8192,
+                    max_h=4096,
+                )
+            )
+    return specs
 
 
 def get_info() -> Dict[str, Any]:
@@ -213,8 +210,8 @@ cdef class Decoder:
 
     def init_context(self, encoding: str, width: int, height: int, colorspace: str, options: typedict) -> None:
         log("vpx decoder init_context%s", (encoding, width, height, colorspace))
-        assert encoding in CODECS
-        assert colorspace in get_input_colorspaces(encoding)
+        assert encoding in CODECS, f"invalid encoding {encoding!r}"
+        assert colorspace in COLORSPACES[encoding], f"invalid colorspace {colorspace!r} for encoding {encoding!r}"
         cdef int flags = 0
         cdef const vpx_codec_iface_t *codec_iface = make_codec_dx(encoding)
         self.encoding = encoding

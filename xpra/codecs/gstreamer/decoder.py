@@ -96,38 +96,31 @@ def get_min_size(_encoding: str):
     return 48, 16
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    if encoding not in CODECS:
-        raise ValueError(f"unsupported encoding {encoding!r}")
-    return ("YUV420P",)
-
-
 def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
     decoder = CODECS.get(encoding)
     if not decoder:
         raise ValueError(f"unsupported encoding {encoding!r}")
-    assert input_colorspace in get_input_colorspaces(encoding)
-    if decoder.startswith("nv"):
-        return ("NV12", )
-    return ("YUV420P", )
+    assert input_colorspace in "YUV420P"
 
 
-def get_specs(encoding: str, colorspace: str) -> tuple[VideoSpec]:
-    assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    if colorspace not in get_input_colorspaces(encoding):
-        raise ValueError("invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding)))
-    return (
-        VideoSpec(
+def get_specs() -> Sequence[VideoSpec]:
+    specs: Sequence[VideoSpec] = []
+    for encoding, decoder in CODECS.items():
+        in_cs = "YUV420P"
+        out_cs = "NV12" if decoder.startswith("nv") else "YUV420P"
+        has_lossless_mode = encoding == "vp9" and in_cs == "YUV444P"
+        specs.append(VideoSpec(
             encoding=encoding,
-            input_colorspace=colorspace, output_colorspaces=get_output_colorspaces(encoding, colorspace),
-            has_lossless_mode=encoding == "vp9" and colorspace == "YUV444P",
+            input_colorspace=in_cs, output_colorspaces=(out_cs, ),
+            has_lossless_mode=has_lossless_mode,
             codec_class=Decoder, codec_type=get_type(),
             quality=50, speed=50,
             size_efficiency=60,
             setup_cost=50,
             max_w=8192,
-            max_h=4096),
-    )
+            max_h=4096,
+        ))
+    return specs
 
 
 class Decoder(VideoPipeline):

@@ -147,21 +147,20 @@ NVJPEG_INPUT_FORMATS: Dict[str, Sequence[str]] = {
 }
 
 
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
-    assert encoding in ("jpeg", "jpega")
+def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
-    for in_cs in NVJPEG_INPUT_FORMATS[encoding]
-
-    return (
-        VideoSpec(
-            encoding="jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ),
-            has_lossless_mode=False,
-            codec_class=Encoder, codec_type="nvjpeg",
-            setup_cost=20, cpu_cost=0, gpu_cost=100,
-            min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
-            can_scale=True,
-            score_boost=-50),
-    )
+    for encoding, colorspace in NVJPEG_INPUT_FORMATS.items():
+        specs.append(VideoSpec(
+                encoding="jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ),
+                has_lossless_mode=False,
+                codec_class=Encoder, codec_type="nvjpeg",
+                setup_cost=20, cpu_cost=0, gpu_cost=100,
+                min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
+                can_scale=True,
+                score_boost=-50,
+            ),
+        )
+    return specs
 
 
 cdef class Encoder:

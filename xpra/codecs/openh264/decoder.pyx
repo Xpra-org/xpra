@@ -116,11 +116,6 @@ ERROR_STR: Dict[int, str] = {
 }
 
 
-COLORSPACES : Dict[str, str] = {
-    "YUV420P"   : "YUV420P",
-}
-
-
 def init_module() -> None:
     log("openh264.init_module()")
 
@@ -142,7 +137,6 @@ def get_type() -> str:
 def get_info() -> Dict[str, Any]:
     return {
         "version"   : get_version(),
-        "formats"   : tuple(COLORSPACES.keys()),
     }
 
 
@@ -154,35 +148,21 @@ def get_min_size(encoding) -> Tuple[int, int]:
     return 32, 32
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    assert encoding in get_encodings()
-    return tuple(COLORSPACES.keys())
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    assert encoding in get_encodings()
-    assert input_colorspace in COLORSPACES
-    return (input_colorspace, )
-
-
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
 
-def get_specs(encoding, colorspace) -> Sequence[VideoSpec]:
-    assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
-    #we can handle high quality and any speed
-    #setup cost is moderate (about 10ms)
+def get_specs() -> Sequence[VideoSpec]:
     return (
         VideoSpec(
-            encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_output_colorspaces(encoding, colorspace),
+            encoding="h264", input_colorspace="YUV420P", output_colorspaces="YUV420P",
             has_lossless_mode=False,
             codec_class=Decoder, codec_type=get_type(),
             quality=40, speed=20,
             size_efficiency=40,
             setup_cost=0, width_mask=0xFFFE, height_mask=0xFFFE,
-            max_w=MAX_WIDTH, max_h=MAX_HEIGHT),
-        )
+            max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
+        ),
+    )
 
 
 cdef class Decoder:

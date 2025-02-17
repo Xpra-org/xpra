@@ -447,18 +447,12 @@ class VideoHelper:
             log(" video decoder %s could not be loaded:", decoder_name)
             log(" %s", get_codec_error(decoder_name))
             return
-        decoder_type = decoder_module.get_type()
-        encodings = decoder_module.get_encodings()
-        log(" %s encodings=%s", decoder_type, csv(encodings))
-        for encoding in encodings:
-            colorspaces = decoder_module.get_input_colorspaces(encoding)
-            log(" %10s input colorspaces for %s: %s", decoder_type, encoding, csv(colorspaces))
-            for colorspace in colorspaces:
-                specs = decoder_module.get_specs(encoding, colorspace)
-                for spec in specs:
-                    self.add_decoder_spec(encoding, colorspace, spec)
+        for spec in decoder_module.get_specs():
+            self.add_decoder_spec(spec)
 
-    def add_decoder_spec(self, encoding: str, colorspace: str, decoder_spec: VideoSpec):
+    def add_decoder_spec(self, decoder_spec: VideoSpec):
+        encoding = decoder_spec.encoding
+        colorspace = decoder_spec.input_colorspace
         self._video_decoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(decoder_spec)
 
     def get_server_full_csc_modes(self, *client_supported_csc_modes: str) -> dict[str, list[str]]:
