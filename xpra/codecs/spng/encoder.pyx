@@ -222,7 +222,7 @@ def encode(coding: str, image: ImageWrapper, options=None) -> Tuple:
 
     cdef membuf = makebuf(png_data, png_len)
     spng_ctx_free(ctx)
-    cdata = memoryview(membuf)
+    cdata = memoryview(membuf).toreadonly()
     may_save_image("png", cdata)
     return coding, Compressed(coding, cdata), {}, width, height, 0, len(rgb_format)*8
 
