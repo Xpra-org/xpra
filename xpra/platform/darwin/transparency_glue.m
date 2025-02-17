@@ -1,6 +1,6 @@
 /**
  * This file is part of Xpra.
- * Copyright (C) 2018-2019 Antoine Martin <antoine@devloop.org.uk>
+ * Copyright (C) 2018 Antoine Martin <antoine@devloop.org.uk>
  */
 
 #import <Cocoa/Cocoa.h>
