@@ -17,7 +17,7 @@ cdef extern from "Python.h":
     int PyBUF_ANY_CONTIGUOUS
 
 
-def xor_str(a: SizedBuffer, b: SizedBuffer) -> SizedBuffer:
+def xor_str(a: SizedBuffer, b: SizedBuffer) -> memoryview:
     if len(a) != len(b):
         raise ValueError("cyxor cannot xor strings of different lengths (%s:%s vs %s:%s)" % (type(a), len(a), type(b), len(b)))
     cdef Py_buffer py_bufa

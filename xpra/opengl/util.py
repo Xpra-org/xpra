@@ -6,7 +6,6 @@
 
 import os
 import time
-from typing import Any
 
 from OpenGL import GL
 
@@ -43,7 +42,7 @@ if envbool("XPRA_OPENGL_ZEROCOPY_UPLOAD", True):
         zerocopy_upload = version.__version__ == OpenGL_accelerate.__version__
 
 
-def pixels_for_upload(img_data) -> tuple[str, Any]:
+def pixels_for_upload(img_data) -> tuple[str, [memoryview | bytes]]:
     # prepare the pixel buffer for upload:
     if isinstance(img_data, memoryview):
         if zerocopy_upload:

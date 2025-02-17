@@ -11,7 +11,7 @@ from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context
 from xpra.common import SizedBuffer
 
 
-def hybi_unmask(data, unsigned int offset, unsigned int datalen) -> SizedBuffer:
+def hybi_unmask(data, unsigned int offset, unsigned int datalen) -> memoryview:
     cdef uintptr_t mp
     cdef unsigned int min_len = offset + 4 + datalen
     with buffer_context(data) as bc:
@@ -21,7 +21,7 @@ def hybi_unmask(data, unsigned int offset, unsigned int datalen) -> SizedBuffer:
         return do_hybi_mask(mp, mp + 4, datalen)
 
 
-def hybi_mask(mask: bytes, data: SizedBuffer) -> SizedBuffer:
+def hybi_mask(mask: bytes, data: SizedBuffer) -> memoryview:
     if len(mask) != 4:
         raise ValueError(f"invalid mask buffer size: {len(mask)} bytes")
     with buffer_context(mask) as mbc:
@@ -29,7 +29,7 @@ def hybi_mask(mask: bytes, data: SizedBuffer) -> SizedBuffer:
             return do_hybi_mask(<uintptr_t> int(mbc), <uintptr_t> int(dbc), len(dbc))
 
 
-cdef object do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
+cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
     # we skip the first 'align' bytes in the output buffer,
     # to ensure that its alignment is the same as the input data buffer
     cdef unsigned int align = (<uintptr_t> dp) & 0x3
