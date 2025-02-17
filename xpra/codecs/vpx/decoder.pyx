@@ -141,14 +141,6 @@ def get_min_size(encoding:str) -> Tuple[int, int]:
     return 16, 16
 
 
-def get_output_colorspaces(encoding:str, csc:str) -> Sequence[str]:
-    #same as input
-    assert encoding in CODECS
-    colorspaces = COLORSPACES.get(encoding)
-    assert csc in colorspaces, "invalid colorspace '%s' for encoding '%s' (must be one of %s)" % (csc, encoding, colorspaces)
-    return (csc, )
-
-
 def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
     for encoding, in_css in COLORSPACES.items():

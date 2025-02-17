@@ -447,10 +447,6 @@ def get_encodings() -> Sequence[str]:
     return CODECS
 
 
-def get_output_colorspaces(encoding, csc) -> Sequence[str]:
-    return ("NV12", )
-
-
 def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
     for encoding in CODECS:

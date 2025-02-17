@@ -96,13 +96,6 @@ def get_min_size(_encoding: str):
     return 48, 16
 
 
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    decoder = CODECS.get(encoding)
-    if not decoder:
-        raise ValueError(f"unsupported encoding {encoding!r}")
-    assert input_colorspace in "YUV420P"
-
-
 def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
     for encoding, decoder in CODECS.items():
