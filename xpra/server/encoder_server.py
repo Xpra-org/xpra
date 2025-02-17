@@ -110,7 +110,7 @@ class EncoderServer(ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
-        seq, encoding, width, height, src_format, options = packet[1:7]
+        seq, codec_type, encoding, width, height, src_format, options = packet[1:8]
         vh = getVideoHelper()
         specs = vh.get_encoder_specs(encoding).get(src_format, ())
         if not specs:
@@ -122,9 +122,16 @@ class EncoderServer(ServerBase):
         log(f"request: {encoding}, cuda_device_context={device_context}")
         if device_context:
             options["cuda-device-context"] = device_context
-        # we should be able to specify which one
-        # and verify dimensions
-        spec = specs[-1]
+
+        def find_spec():
+            for spec in specs:
+                if spec.codec_type != codec_type:
+                    continue
+                assert spec.encoding == encoding
+                assert spec.input_colorspace == src_format
+                return spec
+            return specs[0]
+        spec = find_spec()
         try:
             encoder = spec.codec_class()
             encoder.init_context(encoding, width, height, src_format, typedict(options))

@@ -171,8 +171,9 @@ class EncoderClient(baseclass):
 
     def request_context(self, encoder, encoding: str, width: int, height: int, src_format: str, options: dict):
         seq = encoder.sequence
+        codec_type = encoder.codec_type
         self.encoders[seq] = encoder
-        self.send("context-request", seq, encoding, width, height, src_format, options)
+        self.send("context-request", seq, codec_type, encoding, width, height, src_format, options)
 
     def _process_context_response(self, packet: PacketType):
         seq = packet[1]
@@ -264,23 +265,31 @@ def cleanup_module() -> None:
     server.disconnect()
 
 
+def make_spec(espec: dict) -> VideoSpec:
+    codec_type = espec.pop("codec_type")
+
+    class RemoteEncoder(Encoder):
+        def __init__(self):
+            super().__init__(codec_type)
+
+    spec = VideoSpec(codec_class=RemoteEncoder, codec_type=f"remote-{codec_type}")
+    for k, v in espec.items():
+        if not hasattr(spec, k):
+            log.warn(f"Warning: unknown video spec attribute {k!r}")
+            continue
+        setattr(spec, k, v)
+    return spec
+
+
 def get_specs() -> Sequence[VideoSpec]:
     # the `server.specs` are dictionaries,
     # which we need to convert to real `VideoSpec` objects:
     specs: Sequence[VideoSpec] = []
-    for encoding, especs in server.specs.items():
-        for espec in especs:
-            log(f"remote: {encoding}: {espec}")
-            codec_type = espec.pop("codec_type", "")
-            if not codec_type:
-                continue
-            spec = VideoSpec(codec_class=Encoder, codec_type=f"remote-{codec_type}")
-            for k, v in espec.items():
-                if not hasattr(spec, k):
-                    log.warn(f"Warning: unknown video spec attribute {k!r}")
-                    continue
-                setattr(spec, k, v)
-            specs.append(spec)
+    for encoding, csc_specs in server.specs.items():
+        for csc, especs in csc_specs.items():
+            for espec in especs:
+                log(f"remote: {encoding} + {csc}: {espec}")
+                specs.append(make_spec(espec))
     log(f"remote.get_specs()={specs}")
     return tuple(specs)
 
@@ -289,9 +298,17 @@ sequence = AtomicInteger()
 
 
 class Encoder:
+    __slots__ = (
+        "codec_type", "sequence", "encoding",
+        "width", "height", "src_format", "dst_formats", "last_frame_times",
+        "ready", "closed", "responses",
+        "__weakref__",
+    )
     """
     This encoder connects to an encoder server and delegates to it
     """
+    def __init__(self, codec_type: str):
+        self.codec_type = codec_type
 
     def init_context(self, encoding: str, width: int, height: int, src_format: str, options: typedict) -> None:
         self.sequence = sequence.increase()
