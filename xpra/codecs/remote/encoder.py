@@ -18,7 +18,7 @@ from xpra.util.env import envint
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.scripts.config import InitExit
 from xpra.net.common import PacketElement, PacketType
-from xpra.codecs.constants import VideoSpec
+from xpra.codecs.constants import VideoSpec, CodecStateException
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
@@ -87,6 +87,9 @@ class EncoderClient(baseclass):
         # if conn.timeout > 0:
         #    GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
         return protocol
+
+    def is_connected(self) -> bool:
+        return bool(self.protocol) and bool(self.encodings)
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         packet = (packet_type, *parts)
@@ -384,6 +387,8 @@ class Encoder:
         self.last_frame_times = deque()
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
+        if not server.is_connected():
+            raise CodecStateException("not connected to encoder server")
         server.compress(self, image, options)
         try:
             return self.responses.get(timeout=1)
