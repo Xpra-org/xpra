@@ -815,7 +815,8 @@ class X11ServerCore(GTKServerBase):
             X11Keyboard.xtest_fake_key(keycode, press)
 
     def do_x11_cursor_event(self, event) -> None:
-        if not self.cursors:
+        cursors = getattr(self, "cursors", False)
+        if not cursors:
             return
         if self.last_cursor_serial == event.cursor_serial:
             cursorlog("ignoring cursor event %s with the same serial number %s", event, self.last_cursor_serial)

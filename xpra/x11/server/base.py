@@ -311,9 +311,14 @@ class X11ServerBase(X11ServerCore):
     def update_server_settings(self, settings=None, reset=False) -> None:
         if not features.display:
             return
+        cursor_size = getattr(self, "cursor_size", 0)
+        dpi = getattr(self, "dpi", 0)
+        antialias = getattr(self, "antialias", {})
+        double_click_time = getattr(self, "double_click_time", 0)
+        double_click_distance = getattr(self, "double_click_distance", (-1, -1))
         self.do_update_server_settings(settings or self._settings, reset,
-                                       self.dpi, self.double_click_time, self.double_click_distance,
-                                       self.antialias, self.cursor_size)
+                                       dpi, double_click_time, double_click_distance,
+                                       antialias, cursor_size)
 
     def do_update_server_settings(self, settings, reset=False,
                                   dpi=0, double_click_time=0, double_click_distance=(-1, -1),
