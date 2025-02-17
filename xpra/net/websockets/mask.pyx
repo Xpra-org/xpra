@@ -33,7 +33,7 @@ cdef object do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned int datalen):
     # we skip the first 'align' bytes in the output buffer,
     # to ensure that its alignment is the same as the input data buffer
     cdef unsigned int align = (<uintptr_t> dp) & 0x3
-    cdef unsigned int initial_chars = (4 - align) & 0x3
+    cdef unsigned int initial_chars = 4 - align
     cdef MemBuf out_buf = getbuf(datalen+align, 0)
     cdef uintptr_t op = <uintptr_t> out_buf.get_mem()
     # char pointers:
