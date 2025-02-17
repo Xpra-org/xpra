@@ -206,12 +206,19 @@ class TestColorRange(unittest.TestCase):
                 csc_mod = loader.load_codec(csc_name)
                 if not csc_mod:
                     continue
-                if yuv_format not in csc_mod.get_input_colorspaces():
-                    continue
-                if self.rgb_format not in csc_mod.get_output_colorspaces(yuv_format):
-                    continue
+
+                def find_spec():
+                    for spec in csc_mod.get_specs():
+                        if yuv_format not in spec.input_colorspace:
+                            continue
+                        if self.rgb_format not in spec.output_colorspaces:
+                            continue
+                        return spec
+                    return None
+
+                spec = find_spec()
                 csc_options = typedict({"full-range": yuv_image.get_full_range()})
-                converter = csc_mod.Converter()
+                converter = spec.codec_class()
                 converter.init_context(self.width, self.height, yuv_format,
                                        self.width, self.height, self.rgb_format, csc_options)
                 rgb_image = converter.convert_image(yuv_image)

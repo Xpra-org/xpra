@@ -60,7 +60,9 @@ log("csc_cython: byteorder(RGB)=%s", (RGB_R, RGB_G, RGB_B))
 log("csc_cython: byteorder(BGR)=%s", (BGR_R, BGR_G, BGR_B))
 
 #COLORSPACES = {"BGRX" : ["YUV420P"], "YUV420P" : ["RGB", "BGR", "RGBX", "BGRX"], "GBRP" : ["RGBX", "BGRX"] }
-def get_CS(in_cs, valid_options):
+
+
+def get_CS(in_cs, valid_options) -> Sequence[str]:
     v = os.environ.get("XPRA_CSC_CYTHON_%s_COLORSPACES" % in_cs)
     if v is None:
         return valid_options
@@ -75,7 +77,8 @@ def get_CS(in_cs, valid_options):
     log("environment override for %s: %s", in_cs, env_override)
     return env_override
 
-COLORSPACES = {
+
+COLORSPACES: Dict[str, Sequence[str]] = {
     "BGRX"       : get_CS("BGRX",    ["YUV420P", "YUV444P"]),
     "RGBX"       : get_CS("RGBX",    ["YUV420P", "YUV444P"]),
     "BGR"        : get_CS("BGR",     ["YUV420P", "YUV444P"]),
@@ -112,33 +115,29 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-def get_input_colorspaces() -> Sequence[str]:
-    return tuple(COLORSPACES.keys())
-
-
-def get_output_colorspaces(input_colorspace: str) -> Sequence[str]:
-    return COLORSPACES[input_colorspace]
-
-
-def get_spec(in_colorspace: str, out_colorspace: str) -> CSCSpec:
-    assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, get_input_colorspaces())
-    assert out_colorspace in COLORSPACES.get(in_colorspace), "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, get_output_colorspaces(in_colorspace))
-    can_scale = True
-    width_mask = height_mask = 0xFFFF
-    if in_colorspace in ("r210", "YUV444P") or out_colorspace=="r210":
-        can_scale = False
-    elif in_colorspace=="GBRP10":
-        can_scale = False
-    if in_colorspace=="YUV420P":
-        #safer not to try to handle odd dimensions as input:
-        width_mask = height_mask = 0xFFFE
-    #low score as this should be used as fallback only:
-    return CSCSpec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
+def get_specs() -> Sequence[CSCSpec]:
+    specs: Sequence[CSCSpec] = []
+    for in_cs, out_css in COLORSPACES.items():
+        can_scale = True
+        width_mask = height_mask = 0xFFFF
+        for out_cs in out_css:
+            if in_cs in ("r210", "YUV444P") or out_cs=="r210":
+                can_scale = False
+            elif in_cs == "GBRP10":
+                can_scale = False
+            if in_cs == "YUV420P":
+                #safer not to try to handle odd dimensions as input:
+                width_mask = height_mask = 0xFFFE
+            # low score as this should be used as fallback only:
+            specs.append(CSCSpec(
+                    input_colorspace=in_cs, output_colorspaces=(out_cs, ),
                     codec_class=Converter, codec_type=get_type(),
                     quality=50, speed=0, setup_cost=0, min_w=2, min_h=2,
                     max_w=16*1024, max_h=16*1024,
                     can_scale=can_scale,
                     width_mask=width_mask, height_mask=height_mask)
+                )
+    return specs
 
 
 class CythonImageWrapper(ImageWrapper):
@@ -475,8 +474,8 @@ cdef class Converter:
     def init_context(self, int src_width, int src_height, src_format: str,
                            int dst_width, int dst_height, dst_format: str, options: typedict) -> None:
         cdef int i
-        assert src_format in get_input_colorspaces(), "invalid input colorspace: %s (must be one of %s)" % (src_format, get_input_colorspaces())
-        assert dst_format in get_output_colorspaces(src_format), "invalid output colorspace: %s (must be one of %s)" % (dst_format, get_output_colorspaces(src_format))
+        assert src_format in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (src_format, tuple(COLORSPACES.keys()))
+        assert dst_format in COLORSPACES[src_format], "invalid output colorspace: %s (must be one of %s)" % (dst_format, COLORSPACES[src_format])
         log("csc_cython.Converter.init_context%s", (
             src_width, src_height, src_format, dst_width, dst_height, dst_format, options))
         self.src_width = src_width

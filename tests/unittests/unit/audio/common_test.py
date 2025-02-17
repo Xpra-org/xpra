@@ -20,13 +20,14 @@ class TestCommon(unittest.TestCase):
         assert common.audio_option_or_all("unspecified", (), ONE_OPTION)==ONE_OPTION
 
         assert common.audio_option_or_all("valid", ONE_OPTION, ONE_OPTION)==ONE_OPTION
-        with LoggerSilencer(common, ("error", "warn")):
+        with LoggerSilencer(common):
             assert common.audio_option_or_all("invalid options", (common.VORBIS, common.OGG, ), ONE_OPTION)==ONE_OPTION
             assert common.audio_option_or_all("no valid options", (common.VORBIS, common.OGG, ), ())==()
 
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

@@ -33,10 +33,13 @@ def mod_check(mod_name: str, in_csc: str, out_csc: str):
     csc_mod = loader.load_codec(mod_name)
     if not csc_mod:
         raise ValueError(f"{mod_name} not found")
-    if in_csc not in csc_mod.get_input_colorspaces():
+    specs = csc_mod.get_specs()
+    in_match = tuple(spec for spec in specs if spec.input_colorspace == in_csc)
+    if not in_match:
         raise ValueError(f"{mod_name} does not support {in_csc!r} as input for {out_csc!r}")
-    if out_csc not in csc_mod.get_output_colorspaces(in_csc):
-        raise ValueError(f"{mod_name} does not support {out_csc!r} as output for {in_csc}")
+    out_match = tuple(spec for spec in specs if out_csc not in spec.output_colorspaces)
+    if not out_match:
+        raise ValueError(f"{mod_name} does not support {out_csc!r} as output for {in_csc!r}")
     return csc_mod
 
 

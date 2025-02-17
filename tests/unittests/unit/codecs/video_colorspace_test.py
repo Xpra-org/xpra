@@ -203,7 +203,12 @@ class Test_Roundtrip(unittest.TestCase):
         out_image = decoder.decompress_image(cdata, typedict(client_options))
         if not out_image:
             raise ValueError("no image")
+        if decoder.get_type() == "nvdec":
+            # uses GPU pycuda DeviceAllocation buffers,
+            # which we can't compare directly
+            return
         out_pixels = out_image.get_pixels()
+
         out_csc = out_image.get_pixel_format()
         md = 0
         if in_csc.startswith("YUV") or in_csc == "NV12":

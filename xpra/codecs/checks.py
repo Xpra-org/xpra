@@ -620,18 +620,12 @@ def do_testcsc(csc_module, iw: int, ih: int, ow: int, oh: int,
     log("do_testcsc%s", (csc_module, iw, ih, ow, oh, full, test_cs_in, test_cs_out,
                          TEST_LIMIT_W, TEST_LIMIT_H))
     cstype = csc_module.get_type()
-    cs_in_list = test_cs_in
-    if cs_in_list is None:
-        cs_in_list = csc_module.get_input_colorspaces()
-    for cs_in in cs_in_list:
-        cs_out_list = test_cs_out
-        if cs_out_list is None:
-            cs_out_list = csc_module.get_output_colorspaces(cs_in)
-        for cs_out in cs_out_list:
-            if iw != ow or ih != oh:
-                spec = csc_module.get_spec(cs_in, cs_out)
-                if not spec.can_scale:
-                    continue
+    for spec in csc_module.get_specs():
+        cs_in = spec.input_colorspace
+        for cs_out in spec.output_colorspaces:
+            if (iw != ow or ih != oh) and not spec.can_scale:
+                continue
+
             log(f"{cstype}: testing {cs_in} -> {cs_out}")
             e = csc_module.Converter()
             try:

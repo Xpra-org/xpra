@@ -9,7 +9,6 @@ from collections.abc import Sequence
 from xpra.common import noop
 from xpra.os_util import POSIX, OSX
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv
 from xpra.util.env import envint
 from xpra.server.source.stub_source_mixin import StubSourceMixin
 from xpra.log import Logger
@@ -32,6 +31,19 @@ def valid_encodings(args: Sequence[str]) -> list[str]:
         else:
             encodings.append(x)
     return encodings
+
+
+def find_csc_spec(src_format: str, dst_format: str):
+    from xpra.codecs.video import getVideoHelper
+    specs = getVideoHelper().get_csc_specs(src_format).get(dst_format, ())
+    log.error(f"{specs=}")
+    for spec in specs:
+        if src_format not in spec.input_colorspace:
+            continue
+        if dst_format not in spec.output_colorspaces:
+            continue
+        return spec
+    raise ValueError("cannot convert %r to %r", src_format, dst_format)
 
 
 class WebcamMixin(StubSourceMixin):
@@ -202,34 +214,19 @@ class WebcamMixin(StubSourceMixin):
             bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w * 4, planes=ImageWrapper.PACKED)
             src_format = webcam.get_src_format()
             if not src_format:
+                log("no webcam src format")
                 # closed / closing
                 return False
-            # one of those two should be present
             try:
-                csc_mod = "csc_libyuv"
-                from xpra.codecs.libyuv.converter import (
-                    get_input_colorspaces,
-                    get_output_colorspaces,
-                    Converter,
-                )
-            except ImportError:
-                self.send_webcam_stop(device_id, "no csc module")
-                return False
-            try:
-                if rgb_pixel_format not in get_input_colorspaces():
-                    raise ValueError(f"unsupported RGB pixel format {rgb_pixel_format}")
-                if src_format not in get_output_colorspaces(rgb_pixel_format):
-                    raise ValueError(f"unsupported output colourspace format {src_format}")
-            except Exception as e:
-                log.error("Error: cannot convert %s to %s using %s:", rgb_pixel_format, src_format, csc_mod)
-                log.estr(e)
-                log.error(" input-colorspaces: %s", csv(get_input_colorspaces()))
-                log.error(" output-colorspaces: %s", csv(get_output_colorspaces(rgb_pixel_format)))
-                self.send_webcam_stop(device_id, f"csc format error: {e}")
+                csc_spec = find_csc_spec(rgb_pixel_format, src_format)
+            except ValueError as e:
+                message = f"cannot convert {rgb_pixel_format!r} to {src_format!r}: {e}"
+                log(f"Warning: {message}")
+                self.send_webcam_stop(device_id, message)
                 return False
             tw = webcam.get_width()
             th = webcam.get_height()
-            csc = Converter()
+            csc = csc_spec.codec_class()
             csc.init_context(w, h, rgb_pixel_format, tw, th, src_format, typedict())
             image = csc.convert_image(bgrx_image)
             webcam.push_image(image)

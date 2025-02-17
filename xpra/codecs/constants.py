@@ -165,6 +165,8 @@ class CodecSpec:
 
     codec_class     : Callable
     codec_type      : str
+    input_colorspace: str = "invalid"
+    output_colorspaces : Sequence[str] = ()      # ie: ("YUV420P" : "YUV420P", ...)
     quality         : int = 50
     speed           : int = 50
     size_efficiency : int = 50
@@ -238,8 +240,6 @@ class CodecSpec:
 class VideoSpec(CodecSpec):
 
     encoding           : str = "invalid"
-    input_colorspace   : str = "invalid"
-    output_colorspaces : Sequence[str] = ()      # ie: ("YUV420P" : "YUV420P", ...)
     has_lossless_mode   : bool = False
 
     def __repr__(self):
@@ -249,11 +249,8 @@ class VideoSpec(CodecSpec):
 @dataclass(kw_only=True)
 class CSCSpec(CodecSpec):
 
-    input_colorspace: str = "invalid"
-    output_colorspace: str = "invalid"
-
     def __repr__(self):
-        return f"{self.codec_type}({self.input_colorspace} to {self.output_colorspace})"
+        return f"{self.codec_type}({self.input_colorspace} to {self.output_colorspaces})"
 
 
 def main():

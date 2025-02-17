@@ -181,7 +181,7 @@ class SourceMixinsTest(unittest.TestCase):
                     if has_file:
                         caps["mmap.file"] = tmp.name
                         caps["mmap_file"] = tmp.name
-                    with LoggerSilencer(mmap, ("error", "warn")):
+                    with LoggerSilencer(mmap):
                         self._test_mixin_class(mmap.MMAP_Connection, {
                             "mmap_filename" : server_mmap_filename,
                             "mmap_supported" : mmap_supported,
@@ -281,6 +281,10 @@ class SourceMixinsTest(unittest.TestCase):
         wm.hello_sent = True
         packets = []
 
+        from xpra.codecs.video import getVideoHelper
+        getVideoHelper().set_modules(csc_modules=("csc_libyuv", "csc_cython"))
+        getVideoHelper().init_csc_options()
+
         def send(*args):
             packets.append(args)
         #wm.send = send
@@ -289,7 +293,7 @@ class SourceMixinsTest(unittest.TestCase):
             assert wm.get_info()
             device_id = 0
             w, h = 640, 480
-            with silence_info(webcam.log):
+            with silence_info(webcam):
                 assert wm.start_virtual_webcam(device_id, w, h)
             assert wm.get_info().get("webcam", {}).get("active-devices", 0)==1
             assert len(packets)==1    #ack sent
@@ -301,7 +305,7 @@ class SourceMixinsTest(unittest.TestCase):
             image.save(buf, "png")
             data = buf.getvalue()
             buf.close()
-            assert wm.process_webcam_frame(device_id, frame_no, "png", w, h, data)
+            assert wm.process_webcam_frame(device_id, frame_no, "png", w, h, data, {})
             assert len(packets)==2    #ack sent
             assert packets[1][0]=="webcam-ack"
             #now send a jpeg as png,
@@ -311,16 +315,11 @@ class SourceMixinsTest(unittest.TestCase):
             data = buf.getvalue()
             buf.close()
             #suspend error logging to avoid the scary message:
-            from xpra.server.source.webcam import log as webcam_log
-            elog = webcam_log.error
-            try:
-                webcam_log.error = webcam_log.debug
-                assert not wm.process_webcam_frame(device_id, frame_no, "png", w, h, data)
-            finally:
-                #restore it:
-                webcam_log.error = elog
-            assert len(packets)==3
-            assert packets[2][0]=="webcam-stop"
+            from xpra.server.source import webcam
+            with silence_error(webcam):
+                assert not wm.process_webcam_frame(device_id, frame_no, "png", w, h, data, {})
+            assert len(packets) == 3
+            assert packets[2][0] == "webcam-stop"
         finally:
             wm.cleanup()
 

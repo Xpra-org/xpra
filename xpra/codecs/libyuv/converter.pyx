@@ -250,22 +250,19 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-def get_input_colorspaces() -> Sequence[str]:
-    return tuple(COLORSPACES.keys())
-
-
-def get_output_colorspaces(input_colorspace: str) -> Sequence[str]:
-    return COLORSPACES.get(input_colorspace, ())
-
-
-def get_spec(in_colorspace: str, out_colorspace: str) -> CSCSpec:
-    assert in_colorspace in COLORSPACES, "invalid input colorspace: %s (must be one of %s)" % (in_colorspace, COLORSPACES)
-    assert out_colorspace in COLORSPACES[in_colorspace], "invalid output colorspace: %s (must be one of %s)" % (out_colorspace, COLORSPACES[in_colorspace])
-    return CSCSpec(input_colorspace=in_colorspace, output_colorspace=out_colorspace,
-                    codec_class=Converter, codec_type=get_type(),
-                    quality=100, speed=100,
-                    setup_cost=0, min_w=8, min_h=2, can_scale=in_colorspace not in ("NV12", "YUYV"),
-                    max_w=MAX_WIDTH, max_h=MAX_HEIGHT)
+def get_specs() -> Sequence[CSCSpec]:
+    specs: Sequence[CSCSpec] = []
+    for in_cs, out_css in COLORSPACES.items():
+        can_scale = in_cs not in ("NV12", "YUYV")
+        specs.append(CSCSpec(
+                input_colorspace=in_cs, output_colorspaces=out_css,
+                codec_class=Converter, codec_type=get_type(),
+                quality=100, speed=100,
+                setup_cost=0, min_w=8, min_h=2, can_scale=can_scale,
+                max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
+                )
+            )
+    return specs
 
 
 class YUVImageWrapper(ImageWrapper):

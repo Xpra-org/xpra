@@ -652,7 +652,7 @@ cdef class Decoder:
         return self.encoding
 
     def get_type(self) -> str:
-        return  "nvdec"
+        return "nvdec"
 
     def __dealloc__(self):
         self.clean()

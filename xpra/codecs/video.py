@@ -413,16 +413,14 @@ class VideoHelper:
             log(" csc module %s could not be loaded:", csc_name)
             log(" %s", get_codec_error(csc_name))
             return
-        in_cscs = csc_module.get_input_colorspaces()
-        for in_csc in in_cscs:
-            out_cscs = csc_module.get_output_colorspaces(in_csc)
-            log("%10s output colorspaces for %10s: %s", csc_module.get_type(), in_csc, csv(out_cscs))
-            for out_csc in out_cscs:
-                spec = csc_module.get_spec(in_csc, out_csc)
-                self.add_csc_spec(in_csc, out_csc, spec)
+        specs = csc_module.get_specs()
+        for spec in specs:
+            self.add_csc_spec(spec)
 
-    def add_csc_spec(self, in_csc: str, out_csc: str, spec: CSCSpec) -> None:
-        self._csc_encoder_specs.setdefault(in_csc, {}).setdefault(out_csc, []).append(spec)
+    def add_csc_spec(self, spec: CSCSpec) -> None:
+        in_csc = spec.input_colorspace
+        for out_csc in spec.output_colorspaces:
+            self._csc_encoder_specs.setdefault(in_csc, {}).setdefault(out_csc, []).append(spec)
 
     def init_video_decoders_options(self) -> None:
         log("init_video_decoders_options() will try video decoders: %s", csv(self.video_decoders) or "none")

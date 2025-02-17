@@ -393,10 +393,12 @@ class Logger:
     * we bypass the logging system unless debugging is enabled for the logger,
         which is much faster than relying on the python logging code
     """
-    __slots__ = ("categories", "level", "level_override", "_logger", "debug_enabled", "__weakref__", "debug")
+    __slots__ = ("categories",
+                 "level", "level_override", "min_level", "_logger", "debug_enabled", "__weakref__", "debug")
 
     def __init__(self, *categories: str):
         self.debug = self.__call__
+        self.min_level = 0
         self.categories = list(categories)
         n = 1
         caller = ""
@@ -474,6 +476,8 @@ class Logger:
         self.level_override = logging.CRITICAL if enable else 0
 
     def log(self, level, msg: str, *args, **kwargs) -> None:
+        if level < self.min_level:
+            return
         exc_info = kwargs.pop("exc_info", None)
         if exc_info is True:
             ei = sys.exc_info()

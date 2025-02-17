@@ -35,7 +35,7 @@ class BackgroundWorkerTest(unittest.TestCase):
         w.add(nodupe, False)
         w.add(nodupe, False)
         time.sleep(1)
-        with LoggerSilencer(background_worker, ("warn", "info")):
+        with LoggerSilencer(background_worker):
             # trigger the warning with more than 10 items:
             def slow_item():
                 time.sleep(1)

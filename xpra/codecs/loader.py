@@ -530,9 +530,9 @@ def print_codecs(list_codecs: Sequence[str]) -> None:
             if log.is_debug_enabled():
                 try:
                     if name.find("csc") >= 0:
-                        cs = list(mod.get_input_colorspaces())
-                        for c in list(cs):
-                            cs += list(mod.get_output_colorspaces(c))
+                        cs = []
+                        for spec in list(mod.get_specs()):
+                            cs.append(spec.input_colorspace)
                         out(f"                         colorspaces: {csv(list(set(cs)))}")
                     elif name.find("enc") >= 0 or name.find("dec") >= 0:
                         encodings = mod.get_encodings()
@@ -541,7 +541,7 @@ def print_codecs(list_codecs: Sequence[str]) -> None:
                         i = mod.get_info()
                         for k, v in sorted(i.items()):
                             out(f"                         {k} = {v}")
-                    except Exception:
+                    except RuntimeError:
                         pass
                 except Exception as e:
                     log(f"{mod}", exc_info=True)
