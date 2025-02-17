@@ -226,21 +226,6 @@ def get_encodings() -> Sequence[str]:
     return CODECS
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    assert encoding in get_encodings(), "invalid encoding: %s" % encoding
-    return COLORSPACES[encoding]
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    assert encoding in get_encodings(), "invalid encoding: %s" % encoding
-    csoptions = COLORSPACES[encoding]
-    assert input_colorspace in csoptions, "invalid input colorspace: %s, %s only supports %s" % (input_colorspace, encoding, csoptions)
-    #always unchanged in output:
-    if input_colorspace=="YUV444P10":
-        return ["r210",]
-    return [input_colorspace]
-
-
 generation = AtomicInteger()
 
 
@@ -279,29 +264,36 @@ if WIN32:
     MAX_SIZE["vp9"] = (4096, 4096)
 
 
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
-    assert encoding in CODECS, "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
-    #setup cost is reasonable (usually about 5ms)
-    global MAX_SIZE
-    max_w, max_h = MAX_SIZE[encoding]
-    if encoding=="vp8":
-        has_lossless_mode = False
-        speed = 50
-        quality = 50
-    else:
-        has_lossless_mode = colorspace.startswith("YUV444P")
-        speed = 40
-        quality = 50 + 50*int(has_lossless_mode)
-    return (
-        VideoSpec(
-            encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace],
-            has_lossless_mode=has_lossless_mode,
-            codec_class=Encoder, codec_type=get_type(),
-            quality=quality, speed=speed,
-            size_efficiency=60,
-            setup_cost=20, max_w=max_w, max_h=max_h),
-        )
+def get_specs() -> Sequence[VideoSpec]:
+    specs: Sequence[VideoSpec] = []
+
+    for encoding in get_encodings():
+        max_w, max_h = MAX_SIZE[encoding]
+        if encoding=="vp8":
+            has_lossless_mode = False
+            speed = 50
+            quality = 50
+        else:
+            has_lossless_mode = in_cs.startswith("YUV444P")
+            speed = 40
+            quality = 50 + 50*int(has_lossless_mode)
+
+        for in_cs in COLORSPACES[encoding]:
+            out_cs = in_cs
+            if in_cs == "YUV444P10":
+                out_cs = "r210"
+
+            specs.append(
+                VideoSpec(
+                    encoding=encoding, input_colorspace=in_cs, output_colorspaces=[out_cs],
+                    has_lossless_mode=has_lossless_mode,
+                    codec_class=Encoder, codec_type=get_type(),
+                    quality=quality, speed=speed,
+                    size_efficiency=60,
+                    setup_cost=20, max_w=max_w, max_h=max_h,
+                )
+            )
+    return specs
 
 
 cdef inline vpx_img_fmt_t get_vpx_colorspace(colorspace: str) except -1:
@@ -354,7 +346,7 @@ cdef class Encoder:
         assert options.get("scaled-width", width)==width, "vpx encoder does not handle scaling"
         assert options.get("scaled-height", height)==height, "vpx encoder does not handle scaling"
         assert encoding in get_encodings()
-        assert src_format in get_input_colorspaces(encoding), f"invalid source format {src_format!r} for {encoding}"
+        assert src_format in COLORSPACES.get(encoding, ()), f"invalid source format {src_format!r} for {encoding}"
 
         self.src_format = src_format
 

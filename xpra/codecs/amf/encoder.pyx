@@ -141,18 +141,6 @@ def get_encodings() -> Sequence[str]:
     return CODECS
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    assert encoding in get_encodings(), "invalid encoding: %s" % encoding
-    # return ("YUV420P", "NV12", "BGRA")
-    return ("NV12", )
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    assert encoding in get_encodings(), "invalid encoding: %s" % encoding
-    assert input_colorspace in get_input_colorspaces(encoding)
-    return ("YUV420P", )
-
-
 def get_info() -> Dict[str, Any]:
     info = {
         "version"       : get_version(),
@@ -161,17 +149,15 @@ def get_info() -> Dict[str, Any]:
     return info
 
 
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
-    assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in get_input_colorspaces(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_input_colorspaces(encoding))
+def get_specs() -> Sequence[VideoSpec]:
+    specs: Sequence[VideoSpec] = []
     # setup cost is reasonable (usually about 5ms)
     max_w, max_h = 3840, 2160
-    has_lossless_mode = False
     speed = 50
     quality = 50
     return (
         VideoSpec(
-            encoding=encoding, input_colorspace=colorspace, output_colorspaces=[colorspace],
+            encoding="h264", input_colorspace="NV12", output_colorspaces=("YUV420P", ),
             has_lossless_mode=False,
             codec_class=Encoder, codec_type=get_type(),
             quality=quality, speed=speed,
@@ -210,7 +196,7 @@ cdef class Encoder:
         assert options.get("scaled-width", width)==width, "amf encoder does not handle scaling"
         assert options.get("scaled-height", height)==height, "amf encoder does not handle scaling"
         assert encoding in get_encodings()
-        assert src_format in get_input_colorspaces(encoding), f"invalid source format {src_format!r} for {encoding}"
+        assert src_format == "NV12", f"invalid source format {src_format!r} for {encoding!r}"
         self.src_format = src_format
         if src_format == "YUV420P":
             self.surface_format = AMF_SURFACE_YUV420P

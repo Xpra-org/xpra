@@ -376,17 +376,15 @@ class VideoHelper:
             return
         encoder_type = encoder_module.get_type()
         encodings = encoder_module.get_encodings()
+
         log(" %12s encodings=%s", encoder_type, csv(encodings))
-        for encoding in encodings:
-            colorspaces = encoder_module.get_input_colorspaces(encoding)
-            log(" %9s  input colorspaces for %5s: %s", encoder_type, encoding, csv(colorspaces))
-            for colorspace in colorspaces:
-                specs = encoder_module.get_specs(encoding, colorspace)
-                for spec in specs:
-                    self.add_encoder_spec(encoding, colorspace, spec)
+        for spec in encoder_module.get_specs():
+            self.add_encoder_spec(spec)
         log("video encoder options: %s", self._video_encoder_specs)
 
-    def add_encoder_spec(self, encoding: str, colorspace: str, spec: VideoSpec):
+    def add_encoder_spec(self, spec: VideoSpec):
+        encoding = spec.encoding
+        colorspace = spec.input_colorspace
         self._video_encoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec)
 
     def init_csc_options(self) -> None:

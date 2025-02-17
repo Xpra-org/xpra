@@ -1370,21 +1370,6 @@ def get_COLORSPACES(encoding: str) -> Dict[str, Sequence[str]]:
     return COLORSPACES
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    return list(get_COLORSPACES(encoding).keys())
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    cs = get_COLORSPACES(encoding)
-    out = cs.get(input_colorspace)
-    if not out:
-        raise ValueError(f"invalid input colorspace {input_colorspace} for encoding {encoding}, must be one of: {out}")
-    #the output will actually be in one of those two formats once decoded
-    #because internally that's what we convert to before encoding
-    #(well, NV12... which is equivallent to YUV420P here...)
-    return out
-
-
 #Note: these counters should be per-device, but
 #when we call get_runtime_factor(), we don't know which device is going to get used!
 #since we have load balancing, using an overall factor isn't too bad
@@ -1427,31 +1412,43 @@ def get_height_mask(colorspace: str) -> int:
     return 0xFFFF
 
 
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
-    assert encoding in get_encodings(), "invalid format: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in get_COLORSPACES(encoding), "invalid colorspace: %s (must be one of %s)" % (colorspace, get_COLORSPACES(encoding))
-    #ratings: quality, speed, setup cost, cpu cost, gpu cost, latency, max_w, max_h
-    #undocumented and found the hard way, see:
-    #https://github.com/Xpra-org/xpra/issues/1046#issuecomment-765450102
-    #https://github.com/Xpra-org/xpra/issues/1550
+def get_specs() -> Sequence[VideoSpec]:
+    # undocumented and found the hard way, see:
+    # https://github.com/Xpra-org/xpra/issues/1046#issuecomment-765450102
+    # https://github.com/Xpra-org/xpra/issues/1550
     min_w, min_h = (128, 128)
-    width_mask = get_width_mask(colorspace)
-    height_mask = get_height_mask(colorspace)
-    #FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
-    global MAX_SIZE
-    max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
-    has_lossless_mode = colorspace in ("XRGB", "BGRX", "r210") and encoding=="h264"
-    cs = VideoSpec(encoding=encoding, input_colorspace=colorspace, output_colorspaces=get_COLORSPACES(encoding)[colorspace], has_lossless_mode=LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED),
-                      codec_class=Encoder, codec_type=get_type(),
-                      quality=60+has_lossless_mode*40, speed=100, size_efficiency=100,
-                      setup_cost=80, cpu_cost=10, gpu_cost=100,
-                      #using a hardware encoder for something this small is silly:
-                      min_w=min_w, min_h=min_h,
-                      max_w=max_w, max_h=max_h,
-                      can_scale=colorspace!="r210",
-                      width_mask=width_mask, height_mask=height_mask)
-    cs.get_runtime_factor = get_runtime_factor
-    return (cs, )
+
+    specs: Sequence[VideoSpec] = []
+    for encoding in get_encodings():
+        # FIXME: we should probe this using WIDTH_MAX, HEIGHT_MAX!
+        max_w, max_h = MAX_SIZE.get(encoding, (4096, 4096))
+        has_lossless_mode = LOSSLESS_CODEC_SUPPORT.get(encoding, LOSSLESS_ENABLED)
+
+        for in_cs, out_css in get_COLORSPACES(encoding).items():
+            width_mask = get_width_mask(in_cs)
+            height_mask = get_height_mask(in_cs)
+            has_lossless_mode = in_cs in ("XRGB", "BGRX", "r210") and encoding == "h264"
+
+            #the output will actually be in one of those two formats once decoded
+            #because internally that's what we convert to before encoding
+            #(well, NV12... which is equivallent to YUV420P here...)
+
+            spec = VideoSpec(
+                encoding=encoding, input_colorspace=in_cs, output_colorspaces=out_css,
+                has_lossless_mode=has_lossless_mode,
+                codec_class=Encoder, codec_type=get_type(),
+                quality=60+has_lossless_mode*40, speed=100, size_efficiency=100,
+                setup_cost=80, cpu_cost=10, gpu_cost=100,
+                #using a hardware encoder for something this small is silly:
+                min_w=min_w, min_h=min_h,
+                max_w=max_w, max_h=max_h,
+                can_scale=in_cs != "r210",
+                width_mask=width_mask, height_mask=height_mask,
+            )
+            spec.get_runtime_factor = get_runtime_factor
+            specs.append(spec)
+    return specs
+
 
 #ie: NVENCAPI_VERSION=0x30 -> PRETTY_VERSION = [3, 0]
 PRETTY_VERSION = (int(NVENCAPI_MAJOR_VERSION), int(NVENCAPI_MINOR_VERSION))
@@ -3149,12 +3146,12 @@ def init_module() -> None:
 
                 log("will test: %s", test_encodings)
                 for encoding in test_encodings:
-                    colorspaces = get_input_colorspaces(encoding)
+                    colorspaces = list(get_COLORSPACES(encoding).keys())
                     if not colorspaces:
                         raise ValueError(f"cannot use NVENC: no colorspaces available for {encoding}")
                     src_format = colorspaces[0]
                     log(f"testing {encoding} using {src_format} from {colorspaces}")
-                    options["dst-formats"] = get_output_colorspaces(encoding, src_format)
+                    options["dst-formats"] = get_COLORSPACES(encoding).get(src_format, ())
                     test_encoder = None
                     try:
                         test_encoder = Encoder()

@@ -10,6 +10,7 @@ from collections.abc import Sequence
 
 from libc.stdint cimport uintptr_t
 from xpra.codecs.image import ImageWrapper
+from xpra.codecs.constants import VideoSpec
 from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
     NV_ENC_INPUT_PTR, NV_ENC_OUTPUT_PTR, NV_ENC_REGISTERED_PTR,
@@ -146,21 +147,11 @@ NVJPEG_INPUT_FORMATS: Dict[str, Sequence[str]] = {
 }
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    assert encoding in ("jpeg", "jpega")
-    return NVJPEG_INPUT_FORMATS[encoding]
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    assert encoding in ("jpeg", "jpega")
-    assert input_colorspace in get_input_colorspaces(encoding)
-    return NVJPEG_INPUT_FORMATS[encoding]
-
-
 def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
     assert encoding in ("jpeg", "jpega")
-    assert colorspace in get_input_colorspaces(encoding)
-    from xpra.codecs.constants import VideoSpec
+    specs: Sequence[VideoSpec] = []
+    for in_cs in NVJPEG_INPUT_FORMATS[encoding]
+
     return (
         VideoSpec(
             encoding="jpeg", input_colorspace=colorspace, output_colorspaces=(colorspace, ),
@@ -197,7 +188,7 @@ cdef class Encoder:
 
     def init_context(self, encoding, width : int, height : int, src_format, options: typedict) -> None:
         assert encoding in ("jpeg", "jpega")
-        assert src_format in get_input_colorspaces(encoding)
+        assert src_format in NVJPEG_INPUT_FORMATS[encoding]
         options = options or typedict()
         self.encoding = encoding
         self.width = width

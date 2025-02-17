@@ -51,21 +51,6 @@ def get_encodings() -> Sequence[str]:
     return tuple(COLORSPACES.keys())
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    colorspaces = COLORSPACES.get(encoding)
-    assert colorspaces, f"invalid input colorspace for {encoding}"
-    return tuple(colorspaces.keys())
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    colorspaces = COLORSPACES.get(encoding)
-    assert colorspaces, f"invalid input colorspace for {encoding}"
-    out_colorspaces = colorspaces.get(input_colorspace)
-    assert out_colorspaces, f"invalid input colorspace {input_colorspace} for {encoding}"
-    log.warn(f"get_output_colorspaces({encoding}, {input_colorspace})={out_colorspaces}")
-    return tuple(out_colorspaces)
-
-
 def ElementEncoderClass(element: str):
     class ElementEncoder(Encoder):
         pass
@@ -99,11 +84,13 @@ def make_spec(element: str, encoding: str, cs_in: str, css_out: Sequence[str],
 SPECS: dict[str, dict[str, list[VideoSpec]]] = {}
 
 
-def get_specs(encoding: str, colorspace: str) -> list[VideoSpec]:
-    colorspaces = SPECS.get(encoding)
-    assert colorspaces, f"invalid encoding: {encoding} (must be one of %s)" % csv(SPECS.keys())
-    assert colorspace in colorspaces, f"invalid colorspace: {colorspace} (must be one of %s)" % csv(colorspaces.keys())
-    return colorspaces[colorspace]
+def get_specs() -> Sequence[VideoSpec]:
+    # easy, just flatten the ones we found:
+    specs: Sequence[VideoSpec] = []
+    for cs_dicts in SPECS.values():
+        for lspecs in cs_dicts.values():
+            specs += lspecs
+    return specs
 
 
 def init_all_specs(*exclude) -> None:

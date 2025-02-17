@@ -264,40 +264,24 @@ def cleanup_module() -> None:
     server.disconnect()
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    assert encoding in get_encodings()
-    return tuple(server.specs.get(encoding, {}).keys())
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    assert encoding in get_encodings()
-    especs = tuple(server.specs.get(encoding, {}).get(input_colorspace, ()))
-    output_colorspaces = []
-    for espec in especs:
-        for cs in espec.get("output_colorspaces", ()):
-            if cs not in output_colorspaces:
-                output_colorspaces.append(cs)
-    return tuple(output_colorspaces)
-
-
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
+def get_specs() -> Sequence[VideoSpec]:
     # the `server.specs` are dictionaries,
     # which we need to convert to real `VideoSpec` objects:
-    specs = []
-    especs = tuple(server.specs.get(encoding, {}).get(colorspace, ()))
-    for espec in especs:
-        log(f"remote: {encoding} + {colorspace}: {espec}")
-        codec_type = espec.pop("codec_type", "")
-        if not codec_type:
-            continue
-        spec = VideoSpec(codec_class=Encoder, codec_type=f"remote-{codec_type}")
-        for k, v in espec.items():
-            if not hasattr(spec, k):
-                log.warn(f"Warning: unknown video spec attribute {k!r}")
+    specs: Sequence[VideoSpec] = []
+    for encoding, especs in server.specs.items():
+        for espec in especs:
+            log(f"remote: {encoding}: {espec}")
+            codec_type = espec.pop("codec_type", "")
+            if not codec_type:
                 continue
-            setattr(spec, k, v)
-        specs.append(spec)
-    log(f"remote.get_specs({encoding}, {colorspace}={specs}")
+            spec = VideoSpec(codec_class=Encoder, codec_type=f"remote-{codec_type}")
+            for k, v in espec.items():
+                if not hasattr(spec, k):
+                    log.warn(f"Warning: unknown video spec attribute {k!r}")
+                    continue
+                setattr(spec, k, v)
+            specs.append(spec)
+    log(f"remote.get_specs()={specs}")
     return tuple(specs)
 
 

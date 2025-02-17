@@ -442,52 +442,43 @@ def get_encodings() -> Tuple[str,...]:
     return ("h264", )
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    assert encoding in get_encodings()
-    return tuple(COLORSPACES.keys())
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    assert encoding in get_encodings()
-    assert input_colorspace in COLORSPACES
-    return (COLORSPACES[input_colorspace],)
-
-
 #actual limits (which we cannot reach because we hit OOM):
 #MAX_WIDTH, MAX_HEIGHT = (16384, 16384)
 MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 
 
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
-    assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
-    #we can handle high quality and any speed
-    #setup cost is moderate (about 10ms)
-    has_lossless_mode = colorspace in ("YUV444P", "BGR", "BGRX", "RGB")
-    height_mask = width_mask = 0xFFFF
-    if colorspace not in ("YUV444P", "BGRX"):
-        width_mask = 0xFFFE
-        if colorspace=="YUV420P":
-            height_mask = 0xFFFE
-    return (
-        VideoSpec(
-            encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
-            has_lossless_mode=has_lossless_mode,
-            codec_class=Encoder, codec_type=get_type(),
-            quality=60+40*int(has_lossless_mode), speed=60,
-            size_efficiency=60,
-            setup_cost=20, width_mask=width_mask, height_mask=height_mask,
-            max_w=MAX_WIDTH, max_h=MAX_HEIGHT),
+def get_specs() -> Sequence[VideoSpec]:
+    specs: Sequence[VideoSpec] = []
+
+    for in_cs, out_cs in COLORSPACES.items():
+        # can handle high quality and any speed
+        # setup cost is moderate (about 10ms)
+        has_lossless_mode = in_cs in ("YUV444P", "BGR", "BGRX", "RGB")
+        height_mask = width_mask = 0xFFFF
+        if in_cs not in ("YUV444P", "BGRX"):
+            width_mask = 0xFFFE
+            if in_cs == "YUV420P":
+                height_mask = 0xFFFE
+        specs.append(VideoSpec(
+                encoding="h264", input_colorspace=in_cs, output_colorspaces=(out_cs, ),
+                has_lossless_mode=has_lossless_mode,
+                codec_class=Encoder, codec_type=get_type(),
+                quality=60+40*int(has_lossless_mode), speed=60,
+                size_efficiency=60,
+                setup_cost=20, width_mask=width_mask, height_mask=height_mask,
+                max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
+            )
         )
+    return specs
 
 
 # maps a log level to one of our logger functions:
-LOGGERS : Dict[int,Callable] = {
-           X264_LOG_ERROR   : log.error,
-           X264_LOG_WARNING : log.warn,
-           X264_LOG_INFO    : log.info,
-           X264_LOG_DEBUG   : log.debug,
-           }
+LOGGERS: Dict[int,Callable] = {
+       X264_LOG_ERROR   : log.error,
+       X264_LOG_WARNING : log.warn,
+       X264_LOG_INFO    : log.info,
+       X264_LOG_DEBUG   : log.debug,
+}
 
 # maps a log level string to the actual constant:
 X264_LOG_MAP: Dict[str, int] = {

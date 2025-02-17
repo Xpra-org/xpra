@@ -456,7 +456,7 @@ class EncodingsMixin(StubSourceMixin):
                         # which may be used by other clients (other ServerSource instances)
                         self.video_helper = getVideoHelper().clone()
                         cloned = True
-                    self.video_helper.add_encoder_spec(encoding, colorspace, spec)
+                    self.video_helper.add_encoder_spec(spec)
 
     ######################################################################
     # Functions used by the server to request something

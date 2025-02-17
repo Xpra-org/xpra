@@ -14,6 +14,7 @@ from libc.string cimport memset  # pylint: disable=syntax-error
 from xpra.buffers.membuf cimport buffer_context
 
 from xpra.codecs.image import ImageWrapper
+from xpra.codecs.constants import VideoSpec
 from xpra.net.compression import Compressed
 from xpra.codecs.debug import may_save_image
 from xpra.util.env import envbool, envint
@@ -376,30 +377,21 @@ def cleanup_module() -> None:
 INPUT_PIXEL_FORMATS = ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR")
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    assert encoding=="webp"
-    return INPUT_PIXEL_FORMATS
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    assert encoding=="webp"
-    assert input_colorspace in INPUT_PIXEL_FORMATS
-    return (input_colorspace, )
-
-
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
-    assert encoding=="webp"
-    assert colorspace in get_input_colorspaces(encoding)
-    from xpra.codecs.constants import VideoSpec
-    return (
-        VideoSpec(
-            encoding=encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ), has_lossless_mode=False,
-            codec_class=Encoder, codec_type="webp",
-            setup_cost=0, cpu_cost=100, gpu_cost=0,
-            min_w=16, min_h=16, max_w=4*1024, max_h=4*1024,
-            can_scale=True,
-            score_boost=-50),
+def get_specs() -> Sequence[VideoSpec]:
+    specs: Sequence[VideoSpec] = []
+    for in_cs in INPUT_PIXEL_FORMATS:
+        out_cs = in_cs
+        specs.append(VideoSpec(
+                encoding="webp", input_colorspace=in_cs, output_colorspaces=(out_cs, ),
+                has_lossless_mode=False,
+                codec_class=Encoder, codec_type="webp",
+                setup_cost=0, cpu_cost=100, gpu_cost=0,
+                min_w=16, min_h=16, max_w=4*1024, max_h=4*1024,
+                can_scale=True,
+                score_boost=-50,
+            )
         )
+    return specs
 
 
 cdef inline webp_check(int ret):
@@ -464,7 +456,7 @@ cdef class Encoder:
 
     def init_context(self, encoding: str, width : int, height : int, src_format: str, options: typedict) -> None:
         assert encoding=="webp", "invalid encoding: %s" % encoding
-        assert src_format in get_input_colorspaces(encoding)
+        assert src_format in INPUT_PIXEL_FORMATS
         self.width = width
         self.height = height
         self.src_format = src_format

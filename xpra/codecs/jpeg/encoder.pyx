@@ -13,6 +13,7 @@ from libc.stdint cimport uintptr_t
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport makebuf, MemBuf, buffer_context     # pylint: disable=syntax-error
 from xpra.codecs.constants import get_subsampling_divs
+from xpra.codecs.constants import VideoSpec
 from xpra.codecs.debug import may_save_image
 from xpra.net.compression import Compressed
 from xpra.util.env import envbool
@@ -126,42 +127,34 @@ if YUV:
     JPEG_INPUT_COLORSPACES = ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR", "YUV420P", "YUV422P", "YUV444P")
 else:
     JPEG_INPUT_COLORSPACES = ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR")
+JPEGA_INPUT_COLORSPACES = ("BGRA", "RGBA", )
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    if encoding == "jpeg":
-        return JPEG_INPUT_COLORSPACES
-    assert encoding == "jpega"
-    return ("BGRA", "RGBA", )
+def get_specs() -> Sequence[VideoSpec]:
+    specs: Sequence[VideoSpec] = []
+    for encoding in ("jpeg", "jpega"):
+        in_css = JPEG_INPUT_COLORSPACES if encoding == "jpeg" else JPEGA_INPUT_COLORSPACES
 
+        for in_cs in in_css:
+            width_mask=0xFFFF
+            height_mask=0xFFFF
+            if in_cs in ("YUV420P", "YUV422P"):
+                width_mask=0xFFFE
+            if in_cs in ("YUV420P", ):
+                height_mask=0xFFFE
 
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    assert encoding in get_encodings()
-    assert input_colorspace in get_input_colorspaces(encoding)
-    return (input_colorspace, )
-
-
-def get_specs(encoding: str, colorspace: str) -> Sequence[VideoSpec]:
-    assert encoding in ("jpeg", "jpega")
-    assert colorspace in get_input_colorspaces(encoding)
-    from xpra.codecs.constants import VideoSpec
-    width_mask=0xFFFF
-    height_mask=0xFFFF
-    if colorspace in ("YUV420P", "YUV422P"):
-        width_mask=0xFFFE
-    if colorspace in ("YUV420P", ):
-        height_mask=0xFFFE
-    return (
-        VideoSpec(
-            encoding=encoding, input_colorspace=colorspace, output_colorspaces=(colorspace, ),
-            has_lossless_mode=False,
-            codec_class=Encoder, codec_type="jpeg",
-            setup_cost=0, cpu_cost=100, gpu_cost=0,
-            min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
-            can_scale=False,
-            score_boost=-50,
-            width_mask=width_mask, height_mask=height_mask),
-        )
+            specs.append(VideoSpec(
+                    encoding=encoding, input_colorspace=in_cs, output_colorspaces=(in_cs, ),
+                    has_lossless_mode=False,
+                    codec_class=Encoder, codec_type="jpeg",
+                    setup_cost=0, cpu_cost=100, gpu_cost=0,
+                    min_w=16, min_h=16, max_w=16*1024, max_h=16*1024,
+                    can_scale=False,
+                    score_boost=-50,
+                    width_mask=width_mask, height_mask=height_mask,
+                )
+            )
+    return specs
 
 
 cdef inline int norm_quality(int quality) nogil:
@@ -191,7 +184,12 @@ cdef class Encoder:
 
     def init_context(self, encoding: str, width : int, height : int, src_format: str, options: typedict) -> None:
         assert encoding in ("jpeg", "jpega"), "invalid encoding: %s" % encoding
-        assert src_format in get_input_colorspaces(encoding)
+        if encoding == "jpeg":
+            assert src_format in JPEG_INPUT_COLORSPACES
+        elif encoding == "jpega":
+            assert src_format in JPEGA_INPUT_COLORSPACES
+        else:
+            raise ValueError(f"invalid encoding {encoding!r}")
         scaled_width = options.intget("scaled-width", width)
         scaled_height = options.intget("scaled-height", height)
         assert scaled_width == width and scaled_height == height, "jpeg encoder does not handle scaling"

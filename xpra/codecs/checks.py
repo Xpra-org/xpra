@@ -503,10 +503,11 @@ def get_encoder_max_size(encoder_module, encoding: str,
 
 def do_testencoding(encoder_module, encoding, W: int, H: int, full: bool = False,
                     limit_w: int = TEST_LIMIT_W, limit_h: int = TEST_LIMIT_H) -> None:
-    for cs_in in encoder_module.get_input_colorspaces(encoding):
-        for cs_out in encoder_module.get_output_colorspaces(encoding, cs_in):
-            for spec in encoder_module.get_specs(encoding, cs_in):
-                test_encoder_spec(spec.codec_class, encoding, cs_in, cs_out, W, H, full, limit_w, limit_h)
+    for spec in encoder_module.get_specs():
+        if spec.encoding != encoding:
+            continue
+        for out_cs in spec.output_colorspaces:
+            test_encoder_spec(spec.codec_class, encoding, spec.input_colorspace, out_cs, W, H, full, limit_w, limit_h)
 
 
 def test_encoder_spec(encoder_class: Callable, encoding: str, cs_in: str, cs_out: str, W:int, H:int, full:bool=False,

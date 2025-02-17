@@ -389,36 +389,29 @@ def get_encodings() -> Sequence[str]:
     return ("h264", )
 
 
-def get_input_colorspaces(encoding: str) -> Sequence[str]:
-    assert encoding in get_encodings()
-    return tuple(COLORSPACES.keys())
-
-
-def get_output_colorspaces(encoding: str, input_colorspace: str) -> Sequence[str]:
-    assert encoding in get_encodings()
-    assert input_colorspace in COLORSPACES
-    return (COLORSPACES[input_colorspace],)
-
-
-#actual limits (which we cannot reach because we hit OOM):
-#MAX_WIDTH, MAX_HEIGHT = (16384, 16384)
+# actual limits (which we cannot reach because we hit OOM):
+# MAX_WIDTH, MAX_HEIGHT = (16384, 16384)
 MAX_WIDTH, MAX_HEIGHT = (3840, 2160)
 
-def get_specs(encoding, colorspace) -> Sequence[VideoSpec]:
-    assert encoding in get_encodings(), "invalid encoding: %s (must be one of %s" % (encoding, get_encodings())
-    assert colorspace in COLORSPACES, "invalid colorspace: %s (must be one of %s)" % (colorspace, COLORSPACES.keys())
-    #we can handle high quality and any speed
-    #setup cost is moderate (about 10ms)
-    return (
-        VideoSpec(
-            encoding=encoding, input_colorspace=colorspace, output_colorspaces=(COLORSPACES[colorspace],),
-            has_lossless_mode=False,
-            codec_class=Encoder, codec_type=get_type(),
-            quality=40, speed=20,
-            size_efficiency=40,
-            setup_cost=0, width_mask=0xFFFE, height_mask=0xFFFE,
-            max_w=MAX_WIDTH, max_h=MAX_HEIGHT),
-        )
+def get_specs() -> Sequence[VideoSpec]:
+    specs: Sequence[VideoSpec] = []
+
+    for encoding in get_encodings():
+        for in_cs in tuple(COLORSPACES.keys()):
+            out_cs = in_cs
+            # we can handle high quality and any speed
+            # setup cost is moderate (about 10ms)
+            specs.append(VideoSpec(
+                    encoding=encoding, input_colorspace=in_cs, output_colorspaces=(out_cs, ),
+                    has_lossless_mode=False,
+                    codec_class=Encoder, codec_type=get_type(),
+                    quality=40, speed=20,
+                    size_efficiency=40,
+                    setup_cost=0, width_mask=0xFFFE, height_mask=0xFFFE,
+                    max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
+                )
+            )
+    return specs
 
 generation = AtomicInteger()
 
