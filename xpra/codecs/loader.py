@@ -114,9 +114,9 @@ if PIL_BLOCK:
     pillow_import_block()
 
 
-def codec_import_check(name: str, description: str, top_module: str, class_module: str, classnames: Sequence[str]):
+def codec_import_check(name: str, description: str, top_module: str, class_module: str, attrs: Sequence[str]):
     log(f"{name}:")
-    log(" codec_import_check%s", (name, description, top_module, class_module, classnames))
+    log(" codec_import_check%s", (name, description, top_module, class_module, attrs))
     if any(name.find(s) >= 0 for s in SKIP_LIST):
         log(f" skipped from list: {csv(SKIP_LIST)}")
         return None
@@ -135,10 +135,10 @@ def codec_import_check(name: str, description: str, top_module: str, class_modul
         log.warn(f" cannot load {name} ({description}):", exc_info=True)
         codec_errors[name] = str(e)
         return None
-    classname = None
+    attr = None
     try:
         try:
-            log(f" {top_module} found, will check for {classnames} in {class_module}")
+            log(f" {top_module} found, will check for {attrs} in {class_module}")
             ic = import_module(class_module)
             try:
                 # run init_module?
@@ -153,13 +153,13 @@ def codec_import_check(name: str, description: str, top_module: str, class_modul
                     if module_logger:
                         module_logger.enable_debug()
 
-                if classnames:
-                    for classname in classnames:
+                if attrs:
+                    for attr in attrs:
                         try:
-                            clazz = getattr(ic, classname)
+                            clazz = getattr(ic, attr)
                         except AttributeError:
-                            raise ImportError(f"cannot find {classname!r} in {ic}") from None
-                        log(f"{class_module}.{classname}={clazz}")
+                            raise ImportError(f"cannot find {attr!r} in {ic}") from None
+                        log(f"{class_module}.{attr}={clazz}")
 
                 selftest = getattr(ic, "selftest", None)
                 log(f"{name}.selftest={selftest}")
@@ -190,12 +190,10 @@ def codec_import_check(name: str, description: str, top_module: str, class_modul
             log("", exc_info=True)
     except Exception as e:
         codec_errors[name] = str(e)
-        if classname:
-            log.warn(" cannot load %s (%s): %s missing from %s",
-                     name, description, classname, class_module, exc_info=True)
+        if attr:
+            log.warn(f" cannot load {name} ({description}): {attr} missing from {class_module}", exc_info=True)
         else:
-            log.warn(" cannot load %s (%s)",
-                     name, description, exc_info=True)
+            log.warn(f" cannot load {name} ({description})", exc_info=True)
     return None
 
 
@@ -236,10 +234,10 @@ def add_codec_version(name: str, top_module, version: str = "get_version()", alt
         log.warn("", exc_info=True)
 
 
-def xpra_codec_import(name: str, description: str, top_module, class_module, classnames):
+def xpra_codec_import(name: str, description: str, top_module, class_module, attrs):
     xpra_top_module = f"xpra.codecs.{top_module}"
     xpra_class_module = f"{xpra_top_module}.{class_module}"
-    if codec_import_check(name, description, xpra_top_module, xpra_class_module, classnames):
+    if codec_import_check(name, description, xpra_top_module, xpra_class_module, attrs):
         version_name = name
         if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
             version_name = name[4:]
@@ -304,13 +302,13 @@ def load_codec(name: str):
     name = name.replace("-", "_")
     if not has_codec(name):
         try:
-            description, top_module, class_module, classnames_str = CODEC_OPTIONS[name]
-            classnames = classnames_str.split(",")
+            description, top_module, class_module, attrs_names = CODEC_OPTIONS[name]
+            attrs = attrs_names.split(",")
         except KeyError:
             log("load_codec(%s)", name, exc_info=True)
             log.error("Error: invalid codec name '%s'", name)
         else:
-            xpra_codec_import(name, description, top_module, class_module, classnames)
+            xpra_codec_import(name, description, top_module, class_module, attrs)
     return get_codec(name)
 
 
