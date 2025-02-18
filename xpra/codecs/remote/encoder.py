@@ -226,7 +226,7 @@ class EncoderClient(baseclass):
             mmap_data, free = mmap_read_area.mmap_read(*chunks)
             bdata = bytes(mmap_data)
             free()
-        log("server replied with %i bytes", len(bdata))
+        log("server replied with %i bytes, client-options=%s", len(bdata), client_options)
         encoder.compressed_data(bdata, client_options)
 
 
