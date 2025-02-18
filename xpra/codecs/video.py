@@ -351,32 +351,31 @@ class VideoHelper:
             try:
                 mod = get_encoder_module_name(x)
                 load_codec(mod)
-                log(" encoder for %s: %s", x, mod)
+                log(f" encoder for {x!r}: {mod!r}")
                 try:
                     self.init_video_encoder_option(mod)
                 except Exception as e:
-                    log(" init_video_encoder_option(%s) error", mod, exc_info=True)
-                    log.warn("Warning: cannot load %s video encoder:", mod)
-                    log.warn(" %s", e)
+                    log(f" init_video_encoder_option({mod!r}) error", exc_info=True)
+                    log.warn(f"Warning: cannot load {mod!r} video encoder:")
+                    log.warn(f" {e}")
                     del e
             except Exception as e:
-                log("error on %s", x, exc_info=True)
-                log.warn("Warning: cannot add %s encoder: %s", x, e)
+                log(f"error on {x!r}",exc_info=True)
+                log.warn(f"Warning: cannot add {x!r} encoder: {e}")
                 del e
         log("found %i video encoder formats: %s",
             len(self._video_encoder_specs), csv(self._video_encoder_specs))
 
     def init_video_encoder_option(self, encoder_name: str) -> None:
         encoder_module = get_codec(encoder_name)
-        log("init_video_encoder_option(%s)", encoder_name)
-        log(" module=%s", encoder_module)
+        log(f"init_video_encoder_option({encoder_name})")
+        log(f" module={encoder_module!r}")
         if not encoder_module:
-            log(" video encoder '%s' could not be loaded:", encoder_name)
+            log(f" video encoder {encoder_name!r} could not be loaded:")
             log(" %s", get_codec_error(encoder_name))
             return
         encoder_type = encoder_module.get_type()
         encodings = encoder_module.get_encodings()
-
         log(" %12s encodings=%s", encoder_type, csv(encodings))
         for spec in encoder_module.get_specs():
             self.add_encoder_spec(spec)
@@ -400,17 +399,17 @@ class VideoHelper:
                 log.warn(f"Warning: cannot add {x!r} csc", exc_info=True)
         log(" csc specs: %s", csv(self._csc_encoder_specs))
         for src_format, d in sorted(self._csc_encoder_specs.items()):
-            log(" %s - %s options:", src_format, len(d))
+            log(f" {src_format!r} - {len(d)} options:")
             for dst_format, specs in sorted(d.items()):
                 log("  * %7s via: %s", dst_format, csv(sorted(spec.codec_type for spec in specs)))
         log("csc options: %s", self._csc_encoder_specs)
 
     def init_csc_option(self, csc_name: str) -> None:
         csc_module = get_codec(csc_name)
-        log("init_csc_option(%s)", csc_name)
-        log(" module=%s", csc_module)
+        log(f"init_csc_option({csc_name!r})")
+        log(f" module={csc_module!r}")
         if csc_module is None:
-            log(" csc module %s could not be loaded:", csc_name)
+            log(f" csc module {csc_name!r} could not be loaded:")
             log(" %s", get_codec_error(csc_name))
             return
         specs = csc_module.get_specs()
@@ -439,8 +438,8 @@ class VideoHelper:
 
     def init_video_decoder_option(self, decoder_name: str) -> None:
         decoder_module = get_codec(decoder_name)
-        log("init_video_decoder_option(%s)", decoder_name)
-        log(" module=%s", decoder_module)
+        log(f"init_video_decoder_option({decoder_name!r})")
+        log(f" module={decoder_module!r}")
         if not decoder_module:
             log(" video decoder %s could not be loaded:", decoder_name)
             log(" %s", get_codec_error(decoder_name))
@@ -480,7 +479,7 @@ class VideoHelper:
             returns the CSC modes per encoding that the server can encode with,
             this will include the RGB modes themselves too.
         """
-        log("get_server_full_csc_modes_for_rgb%s", target_rgb_modes)
+        log(f"get_server_full_csc_modes_for_rgb{target_rgb_modes!r}")
         supported_csc_modes = list(filter(lambda rgb_mode: rgb_mode != "*", target_rgb_modes))
         for src_format, specs in self._csc_encoder_specs.items():
             for dst_format, csc_specs in specs.items():
