@@ -31,6 +31,9 @@ class EncoderServer(ServerBase):
         self.loop = GLib.MainLoop()
         self.encoders = {}
 
+    def __repr__(self):
+        return "EncoderServer"
+
     def init(self, opts) -> None:
         super().init(opts)
         from xpra.codecs.pillow.encoder import get_encodings
@@ -62,6 +65,9 @@ class EncoderServer(ServerBase):
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_packets("encode", "context-request", "context-compress", )
+
+    def print_encoding_info(self):
+        log("%s.print_encoding_info()", self)
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         super().add_new_client(ss, c, send_ui, share_count)
