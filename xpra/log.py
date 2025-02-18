@@ -478,14 +478,15 @@ class Logger:
     def log(self, level, msg: str, *args, **kwargs) -> None:
         if level < self.min_level:
             return
-        exc_info = kwargs.pop("exc_info", None)
+        exc_info = kwargs.get("exc_info", None)
         if exc_info is True:
+            kwargs.pop("exc_info")
             ei = sys.exc_info()
             if ei != (None, None, None):
                 exc_info = False
                 kwargs["exc_info"] = ei
         if LOG_PREFIX:
-            msg = LOG_PREFIX+msg
+            msg = LOG_PREFIX + msg
         frame = kwargs.pop("frame", None)
         backtrace = kwargs.pop("backtrace", level >= BACKTRACE_LEVEL) or bool(frame)
         global_logging_handler(self._logger.log, self.level_override or level, msg, *args, **kwargs)
@@ -540,7 +541,7 @@ class ErrorTrapper(AbstractContextManager):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
-            self.logger.error(self.message, *self.args, exc_info=True)
+            self.logger.error(self.message, *self.args, backtrace=True)
             return True
 
     def __repr__(self):
