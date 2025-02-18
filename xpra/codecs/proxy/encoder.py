@@ -32,14 +32,6 @@ def get_encodings() -> Sequence[str]:
     return ("proxy",)
 
 
-def init_module() -> None:
-    log("enc_proxy.init_module()")
-
-
-def cleanup_module() -> None:
-    log("enc_proxy.cleanup_module()")
-
-
 class Encoder:
     """
         This is a "fake" encoder which just forwards

@@ -20,7 +20,6 @@ from xpra.gstreamer.pipeline import Pipeline
 from xpra.codecs.constants import get_profile, CSC_ALIAS, VideoSpec
 from xpra.codecs.gstreamer.common import (
     get_version, get_type, get_info,
-    init_module, cleanup_module,
     get_video_encoder_caps, get_video_encoder_options,
     get_gst_encoding, get_encoder_info, get_gst_rgb_format,
 )
@@ -33,7 +32,7 @@ log = Logger("encoder", "gstreamer")
 
 GObject = gi_import("GObject")
 
-log(f"capture: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
+log(f"capture: {get_type()} {get_version()}")
 
 SAVE_TO_FILE = envbool("XPRA_SAVE_TO_FILE")
 

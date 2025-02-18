@@ -116,14 +116,6 @@ ERROR_STR: Dict[int, str] = {
 }
 
 
-def init_module() -> None:
-    log("openh264.init_module()")
-
-
-def cleanup_module() -> None:
-    log("openh264.cleanup_module()")
-
-
 def get_version() -> Tuple[int, int, int]:
     cdef OpenH264Version version
     WelsGetCodecVersionEx(&version)

@@ -190,17 +190,6 @@ CODECS = tuple(COLORSPACES.keys())
 DEF VP9_RANGE = 4
 
 
-def init_module() -> None:
-    log("vpx.encoder.init_module() info=%s", get_info())
-    assert len(CODECS)>0, "no supported encodings!"
-    log("supported codecs: %s", CODECS)
-    log("supported colorspaces: %s", COLORSPACES)
-
-
-def cleanup_module() -> None:
-    log("vpx.encoder.cleanup_module()")
-
-
 def get_abi_version() -> int:
     return VPX_ENCODER_ABI_VERSION
 

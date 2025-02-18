@@ -409,14 +409,6 @@ cdef inline bytes b(value: str):
     return value.encode("latin1")
 
 
-def init_module() -> None:
-    log("enc_x264.init_module()")
-
-
-def cleanup_module() -> None:
-    log("enc_x264.cleanup_module()")
-
-
 def get_version() -> Tuple[int]:
     return (X264_BUILD, )
 

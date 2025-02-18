@@ -50,23 +50,20 @@ DEF AVIF_PLANE_COUNT_YUV = 3
 def get_type() -> str:
     return "avif"
 
+
 def get_encodings() -> Sequence[str]:
     return ("avif", )
 
+
 def get_version() -> Tuple[int, int, int]:
     return (AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH)
+
 
 def get_info():
     return  {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
     }
-
-def init_module() -> None:
-    log("avif.init_module()")
-
-def cleanup_module() -> None:
-    log("avif.cleanup_module()")
 
 
 AVIF_PIXEL_FORMAT: Dict[int, str] = {

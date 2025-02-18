@@ -92,15 +92,6 @@ COLORSPACES: Dict[str, Sequence[str]] = {
 }
 
 
-def init_module() -> None:
-    #nothing to do!
-    log("csc_cython.init_module()")
-
-
-def cleanup_module() -> None:
-    log("csc_cython.cleanup_module()")
-
-
 def get_type() -> str:
     return "cython"
 

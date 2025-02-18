@@ -15,7 +15,6 @@ from xpra.gstreamer.common import (
 from xpra.codecs.gstreamer.common import (
     VideoPipeline,
     get_version, get_type, get_info,
-    init_module, cleanup_module,
     get_default_decoder_options,
 )
 from xpra.codecs.constants import VideoSpec
@@ -29,7 +28,7 @@ log = Logger("decoder", "gstreamer")
 
 GObject = gi_import("GObject")
 
-log(f"decoder: {get_type()} {get_version()}, {init_module}, {cleanup_module}")
+log(f"decoder: {get_type()} {get_version()}")
 
 FORMATS = os.environ.get("XPRA_GSTREAMER_DECODER_FORMATS", "h264,hevc,vp8,vp9,av1").split(",")
 

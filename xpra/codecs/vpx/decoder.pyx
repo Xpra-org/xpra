@@ -102,16 +102,6 @@ COLORSPACES : Dict[str, Sequence[str]] = {
 CODECS = tuple(COLORSPACES.keys())
 
 
-def init_module() -> None:
-    log("vpx.decoder.init_module() info=%s", get_info())
-    log("supported codecs: %s", CODECS)
-    log("supported colorspaces: %s", COLORSPACES)
-
-
-def cleanup_module() -> None:
-    log("vpx.decoder.cleanup_module()")
-
-
 def get_abi_version() -> int:
     return VPX_DECODER_ABI_VERSION
 

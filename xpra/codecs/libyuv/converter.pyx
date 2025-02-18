@@ -213,15 +213,6 @@ cdef inline uintptr_t memalign_ptr(uintptr_t ptr):
     return <uintptr_t> roundupl(<uintptr_t> ptr, ALIGN)
 
 
-def init_module() -> None:
-    #nothing to do!
-    log("csc_libyuv.init_module()")
-
-
-def cleanup_module() -> None:
-    log("csc_libyuv.cleanup_module()")
-
-
 def get_type() -> str:
     return "libyuv"
 

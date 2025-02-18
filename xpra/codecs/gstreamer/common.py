@@ -154,14 +154,6 @@ def get_info() -> dict[str, Any]:
     return {"version": get_version()}
 
 
-def init_module() -> None:
-    log("gstreamer.init_module()")
-
-
-def cleanup_module() -> None:
-    log("gstreamer.cleanup_module()")
-
-
 IDENTICAL_PIXEL_FORMATS = (
     "NV12",
     "RGBA", "BGRA", "ARGB", "ABGR",

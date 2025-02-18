@@ -366,14 +366,6 @@ def get_info() -> Dict[str, Any]:
     }
 
 
-def init_module() -> None:
-    log("webp.init_module()")
-
-
-def cleanup_module() -> None:
-    log("webp.cleanup_module()")
-
-
 INPUT_PIXEL_FORMATS = ("RGBX", "RGBA", "BGRX", "BGRA", "RGB", "BGR")
 
 
