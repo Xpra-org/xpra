@@ -64,6 +64,7 @@ class TestVideoScoring(unittest.TestCase):
         encoder_spec.gpu_cost = 0
         encoder_spec.cpu_cost = 10
         encoder_spec.codec_type = "test codec"
+        encoder_spec.get_runtime_factor = lambda: 1
         test_csc_spec = AdHocStruct()
         test_csc_spec.width_mask = 0xffff
         test_csc_spec.height_mask = 0xffff
