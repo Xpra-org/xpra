@@ -121,73 +121,70 @@ def codec_import_check(name: str, description: str, top_module: str, class_modul
         log(f" skipped from list: {csv(SKIP_LIST)}")
         return None
     try:
-        try:
-            if name in CODEC_FAIL_IMPORT:
-                raise ImportError("codec found in fail import list")
-            module = import_module(top_module)
-            log(f"imported {module!r}")
-        except ImportError as e:
-            log(f"failed to import {name} ({description})")
-            log("", exc_info=True)
-            codec_errors[name] = str(e)
-            return None
+        if name in CODEC_FAIL_IMPORT:
+            raise ImportError("codec found in fail import list")
+        module = import_module(top_module)
+        log(f"imported {module!r}")
+    except ImportError as e:
+        log(f"failed to import {name} ({description})")
+        log("", exc_info=True)
+        codec_errors[name] = str(e)
+        return None
     except Exception as e:
         log.warn(f" cannot load {name} ({description}):", exc_info=True)
         codec_errors[name] = str(e)
         return None
     attr = None
     try:
+        log(f" {top_module} found, will check for {attrs} in {class_module}")
+        ic = import_module(class_module)
         try:
-            log(f" {top_module} found, will check for {attrs} in {class_module}")
-            ic = import_module(class_module)
-            try:
-                # run init_module?
-                init_module = getattr(ic, "init_module", noop)
-                log(f"{ic}.init_module={init_module}")
-                init_module()
+            # run init_module?
+            init_module = getattr(ic, "init_module", noop)
+            log(f"{ic}.init_module={init_module}")
+            init_module()
 
-                if log.is_debug_enabled():
-                    # try to enable debugging on the codec's own logger:
-                    module_logger = getattr(ic, "log", None)
-                    log(f"{class_module}.log={module_logger}")
-                    if module_logger:
-                        module_logger.enable_debug()
+            if log.is_debug_enabled():
+                # try to enable debugging on the codec's own logger:
+                module_logger = getattr(ic, "log", None)
+                log(f"{class_module}.log={module_logger}")
+                if module_logger:
+                    module_logger.enable_debug()
 
-                if attrs:
-                    for attr in attrs:
-                        try:
-                            clazz = getattr(ic, attr)
-                        except AttributeError:
-                            raise ImportError(f"cannot find {attr!r} in {ic}") from None
-                        log(f"{class_module}.{attr}={clazz}")
+            for attr in attrs:
+                try:
+                    clazz = getattr(ic, attr)
+                except AttributeError:
+                    raise ImportError(f"cannot find {attr!r} in {ic}") from None
+                log(f"{class_module}.{attr}={clazz}")
 
-                selftest = getattr(ic, "selftest", None)
-                log(f"{name}.selftest={selftest}")
-                if SELFTEST and selftest:
-                    if name in CODEC_FAIL_SELFTEST:
-                        raise ImportError("codec found in fail selftest list")
-                    try:
-                        selftest(FULL_SELFTEST)
-                    except Exception as e:
-                        log(f"{selftest} failed", exc_info=True)
-                        if not isinstance(e, ImportError):
-                            log.warn(f"Warning: {name} failed its self test")
-                            for x in str(e).splitlines():
-                                log.warn(f" {x}")
-                        return None
-            finally:
-                cleanup_module = getattr(ic, "cleanup_module", noop)
-                log(f"{class_module} cleanup_module={cleanup_module}")
-                cleanup_module()
-            log(f" found {name} : {ic}")
-            codecs[name] = ic
-            return ic
-        except ImportError as e:
-            codec_errors[name] = str(e)
-            log_fn = log.error if should_warn(name) else log.debug
-            log_fn(f"Error importing {name} ({description})")
-            log_fn(f" {e}")
-            log("", exc_info=True)
+            selftest = getattr(ic, "selftest", None)
+            log(f"{name}.selftest={selftest}")
+            if SELFTEST and selftest:
+                if name in CODEC_FAIL_SELFTEST:
+                    raise ImportError("codec found in fail selftest list")
+                try:
+                    selftest(FULL_SELFTEST)
+                except Exception as e:
+                    log(f"{selftest} failed", exc_info=True)
+                    if not isinstance(e, ImportError):
+                        log.warn(f"Warning: {name} failed its self test")
+                        for x in str(e).splitlines():
+                            log.warn(f" {x}")
+                    return None
+        finally:
+            cleanup_module = getattr(ic, "cleanup_module", noop)
+            log(f"{class_module} cleanup_module={cleanup_module}")
+            cleanup_module()
+        log(f" found {name} : {ic}")
+        codecs[name] = ic
+        return ic
+    except ImportError as e:
+        codec_errors[name] = str(e)
+        log_fn = log.error if should_warn(name) else log.debug
+        log_fn(f"Error importing {name} ({description})")
+        log_fn(f" {e}")
+        log("", exc_info=True)
     except Exception as e:
         codec_errors[name] = str(e)
         if attr:
@@ -232,16 +229,6 @@ def add_codec_version(name: str, top_module, version: str = "get_version()", alt
     except Exception as e:
         log.warn(f"error during {name} codec import: %s", e)
         log.warn("", exc_info=True)
-
-
-def xpra_codec_import(name: str, description: str, top_module, class_module, attrs):
-    xpra_top_module = f"xpra.codecs.{top_module}"
-    xpra_class_module = f"{xpra_top_module}.{class_module}"
-    if codec_import_check(name, description, xpra_top_module, xpra_class_module, attrs):
-        version_name = name
-        if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
-            version_name = name[4:]
-        add_codec_version(version_name, xpra_class_module)
 
 
 platformname = sys.platform.rstrip("0123456789")
@@ -307,8 +294,14 @@ def load_codec(name: str):
         except KeyError:
             log("load_codec(%s)", name, exc_info=True)
             log.error("Error: invalid codec name '%s'", name)
-        else:
-            xpra_codec_import(name, description, top_module, class_module, attrs)
+            return None
+        xpra_top_module = f"xpra.codecs.{top_module}"
+        xpra_class_module = f"{xpra_top_module}.{class_module}"
+        if codec_import_check(name, description, xpra_top_module, xpra_class_module, attrs):
+            version_name = name
+            if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
+                version_name = name[4:]
+            add_codec_version(version_name, xpra_class_module)
     return get_codec(name)
 
 
