@@ -21,7 +21,7 @@ def clean_mmap_area(area: BaseMmapArea) -> None:
         return
     try:
         area.close()
-    except RuntimeError:
+    except BufferError:
         # this can fail when handling a SIGINT signal,
         # with the message: "cannot close exported pointers exist",
         # so wait a little bit and try again:
