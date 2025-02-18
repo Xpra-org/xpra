@@ -303,6 +303,10 @@ class VideoHelper:
             self._initialized = True
         log("VideoHelper.init() done")
 
+    def init_module(self, mod):
+        mod.init_module()
+        self._cleanup_modules.append(mod)
+
     def get_gpu_options(self, codec_specs: Vdict, out_fmts=("*", )) -> dict[str, list[CodecSpec]]:
         gpu_fmts: dict[str, list[CodecSpec]] = {}
         for in_fmt, vdict in codec_specs.items():
@@ -374,6 +378,7 @@ class VideoHelper:
             log(f" video encoder {encoder_name!r} could not be loaded:")
             log(" %s", get_codec_error(encoder_name))
             return
+        self.init_module(encoder_module)
         encoder_type = encoder_module.get_type()
         encodings = encoder_module.get_encodings()
         log(" %12s encodings=%s", encoder_type, csv(encodings))
@@ -412,6 +417,7 @@ class VideoHelper:
             log(f" csc module {csc_name!r} could not be loaded:")
             log(" %s", get_codec_error(csc_name))
             return
+        self.init_module(csc_module)
         specs = csc_module.get_specs()
         for spec in specs:
             self.add_csc_spec(spec)
@@ -444,6 +450,7 @@ class VideoHelper:
             log(" video decoder %s could not be loaded:", decoder_name)
             log(" %s", get_codec_error(decoder_name))
             return
+        self.init_module(decoder_module)
         for spec in decoder_module.get_specs():
             self.add_decoder_spec(spec)
 
