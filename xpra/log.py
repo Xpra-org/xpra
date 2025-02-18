@@ -476,7 +476,7 @@ class Logger:
         self.level_override = logging.CRITICAL if enable else 0
 
     def log(self, level, msg: str, *args, **kwargs) -> None:
-        if level < self.min_level:
+        if level <= self.min_level:
             return
         exc_info = kwargs.get("exc_info", None)
         if exc_info is True:
