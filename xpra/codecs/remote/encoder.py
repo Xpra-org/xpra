@@ -271,6 +271,10 @@ def cleanup_module() -> None:
     server.disconnect()
 
 
+def get_runtime_factor() -> float:
+    return float(server.is_connected())
+
+
 def make_spec(espec: dict) -> VideoSpec:
     codec_type = espec.pop("codec_type")
 
@@ -284,6 +288,7 @@ def make_spec(espec: dict) -> VideoSpec:
             log.warn(f"Warning: unknown video spec attribute {k!r}")
             continue
         setattr(spec, k, v)
+    spec.get_runtime_factor = get_runtime_factor
     return spec
 
 
