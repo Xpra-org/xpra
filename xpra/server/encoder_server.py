@@ -19,7 +19,7 @@ from xpra.log import Logger
 
 GLib = gi_import("GLib")
 
-log = Logger("server", "encoding")
+log = Logger("server", "encoder")
 
 
 class EncoderServer(ServerBase):

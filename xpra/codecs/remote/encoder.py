@@ -397,5 +397,5 @@ class Encoder:
             return b"", {}
 
     def compressed_data(self, bdata, client_options: dict) -> None:
-        log(f"received compressed data: {len(bdata)}, {client_options=}")
+        log(f"received {self.encoding!r} compressed data: {len(bdata)} bytes, {client_options=}")
         self.responses.put((bdata, client_options))

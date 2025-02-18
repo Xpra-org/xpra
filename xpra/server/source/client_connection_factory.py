@@ -117,7 +117,7 @@ def get_client_connection_class(caps: typedict):
                 except Exception as e:
                     log("%s.cleanup()", bc, exc_info=True)
                     log.error("Error closing connection,")
-                    log.error(f" in {bc} module:")
+                    log.error(" %s in %s module:", type(e).__name__, bc.__name__)
                     log.estr(e)
                     raise RuntimeError(f"failed to close {bc}: {e}") from None
 
