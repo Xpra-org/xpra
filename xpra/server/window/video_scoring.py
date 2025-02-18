@@ -213,6 +213,7 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
     # gpu vs cpu
     gpu_score = max(0, GPU_BIAS - 50) * encoder_spec.gpu_cost // 50
     cpu_score = max(0, 50 - GPU_BIAS) * encoder_spec.cpu_cost // 50
+    runtime_score *= encoder_spec.get_runtime_factor()
     score = round(
         (qscore + sscore + er_score + sizescore + score_delta + gpu_score + cpu_score) * runtime_score / 100)
     log(
