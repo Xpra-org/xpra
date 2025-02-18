@@ -18,7 +18,7 @@ from xpra.util.env import envint
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.scripts.config import InitExit
 from xpra.net.common import PacketElement, PacketType
-from xpra.codecs.constants import VideoSpec, CodecStateException
+from xpra.codecs.constants import VideoSpec, CodecStateException, TransientCodecException
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
@@ -51,6 +51,9 @@ class EncoderClient(baseclass):
             opts.mmap = "both"
             opts.mmap_group = ""
             MmapClient.init(self, opts)
+
+    def __repr__(self):
+        return "EncoderClient(%s)" % self.uri
 
     def connect(self, retry=False) -> None:
         if self.protocol:
@@ -312,20 +315,30 @@ class Encoder:
     """
     def __init__(self, codec_type: str):
         self.codec_type = codec_type
+        self.sequence = sequence.increase()
+        self.encoding = ""
+        self.closed = False
+        self.width = self.height = 0
+        self.src_format = ""
+        self.dst_formats: Sequence[str] = ()
+        self.last_frame_times: deque[float] = deque(maxlen=200)
+        self.ready = False
+        self.responses = Queue(maxsize=1)
 
     def init_context(self, encoding: str, width: int, height: int, src_format: str, options: typedict) -> None:
-        self.sequence = sequence.increase()
         self.encoding = encoding
         self.width = width
         self.height = height
         self.src_format = src_format
         self.dst_formats = options.strtupleget("dst-formats")
-        self.last_frame_times: deque[float] = deque(maxlen=200)
-        self.ready = False
         self.closed = False
-        server.connect()
+        try:
+            server.connect()
+        except InitExit as e:
+            log("failed to connect to remote encoder server %s", server)
+            log(" %s", e)
+            raise TransientCodecException(f"failed to connect: {e}") from None
         server.request_context(self, encoding, width, height, src_format, dict(options))
-        self.responses = Queue(maxsize=1)
 
     def is_ready(self) -> bool:
         return self.ready
@@ -394,6 +407,8 @@ class Encoder:
             return self.responses.get(timeout=1)
         except Empty:
             log.warn("Warning: remote encoder timeout waiting for server response")
+            log.warn(f" for {self.encoding!r} compression of {image}")
+            self.closed = not server.is_connected()
             return b"", {}
 
     def compressed_data(self, bdata, client_options: dict) -> None:

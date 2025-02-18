@@ -2607,6 +2607,10 @@ class WindowVideoSource(WindowSource):
                  ve.get_type(), actual_encoding, enc_width, enc_height, len(data or ""),
                  (enc_width*enc_height/(end-start+0.000001)/1024.0/1024.0), client_options)
         if not data:
+            if ve.is_closed():
+                videolog("video encoder is closed: %s", ve)
+                self.video_context_clean()
+                return self.video_fallback(image, options)
             videolog.error("Error: %s video data is missing", encoding)
             return ()
         return actual_encoding, Compressed(actual_encoding, data), client_options, width, height, 0, 24
