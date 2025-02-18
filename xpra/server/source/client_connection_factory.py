@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Sequence, Callable
 
 from xpra.server import features
 from xpra.util.str_fn import print_nested_dict
@@ -89,7 +89,7 @@ def get_client_connection_class(caps: typedict):
 
     class ClientConnectionMuxer(ClientConnectionClass):
 
-        def __init__(self, protocol, disconnect_cb, server, setting_changed):
+        def __init__(self, protocol, disconnect_cb: Callable, server, setting_changed: Callable):
             self.hello_sent = False
             from xpra.server.source.client_connection import ClientConnection
             for bc in CC_BASES:
