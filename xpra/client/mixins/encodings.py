@@ -9,7 +9,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS
-from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec
+from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
 from xpra.scripts.config import parse_bool_or_int
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE
@@ -137,6 +137,7 @@ class Encodings(StubClientMixin):
     def cleanup(self) -> None:
         with log.trap_error("Error during video helper cleanup"):
             getVideoHelper().cleanup()
+        unload_codecs()
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets("encodings")

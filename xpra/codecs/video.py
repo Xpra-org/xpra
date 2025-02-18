@@ -14,7 +14,7 @@ from collections.abc import Callable, Sequence, Iterable
 from xpra.common import Self
 from xpra.scripts.config import csvstrl
 from xpra.codecs.constants import VideoSpec, CodecSpec, CSCSpec
-from xpra.codecs.loader import load_codec, get_codec, get_codec_error, autoprefix
+from xpra.codecs.loader import load_codec, get_codec, get_codec_error, autoprefix, unload_codecs
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.log import Logger
 
@@ -196,8 +196,6 @@ class VideoHelper:
         self.csc_modules = []
         self.video_decoders = []
 
-        self._cleanup_modules = []
-
         # bits needed to ensure we can initialize just once
         # even when called from multiple threads:
         self._initialized = init
@@ -235,12 +233,6 @@ class VideoHelper:
             # check again with lock held (in case of race):
             if not self._initialized:
                 return
-            cmods = self._cleanup_modules
-            self._cleanup_modules = []
-            log("VideoHelper.cleanup() cleanup modules=%s", cmods)
-            for module in cmods:
-                with log.trap_error(f"Error cleaning up {module}"):
-                    module.cleanup_module()
             self._video_encoder_specs = {}
             self._csc_encoder_specs = {}
             self._video_decoder_specs = {}
@@ -302,10 +294,6 @@ class VideoHelper:
             self.init_video_decoders_options()
             self._initialized = True
         log("VideoHelper.init() done")
-
-    def init_module(self, mod):
-        mod.init_module()
-        self._cleanup_modules.append(mod)
 
     def get_gpu_options(self, codec_specs: Vdict, out_fmts=("*", )) -> dict[str, list[CodecSpec]]:
         gpu_fmts: dict[str, list[CodecSpec]] = {}
@@ -378,7 +366,6 @@ class VideoHelper:
             log(f" video encoder {encoder_name!r} could not be loaded:")
             log(" %s", get_codec_error(encoder_name))
             return
-        self.init_module(encoder_module)
         encoder_type = encoder_module.get_type()
         encodings = encoder_module.get_encodings()
         log(" %12s encodings=%s", encoder_type, csv(encodings))
@@ -417,7 +404,6 @@ class VideoHelper:
             log(f" csc module {csc_name!r} could not be loaded:")
             log(" %s", get_codec_error(csc_name))
             return
-        self.init_module(csc_module)
         specs = csc_module.get_specs()
         for spec in specs:
             self.add_csc_spec(spec)
@@ -450,7 +436,6 @@ class VideoHelper:
             log(" video decoder %s could not be loaded:", decoder_name)
             log(" %s", get_codec_error(decoder_name))
             return
-        self.init_module(decoder_module)
         for spec in decoder_module.get_specs():
             self.add_decoder_spec(spec)
 
@@ -511,19 +496,17 @@ def getVideoHelper() -> VideoHelper:
 
 def main():
     # pylint: disable=import-outside-toplevel
-    from xpra.codecs.loader import load_codecs, show_codecs
     from xpra.log import enable_color, consume_verbose_argv
     from xpra.platform import program_context
     with program_context("Video Helper"):
         enable_color()
         consume_verbose_argv(sys.argv, "video", "encoding")
-        load_codecs()
-        show_codecs()
         vh = getVideoHelper()
         vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
         vh.init()
         info = vh.get_info()
         print_nested_dict(info)
+        unload_codecs()
 
 
 if __name__ == "__main__":

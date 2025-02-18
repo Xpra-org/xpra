@@ -20,7 +20,8 @@ from xpra.util.objects import AtomicInteger, typedict
 from xpra.util.str_fn import csv, pver, strtobytes
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.nvidia.cuda.context import (
-    init_all_devices, get_devices, get_device_name,
+    init_all_devices, free_default_device_context,
+    get_devices, get_device_name,
     get_cuda_info, get_pycuda_info, reset_state,
     get_CUDA_function, record_device_failure, record_device_success,
     cuda_device_context, load_device,
@@ -3238,6 +3239,7 @@ def init_module() -> None:
 def cleanup_module() -> None:
     log("nvenc.cleanup_module()")
     reset_state()
+    free_default_device_context()
 
 
 def selftest(full=False) -> None:

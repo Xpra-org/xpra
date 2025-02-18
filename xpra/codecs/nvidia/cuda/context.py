@@ -51,11 +51,11 @@ MIN_FREE_MEMORY = envint("XPRA_CUDA_MIN_FREE_MEMORY", 10)
 DEVICE_STATE: dict[int, bool] = {}
 
 
-def record_device_failure(device_id: int):
+def record_device_failure(device_id: int) -> None:
     DEVICE_STATE[device_id] = False
 
 
-def record_device_success(device_id: int):
+def record_device_success(device_id: int) -> None:
     DEVICE_STATE[device_id] = True
 
 
@@ -231,7 +231,7 @@ def driver_init() -> bool:
 DEVICES: list[int] | None = None
 
 
-def init_all_devices():
+def init_all_devices() -> list[int]:
     global DEVICES, DEVICE_INFO
     if DEVICES is not None:
         return DEVICES
@@ -334,7 +334,7 @@ def check_device(i: int, device, min_compute: int = 0) -> bool:
         context.pop()
 
 
-def get_devices():
+def get_devices() -> list[int] | None:
     return DEVICES
 
 
@@ -459,11 +459,11 @@ def load_device(device_id: int):
     return None
 
 
-def make_device_context(device_id: int):
+def make_device_context(device_id: int) -> tuple:
     log(f"make_device_context({device_id}")
     device = load_device(device_id)
     if not device:
-        return None
+        return ()
     log(f"make_device_context({device_id}) device_info={device_info(device)}")
     cf = ctx_flags
     flags = cf.SCHED_YIELD | cf.MAP_HOST
@@ -473,7 +473,7 @@ def make_device_context(device_id: int):
         log(f"{device}.make_context({flags:x})", exc_info=True)
         log.error(f"Error: cannot create CUDA context for device {device_id}")
         log.estr(e)
-        return None
+        return ()
     log(f"created context={context}")
     free, total = mem_get_info()
     log("memory: free=%sMB, total=%sMB", int(free / 1024 / 1024), int(total / 1024 / 1024))
@@ -504,6 +504,14 @@ def get_default_device_context():
         end = monotonic()
         log("default device context init took %.1fms", 1000 * (end - start))
     return default_device_context
+
+
+def free_default_device_context() -> None:
+    global default_device_context
+    ddc = default_device_context
+    default_device_context = None
+    if ddc:
+        ddc.free()
 
 
 class cuda_device_context:
@@ -593,7 +601,7 @@ class cuda_device_context:
 KERNELS: dict[str, bytes] = {}
 
 
-def get_CUDA_function(function_name):
+def get_CUDA_function(function_name: str):
     """
         Returns the compiled kernel for the given device
         and kernel key.
@@ -632,7 +640,7 @@ def get_CUDA_function(function_name):
     return CUDA_function
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("CUDA-Info", "CUDA Info"):

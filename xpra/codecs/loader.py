@@ -138,44 +138,40 @@ def codec_import_check(name: str, description: str, top_module: str, class_modul
     try:
         log(f" {top_module} found, will check for {attrs} in {class_module}")
         ic = import_module(class_module)
-        try:
-            # run init_module?
-            init_module = getattr(ic, "init_module", noop)
-            log(f"{ic}.init_module={init_module}")
-            init_module()
 
-            if log.is_debug_enabled():
-                # try to enable debugging on the codec's own logger:
-                module_logger = getattr(ic, "log", None)
-                log(f"{class_module}.log={module_logger}")
-                if module_logger:
-                    module_logger.enable_debug()
+        init_module = getattr(ic, "init_module", noop)
+        log(f"{ic}.init_module={init_module}")
+        init_module()
 
-            for attr in attrs:
-                try:
-                    clazz = getattr(ic, attr)
-                except AttributeError:
-                    raise ImportError(f"cannot find {attr!r} in {ic}") from None
-                log(f"{class_module}.{attr}={clazz}")
+        if log.is_debug_enabled():
+            # try to enable debugging on the codec's own logger:
+            module_logger = getattr(ic, "log", None)
+            log(f"{class_module}.log={module_logger}")
+            if module_logger:
+                module_logger.enable_debug()
 
-            selftest = getattr(ic, "selftest", None)
-            log(f"{name}.selftest={selftest}")
-            if SELFTEST and selftest:
-                if name in CODEC_FAIL_SELFTEST:
-                    raise ImportError("codec found in fail selftest list")
-                try:
-                    selftest(FULL_SELFTEST)
-                except Exception as e:
-                    log(f"{selftest} failed", exc_info=True)
-                    if not isinstance(e, ImportError):
-                        log.warn(f"Warning: {name} failed its self test")
-                        for x in str(e).splitlines():
-                            log.warn(f" {x}")
-                    return None
-        finally:
-            cleanup_module = getattr(ic, "cleanup_module", noop)
-            log(f"{class_module} cleanup_module={cleanup_module}")
-            cleanup_module()
+        for attr in attrs:
+            try:
+                clazz = getattr(ic, attr)
+            except AttributeError:
+                raise ImportError(f"cannot find {attr!r} in {ic}") from None
+            log(f"{class_module}.{attr}={clazz}")
+
+        selftest = getattr(ic, "selftest", None)
+        log(f"{name}.selftest={selftest}")
+        if SELFTEST and selftest:
+            if name in CODEC_FAIL_SELFTEST:
+                raise ImportError("codec found in fail selftest list")
+            try:
+                selftest(FULL_SELFTEST)
+            except Exception as e:
+                log(f"{selftest} failed", exc_info=True)
+                if not isinstance(e, ImportError):
+                    log.warn(f"Warning: {name} failed its self test")
+                    for x in str(e).splitlines():
+                        log.warn(f" {x}")
+                return None
+
         log(f" found {name} : {ic}")
         codecs[name] = ic
         return ic
@@ -336,6 +332,22 @@ def load_codecs(encoders=True, decoders=True, csc=True, video=True, sources=Fals
     return tuple(loaded)
 
 
+def unload_codecs() -> None:
+    global codecs
+    log(f"unload_codecs() {codecs=}")
+    copy = codecs
+    codecs = {}
+    for name, module in copy.items():
+        try:
+            cleanup_module = getattr(module, "cleanup_module", noop)
+            log(f"{name} cleanup_module={cleanup_module}")
+            cleanup_module()
+        except RuntimeError as e:
+            log(f"{cleanup_module}()", exc_info=True)
+            log.warn(f"Warning: error during {name!r} module cleanup")
+            log.warn(f" {e}")
+
+
 def show_codecs(show: Iterable[str] = ()) -> None:
     for name in sorted(show or ALL_CODECS):
         log(f"* {name.ljust(20)} : {str(name in codecs).ljust(10)} {codecs.get(name, '')}")
@@ -462,6 +474,7 @@ def main(args) -> int:
         def load_in_thread() -> None:
             codecs = do_main_load(args)
             print_codecs(codecs)
+            unload_codecs()
             main_loop.quit()
 
         from xpra.util.thread import start_thread
