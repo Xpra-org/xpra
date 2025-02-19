@@ -117,7 +117,7 @@ class EncoderServer(ServerBase):
         vh = getVideoHelper()
         specs = vh.get_encoder_specs(encoding).get(src_format, ())
         if not specs:
-            ss.send("context-response", seq, False, "matching encoder not found")
+            ss.send("context-response", seq, False, "matching encoder not found", {})
             return
         # ensure we have a cuda context,
         # even if mmap is enabled!
@@ -127,12 +127,12 @@ class EncoderServer(ServerBase):
             options["cuda-device-context"] = device_context
 
         def find_spec():
-            for spec in specs:
-                if spec.codec_type != codec_type:
+            for espec in specs:
+                if espec.codec_type != codec_type:
                     continue
-                assert spec.encoding == encoding
-                assert spec.input_colorspace == src_format
-                return spec
+                assert espec.encoding == encoding
+                assert espec.input_colorspace == src_format
+                return espec
             return specs[0]
         spec = find_spec()
         try:
@@ -140,10 +140,10 @@ class EncoderServer(ServerBase):
             encoder.init_context(encoding, width, height, src_format, typedict(options))
             self.encoders[seq] = encoder
             log(f"new encoder: {encoder}")
-            ss.send("context-response", seq, True)
+            ss.send("context-response", seq, True, "", encoder.get_info())
         except RuntimeError as e:
             log("context request failed", exc_info=True)
-            ss.send("context-response", seq, False, f"initialization error: {e}")
+            ss.send("context-response", seq, False, f"initialization error: {e}", {})
 
     def _process_context_compress(self, proto: SocketProtocol, packet: PacketType) -> None:
         ss = self.get_server_source(proto)

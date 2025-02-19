@@ -190,8 +190,9 @@ class EncoderClient(baseclass):
         seq = packet[1]
         ok = packet[2]
         message = "" if len(packet) < 4 else packet[3]
+        info = {} if len(packet) < 5 else packet[4]
         encoder = self.encoders.get(seq)
-        log(f"context-response: {seq}={encoder}, {ok=}, {message=!r}")
+        log(f"context-response: {seq}={encoder}, {ok=}, {message=!r}, {info=}")
         if not encoder:
             log.error(f"Error: encoder {seq} not found!")
             return
