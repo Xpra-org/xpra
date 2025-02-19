@@ -915,7 +915,7 @@ fi
 
 
 %changelog
-- Sun Feb 09 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
+- Wed Feb 19 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
 - Platforms, build and packaging:
    MS Windows custom build arguments
    EXE manigests optional
@@ -925,21 +925,35 @@ fi
    also prefer the CUDA arch specific pkgconfig file for nvdec
    CUDA kernel build errors with CUDA 12.8 and Fedora 41
    PyOpenGL 3.1.9
+   add Fedora 42 with Python 3.14 and Ubuntu Plucky, remove Fedora 39 and Ubuntu Lunar
+   PyCUDA 2025.1
+   build pycuda on Fedora 40
+   Cython 3.0.12
+   `libexec` scripts installation into a prefix
+   detect MS Windows version for all codepages
 - Major:
    integer time overflow, prevent more
    server fails to start when sourcing profile strings
    qp calculation with nvenc
+   encoder runtime factor was not being honoured
 - Network:
    scary warnings when RDP clients attempt to connect
-- Minor:
    limit openssl version details exposed
+   strip comments from paramiko configs
+- Minor:
    revert to other client's ssh agent socket on disconnection
    partial dpi settings with some clients (ie: `html5`)
+   codec error handling
 - Cosmetic:
    make it easier to cut & paste the CUDA kernel compilation command
    unnecessary import
    linter warning
    update module path in message
+   handle missing version more gracefully
+   hide unnecessary info / when desired
+   correct encoder state displayed
+   remove deprecated syntax
+   DPI documentation link
 
 * Tue Jan 14 2025 Antoine Martin <antoine@xpra.org> 6.2.3-10
 - Platforms, build and packaging:

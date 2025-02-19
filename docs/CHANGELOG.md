@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.4] 2025-02-09
+## [6.2.4] 2025-02-19
 * Platforms, build and packaging:
     * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
     * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
@@ -10,21 +10,35 @@
     * [also prefer the CUDA arch specific pkgconfig file for nvdec](https://github.com/Xpra-org/xpra/commit/f541e0be0a1e112fea2299701edad354fe9fe8a8)
     * [CUDA kernel build errors with CUDA 12.8 and Fedora 41](https://github.com/Xpra-org/xpra/commit/4191dbffa4bdb071bae648dee1961331c592a32d)
     * [PyOpenGL 3.1.9](https://github.com/Xpra-org/xpra/commit/7e7f17200fb40f7096e553a841c280491899fc12)
+    * add [Fedora 42 with Python 3.14](https://github.com/Xpra-org/xpra/commit/b12d74fc90d5792ea79d613d52671300c231ef21) and [Ubuntu Plucky](https://github.com/Xpra-org/xpra/commit/41bcde7a94c916d29888c086ba8bb8c8567c5513), remove [Fedora 39](https://github.com/Xpra-org/xpra/commit/a242711bae960845a07e8cd7130b0a549faf464d) and [Ubuntu Lunar](https://github.com/Xpra-org/xpra/commit/a7a5de29abaf2b420ff28fdd290c9de7e92ae674)
+    * [PyCUDA 2025.1](https://github.com/Xpra-org/xpra/commit/6842f5aa39c3b6d8eaa56428d2a87e5e56fe6949)
+    * [build pycuda on Fedora 40](https://github.com/Xpra-org/xpra/commit/25d61258fcdbc4984497f3092b7da85e268ef70c)
+    * [Cython 3.0.12](https://github.com/Xpra-org/xpra/commit/b130d1f72180ef2ef23051ab17f04c1b7a177887)
+    * [`libexec` scripts installation into a prefix](https://github.com/Xpra-org/xpra/commit/a27319e0d98a1e1c437b0af226867a3890373fb6)
+    * [detect MS Windows version for all codepages](https://github.com/Xpra-org/xpra/commit/7fd24b71146424e6ed24ed32178fc79463981051)
 * Major:
     * [integer time overflow](https://github.com/Xpra-org/xpra/commit/dcc8be686c413fe289e284801b5203455ce82830), [prevent more](https://github.com/Xpra-org/xpra/commit/4c0acc83d4799fd945afe3084f6e653d9dbe02e6)
     * [server fails to start when sourcing profile strings](https://github.com/Xpra-org/xpra/commit/3bd53a6e9e8c808aff025eb0cbe972f49f1f3191)
     * [qp calculation with nvenc](https://github.com/Xpra-org/xpra/commit/299268b8a08b739c5f1ad51c837a82a96bd061df)
+    * [encoder runtime factor was not being honoured](https://github.com/Xpra-org/xpra/commit/854a51cb00cdf189ccd4a5be93cfcc14f9aa7309) [+ update unit test](https://github.com/Xpra-org/xpra/commit/a58975e887a9a666f456b5cfbc48a617a63d0ede)
 * Network:
     * [scary warnings when RDP clients attempt to connect](https://github.com/Xpra-org/xpra/commit/5f6b4454a59952822362f204dc75f84ac9f17a23)
-* Minor:
     * [limit openssl version details exposed](https://github.com/Xpra-org/xpra/commit/de983c867c743e04670e61a7bf6ef05ddf61fab2)
+    * [strip comments from paramiko configs](https://github.com/Xpra-org/xpra/commit/049a73985ffc4d17d37a7c0187c20dc4b468c28c)
+* Minor:
     * [revert to other client's ssh agent socket on disconnection](https://github.com/Xpra-org/xpra/commit/d0acde606e8d79e06a6f8b3b8cab10def19add8a)
     * [partial dpi settings with some clients (ie: `html5`)](https://github.com/Xpra-org/xpra/commit/5c891aff0205b5177f38f636b592fa6e4c0a04e8)
+    * [codec error handling](https://github.com/Xpra-org/xpra/commit/2d2539adbadf2182d1a1676d58053335229b02c3)
 * Cosmetic:
     * [make it easier to cut & paste the CUDA kernel compilation command](https://github.com/Xpra-org/xpra/commit/51721cb26b6838e5ec5e662c2943048137ea2fd8)
     * [unnecessary import](https://github.com/Xpra-org/xpra/commit/46e654861cca19fba32810c6f390b47470a80a2b)
     * [linter warning](https://github.com/Xpra-org/xpra/commit/78baf27017ec29bc4bbc353d9080c722b88dfb8a)
     * [update module path in message](https://github.com/Xpra-org/xpra/commit/6f8f06733bae5143d5e363c1b643c7acd5dedeca)
+    * [handle missing version more gracefully](https://github.com/Xpra-org/xpra/commit/b182947a51d0daa788078f8d3d07bc90dfc0f29d)
+    * [hide unnecessary info / when desired](https://github.com/Xpra-org/xpra/commit/4f7f93730ccdfd621531afe7d2dc8a148d8b917b)
+    * [correct encoder state displayed](https://github.com/Xpra-org/xpra/commit/13594b7782ff357a9c804515ab3571d0f00c31d6)
+    * [remove deprecated syntax](https://github.com/Xpra-org/xpra/commit/a3a5678c3914ade049c8c951cd912ce8710b87ad)
+    * [DPI documentation link](https://github.com/Xpra-org/xpra/commit/6998475101c2496903c66bfc22f878015bbdafd1)
 
 ## [6.2.3] 2025-01-14
 * Platforms, build and packaging:
