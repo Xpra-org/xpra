@@ -5,6 +5,7 @@
 
 import os
 import uuid
+from random import randint
 from queue import Queue, Empty
 from typing import Any
 from time import monotonic
@@ -14,7 +15,8 @@ from weakref import WeakValueDictionary
 from threading import Event
 
 from xpra import __version__
-from xpra.util.env import envint
+from xpra.util.io import is_socket, load_binary_file
+from xpra.util.env import envint, osexpand
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.scripts.config import InitExit
 from xpra.net.common import PacketElement, PacketType
@@ -25,7 +27,6 @@ from xpra.log import Logger
 log = Logger("encoder", "remote")
 
 ENCODER_SERVER_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 5)
-ENCODER_SERVER_URI = os.environ.get("XPRA_ENCODER_SERVER_URI", "tcp://127.0.0.1:20000/")
 ENCODER_SERVER_SOCKET_TIMEOUT = envint("XPRA_ENCODER_SERVER_SOCKET_TIMEOUT", 1)
 
 try:
@@ -36,12 +37,59 @@ except ImportError:
     baseclass = StubClientMixin
 
 
+def find_encoder_server_uri(sessions_dir: str) -> str:
+    session_dir = os.environ.get("XPRA_SESSION_DIR")
+    log(f"find_encoder_server_uri({sessions_dir!r}) {session_dir=!r}")
+    encoder_sockets = []
+    for sdir in os.listdir(sessions_dir):
+        if not sdir.isnumeric():
+            continue
+        path = os.path.join(sessions_dir, sdir)
+        encoder_socket = get_encoder_socket(path)
+        if encoder_socket:
+            encoder_sockets.append(encoder_socket)
+    if not encoder_sockets:
+        return ""
+    if len(encoder_sockets) == 1:
+        index = 0
+    else:
+        # choose one at random:
+        index = randint(0, len(encoder_sockets) - 1)
+    encoder = encoder_sockets[index]
+    log(f"find_encoder_server_uri({sessions_dir!r})=%s, from %i encoders found: %s",
+        encoder,len(encoder_sockets), encoder_sockets)
+    return encoder
+
+
+def get_encoder_socket(session_dir: str) -> str:
+    if not os.path.exists(session_dir) or not os.path.isdir(session_dir):
+        return ""
+    # there must be a server config:
+    config = os.path.join(session_dir, "config")
+    if not os.path.exists(config) or not os.path.isfile(config):
+        return ""
+    # and a socket we can connect to:
+    socket = os.path.join(session_dir, "socket")
+    if not os.path.exists(socket) or not is_socket(socket):
+        return ""
+    # verify that the server is an 'encoding' server:
+    cdata = load_binary_file(config)
+    if not cdata:
+        return ""
+    for line in cdata.decode("utf8").splitlines():
+        if line.startswith("mode="):
+            mode = line[len("mode="):]
+            if mode == "encoder":
+                return socket
+    return ""
+
+
 class EncoderClient(baseclass):
 
     def __init__(self, options: dict):
         log(f"remote.EncoderClient({options})")
         to = typedict(options)
-        self.uri = to.strget("uri", ENCODER_SERVER_URI)
+        self.uri = to.strget("uri", "")
         self.server_timeout = to.intget("timeout", ENCODER_SERVER_TIMEOUT)
         self.server_socket_timeout = to.intget("socket-timeout", ENCODER_SERVER_SOCKET_TIMEOUT)
         self.encodings: Sequence[str] = ()
@@ -50,28 +98,31 @@ class EncoderClient(baseclass):
         self._ordinary_packets = []
         self.event = Event()
         self.encoders = WeakValueDictionary()
-        from xpra.scripts.config import XpraConfig
-        opts = XpraConfig()
+        from xpra.scripts.config import make_defaults_struct
+        opts = make_defaults_struct()
         opts.mmap = "both"
         opts.mmap_group = ""
         super().init(opts)
+        self.sessions_dir = osexpand(to.strget("sessions-dir", opts.sessions_dir))
 
     def __repr__(self):
         return "EncoderClient(%s)" % self.uri
 
-    def connect(self, retry=False) -> None:
+    def connect(self) -> None:
         if self.protocol:
             log("already connected")
+            return
+        uri = self.uri or find_encoder_server_uri(self.sessions_dir)
+        if not uri:
+            log("no encoder server found")
             return
         from xpra.scripts.main import error_handler, parse_display_name, connect_to
         from xpra.scripts.config import make_defaults_struct
         opts = make_defaults_struct()
-        desc = parse_display_name(error_handler, opts, self.uri)
+        desc = parse_display_name(error_handler, opts, uri)
         if "timeout" not in desc:
             desc["timeout"] = self.server_socket_timeout
-        if "retry" not in desc:
-            desc["retry"] = retry
-        log(f"EncoderClient.connect({retry}) server desc={desc!r}")
+        log(f"EncoderClient.connect() server desc={desc!r}")
         conn = connect_to(desc, opts)
         super().setup_connection(conn)
         self.protocol = self.make_protocol(conn)
@@ -143,7 +194,8 @@ class EncoderClient(baseclass):
         log("got hello: %s", caps)
         if not super().parse_server_capabilities(typedict(caps)):
             raise RuntimeError("failed to parse capabilities")
-        log.info("connected to encoder server at %s", self.uri)
+        version = caps.get("version")
+        log.info("connected to encoder server version %s", version)
 
     def _process_encodings(self, packet: PacketType) -> None:
         log(f"{packet!r}")
@@ -156,11 +208,13 @@ class EncoderClient(baseclass):
         log("disconnected from server %s", self.protocol)
         self.encodings = ()
         self.protocol = None
+        super().cleanup()
 
     def _process_connection_lost(self, packet: PacketType) -> None:
         log("connection-lost for server %s", self.protocol)
         self.encodings = ()
         self.protocol = None
+        super().cleanup()
 
     def _process_startup_complete(self, packet: PacketType) -> None:
         log(f"{packet!r}")
