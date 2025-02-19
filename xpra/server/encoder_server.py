@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 from collections.abc import Callable
 
 from xpra.common import noop
@@ -20,6 +21,11 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("server", "encoder")
+
+# ensure we don't create loops!
+codec_key = "xpra.codecs.remote"
+assert codec_key not in sys.modules
+sys.modules[codec_key] = None
 
 
 class EncoderServer(ServerBase):
