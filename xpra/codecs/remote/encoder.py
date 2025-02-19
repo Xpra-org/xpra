@@ -32,7 +32,8 @@ try:
     from xpra.client.mixins.mmap import MmapClient
     baseclass = MmapClient
 except ImportError:
-    baseclass = object
+    from xpra.client.base.stub_client_mixin import StubClientMixin
+    baseclass = StubClientMixin
 
 
 class EncoderClient(baseclass):
@@ -49,12 +50,11 @@ class EncoderClient(baseclass):
         self._ordinary_packets = []
         self.event = Event()
         self.encoders = WeakValueDictionary()
-        if baseclass != object:
-            from xpra.scripts.config import XpraConfig
-            opts = XpraConfig()
-            opts.mmap = "both"
-            opts.mmap_group = ""
-            MmapClient.init(self, opts)
+        from xpra.scripts.config import XpraConfig
+        opts = XpraConfig()
+        opts.mmap = "both"
+        opts.mmap_group = ""
+        super().init(opts)
 
     def __repr__(self):
         return "EncoderClient(%s)" % self.uri
@@ -73,8 +73,7 @@ class EncoderClient(baseclass):
             desc["retry"] = retry
         log(f"EncoderClient.connect({retry}) server desc={desc!r}")
         conn = connect_to(desc, opts)
-        if baseclass != object:
-            MmapClient.setup_connection(self, conn)
+        super().setup_connection(conn)
         self.protocol = self.make_protocol(conn)
         self.send_hello()
 
@@ -128,8 +127,7 @@ class EncoderClient(baseclass):
             "mouse": False,
             "network-state": False,  # tell older server that we don't have "ping"
         }
-        if baseclass != object:
-            caps.update(MmapClient.get_caps(self))
+        caps.update(super().get_caps())
         from xpra.net.packet_encoding import get_packet_encoding_caps
         caps.update(get_packet_encoding_caps(0))
         from xpra.net.compression import get_compression_caps
@@ -143,8 +141,8 @@ class EncoderClient(baseclass):
     def _process_hello(self, packet: PacketType) -> None:
         caps = packet[1]
         log("got hello: %s", caps)
-        if baseclass != object:
-            MmapClient.parse_server_capabilities(self, typedict(caps))
+        if not super().parse_server_capabilities(typedict(caps)):
+            raise RuntimeError("failed to parse capabilities")
         log.info("connected to encoder server at %s", self.uri)
 
     def _process_encodings(self, packet: PacketType) -> None:
