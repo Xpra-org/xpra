@@ -7,11 +7,11 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.scripts.config import parse_bool_or_int, csvstrl
 from xpra.util.env import envint
 from xpra.os_util import OSX
 from xpra.net.common import PacketType
 from xpra.util.version import vtrim
+from xpra.scripts.config import parse_bool_or_int
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENCODINGS
 from xpra.codecs.loader import get_codec, codec_versions, load_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
@@ -54,8 +54,6 @@ class EncodingServer(StubServerMixin):
         self.lossless_mode_encodings: Sequence[str] = ()
         self.default_encoding: str = ""
         self.scaling_control = None
-        self.video_encoders: Sequence[str] = ()
-        self.csc_modules: Sequence[str] = ()
         self.video = True
 
     def init(self, opts) -> None:
@@ -69,9 +67,7 @@ class EncodingServer(StubServerMixin):
         if self.video:
             if opts.video_scaling.lower() not in ("auto", "on"):
                 self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
-            self.video_encoders = tuple(csvstrl(opts.video_encoders).split(","))
-            self.csc_modules = tuple(csvstrl(opts.csc_modules).split(","))
-            getVideoHelper().set_modules(video_encoders=self.video_encoders, csc_modules=self.csc_modules)
+            getVideoHelper().set_modules(video_encoders=opts.video_encoders, csc_modules=opts.csc_modules)
 
     def setup(self) -> None:
         # essential codecs, load them early:

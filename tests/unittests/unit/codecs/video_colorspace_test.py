@@ -14,10 +14,7 @@ from xpra.util.str_fn import hexstr
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.codecs.checks import make_test_image
-from xpra.codecs.video import (
-    getVideoHelper,
-    ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS,
-)
+from xpra.codecs.video import getVideoHelper
 from xpra.log import Logger, consume_verbose_argv
 
 MAX_DELTA = 7
@@ -120,7 +117,7 @@ class Test_Roundtrip(unittest.TestCase):
 
     def test_all(self):
         vh = getVideoHelper()
-        vh.set_modules(ALL_VIDEO_ENCODER_OPTIONS, ALL_CSC_MODULE_OPTIONS, ALL_VIDEO_DECODER_OPTIONS)
+        vh.enable_all_modules()
         vh.init()
         # info = vh.get_info()
         encodings = vh.get_encodings()

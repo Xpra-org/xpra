@@ -407,8 +407,8 @@ CS_CHROMA: Dict[str, int] = {
 }
 
 
-def init_module() -> None:
-    log("nvdec.init_module()")
+def init_module(options: dict) -> None:
+    log("nvdec.init_module(%s)", options)
     from xpra.codecs.nvidia.util import has_nvidia_hardware
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")

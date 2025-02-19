@@ -115,14 +115,6 @@ def get_encodings() -> Sequence[str]:
     return ("jpeg", "jpega")
 
 
-def init_module() -> None:
-    log("jpeg.init_module()")
-
-
-def cleanup_module() -> None:
-    log("jpeg.cleanup_module()")
-
-
 if YUV:
     JPEG_INPUT_COLORSPACES = ("BGRX", "RGBX", "XBGR", "XRGB", "RGB", "BGR", "YUV420P", "YUV422P", "YUV444P")
 else:

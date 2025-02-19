@@ -843,7 +843,7 @@ class SharedCUDAImageWrapper(CUDAImageWrapper):
         self.cuda_device_buffer = None
 
 
-def init_module() -> None:
+def init_module(options: dict) -> None:
     log("nvfbc.init_module()")
     init_nvfbc_library()
 

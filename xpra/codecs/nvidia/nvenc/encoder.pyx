@@ -3044,11 +3044,11 @@ cdef class Encoder:
 
 
 _init_message = False
-def init_module() -> None:
+def init_module(options: dict) -> None:
     from xpra.codecs.nvidia.util import has_nvidia_hardware
     if has_nvidia_hardware() is False:
         raise ImportError("no nvidia GPU device found")
-    log("nvenc.init_module()")
+    log("nvenc.init_module(%s)", options)
     min_version = 10
     if NVENCAPI_MAJOR_VERSION < min_version:
         raise RuntimeError("unsupported version of NVENC: %i, minimum version is %i" % (NVENCAPI_VERSION, min_version))
@@ -3095,7 +3095,8 @@ def init_module() -> None:
             device = load_device(device_id)
             cdc = cuda_device_context(device_id, device)
             with cdc as device_context:
-                options = typedict({
+                encoder_options = typedict(options)
+                encoder_options.update({
                     "cuda_device"   : device_id,
                     "cuda-device-context" : cdc,
                     "threaded-init" : False,
@@ -3152,11 +3153,11 @@ def init_module() -> None:
                         raise ValueError(f"cannot use NVENC: no colorspaces available for {encoding}")
                     src_format = colorspaces[0]
                     log(f"testing {encoding} using {src_format} from {colorspaces}")
-                    options["dst-formats"] = get_COLORSPACES(encoding).get(src_format, ())
+                    encoder_options["dst-formats"] = get_COLORSPACES(encoding).get(src_format, ())
                     test_encoder = None
                     try:
                         test_encoder = Encoder()
-                        test_encoder.init_context(encoding, 1920, 1080, src_format, options)
+                        test_encoder.init_context(encoding, 1920, 1080, src_format, encoder_options)
                         success = True
                         if client_key:
                             log("the license key '%s' is valid", client_key)

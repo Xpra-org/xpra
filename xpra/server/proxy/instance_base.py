@@ -814,7 +814,7 @@ class ProxyInstance:
         enclog("video_init() loading codecs")
         enclog("video_init() loading pillow encoder")
         load_codec("enc_pillow")
-        enclog("video_init() will try video encoders: %s", csv(self.video_encoder_modules) or "none")
+        enclog("video_init() will try video encoders: %s", self.video_encoder_modules or "none")
         self.video_helper_init()
 
         self.video_encoding_defs = {}

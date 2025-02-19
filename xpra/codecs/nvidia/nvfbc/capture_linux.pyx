@@ -763,7 +763,7 @@ cdef class NvFBC_CUDACapture:
                 log("%s.pop() or detach()", cuda_context, exc_info=True)
 
 
-def init_module() -> None:
+def init_module(options: dict) -> None:
     log("nvfbc.init_module()")
     init_nvfbc_library()
 

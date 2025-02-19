@@ -282,7 +282,7 @@ class SourceMixinsTest(unittest.TestCase):
         packets = []
 
         from xpra.codecs.video import getVideoHelper
-        getVideoHelper().set_modules(csc_modules=("csc_libyuv", "csc_cython"))
+        getVideoHelper().set_modules(csc_modules={"csc_libyuv": {}, "csc_cython": {}})
         getVideoHelper().init_csc_options()
 
         def send(*args):

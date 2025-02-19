@@ -114,7 +114,8 @@ if PIL_BLOCK:
     pillow_import_block()
 
 
-def codec_import_check(name: str, description: str, top_module: str, class_module: str, attrs: Sequence[str]):
+def codec_import_check(name: str, description: str, top_module: str, class_module: str,
+                       attrs: Sequence[str], options: dict):
     log(f"{name}:")
     log(" codec_import_check%s", (name, description, top_module, class_module, attrs))
     if any(name.find(s) >= 0 for s in SKIP_LIST):
@@ -141,7 +142,7 @@ def codec_import_check(name: str, description: str, top_module: str, class_modul
 
         init_module = getattr(ic, "init_module", noop)
         log(f"{ic}.init_module={init_module}")
-        init_module()
+        init_module(options)
 
         if log.is_debug_enabled():
             # try to enable debugging on the codec's own logger:
@@ -280,8 +281,8 @@ if OSX or WIN32:
     NOLOAD += ["v4l2", "evdi", "drm"]
 
 
-def load_codec(name: str):
-    log("load_codec(%s)", name)
+def load_codec(name: str, options: dict | None = None):
+    log("load_codec(%s, %s)", name, options)
     name = name.replace("-", "_")
     if not has_codec(name):
         try:
@@ -293,7 +294,7 @@ def load_codec(name: str):
             return None
         xpra_top_module = f"xpra.codecs.{top_module}"
         xpra_class_module = f"{xpra_top_module}.{class_module}"
-        if codec_import_check(name, description, xpra_top_module, xpra_class_module, attrs):
+        if codec_import_check(name, description, xpra_top_module, xpra_class_module, attrs, options or {}):
             version_name = name
             if name.startswith("enc_") or name.startswith("dec_") or name.startswith("csc_"):
                 version_name = name[4:]

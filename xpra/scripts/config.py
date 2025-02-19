@@ -1665,12 +1665,13 @@ def fixup_encodings(options) -> None:
             ("video-encoders", ALL_VIDEO_ENCODER_OPTIONS),
             ("video-decoders", ALL_VIDEO_DECODER_OPTIONS),
         ):
-            # ensure value is a list:
+            # ensure value is always a sequence:
             attr_name = name.replace("-", "_")
             value = getattr(options, attr_name)
-            vlist = [x for x in csvstrl(value).split(",") if x.strip()]
-            setattr(options, attr_name, value)
-            if "help" in vlist:
+            if not isinstance(value, Sequence):
+                value = [x for x in csvstrl(value).split(",") if x.strip()]
+                setattr(options, attr_name, value)
+            if "help" in value:
                 raise InitInfo(f"the following {name} are defined: {csv(all_list)}")
 
 

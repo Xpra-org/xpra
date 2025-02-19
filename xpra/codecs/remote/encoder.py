@@ -26,7 +26,7 @@ log = Logger("encoder", "remote")
 
 ENCODER_SERVER_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 5)
 ENCODER_SERVER_URI = os.environ.get("XPRA_ENCODER_SERVER_URI", "tcp://127.0.0.1:20000/")
-ENCODER_SERVER_SOCKET_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 1)
+ENCODER_SERVER_SOCKET_TIMEOUT = envint("XPRA_ENCODER_SERVER_SOCKET_TIMEOUT", 1)
 
 try:
     from xpra.client.mixins.mmap import MmapClient
@@ -37,8 +37,12 @@ except ImportError:
 
 class EncoderClient(baseclass):
 
-    def __init__(self, uri=""):
-        self.uri = uri
+    def __init__(self, options: dict):
+        log(f"remote.EncoderClient({options})")
+        to = typedict(options)
+        self.uri = to.strget("uri", ENCODER_SERVER_URI)
+        self.server_timeout = to.intget("timeout", ENCODER_SERVER_TIMEOUT)
+        self.server_socket_timeout = to.intget("socket-timeout", ENCODER_SERVER_SOCKET_TIMEOUT)
         self.encodings: Sequence[str] = ()
         self.specs: dict[str, dict[str, Sequence[VideoSpec]]] = {}
         self.protocol = None
@@ -64,10 +68,10 @@ class EncoderClient(baseclass):
         opts = make_defaults_struct()
         desc = parse_display_name(error_handler, opts, self.uri)
         if "timeout" not in desc:
-            desc["timeout"] = ENCODER_SERVER_SOCKET_TIMEOUT
+            desc["timeout"] = self.server_socket_timeout
         if "retry" not in desc:
             desc["retry"] = retry
-        log(f"server desc={desc!r}")
+        log(f"EncoderClient.connect({retry}) server desc={desc!r}")
         conn = connect_to(desc, opts)
         if baseclass != object:
             MmapClient.setup_connection(self, conn)
@@ -134,13 +138,14 @@ class EncoderClient(baseclass):
         self.send("hello", caps)
         self.event.clear()
         self.protocol.start()
-        self.event.wait(ENCODER_SERVER_TIMEOUT)
+        self.event.wait(self.server_timeout)
 
     def _process_hello(self, packet: PacketType) -> None:
         caps = packet[1]
         log("got hello: %s", caps)
         if baseclass != object:
             MmapClient.parse_server_capabilities(self, typedict(caps))
+        log.info("connected to encoder server at %s", self.uri)
 
     def _process_encodings(self, packet: PacketType) -> None:
         log(f"{packet!r}")
@@ -245,7 +250,7 @@ def get_info() -> dict[str, Any]:
     return {"version": get_version()}
 
 
-server = EncoderClient(ENCODER_SERVER_URI)
+server = None
 encodings: Sequence[str] = ()
 
 
@@ -253,11 +258,11 @@ def get_encodings() -> Sequence[str]:
     return encodings
 
 
-def init_module() -> None:
-    uri = ENCODER_SERVER_URI
-    log(f"remote.init_module() attempting to connect to {uri!r}")
-    global encodings
+def init_module(options: dict) -> None:
+    log(f"remote.encoder.init_module({options})")
+    global encodings, server
     try:
+        server = EncoderClient(options)
         server.connect()
     except (InitExit, OSError, RuntimeError):
         log("failed to connect to server, no encodings available", exc_info=True)

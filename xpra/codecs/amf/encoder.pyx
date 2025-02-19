@@ -98,13 +98,6 @@ cdef extern from "Python.h":
     void PyMem_Free(void *ptr)
 
 
-def init_module() -> None:
-    get_factory()
-
-def cleanup_module() -> None:
-    log("amf.encoder.cleanup_module()")
-
-
 cdef inline AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM get_h264_preset(int quality, int speed):
     if quality >= 80:
         return AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY
