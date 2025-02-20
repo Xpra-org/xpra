@@ -482,7 +482,7 @@ def setup_tcp_socket(host: str, iport: int, socktype: str = "tcp") \
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"failed to setup {socktype} socket on {host}:{iport} {e}") from None
 
-    def cleanup_tcp_socket():
+    def cleanup_tcp_socket() -> None:
         log.info("closing %s socket %s", socktype.lower(), pretty_socket((host, iport)))
         try:
             tcp_socket.close()
@@ -623,7 +623,7 @@ def parse_bind_vsock(bind_vsock: list[str]) -> dict[tuple[int, int], dict]:
 def setup_sd_listen_socket(stype: str, sock, addr) -> tuple[str, socket.socket, Any, Callable]:
     log = get_network_logger()
 
-    def cleanup_sd_listen_socket():
+    def cleanup_sd_listen_socket() -> None:
         log.info(f"closing sd listen socket {pretty_socket(addr)}")
         try:
             sock.close()
