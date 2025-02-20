@@ -296,6 +296,10 @@ class EncoderClient(baseclass):
     def get_encodings(self) -> Sequence[str]:
         return self.encodings
 
+    def request_close(self, seq: int, message=""):
+        if self.is_connected():
+            self.send("context-close", seq, message)
+
     def request_context(self, encoder, encoding: str, width: int, height: int, src_format: str, options: dict):
         seq = encoder.sequence
         codec_type = encoder.codec_type
@@ -526,6 +530,7 @@ class Encoder:
         self.src_format = ""
         self.dst_formats = ()
         self.last_frame_times = deque()
+        server.request_close(self.sequence, "encoder closed")
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         if not server.is_connected():

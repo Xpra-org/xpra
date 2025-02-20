@@ -5,6 +5,7 @@
 
 import sys
 from math import ceil
+from typing import Any
 from time import monotonic
 from collections.abc import Callable
 
@@ -44,7 +45,7 @@ class EncoderServer(ServerBase):
         super().__init__()
         self.session_type = "encoder"
         self.main_loop = GLib.MainLoop()
-        self.encoders = {}
+        self.encoders: dict[str, dict[int, Any]] = {}
 
     def __repr__(self):
         return "EncoderServer"
@@ -73,9 +74,19 @@ class EncoderServer(ServerBase):
         from xpra.util.system import register_SIGUSR_signals
         register_SIGUSR_signals()
 
+    def cleanup_source(self, source) -> None:
+        encoders = self.encoders.pop(source.uuid, {})
+        if encoders:
+            for seq, encoder in encoders.items():
+                try:
+                    encoder.clean()
+                except RuntimeError:
+                    log.error(f"Error cleaning encoder {encoder} for sequence {seq} of connection {source}")
+        super().cleanup_source(source)
+
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("encode", "context-request", "context-compress", )
+        self.add_packets("encode", "context-request", "context-compress", "context-close")
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         super().add_new_client(ss, c, send_ui, share_count)
@@ -120,6 +131,21 @@ class EncoderServer(ServerBase):
         packet = ["encode-response", coding, compressed.data, client_options, width, height, stride, bpp, metadata]
         ss.send_async(*packet)
 
+    def _process_context_close(self, proto: SocketProtocol, packet: PacketType) -> None:
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
+        seq, message = packet[1:3]
+        encoder = self.encoders.get(ss.uuid, {}).pop(seq, None)
+        if not encoder:
+            log.error(f"Error encoder not found for uuid {ss.uuid!r} and sequence {seq}")
+            return
+        log(f"context-close: {encoder!r}, {message=}")
+        try:
+            encoder.clean()
+        except RuntimeError:
+            log.error(f"Error cleaning encoder {encoder} for sequence {seq} of connection {ss}")
+
     def _process_context_request(self, proto: SocketProtocol, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -149,7 +175,7 @@ class EncoderServer(ServerBase):
         try:
             encoder = spec.codec_class()
             encoder.init_context(encoding, width, height, src_format, typedict(options))
-            self.encoders[seq] = encoder
+            self.encoders.setdefault(ss.uuid, {})[seq] = encoder
             log(f"new encoder: {encoder}")
             ss.send("context-response", seq, True, "", encoder.get_info())
         except RuntimeError as e:
@@ -161,7 +187,11 @@ class EncoderServer(ServerBase):
         if not ss:
             return
         seq, metadata, pixels, options = packet[1:5]
-        encoder = self.encoders[seq]
+        encoder = self.encoders.get(ss.uuid, {}).get(seq)
+        if not encoder:
+            log.error(f"Error encoder not found for uuid {ss.uuid!r} and sequence {seq}")
+            ss.send("context-data", seq, b"", {"error": "context not found"})
+            return
         encoding = encoder.get_encoding()
         free_cb = []
         chunks = options.get("chunks", ())
@@ -191,6 +221,7 @@ class EncoderServer(ServerBase):
             for free in free_cb:
                 free()
         if bdata is None:
+            ss.send("context-data", seq, b"", {"error": "no data from encoder"})
             raise RuntimeError("no data!")
         mmap_write_area = getattr(ss, "mmap_write_area", None)
         log(f"{len(bdata)} bytes, {client_options=}, {mmap_write_area=}")
