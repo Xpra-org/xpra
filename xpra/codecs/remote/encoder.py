@@ -18,6 +18,7 @@ from xpra.os_util import gi_import
 from xpra.util.io import is_socket, load_binary_file
 from xpra.util.env import envint, osexpand
 from xpra.util.objects import typedict, AtomicInteger
+from xpra.util.thread import start_thread
 from xpra.scripts.main import connect_to
 from xpra.scripts.parsing import parse_display_name
 from xpra.scripts.config import InitExit, make_defaults_struct
@@ -27,6 +28,8 @@ from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.log import Logger
 
 log = Logger("encoder", "remote")
+
+GLib = gi_import("GLib")
 
 ENCODER_SERVER_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 5)
 ENCODER_SERVER_SOCKET_TIMEOUT = envint("XPRA_ENCODER_SERVER_SOCKET_TIMEOUT", 1)
@@ -106,6 +109,7 @@ class EncoderClient(baseclass):
         self.reconnect_delay = to.intget("reconnect-delay", RECONNECT_DELAY)
         self.connect_poll_delay = to.intget("connect-poll-delay", CONNECT_POLL_DELAY)
         self.connect_timer = 0
+        self.connecting = False
         self.encodings: Sequence[str] = ()
         self.specs: dict[str, dict[str, Sequence[VideoSpec]]] = {}
         self.protocol = None
@@ -121,23 +125,35 @@ class EncoderClient(baseclass):
     def __repr__(self):
         return "EncoderClient(%s)" % self.uri
 
-    def schedule_connect(self, delay: int) -> None:
-        if self.connect_timer:
-            return
-        GLib = gi_import("GLib")
-        self.connect_timer = GLib.timeout_add(delay, self.sheduled_connect)
+    def cleanup(self) -> None:
+        ct = self.connect_timer
+        if ct:
+            self.connect_timer = 0
+            GLib.source_remove(ct)
+        super().cleanup()
 
-    def sheduled_connect(self) -> bool:
+    def schedule_connect(self, delay: int) -> None:
+        if self.is_connected() or self.connect_timer or self.connecting:
+            return
+        self.connect_timer = GLib.timeout_add(delay, self.scheduled_connect, delay)
+
+    def scheduled_connect(self, delay: int) -> bool:
+        self.connect_timer = 0
+        # connect() does I/O, so we have to use a separate thread to call it:
+        start_thread(self.threaded_scheduled_connect, "encoder-server-connect", True, (delay, ))
+        return False
+
+    def threaded_scheduled_connect(self, delay: int) -> None:
+        if self.is_connected() or self.connecting:
+            return
         try:
             self.do_connect()
         except (OSError, InitExit):
             log("failed to connect", exc_info=True)
-            return True
+            self.schedule_connect(delay)
         if not self.protocol:
             # try again:
-            return True
-        self.connect_timer = 0
-        return False
+            self.schedule_connect(delay)
 
     def connect(self) -> None:
         if self.protocol:
@@ -154,15 +170,19 @@ class EncoderClient(baseclass):
         if not uri:
             log("no encoder server found")
             return False
-        opts = make_defaults_struct()
-        desc = parse_display_name(ValueError, opts, uri)
-        if "timeout" not in desc:
-            desc["timeout"] = self.server_socket_timeout
-        log(f"EncoderClient.do_connect() server desc={desc!r}")
-        conn = connect_to(desc, opts)
-        super().setup_connection(conn)
-        self.protocol = self.make_protocol(conn)
-        self.send_hello()
+        try:
+            self.connecting = True
+            opts = make_defaults_struct()
+            desc = parse_display_name(ValueError, opts, uri)
+            if "timeout" not in desc:
+                desc["timeout"] = self.server_socket_timeout
+            log(f"EncoderClient.do_connect() server desc={desc!r}")
+            conn = connect_to(desc, opts)
+            super().setup_connection(conn)
+            self.protocol = self.make_protocol(conn)
+            self.send_hello()
+        finally:
+            self.connecting = False
         return True
 
     def make_protocol(self, conn):
