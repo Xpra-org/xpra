@@ -2325,7 +2325,6 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
     if mode in (
             "seamless", "desktop", "monitor", "expand",
             "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
-            "encoder",
     ):
         if OSX or WIN32:
             raise InitException(f"{mode} is not supported on this platform")
