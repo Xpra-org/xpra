@@ -2551,6 +2551,7 @@ if cython_ENABLED:
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.auth")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server")
+toggle_packages(server_ENABLED and codecs_ENABLED, "xpra.server.encoder")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and rfb_ENABLED, "xpra.server.rfb")
@@ -2923,6 +2924,8 @@ if cythonize_more_ENABLED:
             ax("xpra.server.rfb")
         if shadow_ENABLED:
             ax("xpra.server.shadow")
+        if codecs_ENABLED:
+            ax("xpra.server.encoder")
         ax("xpra.server.source")
         ax("xpra.server.window")
         ax("xpra.server")

@@ -411,7 +411,7 @@ def make_expand_server(attrs: dict[str, str]):
 
 
 def make_encoder_server():
-    from xpra.server.encoder_server import EncoderServer
+    from xpra.server.encoder.server import EncoderServer
     return EncoderServer()
 
 
