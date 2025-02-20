@@ -378,6 +378,10 @@ class EncodingsMixin(StubSourceMixin):
             try:
                 # pylint: disable=import-outside-toplevel
                 from xpra.codecs.nvidia.cuda.context import get_device_context
+            except ImportError as e:
+                cudalog(f"unable to import cuda context: {e}")
+                return None
+            try:
                 self.cuda_device_context = get_device_context(self.encoding_options)
                 cudalog("cuda_device_context=%s", self.cuda_device_context)
             except Exception as e:
