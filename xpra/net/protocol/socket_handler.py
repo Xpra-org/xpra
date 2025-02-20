@@ -1008,7 +1008,7 @@ class SocketProtocol:
                     # try to handle the first buffer:
                     buf = read_buffers[0]
                     if not header and buf[0] != PACKET_HEADER_CHAR:
-                        self.invalid_header(self, buf, "invalid packet header byte")
+                        self.invalid_header(self, buf, f"invalid packet header byte {hex(buf[0])}")
                         return
                     # how much to we need to slice off to complete the header:
                     read = min(len(buf), HEADER_SIZE - len(header))
