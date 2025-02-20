@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.4] 2025-02-19
+## [6.2.4] 2025-02-21
 * Platforms, build and packaging:
     * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
     * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
@@ -9,6 +9,7 @@
     * [`dev-env` subcommand errors on Debian systems](https://github.com/Xpra-org/xpra/commit/a80b4e5ba00940a5fbce0b647e7d4d5ad4b3e3a8)
     * [also prefer the CUDA arch specific pkgconfig file for nvdec](https://github.com/Xpra-org/xpra/commit/f541e0be0a1e112fea2299701edad354fe9fe8a8)
     * [CUDA kernel build errors with CUDA 12.8 and Fedora 41](https://github.com/Xpra-org/xpra/commit/4191dbffa4bdb071bae648dee1961331c592a32d)
+    * [libyuv 0.1899](https://github.com/Xpra-org/xpra/commit/feeaeb1bfaf4a0854cc1906cf874dbcdf7d65d3a)
     * [PyOpenGL 3.1.9](https://github.com/Xpra-org/xpra/commit/7e7f17200fb40f7096e553a841c280491899fc12)
     * add [Fedora 42 with Python 3.14](https://github.com/Xpra-org/xpra/commit/b12d74fc90d5792ea79d613d52671300c231ef21) and [Ubuntu Plucky](https://github.com/Xpra-org/xpra/commit/41bcde7a94c916d29888c086ba8bb8c8567c5513), remove [Fedora 39](https://github.com/Xpra-org/xpra/commit/a242711bae960845a07e8cd7130b0a549faf464d) and [Ubuntu Lunar](https://github.com/Xpra-org/xpra/commit/a7a5de29abaf2b420ff28fdd290c9de7e92ae674)
     * [PyCUDA 2025.1](https://github.com/Xpra-org/xpra/commit/6842f5aa39c3b6d8eaa56428d2a87e5e56fe6949)
@@ -21,6 +22,7 @@
     * [server fails to start when sourcing profile strings](https://github.com/Xpra-org/xpra/commit/3bd53a6e9e8c808aff025eb0cbe972f49f1f3191)
     * [qp calculation with nvenc](https://github.com/Xpra-org/xpra/commit/299268b8a08b739c5f1ad51c837a82a96bd061df)
     * [encoder runtime factor was not being honoured](https://github.com/Xpra-org/xpra/commit/854a51cb00cdf189ccd4a5be93cfcc14f9aa7309) [+ update unit test](https://github.com/Xpra-org/xpra/commit/a58975e887a9a666f456b5cfbc48a617a63d0ede)
+    * [disable 'DOUBLE-BUFFER' extension](https://github.com/Xpra-org/xpra/commit/a73ef72998e06e23946211af57159ceb6315e792)
 * Network:
     * [scary warnings when RDP clients attempt to connect](https://github.com/Xpra-org/xpra/commit/5f6b4454a59952822362f204dc75f84ac9f17a23)
     * [limit openssl version details exposed](https://github.com/Xpra-org/xpra/commit/de983c867c743e04670e61a7bf6ef05ddf61fab2)

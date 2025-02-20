@@ -7,6 +7,7 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     `dev-env` subcommand errors on Debian systems
     also prefer the CUDA arch specific pkgconfig file for nvdec
     CUDA kernel build errors with CUDA 12.8 and Fedora 41
+    libyuv 0.1899
     PyOpenGL 3.1.9
     add Fedora 42 with Python 3.14 and Ubuntu Plucky, remove Fedora 39 and Ubuntu Lunar
     PyCUDA 2025.1
@@ -19,6 +20,7 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     server fails to start when sourcing profile strings
     qp calculation with nvenc
     encoder runtime factor was not being honoured
+    disable 'DOUBLE-BUFFER' extension
   * Network:
     scary warnings when RDP clients attempt to connect
     limit openssl version details exposed
@@ -38,7 +40,7 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     remove deprecated syntax
     DPI documentation link
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 19 Feb 2025 18:06:45 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 21 Feb 2025 00:38:01 +0700
 
 xpra (6.2.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
