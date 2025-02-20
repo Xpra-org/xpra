@@ -126,14 +126,19 @@ class EncoderClient(baseclass):
         return "EncoderClient(%s)" % self.uri
 
     def cleanup(self) -> None:
+        self.cancel_schedule_connect()
+        super().cleanup()
+
+    def cancel_schedule_connect(self):
         ct = self.connect_timer
         if ct:
             self.connect_timer = 0
             GLib.source_remove(ct)
-        super().cleanup()
 
     def schedule_connect(self, delay: int) -> None:
-        if self.is_connected() or self.connect_timer or self.connecting:
+        connected = self.is_connected()
+        log(f"schedule_connect({delay}) {connected=}, timer={self.connect_timer}, connecting={self.connecting}")
+        if connected or self.connect_timer or self.connecting:
             return
         self.connect_timer = GLib.timeout_add(delay, self.scheduled_connect, delay)
 
@@ -394,6 +399,7 @@ def init_module(options: dict) -> None:
 def cleanup_module() -> None:
     log("remote.cleanup_module()")
     server.disconnect()
+    server.cancel_schedule_connect()
 
 
 def get_runtime_factor() -> float:
