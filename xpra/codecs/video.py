@@ -117,14 +117,25 @@ def filt(prefix: str, name: str,
          all_fn: Callable[[], list[str]],
          all_options: Iterable[str]) -> dict[str, dict[str, str]]:
     assert isinstance(inlist, Sequence), f"options for {prefix!r} is not a sequence"
-    # log("filt%s", (prefix, name, inlist, all_fn, all_list))
+    # log("filt%s", (prefix, name, inlist, all_fn, all_options))
     if "none" in inlist:
         return {}
 
     # replace the alias 'all' with the actual values:
-    while "all" in inlist:
-        i = inlist.index("all")
-        inlist = inlist[:i]+all_fn()+inlist[i+1:]
+    real_list = []
+    for item in inlist:
+        if item == "all":
+            real_list += all_fn()
+            continue
+        # each entry can contain an encoder with options, ie:
+        # "remote:uri=foo,timeout=5"
+        # or multiple encoders, ie:
+        # "vpx,x264"
+        # but not both!
+        if item.find(":") > 0:
+            real_list.append(item)
+        else:
+            real_list += item.split(",")
 
     # auto prefix the module part:
     def ap(v: str) -> str:
@@ -145,8 +156,8 @@ def filt(prefix: str, name: str,
     def noopt(item: str):
         return item.split(":", 1)[0]
 
-    exclist = apl(x[1:] for x in inlist if x and x.startswith("-"))
-    inclist = apl(x for x in inlist if x and not x.startswith("-"))
+    exclist = apl(x[1:] for x in real_list if x and x.startswith("-"))
+    inclist = apl(x for x in real_list if x and not x.startswith("-"))
     if not inclist and exclist:
         inclist = apl(all_fn())
     lists = exclist + inclist
