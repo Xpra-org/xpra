@@ -164,6 +164,7 @@ def get_Xdummy_command(xorg_cmd="Xorg",
         "+extension", "GLX",
         "+extension", "RANDR",
         "+extension", "RENDER",
+        "-extension", "DOUBLE-BUFFER",
         "-auth", "$XAUTHORITY",
         "-logfile", f"{log_dir}/Xorg.log",
         # must be specified with some Xorg versions (ie: arch linux)
@@ -179,6 +180,7 @@ def get_Xvfb_command(width=8192, height=4096, dpi=96) -> list[str]:
         "+extension", "GLX",
         "+extension", "Composite",
         "+extension", "RANDR", "+extension", "RENDER",
+        "-extension", "DOUBLE-BUFFER",
         "-screen", "0", f"{width}x{height}x24+32",
         # better than leaving to vfb after a resize?
         "-nolisten", "tcp",
