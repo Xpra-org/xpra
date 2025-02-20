@@ -33,7 +33,7 @@ from xpra.codecs.image import ImageWrapper
 from xpra.codecs.constants import (
     preforder,
     LOSSY_PIXEL_FORMATS, PREFERRED_REFRESH_ENCODING_ORDER,
-    PSEUDO_LOSSLESS_ENCODINGS, TRUE_LOSSLESS_ENCODINGS,
+    PSEUDO_LOSSLESS_ENCODINGS, TRUE_LOSSLESS_ENCODINGS, COMPRESS_FMT, COMPRESS_FMT_DIRECT,
 )
 from xpra.net.compression import use, Compressed, LevelCompressed
 from xpra.log import Logger
@@ -122,15 +122,6 @@ LOSSLESS_WINDOW_TYPES = set(os.environ.get(
     "XPRA_LOSSLESS_WINDOW_TYPES",
     "DOCK,TOOLBAR,MENU,UTILITY,DROPDOWN_MENU,POPUP_MENU,TOOLTIP,NOTIFICATION,COMBO,DND"
 ).split(","))
-
-
-COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
-COMPRESS_RATIO      : str = " with ratio %5.1f%%  (%5iKB to %5iKB)"
-COMPRESS_FMT_SUFFIX : str = ", sequence %5i, client_options=%-50s, options=%s"
-COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
-COMPRESS_FMT_DIRECT : str = (
-    "compress:            %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s" + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
-)
 
 ui_context: ContextManager = nullcontext()
 if POSIX and not OSX and not envbool("XPRA_NOX11", False) and os.environ.get("GDK_BACKEND", "x11") == "x11":
@@ -2794,8 +2785,8 @@ class WindowSource(WindowIconSource):
             client_options["ts"] = image.get_timestamp()
         end = monotonic()
         compresslog(COMPRESS_FMT,
-                    (end-start)*1000.0, outw, outh, x, y, self.wid, coding,
-                    100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
+                    (end-start) * 1000.0, outw, outh, x, y, self.wid, coding,
+                    100.0 * csize / psize, ceil(psize/1024), ceil(csize/1024),
                     self._damage_packet_sequence, client_options, options)
         self.statistics.encoding_stats.append((end, coding, w*h, bpp, csize, end-start))
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
@@ -2839,7 +2830,7 @@ class WindowSource(WindowIconSource):
         packet = self.make_draw_packet(x, y, w, h, coding, cdata, outstride, client_info, options)
         compresslog(COMPRESS_FMT_DIRECT,
                     w, h, x, y, self.wid, coding,
-                    100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
+                    100.0 * csize / psize, ceil(psize/1024), ceil(csize/1024),
                     self._damage_packet_sequence, client_info, options)
         self.queue_damage_packet(packet, damage_time, process_damage_time)
 

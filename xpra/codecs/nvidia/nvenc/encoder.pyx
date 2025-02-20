@@ -1774,7 +1774,7 @@ cdef class Encoder:
             raise
         cdef double end = monotonic()
         self.ready = 1
-        log("init_device(%s) took %1.fms", options, (end-start)*1000.0)
+        log("init_device(%s) took %1.fms", options, (end - start) * 1000)
 
     def is_ready(self) -> bool:
         return bool(self.ready)
@@ -2207,7 +2207,7 @@ cdef class Encoder:
         if self.profile_name:
             info["profile"] = self.profile_name
         cdef double t = self.time
-        info["total_time_ms"] = int(self.time*1000.0)
+        info["total_time_ms"] = int(self.time * 1000)
         if self.frames>0 and t>0:
             pps = self.width * self.height * self.frames / t
             info["pixels_per_second"] = int(pps)
@@ -2619,7 +2619,7 @@ cdef class Encoder:
         if elapsed==0:
             #mswindows monotonic time minimum precision is 1ms...
             elapsed = 0.0001
-        log("exec_kernel:  kernel %13s took %3.1f ms: %5i MPixels/s", self.kernel_name, elapsed*1000.0, (w*h)/elapsed//1024//1024)
+        log("exec_kernel:  kernel %13s took %3.1f ms: %5i MPixels/s", self.kernel_name, elapsed * 1000, (w*h)/elapsed//1024//1024)
 
     cdef NV_ENC_INPUT_PTR map_input_resource(self):
         cdef NV_ENC_MAP_INPUT_RESOURCE mapInputResource

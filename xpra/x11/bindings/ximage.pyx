@@ -733,7 +733,7 @@ cdef class XShmImageWrapper(XImageWrapper):
     def freeze(self) -> bool:
         #we just force a restride, which will allocate a new pixel buffer:
         cdef unsigned int newstride = roundup(self.width*len(self.pixel_format), 4)
-        self.timestamp = int(monotonic()*1000)
+        self.timestamp = int(monotonic() * 1000)
         return self.restride(newstride)
 
     def free(self) -> None:

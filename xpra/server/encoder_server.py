@@ -4,6 +4,8 @@
 # later version. See the file COPYING for details.
 
 import sys
+from math import ceil
+from time import monotonic
 from collections.abc import Callable
 
 from xpra.common import noop
@@ -13,6 +15,7 @@ from xpra.net.common import PacketType
 from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
+from xpra.codecs.constants import COMPRESS_RATIO, COMPRESS_FMT_SUFFIX
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.server.base import ServerBase, SERVER_BASES
 from xpra.codecs.video import getVideoHelper
@@ -21,11 +24,17 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("server", "encoder")
+compresslog = Logger("compress")
 
 # ensure we don't create loops!
 codec_key = "xpra.codecs.remote"
 assert codec_key not in sys.modules
 sys.modules[codec_key] = None
+
+
+COMPRESS_FMT = (
+    "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i               using %9s" + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
+)
 
 
 class EncoderServer(ServerBase):
@@ -162,6 +171,7 @@ class EncoderServer(ServerBase):
         chunks = options.get("chunks", ())
         planes = metadata.get("planes", 0)
         log("compress request with %i planes, mmap chunks=%s", planes, chunks)
+        start = monotonic()
         if not pixels and chunks:
             # get the pixels from the mmap chunks:
             if planes == PlanarFormat.PACKED:
@@ -194,3 +204,14 @@ class EncoderServer(ServerBase):
         else:
             data = Compressed(encoding, bdata)
         ss.send("context-data", seq, data, client_options)
+        end = monotonic()
+        csize = len(bdata)
+        psize = image.get_bytesperpixel() * image.get_width() * image.get_height()
+        x = image.get_x()
+        y = image.get_y()
+        outw = encoder.get_width()
+        outh = encoder.get_height()
+        compresslog(COMPRESS_FMT,
+                    (end-start) * 1000, outw, outh, x, y, encoding,
+                    100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
+                    seq, client_options, options)

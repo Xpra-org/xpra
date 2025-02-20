@@ -487,7 +487,7 @@ cdef class Converter:
             info["dst_format"] = self.dst_format
         if self.frames>0 and self.time>0:
             pps = self.src_width * self.src_height * self.frames / self.time
-            info["total_time_ms"] = int(self.time*1000.0)
+            info["total_time_ms"] = int(self.time * 1000)
             info["pixels_per_second"] = int(pps)
         return info
 

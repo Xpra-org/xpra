@@ -110,5 +110,5 @@ def rgb_reformat(image: ImageWrapper, rgb_formats, supports_transparency: bool) 
     end = monotonic()
     log("rgb_reformat(%s, %s, %s) converted from %s (%s bytes) to %s (%s bytes) in %.1fms, rowstride=%s",
         image, rgb_formats, supports_transparency, pixel_format, len(pixels),
-        target_format, len(data), (end-start)*1000.0, rowstride)
+        target_format, len(data), (end-start)*1000, rowstride)
     return True

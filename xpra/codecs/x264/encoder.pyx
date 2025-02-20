@@ -775,7 +775,7 @@ cdef class Encoder:
         if self.frames>0 and self.time>0:
             pps = self.width * self.height * self.frames / self.time
             info |= {
-                "total_time_ms"     : int(self.time*1000.0),
+                "total_time_ms"     : int(self.time * 1000),
                 "pixels_per_second" : int(pps),
             }
         #calculate fps:

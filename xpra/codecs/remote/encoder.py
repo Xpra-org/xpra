@@ -30,7 +30,9 @@ log = Logger("encoder", "remote")
 
 ENCODER_SERVER_TIMEOUT = envint("XPRA_ENCODER_SERVER_TIMEOUT", 5)
 ENCODER_SERVER_SOCKET_TIMEOUT = envint("XPRA_ENCODER_SERVER_SOCKET_TIMEOUT", 1)
+CONNECT_POLL_DELAY = envint("XPRA_CONNECT_POLL_DELAY", 10000)
 RECONNECT_DELAY = envint("XPRA_RECONNECT_DELAY", 2000)
+ENCODINGS = tuple(x for x in os.environ.get("XPRA_REMOTE_ENCODINGS", "h264,vp8,vp9").split(",") if x)
 
 try:
     from xpra.client.mixins.mmap import MmapClient
@@ -48,6 +50,8 @@ def find_encoder_server_uri(sessions_dir: str) -> str:
         if not sdir.isnumeric():
             continue
         path = os.path.join(sessions_dir, sdir)
+        if path == session_dir:
+            continue
         encoder_socket = get_encoder_socket(path)
         if encoder_socket:
             encoder_sockets.append(encoder_socket)
@@ -100,6 +104,7 @@ class EncoderClient(baseclass):
         self.server_timeout = to.intget("timeout", ENCODER_SERVER_TIMEOUT)
         self.server_socket_timeout = to.intget("socket-timeout", ENCODER_SERVER_SOCKET_TIMEOUT)
         self.reconnect_delay = to.intget("reconnect-delay", RECONNECT_DELAY)
+        self.connect_poll_delay = to.intget("connect-poll-delay", CONNECT_POLL_DELAY)
         self.connect_timer = 0
         self.encodings: Sequence[str] = ()
         self.specs: dict[str, dict[str, Sequence[VideoSpec]]] = {}
@@ -116,17 +121,17 @@ class EncoderClient(baseclass):
     def __repr__(self):
         return "EncoderClient(%s)" % self.uri
 
-    def schedule_reconnect(self):
+    def schedule_connect(self, delay: int) -> None:
         if self.connect_timer:
             return
         GLib = gi_import("GLib")
-        self.connect_timer = GLib.timeout_add(self.reconnect_delay, self.reconnect)
+        self.connect_timer = GLib.timeout_add(delay, self.sheduled_connect)
 
-    def reconnect(self) -> bool:
+    def sheduled_connect(self) -> bool:
         try:
             self.do_connect()
         except (OSError, InitExit):
-            log("failed to re-connect", exc_info=True)
+            log("failed to connect", exc_info=True)
             return True
         if not self.protocol:
             # try again:
@@ -141,22 +146,24 @@ class EncoderClient(baseclass):
         if self.connect_timer:
             log("connect timer is already due")
             return
-        self.do_connect()
+        if not self.do_connect():
+            self.schedule_connect(self.connect_poll_delay)
 
-    def do_connect(self) -> None:
+    def do_connect(self) -> bool:
         uri = self.uri or find_encoder_server_uri(self.sessions_dir)
         if not uri:
             log("no encoder server found")
-            return
+            return False
         opts = make_defaults_struct()
         desc = parse_display_name(ValueError, opts, uri)
         if "timeout" not in desc:
             desc["timeout"] = self.server_socket_timeout
-        log(f"EncoderClient.connect() server desc={desc!r}")
+        log(f"EncoderClient.do_connect() server desc={desc!r}")
         conn = connect_to(desc, opts)
         super().setup_connection(conn)
         self.protocol = self.make_protocol(conn)
         self.send_hello()
+        return True
 
     def make_protocol(self, conn):
         from xpra.net.packet_encoding import init_all
@@ -176,7 +183,8 @@ class EncoderClient(baseclass):
         return protocol
 
     def is_connected(self) -> bool:
-        return bool(self.protocol) and bool(self.encodings)
+        p = self.protocol
+        return bool(p) and not p.is_closed()
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
         packet = (packet_type, *parts)
@@ -229,24 +237,28 @@ class EncoderClient(baseclass):
 
     def _process_encodings(self, packet: PacketType) -> None:
         log(f"{packet!r}")
-        self.specs = typedict(packet[1]).dictget("video") or {}
-        self.encodings = tuple(self.specs.keys())
-        log("got encodings=%s", self.encodings)
-        log("from specs=%s", self.specs)
+        specs = typedict(packet[1]).dictget("video") or {}
+        self.specs = dict((k, v) for k, v in specs.items() if k in ENCODINGS)
+        log("received specs=%s", specs)
+        log("filtered specs=%s", self.specs)
+        encodings = tuple(self.specs.keys())
+        self.encodings = tuple(set(encodings) & set(ENCODINGS))
+        log("received encodings=%s", encodings)
+        log("filtered encodings=%s", self.encodings)
 
     def _process_disconnect(self, packet: PacketType) -> None:
         log("disconnected from server %s", self.protocol)
         self.encodings = ()
         self.protocol = None
         super().cleanup()
-        self.schedule_reconnect()
+        self.schedule_connect(self.reconnect_delay)
 
     def _process_connection_lost(self, packet: PacketType) -> None:
         log("connection-lost for server %s", self.protocol)
         self.encodings = ()
         self.protocol = None
         super().cleanup()
-        self.schedule_reconnect()
+        self.schedule_connect(self.reconnect_delay)
 
     def _process_startup_complete(self, packet: PacketType) -> None:
         log(f"{packet!r}")
@@ -336,24 +348,23 @@ def get_info() -> dict[str, Any]:
 
 
 server = None
-encodings: Sequence[str] = ()
 
 
 def get_encodings() -> Sequence[str]:
-    return encodings
+    s = server
+    if s and s.is_connected():
+        return server.get_encodings()
+    return ENCODINGS
 
 
 def init_module(options: dict) -> None:
     log(f"remote.encoder.init_module({options})")
-    global encodings, server
+    global server
     try:
         server = EncoderClient(options)
         server.connect()
     except (InitExit, OSError, RuntimeError):
         log("failed to connect to server, no encodings available", exc_info=True)
-        encodings = ()
-    else:
-        encodings = server.get_encodings()
 
 
 def cleanup_module() -> None:

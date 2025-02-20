@@ -268,3 +268,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
+COMPRESS_RATIO      : str = " with ratio %5.1f%%  (%5iKB to %5iKB)"
+COMPRESS_FMT_SUFFIX : str = ", sequence %5i, client_options=%-50s, options=%s"
+COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
+COMPRESS_FMT_DIRECT : str = (
+    "compress:            %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s" + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
+)

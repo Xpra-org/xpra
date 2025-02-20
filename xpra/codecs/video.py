@@ -394,9 +394,6 @@ class VideoHelper:
             log(f" video encoder {encoder_name!r} could not be loaded:")
             log(" %s", get_codec_error(encoder_name))
             return
-        encoder_type = encoder_module.get_type()
-        encodings = encoder_module.get_encodings()
-        log(" %12s encodings=%s", encoder_type, csv(encodings))
         for spec in encoder_module.get_specs():
             self.add_encoder_spec(spec)
         log("video encoder options: %s", self._video_encoder_specs)

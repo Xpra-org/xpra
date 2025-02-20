@@ -14,13 +14,13 @@ from collections.abc import Callable, Iterable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.net.compression import Compressed, LargeStructure
-from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING
+from xpra.codecs.constants import TransientCodecException, RGB_FORMATS, PIXEL_SUBSAMPLING, COMPRESS_FMT_PREFIX, \
+    COMPRESS_FMT_SUFFIX, COMPRESS_FMT
 from xpra.codecs.image import ImageWrapper
 from xpra.server.window.compress import (
     WindowSource, DelayedRegions, get_encoder_type, free_image_wrapper,
     STRICT_MODE, LOSSLESS_WINDOW_TYPES,
     DOWNSCALE_THRESHOLD, DOWNSCALE, TEXT_QUALITY,
-    COMPRESS_FMT_PREFIX, COMPRESS_FMT_SUFFIX, COMPRESS_FMT,
     LOG_ENCODERS,
 )
 from xpra.util.rectangle import rectangle, merge_all
@@ -2010,7 +2010,7 @@ class WindowVideoSource(WindowSource):
             self.csc_clean(self._csc_encoder)
             self.ve_clean(self._video_encoder)
         end = monotonic()
-        videolog("setup_pipeline(..) failed! took %.2fms", (end-start)*1000.0)
+        videolog("setup_pipeline(..) failed! took %.2fms", (end-start) * 1000)
         return False
 
     def setup_pipeline_option(self, width: int, height: int, src_format: str,
@@ -2053,7 +2053,7 @@ class WindowVideoSource(WindowSource):
                               enc_width, enc_height, enc_in_format, csc_options)
             csc_end = monotonic()
             csclog("setup_pipeline: csc=%s, info=%s, setup took %.2fms",
-                   csce, csce.get_info(), (csc_end-csc_start)*1000.0)
+                   csce, csce.get_info(), (csc_end - csc_start) * 1000)
         else:
             csce = None
             # use the encoder's mask directly since that's all we have to worry about!
@@ -2096,7 +2096,7 @@ class WindowVideoSource(WindowSource):
         self.start_video_frame = 0
         self._video_encoder = ve
         videolog("setup_pipeline: csc=%s, video encoder=%s, info: %s, setup took %.2fms",
-                 csce, ve, ve.get_info(), (enc_end-enc_start)*1000.0)
+                 csce, ve, ve.get_info(), (enc_end - enc_start) * 1000)
         scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
         return True
 
@@ -2245,7 +2245,7 @@ class WindowVideoSource(WindowSource):
                 end = monotonic()
                 match_pct = int(100*count/h)
                 scrolllog("best scroll guess took %ims, matches %i%% of %i lines: %s",
-                          (end-start)*1000, match_pct, h, scroll)
+                          (end - start) * 1000, match_pct, h, scroll)
             else:
                 max_zones = 50
                 match_pct = min_percent
@@ -2321,8 +2321,8 @@ class WindowVideoSource(WindowSource):
                                            coding, LargeStructure(coding, scrolls), 0, client_options, options)
             self.queue_damage_packet(packet, damage_time, process_damage_time)
             compresslog(COMPRESS_SCROLL_FMT,
-                        (end-start)*1000.0, w, h, x, y, self.wid, coding,
-                        len(scrolls), w*h*4/1024,
+                        (end-start) * 1000, w, h, x, y, self.wid, coding,
+                        len(scrolls), w * h * 4 / 1024,
                         self._damage_packet_sequence, client_options, options)
         del scrolls
         # send the rest as rectangles:
@@ -2371,11 +2371,11 @@ class WindowVideoSource(WindowSource):
                 psize = w*sh*4
                 csize = len(data)
                 compresslog(COMPRESS_FMT,
-                            (monotonic()-substart)*1000.0, w, sh, x+0, y+sy, self.wid, coding,
-                            100.0*csize/psize, ceil(psize/1024), ceil(csize/1024),
+                            (monotonic() - substart) * 1000, w, sh, x+0, y+sy, self.wid, coding,
+                            100 * csize / psize, ceil(psize / 1024), ceil(csize / 1024),
                             self._damage_packet_sequence, client_options, options)
             scrolllog("non-scroll (quality=%i, speed=%i) took %ims for %i rectangles",
-                      self._current_quality, self._current_speed, (monotonic()-nsstart)*1000, len(non_scroll))
+                      self._current_quality, self._current_speed, (monotonic() - nsstart) * 1000, len(non_scroll))
         else:
             scrolllog("no non_scroll areas")
         if flush != 0:
