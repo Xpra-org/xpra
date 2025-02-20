@@ -114,6 +114,15 @@ class DisplayManager(StubServerMixin):
         self.bit_depth = self.get_display_bit_depth()
         self.refresh_rate = opts.refresh_rate
 
+    def print_screen_info(self) -> None:
+        display = os.environ.get("DISPLAY")
+        if display and display.startswith(":"):
+            extra = ""
+            bit_depth = self.get_display_bit_depth()
+            if bit_depth:
+                extra = f" with {bit_depth} bit colors"
+            log.info(f" connected to X11 display {display}{extra}")
+
     def get_display_bit_depth(self) -> int:
         return 0
 

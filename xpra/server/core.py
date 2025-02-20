@@ -649,13 +649,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         return 0
 
     def print_screen_info(self) -> None:
-        display = os.environ.get("DISPLAY")
-        if display and display.startswith(":"):
-            extra = ""
-            bit_depth = self.get_display_bit_depth()
-            if bit_depth:
-                extra = f" with {bit_depth} bit colors"
-            log.info(f" connected to X11 display {display}{extra}")
+        """ see subclasses for actual implementations """
 
     # #####################################################################
     # sockets / connections / packets:
