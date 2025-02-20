@@ -1,5 +1,5 @@
 %define _disable_source_fetch 0
-%define COMMIT 331c361581896292fb46c8c6905e41262b7ca95f
+%define COMMIT 47ddac2996378c34aab9318f0d218303b1d282e7
 %define __cmake_in_source_build 1
 %global _default_patch_fuzz 2
 
@@ -7,20 +7,14 @@ Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
 # found in ./README.chromium :
-Release:	0.1878.20231004git331c3615.1%{?dist}
+Release:	0.1899.r2785.47ddac299.1%{?dist}
 License:	BSD
 URL:		https://chromium.googlesource.com/libyuv/libyuv
-#VCS:		scm:git:https://chromium.googlesource.com/libyuv/libyuv
-Source0:	https://xpra.org/src/libyuv-%{COMMIT}.tar.xz
+Source0:	https://chromium.googlesource.com/libyuv/libyuv/+archive/47ddac2996378c34aab9318f0d218303b1d282e7.tar.gz
 # Fedora-specific. Upstream isn't interested in these patches.
 Patch1:		libyuv-0001-Use-a-proper-so-version.patch
-Patch2:		libyuv-0002-Link-against-shared-library.patch
-Patch3:		libyuv-0003-Disable-static-library.patch
-Patch4:		libyuv-0004-Don-t-install-conversion-tool.patch
-Patch5:		libyuv-0005-Use-library-suffix-during-installation.patch
 # I don't know how to fix this properly and I don't care:
 Patch7:		libyuv-0007-nojpeg.patch
-Patch8:		libyuv-0008-noconstants.patch
 BuildRequires:	make
 BuildRequires:	cmake
 BuildRequires:	gcc-c++
@@ -52,11 +46,12 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "9444dc22674dbdfaec7266df826cb5f66fd2ece1f935c0eb1f6d27417986237e" ]; then
+if [ "${sha256}" != "90580d8679bca03999ebc5cbb238a7038ce122cab2928f5506cf8d87cfe2dd59" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%autosetup -p1 -n libyuv-%{COMMIT}
+
+%autosetup -p1 -c
 
 cat > %{name}.pc << EOF
 prefix=%{_prefix}
@@ -75,22 +70,22 @@ EOF
 LIBYUV_DISABLE_JPEG=1 %cmake .
 CXX_FLAGS="${CXX_FLAGS} -lm" LIBYUV_DISABLE_JPEG=1 %make_build
 
+
 %install
 %make_install
 
 mkdir -p %{buildroot}%{_libdir}/pkgconfig
 cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
-
-
-%check
-# FIXME fails again on s390
-./libyuv_unittest || true
+rm -fr %{buildroot}/usr/lib/debug
+mv %{buildroot}/usr/lib/* %{buildroot}%{_libdir}/
 
 
 %files
 %license LICENSE
 %doc AUTHORS PATENTS README.md
+%{_bindir}/yuvconvert
 %{_libdir}/%{name}.so.*
+%{_libdir}/%{name}.a
 
 
 %files devel
@@ -101,6 +96,12 @@ cp -a %{name}.pc %{buildroot}%{_libdir}/pkgconfig/
 
 
 %changelog
+* Thu Feb 20 2025 Antoine Martin <totaam@xpra.org> - 0-0.1899.r2785.47ddac299.1
+- new upstream git snapshot
+- use googlesource.com URL for download
+- remove outdated patches
+- bundle yuvconvert and static library
+
 * Fri Feb 03 2023 Antoine Martin <totaam@xpra.org> - 0-0.1857.20230123gitb2528b0b.1
 - new upstream git snapshot - now hosted on xpra.org
 
