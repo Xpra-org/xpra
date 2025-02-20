@@ -43,7 +43,7 @@ class EncoderServer(ServerBase):
         log(f"EncoderServer.__init__() {SERVER_BASES=}")
         super().__init__()
         self.session_type = "encoder"
-        self.loop = GLib.MainLoop()
+        self.main_loop = GLib.MainLoop()
         self.encoders = {}
 
     def __repr__(self):
@@ -62,13 +62,13 @@ class EncoderServer(ServerBase):
         register_SIGUSR_signals(sstr)
 
     def do_run(self) -> None:
-        log("do_run() calling %s", self.loop.run)
-        self.loop.run()
-        log("do_run() end of %()", self.loop.run)
+        log("do_run() calling %s", self.main_loop.run)
+        self.main_loop.run()
+        log("do_run() end of %()", self.main_loop.run)
 
     def do_quit(self) -> None:
-        log("do_quit: calling loop.quit()")
-        self.loop.quit()
+        log("do_quit: calling main_loop.quit()")
+        self.main_loop.quit()
         # from now on, we can't rely on the main loop:
         from xpra.util.system import register_SIGUSR_signals
         register_SIGUSR_signals()
