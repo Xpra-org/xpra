@@ -129,7 +129,7 @@ class EncoderClient(baseclass):
         self.cancel_schedule_connect()
         super().cleanup()
 
-    def cancel_schedule_connect(self):
+    def cancel_schedule_connect(self) -> None:
         ct = self.connect_timer
         if ct:
             self.connect_timer = 0
@@ -303,17 +303,17 @@ class EncoderClient(baseclass):
     def get_encodings(self) -> Sequence[str]:
         return self.encodings
 
-    def request_close(self, seq: int, message=""):
+    def request_close(self, seq: int, message="") -> None:
         if self.is_connected():
             self.send("context-close", seq, message)
 
-    def request_context(self, encoder, encoding: str, width: int, height: int, src_format: str, options: dict):
+    def request_context(self, encoder, encoding: str, width: int, height: int, src_format: str, options: dict) -> None:
         seq = encoder.sequence
         codec_type = encoder.codec_type
         self.encoders[seq] = encoder
         self.send("context-request", seq, codec_type, encoding, width, height, src_format, options)
 
-    def _process_context_response(self, packet: PacketType):
+    def _process_context_response(self, packet: PacketType) -> None:
         seq = packet[1]
         ok = packet[2]
         message = "" if len(packet) < 4 else packet[3]
@@ -350,7 +350,7 @@ class EncoderClient(baseclass):
             pixels = b""
         self.send("context-compress", encoder.sequence, metadata, pixels, options)
 
-    def _process_context_data(self, packet: PacketType):
+    def _process_context_data(self, packet: PacketType) -> None:
         seq, bdata, client_options = packet[1:4]
         encoder = self.encoders.get(seq)
         if not encoder:
