@@ -152,12 +152,14 @@ class EncoderClient(baseclass):
         if self.is_connected() or self.connecting:
             return
         try:
-            self.do_connect()
-        except (OSError, InitExit):
-            log("failed to connect", exc_info=True)
+            if not self.do_connect():
+                # try again:
+                self.schedule_connect(delay)
+        except InitExit as e:
+            log("failed to connect: %s", e)
             self.schedule_connect(delay)
-        if not self.protocol:
-            # try again:
+        except OSError:
+            log("failed to connect", exc_info=True)
             self.schedule_connect(delay)
 
     def connect(self) -> None:
