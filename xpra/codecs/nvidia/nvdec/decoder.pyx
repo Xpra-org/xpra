@@ -520,7 +520,7 @@ cdef class Decoder:
     cdef object __weakref__
 
     def init_context(self, encoding: str, width: int, height: int, colorspace: str, options: typedict) -> None:
-        log("nvdec.Decoder.init_context%s", (encoding, width, height, colorspace))
+        log("nvdec.Decoder.init_context%s", (encoding, width, height, colorspace, options))
         if encoding not in CODEC_MAP:
             raise ValueError(f"invalid encoding {encoding} for nvdec")
         if colorspace not in CS_CHROMA:
@@ -840,8 +840,9 @@ def decompress_and_download(encoding: str, img_data, width: int, height: int, op
 def decompress_with_device(encoding: str, img_data, width: int, height: int, options=None) -> ImageWrapper:
     cdef Decoder decoder = Decoder()
     try:
-        decoder.init_context(encoding, width, height, "YUV420P")
-        return decoder.decompress_image(img_data, typedict(options or {}))
+        tdoptions = typedict(options or {})
+        decoder.init_context(encoding, width, height, "YUV420P", tdoptions)
+        return decoder.decompress_image(img_data, tdoptions)
     finally:
         decoder.clean()
 
