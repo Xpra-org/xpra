@@ -22,6 +22,7 @@ log = Logger("codec", "video")
 # the codec loader uses the names...
 # but we need the module name to be able to probe without loading the codec:
 CODEC_TO_MODULE: dict[str, str] = {
+    "enc_amf"       : "amf.encoder",
     "enc_vpx"       : "vpx.encoder",
     "dec_vpx"       : "vpx.decoder",
     "enc_x264"      : "x264.encoder",
@@ -63,7 +64,7 @@ def try_import_modules(prefix: str, *codec_names: str) -> list[str]:
 
 
 # all the codecs we know about:
-ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("x264", "openh264", "vpx",
+ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("amf", "x264", "openh264", "vpx",
                                             "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer", "remote")
 HARDWARE_ENCODER_OPTIONS: Sequence[str] = ("nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS: Sequence[str] = ("cython", "libyuv")
