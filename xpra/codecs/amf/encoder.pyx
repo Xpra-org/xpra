@@ -441,6 +441,7 @@ cdef class Encoder:
                 #"speed"    : self.speed,
             }
         finally:
+            self.frames += 1
             for i in range(2):
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
