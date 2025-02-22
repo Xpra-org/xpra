@@ -434,7 +434,7 @@ cdef class Encoder:
                 pic_in[i] = <uint8_t *> py_buf[i].buf
                 strides[i] = istrides[i]
             return self.do_compress_image(pic_in, strides), {
-                "csc"       : self.src_format,
+                "csc"       : {"NV12": "YUV420P"}.get(self.src_format, self.src_format),
                 "frame"     : int(self.frames),
                 "full-range" : bool(full_range),
                 #"quality"  : min(99+self.lossless, self.quality),
