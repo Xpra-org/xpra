@@ -758,7 +758,6 @@ def setup_share(light: bool) -> None:
         "share/gstreamer-1.0",
         "share/gst-plugins-base",
         "share/p11-kit",
-        "share/themes/*/gtk-2.0*",
     )
     if light:
         # remove extra bits that take up a lot of space:
