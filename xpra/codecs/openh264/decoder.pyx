@@ -146,7 +146,7 @@ MAX_WIDTH, MAX_HEIGHT = (8192, 4096)
 def get_specs() -> Sequence[VideoSpec]:
     return (
         VideoSpec(
-            encoding="h264", input_colorspace="YUV420P", output_colorspaces="YUV420P",
+            encoding="h264", input_colorspace="YUV420P", output_colorspaces=("YUV420P", ),
             has_lossless_mode=False,
             codec_class=Decoder, codec_type=get_type(),
             quality=40, speed=20,
