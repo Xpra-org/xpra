@@ -659,7 +659,10 @@ cdef class Decoder:
 
     def clean(self) -> None:
         cdef CUresult r = 0
-        self.event.set()
+        e = self.event
+        if e:
+            e.set()
+            self.event = None
         if self.parser!=NULL:
             self.flush()
             r = cuvidDestroyVideoParser(self.parser)
