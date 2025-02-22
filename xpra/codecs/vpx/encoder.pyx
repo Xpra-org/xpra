@@ -274,7 +274,7 @@ def get_specs() -> Sequence[VideoSpec]:
 
             specs.append(
                 VideoSpec(
-                    encoding=encoding, input_colorspace=in_cs, output_colorspaces=[out_cs],
+                    encoding=encoding, input_colorspace=in_cs, output_colorspaces=(out_cs, ),
                     has_lossless_mode=has_lossless_mode,
                     codec_class=Encoder, codec_type=get_type(),
                     quality=quality, speed=speed,
