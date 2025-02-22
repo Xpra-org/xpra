@@ -580,7 +580,8 @@ class cuda_device_context:
 
     def free(self) -> None:
         c = self.context
-        log("free() context=%s", c)
+        if log:
+            log("free() context=%s", c)
         if c:
             self.device_id = 0
             self.device = None
