@@ -15,6 +15,7 @@ from threading import Event
 
 from xpra import __version__
 from xpra.os_util import gi_import
+from xpra.util.str_fn import Ellipsizer, print_nested_dict
 from xpra.util.io import is_socket, load_binary_file
 from xpra.util.env import envint, osexpand
 from xpra.util.objects import typedict, AtomicInteger
@@ -255,18 +256,19 @@ class EncoderClient(baseclass):
 
     def _process_hello(self, packet: PacketType) -> None:
         caps = packet[1]
-        log("got hello: %s", caps)
+        log("got hello: %s", Ellipsizer(caps))
         if not super().parse_server_capabilities(typedict(caps)):
             raise RuntimeError("failed to parse capabilities")
         version = caps.get("version")
         log.info("connected to encoder server version %s", version)
 
     def _process_encodings(self, packet: PacketType) -> None:
-        log(f"{packet!r}")
+        log(f"{Ellipsizer(packet)!r}")
         specs = typedict(packet[1]).dictget("video") or {}
         self.specs = dict((k, v) for k, v in specs.items() if k in ENCODINGS)
-        log("received specs=%s", specs)
-        log("filtered specs=%s", self.specs)
+        log("received specs=%s", Ellipsizer(specs))
+        log("filtered specs:")
+        print_nested_dict(self.specs, print_fn=log)
         encodings = tuple(self.specs.keys())
         self.encodings = tuple(set(encodings) & set(ENCODINGS))
         log("received encodings=%s", encodings)
@@ -408,7 +410,7 @@ def get_runtime_factor() -> float:
 
 
 def make_spec(espec: dict) -> VideoSpec:
-    codec_type = espec.pop("codec_type")
+    codec_type = espec["codec_type"]
 
     class RemoteEncoder(Encoder):
         def __init__(self):
@@ -416,6 +418,8 @@ def make_spec(espec: dict) -> VideoSpec:
 
     spec = VideoSpec(codec_class=RemoteEncoder, codec_type=f"remote-{codec_type}")
     for k, v in espec.items():
+        if k == "codec_type":
+            continue
         if not hasattr(spec, k):
             log.warn(f"Warning: unknown video spec attribute {k!r}")
             continue

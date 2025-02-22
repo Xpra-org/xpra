@@ -5,15 +5,14 @@
 # later version. See the file COPYING for details.
 
 import sys
-import traceback
-from threading import Lock
+from types import ModuleType
 from typing import Any
 from importlib.util import find_spec
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.common import Self
 from xpra.codecs.constants import VideoSpec, CodecSpec, CSCSpec
-from xpra.codecs.loader import load_codec, get_codec, get_codec_error, autoprefix, unload_codecs
+from xpra.codecs.loader import load_codec, autoprefix, unload_codecs
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.log import Logger
@@ -64,7 +63,8 @@ def try_import_modules(prefix: str, *codec_names: str) -> list[str]:
 
 
 # all the codecs we know about:
-ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("x264", "openh264", "vpx", "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer", "remote")
+ALL_VIDEO_ENCODER_OPTIONS: Sequence[str] = ("x264", "openh264", "vpx",
+                                            "nvenc", "nvjpeg", "jpeg", "webp", "gstreamer", "remote")
 HARDWARE_ENCODER_OPTIONS: Sequence[str] = ("nvenc", "nvjpeg")
 ALL_CSC_MODULE_OPTIONS: Sequence[str] = ("cython", "libyuv")
 ALL_VIDEO_DECODER_OPTIONS: Sequence[str] = ("openh264", "vpx", "gstreamer", "nvdec")
@@ -153,8 +153,8 @@ def filt(prefix: str, name: str,
         return [ap(v) for v in items]
 
     # when comparing, ignore options:
-    def noopt(item: str):
-        return item.split(":", 1)[0]
+    def noopt(item_str: str):
+        return item_str.split(":", 1)[0]
 
     exclist = apl(x[1:] for x in real_list if x and x.startswith("-"))
     inclist = apl(x for x in real_list if x and not x.startswith("-"))
@@ -177,8 +177,10 @@ def filt(prefix: str, name: str,
     return values
 
 
-VdictEntry = dict[str, list[CodecSpec]]
+VdictEntry = dict[str, Sequence[CodecSpec]]
 Vdict = dict[str, VdictEntry]
+
+VModuleOptions = dict[str, dict[str, str]]
 
 
 # manual deep-ish copy: make new dictionaries and lists,
@@ -210,6 +212,46 @@ def parse_video_option(value: str) -> tuple[str, dict[str, str]]:
     return encoder, parse_simple_dict(parts[1])
 
 
+def init_modules(prefix: str, defs: VModuleOptions) -> dict[str, ModuleType]:
+    log(f"init_modules({prefix!r}, {defs})")
+    modules = {}
+    for x, options in defs.items():
+        try:
+            mod_name = autoprefix(prefix, x)
+            mod = load_codec(mod_name, options)
+            log(f" {prefix!r} module for {x!r}: {mod_name!r}={mod}")
+            if not mod:
+                log.info(f" {x!r} not found")
+                continue
+            modules[mod_name] = mod
+        except Exception as e:
+            log(f"error on {x!r}", exc_info=True)
+            log.warn(f"Warning: cannot add {x!r}: {e}")
+    log(f"found %i {prefix!r} options: %s", len(modules), modules)
+    return modules
+
+
+def get_all_specs(modules: dict[str, ModuleType]) -> list:
+    specs = []
+    for mod in modules.values():
+        specs += mod.get_specs()
+    return specs
+
+
+def get_gpu_options(codec_specs: Vdict, out_fmts=("*",)) -> dict[str, list[CodecSpec]]:
+    gpu_fmts: dict[str, list[CodecSpec]] = {}
+    for in_fmt, vdict in codec_specs.items():
+        for out_fmt, codecs in vdict.items():
+            if "*" not in out_fmts and out_fmt not in out_fmts:
+                continue
+            for codec in codecs:
+                if codec.gpu_cost > codec.cpu_cost:
+                    log(f"get_gpu_options {out_fmt}: {codec}")
+                    gpu_fmts.setdefault(in_fmt, []).append(codec)
+    log(f"get_gpu_options({codec_specs})={gpu_fmts}")
+    return gpu_fmts
+
+
 class VideoHelper:
     """
         This class is a bit like a registry of known encoders, csc modules and decoders.
@@ -218,26 +260,18 @@ class VideoHelper:
         We can also clone it to modify it (used by per client proxy encoders)
     """
 
-    def __init__(self,
-                 vencspecs: Vdict | None = None,
-                 cscspecs: Vdict | None = None,
-                 vdecspecs: Vdict | None = None,
-                 init=False):
-        self._video_encoder_specs: Vdict = vencspecs or {}
-        self._csc_encoder_specs: Vdict = cscspecs or {}
-        self._video_decoder_specs: Vdict = vdecspecs or {}
-        self.video_encoders = []
-        self.csc_modules = []
-        self.video_decoders = []
+    def __init__(self, encoders=None, csc=None, decoders=None):
+        self.encoders: VModuleOptions = encoders or {}
+        self.csc: VModuleOptions = csc or {}
+        self.decoders: VModuleOptions = decoders or {}
+        self.encoder_modules: dict[str, ModuleType] = {}
+        self.csc_modules: dict[str, ModuleType] = {}
+        self.decoder_modules: dict[str, ModuleType] = {}
 
-        # bits needed to ensure we can initialize just once
-        # even when called from multiple threads:
-        self._initialized = init
-        self._init_from = []
-        self._lock = Lock()
-
-    def is_initialized(self) -> bool:
-        return self._initialized
+    def init(self) -> None:
+        self.encoder_modules = init_modules("enc", self.encoders)
+        self.csc_modules = init_modules("csc", self.csc)
+        self.decoder_modules = init_modules("dec", self.decoders)
 
     def enable_all_modules(self):
         self.set_modules(ALL_VIDEO_ENCODER_OPTIONS,
@@ -250,66 +284,52 @@ class VideoHelper:
                     video_decoders: Sequence[str] = (),
                     ):
         log("set_modules%s", (video_encoders, csc_modules, video_decoders))
-        if self._initialized:
-            log.error("Error: video helper modules have already been initialized")
-            for ifrom in self._init_from:
-                log.error("from:")
-                for tb in ifrom:
-                    log.error(" %s", tb.strip("\n\r"))
-            raise RuntimeError("too late to set modules, the helper is already initialized")
-        self.video_encoders = filt("enc", "video encoders", video_encoders,
-                                   get_video_encoders, ALL_VIDEO_ENCODER_OPTIONS)
-        self.csc_modules = filt("csc", "csc modules", csc_modules,
-                                get_csc_modules, ALL_CSC_MODULE_OPTIONS)
-        self.video_decoders = filt("dec", "video decoders", video_decoders,
-                                   get_video_decoders, ALL_VIDEO_DECODER_OPTIONS)
+        self.encoders = filt("enc", "video encoders", video_encoders,
+                             get_video_encoders, ALL_VIDEO_ENCODER_OPTIONS)
+        self.csc = filt("csc", "csc modules", csc_modules,
+                        get_csc_modules, ALL_CSC_MODULE_OPTIONS)
+        self.decoders = filt("dec", "video decoders", video_decoders,
+                             get_video_decoders, ALL_VIDEO_DECODER_OPTIONS)
         log("VideoHelper.set_modules(%r, %r, %r) video encoders=%s, csc=%s, video decoders=%s",
             csv(video_encoders), csv(csc_modules), csv(video_decoders),
-            self.video_encoders, self.csc_modules, self.video_decoders)
+            self.encoders, self.csc, self.decoders)
 
     def cleanup(self) -> None:
-        with self._lock:
-            # check again with lock held (in case of race):
-            if not self._initialized:
-                return
-            self._video_encoder_specs = {}
-            self._csc_encoder_specs = {}
-            self._video_decoder_specs = {}
-            self.video_encoders = []
-            self.csc_modules = []
-            self.video_decoders = []
-            self._initialized = False
+        self.encoders = {}
+        self.csc = {}
+        self.decoders = {}
+        self.encoder_modules = []
+        self.csc_modules = []
+        self.decoder_modules = []
 
     def clone(self) -> Self:
-        if not self._initialized:
-            self.init()
-        ves = deepish_clone_dict(self._video_encoder_specs)
-        ces = deepish_clone_dict(self._csc_encoder_specs)
-        vds = deepish_clone_dict(self._video_decoder_specs)
-        return VideoHelper(ves, ces, vds, True)
+        return VideoHelper(self.encoders, self.csc, self.decoders)
 
     def get_info(self) -> dict[str, Any]:
         d: dict[str, Any] = {}
-        if not (self.video_encoders or self.csc_modules or self.video_decoders):
+        if not (self.encoders or self.csc or self.decoders):
             # shortcut out: nothing to show
             return d
         einfo = d.setdefault("encoding", {})
         dinfo = d.setdefault("decoding", {})
         cinfo = d.setdefault("csc", {})
-        for encoding, encoder_specs in self._video_encoder_specs.items():
+        for encoding, encoder_specs in self.get_video_encoding_options().items():
             for in_csc, specs in encoder_specs.items():
                 for spec in specs:
                     einfo.setdefault(f"{in_csc}_to_{encoding}", []).append(spec.codec_type)
-        for in_csc, out_specs in self._csc_encoder_specs.items():
+        for in_csc, out_specs in self.get_csc_options().items():
             for out_csc, specs in out_specs.items():
                 cinfo[f"{in_csc}_to_{out_csc}"] = [spec.codec_type for spec in specs]
-        for encoding, decoder_specs in self._video_decoder_specs.items():
+        for encoding, decoder_specs in self.get_video_decoding_options().items():
             for out_csc, decoders in decoder_specs.items():
                 for decoder in decoders:
                     dinfo.setdefault(f"{encoding}_to_{out_csc}", []).append(decoder.codec_type)
         venc = einfo.setdefault("video-encoder", {})
         for x in ALL_VIDEO_ENCODER_OPTIONS:
-            venc[x] = modstatus(get_encoder_module_name(x), get_video_encoders(), self.video_encoders)
+            venc[x] = modstatus(get_encoder_module_name(x), get_video_encoders(), self.encoders)
+        vdec = einfo.setdefault("video-decoder", {})
+        for x in ALL_VIDEO_DECODER_OPTIONS:
+            vdec[x] = modstatus(get_decoder_module_name(x), get_video_decoders(), self.encoders)
         cscm = einfo.setdefault("csc-module", {})
         for x in ALL_CSC_MODULE_OPTIONS:
             cscm[x] = modstatus(get_csc_module_name(x), get_csc_modules(), self.csc_modules)
@@ -320,175 +340,69 @@ class VideoHelper:
         }
         return d
 
-    def init(self) -> None:
-        log("VideoHelper.init()")
-        with self._lock:
-            self._init_from.append(traceback.format_stack())
-            # check again with lock held (in case of race):
-            log("VideoHelper.init() initialized=%s", self._initialized)
-            if self._initialized:
-                return
-            self.init_video_encoders_options()
-            self.init_csc_options()
-            self.init_video_decoders_options()
-            self._initialized = True
-        log("VideoHelper.init() done")
+    def get_gpu_encodings(self) -> dict[str, Sequence[CodecSpec]]:
+        return get_gpu_options(self.get_video_encoding_options())
 
-    def get_gpu_options(self, codec_specs: Vdict, out_fmts=("*", )) -> dict[str, list[CodecSpec]]:
-        gpu_fmts: dict[str, list[CodecSpec]] = {}
-        for in_fmt, vdict in codec_specs.items():
-            for out_fmt, codecs in vdict.items():
-                if "*" not in out_fmts and out_fmt not in out_fmts:
-                    continue
-                for codec in codecs:
-                    if codec.gpu_cost > codec.cpu_cost:
-                        log(f"get_gpu_options {out_fmt}: {codec}")
-                        gpu_fmts.setdefault(in_fmt, []).append(codec)
-        log(f"get_gpu_options({codec_specs})={gpu_fmts}")
-        return gpu_fmts
+    def get_gpu_csc(self) -> dict[str, Sequence[CodecSpec]]:
+        return get_gpu_options(self.get_csc_options())
 
-    def get_gpu_encodings(self) -> dict[str, list[CodecSpec]]:
-        return self.get_gpu_options(self._video_encoder_specs)
-
-    def get_gpu_csc(self) -> dict[str, list[CodecSpec]]:
-        return self.get_gpu_options(self._csc_encoder_specs)
-
-    def get_gpu_decodings(self) -> dict[str, list[CodecSpec]]:
-        return self.get_gpu_options(self._video_decoder_specs)
+    def get_gpu_decodings(self) -> dict[str, Sequence[CodecSpec]]:
+        return get_gpu_options(self.get_video_decoding_options())
 
     def get_encodings(self) -> Sequence[str]:
-        return tuple(self._video_encoder_specs.keys())
+        return tuple(self.get_video_encoding_options().keys())
 
     def get_decodings(self) -> Sequence[str]:
-        return tuple(self._video_decoder_specs.keys())
+        return tuple(self.get_video_decoding_options().keys())
 
     def get_csc_inputs(self) -> Sequence[str]:
-        return tuple(self._csc_encoder_specs.keys())
+        return tuple(self.get_csc_options().keys())
 
     def get_encoder_specs(self, encoding: str) -> VdictEntry:
-        return self._video_encoder_specs.get(encoding, {})
+        return self.get_video_encoding_options().get(encoding, {})
 
     def get_csc_specs(self, src_format: str) -> VdictEntry:
-        return self._csc_encoder_specs.get(src_format, {})
+        return self.get_csc_options().get(src_format, {})
 
     def get_decoder_specs(self, encoding: str) -> VdictEntry:
-        return self._video_decoder_specs.get(encoding, {})
+        return self.get_video_decoding_options().get(encoding, {})
 
-    def init_video_encoders_options(self) -> None:
-        log("init_video_encoders_options() will try video encoders: %s", self.video_encoders or "none")
-        if not self.video_encoders:
-            return
-        for x, options in self.video_encoders.items():
-            try:
-                mod = get_encoder_module_name(x)
-                load_codec(mod, options)
-                log(f" encoder for {x!r}: {mod!r}")
-                try:
-                    self.init_video_encoder_option(mod)
-                except Exception as e:
-                    log(f" init_video_encoder_option({mod!r}) error", exc_info=True)
-                    log.warn(f"Warning: cannot load {mod!r} video encoder:")
-                    log.warn(f" {e}")
-                    del e
-            except Exception as e:
-                log(f"error on {x!r}",exc_info=True)
-                log.warn(f"Warning: cannot add {x!r} encoder: {e}")
-                del e
-        log("found %i video encoder formats: %s",
-            len(self._video_encoder_specs), csv(self._video_encoder_specs))
+    def get_video_encoding_options(self) -> dict[str, dict[str, Sequence[VideoSpec]]]:
+        log("get_video_encoding_options() will try video encoders: %s", self.encoder_modules or "none")
+        ve_options: dict[str, dict[str, Sequence[VideoSpec]]] = {}
+        for spec in get_all_specs(self.encoder_modules):
+            ve_options.setdefault(spec.encoding, {}).setdefault(spec.input_colorspace, []).append(spec)
+        log("get_video_encoding_options()=%s", ve_options)
+        return ve_options
 
-    def init_video_encoder_option(self, encoder_name: str) -> None:
-        encoder_module = get_codec(encoder_name)
-        log(f"init_video_encoder_option({encoder_name})")
-        log(f" module={encoder_module!r}")
-        if not encoder_module:
-            log(f" video encoder {encoder_name!r} could not be loaded:")
-            log(" %s", get_codec_error(encoder_name))
-            return
-        for spec in encoder_module.get_specs():
-            self.add_encoder_spec(spec)
-        log("video encoder options: %s", self._video_encoder_specs)
+    def get_csc_options(self) -> dict[str, dict[str, Sequence[CSCSpec]]]:
+        log("get_csc_options() will try csc modules: %s", self.csc_modules or "none")
+        csc_options: dict[str, dict[str, Sequence[CSCSpec]]] = {}
+        for spec in get_all_specs(self.csc_modules):
+            in_csc = spec.input_colorspace
+            for out_csc in spec.output_colorspaces:
+                csc_options.setdefault(in_csc, {}).setdefault(out_csc, []).append(spec)
+        log("get_csc_options()=%s", csc_options)
+        return csc_options
 
-    def add_encoder_spec(self, spec: VideoSpec):
-        encoding = spec.encoding
-        colorspace = spec.input_colorspace
-        self._video_encoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(spec)
-
-    def init_csc_options(self) -> None:
-        log("init_csc_options() will try csc modules: %s", self.csc_modules or "none")
-        if not self.csc_modules:
-            return
-        for x, options in self.csc_modules.items():
-            try:
-                mod = get_csc_module_name(x)
-                load_codec(mod, options)
-                self.init_csc_option(mod)
-            except ImportError:
-                log.warn(f"Warning: cannot add {x!r} csc", exc_info=True)
-        log(" csc specs: %s", csv(self._csc_encoder_specs))
-        for src_format, d in sorted(self._csc_encoder_specs.items()):
-            log(f" {src_format!r} - {len(d)} options:")
-            for dst_format, specs in sorted(d.items()):
-                log("  * %7s via: %s", dst_format, csv(sorted(spec.codec_type for spec in specs)))
-        log("csc options: %s", self._csc_encoder_specs)
-
-    def init_csc_option(self, csc_name: str) -> None:
-        csc_module = get_codec(csc_name)
-        log(f"init_csc_option({csc_name!r})")
-        log(f" module={csc_module!r}")
-        if csc_module is None:
-            log(f" csc module {csc_name!r} could not be loaded:")
-            log(" %s", get_codec_error(csc_name))
-            return
-        specs = csc_module.get_specs()
-        for spec in specs:
-            self.add_csc_spec(spec)
-
-    def add_csc_spec(self, spec: CSCSpec) -> None:
-        in_csc = spec.input_colorspace
-        for out_csc in spec.output_colorspaces:
-            self._csc_encoder_specs.setdefault(in_csc, {}).setdefault(out_csc, []).append(spec)
-
-    def init_video_decoders_options(self) -> None:
-        log("init_video_decoders_options() will try video decoders: %s", self.video_decoders or "none")
-        if not self.video_decoders:
-            return
-        for x, options in self.video_decoders.items():
-            try:
-                mod = get_decoder_module_name(x)
-                load_codec(mod, options)
-                self.init_video_decoder_option(mod)
-            except ImportError:
-                log.warn(f"Warning: cannot add {x!r} decoder", exc_info=True)
-        log("found %s video decoder formats: %s",
-            len(self._video_decoder_specs), csv(self._video_decoder_specs))
-        log("video decoder options: %s", self._video_decoder_specs)
-
-    def init_video_decoder_option(self, decoder_name: str) -> None:
-        decoder_module = get_codec(decoder_name)
-        log(f"init_video_decoder_option({decoder_name!r})")
-        log(f" module={decoder_module!r}")
-        if not decoder_module:
-            log(" video decoder %s could not be loaded:", decoder_name)
-            log(" %s", get_codec_error(decoder_name))
-            return
-        for spec in decoder_module.get_specs():
-            self.add_decoder_spec(spec)
-
-    def add_decoder_spec(self, decoder_spec: VideoSpec):
-        encoding = decoder_spec.encoding
-        colorspace = decoder_spec.input_colorspace
-        self._video_decoder_specs.setdefault(encoding, {}).setdefault(colorspace, []).append(decoder_spec)
+    def get_video_decoding_options(self) -> dict[str, dict[str, Sequence[VideoSpec]]]:
+        log("get_video_decoding_options() will try video decoders: %s", self.decoder_modules or "none")
+        vd_options: dict[str, dict[str, Sequence[VideoSpec]]] = {}
+        for spec in get_all_specs(self.decoder_modules):
+            vd_options.setdefault(spec.encoding, {}).setdefault(spec.input_colorspace, []).append(spec)
+        log("get_video_decoding_options()=%s", vd_options)
+        return vd_options
 
     def get_server_full_csc_modes(self, *client_supported_csc_modes: str) -> dict[str, list[str]]:
         """ given a list of CSC modes the client can handle,
             returns the CSC modes per encoding that the server can encode with.
             (taking into account the decoder's actual output colorspace for each encoding)
         """
+        dec_options = self.get_video_decoding_options()
         log("get_server_full_csc_modes(%s) decoder encodings=%s",
-            client_supported_csc_modes, csv(self._video_decoder_specs.keys()))
+            client_supported_csc_modes, csv(dec_options.keys()))
         full_csc_modes: dict[str, list[str]] = {}
-        for encoding, encoding_specs in self._video_decoder_specs.items():
+        for encoding, encoding_specs in dec_options.items():
             assert encoding_specs is not None
             for colorspace, decoder_specs in sorted(encoding_specs.items()):
                 for decoder_spec in decoder_specs:
@@ -509,7 +423,7 @@ class VideoHelper:
         """
         log(f"get_server_full_csc_modes_for_rgb{target_rgb_modes!r}")
         supported_csc_modes = list(filter(lambda rgb_mode: rgb_mode != "*", target_rgb_modes))
-        for src_format, specs in self._csc_encoder_specs.items():
+        for src_format, specs in self.get_csc_options().items():
             for dst_format, csc_specs in specs.items():
                 if not csc_specs:
                     continue
