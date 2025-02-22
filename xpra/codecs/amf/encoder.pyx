@@ -350,6 +350,7 @@ cdef class Encoder:
             "encoding"  : self.encoding,
             "src_format": self.src_format,
         }
+        return info
 
     def get_encoding(self) -> str:
         return self.encoding
