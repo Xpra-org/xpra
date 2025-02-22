@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.4] 2025-02-21
+## [6.2.4] 2025-02-22
 * Platforms, build and packaging:
     * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
     * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
@@ -17,12 +17,18 @@
     * [Cython 3.0.12](https://github.com/Xpra-org/xpra/commit/b130d1f72180ef2ef23051ab17f04c1b7a177887)
     * [`libexec` scripts installation into a prefix](https://github.com/Xpra-org/xpra/commit/a27319e0d98a1e1c437b0af226867a3890373fb6)
     * [detect MS Windows version for all codepages](https://github.com/Xpra-org/xpra/commit/7fd24b71146424e6ed24ed32178fc79463981051)
+    * [don't enable splash unconditionally on non-posix](https://github.com/Xpra-org/xpra/commit/1b488723784ed976cea55ac09186033104e4b7e3)
 * Major:
     * [integer time overflow](https://github.com/Xpra-org/xpra/commit/dcc8be686c413fe289e284801b5203455ce82830), [prevent more](https://github.com/Xpra-org/xpra/commit/4c0acc83d4799fd945afe3084f6e653d9dbe02e6)
     * [server fails to start when sourcing profile strings](https://github.com/Xpra-org/xpra/commit/3bd53a6e9e8c808aff025eb0cbe972f49f1f3191)
+    * [disable 'DOUBLE-BUFFER' extension](https://github.com/Xpra-org/xpra/commit/a73ef72998e06e23946211af57159ceb6315e792)
+* Encodings:
     * [qp calculation with nvenc](https://github.com/Xpra-org/xpra/commit/299268b8a08b739c5f1ad51c837a82a96bd061df)
     * [encoder runtime factor was not being honoured](https://github.com/Xpra-org/xpra/commit/854a51cb00cdf189ccd4a5be93cfcc14f9aa7309) [+ update unit test](https://github.com/Xpra-org/xpra/commit/a58975e887a9a666f456b5cfbc48a617a63d0ede)
-    * [disable 'DOUBLE-BUFFER' extension](https://github.com/Xpra-org/xpra/commit/a73ef72998e06e23946211af57159ceb6315e792)
+    * [disable video decoders when they fail](https://github.com/Xpra-org/xpra/commit/6526133db5799b251d3f2d39064981648bfadab0)
+    * [nvdec cleanup errors](https://github.com/Xpra-org/xpra/commit/29940028de57090fd31140a187a3cec1ddcc9a42)
+    * [codec error handling](https://github.com/Xpra-org/xpra/commit/2d2539adbadf2182d1a1676d58053335229b02c3)
+    * [avoid cuda context error messages when not installed](https://github.com/Xpra-org/xpra/commit/0a3022e3119d63041bbf8e8e4f930d0eb6040942)
 * Network:
     * [scary warnings when RDP clients attempt to connect](https://github.com/Xpra-org/xpra/commit/5f6b4454a59952822362f204dc75f84ac9f17a23)
     * [limit openssl version details exposed](https://github.com/Xpra-org/xpra/commit/de983c867c743e04670e61a7bf6ef05ddf61fab2)
@@ -30,7 +36,6 @@
 * Minor:
     * [revert to other client's ssh agent socket on disconnection](https://github.com/Xpra-org/xpra/commit/d0acde606e8d79e06a6f8b3b8cab10def19add8a)
     * [partial dpi settings with some clients (ie: `html5`)](https://github.com/Xpra-org/xpra/commit/5c891aff0205b5177f38f636b592fa6e4c0a04e8)
-    * [codec error handling](https://github.com/Xpra-org/xpra/commit/2d2539adbadf2182d1a1676d58053335229b02c3)
 * Cosmetic:
     * [make it easier to cut & paste the CUDA kernel compilation command](https://github.com/Xpra-org/xpra/commit/51721cb26b6838e5ec5e662c2943048137ea2fd8)
     * [unnecessary import](https://github.com/Xpra-org/xpra/commit/46e654861cca19fba32810c6f390b47470a80a2b)
@@ -41,6 +46,7 @@
     * [correct encoder state displayed](https://github.com/Xpra-org/xpra/commit/13594b7782ff357a9c804515ab3571d0f00c31d6)
     * [remove deprecated syntax](https://github.com/Xpra-org/xpra/commit/a3a5678c3914ade049c8c951cd912ce8710b87ad)
     * [DPI documentation link](https://github.com/Xpra-org/xpra/commit/6998475101c2496903c66bfc22f878015bbdafd1)
+    * [unit tests log cuda errors](https://github.com/Xpra-org/xpra/commit/e48c2a20212423702eb93903f990627adf11ed8b)
 
 ## [6.2.3] 2025-01-14
 * Platforms, build and packaging:

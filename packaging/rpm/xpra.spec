@@ -915,7 +915,7 @@ fi
 
 
 %changelog
-- Fri Feb 21 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
+- Sat Feb 22 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
 - Platforms, build and packaging:
    MS Windows custom build arguments
    EXE manigests optional
@@ -932,12 +932,18 @@ fi
    Cython 3.0.12
    `libexec` scripts installation into a prefix
    detect MS Windows version for all codepages
+   don't enable splash unconditionally on non-posix
 - Major:
    integer time overflow, prevent more
    server fails to start when sourcing profile strings
+   disable 'DOUBLE-BUFFER' extension
+- Encodings:
    qp calculation with nvenc
    encoder runtime factor was not being honoured
-   disable 'DOUBLE-BUFFER' extension
+   disable video decoders when they fail
+   nvdec cleanup errors
+   avoid cuda context error messages when not installed
+   codec error handling
 - Network:
    scary warnings when RDP clients attempt to connect
    limit openssl version details exposed
@@ -945,7 +951,6 @@ fi
 - Minor:
    revert to other client's ssh agent socket on disconnection
    partial dpi settings with some clients (ie: `html5`)
-   codec error handling
 - Cosmetic:
    make it easier to cut & paste the CUDA kernel compilation command
    unnecessary import
@@ -956,6 +961,7 @@ fi
    correct encoder state displayed
    remove deprecated syntax
    DPI documentation link
+   unit tests log cuda errors
 
 * Tue Jan 14 2025 Antoine Martin <antoine@xpra.org> 6.2.3-10
 - Platforms, build and packaging:
