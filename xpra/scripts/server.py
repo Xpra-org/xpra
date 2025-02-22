@@ -591,8 +591,6 @@ def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str) -> bo
     if splash in (True, False):
         return splash
     # auto mode, figure out if we should show it:
-    if not POSIX:
-        return True
     if os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT"):
         # don't show the splash screen over SSH forwarding
         return False
@@ -604,6 +602,8 @@ def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str) -> bo
     if mode in ("proxy", "encoder"):
         return False
     if os.environ.get("XDG_SESSION_DESKTOP"):
+        return True
+    if not POSIX:
         return True
     return False
 
