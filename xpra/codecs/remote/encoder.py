@@ -151,20 +151,13 @@ class EncoderClient(baseclass):
     def threaded_scheduled_connect(self, delay: int) -> None:
         if self.is_connected() or self.connecting:
             return
-        try:
-            if not self.do_connect():
-                # try again:
-                self.schedule_connect(delay)
-        except InitExit as e:
-            log("failed to connect: %s", e)
-            self.schedule_connect(delay)
-        except OSError:
-            log("failed to connect", exc_info=True)
+        if not self.do_connect():
+            # try again:
             self.schedule_connect(delay)
 
     def connect(self) -> None:
-        if self.protocol:
-            log("already connected")
+        if self.is_connected() or self.connecting:
+            log("already connected / connecting")
             return
         if self.connect_timer:
             log("connect timer is already due")
@@ -188,6 +181,12 @@ class EncoderClient(baseclass):
             super().setup_connection(conn)
             self.protocol = self.make_protocol(conn)
             self.send_hello()
+        except InitExit as e:
+            log("failed to connect: %s", e)
+            return False
+        except OSError:
+            log("failed to connect", exc_info=True)
+            return False
         finally:
             self.connecting = False
         return True
