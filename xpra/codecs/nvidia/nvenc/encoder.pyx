@@ -3082,11 +3082,11 @@ def init_module(options: dict) -> None:
             LOSSLESS_ENABLED = False
     #check NVENC availability by creating a context:
     device_warnings = {}
-    log("init_module() will try keys: %s", try_keys)
+    log("init_module(%s) will try keys: %s", options, try_keys)
     for client_key in try_keys:
         if client_key:
             #this will set the global key object used by all encoder contexts:
-            log("init_module() testing with key '%s'", client_key)
+            log("init_module(%s) testing with key '%s'", options, client_key)
             global CLIENT_KEY_GUID
             CLIENT_KEY_GUID = c_parseguid(client_key)
 
@@ -3258,5 +3258,5 @@ def selftest(full=False) -> None:
     if full:
         from xpra.codecs.checks import get_encoder_max_sizes
         from xpra.codecs.nvidia.nvenc import encoder
-        init_module()
+        init_module({})
         log.info("%s max dimensions: %s", encoder, get_encoder_max_sizes(encoder))

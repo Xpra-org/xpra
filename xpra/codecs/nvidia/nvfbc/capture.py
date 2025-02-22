@@ -46,7 +46,7 @@ def main(argv):
         fbc_capture = get_capture_module()
         if not fbc_capture:
             raise RuntimeError("nvfbc is not supported on this platform")
-        fbc_capture.init_module()
+        fbc_capture.init_module({})
         if WIN32:
             try:
                 if "enable" in argv[1:]:

@@ -9,6 +9,7 @@ import logging
 import unittest
 
 from xpra.util.str_fn import csv
+from xpra.common import noop
 from xpra.codecs import loader
 from xpra.codecs.constants import TransientCodecException
 
@@ -22,10 +23,9 @@ except AttributeError:
 class TestDecoders(unittest.TestCase):
 
     def test_all_codecs_found(self):
-        #the self tests would swallow the exceptions and produce a warning:
+        # the self tests would swallow the exceptions and produce a warning:
         loader.RUN_SELF_TESTS = False
-        #loader.load_codecs()
-        #test them all:
+        # test them all:
         missing = []
         for codec_name in TEST_CODECS:
             loader.load_codec(codec_name)
@@ -34,28 +34,27 @@ class TestDecoders(unittest.TestCase):
                 missing.append(codec_name)
                 continue
             try:
-                #try to suspend error logging for full tests,
-                #as those may cause errors
+                # try to suspend error logging for full tests,
+                # as those may cause errors
                 log = getattr(codec, "log", None)
                 if SUSPEND_CODEC_ERROR_LOGGING and log and not log.is_debug_enabled():
                     log.setLevel(logging.CRITICAL)
-                init_module = getattr(codec, "init_module", None)
-                #print("%s.init_module=%s" % (codec, init_module))
-                if init_module:
-                    try:
-                        init_module()
-                    except Exception as e:
-                        print("cannot initialize %s: %s" % (codec, e))
-                        print(" test skipped")
-                        continue
-                #print("found %s: %s" % (codec_name, codec))
-                selftest = getattr(codec, "selftest", None)
-                #print("selftest(%s)=%s" % (codec_name, selftest))
-                if selftest:
-                    try:
-                        selftest(True)
-                    except TransientCodecException as e:
-                        print("ignoring TransientCodecException on %s : %s" % (codec, e))
+                init_module = getattr(codec, "init_module", noop)
+                try:
+                    init_module({})
+                except Exception as e:
+                    print("cannot initialize %s: %s" % (codec, e))
+                    print(" test skipped")
+                    continue
+
+                selftest = getattr(codec, "selftest", noop)
+                try:
+                    selftest(True)
+                except TransientCodecException as e:
+                    print("ignoring TransientCodecException on %s : %s" % (codec, e))
+
+                cleanup_module = getattr(codec, "cleanup_module", noop)
+                cleanup_module()
             finally:
                 if log:
                     log.setLevel(logging.DEBUG)
@@ -63,8 +62,10 @@ class TestDecoders(unittest.TestCase):
             print("Warning: the following codecs are missing and have not been tested:")
             print(f" {csv(missing)}")
 
+
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
