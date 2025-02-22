@@ -76,21 +76,6 @@ PREFERRED_ENCODER_ORDER: Sequence[str] = tuple(
 log("video: ALL_VIDEO_ENCODER_OPTIONS=%s", ALL_VIDEO_ENCODER_OPTIONS)
 log("video: ALL_CSC_MODULE_OPTIONS=%s", ALL_CSC_MODULE_OPTIONS)
 log("video: ALL_VIDEO_DECODER_OPTIONS=%s", ALL_VIDEO_DECODER_OPTIONS)
-# for client side, using the gfx card for csc is a bit silly:
-# use it for OpenGL or don't use it at all
-# on top of that, there are compatibility problems with gtk at times: OpenCL AMD and TLS don't mix well
-
-
-def get_encoder_module_name(x: str) -> str:
-    return autoprefix("enc", x)
-
-
-def get_decoder_module_name(x: str) -> str:
-    return autoprefix("dec", x)
-
-
-def get_csc_module_name(x: str) -> str:
-    return autoprefix("csc", x)
 
 
 def get_video_encoders(names=ALL_VIDEO_ENCODER_OPTIONS) -> list[str]:
@@ -326,13 +311,13 @@ class VideoHelper:
                     dinfo.setdefault(f"{encoding}_to_{out_csc}", []).append(decoder.codec_type)
         venc = einfo.setdefault("video-encoder", {})
         for x in ALL_VIDEO_ENCODER_OPTIONS:
-            venc[x] = modstatus(get_encoder_module_name(x), get_video_encoders(), self.encoders)
+            venc[x] = modstatus(autoprefix("enc", x), get_video_encoders(), self.encoders)
         vdec = einfo.setdefault("video-decoder", {})
         for x in ALL_VIDEO_DECODER_OPTIONS:
-            vdec[x] = modstatus(get_decoder_module_name(x), get_video_decoders(), self.encoders)
+            vdec[x] = modstatus(autoprefix("dec", x), get_video_decoders(), self.encoders)
         cscm = einfo.setdefault("csc-module", {})
         for x in ALL_CSC_MODULE_OPTIONS:
-            cscm[x] = modstatus(get_csc_module_name(x), get_csc_modules(), self.csc_modules)
+            cscm[x] = modstatus(autoprefix("csc", x), get_csc_modules(), self.csc_modules)
         d["gpu"] = {
             "encodings": tuple(self.get_gpu_encodings().keys()),
             "csc": tuple(self.get_gpu_csc().keys()),
