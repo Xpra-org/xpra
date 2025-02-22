@@ -790,6 +790,9 @@ class WindowBackingBase:
                     if decoder_spec.setup_cost > 100:
                         decoders_for_cs.remove(decoder_spec)
                         if not decoders_for_cs:
+                            decoder_options.pop(input_colorspace, None)
+                            if not decoder_options:
+                                VIDEO_DECODERS.pop(coding, None)
                             raise RuntimeError(f"all the video decoders have failed: {all_decoders_for_cs}")
                 videolog("paint_with_video_decoder: info=%s", vd.get_info())
             try:
