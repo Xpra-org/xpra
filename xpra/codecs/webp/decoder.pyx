@@ -167,7 +167,7 @@ cdef inline void webp_check(int ret):
     raise RuntimeError("error: %s" % err)
 
 
-def get_encodings() -> Tuple[str]:
+def get_encodings() -> Sequence[str]:
     return ("webp", )
 
 

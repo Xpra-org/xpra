@@ -119,7 +119,7 @@ def get_version() -> Tuple[int, int]:
     return (1, 0)
 
 
-def get_encodings() -> Sequence[str, str]:
+def get_encodings() -> Sequence[str]:
     return ("jpeg", "jpega")
 
 

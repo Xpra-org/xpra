@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Dict, Iterable, Any
+from collections.abc import Sequence
 from time import monotonic
 
 from libc.string cimport memset  # pylint: disable=syntax-error
@@ -57,7 +58,7 @@ def get_type() -> str:
     return "nvjpeg"
 
 
-def get_encodings() -> Iterable[str]:
+def get_encodings() -> Sequence[str]:
     return ("jpeg", "jpega")
 
 

@@ -430,7 +430,7 @@ def get_info() -> Dict[str,Any]:
         }
 
 
-def get_encodings() -> Tuple[str,...]:
+def get_encodings() -> Sequence[str]:
     return ("h264", )
 
 
