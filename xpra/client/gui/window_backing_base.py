@@ -759,7 +759,7 @@ class WindowBackingBase:
                 decoder_options: VdictEntry = VIDEO_DECODERS.get(coding, {})
                 if not decoder_options:
                     raise RuntimeError(f"no video decoders for {coding!r}")
-                all_decoders_for_cs: list[CodecSpec] = decoder_options.get(input_colorspace, {})
+                all_decoders_for_cs: Sequence[CodecSpec] = decoder_options.get(input_colorspace, {})
                 if not all_decoders_for_cs:
                     raise RuntimeError(f"no video decoders for {coding!r} and {input_colorspace!r}")
                 decoders_for_cs = list(all_decoders_for_cs)

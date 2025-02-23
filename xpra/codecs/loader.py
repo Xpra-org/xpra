@@ -339,8 +339,8 @@ def unload_codecs() -> None:
     copy = codecs
     codecs = {}
     for name, module in copy.items():
+        cleanup_module = getattr(module, "cleanup_module", noop)
         try:
-            cleanup_module = getattr(module, "cleanup_module", noop)
             log(f"{name} cleanup_module={cleanup_module}")
             cleanup_module()
         except RuntimeError as e:

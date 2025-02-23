@@ -102,6 +102,7 @@ def get_encoder_socket(session_dir: str) -> str:
 class EncoderClient(baseclass):
 
     def __init__(self, options: dict):
+        baseclass.__init__(self)
         log(f"remote.EncoderClient({options})")
         to = typedict(options)
         self.uri = to.strget("uri", "")
@@ -329,7 +330,7 @@ class EncoderClient(baseclass):
         else:
             encoder.closed = True
 
-    def compress(self, encoder, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
+    def compress(self, encoder, image: ImageWrapper, options: typedict) -> None:
         log("compress%s", (encoder, image, options))
         metadata = {}
         for attr in ("x", "y", "width", "height", "pixel_format", "depth", "rowstride", "bytesperpixel", "planes", "full_range"):
