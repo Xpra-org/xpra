@@ -14,6 +14,7 @@ from PIL import Image, ImagePalette, __version__ as pil_version
 
 from xpra.common import roundup
 from xpra.codecs.debug import may_save_image
+from xpra.codecs.image import ImageWrapper
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, hexstr
 from xpra.net.compression import Compressed
@@ -81,7 +82,7 @@ def get_info() -> dict[str, Any]:
     }
 
 
-def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
+def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
     if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
         raise ValueError(f"unsupported encoding: {coding!r}")
     log("pillow.encode%s", (coding, image, options))
@@ -147,7 +148,7 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
     }.get(pixel_format, pixel_format)
     pil_import_format = pixel_format.replace("A", "a")
     try:
-        # PIL cannot use the memoryview directly:
+        # older versions cannot use the memoryview directly:
         if pil_major < 10 and isinstance(pixels, memoryview):
             pixels = pixels.tobytes()
         # it is safe to use frombuffer() here since the convert()
@@ -159,7 +160,7 @@ def encode(coding: str, image, options: typedict) -> tuple[str, Compressed, dict
             rgb, (w, h), len(pixels),
             "raw", pil_import_format, rowstride, 1),
             exc_info=True)
-        log.error(f"Error: pillow failed to import image as {pil_import_format}:")
+        log.error(f"Error: pillow failed to import image as {pil_import_format!r}:")
         log.estr(e)
         log.error(" for %s", image)
         log.error(f" pixel data: %i %s, with {rowstride=}", len(pixels), type(pixels))
