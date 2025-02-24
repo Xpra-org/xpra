@@ -222,7 +222,7 @@ cdef object rgbdata_to_bgrx(const unsigned char *rgb, const int rgb_len):
     cdef unsigned int p
     with nogil:
         while si < mi:
-            bgrx[di] = rgb[si] + rgb[si+1]<<8 + rgb[si+2]<<16
+            bgrx[di] = rgb[si] + (rgb[si+1]<<8) + (rgb[si+2]<<16)
             di += 1
             si += 3
     return memoryview(output_buf)
