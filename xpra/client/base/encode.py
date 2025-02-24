@@ -66,6 +66,12 @@ class EncodeClient(HelloRequestClient, MmapClient):
         # because HelloRequestClient will call get_caps() to retrieve them
         HelloRequestClient.setup_connection(self, conn)
 
+    def server_connection_established(self, c: typedict) -> bool:
+        if not MmapClient.parse_server_capabilities(self, c) and HelloRequestClient.parse_server_capabilities(self, c):
+            return False
+        # this will call do_command()
+        return super().server_connection_established(c)
+
     def client_type(self) -> str:
         return "encoder"
 
