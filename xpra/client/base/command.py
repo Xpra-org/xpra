@@ -138,7 +138,7 @@ class HelloRequestClient(SendCommandConnectClient):
         # overridden method, so we can avoid printing a warning,
         # we haven't received the hello back from the server
         # but that's fine for a request client
-        info = tuple(repr(x) for x in packet[1:])
+        info = tuple(str(x) for x in packet[1:])
         reason = info[0]
         if disconnect_is_an_error(reason):
             self.server_disconnect_warning(*info)
