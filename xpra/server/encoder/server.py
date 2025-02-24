@@ -275,7 +275,7 @@ class EncoderServer(ServerBase):
         try:
             image = ImageWrapper(**metadata)
             log(f"{encoder=} {image=}")
-            add_device_context(options)
+            add_device_context(ss, options)
             bdata, client_options = encoder.compress_image(image, typedict(options))
         finally:
             for free in free_cb:
