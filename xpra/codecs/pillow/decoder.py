@@ -149,7 +149,7 @@ def decompress(coding: str, img_data: bytes, options: typedict) -> tuple[str, by
     elif img.mode == "L":
         if transparency >= 0:
             # why do we have to deal with alpha ourselves??
-            def mask_value(a):
+            def mask_value(a: int) -> int:
                 if a != transparency:
                     return 255
                 return 0
@@ -157,7 +157,7 @@ def decompress(coding: str, img_data: bytes, options: typedict) -> tuple[str, by
             mask = Image.eval(img, mask_value)
             mask = mask.convert("L")
 
-            def nomask_value(a):
+            def nomask_value(a: int) -> int:
                 if a != transparency:
                     return a
                 return 0
