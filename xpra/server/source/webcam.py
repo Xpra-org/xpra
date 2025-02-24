@@ -193,7 +193,7 @@ class WebcamMixin(StubSourceMixin):
         free = noop
         try:
             if encoding == "mmap":
-                chunks = options["chunks"]
+                chunks = options.pop("chunks", ())
                 mmap_read_area = getattr(self, "mmap_read_area", None)
                 assert mmap_read_area, "no mmap read area!"
                 assert self.mmap_supported, "mmap is not supported, yet the client used it!?"
