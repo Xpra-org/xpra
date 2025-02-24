@@ -33,6 +33,7 @@ class MmapArea(BaseMmapArea):
         return info
 
     def cleanup(self) -> None:
+        super().close()
         self.clean_mmap()
 
     def clean_mmap(self) -> None:
