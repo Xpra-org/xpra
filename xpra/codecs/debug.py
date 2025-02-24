@@ -5,6 +5,7 @@
 
 from time import monotonic
 
+from xpra.codecs.image import ImageWrapper
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.env import envbool
 from xpra.log import Logger
@@ -23,3 +24,17 @@ def may_save_image(coding: str, data: memoryview | bytes | bytearray, now: float
         with open(filename, "wb") as f:
             f.write(bdata)
         log.info("saved %7i bytes to %s", len(data), filename)
+
+
+def save_imagewrapper(image: ImageWrapper, filename: str) -> None:
+    import os.path
+    from xpra.util.objects import typedict
+    from xpra.codecs.pillow.encoder import encode
+    ext = os.path.splitext(filename)[1].lstrip(".")
+    cdata = encode(ext, image, typedict())[1]
+    w = image.get_width()
+    h = image.get_height()
+    stride = image.get_rowstride()
+    log("save_image: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride * h), filename)
+    with open(filename, "wb") as f:
+        f.write(cdata.data)

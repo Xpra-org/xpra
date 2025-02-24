@@ -31,7 +31,7 @@ from xpra.codecs.loader import has_codec
 from xpra.common import roundup, MIN_VREFRESH, MAX_VREFRESH
 from xpra.util.parsing import parse_scaling_value
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, print_nested_dict, memoryview_to_bytes
+from xpra.util.str_fn import csv, print_nested_dict
 from xpra.util.env import envint, envbool, first_time
 from xpra.log import Logger
 
@@ -164,35 +164,13 @@ def get_pipeline_score_info(score, scaling,
 
 
 def save_video_frame(wid: int, image: ImageWrapper) -> None:
-    from PIL import Image
-    w = image.get_width()
-    h = image.get_height()
-    stride = image.get_rowstride()
-    img_data = image.get_pixels()
-    rgb_format = image.get_pixel_format()  # ie: BGRA
-    rgba_format = rgb_format.replace("BGRX", "BGRA")
-    from PIL import __version__ as pil_version
-
-    try:
-        major = int(pil_version.split(".")[0])
-    except ValueError:
-        major = 0
-    if major < 10:
-        img_data = memoryview_to_bytes(img_data)
-    img = Image.frombuffer("RGBA", (w, h), img_data, "raw", rgba_format, stride)
-    kwargs = {}
-    if SAVE_VIDEO_FRAMES == "jpeg":
-        kwargs = {
-            "quality": 0,
-            "optimize": False,
-        }
     t = monotonic()
     tstr = time.strftime("%H-%M-%S", time.localtime(t))
     filename = "W%i-VDO-%s.%03i.%s" % (wid, tstr, (t * 1000) % 1000, SAVE_VIDEO_FRAMES)
     if SAVE_VIDEO_PATH:
         filename = os.path.join(SAVE_VIDEO_PATH, filename)
-    videolog("do_video_encode: saving %4ix%-4i pixels, %7i bytes to %s", w, h, (stride * h), filename)
-    img.save(filename, SAVE_VIDEO_FRAMES, **kwargs)
+    from xpra.codecs.debug import save_imagewrapper
+    save_imagewrapper(image, filename)
 
 
 class WindowVideoSource(WindowSource):
