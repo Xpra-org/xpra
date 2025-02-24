@@ -9,6 +9,7 @@ from typing import Sequence, Any
 
 from xpra.client.base.command import HelloRequestClient
 from xpra.client.mixins.mmap import MmapClient
+from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
 from xpra.net.common import PacketType
 from xpra.util.io import load_binary_file
@@ -16,6 +17,8 @@ from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("client", "encoding")
+
+EXT_ALIASES = {"jpg": "jpeg"}
 
 
 class EncodeClient(HelloRequestClient, MmapClient):
@@ -32,29 +35,30 @@ class EncodeClient(HelloRequestClient, MmapClient):
         MmapClient.__init__(self)
         self.filenames = list(filenames)
         self.add_packets("encode-response", "encodings")
-        from xpra.codecs.pillow.decoder import get_encodings, decompress
-        self.encodings = get_encodings()
         self.decompress = decompress
-        encodings = ("png", "jpeg")
-        self.encoding_options = {
-            "options": encodings,
-            "core": encodings,
-            "setting": options.encoding,
-        }
-        for attr, value in {
-            "quality": options.quality,
-            "min-quality": options.min_quality,
-            "speed": options.speed,
-            "min-speed": options.min_speed,
-        }.items():
-            if value > 0:
-                self.encoding_options[attr] = value
+        self.encoding_options = {}
+        self.encodings = get_encodings()
 
     def init(self, opts) -> None:
         if opts.mmap.lower() == "auto":
             opts.mmap = "yes"
         HelloRequestClient.init(self, opts)
         MmapClient.init(self, opts)
+        if opts.encoding and opts.encoding not in self.encodings:
+            self.encodings = tuple(list(self.encodings) + [opts.encoding])
+        self.encoding_options = {
+            "options": self.encodings,
+            "core": self.encodings,
+            "setting": opts.encoding,
+        }
+        for attr, value in {
+            "quality": opts.quality,
+            "min-quality": opts.min_quality,
+            "speed": opts.speed,
+            "min-speed": opts.min_speed,
+        }.items():
+            if value > 0:
+                self.encoding_options[attr] = value
 
     def setup_connection(self, conn) -> None:
         # must do mmap first to ensure the mmap areas are initialized:
@@ -107,6 +111,7 @@ class EncodeClient(HelloRequestClient, MmapClient):
         filename = self.filenames.pop(0)
         log(f"send_encode() {filename=!r}")
         ext = filename.split(".")[-1]
+        ext = EXT_ALIASES.get(ext, ext)
         if ext not in self.encodings:
             log.warn(f"Warning: {ext!r} format is not supported")
             log.warn(" use %s", " or ".join(self.encodings))
@@ -115,6 +120,16 @@ class EncodeClient(HelloRequestClient, MmapClient):
         img_data = load_binary_file(filename)
         options = typedict()
         rgb_format, raw_data, width, height, rowstride = self.decompress(ext, img_data, options)
+        # video encoders prefer BGRA pixel order:
+        if rgb_format == "RGBA":
+            from xpra.codecs.argb.argb import rgba_to_bgra
+            raw_data = rgba_to_bgra(raw_data)
+            rgb_format = "BGRX"
+        elif rgb_format == "RGB":
+            from xpra.codecs.argb.argb import rgb_to_bgrx
+            raw_data = rgb_to_bgrx(raw_data)
+            rgb_format = "BGRX"
+            rowstride = rowstride * 4 // 3
         encoding = "rgb"
         encode_options = {}
         if self.mmap_write_area and self.mmap_write_area.enabled:

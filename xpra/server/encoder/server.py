@@ -4,14 +4,16 @@
 # later version. See the file COPYING for details.
 
 import sys
+import os.path
 from math import ceil
 from typing import Any
 from time import monotonic
 from collections.abc import Callable
 
-from xpra.common import noop
+from xpra.common import noop, ConnectionMessage
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
+from xpra.util.str_fn import csv
 from xpra.net.common import PacketType
 from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -33,9 +35,37 @@ assert codec_key not in sys.modules
 sys.modules[codec_key] = None
 
 
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+assert (not SAVE_TO_FILE) or SAVE_TO_FILE in ("jpeg", "png", "webp")
+
 COMPRESS_FMT = (
     "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i               using %9s" + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
 )
+
+
+def add_device_context(ss, options: dict):
+    device_context = ss.allocate_cuda_device_context()
+    log(f"add_device_context: cuda_device_context={device_context}")
+    if device_context:
+        options["cuda-device-context"] = device_context
+
+
+def _make_video_encoder(encoding: str, src_format: str, codec_type=""):
+    specs = getVideoHelper().get_encoder_specs(encoding).get(src_format, ())
+    if not specs:
+        return None
+
+    def find_spec():
+        for espec in specs:
+            if codec_type and espec.codec_type != codec_type:
+                continue
+            assert espec.encoding == encoding
+            assert espec.input_colorspace == src_format
+            return espec
+        return specs[0]
+
+    spec = find_spec()
+    return spec.codec_class()
 
 
 class EncoderServer(ServerBase):
@@ -98,12 +128,12 @@ class EncoderServer(ServerBase):
         ss = self.get_server_source(proto)
         if not ss:
             return
-        input_coding, rgb_format, raw_data, width, height, rowstride, options, metadata = packet[1:9]
+        input_coding, pixel_format, raw_data, width, height, rowstride, options, metadata = packet[1:9]
         depth = 32
         bpp = 4
         full_range = True
         encoding = "png" if ss.encoding in ("auto", "") else ss.encoding
-        log("encode request from %s, %s to %s from %s", ss, input_coding, encoding, ss.encoding)
+        log("encode request from %s, %s to %s (from %s)", ss, input_coding, encoding, ss.encoding)
         # connection encoding options:
         eo = dict(ss.default_encoding_options)
         # the request can override:
@@ -112,7 +142,7 @@ class EncoderServer(ServerBase):
         if input_coding == "mmap":
             if not ss.mmap_supported or not ss.mmap_read_area:
                 raise RuntimeError("mmap packet but mmap read is not available")
-            chunks = options["chunks"]
+            chunks = options.pop("chunks", ())
             rgb_data, free = ss.mmap_read_area.mmap_read(*chunks)
         else:
             if options.get("lz4") > 0:
@@ -121,14 +151,43 @@ class EncoderServer(ServerBase):
             else:
                 rgb_data = raw_data
             free = noop
+
         try:
-            from xpra.codecs.pillow.encoder import encode
-            image = ImageWrapper(0, 0, width, height, rgb_data, rgb_format, depth, rowstride,
+            image = ImageWrapper(0, 0, width, height, rgb_data, pixel_format, depth, rowstride,
                                  bpp, PlanarFormat.PACKED, True, None, full_range)
-            coding, compressed, client_options, width, height, stride, bpp = encode(encoding, image, typedict(eo))
+            if SAVE_TO_FILE:
+                from xpra.codecs.debug import save_imagewrapper
+                now = int(monotonic()*1000)
+                filename = f"{now}.{SAVE_TO_FILE}"
+                save_imagewrapper(image, filename)
+                log.info(f"saved {image}, pixels={len(rgb_data)} {type(rgb_data)} to {filename!r}")
+            from xpra.codecs.pillow.encoder import encode, get_encodings
+            if encoding in get_encodings():
+                # simple path: use pillow
+                coding, compressed, client_options, width, height, stride, bpp = encode(encoding, image, typedict(eo))
+                bdata = compressed.data
+            else:
+                # try a video encoder:
+                encoder = _make_video_encoder(encoding, pixel_format)
+                if not encoder:
+                    msg = f"no video encoders found for {encoding!r} and {pixel_format!r}"
+                    log(msg)
+                    especs = getVideoHelper().get_encoder_specs(encoding)
+                    log(f" supported pixel formats for {encoding!r}: %s", csv(especs.keys()))
+                    raise ValueError(msg)
+                add_device_context(ss, options)
+                encoder.init_context(encoding, width, height, pixel_format, typedict(options))
+                bdata, client_options = encoder.compress_image(image, typedict(options))
+                bpp = 24
+                stride = 0
+                coding = encoding
+        except (ValueError, RuntimeError) as e:
+            log("encode failed", exc_info=True)
+            self.disconnect_client(proto, ConnectionMessage.SERVER_ERROR, f"failed to encode: {e}")
+            return
         finally:
             free()
-        packet = ["encode-response", coding, compressed.data, client_options, width, height, stride, bpp, metadata]
+        packet = ["encode-response", coding, bdata, client_options, width, height, stride, bpp, metadata]
         ss.send_async(*packet)
 
     def _process_context_close(self, proto: SocketProtocol, packet: PacketType) -> None:
@@ -151,29 +210,9 @@ class EncoderServer(ServerBase):
         if not ss:
             return
         seq, codec_type, encoding, width, height, src_format, options = packet[1:8]
-        vh = getVideoHelper()
-        specs = vh.get_encoder_specs(encoding).get(src_format, ())
-        if not specs:
-            ss.send("context-response", seq, False, "matching encoder not found", {})
-            return
-        # ensure we have a cuda context,
-        # even if mmap is enabled!
-        device_context = ss.allocate_cuda_device_context()
-        log(f"request: {encoding}, cuda_device_context={device_context}")
-        if device_context:
-            options["cuda-device-context"] = device_context
-
-        def find_spec():
-            for espec in specs:
-                if espec.codec_type != codec_type:
-                    continue
-                assert espec.encoding == encoding
-                assert espec.input_colorspace == src_format
-                return espec
-            return specs[0]
-        spec = find_spec()
         try:
-            encoder = spec.codec_class()
+            encoder = _make_video_encoder(encoding, src_format, codec_type)
+            add_device_context(ss, options)
             encoder.init_context(encoding, width, height, src_format, typedict(options))
             self.encoders.setdefault(ss.uuid, {})[seq] = encoder
             log(f"new encoder: {encoder}")
@@ -213,9 +252,7 @@ class EncoderServer(ServerBase):
         try:
             image = ImageWrapper(**metadata)
             log(f"{encoder=} {image=}")
-            device_context = ss.allocate_cuda_device_context()
-            if device_context:
-                options["cuda-device-context"] = device_context
+            add_device_context(options)
             bdata, client_options = encoder.compress_image(image, typedict(options))
         finally:
             for free in free_cb:
