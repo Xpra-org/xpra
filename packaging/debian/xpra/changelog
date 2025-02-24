@@ -27,6 +27,7 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     nvdec cleanup errors
     avoid cuda context error messages when not installed
     codec error handling
+    bgrx output image was cropped and blanked out
   * Network:
     scary warnings when RDP clients attempt to connect
     limit openssl version details exposed
@@ -46,7 +47,7 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     DPI documentation link
     unit tests log cuda errors
 
- -- Antoine Martin <antoine@xpra.org>  Sat, 22 Feb 2025 21:49:21 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 24 Feb 2025 23:02:50 +0700
 
 xpra (6.2.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
