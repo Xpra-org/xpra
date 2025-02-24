@@ -8,7 +8,7 @@ import os.path
 from math import ceil
 from typing import Any
 from time import monotonic
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.common import noop, ConnectionMessage
 from xpra.os_util import gi_import
@@ -66,6 +66,22 @@ def _make_video_encoder(encoding: str, src_format: str, codec_type=""):
 
     spec = find_spec()
     return spec.codec_class()
+
+
+def csc_image(image: ImageWrapper, format_options: Sequence[str]) -> ImageWrapper | None:
+    pixel_format = image.get_pixel_format()
+    width = image.get_width()
+    height = image.get_height()
+    for fmt in format_options:
+        for csc_spec in getVideoHelper().get_csc_specs(pixel_format).get(fmt, ()):
+            log(f"csc {pixel_format!r} -> {csc_spec.codec_type!r} via {csc_spec!r}")
+            converter = csc_spec.codec_class()
+            converter.init_context(width, height, pixel_format, width, height, fmt, typedict())
+            result = converter.convert_image(image)
+            converter.clean()
+            log(f" -> {result}")
+            return result
+    return None
 
 
 class EncoderServer(ServerBase):
@@ -173,8 +189,15 @@ class EncoderServer(ServerBase):
                     msg = f"no video encoders found for {encoding!r} and {pixel_format!r}"
                     log(msg)
                     especs = getVideoHelper().get_encoder_specs(encoding)
-                    log(f" supported pixel formats for {encoding!r}: %s", csv(especs.keys()))
-                    raise ValueError(msg)
+                    if especs:
+                        input_cs_options = tuple(especs.keys())
+                        image = csc_image(image, input_cs_options)
+                        if image:
+                            pixel_format = image.get_pixel_format()
+                            encoder = _make_video_encoder(encoding, pixel_format)
+                    if not encoder:
+                        log(f" supported pixel formats for {encoding!r}: %s", csv(input_cs_options))
+                        raise ValueError(msg)
                 add_device_context(ss, options)
                 encoder.init_context(encoding, width, height, pixel_format, typedict(options))
                 bdata, client_options = encoder.compress_image(image, typedict(options))
