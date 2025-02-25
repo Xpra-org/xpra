@@ -10,7 +10,7 @@ Version:	0
 Release:	0.1899.r2785.47ddac299.1%{?dist}
 License:	BSD
 URL:		https://chromium.googlesource.com/libyuv/libyuv
-Source0:	https://chromium.googlesource.com/libyuv/libyuv/+archive/47ddac2996378c34aab9318f0d218303b1d282e7.tar.gz
+Source0:	https://xpra.org/src/47ddac2996378c34aab9318f0d218303b1d282e7.tar.gz
 # Fedora-specific. Upstream isn't interested in these patches.
 Patch1:		libyuv-0001-Use-a-proper-so-version.patch
 # I don't know how to fix this properly and I don't care:
@@ -46,7 +46,7 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "90580d8679bca03999ebc5cbb238a7038ce122cab2928f5506cf8d87cfe2dd59" ]; then
+if [ "${sha256}" != "9af377b3c1d7737eee0679e17c9a89aa065d7339a78e900ec1fcb78d461d7a91" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -98,7 +98,6 @@ mv %{buildroot}/usr/lib/* %{buildroot}%{_libdir}/
 %changelog
 * Thu Feb 20 2025 Antoine Martin <totaam@xpra.org> - 0-0.1899.r2785.47ddac299.1
 - new upstream git snapshot
-- use googlesource.com URL for download
 - remove outdated patches
 - bundle yuvconvert and static library
 
