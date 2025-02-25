@@ -10,7 +10,7 @@ Version:	0
 Release:	0.1899.r2785.47ddac299.1%{?dist}
 License:	BSD
 URL:		https://chromium.googlesource.com/libyuv/libyuv
-Source0:	https://xpra.org/src/47ddac2996378c34aab9318f0d218303b1d282e7.tar.gz
+Source0:	https://xpra.org/src/libyuv-0.1899.r2785.tar.xz
 # Fedora-specific. Upstream isn't interested in these patches.
 Patch1:		libyuv-0001-Use-a-proper-so-version.patch
 # I don't know how to fix this properly and I don't care:
@@ -46,12 +46,12 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "9af377b3c1d7737eee0679e17c9a89aa065d7339a78e900ec1fcb78d461d7a91" ]; then
+if [ "${sha256}" != "9c357dd2fa7ab21ad9dfd0e430d47941964dda4a2b6c766991380e6d4b7c3630" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 
-%autosetup -p1 -c
+%autosetup -p1 -n libyuv-0.1899.r2785
 
 cat > %{name}.pc << EOF
 prefix=%{_prefix}
