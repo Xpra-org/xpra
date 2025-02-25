@@ -915,7 +915,7 @@ fi
 
 
 %changelog
-- Mon Feb 24 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
+- Tue Feb 25 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
 - Platforms, build and packaging:
    MS Windows custom build arguments
    EXE manigests optional
@@ -945,6 +945,7 @@ fi
    avoid cuda context error messages when not installed
    codec error handling
    bgrx output image was cropped and blanked out
+   evdi build
 - Network:
    scary warnings when RDP clients attempt to connect
    limit openssl version details exposed

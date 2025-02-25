@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.4] 2025-02-24
+## [6.2.4] 2025-02-25
 * Platforms, build and packaging:
     * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
     * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
@@ -30,6 +30,7 @@
     * [codec error handling](https://github.com/Xpra-org/xpra/commit/2d2539adbadf2182d1a1676d58053335229b02c3)
     * [avoid cuda context error messages when not installed](https://github.com/Xpra-org/xpra/commit/0a3022e3119d63041bbf8e8e4f930d0eb6040942)
     * [bgrx output image was cropped](https://github.com/Xpra-org/xpra/commit/a08b0f6ae730d8295c7ce9960be83802010434e2) [and blanked out](https://github.com/Xpra-org/xpra/commit/91e7a7342f8c2d02308fd22995726ddcf60b7d53)
+    * [evdi build](https://github.com/Xpra-org/xpra/commit/b57a3768da1fe109f45716ee62c6465c46716a40)
 * Network:
     * [scary warnings when RDP clients attempt to connect](https://github.com/Xpra-org/xpra/commit/5f6b4454a59952822362f204dc75f84ac9f17a23)
     * [limit openssl version details exposed](https://github.com/Xpra-org/xpra/commit/de983c867c743e04670e61a7bf6ef05ddf61fab2)
