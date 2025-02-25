@@ -257,11 +257,13 @@ cdef extern from "core/Variant.h":
         AMF_VARIANT_TYPE type
         AMFSize sizeValue
         AMFRate rateValue
+        int64_t int64Value
 
     AMF_RESULT AMFVariantInit(AMFVariantStruct* pDest)
     AMF_RESULT AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value)
     AMF_RESULT AMFVariantAssignSize(AMFVariantStruct* pDest, const AMFSize &value)
     AMF_RESULT AMFVariantAssignRate(AMFVariantStruct* pDest, const AMFRate &value)
+    AMF_RESULT AMFVariantClear(AMFVariantStruct* pDest)
 
 cdef extern from "core/Plane.h":
     ctypedef enum AMF_PLANE_TYPE:
@@ -373,13 +375,29 @@ cdef inline PLANE_TYPE_STR(AMF_PLANE_TYPE ptype):
 
 cdef extern from "core/Trace.h":
 
+    cdef int AMF_TRACE_ERROR
+    cdef int AMF_TRACE_WARNING
+    cdef int AMF_TRACE_INFO
+    cdef int AMF_TRACE_DEBUG
+    cdef int AMF_TRACE_TRACE
+
+    ctypedef void (*TRACEWRITE)(AMFTraceWriter* pThis, const wchar_t* scope, const wchar_t* message) noexcept nogil
+    ctypedef void (*TRACEFLUSH)(AMFTraceWriter* pThis) noexcept nogil
+
+    ctypedef struct AMFTraceWriterVtbl:
+        TRACEWRITE Write
+        TRACEFLUSH Flush
+
+    ctypedef struct AMFTraceWriter:
+        const AMFTraceWriterVtbl *pVtbl
+
     ctypedef void (*TRACEW)(AMFTrace* pThis, const wchar_t* src_path, amf_int32 line, amf_int32 level, const wchar_t* scope,amf_int32 countArgs, const wchar_t* format, ...)
     ctypedef void (*TRACE)(AMFTrace* pThis, const wchar_t* src_path, amf_int32 line, amf_int32 level, const wchar_t* scope, const wchar_t* message, va_list* pArglist)
     ctypedef amf_int32 (*SETGLOBALLEVEL)(AMFTrace* pThis, amf_int32 level)
     ctypedef amf_int32 (*GETGLOBALLEVEL)(AMFTrace* pThis)
-
     ctypedef const wchar_t* (*GETRESULTTEXT)(AMFTrace* pThis, AMF_RESULT res)
-
+    ctypedef void (*REGISTERWRITER)(AMFTrace* pThis, const wchar_t* writerID, AMFTraceWriter* pWriter, amf_bool enable)
+    ctypedef void (*UNREGISTERWRITER)(AMFTrace* pThis, const wchar_t* writerID)
 
     ctypedef struct AMFTraceVtbl:
         TRACEW TraceW
@@ -387,6 +405,8 @@ cdef extern from "core/Trace.h":
         SETGLOBALLEVEL SetGlobalLevel
         GETGLOBALLEVEL GetGlobalLevel
         GETRESULTTEXT GetResultText
+        REGISTERWRITER RegisterWriter
+        UNREGISTERWRITER UnregisterWriter
 
     ctypedef struct AMFTrace:
         const AMFTraceVtbl *pVtbl

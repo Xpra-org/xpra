@@ -279,18 +279,21 @@ cdef class Encoder:
             self.check(AMFVariantInit(&var), "AMF variant initialization")
             AMFVariantAssignInt64(&var, value)
             self.set_encoder_property(prop, var)
+            # AMFVariantClear(&var)
         def setsize(prop: str) -> None:
             self.check(AMFVariantInit(&var), "AMF variant initialization")
             var.type = AMF_VARIANT_SIZE
             var.sizeValue.width = self.width
             var.sizeValue.height = self.height
             self.set_encoder_property(prop, var)
+            # AMFVariantClear(&var)
         def setframerate(prop: str) -> None:
             self.check(AMFVariantInit(&var), "AMF variant initialization")
             var.type = AMF_VARIANT_RATE
             var.rateValue.num = 25
             var.rateValue.den = 1
             self.set_encoder_property(prop, var)
+            # AMFVariantClear(&var)
         def setbitrate(prop: str) -> None:
             if bwlimit:
                 setint64(prop, value=bwlimit)

@@ -12,6 +12,7 @@ from libc.string cimport memset
 from xpra.codecs.amf.amf cimport (
     AMF_RESULT, AMF_OK,
     AMFFactory, AMFGuid, AMFTrace, AMFSurface, AMFPlane,
+    AMFTraceWriter, AMFTraceWriterVtbl, AMF_TRACE_DEBUG, AMF_TRACE_INFO,
     amf_uint32, amf_uint16, amf_uint8, amf_int32,
     RESULT_STR,
 )
@@ -28,6 +29,7 @@ assert amf
 
 cdef extern from "Python.h":
     object PyUnicode_FromWideChar(wchar_t *w, Py_ssize_t size)
+    wchar_t* PyUnicode_AsWideCharString(object unicode, Py_ssize_t *size)
 
 
 cdef extern from "string.h":
@@ -36,12 +38,46 @@ cdef extern from "string.h":
 
 cdef AMFFactory *factory
 cdef int initialized = 0
+cdef U_XPRA_TRACER = "xpra-tracer"
+
+cdef wchar_t *XPRA_TRACER = PyUnicode_AsWideCharString(U_XPRA_TRACER, NULL)
+
+cdef void trace_write(AMFTraceWriter* pThis, const wchar_t* scope, const wchar_t* message) noexcept nogil:
+    with gil:
+        scope_str = PyUnicode_FromWideChar(scope, -1) or ""
+        message_str = (PyUnicode_FromWideChar(message, -1) or "").rstrip("\n\r")
+        parts = message_str.split(": ", 1)
+        # ie: "2025-02-25 17:46:29.642     1984 [AMFEncoderCoreH264]   Debug: AMFEncoderCoreH264Impl::Terminate()"
+        # log.info(f"{scope_str=} {message_str=}")
+        fn = log.info
+        if len(parts) == 2:
+            category = parts[0].split(" ")[-1].lower()
+            fn = {
+                "debug": log.debug,
+                "info": log.info,
+                "warning": log.warn,
+                "error": log.error,
+            }.get(category, fn)
+            message_str = parts[1]
+        fn(f"{scope_str}: {message_str}")
+
+cdef void trace_flush(AMFTraceWriter* pThis) noexcept nogil:
+    pass
+
+
+cdef AMFTraceWriterVtbl xpra_trace_writer_functions
+xpra_trace_writer_functions.Write = trace_write
+xpra_trace_writer_functions.Flush = trace_flush
+
+cdef AMFTraceWriter xpra_trace_writer
+xpra_trace_writer.pVtbl = &xpra_trace_writer_functions
+
+cdef AMFTrace *trace = NULL
 
 
 cdef AMFFactory *get_factory():
     global initialized, factory
     cdef AMF_RESULT res = AMF_OK
-    cdef AMFTrace *trace = NULL
     if not initialized:
         initialized = 1
         log("amf.common.get_factory() version=%s", get_version())
@@ -56,14 +92,21 @@ cdef AMFFactory *get_factory():
         if res == 0:
             assert trace != NULL
             log(f"Trace.GetGlobalLevel=%i", trace.pVtbl.GetGlobalLevel(trace))
-            trace.pVtbl.SetGlobalLevel(trace, 0)
+            trace.pVtbl.RegisterWriter(trace, XPRA_TRACER, &xpra_trace_writer, 1)
+            if log.is_debug_enabled():
+                trace.pVtbl.SetGlobalLevel(trace, AMF_TRACE_DEBUG)
+            else:
+                trace.pVtbl.SetGlobalLevel(trace, AMF_TRACE_INFO)
     return factory
 
 
 cdef void cleanup(self):
     global initialized
     log("amf.common.cleanup() initialized=%s", bool(initialized))
-    initialized = 0
+    if initialized:
+        initialized = 0
+        if trace:
+            trace.pVtbl.UnregisterWriter(trace, XPRA_TRACER)
 
 
 cdef get_version():
