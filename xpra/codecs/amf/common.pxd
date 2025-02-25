@@ -3,11 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict
+
 from libc.stddef cimport wchar_t
 from libc.stdint cimport uint64_t, uintptr_t
 
 from xpra.codecs.amf.amf cimport (
-    AMF_RESULT, AMFFactory, AMFGuid, AMFSurface,
+    AMF_RESULT, AMFFactory, AMFGuid, AMFSurface, AMFCaps, AMFIOCaps, AMFVariantStruct,
     amf_uint32, amf_uint16, amf_uint8,
 )
 
@@ -27,3 +29,7 @@ cdef void set_guid(AMFGuid *guid,
 cdef uint64_t get_c_version()
 
 cdef void fill_nv12_surface(AMFSurface *surface, amf_uint8 Y, amf_uint8 U, amf_uint8 V)
+
+cdef object get_caps(AMFCaps *caps, props: Dict)
+
+cdef object get_io_caps(AMFIOCaps *iocaps)

@@ -258,6 +258,7 @@ cdef extern from "core/Variant.h":
         AMFSize sizeValue
         AMFRate rateValue
         int64_t int64Value
+        amf_bool boolValue
 
     AMF_RESULT AMFVariantInit(AMFVariantStruct* pDest)
     AMF_RESULT AMFVariantAssignInt64(AMFVariantStruct* pDest, amf_int64 value)
@@ -561,6 +562,15 @@ cdef inline FRAME_TYPE_STR(AMF_FRAME_TYPE ftype):
     }.get(ftype, "unknown")
 
 
+cdef inline ACCEL_TYPE_STR(AMF_ACCELERATION_TYPE dtype):
+    return{
+        AMF_ACCEL_NOT_SUPPORTED: "not supported",
+        AMF_ACCEL_HARDWARE: "hardware",
+        AMF_ACCEL_GPU: "gpu",
+        AMF_ACCEL_SOFTWARE: "software",
+    }.get(dtype, "unknown")
+
+
 cdef extern from "core/Context.h":
     ctypedef enum AMF_DX_VERSION:
         AMF_DX9     # 90
@@ -617,8 +627,52 @@ cdef extern from "core/Context.h":
 
 
 cdef extern from "components/ComponentCaps.h":
+    ctypedef enum AMF_ACCELERATION_TYPE:
+        AMF_ACCEL_NOT_SUPPORTED
+        AMF_ACCEL_HARDWARE
+        AMF_ACCEL_GPU
+        AMF_ACCEL_SOFTWARE
+
+    ctypedef void (*GETWIDTHRANGE)(AMFIOCaps* pThis, amf_int32* minWidth, amf_int32* maxWidth)
+    ctypedef void (*GETHEIGHTRANGE)(AMFIOCaps* pThis, amf_int32* minHeight, amf_int32* maxHeight)
+    # Get memory alignment in lines: Vertical aligmnent should be multiples of this number
+    ctypedef amf_int32 (*GETVERTALIGN)(AMFIOCaps* pThis)
+    # Enumerate supported surface pixel formats
+    ctypedef amf_int32 (*GETNUMOFFORMATS)(AMFIOCaps* pThis)
+    ctypedef AMF_RESULT (*GETFORMATAT)(AMFIOCaps* pThis, amf_int32 index, AMF_SURFACE_FORMAT* format, amf_bool* native)
+    # Enumerate supported memory types
+    ctypedef amf_int32 (*GETNUMOFMEMORYTYPES)(AMFIOCaps* pThis)
+    ctypedef AMF_RESULT (*GETMEMORYTYPEAT)(AMFIOCaps* pThis, amf_int32 index, AMF_MEMORY_TYPE* memType, amf_bool* native)
+    ctypedef amf_bool (*ISINTERLACEDSUPPORTED)(AMFIOCaps* pThis)
+
+    ctypedef struct AMFIOCapsVtbl:
+        GETWIDTHRANGE GetWidthRange
+        GETHEIGHTRANGE GetHeightRange
+        GETVERTALIGN GetVertAlign
+        GETNUMOFFORMATS GetNumOfFormats
+        GETFORMATAT GetFormatAt
+        GETNUMOFMEMORYTYPES GetNumOfMemoryTypes
+        GETMEMORYTYPEAT GetMemoryTypeAt
+        ISINTERLACEDSUPPORTED IsInterlacedSupported
+
+    ctypedef struct AMFIOCaps:
+        const AMFIOCapsVtbl *pVtbl
+
+    ctypedef AMF_RESULT (*CAPSSETPROPERTY)(AMFCaps* pThis, const wchar_t* name, AMFVariantStruct value)
+    ctypedef AMF_RESULT (*CAPSGETPROPERTY)(AMFCaps* pThis, const wchar_t* name, AMFVariantStruct* pValue)
+    ctypedef AMF_RESULT (*HASPROPERTY)(AMFCaps* pThis, const wchar_t* name)
+
+    ctypedef AMF_ACCELERATION_TYPE (*GETACCELERATIONTYPE)(AMFCaps* pThis)
+    ctypedef AMF_RESULT (*GETINPUTCAPS)(AMFCaps* pThis, AMFIOCaps** input)
+    ctypedef AMF_RESULT (*GETOUTPUTCAPS)(AMFCaps* pThis, AMFIOCaps** output)
+
     ctypedef struct AMFCapsVtbl:
-        pass
+        CAPSSETPROPERTY SetProperty
+        CAPSGETPROPERTY GetProperty
+        HASPROPERTY HasProperty
+        GETACCELERATIONTYPE GetAccelerationType
+        GETINPUTCAPS GetInputCaps
+        GETOUTPUTCAPS GetOutputCaps
 
     ctypedef struct AMFCaps:
         const AMFCapsVtbl *pVtbl

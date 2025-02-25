@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Dict
 from ctypes import CDLL, c_uint64, c_int, c_void_p, byref, POINTER
 
 from libc.stddef cimport wchar_t
@@ -12,11 +13,16 @@ from libc.string cimport memset
 from xpra.codecs.amf.amf cimport (
     AMF_RESULT, AMF_OK,
     AMFFactory, AMFGuid, AMFTrace, AMFSurface, AMFPlane,
+    AMFVariantInit,
     AMFTraceWriter, AMFTraceWriterVtbl, AMF_TRACE_DEBUG, AMF_TRACE_INFO,
-    amf_uint32, amf_uint16, amf_uint8, amf_int32,
-    RESULT_STR,
+    amf_uint32, amf_uint16, amf_uint8, amf_int32, amf_bool,
+    AMFCaps, AMFIOCaps,
+    AMF_SURFACE_FORMAT, AMF_MEMORY_TYPE,
+    SURFACE_FORMAT_STR, MEMORY_TYPE_STR, RESULT_STR,
+    AMF_ACCELERATION_TYPE, ACCEL_TYPE_STR,
 )
 
+from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("amf")
@@ -30,6 +36,7 @@ assert amf
 cdef extern from "Python.h":
     object PyUnicode_FromWideChar(wchar_t *w, Py_ssize_t size)
     wchar_t* PyUnicode_AsWideCharString(object unicode, Py_ssize_t *size)
+    void PyMem_Free(void *ptr)
 
 
 cdef extern from "string.h":
@@ -50,7 +57,9 @@ cdef void trace_write(AMFTraceWriter* pThis, const wchar_t* scope, const wchar_t
         # ie: "2025-02-25 17:46:29.642     1984 [AMFEncoderCoreH264]   Debug: AMFEncoderCoreH264Impl::Terminate()"
         # log.info(f"{scope_str=} {message_str=}")
         fn = log.info
-        if len(parts) == 2:
+        if message_str.endswith("Switching to AllocBufferEx()") or message_str.startswith("Video core bandwidth calcs is not available"):
+            fn = log.debug
+        elif len(parts) == 2:
             category = parts[0].split(" ")[-1].lower()
             fn = {
                 "debug": log.debug,
@@ -59,6 +68,8 @@ cdef void trace_write(AMFTraceWriter* pThis, const wchar_t* scope, const wchar_t
                 "error": log.error,
             }.get(category, fn)
             message_str = parts[1]
+            if message_str.endswith("Switching to AllocBufferEx()") or message_str.startswith("Video core bandwidth calcs is not available"):
+                fn = log.debug
         fn(f"{scope_str}: {message_str}")
 
 cdef void trace_flush(AMFTraceWriter* pThis) noexcept nogil:
@@ -189,3 +200,100 @@ cdef void fill_nv12_surface(AMFSurface *surface, amf_uint8 Y, amf_uint8 U, amf_u
         for x in range(widthUV):
             line[x] = U
             line[x+1] = V
+
+
+cdef object get_caps(AMFCaps *caps, props: Dict):
+    cdef AMFVariantStruct var
+    cdef AMF_RESULT r
+
+    def query_variant(prop: str):
+        check(AMFVariantInit(&var), "AMF variant initialization")
+        cdef wchar_t *wprop = PyUnicode_AsWideCharString(prop, NULL)
+        check(caps.pVtbl.GetProperty(caps, wprop, &var), f"query {prop} caps")
+        PyMem_Free(wprop)
+
+    def get_int64(prop: str) -> int:
+        query_variant(prop)
+        return int(var.int64Value)
+
+    def get_bool(prop: str) -> bool:
+        query_variant(prop)
+        return bool(var.boolValue)
+
+    pycaps = {}
+    cdef AMF_ACCELERATION_TYPE accel = caps.pVtbl.GetAccelerationType(caps)
+    pycaps["acceleration"] = ACCEL_TYPE_STR(accel)
+
+    getters: Dict[str, Callable] = {
+        "max-bitrate": get_int64,
+        "number-of-streams": get_int64,
+        "max-level": get_int64,
+        "hardware-instances": get_int64,
+        "max-throughput": get_int64,
+        "requested-throughput": get_int64,
+        "roi": get_bool,
+        "pre-analysis": get_bool,
+    }
+    for pyname, amfname in props.items():
+        getter = getters.get(pyname, noop)
+        log(f"getter({pyname})={getter}")
+        if getter != noop:
+            try:
+                value = getter(amfname)
+            except RuntimeError as e:
+                log(f"failed to query {pyname}: {e}")
+            else:
+                pycaps[pyname] = value
+    # add IO caps:
+    cdef AMFIOCaps *iocaps = NULL
+    check(caps.pVtbl.GetInputCaps(caps, &iocaps), f"retrieving encoder input caps")
+    pycaps["input"] = get_io_caps(iocaps)
+    check(caps.pVtbl.GetOutputCaps(caps, &iocaps), f"retrieving encoder output caps")
+    pycaps["output"] = get_io_caps(iocaps)
+    return pycaps
+
+
+cdef object get_io_caps(AMFIOCaps *iocaps):
+    caps = {
+        "vertical-align": iocaps.pVtbl.GetVertAlign(iocaps),
+    }
+    cdef amf_int32 minval, maxval
+    iocaps.pVtbl.GetWidthRange(iocaps, &minval, &maxval)
+    caps["width-range"] = (minval, maxval)
+    iocaps.pVtbl.GetHeightRange(iocaps, &minval, &maxval)
+    caps["height-range"] = (minval, maxval)
+
+    cdef amf_int32 count = iocaps.pVtbl.GetNumOfFormats(iocaps)
+    cdef AMF_SURFACE_FORMAT surface_format
+    cdef amf_bool native
+    cdef AMF_RESULT r
+    formats = []
+    native_formats = []
+    for i in range(count):
+        r = iocaps.pVtbl.GetFormatAt(iocaps, i, &surface_format, &native)
+        if r:
+            continue
+        name = SURFACE_FORMAT_STR(surface_format)
+        if native:
+            native_formats.append(name)
+        else:
+            formats.append(name)
+    caps["native-formats"] = tuple(native_formats)
+    caps["formats"] = tuple(formats)
+    count = iocaps.pVtbl.GetNumOfMemoryTypes(iocaps)
+    cdef AMF_MEMORY_TYPE memory_type
+    memory_types = []
+    native_memory_types = []
+    for i in range(count):
+        r = iocaps.pVtbl.GetMemoryTypeAt(iocaps, i, &memory_type, &native)
+        if r:
+            continue
+        name = MEMORY_TYPE_STR(memory_type)
+        if native:
+            native_memory_types.append(name)
+        else:
+            memory_types.append(name)
+    caps["native-memory-types"] = tuple(native_memory_types)
+    caps["memory-types"] = tuple(memory_types)
+    caps["interlaced-supported"] = bool(iocaps.pVtbl.IsInterlacedSupported(iocaps))
+    return caps

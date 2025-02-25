@@ -55,6 +55,7 @@ from xpra.codecs.amf.amf cimport (
     amf_handle, amf_long, amf_int32,
     AMFDataAllocatorCB,
     AMFSize, AMFRate,
+    AMFCaps,
     AMFGuid,
     AMFBuffer,
     AMFComponentOptimizationCallback,
@@ -69,7 +70,7 @@ from xpra.codecs.amf.amf cimport (
     AMFFactory,
 )
 from xpra.codecs.amf.common cimport (
-    set_guid, get_factory, get_version, check,
+    set_guid, get_factory, get_version, check, get_caps,
 )
 
 
@@ -145,7 +146,8 @@ def get_info() -> Dict[str, Any]:
 def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
     # setup cost is reasonable (usually about 5ms)
-    max_w, max_h = 3840, 2160
+    min_w = min_h = 128
+    max_w = max_h = 4096
     speed = 50
     quality = 50
     return (
@@ -155,8 +157,24 @@ def get_specs() -> Sequence[VideoSpec]:
             codec_class=Encoder, codec_type=get_type(),
             quality=quality, speed=speed,
             size_efficiency=60,
-            setup_cost=20, max_w=max_w, max_h=max_h),
+            setup_cost=20,
+            min_w=min_w, min_h=min_h,
+            max_w=max_w, max_h=max_h),
         )
+
+
+ENCODING_CAPS: Dict[str, Dict[str, str]] = {
+    "h264" : {
+        "max-bitrate" : "MaxBitrate",
+        "number-of-streams": "NumOfStreams",
+        "max-level": "MaxLevel",
+        "hardware-instances": "NumOfHwInstances",
+        "max-throughput": "MaxThroughput",
+        "requested-throughput": "RequestedThroughput",
+        "roi": "ROIMap",
+        "pre-analysis": "PreAnalysis",
+    },
+}
 
 
 generation = AtomicInteger()
@@ -177,6 +195,7 @@ cdef class Encoder:
     cdef int quality
     cdef unsigned int generation
     cdef object file
+    cdef object caps
 
     cdef object __weakref__
 
@@ -210,6 +229,7 @@ cdef class Encoder:
         self.context = NULL
         self.encoder = NULL
         self.device = NULL
+        self.caps = {}
 
         self.amf_context_init()
         self.amf_encoder_init(options)
@@ -256,6 +276,14 @@ cdef class Encoder:
         self.check(ret, f"AMF encoder setting property {name} to {var!r}")
         PyMem_Free(prop)
 
+    def get_caps(self) -> Dict:
+        assert self.encoder
+        cdef AMFCaps *caps
+        cdef AMF_RESULT r
+        res = self.encoder.pVtbl.GetCaps(self.encoder, &caps)
+        enc_props = ENCODING_CAPS.get(self.encoding, {})
+        return get_caps(caps, enc_props)
+
     def amf_encoder_init(self, options: typedict) -> None:
         cdef AMFFactory *factory = get_factory()
         assert factory and self.context
@@ -267,6 +295,9 @@ cdef class Encoder:
         PyMem_Free(amf_codec)
         log(f"amf_encoder_init() CreateComponent()={res}")
         self.check(res, f"AMF {self.encoding!r} encoder creation")
+
+        self.caps = self.get_caps()
+        log("encoder caps: %s", self.caps)
 
         speed = options.intget("speed", 50)
         quality = options.intget("quality", 50)
@@ -352,6 +383,7 @@ cdef class Encoder:
             "quality"   : self.quality,
             "encoding"  : self.encoding,
             "src_format": self.src_format,
+            "caps": self.caps,
         }
         return info
 
