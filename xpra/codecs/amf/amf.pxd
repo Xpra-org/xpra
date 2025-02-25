@@ -477,6 +477,8 @@ cdef extern from "core/Surface.h":
     ctypedef AMF_FRAME_TYPE (*SURFACE_GETFRAMETYPE)(AMFSurface* pThis)
     ctypedef AMF_RESULT (*SURFACE_CONVERT)(AMFSurface* pThis, AMF_MEMORY_TYPE type)
     ctypedef AMF_RESULT (*SURFACE_INTEROP)(AMFSurface* pThis, AMF_MEMORY_TYPE type)
+    ctypedef AMF_RESULT (*SETCROP)(amf_int32 x,amf_int32 y, amf_int32 width, amf_int32 height)
+    ctypedef AMF_RESULT (*COPYSURFACEREGION)(AMFSurface* pDest, amf_int32 dstX, amf_int32 dstY, amf_int32 srcX, amf_int32 srcY, amf_int32 width, amf_int32 height)
 
     ctypedef struct AMFSurfaceVtbl:
         SURFACE_SETPROPERTY SetProperty
@@ -489,6 +491,8 @@ cdef extern from "core/Surface.h":
         SURFACE_GETFRAMETYPE GetFrameType
         SURFACE_CONVERT Convert
         SURFACE_INTEROP Interop
+        SETCROP SetCrop
+        COPYSURFACEREGION CopySurfaceRegion
 
     ctypedef struct AMFSurface:
         const AMFSurfaceVtbl *pVtbl

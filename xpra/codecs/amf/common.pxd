@@ -9,7 +9,8 @@ from libc.stddef cimport wchar_t
 from libc.stdint cimport uint64_t, uintptr_t
 
 from xpra.codecs.amf.amf cimport (
-    AMF_RESULT, AMFFactory, AMFGuid, AMFSurface, AMFCaps, AMFIOCaps, AMFVariantStruct,
+    AMF_RESULT, AMFFactory, AMFGuid, AMFSurface, AMFSurfaceVtbl,
+    AMFPlane, AMFPlaneVtbl, AMFData, AMFCaps, AMFIOCaps, AMFVariantStruct,
     amf_uint32, amf_uint16, amf_uint8,
 )
 
@@ -33,3 +34,9 @@ cdef void fill_nv12_surface(AMFSurface *surface, amf_uint8 Y, amf_uint8 U, amf_u
 cdef object get_caps(AMFCaps *caps, props: Dict)
 
 cdef object get_io_caps(AMFIOCaps *iocaps)
+
+cdef object get_plane_info(AMFPlane *plane)
+
+cdef object get_data_info(AMFData *data)
+
+cdef object get_surface_info(AMFSurface *surface)

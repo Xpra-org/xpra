@@ -70,7 +70,7 @@ from xpra.codecs.amf.amf cimport (
     AMFFactory,
 )
 from xpra.codecs.amf.common cimport (
-    set_guid, get_factory, get_version, check, get_caps,
+    set_guid, get_factory, get_version, check, get_caps, get_plane_info, get_data_info, get_surface_info,
 )
 
 
@@ -491,7 +491,7 @@ cdef class Encoder:
         cdef AMFSurface *ptr = surface[0]
         assert ptr != NULL
         if log.is_debug_enabled():
-            log(f"{memtype} surface: %s", self.get_surface_info(ptr))
+            log(f"{memtype} surface: %s", get_surface_info(ptr))
 
     cdef void set_surface_property(self, AMFSurface *surface, name: str, variant: AMF_VARIANT_TYPE, value: int64_t):
         cdef AMFVariantStruct var
@@ -505,7 +505,7 @@ cdef class Encoder:
         plane = surface.pVtbl.GetPlaneAt(surface, plane_index)
         assert plane
         if log.is_debug_enabled():
-            log("plane=%s", self.get_plane_info(plane))
+            log("plane=%s", get_plane_info(plane))
         # texture is a `ID3D11Texture2D`:
         cdef uintptr_t texture = <uintptr_t> plane.pVtbl.GetNative(plane)
         assert texture
@@ -514,10 +514,13 @@ cdef class Encoder:
     cdef bytes do_compress_image(self, uint8_t *pic_in[2], int strides[2]):
         cdef unsigned long start_time = 0    # nanoseconds!
         cdef AMFPlane *plane
+        cdef uintptr_t src, dst
         cdef uintptr_t host_texture
         cdef uintptr_t gpu_texture
         cdef AMFSurface *host_surface
         cdef AMFSurface *gpu_surface
+        cdef amf_int32 hpitch, vpitch
+        cdef int stride
         cdef AMF_RESULT res
 
         if not WIN32:
@@ -535,8 +538,23 @@ cdef class Encoder:
 
             for plane_index in range(2):
                 log("plane %s src data=%#x", ["Y", "UV"][plane_index], <uintptr_t> pic_in[plane_index])
+                plane = host_surface.pVtbl.GetPlaneAt(host_surface, plane_index)
+                assert plane
+                stride = strides[plane_index]
+                hpitch = plane.pVtbl.GetHPitch(plane)
+                vpitch = plane.pVtbl.GetVPitch(plane)
                 host_texture = self.get_native_plane(host_surface, plane_index)
-                memcpy(<void *> host_texture, <void *> pic_in[plane_index], strides[plane_index] * (self.height//2))
+                #host_texture = <uintptr_t> plane.pVtbl.GetNative(plane)
+                src = <uintptr_t> pic_in[plane_index]
+                dst = <uintptr_t> host_texture
+                if hpitch == stride:
+                    # same stride, happy path with just one big copy:
+                    memcpy(<void *> dst, <void *> src, hpitch * vpitch)
+                else:
+                    for y in range(vpitch):
+                        memcpy(<void *> dst, <void *> src, stride)
+                        dst += hpitch
+                        src += stride
 
             # make it accessible by the GPU:
             res = host_surface.pVtbl.Convert(host_surface, AMF_MEMORY_DX11)
@@ -577,7 +595,7 @@ cdef class Encoder:
             self.check(res, "AMF query output")
         assert data
         if log.is_debug_enabled():
-            log("data=%s", self.get_data_info(data))
+            log("data=%s", get_data_info(data))
         cdef AMFGuid guid
         set_guid(&guid, 0xb04b7248, 0xb6f0, 0x4321, 0xb6, 0x91, 0xba, 0xa4, 0x74, 0xf, 0x9f, 0xcb)
         cdef AMFBuffer* buffer = NULL
@@ -609,43 +627,6 @@ cdef class Encoder:
                 break
             sleep(0.001)
         self.check(res, "AMF encoder flush")
-
-    cdef get_data_info(self, AMFData *data):
-        assert data
-        cdef const AMFDataVtbl *dfn = data.pVtbl
-        return {
-            "property-count": dfn.GetPropertyCount(data),
-            "memory-type": MEMORY_TYPE_STR(dfn.GetMemoryType(data)),
-            "data-type": DATA_TYPE_STR(dfn.GetDataType(data)),
-        }
-
-    cdef get_plane_info(self, AMFPlane *plane):
-        assert plane
-        ptype = plane.pVtbl.GetType(plane)
-        cdef const AMFPlaneVtbl *pfn = plane.pVtbl
-        return {
-            "type": PLANE_TYPE_STR(ptype),
-            "native": <uintptr_t> pfn.GetNative(plane),
-            "size": pfn.GetPixelSizeInBytes(plane),
-            "offset-x": pfn.GetOffsetX(plane),
-            "offset-y": pfn.GetOffsetY(plane),
-            "width": pfn.GetWidth(plane),
-            "height": pfn.GetHeight(plane),
-            "h-pitch": pfn.GetHPitch(plane),
-            "v-pitch": pfn.GetVPitch(plane),
-            "is-tiled": pfn.IsTiled(plane),
-        }
-
-    cdef get_surface_info(self, AMFSurface *surface):
-        assert surface
-        cdef const AMFSurfaceVtbl *sfn = surface.pVtbl
-        fmt = sfn.GetFormat(surface)
-        cdef AMF_FRAME_TYPE ftype = sfn.GetFrameType(surface)
-        return {
-            "format": SURFACE_FORMAT_STR(fmt),
-            "planes": sfn.GetPlanesCount(surface),
-            "frame-type": FRAME_TYPE_STR(ftype),
-        }
 
     def set_encoding_speed(self, int pct) -> None:
         if self.speed==pct:

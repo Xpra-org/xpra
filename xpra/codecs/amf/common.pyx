@@ -12,14 +12,16 @@ from libc.string cimport memset
 
 from xpra.codecs.amf.amf cimport (
     AMF_RESULT, AMF_OK,
-    AMFFactory, AMFGuid, AMFTrace, AMFSurface, AMFPlane,
+    AMFFactory, AMFGuid, AMFTrace, AMFSurface, AMFPlane, AMFData, AMFDataVtbl,
     AMFVariantInit,
     AMFTraceWriter, AMFTraceWriterVtbl, AMF_TRACE_DEBUG, AMF_TRACE_INFO,
     amf_uint32, amf_uint16, amf_uint8, amf_int32, amf_bool,
     AMFCaps, AMFIOCaps,
+    AMF_FRAME_TYPE,
     AMF_SURFACE_FORMAT, AMF_MEMORY_TYPE,
-    SURFACE_FORMAT_STR, MEMORY_TYPE_STR, RESULT_STR,
-    AMF_ACCELERATION_TYPE, ACCEL_TYPE_STR,
+    SURFACE_FORMAT_STR, MEMORY_TYPE_STR, DATA_TYPE_STR, FRAME_TYPE_STR,
+    AMF_ACCELERATION_TYPE, ACCEL_TYPE_STR, PLANE_TYPE_STR,
+    RESULT_STR,
 )
 
 from xpra.common import noop
@@ -297,3 +299,43 @@ cdef object get_io_caps(AMFIOCaps *iocaps):
     caps["memory-types"] = tuple(memory_types)
     caps["interlaced-supported"] = bool(iocaps.pVtbl.IsInterlacedSupported(iocaps))
     return caps
+
+
+cdef object get_plane_info(AMFPlane *plane):
+    assert plane
+    ptype = plane.pVtbl.GetType(plane)
+    cdef const AMFPlaneVtbl *pfn = plane.pVtbl
+    return {
+        "type": PLANE_TYPE_STR(ptype),
+        "native": <uintptr_t> pfn.GetNative(plane),
+        "size": pfn.GetPixelSizeInBytes(plane),
+        "offset-x": pfn.GetOffsetX(plane),
+        "offset-y": pfn.GetOffsetY(plane),
+        "width": pfn.GetWidth(plane),
+        "height": pfn.GetHeight(plane),
+        "h-pitch": pfn.GetHPitch(plane),
+        "v-pitch": pfn.GetVPitch(plane),
+        "is-tiled": pfn.IsTiled(plane),
+    }
+
+
+cdef object get_data_info(AMFData *data):
+    assert data
+    cdef const AMFDataVtbl *dfn = data.pVtbl
+    return {
+        "property-count": dfn.GetPropertyCount(data),
+        "memory-type": MEMORY_TYPE_STR(dfn.GetMemoryType(data)),
+        "data-type": DATA_TYPE_STR(dfn.GetDataType(data)),
+    }
+
+
+cdef object get_surface_info(AMFSurface *surface):
+    assert surface
+    cdef const AMFSurfaceVtbl *sfn = surface.pVtbl
+    fmt = sfn.GetFormat(surface)
+    cdef AMF_FRAME_TYPE ftype = sfn.GetFrameType(surface)
+    return {
+        "format": SURFACE_FORMAT_STR(fmt),
+        "planes": sfn.GetPlanesCount(surface),
+        "frame-type": FRAME_TYPE_STR(ftype),
+    }
