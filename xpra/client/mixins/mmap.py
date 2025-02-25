@@ -50,9 +50,9 @@ class MmapArea(BaseMmapArea):
                 clean_mmap(self.filename)
                 self.filename = ""
 
-    def enable_from_caps(self, mmap_caps: dict) -> bool:
+    def enable_from_caps(self, mmap_caps: typedict) -> bool:
         try:
-            self.parse_caps(typedict(mmap_caps))
+            self.parse_caps(mmap_caps)
             if self.enabled:
                 self.verify_token()
             if not self.enabled:

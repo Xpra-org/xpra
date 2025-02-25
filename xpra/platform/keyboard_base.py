@@ -79,7 +79,8 @@ class KeyboardBase:
         log(f"modifier_keycodes={self.modifier_keycodes}")
 
     def mask_to_names(self, mask) -> list[str]:
-        return mask_to_names(mask, self.modifier_map)
+        # mask can be an int, or a `ModifierType` enum:
+        return mask_to_names(int(mask), self.modifier_map)
 
     def get_keymap_modifiers(self) -> tuple[dict, list[str], list[str]]:
         """

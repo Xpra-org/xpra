@@ -76,7 +76,7 @@ class AuthHandlersTest(unittest.TestCase):
 
     def test_uri_handler(self):
         from xpra.challenge.uri import Handler
-        password = b"foo"
+        password = "foo"
         self.do_test_handler(True, password, Handler, password=password)
 
 

@@ -284,9 +284,9 @@ class VideoHelper:
         self.encoders = {}
         self.csc = {}
         self.decoders = {}
-        self.encoder_modules = []
-        self.csc_modules = []
-        self.decoder_modules = []
+        self.encoder_modules = {}
+        self.csc_modules = {}
+        self.decoder_modules = {}
 
     def clone(self) -> Self:
         return VideoHelper(self.encoders, self.csc, self.decoders)

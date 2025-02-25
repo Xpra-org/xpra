@@ -993,7 +993,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         cipher = caps.strget("cipher")
         cipher_mode = caps.strget("mode", DEFAULT_MODE)
         cipher_iv = caps.strget("iv")
-        key_salt = caps.strget("key_salt")
+        key_salt = caps.bytesget("key_salt")
         key_hash = caps.strget("key_hash", DEFAULT_KEY_HASH)
         key_size = caps.intget("key_size", DEFAULT_KEYSIZE)
         key_stretch = caps.strget("key_stretch", DEFAULT_KEY_STRETCH)

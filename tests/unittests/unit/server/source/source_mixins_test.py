@@ -81,8 +81,8 @@ class SourceMixinsTest(unittest.TestCase):
             c.user_event(m)
             c.may_notify(m)
             c.queue_encode(m, ("item",))
-            c.send_more(m, ("packet-type", 0))
-            c.send_async(m, ("packet-type", 0))
+            c.send_more(m, "packet-type", 0)
+            c.send_async(m, "packet-type", 0)
         for c in mixin_classes:
             if test_fn:
                 test_fn(c, m)
