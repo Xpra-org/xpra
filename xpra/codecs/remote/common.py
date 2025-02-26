@@ -186,6 +186,7 @@ class RemoteConnectionClient(baseclass):
             desc = parse_display_name(ValueError, opts, uri)
             if "timeout" not in desc:
                 desc["timeout"] = self.server_socket_timeout
+            desc["quiet"] = True
             log(f"EncoderClient.do_connect() server desc={desc!r}")
             conn = connect_to(desc, opts)
             super().setup_connection(conn)

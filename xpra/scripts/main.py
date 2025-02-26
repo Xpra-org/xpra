@@ -1185,6 +1185,7 @@ def retry_socket_connect(options: dict):
     from xpra.net.socket_util import socket_connect
     start = monotonic()
     retry = options.get("retry", True) in TRUE_OPTIONS
+    quiet = options.get("quiet", False)
     retry_count = 0
     timeout = options.get("timeout", CONNECT_TIMEOUT)
     while True:
@@ -1195,7 +1196,7 @@ def retry_socket_connect(options: dict):
             break
         if monotonic() - start >= timeout:
             break
-        if retry_count == 0:
+        if not quiet and retry_count == 0:
             log = Logger("network")
             log.info("")
             log.info(f"failed to connect to {dtype}://{host}:{port}/")
