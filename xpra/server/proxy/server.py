@@ -166,7 +166,6 @@ class ProxyServer(ProxyServerBaseClass):
         # or even start them, so allow more time before timing out:
         self._accept_timeout += 10
         self.pings = 0
-        self.video_encoders = ()
         self._start_sessions = False
         # keep track of the proxy process instances
         # the display they're on and the message queue we can
@@ -180,7 +179,6 @@ class ProxyServer(ProxyServerBaseClass):
     def init(self, opts) -> None:
         log("ProxyServer.init(%s)", opts)
         self.pings = int(opts.pings)
-        self.video_encoders = opts.proxy_video_encoders
         self._start_sessions = opts.proxy_start_sessions
         for bc in SERVER_BASES:
             bc.init(self, opts)
@@ -540,7 +538,7 @@ class ProxyServer(ProxyServerBaseClass):
             if env_options:
                 log.warn("environment options are ignored in threaded mode")
             from xpra.server.proxy.instance_thread import ProxyInstanceThread
-            pit = ProxyInstanceThread(session_options, self.video_encoders, self.pings,
+            pit = ProxyInstanceThread(session_options, self.pings,
                                       client_proto, server_conn,
                                       disp_desc, cipher, cipher_mode, encryption_key, c)
             pit.stopped = self.reap
@@ -575,7 +573,7 @@ class ProxyServer(ProxyServerBaseClass):
                 client_conn.set_active(True)
                 from xpra.server.proxy.instance_process import ProxyInstanceProcess
                 process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
-                                               self.video_encoders, self.pings,
+                                               self.pings,
                                                client_conn, disp_desc, client_state,
                                                cipher, cipher_mode, encryption_key, server_conn, c, message_queue)
                 log("starting %s from pid=%s", process, os.getpid())

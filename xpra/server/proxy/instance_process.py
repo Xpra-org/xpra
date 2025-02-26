@@ -9,7 +9,6 @@ import sys
 import signal
 from typing import Any
 from queue import SimpleQueue
-from collections.abc import Sequence
 from multiprocessing import Process
 
 from xpra.server.proxy.instance_base import ProxyInstance
@@ -39,7 +38,6 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.log import Logger
 
 log = Logger("proxy")
-enclog = Logger("encoding")
 
 MAX_CONCURRENT_CONNECTIONS = 20
 
@@ -60,11 +58,11 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
 
     def __init__(self, uid: int, gid: int, env_options: dict[str, str], session_options: dict[str, str],
                  socket_dir: str,
-                 video_encoder_modules: Sequence[str], pings: int,
+                 pings: int,
                  client_conn, disp_desc: dict[str, Any], client_state: dict[str, Any],
                  cipher: str, cipher_mode: str, encryption_key: bytes, server_conn, caps: typedict, message_queue):
         ProxyInstance.__init__(self, session_options,
-                               video_encoder_modules, pings,
+                               pings,
                                disp_desc, cipher, cipher_mode, encryption_key, caps)
         QueueScheduler.__init__(self)
         ControlHandler.__init__(self)
@@ -77,7 +75,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
         self.socket_dir = socket_dir
         self.client_state = client_state
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
-                               video_encoder_modules,
                                client_conn, disp_desc, Ellipsizer(client_state),
                                cipher, cipher_mode, encryption_key, server_conn,
                                "%s: %s.." % (type(caps), Ellipsizer(caps)), message_queue))

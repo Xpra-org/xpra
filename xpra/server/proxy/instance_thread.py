@@ -4,13 +4,12 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Callable
 
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.server.proxy.instance_base import ProxyInstance
-from xpra.codecs.video import getVideoHelper
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -20,33 +19,22 @@ GLib = gi_import("GLib")
 
 class ProxyInstanceThread(ProxyInstance):
 
-    def __init__(self, session_options: dict[str, str], video_encoders: Sequence[str], pings: int,
+    def __init__(self, session_options: dict[str, str], pings: int,
                  client_proto, server_conn,
                  disp_desc: dict[str, Any],
                  cipher: str, cipher_mode: str, encryption_key: bytes, caps: typedict):
-        super().__init__(session_options, video_encoders, pings,
+        super().__init__(session_options, pings,
                          disp_desc, cipher, cipher_mode, encryption_key, caps)
         self.client_protocol = client_proto
         self.server_conn = server_conn
 
-    def video_helper_init(self) -> None:
-        # all threads will use just use the same settings anyway,
-        # so don't re-initialize the video helper:
-        self.video_helper = getVideoHelper()
-        # only use video encoders (no CSC supported in proxy)
-        try:
-            self.video_helper.set_modules(video_encoders=self.video_encoder_modules)
-            self.video_helper.init()
-        except RuntimeError as e:
-            log("video_helper_init() ignored: %s", e)
-
     def __repr__(self):
         return "threaded proxy instance"
 
-    def idle_add(self, fn, *args, **kwargs) -> int:
+    def idle_add(self, fn: Callable, *args, **kwargs) -> int:
         return GLib.idle_add(fn, *args, **kwargs)
 
-    def timeout_add(self, timeout, fn, *args, **kwargs) -> int:
+    def timeout_add(self, timeout, fn: Callable, *args, **kwargs) -> int:
         return GLib.timeout_add(timeout, fn, *args, **kwargs)
 
     def source_remove(self, tid: int) -> None:

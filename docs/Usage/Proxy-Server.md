@@ -15,16 +15,6 @@ Depending on the [authentication](Authentication.md) module configured, the prox
 * provide access to a custom list of sessions (ie: using the `sqlite` authentication module)
 
 
-## GPU Accelerated Transcoding
-If the proxy server has access to a hardware accelerated encoding device (ie: [NVENC](NVENC.md)) and the servers it proxies do not, then it can automatically be used for speeding up screen update compression. (details in [#504](https://github.com/Xpra-org/xpra/issues/504))
-
-
-## Diagram
-Here is an example architecture using the proxy server to provide access to a number of servers through a single port, also showing where NVENC hardware encoders and TCP proxying (apache, nginx, thttp,..) can all hook into:
-
-![Xpra Proxy Diagram](../images/Xpra-Proxy.png)
-
-
 <details>
   <summary>Setup example</summary>
 
