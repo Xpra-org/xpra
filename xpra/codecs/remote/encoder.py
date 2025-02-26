@@ -63,15 +63,23 @@ class EncoderClient(RemoteConnectionClient):
         else:
             encoder.closed = True
 
-    def compress(self, encoder, image: ImageWrapper, options: typedict) -> None:
-        log("compress%s", (encoder, image, options))
+    def compress(self, seq, image: ImageWrapper, options: typedict) -> None:
+        log("compress%s", (seq, image, options))
         metadata = {}
         for attr in ("x", "y", "width", "height", "pixel_format", "depth", "rowstride", "bytesperpixel", "planes", "full_range"):
             metadata[attr] = getattr(image, f"get_{attr}")()
         pixels = image.get_pixels()
+        nplanes = image.get_planes()
+        if self.lz4:
+            options["lz4"] = True
+            from xpra.net.lz4.lz4 import compress
+            if nplanes == PlanarFormat.PACKED:
+                pixels = compress(pixels)
+            else:
+                pixels = [compress(plane) for plane in pixels]
+
         mmap_write_area = getattr(self, "mmap_write_area", None)
         if mmap_write_area:
-            nplanes = image.get_planes()
             if nplanes == PlanarFormat.PACKED:
                 mmap_data = mmap_write_area.write_data(pixels)
                 log("sending image via mmap: %s", mmap_data)
@@ -83,7 +91,7 @@ class EncoderClient(RemoteConnectionClient):
                     mmap_data.append(plane_data)
             options["chunks"] = tuple(mmap_data)
             pixels = b""
-        self.send("context-compress", encoder.generation, metadata, pixels, options)
+        self.send("context-compress", seq, metadata, pixels, options)
 
     def _process_context_data(self, packet: PacketType) -> None:
         seq, bdata, client_options = packet[1:4]
@@ -178,7 +186,7 @@ class Encoder(RemoteCodec):
     def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         if not server.is_connected():
             raise CodecStateException("not connected to encoder server")
-        server.compress(self, image, options)
+        server.compress(self.generation, image, options)
         try:
             return self.responses.get(timeout=1)
         except Empty:

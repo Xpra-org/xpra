@@ -256,6 +256,12 @@ class EncoderServer(ServerBase):
             return
         encoding = encoder.get_encoding()
         free_cb = []
+
+        def free_all() -> None:
+            for free_fn in free_cb:
+                free_fn()
+            free_cb[:] = []
+
         chunks = options.pop("chunks", ())
         planes = metadata.get("planes", 0)
         log("compress request with %i planes, mmap chunks=%s", planes, chunks)
@@ -271,6 +277,15 @@ class EncoderServer(ServerBase):
                     plane_pixels, free = ss.mmap_read_area.mmap_read(*chunks[plane])
                     free_cb.append(free)
                     pixels.append(plane_pixels)
+
+        if options.get("lz4", 0) > 0:
+            from xpra.net.lz4.lz4 import decompress
+            if planes == PlanarFormat.PACKED:
+                pixels = decompress(pixels)
+            else:
+                pixels = [decompress(plane) for plane in pixels]
+            free_all()
+
         metadata["pixels"] = pixels
         try:
             image = ImageWrapper(**metadata)
@@ -278,8 +293,8 @@ class EncoderServer(ServerBase):
             add_device_context(ss, options)
             bdata, client_options = encoder.compress_image(image, typedict(options))
         finally:
-            for free in free_cb:
-                free()
+            free_all()
+
         if bdata is None:
             ss.send("context-data", seq, b"", {"error": "no data from encoder"})
             raise RuntimeError("no data!")

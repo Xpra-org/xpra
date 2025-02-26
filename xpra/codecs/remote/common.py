@@ -122,6 +122,7 @@ class RemoteConnectionClient(baseclass):
         self.server_socket_timeout = to.intget("socket-timeout", ENCODER_SERVER_SOCKET_TIMEOUT)
         self.reconnect_delay = to.intget("reconnect-delay", RECONNECT_DELAY)
         self.connect_poll_delay = to.intget("connect-poll-delay", CONNECT_POLL_DELAY)
+        self.lz4 = to.boolget("lz4", False)
         self.connect_timer = 0
         self.connecting = False
         self.specs: dict[str, dict[str, Sequence[VideoSpec]]] = {}
