@@ -238,7 +238,6 @@ class WindowClient(StubClientMixin):
     """
 
     def __init__(self):
-        super().__init__()
         self._window_to_id: dict[Any, int] = {}
         self._id_to_window: dict[int, Any] = {}
 

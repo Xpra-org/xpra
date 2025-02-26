@@ -1812,7 +1812,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
         if opts.encoding == "auto":
             opts.encoding = ""
         if opts.encoding:
-            from xpra.client.gui import features
+            from xpra.client.base import features
             if features.encoding:
                 einfo = ""
                 encodings = list(app.get_encodings()) + ["auto", "stream"]
@@ -2109,7 +2109,7 @@ def set_client_features(opts) -> None:
             return False
         return True
 
-    from xpra.client.gui import features
+    from xpra.client.base import features
     features.display = opts.windows
     features.windows = opts.windows
     features.gstreamer = opts.gstreamer
@@ -2131,7 +2131,7 @@ def set_client_features(opts) -> None:
 
 def enforce_client_features() -> None:
     from xpra.util.pysystem import enforce_features
-    from xpra.client.gui import features
+    from xpra.client.base import features
     enforce_features(features, {
         "display": "xpra.client.mixins.display",
         "windows": "xpra.client.mixins.windows",
@@ -3537,6 +3537,8 @@ def run_top(error_cb, options, args, cmdline) -> ExitValue:
 
 
 def run_encode(error_cb, options, args, cmdline) -> ExitValue:
+    set_client_features(options)
+    enforce_client_features()
     from xpra.client.base.encode import EncodeClient
     if not args:
         raise ValueError("please specify a display and at least one filename")

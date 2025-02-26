@@ -37,7 +37,6 @@ class WebcamForwarder(StubClientMixin):
     __signals__ = ["webcam-changed"]
 
     def __init__(self):
-        super().__init__()
         # webcam:
         self.webcam_option = ""
         self.webcam_forwarding = False

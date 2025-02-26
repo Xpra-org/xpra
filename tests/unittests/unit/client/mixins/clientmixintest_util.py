@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from time import monotonic
 from collections.abc import Callable
 
 from xpra.util.objects import typedict, AdHocStruct
@@ -91,6 +92,8 @@ class ClientMixinTest(unittest.TestCase):
 
     def _test_mixin_class(self, mclass, opts, caps=None, protocol_type="xpra"):
         x = self.mixin = mclass()
+        x.start_time = monotonic()
+        x.exit_code = None
         x.server_packet_types = ()
         x.quit = self.fake_quit
         fake_protocol = AdHocStruct()

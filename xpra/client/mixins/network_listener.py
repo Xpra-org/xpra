@@ -45,7 +45,6 @@ class NetworkListener(StubClientMixin):
     """
 
     def __init__(self):
-        super().__init__()
         self.sockets: dict[Any, dict] = {}
         self.socket_info: dict[Any, dict] = {}
         self.socket_options: dict[Any, dict] = {}

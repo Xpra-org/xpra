@@ -26,7 +26,6 @@ class TrayClient(StubClientMixin):
     """
 
     def __init__(self):
-        super().__init__()
         # settings:
         self.tray_icon = None
         # state:

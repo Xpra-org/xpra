@@ -32,7 +32,6 @@ class NotificationClient(StubClientMixin):
     """
 
     def __init__(self):
-        super().__init__()
         self.client_supports_notifications = False
         self.server_notifications = False
         self.notifications_enabled = False

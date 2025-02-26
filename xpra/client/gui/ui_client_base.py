@@ -27,7 +27,7 @@ from xpra.util.str_fn import std, Ellipsizer, repr_ellipsized
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.client.gui import features
+from xpra.client.base import features
 from xpra.log import Logger
 
 CLIENT_BASES = get_client_base_classes()

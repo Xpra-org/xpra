@@ -8,7 +8,6 @@ import os
 from typing import Sequence, Any
 
 from xpra.client.base.command import HelloRequestClient
-from xpra.client.mixins.mmap import MmapClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
 from xpra.net.common import PacketType
@@ -21,7 +20,24 @@ log = Logger("client", "encoding")
 EXT_ALIASES = {"jpg": "jpeg"}
 
 
-class EncodeClient(HelloRequestClient, MmapClient):
+def get_client_base_classes() -> tuple[type, ...]:
+    from xpra.client.base import features
+
+    classes: list[type] = []
+    # Warning: MmapClient must come first,
+    # so it is initialized by the time HelloRequestClient creates the hello packet
+    if features.mmap:
+        from xpra.client.mixins.mmap import MmapClient
+        classes.append(MmapClient)
+    classes.append(HelloRequestClient)
+    return tuple(classes)
+
+
+CLIENT_BASES = get_client_base_classes()
+ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
+
+
+class EncodeClient(ClientBaseClass):
     """
     Sends the file(s) to the server for encoding,
     saves the result in the current working directory
@@ -31,8 +47,9 @@ class EncodeClient(HelloRequestClient, MmapClient):
     def __init__(self, options, filenames: Sequence[str]):
         if not filenames:
             raise ValueError("please specify some filenames to encode")
-        HelloRequestClient.__init__(self, options)
-        MmapClient.__init__(self)
+        for cc in CLIENT_BASES:
+            args = (options, ) if cc == HelloRequestClient else ()
+            cc.__init__(self, *args)
         self.filenames = list(filenames)
         self.add_packets("encode-response", "encodings")
         self.decompress = decompress
@@ -42,8 +59,8 @@ class EncodeClient(HelloRequestClient, MmapClient):
     def init(self, opts) -> None:
         if opts.mmap.lower() == "auto":
             opts.mmap = "yes"
-        HelloRequestClient.init(self, opts)
-        MmapClient.init(self, opts)
+        for cc in CLIENT_BASES:
+            cc.init(self, opts)
         if opts.encoding and opts.encoding not in self.encodings:
             self.encodings = tuple(list(self.encodings) + [opts.encoding])
         self.encoding_options = {
@@ -61,14 +78,13 @@ class EncodeClient(HelloRequestClient, MmapClient):
                 self.encoding_options[attr] = value
 
     def setup_connection(self, conn) -> None:
-        # must do mmap first to ensure the mmap areas are initialized:
-        MmapClient.setup_connection(self, conn)
-        # because HelloRequestClient will call get_caps() to retrieve them
-        HelloRequestClient.setup_connection(self, conn)
+        for cc in CLIENT_BASES:
+            cc.setup_connection(self, conn)
 
     def server_connection_established(self, c: typedict) -> bool:
-        if not MmapClient.parse_server_capabilities(self, c) and HelloRequestClient.parse_server_capabilities(self, c):
-            return False
+        for cc in CLIENT_BASES:
+            if not cc.parse_server_capabilities(self, c):
+                return False
         # this will call do_command()
         return super().server_connection_established(c)
 
@@ -99,12 +115,14 @@ class EncodeClient(HelloRequestClient, MmapClient):
         self.send_encode()
 
     def hello_request(self) -> dict[str, Any]:
+        hello = {}
+        for cc in CLIENT_BASES:
+            hello.update(cc.get_caps(self))
         hello = {
             "request": "encode",
             "ui_client": True,
             "encoding": self.encoding_options,
         }
-        hello.update(MmapClient.get_caps(self))
         log(f"{hello=}")
         return hello
 
@@ -147,9 +165,10 @@ class EncodeClient(HelloRequestClient, MmapClient):
             log("sending uncompressed")
             data = raw_data
 
-        if self.mmap_write_area and self.mmap_write_area.enabled:
-            mmap_data = self.mmap_write_area.write_data(data)
-            log("mmap_write_area=%s, mmap_data=%s", self.mmap_write_area.get_info(), mmap_data)
+        mmap_write_area = getattr(self, "mmap_write_area", None)
+        if mmap_write_area and mmap_write_area.enabled:
+            mmap_data = mmap_write_area.write_data(data)
+            log("mmap_write_area=%s, mmap_data=%s", mmap_write_area.get_info(), mmap_data)
             encoding = "mmap"
             data = b""
             encode_options["chunks"] = mmap_data

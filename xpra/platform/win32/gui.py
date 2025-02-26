@@ -20,7 +20,7 @@ from ctypes import (
 from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT, HGDIOBJ, LPCWSTR
 from ctypes.util import find_library
 
-from xpra.client.gui import features
+from xpra.client.base import features
 from xpra.exit_codes import ExitCode
 from xpra.common import noop
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener

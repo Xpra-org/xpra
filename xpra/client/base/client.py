@@ -99,6 +99,8 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             ServerInfoMixin.__init__(self)
             FilePrintMixin.__init__(self)
         self._init_done = False
+        self.exit_code = None
+        self.start_time = int(monotonic())
 
     def defaults_init(self) -> None:
         # skip warning when running the client

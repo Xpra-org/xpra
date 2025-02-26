@@ -27,7 +27,6 @@ class RemoteLogging(StubClientMixin):
     """
 
     def __init__(self):
-        super().__init__()
         self.remote_logging = "no"
         self.in_remote_logging = False
         self.local_logging = None

@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import sys
-import time
 from typing import Any, NoReturn
 
 from xpra.util.objects import typedict
@@ -15,10 +14,6 @@ from xpra.net.common import PacketHandlerType
 
 class StubClientMixin:
     __signals__: list[str] = []
-
-    def __init__(self):
-        self.exit_code = None
-        self.start_time = int(time.time())
 
     def init(self, opts) -> None:
         """

@@ -6,7 +6,7 @@
 
 def get_client_base_classes() -> tuple[type, ...]:
     from xpra.client.base.client import XpraClientBase
-    from xpra.client.gui import features
+    from xpra.client.base import features
 
     CLIENT_BASES: list[type] = [XpraClientBase]
     if features.display:

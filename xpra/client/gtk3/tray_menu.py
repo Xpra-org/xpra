@@ -26,7 +26,7 @@ from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
 from xpra.util.config import unset_config_attributes, update_config_attributes
 from xpra.util.stats import std_unit_dec
-from xpra.client.gui import features
+from xpra.client.base import features
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

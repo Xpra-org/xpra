@@ -20,7 +20,7 @@ from xpra.client.gtk3.tray_menu import (
 )
 from xpra.platform.paths import get_icon
 from xpra.platform.darwin import get_OSXApplication
-from xpra.client.gui import features
+from xpra.client.base import features
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")

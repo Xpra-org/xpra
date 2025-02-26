@@ -58,7 +58,6 @@ class NetworkState(StubClientMixin):
     PACKET_TYPES = ("ping", "ping_echo", "info-response")
 
     def __init__(self):
-        super().__init__()
         self.server_start_time: float = -1
         # legacy:
         self.compression_level: int = 0

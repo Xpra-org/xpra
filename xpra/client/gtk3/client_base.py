@@ -165,7 +165,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
-        from xpra.client.gui import features
+        from xpra.client.base import features
         if features.windows:
             # call this once early:
             ignorewarnings(self.get_mouse_position)

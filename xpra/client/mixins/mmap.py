@@ -78,7 +78,6 @@ class MmapClient(StubClientMixin):
     """
 
     def __init__(self):
-        super().__init__()
         self.mmap_read_area: MmapArea | None = None
         self.mmap_write_area: MmapArea | None = None
         self.mmap_supported = True

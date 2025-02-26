@@ -21,7 +21,7 @@ from xpra.util.str_fn import csv, strtobytes, bytestostr, Ellipsizer
 from xpra.util.env import envint
 from xpra.common import noop
 from xpra.util.stats import values_to_scaled_values, values_to_diff_scaled_values, to_std_unit, std_unit_dec, std_unit
-from xpra.client.gui import features
+from xpra.client.base import features
 from xpra.client.base.command import InfoTimerClient
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.graph import make_graph_imagesurface
