@@ -138,13 +138,7 @@ class EncodeClient(HelloRequestClient, MmapClient):
             rowstride = rowstride * 4 // 3
         encoding = "rgb"
         encode_options = {}
-        if self.mmap_write_area and self.mmap_write_area.enabled:
-            mmap_data = self.mmap_write_area.write_data(raw_data)
-            log("mmap_write_area=%s, mmap_data=%s", self.mmap_write_area.get_info(), mmap_data)
-            encoding = "mmap"
-            data = b""
-            encode_options["chunks"] = mmap_data
-        elif self.compression_level > 0:
+        if self.compression_level > 0:
             from xpra.net.lz4.lz4 import compress
             data = compress(raw_data)
             encode_options["lz4"] = 1
@@ -152,6 +146,13 @@ class EncodeClient(HelloRequestClient, MmapClient):
         else:
             log("sending uncompressed")
             data = raw_data
+
+        if self.mmap_write_area and self.mmap_write_area.enabled:
+            mmap_data = self.mmap_write_area.write_data(data)
+            log("mmap_write_area=%s, mmap_data=%s", self.mmap_write_area.get_info(), mmap_data)
+            encoding = "mmap"
+            data = b""
+            encode_options["chunks"] = mmap_data
 
         metadata = {"filename": filename}
         self.send("encode", encoding, rgb_format, data, width, height, rowstride, encode_options, metadata)

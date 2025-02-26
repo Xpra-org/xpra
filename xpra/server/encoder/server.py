@@ -155,17 +155,17 @@ class EncoderServer(ServerBase):
         # the request can override:
         eo.update(options)
         log("using settings: %s", eo)
+        free = noop
+        rgb_data = raw_data
         if input_coding == "mmap":
             if not ss.mmap_supported or not ss.mmap_read_area:
                 raise RuntimeError("mmap packet but mmap read is not available")
             chunks = options.pop("chunks", ())
             rgb_data, free = ss.mmap_read_area.mmap_read(*chunks)
-        else:
-            if options.get("lz4") > 0:
-                from xpra.net.lz4.lz4 import decompress
-                rgb_data = decompress(raw_data, max_size=64*1024*1024)
-            else:
-                rgb_data = raw_data
+        if options.get("lz4") > 0:
+            from xpra.net.lz4.lz4 import decompress
+            rgb_data = decompress(rgb_data, max_size=64*1024*1024)
+            free()
             free = noop
 
         try:
