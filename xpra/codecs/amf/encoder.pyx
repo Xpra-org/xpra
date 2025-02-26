@@ -543,8 +543,7 @@ cdef class Encoder:
                 stride = strides[plane_index]
                 hpitch = plane.pVtbl.GetHPitch(plane)
                 vpitch = plane.pVtbl.GetVPitch(plane)
-                host_texture = self.get_native_plane(host_surface, plane_index)
-                #host_texture = <uintptr_t> plane.pVtbl.GetNative(plane)
+                host_texture = <uintptr_t> plane.pVtbl.GetNative(plane)
                 src = <uintptr_t> pic_in[plane_index]
                 dst = <uintptr_t> host_texture
                 if hpitch == stride:
