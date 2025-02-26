@@ -220,7 +220,7 @@ class EncoderServer(ServerBase):
         seq, message = packet[1:3]
         encoder = self.encoders.get(ss.uuid, {}).pop(seq, None)
         if not encoder:
-            log.error(f"Error encoder not found for uuid {ss.uuid!r} and sequence {seq}")
+            log(f"closing: encoder not found for uuid {ss.uuid!r} and sequence {seq}")
             return
         log(f"context-close: {encoder!r}, {message=}")
         try:
