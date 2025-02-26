@@ -21,6 +21,12 @@ log = Logger("encoder", "remote")
 ENCODINGS = tuple(x for x in os.environ.get("XPRA_REMOTE_ENCODINGS", "h264,vp8,vp9").split(",") if x)
 
 
+def safe_dict(opts: dict | typedict) -> dict:
+    # a simple dictionary suitable for sending via rencodeplus
+    # (removes floats and other illegal values)
+    return dict((k, v) for k, v in opts.items() if isinstance(k, str) and isinstance(v, (int, str, bool)))
+
+
 class EncoderClient(RemoteConnectionClient):
 
     def __repr__(self):
@@ -46,7 +52,8 @@ class EncoderClient(RemoteConnectionClient):
         seq = encoder.generation
         codec_type = encoder.codec_type
         self.encoders[seq] = encoder
-        self.send("context-request", seq, codec_type, encoding, width, height, src_format, options)
+        sopts = safe_dict(options)
+        self.send("context-request", seq, codec_type, encoding, width, height, src_format, sopts)
 
     def _process_context_response(self, packet: PacketType) -> None:
         seq = packet[1]
@@ -66,14 +73,15 @@ class EncoderClient(RemoteConnectionClient):
     def compress(self, seq, image: ImageWrapper, options: typedict) -> None:
         log("compress%s", (seq, image, options))
         metadata = {}
-        for attr in ("x", "y", "width", "height", "depth", "rowstride", "bytesperpixel", "planes"):
+        for attr in ("x", "y", "width", "height", "depth", "bytesperpixel", "planes"):
             metadata[attr] = int(getattr(image, f"get_{attr}")())
-        for attr in ("pixel_format", "full_range"):
+        for attr in ("rowstride", "pixel_format", "full_range"):
             metadata[attr] = getattr(image, f"get_{attr}")()
         pixels = image.get_pixels()
         nplanes = image.get_planes()
+        sopts = safe_dict(options)
         if self.lz4:
-            options["lz4"] = True
+            sopts["lz4"] = True
             from xpra.net.lz4.lz4 import compress
             if nplanes == PlanarFormat.PACKED:
                 pixels = compress(pixels)
@@ -91,9 +99,9 @@ class EncoderClient(RemoteConnectionClient):
                     plane_data = mmap_write_area.write_data(pixels[plane])
                     log("sending plane %i via mmap: %s", plane, plane_data)
                     mmap_data.append(plane_data)
-            options["chunks"] = tuple(mmap_data)
+            sopts["chunks"] = tuple(mmap_data)
             pixels = b""
-        self.send("context-compress", seq, metadata, pixels, options)
+        self.send("context-compress", seq, metadata, pixels, sopts)
 
     def _process_context_data(self, packet: PacketType) -> None:
         seq, bdata, client_options = packet[1:4]
