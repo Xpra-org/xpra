@@ -23,7 +23,7 @@ class Authenticator(SysAuthenticator):
         self.gid = -1
         self.peercred_check = False
         if not POSIX:
-            log.warn("Warning: peercred authentication is not supported on %s", os.name)
+            log.warn("Warning: peercred authentication is not supported on %r", os.name)
             return
         connection = kwargs.get("connection", None)
         uids = kwargs.pop("uid", "")
@@ -34,10 +34,8 @@ class Authenticator(SysAuthenticator):
 
     def check_peercred(self, connection, uids="", gids="", allow_owner: bool = False) -> None:
         allow_uids = allow_gids = None
-        if uids or allow_owner:
+        if uids:
             allow_uids = []
-            if allow_owner:
-                allow_uids.append(getuid())
             for x in uids.split(":"):
                 if not x.strip():
                     continue
@@ -67,9 +65,9 @@ class Authenticator(SysAuthenticator):
                     else:
                         log.warn("Warning: unknown group '%s'", x)
             log("peercred: allow_gids(%s)=%s", gids, allow_gids)
-        self.do_check_peercred(connection, allow_uids, allow_gids)
+        self.do_check_peercred(connection, allow_uids, allow_gids, allow_owner)
 
-    def do_check_peercred(self, connection, allow_uids=None, allow_gids=None):
+    def do_check_peercred(self, connection, allow_uids=None, allow_gids=None, allow_owner=False):
         try:
             if connection and isinstance(connection, SocketConnection):
                 sock = connection._socket
@@ -79,13 +77,22 @@ class Authenticator(SysAuthenticator):
                     log.warn("Warning: failed to get peer credentials on %s", sock)
                     return
                 _, uid, gid = peercred
-                if allow_uids is not None and uid not in allow_uids:
-                    log.warn("Warning: peercred access denied,")
-                    log.warn(" uid %i is not in the whitelist: %s", uid, csv(allow_uids))
-                elif allow_gids is not None and gid not in allow_gids:
-                    log.warn("Warning: peercred access denied,")
-                    log.warn(" gid %i is not in the whitelist: %s", gid, csv(allow_gids))
-                else:
+
+                def check() -> bool:
+                    if allow_owner and uid == getuid():
+                        log(f"matched owner: {uid}")
+                        return True
+                    if allow_uids is not None and uid not in allow_uids:
+                        log.warn("Warning: peercred access denied,")
+                        log.warn(" uid %i is not in the whitelist: %s", uid, csv(allow_uids))
+                        return False
+                    if allow_gids is not None and gid not in allow_gids:
+                        log.warn("Warning: peercred access denied,")
+                        log.warn(" gid %i is not in the whitelist: %s", gid, csv(allow_gids))
+                        return False
+                    return True
+
+                if check():
                     self.peercred_check = True
                     self.uid = uid
                     self.gid = gid
