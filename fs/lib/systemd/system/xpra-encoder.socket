@@ -1,0 +1,12 @@
+[Unit]
+Description=Xpra Encoder Socket
+PartOf=xpra-encoder.service
+
+[Socket]
+ListenStream=/run/xpra/encoder
+SocketUser=root
+SocketGroup=xpra
+PassCredentials=true
+
+[Install]
+WantedBy=sockets.target

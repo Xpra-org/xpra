@@ -1,0 +1,23 @@
+[Unit]
+Description=Xpra Encoder Server
+Documentation=man:xpra
+Requires=xpra-encoder.socket
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/sysconfig/xpra
+ExecStart=/usr/bin/xpra encoder :20000 --daemon=no \
+    --bind=none --auth=${AUTH} --socket-permissions=666 \
+    --log-dir=/var/log --pidfile=/run/xpra/encoder/server.pid --debug=${DEBUG}
+#rely on SIGKILL which returns 128+15=143
+SuccessExitStatus=0 143
+Restart=on-abnormal
+PIDFile=/run/xpra/encoder/server.pid
+ProtectSystem=strict
+ReadWritePaths=/run/xpra /tmp
+#PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

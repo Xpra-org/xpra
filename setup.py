@@ -2369,8 +2369,8 @@ else:
                     subs[b"/etc/sysconfig"] = cdir.encode()
                 if os.path.exists("/bin/systemctl") or os.path.exists("/usr/bin/systemctl") or sd_listen_ENABLED:
                     if sd_listen_ENABLED:
-                        copytodir("fs/lib/systemd/system/xpra.service", systemd_dir,
-                                  subs=subs)
+                        copytodir("fs/lib/systemd/system/xpra.service", systemd_dir, subs=subs)
+                        copytodir("fs/lib/systemd/system/xpra-encoder.service", systemd_dir, subs=subs)
                     else:
                         copytodir("fs/lib/systemd/system/xpra-nosocketactivation.service", systemd_dir,
                                   dst_name="xpra.service", subs=subs)
@@ -2378,6 +2378,7 @@ else:
                     copytodir("fs/etc/init.d/xpra", "/etc/init.d")
             if sd_listen_ENABLED:
                 copytodir("fs/lib/systemd/system/xpra.socket", systemd_dir)
+                copytodir("fs/lib/systemd/system/xpra-encoder.socket", systemd_dir)
             if POSIX and dbus_ENABLED and proxy_ENABLED:
                 copytodir("fs/etc/dbus-1/system.d/xpra.conf", "/etc/dbus-1/system.d")
 

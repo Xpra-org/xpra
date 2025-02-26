@@ -88,7 +88,12 @@ def find_server_uri(sessions_dir: str) -> str:
     return encoder
 
 
+SYSTEM_ENCODER_PATH = "/run/xpra/encoder"
+
+
 def get_server_socket_path(session_dir: str) -> str:
+    if os.name == "posix" and os.path.exists(SYSTEM_ENCODER_PATH) and is_socket(SYSTEM_ENCODER_PATH):
+        return SYSTEM_ENCODER_PATH
     if not os.path.exists(session_dir) or not os.path.isdir(session_dir):
         return ""
     # there must be a server config:

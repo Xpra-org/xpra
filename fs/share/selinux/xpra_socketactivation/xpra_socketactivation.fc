@@ -9,6 +9,7 @@
 #system proxy server socket and pid file, shared group socket:
 /run/xpra								-d gen_context(system_u:object_r:xpra_runtime_t,s0)
 /run/xpra/system						-s gen_context(system_u:object_r:xpra_socket_t,s0)
+/run/xpra/encoder						-s gen_context(system_u:object_r:xpra_socket_t,s0)
 /run/xpra/[^/]*							-s gen_context(system_u:object_r:xpra_socket_t,s0)
 /run/xpra/xpra\.pid						-- gen_context(system_u:object_r:xpra_pid_t,s0)
 #user runtime sockets, pid and log files:
