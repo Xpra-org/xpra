@@ -166,7 +166,7 @@ class MmapClient(StubClientMixin):
                 log(f"caps({prefix})={area_caps!r}")
                 if area_caps:
                     try:
-                        if area.enable_from_caps(area_caps):
+                        if area.enable_from_caps(typedict(area_caps)):
                             found = True
                             break   # no need to try the other prefix
                     except ValueError:
