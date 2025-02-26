@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from ctypes import c_uint64, c_int, c_void_p, byref, POINTER
 from ctypes import CDLL
 
-from xpra.codecs.constants import VideoSpec, get_subsampling_divs
+from xpra.codecs.constants import VideoSpec, get_subsampling_divs, EncodingNotSupported
 from xpra.codecs.image import ImageWrapper
 from xpra.os_util import WIN32
 from xpra.util.env import envbool, first_time
@@ -29,7 +29,7 @@ from xpra.codecs.amf.amf cimport (
     AMF_RESULT, AMF_EOF, AMF_REPEAT,
     AMF_DX11_0,
     AMF_MEMORY_TYPE, AMF_MEMORY_DX11, AMF_MEMORY_HOST,
-    AMF_INPUT_FULL,
+    AMF_INPUT_FULL, AMF_NOT_SUPPORTED,
     AMF_SURFACE_FORMAT, AMF_SURFACE_YUV420P, AMF_SURFACE_NV12, AMF_SURFACE_BGRA,
     AMF_VARIANT_TYPE, AMF_VARIANT_INT64, AMF_VARIANT_SIZE, AMF_VARIANT_RATE,
     AMF_VIDEO_ENCODER_USAGE_ENUM,
@@ -145,34 +145,76 @@ def get_info() -> Dict[str, Any]:
 
 def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
-    # setup cost is reasonable (usually about 5ms)
-    min_w = min_h = 128
-    max_w = max_h = 4096
     speed = 50
     quality = 50
-    return (
-        VideoSpec(
-            encoding="h264", input_colorspace="NV12", output_colorspaces=("YUV420P", ),
-            has_lossless_mode=False,
-            codec_class=Encoder, codec_type=get_type(),
-            quality=quality, speed=speed,
-            size_efficiency=60,
-            setup_cost=20,
-            min_w=min_w, min_h=min_h,
-            max_w=max_w, max_h=max_h),
-        )
+    for encoding in CODECS:
+        caps = CAPS.get(encoding, {})
+        input_caps = caps.get("input", {})
+        output_caps = caps.get("output", {})
+        min_w, max_w = input_caps.get("width-range", (128, 4096))
+        min_h, max_h = input_caps.get("height-range", (128, 4096))
+        input_colorspaces = input_caps.get("native-formats", ("NV12", ))
+        output_colorspaces = output_caps.get("native-formats", ("YUV420P", ))
+        for input_colorspace in input_colorspaces:
+            # ugly translation into the names xpra uses for legacy reasons:
+            out_css = tuple({"NV12" : "YUV420P"}.get(cs, cs) for cs in output_colorspaces)
+            spec = VideoSpec(
+                encoding=encoding, input_colorspace=input_colorspace, output_colorspaces=out_css,
+                has_lossless_mode=False,
+                codec_class=Encoder, codec_type=get_type(),
+                quality=quality, speed=speed,
+                size_efficiency=60,
+                setup_cost=20,
+                min_w=min_w, min_h=min_h,
+                max_w=max_w, max_h=max_h)
+            log("AMF encoder spec for %r: %s", encoding, spec.to_dict())
+            specs.append(spec)
+    return specs
+
+
+# these are the actual caps and are probed during the self-tests:
+CAPS: Dict[str, str] = {}
 
 
 ENCODING_CAPS: Dict[str, Dict[str, str]] = {
-    "h264" : {
+    "h264": {
         "max-bitrate" : "MaxBitrate",
         "number-of-streams": "NumOfStreams",
         "max-level": "MaxLevel",
-        "hardware-instances": "NumOfHwInstances",
+        "b-frames": "BFrames",
         "max-throughput": "MaxThroughput",
+        "fixed-sliced-mode": "FixedSliceMode",
+        "color-conversion": "ColorConversion",
+        "hardware-instances": "NumOfHwInstances",
         "requested-throughput": "RequestedThroughput",
         "roi": "ROIMap",
         "pre-analysis": "PreAnalysis",
+    },
+    "av1": {
+        "max-bitrate" : "Av1MaxBitrate",
+        # "number-of-streams": n/a
+        "max-level": "Av1MaxLevel",
+        "max-profile": "Av1MaxProfile",
+        "hardware-instances": "Av1CapNumOfHwInstances",
+        "max-throughput": "Av1CapMaxThroughput",
+        "max-bitrate": "Av1MaxBitrate",
+        "requested-throughput": "Av1CapRequestedThroughput",
+        # "roi": n/a,
+        "pre-analysis": "Av1PreAnalysis",
+        "tile-output": "AV1SupportTileOutput",
+        "width-alignment": "Av1WidthAlignmentFactor",
+        "height-alignment": "Av1HeightAlignmentFactor",
+    },
+    "hevc": {
+        "max-bitrate" : "HevcMaxBitrate",
+        "number-of-streams": "HevcNumOfStreams",
+        "max-profile": "HevcMaxProfile",
+        "max-tier": "HevcMaxTier",
+        "max-level": "HevcMaxLevel",
+        "hardware-instances": "HevcNumOfHwInstances",
+        "max-throughput": "HevcMaxThroughput",
+        "requested-throughput": "HevcRequestedThroughput",
+        "pre-analysis": "HevcPreAnalysis",
     },
 }
 
@@ -294,9 +336,14 @@ cdef class Encoder:
         cdef AMF_RESULT res = get_factory().pVtbl.CreateComponent(factory, self.context, amf_codec, &self.encoder)
         PyMem_Free(amf_codec)
         log(f"amf_encoder_init() CreateComponent()={res}")
+        if res == AMF_NOT_SUPPORTED:
+            message = f"{amf_codec_name!r} is not supported"
+            log(message)
+            raise EncodingNotSupported(message)
         self.check(res, f"AMF {self.encoding!r} encoder creation")
 
         self.caps = self.get_caps()
+        CAPS[self.encoding] = self.caps
         log("encoder caps: %s", self.caps)
 
         speed = options.intget("speed", 50)
@@ -657,5 +704,6 @@ def selftest(full=False) -> None:
     try:
         SAVE_TO_FILE = None
         CODECS = testencoder(encoder, full)
+        log("AMF specs()=%s", get_specs())
     finally:
         SAVE_TO_FILE = temp

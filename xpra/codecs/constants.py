@@ -160,6 +160,10 @@ class CodecStateException(RuntimeError):
     pass
 
 
+class EncodingNotSupported(RuntimeError):
+    pass
+
+
 @dataclass(kw_only=True)
 class CodecSpec:
 

@@ -12,6 +12,7 @@ from typing import Any, TypeAlias
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.common import roundup
+from xpra.codecs.constants import EncodingNotSupported
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.log import Logger
@@ -415,6 +416,10 @@ def testencoder(encoder_module, full: bool) -> Sequence[str]:
     for encoding in tuple(codecs):
         try:
             testencoding(encoder_module, encoding, full)
+        except EncodingNotSupported as e:
+            log(f"{etype}: {encoding} encoding failed", exc_info=True)
+            del e
+            codecs.remove(encoding)
         except Exception as e:
             log(f"{etype}: {encoding} encoding failed", exc_info=True)
             log.warn(f"Warning: {etype} encoder testing failed with {encoding}:")

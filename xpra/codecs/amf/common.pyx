@@ -59,7 +59,11 @@ cdef void trace_write(AMFTraceWriter* pThis, const wchar_t* scope, const wchar_t
         # ie: "2025-02-25 17:46:29.642     1984 [AMFEncoderCoreH264]   Debug: AMFEncoderCoreH264Impl::Terminate()"
         # log.info(f"{scope_str=} {message_str=}")
         fn = log.info
-        if message_str.endswith("Switching to AllocBufferEx()") or message_str.startswith("Video core bandwidth calcs is not available"):
+        if (
+            message_str.endswith("Switching to AllocBufferEx()")
+            or message_str.startswith("Video core bandwidth calcs is not available")
+            or message_str.startswith("***Found regpath, but key not found")
+        ):
             fn = log.debug
         elif len(parts) == 2:
             category = parts[0].split(" ")[-1].lower()
@@ -229,12 +233,21 @@ cdef object get_caps(AMFCaps *caps, props: Dict):
     getters: Dict[str, Callable] = {
         "max-bitrate": get_int64,
         "number-of-streams": get_int64,
+        "max-profile": get_int64,
+        "max-tier": get_int64,
         "max-level": get_int64,
+        "b-frames": get_bool,
+        "fixed-sliced-mode": get_bool,
         "hardware-instances": get_int64,
+        "color-conversion": get_bool,
         "max-throughput": get_int64,
+        "max-bitrate": get_int64,
+        "pre-analysis": get_bool,
         "requested-throughput": get_int64,
         "roi": get_bool,
-        "pre-analysis": get_bool,
+        "tile-output": get_bool,
+        "width-alignment": get_int64,
+        "height-alignment": get_int64,
     }
     for pyname, amfname in props.items():
         getter = getters.get(pyname, noop)
