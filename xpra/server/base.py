@@ -45,7 +45,6 @@ class ServerBase(ServerBaseClass):
     See GTKServerBase/X11ServerBase and other platform specific subclasses.
     """
 
-    # noinspection PyMissingConstructor
     def __init__(self):
         for c in SERVER_BASES:
             c.__init__(self)
@@ -56,19 +55,17 @@ class ServerBase(ServerBaseClass):
         self.ui_driver = None
         self.sharing: bool | None = None
         self.lock: bool | None = None
-
         self.idle_timeout: int = 0
-        # duplicated from Server Source...
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
 
-    def suspend_event(self, args):
+    def suspend_event(self, args) -> None:
         ServerCore.suspend_event(self, args)
         self.server_event("suspend")
         for s in self._server_sources.values():
             if hasattr(s, "go_idle"):
                 s.go_idle()
 
-    def resume_event(self, args):
+    def resume_event(self, args) -> None:
         ServerCore.resume_event(self, args)
         self.server_event("resume")
         for s in self._server_sources.values():
