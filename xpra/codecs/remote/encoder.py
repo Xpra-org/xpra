@@ -66,7 +66,9 @@ class EncoderClient(RemoteConnectionClient):
     def compress(self, seq, image: ImageWrapper, options: typedict) -> None:
         log("compress%s", (seq, image, options))
         metadata = {}
-        for attr in ("x", "y", "width", "height", "pixel_format", "depth", "rowstride", "bytesperpixel", "planes", "full_range"):
+        for attr in ("x", "y", "width", "height", "depth", "rowstride", "bytesperpixel", "planes"):
+            metadata[attr] = int(getattr(image, f"get_{attr}")())
+        for attr in ("pixel_format", "full_range"):
             metadata[attr] = getattr(image, f"get_{attr}")()
         pixels = image.get_pixels()
         nplanes = image.get_planes()
