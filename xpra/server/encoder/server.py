@@ -256,7 +256,7 @@ class EncoderServer(ServerBase):
             return
         encoding = encoder.get_encoding()
         free_cb = []
-        chunks = options.get("chunks", ())
+        chunks = options.pop("chunks", ())
         planes = metadata.get("planes", 0)
         log("compress request with %i planes, mmap chunks=%s", planes, chunks)
         start = monotonic()
