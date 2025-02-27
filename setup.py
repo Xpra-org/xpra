@@ -154,6 +154,10 @@ def pkg_config_ok(*args) -> bool:
     return get_status_output([PKG_CONFIG] + [str(x) for x in args])[0] == 0
 
 
+def pkg_config_exists(*names: str) -> bool:
+    return pkg_config_ok("--exists", *names)
+
+
 def pkg_config_version(req_version: str, pkgname: str) -> bool:
     r, out, _ = get_status_output([PKG_CONFIG, "--modversion", pkgname])
     if r != 0 or not out:
@@ -207,7 +211,7 @@ quic_ENABLED = DEFAULT
 ssh_ENABLED = DEFAULT
 http_ENABLED = DEFAULT
 service_ENABLED = LINUX and server_ENABLED
-sd_listen_ENABLED = POSIX and pkg_config_ok("--exists", "libsystemd")
+sd_listen_ENABLED = POSIX and pkg_config_exists("libsystemd")
 proxy_ENABLED = DEFAULT
 client_ENABLED = DEFAULT
 qt6_client_ENABLED = False
@@ -235,7 +239,7 @@ def has_header_file(name, isdir=False) -> bool:
 
 
 x11_ENABLED = DEFAULT and not WIN32 and not OSX
-wayland_ENABLED = not WIN32 and not OSX and pkg_config_ok("--exists", "wayland-client")
+wayland_ENABLED = not WIN32 and not OSX and pkg_config_exists("wayland-client")
 xinput_ENABLED = x11_ENABLED
 uinput_ENABLED = x11_ENABLED
 dbus_ENABLED = DEFAULT and (x11_ENABLED or WIN32) and not OSX
@@ -243,7 +247,7 @@ gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 ism_ext_ENABLED = DEFAULT and gtk3_ENABLED and data_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-has_pam_headers = has_header_file("/security", isdir=True) or pkg_config_ok("--exists", "pam", "pam_misc")
+has_pam_headers = has_header_file("/security", isdir=True) or pkg_config_exists("pam", "pam_misc")
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and LINUX and has_pam_headers
 
 proc_use_procps         = LINUX and has_header_file("/proc/procps.h")
@@ -283,8 +287,10 @@ pillow_encoder_ENABLED  = pillow_ENABLED
 pillow_decoder_ENABLED  = pillow_ENABLED
 argb_ENABLED            = DEFAULT
 argb_encoder_ENABLED    = argb_ENABLED
-spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", "spng")
-spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", "spng")
+# some platforms have "spng.pc", others use "libspng.pc"..
+spng_pc = "libspng" if pkg_config_exists("libspng") else "spng"
+spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", spng_pc)
+spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", spng_pc)
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
 webp_encoder_ENABLED    = webp_ENABLED
 webp_decoder_ENABLED    = webp_ENABLED
@@ -308,14 +314,14 @@ evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.10", "evdi
 drm_ENABLED             = DEFAULT and (LINUX or FREEBSD) and pkg_config_version("2.4", "libdrm")
 csc_cython_ENABLED      = DEFAULT
 nvidia_ENABLED          = DEFAULT and not OSX and BITS==64
-nvjpeg_encoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
-nvjpeg_decoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
+nvjpeg_encoder_ENABLED  = nvidia_ENABLED and pkg_config_exists("nvjpeg")
+nvjpeg_decoder_ENABLED  = nvidia_ENABLED and pkg_config_exists("nvjpeg")
 nvenc_ENABLED           = nvidia_ENABLED and pkg_config_version("10", "nvenc")
 nvdec_ENABLED           = False
-nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_ok("--exists", "nvfbc")
+nvfbc_ENABLED           = nvidia_ENABLED and not ARM and pkg_config_exists("nvfbc")
 cuda_kernels_ENABLED    = nvidia_ENABLED and (nvenc_ENABLED or nvjpeg_encoder_ENABLED)
 cuda_rebuild_ENABLED    = None if (nvidia_ENABLED and not WIN32) else False
-csc_libyuv_ENABLED      = DEFAULT and pkg_config_ok("--exists", "libyuv")
+csc_libyuv_ENABLED      = DEFAULT and pkg_config_exists("libyuv")
 gstreamer_ENABLED       = DEFAULT
 gstreamer_audio_ENABLED = gstreamer_ENABLED
 gstreamer_video_ENABLED = gstreamer_ENABLED
@@ -2669,7 +2675,7 @@ tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.util.rectangle", 
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.cystats", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.window.motion", optimize=3)
 if pam_ENABLED:
-    if pkg_config_ok("--exists", "pam", "pam_misc"):
+    if pkg_config_exists("pam", "pam_misc"):
         pam_kwargs = {"pkgconfig_names" : "pam,pam_misc"}
     else:
         pam_kwargs = {
@@ -2763,8 +2769,8 @@ toggle_packages(webp_encoder_ENABLED or webp_decoder_ENABLED, "xpra.codecs.webp"
 tace(webp_encoder_ENABLED, "xpra.codecs.webp.encoder", "libwebp")
 tace(webp_decoder_ENABLED, "xpra.codecs.webp.decoder", "libwebp")
 toggle_packages(spng_decoder_ENABLED or spng_encoder_ENABLED, "xpra.codecs.spng")
-tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", "spng")
-tace(spng_encoder_ENABLED, "xpra.codecs.spng.encoder", "spng")
+tace(spng_decoder_ENABLED, "xpra.codecs.spng.decoder", spng_pc)
+tace(spng_encoder_ENABLED, "xpra.codecs.spng.encoder", spng_pc)
 toggle_packages(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg")
 tace(nvjpeg_encoder_ENABLED or nvjpeg_decoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.common", f"{cuda},nvjpeg")
 tace(nvjpeg_encoder_ENABLED, "xpra.codecs.nvidia.nvjpeg.encoder", f"{cuda},nvjpeg")
