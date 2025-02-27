@@ -546,7 +546,7 @@ def print_codecs(list_codecs: Sequence[str]) -> None:
                         i = mod.get_info()
                         for k, v in sorted(i.items()):
                             out(f"                         {k} = {v}")
-                    except RuntimeError:
+                    except (AttributeError, RuntimeError):
                         pass
                 except Exception as e:
                     log(f"{mod}", exc_info=True)
