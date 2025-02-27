@@ -6,6 +6,9 @@
 from typing import Dict
 from ctypes import CDLL, c_uint64, c_int, c_void_p, byref, POINTER
 
+from xpra.common import noop
+from xpra.log import Logger
+
 from libc.stddef cimport wchar_t
 from libc.stdint cimport uint64_t, uintptr_t
 from libc.string cimport memset
@@ -24,16 +27,9 @@ from xpra.codecs.amf.amf cimport (
     RESULT_STR,
 )
 
-from xpra.common import noop
-from xpra.log import Logger
+cdef extern from "core/Factory.h":
+    cdef const char* AMF_DLL_NAMEA
 
-log = Logger("amf")
-LIBNAME = "amfrt64"
-try:
-    amf = CDLL(LIBNAME)
-except OSError as e:
-    raise ImportError(f"AMF library {LIBNAME!r} not found: {e}") from None
-assert amf
 
 cdef extern from "Python.h":
     object PyUnicode_FromWideChar(wchar_t *w, Py_ssize_t size)
@@ -43,6 +39,23 @@ cdef extern from "Python.h":
 
 cdef extern from "string.h":
     size_t wcslen(const wchar_t *str)
+
+
+log = Logger("amf")
+
+
+cdef object load_library():
+    libname = AMF_DLL_NAMEA.decode("latin1")
+    try:
+        amf = CDLL(libname)
+    except OSError as e:
+        log("CDLL({libname})", exc_info=True)
+        raise ImportError(f"AMF library {libname!r} not found: {e}") from None
+    assert amf
+    return amf
+
+
+amf = load_library()
 
 
 cdef AMFFactory *factory
