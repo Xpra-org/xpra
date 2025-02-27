@@ -329,18 +329,26 @@ class VideoPipeline(Pipeline):
     Dispatch video encoding or decoding to a gstreamer pipeline
     """
 
-    def init_context(self, encoding: str, width: int, height: int, colorspace: str, options: typedict) -> None:
-        self.encoding: str = encoding
-        self.width: int = width
-        self.height: int = height
-        self.colorspace: str = colorspace
-        self.frames: int = 0
+    def __init__(self):
+        super().__init__()
+        self.encoding = ""
+        self.width = 0
+        self.height = 0
+        self.colorspace = ""
+        self.frames = 0
         self.frame_queue: SimpleQueue[Any] = SimpleQueue()
-        self.pipeline_str: str = ""
+        self.pipeline_str = ""
+        self.src: Gst.Element | None = None
+        self.sink: Gst.Element | None = None
+
+    def init_context(self, encoding: str, width: int, height: int, colorspace: str, options: typedict) -> None:
+        self.encoding = encoding
+        self.width = width
+        self.height = height
+        self.colorspace = colorspace
         self.create_pipeline(options)
         self.src: Gst.Element = self.pipeline.get_by_name("src")
         self.src.set_property("format", Gst.Format.TIME)
-        # self.src.set_caps(Gst.Caps.from_string(CAPS))
         self.sink: Gst.Element = self.pipeline.get_by_name("sink")
 
         def sh(sig: str, handler: Callable):
