@@ -915,7 +915,7 @@ fi
 
 
 %changelog
-- Tue Feb 25 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
+- Thu Feb 27 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
 - Platforms, build and packaging:
    MS Windows custom build arguments
    EXE manigests optional
@@ -933,6 +933,7 @@ fi
    `libexec` scripts installation into a prefix
    detect MS Windows version for all codepages
    don't enable splash unconditionally on non-posix
+   spng codecs missing due to pkg-config changes
 - Major:
    integer time overflow, prevent more
    server fails to start when sourcing profile strings
@@ -946,6 +947,8 @@ fi
    codec error handling
    bgrx output image was cropped and blanked out
    evdi build
+   GStreamer video encoder errors in debug logging
+   disable GStreamer video encoder on MS Windows
 - Network:
    scary warnings when RDP clients attempt to connect
    limit openssl version details exposed

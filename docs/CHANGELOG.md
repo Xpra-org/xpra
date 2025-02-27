@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.4] 2025-02-25
+## [6.2.4] 2025-02-27
 * Platforms, build and packaging:
     * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
     * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
@@ -18,6 +18,7 @@
     * [`libexec` scripts installation into a prefix](https://github.com/Xpra-org/xpra/commit/a27319e0d98a1e1c437b0af226867a3890373fb6)
     * [detect MS Windows version for all codepages](https://github.com/Xpra-org/xpra/commit/7fd24b71146424e6ed24ed32178fc79463981051)
     * [don't enable splash unconditionally on non-posix](https://github.com/Xpra-org/xpra/commit/1b488723784ed976cea55ac09186033104e4b7e3)
+    * [spng codecs missing due to pkg-config changes](https://github.com/Xpra-org/xpra/commit/48dc9858c4d263ea575f894b70294ef1576fdc5f)
 * Major:
     * [integer time overflow](https://github.com/Xpra-org/xpra/commit/dcc8be686c413fe289e284801b5203455ce82830), [prevent more](https://github.com/Xpra-org/xpra/commit/4c0acc83d4799fd945afe3084f6e653d9dbe02e6)
     * [server fails to start when sourcing profile strings](https://github.com/Xpra-org/xpra/commit/3bd53a6e9e8c808aff025eb0cbe972f49f1f3191)
@@ -31,6 +32,8 @@
     * [avoid cuda context error messages when not installed](https://github.com/Xpra-org/xpra/commit/0a3022e3119d63041bbf8e8e4f930d0eb6040942)
     * [bgrx output image was cropped](https://github.com/Xpra-org/xpra/commit/a08b0f6ae730d8295c7ce9960be83802010434e2) [and blanked out](https://github.com/Xpra-org/xpra/commit/91e7a7342f8c2d02308fd22995726ddcf60b7d53)
     * [evdi build](https://github.com/Xpra-org/xpra/commit/b57a3768da1fe109f45716ee62c6465c46716a40)
+    * [GStreamer video encoder errors in debug logging](https://github.com/Xpra-org/xpra/commit/a277714df53bef318444b5422962c7bbc32968bc)
+    * [disable GStreamer video encoder on MS Windows](https://github.com/Xpra-org/xpra/commit/3be51774a8404c9d7eddc8c8c910165877118b08)
 * Network:
     * [scary warnings when RDP clients attempt to connect](https://github.com/Xpra-org/xpra/commit/5f6b4454a59952822362f204dc75f84ac9f17a23)
     * [limit openssl version details exposed](https://github.com/Xpra-org/xpra/commit/de983c867c743e04670e61a7bf6ef05ddf61fab2)

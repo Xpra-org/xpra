@@ -16,6 +16,7 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     `libexec` scripts installation into a prefix
     detect MS Windows version for all codepages
     don't enable splash unconditionally on non-posix
+    spng codecs missing due to pkg-config changes
   * Major:
     integer time overflow, prevent more
     server fails to start when sourcing profile strings
@@ -29,6 +30,8 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     codec error handling
     bgrx output image was cropped and blanked out
     evdi build
+    GStreamer video encoder errors in debug logging
+    disable GStreamer video encoder on MS Windows
   * Network:
     scary warnings when RDP clients attempt to connect
     limit openssl version details exposed
@@ -48,7 +51,7 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     DPI documentation link
     unit tests log cuda errors
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 25 Feb 2025 14:00:48 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 27 Feb 2025 19:10:49 +0700
 
 xpra (6.2.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
