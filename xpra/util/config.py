@@ -18,7 +18,7 @@ from xpra.log import Logger
 
 log = Logger("util")
 
-
+OLD_CONFIGURE_TOOL_CONFIG = "99_configure_tool.conf"
 CONFIGURE_TOOL_CONFIG = "90_configure_tool.conf"
 
 
@@ -118,3 +118,21 @@ def with_config(cb: Callable) -> None:
         GLib.idle_add(cb, defaults)
 
     start_thread(load_config, "load-config", daemon=True)
+
+
+def may_migrate() -> None:
+    from xpra.platform.paths import get_user_conf_dirs
+    for user_conf_dir in get_user_conf_dirs():
+        old_config = osexpand(os.path.join(user_conf_dir, "conf.d", OLD_CONFIGURE_TOOL_CONFIG))
+        if not os.path.exists(old_config):
+            continue
+        new_config = osexpand(os.path.join(user_conf_dir, "conf.d", CONFIGURE_TOOL_CONFIG))
+        if os.path.exists(new_config):
+            continue
+        try:
+            os.rename(old_config, new_config)
+        except OSError:
+            pass
+
+
+may_migrate()
