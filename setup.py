@@ -285,6 +285,8 @@ pillow_encoder_ENABLED  = pillow_ENABLED
 pillow_decoder_ENABLED  = pillow_ENABLED
 argb_ENABLED            = DEFAULT
 argb_encoder_ENABLED    = argb_ENABLED
+# some platforms have "spng.pc", others use "libspng.pc"..
+spng_pc = "libspng" if pkg_config_ok("--exists", "libspng") else "spng"
 spng_decoder_ENABLED    = DEFAULT and pkg_config_version("0.6", "spng")
 spng_encoder_ENABLED    = DEFAULT and pkg_config_version("0.7", "spng")
 webp_ENABLED            = DEFAULT and pkg_config_version("0.5", "libwebp")
