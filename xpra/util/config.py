@@ -6,8 +6,8 @@
 import os
 
 from datetime import datetime
-from typing import Callable
-from collections.abc import Sequence
+from typing import Any
+from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.scripts.config import make_defaults_struct
@@ -109,10 +109,10 @@ def get_config_env(var_name: str,
     return env.get(var_name, "")
 
 
-def with_config(cb: Callable) -> None:
+def with_config(cb: Callable[[Any], bool]) -> None:
     # load config in a thread as this involves IO,
     # then run the callback in the UI thread
-    def load_config():
+    def load_config() -> None:
         defaults = make_defaults_struct()
         GLib = gi_import("GLib")
         GLib.idle_add(cb, defaults)

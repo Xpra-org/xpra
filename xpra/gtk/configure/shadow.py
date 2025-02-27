@@ -147,7 +147,7 @@ class ConfigureGUI(BaseGUIWindow):
 
         # only enable the confirm button once an option has been chosen,
         # and ensure that there is always one option selected
-        def option_toggled(toggled_btn=None, *_args):
+        def option_toggled(toggled_btn=None, *_args) -> None:
             if toggled_btn and toggled_btn.get_active():
                 for button in self.buttons:
                     if button != toggled_btn:
@@ -162,7 +162,7 @@ class ConfigureGUI(BaseGUIWindow):
         option_toggled()
         self.vbox.show_all()
 
-    def save_shadow(self, *_args):
+    def save_shadow(self, *_args) -> None:
         active = [button for button in self.buttons if button.get_active()]
         assert len(active) == 1
         setting = active[0].shadow_backend.lower()

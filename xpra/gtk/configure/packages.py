@@ -64,7 +64,7 @@ class ConfigureGUI(BaseGUIWindow):
             parent=parent,
         )
 
-    def populate(self):
+    def populate(self) -> None:
         self.clear_vbox()
         self.add_widget(label("Install or remove xpra packages", font="sans 20"))
 
@@ -163,7 +163,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.show_all()
         start_thread(self.query_packages, "query-packages", daemon=True)
 
-    def query_packages(self, connect=True):
+    def query_packages(self, connect=True) -> None:
         if self.package_system == "dnf":
             cmd = "rpm -qa"
         else:
@@ -191,6 +191,7 @@ class ConfigureGUI(BaseGUIWindow):
                 if remainder[1] in "0123456789":
                     return True
             return False
+
         for package, switch in self.package_switch.items():
             found = find_package(f"xpra-{package}")
             self.initial_state[package] = found
@@ -199,7 +200,6 @@ class ConfigureGUI(BaseGUIWindow):
             if connect:
                 switch.connect("state-set", self.toggle_package, package)
             switch.set_sensitive(True)
-        return False
 
     def sync_switches(self) -> None:
         for package, switch in self.package_switch.items():
@@ -207,7 +207,7 @@ class ConfigureGUI(BaseGUIWindow):
             if switch.get_state() != state:
                 switch.set_state(state)
 
-    def toggle_package(self, widget, state, package):
+    def toggle_package(self, widget, state, package: str) -> None:
         if not widget.get_sensitive():
             return
         enabled = bool(state)
@@ -228,7 +228,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.apply_button.set_sensitive(self.current_state != self.initial_state)
         log("toggle_package%s", (widget, state, package))
 
-    def apply(self, *_args):
+    def apply(self, *_args) -> None:
         remove = [
             f"xpra-{x}" for x in self.initial_state.keys()
             if self.initial_state[x] and not self.current_state[x]
@@ -250,7 +250,7 @@ class ConfigureGUI(BaseGUIWindow):
         command += [f"bash -c {shell_command}"]
         log(f"{command=}")
 
-        def update_packages():
+        def update_packages() -> None:
             r = get_status_output(command)[0]
             log(f"update_packages() {command=} returned {r}")
             self.query_packages(False)

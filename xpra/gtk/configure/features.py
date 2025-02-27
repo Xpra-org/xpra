@@ -31,7 +31,7 @@ FEATURES = (
 )
 
 
-def plabel(text, tooltip="", sensitive=False, font="sans 12"):
+def plabel(text, tooltip="", sensitive=False, font="sans 12") -> Gtk.Label:
     lbl = label(text, tooltip=tooltip, font=font)
     lbl.set_hexpand(False)
     lbl.set_halign(Gtk.Align.START)
@@ -54,7 +54,7 @@ class ConfigureGUI(BaseGUIWindow):
             parent=parent,
         )
 
-    def populate(self):
+    def populate(self) -> None:
         self.clear_vbox()
         self.add_widget(label("Configure Xpra's Features", font="sans 20"))
         self.add_text_lines((
@@ -91,7 +91,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.show_all()
         with_config(self.configure_switches)
 
-    def configure_switches(self, defaults):
+    def configure_switches(self, defaults) -> bool:
         for subsystem, switch in self.subsystem_switch.items():
             value = getattr(defaults, subsystem.replace("-", "_"), None)
             log(f"configure_switches: {subsystem}={value}")
@@ -102,7 +102,7 @@ class ConfigureGUI(BaseGUIWindow):
         return False
 
     @staticmethod
-    def toggle_subsystem(_widget, state, subsystem):
+    def toggle_subsystem(_widget, state, subsystem: str) -> None:
         update_config_attribute(subsystem, bool(state))
 
 

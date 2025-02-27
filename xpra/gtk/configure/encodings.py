@@ -45,7 +45,7 @@ class ConfigureGUI(BaseGUIWindow):
     def populate(self):
         with_config(self.do_populate)
 
-    def do_populate(self, config):
+    def do_populate(self, config) -> bool:
         self.clear_vbox()
         self.add_widget(label("Configure Xpra's Picture Compression", font="sans 20"))
         url = "https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Encodings.md#tuning"
@@ -100,21 +100,22 @@ class ConfigureGUI(BaseGUIWindow):
         grid.attach(lbl, 0, 0, 1, 1)
         grid.attach(switch, 1, 0, 1, 1)
         self.show_all()
+        return None
 
     @staticmethod
-    def speed_changed(widget):
+    def speed_changed(widget) -> None:
         update_config_attribute("min-speed", int(widget.get_value()))
 
     @staticmethod
-    def quality_changed(widget):
+    def quality_changed(widget) -> None:
         update_config_attribute("min-quality", int(widget.get_value()))
 
     @staticmethod
-    def ar_changed(widget):
+    def ar_changed(widget) -> None:
         update_config_attribute("auto-refresh-delay", int(widget.get_value())/1000)
 
     @staticmethod
-    def toggle_grayscale(_widget, state):
+    def toggle_grayscale(_widget, state) -> None:
         update_config_attribute("encoding", "grayscale" if state else "auto")
 
 

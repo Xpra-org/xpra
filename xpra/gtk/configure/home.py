@@ -7,7 +7,7 @@ from importlib import import_module
 from importlib.util import find_spec
 
 from xpra.gtk.configure.common import run_gui
-from xpra.os_util import LINUX
+from xpra.os_util import LINUX, POSIX, OSX
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label
 
@@ -34,6 +34,8 @@ class HomeGUI(BaseGUIWindow):
         # self.sub("GStreamer", "gstreamer.png", "Configure the GStreamer codecs", "gstreamer")
 
         self.sub("Shadow Server", "shadow.png", "Configure the Shadow Server", "shadow", "xpra.server")
+        if POSIX and not OSX:
+            self.sub("Virtual Framebuffer", "monitor.png", "Configure the vfb command", "vfb", "xpra.x11")
         # self.sub("OpenGL acceleration", "opengl.png", "Test and validate OpenGL renderer", "opengl")
 
     def sub(self, title="", icon_name="browse.png", tooltip="", configure: str = "", req_module="xpra") -> None:
