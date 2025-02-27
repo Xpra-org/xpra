@@ -162,6 +162,10 @@ def make_spec(espec: dict) -> VideoSpec:
     return spec
 
 
+def get_encodings() -> Sequence[str]:
+    return tuple(server.specs.items())
+
+
 def get_specs() -> Sequence[VideoSpec]:
     # the `server.specs` are dictionaries,
     # which we need to convert to real `VideoSpec` objects:
