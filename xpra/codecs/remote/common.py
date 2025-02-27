@@ -80,7 +80,6 @@ def find_server_uri(sessions_dir: str) -> str:
             times[spath] = os.path.getmtime(spath)
         # sort by value:
         times = dict(sorted(times.items(), key=lambda item: - item[1]))
-        log.warn(f"{times=}")
         encoder_sockets = tuple(times.keys())
     encoder = encoder_sockets[0]
     log(f"find_server_uri({sessions_dir!r})=%s, from %i encoders found: %s",
