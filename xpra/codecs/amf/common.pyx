@@ -59,23 +59,23 @@ cdef void trace_write(AMFTraceWriter* pThis, const wchar_t* scope, const wchar_t
         # ie: "2025-02-25 17:46:29.642     1984 [AMFEncoderCoreH264]   Debug: AMFEncoderCoreH264Impl::Terminate()"
         # log.info(f"{scope_str=} {message_str=}")
         fn = log.info
-        if (
-            message_str.endswith("Switching to AllocBufferEx()")
-            or message_str.startswith("Video core bandwidth calcs is not available")
-            or message_str.startswith("***Found regpath, but key not found")
-        ):
-            fn = log.debug
-        elif len(parts) == 2:
+        if len(parts) == 2:
             category = parts[0].split(" ")[-1].lower()
-            fn = {
-                "debug": log.debug,
-                "info": log.info,
-                "warning": log.warn,
-                "error": log.error,
-            }.get(category, fn)
             message_str = parts[1]
-            if message_str.endswith("Switching to AllocBufferEx()") or message_str.startswith("Video core bandwidth calcs is not available"):
+            if (
+                message_str.endswith("Switching to AllocBufferEx()")
+                or message_str.startswith("Video core bandwidth calcs is not available")
+                or message_str.startswith("***Found regpath, but key not found")
+                or message_str.startswith("AMFEncoderCoreBaseImpl::QueryThroughput")
+            ):
                 fn = log.debug
+            else:
+                fn = {
+                    "debug": log.debug,
+                    "info": log.info,
+                    "warning": log.warn,
+                    "error": log.error,
+                }.get(category, fn)
         fn(f"{scope_str}: {message_str}")
 
 cdef void trace_flush(AMFTraceWriter* pThis) noexcept nogil:
