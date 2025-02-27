@@ -9,6 +9,7 @@ from xpra.os_util import gi_import
 from xpra.gtk.configure.common import run_gui
 from xpra.util.config import update_config_attribute, with_config
 from xpra.util.io import which
+from xpra.util.system import is_Debian, is_Ubuntu
 from xpra.gtk.dialogs.base_gui_window import BaseGUIWindow
 from xpra.gtk.widget import label, setfont
 from xpra.log import Logger
@@ -17,6 +18,16 @@ Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 log = Logger("gstreamer", "util")
+
+
+XDUMMY_INFO = [
+    "Xdummy",
+    "Xorg server with the `dummy` driver",
+    "runs a full `Xorg` server",
+    "supports multi-monitor virtualization and DPI emulation",
+]
+if is_Debian() or is_Ubuntu():
+    XDUMMY_INFO.append("should not be used on Debian or Ubuntu due to severe bugs")
 
 
 VFB_BACKENDS: dict[str, tuple[Sequence[str], Sequence[str]]] = {
@@ -30,12 +41,7 @@ VFB_BACKENDS: dict[str, tuple[Sequence[str], Sequence[str]]] = {
     ),
     "Xdummy": (
         ("Xorg", ),
-        (
-            "Xdummy",
-            "Xorg server with the `dummy` driver",
-            "runs a full `Xorg` server",
-            "supports multi-monitor virtualization and DPI emulation",
-        ),
+        XDUMMY_INFO,
     ),
     "weston+Xwayland": (
         ("weston", "Xwayland"),
