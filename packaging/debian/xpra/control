@@ -69,6 +69,7 @@ Depends: xpra-client (= ${binary:Version})
 Recommends: xpra-audio (= ${binary:Version})
             ,xpra-codecs-extras (= ${binary:Version})
 Suggests:  xpra-codecs-nvidia (= ${binary:Version})
+         ,xpra-codecs-amd (= ${binary:Version})
 Description: tool to detach/reattach running X programs
  Xpra gives you the functionality of GNU Screen for X applications.
  .
@@ -174,6 +175,7 @@ Recommends: xpra-codecs (= ${binary:Version})
 # most of the examples use an xterm:
         ,xterm
 Suggests: xpra-codecs-nvidia (= ${binary:Version})
+        ,xpra-codecs-amd (= ${binary:Version})
         ,openssh-server
         ,python3-opengl
 # authentication:
@@ -307,6 +309,7 @@ Depends: xpra-common (= ${binary:Version})
 #sid:              ,libspng0
 Suggests: v4l2loopback-dkms
           ,xpra-codecs-nvidia (= ${binary:Version})
+          ,xpra-codecs-amd (= ${binary:Version})
           ,python3-opencv
 Description: Picture and video codecs
  for the xpra server and client.
@@ -333,6 +336,18 @@ Recommends:
         ,gstreamer1.0-pipewire
         ,python3-gst-1.0
 Description: Extra picture and video codecs
+ for the xpra server and client.
+
+
+Package: xpra-codecs-amd
+Architecture: any
+Conflicts: python2-xpra, python3-xpra, xpra (<< 5), xpra-codecs (<< 6)
+Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
+Enhances: xpra-codecs (= ${binary:Version})
+Depends: xpra-codecs (= ${binary:Version})
+        ,${python3:Depends}
+        ,amf-amdgpu-pro
+Description: Proprietary AMD video codecs
  for the xpra server and client.
 
 

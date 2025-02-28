@@ -58,6 +58,8 @@ autoprov: no
 %define pyqt6 1
 %endif
 
+%define amf_codecs %(pkg-config --exists amf && echo 1)
+
 %global gnome_shell_extension input-source-manager@xpra_org
 
 %{!?nthreads: %global nthreads %(nproc)}
@@ -121,6 +123,7 @@ Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-extra = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs-amd = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
 Recommends:			%{package_prefix}-x11 = %{version}-%{release}
 Requires:			%{package_prefix}-client = %{version}-%{release}
@@ -233,6 +236,7 @@ This package contains the files which are shared between the xpra client and ser
 %package -n %{package_prefix}-codecs
 Summary:			Picture and video codecs for xpra clients and servers.
 Suggests:			%{package_prefix}-codecs-extra
+Suggests:			%{package_prefix}-codecs-amd
 Suggests:			%{package_prefix}-codecs-nvidia
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			%{python3}-pillow
@@ -294,6 +298,17 @@ Recommends:			pipewire-gstreamer
 %description -n %{package_prefix}-codecs-extras
 This package contains extra picture and video codecs used by xpra clients and servers.
 These codecs may have patent or licensing issues.
+
+
+%if 0%{amf_codecs}
+%package -n %{package_prefix}-codecs-amd
+Summary:			AMF video codecs for AMD GPUs
+Requires:			%{package_prefix}-codecs = %{version}-%{release}
+Requires:			libamdenc-amdgpu-pro
+%description -n %{package_prefix}-codecs-amd
+This package contains the video codecs for AMD GPUs,
+this is used by both xpra clients and servers.
+%endif
 
 
 %if 0%{?nvidia_codecs}
@@ -477,6 +492,7 @@ Recommends:			%{package_prefix}-client = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-extra = %{version}-%{release}
 Recommends:			%{package_prefix}-codecs-nvidia = %{version}-%{release}
+Recommends:			%{package_prefix}-codecs-amd = %{version}-%{release}
 Recommends:			cups-filters
 Recommends:			cups-pdf
 Recommends:			%{python3}-cups
@@ -747,6 +763,14 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %endif
 %{python3_sitearch}/xpra/codecs/gstreamer
+%if 0%{amf_codecs}
+%{python3_sitearch}/xpra/codecs/amf
+%endif
+
+%if 0%{amf_codecs}
+%files -n %{package_prefix}-codecs-amd
+%{python3_sitearch}/xpra/codecs/amf
+%endif
 
 %if 0%{?nvidia_codecs}
 %files -n %{package_prefix}-codecs-nvidia
