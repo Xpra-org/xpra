@@ -46,13 +46,19 @@ log = Logger("amf")
 
 cdef object load_library():
     libname = AMF_DLL_NAMEA.decode("latin1")
-    try:
-        amf = CDLL(libname)
-    except OSError as e:
-        log("CDLL({libname})", exc_info=True)
-        raise ImportError(f"AMF library {libname!r} not found: {e}") from None
-    assert amf
-    return amf
+    options = [libname]
+    import os
+    import platform
+    arch = platform.machine()   # ie: "x86_64"
+    for lib_path in ("/opt/amdgpu-pro/lib64", f"/opt/amdgpu-pro/lib/{arch}-linux-gnu", os.environ.get("AMF_LIB_PATH", "")):
+        if lib_path and os.path.exists(lib_path) and os.path.isdir(lib_path):
+            options.append(os.path.join(lib_path, f"{libname}.so"))
+    for option in options:
+        try:
+            return CDLL(option)
+        except (OSError, ImportError) as e:
+            log("CDLL({option!r})", exc_info=True)
+    raise ImportError(f"AMF library {libname!r} not found")
 
 
 amf = load_library()
