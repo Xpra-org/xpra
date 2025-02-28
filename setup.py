@@ -302,7 +302,7 @@ avif_decoder_ENABLED    = avif_ENABLED
 vpx_ENABLED             = DEFAULT and pkg_config_version("1.7", "vpx") and BITS==64
 vpx_encoder_ENABLED     = vpx_ENABLED
 vpx_decoder_ENABLED     = vpx_ENABLED
-amf_ENABLED             = pkg_config_version("amf", "1.0") or has_header_file("AMF/components/VideoEncoderVCE.h")
+amf_ENABLED             = pkg_config_version("1.0", "amf") or has_header_file("AMF/components/VideoEncoderVCE.h")
 amf_encoder_ENABLED     = amf_ENABLED
 remote_encoder_ENABLED  = DEFAULT
 # opencv currently broken on 32-bit windows (crashes on load):
