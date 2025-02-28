@@ -697,9 +697,6 @@ cdef class Encoder:
 
 def selftest(full=False) -> None:
     global CODECS, SAVE_TO_FILE
-    from xpra.os_util import WIN32
-    if not WIN32:
-        raise ImportError("amf encoder needs porting to this platform")
     from xpra.codecs.checks import testencoder, get_encoder_max_size
     from xpra.codecs.amf import encoder
     temp = SAVE_TO_FILE
