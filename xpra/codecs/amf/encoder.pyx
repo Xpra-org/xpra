@@ -86,6 +86,7 @@ AMF_ENCODINGS : Dict[str, str] = {
     "hevc": "AMFVideoEncoder_HEVC",
     "av1": "AMFVideoEncoder_AV1",
 }
+
 START_TIME_PROPERTY = "StartTimeProperty"
 
 
@@ -130,6 +131,7 @@ def get_type() -> str:
 
 
 CODECS = tuple(AMF_ENCODINGS.keys())
+
 
 def get_encodings() -> Sequence[str]:
     return CODECS

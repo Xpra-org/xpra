@@ -203,6 +203,7 @@ cdef extern from "core/Data.h":
     ctypedef struct AMFData:
         const AMFDataVtbl *pVtbl
 
+
 cdef extern from "core/Platform.h":
     ctypedef struct AMFSize:
         amf_int32 width
@@ -265,6 +266,7 @@ cdef extern from "core/Variant.h":
     AMF_RESULT AMFVariantAssignSize(AMFVariantStruct* pDest, const AMFSize &value)
     AMF_RESULT AMFVariantAssignRate(AMFVariantStruct* pDest, const AMFRate &value)
     AMF_RESULT AMFVariantClear(AMFVariantStruct* pDest)
+
 
 cdef extern from "core/Plane.h":
     ctypedef enum AMF_PLANE_TYPE:
@@ -375,7 +377,6 @@ cdef inline PLANE_TYPE_STR(AMF_PLANE_TYPE ptype):
 
 
 cdef extern from "core/Trace.h":
-
     cdef int AMF_TRACE_ERROR
     cdef int AMF_TRACE_WARNING
     cdef int AMF_TRACE_INFO
@@ -683,7 +684,6 @@ cdef extern from "components/ComponentCaps.h":
 
 
 cdef extern from "components/Component.h":
-
     ctypedef amf_long (*COMPONENT_ACQUIRE)(AMFComponent* pThis)
     ctypedef amf_long (*COMPONENT_RELEASE)(AMFComponent* pThis)
 
