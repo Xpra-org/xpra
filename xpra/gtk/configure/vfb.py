@@ -147,7 +147,7 @@ class ConfigureGUI(BaseGUIWindow):
 
         # only enable the confirm button once an option has been chosen,
         # and ensure that there is always one option selected
-        def option_toggled(toggled_btn=None, *_args):
+        def option_toggled(toggled_btn=None, *_args) -> None:
             if toggled_btn and toggled_btn.get_active():
                 for button in self.buttons:
                     if button != toggled_btn:
@@ -163,7 +163,7 @@ class ConfigureGUI(BaseGUIWindow):
         self.vbox.show_all()
         return False
 
-    def save_xvfb(self, *_args):
+    def save_xvfb(self, *_args) -> None:
         active = [button for button in self.buttons if button.get_active()]
         assert len(active) == 1
         xvfb = active[0].xvfb_backend
