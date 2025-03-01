@@ -65,7 +65,7 @@ from xpra.codecs.amf.amf cimport (
     AMFVariantStruct, AMFVariantInit,
     AMFVariantAssignInt64, AMFVariantAssignSize, AMFVariantAssignRate,
     AMFSurface, AMFSurfaceVtbl,
-    AMFContext,
+    AMFContext, AMFContext1,
     AMFComponent,
     AMFFactory,
 )
@@ -226,6 +226,7 @@ generation = AtomicInteger()
 
 cdef class Encoder:
     cdef AMFContext *context
+    cdef AMFContext1 *context1
     cdef AMFComponent* encoder
     cdef AMF_SURFACE_FORMAT surface_format
     cdef AMFSurface* surface
@@ -294,6 +295,7 @@ cdef class Encoder:
         cdef AMF_RESULT res = factory.pVtbl.CreateContext(factory, &self.context)
         log(f"amf_context_init() CreateContext()={res}")
         self.check(res, "AMF context initialization")
+        cdef AMFGuid amf1contextguid
         if DX11:
             res = self.context.pVtbl.InitDX11(self.context, NULL, AMF_DX11_0)
             log(f"amf_context_init() InitDX11()={res}")
@@ -308,10 +310,13 @@ cdef class Encoder:
             if descr and first_time(f"GPU:{descr}"):
                 log.info(f"AMF initialized using DX11 device {descr!r}")
         else:
-            res = self.context.pVtbl.InitOpenGL(self.context, NULL, NULL, NULL)
-            log(f"amf_context_init() InitOpenGL()={res}")
-            self.check(res, "AMF OpenGL device initialization")
-            self.device = <void *> self.context.pVtbl.GetOpenGLContext(self.context)
+            set_guid(&amf1contextguid, 0xd9e9f868, 0x6220, 0x44c6, 0xa2, 0x2f, 0x7c, 0xd6, 0xda, 0xc6, 0x86, 0x46)
+            res = self.context.pVtbl.QueryInterface(self.context, &amf1contextguid, <void**> &self.context1)
+            self.check(res, "AMFContext1 query")
+            res = self.context1.pVtbl.InitVulkan(self.context1, NULL)
+            log(f"amf_context_init() InitVulkan()={res}")
+            self.check(res, "AMF Vulkan device initialization")
+            self.device = <void *> self.context1.pVtbl.GetVulkanDevice(self.context1)
         log(f"amf_context_init() device=%#x", <uintptr_t> self.device)
 
     cdef void set_encoder_property(self, name: str, AMFVariantStruct var):
@@ -470,6 +475,7 @@ cdef class Encoder:
             self.context = NULL
             context.pVtbl.Terminate(context)
             context.pVtbl.Release(context)
+        self.context1 = NULL
         self.frames = 0
         self.width = 0
         self.height = 0

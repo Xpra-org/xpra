@@ -586,6 +586,7 @@ cdef extern from "core/Context.h":
 
     ctypedef amf_long (*CONTEXT_ACQUIRE)(AMFContext* pThis)
     ctypedef amf_long (*CONTEXT_RELEASE)(AMFContext* pThis)
+    ctypedef AMF_RESULT (*CONTEXT_QUERYINTERFACE)(AMFContext* pThis, const AMFGuid *interfaceID, void** ppInterface)
 
     ctypedef AMF_RESULT (*CONTEXT_TERMINATE)(AMFContext *context)
     ctypedef AMF_RESULT (*CONTEXT_INITDX11)(AMFContext *context, void* pDX11Device, AMF_DX_VERSION dxVersionRequired)
@@ -612,6 +613,7 @@ cdef extern from "core/Context.h":
     ctypedef struct AMFContextVtbl:
         CONTEXT_ACQUIRE Acquire
         CONTEXT_RELEASE Release
+        CONTEXT_QUERYINTERFACE QueryInterface
 
         CONTEXT_TERMINATE Terminate
         CONTEXT_INITDX11 InitDX11
@@ -629,6 +631,20 @@ cdef extern from "core/Context.h":
 
     ctypedef struct AMFContext:
         const AMFContextVtbl *pVtbl
+
+    ctypedef AMF_RESULT (*CONTEXT1_INITVULKAN)(AMFContext1 *context, void* pVulkanDevice)
+    ctypedef void* (*CONTEXT1_GETVULKANDEVICE)(AMFContext1 *context)
+    ctypedef AMF_RESULT (*CONTEXT1_LOCKVULKAN)(AMFContext1 *context)
+    ctypedef AMF_RESULT (*CONTEXT1_UNLOCKVULKAN)(AMFContext1 *context)
+
+    ctypedef struct AMFContext1Vtbl:
+        CONTEXT1_INITVULKAN InitVulkan
+        CONTEXT1_GETVULKANDEVICE GetVulkanDevice
+        CONTEXT1_LOCKVULKAN LockVulkan
+        CONTEXT1_UNLOCKVULKAN UnlockVulkan
+
+    ctypedef struct AMFContext1:
+        const AMFContext1Vtbl *pVtbl
 
 
 cdef extern from "components/ComponentCaps.h":
