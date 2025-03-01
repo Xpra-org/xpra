@@ -60,9 +60,11 @@ def query_ibus() -> dict[str, Any]:
 def with_ibus_ready(callback: Callable[[], None]):
     try:
         from xpra.os_util import gi_import
+        from xpra.dbus.helper import DBusHelper
         IBus = gi_import("IBus")
+        dbus_helper = DBusHelper()
     except ImportError as e:
-        log(f"failed to import ibus: {e}")
+        log(f"failed to import ibus functions: {e}")
         return
 
     # warning: this callback will not fire unless a GLib main loop is running!
@@ -89,8 +91,7 @@ def with_ibus_ready(callback: Callable[[], None]):
         check_connected(0)
 
     log(f"waiting for {BUSNAME!r} to call {callback}")
-    from xpra.dbus.helper import DBusHelper
-    session_bus = DBusHelper().get_session_bus()
+    session_bus = dbus_helper.get_session_bus()
     session_bus.watch_name_owner(BUSNAME, got_name)
 
 
