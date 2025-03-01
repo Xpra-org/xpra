@@ -166,7 +166,7 @@ class ConfigureGUI(BaseGUIWindow):
     def save_xvfb(self, *_args):
         active = [button for button in self.buttons if button.get_active()]
         assert len(active) == 1
-        xvfb = active[0].xvfb_backend.lower()
+        xvfb = active[0].xvfb_backend
         log.info(f"saving {xvfb=!r}")
         update_config_attribute("xvfb", xvfb)
         self.dismiss()
