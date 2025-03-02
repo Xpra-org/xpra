@@ -162,6 +162,7 @@ class SocketProtocol:
         self.compressor = "none"
         self._compress = compression.get_compressor("none")
         self.compression_level = 0
+        self.chunks = True
         self.authenticators = ()
         self.encryption = ""
         self.keyfile = ""
@@ -202,7 +203,7 @@ class SocketProtocol:
         "cipher_in_always_pad", "cipher_in_stream", "cipher_in_key",
         "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
         "cipher_out_always_pad", "cipher_out_stream", "cipher_out_key",
-        "compression_level", "encoder", "compressor",
+        "compression_level", "chunks", "encoder", "compressor",
     )
 
     def save_state(self) -> dict[str, Any]:
@@ -393,6 +394,7 @@ class SocketProtocol:
         info = {
             "large_packets": self.large_packets,
             "compression_level": self.compression_level,
+            "chunks": self.chunks,
             "max_packet_size": self.max_packet_size,
             "has_more": shm and shm.is_set(),
             "receive-pending": self.receive_pending,
@@ -596,6 +598,7 @@ class SocketProtocol:
     def enable_encoder_from_caps(self, caps: typedict) -> bool:
         options = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
         log(f"enable_encoder_from_caps(..) options={options}")
+        self.chunks = caps.boolget("chunks", True)
         for e in options:
             if caps.boolget(e):
                 self.enable_encoder(e)
@@ -698,7 +701,7 @@ class SocketProtocol:
                 continue
             if isinstance(item, Compressed):
                 # already compressed data (usually pixels, cursors, etc)
-                if not item.can_inline or size > INLINE_SIZE:
+                if self.chunks and not item.can_inline or size > INLINE_SIZE:
                     il = 0
                     if isinstance(item, LevelCompressed):
                         # unlike `Compressed` (usually pixels, decompressed in the paint thread),
