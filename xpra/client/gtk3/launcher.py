@@ -100,7 +100,7 @@ red = color_parse("red")
 white = color_parse("white")
 
 
-def get_active_item_index(optionmenu):
+def get_active_item_index(optionmenu) -> int:
     menu = optionmenu.get_popup()
     for i, x in enumerate(menu.get_children()):
         if hasattr(x, "get_active") and x.get_active():
@@ -108,7 +108,7 @@ def get_active_item_index(optionmenu):
     return -1
 
 
-def set_history_from_active(optionmenu):
+def set_history_from_active(optionmenu) -> None:
     # Used for MenuButton combo:
     # sets the first active menu entry as the "history" value (the selected item)
     i = get_active_item_index(optionmenu)
@@ -129,7 +129,7 @@ def has_mdns() -> bool:
     return False
 
 
-def get_connection_modes():
+def get_connection_modes() -> list[str]:
     modes = [MODE_SSH, MODE_NESTED_SSH]
     try:
         import ssl
@@ -151,13 +151,13 @@ def get_connection_modes():
     return modes
 
 
-def image_button(text="", tooltip="", icon_pixbuf=None, clicked_cb=None):
+def image_button(text="", tooltip="", icon_pixbuf=None, clicked_cb=None) -> Gtk.Image:
     icon = Gtk.Image()
     icon.set_from_pixbuf(icon_pixbuf)
     return imagebutton(text, icon, tooltip, clicked_cb, icon_size=None)
 
 
-def button(tooltip, icon_name, callback):
+def button(tooltip, icon_name, callback) -> Gtk.Button:
     btn = Gtk.Button()
     theme = Gtk.IconTheme.get_default()
     try:
@@ -184,7 +184,7 @@ def button(tooltip, icon_name, callback):
         btn.add(image)
     btn.set_tooltip_text(tooltip)
 
-    def clicked(*_args):
+    def clicked(*_args) -> None:
         callback()
 
     btn.connect("clicked", clicked)
@@ -209,7 +209,7 @@ class ApplicationWindow:
         self.exit_code = None
         self.current_error = None
 
-    def parse_ssh(self):
+    def parse_ssh(self) -> None:
         ssh_cmd = parse_ssh_option(self.config.ssh)[0].strip().lower()
         self.is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
         self.is_paramiko = ssh_cmd.startswith("paramiko")
@@ -225,11 +225,11 @@ class ApplicationWindow:
         modes = get_connection_modes()
         return {"mode": lambda x: validate_in_list(x, modes)}
 
-    def create_window_with_config(self):
+    def create_window_with_config(self) -> None:
         self.do_create_window()
         self.update_gui_from_config()
 
-    def do_create_window(self):
+    def do_create_window(self) -> None:
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.destroy)
@@ -254,7 +254,7 @@ class ApplicationWindow:
         hb.add(hb_button("About", "help-about", show_about))
         self.bug_tool = None
 
-        def bug(*_args):
+        def bug(*_args) -> None:
             if self.bug_tool is None:
                 from xpra.gtk.dialogs.bug_report import BugReport
                 self.bug_tool = BugReport()
@@ -265,12 +265,12 @@ class ApplicationWindow:
         if has_mdns():
             self.mdns_gui = None
 
-            def mdns(*_args):
+            def mdns(*_args) -> None:
                 if self.mdns_gui is None:
                     from xpra.gtk.dialogs.mdns_gui import mdns_sessions
                     self.mdns_gui = mdns_sessions(self.config)
 
-                    def close_mdns():
+                    def close_mdns() -> None:
                         mdns_gui = self.mdns_gui
                         if mdns_gui:
                             self.mdns_gui = None
@@ -480,11 +480,11 @@ class ApplicationWindow:
         self.window.vbox = vbox
         self.window.add(vbox)
 
-    def accel_close(self, *args):
+    def accel_close(self, *args) -> None:
         log("accel_close%s", args)
         Gtk.main_quit()
 
-    def validate(self, *args):
+    def validate(self, *args) -> list:
         mode = self.mode_combo.get_active_text().lower()
         ssh = mode == MODE_SSH
         sshtossh = mode == MODE_NESTED_SSH
@@ -553,7 +553,7 @@ class ApplicationWindow:
         self.connect_btn.set_sensitive(len(err_text) == 0)
         return errs
 
-    def show(self):
+    def show(self) -> None:
         self.window.show()
         self.window.present()
         self.connect_btn.grab_focus()
@@ -562,7 +562,7 @@ class ApplicationWindow:
         Gtk.main()
         return self.exit_code or 0
 
-    def mode_changed(self, *_args):
+    def mode_changed(self, *_args) -> None:
         mode = self.mode_combo.get_active_text().lower()
         ssh = mode == MODE_SSH
         sshtossh = mode == MODE_NESTED_SSH
@@ -638,7 +638,7 @@ class ApplicationWindow:
         else:
             self.nostrict_host_check.hide()
 
-    def reset_errors(self):
+    def reset_errors(self) -> None:
         self.set_sensitive(True)
         self.set_info_text("")
         for widget in (
@@ -649,7 +649,7 @@ class ApplicationWindow:
             self.set_widget_fg_color(self.info, False)
             self.set_widget_bg_color(widget, False)
 
-    def set_info_text(self, text, is_error=False):
+    def set_info_text(self, text, is_error=False) -> None:
         if self.info:
             def do_set_info():
                 self.info.set_text(text)
@@ -658,19 +658,19 @@ class ApplicationWindow:
 
             GLib.idle_add(do_set_info)
 
-    def set_sensitive(self, s):
+    def set_sensitive(self, s) -> None:
         GLib.idle_add(self.window.set_sensitive, s)
 
-    def choose_pkey_file(self, title, action, action_button, callback):
+    def choose_pkey_file(self, title, action, action_button, callback) -> None:
         file_filter = Gtk.FileFilter()
         file_filter.set_name("All Files")
         file_filter.add_pattern("*")
         choose_file(self.window, title, action, action_button, callback, file_filter)
 
-    def proxy_key_browse_clicked(self, *args):
+    def proxy_key_browse_clicked(self, *args) -> None:
         log("proxy_key_browse_clicked%s", args)
 
-        def do_choose(filename):
+        def do_choose(filename) -> None:
             # make sure the file extension is .ppk
             if os.path.splitext(filename)[-1] != ".ppk":
                 filename += ".ppk"
@@ -678,12 +678,12 @@ class ApplicationWindow:
 
         self.choose_pkey_file("Choose SSH private key", Gtk.FileChooserAction.OPEN, Gtk.STOCK_OPEN, do_choose)
 
-    def connect_clicked(self, *args):
+    def connect_clicked(self, *args) -> None:
         log(f"connect_clicked({args})")
         self.update_options_from_gui()
         self.do_connect()
 
-    def clean_client(self):
+    def clean_client(self) -> None:
         c = self.client
         if c:
             c.disconnect_and_quit = noop
@@ -692,7 +692,7 @@ class ApplicationWindow:
             c.exit = noop
             c.cleanup()
 
-    def handle_exception(self, e):
+    def handle_exception(self, e) -> None:
         log(f"handle_exception({e})")
         t = str(e)
         log("handle_exception: %s", traceback.format_exc())
@@ -700,7 +700,7 @@ class ApplicationWindow:
             # in debug mode, include the full stacktrace:
             t = traceback.format_exc()
 
-        def ui_handle_exception():
+        def ui_handle_exception() -> None:
             self.clean_client()
             self.set_sensitive(True)
             if not self.current_error:
@@ -711,14 +711,14 @@ class ApplicationWindow:
 
         GLib.idle_add(ui_handle_exception)
 
-    def do_connect(self):
+    def do_connect(self) -> None:
         try:
             self.connect_builtin()
         except Exception as e:
             log.error("Error: cannot connect", exc_info=True)
             self.handle_exception(e)
 
-    def connect_builtin(self):
+    def connect_builtin(self) -> None:
         # cooked vars used by connect_to
         username = self.config.username
         params = {
@@ -802,7 +802,7 @@ class ApplicationWindow:
         configure_network(self.config)
         self.start_client(params)
 
-    def start_client(self, display_desc):
+    def start_client(self, display_desc: dict) -> None:
         bypass_no_gtk()
         self.client = make_client(self.config)
         self.client.show_progress(30, "client configuration")
@@ -811,20 +811,20 @@ class ApplicationWindow:
         self.client.init_ui(self.config)
         self.client.username = display_desc.get("username")
 
-        def handshake_complete(*_args):
+        def handshake_complete(*_args) -> None:
             self.client.show_progress(100, "Session connected")
 
         self.client.after_handshake(handshake_complete)
         self.set_info_text("Connecting...")
         start_thread(self.do_connect_builtin, "connect", daemon=True, args=(display_desc,))
 
-    def ssh_failed(self, message):
+    def ssh_failed(self, message) -> None:
         log(f"ssh_failed({message})")
         if not self.current_error:
             self.current_error = message
             self.set_info_text(message, True)
 
-    def do_connect_builtin(self, display_desc):
+    def do_connect_builtin(self, display_desc: dict) -> None:
         log(f"do_connect_builtin({display_desc})")
         self.exit_code = None
         self.current_error = None
@@ -842,14 +842,14 @@ class ApplicationWindow:
         log("connect_to(..)=%s, hiding launcher window, starting client", conn)
         GLib.idle_add(self.start_XpraClient, conn, display_desc)
 
-    def start_XpraClient(self, conn, display_desc):
+    def start_XpraClient(self, conn, display_desc) -> None:
         try:
             self.do_start_XpraClient(conn, display_desc)
         except Exception as e:
             log.error("Error: failed to start client", exc_info=True)
             self.handle_exception(e)
 
-    def do_start_XpraClient(self, conn, display_desc):
+    def do_start_XpraClient(self, conn, display_desc) -> None:
         log("do_start_XpraClient(%s, %s) client=%s", conn, display_desc, self.client)
         self.client.encoding = self.config.encoding
         self.client.display_desc = display_desc
@@ -860,13 +860,13 @@ class ApplicationWindow:
         if self.config.password:
             self.client.password = self.config.password
 
-        def do_quit(*args):
+        def do_quit(*args) -> None:
             log("do_quit%s", args)
             self.clean_client()
             self.destroy()
             Gtk.main_quit()
 
-        def handle_client_quit(exit_launcher=False):
+        def handle_client_quit(exit_launcher=False) -> None:
             w = self.window
             log("handle_quit(%s) window=%s", exit_launcher, w)
             self.clean_client()
@@ -878,7 +878,7 @@ class ApplicationWindow:
                     self.set_sensitive(True)
                     GLib.idle_add(w.show)
 
-        def reconnect(exit_code):
+        def reconnect(exit_code) -> bool:
             log("reconnect(%s) config reconnect=%s",
                 exit_str(exit_code), self.config.reconnect)
             if not self.config.reconnect or exit_code not in RETRY_EXIT_CODES:
@@ -888,7 +888,7 @@ class ApplicationWindow:
             GLib.timeout_add(100, self.start_client, display_desc)
             return True
 
-        def warn_and_quit_override(exit_code, warning):
+        def warn_and_quit_override(exit_code, warning) -> None:
             log("warn_and_quit_override(%s, %s)", exit_code, warning)
             password_warning = warning.find("invalid password") >= 0
             if password_warning:
@@ -903,7 +903,7 @@ class ApplicationWindow:
                 self.set_info_text(warning, err)
             handle_client_quit(not err)
 
-        def quit_override(exit_code):
+        def quit_override(exit_code) -> None:
             log("quit_override(%s)", exit_code)
             if reconnect(exit_code):
                 return
@@ -916,12 +916,12 @@ class ApplicationWindow:
         self.client.warn_and_quit = warn_and_quit_override
         self.client.quit = quit_override
 
-        def after_handshake():
+        def after_handshake() -> None:
             self.set_info_text("Handshake complete")
 
         self.client.after_handshake(after_handshake)
 
-        def first_ui_received(*_args):
+        def first_ui_received(*_args) -> None:
             self.set_info_text("Running")
             self.window.hide()
 
@@ -961,7 +961,7 @@ class ApplicationWindow:
         modify_fg(widget, red if is_error else black)
 
     def update_options_from_gui(self) -> None:
-        def pint(vstr):
+        def pint(vstr) -> int:
             try:
                 return int(vstr)
             except ValueError:
@@ -993,7 +993,7 @@ class ApplicationWindow:
             (self.config.username, self.config.password, self.config.mode, self.config.encryption,
              self.config.host, self.config.port, self.config.ssh_port))
 
-    def update_gui_from_config(self):
+    def update_gui_from_config(self) -> None:
         mode = (self.config.mode or "").lower()
         active = 0
         for i, e in enumerate(get_connection_modes()):
@@ -1002,7 +1002,7 @@ class ApplicationWindow:
                 break
         self.mode_combo.set_active(active)
 
-        def get_port(vstr, default_port=""):
+        def get_port(vstr, default_port="") -> str:
             try:
                 iport = int(vstr)
                 if 0 < iport < 2 ** 16:
@@ -1118,7 +1118,7 @@ def exception_dialog(title: str) -> None:
     md.format_secondary_text(traceback.format_exc())
     md.show_all()
 
-    def close_dialog(*_args):
+    def close_dialog(*_args) -> None:
         md.destroy()
         Gtk.main_quit()
 
@@ -1167,7 +1167,7 @@ def do_main(argv: list[str]) -> int:
     try:
         app = ApplicationWindow()
 
-        def handle_signal(signum):
+        def handle_signal(signum) -> None:
             app.show()
             client = app.client
             if client:
@@ -1207,7 +1207,7 @@ def do_main(argv: list[str]) -> int:
                     force_focus()
                     app.show()
                 else:
-                    def open_file(filename):
+                    def open_file(filename) -> None:
                         log("open_file(%s)", filename)
                         app.update_options_from_file(filename)
                         # the compressors and packet encoders cannot be changed from the UI
@@ -1221,7 +1221,7 @@ def do_main(argv: list[str]) -> int:
                             force_focus()
                             app.show()
 
-                    def open_URL(url):
+                    def open_URL(url) -> None:
                         log("open_URL(%s)", url)
                         app.__osx_open_signal = True
                         app.update_options_from_URL(url)
