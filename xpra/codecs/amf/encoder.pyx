@@ -29,7 +29,7 @@ from xpra.codecs.amf.amf cimport (
     AMF_RESULT, AMF_EOF, AMF_REPEAT,
     AMF_DX11_0,
     AMF_MEMORY_TYPE, AMF_MEMORY_DX11, AMF_MEMORY_HOST,
-    AMF_INPUT_FULL, AMF_NOT_SUPPORTED,
+    AMF_INPUT_FULL, AMF_NOT_SUPPORTED, AMF_ALREADY_INITIALIZED, AMF_OK,
     AMF_SURFACE_FORMAT, AMF_SURFACE_YUV420P, AMF_SURFACE_NV12, AMF_SURFACE_BGRA,
     AMF_VARIANT_TYPE, AMF_VARIANT_INT64, AMF_VARIANT_SIZE, AMF_VARIANT_RATE,
     AMF_VIDEO_ENCODER_USAGE_ENUM,
@@ -315,7 +315,8 @@ cdef class Encoder:
             self.check(res, "AMFContext1 query")
             res = self.context1.pVtbl.InitVulkan(self.context1, NULL)
             log(f"amf_context_init() InitVulkan()={res}")
-            self.check(res, "AMF Vulkan device initialization")
+            if res != AMF_OK and res != AMF_ALREADY_INITIALIZED:
+                self.check(res, "AMF Vulkan device initialization")
             self.device = <void *> self.context1.pVtbl.GetVulkanDevice(self.context1)
         log(f"amf_context_init() device=%#x", <uintptr_t> self.device)
 
