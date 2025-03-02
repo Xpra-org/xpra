@@ -262,6 +262,8 @@ class ImageWrapper:
         self.free()
 
     def free(self) -> None:
+        if not hasattr(self, "freed"):
+            return
         if not self.freed:
             self.freed = True
             self.planes = PlanarFormat.INVALID
