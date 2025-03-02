@@ -4,9 +4,9 @@
 # later version. See the file COPYING for details.
 
 import sys
-import yaml
 import struct
 import socket
+import yaml
 
 FLAGS_YAML = 0x4
 
@@ -25,8 +25,8 @@ def main(args):
 
         def send(*args) -> None:
             payload = yaml.dump(list(args)).encode("utf-8")
-            packet = struct.pack(b"!cBBBL", b"P", FLAGS_YAML, 0, 0, len(payload)) + payload
-            sock.send(packet)
+            header = struct.pack(b"!cBBBL", b"P", FLAGS_YAML, 0, 0, len(payload))
+            sock.send(header + payload)
 
         bufs = []
 
@@ -87,6 +87,7 @@ def main(args):
         with open(f"./frame.{encoding}", "wb") as f:
             f.write(data)
         sock.close()
+    return 0
 
 
 if __name__ == '__main__':
