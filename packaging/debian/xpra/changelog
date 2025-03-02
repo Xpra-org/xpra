@@ -9,7 +9,9 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     CUDA kernel build errors with CUDA 12.8 and Fedora 41
     libyuv 0.1899
     PyOpenGL 3.1.9
+    Python 3.14 parallel build errors
     add Fedora 42 with Python 3.14 and Ubuntu Plucky, remove Fedora 39 and Ubuntu Lunar
+    Fedora `pam_misc` workaround
     PyCUDA 2025.1
     build pycuda on Fedora 40
     Cython 3.0.12
@@ -51,7 +53,7 @@ xpra (6.2.4-1) UNRELEASED; urgency=low
     DPI documentation link
     unit tests log cuda errors
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 27 Feb 2025 19:10:49 +0700
+ -- Antoine Martin <antoine@xpra.org>  Sun, 01 Mar 2025 21:58:01 +0700
 
 xpra (6.2.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

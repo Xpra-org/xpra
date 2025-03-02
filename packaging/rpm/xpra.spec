@@ -915,7 +915,7 @@ fi
 
 
 %changelog
-- Thu Feb 27 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
+- Sun Mar 02 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
 - Platforms, build and packaging:
    MS Windows custom build arguments
    EXE manigests optional
@@ -926,7 +926,9 @@ fi
    CUDA kernel build errors with CUDA 12.8 and Fedora 41
    libyuv 0.1899
    PyOpenGL 3.1.9
+   Python 3.14 parallel build errors
    add Fedora 42 with Python 3.14 and Ubuntu Plucky, remove Fedora 39 and Ubuntu Lunar
+   Fedora `pam_misc` workaround
    PyCUDA 2025.1
    build pycuda on Fedora 40
    Cython 3.0.12

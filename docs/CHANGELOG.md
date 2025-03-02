@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.4] 2025-02-27
+## [6.2.4] 2025-03-02
 * Platforms, build and packaging:
     * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
     * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
@@ -11,7 +11,9 @@
     * [CUDA kernel build errors with CUDA 12.8 and Fedora 41](https://github.com/Xpra-org/xpra/commit/4191dbffa4bdb071bae648dee1961331c592a32d)
     * [libyuv 0.1899](https://github.com/Xpra-org/xpra/commit/feeaeb1bfaf4a0854cc1906cf874dbcdf7d65d3a)
     * [PyOpenGL 3.1.9](https://github.com/Xpra-org/xpra/commit/7e7f17200fb40f7096e553a841c280491899fc12)
+    * [Python 3.14 parallel build errors](https://github.com/Xpra-org/xpra/commit/1ce15eea0c545083c8eceaf9938f56636555cb18)
     * add [Fedora 42 with Python 3.14](https://github.com/Xpra-org/xpra/commit/b12d74fc90d5792ea79d613d52671300c231ef21) and [Ubuntu Plucky](https://github.com/Xpra-org/xpra/commit/41bcde7a94c916d29888c086ba8bb8c8567c5513), remove [Fedora 39](https://github.com/Xpra-org/xpra/commit/a242711bae960845a07e8cd7130b0a549faf464d) and [Ubuntu Lunar](https://github.com/Xpra-org/xpra/commit/a7a5de29abaf2b420ff28fdd290c9de7e92ae674)
+    * [Fedora `pam_misc` workaround](https://github.com/Xpra-org/xpra/commit/a7ce08a59254768e75207809464de8075f7885d4)
     * [PyCUDA 2025.1](https://github.com/Xpra-org/xpra/commit/6842f5aa39c3b6d8eaa56428d2a87e5e56fe6949)
     * [build pycuda on Fedora 40](https://github.com/Xpra-org/xpra/commit/25d61258fcdbc4984497f3092b7da85e268ef70c)
     * [Cython 3.0.12](https://github.com/Xpra-org/xpra/commit/b130d1f72180ef2ef23051ab17f04c1b7a177887)
