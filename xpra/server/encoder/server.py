@@ -134,6 +134,12 @@ class EncoderServer(ServerBase):
         super().init_packet_handlers()
         self.add_packets("encode", "context-request", "context-compress", "context-close")
 
+    def parse_hello(self, ss, c: typedict, send_ui: bool) -> None:
+        super().parse_hello(ss, c, send_ui)
+        from xpra.server.source.encodings import EncodingsMixin
+        if not isinstance(ss, EncodingsMixin):
+            raise ValueError("client did not enable encoding")
+
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         super().add_new_client(ss, c, send_ui, share_count)
         ss.protocol.large_packets.append("encode-response")
