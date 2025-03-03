@@ -155,7 +155,7 @@ def ensure_item_selected(submenu, item, recurse=True):
         return None
     if item.get_active():
         # deactivate all except this one
-        def deactivate(items, skip=None):
+        def deactivate(items, skip=None) -> None:
             for x in items:
                 if x == skip:
                     continue
@@ -172,7 +172,7 @@ def ensure_item_selected(submenu, item, recurse=True):
 
     # ensure there is at least one other active item
 
-    def get_active_item(items):
+    def get_active_item(items) -> int:
         for x in items:
             if isinstance(x, Gtk.MenuItem):
                 submenu = x.get_submenu()
@@ -182,7 +182,7 @@ def ensure_item_selected(submenu, item, recurse=True):
                         return a
             if isinstance(x, Gtk.CheckMenuItem) and x.get_active():
                 return x
-        return None
+        return 0
 
     active = get_active_item(submenu.get_children())
     if active:
@@ -231,7 +231,7 @@ def make_min_auto_menu(title, min_options, options,
             items[s] = qi
         return items
 
-    def set_value(item, ss):
+    def set_value(item, ss) -> None:
         if not item.get_active() or submenu.updating:
             return
         try:
@@ -263,7 +263,7 @@ def make_min_auto_menu(title, min_options, options,
     set_sensitive(mstitle, False)
     submenu.append(mstitle)
 
-    def set_min_value(item, ss):
+    def set_min_value(item, ss) -> None:
         if not item.get_active() or submenu.updating:
             return
         try:
@@ -370,12 +370,13 @@ class MenuHelper:
         if client:
             self.client = client
 
-            def shortcut():
+            def shortcut() -> None:
                 self.handshake_menuitem = self.menuitem
 
             client.after_handshake(shortcut)
 
     def build(self):
+        log(f"build() menu={self.menu}")
         if self.menu is None:
             try:
                 self.menu = self.setup_menu()
@@ -417,14 +418,14 @@ class MenuHelper:
         log("activate(%s, %s)", button, time)
         self.show_menu(button, time)
 
-    def popup(self, button, time) -> None:
+    def popup(self, button: int, time) -> None:
         log("popup(%s, %s)", button, time)
         self.show_menu(button, time)
 
-    def show_menu(self, button, time) -> None:
+    def show_menu(self, button: int, time) -> None:
         self.close_menu()
         if not self.menu:
-            log.warn("menu is not available yet")
+            log.warn("Warning: menu is not available yet")
             return
         with IgnoreWarningsContext():
             self.menu.popup(None, None, None, None, button, time)
@@ -439,7 +440,7 @@ class MenuHelper:
         mi = self.menuitem(*args, **kwargs)
         set_sensitive(mi, False)
 
-        def enable_menuitem(*_args):
+        def enable_menuitem(*_args) -> None:
             set_sensitive(mi, True)
 
         self.after_handshake(enable_menuitem)
@@ -458,7 +459,7 @@ class MenuHelper:
                 image = self.get_image(icon_name, icon_size)
 
         # Gtk adds ImageMenuItem as arguments to the callback, but we don't want any:
-        def menu_cb(*_args):
+        def menu_cb(*_args) -> None:
             if cb:
                 cb()
 
@@ -477,7 +478,7 @@ class MenuHelper:
         return self.menuitem("About Xpra", "xpra.png", cb=about)
 
     def make_updatecheckmenuitem(self) -> Gtk.ImageMenuItem:
-        def show_update_window():
+        def show_update_window() -> None:
             from xpra.gtk.dialogs.update_status import get_update_status_window
             w = get_update_status_window()
             w.show()
@@ -493,14 +494,14 @@ class MenuHelper:
             return None
         from xpra.gtk.dialogs.qrcode import show_qr
 
-        def show():
+        def show() -> None:
             uri = self.client.display_desc.get("display_name")
             show_qr(uri)
 
         qr_menuitem = self.menuitem("Show QR connection string", "qr.png", cb=show)
         log("make_qrmenuitem() qrencode.encode_image=%s", encode_image)
         if encode_image:
-            def with_connection(*_args):
+            def with_connection(*_args) -> None:
                 uri = self.client.display_desc.get("display_name")
                 if not uri or not any(uri.startswith(proto) for proto in ("tcp:", "ws:", "wss:")):
                     set_sensitive(qr_menuitem, False)
@@ -513,7 +514,7 @@ class MenuHelper:
         return qr_menuitem
 
     def make_sessioninfomenuitem(self) -> Gtk.ImageMenuItem:
-        def show_session_info_cb(*_args):
+        def show_session_info_cb(*_args) -> None:
             # we define a generic callback to remove the arguments
             # (which contain the menu widget and are of no interest to the 'show_session_info' function)
             self.show_session_info()
@@ -529,7 +530,7 @@ class MenuHelper:
         return self.menuitem("Documentation", "documentation.png", cb=show_docs)
 
     def make_html5menuitem(self) -> Gtk.ImageMenuItem:
-        def show_html5():
+        def show_html5() -> None:
             from xpra.scripts.main import run_html5
             from xpra.util.thread import start_thread
             url_options = {}

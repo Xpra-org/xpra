@@ -183,18 +183,6 @@ def choose_csc(modes: Sequence[str], quality=100) -> str:
     return modes[0]
 
 
-def capture_and_encode(capture_element: str, encoding: str, full_csc_modes: typedict, w: int, h: int, framerate=0):
-    encoder_spec = choose_video_encoder(encoding, full_csc_modes)
-    if not encoder_spec:
-        log(f"unable to find a GStreamer video encoder with csc modes={full_csc_modes}")
-        return None
-    assert encoder_spec.codec_type.startswith("gstreamer-")
-    encoder = encoder_spec.codec_type[len("gstreamer-"):]
-    encoding = encoder_spec.encoding
-    csc_mode = encoder_spec.input_colorspace
-    return CaptureAndEncode(capture_element, encoding, encoder, csc_mode, w, h, framerate)
-
-
 class CaptureAndEncode(Capture):
     """
     Uses a GStreamer pipeline to capture the screen
@@ -285,6 +273,19 @@ class CaptureAndEncode(Capture):
 
 
 GObject.type_register(CaptureAndEncode)
+
+
+def capture_and_encode(capture_element: str, encoding: str,
+                       full_csc_modes: typedict, w: int, h: int, framerate=0) -> CaptureAndEncode | None:
+    encoder_spec = choose_video_encoder(encoding, full_csc_modes)
+    if not encoder_spec:
+        log(f"unable to find a GStreamer video encoder with csc modes={full_csc_modes}")
+        return None
+    assert encoder_spec.codec_type.startswith("gstreamer-")
+    encoder = encoder_spec.codec_type[len("gstreamer-"):]
+    encoding = encoder_spec.encoding
+    csc_mode = encoder_spec.input_colorspace
+    return CaptureAndEncode(capture_element, encoding, encoder, csc_mode, w, h, framerate)
 
 
 def selftest(_full=False) -> None:

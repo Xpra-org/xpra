@@ -102,7 +102,7 @@ class GTKTrayMenu(MenuHelper):
     def setup_menu(self):
         return self.do_setup_menu(SHOW_CLOSE)
 
-    def do_setup_menu(self, show_close):
+    def do_setup_menu(self, show_close: bool):
         log("setup_menu(%s)", show_close)
         menu = Gtk.Menu()
 
