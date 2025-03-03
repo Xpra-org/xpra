@@ -419,7 +419,7 @@ cdef class Encoder:
             raise RuntimeError(f"unexpected encoding {self.encoding!r}")
         # init:
         res = self.encoder.pVtbl.Init(self.encoder, self.surface_format, self.width, self.height)
-        self.check(res, "AMF {self.encoding!r} encoder initialization for {self.width}x{self.height} {self.src_format}")
+        self.check(res, f"AMF {self.encoding!r} encoder initialization for {self.width}x{self.height} {self.src_format}")
         log(f"amf_encoder_init() {self.encoding} encoder initialized at %#x", <uintptr_t> self.encoder)
 
     def is_ready(self) -> bool:
