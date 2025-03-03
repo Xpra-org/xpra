@@ -231,7 +231,14 @@ cdef object get_caps(AMFCaps *caps, props: Dict):
     cdef AMFVariantStruct var
     cdef AMF_RESULT r
 
-    def query_variant(prop: str):
+    def has_property(prop: str) -> bool:
+        cdef wchar_t *wprop = PyUnicode_AsWideCharString(prop, NULL)
+        try:
+            return caps.pVtbl.HasProperty(caps, wprop)
+        finally:
+            PyMem_Free(wprop)
+
+    def query_variant(prop: str) -> None:
         check(AMFVariantInit(&var), "AMF variant initialization")
         cdef wchar_t *wprop = PyUnicode_AsWideCharString(prop, NULL)
         check(caps.pVtbl.GetProperty(caps, wprop, &var), f"query {prop} caps")
@@ -269,6 +276,8 @@ cdef object get_caps(AMFCaps *caps, props: Dict):
         "height-alignment": get_int64,
     }
     for pyname, amfname in props.items():
+        if not has_property(amfname):
+            continue
         getter = getters.get(pyname, noop)
         log(f"getter({pyname})={getter}")
         if getter != noop:
