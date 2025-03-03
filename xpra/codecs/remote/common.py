@@ -118,7 +118,7 @@ def get_server_socket_path(session_dir: str) -> str:
 class RemoteConnectionClient(baseclass):
 
     def __init__(self, options: dict):
-        baseclass.__init__(self)
+        super().__init__()
         log(f"RemoteConnectionClient({options})")
         to = typedict(options)
         self.uri = to.strget("uri", "")
@@ -279,14 +279,13 @@ class RemoteConnectionClient(baseclass):
 
     def _process_disconnect(self, packet: PacketType) -> None:
         log("disconnected from server %s", self.protocol)
-        self.encodings = ()
-        self.protocol = None
-        super().cleanup()
-        self.schedule_connect(self.reconnect_delay)
+        self.server_connection_cleanup()
 
     def _process_connection_lost(self, packet: PacketType) -> None:
         log("connection-lost for server %s", self.protocol)
-        self.encodings = ()
+        self.server_connection_cleanup()
+
+    def server_connection_cleanup(self):
         self.protocol = None
         super().cleanup()
         self.schedule_connect(self.reconnect_delay)

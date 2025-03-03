@@ -29,8 +29,18 @@ def safe_dict(opts: dict | typedict) -> dict:
 
 class EncoderClient(RemoteConnectionClient):
 
+    def __init__(self, options: dict):
+        super().__init__(options)
+        self.specs = {}
+        self.encodings: Sequence[str] = ()
+
     def __repr__(self):
         return "EncoderClient(%s)" % self.uri
+
+    def server_connection_cleanup(self):
+        super().server_connection_cleanup()
+        self.specs = {}
+        self.encodings = ()
 
     def _process_encodings(self, packet: PacketType) -> None:
         log(f"{Ellipsizer(packet)!r}")
