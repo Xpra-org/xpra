@@ -14,6 +14,7 @@ class DBUS_Mixin(StubSourceMixin):
     """
     Expose the ClientConnection using a dbus service
     """
+    PREFIX = "dbus"
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:

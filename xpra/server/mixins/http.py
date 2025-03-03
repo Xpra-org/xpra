@@ -86,6 +86,7 @@ class HttpServer(StubServerMixin):
     """
     Mixin for servers that can handle http requests
     """
+    PREFIX = "http"
 
     def __init__(self):
         self._http_scripts = {}
@@ -126,6 +127,7 @@ class HttpServer(StubServerMixin):
 
     def get_info(self, _proto=None) -> dict[str, Any]:
         return {
+            HttpServer.PREFIX: {"scripts": tuple(self._http_scripts.keys())},
         }
 
     def http_menu_request(self, _uri: str) -> HttpResponse:

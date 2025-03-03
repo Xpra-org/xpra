@@ -25,6 +25,7 @@ class RemoteLogging(StubClientMixin):
     either sending local logging events to the server,
     or receiving logging events from the server.
     """
+    PREFIX = "logging"
 
     def __init__(self):
         self.remote_logging = "no"
@@ -80,10 +81,16 @@ class RemoteLogging(StubClientMixin):
         return True
 
     def start_receiving_logging(self) -> None:
+        # legacy:
         self.add_packets("logging")
+        # prefixed:
+        self.add_packets("logging-event")
         self.send("logging-control", "start")
 
     def _process_logging(self, packet: PacketType) -> None:
+        self._process_logging_event(packet)
+
+    def _process_logging_event(self, packet: PacketType) -> None:
         assert not self.local_logging, "cannot receive logging packets when forwarding logging!"
         level = int(packet[1])
         msg = packet[2]

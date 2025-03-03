@@ -408,7 +408,8 @@ class X11ServerCore(GTKServerBase):
         except ImportError:
             pass
         # cursor:
-        info.setdefault("cursor", {}).update(self.get_cursor_info())
+        if self.last_cursor_image:
+            info.setdefault("cursor", {}).update({"current": self.get_cursor_info()})
         with xswallow:
             sinfo |= {
                 "Xkb": X11Keyboard.hasXkb(),
@@ -431,7 +432,7 @@ class X11ServerCore(GTKServerBase):
         # copy to prevent race:
         cd = self.last_cursor_image
         if cd is None:
-            return {"": "None"}
+            return {}
         dci = self.default_cursor_image
         cinfo = {
             "is-default": bool(dci) and len(dci) >= 8 and len(cd) >= 8 and cd[7] == dci[7],

@@ -27,6 +27,8 @@ MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 
 class ClipboardConnection(StubSourceMixin):
 
+    PREFIX = "clipboard"
+
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         return caps.boolget("clipboard")
@@ -47,7 +49,7 @@ class ClipboardConnection(StubSourceMixin):
         self.cancel_clipboard_progress_timer()
 
     def parse_client_caps(self, c: typedict) -> None:
-        ccaps = c.get("clipboard")
+        ccaps = c.get(ClipboardConnection.PREFIX)
         if ccaps and isinstance(ccaps, dict):
             ccaps = typedict(ccaps)
             self.clipboard_enabled = ccaps.boolget("enabled", True)
@@ -63,7 +65,7 @@ class ClipboardConnection(StubSourceMixin):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "clipboard": {
+            ClipboardConnection.PREFIX: {
                 "enabled": self.clipboard_enabled,
                 "notifications": self.clipboard_notifications,
                 "greedy": self.clipboard_greedy,

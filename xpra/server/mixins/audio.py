@@ -46,6 +46,7 @@ class AudioServer(StubServerMixin):
     """
     Mixin for servers that handle audio forwarding.
     """
+    PREFIX = "audio"
 
     def __init__(self):
         self.audio_init_done = Event()
@@ -393,6 +394,9 @@ class AudioServer(StubServerMixin):
         return info
 
     def _process_sound_control(self, proto, packet: PacketType) -> None:
+        self._process_sound_control(proto, packet)
+
+    def _process_audio_control(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return
@@ -405,11 +409,17 @@ class AudioServer(StubServerMixin):
         audio_control(*packet[1:])
 
     def _process_sound_data(self, proto, packet: PacketType) -> None:
+        self._process_sound_data(proto, packet)
+
+    def _process_audio_data(self, proto, packet: PacketType) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.audio_data(*packet[1:])
 
     def init_packet_handlers(self) -> None:
         if self.supports_speaker or self.supports_microphone:
+            # legacy unprefixed names:
             self.add_packets("sound-control", main_thread=True)
             self.add_packets("sound-data")
+            self.add_packets(f"{AudioServer.PREFIX}-control", main_thread=True)
+            self.add_packets(f"{AudioServer.PREFIX}-data")

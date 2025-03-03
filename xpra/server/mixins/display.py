@@ -90,6 +90,7 @@ class DisplayManager(StubServerMixin):
     Mixin for servers that handle displays.
     """
     DEFAULT_REFRESH_RATE = 0
+    PREFIX = "display"
 
     def __init__(self):
         self.randr = False

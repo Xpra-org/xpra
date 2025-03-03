@@ -46,6 +46,7 @@ class DisplayClient(StubClientMixin):
     Adds client-side scaling handling
     """
     __signals__ = ["scaling-changed"]
+    PREFIX = "display"
 
     def __init__(self):
         check_display()

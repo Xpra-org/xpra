@@ -25,6 +25,7 @@ class LoggingServer(StubServerMixin):
     """
     Mixin for servers that can receive and send logging packets
     """
+    PREFIX = "logging"
 
     def __init__(self):
         self.remote_logging_send: bool = False
@@ -47,11 +48,17 @@ class LoggingServer(StubServerMixin):
         self.stop_capturing_logging()
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
+        return {"remote-logging": self._features()}
+
+    def _features(self) -> dict[str, Any]:
         return {
-            "remote-logging": {
-                "receive": self.remote_logging_receive,
-                "send": self.remote_logging_send,
-            },
+            "receive": self.remote_logging_receive,
+            "send": self.remote_logging_send,
+        }
+
+    def get_info(self, _proto):
+        return {
+            LoggingServer.PREFIX: self._features(),
         }
 
     def cleanup_protocol(self, protocol) -> None:
@@ -182,6 +189,9 @@ class LoggingServer(StubServerMixin):
             log.warn("Warning: unknown logging-control action '%r'", action)
 
     def _process_logging(self, proto, packet: PacketType) -> None:
+        self._process_logging_event(proto, packet)
+
+    def _process_logging_event(self, proto, packet: PacketType) -> None:
         assert self.remote_logging_receive
         ss = self.get_server_source(proto)
         if ss is None:
@@ -219,6 +229,9 @@ class LoggingServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         if self.remote_logging_receive:
+            # legacy:
             self.add_packets("logging")
+            # prefixed:
+            self.add_packets("logging-event")
         if self.remote_logging_send:
             self.add_packets("logging-control")

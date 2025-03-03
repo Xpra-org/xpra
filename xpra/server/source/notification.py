@@ -16,6 +16,8 @@ log = Logger("notify")
 
 class NotificationMixin(StubSourceMixin):
 
+    PREFIX = "notification"
+
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         v = caps.get("notifications")
@@ -37,7 +39,7 @@ class NotificationMixin(StubSourceMixin):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "notifications": self.send_notifications,
+            NotificationMixin.PREFIX: self.send_notifications,
         }
 
     ######################################################################

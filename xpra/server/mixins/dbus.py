@@ -17,6 +17,7 @@ class DbusServer(StubServerMixin):
     """
     Mixin for servers that have a dbus server associated with them
     """
+    PREFIX = "dbus"
 
     def __init__(self):
         self.dbus_pid: int = 0
@@ -80,7 +81,7 @@ class DbusServer(StubServerMixin):
         if not self.dbus_pid or not self.dbus_env:
             return {}
         return {
-            "dbus": {
+            DbusServer.PREFIX: {
                 "pid": self.dbus_pid,
                 "env": self.dbus_env,
             }

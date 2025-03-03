@@ -43,6 +43,7 @@ class NetworkListener(StubClientMixin):
     - info request
     - control commands
     """
+    PREFIX = "listener"
 
     def __init__(self):
         self.sockets: dict[Any, dict] = {}

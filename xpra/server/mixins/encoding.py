@@ -35,11 +35,17 @@ ENCODINGS_WITH_QUALITY = (
     "scroll",
 )
 
+ENCODING_OPTIONS = (
+    "quality", "min-quality", "max-quality",
+    "speed", "min-speed", "max-speed",
+)
+
 
 class EncodingServer(StubServerMixin):
     """
     Mixin for adding encodings to a server
     """
+    PREFIX = "encoding"
 
     def __init__(self):
         self.default_quality = -1
@@ -236,6 +242,9 @@ class EncodingServer(StubServerMixin):
             self.default_encoding = self.encoding
 
     def _process_encoding(self, proto, packet: PacketType) -> None:
+        self._process_encoding_set(proto, packet)
+
+    def _process_encoding_set(self, proto, packet: PacketType) -> None:
         encoding = str(packet[1])
         ss = self.get_server_source(proto)
         if ss is None:
@@ -280,10 +289,7 @@ class EncodingServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if not ss:
             return
-        assert attr in (
-            "quality", "min-quality", "max-quality",
-            "speed", "min-speed", "max-speed",
-        ), f"invalid attribute {attr!r}"
+        assert attr in ENCODING_OPTIONS
         log("Setting %s to %s", attr, value)
         fn = getattr(ss, "set_%s" % attr.replace("-", "_"))
         fn(value)
@@ -295,9 +301,27 @@ class EncodingServer(StubServerMixin):
         if refresh:
             refresh(proto)  # pylint: disable=not-callable
 
+    def _process_encoding_options(self, proto, packet) -> None:
+        ss = self.get_server_source(proto)
+        if not ss:
+            return
+        updates = packet[1]
+        for attr, value in updates.items():
+            if attr not in ENCODING_OPTIONS:
+                log.warn(f"Warning: {attr!r} is not a valid encoding option")
+                continue
+            log(f"setting {attr!r} to {value!r}")
+            fn = getattr(ss, "set_%s" % attr.replace("-", "_"))
+            fn(value)
+        self.call_idle_refresh_all_windows(proto)
+
     def init_packet_handlers(self) -> None:
+        # legacy:
         self.add_packets(
             "encoding",
             "quality", "min-quality", "max-quality",
             "speed", "min-speed", "max-speed",
         )
+        # prefixed:
+        self.add_packets(f"{EncodingServer.PREFIX}-set")
+        self.add_packets(f"{EncodingServer.PREFIX}-options")

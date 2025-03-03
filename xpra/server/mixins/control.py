@@ -5,13 +5,12 @@
 
 from typing import Any
 
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("command")
 
 
-class ControlHandler(StubServerMixin):
+class ControlHandler:
 
     def __init__(self):
         self.control_commands: dict[str, Any] = {}

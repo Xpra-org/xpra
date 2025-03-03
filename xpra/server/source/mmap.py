@@ -38,6 +38,8 @@ def clean_mmap_area(area: BaseMmapArea) -> None:
 
 class MMAP_Connection(StubSourceMixin):
 
+    PREFIX = "mmap"
+
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         mmap_caps = typedict(caps.get("mmap") or {})
@@ -157,7 +159,7 @@ class MMAP_Connection(StubSourceMixin):
                 else:
                     mmap_caps.update(caps)
         log(f"mmap caps={mmap_caps}")
-        return {"mmap": mmap_caps}
+        return {MMAP_Connection.PREFIX: mmap_caps}
 
     def get_info(self) -> dict[str, Any]:
         info = {}
@@ -167,4 +169,4 @@ class MMAP_Connection(StubSourceMixin):
         }.items():
             if area:
                 info[name] = area.get_info()
-        return {"mmap": info}
+        return {MMAP_Connection.PREFIX: info}

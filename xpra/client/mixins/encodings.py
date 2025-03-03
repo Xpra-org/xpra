@@ -83,6 +83,7 @@ class Encodings(StubClientMixin):
     """
     Mixin for adding encodings to a client
     """
+    PREFIX = "encoding"
 
     def __init__(self):
         self.allowed_encodings = []

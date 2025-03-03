@@ -42,6 +42,7 @@ class WindowsMixin(StubSourceMixin):
     - events
     etc
     """
+    PREFIX = "window"
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:

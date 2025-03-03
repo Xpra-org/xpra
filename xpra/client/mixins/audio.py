@@ -63,6 +63,7 @@ class AudioClient(StubClientMixin):
     Utility mixin for clients that handle audio
     """
     __signals__ = ["speaker-changed", "microphone-changed"]
+    PREFIX = "audio"
 
     def __init__(self):
         self.audio_source_plugin = ""
@@ -190,12 +191,12 @@ class AudioClient(StubClientMixin):
         ss = self.audio_sink
         if ss:
             info["sink"] = ss.get_info()
-        return {"audio": info}
+        return {AudioClient.PREFIX: info}
 
     def get_caps(self) -> dict[str, Any]:
         return {
             "av-sync": self.get_avsync_capabilities(),
-            "audio": self.get_audio_capabilities(),
+            AudioClient.PREFIX: self.get_audio_capabilities(),
         }
 
     def get_audio_capabilities(self) -> dict[str, Any]:
@@ -556,6 +557,9 @@ class AudioClient(StubClientMixin):
     # packet handlers
 
     def _process_sound_data(self, packet: PacketType) -> None:
+        self._process_audio_data(packet)
+
+    def _process_audio_data(self, packet: PacketType) -> None:
         codec = str(packet[1])
         data = memoryview_to_bytes(packet[2])
         metadata = typedict(packet[3])
@@ -628,5 +632,8 @@ class AudioClient(StubClientMixin):
 
     def init_authenticated_packet_handlers(self) -> None:
         log("init_authenticated_packet_handlers()")
-        # these handlers can run directly from the network thread:
+        # this handler can run directly from the network thread:
+        # legacy name:
         self.add_packets("sound-data")
+        # prefixed:
+        self.add_packets(f"{AudioClient.PREFIX}-data")

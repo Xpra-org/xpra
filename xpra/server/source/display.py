@@ -21,6 +21,7 @@ class ClientDisplayMixin(StubSourceMixin):
     """
     Store information and manage events related to the client's display
     """
+    PREFIX = "display"
 
     def cleanup(self) -> None:
         self.init_state()

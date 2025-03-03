@@ -24,6 +24,7 @@ SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 
 class CursorsMixin(StubSourceMixin):
+    PREFIX = "cursor"
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
@@ -64,7 +65,7 @@ class CursorsMixin(StubSourceMixin):
     # info:
     def get_info(self) -> dict[str, Any]:
         return {
-            "cursors": {
+            CursorsMixin.PREFIX: {
                 "enabled": self.send_cursors,
                 "encodings": self.cursor_encodings,
             },

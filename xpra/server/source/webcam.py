@@ -51,9 +51,11 @@ class WebcamMixin(StubSourceMixin):
     Handle webcam forwarding.
     """
 
+    PREFIX = "webcam"
+
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        if not caps.boolget("webcam"):
+        if not caps.boolget(WebcamMixin.PREFIX):
             return False
         try:
             from xpra.codecs.pillow.decoder import HEADERS  # pylint: disable=import-outside-toplevel
@@ -83,7 +85,7 @@ class WebcamMixin(StubSourceMixin):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "webcam": {
+            WebcamMixin.PREFIX: {
                 "encodings": self.webcam_encodings,
                 "active-devices": len(self.webcam_forwarding_devices),
             }

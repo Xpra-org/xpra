@@ -17,9 +17,11 @@ log = Logger("exec")
 
 class ShellMixin(StubSourceMixin):
 
+    PREFIX = "shell"
+
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("shell", False)
+        return caps.boolget(ShellMixin.PREFIX, False)
 
     def __init__(self, *_args):
         self._server = None
@@ -40,10 +42,10 @@ class ShellMixin(StubSourceMixin):
         log("init_from(%s, %s) shell_enabled(%s)=%s", protocol, server, options, self.shell_enabled)
 
     def get_caps(self) -> dict[str, Any]:
-        return {"shell": self.shell_enabled}
+        return {ShellMixin.PREFIX: self.shell_enabled}
 
     def get_info(self) -> dict[str, Any]:
-        return {"shell": self.shell_enabled}
+        return {ShellMixin.PREFIX: self.shell_enabled}
 
     def shell_exec(self, code: str) -> tuple[str, str]:
         stdout, stderr = self.do_shell_exec(code)

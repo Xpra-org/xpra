@@ -63,7 +63,7 @@ class EncoderClient(RemoteConnectionClient):
         encoder = self.encoders.get(seq)
         log(f"context-response: {seq}={encoder}, {ok=}, {message=!r}, {info=}")
         if not encoder:
-            log.error(f"Error: encoder {seq} not found!")
+            log.error(f"Error: context ignored, encoder {seq} not found!")
             return
         if ok:
             encoder.ready = True
@@ -107,7 +107,7 @@ class EncoderClient(RemoteConnectionClient):
         seq, bdata, client_options = packet[1:4]
         encoder = self.encoders.get(seq)
         if not encoder:
-            log.error(f"Error: encoder {seq} not found!")
+            log.error(f"Error: data unused, encoder {seq} not found!")
             return
         chunks = client_options.pop("chunks", ())
         if not bdata and chunks:

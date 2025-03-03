@@ -53,9 +53,11 @@ def stop_proc(proc) -> None:
 
 class AudioMixin(StubSourceMixin):
 
+    PREFIX = "audio"
+
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        audio = caps.get("audio")
+        audio = caps.get(AudioMixin.PREFIX)
         if isinstance(audio, dict):
             audio = typedict(audio)
             return audio.boolget("send") or audio.boolget("receive")
@@ -110,7 +112,7 @@ class AudioMixin(StubSourceMixin):
             stop_proc(proc)
 
     def parse_client_caps(self, c: typedict) -> None:
-        audio = typedict(c.dictget("audio") or {})
+        audio = typedict(c.dictget(AudioMixin.PREFIX) or {})
         self.wants_audio = "audio" in c.strtupleget("wants") or audio.boolget("send") or audio.boolget("receive")
         if audio:
             self.pulseaudio_id = audio.strget("pulseaudio.id")

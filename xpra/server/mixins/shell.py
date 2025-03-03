@@ -15,6 +15,7 @@ class ShellServer(StubServerMixin):
     """
     Mixin for adding `shell` support
     """
+    PREFIX = "shell"
 
     def __init__(self):
         self.counter = 0
@@ -22,7 +23,7 @@ class ShellServer(StubServerMixin):
 
     def get_info(self, _source=None) -> dict[str, Any]:
         return {
-            "shell": {
+            ShellServer.PREFIX: {
                 "counter": self.counter,
                 "last-commands": list(self.commands),
             },

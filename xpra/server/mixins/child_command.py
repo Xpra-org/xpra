@@ -40,6 +40,8 @@ class ChildCommandServer(StubServerMixin):
     ie "--start=xterm"
     """
 
+    PREFIX = "command"
+
     def __init__(self):
         self.child_display: str = ""
         self.start_commands = []
@@ -212,7 +214,7 @@ class ChildCommandServer(StubServerMixin):
             )
         for i, procinfo in enumerate(self.children_started):
             info[i] = procinfo.get_info()
-        cinfo: dict[str, Any] = {"commands": info}
+        cinfo: dict[str, Any] = {ChildCommandServer.PREFIX: info}
         return cinfo
 
     def last_client_exited(self) -> None:
@@ -395,6 +397,9 @@ class ChildCommandServer(StubServerMixin):
                 self.mdns_update()
 
     def _process_start_command(self, proto, packet: PacketType) -> None:
+        self._process_command_start(proto, packet)
+
+    def _process_command_start(self, proto, packet: PacketType) -> None:
         log(f"start new command: {packet}")
         if not self.start_new_commands:
             log.warn("Warning: received start-command request,")
@@ -448,4 +453,7 @@ class ChildCommandServer(StubServerMixin):
         if COMMAND_SIGNALS:
             self.add_packets("command-signal")
         if self.start_new_commands:
+            # legacy:
             self.add_packets("start-command")
+            # prefixed:
+            self.add_packets(f"{ChildCommandServer.PREFIX}-start")

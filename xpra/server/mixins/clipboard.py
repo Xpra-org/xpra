@@ -29,6 +29,7 @@ class ClipboardServer(StubServerMixin):
     """
     Mixin for servers that handle clipboard synchronization.
     """
+    PREFIX = "clipboard"
 
     def __init__(self):
         self.clipboard = False
@@ -69,7 +70,7 @@ class ClipboardServer(StubServerMixin):
         cc = self._clipboard_client
         if cc:
             ci["client"] = cc.uuid
-        return {"clipboard": ci}
+        return {ClipboardServer.PREFIX: ci}
 
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         clipboard = self._clipboard_helper is not None
@@ -86,7 +87,7 @@ class ClipboardServer(StubServerMixin):
             "direction": self.clipboard_direction,
         }
         log("clipboard server caps=%s", ccaps)
-        return {"clipboard": ccaps}
+        return {ClipboardServer.PREFIX: ccaps}
 
     def init_clipboard(self) -> None:
         log("init_clipboard() enabled=%s, filter file=%s", self.clipboard, self.clipboard_filter_file)
@@ -254,4 +255,4 @@ class ClipboardServer(StubServerMixin):
                     "pending-requests", "enable-selections", "loop-uuids",
                     "status",
             ):
-                self.add_packet_handler("clipboard-%s" % x, self._process_clipboard_packet)
+                self.add_packet_handler(f"{ClipboardServer.PREFIX}-%s" % x, self._process_clipboard_packet)

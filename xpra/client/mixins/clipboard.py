@@ -70,6 +70,7 @@ class ClipboardClient(StubClientMixin):
     Utility mixin for clients that handle clipboard synchronization
     """
     __signals__ = ["clipboard-toggled"]
+    PREFIX = "clipboard"
 
     def __init__(self):
         self.client_clipboard_type: str = ""
@@ -140,7 +141,7 @@ class ClipboardClient(StubClientMixin):
             "greedy": CLIPBOARD_GREEDY,
             "preferred-targets": CLIPBOARD_PREFERRED_TARGETS,
         }
-        return {"clipboard": caps}
+        return {ClipboardClient.PREFIX: caps}
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         try:
@@ -198,6 +199,7 @@ class ClipboardClient(StubClientMixin):
         self.emit("clipboard-toggled")
 
     def init_authenticated_packet_handlers(self) -> None:
+        # legacy:
         self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_status)
         for x in (
             "token", "request",
@@ -205,7 +207,7 @@ class ClipboardClient(StubClientMixin):
             "pending-requests", "enable-selections",
             "status",
         ):
-            self.add_packet_handler(f"clipboard-{x}", self._process_clipboard_packet, True)
+            self.add_packet_handler(f"{ClipboardClient.PREFIX}-{x}", self._process_clipboard_packet, True)
 
     def make_clipboard_helper(self):
         """

@@ -47,6 +47,7 @@ class EncodingsMixin(StubSourceMixin):
     Store information about the client's support for encodings.
     Runs the encode thread.
     """
+    PREFIX = "encoding"
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:

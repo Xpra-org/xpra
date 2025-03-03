@@ -32,6 +32,7 @@ class ServerBaseControlCommands(StubServerMixin):
     """
     Control commands for ServerBase
     """
+    PREFIX = "control"
 
     def setup(self) -> None:
         self.add_control_commands()
@@ -830,6 +831,9 @@ class ServerBaseControlCommands(StubServerMixin):
         return f"window {wid} moved to {x},{y} and resized to {w}x{h} for {count} clients"
 
     def _process_command_request(self, protocol, packet: PacketType) -> None:
+        self._process_control_request(protocol, packet)
+
+    def _process_control_request(self, protocol, packet: PacketType) -> None:
         """ client sent a command request through its normal channel """
         assert len(packet) >= 2, "invalid command request packet (too small!)"
         # packet[0] = "control"
@@ -838,6 +842,7 @@ class ServerBaseControlCommands(StubServerMixin):
         log("command request returned: %s (%s)", code, msg)
 
     def init_packet_handlers(self) -> None:
-        self._authenticated_packet_handlers.update({
-            "command_request": self._process_command_request,
-        })
+        # legacy:
+        self.add_packet_handler("command_request", self._process_command_request)
+        # prefixed:
+        self.add_packet_handler(f"{ServerBaseControlCommands.PREFIX}-request", self._process_command_request)

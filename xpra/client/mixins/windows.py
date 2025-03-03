@@ -236,6 +236,7 @@ class WindowClient(StubClientMixin):
     Utility superclass for clients that handle windows:
     create, resize, paint, grabs, cursors, etc
     """
+    PREFIX = "window"
 
     def __init__(self):
         self._window_to_id: dict[Any, int] = {}

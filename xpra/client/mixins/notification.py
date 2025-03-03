@@ -30,6 +30,7 @@ class NotificationClient(StubClientMixin):
     """
     Mixin for clients that handle notifications
     """
+    PREFIX = "notification"
 
     def __init__(self):
         self.client_supports_notifications = False
@@ -76,7 +77,7 @@ class NotificationClient(StubClientMixin):
         }
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("notification-show", "notification-close")
+        self.add_packets(f"{NotificationClient.PREFIX}-show", f"{NotificationClient.PREFIX}-close")
         # legacy name:
         self.add_packet_handler("notify_show", self._process_notification_show)
         self.add_packet_handler("notify_close", self._process_notification_close)

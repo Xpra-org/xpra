@@ -28,6 +28,7 @@ class SshAgent(StubServerMixin):
     ensures that the symlinks point to the active client,
     and reverts back to the default when the client goes away.
     """
+    PREFIX = "ssh-agent"
 
     def set_session_driver(self, source) -> None:
         if not SSH_AGENT_DISPATCH:

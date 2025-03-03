@@ -23,6 +23,7 @@ class NotificationForwarder(StubServerMixin):
     """
     Mixin for servers that forward notifications.
     """
+    PREFIX = "notification"
 
     def __init__(self):
         self.notifications_forwarder = None

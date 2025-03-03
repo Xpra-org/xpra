@@ -12,7 +12,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Callable
 
-from xpra.util.env import envbool, SilenceWarningsContext
+from xpra.util.env import envbool
 from xpra.util.version import dict_version_trim
 from xpra.os_util import gi_import
 from xpra.common import FULL_INFO
@@ -33,7 +33,6 @@ UI_THREAD_WATCHER = envbool("XPRA_UI_THREAD_WATCHER")
 
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
-cursorlog = Logger("server", "cursor")
 notifylog = Logger("notify")
 
 
@@ -142,11 +141,8 @@ class GTKServerBase(ServerBase):
         if "display" in source.wants:
             display = Gdk.Display.get_default()
             if display:
-                max_size = tuple(display.get_maximal_cursor_size())
                 capabilities |= {
                     "display": display.get_name(),
-                    "cursor.default_size": display.get_default_cursor_size(),
-                    "cursor.max_size": max_size,
                 }
         if "versions" in source.wants and FULL_INFO >= 2:
             capabilities.setdefault("versions", {}).update(get_gtk_version_info())
@@ -162,7 +158,6 @@ class GTKServerBase(ServerBase):
                     "root_window_size": self.get_root_window_size(),
                 }
             )
-            info.setdefault("cursor", {}).update(self.get_ui_cursor_info())
         return info
 
     def suspend_cursor(self, proto) -> None:
@@ -186,24 +181,6 @@ class GTKServerBase(ServerBase):
         ss = self.get_server_source(proto)
         if ss:
             ss.send_cursor()
-
-    def get_ui_cursor_info(self) -> dict[str, Any]:
-        # (from UI thread)
-        # now cursor size info:
-        display = Gdk.Display.get_default()
-        if not display:
-            return {}
-        with SilenceWarningsContext(DeprecationWarning):
-            pos = display.get_default_screen().get_root_window().get_pointer()
-        cinfo = {"position": (pos.x, pos.y)}
-        for prop, size in {
-            "default": display.get_default_cursor_size(),
-            "max": tuple(display.get_maximal_cursor_size()),
-        }.items():
-            if size is None:
-                continue
-            cinfo[f"{prop}_size"] = size
-        return cinfo
 
     def do_get_info(self, proto, *args) -> dict[str, Any]:
         start = monotonic()

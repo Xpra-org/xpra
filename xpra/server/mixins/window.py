@@ -26,6 +26,7 @@ class WindowServer(StubServerMixin):
     """
     Mixin for servers that forward windows.
     """
+    PREFIX = "window"
 
     def __init__(self):
         # Window id 0 is reserved for "not a window"

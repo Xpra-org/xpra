@@ -23,6 +23,7 @@ class WebcamServer(StubServerMixin):
     it just delegates to the webcam source mixin,
     so each user can have its own webcam device(s).
     """
+    PREFIX = "webcam"
 
     def __init__(self):
         self.webcam_device = ""
@@ -44,14 +45,11 @@ class WebcamServer(StubServerMixin):
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {
-            "webcam": {
+            WebcamServer.PREFIX: {
                 "enabled": self.webcam_enabled,
                 "encodings": self.webcam_encodings,
                 "devices": self.webcam_virtual_video_devices,
             },
-            # pre v6, v5.0.2
-            "webcam.encodings": self.webcam_encodings,
-            "virtual-video-devices": self.webcam_virtual_video_devices,
         }
 
     def get_info(self, _proto) -> dict[str, Any]:
@@ -65,7 +63,7 @@ class WebcamServer(StubServerMixin):
             })
         if self.webcam_device:
             info["device"] = self.webcam_device
-        return {"webcam": info}
+        return {WebcamServer.PREFIX: info}
 
     def init_webcam(self) -> None:
         if not self.webcam_enabled:

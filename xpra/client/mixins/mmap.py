@@ -76,6 +76,7 @@ class MmapClient(StubClientMixin):
     """
     Mixin for adding mmap support to a client
     """
+    PREFIX = "mmap"
 
     def __init__(self):
         self.mmap_read_area: MmapArea | None = None
@@ -184,7 +185,7 @@ class MmapClient(StubClientMixin):
         }.items():
             if area:
                 info[prefix] = area.get_info()
-        return {"mmap": info}
+        return {MmapClient.PREFIX: info}
 
     def get_caps(self) -> dict[str, Any]:
         if not self.mmap_supported:
@@ -199,4 +200,4 @@ class MmapClient(StubClientMixin):
         if self.mmap_read_area:
             # duplicate it for legacy unprefixed caps:
             caps.update(self.mmap_read_area.get_caps())
-        return {"mmap": caps}
+        return {MmapClient.PREFIX: caps}

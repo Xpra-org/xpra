@@ -14,6 +14,7 @@ class MMAP_Server(StubServerMixin):
     """
     Mixin for servers that can handle mmap transfers
     """
+    PREFIX = "mmap"
 
     def __init__(self):
         self.mmap_supported = False

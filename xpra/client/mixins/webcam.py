@@ -32,8 +32,8 @@ class WebcamForwarder(StubClientMixin):
     """
     Mixin for clients that forward webcams
     """
-
     PACKET_TYPES = ("webcam-ack", "webcam-stop")
+    PREFIX = "webcam"
     __signals__ = ["webcam-changed"]
 
     def __init__(self):
