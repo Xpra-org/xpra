@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.4] 2025-03-02
+## [6.2.4] 2025-03-03
 * Platforms, build and packaging:
     * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
     * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
@@ -43,6 +43,7 @@
 * Minor:
     * [revert to other client's ssh agent socket on disconnection](https://github.com/Xpra-org/xpra/commit/d0acde606e8d79e06a6f8b3b8cab10def19add8a)
     * [partial dpi settings with some clients (ie: `html5`)](https://github.com/Xpra-org/xpra/commit/5c891aff0205b5177f38f636b592fa6e4c0a04e8)
+    * [only re-initialize encodings on update message](https://github.com/Xpra-org/xpra/commit/a4f8ee4c487ce7abc0fcc7dc1a5aba86d085437d)
 * Cosmetic:
     * [make it easier to cut & paste the CUDA kernel compilation command](https://github.com/Xpra-org/xpra/commit/51721cb26b6838e5ec5e662c2943048137ea2fd8)
     * [unnecessary import](https://github.com/Xpra-org/xpra/commit/46e654861cca19fba32810c6f390b47470a80a2b)

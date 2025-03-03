@@ -915,7 +915,7 @@ fi
 
 
 %changelog
-- Sun Mar 02 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
+- Mon Mar 03 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
 - Platforms, build and packaging:
    MS Windows custom build arguments
    EXE manigests optional
@@ -958,6 +958,7 @@ fi
 - Minor:
    revert to other client's ssh agent socket on disconnection
    partial dpi settings with some clients (ie: `html5`)
+   only re-initialize encodings on update message
 - Cosmetic:
    make it easier to cut & paste the CUDA kernel compilation command
    unnecessary import
