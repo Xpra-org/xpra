@@ -33,6 +33,7 @@ from xpra.codecs.amf.amf cimport (
     AMF_SURFACE_FORMAT, AMF_SURFACE_YUV420P, AMF_SURFACE_NV12, AMF_SURFACE_BGRA,
     AMF_VARIANT_TYPE, AMF_VARIANT_INT64, AMF_VARIANT_SIZE, AMF_VARIANT_RATE,
     AMF_VIDEO_ENCODER_USAGE_ENUM,
+    AMF_VIDEO_ENCODER_USAGE_LOW_LATENCY,
     AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY,
     AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM,
     AMF_VIDEO_ENCODER_QUALITY_PRESET_QUALITY,
@@ -231,6 +232,7 @@ cdef class Encoder:
     cdef AMF_SURFACE_FORMAT surface_format
     cdef AMFSurface* surface
     cdef void *device
+    cdef object device_info
     cdef unsigned long frames
     cdef unsigned int width
     cdef unsigned int height
@@ -275,6 +277,7 @@ cdef class Encoder:
         self.encoder = NULL
         self.device = NULL
         self.caps = {}
+        self.device_info = {}
 
         self.amf_context_init()
         self.amf_encoder_init(options)
@@ -304,9 +307,9 @@ cdef class Encoder:
             assert self.device
             from xpra.platform.win32.d3d11.device import D3D11Device
             device = D3D11Device(<uintptr_t> self.device)
-            device_info = device.get_info()
-            log("device: %s", device_info)
-            descr = device_info.get("description", "")
+            self.device_info = device.get_info()
+            log("device: %s", self.device_info)
+            descr = self.device_info.get("description", "")
             if descr and first_time(f"GPU:{descr}"):
                 log.info(f"AMF initialized using DX11 device {descr!r}")
         else:
@@ -389,7 +392,14 @@ cdef class Encoder:
             setsize("FrameSize")
             setframerate("FrameRate")
             setbitrate("TargetBitrate")
-            setint64("Usage", value=AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY)
+            # very unreliable way of detecting older cards
+            # assume that newer ones have 4GB or more
+            # (older cards may report 3.9GB)
+            video_memory = self.device_info.get("memory", {}).get("video", 0)
+            if video_memory >= 4*1024*1024*1024:
+                setint64("Usage", value=AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY)
+            else:
+                setint64("Usage", value=AMF_VIDEO_ENCODER_USAGE_LOW_LATENCY)
             setint64("QualityPreset", get_h264_preset(quality, speed))
             if False:
                 setint64("Profile", value=AMF_VIDEO_ENCODER_PROFILE_HIGH)
