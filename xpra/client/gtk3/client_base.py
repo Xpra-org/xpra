@@ -112,6 +112,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.shortcuts_info = None
         self.session_info = None
         self.bug_report = None
+        self.menu_helper = None
         self.file_size_dialog = None
         self.file_ask_dialog = None
         self.file_dialog = None
@@ -162,6 +163,20 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         with xsync:
             root_xid = self.get_root_xid()
             send_wm_request_frame_extents(root_xid, xid)
+
+    def get_menu_helper(self):
+        """
+        menu helper used by our tray (make_tray / setup_xpra_tray)
+        and for showing the menu on windows via a shortcut,
+        """
+        if not self.menu_helper:
+            from xpra.platform.gui import get_native_tray_menu_helper_class
+            from xpra.client.gtk3.tray_menu import GTKTrayMenu
+            from xpra.util.objects import make_instance
+            mhc = (get_native_tray_menu_helper_class(), GTKTrayMenu)
+            log("make_tray_menu_helper() tray menu helper classes: %s", mhc)
+            self.menu_helper = make_instance(mhc, self)
+        return self.menu_helper
 
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")

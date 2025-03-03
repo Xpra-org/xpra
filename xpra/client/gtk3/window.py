@@ -113,15 +113,13 @@ class ClientWindow(GTKClientWindowBase):
         self.set_titlebar(hb)
 
     def show_xpra_menu(self, *_args) -> None:
-        mh = getattr(self._client, "menu_helper", None)
-        if not mh:
-            from xpra.client.gtk3.tray_menu import GTKTrayMenu
-            mh = GTKTrayMenu(self._client)
-        mh.popup(0, 0)
+        mh = self._client.get_menu_helper()
+        if mh:
+            mh.build()
+            mh.popup(0, 0)
 
     def show_window_menu(self, *_args) -> None:
-        self.menu_helper.build()
-        self.menu_helper.popup(0, 0)
+        self.show_xpra_menu()
 
     def get_backing_class(self) -> type:
         from xpra.client.gtk3.cairo_backing import CairoBacking

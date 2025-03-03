@@ -37,7 +37,7 @@ class TrayClient(StubClientMixin):
         if not opts.tray:
             return
         self.tray_icon = opts.tray_icon
-        self.menu_helper = self.make_tray_menu_helper()
+        self.get_menu_helper()
         if opts.delay_tray:
             self.connect("first-ui-received", self.setup_xpra_tray)
         else:
@@ -82,11 +82,15 @@ class TrayClient(StubClientMixin):
         # use the native ones first:
         return get_native_tray_classes()
 
-    def make_tray_menu_helper(self):
-        """ menu helper class used by our tray (make_tray / setup_xpra_tray) """
-        mhc = (get_native_tray_menu_helper_class(), self.get_tray_menu_helper_class())
-        log("make_tray_menu_helper() tray menu helper classes: %s", mhc)
-        return make_instance(mhc, self)
+    def get_menu_helper(self):
+        """
+        menu helper used by our tray (make_tray / setup_xpra_tray)
+        and for showing the menu on windows via a shortcut,
+        this method is overriden in the gtk3.client
+        """
+        mhc = (get_native_tray_menu_helper_class(), )
+        self.menu_helper = make_instance(mhc, self)
+        return self.menu_helper
 
     def show_menu(self, *_args) -> None:
         if self.menu_helper:

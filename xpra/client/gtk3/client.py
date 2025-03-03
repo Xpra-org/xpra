@@ -80,12 +80,6 @@ class XpraClient(GTKXpraClient):
             return ydpi
         return round(self.get_screen_resolution())
 
-    # noinspection PyMethodMayBeStatic
-    def get_tray_menu_helper_class(self) -> type:
-        # pylint: disable=import-outside-toplevel
-        from xpra.client.gtk3.tray_menu import GTKTrayMenu
-        return GTKTrayMenu
-
     def get_mouse_position(self) -> tuple[int, int]:
         # with GTK3, we can get None values!
         root = self.get_root_window()
