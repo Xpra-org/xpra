@@ -241,9 +241,6 @@ class EncodingServer(StubServerMixin):
             log.warn("ignored invalid default encoding option: %s", self.encoding)
             self.default_encoding = self.encoding
 
-    def _process_encoding(self, proto, packet: PacketType) -> None:
-        self._process_encoding_set(proto, packet)
-
     def _process_encoding_set(self, proto, packet: PacketType) -> None:
         encoding = str(packet[1])
         ss = self.get_server_source(proto)
@@ -316,12 +313,10 @@ class EncodingServer(StubServerMixin):
         self.call_idle_refresh_all_windows(proto)
 
     def init_packet_handlers(self) -> None:
+        self.add_packets(f"{EncodingServer.PREFIX}-set", f"{EncodingServer.PREFIX}-options")
         # legacy:
         self.add_packets(
-            "encoding",
             "quality", "min-quality", "max-quality",
             "speed", "min-speed", "max-speed",
         )
-        # prefixed:
-        self.add_packets(f"{EncodingServer.PREFIX}-set")
-        self.add_packets(f"{EncodingServer.PREFIX}-options")
+        self.add_legacy_alias("encodings", f"{EncodingServer.PREFIX}-set")

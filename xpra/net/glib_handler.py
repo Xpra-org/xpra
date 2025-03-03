@@ -23,6 +23,7 @@ class GLibPacketHandler:
         self._authenticated_packet_handlers: dict[str, Callable] = {}
         self._authenticated_ui_packet_handlers: dict[str, Callable] = {}
         self._default_packet_handlers: dict[str, Callable] = {}
+        self.packet_alias: dict[str, str] = {}
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -58,8 +59,12 @@ class GLibPacketHandler:
             handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
             self.add_packet_handler(packet_type, handler, main_thread)
 
+    def add_legacy_alias(self, legacy_name, new_name) -> None:
+        self.packet_alias[legacy_name] = new_name
+
     def dispatch_packet(self, proto, packet, authenticated=False) -> None:
         packet_type = str(packet[0])
+        packet_type = self.packet_alias.get(packet_type, packet_type)
         handler: Callable = noop
 
         def call_handler() -> None:

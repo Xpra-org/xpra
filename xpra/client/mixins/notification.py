@@ -78,9 +78,8 @@ class NotificationClient(StubClientMixin):
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(f"{NotificationClient.PREFIX}-show", f"{NotificationClient.PREFIX}-close")
-        # legacy name:
-        self.add_packet_handler("notify_show", self._process_notification_show)
-        self.add_packet_handler("notify_close", self._process_notification_close)
+        self.add_legacy_alias("notify_show", f"{NotificationClient.PREFIX}-show")
+        self.add_legacy_alias("notify_close", f"{NotificationClient.PREFIX}-close")
 
     def make_notifier(self):
         nc = self.get_notifier_classes()

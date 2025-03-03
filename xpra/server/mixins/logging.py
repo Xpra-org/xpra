@@ -229,9 +229,7 @@ class LoggingServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         if self.remote_logging_receive:
-            # legacy:
-            self.add_packets("logging")
-            # prefixed:
             self.add_packets("logging-event")
+            self.add_legacy_alias("logging", "logging-event")
         if self.remote_logging_send:
             self.add_packets("logging-control")

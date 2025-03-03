@@ -418,8 +418,7 @@ class AudioServer(StubServerMixin):
 
     def init_packet_handlers(self) -> None:
         if self.supports_speaker or self.supports_microphone:
-            # legacy unprefixed names:
-            self.add_packets("sound-control", main_thread=True)
-            self.add_packets("sound-data")
             self.add_packets(f"{AudioServer.PREFIX}-control", main_thread=True)
             self.add_packets(f"{AudioServer.PREFIX}-data")
+            self.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")
+            self.add_legacy_alias("sound-data", f"{AudioServer.PREFIX}-data")

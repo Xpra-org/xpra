@@ -100,7 +100,5 @@ class CursorManager(StubServerMixin):
             ss.send_cursors = bool(packet[1])
 
     def init_packet_handlers(self) -> None:
-        # legacy:
-        self.add_packets("set-cursors")
-        # prefixed:
-        self.add_packets("cursor-set")
+        self.add_packets(f"{CursorManager.PREFIX}-set")
+        self.add_legacy_alias("set-cursors", f"{CursorManager.PREFIX}-set")

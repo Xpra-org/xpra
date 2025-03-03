@@ -556,9 +556,6 @@ class AudioClient(StubClientMixin):
     ######################################################################
     # packet handlers
 
-    def _process_sound_data(self, packet: PacketType) -> None:
-        self._process_audio_data(packet)
-
     def _process_audio_data(self, packet: PacketType) -> None:
         codec = str(packet[1])
         data = memoryview_to_bytes(packet[2])
@@ -633,7 +630,5 @@ class AudioClient(StubClientMixin):
     def init_authenticated_packet_handlers(self) -> None:
         log("init_authenticated_packet_handlers()")
         # this handler can run directly from the network thread:
-        # legacy name:
-        self.add_packets("sound-data")
-        # prefixed:
         self.add_packets(f"{AudioClient.PREFIX}-data")
+        self.add_legacy_alias("sound-data", f"{AudioClient.PREFIX}-data")

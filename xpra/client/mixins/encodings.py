@@ -140,11 +140,12 @@ class Encodings(StubClientMixin):
         unload_codecs()
 
     def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("encodings")
+        self.add_packets(f"{Encodings.PREFIX}-set")
+        self.add_legacy_alias("encodings", f"{Encodings.PREFIX}-set")
 
-    def _process_encodings(self, packet: PacketType) -> None:
+    def _process_encoding_set(self, packet: PacketType) -> None:
         caps = typedict(packet[1])
-        Encodings._parse_server_capabilities(caps)
+        Encodings._parse_server_capabilities(self, caps)
 
     def get_info(self) -> dict[str, Any]:
         return {

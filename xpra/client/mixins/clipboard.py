@@ -199,8 +199,7 @@ class ClipboardClient(StubClientMixin):
         self.emit("clipboard-toggled")
 
     def init_authenticated_packet_handlers(self) -> None:
-        # legacy:
-        self.add_packet_handler("set-clipboard-enabled", self._process_clipboard_status)
+        self.add_legacy_alias("set-clipboard-enabled", f"{ClipboardClient.PREFIX}-status")
         for x in (
             "token", "request",
             "contents", "contents-none",
@@ -253,6 +252,7 @@ class ClipboardClient(StubClientMixin):
         log("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s",
             args, self.clipboard_enabled, self.server_clipboard)
         if self.server_clipboard:
+            # non-legacy name would be "clipboard-status"
             self.send_now("set-clipboard-enabled", self.clipboard_enabled)
             if self.clipboard_enabled:
                 ch = self.clipboard_helper

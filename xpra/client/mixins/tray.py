@@ -57,7 +57,7 @@ class TrayClient(StubClientMixin):
             tray.show()
             icon_timestamp = tray.icon_timestamp
 
-            def reset_icon():
+            def reset_icon() -> None:
                 if not self.tray:
                     return
                 # re-set the icon after a short delay,
@@ -122,7 +122,7 @@ class TrayClient(StubClientMixin):
                               xpra_tray_geometry, xpra_tray_click, xpra_tray_mouseover, xpra_tray_exit)
         log("setup_xpra_tray(%s)=%s (%s)", tray_icon_filename, tray, type(tray))
         if tray:
-            def reset_tray_title():
+            def reset_tray_title() -> None:
                 tray.set_tooltip(self.get_tray_title())
 
             self.after_handshake(reset_tray_title)
