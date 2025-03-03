@@ -69,7 +69,7 @@ class ChildCommandMixinTest(ServerMixinTest):
             self.handle_packet(("start-command", "test", command, True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
-        commands = info.get("commands")
+        commands = info.get("command")
         assert commands
         proc_info = commands.get(0)
         assert proc_info
@@ -82,7 +82,7 @@ class ChildCommandMixinTest(ServerMixinTest):
             self.handle_packet(("start-command", "sleep", "sleep 10", True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
-        commands = info.get("commands")
+        commands = info.get("command")
         assert commands
         proc_info = commands.get(1)
         assert proc_info
@@ -96,7 +96,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         time.sleep(1)
         self.mixin.child_reaper.poll()
         info = self.mixin.get_info(self.protocol)
-        commands = info.get("commands")
+        commands = info.get("command")
         assert commands
         proc_info = commands.get(1)
         assert proc_info.get("dead") is True

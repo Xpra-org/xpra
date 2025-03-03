@@ -33,6 +33,7 @@ class ClientMixinTest(unittest.TestCase):
         self.mixin = None
         self.packet_handlers = {}
         self.exit_codes = []
+        self.legacy_alias = {}
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
@@ -72,6 +73,9 @@ class ClientMixinTest(unittest.TestCase):
                 log.error("[%3i] %s", i, packet)
             raise RuntimeError("invalid packet slice %s, expected %s" % (pslice, expected))
 
+    def add_legacy_alias(self, legacy_name: str, name: str) -> None:
+        self.legacy_alias[legacy_name] = name
+
     def add_packet_handler(self, packet_type: str, handler: Callable, main_thread=False):
         # log("add_packet_handler%s", (packet_type, handler, main_thread))
         self.packet_handlers[packet_type] = handler
@@ -101,6 +105,7 @@ class ClientMixinTest(unittest.TestCase):
         fake_protocol.set_compression_level = lambda _x: None
         fake_protocol.TYPE = protocol_type
         x._protocol = fake_protocol   # pylint: disable=protected-access
+        x.add_legacy_alias = self.add_legacy_alias
         x.add_packets = self.add_packets
         x.add_packet_handler = self.add_packet_handler
         x.init(opts)
