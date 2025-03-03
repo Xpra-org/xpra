@@ -16,7 +16,7 @@ from xpra.net.common import PacketType, PacketElement
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
 from xpra.util.objects import typedict, merge_dicts
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.net.bytestreams import set_socket_timeout
 from xpra.server import features, ServerExitMode
@@ -473,7 +473,9 @@ class ServerBase(ServerBaseClass):
         info: dict[str, Any] = {}
         for c in SERVER_BASES:
             with log.trap_error("Error collecting UI info from %s", c):
-                merge_dicts(info, c.get_ui_info(self, proto, client_uuids, *args))
+                mixin_info = c.get_ui_info(self, proto, client_uuids, *args)
+                log("%s.get_ui_info(%s, ..)=%r", c, proto, Ellipsizer(mixin_info))
+                merge_dicts(info, mixin_info)
         return info
 
     def get_info(self, proto=None, client_uuids=None) -> dict[str, Any]:
@@ -509,7 +511,9 @@ class ServerBase(ServerBaseClass):
             subsystems.append(c.__name__.replace("Server", ""))
             with log.trap_error(f"Error collecting information from {c}"):
                 cstart = monotonic()
-                merge_dicts(info, c.get_info(self, proto))
+                mixin_info = c.get_info(self, proto)
+                log("%s.get_info(%s)=%r", c, proto, Ellipsizer(mixin_info))
+                merge_dicts(info, mixin_info)
                 cend = monotonic()
                 log("%s.get_info(%s) took %ims", c, proto, int(1000 * (cend - cstart)))
         up("subsystems", subsystems)

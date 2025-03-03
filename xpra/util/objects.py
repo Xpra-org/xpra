@@ -309,8 +309,9 @@ def merge_dicts(a: dict[str, Any], b: dict[str, Any], path: list[str] | None = N
             elif a[key] == b[key]:
                 pass  # same leaf value
             else:
-                raise ValueError('Conflict at %s: existing value is %s, new value is %s' % (
-                    '.'.join(path + [str(key)]), a[key], b[key]))
+                pathstr = ".".join(repr(v) for v in (path + [key]))
+                # print(f"merged_dicts({a!r}, {b!r}, {path!r}) {key=!r}")
+                raise ValueError(f"Conflict at {pathstr}: existing value is {a[key]}, new value is {b[key]}")
         else:
             a[key] = b[key]
     return a
