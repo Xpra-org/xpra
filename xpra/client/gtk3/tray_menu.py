@@ -687,7 +687,7 @@ class GTKTrayMenu(MenuHelper):
         self.after_handshake(set_encodingsmenuitem)
         # FUGLY warning: we want to update the menu if we get an 'encodings' packet,
         # so we inject our handler:
-        saved_process_encodings = getattr(self.client, "_process_encodings")
+        saved_process_encodings = getattr(self.client, "_process_encoding_set")
         if saved_process_encodings:
             def process_encodings(*args) -> None:
                 # pass it on:

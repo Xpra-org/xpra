@@ -191,7 +191,7 @@ class ClipboardServer(StubServerMixin):
             # protocol has been dropped!
             return
         packet_type = packet[0]
-        if packet_type == "clipboard-status":
+        if packet_type in ("clipboard-status", "set-clipboard-enabled"):
             self._process_clipboard_status(proto, packet)
             return
         if self._clipboard_client != ss:
