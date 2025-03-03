@@ -24,6 +24,7 @@ class ServerMixinTest(unittest.TestCase):
         self.source = None
         self.protocol = None
         self.packet_handlers = {}
+        self.legacy_alias = {}
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
@@ -34,11 +35,11 @@ class ServerMixinTest(unittest.TestCase):
             self.mixin.cleanup()
             self.mixin = None
 
-    def debug_all(self):
+    def debug_all(self) -> None:
         from xpra.log import enable_debug_for
         enable_debug_for("all")
 
-    def stop(self):
+    def stop(self) -> None:
         self.glib.timeout_add(1000, self.main_loop.quit)
 
     def wait_for_threaded_init(self):
@@ -46,16 +47,20 @@ class ServerMixinTest(unittest.TestCase):
         # so no need to wait
         pass
 
-    def add_packets(self, *packet_types: str, main_thread=True):
+    def add_packets(self, *packet_types: str, main_thread=True) -> None:
         for packet_type in packet_types:
             handler = getattr(self.mixin, "_process_" + packet_type.replace("-", "_"))
             self.add_packet_handler(packet_type, handler, main_thread)
 
-    def add_packet_handler(self, packet_type: str, handler=None, main_thread=True):
+    def add_legacy_alias(self, legacy_name: str, name: str) -> None:
+        self.legacy_alias[legacy_name] = name
+
+    def add_packet_handler(self, packet_type: str, handler=None, main_thread=True) -> None:
         self.packet_handlers[packet_type] = handler
 
     def handle_packet(self, packet):
         packet_type = packet[0]
+        packet_type = self.legacy_alias.get(packet_type, packet_type)
         ph = self.packet_handlers.get(packet_type)
         assert ph is not None, "no packet handler for %s" % packet_type
         ph(self.protocol, packet)
@@ -80,6 +85,7 @@ class ServerMixinTest(unittest.TestCase):
         x._server_sources = {}   # pylint: disable=protected-access
         x.wait_for_threaded_init = self.wait_for_threaded_init
         x.add_packets = self.add_packets
+        x.add_legacy_alias = self.add_legacy_alias
         x.add_packet_handler = self.add_packet_handler
         x.get_server_source = self.get_server_source
         x.init_state()
