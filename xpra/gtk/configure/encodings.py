@@ -100,7 +100,7 @@ class ConfigureGUI(BaseGUIWindow):
         grid.attach(lbl, 0, 0, 1, 1)
         grid.attach(switch, 1, 0, 1, 1)
         self.show_all()
-        return None
+        return False
 
     @staticmethod
     def speed_changed(widget) -> None:
