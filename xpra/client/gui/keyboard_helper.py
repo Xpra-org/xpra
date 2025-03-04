@@ -13,6 +13,7 @@ from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
 from xpra.util.str_fn import std, csv, Ellipsizer
 from xpra.util.env import envbool
+from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("keyboard")
@@ -94,11 +95,7 @@ class KeyboardHelper:
 
     def cleanup(self) -> None:
         self.reset_state()
-
-        def nosend(*_args) -> None:
-            """ make sure we don't send keyboard updates during cleanup """
-
-        self.send = nosend
+        self.send = noop
 
     def keymap_changed(self, *args) -> None:
         """ This method is overridden in the GTK Keyboard Helper """
@@ -112,7 +109,7 @@ class KeyboardHelper:
     def get_modifier_names(self) -> dict[str, str]:
         return get_modifier_names(self.mod_meanings)
 
-    def key_handled_as_shortcut(self, window, key_name: str, modifiers: list[str], depressed: bool):
+    def key_handled_as_shortcut(self, window, key_name: str, modifiers: list[str], depressed: bool) -> bool:
         # find the shortcuts that may match this key:
         shortcuts = self.key_shortcuts.get(key_name)
         log("key_handled_as_shortcut%s shortcuts_enabled=%s, shortcuts=%s",
@@ -134,7 +131,7 @@ class KeyboardHelper:
                 return True
         return False
 
-    def _check_shortcut(self, window, key_name: str, modifiers: list[str], depressed: bool, shortcut):
+    def _check_shortcut(self, window, key_name: str, modifiers: list[str], depressed: bool, shortcut: Sequence) -> bool:
         req_mods, action, args = shortcut
         extra_modifiers = list(modifiers)
         for rm in req_mods:
@@ -187,7 +184,7 @@ class KeyboardHelper:
             log.error("", exc_info=True)
         return True
 
-    def process_key_event(self, wid: int, key_event: KeyEvent):
+    def process_key_event(self, wid: int, key_event: KeyEvent) -> bool:
         """
             This method gives the Keyboard class
             a chance to fire more than one send_key_action.
