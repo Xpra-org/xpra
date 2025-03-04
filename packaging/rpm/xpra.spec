@@ -998,7 +998,7 @@ fi
 
 
 %changelog
-* Tue Jan 14 2025 Antoine Martin <antoine@xpra.org> 6.3-10
+* Tue Mar 04 2025 Antoine Martin <antoine@xpra.org> 6.3-10
 - Platforms, build and packaging:
    rewritten MS Windows build script
    `RHEL` 10 and clones
@@ -1009,7 +1009,12 @@ fi
    remove copyright end years
 - Configuration:
    `xvfb` aliases
+   configure `xvfb` dialog
    easily modify settings
+- Encodings:
+   AMD AMF encoder
+   encoder server
+   avoid subsampling in lossless mode
 - Features:
    server power events
    ibus keyboard layouts
@@ -1017,6 +1022,7 @@ fi
    save selection in run dialog
    `OpenGL` `YUVA` support for `jpeg` with alpha
 - Network:
+   bi-directional `mmap`
    `hyperv` connections
    `nginx` proxy documentation
    `http-header` authentication module
@@ -1028,6 +1034,7 @@ fi
 - Improvements:
    skip unused slow imports
    avoid loading `numpy` unnecessarily
+   generic modules
 
 * Wed Oct 09 2024 Antoine Martin <antoine@xpra.org> 6.2-10
 - Platforms, build and packaging:

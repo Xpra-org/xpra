@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3] 2025-01-14
+## [6.3] 2025-03-04
 * Platforms, build and packaging:
     * [rewritten MS Windows build script](https://github.com/Xpra-org/xpra/issues/4394)
     * [`RHEL` 10 and clones](https://github.com/Xpra-org/xpra/issues/4282)
@@ -11,7 +11,12 @@
     * [remove copyright end years](https://github.com/Xpra-org/xpra/issues/4455)
 * Configuration:
     * [`xvfb` aliases](https://github.com/Xpra-org/xpra/issues/4456)
+    * [configure `xvfb` dialog](https://github.com/Xpra-org/xpra/issues/4456)
     * [easily modify settings](https://github.com/Xpra-org/xpra/issues/4461)
+* Encodings:
+    * [AMD AMF encoder](https://github.com/Xpra-org/xpra/issues/511)
+    * [encoder server](https://github.com/Xpra-org/xpra/issues/4483)
+    * [avoid subsampling in lossless mode](https://github.com/Xpra-org/xpra/issues/4397)
 * Features:
     * [server power events](https://github.com/Xpra-org/xpra/issues/4382)
     * [ibus keyboard layouts](https://github.com/Xpra-org/xpra/issues/4449)
@@ -19,6 +24,7 @@
     * [save selection in run dialog](https://github.com/Xpra-org/xpra/issues/4432)
     * [`OpenGL` `YUVA` support for `jpeg` with alpha](https://github.com/Xpra-org/xpra/issues/1765)
 * Network:
+    * [bi-directional `mmap`](https://github.com/Xpra-org/xpra/issues/4491)
     * [`hyperv` connections](https://github.com/Xpra-org/xpra/issues/3666)
     * [`nginx` proxy documentation](https://github.com/Xpra-org/xpra/issues/4435)
     * [`http-header` authentication module](https://github.com/Xpra-org/xpra/issues/4438)
@@ -30,6 +36,7 @@
 * Improvements:
     * [skip unused slow imports](https://github.com/Xpra-org/xpra/issues/4454)
     * [avoid loading `numpy` unnecessarily](https://github.com/Xpra-org/xpra/issues/4457)
+    * [generic modules](https://github.com/Xpra-org/xpra/issues/4523)
 
 ## [6.2.0] 2024-10-09
 * Platforms, build and packaging:
