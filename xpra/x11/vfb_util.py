@@ -275,7 +275,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
         w, h = vfb_geom[:2]
         log("patch_xvfb_command%s", (xvfb_cmd, w, h, pixel_depth or 32))
         patch_xvfb_command(xvfb_cmd, w, h, pixel_depth or 32)
-        log.info(f"{xvfb_cmd=!r}")
+        log(f"{xvfb_cmd=!r}")
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
         if logfile_argindex+1 >= len(xvfb_cmd):
