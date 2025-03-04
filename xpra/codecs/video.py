@@ -109,19 +109,21 @@ def filt(prefix: str, name: str,
 
     # replace the alias 'all' with the actual values:
     real_list = []
-    for item in inlist:
-        if item == "all":
-            real_list += all_fn()
-            continue
+    for entry in inlist:
         # each entry can contain an encoder with options, ie:
         # "remote:uri=foo,timeout=5"
         # or multiple encoders, ie:
         # "vpx,x264"
         # but not both!
-        if item.find(":") > 0:
-            real_list.append(item)
+        if entry.find(":") > 0:
+            items = [entry]
         else:
-            real_list += item.split(",")
+            items = entry.split(",")
+        for item in items:
+            if item == "all":
+                real_list += all_fn()
+            else:
+                real_list.append(item)
 
     # auto prefix the module part:
     def ap(v: str) -> str:
