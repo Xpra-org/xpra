@@ -77,8 +77,8 @@ def parse_command_line(argv: list[str]):
     add("verpatch", help="run `verpatch` on the executables")
     add("light", help="trimmed down build")
     add("sbom", help="record SBOM")
-    add("installer", help="create an EXE installer")
-    add("run", help="run the installer")
+    add("exe", help="create an EXE installer")
+    add("run", help="run the EXE installer")
     add("msi", help="create an MSI installer")
     add("sign", help="sign the EXE and MSI installers")
     add("tests", help="run the unit tests", default=False)
@@ -1255,8 +1255,8 @@ def create_zip() -> None:
     print(f"{ZIP_FILENAME}: {size}MB")
 
 
-def create_installer(args) -> str:
-    step("Creating the installer using InnoSetup")
+def create_exe(args) -> str:
+    step("Creating the EXE installer using InnoSetup")
     innosetup = find_command("innosetup", "INNOSETUP",
                              f"{PROGRAMFILES}\\Inno Setup 6\\ISCC.exe",
                              f"{PROGRAMFILES_X86}\\Inno Setup 6\\ISCC.exe",
@@ -1307,7 +1307,7 @@ def sign_file(filename: str) -> None:
     log_command(["signtool.exe", "sign", "/v", "/f", KEY_FILE, "/t", TIMESTAMP_SERVER, filename], "signtool.log")
 
 
-def create_msi(installer: str) -> str:
+def create_msi(exe: str) -> str:
     msiwrapper = find_command("msiwrapper", "MSIWRAPPER",
                               f"{PROGRAMFILES}\\MSI Wrapper\\MsiWrapper.exe",
                               f"{PROGRAMFILES_X86}\\MSI Wrapper\\MsiWrapper.exe")
@@ -1315,7 +1315,7 @@ def create_msi(installer: str) -> str:
     # search and replace in the template file:
     subs: dict[str, str] = {
         "CWD": os.getcwd(),
-        "INPUT": installer,
+        "INPUT": exe,
         "OUTPUT": MSI_FILENAME,
         "ZERO_PADDED_VERSION": version_info.padded,
         "FULL_VERSION": version_info.full_string,
@@ -1402,18 +1402,18 @@ def build(args) -> None:
     print(f"installed size: {size}MB")
     if args.zip:
         create_zip()
-    if args.installer:
-        installer = create_installer(args)
-        if not os.path.exists(installer):
-            raise RuntimeError("failed to create installer")
+    if args.exe:
+        exe = create_exe(args)
+        if not os.path.exists(exe):
+            raise RuntimeError(f"failed to create EXE installer {exe!r}")
         if args.sign:
             step("Signing EXE")
-            sign_file(installer)
+            sign_file(exe)
         if args.run:
-            step("Running the new installer")
-            os.system(installer)
+            step(f"Running the new EXE installer {exe!r}")
+            os.system(exe)
         if args.msi:
-            msi = create_msi(installer)
+            msi = create_msi(exe)
             if not os.path.exists(msi):
                 raise RuntimeError("failed to create msi")
             if args.sign:
@@ -1437,7 +1437,7 @@ def main(argv):
         elif arg == "zip":
             create_zip()
         elif arg == "exe":
-            create_installer(args)
+            create_exe(args)
         else:
             raise ValueError(f"unknown argument {arg!r}")
     else:
