@@ -173,6 +173,8 @@ def parse_URL(url: str) -> tuple[str, dict]:
         scheme = scheme[len("xpra+"):]
     if scheme in ("tcp", "ssl", "ssh", "ws", "wss"):
         address = f"{scheme}://{address}"
+    if scheme in ("ws", "wss") and up.path:
+        address += "/"+up.path
     return address, options
 
 
@@ -967,7 +969,7 @@ def do_parse_cmdline(cmdline: list[str], defaults):
         raise InitInfo("No audio capture plugins found!")
 
     # special handling for URL mode:
-    # xpra attach xpra://[mode:]host:port/?param1=value1&param2=value2
+    # xpra attach xpra://[mode:]host:port/path?param1=value1&param2=value2
     if len(args) == 2 and args[0] == "attach":
         from xpra.net.common import URL_MODES
         # ie: "xpra+tcp" -> "tcp"
