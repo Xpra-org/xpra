@@ -57,7 +57,7 @@ MODE_QUIC = "quic"
 
 # what we save in the config file:
 SAVED_FIELDS = [
-    "username", "password", "host", "port", "mode", "ssh_port",
+    "username", "password", "host", "port", "mode", "ssh_port", "path",
     "encoding", "quality", "min-quality", "speed", "min-speed",
     "proxy_port", "proxy_username", "proxy_key", "proxy_password",
     "proxy_host",
@@ -72,6 +72,7 @@ LAUNCHER_OPTION_TYPES = {
     "username": str,
     "password": str,
     "mode": str,
+    "path": str,
     "autoconnect": bool,
     "ssh_port": int,
     "proxy_host": str,
@@ -86,6 +87,7 @@ LAUNCHER_DEFAULTS = {
     "username": get_username(),
     "password": "",
     "mode": MODE_TCP,  # tcp,ssh,..
+    "path": "",
     "autoconnect": False,
     "ssh_port": 22,
     "proxy_host": "",
@@ -405,6 +407,11 @@ class ApplicationWindow:
         self.port_entry.connect("changed", self.validate)
         self.port_entry.connect("activate", self.connect_clicked)
         self.port_entry.set_tooltip_text("port/display")
+        self.path_entry = Gtk.Entry()
+        self.path_entry.set_max_length(128)
+        self.path_entry.set_width_chars(5)
+        self.path_entry.connect("activate", self.connect_clicked)
+        self.path_entry.set_tooltip_text("request path")
         hbox.pack_start(label("Server:"), False, False)
         hbox.pack_start(self.username_entry, True, True)
         hbox.pack_start(label("@"), False, False)
@@ -412,6 +419,8 @@ class ApplicationWindow:
         hbox.pack_start(self.ssh_port_entry, False, False)
         hbox.pack_start(label(":"), False, False)
         hbox.pack_start(self.port_entry, False, False)
+        hbox.pack_start(label("/"), False, False)
+        hbox.pack_start(self.path_entry, False, False)
         vbox.pack_start(hbox)
 
         # Password
@@ -632,6 +641,11 @@ class ApplicationWindow:
             if sshtossh:
                 self.check_boxes_hbox.hide()
                 self.proxy_password_hbox.hide()
+        can_use_path = mode in ("ws", "wss")
+        if can_use_path:
+            self.path_entry.show()
+        else:
+            self.path_entry.hide()
         self.validate()
         if mode in (MODE_SSL, MODE_WSS, MODE_QUIC) or (mode == MODE_SSH and not WIN32):
             self.nostrict_host_check.show()
@@ -789,6 +803,8 @@ class ApplicationWindow:
             params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
             params["display_name"] = f"{self.config.mode}://{self.config.host}:{self.config.port}"
+            if self.config.mode in (MODE_WS, MODE_WSS):
+                params["path"] = self.config.path
             if self.config.mode in (MODE_SSL, MODE_WSS, MODE_QUIC) and self.nostrict_host_check.get_active():
                 params["strict-host-check"] = False
 
@@ -972,6 +988,7 @@ class ApplicationWindow:
         self.config.port = pint(self.port_entry.get_text())
         self.config.username = self.username_entry.get_text()
         self.config.password = self.password_entry.get_text()
+        self.config.path = self.path_entry.get_text()
         self.config.autoconnect = self.autoconnect.get_active()
 
         self.config.proxy_host = self.proxy_host_entry.get_text()
@@ -1033,6 +1050,7 @@ class ApplicationWindow:
         self.username_entry.set_text(username)
         self.password_entry.set_text(password)
         self.host_entry.set_text(self.config.host)
+        self.path_entry.set_text(self.config.path)
 
     def close_window(self, *_args) -> None:
         w = self.window
@@ -1207,7 +1225,7 @@ def do_main(argv: list[str]) -> int:
                     force_focus()
                     app.show()
                 else:
-                    def open_file(filename) -> None:
+                    def open_file(filename: str) -> None:
                         log("open_file(%s)", filename)
                         app.update_options_from_file(filename)
                         # the compressors and packet encoders cannot be changed from the UI
@@ -1221,7 +1239,7 @@ def do_main(argv: list[str]) -> int:
                             force_focus()
                             app.show()
 
-                    def open_URL(url) -> None:
+                    def open_URL(url: str) -> None:
                         log("open_URL(%s)", url)
                         app.__osx_open_signal = True
                         app.update_options_from_URL(url)
