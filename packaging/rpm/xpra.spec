@@ -60,7 +60,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.2.4
+Version:			6.2.5
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -915,6 +915,8 @@ fi
 
 
 %changelog
+* Wed Mar 05 2025 Antoine Martin <antoine@xpra.org> 6.2.5-10
+- TODO
 * Mon Mar 03 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
 - Platforms, build and packaging:
    MS Windows custom build arguments

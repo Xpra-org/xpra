@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.2.5] 2025-03-05
+* TODO
+
 ## [6.2.4] 2025-03-03
 * Platforms, build and packaging:
     * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
