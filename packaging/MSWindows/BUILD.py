@@ -129,12 +129,12 @@ def du(path: str) -> int:
 
 
 def get_build_args(args) -> list[str]:
-    xpra_args = []
+    xpra_args = ["--without-gstreamer_video"]
     if args.light:
         for option in (
             "shadow", "server", "proxy", "rfb",
             "dbus",
-            "avif", "gstreamer_video",
+            "avif",
             "nvfbc", "cuda_kernels",
             "csc_cython",
             "webcam",
