@@ -1,7 +1,51 @@
 # Changelog
 
-## [5.1] 2025-01-23
-* TODO
+## [5.1] 2025-03-05
+* Platforms, build and packaging:
+    * [prefer CUDA arch specific pkg-config file for `nvdec`](https://github.com/Xpra-org/xpra/commit/87a0e81f9df262b79d348e5c53ea046ac68cb97e)
+    * [CUDA build errors with newer compilers](https://github.com/Xpra-org/xpra/commit/9fdc7b3d68f795c54890d41989cae0ee58762597)
+    * [Python 3.14 parallel build errors](https://github.com/Xpra-org/xpra/commit/0977328ec0cf8b767baedc3a806ccf1b2a0b97b2)
+    * [Fedora 42 package list](https://github.com/Xpra-org/xpra/commit/25a6ab33867c4d6e12d0a04e2aad12f56c154086) [with default Python](https://github.com/Xpra-org/xpra/commit/7e18f0353527a5c3c5df59c0ee541531f50a3ed6), workarounds for [dependencies](https://github.com/Xpra-org/xpra/commit/3df6f2b395105e10c6ffb096675877de8961e675) and [`pam_misc`](https://github.com/Xpra-org/xpra/commit/6ca947d5bb4f23e186573d39b7672fab87828df7)
+    * [add Ubuntu Plucky](https://github.com/Xpra-org/xpra/commit/627df9428434dfb443622c5d8e24a2403a59f87c), [remove Ubuntu Lunar](https://github.com/Xpra-org/xpra/commit/beb308a4292444044626c6c525e773a1d316a21c)
+    * [PyCUDA 2025.1](https://github.com/Xpra-org/xpra/commit/d4c0df6e55ff5a0315a0c488c50b2db111288000)
+    * [Cython 3.0.12](https://github.com/Xpra-org/xpra/commit/0a7f75bdbec97544ef9c2818cd5acfc96ece9898)
+    * [`libyuv` 0.1899](https://github.com/Xpra-org/xpra/commit/8487756a59a23162e8b191e602b77e04837dacc9)
+    * [`pyu2f` incorrect build dependency](https://github.com/Xpra-org/xpra/commit/fa251355257bac7484a2c04d07f47eb69f4fb1d8)
+    * [missing RPM `python3` direct dependency for some Python libraries](https://github.com/Xpra-org/xpra/commit/c97d565504eb54751b95f2cdfa9608bda13641d4)
+    * [errors installing `libexec` scripts into a prefix](https://github.com/Xpra-org/xpra/commit/9b9da1e93f9b1f1a95964ee690e4127a004d3d9b)
+    * [detect MS Windows version for all codepages](https://github.com/Xpra-org/xpra/commit/40402e0e38e304ea517e7c4982a9810b7a62cfe7)
+    * [valid default options for MS Windows arm64 non-light builds](https://github.com/Xpra-org/xpra/commit/92f126459a9c349bd1c3a1e74712d29df7773fdc)
+    * [don't enable splash unconditionally on non-posix](https://github.com/Xpra-org/xpra/commit/51d82468d1bb8d0e85e452440ca28521091eb44b)
+    * [spng codecs missing due to pkg-config changes](https://github.com/Xpra-org/xpra/commit/76f961cc009f410d02afe6b63da2ac1e57ebcc95)
+* New features:
+    * [keycloak authentication module](https://github.com/Xpra-org/xpra/commit/da2c6f3d1af401f19090442cf171e61ab744244f)
+* Encodings:
+    * [`nvenc` context interface mismatch](https://github.com/Xpra-org/xpra/commit/9f3c782230097eab9c50c40e0a5adfa5346184cf)
+    * [don't import proxy encoder module unless needed](https://github.com/Xpra-org/xpra/commit/50308fc3378ee122558807a3ee88a1d74f34ba44)
+    * [video encoder runtime factor ignored](https://github.com/Xpra-org/xpra/commit/07d1670d87d1703fc9d1883f88966da2b1936552)
+    * [cuda context tests cleanup errors](https://github.com/Xpra-org/xpra/commit/b8d7d809d3cf5bc3f8fdbdf4ab49ce9edad9b541)
+    * [nvdec cleanup errors](https://github.com/Xpra-org/xpra/commit/9cf2e0de6198c0c5b94f0b5279da179af4e9a006)
+    * [avoid cuda warnings when not available](https://github.com/Xpra-org/xpra/commit/2b1eaa693ffd0de5ef67e624400b85088b3d8370)
+    * [bgrx output image was cropped](https://github.com/Xpra-org/xpra/commit/c88bc7c14dbd0e43ec07e6d10379ec780bdf64dd) [and blanked out](https://github.com/Xpra-org/xpra/commit/9cc672f12a35aa7b52976ef7615d10d016767b03)
+    * [disable GStreamer video codecs on MS Windows (can crash)](https://github.com/Xpra-org/xpra/commit/a0a68c4b1bdab482958a580286a9f5bfd2e319b1)
+* Network:
+    * [strip comments from ssh host config attributes](https://github.com/Xpra-org/xpra/commit/9e9c997726d190f9ad8f3823ee337e9036ddf21f)
+* Major:
+    * [integer time overflow](https://github.com/Xpra-org/xpra/commit/cbe5a4d1564eb038c597ccf9efcb5427458d6bb7), [prevent more](https://github.com/Xpra-org/xpra/commit/73ac696d5b7da7c7af31cfeabdec2da4da19b733)
+    * [server fails to start when sourcing profile strings](https://github.com/Xpra-org/xpra/commit/696f6ed6b3181f815fc188ed0b6a1a58c8d04bba)
+* Minor:
+    * [don't expose full OpenSSL version number by default](https://github.com/Xpra-org/xpra/commit/4fbd891a3d7c5f6370a5859ae5373718d74dadae)
+    * [don't expose network interface information by default](https://github.com/Xpra-org/xpra/commit/80d77d1e9294e8b996c22fcca934d685f465e61f)
+    * [numpy OpenGL import harness](https://github.com/Xpra-org/xpra/commit/11dae42eda83af2992621020ff6404f79bf69b91)
+    * [revert to other client's ssh agent socket on disconnection](https://github.com/Xpra-org/xpra/commit/101619ccee38dc412f77585d269df229076b6dc9)
+    * [only re-initialize encodings on update message](https://github.com/Xpra-org/xpra/commit/6434e8ba5116cccdc1a441fa97875decdbf8951a)
+* Cosmetic:
+    * [expose X11 errors](https://github.com/Xpra-org/xpra/commit/68cf81658c3432296eff305c2c5c0fc0d9a92e6f)
+    * [Gtk unhelpful deprecation warnings](https://github.com/Xpra-org/xpra/commit/cdee59c489dc128ec9810a3fb9b637adde7a4581)
+    * [Rsvg warnings](https://github.com/Xpra-org/xpra/commit/bd6bf6ba6f6b66f40609ece688eabeb189b7bb53)
+    * [invalid encoder state reported](https://github.com/Xpra-org/xpra/commit/004416a6fdc1bbeeb4ae4366890234250080151a)
+    * [don't use deprecated syntax in documentation example](https://github.com/Xpra-org/xpra/commit/7291a0fae3bce22ce55aee4e45c97bad82877d08)
+    * [documentation broken link](https://github.com/Xpra-org/xpra/commit/8a25a78fdf6ffb58b14b085bb239645060656926)
 
 ## [5.0.12] 2025-01-19
 * Platforms, build and packaging:
