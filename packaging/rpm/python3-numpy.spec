@@ -55,6 +55,7 @@ Provides:       numpy = %{epoch}:%{version}-%{release}
 Provides:       numpy%{?_isa} = %{epoch}:%{version}-%{release}
 Obsoletes:      numpy < 1:1.10.1-3
 
+Requires:       %{python3}
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-Cython

@@ -25,6 +25,7 @@ Version:        0.43.0
 Source0:        https://files.pythonhosted.org/packages/source/w/%{pypi_name}/%{pypi_name}-%{version}.tar.gz
 Summary:        Built-package format for Python
 Provides:       bundled(python3dist(packaging)) = 20.9
+Requires:       %{python3}
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
 License:        MIT and (ASL 2.0 or BSD)
