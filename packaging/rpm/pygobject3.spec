@@ -37,7 +37,6 @@ BuildRequires:  pkgconfig(py3cairo) >= %{pycairo_version}
 BuildRequires:  meson
 BuildRequires:  %{python3}-devel >= %{python3_version}
 BuildRequires:  %{python3}-setuptools
-Requires:       %{python3}
 
 %if 0%{?fedora}
 # https://docs.fedoraproject.org/en-US/packaging-guidelines/Python_Appendix/#_byte_compilation_reproducibility
@@ -64,6 +63,7 @@ for use in Python 3 programs.
 Summary:        Python 3 bindings for GObject Introspection base package
 Requires:       gobject-introspection%{?_isa} >= %{gobject_introspection_version}
 Requires:       %{python3}-gobject-base-noarch = %{version}-%{release}
+Requires:       %{python3}
 
 %description -n %{python3}-gobject-base
 This package provides the non-cairo specific bits of the GObject Introspection
@@ -73,6 +73,7 @@ library that are architecture specific.
 Summary:        Python 3 bindings for GObject Introspection base (not architecture dependent)
 BuildArch:      noarch
 Requires:       %{python3}-gobject-base = %{version}-%{release}
+Requires:       %{python3}
 
 %description -n %{python3}-gobject-base-noarch
 This package provides the non-cairo specific bits of the GObject Introspection
