@@ -132,7 +132,7 @@ class Encodings(StubClientMixin):
 
     def _process_encodings(self, packet : PacketType) -> None:
         caps = typedict(packet[1])
-        self._parse_server_capabilities(caps)
+        Encodings._parse_server_capabilities(self, caps)
 
 
     def get_info(self) -> Dict[str,Any]:
