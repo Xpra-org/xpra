@@ -12,7 +12,7 @@ from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
 from xpra.scripts.config import parse_bool_or_int
-from xpra.common import FULL_INFO, VIDEO_MAX_SIZE
+from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, noop
 from xpra.net.common import PacketType
 from xpra.net import compression
 from xpra.util.objects import typedict
@@ -146,6 +146,9 @@ class Encodings(StubClientMixin):
     def _process_encoding_set(self, packet: PacketType) -> None:
         caps = typedict(packet[1])
         Encodings._parse_server_capabilities(self, caps)
+        # fire setting change event for the system-tray:
+        ssc = getattr(self, "server_setting_changed", noop)
+        ssc("encoding", caps)
 
     def get_info(self) -> dict[str, Any]:
         return {
