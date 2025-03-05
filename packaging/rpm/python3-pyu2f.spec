@@ -26,7 +26,7 @@ License:        BSD
 Group:          Development/Libraries/Python
 Source0:		https://files.pythonhosted.org/packages/source/p/pyu2f/pyu2f-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-BuildRequires:  python3-devel
+BuildRequires:  %{python3}-devel
 
 %description
 pyu2f provides functionality for interacting with a U2F device over USB.
