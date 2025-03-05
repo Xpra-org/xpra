@@ -18,6 +18,7 @@ URL:            http://freedesktop.org/Software/pyxdg
 Source0:        https://files.pythonhosted.org/packages/source/p/pyxdg/pyxdg-%{version}.tar.gz
 # https://gitlab.freedesktop.org/xdg/pyxdg/merge_requests/2
 BuildArch:      noarch
+Requires:       %{python3}
 BuildRequires:	hicolor-icon-theme
 BuildRequires:	shared-mime-info
 BuildRequires:  %{python3}-devel

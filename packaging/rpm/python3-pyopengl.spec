@@ -32,6 +32,7 @@ BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-cython
 BuildRequires:  gcc
+Requires:       %{python3}
 Requires:       freeglut
 Obsoletes:      %{python3}-PyOpenGL < 3.1.5
 Obsoletes:      %{python3}-PyOpenGL-accelerate < 3.1.5

@@ -26,6 +26,7 @@ License:        BSD
 Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/source/n/nvidia_ml_py/nvidia_ml_py-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+Requires:       %{python3}
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
 

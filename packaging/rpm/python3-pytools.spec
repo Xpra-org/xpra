@@ -20,6 +20,7 @@ Source0:        https://files.pythonhosted.org/packages/source/p/pytools/pytools
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		%{python3}-pytools = %{version}-%{release}
 BuildArch:      noarch
+Requires:       %{python3}
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-pip
