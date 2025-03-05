@@ -1,4 +1,10 @@
 %define _disable_source_fetch 0
+%if 0%{?fedora} >= 42
+# F42 builds tried to bring in some weird dependencies on paths like /usr/sbin/python3
+AutoReqProv: no
+autoreq: no
+autoprov: no
+%endif
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %define bin_prefix %{nil}
