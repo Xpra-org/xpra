@@ -14,6 +14,7 @@ Source0:        https://files.pythonhosted.org/packages/b5/00/b7350b62803926f1d8
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Provides:		python3-pytools = %{version}-%{release}
 BuildArch:      noarch
+Requires:       python3
 BuildRequires:  python3-devel python3-setuptools
 
 %description

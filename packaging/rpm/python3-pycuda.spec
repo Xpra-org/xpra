@@ -49,6 +49,7 @@ BuildRequires:  cuda
 %description
 PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 
+Requires:       python3
 Requires:       python3-decorator
 Requires:       python3-numpy
 Requires:       python3-pytools

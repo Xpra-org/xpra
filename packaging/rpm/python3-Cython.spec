@@ -18,7 +18,7 @@ License:	Python
 URL:		http://www.cython.org
 Source0:    https://github.com/cython/cython/archive/refs/tags/%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-Requires:   python3
+Requires:       python3
 
 BuildRequires:	python3-devel
 BuildRequires:	python3-setuptools

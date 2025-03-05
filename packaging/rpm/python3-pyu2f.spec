@@ -19,6 +19,7 @@ License:        BSD
 Group:          Development/Libraries/Python
 Source0:		https://files.pythonhosted.org/packages/29/b5/c1209e6cb77647bc2c9a6a1a953355720f34f3b006b725e303c70f3c0786/pyu2f-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+Requires:       python3
 BuildRequires:  python3-devel
 
 %description

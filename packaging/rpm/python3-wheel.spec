@@ -18,6 +18,7 @@ Source0:        https://files.pythonhosted.org/packages/fb/d0/0b4c18a0b85c20233b
 %endif
 Summary:        Built-package format for Python
 Provides:       bundled(python3dist(packaging)) = 20.9
+Requires:       python3
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 License:        MIT and (ASL 2.0 or BSD)
