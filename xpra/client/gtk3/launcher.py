@@ -833,6 +833,7 @@ class ApplicationWindow:
         self.current_error = None
         self.set_info_text("Connecting.")
         self.set_sensitive(False)
+        self.client.show_progress(60, "connecting")
         try:
             log("calling %s%s", connect_to,
                 (display_desc, repr_ellipsized(str(self.config)), self.set_info_text, self.ssh_failed))
