@@ -39,7 +39,7 @@ from xpra.scripts.main import (
     connect_to, make_client,
     configure_network, configure_env, configure_logging,
     )
-from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args
+from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args, get_ssl_options
 from xpra.exit_codes import RETRY_EXIT_CODES, ExitCode, exit_str
 from xpra.platform.info import get_username
 from xpra.log import Logger, enable_debug_for
@@ -776,6 +776,8 @@ class ApplicationWindow:
             params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
             params["display_name"] = f"{self.config.mode}://{self.config.host}:{self.config.port}"
+            # always populate ssl so we can auto-upgrade:
+            params["ssl-options"] = get_ssl_options(params, self.config, [])
             if self.config.mode in (MODE_SSL, MODE_WSS) and self.nostrict_host_check.get_active():
                 params["strict-host-check"] = False
 
