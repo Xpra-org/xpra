@@ -131,7 +131,7 @@ class SSLVerifyFailure(InitExit):
         self.ssl_sock = ssl_sock
 
 
-def ssl_handshake(ssl_sock):
+def ssl_handshake(ssl_sock) -> None:
     ssllog = get_ssl_logger()
     try:
         ssl_sock.do_handshake(True)
@@ -157,7 +157,6 @@ def ssl_handshake(ssl_sock):
             ssllog("host failed SSL verification: %s", msg)
             raise SSLVerifyFailure(status, msg, verify_code, ssl_sock) from None
         raise InitExit(status, f"SSL handshake failed: {e}") from None
-    return ssl_sock
 
 
 def get_ssl_verify_mode(verify_mode_str: str):

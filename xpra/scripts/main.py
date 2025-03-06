@@ -1403,8 +1403,9 @@ def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=no
                 sock = ssl_wrap_socket(sock, **ssl_options)
             except ValueError as e:
                 raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
-            sock = ssl_handshake(sock)
-            assert sock, f"failed to wrap socket {sock}"
+            if not sock:
+                raise RuntimeError(f"failed to wrap socket {sock}")
+            ssl_handshake(sock)
             conn._socket = sock
             conn.timeout = timeout
 
