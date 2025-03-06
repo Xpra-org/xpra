@@ -176,3 +176,17 @@ def color_parse(*args) -> Gdk.Color | None:
     if ok:
         return v
     return None
+
+
+black = color_parse("black")
+red = color_parse("red")
+white = color_parse("white")
+
+
+def set_widget_bg_color(widget, is_error=False) -> None:
+    with IgnoreWarningsContext():
+        widget.modify_base(Gtk.StateType.NORMAL, red if is_error else white)
+
+
+def set_widget_fg_color(widget, is_error=False) -> None:
+    modify_fg(widget, red if is_error else black)

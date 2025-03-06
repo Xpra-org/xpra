@@ -22,7 +22,10 @@ from collections.abc import Callable
 from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
 from xpra.gtk.signals import register_os_signals
 from xpra.gtk.window import add_close_accel
-from xpra.gtk.widget import scaled_image, imagebutton, label, choose_file, modify_fg, color_parse
+from xpra.gtk.widget import (
+    scaled_image, imagebutton, label, choose_file, modify_fg,
+    set_widget_bg_color, set_widget_fg_color, red, black,
+)
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.os_util import WIN32, OSX, gi_import
@@ -96,10 +99,6 @@ LAUNCHER_DEFAULTS = {
     "proxy_password": "",
     "proxy_key": "",
 }
-
-black = color_parse("black")
-red = color_parse("red")
-white = color_parse("white")
 
 
 def get_active_item_index(optionmenu) -> int:
@@ -193,13 +192,30 @@ def button(tooltip, icon_name, callback) -> Gtk.Button:
     return btn
 
 
+def get_launcher_validation() -> dict:
+    # TODO: since "mode" is not part of global options
+    # this validation should be injected from the launcher instead
+    def validate_in_list(x, options) -> str:
+        if x in options:
+            return ""
+        return "must be in " + csv(options)
+
+    modes = get_connection_modes()
+    return {"mode": lambda x: validate_in_list(x, modes)}
+
+
+def accel_close(*args) -> None:
+    log("accel_close%s", args)
+    Gtk.main_quit()
+
+
 class ApplicationWindow:
 
     def __init__(self):
         # Default connection options
         self.config = make_defaults_struct(extras_defaults=LAUNCHER_DEFAULTS,
                                            extras_types=LAUNCHER_OPTION_TYPES,
-                                           extras_validation=self.get_launcher_validation())
+                                           extras_validation=get_launcher_validation())
         self.parse_ssh()
         # TODO: the fixup does not belong here?
         from xpra.scripts.main import fixup_options
@@ -216,17 +232,6 @@ class ApplicationWindow:
         self.is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
         self.is_paramiko = ssh_cmd.startswith("paramiko")
 
-    def get_launcher_validation(self) -> dict:
-        # TODO: since "mode" is not part of global options
-        # this validation should be injected from the launcher instead
-        def validate_in_list(x, options) -> str:
-            if x in options:
-                return ""
-            return "must be in " + csv(options)
-
-        modes = get_connection_modes()
-        return {"mode": lambda x: validate_in_list(x, modes)}
-
     def create_window_with_config(self) -> None:
         self.do_create_window()
         self.update_gui_from_config()
@@ -240,7 +245,7 @@ class ApplicationWindow:
         self.window.set_position(Gtk.WindowPosition.CENTER)
         with IgnoreWarningsContext():
             self.window.set_wmclass("xpra-launcher-gui", "Xpra-Launcher-GUI")
-        add_close_accel(self.window, self.accel_close)
+        add_close_accel(self.window, accel_close)
         icon = get_icon_pixbuf("connect.png")
         if icon:
             self.window.set_icon(icon)
@@ -489,10 +494,6 @@ class ApplicationWindow:
         self.window.vbox = vbox
         self.window.add(vbox)
 
-    def accel_close(self, *args) -> None:
-        log("accel_close%s", args)
-        Gtk.main_quit()
-
     def validate(self, *args) -> list:
         mode = self.mode_combo.get_active_text().lower()
         ssh = mode == MODE_SSH
@@ -554,7 +555,7 @@ class ApplicationWindow:
         errs.append((self.port_entry, port < 0 or port >= 2 ** 16, "invalid port number"))
         err_text = []
         for w, e, text in errs:
-            self.set_widget_bg_color(w, e)
+            set_widget_bg_color(w, e)
             if e:
                 err_text.append(text)
         log(f"validate({args}) err_text={err_text}, errs={errs}")
@@ -660,15 +661,15 @@ class ApplicationWindow:
                 self.port_entry, self.proxy_password_entry, self.proxy_username_entry,
                 self.proxy_host_entry, self.proxy_port_entry, self.ssh_port_entry,
         ):
-            self.set_widget_fg_color(self.info, False)
-            self.set_widget_bg_color(widget, False)
+            set_widget_fg_color(self.info, False)
+            set_widget_bg_color(widget, False)
 
     def set_info_text(self, text, is_error=False) -> None:
         if self.info:
             def do_set_info() -> None:
                 self.info.set_text(text)
                 self.info.set_selectable(is_error)
-                self.set_widget_fg_color(self.info, is_error)
+                set_widget_fg_color(self.info, is_error)
 
             GLib.idle_add(do_set_info)
 
@@ -856,16 +857,16 @@ class ApplicationWindow:
             self.handle_exception(e)
             return
         log("connect_to(..)=%s, hiding launcher window, starting client", conn)
-        GLib.idle_add(self.start_XpraClient, conn, display_desc)
+        GLib.idle_add(self.start_xpra_client, conn, display_desc)
 
-    def start_XpraClient(self, conn, display_desc: dict) -> None:
+    def start_xpra_client(self, conn, display_desc: dict) -> None:
         try:
-            self.do_start_XpraClient(conn, display_desc)
+            self.do_start_xpra_client(conn, display_desc)
         except Exception as e:
             log.error("Error: failed to start client", exc_info=True)
             self.handle_exception(e)
 
-    def do_start_XpraClient(self, conn, display_desc: dict) -> None:
+    def do_start_xpra_client(self, conn, display_desc: dict) -> None:
         log("do_start_XpraClient(%s, %s) client=%s", conn, display_desc, self.client)
         self.client.encoding = self.config.encoding
         self.client.display_desc = display_desc
@@ -969,13 +970,6 @@ class ApplicationWindow:
             self.password_entry.modify_text(Gtk.StateType.NORMAL, red)
         self.password_entry.grab_focus()
 
-    def set_widget_bg_color(self, widget, is_error=False) -> None:
-        with IgnoreWarningsContext():
-            widget.modify_base(Gtk.StateType.NORMAL, red if is_error else white)
-
-    def set_widget_fg_color(self, widget, is_error=False) -> None:
-        modify_fg(widget, red if is_error else black)
-
     def update_options_from_gui(self) -> None:
         def pint(vstr) -> int:
             try:
@@ -1066,7 +1060,7 @@ class ApplicationWindow:
         Gtk.main_quit()
         return False
 
-    def update_options_from_URL(self, url: str) -> None:
+    def update_options_from_url(self, url: str) -> None:
         from xpra.scripts.parsing import parse_URL
         address, props = parse_URL(url)
         pa = address.split("://")
@@ -1095,7 +1089,7 @@ class ApplicationWindow:
         # so try to load it from file, and define it if not present:
         options = validate_config(props,
                                   extras_types=LAUNCHER_OPTION_TYPES,
-                                  extras_validation=self.get_launcher_validation())
+                                  extras_validation=get_launcher_validation())
         for k, v in options.items():
             fn = k.replace("-", "_")
             setattr(self.config, fn, v)
@@ -1242,7 +1236,7 @@ def do_main(argv: list[str]) -> int:
                     def open_URL(url: str) -> None:
                         log("open_URL(%s)", url)
                         app.__osx_open_signal = True
-                        app.update_options_from_URL(url)
+                        app.update_options_from_url(url)
                         # the compressors and packet encoders cannot be changed from the UI
                         # so apply them now:
                         configure_network(app.config)
