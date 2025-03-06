@@ -12,14 +12,10 @@ from typing import Any, Dict
 from xpra.log import Logger
 log = Logger("util", "auth")
 
-from xpra.util.str_fn import strtobytes, bytestostr
 from ctypes import addressof, create_string_buffer, sizeof
 
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 from libc.string cimport memset
-
-ctypedef void* void_p  # @UndefinedVariable
-ctypedef const void* const_void_p  # @UndefinedVariable
 
 
 cdef extern from "Python.h":
@@ -177,13 +173,13 @@ cdef class pam_session:
             return False
 
         if password:
-            conv.conv = <void_p> &password_conv
+            conv.conv = <void *> &password_conv
             assert self.password, "no password to use for pam_start"
             if PyObject_GetBuffer(self.password, &view, PyBUF_ANY_CONTIGUOUS):
                 raise RuntimeError("failed to read password data")
             conv.appdata_ptr = view.buf
         else:
-            conv.conv = <void_p> misc_conv
+            conv.conv = <void *> misc_conv
             conv.appdata_ptr = NULL
         cdef int r = 0
         try:
@@ -199,7 +195,7 @@ cdef class pam_session:
             return False
         return True
 
-    def set_env(self, env : Dict[str,Any]):
+    def set_env(self, env : Dict[str,Any]) -> None:
         assert self.pam_handle!=NULL
         cdef int r
         for k,v in env.items():
@@ -229,7 +225,7 @@ cdef class pam_session:
         log("get_envlist()=%s", env)
         return env
 
-    def set_items(self, items : Dict[str,Any]):
+    def set_items(self, items : Dict[str,Any]) -> None:
         cdef const void* item
         cdef pam_xauth_data xauth_data
         cdef int r
@@ -248,11 +244,11 @@ cdef class pam_session:
                 s = v+b"\0"
                 xauth_data.datalen = len(v)
                 xauth_data.data = s
-                item = <const_void_p> &xauth_data
+                item = <const void *> &xauth_data
             else:
                 s = create_string_buffer(v)
                 l = addressof(s)
-                item = <const_void_p> l
+                item = <const void *> l
             r = pam_set_item(self.pam_handle, item_type, item)
             if r != PAM_SUCCESS:
                 log.error("Error %i: failed to set pam item '%s' to '%s'", r, k, v)
