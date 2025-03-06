@@ -418,7 +418,7 @@ def use_systemd_run(s) -> bool:
     return r == 0
 
 
-def verify_gir():
+def verify_gir() -> None:
     try:
         from gi import repository
         assert repository
@@ -538,7 +538,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
         return 128 + signal.SIGINT
 
 
-def is_connection_arg(arg):
+def is_connection_arg(arg) -> bool:
     if POSIX and (arg.startswith(":") or arg.startswith("wayland-")):
         return True
     if any(arg.startswith(f"{mode}://") for mode in SOCKET_TYPES):
@@ -1091,7 +1091,8 @@ def do_pick_display(error_cb, opts, extra_args, cmdline=()) -> dict[str, Any]:
     assert False
 
 
-def single_display_match(dir_servers, error_cb, nomatch="cannot find any live servers to connect to"):
+def single_display_match(dir_servers, error_cb,
+                         nomatch="cannot find any live servers to connect to") -> tuple[str, str, str]:
     # ie: {"/tmp" : [LIVE, "desktop-10", "/tmp/desktop-10"]}
     # aggregate all the different locations:
     allservers = []
@@ -1832,7 +1833,7 @@ def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
                     raise InitInfo(einfo + "%s xpra client supports the following encodings:\n * %s" %
                                    (app.client_toolkit(), "\n * ".join(encodings_help(encodings))))
 
-        def handshake_complete(*_args):
+        def handshake_complete(*_args) -> None:
             app.show_progress(100, "connection established")
             log = get_logger()
             try:
@@ -2377,7 +2378,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
     return do_run_server(script_file, cmdline, error_cb, options, args, full_mode, str(display or ""), defaults)
 
 
-def get_current_root_size(display_is_remote: bool):
+def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
     root_w = root_h = 0
     if display_is_remote or OSX or not POSIX:
         # easy path, just load gtk early:
@@ -2463,7 +2464,7 @@ def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> int |
     return None
 
 
-def find_mode_pos(args, mode: str):
+def find_mode_pos(args, mode: str) -> int:
     rmode = REVERSE_MODE_ALIAS.get(mode, str(mode))
     mode_strs = [rmode]
     if rmode.find("-") > 0:
@@ -3000,7 +3001,7 @@ def run_glcheck(opts) -> ExitValue:
     return 0
 
 
-def pick_shadow_display(args, uid=getuid(), gid=getgid(), sessions_dir=""):
+def pick_shadow_display(args, uid=getuid(), gid=getgid(), sessions_dir="") -> str:
     if len(args) == 1 and args[0]:
         if OSX or WIN32:
             return args[0]
@@ -3043,7 +3044,7 @@ def start_macos_shadow(cmd, env, cwd) -> None:
         Popen(x, env=env, cwd=cwd).wait()
 
 
-def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name):
+def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name) -> None:
     log = Logger("server")
     from xpra.platform.paths import get_app_dir
     app_dir = get_app_dir()
@@ -4768,7 +4769,7 @@ def run_setting(setunset: bool, args) -> ExitValue:
         if len(args) > 2:
             raise ValueError(f"too many values for {setting!r} which is a {otype!r}")
 
-        def parse_bool(value: str):
+        def parse_bool(value: str) -> bool:
             v = value.lower()
             if v in TRUE_OPTIONS:
                 return True
