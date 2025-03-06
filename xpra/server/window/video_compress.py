@@ -2393,10 +2393,13 @@ class WindowVideoSource(WindowSource):
             return
         super().do_schedule_auto_refresh(encoding, data, region, client_options, options)
 
-    def video_fallback(self, image: ImageWrapper, options, warn=False) -> tuple:
+    def video_fallback(self, image: ImageWrapper, options, warn=False, info="") -> tuple:
         if warn and first_time(f"non-video-{self.wid}"):
             videolog.warn("Warning: using non-video fallback encoding")
             videolog.warn(f" for {image} of window {self.wid}")
+            videolog.warn(f" {info}")
+        else:
+            videolog(f"video fallback: {info}")
         w = image.get_width()
         h = image.get_height()
         fallback_encodings = tuple(set(self.non_video_encodings).intersection(self.video_fallback_encodings.keys()))
@@ -2459,12 +2462,9 @@ class WindowVideoSource(WindowSource):
 
         if not self.common_video_encodings:
             # we have to send using a non-video encoding as that's all we have!
-            videolog("no common video encodings: using fallback")
-            return self.video_fallback(image, options)
+            return self.video_fallback(image, options, info="no common video encodings")
         if self.image_depth not in (24, 30, 32):
-            # this image depth is not supported for video
-            videolog("depth %s not supported for video: using fallback", self.image_depth)
-            return self.video_fallback(image, options)
+            return self.video_fallback(image, options, info=f"depth {self.image_depth} not supported")
 
         if self.encoding == "grayscale":
             from xpra.codecs.csc_libyuv.converter import argb_to_gray
@@ -2479,14 +2479,12 @@ class WindowVideoSource(WindowSource):
             encodings = (encoding, )
 
         if not self.check_pipeline(encodings, w, h, src_format):
-            return self.video_fallback(image, options)
+            return self.video_fallback(image, options, info="pipeline failed")
         ve = self._video_encoder
         if not ve:
-            videolog("no video encoder instance")
-            return self.video_fallback(image, options, warn=True)
+            return self.video_fallback(image, options, warn=True, info="no video encoder instance")
         if not ve.is_ready():
-            videolog("video encoder %s is not ready yet, using temporary fallback", ve)
-            return self.video_fallback(image, options, warn=False)
+            return self.video_fallback(image, options, warn=False, info=f"encoder {ve.get_type()!r} is not ready")
 
         # we're going to use the video encoder,
         # so make sure we don't time it out:
@@ -2519,7 +2517,7 @@ class WindowVideoSource(WindowSource):
             if csce:
                 videolog.error(" csc %s:", csce.get_type())
                 print_nested_dict(csce.get_info(), prefix="   ", print_fn=videolog.error)
-            return self.video_fallback(image, options, warn=False)
+            return self.video_fallback(image, options, warn=False, info=f"compression failure: {e}")
         finally:
             if image != csc_image:
                 free_image_wrapper(csc_image)
@@ -2527,7 +2525,7 @@ class WindowVideoSource(WindowSource):
         if not ret:
             if not self.is_cancelled():
                 videolog.error("Error: %s video compression failed", encoding)
-            return self.video_fallback(image, options, warn=True)
+            return self.video_fallback(image, options, warn=True, info="no data")
         data, client_options = ret
         end = monotonic()
         if LOG_ENCODERS or compresslog.is_debug_enabled() and "csc-type" not in client_options:
@@ -2573,8 +2571,7 @@ class WindowVideoSource(WindowSource):
                     # so send something as non-video
                     # and skip painting this video frame when it does come out:
                     self.start_video_frame = delayed
-                    videolog("delayed frame, so sending fallback encoding initially")
-                    return self.video_fallback(image, options)
+                    return self.video_fallback(image, options, info="delayed frame")
                 return ()
         else:
             # there are no delayed frames,
@@ -2588,7 +2585,7 @@ class WindowVideoSource(WindowSource):
             if ve.is_closed():
                 videolog("video encoder is closed: %s", ve)
                 self.video_context_clean()
-                return self.video_fallback(image, options)
+                return self.video_fallback(image, options, info=f"encoder {ve.get_type()} is closed")
             videolog.error("Error: %s video data is missing", encoding)
             return ()
         return actual_encoding, Compressed(actual_encoding, data), client_options, width, height, 0, 24
