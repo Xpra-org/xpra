@@ -2682,7 +2682,7 @@ if pam_ENABLED:
             "extra_compile_args": "-I" + find_header_file("/security", isdir=True),
             "extra_link_args": ("-lpam", "-lpam_misc"),
         }
-    ace("xpra.server.pam", **pam_kwargs)
+    ace("xpra.platform.pam", **pam_kwargs)
 
 # platform:
 tace(sd_listen_ENABLED, "xpra.platform.posix.sd_listen", "libsystemd")
