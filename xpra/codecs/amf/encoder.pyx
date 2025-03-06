@@ -164,6 +164,7 @@ def get_specs() -> Sequence[VideoSpec]:
             spec = VideoSpec(
                 encoding=encoding, input_colorspace=input_colorspace, output_colorspaces=out_css,
                 has_lossless_mode=False,
+                full_range=False,
                 codec_class=Encoder, codec_type=get_type(),
                 quality=quality, speed=speed,
                 size_efficiency=60,
@@ -503,7 +504,6 @@ cdef class Encoder:
         assert self.context!=NULL
         pixels = image.get_pixels()
         istrides = image.get_rowstride()
-        cdef int full_range = int(image.get_full_range())
         pf = image.get_pixel_format().replace("A", "X")
         if pf != self.src_format:
             raise ValueError(f"expected {self.src_format} but got {image.get_pixel_format()}")
@@ -537,7 +537,7 @@ cdef class Encoder:
             return self.do_compress_image(pic_in, strides), {
                 "csc"       : {"NV12": "YUV420P"}.get(self.src_format, self.src_format),
                 "frame"     : int(self.frames),
-                "full-range" : bool(full_range),
+                "full-range" : False,
                 #"quality"  : min(99+self.lossless, self.quality),
                 #"speed"    : self.speed,
             }

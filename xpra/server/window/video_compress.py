@@ -2024,7 +2024,7 @@ class WindowVideoSource(WindowSource):
             csc_speed = max(1, min(speed, 100-quality/2.0))
             csc_options = typedict(options)
             csc_options["speed"] = csc_speed
-            csc_options["full-range"] = True        # TODO: check which video encoders require "studio" range, none?
+            csc_options["full-range"] = encoder_spec.full_range
             csc_start = monotonic()
             csce = csc_spec.make_instance()
             csce.init_context(csc_width, csc_height, src_format,

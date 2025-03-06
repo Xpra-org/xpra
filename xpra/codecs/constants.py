@@ -245,6 +245,7 @@ class VideoSpec(CodecSpec):
 
     encoding           : str = "invalid"
     has_lossless_mode   : bool = False
+    full_range: bool = True
 
     def __repr__(self):
         return f"{self.codec_type}({self.input_colorspace} to {self.encoding})"
