@@ -1081,8 +1081,8 @@ class ApplicationWindow:
         self._apply_props(props)
 
     def update_options_from_file(self, filename: str) -> None:
-        log("update_options_from_file(%s)", filename)
         props = read_config(filename)
+        log("update_options_from_file(%s) props=%s", filename, props)
         self._apply_props(props)
 
     def _apply_props(self, props: dict[str, Any]) -> None:
@@ -1199,8 +1199,7 @@ def do_main(argv: list[str]) -> int:
             configure_network(app.config)
         debug = fixup_debug_option(app.config.debug)
         if debug:
-            for x in debug.split(","):
-                enable_debug_for(x)
+            enable_debug_for(*debug.split(","))
         app.create_window_with_config()
     except Exception:
         exception_dialog("Error creating launcher form")
