@@ -10,7 +10,6 @@ from typing import Any
 from time import monotonic
 from collections import deque
 from collections.abc import Sequence
-from weakref import WeakValueDictionary
 from threading import Event
 
 from xpra import __version__
@@ -133,7 +132,6 @@ class RemoteConnectionClient(baseclass):
         self.protocol = None
         self._ordinary_packets = []
         self.connect_event = Event()
-        self.encoders = WeakValueDictionary()
         opts = make_defaults_struct()
         opts.mmap = "both"
         opts.mmap_group = ""

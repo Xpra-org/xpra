@@ -6,6 +6,7 @@
 import os
 from queue import Empty
 from collections.abc import Sequence
+from weakref import WeakValueDictionary
 
 from xpra.util.str_fn import Ellipsizer, print_nested_dict
 from xpra.util.objects import typedict
@@ -32,6 +33,7 @@ class EncoderClient(RemoteConnectionClient):
     def __init__(self, options: dict):
         super().__init__(options)
         self.specs = {}
+        self.encoders = WeakValueDictionary()
         self.encodings: Sequence[str] = ()
 
     def __repr__(self):
@@ -73,7 +75,7 @@ class EncoderClient(RemoteConnectionClient):
         encoder = self.encoders.get(seq)
         log(f"context-response: {seq}={encoder}, {ok=}, {message=!r}, {info=}")
         if not encoder:
-            log.error(f"Error: context ignored, encoder {seq} not found!")
+            log(f"context response ignored, encoder {seq} not found!")
             return
         if ok:
             encoder.ready = True
@@ -205,6 +207,7 @@ class Encoder(RemoteCodec):
 
     def clean(self) -> None:
         super().clean()
+        self.responses.put((b"", {}))
         server.request_close(self.generation, "encoder closed")
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
