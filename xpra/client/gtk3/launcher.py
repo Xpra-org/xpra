@@ -219,9 +219,9 @@ class ApplicationWindow:
     def get_launcher_validation(self) -> dict:
         # TODO: since "mode" is not part of global options
         # this validation should be injected from the launcher instead
-        def validate_in_list(x, options):
+        def validate_in_list(x, options) -> str:
             if x in options:
-                return None
+                return ""
             return "must be in " + csv(options)
 
         modes = get_connection_modes()
@@ -250,7 +250,7 @@ class ApplicationWindow:
         hb.props.title = "Session Launcher"
         self.window.set_titlebar(hb)
 
-        def show_about(*_args):
+        def show_about(*_args) -> None:
             about(parent=self.window)
 
         hb.add(hb_button("About", "help-about", show_about))
@@ -665,7 +665,7 @@ class ApplicationWindow:
 
     def set_info_text(self, text, is_error=False) -> None:
         if self.info:
-            def do_set_info():
+            def do_set_info() -> None:
                 self.info.set_text(text)
                 self.info.set_selectable(is_error)
                 self.set_widget_fg_color(self.info, is_error)
@@ -858,14 +858,14 @@ class ApplicationWindow:
         log("connect_to(..)=%s, hiding launcher window, starting client", conn)
         GLib.idle_add(self.start_XpraClient, conn, display_desc)
 
-    def start_XpraClient(self, conn, display_desc) -> None:
+    def start_XpraClient(self, conn, display_desc: dict) -> None:
         try:
             self.do_start_XpraClient(conn, display_desc)
         except Exception as e:
             log.error("Error: failed to start client", exc_info=True)
             self.handle_exception(e)
 
-    def do_start_XpraClient(self, conn, display_desc) -> None:
+    def do_start_XpraClient(self, conn, display_desc: dict) -> None:
         log("do_start_XpraClient(%s, %s) client=%s", conn, display_desc, self.client)
         self.client.encoding = self.config.encoding
         self.client.display_desc = display_desc
