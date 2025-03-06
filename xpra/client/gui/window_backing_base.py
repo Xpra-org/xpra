@@ -786,7 +786,10 @@ class WindowBackingBase:
                             decoder_options.pop(input_colorspace, None)
                             if not decoder_options:
                                 VIDEO_DECODERS.pop(coding, None)
-                            raise RuntimeError(f"all the video decoders have failed: {all_decoders_for_cs}")
+                            msg = f"no decoders for {coding!r} and {input_colorspace!r}"
+                            fire_paint_callbacks(callbacks, -1, msg)
+                            log(f"{msg}: {all_decoders_for_cs}")
+                            return
                 videolog("paint_with_video_decoder: info=%s", vd.get_info())
             try:
                 img = vd.decompress_image(img_data, options)
