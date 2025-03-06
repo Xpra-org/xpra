@@ -1161,8 +1161,7 @@ def do_main(argv: list[str]) -> int:
         options, args = parse_cmdline(argv)
         debug = fixup_debug_option(options.debug)
         if debug:
-            for x in debug.split(","):
-                enable_debug_for(x)
+            enable_debug_for(*debug.split(","))
     except InitInfo as e:
         print(str(e))
         return 0
