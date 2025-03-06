@@ -388,7 +388,7 @@ class RemoteCodec:
         return self.height
 
     def get_type(self) -> str:
-        return "remote"
+        return f"remote-{self.codec_type}"
 
     def clean(self) -> None:
         self.closed = True

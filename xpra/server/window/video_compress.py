@@ -1445,8 +1445,8 @@ class WindowVideoSource(WindowSource):
                 scorelog(" change of video input dimensions from %ix%i to %ix%i",
                          ve.get_width(), ve.get_height(), enc_width, enc_height)
                 return False
-            if not isinstance(ve, encoder_spec.codec_class):
-                scorelog(f" found a better video encoder class than {type(ve)}: {encoder_spec.codec_class}")
+            if ve.get_type() != encoder_spec.codec_type:
+                scorelog(f" found a better video encoder type than {ve.get_type()}: {encoder_spec.codec_type}")
                 return False
         # everything is still valid:
         return True
