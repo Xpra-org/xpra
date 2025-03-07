@@ -227,8 +227,8 @@ data_ENABLED = DEFAULT
 
 def find_header_file(name: str, isdir=False) -> str:
     matches = [v for v in
-               [d+name for d in INCLUDE_DIRS]
-               if os.path.exists(v) and os.path.isdir(v)==isdir]
+               [os.path.join(d, name) for d in INCLUDE_DIRS]
+               if os.path.exists(v) and os.path.isdir(v) == isdir]
     if not matches:
         return ""
     return matches[0]
@@ -2679,7 +2679,7 @@ if pam_ENABLED:
         pam_kwargs = pkgconfig("pam", "pam_misc")
     else:
         pam_kwargs = {
-            "extra_compile_args": "-I" + find_header_file("/security", isdir=True),
+            "extra_compile_args": "-I" + find_header_file("security", isdir=True),
             "extra_link_args": ("-lpam", "-lpam_misc"),
         }
     ace("xpra.platform.pam", **pam_kwargs)
@@ -2794,7 +2794,7 @@ if amf_ENABLED:
         amf_kwargs = pkgconfig("amf")
     except ValueError:
         amf_kwargs = pkgconfig("amf") or {
-            "extra_compile_args": "-I" + find_header_file("/AMF", isdir=True) + "/AMF",
+            "extra_compile_args": "-I" + find_header_file("AMF", isdir=True) + "/AMF",
             # "extra_link_args": ("-lpam", "-lpam_misc"),
         }
         print(f"using default amf args: {amf_kwargs}")
