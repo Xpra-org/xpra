@@ -166,6 +166,9 @@ def _find_command(name: str, env_name: str, *paths) -> str:
     cmd = os.environ.get(env_name, "")
     if cmd and os.path.exists(cmd):
         return cmd
+    cwd_cmd = os.path.abspath(f"./{name}.exe")
+    if os.path.exists(cwd_cmd):
+        return cwd_cmd
     cmd = which(name)
     if cmd and os.path.exists(cmd):
         return cmd
