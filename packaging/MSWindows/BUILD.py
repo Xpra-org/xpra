@@ -331,6 +331,10 @@ def clean() -> None:
 
 
 def find_windowskit_command(name="mc") -> str:
+    debug(f"find_windowskit_command({name!r})")
+    cwd_cmd = os.path.abspath(f"./{name}.exe")
+    if os.path.exists(cwd_cmd):
+        return cwd_cmd
     # the proper way would be to run vsvars64.bat
     # but we only want to locate 3 commands,
     # so we find them "by hand":
@@ -345,10 +349,13 @@ def find_windowskit_command(name="mc") -> str:
 
 
 def find_vs_command(name="link") -> str:
-    debug(f"find_vs_command({name})")
+    debug(f"find_vs_command({name!r})")
+    cwd_cmd = os.path.abspath(f"./{name}.exe")
+    if os.path.exists(cwd_cmd):
+        return cwd_cmd
     dirs = []
     for prog_dir in (PROGRAMFILES, PROGRAMFILES_X86):
-        for VSV in (14.0, 17.0, 19.0, 2019):
+        for VSV in (14.0, 17.0, 19.0, 2019, 2022):
             vsdir = f"{prog_dir}\\Microsoft Visual Studio\\{VSV}"
             if os.path.exists(vsdir):
                 dirs.append(f"{vsdir}\\VC\\bin")
@@ -382,7 +389,7 @@ VersionInfo = namedtuple("VersionInfo", "string,value,revision,full_string,arch_
 version_info = VersionInfo("invalid", (0, 0), 0, "invalid", "arch", "extra", (0, 0, 0, 0))
 
 
-def set_version_info(light: bool):
+def set_version_info(light: bool) -> None:
     step("Collecting version information")
     for filename in ("src_info.py", "build_info.py"):
         path = os.path.join("xpra", filename)
@@ -392,7 +399,7 @@ def set_version_info(light: bool):
     load_version_info(light)
 
 
-def load_version_info(light: bool):
+def load_version_info(light: bool) -> None:
 
     def load_module(src: str):
         spec = spec_from_file_location("xpra", src)
@@ -1215,7 +1222,7 @@ def export_sbom() -> None:
 def verpatch() -> None:
     EXCLUDE = ("plink", "openssh", "openssl", "paexec")
 
-    def run_verpatch(filename: str, descr: str):
+    def run_verpatch(filename: str, descr: str) -> None:
         log_command(["verpatch", filename,
                      "/s", "desc", descr,
                      "/va", version_info.padded,
@@ -1423,7 +1430,7 @@ def build(args) -> None:
                 sign_file(msi)
 
 
-def main(argv):
+def main(argv) -> None:
     args, unknownargs = parse_command_line(argv)
     if len(unknownargs) > 1:
         if len(unknownargs) != 2:
