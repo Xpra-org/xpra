@@ -797,7 +797,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             self.quit(ExitCode.INTERNAL_ERROR)
             return
         ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
-        ssl_sock = ssl_handshake(ssl_sock)
+        ssl_handshake(ssl_sock)
         authlog("ssl handshake complete")
         from xpra.net.bytestreams import SSLSocketConnection
         ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, new_socktype)
