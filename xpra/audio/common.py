@@ -62,9 +62,9 @@ def audio_option_or_all(name: str, options, all_values: Iterable[str]) -> Sequen
                     v.append(o)
         if invalid_options:
             if all_values:
-                log.warn("Warning: invalid values for {name!r}: " + csv(invalid_options))
+                log.warn(f"Warning: invalid values for {name!r}: " + csv(invalid_options))
                 log.warn(" valid options: " + csv(all_values))
             else:
-                log.warn("Warning: no {name!r} available")
+                log.warn(f"Warning: no {name!r} available")
     log("%s=%s", name, csv(v))
     return tuple(v)
