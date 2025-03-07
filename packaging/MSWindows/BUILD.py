@@ -685,7 +685,6 @@ def trim_python_libs() -> None:
         "backports",
         "importlib_resources/compat",
         "importlib_resources/tests",
-        "yaml",
         # no need for headers:
         # "cairo/include"
     )
