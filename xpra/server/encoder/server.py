@@ -195,6 +195,7 @@ class EncoderServer(ServerBase):
                     msg = f"no video encoders found for {encoding!r} and {pixel_format!r}"
                     log(msg)
                     especs = getVideoHelper().get_encoder_specs(encoding)
+                    input_cs_options = ()
                     if especs:
                         input_cs_options = tuple(especs.keys())
                         image = csc_image(image, input_cs_options)
