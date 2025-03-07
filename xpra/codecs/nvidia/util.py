@@ -87,7 +87,7 @@ def _has_nvidia_hardware() -> bool | None:
         if output:
             log(f"has_nvidia_hardware() found NVIDIA GPU(s) using nvidia-smi: {output}")
             return True
-    except (FileNotFoundError, subprocess.CalledProcessError):
+    except (FileNotFoundError, subprocess.CalledProcessError, OSError):
         log("has_nvidia_hardware() nvidia-smi command not found or failed")
     # hope for the best
     log("has_nvidia_hardware() unable to ascertain, returning None")
