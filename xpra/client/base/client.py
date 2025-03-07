@@ -202,7 +202,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         # ie: file:filename=password.txt
         parts = auth.split(":", 1)
         mod_name = parts[0]
-        kwargs = {}
+        kwargs: dict[str, Any] = {}
         if len(parts) == 2:
             kwargs = parse_simple_dict(parts[1])
         kwargs["protocol"] = self._protocol
