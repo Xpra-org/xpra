@@ -5,6 +5,9 @@
 
 import os
 
+from collections.abc import Sequence
+
+
 PIPE_NAME = "xpra-service"
 
 
@@ -24,7 +27,7 @@ def get_commonappdata_dir() -> str:
         return ""
 
 
-def main(argv):
+def main(argv: Sequence[str]) -> int:
     if len(argv) > 1 and argv[1] != "start":
         if argv[1] != "stop":
             raise ValueError(f"unsupported subcommand {argv[1]!r}")
@@ -39,7 +42,7 @@ def main(argv):
 
     args = argv[:1] + [
         "proxy",
-        "--bind-tcp=0.0.0.0:14500,auth=sys",
+        "--bind-tcp=0.0.0.0:14500,auth=sys,client-username=true,verify-username=true",
         "--tray=no",
         # "-d", "win32,proxy",
         # "--mdns=no",
@@ -62,12 +65,12 @@ def main(argv):
     return run_mode("Xpra-Proxy", args)
 
 
-def run_mode(name, args):
+def run_mode(name: str, args: Sequence[str]) -> int:
     from xpra.platform import init, set_default_name
     set_default_name(name)
     init()
     from xpra.scripts.main import main as xpra_main
-    return xpra_main(args[0], args)
+    return int(xpra_main(args[0], args))
 
 
 if __name__ == "__main__":
