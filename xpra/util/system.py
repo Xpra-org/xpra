@@ -314,6 +314,8 @@ def platform_release(release):
             import wmi
         except ImportError:
             log(f"platform_release({release}) no wmi", exc_info=True)
+            if release.endswith("Server"):
+                return release.replace("Server", "-Server")  # ie: "2025Server" -> "2025-Server"
         else:
             try:
                 computer = wmi.WMI()
