@@ -5,6 +5,7 @@
 
 import os
 from time import sleep
+from collections.abc import Sequence
 
 from xpra.server.proxy.server import ProxyServer as _ProxyServer, get_proxy_env
 from xpra.platform.paths import get_app_dir
@@ -17,7 +18,7 @@ from xpra.log import Logger
 log = Logger("proxy")
 
 
-def exec_command(username, args, exe, cwd, env):
+def exec_command(username: str, args: Sequence[str], exe: str, cwd: str, env: dict[str, str]):
     log("exec_command%s", (username, args, exe, cwd, env))
     # pylint: disable=import-outside-toplevel
     from xpra.platform.win32.lsa_logon_lib import logon_msv1_s4u

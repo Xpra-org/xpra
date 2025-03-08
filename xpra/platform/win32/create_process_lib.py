@@ -13,8 +13,8 @@ from ctypes import (
     get_last_error, WinError, WinDLL,  # @UnresolvedImport
     Structure, byref, POINTER, sizeof, create_unicode_buffer,
 )
-import wintypes
-from wintypes import BYTE, BOOL, WORD, DWORD, LPWSTR, LPCWSTR, LPVOID   # @UnresolvedImport
+from ctypes import wintypes
+from ctypes.wintypes import BYTE, BOOL, WORD, DWORD, LPWSTR, LPCWSTR, LPVOID   # @UnresolvedImport
 
 kernel32 = WinDLL('kernel32', use_last_error=True)
 advapi32 = WinDLL('advapi32', use_last_error=True)
@@ -77,7 +77,7 @@ class HANDLE(wintypes.HANDLE):
     def __int__(self):
         return self.value or 0
 
-    def Detach(self):
+    def Detach(self) -> int:
         if not getattr(self, 'closed', False):
             self.closed = True
             value = int(self)
@@ -85,7 +85,7 @@ class HANDLE(wintypes.HANDLE):
             return value
         raise ValueError("already closed")
 
-    def Close(self, CloseHandle=kernel32.CloseHandle):
+    def Close(self, CloseHandle=kernel32.CloseHandle) -> None:
         if self and not getattr(self, 'closed', False):
             CloseHandle(self.Detach())
 
@@ -214,7 +214,7 @@ def _check_bool(result, func, args):
     return args
 
 
-def WIN(func, restype, *argtypes):
+def WIN(func, restype, *argtypes) -> None:
     func.restype = restype
     func.argtypes = argtypes
     if issubclass(restype, HANDLE_IHV):
@@ -362,10 +362,10 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
     dwCreationFlags = ci.dwCreationFlags | CREATE_UNICODE_ENVIRONMENT
     lpEnvironment = create_environment(ci.lpEnvironment)
 
-    if (dwCreationFlags & DETACHED_PROCESS and (
-            (dwCreationFlags & CREATE_NEW_CONSOLE) or
-            (ci.dwCreationType == CREATION_TYPE_LOGON) or
-            (ci.dwCreationType == CREATION_TYPE_TOKEN)
+    if dwCreationFlags & DETACHED_PROCESS and any((
+            dwCreationFlags & CREATE_NEW_CONSOLE,
+            ci.dwCreationType == CREATION_TYPE_LOGON,
+            ci.dwCreationType == CREATION_TYPE_TOKEN,
     )):
         raise RuntimeError('DETACHED_PROCESS is incompatible with '
                            'CREATE_NEW_CONSOLE, which is implied for '
@@ -485,7 +485,7 @@ class Popen(subprocess.Popen):
         if self._child_started:
             pi.hThread.Close()
 
-    def start(self):
+    def start(self) -> None:
         if self._child_started:
             raise RuntimeError("processes can only be started once")
         hThread = self._processinfo.hThread
