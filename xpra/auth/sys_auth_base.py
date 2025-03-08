@@ -51,9 +51,8 @@ class SysAuthenticatorBase:
             # allow the client to specify the username to authenticate with:
             self.username = kwargs.get("remote", {}).get("username", self.username)
             log(f"username={self.username!r}")
-        elif verify_username and remote_username != self.username:
-            log(f"verifying username={self.username!r} vs remote={remote_username!r}")
-            raise ValueError(f"invalid username {remote_username!r}")
+        elif verify_username:
+            self.verify_username(remote_username)
         self.salt = None
         self.digest = None
         self.salt_digest = None
@@ -71,6 +70,11 @@ class SysAuthenticatorBase:
         #    log.warn("Warning: unused keyword arguments for %s authentication:", self)
         #    log.warn(" %s", unused)
         log("auth prompt=%s, socket_dirs=%s", self.prompt, self.socket_dirs)
+
+    def verify_username(self, remote_username: str) -> None:
+        if remote_username != self.username:
+            log(f"verifying username={self.username!r} vs remote={remote_username!r}")
+            raise ValueError(f"invalid username {remote_username!r}")
 
     def get_uid(self) -> int:
         raise NotImplementedError()
