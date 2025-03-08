@@ -363,7 +363,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         register_SIGUSR_signals(GLib.idle_add)
 
     def threaded_init(self) -> None:
-        log.warn("threaded_init() servercore start")
+        log("threaded_init() servercore start")
         self.threaded_setup()
         self.call_init_thread_callbacks()
 
