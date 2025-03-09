@@ -27,7 +27,7 @@ $PACMAN --noconfirm --needed -S ${XPKG}dbus-glib
 $PACMAN --noconfirm --needed -S ${XPKG}gst-python
 #development tools and libs for building extra packages:
 $PACMAN --noconfirm --needed -S base-devel ${XPKG}yasm ${XPKG}nasm gcc groff subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
-for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks pyopenssl; do
+for x in cryptography cffi pycparser numpy pillow cx_Freeze appdirs paramiko comtypes netifaces setproctitle pyu2f ldap ldap3 bcrypt pynacl pyopengl pyopengl-accelerate nvidia-ml zeroconf certifi yaml py-cpuinfo winkerberos gssapi coverage psutil oauthlib pysocks pyopenssl pyqt6; do
 	$PACMAN --noconfirm --needed -S ${XPKG}python-${x}
 done
 #dependencies of browser_cookie3 and pycuda,
