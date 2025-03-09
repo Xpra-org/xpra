@@ -43,9 +43,12 @@ def read_link(path: str) -> str:
     try:
         with open(path, "rb") as stream:
             content = stream.read()
+    except OSError:
+        log(f"read_link({path!r})", exc_info=True)
+        return ""
+    try:
         return parse_link(content)
     except Exception as e:
-        # log("error parsing '%s'", path, exc_info=True)
         log("error parsing '%s': %s", path, e)
         return ""
 

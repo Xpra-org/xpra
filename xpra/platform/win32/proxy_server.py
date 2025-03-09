@@ -17,6 +17,8 @@ from xpra.log import Logger
 
 log = Logger("proxy")
 
+PAEXEC = envbool("XPRA_PAEXEC", True)
+
 
 def exec_command(username: str, password: str, args: Sequence[str], exe: str, cwd: str, env: dict[str, str]):
     log("exec_command%s", (username, args, exe, cwd, env))
@@ -81,11 +83,12 @@ class ProxyServer(_ProxyServer):
         exe = shadow_command
 
         # use paexec to access the GUI session:
-        if envbool("XPRA_PAEXEC", True) and os.path.exists(paexec) and os.path.isfile(paexec):
+        if PAEXEC and os.path.exists(paexec) and os.path.isfile(paexec):
             # find the session-id to shadow:
             if not session_info:
                 session_info = find_session(username)
             if session_info:
+                log(f"found session {session_info} for {username!r}")
                 cmd = [
                     "paexec.exe",
                     "-i", str(session_info["SessionID"]), "-s",
@@ -94,6 +97,7 @@ class ProxyServer(_ProxyServer):
             else:
                 log.warn("Warning: session not found for username '%s'", username)
         else:
+            log(f"{PAEXEC=}, {paexec=!r}")
             log.warn("Warning: starting without paexec, expect a black screen")
 
         cmd += [

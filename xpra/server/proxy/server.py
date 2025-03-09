@@ -439,7 +439,7 @@ class ProxyServer(ProxyServerBaseClass):
                 log("start_new_session%s=%s", (username, "..", uid, gid, sns, displays), (proc, socket_path, display))
             except Exception as e:
                 log("start_server_subprocess failed", exc_info=True)
-                log.error("Error: failed to start server subprocess:")
+                log.error("Error: failed to start new session subprocess:")
                 log.estr(e)
                 nosession("failed to start a new session")
                 return
