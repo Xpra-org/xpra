@@ -12,7 +12,6 @@ from xpra.platform.paths import get_app_dir
 from xpra.common import SocketState
 from xpra.util.env import envbool
 from xpra.util.io import pollwait
-from xpra.util.str_fn import strtobytes
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -72,8 +71,8 @@ class ProxyServer(_ProxyServer):
         if not session_info:
             # first, Logon:
             with log.trap_error(f"Error: failed to logon as {username!r}"):
-                from xpra.platform.win32.desktoplogon_lib import Logon
-                Logon(strtobytes(username), strtobytes(password))
+                from xpra.platform.win32.desktoplogon_lib import logon
+                logon(username, password)
         # hwinstaold = set_window_station("winsta0")
         app_dir = get_app_dir()
         shadow_command = os.path.join(app_dir, "Xpra-Shadow.exe")
