@@ -19,16 +19,7 @@ namespace DesktopLogon
         }
 
         [DllExport]
-        public static void Logon(string user, string password)
-        {
-            Console.WriteLine("Logon({0}, {1})", user, password);
-            var domain = System.Environment.UserDomainName;
-            var server = "localhost"; //System.Net.Dns.GetHostName();
-            LogonEx(server, domain, user, password);
-        }
-
-        [DllExport]
-        public static void LogonEx(string server, string domain, string user, string password)
+        public static void Logon(string server, string domain, string user, string password)
         {
             Console.WriteLine("LogonEx({0}, {1}, {2}, {3})", server, domain, user, password);
             void ProcessTaskThread()

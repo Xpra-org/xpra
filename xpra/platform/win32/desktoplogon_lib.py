@@ -146,7 +146,7 @@ def logon(username: str, password: str) -> int:
     d = b(os.environ.get("USERDOMAIN", "WORKGROUP"))
     u = b(username)
     p = b(password)
-    desktop_logon.LogonEx(s, d, u, p)
+    desktop_logon.Logon(s, d, u, p)
     r = desktop_logon.getErrorCode()
     if r:
         from xpra.log import Logger
