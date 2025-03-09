@@ -64,19 +64,22 @@
     <DllExportTimeout>30000</DllExportTimeout>
     <DllExportPeCheck>2</DllExportPeCheck>
     <DllExportPatches>0</DllExportPatches>
+    <DllExportRefreshObj>false</DllExportRefreshObj>
+    <DllExportILAsmExternAsm />
+    <DllExportILAsmTypeRef />
+    <DllExportTypeRefOptions>0</DllExportTypeRefOptions>
+    <DllExportRefPackages />
+    <DllExportPreProcType>0</DllExportPreProcType>
+    <DllExportPostProcType>0</DllExportPostProcType>
+    <DllExportDir>$(MSBuildProjectDirectory)\</DllExportDir>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AxMSTSCLib">
-      <HintPath>..\..\..\..\..\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\AxMSTSCLib.dll</HintPath>
+      <HintPath>.\AxMSTSCLib.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
-    <Reference Include="DllExport, PublicKeyToken=8337224c9ad9e356">
-      <HintPath>$(SolutionDir)packages\DllExport.1.7.0\gcache\$(DllExportMetaXBase)\$(DllExportNamespace)\$(DllExportMetaLibName)</HintPath>
-      <Private>False</Private>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
     <Reference Include="MSTSCLib">
-      <HintPath>..\..\..\..\..\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\MSTSCLib.dll</HintPath>
+      <HintPath>.\MSTSCLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="System" />
@@ -92,23 +95,44 @@
   <ItemGroup>
     <Compile Include="DesktopLogon.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DllExport">
-      <Version>1.7.0</Version>
+      <Version>1.8.0</Version>
       <Visible>false</Visible>
       <Wz>1</Wz>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ImportGroup Label=".NET DllExport">
-    <Import Project="$(SolutionDir)packages\DllExport.1.7.0\tools\net.r_eg.DllExport.targets" Condition="Exists($([MSBuild]::Escape('$(SolutionDir)packages\DllExport.1.7.0\tools\net.r_eg.DllExport.targets')))" Label="8337224c9ad9e356" />
+    <Import Project="$(DllExportDir)packages\DllExport.1.8.0\tools\net.r_eg.DllExport.targets" Condition="Exists($([MSBuild]::Escape('$(DllExportDir)packages\DllExport.1.8.0\tools\net.r_eg.DllExport.targets')))" Label="8337224c9ad9e356" />
   </ImportGroup>
   <Target Name="DllExportRestorePkg" BeforeTargets="PrepareForBuild">
-    <Error Condition="!Exists('$(SolutionDir)DllExport.bat')" Text="DllExport.bat is not found. Path: '$(SolutionDir)' - https://github.com/3F/DllExport" />
-    <Exec Condition="('$(DllExportModImported)' != 'true' Or !Exists('$(SolutionDir)packages\DllExport.1.7.0\tools\net.r_eg.DllExport.targets')) And Exists('$(SolutionDir)DllExport.bat')" Command=".\DllExport.bat  -action Restore" WorkingDirectory="$(SolutionDir)" />
+    <Error Condition="'$(DllExportNoRestore)'!='true' And !Exists('$(DllExportDir)DllExport.bat')" Text="DllExport.bat was not found in $(DllExportDir); https://github.com/3F/DllExport" />
+    <Exec Condition="'$(DllExportNoRestore)'!='true' And ('$(DllExportModImported)'!='true' Or !Exists('$(DllExportDir)packages\DllExport.1.8.0\tools\net.r_eg.DllExport.targets') Or !Exists('$(DllExportDir)packages\DllExport.1.8.0\gcache')) And Exists('$(DllExportDir)DllExport.bat')" Command=".\DllExport.bat  -action Restore" WorkingDirectory="$(DllExportDir)" />
+    <MSBuild Condition="'$(DllExportModImported)'!='true'" Projects="$(DllExportDir)packages\DllExport.1.8.0\tools\net.r_eg.DllExport.targets" Targets="DllExportMetaXBaseTarget" Properties="TargetFramework=$(TargetFramework)">
+      <Output TaskParameter="TargetOutputs" PropertyName="DllExportMetaXBase" />
+    </MSBuild>
+    <ItemGroup>
+      <Reference Include="DllExport, PublicKeyToken=8337224c9ad9e356">
+        <HintPath>$(DllExportDir)packages\DllExport.1.8.0\gcache\$(DllExportMetaXBase)\$(DllExportNamespace)\$(DllExportMetaLibName)</HintPath>
+        <Private>False</Private>
+        <SpecificVersion>False</SpecificVersion>
+      </Reference>
+    </ItemGroup>
   </Target>
-  <Target Name="DllExportRPkgDynamicImport" BeforeTargets="PostBuildEvent" DependsOnTargets="GetFrameworkPaths" Condition="'$(DllExportModImported)' != 'true' And '$(DllExportRPkgDyn)' != 'false'">
-    <MSBuild BuildInParallel="true" UseResultsCache="true" Projects="$(MSBuildProjectFullPath)" Properties="DllExportRPkgDyn=true" Targets="Build" />
+  <Target Name="DllExportRPkgDynamicImport" BeforeTargets="PostBuildEvent" DependsOnTargets="GetFrameworkPaths" Condition="'$(DllExportModImported)'!='true' And '$(DllExportRPkgDyn)'!='false'">
+    <MSBuild BuildInParallel="true" UseResultsCache="true" Projects="$(MSBuildProjectFullPath)" Properties="Configuration=$(Configuration);DllExportRPkgDyn=true" Targets="Build" />
   </Target>
 </Project>
