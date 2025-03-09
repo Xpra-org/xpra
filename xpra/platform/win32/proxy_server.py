@@ -18,7 +18,7 @@ from xpra.log import Logger
 log = Logger("proxy")
 
 
-def exec_command(username: str, args: Sequence[str], exe: str, cwd: str, env: dict[str, str]):
+def exec_command(username: str, password: str, args: Sequence[str], exe: str, cwd: str, env: dict[str, str]):
     log("exec_command%s", (username, args, exe, cwd, env))
     # pylint: disable=import-outside-toplevel
     from xpra.platform.win32.lsa_logon_lib import logon_msv1_s4u
@@ -26,11 +26,17 @@ def exec_command(username: str, args: Sequence[str], exe: str, cwd: str, env: di
     log("logon_msv1_s4u(%s)=%s", username, logon_info)
     from xpra.platform.win32.create_process_lib import (
         Popen,
-        CREATIONINFO, CREATION_TYPE_TOKEN, STARTF_USESHOWWINDOW,
+        CREATIONINFO, CREATION_TYPE_TOKEN,  # CREATION_TYPE_LOGON,
+        STARTF_USESHOWWINDOW,
         LOGON_WITH_PROFILE, CREATE_NEW_PROCESS_GROUP, STARTUPINFO,
     )
     creation_info = CREATIONINFO()
+    creation_info.lpApplicationName = "Xpra"
+    creation_info.lpUsername = username
+    creation_info.lpPassword = password
+    creation_info.lpDomain = os.environ.get("USERDOMAIN", "WORKGROUP")
     creation_info.dwCreationType = CREATION_TYPE_TOKEN
+    # creation_info.dwCreationType = CREATION_TYPE_LOGON
     creation_info.dwLogonFlags = LOGON_WITH_PROFILE
     creation_info.dwCreationFlags = CREATE_NEW_PROCESS_GROUP
     creation_info.hToken = logon_info.Token
@@ -104,7 +110,7 @@ class ProxyServer(_ProxyServer):
         env = get_proxy_env()
         env["XPRA_REDIRECT_OUTPUT"] = "1"
         # env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
-        proc = exec_command(username, cmd, exe, app_dir, env)
+        proc = exec_command(username, password, cmd, exe, app_dir, env)
         from xpra.platform.win32.dotxpra import DotXpra
         dotxpra = DotXpra()
         for t in range(10):
