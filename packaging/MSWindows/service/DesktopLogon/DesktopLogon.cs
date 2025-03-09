@@ -21,7 +21,7 @@ namespace DesktopLogon
         [DllExport]
         public static void Logon(string server, string domain, string user, string password)
         {
-            Console.WriteLine("LogonEx({0}, {1}, {2}, {3})", server, domain, user, password);
+            Console.WriteLine("Logon({0}, {1}, {2}, ..)", server, domain, user);
             void ProcessTaskThread()
             {
                 var form = new Form();
