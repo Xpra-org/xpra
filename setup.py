@@ -247,21 +247,21 @@ gtk_x11_ENABLED = DEFAULT and not WIN32 and not OSX
 gtk3_ENABLED = DEFAULT and client_ENABLED
 ism_ext_ENABLED = DEFAULT and gtk3_ENABLED and data_ENABLED
 opengl_ENABLED = DEFAULT and client_ENABLED
-has_pam_headers = has_header_file("/security", isdir=True) or pkg_config_exists("pam", "pam_misc")
+has_pam_headers = has_header_file("security", isdir=True) or pkg_config_exists("pam", "pam_misc")
 pam_ENABLED = DEFAULT and (server_ENABLED or proxy_ENABLED) and LINUX and has_pam_headers
 
-proc_use_procps         = LINUX and has_header_file("/proc/procps.h")
-proc_use_libproc        = LINUX and has_header_file("/libproc2/pids.h")
+proc_use_procps         = LINUX and has_header_file("proc/procps.h")
+proc_use_libproc        = LINUX and has_header_file("libproc2/pids.h")
 proc_ENABLED            = LINUX and (proc_use_procps or proc_use_libproc)
 
 xdg_open_ENABLED        = (LINUX or FREEBSD) and DEFAULT
 netdev_ENABLED          = LINUX and DEFAULT
-vsock_ENABLED           = LINUX and has_header_file("/linux/vm_sockets.h")
+vsock_ENABLED           = LINUX and has_header_file("linux/vm_sockets.h")
 lz4_ENABLED             = DEFAULT
 rencodeplus_ENABLED     = DEFAULT
-brotli_ENABLED          = DEFAULT and has_header_file("/brotli/decode.h") and has_header_file("/brotli/encode.h")
+brotli_ENABLED          = DEFAULT and has_header_file("brotli/decode.h") and has_header_file("brotli/encode.h")
 cityhash_ENABLED        = False  # has_header_file("/city.h")
-qrencode_ENABLED        = DEFAULT and has_header_file("/qrencode.h")
+qrencode_ENABLED        = DEFAULT and has_header_file("qrencode.h")
 clipboard_ENABLED       = DEFAULT
 Xdummy_ENABLED          = None if POSIX else False  # None means auto-detect
 Xdummy_wrapper_ENABLED  = None if POSIX else False  # None means auto-detect
@@ -2108,6 +2108,7 @@ if WIN32:
         "pyu2f",
         "mmap",
         "comtypes", "comtypes.stream",      # used by webcam, netdev_query, taskbar progress (file-transfers), etc
+        #"wmi", "win32com",
     ]
     # this is generated at runtime,
     # but we still have to remove the empty directory by hand
