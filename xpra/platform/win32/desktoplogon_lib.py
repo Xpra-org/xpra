@@ -3,13 +3,14 @@
 # Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+import os
 import sys
 import ctypes
 
 # This definition of the error codes was found here:
 # https://social.technet.microsoft.com/wiki/contents/articles/37870.remote-desktop-client-troubleshooting-disconnect-codes-and-reasons.aspx
 ERROR_CODES: dict[int, str] = {
+    -1: "RDP client thread ended",
     0: "No error",
     1: "User-initiated client disconnect.",
     2: "User-initiated client logoff.",
@@ -133,13 +134,19 @@ ERROR_CODES: dict[int, str] = {
 }
 
 
+def b(s: str) -> bytes:
+    return s.encode("latin1")
+
+
 def logon(username: str, password: str) -> int:
     # sys.path.insert(0, "E:\\DesktopLogon\\")
     # desktop_logon = ctypes.cdll.LoadLibrary("E:\\DesktopLogon\\DesktopLogon.dll")
     desktop_logon = ctypes.cdll.LoadLibrary("DesktopLogon.dll")
-    u = username.encode("latin1")
-    p = password.encode("latin1")
-    desktop_logon.Logon(u, p)
+    s = b("localhost")
+    d = b(os.environ.get("USERDOMAIN", "WORKGROUP"))
+    u = b(username)
+    p = b(password)
+    desktop_logon.LogonEx(s, d, u, p)
     r = desktop_logon.getErrorCode()
     if r:
         from xpra.log import Logger
