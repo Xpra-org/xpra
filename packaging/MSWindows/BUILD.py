@@ -232,9 +232,10 @@ def check_html5() -> None:
 
 def check_signtool() -> None:
     step("locating `signtool`")
+    if os.path.exists("./signtool.exe"):
+        return
     try:
         signtool = find_command("signtool", "SIGNTOOL",
-                                "./signtool.exe",
                                 f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1\\Bin\\signtool.exe"
                                 f"{PROGRAMFILES}\\Microsoft SDKs\\Windows\\v7.1A\\Bin\\signtool.exe"
                                 f"{PROGRAMFILES_X86}\\Windows Kits\\8.1\\Bin\\x64\\signtool.exe"
@@ -247,8 +248,7 @@ def check_signtool() -> None:
         if not signtool:
             raise RuntimeError("signtool not found")
     debug(f"{signtool=}")
-    if signtool.lower() != "./signtool.exe":
-        copyfile(signtool, "./signtool.exe")
+    copyfile(signtool, "./signtool.exe")
 
 
 def show_tail(filename: str) -> None:
