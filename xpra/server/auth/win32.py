@@ -17,6 +17,11 @@ class Authenticator(SysAuthenticator):
         # fugly: keep hold of the password so the win32 proxy can use it
         self.password = ""
 
+    def verify_username(self, remote_username: str) -> None:
+        if remote_username.lower() != self.username.lower():
+            log(f"verifying username={self.username!r} vs remote={remote_username!r}")
+            raise ValueError(f"invalid username {remote_username!r}")
+
     def get_uid(self) -> int:
         return 0
 
