@@ -11,10 +11,13 @@ import os
 import subprocess
 from ctypes import (
     get_last_error, WinError, WinDLL,  # @UnresolvedImport
-    Structure, byref, POINTER, sizeof, create_unicode_buffer,
+    Structure, POINTER, sizeof,
 )
 from ctypes import wintypes
 from ctypes.wintypes import BYTE, BOOL, WORD, DWORD, LPWSTR, LPCWSTR, LPVOID   # @UnresolvedImport
+
+from xpra.log import Logger
+log = Logger("win32")
 
 kernel32 = WinDLL('kernel32', use_last_error=True)
 advapi32 = WinDLL('advapi32', use_last_error=True)
@@ -99,10 +102,12 @@ class PROCESS_INFORMATION(Structure):
     """https://msdn.microsoft.com/en-us/library/ms684873"""
     __slots__ = '_cached_hProcess', '_cached_hThread'
 
-    _fields_ = (('_hProcess',   HANDLE),
-                ('_hThread',    HANDLE),
-                ('dwProcessId', DWORD),
-                ('dwThreadId',  DWORD))
+    _fields_ = (
+        ('_hProcess', HANDLE),
+        ('_hThread', HANDLE),
+        ('dwProcessId', DWORD),
+        ('dwThreadId', DWORD),
+    )
 
     @property
     def hProcess(self):
@@ -154,6 +159,9 @@ class STARTUPINFO(Structure):
     def __init__(self, **kwds):
         self.cb = sizeof(self)
         super().__init__(**kwds)
+
+    def __repr__(self):
+        return "<STARTUPINFO>"
 
 
 class PROC_THREAD_ATTRIBUTE_LIST(Structure):
@@ -324,16 +332,19 @@ class CREATIONINFO:
         self.lpPassword = lpPassword
         self.dwLogonFlags = dwLogonFlags
 
+    def __repr__(self):
+        return "<CREATIONINFO>"
+
 
 def create_environment(environ):
+    log("create_environment(%r)", environ)
     if environ is not None:
         items = ['%s=%s' % (k, environ[k]) for k in sorted(environ)]
-        buf = '\x00'.join(items)
-        length = len(buf) + 2 if buf else 1
-        return create_unicode_buffer(buf, length)
+        return '\x00'.join(items)
 
 
 def create_process(commandline=None, creationinfo=None, startupinfo=None):
+    log("create_process%s", (commandline, creationinfo, startupinfo))
     if creationinfo is None:
         creationinfo = CREATIONINFO()
 
@@ -357,7 +368,7 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
             si.wShowWindow = SW_HIDE
             comspec = os.environ.get("ComSpec", os.path.join(os.environ["SystemRoot"], "System32", "cmd.exe"))
             commandline = f'"{comspec}" /c "{commandline}"'
-        commandline = create_unicode_buffer(commandline)
+        log(f"{commandline=!r}")
 
     dwCreationFlags = ci.dwCreationFlags | CREATE_UNICODE_ENVIRONMENT
     lpEnvironment = create_environment(ci.lpEnvironment)
@@ -370,40 +381,43 @@ def create_process(commandline=None, creationinfo=None, startupinfo=None):
         raise RuntimeError('DETACHED_PROCESS is incompatible with '
                            'CREATE_NEW_CONSOLE, which is implied for '
                            'the logon and token creation types')
-
     if ci.dwCreationType == CREATION_TYPE_NORMAL:
-
-        kernel32.CreateProcessW(
+        args = (
             ci.lpApplicationName, commandline,
             ci.lpProcessAttributes, ci.lpThreadAttributes, ci.bInheritHandles,
             dwCreationFlags, lpEnvironment, ci.lpCurrentDirectory,
-            byref(si), byref(pi))
-
+            si, pi,
+        )
+        log("CreateProcessW%s", args)
+        kernel32.CreateProcessW(*args)
     elif ci.dwCreationType == CREATION_TYPE_LOGON:
-
-        advapi32.CreateProcessWithLogonW(
+        args = (
             ci.lpUsername, ci.lpDomain, ci.lpPassword, ci.dwLogonFlags,
             ci.lpApplicationName, commandline,
             dwCreationFlags, lpEnvironment, ci.lpCurrentDirectory,
-            byref(si), byref(pi))
-
+            si, pi,
+        )
+        log("CreateProcessWithLogonW%s", args)
+        advapi32.CreateProcessWithLogonW(*args)
     elif ci.dwCreationType == CREATION_TYPE_TOKEN:
-
-        advapi32.CreateProcessWithTokenW(
-            ci.hToken, ci.dwLogonFlags,
+        args = (
+            int(ci.hToken), ci.dwLogonFlags,
             ci.lpApplicationName, commandline,
             dwCreationFlags, lpEnvironment, ci.lpCurrentDirectory,
-            byref(si), byref(pi))
-
+            si, pi,
+        )
+        log("CreateProcessWithTokenW%s", args)
+        advapi32.CreateProcessWithTokenW(*args)
     elif ci.dwCreationType == CREATION_TYPE_USER:
-
-        advapi32.CreateProcessAsUserW(
-            ci.hToken,
+        args = (
+            int(ci.hToken),
             ci.lpApplicationName, commandline,
             ci.lpProcessAttributes, ci.lpThreadAttributes, ci.bInheritHandles,
             dwCreationFlags, lpEnvironment, ci.lpCurrentDirectory,
-            byref(si), byref(pi))
-
+            si, pi,
+        )
+        log("CreateProcessAsUserW%s", args)
+        advapi32.CreateProcessAsUserW(*args)
     else:
         raise ValueError('invalid process creation type')
 
@@ -419,21 +433,22 @@ class Popen(subprocess.Popen):
         super().__init__(*args, **kwds)
 
     def _execute_child(self, args, executable, preexec_fn, close_fds,
-                       pass_fds, cwd, env, startupinfo, creationflags,
-                       shell, p2cread, p2cwrite, c2pread, c2pwrite, errread,
-                       errwrite, restore_signals, start_new_session):
+                       pass_fds, cwd, env,
+                       startupinfo, creationflags, shell,
+                       p2cread, p2cwrite,
+                       c2pread, c2pwrite,
+                       errread, errwrite,
+                       *_extra_args):
         """Execute program (MS Windows version)"""
         assert not pass_fds, "pass_fds not supported on Windows."
-        commandline = (args if isinstance(args, str) else
-                       subprocess.list2cmdline(args))
+        commandline = args if isinstance(args, str) else subprocess.list2cmdline(args)
         self._common_execute_child(executable, commandline, shell,
                                    close_fds, creationflags, env, cwd,
                                    startupinfo, p2cread, c2pwrite, errwrite)
 
     def _common_execute_child(self, executable, commandline, shell,
                               close_fds, creationflags, env, cwd,
-                              startupinfo, p2cread, c2pwrite, errwrite,
-                              to_close=()):
+                              startupinfo, p2cread, c2pwrite, errwrite):
 
         ci = self._creationinfo
         if executable is not None:
@@ -458,9 +473,9 @@ class Popen(subprocess.Popen):
         default = -1
         if default not in (p2cread, c2pwrite, errwrite):
             si.dwFlags |= STARTF_USESTDHANDLES
-            si.hStdInput  = int(p2cread)
+            si.hStdInput = int(p2cread)
             si.hStdOutput = int(c2pwrite)
-            si.hStdError  = int(errwrite)
+            si.hStdError = int(errwrite)
 
         try:
             pi = create_process(creationinfo=ci, startupinfo=si)
