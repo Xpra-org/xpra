@@ -5,6 +5,7 @@
 
 import os
 from time import sleep
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.server.proxy.server import ProxyServer as _ProxyServer, get_proxy_env
@@ -59,12 +60,13 @@ def exec_command(username: str, password: str, args: Sequence[str], exe: str, cw
 
 class ProxyServer(_ProxyServer):
 
-    def start_new_session(self, username, password, uid, gid, new_session_dict=None, displays=()):
-        log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))
-        return self.start_win32_shadow(username, password, new_session_dict)
+    def start_new_session(self, username: str, password: str, uid: int, gid: int,
+                          sess_options: dict, displays=()) -> tuple[Any, str, str]:
+        log("start_new_session%s", (username, "..", uid, gid, sess_options, displays))
+        return self.start_win32_shadow(username, password, sess_options)
 
-    def start_win32_shadow(self, username, password, new_session_dict):
-        log("start_win32_shadow%s", (username, "..", new_session_dict))
+    def start_win32_shadow(self, username: str, password: str, sess_options: dict) -> tuple[Any, str, str]:
+        log("start_win32_shadow%s", (username, "..", sess_options))
         # pylint: disable=import-outside-toplevel
         from xpra.platform.win32.wtsapi import find_session
         session_info = find_session(username)
@@ -107,7 +109,7 @@ class ProxyServer(_ProxyServer):
             # "--tray=no",
         ]
         # unless explicitly stated otherwise, exit with client:
-        if new_session_dict.get("exit-with-client", None) is not False:
+        if sess_options.get("exit-with-client", None) is not False:
             cmd.append("--exit-with-client=yes")
         from xpra.log import debug_enabled_categories
         if debug_enabled_categories:

@@ -427,7 +427,7 @@ class ProxyServer(ProxyServerBaseClass):
         proc = None
         socket_path = None
         display = None
-        sns = typedict(c.dictget("start-new-session", {}))
+        sns = c.dictget("start-new-session", {})
         authlog("proxy_session: displays=%s, start_sessions=%s, start-new-session=%s",
                 displays, self._start_sessions, sns)
         if not displays or sns:
@@ -473,7 +473,7 @@ class ProxyServer(ProxyServerBaseClass):
             if socket_path:
                 hello["socket-path"] = socket_path
             # echo mode if present:
-            mode = sns.strget("mode")
+            mode = str(sns.get("mode", ""))
             if mode:
                 hello["mode"] = mode
             client_proto.send_now(("hello", hello))
@@ -603,9 +603,9 @@ class ProxyServer(ProxyServerBaseClass):
         start_thread(start_proxy_process, f"start_proxy({client_proto})")
 
     def start_new_session(self, username: str, _password, uid: int, gid: int,
-                          new_session_dict=None, displays=()) -> tuple[Any, str, str]:
-        log("start_new_session%s", (username, "..", uid, gid, new_session_dict, displays))
-        sns = typedict(new_session_dict or {})
+                          sess_options: dict, displays=()) -> tuple[Any, str, str]:
+        log("start_new_session%s", (username, "..", uid, gid, sess_options, displays))
+        sns = typedict(sess_options or {})
         mode = sns.strget("mode", "start")
         mode = MODE_ALIAS.get(mode, mode)
         if mode not in ("seamless", "desktop", "shadow", "monitor", "expand"):

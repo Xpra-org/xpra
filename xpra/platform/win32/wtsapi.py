@@ -54,7 +54,7 @@ WTSlisten = 6
 WTSReset = 7
 WTSDown = 8
 WTSInit = 9
-CONNECT_STATE = {
+CONNECT_STATE: dict[int, str] = {
     WTSActive: "Active",
     WTSConnected: "Connected",
     WTSConnectQuery: "ConnectQuery",
@@ -96,7 +96,7 @@ WTSConfigInfo = 26
 WTSValidationInfo = 27
 WTSSessionAddressV4 = 28
 WTSIsRemoteSession = 29
-WTS_INFO_CLASS = {
+WTS_INFO_CLASS: dict[int, str] = {
     WTSInitialProgram: "InitialProgram",
     WTSApplicationName: "ApplicationName",
     WTSWorkingDirectory: "WorkingDirectory",
@@ -230,7 +230,7 @@ def get_sessions() -> dict[int, dict[str, Any]]:
     return sessions
 
 
-def find_session(username, with_display=True) -> dict:
+def find_session(username: str, with_display=True) -> dict:
     if username:
         for sid, info in get_sessions().items():
             if with_display and not info.get("Display"):
