@@ -72,7 +72,9 @@ class ProxyServer(_ProxyServer):
             # first, Logon:
             with log.trap_error(f"Error: failed to logon as {username!r}"):
                 from xpra.platform.win32.desktoplogon_lib import logon
-                logon(username, password)
+                r = logon(username, password)
+            if r:
+                raise RuntimeError(f"desktop logon has failed and returned {r}")
         # hwinstaold = set_window_station("winsta0")
         app_dir = get_app_dir()
         shadow_command = os.path.join(app_dir, "Xpra-Shadow.exe")

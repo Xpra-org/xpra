@@ -3,9 +3,10 @@
 # Copyright (C) 2020 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 import os
 import sys
-import ctypes
+from ctypes import CDLL, c_char_p, c_int
 
 # This definition of the error codes was found here:
 # https://social.technet.microsoft.com/wiki/contents/articles/37870.remote-desktop-client-troubleshooting-disconnect-codes-and-reasons.aspx
@@ -141,13 +142,19 @@ def b(s: str) -> bytes:
 def logon(username: str, password: str) -> int:
     # sys.path.insert(0, "E:\\DesktopLogon\\")
     # desktop_logon = ctypes.cdll.LoadLibrary("E:\\DesktopLogon\\DesktopLogon.dll")
-    desktop_logon = ctypes.cdll.LoadLibrary("DesktopLogon.dll")
+    desktop_logon = CDLL("DesktopLogon.dll")
+    Logon = desktop_logon.Logon
+    Logon.argtypes = [c_char_p, c_char_p, c_char_p, c_char_p]
+    Logon.restype = c_int
     s = b("localhost")
     d = b(os.environ.get("USERDOMAIN", "WORKGROUP"))
     u = b(username)
     p = b(password)
     desktop_logon.Logon(s, d, u, p)
-    r = desktop_logon.getErrorCode()
+    getErrorCode = desktop_logon.getErrorCode
+    getErrorCode.argtypes = []
+    getErrorCode.restype = c_int
+    r = getErrorCode()
     if r:
         from xpra.log import Logger
         log = Logger("win32")
