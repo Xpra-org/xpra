@@ -49,8 +49,7 @@ class DotXpra:
         return self.get_server_state(PIPE_PREFIX + display)
 
     def get_server_state(self, sockpath: str, _timeout=5) -> SocketState:
-        full_path = PIPE_PATH + sockpath
-        if os.path.exists(full_path):
+        if sockpath in os.listdir(PIPE_PATH):
             return SocketState.LIVE
         return SocketState.DEAD
 

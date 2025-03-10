@@ -3410,7 +3410,7 @@ def run_stopexit(mode: str, error_cb, opts, extra_args, cmdline) -> ExitValue:
     assert mode in ("stop", "exit")
     no_gtk()
 
-    def show_final_state(display_desc) -> int:
+    def show_final_state(display_desc: dict[str, Any]) -> int:
         # this is for local sockets only!
         display = display_desc["display"]
         sockdir = display_desc.get("socket_dir", "")
@@ -3419,15 +3419,17 @@ def run_stopexit(mode: str, error_cb, opts, extra_args, cmdline) -> ExitValue:
         try:
             sockfile = get_sockpath(display_desc, error_cb, 0)
         except InitException:
-            # on win32, we can't find the path when it is gone
-            final_state = SocketState.DEAD
-        else:
+            # could be a named-pipe:
+            sockfile = display_desc.get("named-pipe", "")
+        if sockfile and os.path.isabs(sockfile):
             # first 5 seconds: just check if the socket still exists:
             # without connecting (avoid warnings and log messages on server)
             for _ in range(25):
                 if not os.path.exists(sockfile):
                     break
                 time.sleep(0.2)
+        final_state = SocketState.UNKNOWN
+        if sockfile:
             # next 5 seconds: actually try to connect
             final_state = SocketState.UNKNOWN
             for _ in range(5):
@@ -3446,7 +3448,7 @@ def run_stopexit(mode: str, error_cb, opts, extra_args, cmdline) -> ExitValue:
             return 1
         raise RuntimeError(f"invalid state: {final_state}")
 
-    def multimode(displays) -> int:
+    def multimode(displays: list[str]) -> int:
         sys.stdout.write(f"Trying to {mode} {len(displays)} displays:\n")
         sys.stdout.write(" %s\n" % csv(displays))
         procs = []
