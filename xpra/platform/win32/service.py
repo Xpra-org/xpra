@@ -31,7 +31,7 @@ def main(argv: Sequence[str]) -> int:
     if len(argv) > 1 and argv[1] != "start":
         if argv[1] != "stop":
             raise ValueError(f"unsupported subcommand {argv[1]!r}")
-        return run_mode("stop", argv[:1] + ["stop", "named-pipe://%s" % PIPE_NAME])
+        return run_mode("stop", argv[:1] + ["stop", f"named-pipe://{PIPE_NAME}"])
 
     from multiprocessing import freeze_support
     freeze_support()
@@ -52,16 +52,16 @@ def main(argv: Sequence[str]) -> int:
         # only SYSTEM can access this named pipe:
         # (so no need for auth)
         os.environ["XPRA_NAMED_PIPE_UNRESTRICTED"] = "0"
-        args.append("--bind=%s" % PIPE_NAME)
+        args.append(f"--bind={PIPE_NAME}")
     else:
         # public named pipe (needs auth):
         os.environ["XPRA_NAMED_PIPE_UNRESTRICTED"] = "1"
-        args.append("--bind=%s,auth=sys" % PIPE_NAME)
+        args.append(f"--bind={PIPE_NAME},auth=sys")
     commonappdata = get_commonappdata_dir()
     if commonappdata:
         ssl_cert = os.path.join(commonappdata, "Xpra", "ssl-cert.pem")
         if os.path.exists(ssl_cert):
-            args.append("--ssl-cert=%s" % ssl_cert)
+            args.append(f"--ssl-cert={ssl_cert}")
     return run_mode("Xpra-Proxy", args)
 
 
