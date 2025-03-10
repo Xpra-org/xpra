@@ -122,7 +122,7 @@ class ProxyServer(_ProxyServer):
         env = get_proxy_env()
         env["XPRA_REDIRECT_OUTPUT"] = "1"
         exe = which(cmd[0])
-        # env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
+        # env["XPRA_LOG_FILENAME"] = "Shadow-Instance.log"
         if username.lower() == "administrator" and SYSTEM_SESSION:
             # don't login
             from subprocess import Popen

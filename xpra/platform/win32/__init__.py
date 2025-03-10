@@ -222,9 +222,10 @@ def do_init() -> None:
         if not os.environ.get("PYTHONPYCACHEPREFIX"):
             sys.pycache_prefix = os.path.join(datadir(), "pycache-%i.%i" % (sys.version_info[0], sys.version_info[1]))
 
+    global _wait_for_input
+
     if not REDIRECT_OUTPUT or is_terminal():
         # figure out if we want to wait for input at the end:
-        global _wait_for_input
         _wait_for_input = should_wait_for_input()
         return
 
@@ -232,10 +233,13 @@ def do_init() -> None:
         log_filename = os.environ.get("XPRA_LOG_FILENAME")
         if not log_filename:
             from xpra.platform import get_prgname
-            log_filename = os.path.join(datadir(), (get_prgname() or "Xpra")+".log")
+            log_filename = (get_prgname() or "Xpra") + ".log"
+        if not os.path.isabs(log_filename):
+            log_filename = os.path.join(datadir(), log_filename)
         sys.stdout = open(log_filename, "a", encoding="utf8")
         sys.stderr = sys.stdout
         os.environ["XPRA_LOG_FILENAME"] = log_filename
+        _wait_for_input = False
 
 
 def do_init_env() -> None:
@@ -318,7 +322,7 @@ def do_clean() -> None:
         return
 
     # undo the redirect to file:
-    if REDIRECT_OUTPUT and envbool("XPRA_LOG_TO_FILE", True):
+    if envbool("XPRA_LOG_TO_FILE", True):
         log_filename = os.environ.get("XPRA_LOG_FILENAME")
         if log_filename and os.path.exists(log_filename):
             noerr(sys.stdout.close)
