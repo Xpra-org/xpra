@@ -369,9 +369,8 @@ def find_vs_command(name="link") -> str:
 def build_service() -> None:
     step("Compiling system service shim")
     XPRA_SERVICE_EXE = "Xpra-Service.exe"
-    delfile(XPRA_SERVICE_EXE)
     SERVICE_SRC_DIR = os.path.join(os.path.abspath("."), "packaging", "MSWindows", "service")
-    for filename in ("event_log.rc", "event_log.res", "MSG00409.bin", "Xpra-Service.exe"):
+    for filename in ("event_log.rc", "event_log.res", "MSG00409.bin", XPRA_SERVICE_EXE):
         path = os.path.join(SERVICE_SRC_DIR, filename)
         delfile(path)
 
@@ -385,7 +384,7 @@ def build_service() -> None:
                 cwd=SERVICE_SRC_DIR)
     log_command(["g++", "-o", XPRA_SERVICE_EXE, "Xpra-Service.cpp", "-Wno-write-strings"], "service-gcc.log",
                 cwd=SERVICE_SRC_DIR)
-    os.rename(os.path.join(SERVICE_SRC_DIR, XPRA_SERVICE_EXE), XPRA_SERVICE_EXE)
+    os.rename(os.path.join(SERVICE_SRC_DIR, XPRA_SERVICE_EXE), os.path.join(DIST, XPRA_SERVICE_EXE))
 
 
 VersionInfo = namedtuple("VersionInfo", ("string", "value", "revision", "full_string", "arch_info", "extra", "padded"))
