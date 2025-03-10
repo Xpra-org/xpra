@@ -162,7 +162,7 @@ class LARGE_INTEGER_TIME(LARGE_INTEGER):
         name = self.__class__.__name__
         return '%s(%d)' % (name, self.value)
 
-    def as_time(self):
+    def as_time(self) -> float:
         time100ns = self.value - self._unix_epoch
         if time100ns >= 0:
             return time100ns / 1e7
@@ -467,7 +467,7 @@ def _check_bool(result, func, args):
     return args
 
 
-def WIN(func, restype, *argtypes):
+def WIN(func, restype, *argtypes) -> None:
     func.restype = restype
     func.argtypes = argtypes
     if issubclass(restype, NTSTATUS):
@@ -679,13 +679,13 @@ def lsa_logon_user(auth_info, local_groups=None, origin_name=py_origin_name,
 
 # High-level LSA logons
 
-def logon_msv1(name, password, domain=None, local_groups=None,
+def logon_msv1(name: str, password: str, domain=None, local_groups=None,
                origin_name=py_origin_name, source_context=None) -> LOGONINFO:
     return lsa_logon_user(MSV1_0_INTERACTIVE_LOGON(name, password, domain),
                           local_groups, origin_name, source_context)
 
 
-def logon_msv1_s4u(name, local_groups=None, origin_name=py_origin_name, source_context=None) -> LOGONINFO:
+def logon_msv1_s4u(name: str, local_groups=None, origin_name=py_origin_name, source_context=None) -> LOGONINFO:
     domain = create_unicode_buffer(MAX_COMPUTER_NAME_LENGTH + 1)
     length = DWORD(len(domain))
     kernel32.GetComputerNameW(domain, byref(length))
@@ -693,7 +693,7 @@ def logon_msv1_s4u(name, local_groups=None, origin_name=py_origin_name, source_c
                           local_groups, origin_name, source_context)
 
 
-def logon_kerb_s4u(name, realm=None, local_groups=None,
+def logon_kerb_s4u(name: str, realm=None, local_groups=None,
                    origin_name=py_origin_name,
                    source_context=None,
                    logon_process_name=py_logon_process_name) -> LOGONINFO:
@@ -712,13 +712,17 @@ def main() -> int:
     with program_context("LSA-Logon-Test", "LSA Logon Test"):
         enable_color()
         consume_verbose_argv(sys.argv, "win32")
-        if len(sys.argv) != 2:
+        if len(sys.argv) not in (2, 3):
             log.warn("invalid number of arguments")
-            log.warn("usage: %s [--verbose] username", sys.argv[0])
+            log.warn("usage: %s [--verbose] username [password]", sys.argv[0])
             return 1
         username = sys.argv[1]
+        password = "" if len(sys.argv) < 3 else sys.argv[2]
         try:
-            logon_msv1_s4u(username)
+            if password:
+                logon_msv1(username, password)
+            else:
+                logon_msv1_s4u(username)
             return 0
         except Exception as e:
             log.error("Logon failed: %s", e)
