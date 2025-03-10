@@ -19,13 +19,17 @@ log = Logger("proxy")
 
 PAEXEC = envbool("XPRA_PAEXEC", True)
 SYSTEM_SESSION = envbool("XPRA_SYSTEM_SESSION", True)
+TOKEN = envbool("XPRA_SYSTEM_TOKEN", False)
 
 
 def exec_command(username: str, password: str, args: Sequence[str], exe: str, cwd: str, env: dict[str, str]):
     log("exec_command%s", (username, args, exe, cwd, env))
     # pylint: disable=import-outside-toplevel
-    from xpra.platform.win32.lsa_logon_lib import logon_msv1
-    logon_info = logon_msv1(username, password)
+    from xpra.platform.win32.lsa_logon_lib import logon_msv1, logon_msv1_s4u
+    if TOKEN:
+        logon_info = logon_msv1_s4u(username)
+    else:
+        logon_info = logon_msv1(username, password)
     log("logon(..)=%s", logon_info)
     from xpra.platform.win32.create_process_lib import (
         Popen,
