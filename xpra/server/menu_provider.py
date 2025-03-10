@@ -35,16 +35,6 @@ def noicondata(menu_data: dict) -> dict:
     return newdata
 
 
-singleton = None
-
-
-def get_menu_provider():
-    global singleton
-    if singleton is None:
-        singleton = MenuProvider()
-    return singleton
-
-
 class MenuProvider:
     __slots__ = (
         "dir_watchers", "menu_reload_timer",
@@ -80,7 +70,7 @@ class MenuProvider:
             log.estr(e)
 
     def do_setup_menu_watcher(self) -> None:
-        def directory_changed(*args):
+        def directory_changed(*args) -> None:
             log(f"directory_changed{args}")
             self.schedule_menu_reload()
 
@@ -234,3 +224,13 @@ class MenuProvider:
 
     def get_info(self, _proto) -> dict[str, Any]:
         return self.get_menu_data(remove_icons=True)
+
+
+singleton: MenuProvider | None = None
+
+
+def get_menu_provider() -> MenuProvider:
+    global singleton
+    if singleton is None:
+        singleton = MenuProvider()
+    return singleton
