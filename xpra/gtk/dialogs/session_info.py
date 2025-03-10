@@ -745,7 +745,7 @@ class SessionInfo(Gtk.Window):
             self.show_window_renderers()
 
         if features.mmap:
-            bool_icon(self.server_mmap_icon, bool(self.client.mmap))
+            bool_icon(self.server_mmap_icon, bool(self.client.mmap_read_area))
         if features.clipboard:
             bool_icon(self.server_clipboard_icon, self.client.server_clipboard)
         if features.notifications:
