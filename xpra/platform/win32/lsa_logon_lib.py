@@ -439,6 +439,9 @@ class MSV1_0_INTERACTIVE_PROFILE(ProfileBuffer):
         ('UserFlags', ULONG),
     )
 
+    def __repr__(self):
+        return f"<MSV1_0_INTERACTIVE_PROFILE>({self.FullName!r})"
+
 
 class SECURITY_ATTRIBUTES(Structure):
     _fields_ = (
@@ -685,7 +688,9 @@ def logon_msv1(name: str, password: str, domain=None, local_groups=None,
                           local_groups, origin_name, source_context)
 
 
-def logon_msv1_s4u(name: str, local_groups=None, origin_name=py_origin_name, source_context=None) -> LOGONINFO:
+def logon_msv1_s4u(name: str, local_groups=None,
+                   origin_name=py_origin_name,
+                   source_context=None) -> LOGONINFO:
     domain = create_unicode_buffer(MAX_COMPUTER_NAME_LENGTH + 1)
     length = DWORD(len(domain))
     kernel32.GetComputerNameW(domain, byref(length))

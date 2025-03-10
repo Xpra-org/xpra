@@ -158,7 +158,7 @@ def logon(username: str, password: str) -> int:
     if r:
         from xpra.log import Logger
         log = Logger("win32")
-        log.warn(f"Warning: Logon error {r}")
+        log.warn(f"Warning: `DesktopLogon` error {r}")
         msg = ERROR_CODES.get(r, "unknown error")
         if msg.find(":") > 0:
             header, msg = msg.split(":", 1)
