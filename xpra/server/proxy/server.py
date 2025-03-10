@@ -322,6 +322,12 @@ class ProxyServer(ProxyServerBaseClass):
         if request == "id":
             self.send_id_info(proto)
             return True
+        if request == "info":
+            info = self.get_session_id_info()
+            log_file = os.environ.get("XPRA_SERVER_LOG", "")
+            info["log-file"] = log_file
+            self.do_send_info(proto, info)
+            return True
         return False
 
     def handle_stop_request(self, proto) -> None:
