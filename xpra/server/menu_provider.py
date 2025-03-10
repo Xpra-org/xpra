@@ -2,7 +2,7 @@
 # Copyright (C) 2010 Antoine Martin <antoine@xpra.org>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+import os.path
 from threading import Lock
 from typing import Any
 from collections.abc import Callable
@@ -104,9 +104,12 @@ class MenuProvider:
             # alias so we can use the same method call as Gio to stop it:
             observer.cancel = observer.stop
             for menu_dir in get_system_menu_dirs():
-                if menu_dir not in self.dir_watchers:
-                    observer.schedule(event_handler, menu_dir, recursive=True)
-                    self.dir_watchers[menu_dir] = observer
+                dir_path = os.path.abspath(menu_dir)
+                if not os.path.exists(dir_path) or not os.path.isdir(dir_path):
+                    continue
+                if dir_path not in self.dir_watchers:
+                    observer.schedule(event_handler, dir_path, recursive=True)
+                    self.dir_watchers[dir_path] = observer
             log(f"using watchdog library: {observer} and {event_handler}")
             observer.start()
             watcher = "watchdog library"
