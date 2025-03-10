@@ -7,26 +7,49 @@
 
 import os
 import sys
-import ctypes
-import collections
+from ctypes import (
+    Structure, POINTER,
+    get_last_error, WinError, WinDLL,
+    create_unicode_buffer, create_string_buffer, resize, addressof, byref, sizeof, memmove, cast,
+    c_char, c_wchar, c_ulonglong, c_size_t, c_void_p,
+)
+from ctypes.wintypes import ULONG, LONG, BOOL, LARGE_INTEGER, USHORT, DWORD, LPVOID, LPWSTR, HANDLE
+from collections import namedtuple
 
-from ctypes import wintypes, get_last_error, WinError, WinDLL
+from xpra.log import Logger
+
+log = Logger("win32")
 
 ntdll = WinDLL('ntdll')
 secur32 = WinDLL('secur32')
 kernel32 = WinDLL('kernel32', use_last_error=True)
 advapi32 = WinDLL('advapi32', use_last_error=True)
 
+CHAR = c_char
+WCHAR = c_wchar
+PCHAR = POINTER(CHAR)
+PWCHAR = POINTER(WCHAR)
+SIZE_T = c_size_t
+PULONG = POINTER(ULONG)
+LSA_OPERATIONAL_MODE = ULONG
+PLSA_OPERATIONAL_MODE = PULONG
+PHANDLE = POINTER(HANDLE)
+PLPVOID = POINTER(LPVOID)
+LPDWORD = POINTER(DWORD)
+
+CloseHandle = kernel32.CloseHandle
+CloseHandle.argtypes = [HANDLE]
+
 MAX_COMPUTER_NAME_LENGTH = 15
 
-SECURITY_LOGON_TYPE = wintypes.ULONG
+SECURITY_LOGON_TYPE = ULONG
 Interactive = 2
 Network = 3
 Batch = 4
 Service = 5
 
-LOGON_SUBMIT_TYPE = wintypes.ULONG
-PROFILE_BUFFER_TYPE = wintypes.ULONG
+LOGON_SUBMIT_TYPE = ULONG
+PROFILE_BUFFER_TYPE = ULONG
 
 MsV1_0InteractiveLogon = 2
 MsV1_0Lm20Logon = 3
@@ -50,74 +73,64 @@ NEGOTIATE_PACKAGE_NAME = b'Negotiate'
 MICROSOFT_KERBEROS_NAME = b'Kerberos'
 MSV1_0_PACKAGE_NAME = b'MICROSOFT_AUTHENTICATION_PACKAGE_V1_0'
 
-DELETE       = 0x00010000
+DELETE = 0x00010000
 READ_CONTROL = 0x00020000
-WRITE_DAC    = 0x00040000
-WRITE_OWNER  = 0x00080000
+WRITE_DAC = 0x00040000
+WRITE_OWNER = 0x00080000
 
-STANDARD_RIGHTS_REQUIRED = (DELETE       |
-                            READ_CONTROL |
-                            WRITE_DAC    |
-                            WRITE_OWNER)
+STANDARD_RIGHTS_REQUIRED = DELETE | READ_CONTROL | WRITE_DAC | WRITE_OWNER
 
-TOKEN_ASSIGN_PRIMARY    = 0x0001
-TOKEN_DUPLICATE         = 0x0002
-TOKEN_IMPERSONATE       = 0x0004
-TOKEN_QUERY             = 0x0008
-TOKEN_QUERY_SOURCE      = 0x0010
+TOKEN_ASSIGN_PRIMARY = 0x0001
+TOKEN_DUPLICATE = 0x0002
+TOKEN_IMPERSONATE = 0x0004
+TOKEN_QUERY = 0x0008
+TOKEN_QUERY_SOURCE = 0x0010
 TOKEN_ADJUST_PRIVILEGES = 0x0020
-TOKEN_ADJUST_GROUPS     = 0x0040
-TOKEN_ADJUST_DEFAULT    = 0x0080
-TOKEN_ADJUST_SESSIONID  = 0x0100
+TOKEN_ADJUST_GROUPS = 0x0040
+TOKEN_ADJUST_DEFAULT = 0x0080
+TOKEN_ADJUST_SESSIONID = 0x0100
 
-TOKEN_ALL_ACCESS = (STANDARD_RIGHTS_REQUIRED |
-                    TOKEN_ASSIGN_PRIMARY     |
-                    TOKEN_DUPLICATE          |
-                    TOKEN_IMPERSONATE        |
-                    TOKEN_QUERY              |
-                    TOKEN_QUERY_SOURCE       |
-                    TOKEN_ADJUST_PRIVILEGES  |
-                    TOKEN_ADJUST_GROUPS      |
-                    TOKEN_ADJUST_DEFAULT     |
-                    TOKEN_ADJUST_SESSIONID)
+TOKEN_ALL_ACCESS = (
+    STANDARD_RIGHTS_REQUIRED | TOKEN_ASSIGN_PRIMARY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE |
+    TOKEN_QUERY | TOKEN_QUERY_SOURCE | TOKEN_ADJUST_PRIVILEGES | TOKEN_ADJUST_GROUPS |
+    TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID
+)
 
 DUPLICATE_CLOSE_SOURCE = 0x00000001
-DUPLICATE_SAME_ACCESS  = 0x00000002
+DUPLICATE_SAME_ACCESS = 0x00000002
 
-TOKEN_TYPE = wintypes.ULONG
-TokenPrimary       = 1
+TOKEN_TYPE = ULONG
+TokenPrimary = 1
 TokenImpersonation = 2
 
-SECURITY_IMPERSONATION_LEVEL = wintypes.ULONG
-SecurityAnonymous      = 0
+SECURITY_IMPERSONATION_LEVEL = ULONG
+SecurityAnonymous = 0
 SecurityIdentification = 1
-SecurityImpersonation  = 2
-SecurityDelegation     = 3
+SecurityImpersonation = 2
+SecurityDelegation = 3
 
-class NTSTATUS(wintypes.LONG):
+
+class NTSTATUS(LONG):
 
     def to_error(self):
         return ntdll.RtlNtStatusToDosError(self)
 
     def __repr__(self):
         name = self.__class__.__name__
-        status = wintypes.ULONG.from_buffer(self)           #@UndefinedVariable
+        status = ULONG.from_buffer(self)
         return '{}({:#010x})'.format(name, status.value)
 
-PNTSTATUS = ctypes.POINTER(NTSTATUS)
 
-class BOOL(wintypes.BOOL):
-    def __repr__(self):
-        name = self.__class__.__name__
-        return '%s(%s)' % (name, bool(self))
+PNTSTATUS = POINTER(NTSTATUS)
 
-class HANDLE(wintypes.HANDLE):
+
+class MANAGED_HANDLE(HANDLE):
     __slots__ = 'closed',
 
     def __int__(self):
         return self.value or 0
 
-    def Detach(self):
+    def detach(self):
         if not getattr(self, 'closed', False):
             self.closed = True
             value = int(self)
@@ -125,20 +138,21 @@ class HANDLE(wintypes.HANDLE):
             return value
         raise ValueError("already closed")
 
-    def Close(self, CloseHandle=kernel32.CloseHandle):
+    def close(self):
         if self and not getattr(self, 'closed', False):
-            CloseHandle(self.Detach())
+            CloseHandle(self.detach())
 
-    __del__ = Close
+    __del__ = close
 
     def __repr__(self):
         return "%s(%d)" % (self.__class__.__name__, int(self))
 
-class LARGE_INTEGER(wintypes.LARGE_INTEGER):
+
+class LARGE_INTEGER_TIME(LARGE_INTEGER):
     # https://msdn.microsoft.com/en-us/library/ff553204
     ntdll.RtlSecondsSince1970ToTime.restype = None
-    _unix_epoch_LI = wintypes.LARGE_INTEGER()
-    ntdll.RtlSecondsSince1970ToTime(0, ctypes.byref(_unix_epoch_LI))
+    _unix_epoch_LI = LARGE_INTEGER()
+    ntdll.RtlSecondsSince1970ToTime(0, byref(_unix_epoch_LI))
     _unix_epoch = _unix_epoch_LI.value
 
     def __int__(self):
@@ -156,61 +170,80 @@ class LARGE_INTEGER(wintypes.LARGE_INTEGER):
 
     @classmethod
     def from_time(cls, t):
-        time100ns = int(t * 10**7)
+        time100ns = int(t * 10 ** 7)
         return cls(time100ns + cls._unix_epoch)
 
-CHAR = ctypes.c_char
-WCHAR = ctypes.c_wchar
-PCHAR = ctypes.POINTER(CHAR)
-PWCHAR = ctypes.POINTER(WCHAR)
 
-class STRING(ctypes.Structure):
-    _fields_ = (('Length',        wintypes.USHORT),
-                ('MaximumLength', wintypes.USHORT),
-                ('Buffer',        PCHAR))
+class STRING(Structure):
+    _fields_ = (
+        ('Length', USHORT),
+        ('MaximumLength', USHORT),
+        ('Buffer', PCHAR),
+    )
 
-PSTRING = ctypes.POINTER(STRING)
 
-class UNICODE_STRING(ctypes.Structure):
-    _fields_ = (('Length',        wintypes.USHORT),
-                ('MaximumLength', wintypes.USHORT),
-                ('Buffer',        PWCHAR))
+PSTRING = POINTER(STRING)
 
-PUNICODE_STRING = ctypes.POINTER(UNICODE_STRING)
 
-class LUID(ctypes.Structure):
-    _fields_ = (('LowPart',  wintypes.DWORD),
-                ('HighPart', wintypes.LONG))
+class UNICODE_STRING(Structure):
+    _fields_ = (
+        ('Length', USHORT),
+        ('MaximumLength', USHORT),
+        ('Buffer', PWCHAR),
+    )
+
+
+PUNICODE_STRING = POINTER(UNICODE_STRING)
+
+
+class LUID(Structure):
+    _fields_ = (
+        ('LowPart', DWORD),
+        ('HighPart', LONG),
+    )
 
     def __new__(cls, value=0):
-        return cls.from_buffer_copy(ctypes.c_ulonglong(value))
+        return cls.from_buffer_copy(c_ulonglong(value))
 
     def __int__(self):
-        return ctypes.c_ulonglong.from_buffer(self).value       #@UndefinedVariable
+        return c_ulonglong.from_buffer(self).value
 
     def __repr__(self):
         name = self.__class__.__name__
         return '%s(%#x)' % (name, int(self))
 
-PLUID = ctypes.POINTER(LUID)
-PSID = wintypes.LPVOID
 
-class SID_AND_ATTRIBUTES(ctypes.Structure):
-    _fields_ = (('Sid',        PSID),
-                ('Attributes', wintypes.DWORD))
+PLUID = POINTER(LUID)
+PSID = LPVOID
 
-PSID_AND_ATTRIBUTES = ctypes.POINTER(SID_AND_ATTRIBUTES)
 
-class TOKEN_GROUPS(ctypes.Structure):
-    _fields_ = (('GroupCount', wintypes.DWORD),
-                ('Groups',     SID_AND_ATTRIBUTES * 1))
+class SID_AND_ATTRIBUTES(Structure):
+    _fields_ = (
+        ('Sid', PSID),
+        ('Attributes', DWORD),
+    )
 
-PTOKEN_GROUPS = ctypes.POINTER(TOKEN_GROUPS)
 
-class TOKEN_SOURCE(ctypes.Structure):
+PSID_AND_ATTRIBUTES = POINTER(SID_AND_ATTRIBUTES)
+
+
+class TOKEN_GROUPS(Structure):
+    _fields_ = (
+        ('GroupCount', DWORD),
+        ('Groups', SID_AND_ATTRIBUTES * 1),
+    )
+
+
+PTOKEN_GROUPS = POINTER(TOKEN_GROUPS)
+
+
+class TOKEN_SOURCE(Structure):
     # noinspection PyTypeChecker
-    _fields_ = (('SourceName', CHAR * TOKEN_SOURCE_LENGTH),
-                ('SourceIdentifier', LUID))
+    _fields_ = (
+        ('SourceName', CHAR * TOKEN_SOURCE_LENGTH),
+        ('SourceIdentifier', LUID),
+    )
+
     def __init__(self, SourceName=None, SourceIdentifier=None):
         super().__init__()
         if SourceName is not None:
@@ -219,40 +252,37 @@ class TOKEN_SOURCE(ctypes.Structure):
             self.SourceName = SourceName
         if SourceIdentifier is None:
             luid = self.SourceIdentifier
-            ntdll.NtAllocateLocallyUniqueId(ctypes.byref(luid))
+            ntdll.NtAllocateLocallyUniqueId(byref(luid))
         else:
             self.SourceIdentifier = SourceIdentifier
 
-PTOKEN_SOURCE = ctypes.POINTER(TOKEN_SOURCE)
+
+PTOKEN_SOURCE = POINTER(TOKEN_SOURCE)
 
 py_source_context = TOKEN_SOURCE(b"PYTHON  ")
 py_origin_name = b"Python-%d" % os.getpid()
 py_logon_process_name = b"PythonLogonProcess-%d" % os.getpid()
 
-SIZE_T = ctypes.c_size_t
 
-class QUOTA_LIMITS(ctypes.Structure):
-    _fields_ = (('PagedPoolLimit',        SIZE_T),
-                ('NonPagedPoolLimit',     SIZE_T),
-                ('MinimumWorkingSetSize', SIZE_T),
-                ('MaximumWorkingSetSize', SIZE_T),
-                ('PagefileLimit',         SIZE_T),
-                ('TimeLimit',             wintypes.LARGE_INTEGER))
+class QUOTA_LIMITS(Structure):
+    _fields_ = (
+        ('PagedPoolLimit', SIZE_T),
+        ('NonPagedPoolLimit', SIZE_T),
+        ('MinimumWorkingSetSize', SIZE_T),
+        ('MaximumWorkingSetSize', SIZE_T),
+        ('PagefileLimit', SIZE_T),
+        ('TimeLimit', LARGE_INTEGER_TIME),
+    )
 
-PQUOTA_LIMITS = ctypes.POINTER(QUOTA_LIMITS)
 
-PULONG = ctypes.POINTER(wintypes.ULONG)
-LSA_OPERATIONAL_MODE = wintypes.ULONG
-PLSA_OPERATIONAL_MODE = PULONG
-PHANDLE = ctypes.POINTER(wintypes.HANDLE)
-PLPVOID = ctypes.POINTER(wintypes.LPVOID)
-LPDWORD = ctypes.POINTER(wintypes.DWORD)
+PQUOTA_LIMITS = POINTER(QUOTA_LIMITS)
 
-class ContiguousUnicode(ctypes.Structure):
+
+class ContiguousUnicode(Structure):
     # _string_names_: sequence matched to underscore-prefixed fields
 
     def _get_unicode_string(self, name):
-        wchar_size = ctypes.sizeof(WCHAR)
+        wchar_size = sizeof(WCHAR)
         s = getattr(self, '_%s' % name)
         length = s.Length // wchar_size
         buf = s.Buffer
@@ -262,12 +292,12 @@ class ContiguousUnicode(ctypes.Structure):
 
     def _set_unicode_buffer(self, value):
         cls = type(self)
-        wchar_size = ctypes.sizeof(WCHAR)
+        wchar_size = sizeof(WCHAR)
         bufsize = (len(value) + 1) * wchar_size
-        ctypes.resize(self, ctypes.sizeof(cls) + bufsize)
-        addr = ctypes.addressof(self) + ctypes.sizeof(cls)
-        src_buf = ctypes.create_unicode_buffer(value)
-        ctypes.memmove(addr, ctypes.addressof(src_buf), bufsize)        # NOSONAR
+        resize(self, sizeof(cls) + bufsize)
+        addr = addressof(self) + sizeof(cls)
+        src_buf = create_unicode_buffer(value)
+        memmove(addr, addressof(src_buf), bufsize)  # NOSONAR
 
     def _set_unicode_string(self, name, value):
         values = []
@@ -279,15 +309,14 @@ class ContiguousUnicode(ctypes.Structure):
         self._set_unicode_buffer('\x00'.join(values))
 
         cls = type(self)
-        wchar_size = ctypes.sizeof(WCHAR)
-        addr = ctypes.addressof(self) + ctypes.sizeof(cls)
+        wchar_size = sizeof(WCHAR)
+        addr = addressof(self) + sizeof(cls)
         for n, v in zip(self._string_names_, values):
-            ptr = ctypes.cast(addr, PWCHAR)
+            ptr = cast(addr, PWCHAR)
             ustr = getattr(self, '_%s' % n)
             length = ustr.Length = len(v) * wchar_size
             full_length = length + wchar_size
-            if ((n == name and value is None) or
-                (n != name and not (length or ustr.Buffer))):
+            if (n == name and value is None) or (n != name and not (length or ustr.Buffer)):
                 ustr.Buffer = None
                 ustr.MaximumLength = 0
             else:
@@ -308,17 +337,18 @@ class ContiguousUnicode(ctypes.Structure):
 
     @classmethod
     def from_address_copy(cls, address, size=None):
-        x = ctypes.Structure.__new__(cls)       #@UndefinedVariable
+        x = Structure.__new__(cls)
         if size is not None:
-            ctypes.resize(x, size)
-        ctypes.memmove(ctypes.byref(x), address, ctypes.sizeof(x))
-        delta = ctypes.addressof(x) - address
+            resize(x, size)
+        memmove(byref(x), address, sizeof(x))
+        delta = addressof(x) - address
         for n in cls._string_names_:
             ustr = getattr(x, '_%s' % n)
-            addr = ctypes.c_void_p.from_buffer(ustr.Buffer)     #@UndefinedVariable
+            addr = c_void_p.from_buffer(ustr.Buffer)
             if addr:
                 addr.value += delta
         return x
+
 
 class AuthInfo(ContiguousUnicode):
     # _message_type_: from a logon-submit-type enumeration
@@ -326,14 +356,17 @@ class AuthInfo(ContiguousUnicode):
         super().__init__()
         self.MessageType = self._message_type_
 
+
 class MSV1_0_INTERACTIVE_LOGON(AuthInfo):
     _message_type_ = MsV1_0InteractiveLogon
     _string_names_ = 'LogonDomainName', 'UserName', 'Password'
 
-    _fields_ = (('MessageType',      LOGON_SUBMIT_TYPE),
-                ('_LogonDomainName', UNICODE_STRING),
-                ('_UserName',        UNICODE_STRING),
-                ('_Password',        UNICODE_STRING))
+    _fields_ = (
+        ('MessageType', LOGON_SUBMIT_TYPE),
+        ('_LogonDomainName', UNICODE_STRING),
+        ('_UserName', UNICODE_STRING),
+        ('_Password', UNICODE_STRING),
+    )
 
     def __init__(self, UserName=None, Password=None, LogonDomainName=None):
         super().__init__()
@@ -344,13 +377,16 @@ class MSV1_0_INTERACTIVE_LOGON(AuthInfo):
         if Password is not None:
             self.Password = Password
 
+
 class S4ULogon(AuthInfo):
     _string_names_ = 'UserPrincipalName', 'DomainName'
 
-    _fields_ = (('MessageType',        LOGON_SUBMIT_TYPE),
-                ('Flags',              wintypes.ULONG),
-                ('_UserPrincipalName', UNICODE_STRING),
-                ('_DomainName',        UNICODE_STRING))
+    _fields_ = (
+        ('MessageType', LOGON_SUBMIT_TYPE),
+        ('Flags', ULONG),
+        ('_UserPrincipalName', UNICODE_STRING),
+        ('_DomainName', UNICODE_STRING),
+    )
 
     def __init__(self, UserPrincipalName=None, DomainName=None, Flags=0):
         super().__init__()
@@ -360,14 +396,18 @@ class S4ULogon(AuthInfo):
         if DomainName is not None:
             self.DomainName = DomainName
 
+
 class MSV1_0_S4U_LOGON(S4ULogon):
     _message_type_ = MsV1_0S4ULogon
+
 
 class KERB_S4U_LOGON(S4ULogon):
     _message_type_ = KerbS4ULogon
 
-PMSV1_0_S4U_LOGON = ctypes.POINTER(MSV1_0_S4U_LOGON)
-PKERB_S4U_LOGON = ctypes.POINTER(KERB_S4U_LOGON)
+
+PMSV1_0_S4U_LOGON = POINTER(MSV1_0_S4U_LOGON)
+PKERB_S4U_LOGON = POINTER(KERB_S4U_LOGON)
+
 
 class ProfileBuffer(ContiguousUnicode):
     # _message_type_
@@ -375,46 +415,57 @@ class ProfileBuffer(ContiguousUnicode):
         super().__init__()
         self.MessageType = self._message_type_
 
+
 class MSV1_0_INTERACTIVE_PROFILE(ProfileBuffer):
     _message_type_ = MsV1_0InteractiveLogon
     _string_names_ = ('LogonScript', 'HomeDirectory', 'FullName',
                       'ProfilePath', 'HomeDirectoryDrive', 'LogonServer')
-    _fields_ = (('MessageType',         PROFILE_BUFFER_TYPE),
-                ('LogonCount',          wintypes.USHORT),
-                ('BadPasswordCount',    wintypes.USHORT),
-                ('LogonTime',           LARGE_INTEGER),
-                ('LogoffTime',          LARGE_INTEGER),
-                ('KickOffTime',         LARGE_INTEGER),
-                ('PasswordLastSet',     LARGE_INTEGER),
-                ('PasswordCanChange',   LARGE_INTEGER),
-                ('PasswordMustChange',  LARGE_INTEGER),
-                ('_LogonScript',        UNICODE_STRING),
-                ('_HomeDirectory',      UNICODE_STRING),
-                ('_FullName',           UNICODE_STRING),
-                ('_ProfilePath',        UNICODE_STRING),
-                ('_HomeDirectoryDrive', UNICODE_STRING),
-                ('_LogonServer',        UNICODE_STRING),
-                ('UserFlags',           wintypes.ULONG))
+    _fields_ = (
+        ('MessageType', PROFILE_BUFFER_TYPE),
+        ('LogonCount', USHORT),
+        ('BadPasswordCount', USHORT),
+        ('LogonTime', LARGE_INTEGER_TIME),
+        ('LogoffTime', LARGE_INTEGER_TIME),
+        ('KickOffTime', LARGE_INTEGER_TIME),
+        ('PasswordLastSet', LARGE_INTEGER_TIME),
+        ('PasswordCanChange', LARGE_INTEGER_TIME),
+        ('PasswordMustChange', LARGE_INTEGER_TIME),
+        ('_LogonScript', UNICODE_STRING),
+        ('_HomeDirectory', UNICODE_STRING),
+        ('_FullName', UNICODE_STRING),
+        ('_ProfilePath', UNICODE_STRING),
+        ('_HomeDirectoryDrive', UNICODE_STRING),
+        ('_LogonServer', UNICODE_STRING),
+        ('UserFlags', ULONG),
+    )
 
-class SECURITY_ATTRIBUTES(ctypes.Structure):
-    _fields_ = (('nLength',              wintypes.DWORD),
-                ('lpSecurityDescriptor', wintypes.LPVOID),
-                ('bInheritHandle',       wintypes.BOOL))
+
+class SECURITY_ATTRIBUTES(Structure):
+    _fields_ = (
+        ('nLength', DWORD),
+        ('lpSecurityDescriptor', LPVOID),
+        ('bInheritHandle', BOOL),
+    )
+
     def __init__(self, **kwds):
-        self.nLength = ctypes.sizeof(self)
+        self.nLength = sizeof(self)
         super().__init__(**kwds)
 
-LPSECURITY_ATTRIBUTES = ctypes.POINTER(SECURITY_ATTRIBUTES)
+
+LPSECURITY_ATTRIBUTES = POINTER(SECURITY_ATTRIBUTES)
+
 
 def _check_status(result, func, args):
     if result.value < 0:
         raise WinError(result.to_error())
     return args
 
+
 def _check_bool(result, func, args):
     if not result:
         raise WinError(get_last_error())
     return args
+
 
 def WIN(func, restype, *argtypes):
     func.restype = restype
@@ -424,155 +475,152 @@ def WIN(func, restype, *argtypes):
     elif issubclass(restype, BOOL):
         func.errcheck = _check_bool
 
+
 # https://msdn.microsoft.com/en-us/library/ms683179
-WIN(kernel32.GetCurrentProcess, wintypes.HANDLE)
+WIN(kernel32.GetCurrentProcess, HANDLE)
 
 # https://msdn.microsoft.com/en-us/library/ms724251
 WIN(kernel32.DuplicateHandle, BOOL,
-    wintypes.HANDLE, # _In_  hSourceProcessHandle
-    wintypes.HANDLE, # _In_  hSourceHandle
-    wintypes.HANDLE, # _In_  hTargetProcessHandle
-    PHANDLE,         # _Out_ lpTargetHandle
-    wintypes.DWORD,  # _In_  dwDesiredAccess
-    wintypes.BOOL,   # _In_  bInheritHandle
-    wintypes.DWORD)  # _In_  dwOptions
+    HANDLE,  # _In_  hSourceProcessHandle
+    HANDLE,  # _In_  hSourceHandle
+    HANDLE,  # _In_  hTargetProcessHandle
+    PHANDLE,  # _Out_ lpTargetHandle
+    DWORD,  # _In_  dwDesiredAccess
+    BOOL,  # _In_  bInheritHandle
+    DWORD)  # _In_  dwOptions
 
 # https://msdn.microsoft.com/en-us/library/ms724295
 WIN(kernel32.GetComputerNameW, BOOL,
-    wintypes.LPWSTR, # _Out_   lpBuffer
-    LPDWORD)         # _Inout_ lpnSize
+    LPWSTR,  # _Out_   lpBuffer
+    LPDWORD)  # _Inout_ lpnSize
 
 # https://msdn.microsoft.com/en-us/library/aa379295
 WIN(advapi32.OpenProcessToken, BOOL,
-    wintypes.HANDLE, # _In_  ProcessHandle
-    wintypes.DWORD,  # _In_  DesiredAccess
-    PHANDLE)         # _Out_ TokenHandle
+    HANDLE,  # _In_  ProcessHandle
+    DWORD,  # _In_  DesiredAccess
+    PHANDLE)  # _Out_ TokenHandle
 
 # https://msdn.microsoft.com/en-us/library/aa446617
 WIN(advapi32.DuplicateTokenEx, BOOL,
-    wintypes.HANDLE,              # _In_     hExistingToken
-    wintypes.DWORD,               # _In_     dwDesiredAccess
-    LPSECURITY_ATTRIBUTES,        # _In_opt_ lpTokenAttributes
-    SECURITY_IMPERSONATION_LEVEL, # _In_     ImpersonationLevel
-    TOKEN_TYPE,                   # _In_     TokenType
-    PHANDLE)                      # _Out_    phNewToken
+    HANDLE,  # _In_     hExistingToken
+    DWORD,  # _In_     dwDesiredAccess
+    LPSECURITY_ATTRIBUTES,  # _In_opt_ lpTokenAttributes
+    SECURITY_IMPERSONATION_LEVEL,  # _In_     ImpersonationLevel
+    TOKEN_TYPE,  # _In_     TokenType
+    PHANDLE)  # _Out_    phNewToken
 
 # https://msdn.microsoft.com/en-us/library/ff566415
 WIN(ntdll.NtAllocateLocallyUniqueId, NTSTATUS,
-    PLUID) # _Out_ LUID
+    PLUID)  # _Out_ LUID
 
 # https://msdn.microsoft.com/en-us/library/aa378279
 WIN(secur32.LsaFreeReturnBuffer, NTSTATUS,
-    wintypes.LPVOID,) # _In_ Buffer
+    LPVOID, )  # _In_ Buffer
 
 # https://msdn.microsoft.com/en-us/library/aa378265
 WIN(secur32.LsaConnectUntrusted, NTSTATUS,
-    PHANDLE,) # _Out_ LsaHandle
+    PHANDLE, )  # _Out_ LsaHandle
 
 #https://msdn.microsoft.com/en-us/library/aa378318
 WIN(secur32.LsaRegisterLogonProcess, NTSTATUS,
-    PSTRING,               # _In_  LogonProcessName
-    PHANDLE,               # _Out_ LsaHandle
-    PLSA_OPERATIONAL_MODE) # _Out_ SecurityMode
+    PSTRING,  # _In_  LogonProcessName
+    PHANDLE,  # _Out_ LsaHandle
+    PLSA_OPERATIONAL_MODE)  # _Out_ SecurityMode
 
 # https://msdn.microsoft.com/en-us/library/aa378269
 WIN(secur32.LsaDeregisterLogonProcess, NTSTATUS,
-    wintypes.HANDLE) # _In_ LsaHandle
+    HANDLE)  # _In_ LsaHandle
 
 # https://msdn.microsoft.com/en-us/library/aa378297
 WIN(secur32.LsaLookupAuthenticationPackage, NTSTATUS,
-    wintypes.HANDLE, # _In_  LsaHandle
-    PSTRING,         # _In_  PackageName
-    PULONG)          # _Out_ AuthenticationPackage
+    HANDLE,  # _In_  LsaHandle
+    PSTRING,  # _In_  PackageName
+    PULONG)  # _Out_ AuthenticationPackage
 
 # https://msdn.microsoft.com/en-us/library/aa378292
 WIN(secur32.LsaLogonUser, NTSTATUS,
-    wintypes.HANDLE,     # _In_     LsaHandle
-    PSTRING,             # _In_     OriginName
-    SECURITY_LOGON_TYPE, # _In_     LogonType
-    wintypes.ULONG,      # _In_     AuthenticationPackage
-    wintypes.LPVOID,     # _In_     AuthenticationInformation
-    wintypes.ULONG,      # _In_     AuthenticationInformationLength
-    PTOKEN_GROUPS,       # _In_opt_ LocalGroups
-    PTOKEN_SOURCE,       # _In_     SourceContext
-    PLPVOID,             # _Out_    ProfileBuffer
-    PULONG,              # _Out_    ProfileBufferLength
-    PLUID,               # _Out_    LogonId
-    PHANDLE,             # _Out_    Token
-    PQUOTA_LIMITS,       # _Out_    Quotas
-    PNTSTATUS)           # _Out_    SubStatus
+    HANDLE,  # _In_     LsaHandle
+    PSTRING,  # _In_     OriginName
+    SECURITY_LOGON_TYPE,  # _In_     LogonType
+    ULONG,  # _In_     AuthenticationPackage
+    LPVOID,  # _In_     AuthenticationInformation
+    ULONG,  # _In_     AuthenticationInformationLength
+    PTOKEN_GROUPS,  # _In_opt_ LocalGroups
+    PTOKEN_SOURCE,  # _In_     SourceContext
+    PLPVOID,  # _Out_    ProfileBuffer
+    PULONG,  # _Out_    ProfileBufferLength
+    PLUID,  # _Out_    LogonId
+    PHANDLE,  # _Out_    Token
+    PQUOTA_LIMITS,  # _Out_    Quotas
+    PNTSTATUS)  # _Out_    SubStatus
 
 
 def duplicate_token(source_token=None, access=TOKEN_ALL_ACCESS,
                     impersonation_level=SecurityImpersonation,
-                    token_type=TokenPrimary, attributes=None):
+                    token_type=TokenPrimary, attributes=None) -> MANAGED_HANDLE:
     close_source = False
     if source_token is None:
         close_source = True
-        source_token = HANDLE()
-        advapi32.OpenProcessToken(kernel32.GetCurrentProcess(),
-            TOKEN_ALL_ACCESS, ctypes.byref(source_token))
-    token = HANDLE()
+        source_token = MANAGED_HANDLE()
+        advapi32.OpenProcessToken(kernel32.GetCurrentProcess(), TOKEN_ALL_ACCESS, byref(source_token))
+    token = MANAGED_HANDLE()
     try:
-        advapi32.DuplicateTokenEx(source_token, access, attributes,
-            impersonation_level, token_type, ctypes.byref(token))
+        advapi32.DuplicateTokenEx(source_token, access, attributes, impersonation_level, token_type, byref(token))
     finally:
         if close_source:
-            source_token.Close()
+            source_token.close()
     return token
 
-def lsa_connect_untrusted():
-    handle = wintypes.HANDLE()
-    secur32.LsaConnectUntrusted(ctypes.byref(handle))
+
+def lsa_connect_untrusted() -> int:
+    handle = HANDLE()
+    secur32.LsaConnectUntrusted(byref(handle))
     return handle.value
 
-def lsa_register_logon_process(logon_process_name):
+
+def lsa_register_logon_process(logon_process_name) -> int:
     if not isinstance(logon_process_name, bytes):
         logon_process_name = logon_process_name.encode('mbcs')
     logon_process_name = logon_process_name[:127]
-    buf = ctypes.create_string_buffer(logon_process_name, 128)
+    buf = create_string_buffer(logon_process_name, 128)
     name = STRING(len(logon_process_name), len(buf), buf)
-    handle = wintypes.HANDLE()
+    handle = HANDLE()
     mode = LSA_OPERATIONAL_MODE()
-    secur32.LsaRegisterLogonProcess(ctypes.byref(name),
-        ctypes.byref(handle), ctypes.byref(mode))
+    secur32.LsaRegisterLogonProcess(byref(name), byref(handle), byref(mode))
     return handle.value
+
 
 def lsa_lookup_authentication_package(lsa_handle, package_name):
     if not isinstance(package_name, bytes):
         package_name = package_name.encode('mbcs')
     package_name = package_name[:127]
-    buf = ctypes.create_string_buffer(package_name)
+    buf = create_string_buffer(package_name)
     name = STRING(len(package_name), len(buf), buf)
-    package = wintypes.ULONG()
-    secur32.LsaLookupAuthenticationPackage(lsa_handle, ctypes.byref(name),
-        ctypes.byref(package))
+    package = ULONG()
+    secur32.LsaLookupAuthenticationPackage(lsa_handle, byref(name), byref(package))
     return package.value
 
 
 # Low-level LSA logon
 
-LOGONINFO = collections.namedtuple('LOGONINFO',
-                                   ('Token', 'LogonId', 'Profile', 'Quotas')
-                                   )
+LOGONINFO = namedtuple('LOGONINFO', ('Token', 'LogonId', 'Profile', 'Quotas'))
+
 
 def lsa_logon_user(auth_info, local_groups=None, origin_name=py_origin_name,
                    source_context=None, auth_package=None, logon_type=None,
-                   lsa_handle=None):
-    from xpra.log import Logger
-    log = Logger("win32")
+                   lsa_handle=None) -> LOGONINFO:
     log("lsa_logon_user%s", (auth_info, local_groups, origin_name,
-                   source_context, auth_package, logon_type,
-                   lsa_handle))
+                             source_context, auth_package, logon_type,
+                             lsa_handle))
     if local_groups is None:
         plocal_groups = PTOKEN_GROUPS()
     else:
-        plocal_groups = ctypes.byref(local_groups)
+        plocal_groups = byref(local_groups)
     if source_context is None:
         source_context = py_source_context
     if not isinstance(origin_name, bytes):
         origin_name = origin_name.encode('mbcs')
-    buf = ctypes.create_string_buffer(origin_name)
+    buf = create_string_buffer(origin_name)
     origin_name = STRING(len(origin_name), len(buf), buf)
     if auth_package is None:
         if isinstance(auth_info, MSV1_0_S4U_LOGON):
@@ -586,11 +634,11 @@ def lsa_logon_user(auth_info, local_groups=None, origin_name=py_origin_name,
             logon_type = Batch
         else:
             logon_type = Interactive
-    profile_buffer = wintypes.LPVOID()
-    profile_buffer_length = wintypes.ULONG()
+    profile_buffer = LPVOID()
+    profile_buffer_length = ULONG()
     profile = None
     logonid = LUID()
-    htoken = HANDLE()
+    htoken = MANAGED_HANDLE()
     quotas = QUOTA_LIMITS()
     substatus = NTSTATUS()
     deregister = False
@@ -599,19 +647,20 @@ def lsa_logon_user(auth_info, local_groups=None, origin_name=py_origin_name,
         deregister = True
     try:
         if isinstance(auth_package, (str, bytes)):
-            auth_package = lsa_lookup_authentication_package(lsa_handle,
-                                auth_package)
+            auth_package = lsa_lookup_authentication_package(lsa_handle, auth_package)
         try:
-            args = (lsa_handle, ctypes.byref(origin_name),
-                logon_type, auth_package, ctypes.byref(auth_info),
-                ctypes.sizeof(auth_info), plocal_groups,
-                ctypes.byref(source_context), ctypes.byref(profile_buffer),
-                ctypes.byref(profile_buffer_length), ctypes.byref(logonid),
-                ctypes.byref(htoken), ctypes.byref(quotas),
-                ctypes.byref(substatus))
+            args = (
+                lsa_handle, byref(origin_name),
+                logon_type, auth_package, byref(auth_info),
+                sizeof(auth_info), plocal_groups,
+                byref(source_context), byref(profile_buffer),
+                byref(profile_buffer_length), byref(logonid),
+                byref(htoken), byref(quotas),
+                byref(substatus),
+            )
             log("LsaLogonUser%s", args)
             secur32.LsaLogonUser(*args)
-        except OSError:            #@UndefinedVariable
+        except OSError:
             if substatus.value:
                 raise WinError(substatus.to_error()) from None
             raise
@@ -620,8 +669,7 @@ def lsa_logon_user(auth_info, local_groups=None, origin_name=py_origin_name,
                 address = profile_buffer.value
                 buftype = PROFILE_BUFFER_TYPE.from_address(address).value
                 if buftype == MsV1_0InteractiveLogon:
-                    profile = MSV1_0_INTERACTIVE_PROFILE.from_address_copy(
-                                address, profile_buffer_length.value)
+                    profile = MSV1_0_INTERACTIVE_PROFILE.from_address_copy(address, profile_buffer_length.value)
                 secur32.LsaFreeReturnBuffer(address)
     finally:
         if deregister:
@@ -632,35 +680,35 @@ def lsa_logon_user(auth_info, local_groups=None, origin_name=py_origin_name,
 # High-level LSA logons
 
 def logon_msv1(name, password, domain=None, local_groups=None,
-                origin_name=py_origin_name, source_context=None):
+               origin_name=py_origin_name, source_context=None) -> LOGONINFO:
     return lsa_logon_user(MSV1_0_INTERACTIVE_LOGON(name, password, domain),
-                local_groups, origin_name, source_context)
+                          local_groups, origin_name, source_context)
 
-def logon_msv1_s4u(name, local_groups=None, origin_name=py_origin_name,
-                    source_context=None):
-    domain = ctypes.create_unicode_buffer(MAX_COMPUTER_NAME_LENGTH + 1)
-    length = wintypes.DWORD(len(domain))
-    kernel32.GetComputerNameW(domain, ctypes.byref(length))
+
+def logon_msv1_s4u(name, local_groups=None, origin_name=py_origin_name, source_context=None) -> LOGONINFO:
+    domain = create_unicode_buffer(MAX_COMPUTER_NAME_LENGTH + 1)
+    length = DWORD(len(domain))
+    kernel32.GetComputerNameW(domain, byref(length))
     return lsa_logon_user(MSV1_0_S4U_LOGON(name, domain.value),
-                local_groups, origin_name, source_context)
+                          local_groups, origin_name, source_context)
+
 
 def logon_kerb_s4u(name, realm=None, local_groups=None,
-                     origin_name=py_origin_name,
-                     source_context=None,
-                     logon_process_name=py_logon_process_name):
+                   origin_name=py_origin_name,
+                   source_context=None,
+                   logon_process_name=py_logon_process_name) -> LOGONINFO:
     lsa_handle = lsa_register_logon_process(logon_process_name)
     try:
         return lsa_logon_user(KERB_S4U_LOGON(name, realm),
-                    local_groups, origin_name, source_context,
-                    lsa_handle=lsa_handle)
+                              local_groups, origin_name, source_context,
+                              lsa_handle=lsa_handle)
     finally:
         secur32.LsaDeregisterLogonProcess(lsa_handle)
 
 
-def main():
+def main() -> int:
     from xpra.platform import program_context
-    from xpra.log import enable_color, Logger, consume_verbose_argv
-    log = Logger("win32")
+    from xpra.log import enable_color, consume_verbose_argv
     with program_context("LSA-Logon-Test", "LSA Logon Test"):
         enable_color()
         consume_verbose_argv(sys.argv, "win32")
@@ -675,6 +723,7 @@ def main():
         except Exception as e:
             log.error("Logon failed: %s", e)
             return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
