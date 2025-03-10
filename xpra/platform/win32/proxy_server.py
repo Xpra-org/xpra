@@ -12,23 +12,24 @@ from xpra.server.proxy.server import ProxyServer as _ProxyServer, get_proxy_env
 from xpra.platform.paths import get_app_dir
 from xpra.common import SocketState
 from xpra.util.env import envbool
-from xpra.util.io import pollwait
+from xpra.util.io import pollwait, which
 from xpra.log import Logger
 
 log = Logger("proxy")
 
 PAEXEC = envbool("XPRA_PAEXEC", True)
+SYSTEM_SESSION = envbool("XPRA_SYSTEM_SESSION", True)
 
 
 def exec_command(username: str, password: str, args: Sequence[str], exe: str, cwd: str, env: dict[str, str]):
     log("exec_command%s", (username, args, exe, cwd, env))
     # pylint: disable=import-outside-toplevel
-    from xpra.platform.win32.lsa_logon_lib import logon_msv1_s4u
-    logon_info = logon_msv1_s4u(username)
-    log("logon_msv1_s4u(%s)=%s", username, logon_info)
+    from xpra.platform.win32.lsa_logon_lib import logon_msv1
+    logon_info = logon_msv1(username, password)
+    log("logon(..)=%s", logon_info)
     from xpra.platform.win32.create_process_lib import (
         Popen,
-        CREATIONINFO, CREATION_TYPE_TOKEN,  # CREATION_TYPE_LOGON,
+        CREATIONINFO, CREATION_TYPE_LOGON,
         STARTF_USESHOWWINDOW,
         LOGON_WITH_PROFILE, CREATE_NEW_PROCESS_GROUP, STARTUPINFO,
     )
@@ -37,8 +38,8 @@ def exec_command(username: str, password: str, args: Sequence[str], exe: str, cw
     creation_info.lpUsername = username
     creation_info.lpPassword = password
     creation_info.lpDomain = os.environ.get("USERDOMAIN", "WORKGROUP")
-    creation_info.dwCreationType = CREATION_TYPE_TOKEN
-    # creation_info.dwCreationType = CREATION_TYPE_LOGON
+    #creation_info.dwCreationType = CREATION_TYPE_TOKEN
+    creation_info.dwCreationType = CREATION_TYPE_LOGON
     creation_info.dwLogonFlags = LOGON_WITH_PROFILE
     creation_info.dwCreationFlags = CREATE_NEW_PROCESS_GROUP
     creation_info.hToken = logon_info.Token
@@ -67,6 +68,11 @@ class ProxyServer(_ProxyServer):
 
     def start_win32_shadow(self, username: str, password: str, sess_options: dict) -> tuple[Any, str, str]:
         log("start_win32_shadow%s", (username, "..", sess_options))
+        app_dir = get_app_dir()
+        shadow_command = app_dir + "\\Xpra-Shadow.exe"
+        paexec = app_dir + "\\paexec.exe"
+        named_pipe = username.replace(" ", "_")
+
         # pylint: disable=import-outside-toplevel
         from xpra.platform.win32.wtsapi import find_session
         session_info = find_session(username)
@@ -75,15 +81,10 @@ class ProxyServer(_ProxyServer):
             with log.trap_error(f"Error: failed to logon as {username!r}"):
                 from xpra.platform.win32.desktoplogon_lib import logon
                 r = logon(username, password)
-            if r:
-                raise RuntimeError(f"desktop logon has failed and returned {r}")
+            #if r:
+            #    raise RuntimeError(f"desktop logon has failed and returned {r}")
         # hwinstaold = set_window_station("winsta0")
-        app_dir = get_app_dir()
-        shadow_command = os.path.join(app_dir, "Xpra-Shadow.exe")
-        paexec = os.path.join(app_dir, "paexec.exe")
-        named_pipe = username.replace(" ", "_")
-        cmd = []
-        exe = shadow_command
+        wrap = []
 
         # use paexec to access the GUI session:
         if PAEXEC and os.path.exists(paexec) and os.path.isfile(paexec):
@@ -92,18 +93,22 @@ class ProxyServer(_ProxyServer):
                 session_info = find_session(username)
             if session_info:
                 log(f"found session {session_info} for {username!r}")
-                cmd = [
+                wrap = [
                     "paexec.exe",
-                    "-i", str(session_info["SessionID"]), "-s",
+                    "-i", str(session_info["SessionID"]),
                 ]
-                exe = paexec
+            elif username.lower() == "administrator" and SYSTEM_SESSION:
+                log("using system session")
+                wrap = [
+                    "paexec.exe", "-x",
+                ]
             else:
                 log.warn("Warning: session not found for username '%s'", username)
         else:
             log(f"{PAEXEC=}, {paexec=!r}")
             log.warn("Warning: starting without paexec, expect a black screen")
 
-        cmd += [
+        cmd = wrap + [
             shadow_command,
             f"--bind={named_pipe}",
             # "--tray=no",
@@ -116,8 +121,15 @@ class ProxyServer(_ProxyServer):
             cmd += ["-d", ",".join(tuple(debug_enabled_categories))]
         env = get_proxy_env()
         env["XPRA_REDIRECT_OUTPUT"] = "1"
+        exe = which(cmd[0])
         # env["XPRA_LOG_FILENAME"] = "E:\\Shadow-Instance.log"
-        proc = exec_command(username, password, cmd, exe, app_dir, env)
+        if username.lower() == "administrator" and SYSTEM_SESSION:
+            # don't login
+            from subprocess import Popen
+            proc = Popen(cmd, executable=exe)
+        else:
+            proc = exec_command(username, password, cmd, exe, app_dir, env)
+
         from xpra.platform.win32.dotxpra import DotXpra
         dotxpra = DotXpra()
         for t in range(10):
@@ -134,7 +146,7 @@ class ProxyServer(_ProxyServer):
                 raise RuntimeError("shadow subprocess has already terminated")
             if t >= 4:
                 state = dotxpra.get_display_state(named_pipe)
-                log("get_display_state(%s)=%s", state)
+                log("get_display_state(%s)=%s", named_pipe, state)
                 if state == SocketState.LIVE:
                     # TODO: test the named pipe
                     sleep(2)
