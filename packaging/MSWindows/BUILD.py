@@ -388,7 +388,7 @@ def build_service() -> None:
     os.rename(os.path.join(SERVICE_SRC_DIR, XPRA_SERVICE_EXE), XPRA_SERVICE_EXE)
 
 
-VersionInfo = namedtuple("VersionInfo", "string,value,revision,full_string,arch_info,extra,padded")
+VersionInfo = namedtuple("VersionInfo", ("string", "value", "revision", "full_string", "arch_info", "extra", "padded"))
 version_info = VersionInfo("invalid", (0, 0), 0, "invalid", "arch", "extra", (0, 0, 0, 0))
 
 

@@ -14,8 +14,8 @@ from xpra.log import Logger
 
 log = Logger("opengl", "window")
 
-Rectangle = namedtuple("Rectangle", "x,y,width,height")
-DrawEvent = namedtuple("DrawEvent", "area")
+Rectangle = namedtuple("Rectangle", ("x", "y", "width", "height"))
+DrawEvent = namedtuple("DrawEvent", ("area", ))
 
 MONITOR_REINIT = envbool("XPRA_OPENGL_MONITOR_REINIT", False)
 

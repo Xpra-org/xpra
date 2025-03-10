@@ -20,7 +20,7 @@ GObject = gi_import("GObject")
 MIN_SIZE = 640, 350
 MAX_SIZE = 8192, 8192
 
-MonitorDamageNotify = namedtuple("MonitorDamageNotify", "x,y,width,height")
+MonitorDamageNotify = namedtuple("MonitorDamageNotify", ("x", "y", "width", "height"))
 
 
 class MonitorDesktopModel(DesktopModelBase):

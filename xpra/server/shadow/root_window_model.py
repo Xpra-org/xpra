@@ -188,7 +188,7 @@ class RootWindowModel:
         if listeners is None:
             log.warn(f"Warning: ignoring notify for {prop!r}")
             return
-        PSpec = namedtuple("PSpec", "name")
+        PSpec = namedtuple("PSpec", ("name", ))
         pspec = PSpec(name=prop)
         for listener, *args in listeners:
             with log.trap_error(f"Error on {prop!r} signal listener {listener}"):

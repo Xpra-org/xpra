@@ -390,7 +390,7 @@ def start_sending_audio(plugins, audio_source_plugin: str, device: str, codec: s
          remote_decoders, remote_pulseaudio_server, remote_pulseaudio_id))
     with log.trap_error("Error setting up %r audio source" % (audio_source_plugin or "auto")):
         # info about the remote end:
-        PAInfo = namedtuple("PAInfo", "pulseaudio_server,pulseaudio_id,remote_decoders")
+        PAInfo = namedtuple("PAInfo", ("pulseaudio_server", "pulseaudio_id", "remote_decoders"))
         remote = PAInfo(pulseaudio_server=remote_pulseaudio_server,
                         pulseaudio_id=remote_pulseaudio_id,
                         remote_decoders=remote_decoders)

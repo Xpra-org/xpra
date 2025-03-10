@@ -24,7 +24,7 @@ log = Logger("quic")
 
 UVLOOP = envbool("XPRA_UVLOOP", not WIN32)
 
-ExceptionWrapper = namedtuple("ExceptionWrapper", "exception,args")
+ExceptionWrapper = namedtuple("ExceptionWrapper", ("exception", "args"))
 
 
 class ThreadedAsyncioLoop:
