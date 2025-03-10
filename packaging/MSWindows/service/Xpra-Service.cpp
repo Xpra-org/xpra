@@ -15,6 +15,7 @@
 #pragma comment(lib, "advapi32.lib")
 
 #define SVCNAME TEXT("Xpra")
+#define SVCDESCRIPTION TEXT("Xpra Proxy Service")
 
 SERVICE_STATUS          gSvcStatus;
 SERVICE_STATUS_HANDLE   gSvcStatusHandle;
@@ -81,7 +82,7 @@ VOID SvcInstall() {
     schService = CreateService(
         schSCManager,              // SCM database
         SVCNAME,                   // name of service
-        SVCNAME,                   // service name to display
+        SVCDESCRIPTION,            // service name to display
         SERVICE_ALL_ACCESS,        // desired access
         SERVICE_WIN32_OWN_PROCESS, // service type
         SERVICE_DEMAND_START,      // start type
