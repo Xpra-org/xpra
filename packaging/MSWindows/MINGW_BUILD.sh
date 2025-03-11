@@ -661,9 +661,6 @@ if [ "${DO_INSTALLER}" == "1" ]; then
 	echo "* Creating the installer using InnoSetup"
 	rm -f "Xpra_Setup.exe" "${INSTALLER_FILENAME}" "${INNOSETUP_LOG}"
 	cp -fn "packaging/MSWindows/xpra.iss" "xpra.iss"
-	if [ "${MSYSTEM_CARCH}" == "x86_64" ]; then
-		cat "packaging/MSWindows/xpra.iss" | sed '/\(ArchitecturesInstallIn64BitMode\|ArchitecturesInstallIn64BitMode\)/ s/=.*/=x64/g' | sed '/\(AppName=\|AppVerName=\|DefaultGroupName=\)/ s/\r$/ (64-bit)\r/g' | sed 's/ArchitecturesAllowed=.*/ArchitecturesAllowed=x64/g' > "xpra.iss"
-	fi
 	if [ "${CLIENT_ONLY}" == "1" ]; then
 		#remove shadow start menu entry
 		sed -i"" "s/.*Xpra Shadow Server.*//g" xpra.iss
