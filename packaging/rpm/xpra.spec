@@ -915,8 +915,29 @@ fi
 
 
 %changelog
-* Wed Mar 05 2025 Antoine Martin <antoine@xpra.org> 6.2.5-10
-- TODO
+* Tue Mar 11 2025 Antoine Martin <antoine@xpra.org> 6.2.5-10
+- Platforms, build and packaging:
+   MS Windows authentication usernames are not case sensitive
+   don't log authentication credentials
+   `signtool.exe` build errors
+   allow all build commands to be placed in the cwd
+   missing PyQT6 in the non-light MS Windows builds
+   better build defaults for `arm64` MS Windows builds
+   Fedora 42 mangled dependencies
+   `pyu2f` incorrect Python version dependency
+   add explicit Python dependencies to python libraries
+- Major:
+   nvidia hardware detection errors
+   honour ssl options in launcher files
+- Encodings:
+   faded colours with `openh264` decoder
+- Cosmetic:
+   audio warnings showing placeholders
+   improved ssl error message
+   show connection step in splash progress
+   typo in RPM changelog
+
+
 * Mon Mar 03 2025 Antoine Martin <antoine@xpra.org> 6.2.4-10
 - Platforms, build and packaging:
    MS Windows custom build arguments

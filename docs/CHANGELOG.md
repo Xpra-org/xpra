@@ -1,382 +1,402 @@
 # Changelog
 
-## [6.2.5] 2025-03-05
-* TODO
+## [6.2.5] 2025-03-11
+* Platforms, build and packaging:
+	* [MS Windows authentication usernames are not case sensitive](https://github.com/Xpra-org/xpra/commit/eb945e95958e58ebb0fe896aeac9c7eeb424c1e0)
+	* [don't log authentication credentials](https://github.com/Xpra-org/xpra/commit/294b90972af4d0a9cbe0fa95d96a3b8fbd3ba6bc)
+	* [`signtool.exe` build errors](https://github.com/Xpra-org/xpra/commit/31b6f4bd4e17742fcf7d735a5e210a9bcc744bda)
+	* [allow all build commands](https://github.com/Xpra-org/xpra/commit/5b8a7d327d53bebc1bb8235a676a96f1c2afa446) [to be placed in the cwd](https://github.com/Xpra-org/xpra/commit/5b8a7d327d53bebc1bb8235a676a96f1c2afa446)
+	* [missing PyQT6 in the non-light MS Windows builds](https://github.com/Xpra-org/xpra/commit/9df7186a1c3a70b77d0032dbc38f7422fb3fcdc9)
+	* [better build defaults for `arm64` MS Windows builds](https://github.com/Xpra-org/xpra/commit/378aa67f731e368d7a81d51f6acfb51d91a1f44c)
+	* [Fedora 42 mangled dependencies](https://github.com/Xpra-org/xpra/commit/cef0cfd60ac3589e5c0278c4ac62f1f2ec56b053)
+	* [`pyu2f` incorrect Python version dependency](https://github.com/Xpra-org/xpra/commit/6a57cb84e958a14cf06992f373841cfc3f470159)
+	* [add explicit Python dependencies to python libraries](https://github.com/Xpra-org/xpra/commit/fafb2ecdfdb068ba604014ad3503459927b7a13e), [pygobject fixup](https://github.com/Xpra-org/xpra/commit/0bda11c5fdd88562f9e10a7e3dd06a262ab3c9a3)
+* Major:
+	* [nvidia hardware detection errors](https://github.com/Xpra-org/xpra/commit/05cd59635d5cac01f2c463d7c26df924d39f7fdf)
+	* [honour ssl options in launcher files](https://github.com/Xpra-org/xpra/commit/ff745884d769fa520d967784cb65f0c8e592ae09)
+* Encodings:
+	* [faded colours with `openh264` decoder](https://github.com/Xpra-org/xpra/commit/85068b3f83d25ad56c7e0a011981a5c1d65b3ed7)
+* Cosmetic:
+	* [audio warnings showing placeholders](https://github.com/Xpra-org/xpra/commit/e056017c060ece575618f6ef59de2d80c959122b)
+	* [improved ssl error message](https://github.com/Xpra-org/xpra/commit/23b89dc035b3bfbd4ce931300e5e692271173d13)
+	* [show connection step in splash progress](https://github.com/Xpra-org/xpra/commit/be6730eae0dc4277d892f1dd7fabfb31a3824fbd)
+	* [typo in RPM changelog](https://github.com/Xpra-org/xpra/commit/450f878b0732087888a1dcc94aeead84b7768c6e)
+
 
 ## [6.2.4] 2025-03-03
 * Platforms, build and packaging:
-    * [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
-    * [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
-    * [EXE installer must overwrite previous version](https://github.com/Xpra-org/xpra/commit/8c4ec6b645f523a0989f4f565cf0654fa2b7906f), [all libraries](https://github.com/Xpra-org/xpra/commit/6c5234d4fa3bb4b92cd9d01cee4abc08db5fc5f1)
-    * [`rpmspec` warnings](https://github.com/Xpra-org/xpra/commit/3bcf48f9dfb092e775cfa9e24c208dbd050774a6)
-    * [`dev-env` subcommand errors on Debian systems](https://github.com/Xpra-org/xpra/commit/a80b4e5ba00940a5fbce0b647e7d4d5ad4b3e3a8)
-    * [also prefer the CUDA arch specific pkgconfig file for nvdec](https://github.com/Xpra-org/xpra/commit/f541e0be0a1e112fea2299701edad354fe9fe8a8)
-    * [CUDA kernel build errors with CUDA 12.8 and Fedora 41](https://github.com/Xpra-org/xpra/commit/4191dbffa4bdb071bae648dee1961331c592a32d)
-    * [libyuv 0.1899](https://github.com/Xpra-org/xpra/commit/feeaeb1bfaf4a0854cc1906cf874dbcdf7d65d3a)
-    * [PyOpenGL 3.1.9](https://github.com/Xpra-org/xpra/commit/7e7f17200fb40f7096e553a841c280491899fc12)
-    * [Python 3.14 parallel build errors](https://github.com/Xpra-org/xpra/commit/1ce15eea0c545083c8eceaf9938f56636555cb18)
-    * add [Fedora 42 with Python 3.14](https://github.com/Xpra-org/xpra/commit/b12d74fc90d5792ea79d613d52671300c231ef21) and [Ubuntu Plucky](https://github.com/Xpra-org/xpra/commit/41bcde7a94c916d29888c086ba8bb8c8567c5513), remove [Fedora 39](https://github.com/Xpra-org/xpra/commit/a242711bae960845a07e8cd7130b0a549faf464d) and [Ubuntu Lunar](https://github.com/Xpra-org/xpra/commit/a7a5de29abaf2b420ff28fdd290c9de7e92ae674)
-    * [Fedora `pam_misc` workaround](https://github.com/Xpra-org/xpra/commit/a7ce08a59254768e75207809464de8075f7885d4)
-    * [PyCUDA 2025.1](https://github.com/Xpra-org/xpra/commit/6842f5aa39c3b6d8eaa56428d2a87e5e56fe6949)
-    * [build pycuda on Fedora 40](https://github.com/Xpra-org/xpra/commit/25d61258fcdbc4984497f3092b7da85e268ef70c)
-    * [Cython 3.0.12](https://github.com/Xpra-org/xpra/commit/b130d1f72180ef2ef23051ab17f04c1b7a177887)
-    * [`libexec` scripts installation into a prefix](https://github.com/Xpra-org/xpra/commit/a27319e0d98a1e1c437b0af226867a3890373fb6)
-    * [detect MS Windows version for all codepages](https://github.com/Xpra-org/xpra/commit/7fd24b71146424e6ed24ed32178fc79463981051)
-    * [don't enable splash unconditionally on non-posix](https://github.com/Xpra-org/xpra/commit/1b488723784ed976cea55ac09186033104e4b7e3)
-    * [spng codecs missing due to pkg-config changes](https://github.com/Xpra-org/xpra/commit/48dc9858c4d263ea575f894b70294ef1576fdc5f)
+	* [MS Windows custom build arguments](https://github.com/Xpra-org/xpra/commit/4d15978f5d8a79a4da2b10c862b3b33625b4918e)
+	* [EXE manigests optional](https://github.com/Xpra-org/xpra/commit/5215b42fc3b80518b8efdb38ad24d19bcba599ed)
+	* [EXE installer must overwrite previous version](https://github.com/Xpra-org/xpra/commit/8c4ec6b645f523a0989f4f565cf0654fa2b7906f), [all libraries](https://github.com/Xpra-org/xpra/commit/6c5234d4fa3bb4b92cd9d01cee4abc08db5fc5f1)
+	* [`rpmspec` warnings](https://github.com/Xpra-org/xpra/commit/3bcf48f9dfb092e775cfa9e24c208dbd050774a6)
+	* [`dev-env` subcommand errors on Debian systems](https://github.com/Xpra-org/xpra/commit/a80b4e5ba00940a5fbce0b647e7d4d5ad4b3e3a8)
+	* [also prefer the CUDA arch specific pkgconfig file for nvdec](https://github.com/Xpra-org/xpra/commit/f541e0be0a1e112fea2299701edad354fe9fe8a8)
+	* [CUDA kernel build errors with CUDA 12.8 and Fedora 41](https://github.com/Xpra-org/xpra/commit/4191dbffa4bdb071bae648dee1961331c592a32d)
+	* [libyuv 0.1899](https://github.com/Xpra-org/xpra/commit/feeaeb1bfaf4a0854cc1906cf874dbcdf7d65d3a)
+	* [PyOpenGL 3.1.9](https://github.com/Xpra-org/xpra/commit/7e7f17200fb40f7096e553a841c280491899fc12)
+	* [Python 3.14 parallel build errors](https://github.com/Xpra-org/xpra/commit/1ce15eea0c545083c8eceaf9938f56636555cb18)
+	* add [Fedora 42 with Python 3.14](https://github.com/Xpra-org/xpra/commit/b12d74fc90d5792ea79d613d52671300c231ef21) and [Ubuntu Plucky](https://github.com/Xpra-org/xpra/commit/41bcde7a94c916d29888c086ba8bb8c8567c5513), remove [Fedora 39](https://github.com/Xpra-org/xpra/commit/a242711bae960845a07e8cd7130b0a549faf464d) and [Ubuntu Lunar](https://github.com/Xpra-org/xpra/commit/a7a5de29abaf2b420ff28fdd290c9de7e92ae674)
+	* [Fedora `pam_misc` workaround](https://github.com/Xpra-org/xpra/commit/a7ce08a59254768e75207809464de8075f7885d4)
+	* [PyCUDA 2025.1](https://github.com/Xpra-org/xpra/commit/6842f5aa39c3b6d8eaa56428d2a87e5e56fe6949)
+	* [build pycuda on Fedora 40](https://github.com/Xpra-org/xpra/commit/25d61258fcdbc4984497f3092b7da85e268ef70c)
+	* [Cython 3.0.12](https://github.com/Xpra-org/xpra/commit/b130d1f72180ef2ef23051ab17f04c1b7a177887)
+	* [`libexec` scripts installation into a prefix](https://github.com/Xpra-org/xpra/commit/a27319e0d98a1e1c437b0af226867a3890373fb6)
+	* [detect MS Windows version for all codepages](https://github.com/Xpra-org/xpra/commit/7fd24b71146424e6ed24ed32178fc79463981051)
+	* [don't enable splash unconditionally on non-posix](https://github.com/Xpra-org/xpra/commit/1b488723784ed976cea55ac09186033104e4b7e3)
+	* [spng codecs missing due to pkg-config changes](https://github.com/Xpra-org/xpra/commit/48dc9858c4d263ea575f894b70294ef1576fdc5f)
 * Major:
-    * [integer time overflow](https://github.com/Xpra-org/xpra/commit/dcc8be686c413fe289e284801b5203455ce82830), [prevent more](https://github.com/Xpra-org/xpra/commit/4c0acc83d4799fd945afe3084f6e653d9dbe02e6)
-    * [server fails to start when sourcing profile strings](https://github.com/Xpra-org/xpra/commit/3bd53a6e9e8c808aff025eb0cbe972f49f1f3191)
-    * [disable 'DOUBLE-BUFFER' extension](https://github.com/Xpra-org/xpra/commit/a73ef72998e06e23946211af57159ceb6315e792)
+	* [integer time overflow](https://github.com/Xpra-org/xpra/commit/dcc8be686c413fe289e284801b5203455ce82830), [prevent more](https://github.com/Xpra-org/xpra/commit/4c0acc83d4799fd945afe3084f6e653d9dbe02e6)
+	* [server fails to start when sourcing profile strings](https://github.com/Xpra-org/xpra/commit/3bd53a6e9e8c808aff025eb0cbe972f49f1f3191)
+	* [disable 'DOUBLE-BUFFER' extension](https://github.com/Xpra-org/xpra/commit/a73ef72998e06e23946211af57159ceb6315e792)
 * Encodings:
-    * [qp calculation with nvenc](https://github.com/Xpra-org/xpra/commit/299268b8a08b739c5f1ad51c837a82a96bd061df)
-    * [encoder runtime factor was not being honoured](https://github.com/Xpra-org/xpra/commit/854a51cb00cdf189ccd4a5be93cfcc14f9aa7309) [+ update unit test](https://github.com/Xpra-org/xpra/commit/a58975e887a9a666f456b5cfbc48a617a63d0ede)
-    * [disable video decoders when they fail](https://github.com/Xpra-org/xpra/commit/6526133db5799b251d3f2d39064981648bfadab0)
-    * [nvdec cleanup errors](https://github.com/Xpra-org/xpra/commit/29940028de57090fd31140a187a3cec1ddcc9a42)
-    * [codec error handling](https://github.com/Xpra-org/xpra/commit/2d2539adbadf2182d1a1676d58053335229b02c3)
-    * [avoid cuda context error messages when not installed](https://github.com/Xpra-org/xpra/commit/0a3022e3119d63041bbf8e8e4f930d0eb6040942)
-    * [bgrx output image was cropped](https://github.com/Xpra-org/xpra/commit/a08b0f6ae730d8295c7ce9960be83802010434e2) [and blanked out](https://github.com/Xpra-org/xpra/commit/91e7a7342f8c2d02308fd22995726ddcf60b7d53)
-    * [evdi build](https://github.com/Xpra-org/xpra/commit/b57a3768da1fe109f45716ee62c6465c46716a40)
-    * [GStreamer video encoder errors in debug logging](https://github.com/Xpra-org/xpra/commit/a277714df53bef318444b5422962c7bbc32968bc)
-    * [disable GStreamer video encoder on MS Windows](https://github.com/Xpra-org/xpra/commit/3be51774a8404c9d7eddc8c8c910165877118b08)
+	* [qp calculation with nvenc](https://github.com/Xpra-org/xpra/commit/299268b8a08b739c5f1ad51c837a82a96bd061df)
+	* [encoder runtime factor was not being honoured](https://github.com/Xpra-org/xpra/commit/854a51cb00cdf189ccd4a5be93cfcc14f9aa7309) [+ update unit test](https://github.com/Xpra-org/xpra/commit/a58975e887a9a666f456b5cfbc48a617a63d0ede)
+	* [disable video decoders when they fail](https://github.com/Xpra-org/xpra/commit/6526133db5799b251d3f2d39064981648bfadab0)
+	* [nvdec cleanup errors](https://github.com/Xpra-org/xpra/commit/29940028de57090fd31140a187a3cec1ddcc9a42)
+	* [codec error handling](https://github.com/Xpra-org/xpra/commit/2d2539adbadf2182d1a1676d58053335229b02c3)
+	* [avoid cuda context error messages when not installed](https://github.com/Xpra-org/xpra/commit/0a3022e3119d63041bbf8e8e4f930d0eb6040942)
+	* [bgrx output image was cropped](https://github.com/Xpra-org/xpra/commit/a08b0f6ae730d8295c7ce9960be83802010434e2) [and blanked out](https://github.com/Xpra-org/xpra/commit/91e7a7342f8c2d02308fd22995726ddcf60b7d53)
+	* [evdi build](https://github.com/Xpra-org/xpra/commit/b57a3768da1fe109f45716ee62c6465c46716a40)
+	* [GStreamer video encoder errors in debug logging](https://github.com/Xpra-org/xpra/commit/a277714df53bef318444b5422962c7bbc32968bc)
+	* [disable GStreamer video encoder on MS Windows](https://github.com/Xpra-org/xpra/commit/3be51774a8404c9d7eddc8c8c910165877118b08)
 * Network:
-    * [scary warnings when RDP clients attempt to connect](https://github.com/Xpra-org/xpra/commit/5f6b4454a59952822362f204dc75f84ac9f17a23)
-    * [limit openssl version details exposed](https://github.com/Xpra-org/xpra/commit/de983c867c743e04670e61a7bf6ef05ddf61fab2)
-    * [strip comments from paramiko configs](https://github.com/Xpra-org/xpra/commit/049a73985ffc4d17d37a7c0187c20dc4b468c28c)
+	* [scary warnings when RDP clients attempt to connect](https://github.com/Xpra-org/xpra/commit/5f6b4454a59952822362f204dc75f84ac9f17a23)
+	* [limit openssl version details exposed](https://github.com/Xpra-org/xpra/commit/de983c867c743e04670e61a7bf6ef05ddf61fab2)
+	* [strip comments from paramiko configs](https://github.com/Xpra-org/xpra/commit/049a73985ffc4d17d37a7c0187c20dc4b468c28c)
 * Minor:
-    * [revert to other client's ssh agent socket on disconnection](https://github.com/Xpra-org/xpra/commit/d0acde606e8d79e06a6f8b3b8cab10def19add8a)
-    * [partial dpi settings with some clients (ie: `html5`)](https://github.com/Xpra-org/xpra/commit/5c891aff0205b5177f38f636b592fa6e4c0a04e8)
-    * [only re-initialize encodings on update message](https://github.com/Xpra-org/xpra/commit/a4f8ee4c487ce7abc0fcc7dc1a5aba86d085437d)
+	* [revert to other client's ssh agent socket on disconnection](https://github.com/Xpra-org/xpra/commit/d0acde606e8d79e06a6f8b3b8cab10def19add8a)
+	* [partial dpi settings with some clients (ie: `html5`)](https://github.com/Xpra-org/xpra/commit/5c891aff0205b5177f38f636b592fa6e4c0a04e8)
+	* [only re-initialize encodings on update message](https://github.com/Xpra-org/xpra/commit/a4f8ee4c487ce7abc0fcc7dc1a5aba86d085437d)
 * Cosmetic:
-    * [make it easier to cut & paste the CUDA kernel compilation command](https://github.com/Xpra-org/xpra/commit/51721cb26b6838e5ec5e662c2943048137ea2fd8)
-    * [unnecessary import](https://github.com/Xpra-org/xpra/commit/46e654861cca19fba32810c6f390b47470a80a2b)
-    * [linter warning](https://github.com/Xpra-org/xpra/commit/78baf27017ec29bc4bbc353d9080c722b88dfb8a)
-    * [update module path in message](https://github.com/Xpra-org/xpra/commit/6f8f06733bae5143d5e363c1b643c7acd5dedeca)
-    * [handle missing version more gracefully](https://github.com/Xpra-org/xpra/commit/b182947a51d0daa788078f8d3d07bc90dfc0f29d)
-    * [hide unnecessary info / when desired](https://github.com/Xpra-org/xpra/commit/4f7f93730ccdfd621531afe7d2dc8a148d8b917b)
-    * [correct encoder state displayed](https://github.com/Xpra-org/xpra/commit/13594b7782ff357a9c804515ab3571d0f00c31d6)
-    * [remove deprecated syntax](https://github.com/Xpra-org/xpra/commit/a3a5678c3914ade049c8c951cd912ce8710b87ad)
-    * [DPI documentation link](https://github.com/Xpra-org/xpra/commit/6998475101c2496903c66bfc22f878015bbdafd1)
-    * [unit tests log cuda errors](https://github.com/Xpra-org/xpra/commit/e48c2a20212423702eb93903f990627adf11ed8b)
+	* [make it easier to cut & paste the CUDA kernel compilation command](https://github.com/Xpra-org/xpra/commit/51721cb26b6838e5ec5e662c2943048137ea2fd8)
+	* [unnecessary import](https://github.com/Xpra-org/xpra/commit/46e654861cca19fba32810c6f390b47470a80a2b)
+	* [linter warning](https://github.com/Xpra-org/xpra/commit/78baf27017ec29bc4bbc353d9080c722b88dfb8a)
+	* [update module path in message](https://github.com/Xpra-org/xpra/commit/6f8f06733bae5143d5e363c1b643c7acd5dedeca)
+	* [handle missing version more gracefully](https://github.com/Xpra-org/xpra/commit/b182947a51d0daa788078f8d3d07bc90dfc0f29d)
+	* [hide unnecessary info / when desired](https://github.com/Xpra-org/xpra/commit/4f7f93730ccdfd621531afe7d2dc8a148d8b917b)
+	* [correct encoder state displayed](https://github.com/Xpra-org/xpra/commit/13594b7782ff357a9c804515ab3571d0f00c31d6)
+	* [remove deprecated syntax](https://github.com/Xpra-org/xpra/commit/a3a5678c3914ade049c8c951cd912ce8710b87ad)
+	* [DPI documentation link](https://github.com/Xpra-org/xpra/commit/6998475101c2496903c66bfc22f878015bbdafd1)
+	* [unit tests log cuda errors](https://github.com/Xpra-org/xpra/commit/e48c2a20212423702eb93903f990627adf11ed8b)
 
 ## [6.2.3] 2025-01-14
 * Platforms, build and packaging:
-    * [pillow 11.1.0](https://github.com/Xpra-org/xpra/commit/e6891f9dffa6f6ab8cd2b78418870350a3d0d3f8)
-    * [`exe` installer standalone step](https://github.com/Xpra-org/xpra/commit/05ff96bfe332d5086ca1348984cee670e33cb18f)
-    * [handle diverging RHEL clone packaging behaviour](https://github.com/Xpra-org/xpra/commit/cbcaa56c822e56a609406358e85114c32dc23568)
-    * [move default package list for newer build script default](https://github.com/Xpra-org/xpra/commit/81a84f72bb2cdd500284cfb52f2fef16600819c2)
-    * [invalid refresh rate detected on some MS Windows configurations](https://github.com/Xpra-org/xpra/commit/b9f1226888e296801313079edccf0315bd6156f0)
-    * [normalize smooth scroll wheel values on macos](https://github.com/Xpra-org/xpra/commit/63d114716dce01beabcf7a49783f72404a7b3ca7)
+	* [pillow 11.1.0](https://github.com/Xpra-org/xpra/commit/e6891f9dffa6f6ab8cd2b78418870350a3d0d3f8)
+	* [`exe` installer standalone step](https://github.com/Xpra-org/xpra/commit/05ff96bfe332d5086ca1348984cee670e33cb18f)
+	* [handle diverging RHEL clone packaging behaviour](https://github.com/Xpra-org/xpra/commit/cbcaa56c822e56a609406358e85114c32dc23568)
+	* [move default package list for newer build script default](https://github.com/Xpra-org/xpra/commit/81a84f72bb2cdd500284cfb52f2fef16600819c2)
+	* [invalid refresh rate detected on some MS Windows configurations](https://github.com/Xpra-org/xpra/commit/b9f1226888e296801313079edccf0315bd6156f0)
+	* [normalize smooth scroll wheel values on macos](https://github.com/Xpra-org/xpra/commit/63d114716dce01beabcf7a49783f72404a7b3ca7)
 * RHEL 10 builds:
-    * [package Qt6 client](https://github.com/Xpra-org/xpra/commit/dd9043eebc3a7c697baa1e25bcce3d27fcedaa72)
-    * [use `weston` + `Xwayland` as xvfb on RHEL 10](https://github.com/Xpra-org/xpra/commit/31f5ad2348e37c298996c7779956c8eb31e5a677)
-    * [provide wrapper script for `weston` + `Xwayland`](https://github.com/Xpra-org/xpra/commit/98f8f7011dfdaed45b36ba50acc8f0b9ac8e8cd8)
-    * [replace `noopenh264` with `openh264`](https://github.com/Xpra-org/xpra/commit/788456259fb3deae8b8361f814fd811dc35ab383)
-    * [`AlmaLinux` `10-kitten` package list](https://github.com/Xpra-org/xpra/commit/c9a9e2c7834f5a9e746d6c57224aa17488ac2f55)
-    * [`CentOS` `stream10` package list](https://github.com/Xpra-org/xpra/commit/745f3e8745277ad333b07776bc87c17e96be2ec2)
+	* [package Qt6 client](https://github.com/Xpra-org/xpra/commit/dd9043eebc3a7c697baa1e25bcce3d27fcedaa72)
+	* [use `weston` + `Xwayland` as xvfb on RHEL 10](https://github.com/Xpra-org/xpra/commit/31f5ad2348e37c298996c7779956c8eb31e5a677)
+	* [provide wrapper script for `weston` + `Xwayland`](https://github.com/Xpra-org/xpra/commit/98f8f7011dfdaed45b36ba50acc8f0b9ac8e8cd8)
+	* [replace `noopenh264` with `openh264`](https://github.com/Xpra-org/xpra/commit/788456259fb3deae8b8361f814fd811dc35ab383)
+	* [`AlmaLinux` `10-kitten` package list](https://github.com/Xpra-org/xpra/commit/c9a9e2c7834f5a9e746d6c57224aa17488ac2f55)
+	* [`CentOS` `stream10` package list](https://github.com/Xpra-org/xpra/commit/745f3e8745277ad333b07776bc87c17e96be2ec2)
 * Major:
-    * [Network Manager API errors in some environments](https://github.com/Xpra-org/xpra/commit/ad855baecd62fc204c69508b59e0cfe908a0d634)
-    * [websocket connection loss with some proxies sending empty payloads](https://github.com/Xpra-org/xpra/commit/9c4a12e6a9b4639de9bc348623e20760e39a8814)
-    * [handle broken `pyopengl-accelerate` installations more gracefully](https://github.com/Xpra-org/xpra/commit/3d45e2986bb8fc962eaea4fea0e2b88ec2b9ee95)
-    * [keyboard layout group regression](https://github.com/Xpra-org/xpra/commit/0e7dfbfd3b806fa723002d364238b1fdbeef1514)
+	* [Network Manager API errors in some environments](https://github.com/Xpra-org/xpra/commit/ad855baecd62fc204c69508b59e0cfe908a0d634)
+	* [websocket connection loss with some proxies sending empty payloads](https://github.com/Xpra-org/xpra/commit/9c4a12e6a9b4639de9bc348623e20760e39a8814)
+	* [handle broken `pyopengl-accelerate` installations more gracefully](https://github.com/Xpra-org/xpra/commit/3d45e2986bb8fc962eaea4fea0e2b88ec2b9ee95)
+	* [keyboard layout group regression](https://github.com/Xpra-org/xpra/commit/0e7dfbfd3b806fa723002d364238b1fdbeef1514)
 * Encodings:
-    * [batch delay increase compounded](https://github.com/Xpra-org/xpra/commit/6363c98caaaa5cb45769afdacb02e1eaf6530c64)
-    * [avoid damage storms: switch to full frames earlier](https://github.com/Xpra-org/xpra/commit/eaf614d9976401da7352c99ffd341a07476baef0)
+	* [batch delay increase compounded](https://github.com/Xpra-org/xpra/commit/6363c98caaaa5cb45769afdacb02e1eaf6530c64)
+	* [avoid damage storms: switch to full frames earlier](https://github.com/Xpra-org/xpra/commit/eaf614d9976401da7352c99ffd341a07476baef0)
 * Clipboard:
-    * [always claim the clipboard selection when updated](https://github.com/Xpra-org/xpra/commit/8b1fd56e7e5e0198f2aed0d89b329bd7c9bcbcf6)
-    * [always update the peer when the owner changes](https://github.com/Xpra-org/xpra/commit/e7e5f68ac6a2c89bcdf560b4d8ea02856f04cd12)
-    * [remote clipboard option not honoured on some platorms](https://github.com/Xpra-org/xpra/commit/188a218edd1f719a81c64f038f48efa017ba49f7)
-    * [allow all clipboards by default](https://github.com/Xpra-org/xpra/commit/c1bc57569eef7fa59796b9849c86d5e39b2e07bf)
+	* [always claim the clipboard selection when updated](https://github.com/Xpra-org/xpra/commit/8b1fd56e7e5e0198f2aed0d89b329bd7c9bcbcf6)
+	* [always update the peer when the owner changes](https://github.com/Xpra-org/xpra/commit/e7e5f68ac6a2c89bcdf560b4d8ea02856f04cd12)
+	* [remote clipboard option not honoured on some platorms](https://github.com/Xpra-org/xpra/commit/188a218edd1f719a81c64f038f48efa017ba49f7)
+	* [allow all clipboards by default](https://github.com/Xpra-org/xpra/commit/c1bc57569eef7fa59796b9849c86d5e39b2e07bf)
 * Desktop mode:
-    * [better compatibility with some window managers when resizing](https://github.com/Xpra-org/xpra/commit/bcfdec08695ae86d2e1cd96a385ed1b264057940)
-    * [handle fixed size desktops correctly](https://github.com/Xpra-org/xpra/commit/2a1854e3f2267c2bacce76bf0fe6d1900cf8e93a)
+	* [better compatibility with some window managers when resizing](https://github.com/Xpra-org/xpra/commit/bcfdec08695ae86d2e1cd96a385ed1b264057940)
+	* [handle fixed size desktops correctly](https://github.com/Xpra-org/xpra/commit/2a1854e3f2267c2bacce76bf0fe6d1900cf8e93a)
 * Minor:
-    * [toolbox examples do not run on some platforms](https://github.com/Xpra-org/xpra/commit/6bacd61ebc505a4de9d92f8cc166b466a390950a)
-    * [`configure` tool incorrectly saves some options](https://github.com/Xpra-org/xpra/commit/d0959a3c2295b9b3f7fe8e6d0e963b1d8ffae1cf), [refresh-delay](https://github.com/Xpra-org/xpra/commit/ede996657aebd3acf9e4e9eeae8c08f6181edebd)
-    * [hide 'configure shadow server' on light builds](https://github.com/Xpra-org/xpra/commit/7de653ee886aa9c5bab1eecb22ec481ee1db5f49)
-    * [typo in `nvjpeg` encoder / decoder build switches](https://github.com/Xpra-org/xpra/commit/8f88a0659ae05fd7469160e4706d1924d6297cc3)
-    * [`libexec` scripts installed twice](https://github.com/Xpra-org/xpra/commit/83825717f43800f49b47263f7d3024ffb0c9159a)
-    * [icon glob lookup mismatch](https://github.com/Xpra-org/xpra/commit/a68bf4e0cdee8c5e5453bbc6803cdad80892aca4)
-    * [division by zero on MS Windows](https://github.com/Xpra-org/xpra/commit/e55643b5e28bf4eee036f8378c0c15376f53565d)
-    * [update keyboard layout mapping for `ku` and `ir`](https://github.com/Xpra-org/xpra/commit/9713037378b8f3333396f54b2f54073eddef25fd)
-    * [avoid lowering quality for `text` content type](https://github.com/Xpra-org/xpra/commit/d6de44ee4a83acd1d6b6ee8ff4bd614831b2d81d), [avoid scaling and subsampling](https://github.com/Xpra-org/xpra/commit/f20feb96ec42f20e337b9c64d2a02b710208fa72)
-    * [avoid potential logging loop](https://github.com/Xpra-org/xpra/commit/ac9dda62adfa03e4110f61a3cbf8dcef3b6256ad)
-    * [close splash screen on server start error](https://github.com/Xpra-org/xpra/commit/b0d73d180762ee150124eb244ac6c591ee9b583f)
+	* [toolbox examples do not run on some platforms](https://github.com/Xpra-org/xpra/commit/6bacd61ebc505a4de9d92f8cc166b466a390950a)
+	* [`configure` tool incorrectly saves some options](https://github.com/Xpra-org/xpra/commit/d0959a3c2295b9b3f7fe8e6d0e963b1d8ffae1cf), [refresh-delay](https://github.com/Xpra-org/xpra/commit/ede996657aebd3acf9e4e9eeae8c08f6181edebd)
+	* [hide 'configure shadow server' on light builds](https://github.com/Xpra-org/xpra/commit/7de653ee886aa9c5bab1eecb22ec481ee1db5f49)
+	* [typo in `nvjpeg` encoder / decoder build switches](https://github.com/Xpra-org/xpra/commit/8f88a0659ae05fd7469160e4706d1924d6297cc3)
+	* [`libexec` scripts installed twice](https://github.com/Xpra-org/xpra/commit/83825717f43800f49b47263f7d3024ffb0c9159a)
+	* [icon glob lookup mismatch](https://github.com/Xpra-org/xpra/commit/a68bf4e0cdee8c5e5453bbc6803cdad80892aca4)
+	* [division by zero on MS Windows](https://github.com/Xpra-org/xpra/commit/e55643b5e28bf4eee036f8378c0c15376f53565d)
+	* [update keyboard layout mapping for `ku` and `ir`](https://github.com/Xpra-org/xpra/commit/9713037378b8f3333396f54b2f54073eddef25fd)
+	* [avoid lowering quality for `text` content type](https://github.com/Xpra-org/xpra/commit/d6de44ee4a83acd1d6b6ee8ff4bd614831b2d81d), [avoid scaling and subsampling](https://github.com/Xpra-org/xpra/commit/f20feb96ec42f20e337b9c64d2a02b710208fa72)
+	* [avoid potential logging loop](https://github.com/Xpra-org/xpra/commit/ac9dda62adfa03e4110f61a3cbf8dcef3b6256ad)
+	* [close splash screen on server start error](https://github.com/Xpra-org/xpra/commit/b0d73d180762ee150124eb244ac6c591ee9b583f)
 * Cosmetic:
-    * [`openh264` license tag](https://github.com/Xpra-org/xpra/commit/1a18f6e8b0f1b86f2cb36c1d31028b8ff0b863a5)
-    * [remove outdated Wayland clipboard warning](https://github.com/Xpra-org/xpra/commit/8d046ff38d4f15ed9a6df8191bce312076b158cd)
-    * [typo](https://github.com/Xpra-org/xpra/commit/76cbf4d484a55b5f58f444a1e0cb7b6d73053bc9)
-    * [strict mode type mismatch](https://github.com/Xpra-org/xpra/commit/43d6b1daa621511eff19b0a12de159f8ffe139b9)
-    * [incorrect compression debug logging](https://github.com/Xpra-org/xpra/commit/7fcf253b5091bb06fe88393a2fa27a020c97e162)
-    * [incorrect damage elapsed time in debug logging](https://github.com/Xpra-org/xpra/commit/61a63d3665e74547f048b3d80af0b1df33a46281)
+	* [`openh264` license tag](https://github.com/Xpra-org/xpra/commit/1a18f6e8b0f1b86f2cb36c1d31028b8ff0b863a5)
+	* [remove outdated Wayland clipboard warning](https://github.com/Xpra-org/xpra/commit/8d046ff38d4f15ed9a6df8191bce312076b158cd)
+	* [typo](https://github.com/Xpra-org/xpra/commit/76cbf4d484a55b5f58f444a1e0cb7b6d73053bc9)
+	* [strict mode type mismatch](https://github.com/Xpra-org/xpra/commit/43d6b1daa621511eff19b0a12de159f8ffe139b9)
+	* [incorrect compression debug logging](https://github.com/Xpra-org/xpra/commit/7fcf253b5091bb06fe88393a2fa27a020c97e162)
+	* [incorrect damage elapsed time in debug logging](https://github.com/Xpra-org/xpra/commit/61a63d3665e74547f048b3d80af0b1df33a46281)
 
 ## [6.2.2] 2024-12-10
 * Platforms, build and packaging:
-    * [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/d4b078ee67e4024cb2c8a6aea69dba0fe7400c14) and [prefix detection](https://github.com/Xpra-org/xpra/commit/9161b51b82cc89347fd317513d1fdba463c85208)
-    * [RPM support](https://github.com/Xpra-org/xpra/commit/9710928f2ee99ee7e0a2c6ecbbc82e3961eba9d2) for [per arch pkgconfig](https://github.com/Xpra-org/xpra/commit/423e9d353ef57cee93f913cd8d9e6582ac640d62)
-    * [missing SVG loader on MS Windows](https://github.com/Xpra-org/xpra/commit/33f59f2126ccf6c26b7c1d28c1f35677b51986ac)
-    * [loaders cache not populated on MS Windows](https://github.com/Xpra-org/xpra/commit/5985efd29669624b70d2e64add09a0809d651e91)
-    * [`install-repo` file permission on Debian](https://github.com/Xpra-org/xpra/commit/d6ed81dfce74283c8ad8f772e3a3269164cbf84e)
-    * [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/fe83ee09b17c2a7e26b228a1d5fc208aa347c2aa)
-    * [`libproxy` support for MS Windows clients](https://github.com/Xpra-org/xpra/commit/1e9e6ac3983ea23c1ce3e3114b62f8cdaa30a5f0)
-    * [`PyOpenGL 3.1.8`](https://github.com/Xpra-org/xpra/commit/eb5f228919fadfed7a52ab6124f219e385645448) + [force upgrade](https://github.com/Xpra-org/xpra/commit/c9efad7907e5b309882023e32de21ab695a82e10)
-    * [missing MacOS AES library](https://github.com/Xpra-org/xpra/commit/25b568965ddb388f3d21d666a722043dbf02351b)
-    * [support providing build arguments using environment](https://github.com/Xpra-org/xpra/commit/cc345e3bb76349d9900dd391bca9e07c80f83cea)
-    * [syntax errors in the MS Windows build setup script](https://github.com/Xpra-org/xpra/commit/121c33de3d8fe54ede6c7ca30f478b5e0a1823eb)
-    * [`openh264` 2.5.0](https://github.com/Xpra-org/xpra/commit/580822e4a035e0a1a559b443f2392bce374eb979)
-    * [`python-pillow` 11.0.0](https://github.com/Xpra-org/xpra/commit/03f6306a2b2a734fa1479fa50b02f7dca9f1c8bb)
-    * [require `clang++` for building CUDA kernels on some Debian distributions](https://github.com/Xpra-org/xpra/commit/85a5462819a511a660792a8e25b1ad2d0d662c67) + [fixup](https://github.com/Xpra-org/xpra/commit/6966b65df8a1968ce687d2e68bf96bc3d2261c54)
-    * [`install-dev` to honour Xdummy flag](https://github.com/Xpra-org/xpra/commit/759e2d7e18006ca20d62339b021ebe72e0da5a0e)
+	* [MSYS2 aarch64 build fix](https://github.com/Xpra-org/xpra/commit/d4b078ee67e4024cb2c8a6aea69dba0fe7400c14) and [prefix detection](https://github.com/Xpra-org/xpra/commit/9161b51b82cc89347fd317513d1fdba463c85208)
+	* [RPM support](https://github.com/Xpra-org/xpra/commit/9710928f2ee99ee7e0a2c6ecbbc82e3961eba9d2) for [per arch pkgconfig](https://github.com/Xpra-org/xpra/commit/423e9d353ef57cee93f913cd8d9e6582ac640d62)
+	* [missing SVG loader on MS Windows](https://github.com/Xpra-org/xpra/commit/33f59f2126ccf6c26b7c1d28c1f35677b51986ac)
+	* [loaders cache not populated on MS Windows](https://github.com/Xpra-org/xpra/commit/5985efd29669624b70d2e64add09a0809d651e91)
+	* [`install-repo` file permission on Debian](https://github.com/Xpra-org/xpra/commit/d6ed81dfce74283c8ad8f772e3a3269164cbf84e)
+	* [record which repository is targeted](https://github.com/Xpra-org/xpra/commit/fe83ee09b17c2a7e26b228a1d5fc208aa347c2aa)
+	* [`libproxy` support for MS Windows clients](https://github.com/Xpra-org/xpra/commit/1e9e6ac3983ea23c1ce3e3114b62f8cdaa30a5f0)
+	* [`PyOpenGL 3.1.8`](https://github.com/Xpra-org/xpra/commit/eb5f228919fadfed7a52ab6124f219e385645448) + [force upgrade](https://github.com/Xpra-org/xpra/commit/c9efad7907e5b309882023e32de21ab695a82e10)
+	* [missing MacOS AES library](https://github.com/Xpra-org/xpra/commit/25b568965ddb388f3d21d666a722043dbf02351b)
+	* [support providing build arguments using environment](https://github.com/Xpra-org/xpra/commit/cc345e3bb76349d9900dd391bca9e07c80f83cea)
+	* [syntax errors in the MS Windows build setup script](https://github.com/Xpra-org/xpra/commit/121c33de3d8fe54ede6c7ca30f478b5e0a1823eb)
+	* [`openh264` 2.5.0](https://github.com/Xpra-org/xpra/commit/580822e4a035e0a1a559b443f2392bce374eb979)
+	* [`python-pillow` 11.0.0](https://github.com/Xpra-org/xpra/commit/03f6306a2b2a734fa1479fa50b02f7dca9f1c8bb)
+	* [require `clang++` for building CUDA kernels on some Debian distributions](https://github.com/Xpra-org/xpra/commit/85a5462819a511a660792a8e25b1ad2d0d662c67) + [fixup](https://github.com/Xpra-org/xpra/commit/6966b65df8a1968ce687d2e68bf96bc3d2261c54)
+	* [`install-dev` to honour Xdummy flag](https://github.com/Xpra-org/xpra/commit/759e2d7e18006ca20d62339b021ebe72e0da5a0e)
 * SBOM:
-    * [SBOM support on MS Windows](https://github.com/Xpra-org/xpra/commit/78a6e04cd39f694a38200dc059996ce02beb7ac1), [use it](https://github.com/Xpra-org/xpra/commit/4042c8355a6a9225bb9891d56b53931f4264a525), [fix it](https://github.com/Xpra-org/xpra/commit/ac7a860264680615db570a5e4ad4a014bf852952)
-    * [record for CUDA](https://github.com/Xpra-org/xpra/commit/055d564d55f5bdd912af1402f8d1999cfb089bd8)
-    * [record 'Light' builds](https://github.com/Xpra-org/xpra/commit/b4d43a6a2c1c95fd875f4881eaf64e4a00f38fb7)
-    * [export to JSON](https://github.com/Xpra-org/xpra/commit/752294b7b8e58657196503afc2ed4dac6e311dbe)
-    * [record pip packages](https://github.com/Xpra-org/xpra/commit/f2e321d14a8a2377a6bffb74e8bf22a7e5b3fa93) + [minor fixup](https://github.com/Xpra-org/xpra/commit/9ed57a446871897ef53509248f258076c4a9d12f)
+	* [SBOM support on MS Windows](https://github.com/Xpra-org/xpra/commit/78a6e04cd39f694a38200dc059996ce02beb7ac1), [use it](https://github.com/Xpra-org/xpra/commit/4042c8355a6a9225bb9891d56b53931f4264a525), [fix it](https://github.com/Xpra-org/xpra/commit/ac7a860264680615db570a5e4ad4a014bf852952)
+	* [record for CUDA](https://github.com/Xpra-org/xpra/commit/055d564d55f5bdd912af1402f8d1999cfb089bd8)
+	* [record 'Light' builds](https://github.com/Xpra-org/xpra/commit/b4d43a6a2c1c95fd875f4881eaf64e4a00f38fb7)
+	* [export to JSON](https://github.com/Xpra-org/xpra/commit/752294b7b8e58657196503afc2ed4dac6e311dbe)
+	* [record pip packages](https://github.com/Xpra-org/xpra/commit/f2e321d14a8a2377a6bffb74e8bf22a7e5b3fa93) + [minor fixup](https://github.com/Xpra-org/xpra/commit/9ed57a446871897ef53509248f258076c4a9d12f)
 * Encodings:
-    * [honour `openh264` maximum dimensions](https://github.com/Xpra-org/xpra/commit/fc79af387508ec63e8ccc572306aef47d8bdbfbc)
-    * [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/7796b6b8e72f37c68a44ac5ecfccd88cf3b0e680)
-    * 10 bits per channel issues: [use pillow](https://github.com/Xpra-org/xpra/commit/c179eb4b24f884953dbc11e610fad6adece407be), [detect alpha channel correctly](https://github.com/Xpra-org/xpra/commit/e2c2f87a893fc0c46ae612b418824191729bfce8) [and encode it properly](https://github.com/Xpra-org/xpra/commit/e0ae9ee74380649d6587561f104d213365143199)
+	* [honour `openh264` maximum dimensions](https://github.com/Xpra-org/xpra/commit/fc79af387508ec63e8ccc572306aef47d8bdbfbc)
+	* [`rgb` errors at unusual bit depths](https://github.com/Xpra-org/xpra/commit/7796b6b8e72f37c68a44ac5ecfccd88cf3b0e680)
+	* 10 bits per channel issues: [use pillow](https://github.com/Xpra-org/xpra/commit/c179eb4b24f884953dbc11e610fad6adece407be), [detect alpha channel correctly](https://github.com/Xpra-org/xpra/commit/e2c2f87a893fc0c46ae612b418824191729bfce8) [and encode it properly](https://github.com/Xpra-org/xpra/commit/e0ae9ee74380649d6587561f104d213365143199)
 * System Tray Menu:
-    * [options disabled once 'auto' is selected](https://github.com/Xpra-org/xpra/commit/6d4e6334179bc143107d5eac6463ae29d42f7d17)
-    * [speed tuning disabled](https://github.com/Xpra-org/xpra/commit/f41a9f64fad92fa7a8c737011c98122e5c4aa6bf)
+	* [options disabled once 'auto' is selected](https://github.com/Xpra-org/xpra/commit/6d4e6334179bc143107d5eac6463ae29d42f7d17)
+	* [speed tuning disabled](https://github.com/Xpra-org/xpra/commit/f41a9f64fad92fa7a8c737011c98122e5c4aa6bf)
 * Major:
-    * [authentication options not honoured with some bind options](https://github.com/Xpra-org/xpra/commit/60e1377ac48d3de4e35819f4347666a343967cb4)
-    * [disable workspace support on MS Windows to prevent crashes](https://github.com/Xpra-org/xpra/commit/e95d8674009145747af49f5b491a100d72051c6e)
-    * [`start-gui` fails if no application is selected](https://github.com/Xpra-org/xpra/commit/fbc0a66451d5c1818e67a8097ff522b222802857)
-    * [prevent padded image overflows](https://github.com/Xpra-org/xpra/commit/6d952d483299017ece05dd9b47b4913d14696967)
-    * [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/129c5b1f2695ce2f085268134b1273cf94c4e56f), [initialization failure](https://github.com/Xpra-org/xpra/commit/fc8638d436fa09e98f2ecb324d249b4145763955)
-    * [`vsock` connection errors](https://github.com/Xpra-org/xpra/commit/c0448d2988d5497aac72d528ed1edc9a13514a6e)
-    * [printing errors on MS Windows](https://github.com/Xpra-org/xpra/commit/fbf1c7a3e393974fe8c7d7fc8bf266639f2d9731)
-    * [use symlinks to prevent ssh agent forwarding setup errors](https://github.com/Xpra-org/xpra/commit/a6e1d44edff4202240de1d61e3aaf154e7417d56)
+	* [authentication options not honoured with some bind options](https://github.com/Xpra-org/xpra/commit/60e1377ac48d3de4e35819f4347666a343967cb4)
+	* [disable workspace support on MS Windows to prevent crashes](https://github.com/Xpra-org/xpra/commit/e95d8674009145747af49f5b491a100d72051c6e)
+	* [`start-gui` fails if no application is selected](https://github.com/Xpra-org/xpra/commit/fbc0a66451d5c1818e67a8097ff522b222802857)
+	* [prevent padded image overflows](https://github.com/Xpra-org/xpra/commit/6d952d483299017ece05dd9b47b4913d14696967)
+	* [`xpra top` corrupted output](https://github.com/Xpra-org/xpra/commit/129c5b1f2695ce2f085268134b1273cf94c4e56f), [initialization failure](https://github.com/Xpra-org/xpra/commit/fc8638d436fa09e98f2ecb324d249b4145763955)
+	* [`vsock` connection errors](https://github.com/Xpra-org/xpra/commit/c0448d2988d5497aac72d528ed1edc9a13514a6e)
+	* [printing errors on MS Windows](https://github.com/Xpra-org/xpra/commit/fbf1c7a3e393974fe8c7d7fc8bf266639f2d9731)
+	* [use symlinks to prevent ssh agent forwarding setup errors](https://github.com/Xpra-org/xpra/commit/a6e1d44edff4202240de1d61e3aaf154e7417d56)
 * Minor:
-    * [clamp 'vrefresh' to a useful range](https://github.com/Xpra-org/xpra/commit/e289ac6094f45d0ba020642775d96b14e61a2575)
-    * [`quic` connections are safe for authentication](https://github.com/Xpra-org/xpra/commit/aa7bd5adf0835d875020737d655f3bfae7faacac)
+	* [clamp 'vrefresh' to a useful range](https://github.com/Xpra-org/xpra/commit/e289ac6094f45d0ba020642775d96b14e61a2575)
+	* [`quic` connections are safe for authentication](https://github.com/Xpra-org/xpra/commit/aa7bd5adf0835d875020737d655f3bfae7faacac)
 * Cosmetic:
-    * [add missing autentication modules to documentation](https://github.com/Xpra-org/xpra/commit/3aa90b898e427fb4a3f4ade3be3e650848f4073c)
-    * [add `pyopenssl` to dependencies documentation](https://github.com/Xpra-org/xpra/commit/4e7941fa8d18e6b90fa257bad34401a5aad5c81f)
-    * [unnecessary import](https://github.com/Xpra-org/xpra/commit/6e389e0b1292897d46f46f39a33eb0b9551d5c2b)
-    * [broken OpenGL drivers documentation link](https://github.com/Xpra-org/xpra/commit/0248d7db2845727b5f307fc64d76a9fb91d5f705)
-    * [handle missing pillow more gracefully](https://github.com/Xpra-org/xpra/commit/631a5b2d7a5d4352ec2bda7e2fd6cf149ae4565f)
-    * [show full icondata error](https://github.com/Xpra-org/xpra/commit/4e7d1194e9f29969b5f0f9b62a607454d2a0bb50)
-    * [proxy error messages formatting](https://github.com/Xpra-org/xpra/commit/8df110bb8010aa48c3c062fc9614753232e57f68)
+	* [add missing autentication modules to documentation](https://github.com/Xpra-org/xpra/commit/3aa90b898e427fb4a3f4ade3be3e650848f4073c)
+	* [add `pyopenssl` to dependencies documentation](https://github.com/Xpra-org/xpra/commit/4e7941fa8d18e6b90fa257bad34401a5aad5c81f)
+	* [unnecessary import](https://github.com/Xpra-org/xpra/commit/6e389e0b1292897d46f46f39a33eb0b9551d5c2b)
+	* [broken OpenGL drivers documentation link](https://github.com/Xpra-org/xpra/commit/0248d7db2845727b5f307fc64d76a9fb91d5f705)
+	* [handle missing pillow more gracefully](https://github.com/Xpra-org/xpra/commit/631a5b2d7a5d4352ec2bda7e2fd6cf149ae4565f)
+	* [show full icondata error](https://github.com/Xpra-org/xpra/commit/4e7d1194e9f29969b5f0f9b62a607454d2a0bb50)
+	* [proxy error messages formatting](https://github.com/Xpra-org/xpra/commit/8df110bb8010aa48c3c062fc9614753232e57f68)
 
 ## [6.2.1] 2024-10-29
 * System tray:
-    * [paint errors with `mmap` mode](https://github.com/Xpra-org/xpra/commit/42e039eb3b5ab256a926f6be530ce5e54be96742)
-    * [distorted paints](https://github.com/Xpra-org/xpra/commit/450f17a217a0f0361f20eb5b072646598a3ceeb7)
+	* [paint errors with `mmap` mode](https://github.com/Xpra-org/xpra/commit/42e039eb3b5ab256a926f6be530ce5e54be96742)
+	* [distorted paints](https://github.com/Xpra-org/xpra/commit/450f17a217a0f0361f20eb5b072646598a3ceeb7)
 * Major:
-    * [OpenGL errors with MS Windows clients](https://github.com/Xpra-org/xpra/commit/adc0487184923a7f08d3623b4ba2eb50feeb5276) [missing stderr](https://github.com/Xpra-org/xpra/commit/ee8827a44cad3a2a0e2d171c85979b3d9e425dc7)
-    * [keycode mapping for Wayland clients](https://github.com/Xpra-org/xpra/commit/8df4acacccd1780e9ef3ecdcaf71e1194cb14cce)
-    * [some windows not shown when there is a tray window being forwarded](https://github.com/Xpra-org/xpra/commit/445ea1d4f11cdfdac655c4729fd7af360a37b481)
-    * [connection failures on some server platforms](https://github.com/Xpra-org/xpra/commit/66e69de7481241f47626fa48ab8691abaa3eb646)
+	* [OpenGL errors with MS Windows clients](https://github.com/Xpra-org/xpra/commit/adc0487184923a7f08d3623b4ba2eb50feeb5276) [missing stderr](https://github.com/Xpra-org/xpra/commit/ee8827a44cad3a2a0e2d171c85979b3d9e425dc7)
+	* [keycode mapping for Wayland clients](https://github.com/Xpra-org/xpra/commit/8df4acacccd1780e9ef3ecdcaf71e1194cb14cce)
+	* [some windows not shown when there is a tray window being forwarded](https://github.com/Xpra-org/xpra/commit/445ea1d4f11cdfdac655c4729fd7af360a37b481)
+	* [connection failures on some server platforms](https://github.com/Xpra-org/xpra/commit/66e69de7481241f47626fa48ab8691abaa3eb646)
 * Minor:
-    * [quality and speed options can be used with generic encodings](https://github.com/Xpra-org/xpra/commit/c4a4f3e2559a962301db1dbc60763540a1560a22)
-    * [check `pam_start` return value in `pam` authentication module](https://github.com/Xpra-org/xpra/commit/33d71abe81eab7cdccce6e5366f9aa9d508b52a3)
-    * [`install-repo` support for Debian and Ubuntu derivatives](https://github.com/Xpra-org/xpra/commit/a8dc44fa7e82381ca1a83b8f76a51e937e4a3247)
+	* [quality and speed options can be used with generic encodings](https://github.com/Xpra-org/xpra/commit/c4a4f3e2559a962301db1dbc60763540a1560a22)
+	* [check `pam_start` return value in `pam` authentication module](https://github.com/Xpra-org/xpra/commit/33d71abe81eab7cdccce6e5366f9aa9d508b52a3)
+	* [`install-repo` support for Debian and Ubuntu derivatives](https://github.com/Xpra-org/xpra/commit/a8dc44fa7e82381ca1a83b8f76a51e937e4a3247)
 * Cosmetic:
-    * [show which client backend values are acceptable](https://github.com/Xpra-org/xpra/commit/ae425f0fc919011755dff678c687fa2f04221239)
-    * [log OpenGL probe errors](https://github.com/Xpra-org/xpra/commit/43e291cd691c9c8d2afd434f19a1da85d5771373)
-    * [date in changelog](https://github.com/Xpra-org/xpra/commit/972da07248e2f51566ddf0ca189a0344a2f1c420)
-    * [add Ubuntu `oracular` support to `install-repo` subcommand](https://github.com/Xpra-org/xpra/commit/c1a859c1d68a9198b5b5656857bd70a04be97a53)
-    * [border color parsing deprecation warning](https://github.com/Xpra-org/xpra/commit/43be8ee67b0bba5ffc8589ac1bd23269ffffbd6b)
+	* [show which client backend values are acceptable](https://github.com/Xpra-org/xpra/commit/ae425f0fc919011755dff678c687fa2f04221239)
+	* [log OpenGL probe errors](https://github.com/Xpra-org/xpra/commit/43e291cd691c9c8d2afd434f19a1da85d5771373)
+	* [date in changelog](https://github.com/Xpra-org/xpra/commit/972da07248e2f51566ddf0ca189a0344a2f1c420)
+	* [add Ubuntu `oracular` support to `install-repo` subcommand](https://github.com/Xpra-org/xpra/commit/c1a859c1d68a9198b5b5656857bd70a04be97a53)
+	* [border color parsing deprecation warning](https://github.com/Xpra-org/xpra/commit/43be8ee67b0bba5ffc8589ac1bd23269ffffbd6b)
 
 ## [6.2.0] 2024-10-09
 * Platforms, build and packaging:
-    * [pycuda for Fedora 41](https://github.com/Xpra-org/xpra/issues/4332)
-    * [move `opengl` module to top level](https://github.com/Xpra-org/xpra/commit/111afa5e028bea7b006bb6cb820e4104af8ba4e9)
-    * [re-enable cython csc module](https://github.com/Xpra-org/xpra/commit/b89ed18a344a30780b69a3288f8e741287e81e0e)
+	* [pycuda for Fedora 41](https://github.com/Xpra-org/xpra/issues/4332)
+	* [move `opengl` module to top level](https://github.com/Xpra-org/xpra/commit/111afa5e028bea7b006bb6cb820e4104af8ba4e9)
+	* [re-enable cython csc module](https://github.com/Xpra-org/xpra/commit/b89ed18a344a30780b69a3288f8e741287e81e0e)
 * Fixes:
-    * [AES padding](https://github.com/Xpra-org/xpra/issues/4372)
+	* [AES padding](https://github.com/Xpra-org/xpra/issues/4372)
 * Features:
-    * [PoC PyQt6 client](https://github.com/Xpra-org/xpra/issues/4314)
-    * [`minimal` command line switch](https://github.com/Xpra-org/xpra/issues/3953)
-    * [option to completely disable all of GStreamer](https://github.com/Xpra-org/xpra/issues/4330)
-    * [strongly enforce disabled subsystems](https://github.com/Xpra-org/xpra/issues/4307)
-    * [watch for start menu file changes reliably, on all platforms](https://github.com/Xpra-org/xpra/issues/3335)
-    * [improve transient and permanent hardware codec failures differently](https://github.com/Xpra-org/xpra/issues/4348)
-    * [continue to remove GTK](https://github.com/Xpra-org/xpra/issues/3871)
-    * [guess initial server display resolution](https://github.com/Xpra-org/xpra/issues/4302)
+	* [PoC PyQt6 client](https://github.com/Xpra-org/xpra/issues/4314)
+	* [`minimal` command line switch](https://github.com/Xpra-org/xpra/issues/3953)
+	* [option to completely disable all of GStreamer](https://github.com/Xpra-org/xpra/issues/4330)
+	* [strongly enforce disabled subsystems](https://github.com/Xpra-org/xpra/issues/4307)
+	* [watch for start menu file changes reliably, on all platforms](https://github.com/Xpra-org/xpra/issues/3335)
+	* [improve transient and permanent hardware codec failures differently](https://github.com/Xpra-org/xpra/issues/4348)
+	* [continue to remove GTK](https://github.com/Xpra-org/xpra/issues/3871)
+	* [guess initial server display resolution](https://github.com/Xpra-org/xpra/issues/4302)
 * Network:
-    * [multi-processing proxy server with SSL](https://github.com/Xpra-org/xpra/issues/4362)
-    * [more control commands for proxy instances](https://github.com/Xpra-org/xpra/issues/4363)
-    * [inline more data in network packets](https://github.com/Xpra-org/xpra/issues/4366)
-    * [SSL setup made easy](https://github.com/Xpra-org/xpra/issues/4288)
+	* [multi-processing proxy server with SSL](https://github.com/Xpra-org/xpra/issues/4362)
+	* [more control commands for proxy instances](https://github.com/Xpra-org/xpra/issues/4363)
+	* [inline more data in network packets](https://github.com/Xpra-org/xpra/issues/4366)
+	* [SSL setup made easy](https://github.com/Xpra-org/xpra/issues/4288)
 
 ## [6.1] 2024-07-18
 * Platforms, build and packaging:
-    * [RHEL 10 builds](https://github.com/Xpra-org/xpra/issues/4282)
-    * make it easier to [setup a development environment](https://github.com/Xpra-org/xpra/issues/4244) and [to install the repositories](https://github.com/Xpra-org/xpra/issues/4245)
+	* [RHEL 10 builds](https://github.com/Xpra-org/xpra/issues/4282)
+	* make it easier to [setup a development environment](https://github.com/Xpra-org/xpra/issues/4244) and [to install the repositories](https://github.com/Xpra-org/xpra/issues/4245)
 * Encodings:
-    * [faster scaling of subsampled images without OpenGL](https://github.com/Xpra-org/xpra/issues/4209)
-    * [zero-copy drawing without OpenGL](https://github.com/Xpra-org/xpra/issues/4270)
-    * [scale YUV before converting to RGB](https://github.com/Xpra-org/xpra/issues/4209)
-    * [full range video compression](https://github.com/Xpra-org/xpra/issues/3837)
-    * [GPU checks from a containerized environment](https://github.com/Xpra-org/xpra/pull/4257)
-    * [colorspace fixes](https://github.com/Xpra-org/xpra/issues/3837)
+	* [faster scaling of subsampled images without OpenGL](https://github.com/Xpra-org/xpra/issues/4209)
+	* [zero-copy drawing without OpenGL](https://github.com/Xpra-org/xpra/issues/4270)
+	* [scale YUV before converting to RGB](https://github.com/Xpra-org/xpra/issues/4209)
+	* [full range video compression](https://github.com/Xpra-org/xpra/issues/3837)
+	* [GPU checks from a containerized environment](https://github.com/Xpra-org/xpra/pull/4257)
+	* [colorspace fixes](https://github.com/Xpra-org/xpra/issues/3837)
 * Network:
-    * [WebTransport server](https://github.com/Xpra-org/xpra/issues/3376#issuecomment-2198059166)
-    * [QUIC fast-open](https://github.com/Xpra-org/xpra/commit/475531d9d4433fa8ac89d5d0ce96744d8519e56d)
+	* [WebTransport server](https://github.com/Xpra-org/xpra/issues/3376#issuecomment-2198059166)
+	* [QUIC fast-open](https://github.com/Xpra-org/xpra/commit/475531d9d4433fa8ac89d5d0ce96744d8519e56d)
 * Features:
-    * [handle display scaling correctly on more platforms](https://github.com/Xpra-org/xpra/issues/4205)
-    * [use native file chooser on some platforms](https://github.com/Xpra-org/xpra/issues/4222)
-    * [support custom window grouping](https://github.com/Xpra-org/xpra/issues/4208)
-    * [optional username verification for authentication modules](https://github.com/Xpra-org/xpra/issues/4294)
-    * [resize virtual display to a specific resolution only](https://github.com/Xpra-org/xpra/issues/4279)
-    * [filter environment exposed to xvfb subcommand](https://github.com/Xpra-org/xpra/issues/4252)
+	* [handle display scaling correctly on more platforms](https://github.com/Xpra-org/xpra/issues/4205)
+	* [use native file chooser on some platforms](https://github.com/Xpra-org/xpra/issues/4222)
+	* [support custom window grouping](https://github.com/Xpra-org/xpra/issues/4208)
+	* [optional username verification for authentication modules](https://github.com/Xpra-org/xpra/issues/4294)
+	* [resize virtual display to a specific resolution only](https://github.com/Xpra-org/xpra/issues/4279)
+	* [filter environment exposed to xvfb subcommand](https://github.com/Xpra-org/xpra/issues/4252)
 * Cosmetic:
-    * many type hints added
-    * linter warnings fixed
+	* many type hints added
+	* linter warnings fixed
 
 ## [6.0] 2024-04-25
 * Platforms, build and packaging:
-    * [build packages for multiple python targets](https://github.com/Xpra-org/xpra/issues/3945)
-    * [require and take advantage of Python 3.10+](https://github.com/Xpra-org/xpra/issues/3930)
-    * [cythonize everything](https://github.com/Xpra-org/xpra/issues/3978) and [build test on git push](https://github.com/Xpra-org/xpra/commit/85bb9cf53d599f8133acc7efd63e052b4308e139)
-    * [workaround for distributions incompatible with CUDA](https://github.com/Xpra-org/xpra/issues/3808)
-    * [add `xpra-client-gnome` package](https://github.com/Xpra-org/xpra/commit/8a5c240e579da02db710c4cc17517aee570ed875)
-    * [use the system provided xxHash library](https://github.com/Xpra-org/xpra/issues/3929)
-    * [riscv64 builds](https://github.com/Xpra-org/xpra/issues/3936)
-    * [PEP 517: pyproject.toml](https://github.com/Xpra-org/xpra/issues/4085)
+	* [build packages for multiple python targets](https://github.com/Xpra-org/xpra/issues/3945)
+	* [require and take advantage of Python 3.10+](https://github.com/Xpra-org/xpra/issues/3930)
+	* [cythonize everything](https://github.com/Xpra-org/xpra/issues/3978) and [build test on git push](https://github.com/Xpra-org/xpra/commit/85bb9cf53d599f8133acc7efd63e052b4308e139)
+	* [workaround for distributions incompatible with CUDA](https://github.com/Xpra-org/xpra/issues/3808)
+	* [add `xpra-client-gnome` package](https://github.com/Xpra-org/xpra/commit/8a5c240e579da02db710c4cc17517aee570ed875)
+	* [use the system provided xxHash library](https://github.com/Xpra-org/xpra/issues/3929)
+	* [riscv64 builds](https://github.com/Xpra-org/xpra/issues/3936)
+	* [PEP 517: pyproject.toml](https://github.com/Xpra-org/xpra/issues/4085)
 * Features:
-    * [OpenGL core profile](https://github.com/Xpra-org/xpra/issues/2467)
-    * [`xpra configure` tool](https://github.com/Xpra-org/xpra/issues/3964)
-    * [faster `mmap`](https://github.com/Xpra-org/xpra/issues/4013)
-    * [make it easier to disable almost everything](https://github.com/Xpra-org/xpra/issues/3953), [audio](https://github.com/Xpra-org/xpra/issues/3835) or [video](https://github.com/Xpra-org/xpra/issues/3952)
-    * [remove legacy compatibility](https://github.com/Xpra-org/xpra/issues/3592)
-    * [try harder to locate the correct xauth file](https://github.com/Xpra-org/xpra/issues/3917)
-    * [honour MacOS backing scale factor with OpenGL](https://github.com/Xpra-org/xpra/commit/efe31046f9dc25587e572975cbdc150c5be721f1)
-    * [workspace support for MS Windows 10](https://github.com/Xpra-org/xpra/issues/1442)
-    * [readonly memoryviews](https://github.com/Xpra-org/xpra/issues/4110)
+	* [OpenGL core profile](https://github.com/Xpra-org/xpra/issues/2467)
+	* [`xpra configure` tool](https://github.com/Xpra-org/xpra/issues/3964)
+	* [faster `mmap`](https://github.com/Xpra-org/xpra/issues/4013)
+	* [make it easier to disable almost everything](https://github.com/Xpra-org/xpra/issues/3953), [audio](https://github.com/Xpra-org/xpra/issues/3835) or [video](https://github.com/Xpra-org/xpra/issues/3952)
+	* [remove legacy compatibility](https://github.com/Xpra-org/xpra/issues/3592)
+	* [try harder to locate the correct xauth file](https://github.com/Xpra-org/xpra/issues/3917)
+	* [honour MacOS backing scale factor with OpenGL](https://github.com/Xpra-org/xpra/commit/efe31046f9dc25587e572975cbdc150c5be721f1)
+	* [workspace support for MS Windows 10](https://github.com/Xpra-org/xpra/issues/1442)
+	* [readonly memoryviews](https://github.com/Xpra-org/xpra/issues/4110)
 * Network:
-    * [abstract sockets](https://github.com/Xpra-org/xpra/issues/4098)
-    * [wait for local server sockets to become available](https://github.com/Xpra-org/xpra/commit/53c5032ad7216770ee6198802d0fbbcf0799cdc1)
-    * [enable websocket upgrades without the html5 client](https://github.com/Xpra-org/xpra/issues/3932)
-    * [update ssh agent to active user](https://github.com/Xpra-org/xpra/issues/3593)
-    * [use libnm to access network information](https://github.com/Xpra-org/xpra/issues/3623)
-    * [ssl auto upgrade](https://github.com/Xpra-org/xpra/issues/3313)
-    * [honour `/etc/ssh/ssh_config`](https://github.com/Xpra-org/xpra/issues/4083)
-    * [`xpra list-clients`](https://github.com/Xpra-org/xpra/issues/4082)
+	* [abstract sockets](https://github.com/Xpra-org/xpra/issues/4098)
+	* [wait for local server sockets to become available](https://github.com/Xpra-org/xpra/commit/53c5032ad7216770ee6198802d0fbbcf0799cdc1)
+	* [enable websocket upgrades without the html5 client](https://github.com/Xpra-org/xpra/issues/3932)
+	* [update ssh agent to active user](https://github.com/Xpra-org/xpra/issues/3593)
+	* [use libnm to access network information](https://github.com/Xpra-org/xpra/issues/3623)
+	* [ssl auto upgrade](https://github.com/Xpra-org/xpra/issues/3313)
+	* [honour `/etc/ssh/ssh_config`](https://github.com/Xpra-org/xpra/issues/4083)
+	* [`xpra list-clients`](https://github.com/Xpra-org/xpra/issues/4082)
 * Cosmetic:
-    * silence warnings: [#4023](https://github.com/Xpra-org/xpra/issues/4023), [#2177](https://github.com/Xpra-org/xpra/issues/2177), [#3988](https://github.com/Xpra-org/xpra/issues/3988), [#4028](https://github.com/Xpra-org/xpra/issues/4028)
-    * [easier call tracing](https://github.com/Xpra-org/xpra/issues/4125)
-    * [PEP 8: code style](https://github.com/Xpra-org/xpra/issues/4086)
+	* silence warnings: [#4023](https://github.com/Xpra-org/xpra/issues/4023), [#2177](https://github.com/Xpra-org/xpra/issues/2177), [#3988](https://github.com/Xpra-org/xpra/issues/3988), [#4028](https://github.com/Xpra-org/xpra/issues/4028)
+	* [easier call tracing](https://github.com/Xpra-org/xpra/issues/4125)
+	* [PEP 8: code style](https://github.com/Xpra-org/xpra/issues/4086)
 * Documentation:
-    * [ivshmem](https://github.com/Xpra-org/xpra/blob/master/docs/Subsystems/MMAP.md#virtio-shmem)
-    * [subsystems](https://github.com/Xpra-org/xpra/issues/3981)
-    * [authentication handlers](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Authentication.md#client-syntax)
-    * [record some SBOM data](https://github.com/Xpra-org/xpra/issues/4050)
+	* [ivshmem](https://github.com/Xpra-org/xpra/blob/master/docs/Subsystems/MMAP.md#virtio-shmem)
+	* [subsystems](https://github.com/Xpra-org/xpra/issues/3981)
+	* [authentication handlers](https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Authentication.md#client-syntax)
+	* [record some SBOM data](https://github.com/Xpra-org/xpra/issues/4050)
 
 ## [5.0] 2023-07-18
 * Major improvements:
-    * [QUIC transport](https://github.com/Xpra-org/xpra/issues/3376)
-    * [split packaging](https://github.com/Xpra-org/xpra/issues/3802)
-    * [freedesktop screencast / remotedesktop](https://github.com/Xpra-org/xpra/issues/3750) for X11 and Wayland
-    * ease of use: [easier basic commands](https://github.com/Xpra-org/xpra/issues/3841), [open html5 client](https://github.com/Xpra-org/xpra/issues/3842), [disable all audio features](https://github.com/Xpra-org/xpra/issues/3835)
+	* [QUIC transport](https://github.com/Xpra-org/xpra/issues/3376)
+	* [split packaging](https://github.com/Xpra-org/xpra/issues/3802)
+	* [freedesktop screencast / remotedesktop](https://github.com/Xpra-org/xpra/issues/3750) for X11 and Wayland
+	* ease of use: [easier basic commands](https://github.com/Xpra-org/xpra/issues/3841), [open html5 client](https://github.com/Xpra-org/xpra/issues/3842), [disable all audio features](https://github.com/Xpra-org/xpra/issues/3835)
 * Platforms, build and packaging:
-    * [Python 3.12 installations](https://github.com/Xpra-org/xpra/issues/3807)
-    * [replace Python2 builds](https://github.com/Xpra-org/xpra/issues/3652)
-    * [LTS feature deprecation](https://github.com/Xpra-org/xpra/issues/3592)
-    * [stricter type checks](https://github.com/Xpra-org/xpra/issues/3927)
-    * [more MacOS workarounds](https://github.com/Xpra-org/xpra/issues/3777)
+	* [Python 3.12 installations](https://github.com/Xpra-org/xpra/issues/3807)
+	* [replace Python2 builds](https://github.com/Xpra-org/xpra/issues/3652)
+	* [LTS feature deprecation](https://github.com/Xpra-org/xpra/issues/3592)
+	* [stricter type checks](https://github.com/Xpra-org/xpra/issues/3927)
+	* [more MacOS workarounds](https://github.com/Xpra-org/xpra/issues/3777)
 * Server:
-    * [try harder to find a valid menu prefix](https://github.com/Xpra-org/xpra/commit/a42e2343ee572ff2edb28ece0b38904969c75470)
-    * [exit with windows](https://github.com/Xpra-org/xpra/issues/3595)
-    * [side buttons with MS Windows shadow servers](https://github.com/Xpra-org/xpra/pull/3865)
-    * [mirror client monitor layout](https://github.com/Xpra-org/xpra/issues/3749)
+	* [try harder to find a valid menu prefix](https://github.com/Xpra-org/xpra/commit/a42e2343ee572ff2edb28ece0b38904969c75470)
+	* [exit with windows](https://github.com/Xpra-org/xpra/issues/3595)
+	* [side buttons with MS Windows shadow servers](https://github.com/Xpra-org/xpra/pull/3865)
+	* [mirror client monitor layout](https://github.com/Xpra-org/xpra/issues/3749)
 * Client:
-    * [allow keyboard shortcuts in readonly mode](https://github.com/Xpra-org/xpra/issues/3899)
-    * [show decoder statistics](https://github.com/Xpra-org/xpra/issues/3796)
-    * [keyboard layout switching shortcut](https://github.com/Xpra-org/xpra/pull/3859)
-    * [layout switching detection for MS Windows](https://github.com/Xpra-org/xpra/issues/3857)
-    * [mirror mouse cursor when sharing](https://github.com/Xpra-org/xpra/issues/3767)
+	* [allow keyboard shortcuts in readonly mode](https://github.com/Xpra-org/xpra/issues/3899)
+	* [show decoder statistics](https://github.com/Xpra-org/xpra/issues/3796)
+	* [keyboard layout switching shortcut](https://github.com/Xpra-org/xpra/pull/3859)
+	* [layout switching detection for MS Windows](https://github.com/Xpra-org/xpra/issues/3857)
+	* [mirror mouse cursor when sharing](https://github.com/Xpra-org/xpra/issues/3767)
 * Minor:
-    * [generic exec authentication module](https://github.com/Xpra-org/xpra/issues/3790)
-    * [audio `removesilence`](https://github.com/Xpra-org/xpra/issues/3709)
-    * [make pulseaudio real-time and high-priority scheduling modes configurable](https://github.com/Xpra-org/xpra/pull/3893)
-    * [use urrlib for parsing](https://github.com/Xpra-org/xpra/issues/3599)
-    * [GTK removal progress](https://github.com/Xpra-org/xpra/issues/3871)
-    * documentation updates and fixes: [broken links](https://github.com/Xpra-org/xpra/pull/3839), [typos](https://github.com/Xpra-org/xpra/pull/3836)
+	* [generic exec authentication module](https://github.com/Xpra-org/xpra/issues/3790)
+	* [audio `removesilence`](https://github.com/Xpra-org/xpra/issues/3709)
+	* [make pulseaudio real-time and high-priority scheduling modes configurable](https://github.com/Xpra-org/xpra/pull/3893)
+	* [use urrlib for parsing](https://github.com/Xpra-org/xpra/issues/3599)
+	* [GTK removal progress](https://github.com/Xpra-org/xpra/issues/3871)
+	* documentation updates and fixes: [broken links](https://github.com/Xpra-org/xpra/pull/3839), [typos](https://github.com/Xpra-org/xpra/pull/3836)
 * Network:
-    * [smaller handshake packet](https://github.com/Xpra-org/xpra/issues/3812)
-    * [SSL auto-upgrade](https://github.com/Xpra-org/xpra/issues/3313)
-    * [better IPv6](https://github.com/Xpra-org/xpra/issues/3853)
-    * [new packet format](https://github.com/Xpra-org/xpra/issues/1942)
-    * [ssh agent forwarding automatic switching when sharing](https://github.com/Xpra-org/xpra/issues/3593)
-    * [use libnm to query network devices](https://github.com/Xpra-org/xpra/issues/3623)
-    * [exclude more user data by default](https://github.com/Xpra-org/xpra/issues/3582)
+	* [smaller handshake packet](https://github.com/Xpra-org/xpra/issues/3812)
+	* [SSL auto-upgrade](https://github.com/Xpra-org/xpra/issues/3313)
+	* [better IPv6](https://github.com/Xpra-org/xpra/issues/3853)
+	* [new packet format](https://github.com/Xpra-org/xpra/issues/1942)
+	* [ssh agent forwarding automatic switching when sharing](https://github.com/Xpra-org/xpra/issues/3593)
+	* [use libnm to query network devices](https://github.com/Xpra-org/xpra/issues/3623)
+	* [exclude more user data by default](https://github.com/Xpra-org/xpra/issues/3582)
 * Encodings:
-    * [use intra refresh](https://github.com/Xpra-org/xpra/issues/3830)
-    * [`stream` encoding for desktop mode](https://github.com/Xpra-org/xpra/issues/3872)
-    * [GStreamer codecs](https://github.com/Xpra-org/xpra/issues/3706)
+	* [use intra refresh](https://github.com/Xpra-org/xpra/issues/3830)
+	* [`stream` encoding for desktop mode](https://github.com/Xpra-org/xpra/issues/3872)
+	* [GStreamer codecs](https://github.com/Xpra-org/xpra/issues/3706)
 
 
 ## [4.4] 2022-10-01
 * Platforms, build and packaging:
-    * [Native LZ4 bindings](https://github.com/Xpra-org/xpra/issues/3601)
-    * Safer native brotli bindings for [compression](https://github.com/Xpra-org/xpra/issues/3572) and [decompression](https://github.com/Xpra-org/xpra/issues/3258)
-    * [Native qrencode bindings](https://github.com/Xpra-org/xpra/issues/3578)
-    * [openSUSE build tweaks](https://github.com/Xpra-org/xpra/issues/3597), [Fedora 37](https://github.com/Xpra-org/xpra/commit/414a1ac9ae2775f1566a800aa1eb4688361f2c38), [Rocky Linux / Alma Linux / CentOS Stream : 8 and 9](https://github.com/Xpra-org/repo-build-scripts/commit/f53085abf3227e4b758c3f4c04fa96092fc2b599), [Oracle Linux](https://github.com/Xpra-org/repo-build-scripts/commit/56a2bf9a48e55924782eb777b05e2b37262868e5)
-    * [Debian finally moved to `libexec`](https://github.com/Xpra-org/xpra/issues/3493)
-    * [MS Windows taskbar integration](https://github.com/Xpra-org/xpra/issues/508)
-    * [SSH server support on MS Windows, including starting shadow sessions](https://github.com/Xpra-org/xpra/issues/3626)
+	* [Native LZ4 bindings](https://github.com/Xpra-org/xpra/issues/3601)
+	* Safer native brotli bindings for [compression](https://github.com/Xpra-org/xpra/issues/3572) and [decompression](https://github.com/Xpra-org/xpra/issues/3258)
+	* [Native qrencode bindings](https://github.com/Xpra-org/xpra/issues/3578)
+	* [openSUSE build tweaks](https://github.com/Xpra-org/xpra/issues/3597), [Fedora 37](https://github.com/Xpra-org/xpra/commit/414a1ac9ae2775f1566a800aa1eb4688361f2c38), [Rocky Linux / Alma Linux / CentOS Stream : 8 and 9](https://github.com/Xpra-org/repo-build-scripts/commit/f53085abf3227e4b758c3f4c04fa96092fc2b599), [Oracle Linux](https://github.com/Xpra-org/repo-build-scripts/commit/56a2bf9a48e55924782eb777b05e2b37262868e5)
+	* [Debian finally moved to `libexec`](https://github.com/Xpra-org/xpra/issues/3493)
+	* [MS Windows taskbar integration](https://github.com/Xpra-org/xpra/issues/508)
+	* [SSH server support on MS Windows, including starting shadow sessions](https://github.com/Xpra-org/xpra/issues/3626)
 * Server:
-    * [Configurable vertical refresh rate](https://github.com/Xpra-org/xpra/issues/3600)
-    * [Virtual Monitors](https://github.com/Xpra-org/xpra/issues/56)
-    * [Multi-monitor desktop mode](https://github.com/Xpra-org/xpra/issues/3524)
-    * [Expand an existing desktop](https://github.com/Xpra-org/xpra/issues/3390)
-    * [Exit with windows](https://github.com/Xpra-org/xpra/issues/3595)
-    * [Full shadow keyboard mapping](https://github.com/Xpra-org/xpra/issues/2630)
-    * [xwait subcommand](https://github.com/Xpra-org/xpra/issues/3386)
-    * [guess content-type from parent pid](https://github.com/Xpra-org/xpra/issues/2753)
-    * [cups print backend status report](https://github.com/Xpra-org/xpra/issues/1228)
-    * [Override sockets on upgrade](https://github.com/Xpra-org/xpra/issues/3568)
-    * [Allow additional options to X server invocation](https://github.com/Xpra-org/xpra/issues/3553)
-    * Control commands for [modifying command environment](https://github.com/Xpra-org/xpra/issues/3502), and [read only flag](https://github.com/Xpra-org/xpra/issues/3466)
-    * [Start new commands via a proxy server's SSH listener](https://github.com/Xpra-org/xpra/issues/2898)
+	* [Configurable vertical refresh rate](https://github.com/Xpra-org/xpra/issues/3600)
+	* [Virtual Monitors](https://github.com/Xpra-org/xpra/issues/56)
+	* [Multi-monitor desktop mode](https://github.com/Xpra-org/xpra/issues/3524)
+	* [Expand an existing desktop](https://github.com/Xpra-org/xpra/issues/3390)
+	* [Exit with windows](https://github.com/Xpra-org/xpra/issues/3595)
+	* [Full shadow keyboard mapping](https://github.com/Xpra-org/xpra/issues/2630)
+	* [xwait subcommand](https://github.com/Xpra-org/xpra/issues/3386)
+	* [guess content-type from parent pid](https://github.com/Xpra-org/xpra/issues/2753)
+	* [cups print backend status report](https://github.com/Xpra-org/xpra/issues/1228)
+	* [Override sockets on upgrade](https://github.com/Xpra-org/xpra/issues/3568)
+	* [Allow additional options to X server invocation](https://github.com/Xpra-org/xpra/issues/3553)
+	* Control commands for [modifying command environment](https://github.com/Xpra-org/xpra/issues/3502), and [read only flag](https://github.com/Xpra-org/xpra/issues/3466)
+	* [Start new commands via a proxy server's SSH listener](https://github.com/Xpra-org/xpra/issues/2898)
 * Shadow server:
-    * [Geometry restrictions](https://github.com/Xpra-org/xpra/issues/3384)
-    * [Shadow specific applications](https://github.com/Xpra-org/xpra/issues/3476)
+	* [Geometry restrictions](https://github.com/Xpra-org/xpra/issues/3384)
+	* [Shadow specific applications](https://github.com/Xpra-org/xpra/issues/3476)
 * Client:
-    * [Automatic keyboard grabs](https://github.com/Xpra-org/xpra/issues/3059)
-    * [Pointer confinement](https://github.com/Xpra-org/xpra/issues/3059)
-    * [Faster window initial data](https://github.com/Xpra-org/xpra/issues/3473)
-    * [Improved DPI detection on MS Windows](https://github.com/Xpra-org/xpra/issues/1526)
-    * [Show all current keyboard shortcuts](https://github.com/Xpra-org/xpra/issues/2779)
-    * [Preserve all options when reconnecting](https://github.com/Xpra-org/xpra/issues/3207)
-    * [Option to accept SSL mismatched host permanently](https://github.com/Xpra-org/xpra/issues/3305)
-    * [Forward all command line options](https://github.com/Xpra-org/xpra/issues/3566)
-    * [Smooth scrolling options](https://github.com/Xpra-org/xpra/issues/3127)
-    * [Per-window scaling](https://github.com/Xpra-org/xpra/issues/3454) - experimental
-    * [Workaround Wayland startup hangs](https://github.com/Xpra-org/xpra/issues/3630)
+	* [Automatic keyboard grabs](https://github.com/Xpra-org/xpra/issues/3059)
+	* [Pointer confinement](https://github.com/Xpra-org/xpra/issues/3059)
+	* [Faster window initial data](https://github.com/Xpra-org/xpra/issues/3473)
+	* [Improved DPI detection on MS Windows](https://github.com/Xpra-org/xpra/issues/1526)
+	* [Show all current keyboard shortcuts](https://github.com/Xpra-org/xpra/issues/2779)
+	* [Preserve all options when reconnecting](https://github.com/Xpra-org/xpra/issues/3207)
+	* [Option to accept SSL mismatched host permanently](https://github.com/Xpra-org/xpra/issues/3305)
+	* [Forward all command line options](https://github.com/Xpra-org/xpra/issues/3566)
+	* [Smooth scrolling options](https://github.com/Xpra-org/xpra/issues/3127)
+	* [Per-window scaling](https://github.com/Xpra-org/xpra/issues/3454) - experimental
+	* [Workaround Wayland startup hangs](https://github.com/Xpra-org/xpra/issues/3630)
 * Security and authentication:
-    * [Configurable information disclosure](https://github.com/Xpra-org/xpra/issues/3582)
-    * [Keycloak authentication](https://github.com/Xpra-org/xpra/issues/3486)
-    * [Capability based authentication](https://github.com/Xpra-org/xpra/issues/3575)
-    * [Authentication for web server scripts](https://github.com/Xpra-org/xpra/issues/3100)
-    * [OTP authentication](https://github.com/Xpra-org/xpra/issues/2906)
-    * [Workaround paramiko `No existing session` error](https://github.com/Xpra-org/xpra/issues/3223)
+	* [Configurable information disclosure](https://github.com/Xpra-org/xpra/issues/3582)
+	* [Keycloak authentication](https://github.com/Xpra-org/xpra/issues/3486)
+	* [Capability based authentication](https://github.com/Xpra-org/xpra/issues/3575)
+	* [Authentication for web server scripts](https://github.com/Xpra-org/xpra/issues/3100)
+	* [OTP authentication](https://github.com/Xpra-org/xpra/issues/2906)
+	* [Workaround paramiko `No existing session` error](https://github.com/Xpra-org/xpra/issues/3223)
 * Encodings and latency:
-    * [Option to cap picture quality](https://github.com/Xpra-org/xpra/issues/3420)
-    * [Expose scaling quality](https://github.com/Xpra-org/xpra/issues/3598)
-    * [NVJPEG decoder](https://github.com/Xpra-org/xpra/issues/3504) (WIP - leaks memory)
-    * [AVIF encoding](https://github.com/Xpra-org/xpra/issues/3457)
-    * [selective `scroll` encoding detection](https://github.com/Xpra-org/xpra/issues/3519)
+	* [Option to cap picture quality](https://github.com/Xpra-org/xpra/issues/3420)
+	* [Expose scaling quality](https://github.com/Xpra-org/xpra/issues/3598)
+	* [NVJPEG decoder](https://github.com/Xpra-org/xpra/issues/3504) (WIP - leaks memory)
+	* [AVIF encoding](https://github.com/Xpra-org/xpra/issues/3457)
+	* [selective `scroll` encoding detection](https://github.com/Xpra-org/xpra/issues/3519)
 * Network:
-    * [SOCKS proxy connection support](https://github.com/Xpra-org/xpra/issues/2105)
-    * [SSH agent forwarding](https://github.com/Xpra-org/xpra/issues/2303)
-    * [proxy network performance improvement](https://github.com/Xpra-org/xpra/issues/2976)
-    * [SSH workarounds for polluted stream premable](https://github.com/Xpra-org/xpra/issues/3610)
+	* [SOCKS proxy connection support](https://github.com/Xpra-org/xpra/issues/2105)
+	* [SSH agent forwarding](https://github.com/Xpra-org/xpra/issues/2303)
+	* [proxy network performance improvement](https://github.com/Xpra-org/xpra/issues/2976)
+	* [SSH workarounds for polluted stream premable](https://github.com/Xpra-org/xpra/issues/3610)
 * Misc:
-    * [easier xpra subcommand invocation](https://github.com/Xpra-org/xpra/issues/3371)
+	* [easier xpra subcommand invocation](https://github.com/Xpra-org/xpra/issues/3371)
 * Refactoring and preparation for the next LTS release:
-    * [Feature deprecation](https://github.com/Xpra-org/xpra/issues/3592)
-    * [Remove "app menus" support](https://github.com/Xpra-org/xpra/issues/2163)
-    * [Remove ancient complicated code](https://github.com/Xpra-org/xpra/issues/3537)
-    * [Simplify the build file](https://github.com/Xpra-org/xpra/issues/3577)
-    * [More robust info handlers](https://github.com/Xpra-org/xpra/issues/3509)
-    * [Remove scary warnings](https://github.com/Xpra-org/xpra/issues/3625)
-    * [f-strings](https://github.com/Xpra-org/xpra/issues/3579)
+	* [Feature deprecation](https://github.com/Xpra-org/xpra/issues/3592)
+	* [Remove "app menus" support](https://github.com/Xpra-org/xpra/issues/2163)
+	* [Remove ancient complicated code](https://github.com/Xpra-org/xpra/issues/3537)
+	* [Simplify the build file](https://github.com/Xpra-org/xpra/issues/3577)
+	* [More robust info handlers](https://github.com/Xpra-org/xpra/issues/3509)
+	* [Remove scary warnings](https://github.com/Xpra-org/xpra/issues/3625)
+	* [f-strings](https://github.com/Xpra-org/xpra/issues/3579)
 
 
 ## [4.3] 2021-12-05
@@ -493,14 +513,14 @@
 
 ## [4.0] 2020-05-10
 * Drop support for:
-    * Python 2, GTK2
-    * legacy versions (pre 1.0)
-    * weak authentication
+	* Python 2, GTK2
+	* legacy versions (pre 1.0)
+	* weak authentication
 * Network, per socket options:
-    * authentication and encryption
-    * ssl
-    * ssh
-    * bind options for client
+	* authentication and encryption
+	* ssl
+	* ssh
+	* bind options for client
 * make it easier to send files from the server
 * xpra toolbox subcommand
 * xpra help subcommand
@@ -509,11 +529,11 @@
 * signal handling fixes
 * smoother window resizing
 * refactoring and testing
-    * unit tests coverage and fixes
-    * completely skip loading unused features at runtime
-    * get rid of capabilities data after parsing it
-    * better module dependency separation
-    * don't convert to a string before we need it
+	* unit tests coverage and fixes
+	* completely skip loading unused features at runtime
+	* get rid of capabilities data after parsing it
+	* better module dependency separation
+	* don't convert to a string before we need it
 * more useful window and tray title
 * make it easier to source environment
 * disable desktop animations in desktop mode
@@ -528,46 +548,46 @@
 * Python 3 port complete, now the default: [#1571](https://github.com/Xpra-org/xpra/issues/1571), [#2195](https://github.com/Xpra-org/xpra/issues/2195)
 * much nicer HTML5 client user interface: [#2269](https://github.com/Xpra-org/xpra/issues/2269)
 * Window handling:
-    * smoother window resizing: [#478](https://github.com/Xpra-org/xpra/issues/478) (OpenGL)
-    * honouring gravity: [#2217](https://github.com/Xpra-org/xpra/issues/2217)
-    * lock them in readonly mode: [#2137](https://github.com/Xpra-org/xpra/issues/2137)
+	* smoother window resizing: [#478](https://github.com/Xpra-org/xpra/issues/478) (OpenGL)
+	* honouring gravity: [#2217](https://github.com/Xpra-org/xpra/issues/2217)
+	* lock them in readonly mode: [#2137](https://github.com/Xpra-org/xpra/issues/2137)
 * xpra top subcommand: [#2348](https://github.com/Xpra-org/xpra/issues/2348)
 * faster startup:
-    * [#2347](https://github.com/Xpra-org/xpra/issues/2347) faster client startup
-    * [#2341](https://github.com/Xpra-org/xpra/issues/2341) faster server startup
+	* [#2347](https://github.com/Xpra-org/xpra/issues/2347) faster client startup
+	* [#2341](https://github.com/Xpra-org/xpra/issues/2341) faster server startup
 * OpenGL:
-    * more reliable driver probing: [#2204](https://github.com/Xpra-org/xpra/issues/2204)
-    * cursor paint support: [#1497](https://github.com/Xpra-org/xpra/issues/1497)
-    * transparency on MacOS: [#1794](https://github.com/Xpra-org/xpra/issues/1794)
+	* more reliable driver probing: [#2204](https://github.com/Xpra-org/xpra/issues/2204)
+	* cursor paint support: [#1497](https://github.com/Xpra-org/xpra/issues/1497)
+	* transparency on MacOS: [#1794](https://github.com/Xpra-org/xpra/issues/1794)
 * Encoding:
-    * lossless window scrolling: [#1320](https://github.com/Xpra-org/xpra/issues/1320)
-    * scrolling acceleration for non-OpenGL backends: [#2295](https://github.com/Xpra-org/xpra/issues/2295)
-    * harden image parsing: [#2279](https://github.com/Xpra-org/xpra/issues/2279)
-    * workaround slow video encoder initialization (ie: NVENC) using replacement frames: [#2048](https://github.com/Xpra-org/xpra/issues/2048)
-    * avoid loading codecs we don't need: [#2344](https://github.com/Xpra-org/xpra/issues/2344)
-    * skip some CUDA devices, speedup enumeration: [#2415](https://github.com/Xpra-org/xpra/issues/2415)
+	* lossless window scrolling: [#1320](https://github.com/Xpra-org/xpra/issues/1320)
+	* scrolling acceleration for non-OpenGL backends: [#2295](https://github.com/Xpra-org/xpra/issues/2295)
+	* harden image parsing: [#2279](https://github.com/Xpra-org/xpra/issues/2279)
+	* workaround slow video encoder initialization (ie: NVENC) using replacement frames: [#2048](https://github.com/Xpra-org/xpra/issues/2048)
+	* avoid loading codecs we don't need: [#2344](https://github.com/Xpra-org/xpra/issues/2344)
+	* skip some CUDA devices, speedup enumeration: [#2415](https://github.com/Xpra-org/xpra/issues/2415)
 * Clipboard:
-    * new native clipboard implementations for all platforms: [#812](https://github.com/Xpra-org/xpra/issues/812)
-    * HTML5 asynchronous clipboard: [#1844](https://github.com/Xpra-org/xpra/issues/1844)
-    * HTML5 support for copying images: [#2312](https://github.com/Xpra-org/xpra/issues/2312) (with watermarking)
-    * brotli compression for text data: [#2289](https://github.com/Xpra-org/xpra/issues/2289)
+	* new native clipboard implementations for all platforms: [#812](https://github.com/Xpra-org/xpra/issues/812)
+	* HTML5 asynchronous clipboard: [#1844](https://github.com/Xpra-org/xpra/issues/1844)
+	* HTML5 support for copying images: [#2312](https://github.com/Xpra-org/xpra/issues/2312) (with watermarking)
+	* brotli compression for text data: [#2289](https://github.com/Xpra-org/xpra/issues/2289)
 * Authentication:
-    * modular client authentication handlers: [#1796](https://github.com/Xpra-org/xpra/issues/1796)
-    * mysql authentication module: [#2287](https://github.com/Xpra-org/xpra/issues/2287)
-    * generic SQL authentication module: [#2288](https://github.com/Xpra-org/xpra/issues/2288)
+	* modular client authentication handlers: [#1796](https://github.com/Xpra-org/xpra/issues/1796)
+	* mysql authentication module: [#2287](https://github.com/Xpra-org/xpra/issues/2287)
+	* generic SQL authentication module: [#2288](https://github.com/Xpra-org/xpra/issues/2288)
 * Network:
-    * client listen mode: [#1022](https://github.com/Xpra-org/xpra/issues/1022)
-    * retry to connect until it succeeds or times out: [#2346](https://github.com/Xpra-org/xpra/issues/2346)
-    * mdns TXT attributes updated at runtime: [#2187](https://github.com/Xpra-org/xpra/issues/2187)
-    * zeroconf fixes: [#2317](https://github.com/Xpra-org/xpra/issues/2317)
-    * drop pybonjour: [#2297](https://github.com/Xpra-org/xpra/issues/2297)
-    * paramiko honours IdentityFile: [#2282](https://github.com/Xpra-org/xpra/issues/2282), handles SIGINT better: [#2378](https://github.com/Xpra-org/xpra/issues/2378)
-    * proxy server fixes for ssl and ssh sockets: [#2399](https://github.com/Xpra-org/xpra/issues/2399), remove spurious options: [#2193](https://github.com/Xpra-org/xpra/issues/2193)
-    * proxy ping and timeouts: [#2408](https://github.com/Xpra-org/xpra/issues/2408)
-    * proxy dynamic authentication: [#2261](https://github.com/Xpra-org/xpra/issues/2261)
+	* client listen mode: [#1022](https://github.com/Xpra-org/xpra/issues/1022)
+	* retry to connect until it succeeds or times out: [#2346](https://github.com/Xpra-org/xpra/issues/2346)
+	* mdns TXT attributes updated at runtime: [#2187](https://github.com/Xpra-org/xpra/issues/2187)
+	* zeroconf fixes: [#2317](https://github.com/Xpra-org/xpra/issues/2317)
+	* drop pybonjour: [#2297](https://github.com/Xpra-org/xpra/issues/2297)
+	* paramiko honours IdentityFile: [#2282](https://github.com/Xpra-org/xpra/issues/2282), handles SIGINT better: [#2378](https://github.com/Xpra-org/xpra/issues/2378)
+	* proxy server fixes for ssl and ssh sockets: [#2399](https://github.com/Xpra-org/xpra/issues/2399), remove spurious options: [#2193](https://github.com/Xpra-org/xpra/issues/2193)
+	* proxy ping and timeouts: [#2408](https://github.com/Xpra-org/xpra/issues/2408)
+	* proxy dynamic authentication: [#2261](https://github.com/Xpra-org/xpra/issues/2261)
 * Automated Testing:
-    * test HTML5 client: [#2231](https://github.com/Xpra-org/xpra/issues/2231)
-    * many new mixin tests: [#1773](https://github.com/Xpra-org/xpra/issues/1773) (and bugs found)
+	* test HTML5 client: [#2231](https://github.com/Xpra-org/xpra/issues/2231)
+	* many new mixin tests: [#1773](https://github.com/Xpra-org/xpra/issues/1773) (and bugs found)
 * start-new-commands is now enabled by default: [#2278](https://github.com/Xpra-org/xpra/issues/2278), and the UI allows free text: [#2221](https://github.com/Xpra-org/xpra/issues/2221)
 * basic support for native GTK wayland client: [#2243](https://github.com/Xpra-org/xpra/issues/2243)
 * forward custom X11 properties: [#2311](https://github.com/Xpra-org/xpra/issues/2311)
@@ -578,49 +598,49 @@
 ## [2.5] 2019-03-19
 * Python 3 port mostly complete, including packaging for Debian
 * pixel compression and bandwidth management:
-    * better recovery from network congestion
-    * distinguish refresh from normal updates
-    * better tuning for mmap connections
-    * heuristics improvements
-    * use video encoders more aggressively
-    * prevent too many delayed frames with x264
-    * better video region detection with opengl content
+	* better recovery from network congestion
+	* distinguish refresh from normal updates
+	* better tuning for mmap connections
+	* heuristics improvements
+	* use video encoders more aggressively
+	* prevent too many delayed frames with x264
+	* better video region detection with opengl content
 * better automatic tuning for client applications
-    * based on application categories
-    * application supplied hints
-    * application window encoding hints
-    * using environment variables and disabling video
+	* based on application categories
+	* application supplied hints
+	* application window encoding hints
+	* using environment variables and disabling video
 * HTML5 client improvements
 * Client improvements:
-    * make it easier to start new commands, provide start menu
-    * probe OpenGL in a subprocess to detect and workaround driver crashes
-    * use appindicator if available
+	* make it easier to start new commands, provide start menu
+	* probe OpenGL in a subprocess to detect and workaround driver crashes
+	* use appindicator if available
 * Packaging:
-    * merge xpra and its dependencies into the ​MSYS2 repository
-    * ship fewer files in MS Windows installers
-    * partial support for parallel installation of 32-bit and 64-bit version on MS Windows
-    * MacOS library updates
-    * CentOS 7: libyu## [] and turbojpeg
-    * Windows Services for Linux (WSL) support
-    * Fedora 30 and Ubuntu Disco support
-    * Ubuntu HWE compatibility (manual steps required due to upstream bug)
+	* merge xpra and its dependencies into the ​MSYS2 repository
+	* ship fewer files in MS Windows installers
+	* partial support for parallel installation of 32-bit and 64-bit version on MS Windows
+	* MacOS library updates
+	* CentOS 7: libyu## [] and turbojpeg
+	* Windows Services for Linux (WSL) support
+	* Fedora 30 and Ubuntu Disco support
+	* Ubuntu HWE compatibility (manual steps required due to upstream bug)
 * Server improvements:
-    * start command on last client exit
-    * honour minimum window size
-    * Python 3
-    * upgrade-desktop subcommand
+	* start command on last client exit
+	* honour minimum window size
+	* Python 3
+	* upgrade-desktop subcommand
 * Network layer:
-    * less copying
-    * use our own websocket layer
-    * make it easier to install mdns on MS Windows
-    * make mmap group configurable
-    * TCP CORK support on Linux
+	* less copying
+	* use our own websocket layer
+	* make it easier to install mdns on MS Windows
+	* make mmap group configurable
+	* TCP CORK support on Linux
 * SSH transport:
-    * support .ssh/config with paramiko backend
-    * connecting via ssh proxy hosts
+	* support .ssh/config with paramiko backend
+	* connecting via ssh proxy hosts
 * SSHFP with paramiko:
-    * clipboard: restrict clipboard data transfers size
-    * audio: support wasapi on MS Windows
+	* clipboard: restrict clipboard data transfers size
+	* audio: support wasapi on MS Windows
 * code cleanups, etc
 
 
@@ -719,18 +739,18 @@
 ## [2.1] 2017-07-24
 * improve system-wide proxy server, logind support on, socket activation
 * new authentication modules:
-    * new posix peercred authentication module (used by system-wide proxy)
-    * new sqlite authentication module
+	* new posix peercred authentication module (used by system-wide proxy)
+	* new sqlite authentication module
 * split packages for RPM, MS Windows and Mac OS
 * digitally signed MS Windows installers
 * HTML5 client improvements:
-    * file upload support
-    * better non-us keyboard and language support
-    * safe HMAC authentication over HTTP, re-connection etc
-    * more complete window management, (pre-)compression (zlib, brotli)
-    * mobile on-screen keyboard
-    * audio forwarding for IE
-    * remote drag and drop support
+	* file upload support
+	* better non-us keyboard and language support
+	* safe HMAC authentication over HTTP, re-connection etc
+	* more complete window management, (pre-)compression (zlib, brotli)
+	* mobile on-screen keyboard
+	* audio forwarding for IE
+	* remote drag and drop support
 * better Multicast DNS support, with a GUI launcher
 * improved image depth / deep color handling
 * desktop mode can now be resized easily
