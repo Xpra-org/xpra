@@ -300,12 +300,15 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     if host_config:
         # paramiko does not strip comments from configs:
         # https://github.com/Xpra-org/xpra/issues/4503
-        def safeget(key: str, default_value: str) -> Any:
-            return host_config.get(key, default_value).split("#", 1)[0]
+        def safeget(key: str, default_value: str | int) -> Any:
+            value = host_config.get(key, default_value)
+            if isinstance(value, str):
+                value = value.split("#", 1)[0]
+            return value
         log(f"got host config for {host!r}: {host_config}")
         host = safeget("hostname", host)
         username = safeget("user", username)
-        port = safeget("port", str(port))
+        port = safeget("port", port)
         try:
             port = int(port)
         except (TypeError, ValueError):
