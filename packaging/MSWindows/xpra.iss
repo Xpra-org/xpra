@@ -23,8 +23,9 @@ WizardImageFile=packaging\MSWindows\xpra-logo.bmp
 WizardSmallImageFile=packaging\MSWindows\xpra.bmp
 LicenseFile=COPYING
 UninstallDisplayIcon={app}\Xpra-Launcher.exe
-ArchitecturesInstallIn64BitMode=x64
-ArchitecturesAllowed=x64
+ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesAllowed=arm64 and x64compatible
+;UsePreviousAppDir=false
 
 [Dirs]
 Name: "{app}"; Flags: uninsalwaysuninstall;
