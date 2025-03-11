@@ -253,7 +253,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         log(f"got host config for {host!r}: {host_config}")
         host = safeget("hostname", host)
         username = safeget("user", username)
-        port = safeget("port", port)
+        port = safeget("port", str(port))
         try:
             port = int(port)
         except (TypeError, ValueError):
