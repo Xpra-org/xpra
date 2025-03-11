@@ -679,8 +679,6 @@ def trim_python_libs() -> None:
     step("Removing unnecessary Python modules")
     # remove test bits we don't need:
     delete_libs(
-        "pywin*",
-        "win32com",
         "backports",
         "importlib_resources/compat",
         "importlib_resources/tests",

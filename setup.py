@@ -2108,7 +2108,7 @@ if WIN32:
         "pyu2f",
         "mmap",
         "comtypes", "comtypes.stream",      # used by webcam, netdev_query, taskbar progress (file-transfers), etc
-        #"wmi", "win32com",
+        "wmi", "win32com",
     ]
     # this is generated at runtime,
     # but we still have to remove the empty directory by hand
