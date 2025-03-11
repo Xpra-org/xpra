@@ -314,13 +314,14 @@ def add_border_rectangles(rectangles: Sequence[tuple[int, int, int, int]],
     rects = list(rectangle(*rect) for rect in rectangles)
     # add border rectangles:
     bsize = border_size
-    for rect in (
+    for x, y, w, h in (
             (0, 0, ww, bsize),  # top
             (0, wh - bsize, ww, bsize),  # bottom
             (ww - bsize, bsize, bsize, wh-bsize*2),  # right
             (0, bsize, bsize, wh-bsize*2),  # left
     ):
-        add_rectangle(rects, rectangle(*rect))
+        if w > 0 and h > 0:
+            add_rectangle(rects, rectangle(x, y, w, h))
     # convert rectangles back to tuples:
     return tuple((rect.x, rect.y, rect.width, rect.height) for rect in rects)
 
