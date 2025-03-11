@@ -120,6 +120,9 @@ def filt(prefix: str, name: str,
         else:
             items = entry.split(",")
         for item in items:
+            # "no-xxxx" -> "-xxxx"
+            if item.startswith("no-"):
+                item = item[2:]
             if item == "all":
                 real_list += all_fn()
             else:
@@ -129,8 +132,6 @@ def filt(prefix: str, name: str,
     def ap(v: str) -> str:
         if v.startswith("-"):
             return "-"+autoprefix(prefix, v[1:])
-        if v.startswith("no-"):
-            return "-"+autoprefix(prefix, v[3:])
         parts = v.split(":", 1)
         if len(parts) == 1:
             return autoprefix(prefix, parts[0])
@@ -142,7 +143,7 @@ def filt(prefix: str, name: str,
 
     # when comparing, ignore options:
     def noopt(item_str: str):
-        return item_str.split(":", 1)[0]
+        return item_str.lstrip("-").split(":", 1)[0]
 
     exclist = apl(x[1:] for x in real_list if x and x.startswith("-"))
     inclist = apl(x for x in real_list if x and not x.startswith("-"))
@@ -150,13 +151,14 @@ def filt(prefix: str, name: str,
         inclist = apl(all_fn())
     lists = exclist + inclist
     all_list = apl(all_options)
-    unknown = tuple(x for x in lists if noopt(ap(x)) not in CODEC_TO_MODULE and x.lower() != "none")
+    unknown = tuple(x for x in lists if noopt(x) not in CODEC_TO_MODULE and x.lower() != "none")
     if unknown:
         log.warn(f"Warning: ignoring unknown {name}: "+csv(unknown))
-    notfound = tuple(x for x in lists if (x and noopt(ap(x)) not in all_list and x not in unknown and x != "none"))
+    notfound = tuple(x for x in lists if (x and noopt(x) not in all_list and x not in unknown and x != "none"))
     if notfound:
         log.warn(f"Warning: {name} not found: "+csv(notfound))
-    allowed = apl(x for x in inclist if x not in exclist and x != "none")
+    allowed = apl(x for x in inclist if x in all_list and x not in exclist and x != "none")
+    # log(f"{inclist=}, {exclist=}, {all_list=} -> {allowed=}")
     # now we can parse individual entries:
     values = {}
     for entry in allowed:
