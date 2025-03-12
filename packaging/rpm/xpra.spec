@@ -915,7 +915,7 @@ fi
 
 
 %changelog
-* Tue Mar 11 2025 Antoine Martin <antoine@xpra.org> 6.2.5-10
+* Wed Mar 12 2025 Antoine Martin <antoine@xpra.org> 6.2.5-10
 - Platforms, build and packaging:
    MS Windows authentication usernames are not case sensitive
    don't log authentication credentials
@@ -929,6 +929,7 @@ fi
 - Major:
    nvidia hardware detection errors
    honour ssl options in launcher files
+   border not shown on small XShape windows with X11 clients
 - Encodings:
    faded colours with `openh264` decoder
 - Cosmetic:

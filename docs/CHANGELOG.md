@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.2.5] 2025-03-11
+## [6.2.5] 2025-03-12
 * Platforms, build and packaging:
 	* [MS Windows authentication usernames are not case sensitive](https://github.com/Xpra-org/xpra/commit/eb945e95958e58ebb0fe896aeac9c7eeb424c1e0)
 	* [don't log authentication credentials](https://github.com/Xpra-org/xpra/commit/294b90972af4d0a9cbe0fa95d96a3b8fbd3ba6bc)
@@ -14,6 +14,7 @@
 * Major:
 	* [nvidia hardware detection errors](https://github.com/Xpra-org/xpra/commit/05cd59635d5cac01f2c463d7c26df924d39f7fdf)
 	* [honour ssl options in launcher files](https://github.com/Xpra-org/xpra/commit/ff745884d769fa520d967784cb65f0c8e592ae09)
+	* [border not shown on small XShape windows with X11 clients](https://github.com/Xpra-org/xpra/commit/0edc7813b8267348a91d08e65a4901a53628f841)
 * Encodings:
 	* [faded colours with `openh264` decoder](https://github.com/Xpra-org/xpra/commit/85068b3f83d25ad56c7e0a011981a5c1d65b3ed7)
 * Cosmetic:

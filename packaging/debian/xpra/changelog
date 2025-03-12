@@ -12,6 +12,7 @@ xpra (6.2.5-1) UNRELEASED; urgency=low
   * Major:
     nvidia hardware detection errors
     honour ssl options in launcher files
+    border not shown on small XShape windows with X11 clients
   * Encodings:
     faded colours with `openh264` decoder
   * Cosmetic:
@@ -20,7 +21,7 @@ xpra (6.2.5-1) UNRELEASED; urgency=low
     show connection step in splash progress
     typo in RPM changelog
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 11 Mar 2025 17:01:18 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 12 Mar 2025 07:31:36 +0700
 
 xpra (6.2.4-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
