@@ -12,6 +12,7 @@
 	* [`pyu2f` incorrect Python version dependency](https://github.com/Xpra-org/xpra/commit/6a57cb84e958a14cf06992f373841cfc3f470159)
 	* [add explicit Python dependencies to python libraries](https://github.com/Xpra-org/xpra/commit/fafb2ecdfdb068ba604014ad3503459927b7a13e), [pygobject fixup](https://github.com/Xpra-org/xpra/commit/0bda11c5fdd88562f9e10a7e3dd06a262ab3c9a3)
 * Major:
+	* [ssh connection regression](https://github.com/Xpra-org/xpra/commit/3dbdf33d58fd78952153754cf6a865c654201047)
 	* [nvidia hardware detection errors](https://github.com/Xpra-org/xpra/commit/05cd59635d5cac01f2c463d7c26df924d39f7fdf)
 	* [honour ssl options in launcher files](https://github.com/Xpra-org/xpra/commit/ff745884d769fa520d967784cb65f0c8e592ae09)
 	* [border not shown on small XShape windows with X11 clients](https://github.com/Xpra-org/xpra/commit/0edc7813b8267348a91d08e65a4901a53628f841)

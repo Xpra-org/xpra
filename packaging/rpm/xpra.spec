@@ -927,6 +927,7 @@ fi
    `pyu2f` incorrect Python version dependency
    add explicit Python dependencies to python libraries
 - Major:
+   ssh connection regression
    nvidia hardware detection errors
    honour ssl options in launcher files
    border not shown on small XShape windows with X11 clients
