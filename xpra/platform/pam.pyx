@@ -32,12 +32,12 @@ cdef extern from "string.h":
 cdef extern from "stdlib.h":
     void *calloc(size_t nitems, size_t size)
 
-cdef extern from "pam_misc.h":
+cdef extern from "security/pam_misc.h":
     ctypedef struct pam_handle_t:
         pass
     void misc_conv(int num_msg, const pam_message **msgm, pam_response **response, void *appdata_ptr)
 
-cdef extern from "pam_appl.h":
+cdef extern from "security/pam_appl.h":
     struct pam_conv:
         void *conv
         #int (*conv)(int num_msg, const pam_message **msg, pam_response **resp, void *appdata_ptr)
