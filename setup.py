@@ -2223,12 +2223,13 @@ tace(server_ENABLED or shadow_ENABLED, "xpra.server.cystats", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.window.motion", optimize=3)
 if pam_ENABLED:
     if pkg_config_ok("--exists", "pam", "pam_misc"):
-        pam_kwargs = {"pkgconfig_names" : "pam,pam_misc"}
+        pam_kwargs = pkgconfig("pam", "pam_misc")
     else:
+        sec_dir = os.path.dirname(find_header_file("security", isdir=True))
         pam_kwargs = {
-            "extra_compile_args" : "-I" + find_header_file("/security", isdir=True),
-            "extra_link_args"    : ("-lpam", "-lpam_misc"),
-            }
+            "extra_compile_args": "-I" + sec_dir,
+            "extra_link_args": ("-lpam", "-lpam_misc"),
+        }
     ace("xpra.server.pam", **pam_kwargs)
 
 #platform:
