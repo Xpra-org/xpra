@@ -2527,8 +2527,8 @@ tace(client_ENABLED or server_ENABLED or shadow_ENABLED, "xpra.util.rectangle", 
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.cystats", optimize=3)
 tace(server_ENABLED or shadow_ENABLED, "xpra.server.window.motion", optimize=3)
 if pam_ENABLED:
-    if pkg_config_ok("--exists", "pam", "pam_misc") and get_status_output(["pkg-config", "--cflags", "pam_misc"])[1].strip("\n\r"):
-        pam_kwargs = pkgconfig("pam", "pam_misc")
+    if pkg_config_ok("--exists", "pam", "pam_misc"):
+        pam_kwargs = {"pkgconfig_names" : "pam,pam_misc"}
     else:
         pam_kwargs = {
             "extra_compile_args": "-I" + find_header_file("/security", isdir=True),
