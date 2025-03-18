@@ -88,7 +88,7 @@ def do_get_default_conf_dirs() -> List[str]:
 
 
 def get_sessions_dir() -> str:
-    return envaslist_or_delegate("XPRA_SESSIONS_DIRS", do_get_sessions_dir)
+    return env_or_delegate("XPRA_SESSIONS_DIR", do_get_sessions_dir)
 def do_get_sessions_dir() -> str:
     return "$XDG_RUNTIME_DIR/xpra"
 
