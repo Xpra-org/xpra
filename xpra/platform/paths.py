@@ -130,7 +130,7 @@ def do_get_state_dir() -> str:
 
 
 def get_sessions_dir() -> str:
-    return envaslist_or_delegate("XPRA_SESSIONS_DIRS", do_get_sessions_dir)
+    return env_or_delegate("XPRA_SESSIONS_DIRS", do_get_sessions_dir)
 
 
 def do_get_sessions_dir() -> str:
