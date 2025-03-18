@@ -74,7 +74,7 @@ cdef class X11CoreBindingsInstance:
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
 
-    def get_root_xid(self) -> int:
+    def get_root_xid(self) -> long:
         assert self.display
         return XDefaultRootWindow(self.display)
 
@@ -136,13 +136,13 @@ cdef class X11CoreBindingsInstance:
         XGetErrorText(self.display, code, buffer, 128)
         return (bytes(buffer[:128]).split(b"\0", 1)[0]).decode("latin1")
 
-    def UngrabKeyboard(self, Time time=CurrentTime) -> int:
+    def UngrabKeyboard(self, Time time=CurrentTime) -> long:
         self.context_check("UngrabKeyboard")
         if self.display == NULL:
             raise RuntimeError("display is closed")
         return XUngrabKeyboard(self.display, time)
 
-    def UngrabPointer(self, Time time=CurrentTime) -> int:
+    def UngrabPointer(self, Time time=CurrentTime) -> long:
         self.context_check("UngrabPointer")
         if self.display == NULL:
             raise RuntimeError("display is closed")

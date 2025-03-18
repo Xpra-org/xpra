@@ -480,7 +480,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     ###################################
     # XUnmapWindow
     ###################################
-    def Unmap(self, Window xwindow) -> int:
+    def Unmap(self, Window xwindow) -> long:
         self.context_check("Unmap")
         cdef unsigned long serial = NextRequest(self.display)
         XUnmapWindow(self.display, xwindow)
@@ -519,7 +519,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             "override-redirect"     : attrs.override_redirect,
         }
 
-    def getEventMask(self, Window xwindow) -> int:
+    def getEventMask(self, Window xwindow) -> long:
         self.context_check("getEventMask")
         cdef XWindowAttributes attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
@@ -581,7 +581,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return depth
 
     # Focus management
-    def XSetInputFocus(self, Window xwindow, object time=CurrentTime) -> None:
+    def XSetInputFocus(self, Window xwindow, Time time=CurrentTime) -> None:
         self.context_check("XSetInputFocus")
         # Always does RevertToParent
         XSetInputFocus(self.display, xwindow, RevertToParent, time)
@@ -776,7 +776,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("XGetSelectionOwner")
         return XGetSelectionOwner(self.display, self.str_to_atom(atom))
 
-    def XSetSelectionOwner(self, Window xwindow, atom, time=CurrentTime):
+    def XSetSelectionOwner(self, Window xwindow, atom, Time time=CurrentTime):
         self.context_check("XSetSelectionOwner")
         return XSetSelectionOwner(self.display, self.str_to_atom(atom), xwindow, time)
 
@@ -886,7 +886,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("selectSelectionInput")
         self.addXSelectInput(xwindow, SelectionNotify)
 
-    def sendSelectionNotify(self, Window xwindow, selection, target, property, time=CurrentTime) -> None:
+    def sendSelectionNotify(self, Window xwindow, selection, target, property, Time time=CurrentTime) -> None:
         self.context_check("sendSelectionNotify")
         cdef XEvent e
         e.type = SelectionNotify
@@ -902,7 +902,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if s == 0:
             raise ValueError("failed to serialize SelectionNotify")
 
-    def ConvertSelection(self, selection, target, property, Window requestor, time=CurrentTime) -> int:
+    def ConvertSelection(self, selection, target, property, Window requestor, Time time=CurrentTime) -> int:
         self.context_check("ConvertSelection")
         return XConvertSelection(self.display, self.str_to_atom(selection), self.str_to_atom(target),
                                  self.str_to_atom(property), requestor, time)
