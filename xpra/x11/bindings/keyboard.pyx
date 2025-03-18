@@ -248,16 +248,6 @@ cdef inline bytes b(value: str):
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 
-cdef X11KeyboardBindingsInstance singleton = None
-
-
-def X11KeyboardBindings():
-    global singleton
-    if singleton is None:
-        singleton = X11KeyboardBindingsInstance()
-    return singleton
-
-
 cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
 
     cdef XModifierKeymap* work_keymap
@@ -1157,3 +1147,13 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         XQueryPointer(self.display, root_window, &root, &child,
                       &root_x, &root_y, &win_x, &win_y, &mask)
         return mask
+
+
+cdef X11KeyboardBindingsInstance singleton = None
+
+
+def X11KeyboardBindings() -> X11KeyboardBindingsInstance:
+    global singleton
+    if singleton is None:
+        singleton = X11KeyboardBindingsInstance()
+    return singleton

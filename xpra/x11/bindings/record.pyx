@@ -565,16 +565,6 @@ cdef void event_callback(XPointer closure, XRecordInterceptData *rec) noexcept:
         XRecordFreeData(rec)
 
 
-cdef RecordBindingsInstance singleton = None
-
-
-def RecordBindings():
-    global singleton
-    if singleton is None:
-        singleton = RecordBindingsInstance()
-    return singleton
-
-
 cdef class RecordBindingsInstance(X11CoreBindingsInstance):
 
     cdef object version
@@ -674,3 +664,13 @@ cdef class RecordBindingsInstance(X11CoreBindingsInstance):
         XFlush(self.display)
         XSync(self.display, False)
         # XCloseDisplay(display)
+
+
+cdef RecordBindingsInstance singleton = None
+
+
+def RecordBindings() -> RecordBindingsInstance:
+    global singleton
+    if singleton is None:
+        singleton = RecordBindingsInstance()
+    return singleton

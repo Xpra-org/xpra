@@ -857,16 +857,6 @@ cdef object window_pixmap_wrapper(Display *xdisplay, Window xwindow):
     return pw
 
 
-cdef XImageBindingsInstance singleton = None
-
-
-def XImageBindings():
-    global singleton
-    if singleton is None:
-        singleton = XImageBindingsInstance()
-    return singleton
-
-
 cdef class XImageBindingsInstance(X11CoreBindingsInstance):
     cdef int has_xshm
 
@@ -900,3 +890,14 @@ cdef class XImageBindingsInstance(X11CoreBindingsInstance):
     def get_xwindow_pixmap_wrapper(self, xwindow):
         self.context_check("get_xwindow_pixmap_wrapper")
         return window_pixmap_wrapper(self.display, xwindow)
+
+
+cdef XImageBindingsInstance singleton = None
+
+
+def XImageBindings() -> XImageBindingsInstance:
+    global singleton
+    if singleton is None:
+        singleton = XImageBindingsInstance()
+    return singleton
+

@@ -382,15 +382,6 @@ from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
 cdef int CONFIGURE_GEOMETRY_MASK = CWX | CWY | CWWidth | CWHeight
 
-cdef X11WindowBindingsInstance singleton = None
-
-
-def X11WindowBindings():
-    global singleton
-    if singleton is None:
-        singleton = X11WindowBindingsInstance()
-    return singleton
-
 
 cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
@@ -1455,3 +1446,13 @@ cdef Bool timestamp_predicate(Display *display, XEvent  *xevent, XPointer arg) n
     if xevent.type!=PropertyNotify:
         return False
     return xevent.xproperty.window==et.window and xevent.xproperty.atom==et.atom
+
+
+cdef X11WindowBindingsInstance singleton = None
+
+
+def X11WindowBindings() -> X11WindowBindingsInstance:
+    global singleton
+    if singleton is None:
+        singleton = X11WindowBindingsInstance()
+    return singleton

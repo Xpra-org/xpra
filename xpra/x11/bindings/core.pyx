@@ -29,15 +29,6 @@ log = Logger("x11", "bindings", "core")
 from xpra.x11.bindings.display_source cimport get_display
 from xpra.x11.bindings.display_source import get_display_name
 
-cdef X11CoreBindingsInstance singleton = None
-
-
-def X11CoreBindings():
-    global singleton
-    if singleton is None:
-        singleton = X11CoreBindingsInstance()
-    return singleton
-
 
 def noop(*args) -> None:
     pass
@@ -156,3 +147,13 @@ cdef class X11CoreBindingsInstance:
         if self.display == NULL:
             raise RuntimeError("display is closed")
         return XUngrabPointer(self.display, time)
+
+
+cdef X11CoreBindingsInstance singleton = None
+
+
+def X11CoreBindings() -> X11CoreBindingsInstance:
+    global singleton
+    if singleton is None:
+        singleton = X11CoreBindingsInstance()
+    return singleton

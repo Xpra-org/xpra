@@ -80,17 +80,6 @@ cdef unsigned int get_pid(Display *display, Window xid) noexcept:
     return pid
 
 
-
-cdef ResBindingsInstance singleton = None
-
-
-def ResBindings():
-    global singleton
-    if singleton is None:
-        singleton = ResBindingsInstance()
-    return singleton
-
-
 cdef class ResBindingsInstance(X11CoreBindingsInstance):
 
     def __init__(self):
@@ -114,3 +103,13 @@ cdef class ResBindingsInstance(X11CoreBindingsInstance):
     def get_pid(self, Window xid) -> long:
         self.context_check("get_pid")
         return get_pid(self.display, xid)
+
+
+cdef ResBindingsInstance singleton = None
+
+
+def ResBindings() -> ResBindingsInstance:
+    global singleton
+    if singleton is None:
+        singleton = ResBindingsInstance()
+    return singleton

@@ -558,14 +558,6 @@ cdef dict get_monitor_properties(Display *display):
     return props
 
 
-cdef RandRBindingsInstance singleton = None
-def RandRBindings():
-    global singleton
-    if singleton is None:
-        singleton = RandRBindingsInstance()
-    return singleton
-
-
 cdef class RandRBindingsInstance(X11CoreBindingsInstance):
 
     cdef int _has_randr
@@ -1291,3 +1283,12 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
         finally:
             XRRFreeScreenResources(rsc)
 
+
+cdef RandRBindingsInstance singleton = None
+
+
+def RandRBindings() -> RandRBindingsInstance:
+    global singleton
+    if singleton is None:
+        singleton = RandRBindingsInstance()
+    return singleton

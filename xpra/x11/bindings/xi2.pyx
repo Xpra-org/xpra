@@ -276,14 +276,6 @@ CLASS_INFO = {
 
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance
 
-cdef X11CoreBindingsInstance singleton = None
-
-
-def X11XI2Bindings():
-    global singleton
-    if singleton is None:
-        singleton = X11XI2BindingsInstance()
-    return singleton
 
 cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
 
@@ -721,3 +713,13 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         self.register_parser()
         self.register_gdk_events()
         #self.select_xi2_events()
+
+
+cdef X11CoreBindingsInstance singleton = None
+
+
+def X11XI2Bindings() -> X11CoreBindingsInstance:
+    global singleton
+    if singleton is None:
+        singleton = X11XI2BindingsInstance()
+    return singleton
