@@ -3044,7 +3044,7 @@ def start_macos_shadow(cmd, env, cwd) -> None:
         Popen(x, env=env, cwd=cwd).wait()
 
 
-def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name) -> None:
+def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name) -> tuple[Any, str, str]:
     log = Logger("server")
     from xpra.platform.paths import get_app_dir
     app_dir = get_app_dir()
