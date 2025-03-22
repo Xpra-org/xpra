@@ -2530,7 +2530,7 @@ if pam_ENABLED:
     if pkg_config_ok("--exists", "pam", "pam_misc"):
         pam_kwargs = pkgconfig("pam", "pam_misc")
     else:
-        sec_dir = os.path.dirname(find_header_file("security", isdir=True))
+        sec_dir = os.path.dirname(find_header_file("/security", isdir=True))
         pam_kwargs = {
             "extra_compile_args": "-I" + sec_dir,
             "extra_link_args": ("-lpam", "-lpam_misc"),
