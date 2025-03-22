@@ -435,12 +435,14 @@ class GLWindowBackingBase(WindowBackingBase):
         vertex_shader = self.init_shader("vertex", GL_VERTEX_SHADER)
         from xpra.opengl.shaders import SOURCE
         for name, source in SOURCE.items():
-            if name in ("overlay", "vertex", "fixed-color"):
+            if name in ("overlay", "blend", "vertex", "fixed-color"):
                 continue
             fragment_shader = self.init_shader(name, GL_FRAGMENT_SHADER)
             self.init_program(name, vertex_shader, fragment_shader)
+        blend_shader = self.init_shader("blend", GL_FRAGMENT_SHADER)
         overlay_shader = self.init_shader("overlay", GL_FRAGMENT_SHADER)
         fixed_color = self.init_shader("fixed-color", GL_FRAGMENT_SHADER)
+        self.init_program("blend", vertex_shader, blend_shader)
         self.init_program("overlay", vertex_shader, overlay_shader)
         self.init_program("fixed-color", vertex_shader, fixed_color)
 
@@ -632,14 +634,17 @@ class GLWindowBackingBase(WindowBackingBase):
                 except GLError as gle:
                     log.error(f"Error deleting {name!r} shader")
                     log.error(f" {gle}")
+            vaos = []
             vao = self.vao
             if vao:
                 self.vao = None
-                glDeleteVertexArrays(1, [vao])
+                vaos.append(vao)
             vao = self.spinner_vao
             if vao:
                 self.spinner_vao = None
-                glDeleteVertexArrays(1, [vao])
+                vaos.append(vao)
+            if vaos:
+                glDeleteVertexArrays(1, vaos)
             ofbo = self.offscreen_fbo
             if ofbo is not None:
                 self.offscreen_fbo = None
@@ -942,21 +947,25 @@ class GLWindowBackingBase(WindowBackingBase):
         self.overlay_texture(texture, x, y, w, h)
 
     def overlay_texture(self, texture: int, x: int, y: int, w: int, h: int) -> None:
-        log("overlay_texture%s", (texture, x, y, w, h))
+        self.combine_texture("overlay", x, y, w, h, {"rgba": texture})
+
+    def combine_texture(self, program: str, x: int, y: int, w: int, h: int, texture_map: dict) -> None:
+        log("combine_texture%s", (program, x, y, w, h, texture_map))
         # paint this texture
-        glActiveTexture(GL_TEXTURE0)
-        target = GL_TEXTURE_RECTANGLE
-        glBindTexture(target, texture)
 
         wh = self.render_size[1]
+        target = GL_TEXTURE_RECTANGLE
         # the region we're updating (reversed):
         with TemporaryViewport(x, wh - y - h, w, h):
-            program = self.programs["overlay"]
+            program = self.programs[program]
             glUseProgram(program)
-            glActiveTexture(GL_TEXTURE0)
-            glBindTexture(target, texture)
-            tex_loc = glGetUniformLocation(program, "rgba")
-            glUniform1i(tex_loc, 0)  # 0 -> TEXTURE_0
+            index = 0
+            for prg_var, texture in texture_map.items():
+                glActiveTexture(GL_TEXTURE0 + index)
+                glBindTexture(target, texture)
+                tex_loc = glGetUniformLocation(program, prg_var)
+                glUniform1i(tex_loc, index)  # 0 -> TEXTURE_0
+                index += 1
 
             viewport_pos = glGetUniformLocation(program, "viewport_pos")
             glUniform2f(viewport_pos, x, y)
@@ -974,10 +983,31 @@ class GLWindowBackingBase(WindowBackingBase):
             glBindTexture(target, 0)
 
     def draw_border(self) -> None:
-        # use the render size as we are updating the "screen" directly:
-        w, h = self.render_size
-        r, g, b, a = tuple(round(v * 256) for v in (self.border.red, self.border.green, self.border.blue, self.border.alpha))
-        self.draw_rectangle(0, 0, w, h, self.border.size, r, g, b, a, h)
+        b = self.border
+        rgba = tuple(max(0, min(255, round(v * 256))) for v in (b.red, b.green, b.blue, b.alpha))
+        pixel = struct.pack(b"!BBBB", *rgba)
+
+        texture = int(self.textures[TEX_RGB])
+        upload_rgba_texture(texture, 1, 1, pixel)
+
+        rw, rh = self.render_size
+        hsize = min(self.border.size, rw)
+        vsize = min(self.border.size, rh)
+        if rw <= hsize or rh <= vsize:
+            rects = ((0, 0, rw, rh), )
+        else:
+            rects = (
+                (0, 0, rw, vsize),                              # top
+                (rw - hsize, vsize, hsize, rh - vsize * 2),     # right
+                (0, rh-vsize, rw, vsize),                       # bottom
+                (0, vsize, hsize, rh - vsize * 2),              # left
+            )
+        fbo = self.textures[TEX_FBO]
+        for x, y, w, h in rects:
+            self.combine_texture("blend", x, y, w, h, {
+                "rgba": texture,
+                "fbo": fbo,
+            })
 
     def paint_box(self, encoding: str, x: int, y: int, w: int, h: int) -> None:
         # show region being painted if debug paint box is enabled only:

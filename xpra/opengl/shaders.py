@@ -157,7 +157,27 @@ layout(location = 0) out vec4 frag_color;
 void main()
 {{
     vec2 pos = gl_FragCoord.xy-viewport_pos.xy;
-    frag_color = texture(rgba, pos);
+    frag_color = texture(rgba, mod(pos, textureSize(rgba)));
+    if ( frag_color.a < 0.3 ) {{
+        discard;
+    }}
+}}
+"""
+
+BLEND_SHADER = f"""
+#version {GLSL_VERSION}
+layout(origin_upper_left) in vec4 gl_FragCoord;
+uniform vec2 viewport_pos;
+uniform sampler2DRect rgba;
+uniform sampler2DRect fbo;
+layout(location = 0) out vec4 frag_color;
+
+void main()
+{{
+    vec2 pos = gl_FragCoord.xy-viewport_pos.xy;
+    vec4 tex_color = texture(rgba, mod(pos, textureSize(rgba)));
+    vec4 cur_color = texture(fbo, pos);
+    frag_color = mix(tex_color, cur_color, 0.5);
     if ( frag_color.a < 0.3 ) {{
         discard;
     }}
@@ -176,6 +196,7 @@ void main()
 """
 
 SOURCE: dict[str, str] = {
+    "blend": BLEND_SHADER,
     "vertex": VERTEX_SHADER,
     "overlay": OVERLAY_SHADER,
     "fixed-color": FIXED_COLOR_SHADER,
