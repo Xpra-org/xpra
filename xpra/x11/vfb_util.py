@@ -174,7 +174,8 @@ def get_xauthority_path(display_name: str) -> str:
     assert POSIX
     # pylint: disable=import-outside-toplevel
     from xpra.platform.posix.paths import _get_xpra_runtime_dir
-    has_home = os.path.exists(os.path.expanduser("~"))
+    expanded_home = os.path.expanduser("~")
+    has_home = os.path.exists(expanded_home) and is_writable(expanded_home, getuid(), getgid())
     if PRIVATE_XAUTH or (not has_home and os.environ.get("XDG_RUNTIME_DIR")):
         d = _get_xpra_runtime_dir()
         if XAUTH_PER_DISPLAY:
@@ -183,7 +184,7 @@ def get_xauthority_path(display_name: str) -> str:
             filename = "Xauthority"
     else:
         if has_home:
-            d = "~/"
+            d = expanded_home
         else:
             d = os.environ.get("TMPDIR", "/tmp")
         filename = ".Xauthority"
