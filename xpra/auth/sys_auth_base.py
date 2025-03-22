@@ -256,7 +256,7 @@ class SysAuthenticator(SysAuthenticatorBase):
             try:
                 import pwd  # pylint: disable=import-outside-toplevel
                 self.pw = pwd.getpwnam(self.username)
-            except Exception:
+            except OSError:
                 log(f"cannot load password database entry for {self.username!r}", exc_info=True)
 
     def get_uid(self) -> int:
