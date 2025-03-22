@@ -5,6 +5,8 @@ For usage related information, see [webcam feature](../Features/Webcam.md).
 
 ## Implementations
 
+The prefix for all packets and capabilities is `webcam`.
+
 | Component         | Link                                                                                                   |
 |-------------------|--------------------------------------------------------------------------------------------------------|
 | client            | [xpra.client.mixins.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/webcam.py) |

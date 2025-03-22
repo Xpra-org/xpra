@@ -5,6 +5,8 @@ For usage related information, see [clipboard feature](../Features/Clipboard.md)
 
 ## Implementations
 
+The prefix for all packets and capabilities is `clipboard`.
+
 | Component         | Link                                                                                                         |
 |-------------------|--------------------------------------------------------------------------------------------------------------|
 | client            | [xpra.client.mixins.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/clipboard.py) |

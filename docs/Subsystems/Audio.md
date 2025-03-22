@@ -5,6 +5,8 @@ For usage related information, see [audio feature](../Features/Audio.md).
 
 ## Implementations
 
+The prefix for all packets and capabilities is `audio`.
+
 | Component         | Link                                                                                                 |
 |-------------------|------------------------------------------------------------------------------------------------------|
 | client            | [xpra.client.mixins.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/audio.py) |

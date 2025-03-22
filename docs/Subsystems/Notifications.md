@@ -5,6 +5,8 @@ For usage related information, see [notitications feature](../Features/Notificat
 
 ## Implementations
 
+The prefix for all packets and capabilities is `notification`.
+
 | Component         | Link                                                                                                               |
 |-------------------|--------------------------------------------------------------------------------------------------------------------|
 | client            | [xpra.client.mixins.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/notification.py) |

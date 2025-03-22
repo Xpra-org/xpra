@@ -5,6 +5,8 @@ between client and server when both reside on the same host.
 
 ## Implementations
 
+The prefix for all packets and capabilities is `mmap`.
+
 | Component         | Link                                                                                               |
 |-------------------|----------------------------------------------------------------------------------------------------|
 | client            | [xpra.client.mixins.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/mmap.py) |

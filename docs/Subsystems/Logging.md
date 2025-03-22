@@ -9,6 +9,8 @@ but it can also be used in the opposite direction.
 
 ## Implementations
 
+The prefix for all packets and capabilities is `logging`.
+
 | Component         | Link                                                                                                     |
 |-------------------|----------------------------------------------------------------------------------------------------------|
 | client            | [xpra.client.mixins.logging](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/logging.py) |
@@ -26,7 +28,7 @@ The server exposes two flags using the `remote-logging` capability prefix:
 
 | Packet Type       | Arguments                                                                        | Direction        |
 |-------------------|----------------------------------------------------------------------------------|------------------|
-| `logging`         | `level` : integer<br/>`message` : string or list of strings<br/>`time` : integer | both             |
+| `logging-event`   | `level` : integer<br/>`message` : string or list of strings<br/>`time` : integer | both             |
 | `logging-control` | `action` : string, only either `start` or `stop`                                 | client to server |
 
 The `logging` packets can be sent to the server if it exposes the `receive` capability,
