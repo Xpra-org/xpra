@@ -218,7 +218,7 @@ def identify_cards() -> dict:
                         "used": int(memory.used),
                     }
 
-                def pciinfo(pci):
+                def pciinfo(pci) -> dict[str, int | str]:
                     i = {}
                     for nvname, pubname in {
                         "domain": "domain",
@@ -296,7 +296,7 @@ def identify_cards() -> dict:
 _cards = None
 
 
-def get_cards(probe=True):
+def get_cards(probe=True) -> dict:
     global _cards
     if _cards is None and probe:
         _cards = identify_cards()
@@ -359,7 +359,7 @@ def parse_nvfbc_hex_key(s) -> bytes:
 license_keys: dict[str, tuple] = {}
 
 
-def get_license_keys(version=0, basefilename="nvenc"):
+def get_license_keys(version=0, basefilename="nvenc") -> Sequence[str]:
     filename = f"{basefilename}%s.keys" % (version or "")
     keys = license_keys.get(filename)
     if keys is not None:
