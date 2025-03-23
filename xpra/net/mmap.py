@@ -429,6 +429,8 @@ class BaseMmapArea:
         if mmap:
             try:
                 mmap.close()
+            except BufferError:
+                log("%s.close()", mmap, exc_info=True)
             except OSError:
                 log("%s.close()", mmap, exc_info=True)
                 log.warn("Warning: failed to close %s mmap area", self.name)
