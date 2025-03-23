@@ -330,7 +330,7 @@ def start_Xvfb(xvfb_str: str, vfb_geom, pixel_depth: int, display_name: str, cwd
                     raise InitException(f"xvfb command has terminated: {xvfb_cmd}")
                 # Read the display number from the pipe we gave to Xvfb
                 try:
-                    buf = read_displayfd(r_pipe)
+                    buf = read_displayfd(r_pipe, proc=xvfb)
                 except Exception as e:
                     buf = b""
                     log("read_displayfd(%s)", r_pipe, exc_info=True)
