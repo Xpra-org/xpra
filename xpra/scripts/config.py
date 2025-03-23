@@ -228,10 +228,12 @@ def get_weston_Xwayland_command(dpi=96) -> list[str]:
     return cmd
 
 
-def xvfb_command(cmd: str, depth=32, dpi=0) -> list[str]:
+def xvfb_command(cmd: str, depth=24, dpi=0) -> list[str]:
     parts = shlex.split(cmd)
     if len(parts) > 1:
         return parts
+    if depth == 0:
+        depth = 24
     exe = parts[0]
     if os.path.isabs(exe):
         return parts
