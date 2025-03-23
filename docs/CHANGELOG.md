@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3] 2025-03-04
+## [6.3] 2025-03-23
 * Platforms, build and packaging:
     * [rewritten MS Windows build script](https://github.com/Xpra-org/xpra/issues/4394)
     * [`RHEL` 10 and clones](https://github.com/Xpra-org/xpra/issues/4282)
@@ -23,6 +23,7 @@
     * [specify refresh rate range](https://github.com/Xpra-org/xpra/issues/3735)
     * [save selection in run dialog](https://github.com/Xpra-org/xpra/issues/4432)
     * [`OpenGL` `YUVA` support for `jpeg` with alpha](https://github.com/Xpra-org/xpra/issues/1765)
+    * [correctly blend border with `OpenGL` renderer](https://github.com/Xpra-org/xpra/issues/4540)
 * Network:
     * [bi-directional `mmap`](https://github.com/Xpra-org/xpra/issues/4491)
     * [`hyperv` connections](https://github.com/Xpra-org/xpra/issues/3666)
