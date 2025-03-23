@@ -18,7 +18,7 @@ _(some more obscure features can be configured using environment variables)_
 
 Starting with version 6.3, settings can be changed permanently from the command line:
 ```shell
-xpra setting dpi 120
+xpra set dpi 120
 ```
 To erase this setting:
 ```shell
