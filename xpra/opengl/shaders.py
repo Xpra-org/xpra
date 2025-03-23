@@ -174,13 +174,11 @@ layout(location = 0) out vec4 frag_color;
 
 void main()
 {{
-    vec2 pos = gl_FragCoord.xy-viewport_pos.xy;
-    vec4 tex_color = texture(rgba, mod(pos, textureSize(rgba)));
-    vec4 cur_color = texture(fbo, pos);
-    frag_color = mix(tex_color, cur_color, 0.5);
-    if ( frag_color.a < 0.3 ) {{
-        discard;
-    }}
+    vec2 tex_pos = gl_FragCoord.xy - viewport_pos.xy;
+    vec4 tex_color = texture(rgba, mod(tex_pos, textureSize(rgba)));
+    vec2 fbo_pos = vec2(gl_FragCoord.x, textureSize(fbo).y - gl_FragCoord.y);
+    vec4 fbo_color = texture(fbo, fbo_pos);
+    frag_color = mix(tex_color, fbo_color, 0.5);
 }}
 """
 
