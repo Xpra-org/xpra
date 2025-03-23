@@ -140,7 +140,7 @@ class ConfigureGUI(BaseGUIWindow):
         cancel_btn = Gtk.Button.new_with_label("Cancel")
         cancel_btn.connect("clicked", self.dismiss)
         btn_box.add(cancel_btn)
-        confirm_btn = Gtk.Button.new_with_label("Confirm")
+        confirm_btn = Gtk.Button.new_with_label("Save")
         confirm_btn.connect("clicked", self.save_xvfb)
         confirm_btn.set_sensitive(False)
         btn_box.add(confirm_btn)
