@@ -7,8 +7,8 @@ xpra start --pixel-depth=30
 ```
 
 ## Support
-* [seamless mode](../Usage/Seamless.md) (aka `xpra start`) supports bit depths 16,24 and 30
-* [desktop mode](../Usage/Desktop.md) (aka `start-desktop`) supports 8,16,24 and 30
+* [seamless mode](../Usage/Seamless.md) supports bit depths 16,24 and 30
+* [desktop mode](../Usage/Desktop.md) supports 8,16,24 and 30
 * the native client `xpra attach` supports 16,24,30,48
 
 Testing that high bit depth is actually in use can be tricky, for that the `xpra toolbox` provides a test application.

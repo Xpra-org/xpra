@@ -73,9 +73,9 @@ speaker=off
 ***
 
 ## Forwarding a [full desktop](Desktop.md)
-Xpra can also forward a full desktop environment using the [start-desktop](Desktop.md) mode:
+Xpra can also forward a full desktop environment using the [desktop](Desktop.md) mode:
 ```shell
-xpra start-desktop --start-child=fluxbox
+xpra desktop --start-child=fluxbox
 ```
 Just like above, you can connect via SSH, TCP or any other [supported transport](../Network/README.md).
 

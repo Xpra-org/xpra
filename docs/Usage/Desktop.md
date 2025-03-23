@@ -11,20 +11,20 @@ To access an existing desktop session, use the [shadow server](Shadow) which is 
 ## Usage
 To start a desktop session simply run:
 ```shell
-xpra start-desktop --start=xterm
+xpra desktop --start=xterm
 ```
 Then connect as usual from the client, or using a VNC client.
 
 Alternatively, you can start a session and connect in one command from the client using the ssh syntax:
 ```shell
-xpra start-desktop --start=xterm ssh://USER@HOST/
+xpra desktop --start=xterm ssh://USER@HOST/
 ```
 
 
 ## Window Manager or Desktop Environment
 In order to run a window manager or even a full desktop environment within this desktop session, simply replace the "xterm" example above with the command that starts the WM or DE of your choice, ie for "fluxbox":
 ```shell
-xpra start-desktop --start=fluxbox
+xpra desktop --start=fluxbox
 ```
 When choosing a window manager, be aware that the more featureful ones also tend to use more bandwidth and will appear to run more slowly.
 
@@ -35,7 +35,7 @@ By default, the desktop size will start using a screen resolution of 1920x1080, 
 
 To change the initial desktop size:
 ```shell
-xpra start-desktop --resize-display="1024x768" --start=fluxbox
+xpra desktop --resize-display="1024x768" --start=fluxbox
 ```
 
 ## Caveats
