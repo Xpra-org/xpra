@@ -28,6 +28,8 @@ With distributions that have `Xdummy` support and xpra version 6.3 or later, you
 ```shell
 xpra xvfb :10
 ```
+Starting with version 6.3, you can configure xpra to use Xdummy as `xvfb` command using the GUI command `xpra configure vfb`. \
+Or from the command line using `xpra set xvfb Xdummy`.
 </details>
 <details>
   <summary>Xdummy with Xpra</summary>
