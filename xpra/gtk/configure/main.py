@@ -41,7 +41,10 @@ def main(args) -> ExitValue:
         else:
             if any(not str.isalnum(x) for x in subcommand):
                 raise ValueError("invalid characters found in subcommand")
-            mod = import_module(f"xpra.gtk.configure.{subcommand}")
+            try:
+                mod = import_module(f"xpra.gtk.configure.{subcommand}")
+            except ImportError:
+                mod = None
             if not mod:
                 raise InitExit(ExitCode.FILE_NOT_FOUND, f"unknown configure subcommand {subcommand!r}")
             return mod.main(args[1:])
