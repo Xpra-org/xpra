@@ -1915,7 +1915,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                           " Default: '%default'.")
     group.add_option("--auth", action="append",
                      dest="auth", default=list(defaults.auth or []),
-                     help="The authentication module to use"
+                     help="The authentication module to use for unix domain sockets and named pipes - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.auth))
     group.add_option("--tcp-auth", action="append",
                      dest="tcp_auth", default=list(defaults.tcp_auth or []),
