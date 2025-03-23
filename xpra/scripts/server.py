@@ -1228,7 +1228,8 @@ def _do_run_server(script_file: str, cmdline,
                 if xvfb_pidfile:
                     os.unlink(xvfb_pidfile)
 
-            getChildReaper().add_process(xvfb, "xvfb", xvfb_cmd, ignore=True, callback=xvfb_terminated)
+            vfb_procinfo = getChildReaper().add_process(xvfb, "xvfb", xvfb_cmd, ignore=True, callback=xvfb_terminated)
+            log("xvfb process info=%s", vfb_procinfo.get_info())
             # always update as we may now have the "real" display name:
             os.environ["DISPLAY"] = display_name
             os.environ["CKCON_X11_DISPLAY"] = display_name
