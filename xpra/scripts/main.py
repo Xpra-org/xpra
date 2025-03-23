@@ -568,6 +568,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         # all args that aren't specifying a connection will be interpreted as a start-child command:
         # ie: "xpra" "start" "xterm"
         # ie: "xpra" "start-desktop" "ssh://host/" "fluxbox"
+        # and we also enable `exit-with-children` if unspecified
         commands = []
         connargs = []
         for arg in tuple(args):
