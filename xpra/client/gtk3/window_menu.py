@@ -35,6 +35,7 @@ class WindowMenuHelper(MenuHelper):
             self.make_fullscreenmenuitem(),
             self.make_abovenmenuitem(),
             self.make_grabmenuitem(),
+            self.make_bordermenuitem(),
             self.make_refreshmenuitem(),
             self.make_reinitmenuitem(),
             self.make_closemenuitem(),
@@ -60,7 +61,7 @@ class WindowMenuHelper(MenuHelper):
             log("minimize%s", args)
             self.window.iconify()
 
-        return self.menuitem("Minimize", "minimize.png", None, minimize)
+        return self.menuitem("Minimize", "minimize.png", cb=minimize)
 
     def make_maximizemenuitem(self) -> Gtk.ImageMenuItem:
         def maximize(*args) -> None:
@@ -74,7 +75,7 @@ class WindowMenuHelper(MenuHelper):
             return "Unmaximize" if maximized else "Maximize"
 
         label = get_label(self.window.is_maximized())
-        self.maximize_menuitem = self.menuitem(label, "maximize.png", None, maximize)
+        self.maximize_menuitem = self.menuitem(label, "maximize.png", cb=maximize)
 
         def window_state_updated(widget, event) -> None:
             maximized_changed = event.changed_mask & Gdk.WindowState.MAXIMIZED
@@ -92,7 +93,7 @@ class WindowMenuHelper(MenuHelper):
             log("fullscreen%s", args)
             self.window.fullscreen()
 
-        return self.menuitem("Fullscreen", "scaling.png", None, fullscreen)
+        return self.menuitem("Fullscreen", "scaling.png", cb=fullscreen)
 
     def _set_ticked(self, item, state: bool) -> None:
         icon_name = ticked_icon(state)
@@ -108,7 +109,7 @@ class WindowMenuHelper(MenuHelper):
             self.window.set_keep_above(above)
             self._set_ticked(self.above_menuitem, above)
 
-        self.above_menuitem = self.menuitem("Always on top", ticked_icon(self.window._above), None, toggle_above)
+        self.above_menuitem = self.menuitem("Always on top", ticked_icon(self.window._above), cb=toggle_above)
         return self.above_menuitem
 
     def make_grabmenuitem(self) -> Gtk.ImageMenuItem:
@@ -123,8 +124,18 @@ class WindowMenuHelper(MenuHelper):
                 self.client.window_grab(self.window.wid, self.window)
             self._set_ticked(self.grab_menuitem, is_grabbed())
 
-        self.grab_menuitem = self.menuitem("Grabbed", ticked_icon(is_grabbed()), None, toggle_grab)
+        self.grab_menuitem = self.menuitem("Grabbed", ticked_icon(is_grabbed()), cb=toggle_grab)
         return self.grab_menuitem
+
+    def make_bordermenuitem(self) -> Gtk.ImageMenuItem:
+        def toggle_border(*args) -> None:
+            log("toggle_border%s", args)
+            self.window.border.shown = not self.window.border.shown
+            self._set_ticked(self.grab_menuitem, self.window.border.shown)
+            self.client.send_refresh(self.window.wid)
+
+        self.border_menuitem = self.menuitem("Show Border", ticked_icon(self.window.border.shown), cb=toggle_border)
+        return self.border_menuitem
 
     def make_refreshmenuitem(self) -> Gtk.ImageMenuItem:
         def force_refresh(*args) -> None:
@@ -134,7 +145,7 @@ class WindowMenuHelper(MenuHelper):
             if reset_icon:
                 reset_icon()
 
-        return self.menuitem("Refresh", "retry.png", None, force_refresh)
+        return self.menuitem("Refresh", "retry.png", cb=force_refresh)
 
     def make_reinitmenuitem(self) -> Gtk.ImageMenuItem:
         def force_reinit(*args) -> None:
@@ -144,11 +155,11 @@ class WindowMenuHelper(MenuHelper):
             if reset_icon:
                 reset_icon()
 
-        return self.menuitem("Re-initialize", "reinitialize.png", None, force_reinit)
+        return self.menuitem("Re-initialize", "reinitialize.png", cb=force_reinit)
 
     def make_closemenuitem(self) -> Gtk.ImageMenuItem:
         def close(*args) -> None:
             log("close(%s)", args)
             self.window.close()
 
-        return self.menuitem("Close", "close.png", None, close)
+        return self.menuitem("Close", "close.png", cb=close)
