@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.gtk3.window_base import GTKClientWindowBase, HAS_X11_BINDINGS
-from xpra.client.gtk3.window_menu import WindowMenuHelper
 from xpra.gtk.widget import scaled_image
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
@@ -84,6 +83,7 @@ class ClientWindow(GTKClientWindowBase):
         return False
 
     def add_header_bar(self) -> None:
+        from xpra.client.gtk3.window_menu import WindowMenuHelper
         self.menu_helper = WindowMenuHelper(self._client, self)
         hb = Gtk.HeaderBar()
         hb.set_has_subtitle(False)
