@@ -2102,17 +2102,20 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         b = self.border
         if b is None or not b.shown:
             return
-        s = b.size
-        ww, wh = self.get_size()
-        borders = (
-            # window is wide enough, add borders on the side:
-            (0, 0, s, wh),  # left
-            (ww - s, 0, s, wh),  # right
-            # window is tall enough, add borders on top and bottom:
-            (0, 0, ww, s),  # top
-            (0, wh - s, ww, s),  # bottom
-        )
-        for x, y, w, h in borders:
+        rw, rh = self.get_size()
+        hsize = min(self.border.size, rw)
+        vsize = min(self.border.size, rh)
+        if rw <= hsize or rh <= vsize:
+            rects = ((0, 0, rw, rh), )
+        else:
+            rects = (
+                (0, 0, rw, vsize),                              # top
+                (rw - hsize, vsize, hsize, rh - vsize * 2),     # right
+                (0, rh - vsize, rw, vsize),                     # bottom
+                (0, vsize, hsize, rh - vsize * 2),              # left
+            )
+
+        for x, y, w, h in rects:
             if w <= 0 or h <= 0:
                 continue
             r = Gdk.Rectangle()
