@@ -6,6 +6,7 @@
 import sys
 
 from xpra.os_util import gi_import
+from xpra.util.str_fn import sorted_nicely
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -77,7 +78,7 @@ class ShortcutInfo(Gtk.Window):
         attach("Keys", 0, "sans bold 12")
         attach("Action", 1, "sans bold 12")
         row += 1
-        for keyname in sorted(shortcuts.keys()):
+        for keyname in sorted_nicely(shortcuts.keys()):
             key_shortcuts = shortcuts[keyname]
             for shortcut in key_shortcuts:
                 modifiers, action, args = shortcut
