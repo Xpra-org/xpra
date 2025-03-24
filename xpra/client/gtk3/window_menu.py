@@ -19,23 +19,20 @@ class WindowMenuHelper(MenuHelper):
         super().__init__(client)
         self.window = window
 
-    def setup_menu(self) -> Gtk.Menu:
-        menu = Gtk.Menu()
-        # menu.append(self.make_closemenuitem())
-        menu.connect("deactivate", self.menu_deactivated)
-        # menu.append(self.make_aboutmenuitem())
-        menu.append(self.make_infomenuitem())
-        # if self.client.client_supports_opengl:
-        #    menu.append(self.make_openglmenuitem())
-        menu.append(self.make_minimizemenuitem())
-        menu.append(self.make_maximizemenuitem())
-        menu.append(self.make_fullscreenmenuitem())
-        menu.append(self.make_abovenmenuitem())
-        menu.append(self.make_refreshmenuitem())
-        menu.append(self.make_reinitmenuitem())
-        menu.append(self.make_closemenuitem())
-        menu.show_all()
-        return menu
+    def get_menu_items(self) -> list[Gtk.ImageMenuItem | Gtk.MenuItem]:
+        return [
+            # menu.append(self.make_aboutmenuitem())
+            self.make_infomenuitem(),
+            # if self.client.client_supports_opengl:
+            #    menu.append(self.make_openglmenuitem())
+            self.make_minimizemenuitem(),
+            self.make_maximizemenuitem(),
+            self.make_fullscreenmenuitem(),
+            self.make_abovenmenuitem(),
+            self.make_refreshmenuitem(),
+            self.make_reinitmenuitem(),
+            self.make_closemenuitem(),
+        ]
 
     def make_infomenuitem(self) -> Gtk.ImageMenuItem:
         def show_info(*_args) -> None:

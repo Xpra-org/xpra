@@ -5,9 +5,9 @@
 
 import os
 import re
-from collections.abc import Callable
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
+from xpra.common import noop
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool, IgnoreWarningsContext
 from xpra.os_util import OSX, gi_import
@@ -299,13 +299,15 @@ def make_min_auto_menu(title, min_options, options,
     return submenu
 
 
-def make_encodingsmenu(get_current_encoding, set_encoding, encodings, server_encodings) -> Gtk.Menu:
+def make_encodingsmenu(get_current_encoding: Callable, set_encoding: Callable,
+                       encodings, server_encodings) -> Gtk.Menu:
     encodings_submenu = Gtk.Menu()
     populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding, encodings, server_encodings)
     return encodings_submenu
 
 
-def populate_encodingsmenu(encodings_submenu, get_current_encoding, set_encoding, encodings, server_encodings) -> None:
+def populate_encodingsmenu(encodings_submenu, get_current_encoding: Callable, set_encoding: Callable,
+                           encodings, server_encodings) -> None:
     from xpra.codecs.loader import get_encoding_help, get_encoding_name
     encodings_submenu.get_current_encoding = get_current_encoding
     encodings_submenu.set_encoding = set_encoding
@@ -386,19 +388,19 @@ class MenuHelper:
                 log.estr(e)
         return self.menu
 
-    def show_shortcuts(self, *args) -> None:
-        self.client.show_shorcuts(*args)
-
-    def show_session_info(self, *args) -> None:
-        self.client.show_session_info(*args)
-
-    def show_bug_report(self, *args) -> None:
-        self.client.show_bug_report(*args)
-
-    def get_image(self, icon_name, size=None):
-        return self.client.get_image(icon_name, size)
-
     def setup_menu(self):
+        log("setup_menu()")
+        return self.do_setup_menu(self.get_menu_items())
+
+    def do_setup_menu(self, items: Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]):
+        menu = Gtk.Menu()
+        for menu_item in items:
+            menu.append(menu_item)
+        menu.connect("deactivate", self.menu_deactivated)
+        menu.show_all()
+        return menu
+
+    def get_menu_items(self) -> list[Gtk.ImageMenuItem | Gtk.MenuItem]:
         raise NotImplementedError()
 
     def cleanup(self) -> None:
@@ -431,6 +433,18 @@ class MenuHelper:
             self.menu.popup(None, None, None, None, button, time)
         self.menu_shown = True
 
+    def show_shortcuts(self, *args) -> None:
+        self.client.show_shorcuts(*args)
+
+    def show_session_info(self, *args) -> None:
+        self.client.show_session_info(*args)
+
+    def show_bug_report(self, *args) -> None:
+        self.client.show_bug_report(*args)
+
+    def get_image(self, icon_name, size=None):
+        return self.client.get_image(icon_name, size)
+
     def after_handshake(self, cb: Callable, *args) -> None:
         if self.client:
             self.client.after_handshake(cb, *args)
@@ -449,7 +463,7 @@ class MenuHelper:
     def make_menu(self) -> Gtk.Menu:
         return Gtk.Menu()
 
-    def menuitem(self, title, icon_name=None, tooltip=None, cb=None, **kwargs) -> Gtk.ImageMenuItem:
+    def menuitem(self, title, icon_name="", tooltip="", cb: Callable = noop, **kwargs) -> Gtk.ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """
         image = None
         if MENU_ICONS:
@@ -465,7 +479,7 @@ class MenuHelper:
 
         return menuitem(title, image, tooltip, menu_cb)
 
-    def checkitem(self, title, cb: Callable | None = None, active=False) -> Gtk.CheckMenuItem:
+    def checkitem(self, title, cb: Callable = noop, active=False) -> Gtk.CheckMenuItem:
         """ Utility method for easily creating a CheckMenuItem """
         check_item = Gtk.CheckMenuItem(label=title)
         check_item.set_active(active)
@@ -519,7 +533,7 @@ class MenuHelper:
             # (which contain the menu widget and are of no interest to the 'show_session_info' function)
             self.show_session_info()
 
-        sessioninfomenuitem = self.handshake_menuitem("Session Info", "statistics.png", None, show_session_info_cb)
+        sessioninfomenuitem = self.handshake_menuitem("Session Info", "statistics.png", cb=show_session_info_cb)
         return sessioninfomenuitem
 
     def make_bugreportmenuitem(self) -> Gtk.ImageMenuItem:

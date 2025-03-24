@@ -100,32 +100,27 @@ def unset_config(*names: str) -> None:
 class GTKTrayMenu(MenuHelper):
 
     def setup_menu(self):
-        return self.do_setup_menu(SHOW_CLOSE)
+        log("setup_menu()")
+        return self.do_setup_menu(self.get_menu_items())
 
-    def do_setup_menu(self, show_close: bool):
-        log("setup_menu(%s)", show_close)
+    def do_setup_menu(self, items: Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]):
         menu = Gtk.Menu()
+        for menu_item in items:
+            menu.append(menu_item)
+        menu.connect("deactivate", self.menu_deactivated)
+        menu.show_all()
+        return menu
 
-        def add(menuitem) -> None:
-            if menuitem:
-                menu.append(menuitem)
+    def get_menu_items(self) -> list[Gtk.ImageMenuItem | Gtk.MenuItem]:
+        log("get_menu_items()")
+        items: list[Gtk.ImageMenuItem | Gtk.MenuItem] = []
 
-        title_item = None
+        def add(item) -> None:
+            if item:
+                items.append(item)
+
         if SHOW_TITLE_ITEM:
-            title_item = Gtk.MenuItem()
-            title_item.set_label(self.client.session_name or "Xpra")
-            set_sensitive(title_item, False)
-            add(title_item)
-
-            def set_menu_title(*_args) -> None:
-                # set the real name when available:
-                try:
-                    title = self.client.get_tray_title()
-                except Exception:
-                    title = self.client.session_name or "Xpra"
-                title_item.set_label(title)
-
-            self.after_handshake(set_menu_title)
+            add(self.make_titlemenuitem())
         add(self.make_infomenuitem())
         add(self.make_featuresmenuitem())
         if features.windows and self.client.keyboard_helper:
@@ -147,18 +142,31 @@ class GTKTrayMenu(MenuHelper):
         if features.windows and START_MENU:
             add(self.make_startmenuitem())
         add(self.make_disconnectmenuitem())
-        if show_close:
+        if SHOW_CLOSE:
             add(self.make_closemenuitem())
-        menu.connect("deactivate", self.menu_deactivated)
-        menu.show_all()
-        log("setup_menu(%s) done", show_close)
-        return menu
+        return items
 
     def is_mmap_enabled(self) -> bool:
         if not getattr(self.client, "", False):
             return False
         mra = self.client.mmap_read_area
         return mra and mra.enabled and mra.size > 0
+
+    def make_titlemenuitem(self) -> Gtk.MenuItem:
+        title_item = Gtk.MenuItem()
+        title_item.set_label(self.client.session_name or "Xpra")
+        set_sensitive(title_item, False)
+
+        def set_menu_title(*_args) -> None:
+            # set the real name when available:
+            try:
+                title = self.client.get_tray_title()
+            except Exception:
+                title = self.client.session_name or "Xpra"
+            title_item.set_label(title)
+
+        self.after_handshake(set_menu_title)
+        return title_item
 
     def make_infomenuitem(self) -> Gtk.ImageMenuItem:
         info_menu_item = self.menuitem("Information", "information.png")
