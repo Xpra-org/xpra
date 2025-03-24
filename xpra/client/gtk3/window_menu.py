@@ -5,12 +5,17 @@
 
 from xpra.os_util import gi_import
 from xpra.client.gtk3.menu_helper import MenuHelper
+from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 
 log = Logger("gtk", "window")
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
+
+
+def ticked_icon(state: bool) -> str:
+    return "ticked.png" if state else "unticked.png"
 
 
 class WindowMenuHelper(MenuHelper):
@@ -29,6 +34,7 @@ class WindowMenuHelper(MenuHelper):
             self.make_maximizemenuitem(),
             self.make_fullscreenmenuitem(),
             self.make_abovenmenuitem(),
+            self.make_grabmenuitem(),
             self.make_refreshmenuitem(),
             self.make_reinitmenuitem(),
             self.make_closemenuitem(),
@@ -88,24 +94,37 @@ class WindowMenuHelper(MenuHelper):
 
         return self.menuitem("Fullscreen", "scaling.png", None, fullscreen)
 
-    def make_abovenmenuitem(self) -> Gtk.ImageMenuItem:
-        def icon_name() -> str:
-            if self.window._above:
-                return "ticked.png"
-            return "unticked.png"
+    def _set_ticked(self, item, state: bool) -> None:
+        icon_name = ticked_icon(state)
+        icon_size = self.menu_icon_size or get_icon_size()
+        image = self.get_image(icon_name, icon_size)
+        item.set_image(image)
 
+    def make_abovenmenuitem(self) -> Gtk.ImageMenuItem:
         def toggle_above(*args) -> None:
             above = not self.window._above
             log("toggle_above%s above=%s", args, above)
             self.window._above = above
             self.window.set_keep_above(above)
-            from xpra.platform.gui import get_icon_size
-            icon_size = self.menu_icon_size or get_icon_size()
-            image = self.get_image(icon_name(), icon_size)
-            self.above_menuitem.set_image(image)
+            self._set_ticked(self.above_menuitem, above)
 
-        self.above_menuitem = self.menuitem("Always on top", icon_name(), None, toggle_above)
+        self.above_menuitem = self.menuitem("Always on top", ticked_icon(self.window._above), None, toggle_above)
         return self.above_menuitem
+
+    def make_grabmenuitem(self) -> Gtk.ImageMenuItem:
+        def is_grabbed() -> bool:
+            return self.client._window_with_grab == self.window.wid
+
+        def toggle_grab(*args) -> None:
+            log("toggle_grab%s", args)
+            if is_grabbed():
+                self.client.window_ungrab()
+            else:
+                self.client.window_grab(self.window.wid, self.window)
+            self._set_ticked(self.grab_menuitem, is_grabbed())
+
+        self.grab_menuitem = self.menuitem("Grabbed", ticked_icon(is_grabbed()), None, toggle_grab)
+        return self.grab_menuitem
 
     def make_refreshmenuitem(self) -> Gtk.ImageMenuItem:
         def force_refresh(*args) -> None:
