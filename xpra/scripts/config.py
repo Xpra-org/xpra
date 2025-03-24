@@ -969,6 +969,7 @@ def get_default_key_shortcuts() -> list[str]:
         (not OSX, "Shift+F11:toggle_fullscreen"),
         (OSX, "Control+F11:toggle_fullscreen"),
         (True, "#+F1:show_menu"),
+        (True, "Control+F1:show_window_menu"),
         (True, "#+F2:show_start_new_command"),
         (True, "#+F3:show_bug_report"),
         (True, "#+F4:quit"),

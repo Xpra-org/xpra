@@ -46,6 +46,7 @@ class KeyboardHelperTest(unittest.TestCase):
             'Shift+Menu:toggle_pointer_grab',
             'Shift+F11:toggle_fullscreen',
             '#+F1:show_menu',
+            'Control+F1:show_window_menu',
             '#+F2:show_start_new_command',
             '#+F3:show_bug_report',
             '#+F4:quit',
