@@ -38,6 +38,7 @@ class ClientWindow(GTKClientWindowBase):
 
     def init_window(self, metadata: typedict) -> None:
         super().init_window(metadata)
+        self.menu_helper = None
         self.header_bar_image = None
         if self.can_use_header_bar(metadata):
             self.add_header_bar()
@@ -83,8 +84,6 @@ class ClientWindow(GTKClientWindowBase):
         return False
 
     def add_header_bar(self) -> None:
-        from xpra.client.gtk3.window_menu import WindowMenuHelper
-        self.menu_helper = WindowMenuHelper(self._client, self)
         hb = Gtk.HeaderBar()
         hb.set_has_subtitle(False)
         hb.set_show_close_button(True)
@@ -119,7 +118,11 @@ class ClientWindow(GTKClientWindowBase):
             mh.popup(0, 0)
 
     def show_window_menu(self, *_args) -> None:
-        self.show_xpra_menu()
+        if not self.menu_helper:
+            from xpra.client.gtk3.window_menu import WindowMenuHelper
+            self.menu_helper = WindowMenuHelper(self._client, self)
+            self.menu_helper.build()
+        self.menu_helper.popup(0, 0)
 
     def get_backing_class(self) -> type:
         from xpra.client.gtk3.cairo_backing import CairoBacking
