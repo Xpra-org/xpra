@@ -56,7 +56,6 @@ class NetworkStateMixin(StubSourceMixin):
     def init_state(self) -> None:
         self.last_ping_echoed_time = 0
         self.check_ping_echo_timers: dict[int, int] = {}
-        self.ping_timer = 0
         self.jitter = 0
         self.adapter_type = ""
         self.client_load = (0, 0, 0)
@@ -115,7 +114,6 @@ class NetworkStateMixin(StubSourceMixin):
     ######################################################################
     # pings:
     def ping(self) -> None:
-        self.ping_timer = 0
         # NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000 * monotonic())
         pinglog("sending ping to %s with time=%s", self.protocol, now_ms)
@@ -155,16 +153,6 @@ class NetworkStateMixin(StubSourceMixin):
                 cl = int(1000.0 * cl)
         self.send_async("ping_echo", time_to_echo, l1, l2, l3, cl, sid, will_have_more=False)
         pinglog(f"ping: sending echo for time={time_to_echo} and {sid=}")
-        # if the client is pinging us, ping it too:
-        if not self.ping_timer:
-            self.ping_timer = GLib.timeout_add(500, self.ping)
-            pinglog(f"starting client ping timer: {self.ping_timer}")
-
-    def cancel_ping_timer(self) -> None:
-        pt = self.ping_timer
-        if pt:
-            self.ping_timer = 0
-            GLib.source_remove(pt)
 
     def process_ping_echo(self, packet) -> None:
         echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
