@@ -140,6 +140,16 @@ def get_client_connection_class(caps: typedict):
                 log("calling %s.threaded_init_complete(%s, %s)", bc, self, server)
                 bc.threaded_init_complete(self, server)
 
+        def suspend(self, *args) -> None:
+            log("suspend%s", args)
+            for bc in CC_BASES:
+                bc.suspend(self, *args)
+
+        def resume(self, *args) -> None:
+            log("resume%s", args)
+            for bc in CC_BASES:
+                bc.resume(self, *args)
+
         def get_info(self) -> dict[str, Any]:
             def module_name(m):
                 name = str(m.__name__.split(".")[-1])

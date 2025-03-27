@@ -362,18 +362,18 @@ class WindowServer(StubServerMixin):
         return wd
 
     def _process_suspend(self, proto, packet: PacketType) -> None:
-        eventslog("suspend(%s)", packet[1:])
         ui = bool(packet[1])
-        wd = self._get_window_dict(packet[2])
         ss = self.get_server_source(proto)
+        wd = self._get_window_dict(packet[2])
+        eventslog("suspend(%s) ui=%s, source=%s, wd=%s", packet[1:], ui, ss, wd)
         if ss:
             ss.suspend(ui, wd)
 
     def _process_resume(self, proto, packet: PacketType) -> None:
-        eventslog("resume(%s)", packet[1:])
         ui = bool(packet[1])
-        wd = self._get_window_dict(packet[2])
         ss = self.get_server_source(proto)
+        wd = self._get_window_dict(packet[2])
+        eventslog("resume(%s) ui=%s, source=%s, wd=%s", packet[1:], ui, ss, wd)
         if ss:
             ss.resume(ui, wd)
 
