@@ -32,6 +32,7 @@ class FakeClient(AdHocStruct):
         self.server_pointer = False
         self.update_focus = noop
         self.has_focus = noop
+        self.suspended = False
 
         self._id_to_window = {}
         self._window_to_id = {}

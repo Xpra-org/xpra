@@ -47,6 +47,7 @@ class WebcamForwarder(StubClientMixin):
         self.webcam_ack_check_timer = 0
         self.webcam_send_timer = 0
         self.webcam_lock = RLock()
+        self.webcam_resume_restart = False
         self.server_webcam = False
         self.server_webcam_encodings: Sequence[str] = ()
         self.server_virtual_video_devices = 0
@@ -102,6 +103,16 @@ class WebcamForwarder(StubClientMixin):
             if self.webcam_option == "on" or self.webcam_option.find("/dev/video") >= 0:
                 self.start_sending_webcam()
         return True
+
+    def suspend(self) -> None:
+        self.webcam_resume_restart = bool(self.webcam_device)
+        self.stop_sending_webcam()
+
+    def resume(self) -> None:
+        wrr = self.webcam_resume_restart
+        if wrr:
+            self.webcam_resume_restart = False
+            self.start_sending_webcam()
 
     def webcam_state_changed(self) -> None:
         GLib.idle_add(self.emit, "webcam-changed")

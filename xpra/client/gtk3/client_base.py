@@ -249,22 +249,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.UI_watcher = get_UI_watcher()
         assert self.UI_watcher
         self.UI_watcher.start()
-
-        # if server supports it, enable UI thread monitoring workaround when needed:
-
-        def UI_resumed() -> None:
-            self.send("resume", True, tuple(self._id_to_window.keys()))
-            # maybe the system was suspended?
-            # so we may want to call WindowClient.resume()
-            resume = getattr(self, "resume", None)
-            if resume:
-                resume()
-
-        def UI_failed() -> None:
-            self.send("suspend", True, tuple(self._id_to_window.keys()))
-
-        self.UI_watcher.add_resume_callback(UI_resumed)
-        self.UI_watcher.add_fail_callback(UI_failed)
+        self.UI_watcher.add_resume_callback(self.resume)
+        self.UI_watcher.add_fail_callback(self.suspend)
 
     def get_vrefresh(self) -> int:
         rate = envint("XPRA_VREFRESH", 0)

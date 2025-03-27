@@ -91,6 +91,7 @@ class UIXpraClient(ClientBaseClass):
         self.request_start = []
         self.request_start_child = []
         self.headerbar = None
+        self.suspended = False
 
         # in WindowClient - should it be?
         # self.server_is_desktop = False
@@ -243,6 +244,22 @@ class UIXpraClient(ClientBaseClass):
             with log.trap_error("Error collection information from %s", c):
                 info.update(c.get_info(self))
         return info
+
+    def suspend(self, *args) -> None:
+        log("suspend%s", args)
+        self.suspended = True
+        for c in CLIENT_BASES:
+            c.suspend(self)
+        # tell the server:
+        self.send("suspend", True, tuple(self._id_to_window.keys()))
+
+    def resume(self, *args) -> None:
+        log("resume%s", args)
+        self.suspended = False
+        for c in CLIENT_BASES:
+            c.resume(self)
+        # tell the server:
+        self.send("resume", True, tuple(self._id_to_window.keys()))
 
     def show_about(self, *_args) -> None:
         log.warn(f"show_about() is not implemented in {self!r}")

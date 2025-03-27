@@ -112,3 +112,13 @@ class StubClientMixin:
         """
         The GTK client may use the splash screen here
         """
+
+    def suspend(self) -> None:
+        """
+        The client is going to suspend, take appropriate measures for this subsystem
+        """
+
+    def resume(self) -> None:
+        """
+        The client is going to resume
+        """

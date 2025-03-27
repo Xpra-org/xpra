@@ -86,6 +86,7 @@ class AudioClient(StubClientMixin):
         self.audio_source_sequence: int = 0
         self.audio_in_bytecount: int = 0
         self.audio_out_bytecount: int = 0
+        self.audio_resume_restart = False
         self.server_av_sync: bool = False
         self.server_pulseaudio_id = ""
         self.server_pulseaudio_server = ""
@@ -252,6 +253,17 @@ class AudioClient(StubClientMixin):
             # to find the pulseaudio server:
             GLib.idle_add(self.start_sending_audio)
         return True
+
+    def suspend(self) -> None:
+        self.audio_resume_restart = bool(self.audio_sink)
+        self.stop_receiving_audio()
+        self.stop_sending_audio()
+
+    def resume(self) -> None:
+        ars = self.audio_resume_restart
+        if ars:
+            self.audio_resume_restart = False
+            self.start_receiving_audio()
 
     ######################################################################
     # audio:

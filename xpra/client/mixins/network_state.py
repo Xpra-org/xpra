@@ -178,8 +178,20 @@ class NetworkState(StubClientMixin):
         return True
 
     def process_ui_capabilities(self, caps: typedict) -> None:
-        self.send_ping()
-        if self.pings > 0:
+        self.start_sending_pings()
+
+    def suspend(self) -> None:
+        self.cancel_ping_timer()
+        self.cancel_ping_echo_timers()
+
+    def resume(self) -> None:
+        self.start_sending_pings()
+
+    # timers:
+
+    def start_sending_pings(self):
+        if self.pings > 0 and not self.ping_timer:
+            self.send_ping()
             self.ping_timer = GLib.timeout_add(1000 * self.pings, self.send_ping)
 
     def cancel_ping_timer(self) -> None:
