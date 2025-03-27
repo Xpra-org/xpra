@@ -70,6 +70,7 @@ class AudioMixin(StubSourceMixin):
         self.speaker_codecs = []
         self.supports_microphone = False
         self.microphone_codecs = []
+        self.restart_speaker_args = ()
 
     def init_from(self, _protocol, server) -> None:
         self.audio_properties = typedict(server.audio_properties)
@@ -239,6 +240,7 @@ class AudioMixin(StubSourceMixin):
             ss.connect("exit", self.audio_source_exit)
             ss.connect("error", self.audio_source_error)
             ss.start()
+            self.restart_speaker_args = (codec, volume)
             return ss
         except Exception as e:
             log.error("Error setting up audio: %s", e, exc_info=True)
@@ -565,3 +567,13 @@ class AudioMixin(StubSourceMixin):
             if v is not None:
                 info[prop] = v
         return info
+
+    def suspend(self, *args) -> None:
+        if self.audio_source:
+            self.stop_sending_audio()
+
+    def resume(self, *args) -> None:
+        rsa = self.restart_speaker_args
+        if rsa:
+            self.restart_speaker_args = []
+            self.start_sending_audio(*rsa)
