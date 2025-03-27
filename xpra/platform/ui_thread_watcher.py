@@ -42,9 +42,9 @@ class UI_thread_watcher:
         self.init_vars()
 
     def init_vars(self) -> None:
-        self.alive_callbacks: list[Callable] = []
-        self.fail_callbacks: list[Callable] = []
-        self.resume_callbacks: list[Callable] = []
+        self.alive_callbacks: list[Callable[[], None]] = []
+        self.fail_callbacks: list[Callable[[], None]] = []
+        self.resume_callbacks: list[Callable[[], None]] = []
         self.UI_blocked: bool = False
         self.announced_blocked: bool = False
         self.last_UI_thread_time: float = 0
@@ -74,26 +74,26 @@ class UI_thread_watcher:
     def stop(self) -> None:
         self.exit.set()
 
-    def add_fail_callback(self, cb: Callable) -> None:
+    def add_fail_callback(self, cb: Callable[[], None]) -> None:
         self.fail_callbacks.append(cb)
 
-    def add_resume_callback(self, cb: Callable) -> None:
+    def add_resume_callback(self, cb: Callable[[], None]) -> None:
         self.resume_callbacks.append(cb)
 
-    def add_alive_callback(self, cb: Callable) -> None:
+    def add_alive_callback(self, cb: Callable[[], None]) -> None:
         self.alive_callbacks.append(cb)
 
-    def remove_fail_callback(self, cb: Callable) -> None:
+    def remove_fail_callback(self, cb: Callable[[], None]) -> None:
         self.fail_callbacks.remove(cb)
 
-    def remove_resume_callback(self, cb: Callable) -> None:
+    def remove_resume_callback(self, cb: Callable[[], None]) -> None:
         self.resume_callbacks.remove(cb)
 
-    def remove_alive_callback(self, cb: Callable) -> None:
+    def remove_alive_callback(self, cb: Callable[[], None]) -> None:
         self.alive_callbacks.remove(cb)
 
     @staticmethod
-    def run_callbacks(callbacks: list[Callable]) -> None:
+    def run_callbacks(callbacks: list[Callable[[], None]]) -> None:
         for callback in callbacks:
             with log.trap_error("Error running UI watcher callback %s", callback):
                 callback()
