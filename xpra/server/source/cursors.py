@@ -49,9 +49,8 @@ class CursorsMixin(StubSourceMixin):
     def cleanup(self) -> None:
         self.cancel_cursor_timer()
 
-    def resume(self, ui, wd: dict[int, Any]) -> None:
-        if ui:
-            self.send_cursor()
+    def resume(self) -> None:
+        self.send_cursor()
 
     def parse_client_caps(self, c: typedict) -> None:
         self.send_cursors = self.send_windows and c.boolget("cursors")

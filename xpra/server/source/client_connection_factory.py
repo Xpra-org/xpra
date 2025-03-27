@@ -140,18 +140,18 @@ def get_client_connection_class(caps: typedict):
                 log("calling %s.threaded_init_complete(%s, %s)", bc, self, server)
                 bc.threaded_init_complete(self, server)
 
-        def suspend(self, *args) -> None:
-            log("suspend%s", args)
+        def suspend(self) -> None:
+            log("suspend()")
             for bc in CC_BASES:
-                bc.suspend(self, *args)
+                bc.suspend(self)
 
-        def resume(self, *args) -> None:
-            log("resume%s", args)
+        def resume(self) -> None:
+            log("resume()")
             for bc in CC_BASES:
-                bc.resume(self, *args)
+                bc.resume(self)
 
         def get_info(self) -> dict[str, Any]:
-            def module_name(m):
+            def module_name(m) -> str:
                 name = str(m.__name__.split(".")[-1])
                 return name.replace("Mixin", "").replace("Connection", "").rstrip("_")
 

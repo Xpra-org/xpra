@@ -22,6 +22,7 @@ from xpra.log import Logger
 
 log = Logger("network")
 bandwidthlog = Logger("network", "bandwidth")
+eventslog = Logger("events")
 
 GLib = gi_import("GLib")
 
@@ -186,7 +187,7 @@ class NetworkStateServer(StubServerMixin):
     def send_ping(self) -> bool:
         from xpra.server.source.networkstate import NetworkStateMixin
         for ss in self._server_sources.values():
-            if getattr(ss, "suspended", False):
+            if ss.suspended:
                 continue
             if isinstance(ss, NetworkStateMixin):
                 ss.ping()
@@ -206,5 +207,24 @@ class NetworkStateServer(StubServerMixin):
         if ss:
             ss.process_ping(time_to_echo, sid)
 
+    def _process_suspend(self, proto, packet: PacketType) -> None:
+        ss = self.get_server_source(proto)
+        eventslog("suspend(%s) source=%s", packet[1:], ss)
+        if ss:
+            ss.suspend()
+
+    def _process_resume(self, proto, packet: PacketType) -> None:
+        ss = self.get_server_source(proto)
+        eventslog("resume(%s) source=%s", packet[1:], ss)
+        if ss:
+            ss.resume()
+
     def init_packet_handlers(self) -> None:
-        self.add_packets("ping", "ping_echo", "connection-data", "bandwidth-limit")
+        self.add_packets(
+            "ping", "ping_echo",
+            "connection-data", "bandwidth-limit",
+        )
+        self.add_packets(
+            "suspend", "resume",
+            main_thread=True,
+        )

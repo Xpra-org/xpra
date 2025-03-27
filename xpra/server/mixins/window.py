@@ -353,30 +353,6 @@ class WindowServer(StubServerMixin):
     def _process_configure_window(self, proto, packet: PacketType) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
-    def _get_window_dict(self, wids) -> dict[int, Any]:
-        wd = {}
-        for wid in wids:
-            window = self._id_to_window.get(wid)
-            if window:
-                wd[wid] = window
-        return wd
-
-    def _process_suspend(self, proto, packet: PacketType) -> None:
-        ui = bool(packet[1])
-        ss = self.get_server_source(proto)
-        wd = self._get_window_dict(packet[2])
-        eventslog("suspend(%s) ui=%s, source=%s, wd=%s", packet[1:], ui, ss, wd)
-        if ss:
-            ss.suspend(ui, wd)
-
-    def _process_resume(self, proto, packet: PacketType) -> None:
-        ui = bool(packet[1])
-        ss = self.get_server_source(proto)
-        wd = self._get_window_dict(packet[2])
-        eventslog("resume(%s) ui=%s, source=%s, wd=%s", packet[1:], ui, ss, wd)
-        if ss:
-            ss.resume(ui, wd)
-
     def send_initial_windows(self, ss, sharing=False) -> None:
         raise NotImplementedError()
 
@@ -413,5 +389,4 @@ class WindowServer(StubServerMixin):
             "configure-window", "close-window",
             "focus",
             "damage-sequence", "buffer-refresh",
-            "suspend", "resume",
             main_thread=True)

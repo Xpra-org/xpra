@@ -568,11 +568,11 @@ class AudioMixin(StubSourceMixin):
                 info[prop] = v
         return info
 
-    def suspend(self, *args) -> None:
+    def suspend(self) -> None:
         if self.audio_source:
             self.stop_sending_audio()
 
-    def resume(self, *args) -> None:
+    def resume(self) -> None:
         rsa = self.restart_speaker_args
         if rsa:
             self.restart_speaker_args = []

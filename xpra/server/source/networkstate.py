@@ -70,7 +70,6 @@ class NetworkStateMixin(StubSourceMixin):
 
     def cleanup(self) -> None:
         self.cancel_ping_echo_timers()
-        self.cancel_ping_timer()
 
     def get_caps(self) -> dict[str, Any]:
         # legacy flag

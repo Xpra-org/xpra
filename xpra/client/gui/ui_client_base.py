@@ -251,6 +251,7 @@ class UIXpraClient(ClientBaseClass):
         for c in CLIENT_BASES:
             c.suspend(self)
         # tell the server:
+        # ("ui" and "window-ids" arguments are optional since v6.3)
         self.send("suspend", True, tuple(self._id_to_window.keys()))
 
     def resume(self, *args) -> None:
@@ -259,6 +260,7 @@ class UIXpraClient(ClientBaseClass):
         for c in CLIENT_BASES:
             c.resume(self)
         # tell the server:
+        # ("ui" and "window-ids" arguments are optional since v6.3)
         self.send("resume", True, tuple(self._id_to_window.keys()))
 
     def show_about(self, *_args) -> None:

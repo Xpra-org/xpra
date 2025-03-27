@@ -86,23 +86,17 @@ class WindowsMixin(StubSourceMixin):
     def all_window_sources(self) -> tuple:
         return tuple(self.window_sources.values())
 
-    def suspend(self, ui: bool, wd: dict[int, Any]) -> None:
-        eventslog("suspend(%s, %s) suspended=%s", ui, wd, self.suspended)
-        if ui:
-            self.suspended = True
-        for wid in wd.keys():
-            ws = self.window_sources.get(wid)
-            if ws:
-                ws.suspend()
+    def suspend(self) -> None:
+        eventslog("suspend() suspended=%s", self.suspended)
+        self.suspended = True
+        for ws in self.window_sources.values():
+            ws.suspend()
 
-    def resume(self, ui, wd: dict[int, Any]) -> None:
-        eventslog("resume(%s, %s) suspended=%s", ui, wd, self.suspended)
-        if ui:
-            self.suspended = False
-        for wid in wd.keys():
-            ws = self.window_sources.get(wid)
-            if ws:
-                ws.resume()
+    def resume(self) -> None:
+        eventslog("resume() suspended=%s", self.suspended)
+        self.suspended = False
+        for ws in self.window_sources.values():
+            ws.resume()
 
     def go_idle(self) -> None:
         # usually fires from the server's idle_grace_timeout_cb
