@@ -22,7 +22,7 @@ from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
 from xpra.net.common import PacketType, PacketElement
 from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
 from xpra.server import features, ServerExitMode
-from xpra.gtk.gobject import one_arg_signal
+from xpra.gtk.gobject import one_arg_signal, n_arg_signal
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.gtk.prop import prop_set
@@ -80,7 +80,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     __gsignals__ = {
         "x11-child-map-event": one_arg_signal,
         "x11-cursor-event": one_arg_signal,
-        "server-event": one_arg_signal,
+        "server-event": n_arg_signal(2),
     }
 
     def __init__(self, clobber):
@@ -267,7 +267,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
     def server_event(self, event_type: str, *args: PacketElement) -> None:
         super().server_event(event_type, *args)
-        self.emit("server-event", args)
+        self.emit("server-event", event_type, args)
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
