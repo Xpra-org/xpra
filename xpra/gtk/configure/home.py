@@ -50,7 +50,7 @@ class HomeGUI(BaseGUIWindow):
 
         sensitive = not req_module or bool(find_spec(req_module))
         if not sensitive:
-            tooltip = f"not available: {tooltip}"
+            tooltip = f"not available in this build:\n'{tooltip}'"
         self.ib(title, icon_name, tooltip, callback=callback, sensitive=sensitive)
 
 
