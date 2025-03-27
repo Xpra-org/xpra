@@ -55,8 +55,6 @@ class UI_thread_watcher:
         if self.last_UI_thread_time > 0:
             log.warn("UI thread watcher already started!")
             return
-        # run once to initialize:
-        self.UI_thread_wakeup()
         if self.polling_timeout > 0:
             start_thread(self.poll_UI_loop, "UI thread polling", daemon=True)
         else:
@@ -118,22 +116,23 @@ class UI_thread_watcher:
     def poll_UI_loop(self) -> None:
         log("poll_UI_loop() running")
         while not self.exit.is_set():
-            delta = monotonic() - self.last_UI_thread_time
-            if self.UI_blocked:
-                log("poll_UI_loop() last_UI_thread_time was %ims ago (max %i), UI_blocked=%s",
-                    delta * 1000, self.max_delta, self.UI_blocked)
-            if delta > self.max_delta / 1000.0:
-                # UI thread is (still?) blocked:
-                if not self.UI_blocked:
-                    self.UI_blocked = True
-                    self.run_callbacks(self.fail_callbacks)
-                if not self.announced_blocked and delta > self.announce_timeout:
-                    self.announced_blocked = True
-                    log.info("UI thread is now blocked")
-            else:
-                # seems to be ok:
-                log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
-                self.run_callbacks(self.alive_callbacks)
+            if self.last_UI_thread_time > 0:
+                delta = monotonic() - self.last_UI_thread_time
+                if self.UI_blocked:
+                    log("poll_UI_loop() last_UI_thread_time was %ims ago (max %i), UI_blocked=%s",
+                        delta * 1000, self.max_delta, self.UI_blocked)
+                if delta > self.max_delta / 1000.0:
+                    # UI thread is (still?) blocked:
+                    if not self.UI_blocked:
+                        self.UI_blocked = True
+                        self.run_callbacks(self.fail_callbacks)
+                    if not self.announced_blocked and delta > self.announce_timeout:
+                        self.announced_blocked = True
+                        log.info("UI thread is now blocked")
+                else:
+                    # seems to be ok:
+                    log("poll_UI_loop() ok, firing %s", self.alive_callbacks)
+                    self.run_callbacks(self.alive_callbacks)
             now = monotonic()
             self.ui_wakeup_timer = GLib.timeout_add(0, self.UI_thread_wakeup, now)
             wstart = monotonic()
