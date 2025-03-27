@@ -1204,55 +1204,59 @@ class GTKTrayMenu(MenuHelper):
 
         if PREFER_IBUS_LAYOUTS:
             def got_ibus_layouts(setting: str, ibus_layouts) -> None:
-                Logger("ibus").debug(f"got {setting!r}=%s", Ellipsizer(ibus_layouts))
                 kh = self.client.keyboard_helper
-                if ibus_layouts and kh.layout and PREFER_IBUS_LAYOUTS:
+                Logger("ibus").debug(f"current layout=%r, got {setting!r}=%s", kh.layout, Ellipsizer(ibus_layouts))
+                if ibus_layouts and kh.layout:
                     self.populate_ibus_keyboard_layouts(ibus_layouts)
             self.client.on_server_setting_changed("ibus-layouts", got_ibus_layouts)
 
     def kbitem(self, title: str, layout: str, variant: str, backend="", name="", active=False) -> Gtk.CheckMenuItem:
-
-        def set_layout(item) -> None:
-            """ this callback updates the client (and server) if needed """
-            ensure_item_selected(self.layout_submenu, item)
-            layout = item.keyboard_layout
-            variant = item.keyboard_variant
-            kh = self.client.keyboard_helper
-            kh.locked = layout != "Auto"
-            if layout != kh.layout_option or variant != kh.variant_option or kh.backend != backend or kh.name != name:
-                kh.backend = backend
-                if layout == "Auto":
-                    # re-detect everything:
-                    msg = "keyboard automatic mode"
-                    kh.layout_option = ""
-                    kh.variant_option = ""
-                    kh.backend = ""
-                    kh.name = ""
-                    unset_config("keyboard-backend", "keyboard-layout", "keyboard-variant")
-                else:
-                    # use layout specified and send it:
-                    kh.layout_option = layout
-                    kh.variant_option = variant
-                    kh.backend = backend
-                    kh.name = name
-                    msg = "new keyboard layout selected"
-                    update_config({
-                        "# keyboard name": name,
-                        "keyboard-backend": backend,
-                        "keyboard-layout": layout,
-                        "keyboard-variant": variant,
-                    })
-                kh.update()
-                kh.send_layout()
-                log.info(f"{msg}: {kh.layout_str()}")
-                if not backend:
-                    kh.send_keymap()
-
-        l = self.checkitem(str(title), set_layout, active)
+        l = self.checkitem(title, self.set_kbitem_layout, active)
         l.set_draw_as_radio(True)
+        l.keyboard_name = name
+        l.keyboard_backend = backend
         l.keyboard_layout = layout
         l.keyboard_variant = variant
         return l
+
+    def set_kbitem_layout(self, item) -> None:
+        """ this callback updates the client (and server) if needed """
+        ensure_item_selected(self.layout_submenu, item)
+        name = item.keyboard_name
+        backend = item.keyboard_backend
+        layout = item.keyboard_layout
+        variant = item.keyboard_variant
+        kh = self.client.keyboard_helper
+        kh.locked = layout != "Auto"
+        if layout != kh.layout_option or variant != kh.variant_option or kh.backend != backend or kh.name != name:
+            kh.backend = backend
+            if layout == "Auto":
+                # re-detect everything:
+                msg = "keyboard automatic mode"
+                kh.layout_option = ""
+                kh.variant_option = ""
+                kh.backend = ""
+                kh.name = ""
+                unset_config("keyboard-backend", "keyboard-layout", "keyboard-variant")
+            else:
+                # use layout specified and send it:
+                kh.layout_option = layout
+                kh.variant_option = variant
+                kh.backend = backend
+                kh.name = name
+                msg = "new keyboard layout selected"
+                update_config({
+                    "# keyboard name": name,        # ie: "xkb:gb:extd:eng"
+                    "# label": item.get_label(),    # ie: "English (UK, extended, Windows)"
+                    "keyboard-backend": backend,
+                    "keyboard-layout": layout,
+                    "keyboard-variant": variant,
+                })
+            kh.update()
+            kh.send_layout()
+            log.info(f"{msg}: {kh.layout_str()}")
+            if not backend:
+                kh.send_keymap()
 
     def populate_ibus_keyboard_layouts(self, ibus_layouts: dict) -> None:
         self.layout_submenu = Gtk.Menu()
@@ -1270,6 +1274,7 @@ class GTKTrayMenu(MenuHelper):
             rank = engine.get("rank", 0)
             engines[rank * 65536 + i] = engine
         log(f"current settings: backend={kh.backend!r}, layout={kh.layout!r}, variant={kh.variant!r}")
+        match = None
         for rank in reversed(sorted(engines)):
             engine = engines[rank]
             layout = engine.get("layout", "")
@@ -1279,7 +1284,13 @@ class GTKTrayMenu(MenuHelper):
             backend = "ibus"
             active = kh.backend == backend and kh.layout == layout and kh.variant == variant
             log(f"{engine=} : {active=}")
-            self.layout_submenu.append(self.kbitem(descr, layout, variant, backend, name, active))
+            item = self.kbitem(descr, layout, variant, backend, name, active)
+            self.layout_submenu.append(item)
+            if active:
+                match = item
+        log(f"ibus {match=}")
+        if match:
+            self.set_kbitem_layout(match)
 
     def populate_keyboard_helper_layouts(self) -> None:
         self.layout_submenu = Gtk.Menu()
