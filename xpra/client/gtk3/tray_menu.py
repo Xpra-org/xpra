@@ -1265,35 +1265,67 @@ class GTKTrayMenu(MenuHelper):
         self.layout_submenu = Gtk.Menu()
         self.keyboard_layout_item.set_submenu(self.layout_submenu)
         kh = self.client.keyboard_helper
-        # use csv and back to get every single layout string:
-        layouts = uniq((kh.layout_option or csv(kh.layouts)).split(","))
-        log(f"populate_ibus_keyboard_layouts() {layouts}")
-        # find the "engines" matching the layouts:
-        engines = {}
-        for i, engine in enumerate(ibus_layouts.get("engines", ())):
-            layout = engine.get("layout", "")
-            if not layout or layout not in layouts:
-                continue
-            rank = engine.get("rank", 0)
-            engines[rank * 65536 + i] = engine
-        log(f"current settings: backend={kh.backend!r}, layout={kh.layout!r}, variant={kh.variant!r}")
-        match = None
-        for rank in reversed(sorted(engines)):
-            engine = engines[rank]
+        matches = []
+
+        def engine_item(engine) -> tuple[str, Gtk.CheckMenuItem]:
             layout = engine.get("layout", "")
             name = engine.get("name", layout)
             descr = engine.get("description", layout).split("\n")[0]
             variant = engine.get("variant", "")
             backend = "ibus"
-            active = kh.backend == backend and kh.layout == layout and kh.variant == variant
+            active = kh.backend == backend and kh.layout == layout and kh.variant == variant and not matches
             log(f"{engine=} : {active=}")
             item = self.kbitem(descr, layout, variant, backend, name, active)
+            return descr, item
+
+        def items_matching(*layouts: str) -> Sequence[Gtk.CheckMenuItem]:
+            # find all the ibus "engines" matching one of these layouts:
+            engines = {}
+            for i, engine in enumerate(ibus_layouts.get("engines", ())):
+                layout = engine.get("layout", "")
+                if not layout or layout not in layouts:
+                    continue
+                rank = engine.get("rank", 0)
+                engines[rank * 65536 + i] = engine
+            items = {}
+            for rank in reversed(sorted(engines)):
+                engine = engines[rank]
+                descr, item = engine_item(engine)
+                if descr not in items:
+                    items[descr] = item
+                    if item.get_active():
+                        matches.append(item)
+            items = dict(sorted(items.items()))
+            return tuple(items.values())
+
+        log(f"current settings: backend={kh.backend!r}, layout={kh.layout!r}, variant={kh.variant!r}")
+
+        # at the top level menu, show layouts matching the layout-option or current layout:
+        layouts = uniq((kh.layout_option or kh.layout).split(","))
+        log(f"unique layouts: {layouts}")
+        for item in items_matching(*layouts):
             self.layout_submenu.append(item)
-            if active:
-                match = item
-        log(f"ibus {match=}")
-        if match:
-            self.set_kbitem_layout(match, save=False)
+
+        # now add a submenu for each of the other layouts:
+        other_layouts = tuple(layout.strip() for layout in uniq((csv(kh.layouts_option or kh.layouts)).split(","))
+                              if layout.strip() not in layouts)
+        log.warn(f"other layouts: {other_layouts}")
+        from xpra.keyboard.layouts import LAYOUT_NAMES
+        for layout in other_layouts:
+            items = items_matching(layout)
+            log(f"items_matching({layout})={items}")
+            if items:
+                layout_name = LAYOUT_NAMES.get(layout, layout)
+                layout_menu = self.menuitem(layout_name)
+                submenu = Gtk.Menu()
+                for item in items:
+                    submenu.append(item)
+                layout_menu.set_submenu(submenu)
+                self.layout_submenu.append(layout_menu)
+
+        log(f"ibus {matches=}")
+        if matches:
+            self.set_kbitem_layout(matches[0], save=False)
 
     def populate_keyboard_helper_layouts(self) -> None:
         self.layout_submenu = Gtk.Menu()

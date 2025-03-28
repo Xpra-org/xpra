@@ -392,6 +392,14 @@ for win32layout in WIN32_LAYOUTS.values():
             layout_variants.append(variant)
 
 
+# make it easier to resolve a 2-letter code into a meaningful description:
+LAYOUT_NAMES: dict[str, str] = {}
+for code3, country, name, codepage, code2, variants in WIN32_LAYOUTS.values():
+    if code2 in LAYOUT_NAMES:
+        continue
+    LAYOUT_NAMES[code2] = name
+
+
 def parse_xkbmap_query(xkbmap_query: str) -> dict[str, str]:
     """ parses the output of "setxkbmap -query" into a dict """
     import re
