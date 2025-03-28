@@ -1219,9 +1219,10 @@ class GTKTrayMenu(MenuHelper):
         l.keyboard_variant = variant
         return l
 
-    def set_kbitem_layout(self, item) -> None:
+    def set_kbitem_layout(self, item, save=True) -> None:
         """ this callback updates the client (and server) if needed """
         ensure_item_selected(self.layout_submenu, item)
+        descr = item.get_label()
         name = item.keyboard_name
         backend = item.keyboard_backend
         layout = item.keyboard_layout
@@ -1237,7 +1238,8 @@ class GTKTrayMenu(MenuHelper):
                 kh.variant_option = ""
                 kh.backend = ""
                 kh.name = ""
-                unset_config("keyboard-backend", "keyboard-layout", "keyboard-variant")
+                if save:
+                    unset_config("keyboard-backend", "keyboard-layout", "keyboard-variant")
             else:
                 # use layout specified and send it:
                 kh.layout_option = layout
@@ -1245,16 +1247,17 @@ class GTKTrayMenu(MenuHelper):
                 kh.backend = backend
                 kh.name = name
                 msg = "new keyboard layout selected"
-                update_config({
-                    "# keyboard name": name,        # ie: "xkb:gb:extd:eng"
-                    "# label": item.get_label(),    # ie: "English (UK, extended, Windows)"
-                    "keyboard-backend": backend,
-                    "keyboard-layout": layout,
-                    "keyboard-variant": variant,
-                })
+                if save:
+                    update_config({
+                        "# description": descr,         # ie: "English (UK, extended, Windows)"
+                        "# keyboard name": name,        # ie: "xkb:gb:extd:eng"
+                        "keyboard-backend": backend,
+                        "keyboard-layout": layout,
+                        "keyboard-variant": variant,
+                    })
             kh.update()
             kh.send_layout()
-            log.info(f"{msg}: {kh.layout_str()}")
+            log.info(f"{msg}: {descr!r}")
             if not backend:
                 kh.send_keymap()
 
@@ -1290,7 +1293,7 @@ class GTKTrayMenu(MenuHelper):
                 match = item
         log(f"ibus {match=}")
         if match:
-            self.set_kbitem_layout(match)
+            self.set_kbitem_layout(match, save=False)
 
     def populate_keyboard_helper_layouts(self) -> None:
         self.layout_submenu = Gtk.Menu()
