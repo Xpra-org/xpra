@@ -198,12 +198,15 @@ class UIXpraClient(ClientBaseClass):
 
     def init_ui(self, opts):
         """ initialize user interface """
-        def noauto(v):
-            if not v:
-                return None
-            if str(v).lower()=="auto":
-                return None
-            return v
+
+        def noauto(val):
+            default = [] if isinstance(val, Sequence) else None
+            if not val:
+                return default
+            if str(val).lower() == "auto":
+                return default
+            return val
+
         overrides = [noauto(getattr(opts, "keyboard_%s" % x)) for x in (
             "layout", "layouts", "variant", "variants", "options",
             )]
