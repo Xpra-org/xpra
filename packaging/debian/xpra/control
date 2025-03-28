@@ -143,6 +143,7 @@ Depends: xpra-common (= ${binary:Version})
         ,xvfb
         ,keyboard-configuration
 Recommends: xpra-codecs (= ${binary:Version})
+        ,xpra-audio-server
         ,xpra-codecs-extras (= ${binary:Version})
         ,xpra-x11 (= ${binary:Version})
         ,xpra-html5
@@ -271,10 +272,7 @@ Depends: xpra-common (= ${binary:Version})
         ,python3-gst-1.0
         ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
-Recommends: pulseaudio
-        ,gstreamer1.0-pulseaudio
-        ,pulseaudio-utils
-        ,gstreamer1.0-tools
+Recommends: gstreamer1.0-tools
         ,gstreamer1.0-alsa
         ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
@@ -282,8 +280,19 @@ Recommends: pulseaudio
 #                  ^^ removesilence
         ,gstreamer1.0-plugins-ugly
 #                  ^^ mp3 ^^
+        ,xpra-audio-server
 Description: Components required for xpra audio forwarding,
  used by both client and servers.
+
+
+Package: xpra-audio-server
+Architecture: any
+Depends: xpra-audio (= ${binary:Version})
+        ,pulseaudio
+        ,gstreamer1.0-pulseaudio
+        ,pulseaudio-utils
+Description: Components required for xpra audio forwarding,
+ on the server side.
 
 
 Package: xpra-codecs

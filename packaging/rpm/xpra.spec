@@ -336,17 +336,24 @@ Recommends:			gstreamer1-plugin-timestamp
 Recommends:			gstreamer1-plugins-bad
 Recommends:			gstreamer1-plugins-ugly
 Recommends:			gstreamer1-plugins-ugly-free
-Recommends:			pulseaudio
-Recommends:			pulseaudio-module-x11
-Recommends:			pulseaudio-utils
+%description -n %{package_prefix}-audio
+This package contains audio support for xpra.
+
+
+%package -n %{package_prefix}-audio-server
+Summary:			%{python3} build of xpra audio server support
+Requires:			%{package_prefix}-audio = %{version}-%{release}
+Requires:			pulseaudio
+Requires:			pulseaudio-module-x11
+Requires:			pulseaudio-utils
 %if 0%{?run_tests}
 BuildRequires:		gstreamer1
 BuildRequires:		gstreamer1-plugins-good
 BuildRequires:		pulseaudio
 BuildRequires:		pulseaudio-utils
 %endif
-%description -n %{package_prefix}-audio
-This package contains audio support for xpra.
+%description -n %{package_prefix}-audio-server
+This package contains audio support for xpra servers.
 
 
 %package -n %{package_prefix}-client
