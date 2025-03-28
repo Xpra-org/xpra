@@ -175,18 +175,19 @@ class NamedPipeListener(Thread):
             if pipe_handle != INVALID_HANDLE:
                 self.new_connection_cb("named-pipe", self, pipe_handle)
                 pipe_handle = INVALID_HANDLE
-        if pipe_handle.value != INVALID_HANDLE:
-            self.close_handle(pipe_handle)
+        self.close_handle(pipe_handle)
 
     def close_handle(self, pipe_handle: HANDLE) -> None:
+        log("CloseHandle(%s)", pipe_handle)
+        if pipe_handle == INVALID_HANDLE:
+            return
         try:
-            log("CloseHandle(%s)", pipe_handle)
             CloseHandle(pipe_handle)
         except Exception:
             log("CloseHandle(%s)", pipe_handle, exc_info=True)
 
     def new_connection(self, socktype, listener, pipe_handle: HANDLE) -> None:
-        log.info("new_connection(%s, %s, %s)", socktype, listener, pipe_handle)
+        log("new_connection(%s, %s, %s)", socktype, listener, pipe_handle)
         self.close_handle(pipe_handle)
 
     def CreatePipeHandle(self) -> HANDLE:
