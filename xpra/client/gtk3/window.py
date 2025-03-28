@@ -12,7 +12,6 @@ from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
-from xpra.util.system import is_gnome
 from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
@@ -27,7 +26,7 @@ GObject = gi_import("GObject")
 Gio = gi_import("Gio")
 
 WINDOW_ICON = envbool("XPRA_WINDOW_ICON", True)
-WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", is_gnome())
+WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", True)
 WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
@@ -84,6 +83,7 @@ class ClientWindow(GTKClientWindowBase):
         return False
 
     def add_header_bar(self) -> None:
+        metalog("add_header_bar()")
         hb = Gtk.HeaderBar()
         hb.set_has_subtitle(False)
         hb.set_show_close_button(True)
