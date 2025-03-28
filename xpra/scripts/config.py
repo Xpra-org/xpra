@@ -1624,7 +1624,11 @@ def fixup_keyboard(options) -> None:
     # variants and layouts can be specified as CSV, convert them to lists:
     def p(v) -> list[str]:
         try:
-            r = remove_dupes(x.strip() for x in str(v).split(","))
+            if isinstance(v, Sequence):
+                seq = v
+            else:
+                seq = str(v).split(",")
+            r = remove_dupes(x.strip() for x in seq)
             # remove empty string if that's the only value:
             if r and len(r) == 1 and r[0] == "":
                 r = []
