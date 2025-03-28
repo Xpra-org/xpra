@@ -268,13 +268,13 @@ Conflicts: python2-xpra, python3-xpra, xpra (<< 5)
 Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< 5)
 Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
-        ,pulseaudio
-        ,gstreamer1.0-pulseaudio
-        ,pulseaudio-utils
         ,python3-gst-1.0
         ,gstreamer1.0-plugins-base
 #                 ^^ vorbis ^^
-Recommends: gstreamer1.0-tools
+Recommends: pulseaudio
+        ,gstreamer1.0-pulseaudio
+        ,pulseaudio-utils
+        ,gstreamer1.0-tools
         ,gstreamer1.0-alsa
         ,gstreamer1.0-plugins-good
 #                  ^^ wavpack, wav, flac, speex ^^
