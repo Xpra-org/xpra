@@ -8,7 +8,7 @@
 from xpra.client.gtk3.window_base import GTKClientWindowBase, HAS_X11_BINDINGS
 from xpra.gtk.widget import scaled_image
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
@@ -64,23 +64,22 @@ class ClientWindow(GTKClientWindowBase):
         hbl = (self.headerbar or "").lower().strip()
         if hbl in FALSE_OPTIONS:
             return False
-        if hbl in TRUE_OPTIONS:
-            sc = metadata.dictget("size-constraints")
-            if sc is None:
-                return True
-            tsc = typedict(sc)
-            maxs = tsc.intpair("maximum-size")
-            if maxs:
-                return False
-            mins = tsc.intpair("minimum-size")
-            if mins and mins != (0, 0):
-                return False
-            if tsc.intpair("increment", (0, 0)) != (0, 0):
-                return False
-            return True
         if hbl == "force":
             return True
-        return False
+        # we can't enable it if there are size-constraints:
+        sc = metadata.dictget("size-constraints")
+        if sc is None:
+            return True
+        tsc = typedict(sc)
+        maxs = tsc.intpair("maximum-size")
+        if maxs:
+            return False
+        mins = tsc.intpair("minimum-size")
+        if mins and mins != (0, 0):
+            return False
+        if tsc.intpair("increment", (0, 0)) != (0, 0):
+            return False
+        return True
 
     def add_header_bar(self) -> None:
         metalog("add_header_bar()")
