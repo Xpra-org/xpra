@@ -551,6 +551,7 @@ class UIXpraClient(ClientBaseClass):
         self._on_server_setting_changed.setdefault(setting, []).append(cb)
         # has the value already been updated:
         value = self.server_setting_updates.get(setting)
+        log("on_server_setting_changed%s value=%s", (setting, cb), value)
         if value is not None:
             cb(setting, value)
 
