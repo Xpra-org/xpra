@@ -200,7 +200,7 @@ class UIXpraClient(ClientBaseClass):
         """ initialize user interface """
 
         def noauto(val):
-            default = [] if isinstance(val, Sequence) else None
+            default = [] if isinstance(val, (list, tuple)) else None
             if not val:
                 return default
             if str(val).lower() == "auto":
