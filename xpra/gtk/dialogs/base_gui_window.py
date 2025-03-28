@@ -96,7 +96,7 @@ class BaseGUIWindow(Gtk.Window):
         self.add_text_lines(lines)
         self.add_buttons(*buttons)
 
-    def add_text_lines(self, lines, font="Sans 14"):
+    def add_text_lines(self, lines, font="Sans 14") -> None:
         text = "\n".join(lines)
         lbl = label(text, font=font)
         lbl.set_line_wrap(True)
@@ -121,6 +121,7 @@ class BaseGUIWindow(Gtk.Window):
         self.do_dismiss()
 
     def add_headerbar(self, about=True, toolbox=True, configure=False) -> None:
+        log("add_headerbar%s", (about, toolbox, configure))
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
         hb.props.title = "Xpra"
@@ -139,7 +140,7 @@ class BaseGUIWindow(Gtk.Window):
             def show_gui(*_args) -> None:
                 w = None
 
-                def hide(*_args):
+                def hide(*_args) -> None:
                     w.hide()
 
                 gui_class.quit = hide
@@ -147,7 +148,7 @@ class BaseGUIWindow(Gtk.Window):
                 w.show()
             add_hb_button(text, icon_name, show_gui)
 
-        def add_buttons():
+        def add_buttons() -> None:
             if about:
                 add_hb_button("About", "help-about", self.show_about)
             if toolbox:
@@ -193,7 +194,7 @@ class BaseGUIWindow(Gtk.Window):
                         fix_button_size(g_child)
             hb.forall(with_child)
 
-        def map_event(*_args):
+        def map_event(*_args) -> None:
             GLib.timeout_add(100, fix_default_icon_sizes)
         self.connect("map-event", map_event)
 
