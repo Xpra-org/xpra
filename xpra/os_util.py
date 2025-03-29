@@ -231,7 +231,7 @@ def platform_release(release):
     return release
 
 
-def platform_name(sys_platform=sys.platform, release=None) -> str:
+def platform_name(sys_platform=sys.platform, release="") -> str:
     if not sys_platform:
         return "unknown"
     PLATFORMS = {
@@ -247,9 +247,9 @@ def platform_name(sys_platform=sys.platform, release=None) -> str:
             values = [v] + list(release)
         else:
             values = []
-            if not release.startswith(v):
+            if release and not release.startswith(v):
                 values.append(v)
-            values.append(release)
+            values.append(release or "")
         return " ".join(str(x) for x in values if x and x not in ("", "unknown", "n/a"))
 
     for k,v in PLATFORMS.items():
