@@ -453,7 +453,7 @@ class SocketConnection(Connection):
                 if iface and iface != "lo":
                     try:
                         from xpra.platform.netdev_query import get_interface_info
-                    except (ModuleNotFoundError, ImportError) as e:
+                    except ImportError as e:
                         log("do_get_socket_info() no netdev_query: %s", e)
                     else:
                         device_info.update(get_interface_info(fd, iface))
