@@ -1309,7 +1309,7 @@ class GTKTrayMenu(MenuHelper):
         # now add a submenu for each of the other layouts:
         other_layouts = tuple(layout.strip() for layout in uniq((csv(kh.layouts_option or kh.layouts)).split(","))
                               if layout.strip() not in layouts)
-        log.warn(f"other layouts: {other_layouts}")
+        log(f"other layouts: {other_layouts}")
         from xpra.keyboard.layouts import LAYOUT_NAMES
         for layout in other_layouts:
             items = items_matching(layout)
