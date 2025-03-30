@@ -15,9 +15,9 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.windows:
         from xpra.client.mixins.windows import WindowClient
         CLIENT_BASES.append(WindowClient)
-    if features.cursors:
-        from xpra.client.mixins.cursors import CursorClient
-        CLIENT_BASES.append(CursorClient)
+        if features.cursors:
+            from xpra.client.mixins.cursors import CursorClient
+            CLIENT_BASES.append(CursorClient)
     if features.webcam:
         from xpra.client.mixins.webcam import WebcamForwarder
         CLIENT_BASES.append(WebcamForwarder)

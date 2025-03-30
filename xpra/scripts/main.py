@@ -2121,7 +2121,7 @@ def set_client_features(opts) -> None:
     from xpra.client.base import features
     features.display = opts.windows
     features.windows = opts.windows
-    features.cursors = opts.cursors
+    features.cursors = opts.windows and opts.cursors
     features.gstreamer = opts.gstreamer
     features.x11 = opts.x11 and impcheck("xpra.x11")
     features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("xpra.audio")
