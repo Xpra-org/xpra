@@ -820,6 +820,9 @@ def do_parse_cmdline(cmdline, defaults):
             hidden_options[k.replace("-", "_")] = v
     #removed in 4.4:
     ignore_options(cmdline, "global-menus")
+    #added in v6.3:
+    ignore_options(cmdline, "keyboard-backend")
+
     group = optparse.OptionGroup(parser, "Server Options",
                 "These options are only relevant when starting or upgrading a server.")
     parser.add_option_group(group)
