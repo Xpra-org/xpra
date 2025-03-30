@@ -1,11 +1,11 @@
 # Changelog
 
-## [5.1] 2025-03-05
+## [5.1] 2025-03-30
 * Platforms, build and packaging:
     * [prefer CUDA arch specific pkg-config file for `nvdec`](https://github.com/Xpra-org/xpra/commit/87a0e81f9df262b79d348e5c53ea046ac68cb97e)
     * [CUDA build errors with newer compilers](https://github.com/Xpra-org/xpra/commit/9fdc7b3d68f795c54890d41989cae0ee58762597)
     * [Python 3.14 parallel build errors](https://github.com/Xpra-org/xpra/commit/0977328ec0cf8b767baedc3a806ccf1b2a0b97b2)
-    * [Fedora 42 package list](https://github.com/Xpra-org/xpra/commit/25a6ab33867c4d6e12d0a04e2aad12f56c154086) [with default Python](https://github.com/Xpra-org/xpra/commit/7e18f0353527a5c3c5df59c0ee541531f50a3ed6), workarounds for [dependencies](https://github.com/Xpra-org/xpra/commit/3df6f2b395105e10c6ffb096675877de8961e675) and [`pam_misc`](https://github.com/Xpra-org/xpra/commit/6ca947d5bb4f23e186573d39b7672fab87828df7)
+    * [Fedora 42 package list](https://github.com/Xpra-org/xpra/commit/25a6ab33867c4d6e12d0a04e2aad12f56c154086) [with default Python](https://github.com/Xpra-org/xpra/commit/7e18f0353527a5c3c5df59c0ee541531f50a3ed6), workarounds for [dependencies](https://github.com/Xpra-org/xpra/commit/3df6f2b395105e10c6ffb096675877de8961e675)
     * [add Ubuntu Plucky](https://github.com/Xpra-org/xpra/commit/627df9428434dfb443622c5d8e24a2403a59f87c), [remove Ubuntu Lunar](https://github.com/Xpra-org/xpra/commit/beb308a4292444044626c6c525e773a1d316a21c)
     * [PyCUDA 2025.1](https://github.com/Xpra-org/xpra/commit/d4c0df6e55ff5a0315a0c488c50b2db111288000)
     * [Cython 3.0.12](https://github.com/Xpra-org/xpra/commit/0a7f75bdbec97544ef9c2818cd5acfc96ece9898)
@@ -14,9 +14,14 @@
     * [missing RPM `python3` direct dependency for some Python libraries](https://github.com/Xpra-org/xpra/commit/c97d565504eb54751b95f2cdfa9608bda13641d4)
     * [errors installing `libexec` scripts into a prefix](https://github.com/Xpra-org/xpra/commit/9b9da1e93f9b1f1a95964ee690e4127a004d3d9b)
     * [detect MS Windows version for all codepages](https://github.com/Xpra-org/xpra/commit/40402e0e38e304ea517e7c4982a9810b7a62cfe7)
+    * [better compatibility with arm64 MS Windows installer packaging](https://github.com/Xpra-org/xpra/commit/4132e85b1cef77d0b8d1326913e57c1f02c1c2f1)
     * [valid default options for MS Windows arm64 non-light builds](https://github.com/Xpra-org/xpra/commit/92f126459a9c349bd1c3a1e74712d29df7773fdc)
+    * [named-pipes shutdown errors](https://github.com/Xpra-org/xpra/commit/f42cee0253b0ccdabdd77dd429baba1facde1420)
     * [don't enable splash unconditionally on non-posix](https://github.com/Xpra-org/xpra/commit/51d82468d1bb8d0e85e452440ca28521091eb44b)
     * [spng codecs missing due to pkg-config changes](https://github.com/Xpra-org/xpra/commit/76f961cc009f410d02afe6b63da2ac1e57ebcc95)
+    * [Ubuntu Oracular package name revert](https://github.com/Xpra-org/xpra/commit/5bd5666c2a0415e3fd5bc2104bc655e18799e7f5)
+    * [Debian distributions with Python >= 3.13 need `setuptools`](https://github.com/Xpra-org/xpra/commit/952c3e672a4c899582542091c5f2153d050954d5)
+    * [`pam_misc` upgrade breaks include path](https://github.com/Xpra-org/xpra/commit/d339be7f51b92afb811c41372571af5f55f74150), [incorrect workaround attempt](https://github.com/Xpra-org/xpra/commit/6ca947d5bb4f23e186573d39b7672fab87828df7) + [fixup](https://github.com/Xpra-org/xpra/commit/b010bff95083bbb4636059c90528b5e0d8c38fe9) + [another](https://github.com/Xpra-org/xpra/commit/07326cc279f590d26c7e083fb8f99d9e1bd91131) [and another](https://github.com/Xpra-org/xpra/commit/54e85a03deafbf23280571c67529c7a5b41a40f3)
 * New features:
     * [keycloak authentication module](https://github.com/Xpra-org/xpra/commit/da2c6f3d1af401f19090442cf171e61ab744244f)
 * Encodings:
@@ -33,19 +38,28 @@
 * Major:
     * [integer time overflow](https://github.com/Xpra-org/xpra/commit/cbe5a4d1564eb038c597ccf9efcb5427458d6bb7), [prevent more](https://github.com/Xpra-org/xpra/commit/73ac696d5b7da7c7af31cfeabdec2da4da19b733)
     * [server fails to start when sourcing profile strings](https://github.com/Xpra-org/xpra/commit/696f6ed6b3181f815fc188ed0b6a1a58c8d04bba)
+    * [honour ssl options in launcher files](https://github.com/Xpra-org/xpra/commit/080b4baac28dcf9247fe02af9150630c49174bd9)
 * Minor:
     * [don't expose full OpenSSL version number by default](https://github.com/Xpra-org/xpra/commit/4fbd891a3d7c5f6370a5859ae5373718d74dadae)
     * [don't expose network interface information by default](https://github.com/Xpra-org/xpra/commit/80d77d1e9294e8b996c22fcca934d685f465e61f)
     * [numpy OpenGL import harness](https://github.com/Xpra-org/xpra/commit/11dae42eda83af2992621020ff6404f79bf69b91)
     * [revert to other client's ssh agent socket on disconnection](https://github.com/Xpra-org/xpra/commit/101619ccee38dc412f77585d269df229076b6dc9)
     * [only re-initialize encodings on update message](https://github.com/Xpra-org/xpra/commit/6434e8ba5116cccdc1a441fa97875decdbf8951a)
+    * [environment variable override returned invalid type](https://github.com/Xpra-org/xpra/commit/eb7783f3ce73e21a885e6c4c5b4c48141e54e42c)
 * Cosmetic:
+    * [fail faster if Xvfb process terminates](https://github.com/Xpra-org/xpra/commit/05ab07a24ce7c4945fd3bd4fac56913e632a9b74)
+    * [show connection step in splash screen progress](https://github.com/Xpra-org/xpra/commit/d0c0bcc00841ee6c34cc1719d5d1c12c3cab0f32)
     * [expose X11 errors](https://github.com/Xpra-org/xpra/commit/68cf81658c3432296eff305c2c5c0fc0d9a92e6f)
     * [Gtk unhelpful deprecation warnings](https://github.com/Xpra-org/xpra/commit/cdee59c489dc128ec9810a3fb9b637adde7a4581)
     * [Rsvg warnings](https://github.com/Xpra-org/xpra/commit/bd6bf6ba6f6b66f40609ece688eabeb189b7bb53)
     * [invalid encoder state reported](https://github.com/Xpra-org/xpra/commit/004416a6fdc1bbeeb4ae4366890234250080151a)
     * [don't use deprecated syntax in documentation example](https://github.com/Xpra-org/xpra/commit/7291a0fae3bce22ce55aee4e45c97bad82877d08)
     * [documentation broken link](https://github.com/Xpra-org/xpra/commit/8a25a78fdf6ffb58b14b085bb239645060656926)
+    * [don't log passwords in (unused) login shim](https://github.com/Xpra-org/xpra/commit/2dd9c64045e92c9b3fcb682b810e889576052ae2)
+    * [preserve option types for keyboard parameters](https://github.com/Xpra-org/xpra/commit/bc8b0537df649765da524d94af7fdef8d49b3a4a) + [fixup](https://github.com/Xpra-org/xpra/commit/ca32c3d9cdd1252374673770267ead2f75b8505b) and [fix parsing of csv values](https://github.com/Xpra-org/xpra/commit/1fc81d44d57a22d9e44a145f38145b63fa1577b0)
+    * [duplicated platform name](https://github.com/Xpra-org/xpra/commit/dac52920ed006d7f6634ae564dd10520e70ecb06) + [fixup](https://github.com/Xpra-org/xpra/commit/4aaf4afde2a5739a4ec20c08d8603e664b79e11f)
+    * [silence warnings when parsing newer (>= v6.3) configuration files](https://github.com/Xpra-org/xpra/commit/8d08465e2b25ff2badbcf256904c2cd6cc819332)
+    * [cursors should not apply to the headerbar](https://github.com/Xpra-org/xpra/commit/0eaecd0bbd8d35fed6a2560e4f14ec09179676e7)
 
 ## [5.0.12] 2025-01-19
 * Platforms, build and packaging:

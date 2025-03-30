@@ -803,8 +803,67 @@ fi
 
 
 %changelog
-* Thu Jan 23 2025 Antoine Martin <antoine@xpra.org> 5.1-10
-- TODO
+* Sun Mar 30 2025 Antoine Martin <antoine@xpra.org> 5.1-10
+- Platforms, build and packaging:
+   prefer CUDA arch specific pkg-config file for `nvdec`
+   CUDA build errors with newer compilers
+   Python 3.14 parallel build errors
+   Fedora 42 package list with default Python, workarounds for dependencies
+   add Ubuntu Plucky, remove Ubuntu Lunar
+   PyCUDA 2025.1
+   Cython 3.0.12
+   `libyuv` 0.1899
+   `pyu2f` incorrect build dependency
+   missing RPM `python3` direct dependency for some Python libraries
+   errors installing `libexec` scripts into a prefix
+   detect MS Windows version for all codepages
+   better compatibility with arm64 MS Windows installer packaging
+   valid default options for MS Windows arm64 non-light builds
+   named-pipes shutdown errors
+   don't enable splash unconditionally on non-posix
+   spng codecs missing due to pkg-config changes
+   Ubuntu Oracular package name revert
+   Debian distributions with Python >= 3.13 need `setuptools`
+   `pam_misc` upgrade breaks include path
+- New features:
+   keycloak authentication module
+- Encodings:
+   `nvenc` context interface mismatch
+   don't import proxy encoder module unless needed
+   video encoder runtime factor ignored
+   cuda context tests cleanup errors
+   nvdec cleanup errors
+   avoid cuda warnings when not available
+   bgrx output image was cropped and blanked out
+   disable GStreamer video codecs on MS Windows (can crash)
+- Network:
+   strip comments from ssh host config attributes
+- Major:
+   integer time overflow, prevent more
+   server fails to start when sourcing profile strings
+   honour ssl options in launcher files
+- Minor:
+   don't expose full OpenSSL version number by default
+   don't expose network interface information by default
+   numpy OpenGL import harness
+   revert to other client's ssh agent socket on disconnection
+   only re-initialize encodings on update message
+   environment variable override returned invalid type
+- Cosmetic:
+   fail faster if Xvfb process terminates
+   show connection step in splash screen progress
+   expose X11 errors
+   Gtk unhelpful deprecation warnings
+   Rsvg warnings
+   invalid encoder state reported
+   don't use deprecated syntax in documentation example
+   documentation broken link
+   don't log passwords in (unused) login shim
+   preserve option types for keyboard parameters and fix parsing of csv values
+   duplicated platform name
+   silence warnings when parsing newer (>= v6.3) configuration files
+   cursors should not apply to the headerbar
+
 * Sun Jan 19 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
 - Platforms, build and packaging:
    MSYS2 aarch64 build fix and prefix detection
