@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.log import Logger
 
@@ -140,8 +142,8 @@ class FakeClient(FileTransferHandler):
     def request_frame_extents(self, window):
         pass
 
-    def get_window_frame_sizes(self):
-        return None
+    def get_window_frame_sizes(self) -> dict[str, Any]:
+        return {}
 
     def fsx(self, v):
         return v

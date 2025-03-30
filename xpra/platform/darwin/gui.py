@@ -160,12 +160,12 @@ def get_window_min_size() -> tuple[int, int]:
 #    return 2**15-1, 2**15-1
 
 
-def get_window_frame_sizes():
+def get_window_frame_sizes() -> dict[str, Any]:
     # use a hard-coded window position and size:
     return get_window_frame_size(20, 20, 100, 100)
 
 
-def get_window_frame_size(x: int, y: int, w: int, h: int):
+def get_window_frame_size(x: int, y: int, w: int, h: int) -> dict[str, Any]:
     try:
         cr = Quartz.NSMakeRect(x, y, w, h)
         mask = Quartz.NSTitledWindowMask | Quartz.NSClosableWindowMask | Quartz.NSMiniaturizableWindowMask | Quartz.NSResizableWindowMask
@@ -189,7 +189,7 @@ def get_window_frame_size(x: int, y: int, w: int, h: int):
         }
 
 
-def get_workarea():
+def get_workarea() -> tuple[int, int, int, int] | None:
     w = get_workareas()
     if w and len(w) == 1:
         return w[0]
@@ -197,7 +197,7 @@ def get_workarea():
 
 
 # per monitor workareas (assuming a single screen)
-def get_workareas() -> list:
+def get_workareas() -> Sequence[tuple[int, int, int, int]]:
     workareas = []
     screens = NSScreen.screens()
     for screen in screens:

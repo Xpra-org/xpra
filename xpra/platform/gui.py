@@ -217,12 +217,12 @@ def get_pillow_icc_info() -> dict[str, Any]:
 
 
 # global workarea for all screens
-def get_workarea():
+def get_workarea() -> tuple[int, int, int, int] | None:
     return None
 
 
 # per monitor workareas (assuming a single screen)
-def get_workareas():
+def get_workareas() -> Sequence[tuple[int, int, int, int]]:
     return ()
 
 
@@ -238,7 +238,7 @@ def get_vrefresh() -> int:
     return -1
 
 
-def get_mouse_config():
+def get_mouse_config() -> dict:
     return {}
 
 
@@ -270,7 +270,7 @@ def get_window_frame_size(_x, _y, _w, _h):
     return None
 
 
-def get_window_frame_sizes():
+def get_window_frame_sizes() -> dict[str, Any]:
     return {}
 
 

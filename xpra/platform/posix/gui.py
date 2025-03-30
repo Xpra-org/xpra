@@ -285,7 +285,7 @@ def get_current_desktop() -> int:
     return -1
 
 
-def get_workarea():
+def get_workarea() -> tuple[int, int, int, int] | None:
     if x11_bindings():
         from xpra.x11.common import get_workarea as get_x11_workarea
         from xpra.gtk.error import xsync
@@ -350,7 +350,7 @@ def get_double_click_distance() -> tuple[int, int]:
     return v, v
 
 
-def get_window_frame_sizes() -> dict:
+def get_window_frame_sizes() -> dict[str, Any]:
     # for X11, have to create a window and then check the
     # _NET_FRAME_EXTENTS value after sending a _NET_REQUEST_FRAME_EXTENTS message,
     # so this is done in the gtk client instead of here...

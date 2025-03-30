@@ -755,7 +755,7 @@ def get_mouse_config() -> dict[str, Any]:
     return info
 
 
-def get_workarea() -> tuple:
+def get_workarea() -> tuple[int, int, int, int] | None:
     # this is for x11 servers which can only use a single workarea,
     # calculate the total area:
     try:
@@ -798,7 +798,7 @@ def get_workarea() -> tuple:
     except Exception as e:
         screenlog("get_workarea()", exc_info=True)
         screenlog.warn("failed to query workareas: %s", e)
-        return ()
+        return None
 
 
 # ie: for a 60 pixel bottom bar on the second monitor at 1280x800:

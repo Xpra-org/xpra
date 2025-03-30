@@ -727,7 +727,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         framelog(f"get_frame_extents({window.get_title()})={v}")
         return v
 
-    def get_window_frame_sizes(self):
+    def get_window_frame_sizes(self) -> dict[str, Any]:
         wfs = get_window_frame_sizes()
         if self.frame_request_window:
             v = self.get_frame_extents(self.frame_request_window)
@@ -919,7 +919,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 self._cursors[w] = cursor_data
                 gdkwin.set_cursor(cursor)
 
-    def make_cursor(self, cursor_data):
+    def make_cursor(self, cursor_data: Sequence) -> Gdk.Cursor | None:
         # if present, try cursor ny name:
         display = Gdk.Display.get_default()
         if not display:

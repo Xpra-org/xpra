@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+
 from xpra.common import noop
 from xpra.util.objects import AdHocStruct
 from xpra.log import Logger
@@ -43,8 +45,8 @@ class FakeClient(AdHocStruct):
         self.window_with_grab = None
         self.keyboard_helper = None
 
-    def get_window_frame_sizes(self, *_args):
-        return None
+    def get_window_frame_sizes(self, *_args) -> dict[str, Any]:
+        return {}
 
     def no_scaling(self, *args):
         if len(args) == 1:
