@@ -5,6 +5,7 @@
 
 display = True
 windows = True
+cursors = True
 gstreamer = True
 x11 = True
 webcam = True

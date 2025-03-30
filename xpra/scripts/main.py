@@ -2121,6 +2121,7 @@ def set_client_features(opts) -> None:
     from xpra.client.base import features
     features.display = opts.windows
     features.windows = opts.windows
+    features.cursors = opts.cursors
     features.gstreamer = opts.gstreamer
     features.x11 = opts.x11 and impcheck("xpra.x11")
     features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("xpra.audio")
@@ -2144,6 +2145,7 @@ def enforce_client_features() -> None:
     enforce_features(features, {
         "display": "xpra.client.mixins.display",
         "windows": "xpra.client.mixins.windows",
+        "cursors": "xpra.client.mixins.cursors",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
         "webcam": "xpra.client.mixins.webcam",

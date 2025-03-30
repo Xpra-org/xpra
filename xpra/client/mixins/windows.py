@@ -48,7 +48,6 @@ focuslog = Logger("focus")
 grablog = Logger("grab")
 iconlog = Logger("icon")
 mouselog = Logger("mouse")
-cursorlog = Logger("cursor")
 metalog = Logger("metadata")
 traylog = Logger("client", "tray")
 execlog = Logger("client", "exec")
@@ -234,7 +233,7 @@ def parse_border(border_str="", display_name="", warn=False) -> WindowBorder:
 class WindowClient(StubClientMixin):
     """
     Utility superclass for clients that handle windows:
-    create, resize, paint, grabs, cursors, etc
+    create, resize, paint, grabs, etc
     """
     PREFIX = "window"
 
@@ -272,12 +271,8 @@ class WindowClient(StubClientMixin):
 
         self.overlay_image = None
 
-        self.server_cursors: bool = False
         self.client_supports_system_tray: bool = False
-        self.client_supports_cursors: bool = False
         self.client_supports_bell: bool = False
-        self.cursors_enabled: bool = False
-        self.default_cursor_data = None
         self.server_bell: bool = False
         self.bell_enabled: bool = False
 
@@ -311,7 +306,6 @@ class WindowClient(StubClientMixin):
                 log.warn("Warning: the tray forwarding module is missing")
             else:
                 self.client_supports_system_tray = True
-        self.client_supports_cursors = opts.cursors
         self.client_supports_bell = opts.bell
         self.input_devices = opts.input_devices
         self.auto_refresh_delay = opts.auto_refresh_delay
@@ -423,9 +417,6 @@ class WindowClient(StubClientMixin):
             modal = w._metadata.boolget("modal", False)
             w.set_modal(modal)
 
-    def set_windows_cursor(self, client_windows, new_cursor) -> None:
-        raise NotImplementedError()
-
     def window_bell(self, window, device, percent: int, pitch: int, duration: int, bell_class,
                     bell_id: int, bell_name: str) -> None:
         raise NotImplementedError()
@@ -457,13 +448,10 @@ class WindowClient(StubClientMixin):
         # FIXME: the messy bits without proper namespace:
         caps = {
             # generic server flags:
-            # mouse and cursors:
             "mouse": {
                 "show": True,  # assumed available in v6
                 "initial-position": self.get_mouse_position(),
             },
-            "named_cursors": False,
-            "cursors": self.client_supports_cursors,
             "double_click": {
                 "time": get_double_click_time(),
                 "distance": get_double_click_distance(),
@@ -492,9 +480,6 @@ class WindowClient(StubClientMixin):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_window_frame_extents = c.boolget("window.frame-extents")
-        self.server_cursors = c.boolget("cursors", True)  # added in 0.5, default to True!
-        self.cursors_enabled = self.server_cursors and self.client_supports_cursors
-        self.default_cursor_data = c.tupleget("cursor.default", None)
         self.server_bell = c.boolget("bell")  # added in 0.5, default to True!
         self.bell_enabled = self.server_bell and self.client_supports_bell
         if not c.boolget("windows", True):
@@ -646,48 +631,6 @@ class WindowClient(StubClientMixin):
             mouselog(f"poll_pointer() updated position: {pos}")
             self.send_mouse_position(device_id, wid, pos)
         return True
-
-    ######################################################################
-    # cursor:
-    def _process_cursor(self, packet: PacketType) -> None:
-        if not self.cursors_enabled:
-            return
-        if len(packet) == 2:
-            # marker telling us to use the default cursor:
-            new_cursor = packet[1]
-            setdefault = False
-        else:
-            if len(packet) < 9:
-                raise ValueError(f"invalid cursor packet: only {len(packet)} items")
-            # trim packet-type:
-            new_cursor = list(packet[1:])
-            encoding = str(new_cursor[0])
-            setdefault = encoding.startswith("default:")
-            if setdefault:
-                encoding = encoding.split(":")[1]
-            new_cursor[0] = encoding
-            if encoding == "png":
-                pixels = new_cursor[8]
-                if SAVE_CURSORS:
-                    serial = new_cursor[7]
-                    with open(f"raw-cursor-{serial:x}.png", "wb") as f:
-                        f.write(pixels)
-                from xpra.codecs.pillow.decoder import open_only  # pylint: disable=import-outside-toplevel
-                img = open_only(pixels, ("png",))
-                new_cursor[8] = img.tobytes("raw", "BGRA")
-                cursorlog("used PIL to convert png cursor to raw")
-                new_cursor[0] = "raw"
-            elif encoding != "raw":
-                cursorlog.warn(f"Warning: invalid cursor encoding: {encoding}")
-                return
-        if setdefault:
-            cursorlog(f"setting default cursor={new_cursor!r}")
-            self.default_cursor_data = new_cursor
-        else:
-            self.set_windows_cursor(self._id_to_window.values(), new_cursor)
-
-    def reset_cursor(self) -> None:
-        self.set_windows_cursor(self._id_to_window.values(), [])
 
     def cook_metadata(self, _new_window, metadata: dict) -> typedict:
         # subclasses can apply tweaks here:
@@ -999,10 +942,11 @@ class WindowClient(StubClientMixin):
             client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
+                default_cursor_data = getattr(self, "default_cursor_data", None)
                 window = cwc(self, group_leader_window, watcher_pid, wid,
                              wx, wy, ww, wh, bw, bh,
                              metadata, override_redirect, client_properties,
-                             border, self.max_window_size, self.default_cursor_data, self.pixel_depth,
+                             border, self.max_window_size, default_cursor_data, self.pixel_depth,
                              self.headerbar)
                 break
             except (RuntimeError, ValueError):
@@ -1763,6 +1707,6 @@ class WindowClient(StubClientMixin):
             "lost-window",
             "window-icon",
             "draw", "eos",
-            "cursor", "bell",
+            "bell",
             "pointer-position", "pointer-grab", "pointer-ungrab",
             main_thread=True)
