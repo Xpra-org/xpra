@@ -908,7 +908,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 cursor = get_default_cursor()
         for w in windows:
             w.set_cursor_data(cursor_data)
-            gdkwin = w.get_window()
+            # the cursor should only apply to the window contents (aka "drawingarea"),
+            # and not the headerbar:
+            gtkwin = getattr(w, "drawing_area", w)
+            gdkwin = gtkwin.get_window()
             # trays don't have a gdk window
             if gdkwin:
                 self._cursors[w] = cursor_data
