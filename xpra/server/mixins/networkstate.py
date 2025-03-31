@@ -187,7 +187,7 @@ class NetworkStateServer(StubServerMixin):
     def send_ping(self) -> bool:
         from xpra.server.source.networkstate import NetworkStateMixin
         for ss in self._server_sources.values():
-            if ss.suspended:
+            if ss.suspended or ss.is_closed() or not ss.startup_completed:
                 continue
             if isinstance(ss, NetworkStateMixin):
                 ss.ping()

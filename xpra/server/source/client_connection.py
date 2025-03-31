@@ -75,6 +75,7 @@ class ClientConnection(StubSourceMixin):
         self.encode_thread = None
         self.ordinary_packets: list[tuple[PacketType, bool, bool]] = []
 
+        self.startup_completed = False
         self.client_packet_types = ()
         self.setting_changed = setting_changed
         self.queue_encode: Callable[[ENCODE_WORK_ITEM], None] = self.start_queue_encode
@@ -140,6 +141,7 @@ class ClientConnection(StubSourceMixin):
 
     def startup_complete(self) -> None:
         log("startup_complete()")
+        self.startup_completed = True
         self.send("startup-complete")
 
     # The encode thread loop management:
