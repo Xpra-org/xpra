@@ -51,7 +51,7 @@ def show_qr(uri: str, width: int = 640, height: int = 640):
 
 
 def qr_pixbuf(uri: str, width: int = 640, height: int = 640):
-    img = qrencode(uri)
+    img = qrencode.encode_image(uri)
     if not img:
         return None
     from PIL import Image
