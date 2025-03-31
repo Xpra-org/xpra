@@ -98,7 +98,7 @@ class WindowInfo(Gtk.Window):
 
         grid = Gtk.Grid()
         grid.set_row_homogeneous(False)
-        grid.set_column_homogeneous(True)
+        grid.set_column_homogeneous(False)
         row = AtomicInteger()
 
         def new_row(text="", widget=None) -> None:
@@ -121,7 +121,8 @@ class WindowInfo(Gtk.Window):
         def irow(text) -> Gtk.Image:
             image = Gtk.Image()
             image.set_margin_start(10)
-            image.set_halign(0)
+            image.set_halign(Gtk.Align.START)
+            image.set_hexpand(False)
             new_row(text, image)
             return image
 
