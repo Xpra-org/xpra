@@ -41,7 +41,7 @@ import subprocess
 from urllib.parse import urlparse, parse_qs
 
 
-__version__ = "6.3"
+__version__ = "6.4"
 
 
 # Writes a syslog entry (msg) at the default facility:

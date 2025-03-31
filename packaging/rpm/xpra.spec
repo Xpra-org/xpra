@@ -74,7 +74,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.3
+Version:			6.4
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -1005,6 +1005,8 @@ fi
 
 
 %changelog
+* Mon Mar 31 2025 Antoine Martin <antoine@xpra.org> 6.4-10
+- TODO
 * Tue Mar 04 2025 Antoine Martin <antoine@xpra.org> 6.3-10
 - Platforms, build and packaging:
    rewritten MS Windows build script
