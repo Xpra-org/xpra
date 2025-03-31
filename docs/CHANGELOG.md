@@ -1,5 +1,26 @@
 # Changelog
 
+## [6.2.6] 2025-03-31
+* Platforms, build and packaging:
+    * [prevent legacy build script from being used](https://github.com/Xpra-org/xpra/commit/d030482ab82255341c691912fef2684bdb53fdd0)
+    * [pam headers path have changed](https://github.com/Xpra-org/xpra/commit/4bcd85e0a5c38721982a5fe6442c5a77d948fde3)
+    * [named-pipe shutdown errors](https://github.com/Xpra-org/xpra/commit/97ad83873f48c45360566c92ff0f82ea59dadd05)
+    * [Debian dependency on `setuptools` for building with Python 3.13 or later](https://github.com/Xpra-org/xpra/commit/59d68d2e518fd1b55d54e71c50fe8e6eedf0d08d)
+* Minor:
+    * [environment variable override returned invalid type](https://github.com/Xpra-org/xpra/commit/b051fa2f7bd5df680fd053ebb86a30bb44035cdf), [rename it](https://github.com/Xpra-org/xpra/commit/75aedcf337d6bcaec183f80bd9020b46dbda82eb)
+    * [fail faster if Xvfb process terminates](https://github.com/Xpra-org/xpra/commit/51b84d688d0321135378b1bbf2c87471f0d5ad03)
+    * [preserve option types](https://github.com/Xpra-org/xpra/commit/1d2031bb02b0ecec58fc86e34a25cf3ccbbc4b58)
+    * [fix parsing of keyboard options specified as lists](https://github.com/Xpra-org/xpra/commit/ed73ed71b10093d4a832abe63fda7834a816c7ee)
+    * [failure to generate connection qrcodes](https://github.com/Xpra-org/xpra/commit/649947e81287ac351926e3617a7f8a935aa027a2)
+* Cosmetic:
+    * [disable menu entries that are not available](https://github.com/Xpra-org/xpra/commit/dece229405e74733677bdfa2605a10d64c1de669)
+    * [custom window cursors should not apply to the header bar](https://github.com/Xpra-org/xpra/commit/d4fe9b3de43e2bc85cf839bcbe85afcce8369144)
+    * [platform name duplicated](https://github.com/Xpra-org/xpra/commit/582ed22251daf5a0c4f262d8ce4d55e0413593a7)
+    * [don't paint window border corners twice](https://github.com/Xpra-org/xpra/commit/8b9b20ff264d186ec85c677bc1463de86704189e)
+    * [clarify `auth` option scope](https://github.com/Xpra-org/xpra/commit/91d5013b428475da147ca66df501bc146a86f505)
+    * [more graceful handling of invalid configuration module names](https://github.com/Xpra-org/xpra/commit/c0fff6f59e8d44023fae5d58c7915a56bd4724cd)
+    * [sort shortcuts](https://github.com/Xpra-org/xpra/commit/75d19750951ff320fae9696b5dbde1576086e956)
+
 ## [6.2.5] 2025-03-12
 * Platforms, build and packaging:
 	* [MS Windows authentication usernames are not case sensitive](https://github.com/Xpra-org/xpra/commit/eb945e95958e58ebb0fe896aeac9c7eeb424c1e0)

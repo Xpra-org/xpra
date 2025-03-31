@@ -60,7 +60,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.2.5
+Version:			6.2.6
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -915,6 +915,27 @@ fi
 
 
 %changelog
+* Mon Mar 31 2025 Antoine Martin <antoine@xpra.org> 6.2.6-10
+- Platforms, build and packaging:
+   prevent legacy build script from being used
+   pam headers path have changed
+   named-pipe shutdown errors
+   Debian dependency on `setuptools` for building with Python 3.13 or later
+- Minor:
+   environment variable override returned invalid type, rename it
+   fail faster if Xvfb process terminates
+   preserve option types
+   fix parsing of keyboard options specified as lists
+   failure to generate connection qrcodes
+- Cosmetic:
+   disable menu entries that are not available
+   custom window cursors should not apply to the header bar
+   platform name duplicated
+   don't paint window border corners twice
+   clarify `auth` option scope
+   more graceful handling of invalid configuration module names
+   sort shortcuts
+
 * Wed Mar 12 2025 Antoine Martin <antoine@xpra.org> 6.2.5-10
 - Platforms, build and packaging:
    MS Windows authentication usernames are not case sensitive
