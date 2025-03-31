@@ -525,7 +525,12 @@ class MenuHelper:
 
     def make_docsmenuitem(self) -> Gtk.ImageMenuItem:
         from xpra.scripts.main import show_docs
-        return self.menuitem("Documentation", "documentation.png", cb=show_docs)
+        from xpra.scripts.config import find_docs_path
+        docs_menuitem = self.menuitem("Documentation", "documentation.png", cb=show_docs)
+        if not find_docs_path():
+            docs_menuitem.set_tooltip_text("documentation not found!")
+            set_sensitive(docs_menuitem, False)
+        return docs_menuitem
 
     def make_html5menuitem(self) -> Gtk.ImageMenuItem:
         def show_html5():
@@ -541,7 +546,12 @@ class MenuHelper:
                 pass
             start_thread(run_html5, "open HTML5 client", True, args=(url_options,))
 
-        return self.menuitem("HTML5 client", "browser.png", cb=show_html5)
+        from xpra.scripts.config import find_html5_path
+        html5_menuitem = self.menuitem("HTML5 client", "browser.png", cb=show_html5)
+        if not find_html5_path():
+            html5_menuitem.set_tooltip_text("html5 client not found!")
+            set_sensitive(html5_menuitem, False)
+        return html5_menuitem
 
     def make_closemenuitem(self) -> Gtk.ImageMenuItem:
         return self.menuitem("Close Menu", "close.png", cb=self.close_menu)
