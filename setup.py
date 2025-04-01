@@ -864,6 +864,7 @@ if len(sys.argv) < 2:
         "dev-env",
         "package",
         "install-repo",
+        "install-lts-repo",
         "install-beta-repo",
         "unittests",
     ):
