@@ -313,7 +313,7 @@ v4l2_ENABLED            = DEFAULT and (not WIN32 and not OSX and not FREEBSD and
 evdi_ENABLED            = DEFAULT and LINUX and pkg_config_version("1.10", "evdi")
 drm_ENABLED             = DEFAULT and (LINUX or FREEBSD) and pkg_config_version("2.4", "libdrm")
 csc_cython_ENABLED      = DEFAULT
-nvidia_ENABLED          = DEFAULT and not OSX and BITS==64
+nvidia_ENABLED          = DEFAULT and not OSX and BITS==64 and not RISCV
 nvjpeg_encoder_ENABLED  = nvidia_ENABLED and pkg_config_exists("nvjpeg")
 nvjpeg_decoder_ENABLED  = nvidia_ENABLED and pkg_config_exists("nvjpeg")
 nvenc_ENABLED           = nvidia_ENABLED and pkg_config_version("10", "nvenc")
