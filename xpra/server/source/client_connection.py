@@ -76,6 +76,7 @@ class ClientConnection(StubSourceMixin):
         self.ordinary_packets: list[tuple[PacketType, bool, bool]] = []
 
         self.startup_completed = False
+        self.suspended = False
         self.client_packet_types = ()
         self.setting_changed = setting_changed
         self.queue_encode: Callable[[ENCODE_WORK_ITEM], None] = self.start_queue_encode
@@ -110,6 +111,12 @@ class ClientConnection(StubSourceMixin):
         self.close_event.set()
         self.protocol = None
         self.statistics.reset(0)
+
+    def suspend(self) -> None:
+        self.suspended = True
+
+    def resume(self) -> None:
+        self.suspended = False
 
     def may_notify(self, *args, **kwargs) -> None:
         # fugly workaround,
