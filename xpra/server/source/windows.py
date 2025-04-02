@@ -452,6 +452,7 @@ class WindowsMixin(StubSourceMixin):
             av_sync_delay = getattr(self, "av_sync_delay", 0)
             conn = getattr(self.protocol, "_conn", None)
             socktype = getattr(conn, "socktype_wrapped", "")
+            jitter = getattr(conn, "jitter", 0)
             datagram = 1350 if socktype == "quic" else 0
             log(f"datagram({socktype=})={datagram}")
             # pylint: disable=import-outside-toplevel
@@ -470,7 +471,7 @@ class WindowsMixin(StubSourceMixin):
                 self.window_icon_encodings, self.encoding_options, self.icons_encoding_options,
                 self.rgb_formats,
                 self.default_encoding_options,
-                mmap_write_area, bandwidth_limit, self.jitter, datagram)
+                mmap_write_area, bandwidth_limit, jitter, datagram)
             ws.init_encoders()
             self.window_sources[wid] = ws
             if len(self.window_sources) > 1:
