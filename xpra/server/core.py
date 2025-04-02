@@ -1308,6 +1308,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             return True, conn, peek_data
         frominfo = pretty_socket(conn.remote)
         netlog("may_wrap_socket(..) peek_data=%s from %s", Ellipsizer(peek_data), frominfo)
+        netlog("may_wrap_socket(..) peek_data got %i bytes", len(peek_data))
         netlog("may_wrap_socket(..) packet_type=%s", packet_type)
 
         def can_upgrade_to(to_socktype: str) -> bool:
