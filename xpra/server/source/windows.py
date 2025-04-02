@@ -68,7 +68,6 @@ class WindowsMixin(StubSourceMixin):
         # WindowSource for each Window ID
         self.window_sources: dict[int, Any] = {}
         self.window_frame_sizes: dict = {}
-        self.suspended = False
         self.send_bell = False
         self.send_windows = True
         self.pointer_grabs = False
@@ -88,13 +87,11 @@ class WindowsMixin(StubSourceMixin):
 
     def suspend(self) -> None:
         eventslog("suspend() suspended=%s", self.suspended)
-        self.suspended = True
         for ws in self.window_sources.values():
             ws.suspend()
 
     def resume(self) -> None:
         eventslog("resume() suspended=%s", self.suspended)
-        self.suspended = False
         for ws in self.window_sources.values():
             ws.resume()
 

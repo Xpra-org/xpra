@@ -56,6 +56,7 @@ class SourceMixinsTest(unittest.TestCase):
         m.wants = ["encodings", "versions", "features", "display"]
         m.packet_queue = []
         m.protocol = protocol
+        m.suspended = False
 
         def encode_queue_size():
             return 0
