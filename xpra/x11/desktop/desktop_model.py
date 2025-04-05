@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.gtk.error import XError, xsync
@@ -27,7 +28,7 @@ screenlog = Logger("screen")
 INC_VALUES = (16, 32, 64, 128, 256)
 
 
-def get_legacy_size_hints(screen_sizes) -> dict[str, tuple[int, int]]:
+def get_legacy_size_hints(screen_sizes: Sequence[tuple[int, int]]) -> dict[str, tuple[int, int]]:
     size_hints = {}
     # find the maximum size supported:
     max_size: dict[int, tuple[int, int]] = {}
@@ -154,7 +155,7 @@ class ScreenDesktopModel(DesktopModelBase):
             else:
                 try:
                     with xsync:
-                        screen_sizes = RandR.get_xrr_screen_sizes()
+                        screen_sizes: list[tuple[int, int]] = RandR.get_xrr_screen_sizes()
                 except XError:
                     screenlog("failed to query screen sizes", exc_info=True)
                 else:
