@@ -30,9 +30,10 @@ for x in cryptography cffi pycparser numpy pillow appdirs paramiko comtypes neti
 	$PACMAN ${XPKG}python-${x}
 done
 #not yet available for aarch64?:
-for x in cx-freeze gssapi amf-headers; do
+for x in cx-freeze gssapi; do
 	$PACMAN ${XPKG}python-${x}
 done
+$PACMAN ${XPKG}amf-headers
 
 #dependencies of browser_cookie3 and pycuda,
 #best to manage them via pacman rather than have them installed via pip,
