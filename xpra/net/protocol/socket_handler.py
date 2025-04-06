@@ -701,7 +701,7 @@ class SocketProtocol:
                 continue
             if isinstance(item, Compressed):
                 # already compressed data (usually pixels, cursors, etc)
-                if self.chunks and not item.can_inline or size > INLINE_SIZE:
+                if self.chunks and (not item.can_inline or size > INLINE_SIZE):
                     il = 0
                     if isinstance(item, LevelCompressed):
                         # unlike `Compressed` (usually pixels, decompressed in the paint thread),
@@ -719,7 +719,7 @@ class SocketProtocol:
                     min_comp_size += size
                     size_check += size
                 continue
-            if isinstance(item, bytes) and level > 0 and size > LARGE_PACKET_SIZE:
+            if self.chunks and isinstance(item, bytes) and level > 0 and size > LARGE_PACKET_SIZE:
                 log.warn("Warning: found a large uncompressed item")
                 log.warn(f" in packet {packet_type!r} at position {i}: {len(item)} bytes")
                 # add new binary packet with large item:
@@ -744,7 +744,7 @@ class SocketProtocol:
             verify_packet(packet)
             raise
         size = len(main_packet)
-        if size > size_check and packet_in[0] not in self.large_packets:
+        if self.chunks and size > size_check and packet_in[0] not in self.large_packets:
             log.warn("Warning: found large packet")
             log.warn(f" {packet_type!r} packet is {len(main_packet)} bytes: ")
             log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))
