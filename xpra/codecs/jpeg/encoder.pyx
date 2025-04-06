@@ -397,6 +397,7 @@ cdef object do_encode_rgb(tjhandle compressor, pfstr, pixels,
         log.error(" pixel format=%s", pfstr)
         return None
     assert out_size>0 and out!=NULL, "jpeg compression produced no data"
+    log("output is %s bytes", out_size)
     return makebuf(out, out_size, 0)
 
 
