@@ -478,7 +478,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
             "desktop-greeter", "gui", "start-gui",
             "docs", "documentation", "about", "html5",
             "pinentry", "input_pass", "_dialog", "_pass",
-            "opengl", "opengl-probe", "opengl-test",
+            "opengl", "opengl-probe", "opengl-test", "opengl-save",
             "autostart",
             "encoding", "video",
             "nvinfo", "webcam",
@@ -787,6 +787,9 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
     if mode == "opengl-test":
         check_gtk_client()
         return run_glprobe(options, True)
+    if mode == "opengl-save-probe":
+        check_gtk_client()
+        return run_glsaveprobe()
     if mode == "example":
         check_gtk_client()
         return run_example(args)
@@ -2241,9 +2244,12 @@ def make_client(opts):
             app.show_progress(20, "validating OpenGL configuration")
             probe, probe_info = run_opengl_probe()
             glinfo = typedict(probe_info)
+            safe = glinfo.boolget("safe", False)
+            SAVE_OPENGL_PROBE = envbool("XPRA_SAVE_OPENGL_PROBE", True)
+            if SAVE_OPENGL_PROBE:
+                save_opengl_probe(safe)
             if opts.opengl == "nowarn":
                 # just on or off from here on:
-                safe = glinfo.boolget("safe", False)
                 opts.opengl = ["off", "on"][safe]
             else:
                 opts.opengl = f"probe-{probe}"
@@ -2262,6 +2268,7 @@ def make_client(opts):
             message = glinfo.strget("message")
             if message:
                 app.show_progress(21, f" {message}")
+
     except Exception:
         if progress_process:
             try:
@@ -3002,6 +3009,20 @@ def run_glcheck(opts) -> ExitValue:
             sys.stdout.write("%s=%s\n" % (k, vstr))
     sys.stdout.flush()
     return 0
+
+
+def run_glsaveprobe() -> ExitValue:
+    probe, probe_info = run_opengl_probe()
+    glinfo = typedict(probe_info)
+    safe = glinfo.boolget("safe", False)
+    save_opengl_probe(safe)
+    print(f"saved opengl={safe} in ")
+    return 0
+
+
+def save_opengl_probe(result: bool) -> None:
+    from xpra.util.config import save_user_config_file, CONFIGURE_TOOL_CONFIG
+    save_user_config_file({"opengl": result}, filename=CONFIGURE_TOOL_CONFIG)
 
 
 def pick_shadow_display(args, uid=getuid(), gid=getgid(), sessions_dir="") -> str:
