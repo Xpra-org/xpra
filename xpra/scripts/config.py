@@ -1660,7 +1660,7 @@ def fixup_encodings(options) -> None:
                 encodings.remove(rm)
             except ValueError:
                 break
-    options.encodings = encodings
+    options.encodings = tuple(encodings)
     if not options.video:
         options.csc_modules = ["none"]
         options.video_encoders = ["none"]
