@@ -157,7 +157,7 @@ def setup_client_ssh_agent_socket(uuid:str, ssh_auth_sock:str) -> str:
         if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(ssh_auth_sock):
             try:
                 #ie: /run/user/1000/xpra/10/$UUID -> /tmp/ssh-XXXXvjt4hN/agent.766599
-                os.symlink(ssh_auth_sock, sockpath, follow_symlinks=False)
+                os.symlink(ssh_auth_sock, sockpath)
             except OSError as e:
                 log(f"os.symlink({ssh_auth_sock}, {sockpath})", exc_info=True)
                 log.error("Error setting up ssh agent socket symlink")
