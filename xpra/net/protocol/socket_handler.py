@@ -220,6 +220,7 @@ class SocketProtocol:
         self.cipher_in_padding = padding
         if self.cipher_in_name!=ciphername:
             cryptolog.info("receiving data using %s encryption", ciphername)
+            cryptolog.warn("Warning: AES encryption is not safe to use with this version")
             self.cipher_in_name = ciphername
 
     def set_cipher_out(self, ciphername:str, iv, password, key_salt, key_hash, key_size:int, iterations:int, padding):
@@ -230,6 +231,7 @@ class SocketProtocol:
         self.cipher_out_padding = padding
         if self.cipher_out_name!=ciphername:
             cryptolog.info("sending data using %s encryption", ciphername)
+            cryptolog.warn("Warning: AES encryption is not safe to use with this version")
             self.cipher_out_name = ciphername
 
 
