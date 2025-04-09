@@ -796,7 +796,7 @@ class SocketProtocol:
                 log.error(f"Error: {name} on {self._conn} failed: {type(e)}", exc_info=True)
                 self.close()
 
-    def flush_write_queue(self):
+    def flush_write_queue(self) -> None:
         while self._write_queue.qsize() and not self._closed:
             if not self._write():
                 return
@@ -960,7 +960,7 @@ class SocketProtocol:
                 return
             self._internal_error("error in network packet reading/parsing", e, exc_info=True)
 
-    def do_read_parse_thread_loop(self):
+    def do_read_parse_thread_loop(self) -> None:
         """
             Process the individual network packets placed in _read_queue.
             Concatenate the raw packet data, then try to parse it.
@@ -1065,7 +1065,7 @@ class SocketProtocol:
                         # this packet is seemingly too big, but check again from the main UI thread
                         # this gives 'set_max_packet_size' a chance to run from "hello"
 
-                        def check_packet_size(size_to_check, packet_header):
+                        def check_packet_size(size_to_check: int, packet_header) -> bool:
                             if self._closed:
                                 return False
                             log("check_packet_size(%#x, %s) max=%#x",
@@ -1234,7 +1234,7 @@ class SocketProtocol:
             except Exception as e:
                 log(f"error releasing the write lock: {e}")
 
-        def close_and_release():
+        def close_and_release() -> None:
             log("close_and_release()")
             self.close()
             writelockrelease()
@@ -1256,7 +1256,7 @@ class SocketProtocol:
                 close_and_release()
                 return
 
-            def wait_for_packet_sent():
+            def wait_for_packet_sent() -> bool:
                 closed = self._closed
                 log("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s",
                     self._write_queue.empty(), closed)
@@ -1305,7 +1305,7 @@ class SocketProtocol:
         log("flush_then_close: wait_for_write_lock()")
         wait_for_write_lock()
 
-    def close(self, message=None) -> None:
+    def close(self, message="") -> None:
         c = self._conn
         log("Protocol.close(%s) closed=%s, connection=%s", message, self._closed, c)
         if self._closed:
@@ -1325,7 +1325,7 @@ class SocketProtocol:
         self.idle_add(self.clean)
         log("Protocol.close(%s) done", message)
 
-    def may_log_stats(self, log_fn: Callable = log.info):
+    def may_log_stats(self, log_fn: Callable = log.info) -> None:
         if self._log_stats is False:
             return
         icount = self.input_packetcount
@@ -1336,7 +1336,7 @@ class SocketProtocol:
         # pylint: disable=import-outside-toplevel
         from xpra.util.stats import std_unit, std_unit_dec
 
-        def log_count(ptype="received", count: int = 0, bytecount: int = -1):
+        def log_count(ptype="received", count: int = 0, bytecount: int = -1) -> None:
             msg = std_unit(count) + f" packets {ptype}"
             if bytecount > 0:
                 msg += " (%s bytes)" % std_unit_dec(bytecount)
