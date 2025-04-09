@@ -1185,7 +1185,7 @@ CLONES : Dict[str, str] = {}
 NO_FILE_OPTIONS = ("daemon", )
 
 
-IGNORE_COMPAT_OPTIONS = ("audio", "video", )
+IGNORE_COMPAT_OPTIONS = ("audio", "video", "keyboard-backend")
 
 
 TRUE_OPTIONS : Tuple[Any, ...] = ("yes", "true", "1", "on", True)
