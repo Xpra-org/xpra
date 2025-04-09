@@ -17,6 +17,7 @@ from xpra.util.str_fn import hexstr, memoryview_to_bytes, Ellipsizer
 from xpra.log import Logger
 
 log = Logger("websocket")
+eventlog = Logger("websocket", "events")
 
 MASK = envbool("XPRA_WEBSOCKET_MASK", False)
 
@@ -38,6 +39,7 @@ class WebSocketProtocol(SocketProtocol):
         return f"WebSocket({self._conn})"
 
     def close(self, message="closing") -> None:
+        eventlog("close(%s) closed=%s", message, self._closed)
         if self._closed:
             return
         self.send_ws_close(reason=message)
@@ -46,8 +48,8 @@ class WebSocketProtocol(SocketProtocol):
         self.ws_payload = []
 
     def send_ws_close(self, code: int = 1000, reason: str = "closing") -> None:
-        log(f"send_ws_close({code}, {reason})")
         data = close_packet(code, reason)
+        eventlog(f"send_ws_close({code}, {reason}) {data=!r}")
         self.flush_then_close(None, data)
 
     def make_wsframe_header(self, packet_type: str, items: list[SizedBuffer]) -> bytes:
@@ -144,7 +146,7 @@ class WebSocketProtocol(SocketProtocol):
         log("_process_ws_pong(%r)", payload)
 
     def _process_ws_close(self, payload: SizedBuffer) -> None:
-        log("_process_ws_close(%r)", payload)
+        eventlog("_process_ws_close(%r)", payload)
         if len(payload) < 2:
             self._connection_lost("unknown reason")
             return
