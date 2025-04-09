@@ -1651,7 +1651,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
 
         log("process_hello: capabilities=%s", capabilities)
         request = c.strget("request")
-        log.warn(f"{request=!r}, {UNAUTHENTICATED_HELLO_REQUESTS=}")
         if request in UNAUTHENTICATED_HELLO_REQUESTS and self.do_handle_hello_request(request, proto, c):
             return
 

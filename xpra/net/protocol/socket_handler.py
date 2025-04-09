@@ -51,6 +51,7 @@ from xpra.log import Logger
 
 log = Logger("network", "protocol")
 cryptolog = Logger("network", "crypto")
+eventlog = Logger("network", "events")
 
 USE_ALIASES = envbool("XPRA_USE_ALIASES", True)
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
@@ -444,7 +445,7 @@ class SocketProtocol:
 
     def start(self) -> None:
         def start_network_read_thread() -> None:
-            log(f"start_network_read_thread() closed={self._closed}")
+            eventlog(f"start_network_read_thread() closed={self._closed}")
             if not self._closed:
                 self._read_thread.start()
 
@@ -454,6 +455,7 @@ class SocketProtocol:
 
     def send_disconnect(self, reasons, done_callback=noop) -> None:
         packet = ["disconnect"] + [nicestr(x) for x in reasons]
+        eventlog("send_disconnect(%r, %r)", reasons, done_callback)
         self.flush_then_close(self.encode, packet, done_callback=done_callback)
 
     def send_now(self, packet: PacketType) -> None:
@@ -872,7 +874,7 @@ class SocketProtocol:
         # add to the read queue (or whatever takes its place - see steal_connection)
         self._process_read(buf)
         if not buf:
-            log("read thread: eof")
+            eventlog("read thread: eof")
             # give time to the parse thread to call close itself,
             # so it has time to parse and process the last packet received
             self.timeout_add(1000, self.close)
@@ -888,6 +890,7 @@ class SocketProtocol:
         return self._conn.read(self.read_buffer_size)
 
     def _internal_error(self, message="", exc=None, exc_info=False) -> None:
+        eventlog("_internal_error(%r, %r, %r)", message, exc, exc_info)
         # log exception info with last log message
         if self._closed:
             return
@@ -900,16 +903,18 @@ class SocketProtocol:
         self.idle_add(self._connection_lost, message)
 
     def _connection_lost(self, message="", exc_info=False) -> bool:
-        log(f"connection lost: {message}", exc_info=exc_info)
+        eventlog(f"connection lost: {message}", exc_info=exc_info)
         self.close(message)
         return False
 
     def invalid(self, msg: str, data: SizedBuffer) -> None:
+        eventlog("invalid(%r, %r)", msg, data)
         self.idle_add(self._process_packet_cb, self, [INVALID, msg, data])
         # Then hang up:
         self.timeout_add(1000, self._connection_lost, msg)
 
     def gibberish(self, msg: str, data: SizedBuffer) -> None:
+        eventlog("gibberish(%r, %r)", msg, data)
         self.idle_add(self._process_packet_cb, self, [GIBBERISH, msg, data])
         # Then hang up:
         self.timeout_add(self.hangup_delay, self._connection_lost, msg)
@@ -917,6 +922,7 @@ class SocketProtocol:
     # delegates to invalid_header()
     # (so this can more easily be intercepted and overridden)
     def invalid_header(self, proto, data: SizedBuffer, msg="invalid packet header") -> None:
+        eventlog("invalid_header(%r, %r)", msg, data)
         self._invalid_header(proto, data, msg)
 
     def _invalid_header(self, proto, data: SizedBuffer, msg="invalid packet header") -> None:
@@ -938,7 +944,7 @@ class SocketProtocol:
         # start the parse thread if needed:
         if not self._read_parser_thread and not self._closed:
             if data is None:
-                log("empty marker in read queue, exiting")
+                eventlog("empty marker in read queue, exiting")
                 self.idle_add(self.close)
                 return
             self.start_read_parser_thread()
@@ -985,7 +991,7 @@ class SocketProtocol:
             # log("parse thread: %i items in read queue", self._read_queue.qsize())
             buf = self._read_queue.get()
             if not buf:
-                log("parse thread: empty marker, exiting")
+                eventlog("parse thread: empty marker, exiting")
                 self.idle_add(self.close)
                 return
 
@@ -997,6 +1003,7 @@ class SocketProtocol:
                 # for this to work, we have to assume that the initial packet is smaller than 64KB:
                 joined = b"".join(read_buffers)
                 pos = find_xpra_header(joined)
+                eventlog("waiting for xpra header: pos=%i", pos)
                 if pos < 0:
                     # wait some more:
                     read_buffers = [joined]
@@ -1068,8 +1075,8 @@ class SocketProtocol:
                         def check_packet_size(size_to_check: int, packet_header) -> bool:
                             if self._closed:
                                 return False
-                            log("check_packet_size(%#x, %s) max=%#x",
-                                size_to_check, hexstr(packet_header), self.max_packet_size)
+                            eventlog("check_packet_size(%#x, %s) max=%#x",
+                                     size_to_check, hexstr(packet_header), self.max_packet_size)
                             if size_to_check > self.max_packet_size:
                                 # pylint: disable=line-too-long
                                 err_msg = f"packet size requested is {size_to_check}"
@@ -1169,11 +1176,11 @@ class SocketProtocol:
                     log.estr(e)
                     if self._closed:
                         return
-                    log(f"failed to parse {etype} packet: %s", hexstr(data[:128]), exc_info=True)
+                    eventlog(f"failed to parse {etype} packet: %s", hexstr(data[:128]), exc_info=True)
                     data_str = memoryview_to_bytes(data)
-                    log(" data: %s", repr_ellipsized(data_str))
-                    log(f" packet_index={packet_index}, payload_size={payload_size}, buffer size={bl}")
-                    log(" full data: %s", hexstr(data_str))
+                    eventlog(" data: %s", repr_ellipsized(data_str))
+                    eventlog(f" packet_index={packet_index}, payload_size={payload_size}, buffer size={bl}")
+                    eventlog(" full data: %s", hexstr(data_str))
                     self.may_log_stats()
                     self.gibberish(f"failed to parse {etype} packet", data)
                     return
@@ -1216,13 +1223,13 @@ class SocketProtocol:
         def closing_already(packet_encoder: Callable | None = None,
                             packet_data=None,
                             done_callback: Callable = noop) -> None:
-            log("flush_then_close%s had already been called, this new request has been ignored",
-                (packet_encoder, packet_data, done_callback))
+            eventlog("flush_then_close%s had already been called, this new request has been ignored",
+                     (packet_encoder, packet_data, done_callback))
 
         self.flush_then_close = closing_already
-        log("flush_then_close%s closed=%s", (encoder, last_packet, done_callback), self._closed)
+        eventlog("flush_then_close%s closed=%s", (encoder, last_packet, done_callback), self._closed)
         if self._closed:
-            log("flush_then_close: already closed")
+            eventlog("flush_then_close: already closed")
             done_callback()
             return
 
@@ -1232,10 +1239,10 @@ class SocketProtocol:
                 if wl:
                     wl.release()
             except Exception as e:
-                log(f"error releasing the write lock: {e}")
+                eventlog(f"error releasing the write lock: {e}")
 
         def close_and_release() -> None:
-            log("close_and_release()")
+            eventlog("close_and_release()")
             self.close()
             writelockrelease()
             done_callback()
@@ -1245,11 +1252,11 @@ class SocketProtocol:
             if not self._write_queue.empty():
                 # write queue still has stuff in it..
                 if timeout <= 0:
-                    log("flush_then_close: queue still busy, closing without sending the last packet")
+                    eventlog("flush_then_close: queue still busy, closing without sending the last packet")
                     close_and_release()
                     return
                 # retry later:
-                log("flush_then_close: still waiting for queue to flush")
+                eventlog("flush_then_close: still waiting for queue to flush")
                 self.timeout_add(100, wait_for_queue, timeout - 1)
                 return
             if not last_packet:
@@ -1258,23 +1265,23 @@ class SocketProtocol:
 
             def wait_for_packet_sent() -> bool:
                 closed = self._closed
-                log("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s",
-                    self._write_queue.empty(), closed)
+                eventlog("flush_then_close: wait_for_packet_sent() queue.empty()=%s, closed=%s",
+                         self._write_queue.empty(), closed)
                 if self._write_queue.empty() or closed:
                     # it got sent, we're done!
                     close_and_release()
                     return False
                 return not closed  # run until we manage to close (here or via the timeout)
 
-            log(f"flush_then_close: queue is now empty, sending the last packet using {encoder=} and closing")
+            eventlog(f"flush_then_close: queue is now empty, sending the last packet using {encoder=} and closing")
             if encoder:
-                log("last packet: %s", last_packet)
+                eventlog("last packet: %s", last_packet)
                 chunks = encoder(last_packet)
-                log("last packet has %i chunks", len(chunks))
+                eventlog("last packet has %i chunks", len(chunks))
                 self._add_chunks_to_queue(last_packet[0], chunks, synchronous=False, more=False)
             else:
                 self.raw_write((last_packet,), "flush-then-close")
-            log("flush_then_close: last packet queued, closed=%s", self._closed)
+            eventlog("flush_then_close: last packet queued, closed=%s", self._closed)
             if wait_for_packet_sent():
                 # check again every 100ms
                 self.timeout_add(100, wait_for_packet_sent)
@@ -1287,11 +1294,11 @@ class SocketProtocol:
                 # cleaned up already
                 return
             if wl.acquire(timeout=timeout / 1000):
-                log("flush_then_close: acquired the write lock")
+                eventlog("flush_then_close: acquired the write lock")
                 # we have the write lock - we MUST free it!
                 wait_for_queue()
             else:
-                log("flush_then_close: timeout waiting for the write lock")
+                eventlog("flush_then_close: timeout waiting for the write lock")
                 self.close()
                 done_callback()
 
@@ -1302,12 +1309,12 @@ class SocketProtocol:
         # -> packet_queued
         # -> wait_for_packet_sent
         # -> close_and_release
-        log("flush_then_close: wait_for_write_lock()")
+        eventlog("flush_then_close: wait_for_write_lock()")
         wait_for_write_lock()
 
     def close(self, message="") -> None:
         c = self._conn
-        log("Protocol.close(%s) closed=%s, connection=%s", message, self._closed, c)
+        eventlog("Protocol.close(%s) closed=%s, connection=%s", message, self._closed, c)
         if self._closed:
             return
         self._closed = True
@@ -1319,11 +1326,11 @@ class SocketProtocol:
         if c:
             self._conn = None
             with log.trap_error("Error closing %s", c):
-                log("Protocol.close(%s) calling %s", message, c.close)
+                eventlog("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
         self.terminate_queue_threads()
         self.idle_add(self.clean)
-        log("Protocol.close(%s) done", message)
+        eventlog("Protocol.close(%s) done", message)
 
     def may_log_stats(self, log_fn: Callable = log.info) -> None:
         if self._log_stats is False:
@@ -1355,6 +1362,7 @@ class SocketProtocol:
         # to ensure that no packets get lost.
         # The caller must call wait_for_io_threads_exit() to ensure that this
         # class is no longer reading from the connection before it can re-use it
+        eventlog("steal_connection(%r)", read_callback)
         assert not self._closed, "cannot steal a closed connection"
         if read_callback:
             self._read_queue_put = read_callback
@@ -1384,7 +1392,7 @@ class SocketProtocol:
         self.source_has_more = noop
 
     def terminate_queue_threads(self) -> None:
-        log("terminate_queue_threads()")
+        eventlog("terminate_queue_threads()")
         # the format thread will exit:
         self._get_packet_cb = no_packet
         self._source_has_more.set()
