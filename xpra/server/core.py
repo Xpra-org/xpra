@@ -92,6 +92,10 @@ MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 100)
 SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", 0.1)
 CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
+UNAUTHENTICATED_HELLO_REQUESTS = tuple(
+    x.strip() for x in
+    os.environ.get("XPRA_UNAUTHENTICATED_HELLO_REQUESTS", "version,connect_test,id").split(",") if x.strip()
+)
 
 SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO > 1)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
@@ -1646,9 +1650,11 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             return
 
         log("process_hello: capabilities=%s", capabilities)
-        if c.strget("request") == "version":
-            self.send_version_info(proto, c.boolget("full-version-request"))
+        request = c.strget("request")
+        log.warn(f"{request=!r}, {UNAUTHENTICATED_HELLO_REQUESTS=}")
+        if request in UNAUTHENTICATED_HELLO_REQUESTS and self.do_handle_hello_request(request, proto, c):
             return
+
         # verify version:
         remote_version = c.strget("version")
         verr = version_compat_check(remote_version)
@@ -2027,6 +2033,9 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         return self.do_handle_hello_request(request, proto, caps)
 
     def do_handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
+        if request == "version":
+            self.send_version_info(proto, caps.boolget("full-version-request"))
+            return True
         if request == "connect_test":
             ctr = caps.strget("connect_test_request")
             response = {"connect_test_response": ctr}
