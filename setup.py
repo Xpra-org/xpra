@@ -288,7 +288,7 @@ drm_ENABLED             = DEFAULT and (LINUX or FREEBSD) and pkg_config_version(
 dec_avcodec2_ENABLED    = ffmpeg_ENABLED and pkg_config_version("57", "libavcodec")
 csc_swscale_ENABLED     = ffmpeg_ENABLED and pkg_config_ok("--exists", "libswscale")
 csc_cython_ENABLED      = DEFAULT
-nvidia_ENABLED          = DEFAULT and not OSX and BITS==64
+nvidia_ENABLED          = DEFAULT and not OSX and BITS==64 and not RISCV
 nvjpeg_encoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
 nvjpeg_decoder_ENABLED  = nvidia_ENABLED and pkg_config_ok("--exists", "nvjpeg")
 nvenc_ENABLED           = nvidia_ENABLED and pkg_config_version("10", "nvenc")
