@@ -825,6 +825,7 @@ fi
    Ubuntu Oracular package name revert
    Debian distributions with Python >= 3.13 need `setuptools`
    `pam_misc` upgrade breaks include path
+   don't enable nvidia codecs on riscv64
 - New features:
    keycloak authentication module
 - Encodings:
@@ -849,6 +850,8 @@ fi
    revert to other client's ssh agent socket on disconnection
    only re-initialize encodings on update message
    environment variable override returned invalid type
+   error generating QR code URLs
+   window info window not showing
 - Cosmetic:
    fail faster if Xvfb process terminates
    show connection step in splash screen progress
@@ -863,6 +866,8 @@ fi
    duplicated platform name
    silence warnings when parsing newer (>= v6.3) configuration files
    cursors should not apply to the headerbar
+   easier debug logging of key network events
+   warn against using AES in this branch
 
 * Sun Jan 19 2025 Antoine Martin <antoine@xpra.org> 5.0.12-10
 - Platforms, build and packaging:

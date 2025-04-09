@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1] 2025-03-30
+## [5.1] 2025-04-09
 * Platforms, build and packaging:
     * [prefer CUDA arch specific pkg-config file for `nvdec`](https://github.com/Xpra-org/xpra/commit/87a0e81f9df262b79d348e5c53ea046ac68cb97e)
     * [CUDA build errors with newer compilers](https://github.com/Xpra-org/xpra/commit/9fdc7b3d68f795c54890d41989cae0ee58762597)
@@ -22,6 +22,7 @@
     * [Ubuntu Oracular package name revert](https://github.com/Xpra-org/xpra/commit/5bd5666c2a0415e3fd5bc2104bc655e18799e7f5)
     * [Debian distributions with Python >= 3.13 need `setuptools`](https://github.com/Xpra-org/xpra/commit/952c3e672a4c899582542091c5f2153d050954d5)
     * [`pam_misc` upgrade breaks include path](https://github.com/Xpra-org/xpra/commit/d339be7f51b92afb811c41372571af5f55f74150), [incorrect workaround attempt](https://github.com/Xpra-org/xpra/commit/6ca947d5bb4f23e186573d39b7672fab87828df7) + [fixup](https://github.com/Xpra-org/xpra/commit/b010bff95083bbb4636059c90528b5e0d8c38fe9) + [another](https://github.com/Xpra-org/xpra/commit/07326cc279f590d26c7e083fb8f99d9e1bd91131) [and another](https://github.com/Xpra-org/xpra/commit/54e85a03deafbf23280571c67529c7a5b41a40f3)
+    * [don't enable nvidia codecs on riscv64](https://github.com/Xpra-org/xpra/commit/7527112416e0635cd29c06aad302e610ce8dc040)
 * New features:
     * [keycloak authentication module](https://github.com/Xpra-org/xpra/commit/da2c6f3d1af401f19090442cf171e61ab744244f)
 * Encodings:
@@ -46,6 +47,8 @@
     * [revert to other client's ssh agent socket on disconnection](https://github.com/Xpra-org/xpra/commit/101619ccee38dc412f77585d269df229076b6dc9)
     * [only re-initialize encodings on update message](https://github.com/Xpra-org/xpra/commit/6434e8ba5116cccdc1a441fa97875decdbf8951a)
     * [environment variable override returned invalid type](https://github.com/Xpra-org/xpra/commit/eb7783f3ce73e21a885e6c4c5b4c48141e54e42c)
+    * [error generating QR code URLs](https://github.com/Xpra-org/xpra/commit/e6a5e0a1f71b8ce9cb51ea278c5e9c47caf2c6e0)
+    * [window info window not showing](https://github.com/Xpra-org/xpra/commit/e4d67a28c204f911da569ce084ff6326fdfd30f2)
 * Cosmetic:
     * [fail faster if Xvfb process terminates](https://github.com/Xpra-org/xpra/commit/05ab07a24ce7c4945fd3bd4fac56913e632a9b74)
     * [show connection step in splash screen progress](https://github.com/Xpra-org/xpra/commit/d0c0bcc00841ee6c34cc1719d5d1c12c3cab0f32)
@@ -60,6 +63,8 @@
     * [duplicated platform name](https://github.com/Xpra-org/xpra/commit/dac52920ed006d7f6634ae564dd10520e70ecb06) + [fixup](https://github.com/Xpra-org/xpra/commit/4aaf4afde2a5739a4ec20c08d8603e664b79e11f)
     * [silence warnings when parsing newer (>= v6.3) configuration files](https://github.com/Xpra-org/xpra/commit/8d08465e2b25ff2badbcf256904c2cd6cc819332)
     * [cursors should not apply to the headerbar](https://github.com/Xpra-org/xpra/commit/0eaecd0bbd8d35fed6a2560e4f14ec09179676e7)
+    * [easier debug logging of key network events](https://github.com/Xpra-org/xpra/commit/8b59dbe0f177da9ad60046dfc621c197876d6622)
+    * [warn against using AES in this branch](https://github.com/Xpra-org/xpra/commit/b754c72c73f996422018717063cc96ff332fd534)
 
 ## [5.0.12] 2025-01-19
 * Platforms, build and packaging:
