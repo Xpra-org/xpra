@@ -520,7 +520,7 @@ class WindowsMixin(StubSourceMixin):
     # Methods used by WindowSource:
     #
     def record_congestion_event(self, source, late_pct: int = 0, send_speed: int = 0) -> None:
-        if not self.bandwidth_detection:
+        if not getattr(self, "bandwidth_detection", False):
             return
         gs = self.statistics
         if not gs:
