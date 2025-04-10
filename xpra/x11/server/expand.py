@@ -10,7 +10,7 @@ from xpra.x11.server.shadow import ShadowX11Server
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.gtk.util import get_default_root_window
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.evdi.capture import EvdiDevice, find_evdi_devices  # pylint: disable=no-name-in-module
+from xpra.codecs.evdi.capture import EvdiDevice, find_evdi_devices, add_evdi_device  # pylint: disable=no-name-in-module
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -88,7 +88,13 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         # time.sleep(2)
         log("evdi_setup()")
         devices = find_evdi_devices()
-        dev = EvdiDevice(devices[0], self.evdi_damage)
+        if not devices:
+            # try to add one:
+            add_evdi_device()
+            devices = find_evdi_devices()
+        device = -1 if not devices else devices[0]
+        log("devices=%s, device=%i", devices, device)
+        dev = EvdiDevice(device, self.evdi_damage)
         self.evdi_device = dev
         log(f"evdi_setup() {dev=}")
         dev.open()
