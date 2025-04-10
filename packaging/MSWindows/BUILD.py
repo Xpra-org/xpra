@@ -1312,7 +1312,7 @@ def create_exe(args) -> str:
 
 
 def sign_file(filename: str) -> None:
-    log_command(["signtool.exe", "sign", "/v", "/f", KEY_FILE, "/t", TIMESTAMP_SERVER, filename], "signtool.log")
+    log_command(["signtool.exe", "sign", "/fd", "SHA256", "/v", "/f", KEY_FILE, "/t", TIMESTAMP_SERVER, filename], "signtool.log")
 
 
 def create_msi(exe: str) -> str:
