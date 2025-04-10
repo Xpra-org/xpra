@@ -128,7 +128,7 @@ cdef extern from "evdi_lib.h":
     evdi_selectable evdi_get_event_ready(evdi_handle handle)
     void evdi_set_logging(evdi_logging evdi_logging)
 
-    void evdi_connect(evdi_handle handle, const unsigned char *edid,
+    void evdi_connect2(evdi_handle handle, const unsigned char *edid,
           const unsigned int edid_length,
           const uint32_t pixel_area_limit,
           const uint32_t pixel_per_second_limit)
@@ -402,7 +402,7 @@ cdef class EvdiDevice:
         cdef unsigned int edid_length = len(self.edid)
         cdef uint32_t pixel_per_second_limit = pixel_area_limit*Hz
         log(f"connect with edid {edid!r} (length={edid_length})")
-        evdi_connect(self.handle, edid_bin, <const unsigned int> edid_length,
+        evdi_connect2(self.handle, edid_bin, <const unsigned int> edid_length,
                      <const uint32_t> pixel_area_limit,
                      <const uint32_t> pixel_per_second_limit)
 
