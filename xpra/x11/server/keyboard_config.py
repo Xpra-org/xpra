@@ -583,7 +583,7 @@ class KeyboardConfig(KeyboardConfigBase):
         if keycode < 0:
             keycode = self.keycode_translation.get(keyname, -1)
             klog("=%i, %i (keyname translation)", keycode, rgroup)
-        if keycode < 0:
+        if keycode < 0 and keyval > 0:
             # last resort, find using the keyval:
             keymap = get_default_keymap()
             b, entries = keymap.get_entries_for_keyval(keyval)
