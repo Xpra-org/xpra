@@ -1028,6 +1028,8 @@ fi
    specify refresh rate range
    save selection in run dialog
    `OpenGL` `YUVA` support for `jpeg` with alpha
+   save `OpenGL` probe result
+   make the window menu more easily accessible
 - Network:
    bi-directional `mmap`
    `hyperv` connections

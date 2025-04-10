@@ -24,6 +24,8 @@
     * [save selection in run dialog](https://github.com/Xpra-org/xpra/issues/4432)
     * [`OpenGL` `YUVA` support for `jpeg` with alpha](https://github.com/Xpra-org/xpra/issues/1765)
     * [correctly blend border with `OpenGL` renderer](https://github.com/Xpra-org/xpra/issues/4540)
+    * [save `OpenGL` probe result](https://github.com/Xpra-org/xpra/issues/4552)
+    * [make the window menu more easily accessible](https://github.com/Xpra-org/xpra/issues/4542)
 * Network:
     * [bi-directional `mmap`](https://github.com/Xpra-org/xpra/issues/4491)
     * [`hyperv` connections](https://github.com/Xpra-org/xpra/issues/3666)
