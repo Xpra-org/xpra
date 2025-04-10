@@ -26,7 +26,6 @@ Version:        2022.1
 Version:        2025.1
 %define systemboost 1
 %endif
-Name:           python3-pycuda
 Release:        1
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
