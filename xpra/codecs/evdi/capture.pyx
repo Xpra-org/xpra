@@ -113,6 +113,7 @@ cdef extern from "evdi_lib.h":
     evdi_device_status evdi_check_device(int device)
     evdi_handle evdi_open(int device)
     int evdi_add_device()
+    evdi_handle evdi_open_attached_to_fixed(const char *sysfs_parent_device, size_t length)
 
     void evdi_close(evdi_handle handle)
     void evdi_disconnect(evdi_handle handle)
@@ -258,7 +259,10 @@ cdef class EvdiDevice:
     def open(self) -> None:
         if self.handle:
             raise RuntimeError("this evdi device is already open")
-        self.handle = evdi_open(self.device)
+        if self.device >=0:
+            self.handle = evdi_open(self.device)
+        else:
+            self.handle = evdi_open_attached_to_fixed(NULL, 0)
         if not self.handle:
             raise ValueError(f"cannot open {self.device}")
 
@@ -522,6 +526,11 @@ def find_evdi_devices() -> List[str]:
             pass
     log(f"find_evdi_devices()={devices}")
     return devices
+
+
+def add_evdi_device() -> None:
+    r = evdi_add_device()
+    log("evdi_add_device()=%i", r)
 
 
 def selftest(full=False) -> None:
