@@ -825,7 +825,8 @@ class X11ServerCore(GTKServerBase):
         cursorlog("cursor_event: %s", event)
         self.last_cursor_serial = event.cursor_serial
         for ss in self.window_sources():
-            ss.send_cursor()
+            if hasattr(ss, "send_cursor"):
+                ss.send_cursor()
 
     def _motion_signaled(self, model, event) -> None:
         mouselog("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)

@@ -180,7 +180,8 @@ class GTKServerBase(ServerBase):
         self.cursor_suspended = False
         ss = self.get_server_source(proto)
         if ss:
-            ss.send_cursor()
+            if hasattr(ss, "send_cursor"):
+                ss.send_cursor()
 
     def do_get_info(self, proto, *args) -> dict[str, Any]:
         start = monotonic()
