@@ -824,6 +824,7 @@ def get_usage() -> list[str]:
         command_options += [
             "detach [DISPLAY]",
             "info [DISPLAY]",
+            "connect-test [DISPLAY]",
             "id [DISPLAY]",
             "version [DISPLAY]",
             "stop [DISPLAY]",

@@ -310,10 +310,13 @@ Note: screenshots can only be taken when a client is attached.
 .SS xpra version
 Queries the server version and prints it out.
 Note: older servers may not support this feature.
-.SS xpra id
-Queries the server for basic information like server pid, uuid, etc
+.SS xpra connect-test
+Tries to connect to a server to see if it is alive.
 This is normally even available prior to authentication.
 This command returns 0 if the server responded.
+.SS xpra id
+Very similar to \fBconnect-test\fP, but this subcommand
+also prints the basic server information it received: pid, uuid, etc
 .SS xpra info
 Queries the server for full version, status and statistics.
 .SS xpra top
