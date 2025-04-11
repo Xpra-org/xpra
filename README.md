@@ -13,18 +13,18 @@ Effectively giving you remote access to individual graphical applications.
 It can also be used to
 [access existing desktop sessions](docs/Usage/Shadow.md) and [start remote desktop sessions](docs/Usage/Desktop.md).
 
-Xpra is _open-source_ ([GPLv2+](COPYING)) with clients available for [many supported platforms](https://github.com/Xpra-org/xpra/wiki/Platforms)
+Xpra is _open-source_ ([GPLv2+](COPYING)) with clients available for [many supported platforms](https://github.com/Xpra-org/xpra/wiki/Platforms),
 and the server includes a built-in [HTML5 client](https://github.com/Xpra-org/xpra-html5).
 Xpra is usable over a wide variety of [network protocols](docs/Network/README.md) and does its best to adapt to any network conditions.
 
-Xpra forwards and synchronizes many extra desktop features which allows remote applications
+Xpra forwards and synchronizes many extra desktop features, which allows remote applications
 to integrate transparently into the client's desktop environment:
 [audio input and output](docs/Features/Audio.md), [printers](docs/Features/Printing.md), [clipboard](docs/Features/Clipboard.md),
-[system trays](docs/Features/System-Tray.md), [notifications](docs/Features/Notifications.md), [webcams](docs/Features/Webcam.md), etc
+[system trays](docs/Features/System-Tray.md), [notifications](docs/Features/Notifications.md), [webcams](docs/Features/Webcam.md), etc.
 
 It can also [open documents and URLs remotely](docs/Features/File-Transfers.md),
 display [high bit depth content](docs/Features/Image-Depth.md),
-and it will try honour the [display's DPI](docs/Features/DPI.md).
+and it will try to honor the [display's DPI](docs/Features/DPI.md).
 
 Here's what a seamless session with two windows (an `xterm` and `glxspheres`)
 looks like when attached from an MS Windows 11 desktop client:
@@ -40,7 +40,7 @@ looks like when attached from an MS Windows 11 desktop client:
 * Linux: [RPM](https://github.com/Xpra-org/xpra/wiki/Download#-for-rpm-distributions), [DEB](https://github.com/Xpra-org/xpra/wiki/Download#-for-debian-based-distributions)
 
 All the packages are signed. There are also [LTS](https://xpra.org/lts) and [beta builds](https://xpra.org/beta) available. \
-For more information and more build architecture options, see [xpra downloads](https://github.com/Xpra-org/xpra/wiki/Download)
+For more information and more build architecture options, see [xpra downloads](https://github.com/Xpra-org/xpra/wiki/Download).
 
 ## Build from source
 ```sh
@@ -61,7 +61,7 @@ Unit test status:
 You can use the [html5 client](https://github.com/Xpra-org/xpra-html5) in which case xpra is only required on the host.
 
 ## Seamless Mode
-Run `xterm` on a remote host, display and iteract with it locally (from the client machine):
+Run `xterm` on a remote host, display and interact with it locally (from the client machine):
 ```sh
 xpra start ssh://USER@HOST/ --start=xterm
 # hint: xterm must be installed on the HOST.
@@ -94,6 +94,6 @@ For more generic version-agnostic information, checkout [the wiki](https://githu
 
 # Help
 Make sure to check the [FAQ](https://github.com/Xpra-org/xpra/blob/master/docs/FAQ.md), your question may already be answered there.
-You can ask your questions on the [github discussions](https://github.com/orgs/Xpra-org/discussions), or on the IRC channel `#xpra` on [`libera.chat`](https://libera.chat)
+You can ask your questions on the [GitHub discussions](https://github.com/orgs/Xpra-org/discussions), or on the IRC channel `#xpra` on [`libera.chat`](https://libera.chat)
 or [using discord](https://discord.gg/w53cmb34rd).
 If you have hit a bug (sorry about that!), please see [reporting bugs](https://github.com/Xpra-org/xpra/wiki/Reporting-Bugs).
