@@ -164,8 +164,8 @@ class SourceMixinsTest(unittest.TestCase):
         }, test_fn=idle_test)
 
     def test_input(self):
-        from xpra.server.source.input import InputMixin
-        self._test_mixin_class(InputMixin)
+        from xpra.server.source.keyboard import KeyboardMixin
+        self._test_mixin_class(KeyboardMixin)
 
     def test_mmap(self):
         from xpra.server.source import mmap

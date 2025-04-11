@@ -15,10 +15,11 @@ class InputMixinTest(ServerMixinTest):
 
     def test_input(self):
         with DisplayContext():
-            from xpra.server.mixins.input import InputServer
-            from xpra.server.source.input import InputMixin
+            from xpra.server.mixins.keyboard import KeyboardServer
+            from xpra.server.source.keyboard import KeyboardMixin
             opts = AdHocStruct()
-            self._test_mixin_class(InputServer, opts, {}, InputMixin)
+            self._test_mixin_class(KeyboardServer, opts, {}, KeyboardMixin)
+
 
 def main():
     unittest.main()

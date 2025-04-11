@@ -131,7 +131,7 @@ class RFBServer:
         GLib.idle_add(self._accept_rfb_source, source)
 
     def _accept_rfb_source(self, source):
-        if features.input_devices:
+        if features.keyboard:
             source.keyboard_config = self.get_keyboard_config()
             self.set_keymap(source)
         model = self._get_rfb_desktop_model()
@@ -145,7 +145,7 @@ class RFBServer:
                 start_refresh(wid)  # pylint: disable=not-callable
 
     def _process_rfb_PointerEvent(self, _proto, packet):
-        if not features.input_devices or self.readonly:
+        if not features.pointer or self.readonly:
             return
         buttons, x, y = packet[1:4]
         wid = self._get_rfb_desktop_wid()
@@ -167,7 +167,7 @@ class RFBServer:
         GLib.idle_add(process_pointer_event)
 
     def _process_rfb_KeyEvent(self, proto, packet):
-        if not features.input_devices or self.readonly:
+        if not features.keyboard or self.readonly:
             return
         source = self.get_server_source(proto)
         if not source:

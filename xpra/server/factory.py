@@ -32,9 +32,12 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.mmap:
         from xpra.server.mixins.mmap import MMAP_Server
         classes.append(MMAP_Server)
-    if features.input_devices:
-        from xpra.server.mixins.input import InputServer
-        classes.append(InputServer)
+    if features.keyboard:
+        from xpra.server.mixins.keyboard import KeyboardServer
+        classes.append(KeyboardServer)
+    if features.pointer:
+        from xpra.server.mixins.pointer import PointerServer
+        classes.append(PointerServer)
     if features.encoding:
         from xpra.server.mixins.encoding import EncodingServer
         classes.append(EncodingServer)

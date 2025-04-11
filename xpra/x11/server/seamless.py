@@ -1000,7 +1000,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 size_changed = oww != w or owh != h
         if is_ui_driver or size_changed or not shown:
             damage = False
-            if is_ui_driver and len(packet) >= 13 and features.input_devices and not self.readonly:
+            if is_ui_driver and len(packet) >= 13 and features.pointer and not self.readonly:
                 pwid = packet[10]
                 pointer = packet[11]
                 modifiers = packet[12]

@@ -37,9 +37,12 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.mmap:
         from xpra.server.source.mmap import MMAP_Connection
         mixins.append(MMAP_Connection)
-    if features.input_devices:
-        from xpra.server.source.input import InputMixin
-        mixins.append(InputMixin)
+    if features.keyboard:
+        from xpra.server.source.keyboard import KeyboardMixin
+        mixins.append(KeyboardMixin)
+    if features.pointer:
+        from xpra.server.source.pointer import PointerMixin
+        mixins.append(PointerMixin)
     if features.dbus:
         from xpra.server.source.dbus import DBUS_Mixin
         mixins.append(DBUS_Mixin)

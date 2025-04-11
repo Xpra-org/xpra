@@ -868,8 +868,8 @@ class X11ServerCore(GTKServerBase):
                     event.pitch, event.duration, event.bell_class, event.bell_id, event.bell_name)
 
     def setup_input_devices(self) -> None:
-        xinputlog("setup_input_devices() input_devices feature=%s", features.input_devices)
-        if not features.input_devices:
+        xinputlog("setup_input_devices() input_devices feature=%s", features.pointer)
+        if not features.pointer:
             return
         xinputlog("setup_input_devices() format=%s, input_devices=%s", self.input_devices_format, self.input_devices)
         xinputlog("setup_input_devices() input_devices_data=%s", self.input_devices_data)

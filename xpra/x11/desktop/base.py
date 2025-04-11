@@ -256,7 +256,7 @@ class DesktopServerBase(DesktopServerBaseClass):
 
     def _process_configure_window(self, proto, packet: PacketType) -> None:
         wid, x, y, w, h = (int(x) for x in packet[1:6])
-        if len(packet) >= 13 and features.input_devices and not self.readonly:
+        if len(packet) >= 13 and features.pointer and not self.readonly:
             pwid = int(packet[10])
             pointer = packet[11]
             modifiers = packet[12]

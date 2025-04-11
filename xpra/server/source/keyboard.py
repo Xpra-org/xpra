@@ -16,55 +16,31 @@ log = Logger("keyboard")
 ibuslog = Logger("ibus")
 
 
-class InputMixin(StubSourceMixin):
+class KeyboardMixin(StubSourceMixin):
     """
-    Manage input devices (keyboard, mouse, etc)
+    Manage keyboard input
     """
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         return any((
             caps.boolget("keyboard"),
-            caps.boolget("mouse"),
             bool(caps.get("xkbmap_keycodes")),  # legacy clients
         ))
 
     def init_state(self) -> None:
         self.keyboard_config = None
         self.ibus = False
-        self.double_click_time: int = -1
-        self.double_click_distance: tuple[int, int] | None = None
-        # mouse echo:
-        self.mouse_last_position: tuple[int, int] | None = None
-        self.mouse_last_relative_position: tuple[int, int] | None = None
 
     def cleanup(self) -> None:
         self.keyboard_config = None
 
     def parse_client_caps(self, c: typedict) -> None:
-        dc = c.dictget("double_click")
-        if dc:
-            dc = typedict(dc)
-            self.double_click_time = dc.intget("time")
-            self.double_click_distance = dc.intpair("distance")
-        else:
-            self.double_click_time = c.intget("double_click.time")
-            self.double_click_distance = c.intpair("double_click.distance")
-        self.mouse_last_position = c.intpair("mouse.initial-position")
         self.ibus = c.boolget("ibus")
         ibuslog(f"client ibus support: {self.ibus}")
 
     def get_info(self) -> dict[str, Any]:
-        dc_info: dict[str, Any] = {}
-        dct = self.double_click_time
-        if dct:
-            dc_info["time"] = dct
-        dcd = self.double_click_distance
-        if dcd:
-            dc_info["distance"] = dcd
-        info = {}
-        if dc_info:
-            info["double-click"] = dc_info
+        info: dict[str, Any] = {}
         kc = self.keyboard_config
         if kc:
             info["keyboard"] = kc.get_info()
@@ -142,11 +118,3 @@ class InputMixin(StubSourceMixin):
             log.info("ignoring client key %s / %s since keyboard is not configured", client_keycode, keyname)
             return -1, 0
         return kc.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
-
-    def update_mouse(self, wid: int, x: int, y: int, rx: int, ry: int) -> None:
-        log("update_mouse(%s, %i, %i, %i, %i) current=%s, client=%i",
-            wid, x, y, rx, ry, self.mouse_last_position, self.counter)
-        if self.mouse_last_position != (x, y) or self.mouse_last_relative_position != (rx, ry):
-            self.mouse_last_position = (x, y)
-            self.mouse_last_position = (rx, ry)
-            self.send_async("pointer-position", wid, x, y, rx, ry)

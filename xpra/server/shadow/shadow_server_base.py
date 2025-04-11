@@ -190,9 +190,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         return 0, 0
 
     def _keys_changed(self) -> None:
-        from xpra.server.mixins.input import InputServer
-        if isinstance(self, InputServer):
-            InputServer._keys_changed(self)
+        from xpra.server.mixins.keyboard import KeyboardServer
+        if isinstance(self, KeyboardServer):
+            KeyboardServer._keys_changed(self)
             from xpra.platform.keyboard import Keyboard
             log.info("the keymap has been changed: %s", Keyboard().get_layout_spec()[0])
 
@@ -317,11 +317,11 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         raise NotImplementedError()
 
     def start_poll_pointer(self) -> None:
-        log("start_poll_pointer() pointer_poll_timer=%s, input_devices=%s, POLL_POINTER=%s",
-            self.pointer_poll_timer, features.input_devices, POLL_POINTER)
+        log("start_poll_pointer() pointer_poll_timer=%s, pointer=%s, POLL_POINTER=%s",
+            self.pointer_poll_timer, features.pointer, POLL_POINTER)
         if self.pointer_poll_timer:
             self.cancel_poll_pointer()
-        if features.input_devices and POLL_POINTER > 0:
+        if features.pointer and POLL_POINTER > 0:
             self.pointer_poll_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
 
     def cancel_poll_pointer(self) -> None:

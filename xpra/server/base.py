@@ -401,7 +401,7 @@ class ServerBase(ServerBaseClass):
                 "lock": self.lock is not False,
                 "lock-toggle": self.lock is None,
                 "windows": features.windows,
-                "keyboard": features.input_devices,
+                "keyboard": features.keyboard,
             }
             sf = self.get_server_features(source)
             capabilities.update(sf)

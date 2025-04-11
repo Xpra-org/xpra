@@ -267,7 +267,8 @@ def show_encoding_help(opts) -> int:
         if x.getEffectiveLevel() == logging.INFO:
             x.setLevel(logging.WARN)
     from xpra.server import features as sf
-    sf.audio = sf.av_sync = sf.clipboard = sf.commands = sf.control = sf.dbus = sf.fileprint = sf.input_devices = False
+    sf.audio = sf.av_sync = sf.clipboard = sf.commands = sf.control = sf.dbus = sf.fileprint = False
+    sf.keyboard = sf.mouse = False
     sf.mmap = sf.logging = sf.network_state = sf.notifications = sf.rfb = sf.shell = sf.webcam = False
     from xpra.server.base import ServerBase
     sb = ServerBase()
@@ -313,7 +314,8 @@ def set_server_features(opts, mode: str) -> None:
         features.commands = False
         features.notifications = features.webcam = features.clipboard = False
         features.gstreamer = features.x11 = features.audio = features.av_sync = False
-        features.fileprint = features.input_devices = features.commands = False
+        features.fileprint = features.commands = False
+        features.keyboard = features.pointer = False
         features.logging = features.display = features.windows = False
         features.cursors = features.rfb = False
         features.ssh = False
@@ -327,7 +329,8 @@ def set_server_features(opts, mode: str) -> None:
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
         features.av_sync = features.audio and b(opts.av_sync)
         features.fileprint = b(opts.printing) or b(opts.file_transfer)
-        features.input_devices = not opts.readonly and impcheck("keyboard")
+        features.keyboard = not opts.readonly and impcheck("keyboard")
+        features.pointer = not opts.readonly
         features.logging = b(opts.remote_logging)
         features.display = opts.windows
         features.windows = features.display and impcheck("codecs")
@@ -363,7 +366,8 @@ def enforce_server_features() -> None:
         "mmap": "xpra.net.mmap,xpra.server.mixins.mmap,xpra.server.source.mmap",
         "ssl": "ssl,xpra.net.ssl_util",
         "ssh": "paramiko,xpra.net.ssh,xpra.server.mixins.ssh_agent",
-        "input_devices": "xpra.server.mixins.input,xpra.server.source.input",
+        "keyboard": "xpra.server.mixins.keyboard,xpra.server.source.keyboard",
+        "pointer": "xpra.server.mixins.pointer,xpra.server.source.pointer",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
         "dbus": "xpra.dbus,xpra.server.dbus,xpra.server.source.dbus",
