@@ -377,6 +377,9 @@ class WindowClient(StubClientMixin):
                         self.overlay_image = Image.open(icon_filename)
         traylog("overlay_image=%s", self.overlay_image)
 
+    def init_ui(self, opts) -> None:
+        self.init_opengl(opts.opengl)
+
     def setup_connection(self, conn) -> None:
         display_name = getattr(self, "display_desc", {}).get("display_name", "")
         if display_name:

@@ -22,6 +22,12 @@ class StubClientMixin:
         or using a default configuration object.
         """
 
+    def init_ui(self, opts) -> None:
+        """
+        Initialize the user interface,
+        creating windows and widgets if needed.
+        """
+
     def run(self) -> ExitValue:
         """
         run the main loop.

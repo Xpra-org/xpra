@@ -1549,7 +1549,7 @@ class GTKTrayMenu(MenuHelper):
         server_menu_item.set_submenu(menu)
         if RUNCOMMAND_MENU:
             menu.append(self.make_runcommandmenuitem())
-        if SHOW_SERVER_COMMANDS:
+        if SHOW_SERVER_COMMANDS and features.commands:
             menu.append(self.make_servercommandsmenuitem())
         if SHOW_TRANSFERS:
             menu.append(self.make_servertransfersmenuitem())

@@ -27,6 +27,12 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.clipboard:
         from xpra.client.mixins.clipboard import ClipboardClient
         CLIENT_BASES.append(ClipboardClient)
+    if features.keyboard:
+        from xpra.client.mixins.keyboard import KeyboardClient
+        CLIENT_BASES.append(KeyboardClient)
+    if features.pointer:
+        from xpra.client.mixins.pointer import PointerClient
+        CLIENT_BASES.append(PointerClient)
     if features.notifications:
         from xpra.client.mixins.notification import NotificationClient
         CLIENT_BASES.append(NotificationClient)
@@ -42,6 +48,9 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.network_listener:
         from xpra.client.mixins.network_listener import NetworkListener
         CLIENT_BASES.append(NetworkListener)
+    if features.commands:
+        from xpra.client.mixins.child_command import CommandClient
+        CLIENT_BASES.append(CommandClient)
     if features.encoding:
         from xpra.client.mixins.encodings import Encodings
         CLIENT_BASES.append(Encodings)

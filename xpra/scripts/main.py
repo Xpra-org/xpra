@@ -2122,6 +2122,7 @@ def set_client_features(opts) -> None:
         return True
 
     from xpra.client.base import features
+    features.commands = opts.commands
     features.display = opts.windows
     features.windows = opts.windows
     features.cursors = opts.windows and opts.cursors
@@ -2130,6 +2131,8 @@ def set_client_features(opts) -> None:
     features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("xpra.audio")
     features.webcam = bo(opts.webcam) and impcheck("xpra.codecs")
     features.clipboard = b(opts.clipboard) and impcheck("xpra.clipboard")
+    features.keyboard = impcheck("xpra.keyboard")
+    features.pointer = features.windows
     features.notifications = opts.notifications and impcheck("xpra.notifications")
     features.dbus = b(opts.dbus) and impcheck("dbus", "xpra.dbus")
     features.mmap = b(opts.mmap)
@@ -2154,6 +2157,8 @@ def enforce_client_features() -> None:
         "webcam": "xpra.client.mixins.webcam",
         "audio": "xpra.audio,xpra.client.mixins.audio",
         "clipboard": "xpra.clipboard,xpra.client.mixins.clipboard",
+        "keyboard": "xpra.keyboard,xpra.client.mixins.keyboard",
+        "pointer": "xpra.client.mixins.pointer",
         "notifications": "xpra.notifications,xpra.client.mixins.notification",
         "dbus": "dbus,xpra.dbus",
         "mmap": "mmap,xpra.net.mmap,xpra.client.mixins.mmap",

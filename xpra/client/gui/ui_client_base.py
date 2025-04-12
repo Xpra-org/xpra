@@ -11,20 +11,16 @@ from collections.abc import Callable, Sequence
 
 from xpra.client.gui.factory import get_client_base_classes
 from xpra.client.base.client import XpraClientBase
-from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
-from xpra.common import FULL_INFO, noop, NotificationID, ConnectionMessage, noerr, get_run_info
+from xpra.common import FULL_INFO, NotificationID, ConnectionMessage, noerr, get_run_info
 from xpra.net.common import PacketType
-from xpra.keyboard.common import KeyEvent
 from xpra.os_util import POSIX, WIN32, OSX, gi_import
 from xpra.util.child_reaper import reaper_cleanup
-from xpra.util.version import get_platform_info
 from xpra.util.system import is_Wayland, platform_name
 from xpra.util.objects import typedict
-from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import std, Ellipsizer, repr_ellipsized
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint
 from xpra.scripts.config import str_to_bool
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base import features
@@ -36,12 +32,9 @@ ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 GLib = gi_import("GLib")
 
 log = Logger("client")
-keylog = Logger("client", "keyboard")
 log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
-MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
-DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 
 
 class UIXpraClient(ClientBaseClass):
@@ -77,19 +70,11 @@ class UIXpraClient(ClientBaseClass):
         self.title: str = ""
         self.session_name: str = ""
 
-        self.server_platform: str = ""
         self.server_session_name: str = ""
 
         # features:
-        self.opengl_enabled: bool = False
-        self.opengl_props: dict[str, Any] = {}
         self.readonly: bool = False
         self.xsettings_enabled: bool = False
-        self.server_start_new_commands: bool = False
-        self.server_xdg_menu = None
-        self.start_new_commands: bool = False
-        self.request_start = []
-        self.request_start_child = []
         self.headerbar = None
         self.suspended = False
 
@@ -99,27 +84,15 @@ class UIXpraClient(ClientBaseClass):
         self.server_sharing_toggle: bool = False
         self.server_lock: bool = False
         self.server_lock_toggle: bool = False
-        self.server_keyboard: bool = True
         self.server_pointer: bool = True
-        self.server_commands_info = False
-        self.server_commands_signals: Sequence[str] = ()
         self.server_readonly = False
         self.server_setting_updates: dict[str, Any] = {}
 
-        self.client_supports_opengl: bool = False
         self.client_supports_sharing: bool = False
         self.client_lock: bool = False
 
         # helpers and associated flags:
         self.client_extras = None
-        self._mouse_position_delay = 5
-        self.keyboard_helper_class: type = KeyboardHelper
-        self.keyboard_helper = None
-        self.keyboard_grabbed: bool = False
-        self.keyboard_sync: bool = False
-        self.key_repeat_delay = -1
-        self.key_repeat_interval = -1
-        self.kh_warning: bool = False
         self.menu_helper = None
 
         # state:
@@ -145,61 +118,12 @@ class UIXpraClient(ClientBaseClass):
 
     def init_ui(self, opts) -> None:
         """ initialize user interface """
-
-        def noauto(val) -> str | Sequence | None:
-            default = [] if isinstance(val, Sequence) else None
-            if not val:
-                return default
-            if str(val).lower() == "auto":
-                return default
-            return val
-
-        send_keyboard = noop
-        if not self.readonly:
-            def do_send_keyboard(*parts):
-                self.after_handshake(self.send, *parts)
-
-            send_keyboard = do_send_keyboard
-        try:
-            kwargs = dict(
-                (x, noauto(getattr(opts, "keyboard_%s" % x))) for x in (
-                    "backend", "model", "layout", "layouts", "variant", "variants", "options",
-                )
-            )
-            self.keyboard_helper = self.keyboard_helper_class(send_keyboard, opts.keyboard_sync,
-                                                              opts.shortcut_modifiers,
-                                                              opts.key_shortcut,
-                                                              opts.keyboard_raw, **kwargs)
-            if DELAY_KEYBOARD_DATA and not self.readonly:
-                self.after_handshake(self.keyboard_helper.send_keymap)
-        except ImportError as e:
-            keylog("error instantiating %s", self.keyboard_helper_class, exc_info=True)
-            keylog.warn(f"Warning: no keyboard support, {e}")
-
-        if features.windows:
-            self.init_opengl(opts.opengl)
-
         if ClientExtras is not None:
             self.client_extras = ClientExtras(self, opts)  # pylint: disable=not-callable
 
-        self.start_new_commands = str_to_bool(opts.start_new_commands)
-        if self.start_new_commands and (opts.start or opts.start_child):
-            from xpra.scripts.main import strip_defaults_start_child
-            from xpra.scripts.config import make_defaults_struct
-            defaults = make_defaults_struct()
-            self.request_start = strip_defaults_start_child(opts.start, defaults.start)
-            self.request_start_child = strip_defaults_start_child(opts.start_child, defaults.start_child)
-
-        if MOUSE_DELAY_AUTO:
-            try:
-                # some platforms don't detect the vrefresh correctly
-                # (ie: macos in virtualbox?), so use a sane default minimum
-                # discount by 5ms to ensure we have time to hit the target
-                v = max(60, self.get_vrefresh())
-                self._mouse_position_delay = max(5, 1000 // v // 2 - 5)
-                log(f"mouse position delay: {self._mouse_position_delay}")
-            except (AttributeError, OSError):
-                log("failed to calculate automatic delay", exc_info=True)
+        for c in CLIENT_BASES:
+            log(f"init: {c}")
+            c.init_ui(self, opts)
 
     def get_vrefresh(self) -> int:
         # this method is overridden in the GTK client
@@ -220,7 +144,7 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.cleanup()")
         for c in CLIENT_BASES:
             c.cleanup(self)
-        for x in (self.keyboard_helper, self.tray, self.menu_helper, self.client_extras):
+        for x in (self.tray, self.menu_helper, self.client_extras):
             if x is None:
                 continue
             log(f"UIXpraClient.cleanup() calling {type(x)}.cleanup()")
@@ -273,11 +197,6 @@ class UIXpraClient(ClientBaseClass):
     def show_bug_report(self, *_args) -> None:
         log.warn(f"show_bug_report() is not implemented in {self!r}")
 
-    def init_opengl(self, _enable_opengl) -> None:
-        self.opengl_enabled = False
-        self.client_supports_opengl = False
-        self.opengl_props = {"info": "not supported"}
-
     def _ui_event(self) -> None:
         if self._ui_events == 0:
             self.emit("first-ui-received")
@@ -288,21 +207,6 @@ class UIXpraClient(ClientBaseClass):
 
     def get_current_modifiers(self):
         raise NotImplementedError()
-
-    def send_start_new_commands(self) -> None:
-        log(f"send_start_new_commands() {self.request_start=}, {self.request_start_child=}")
-        import shlex
-        for cmd in self.request_start:
-            cmd_parts = shlex.split(cmd)
-            self.send_start_command(cmd_parts[0], cmd_parts, True)
-        for cmd in self.request_start_child:
-            cmd_parts = shlex.split(cmd)
-            self.send_start_command(cmd_parts[0], cmd_parts, False)
-
-    def send_start_command(self, name: str, command: list[str], ignore: bool, sharing: bool = True) -> None:
-        log("send_start_command%s", (name, command, ignore, sharing))
-        assert name is not None and command is not None and ignore is not None
-        self.send("start-command", name, command, ignore, sharing)
 
     ######################################################################
     # trigger notifications on disconnection,
@@ -356,32 +260,16 @@ class UIXpraClient(ClientBaseClass):
                         caps["server_uuid"] = uuid
             except (ImportError, RuntimeError):
                 log("skipped server uuid lookup", exc_info=True)
-        for x in (  # generic feature flags:
-                "xdg-menu-update",
-                "setting-change", "mouse",
-        ):
-            caps[x] = True
         caps.setdefault("wants", []).append("events")
         caps |= {
+            "setting-change": True,
             # generic server flags:
             "share": self.client_supports_sharing,
             "lock": self.client_lock,
-            "xdg-menu": self.start_new_commands,
         }
-        caps.update(self.get_keyboard_caps())
         for c in CLIENT_BASES:
             caps.update(c.get_caps(self))
         if FULL_INFO > 0:
-            def skipkeys(d, *keys):
-                return {k: v for k, v in d.items() if k not in keys}
-
-            pi = get_platform_info()
-            op = self.opengl_props
-            if FULL_INFO == 1:
-                op = skipkeys(op, "extensions", "GLU.extensions")
-                pi = skipkeys(pi, "release", "sysrelease", "platform", "processor", "architecture")
-            caps["platform"] = pi
-            caps["opengl"] = op
             caps["session-type"] = get_session_type()
         return caps
 
@@ -408,90 +296,51 @@ class UIXpraClient(ClientBaseClass):
                 if not cb.parse_server_capabilities(self, c):
                     log.info(f"failed to parse server capabilities in {cb}")
                     return False
-            except Exception as e:
-                log("%s.parse_server_capabilities(%s)", cb, Ellipsizer(c), exc_info=True)
-                log.error("Error parsing server capabilities using %s: %s", cb, e)
+            except Exception:
+                log("%s.parse_server_capabilities(%s)", cb, Ellipsizer(c))
+                log.error("Error parsing server capabilities using %s", cb, exc_info=True)
                 return False
         self.server_session_name = c.strget("session_name")
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
-        self.server_platform = c.strget("platform")
         self.server_sharing = c.boolget("sharing")
         self.server_sharing_toggle = c.boolget("sharing-toggle")
         self.server_lock = c.boolget("lock")
         self.server_lock_toggle = c.boolget("lock-toggle")
-        self.server_keyboard = c.boolget("keyboard", True)
-        self.server_pointer = c.boolget("pointer", True)
-        self.server_start_new_commands = c.boolget("start-new-commands")
-        if self.server_start_new_commands:
-            self.server_xdg_menu = c.dictget("xdg-menu", None)
-        if self.request_start or self.request_start_child:
-            if self.server_start_new_commands:
-                self.after_handshake(self.send_start_new_commands)
-            else:
-                log.warn("Warning: cannot start new commands")
-                log.warn(" the feature is currently disabled on the server")
-        self.server_commands_info = c.boolget("server-commands-info")
-        self.server_commands_signals = c.strtupleget("server-commands-signals")
         self.server_readonly = c.boolget("readonly")
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
             self.readonly = True
-        if not self.server_keyboard and self.keyboard_helper:
-            # swallow packets:
-            self.keyboard_helper.send = noop
-
-        i = platform_name(self._remote_platform,
-                          c.strtupleget("platform.linux_distribution") or c.strget("platform.release"))
-        r = ".".join(str(x) for x in self._remote_version)
-        if self._remote_revision:
-            r += f"-r{self._remote_revision}"
-        mode = c.strget("server.mode", "server")
-        bits = c.intget("python.bits", 0)
-        bitsstr = "" if bits == 0 else f" {bits}-bit"
-        log.info(f"Xpra {mode} server version {std(r)}{bitsstr}")
-        if i and i != "unknown":
-            log.info(f" running on {std(i)}")
-        if c.boolget("desktop") or c.boolget("shadow"):
-            v = c.intpair("actual_desktop_size")
-            if v:
-                w, h = v
-                ss = c.tupleget("screen_sizes")
-                log.info(f" remote desktop size is {w}x{h}")
-                if ss:
-                    log_screen_sizes(w, h, ss)
-        proxy = c.get("proxy")
-        if proxy:
-            if isinstance(proxy, dict):
-                pcaps = typedict(proxy)
-                prefix = ""
-            else:
-                pcaps = c
-                prefix = "proxy."
-            proxy_hostname = pcaps.strget(f"{prefix}hostname")
-            proxy_platform = pcaps.strget(f"{prefix}platform")
-            proxy_release = pcaps.strget(f"{prefix}platform.release")
-            proxy_version = pcaps.strget(f"{prefix}version")
-            proxy_version = pcaps.strget(f"{prefix}build.version", proxy_version)
-            proxy_distro = pcaps.strget(f"{prefix}linux_distribution")
-            msg = "via: %s proxy version %s" % (
-                platform_name(proxy_platform, proxy_distro or proxy_release),
-                std(proxy_version or "unknown")
-            )
-            if proxy_hostname:
-                msg += " on '%s'" % std(proxy_hostname)
-            log.info(msg)
+        self.print_proxy_caps(c)
         return True
+
+    def print_proxy_caps(self, c: typedict) -> None:
+        proxy = c.get("proxy")
+        if not proxy:
+            return
+        if isinstance(proxy, dict):
+            pcaps = typedict(proxy)
+            prefix = ""
+        else:
+            pcaps = c
+            prefix = "proxy."
+        proxy_hostname = pcaps.strget(f"{prefix}hostname")
+        proxy_platform = pcaps.strget(f"{prefix}platform")
+        proxy_release = pcaps.strget(f"{prefix}platform.release")
+        proxy_version = pcaps.strget(f"{prefix}version")
+        proxy_version = pcaps.strget(f"{prefix}build.version", proxy_version)
+        proxy_distro = pcaps.strget(f"{prefix}linux_distribution")
+        msg = "via: %s proxy version %s" % (
+            platform_name(proxy_platform, proxy_distro or proxy_release),
+            std(proxy_version or "unknown")
+        )
+        if proxy_hostname:
+            msg += " on '%s'" % std(proxy_hostname)
+        log.info(msg)
 
     def process_ui_capabilities(self, caps: typedict) -> None:
         for c in CLIENT_BASES:
             if c != XpraClientBase:
                 c.process_ui_capabilities(self, caps)
-        # keyboard:
-        if self.keyboard_helper:
-            modifier_keycodes = caps.dictget("modifier_keycodes", {})
-            if modifier_keycodes:
-                self.keyboard_helper.set_modifier_mappings(modifier_keycodes)
-        self.key_repeat_delay, self.key_repeat_interval = caps.intpair("key_repeat", (-1, -1))
         self.handshake_complete()
 
     def _process_startup_complete(self, packet: PacketType) -> None:
@@ -642,61 +491,6 @@ class UIXpraClient(ClientBaseClass):
 
     def send_keyboard_sync_enabled_status(self, *_args) -> None:
         self.send("set-keyboard-sync-enabled", self.keyboard_sync)
-
-    ######################################################################
-    # keyboard:
-    def get_keyboard_caps(self) -> dict[str, Any]:
-        caps = {}
-        kh = self.keyboard_helper
-        if self.readonly or not kh:
-            # don't bother sending keyboard info, as it won't be used
-            caps["keyboard"] = False
-        else:
-            caps["keyboard"] = True
-            caps["ibus"] = True
-            caps["modifiers"] = self.get_current_modifiers()
-            skip = ("keycodes", "x11_keycodes") if DELAY_KEYBOARD_DATA else ()
-            caps["keymap"] = kh.get_keymap_properties(skip)
-            # show the user a summary of what we have detected:
-            self.keyboard_helper.log_keyboard_info()
-            delay_ms, interval_ms = kh.key_repeat_delay, kh.key_repeat_interval
-            if delay_ms > 0 and interval_ms > 0:
-                caps["key_repeat"] = (delay_ms, interval_ms)
-            else:
-                # cannot do keyboard_sync without a key repeat value!
-                # (maybe we could just choose one?)
-                kh.keyboard_sync = False
-            caps["keyboard_sync"] = kh.sync
-        log("keyboard capabilities: %s", caps)
-        return caps
-
-    def next_keyboard_layout(self, update_platform_layout) -> None:
-        if self.keyboard_helper:
-            self.keyboard_helper.next_layout(update_platform_layout)
-
-    def window_keyboard_layout_changed(self, window=None) -> None:
-        # win32 can change the keyboard mapping per window...
-        keylog("window_keyboard_layout_changed(%s)", window)
-        if self.keyboard_helper:
-            self.keyboard_helper.keymap_changed()
-
-    def handle_key_action(self, window, key_event: KeyEvent) -> bool:
-        kh = self.keyboard_helper
-        if not kh:
-            return False
-        wid = self._window_to_id[window]
-        keylog(f"handle_key_action({window}, {key_event}) wid={wid}")
-        if kh.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
-            return False
-        if self.readonly:
-            return False
-        kh.process_key_event(wid, key_event)
-        return False
-
-    def mask_to_names(self, mask) -> list[str]:
-        if self.keyboard_helper is None:
-            return []
-        return self.keyboard_helper.mask_to_names(int(mask))
 
     ######################################################################
     # windows overrides

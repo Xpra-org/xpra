@@ -19,7 +19,7 @@ from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE, PacketType
 from xpra.common import (
     adjust_monitor_refresh_rate, get_refresh_rate_for_value,
-    FULL_INFO, SYNC_ICC, NotificationID,
+    FULL_INFO, SYNC_ICC, NotificationID, skipkeys,
 )
 from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp,
@@ -59,6 +59,9 @@ class DisplayClient(StubClientMixin):
         self.desktop_fullscreen = False
         self.desktop_scaling = False
         self.screen_size_change_timer = 0
+        self.opengl_enabled: bool = False
+        self.opengl_props: dict[str, Any] = {}
+        self.client_supports_opengl: bool = False
 
         self.server_desktop_size = None
         self.server_actual_desktop_size = None
@@ -117,6 +120,11 @@ class DisplayClient(StubClientMixin):
             wm_name = get_wm_name()
             if wm_name:
                 caps["wm_name"] = wm_name
+
+            op = self.opengl_props
+            if FULL_INFO < 2:
+                op = skipkeys(op, "extensions", "GLU.extensions")
+            caps["opengl"] = op
 
         self._last_screen_settings = self.get_screen_settings()
         root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h = self._last_screen_settings[:7]
@@ -220,7 +228,18 @@ class DisplayClient(StubClientMixin):
         self.server_multi_monitors = c.boolget("multi-monitors", False)
         self.server_monitors = c.dictget("monitors")
         log("server multi-monitors=%s, monitors=%s", self.server_multi_monitors, self.server_monitors)
+        self.print_desktop_size(c)
         return True
+
+    def print_desktop_size(self, c: typedict) -> None:
+        if c.boolget("desktop") or c.boolget("shadow"):
+            v = c.intpair("actual_desktop_size")
+            if v:
+                w, h = v
+                ss = c.tupleget("screen_sizes")
+                log.info(f" remote desktop size is {w}x{h}")
+                if ss:
+                    log_screen_sizes(w, h, ss)
 
     def process_ui_capabilities(self, c: typedict) -> None:
         self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")
@@ -424,6 +443,13 @@ class DisplayClient(StubClientMixin):
     def cp(self, x, y) -> tuple[int, int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
+
+    ######################################################################
+    # OpenGL:
+    def init_opengl(self, _enable_opengl) -> None:
+        self.opengl_enabled = False
+        self.client_supports_opengl = False
+        self.opengl_props = {"info": "not supported"}
 
     ######################################################################
     # desktop, screen and scaling:

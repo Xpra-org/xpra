@@ -98,6 +98,7 @@ class ClientMixinTest(unittest.TestCase):
         x = self.mixin = mclass()
         x.start_time = monotonic()
         x.exit_code = None
+        x.readonly = False
         x.server_packet_types = ()
         x.quit = self.fake_quit
         fake_protocol = AdHocStruct()

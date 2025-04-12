@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+commands = True
 display = True
 windows = True
 cursors = True
@@ -11,6 +12,8 @@ x11 = True
 webcam = True
 audio = True
 clipboard = True
+keyboard = True
+pointer = True
 notifications = True
 dbus = True
 mmap = True

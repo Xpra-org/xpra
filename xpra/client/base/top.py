@@ -270,13 +270,12 @@ class TopClient:
         except Exception:
             return None
 
-    def update_screen(self) -> bool:
+    def update_screen(self) -> None:
         self.stdscr.erase()
         try:
             self.do_update_screen()
         finally:
             self.stdscr.refresh()
-        return True
 
     def do_update_screen(self) -> None:
         # c = self.stdscr.getch()
@@ -425,6 +424,18 @@ class TopSessionClient(InfoTimerClient):
         self.setup()
         self.update_screen()
         return super().server_connection_established(caps)
+
+    def print_desktop_size(self, c: typedict) -> None:
+        # skip this as it would interfere with curses
+        pass
+
+    def print_server_info(self, c: typedict) -> None:
+        # skip this as it would interfere with curses
+        pass
+
+    def print_proxy_caps(self, c: typedict) -> None:
+        # skip this as it would interfere with curses
+        pass
 
     def setup(self) -> None:
         if self.stdscr is None:

@@ -383,8 +383,7 @@ class MenuHelper:
             try:
                 self.menu = self.setup_menu()
             except Exception as e:
-                log("build()", exc_info=True)
-                log.error("Error: failed to setup menu")
+                log.error("Error: failed to setup menu", exc_info=True)
                 log.estr(e)
         return self.menu
 

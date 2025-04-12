@@ -369,6 +369,10 @@ def uniq(seq: Iterable) -> list:
     return [x for x in seq if not (x in seen or seen.add(x))]
 
 
+def skipkeys(d: dict, *keys) -> dict:
+    return {k: v for k, v in d.items() if k not in keys}
+
+
 def get_run_info(subcommand="server") -> Sequence[str]:
     from xpra.os_util import POSIX
     from xpra.util.version import full_version_str, get_platform_info
