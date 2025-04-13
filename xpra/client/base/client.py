@@ -1097,7 +1097,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         self.completed_startup = packet
 
     def _process_gibberish(self, packet: PacketType) -> None:
-        log.enable_debug()
         log("process_gibberish(%s)", Ellipsizer(packet))
         message, bdata = packet[1:3]
         from xpra.net.socket_util import guess_packet_type  # pylint: disable=import-outside-toplevel
