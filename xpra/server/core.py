@@ -21,7 +21,7 @@ from collections.abc import Callable, Sequence, Iterable
 
 from xpra.util.version import (
     XPRA_VERSION, XPRA_NUMERIC_VERSION, vparts, version_str, version_compat_check, get_version_info,
-    get_platform_info, get_host_info, parse_version,
+    get_build_info, get_platform_info, get_host_info, parse_version,
 )
 from xpra.scripts.server import deadly_signal
 from xpra.scripts.session import rm_session_dir, clean_session_files
@@ -116,9 +116,11 @@ class ClientException(Exception):
 
 def get_server_info() -> dict[str, Any]:
     # this function is for non UI thread info
+    build = {} if FULL_INFO < 1 else get_build_info()
+    build.update(get_version_info())
     info = {
         "platform": get_platform_info(),
-        "build": get_version_info(),
+        "build": build,
     }
     return info
 
