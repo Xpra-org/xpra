@@ -108,7 +108,6 @@ class SendCommandConnectClient(CommandConnectClient):
     """
 
     def server_connection_established(self, caps) -> bool:
-        assert self.parse_encryption_capabilities(caps), "encryption failure"
         assert self.parse_network_capabilities(caps), "network capabilities failure"
         return super().server_connection_established(caps)
 
