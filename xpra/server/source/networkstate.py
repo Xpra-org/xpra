@@ -13,7 +13,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.common import ConnectionMessage, FULL_INFO
 from xpra.os_util import POSIX
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -43,7 +43,7 @@ def get_socket_bandwidth_limit(protocol) -> int:
     return socket_speed * AUTO_BANDWIDTH_PCT // 100 or 0
 
 
-class NetworkStateMixin(StubSourceMixin):
+class NetworkStateConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:

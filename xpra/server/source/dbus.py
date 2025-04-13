@@ -4,13 +4,13 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.util.objects import typedict
 
 GLib = gi_import("GLib")
 
 
-class DBUS_Mixin(StubSourceMixin):
+class DBUS_Connection(StubClientConnection):
     """
     Expose the ClientConnection using a dbus service
     """
@@ -19,7 +19,7 @@ class DBUS_Mixin(StubSourceMixin):
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         # the DBUSSource we create is only useful if the client
-        # supports one of the mixins it exposes:
+        # supports one of the subsystem it exposes:
         return caps.boolget("windows", False) or caps.boolget("sound", False) or caps.get("audio", False)
 
     def __init__(self):

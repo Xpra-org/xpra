@@ -10,10 +10,10 @@ import unittest
 
 from contextlib import nullcontext
 from xpra.util.objects import AdHocStruct, typedict
-from xpra.client.mixins import mmap
+from xpra.client.subsystem import mmap
 
 from unit.test_util import silence_info, silence_error
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class MixinsTest(ClientMixinTest):

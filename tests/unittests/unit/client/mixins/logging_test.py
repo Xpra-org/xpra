@@ -7,9 +7,9 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from xpra.client.mixins import logging
+from xpra.client.subsystem import logging
 from unit.test_util import silence_info
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class MixinsTest(ClientMixinTest):

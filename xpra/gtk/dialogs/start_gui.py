@@ -1073,7 +1073,7 @@ class EncodingWindow(SessionOptions):
             0.15: "normal",
             0.5: "slow",
         })
-        from xpra.client.mixins.encodings import get_core_encodings
+        from xpra.client.subsystem.encodings import get_core_encodings
         encodings = ["auto", "rgb"] + list(get_core_encodings())
         encodings.remove("rgb24")
         encodings.remove("rgb32")

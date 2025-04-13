@@ -8,14 +8,14 @@ import unittest
 
 from xpra.util.objects import AdHocStruct
 from unit.process_test_util import DisplayContext
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class WindowManagerTest(ClientMixinTest):
 
 	def test_windowmanager(self):
 		with DisplayContext():
-			from xpra.client.mixins.windows import WindowClient
+			from xpra.client.subsystem.windows import WindowClient
 			def _WindowClient():
 				def get_mouse_position():
 					return 0, 0

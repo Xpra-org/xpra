@@ -9,7 +9,7 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.net.compression import Compressed
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.objects import typedict
@@ -23,7 +23,7 @@ log = Logger("server", "cursor")
 SAVE_CURSORS = envbool("XPRA_SAVE_CURSORS", False)
 
 
-class CursorsMixin(StubSourceMixin):
+class CursorsConnection(StubClientConnection):
     PREFIX = "cursor"
 
     @classmethod
@@ -64,7 +64,7 @@ class CursorsMixin(StubSourceMixin):
     # info:
     def get_info(self) -> dict[str, Any]:
         return {
-            CursorsMixin.PREFIX: {
+            CursorsConnection.PREFIX: {
                 "enabled": self.send_cursors,
                 "encodings": self.cursor_encodings,
             },

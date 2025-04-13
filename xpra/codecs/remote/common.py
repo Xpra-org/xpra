@@ -38,7 +38,7 @@ RECONNECT_DELAY = envint("XPRA_RECONNECT_DELAY", 2000)
 
 
 try:
-    from xpra.client.mixins.mmap import MmapClient
+    from xpra.client.subsystem.mmap import MmapClient
     baseclass = MmapClient
 except ImportError:
     from xpra.client.base.stub_client_mixin import StubClientMixin

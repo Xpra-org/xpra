@@ -11,7 +11,7 @@ from xpra.scripts.config import InitException
 from xpra.net.common import PacketType
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.desktop.monitor_model import MonitorDesktopModel
-from xpra.server.mixins.window import WindowsMixin
+from xpra.server.subsystem.window import WindowsConnection
 from xpra.x11.vfb_util import parse_resolution
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.gtk.error import xsync, xlog
@@ -371,7 +371,7 @@ class XpraMonitorServer(DesktopServerBase):
         self.reconfigure_monitors()
         # send it to the clients:
         for ss in self._server_sources.values():
-            if not isinstance(ss, WindowsMixin):
+            if not isinstance(ss, WindowsConnection):
                 continue
             self.send_new_desktop_model(model, ss)
 

@@ -11,13 +11,13 @@ from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
 from xpra.util.screen import get_screen_info
 from xpra.common import MIN_DPI, MAX_DPI
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("av-sync")
 
 
-class ClientDisplayMixin(StubSourceMixin):
+class DisplayConnection(StubClientConnection):
     """
     Store information and manage events related to the client's display
     """

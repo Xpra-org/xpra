@@ -276,7 +276,7 @@ def show_encoding_help(opts) -> int:
     from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, HELP_ORDER
     if "help" in opts.encodings:
         sb.allowed_encodings = PREFERRED_ENCODING_ORDER
-    from xpra.server.mixins.encoding import EncodingServer
+    from xpra.server.subsystem.encoding import EncodingServer
     assert isinstance(sb, EncodingServer)
     EncodingServer.threaded_setup(sb)
     EncodingServer.setup(sb)
@@ -306,7 +306,7 @@ def set_server_features(opts, mode: str) -> None:
             return False
         return True
 
-    # turn off some server mixins:
+    # turn off some server subsystem:
     from xpra.server import features
     if mode == "encoder":
         # turn off all relevant features:
@@ -355,31 +355,31 @@ def enforce_server_features() -> None:
     from xpra.util.pysystem import enforce_features
     from xpra.server import features
     enforce_features(features, {
-        "control": "xpra.net.control,xpra.server.mixins.controlcommands",
-        "commands": "xpra.server.mixins.child_command",
-        "notifications": "xpra.notifications,xpra.server.mixins.notification,xpra.server.source.notification",
-        "webcam": "xpra.server.mixins.webcam,xpra.server.source.webcam",
-        "clipboard": "xpra.clipboard,xpra.server.mixins.clipboard,xpra.server.source.clipboard",
-        "audio": "xpra.audio,xpra.server.mixins.audio,xpra.server.source.audio",
+        "control": "xpra.net.control,xpra.server.subsystem.controlcommands",
+        "commands": "xpra.server.subsystem.child_command",
+        "notifications": "xpra.notifications,xpra.server.subsystem.notification,xpra.server.source.notification",
+        "webcam": "xpra.server.subsystem.webcam,xpra.server.source.webcam",
+        "clipboard": "xpra.clipboard,xpra.server.subsystem.clipboard,xpra.server.source.clipboard",
+        "audio": "xpra.audio,xpra.server.subsystem.audio,xpra.server.source.audio",
         # "av_sync": "??",
-        "fileprint": "xpra.server.mixins.fileprint,xpra.server.source.fileprint",
-        "mmap": "xpra.net.mmap,xpra.server.mixins.mmap,xpra.server.source.mmap",
+        "fileprint": "xpra.server.subsystem.fileprint,xpra.server.source.fileprint",
+        "mmap": "xpra.net.mmap,xpra.server.subsystem.mmap,xpra.server.source.mmap",
         "ssl": "ssl,xpra.net.ssl_util",
-        "ssh": "paramiko,xpra.net.ssh,xpra.server.mixins.ssh_agent",
-        "keyboard": "xpra.server.mixins.keyboard,xpra.server.source.keyboard",
-        "pointer": "xpra.server.mixins.pointer,xpra.server.source.pointer",
+        "ssh": "paramiko,xpra.net.ssh,xpra.server.subsystem.ssh_agent",
+        "keyboard": "xpra.server.subsystem.keyboard,xpra.server.source.keyboard",
+        "pointer": "xpra.server.subsystem.pointer,xpra.server.source.pointer",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
         "dbus": "xpra.dbus,xpra.server.dbus,xpra.server.source.dbus",
-        "encoding": "xpra.server.mixins.encoding,xpra.server.source.encodings",
-        "logging": "xpra.server.mixins.logging",
-        "network_state": "xpra.server.mixins.networkstate,xpra.server.source.networkstate",
-        "shell": "xpra.server.mixins.shell,xpra.server.source.shell",
-        "display": "xpra.server.mixins.display,xpra.server.source.display",
-        "windows": "xpra.server.mixins.window,xpra.server.source.windows",
-        "cursors": "xpra.server.mixins.cursors,xpra.server.source.cursors",
+        "encoding": "xpra.server.subsystem.encoding,xpra.server.source.encodings",
+        "logging": "xpra.server.subsystem.logging",
+        "network_state": "xpra.server.subsystem.networkstate,xpra.server.source.networkstate",
+        "shell": "xpra.server.subsystem.shell,xpra.server.source.shell",
+        "display": "xpra.server.subsystem.display,xpra.server.source.display",
+        "windows": "xpra.server.subsystem.window,xpra.server.source.windows",
+        "cursors": "xpra.server.subsystem.cursors,xpra.server.source.cursors",
         "rfb": "xpra.net.rfb,xpra.server.rfb",
-        "http": "xpra.net.http,xpra.server.mixins.http",
+        "http": "xpra.net.http,xpra.server.subsystem.http",
     })
     may_block_numpy()
 

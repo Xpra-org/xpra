@@ -9,9 +9,9 @@ The prefix for all packets and capabilities is `notification`.
 
 | Component         | Link                                                                                                               |
 |-------------------|--------------------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.mixins.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/notification.py) |
+| client            | [xpra.client.subsystem.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/notification.py) |
 | client connection | [xpra.server.source.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/notification.py) |
-| server            | [xpra.server.mixins.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/notification.py) |
+| server            | [xpra.server.subsystem.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/notification.py) |
 
 
 ## Capabilities

@@ -10,14 +10,14 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import std
 from xpra.common import FULL_INFO
 from xpra.util.version import vparts
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.util.system import platform_name
 from xpra.log import Logger
 
 log = Logger("server")
 
 
-class ClientInfoMixin(StubSourceMixin):
+class ClientInfoConnection(StubClientConnection):
     """
     Store information about the client.
     """

@@ -8,7 +8,7 @@ import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util.objects import typedict, AdHocStruct
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 
 
 class ServerMixinTest(unittest.TestCase):
@@ -80,7 +80,7 @@ class ServerMixinTest(unittest.TestCase):
     def create_test_sockets(self):
         return {}
 
-    def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubSourceMixin):
+    def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubClientConnection):
         x = self.mixin = mclass()
         x._server_sources = {}   # pylint: disable=protected-access
         x.wait_for_threaded_init = self.wait_for_threaded_init

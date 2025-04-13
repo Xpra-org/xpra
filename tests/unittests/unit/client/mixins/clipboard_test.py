@@ -7,14 +7,14 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 from unit.process_test_util import DisplayContext
 
 
 class ClipboardClientTest(ClientMixinTest):
 
 	def test_clipboard(self):
-		from xpra.client.mixins.clipboard import ClipboardClient
+		from xpra.client.subsystem.clipboard import ClipboardClient
 		opts = AdHocStruct()
 		opts.clipboard = "yes"
 		opts.clipboard_direction = "both"

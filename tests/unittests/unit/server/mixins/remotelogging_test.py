@@ -7,13 +7,13 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class ServerMixinsTest(ServerMixinTest):
 
     def test_remotelogging(self):
-        from xpra.server.mixins.logging import LoggingServer
+        from xpra.server.subsystem.logging import LoggingServer
         messages = []
         def newlogfn(*args):
             messages.append(args)

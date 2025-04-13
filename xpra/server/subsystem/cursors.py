@@ -9,7 +9,7 @@ from typing import Any
 from xpra.net.common import PacketType
 from xpra.util.objects import typedict
 from xpra.util.env import SilenceWarningsContext
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("cursor")
@@ -43,8 +43,8 @@ class CursorManager(StubServerMixin):
 
     def send_initial_cursors(self, ss, sharing=False) -> None:
         log("send_initial_cursors(%s, %s)", ss, sharing)
-        from xpra.server.source.cursors import CursorsMixin
-        if isinstance(ss, CursorsMixin):
+        from xpra.server.source.cursors import CursorsConnection
+        if isinstance(ss, CursorsConnection):
             ss.send_cursor()
 
     def get_caps(self, source) -> dict[str, Any]:

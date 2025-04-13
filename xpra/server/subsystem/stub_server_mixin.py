@@ -14,7 +14,7 @@ from xpra.os_util import WIN32
 
 class StubServerMixin:
     """
-    Base class for server mixins.
+    Base class for server subsystem.
     Defines the default interface methods that each mixin may override.
     """
 

@@ -23,7 +23,7 @@ from xpra.platform.info import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
 from xpra.scripts.session import save_session_file
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -90,7 +90,7 @@ class AudioServer(StubServerMixin):
         self.audio_init_done.clear()
         start_thread(self.do_audio_setup, "audio-setup", True)
         # we don't use threaded_setup() here because it would delay
-        # all the other mixins that use it, for no good reason.
+        # all the other subsystem that use it, for no good reason.
 
     def do_audio_setup(self) -> None:
         self.init_pulseaudio()

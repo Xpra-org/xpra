@@ -7,14 +7,14 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class EncodingMixinTest(ServerMixinTest):
 
     def test_encoding(self):
-        from xpra.server.mixins.encoding import EncodingServer
-        from xpra.server.source.encodings import EncodingsMixin
+        from xpra.server.subsystem.encoding import EncodingServer
+        from xpra.server.source.encodings import EncodingsConnection
         opts = AdHocStruct()
         opts.encoding = ""
         opts.encodings = ["rgb", "png"]
@@ -28,7 +28,7 @@ class EncodingMixinTest(ServerMixinTest):
         opts.csc_modules = []
         self._test_mixin_class(EncodingServer, opts, {
             "encodings.core" : opts.encodings,
-            }, EncodingsMixin)
+            }, EncodingsConnection)
         self.handle_packet(("quality", 10))
         #assert self.mixin.get_info().get("encodings").get
         #    "quality"       : self._process_quality,

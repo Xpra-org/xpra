@@ -9,7 +9,7 @@ from time import sleep
 from typing import Any
 from collections.abc import Callable
 
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.util.stats import std_unit
 from xpra.net.common import PacketType
@@ -185,11 +185,11 @@ class NetworkStateServer(StubServerMixin):
             bandwidthlog.info("bandwidth-limit changed to %sbps for client %s", std_unit(bandwidth_limit), client_id)
 
     def send_ping(self) -> bool:
-        from xpra.server.source.networkstate import NetworkStateMixin
+        from xpra.server.source.networkstate import NetworkStateConnection
         for ss in self._server_sources.values():
             if ss.suspended or ss.is_closed() or not ss.startup_completed:
                 continue
-            if isinstance(ss, NetworkStateMixin):
+            if isinstance(ss, NetworkStateConnection):
                 ss.ping()
         return True
 

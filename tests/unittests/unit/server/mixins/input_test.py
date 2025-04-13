@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 from unit.process_test_util import DisplayContext
 
 
@@ -15,10 +15,10 @@ class InputMixinTest(ServerMixinTest):
 
     def test_input(self):
         with DisplayContext():
-            from xpra.server.mixins.keyboard import KeyboardServer
-            from xpra.server.source.keyboard import KeyboardMixin
+            from xpra.server.subsystem.keyboard import KeyboardServer
+            from xpra.server.source.keyboard import KeyboardConnection
             opts = AdHocStruct()
-            self._test_mixin_class(KeyboardServer, opts, {}, KeyboardMixin)
+            self._test_mixin_class(KeyboardServer, opts, {}, KeyboardConnection)
 
 
 def main():

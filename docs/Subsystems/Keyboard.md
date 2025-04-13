@@ -9,9 +9,9 @@ The prefix for all packets and capabilities should be `keyboard` - unfortunately
 
 | Component         | Link                                                                                                       |
 |-------------------|------------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.mixins.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/keyboard.py) |
+| client            | [xpra.client.subsystem.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/keyboard.py) |
 | client connection | [xpra.server.source.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/keyboard.py) |
-| server            | [xpra.server.mixins.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/keyboard.py) |
+| server            | [xpra.server.subsystem.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/keyboard.py) |
 
 
 ## Platforms

@@ -11,7 +11,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.common import NotificationID, ConnectionMessage
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -21,7 +21,7 @@ log = Logger("timeout")
 GRACE_PERCENT = envint("XPRA_GRACE_PERCENT", 90)
 
 
-class IdleMixin(StubSourceMixin):
+class IdleConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:

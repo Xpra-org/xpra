@@ -134,10 +134,10 @@ def get_proxy_env() -> dict[str, str]:
 def get_proxy_server_base_classes() -> tuple[type, ...]:
     classes: list[type] = [ServerCore]
     if features.dbus:
-        from xpra.server.mixins.dbus import DbusServer
+        from xpra.server.subsystem.dbus import DbusServer
         classes.append(DbusServer)
     if features.http:
-        from xpra.server.mixins.http import HttpServer
+        from xpra.server.subsystem.http import HttpServer
         classes.append(HttpServer)
     return tuple(classes)
 

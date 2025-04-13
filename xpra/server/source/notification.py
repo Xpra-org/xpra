@@ -8,13 +8,13 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import NotificationID
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("notify")
 
 
-class NotificationMixin(StubSourceMixin):
+class NotificationConnection(StubClientConnection):
 
     PREFIX = "notification"
 
@@ -39,12 +39,12 @@ class NotificationMixin(StubSourceMixin):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            NotificationMixin.PREFIX: self.send_notifications,
+            NotificationConnection.PREFIX: self.send_notifications,
         }
 
     ######################################################################
     # notifications:
-    # Utility functions for mixins (makes notifications optional)
+    # Utility functions for subsystem (makes notifications optional)
     def may_notify(self, nid: int | NotificationID = 0, summary: str = "", body: str = "",
                    actions=(), hints=None, expire_timeout=10 * 1000,
                    icon_name: str = "", user_callback: Callable | None = None) -> None:

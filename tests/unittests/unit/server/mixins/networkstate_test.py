@@ -10,7 +10,7 @@ import unittest
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.util.env import OSEnvContext
 from unit.test_util import silence_info
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class NetworkStateMixinTest(ServerMixinTest):
@@ -18,9 +18,9 @@ class NetworkStateMixinTest(ServerMixinTest):
     def test_networkstate(self):
         with OSEnvContext():
             os.environ["XPRA_PING_TIMEOUT"] = "1"
-            from xpra.server.mixins import networkstate
-            from xpra.server.source.networkstate import NetworkStateMixin
-            assert NetworkStateMixin.is_needed(typedict({"network-state" : True}))
+            from xpra.server.subsystem import networkstate
+            from xpra.server.source.networkstate import NetworkStateConnection
+            assert NetworkStateConnection.is_needed(typedict({"network-state" : True}))
             opts = AdHocStruct()
             opts.pings = 1
             opts.bandwidth_limit = "1Gbps"
@@ -28,7 +28,7 @@ class NetworkStateMixinTest(ServerMixinTest):
             #the limit for all clients:
             capped_at = 1*1000*1000*1000    #=="1Gbps"
             with silence_info(networkstate):
-                self._test_mixin_class(networkstate.NetworkStateServer, opts, {}, NetworkStateMixin)
+                self._test_mixin_class(networkstate.NetworkStateServer, opts, {}, NetworkStateConnection)
             self.assertEqual(capped_at, self.mixin.get_info().get("bandwidth-limit"))
             self.handle_packet(("ping", 10))
             self.handle_packet(("ping", -1000))

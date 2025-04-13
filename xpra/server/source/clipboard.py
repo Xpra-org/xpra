@@ -10,7 +10,7 @@ from collections import deque
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.platform.features import CLIPBOARDS
 from xpra.net.common import PacketType
 from xpra.util.objects import typedict
@@ -25,7 +25,7 @@ MAX_CLIPBOARD_LIMIT = envint("XPRA_CLIPBOARD_LIMIT", 30)
 MAX_CLIPBOARD_LIMIT_DURATION = envint("XPRA_CLIPBOARD_LIMIT_DURATION", 3)
 
 
-class ClipboardConnection(StubSourceMixin):
+class ClipboardConnection(StubClientConnection):
 
     PREFIX = "clipboard"
 

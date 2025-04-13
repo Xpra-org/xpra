@@ -10,18 +10,18 @@ import binascii
 from xpra.util.objects import AdHocStruct
 
 from unit.test_util import silence_info
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class WebcamMixinTest(ServerMixinTest):
 
     def test_webcam(self):
-        from xpra.server.mixins import webcam
-        from xpra.server.source.webcam import WebcamMixin, log as sourcelog
+        from xpra.server.subsystem import webcam
+        from xpra.server.source.webcam import WebcamConnection, log as sourcelog
         opts = AdHocStruct()
         opts.webcam = "yes"
         with silence_info(webcam):
-            self._test_mixin_class(webcam.WebcamServer, opts, {}, WebcamMixin)
+            self._test_mixin_class(webcam.WebcamServer, opts, {}, WebcamConnection)
         if self.mixin.get_info(self.protocol).get("webcam", {}).get("virtual-video-devices", 0)>0:
             with silence_info(sourcelog):
                 self.handle_packet(("webcam-start", 0, 640, 480))

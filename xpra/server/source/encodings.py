@@ -12,7 +12,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.common import FULL_INFO
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.server.window import batch_config
 from xpra.server.core import ClientException
 from xpra.codecs.video import getVideoHelper
@@ -42,7 +42,7 @@ def parse_batch_int(value, varname: str, default: int) -> int:
     return default
 
 
-class EncodingsMixin(StubSourceMixin):
+class EncodingsConnection(StubClientConnection):
     """
     Store information about the client's support for encodings.
     Runs the encode thread.

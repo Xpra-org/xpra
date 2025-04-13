@@ -10,7 +10,7 @@ import unittest
 from xpra.util.objects import AdHocStruct
 
 from unit.test_util import silence_info
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class AudioMixinTest(ServerMixinTest):
@@ -24,8 +24,8 @@ class AudioMixinTest(ServerMixinTest):
         compression.init_all()
 
     def test_audio(self):
-        from xpra.server.mixins import audio
-        from xpra.server.source.audio import AudioMixin
+        from xpra.server.subsystem import audio
+        from xpra.server.source.audio import AudioConnection
         from xpra.audio import gstreamer_util
         opts = AdHocStruct()
         opts.audio_source = ""
@@ -44,7 +44,7 @@ class AudioMixinTest(ServerMixinTest):
                     "receive" : True,
                     "decoders" : gstreamer_util.CODEC_ORDER,
                     },
-                }, AudioMixin)
+                }, AudioConnection)
             #init runs in a thread, give it time:
             time.sleep(2)
         if not self.mixin.speaker_codecs:

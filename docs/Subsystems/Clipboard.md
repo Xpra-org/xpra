@@ -9,9 +9,9 @@ The prefix for all packets and capabilities is `clipboard`.
 
 | Component         | Link                                                                                                         |
 |-------------------|--------------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.mixins.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/clipboard.py) |
+| client            | [xpra.client.subsystem.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/clipboard.py) |
 | client connection | [xpra.server.source.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/clipboard.py) |
-| server            | [xpra.server.mixins.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/clipboard.py) |
+| server            | [xpra.server.subsystem.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/clipboard.py) |
 
 
 ## Platforms

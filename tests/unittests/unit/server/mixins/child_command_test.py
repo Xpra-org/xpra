@@ -12,7 +12,7 @@ from contextlib import nullcontext
 from xpra.os_util import POSIX
 from xpra.util.objects import AdHocStruct
 from unit.test_util import silence_info
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class ChildCommandMixinTest(ServerMixinTest):
@@ -27,7 +27,7 @@ class ChildCommandMixinTest(ServerMixinTest):
             self.do_test_command_server()
 
     def do_test_command_server(self):
-        from xpra.server.mixins import child_command
+        from xpra.server.subsystem import child_command
         opts = AdHocStruct()
         opts.exit_with_children = True
         opts.terminate_children = True

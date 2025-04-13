@@ -775,11 +775,11 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return tray_classes
 
     def get_tray_classes(self) -> list[type]:
-        from xpra.client.mixins.tray import TrayClient
+        from xpra.client.subsystem.tray import TrayClient
         return self._add_statusicon_tray(TrayClient.get_tray_classes(self))
 
     def get_system_tray_classes(self) -> list[type]:
-        from xpra.client.mixins.windows import WindowClient
+        from xpra.client.subsystem.windows import WindowClient
         return self._add_statusicon_tray(WindowClient.get_system_tray_classes(self))
 
     def supports_system_tray(self) -> bool:
@@ -1429,7 +1429,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def destroy_window(self, wid: int, window) -> None:
         # override so we can cleanup the group-leader if needed,
-        from xpra.client.mixins.windows import WindowClient
+        from xpra.client.subsystem.windows import WindowClient
         WindowClient.destroy_window(self, wid, window)
         group_leader = window.group_leader
         if group_leader is None or not self._group_leader_wids:
@@ -1457,7 +1457,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         group_leader.close()
 
     def setup_clipboard_helper(self, helper_class, options: dict):
-        from xpra.client.mixins.clipboard import ClipboardClient
+        from xpra.client.subsystem.clipboard import ClipboardClient
         ch = ClipboardClient.setup_clipboard_helper(self, helper_class, options)
 
         # check for loops after handshake:

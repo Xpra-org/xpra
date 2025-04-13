@@ -7,7 +7,7 @@ from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("av-sync")
@@ -16,7 +16,7 @@ AV_SYNC_DELTA = envint("XPRA_AV_SYNC_DELTA", 0)
 DEFAULT_AV_SYNC_DELAY = envint("XPRA_DEFAULT_AV_SYNC_DELAY", 150)
 
 
-class AVSyncMixin(StubSourceMixin):
+class AVSyncConnection(StubClientConnection):
     PREFIX = "av-sync"
 
     @classmethod
@@ -46,7 +46,7 @@ class AVSyncMixin(StubSourceMixin):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            AVSyncMixin.PREFIX: {
+            AVSyncConnection.PREFIX: {
                 "": self.av_sync,
                 "enabled": self.av_sync_enabled,
                 "client": self.av_sync_delay,
@@ -56,7 +56,7 @@ class AVSyncMixin(StubSourceMixin):
         }
 
     def parse_client_caps(self, c: typedict) -> None:
-        av_sync = c.get(AVSyncMixin.PREFIX)
+        av_sync = c.get(AVSyncConnection.PREFIX)
         if isinstance(av_sync, dict):
             av_sync = typedict(av_sync)
             enabled = av_sync.boolget("enabled")

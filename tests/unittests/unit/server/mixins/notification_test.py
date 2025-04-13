@@ -14,7 +14,7 @@ from xpra.os_util import WIN32, OSX
 from xpra.util.env import OSEnvContext
 
 from unit.test_util import silence_info
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class NotificationForwarderMixinTest(ServerMixinTest):
@@ -32,7 +32,7 @@ class NotificationForwarderMixinTest(ServerMixinTest):
                 if dbus_env:
                     os.environ.update(dbus_env)
 
-                from xpra.server.mixins import notification
+                from xpra.server.subsystem import notification
                 opts = AdHocStruct()
                 opts.notifications = "yes"
                 with silence_info(notification):

@@ -8,7 +8,7 @@ import unittest
 
 from xpra.util.objects import AdHocStruct
 from xpra.os_util import POSIX, OSX
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 from unit.process_test_util import DisplayContext
 
 
@@ -19,7 +19,7 @@ class ClipboardMixinTest(ServerMixinTest):
             if POSIX and not OSX:
                 from xpra.x11.gtk.display_source import init_gdk_display_source
                 init_gdk_display_source()
-            from xpra.server.mixins.clipboard import ClipboardServer
+            from xpra.server.subsystem.clipboard import ClipboardServer
             from xpra.server.source.clipboard import ClipboardConnection
             opts = AdHocStruct()
             opts.clipboard = "yes"

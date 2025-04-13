@@ -20,7 +20,7 @@ from xpra.util.env import envbool
 from xpra.net.common import PacketType, PacketElement
 from xpra.net.compression import compressed_wrapper, Compressed, LevelCompressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("server")
@@ -34,7 +34,7 @@ ENCODE_WORK_ITEM_TUPLE = tuple[bool, Callable, Sequence[Any]]
 ENCODE_WORK_ITEM: TypeAlias = ENCODE_WORK_ITEM_TUPLE | None
 
 
-class ClientConnection(StubSourceMixin):
+class ClientConnection(StubClientConnection):
     """
     This class mediates between the server class
     (which only knows about actual window objects and display server events)
@@ -66,7 +66,7 @@ class ClientConnection(StubSourceMixin):
         # format: packet, wid, pixels, start_send_cb, end_send_cb
         # (only packet is required - the rest can be 0/None for clipboard packets)
         self.packet_queue = deque[PacketType, int, int, bool]()
-        # the encode work queue is used by mixins that need to encode data before sending it,
+        # the encode work queue is used by subsystem that need to encode data before sending it,
         # ie: encodings and clipboard
         # this queue will hold functions to call to compress data (pixels, clipboard)
         # items placed in this queue are picked off by the "encode" thread,

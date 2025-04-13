@@ -20,7 +20,7 @@ from xpra.common import NotificationID
 from xpra.auth.auth_helper import AuthDef
 from xpra.net.common import PacketType
 from xpra.net.file_transfer import FileTransferAttributes
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 printlog = Logger("printing")

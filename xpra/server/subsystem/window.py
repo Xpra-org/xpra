@@ -8,8 +8,8 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
-from xpra.server.source.windows import WindowsMixin
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.source.windows import WindowsConnection
 from xpra.net.common import PacketType
 from xpra.log import Logger
 
@@ -72,7 +72,7 @@ class WindowServer(StubServerMixin):
         # may need to re-initialize its list of encoders:
         log("reinit_window_encoders()")
         for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
+            if isinstance(ss, WindowsConnection):
                 ss.reinit_encoders()
 
     def last_client_exited(self) -> None:
@@ -108,7 +108,7 @@ class WindowServer(StubServerMixin):
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
         for ss in tuple(self._server_sources.values()):
-            if not isinstance(ss, WindowsMixin):
+            if not isinstance(ss, WindowsConnection):
                 continue
             cminw, cminh = ss.window_min_size
             cmaxw, cmaxh = ss.window_max_size
@@ -133,7 +133,7 @@ class WindowServer(StubServerMixin):
     def send_initial_data(self, ss, caps, send_ui: bool, share_count: int) -> None:
         if not send_ui:
             return
-        if not isinstance(ss, WindowsMixin):
+        if not isinstance(ss, WindowsConnection):
             return
         self.send_initial_windows(ss, share_count > 0)
 
@@ -184,19 +184,19 @@ class WindowServer(StubServerMixin):
         if not wid:
             return  # window is already gone
         for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
+            if isinstance(ss, WindowsConnection):
                 ss.window_metadata(wid, window, pspec.name)
 
     def _remove_window(self, window) -> int:
         wid = self._window_to_id[window]
         log("remove_window: %s - %s", wid, window)
         for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
+            if isinstance(ss, WindowsConnection):
                 ss.lost_window(wid, window)
         del self._window_to_id[window]
         del self._id_to_window[wid]
         for ss in self._server_sources.values():
-            if isinstance(ss, WindowsMixin):
+            if isinstance(ss, WindowsConnection):
                 ss.remove_window(wid, window)
         self.client_properties.pop(wid, None)
         return wid
@@ -218,7 +218,7 @@ class WindowServer(StubServerMixin):
     def _do_send_new_window_packet(self, ptype, window, geometry) -> None:
         wid = self._window_to_id[window]
         for ss in tuple(self._server_sources.values()):
-            if not isinstance(ss, WindowsMixin):
+            if not isinstance(ss, WindowsConnection):
                 continue
             wprops = self.client_properties.get(wid, {}).get(ss.uuid, {})
             x, y, w, h = geometry
@@ -323,7 +323,7 @@ class WindowServer(StubServerMixin):
 
     def refresh_all_windows(self) -> None:
         for ss in tuple(self._server_sources.values()):
-            if not isinstance(ss, WindowsMixin):
+            if not isinstance(ss, WindowsConnection):
                 self.do_refresh_windows(ss, self._id_to_window)
 
     def get_window_position(self, _window) -> tuple[int, int] | None:

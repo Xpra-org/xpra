@@ -17,59 +17,59 @@ log = Logger("server")
 
 def get_enabled_mixins() -> Sequence[type]:
     # pylint: disable=import-outside-toplevel
-    from xpra.server.source.clientinfo import ClientInfoMixin
-    mixins: list[type] = [ClientInfoMixin]
+    from xpra.server.source.clientinfo import ClientInfoConnection
+    mixins: list[type] = [ClientInfoConnection]
     if features.notifications:
-        from xpra.server.source.notification import NotificationMixin
-        mixins.append(NotificationMixin)
+        from xpra.server.source.notification import NotificationConnection
+        mixins.append(NotificationConnection)
     if features.clipboard:
         from xpra.server.source.clipboard import ClipboardConnection
         mixins.append(ClipboardConnection)
     if features.audio:
-        from xpra.server.source.audio import AudioMixin
-        mixins.append(AudioMixin)
+        from xpra.server.source.audio import AudioConnection
+        mixins.append(AudioConnection)
     if features.webcam:
-        from xpra.server.source.webcam import WebcamMixin
-        mixins.append(WebcamMixin)
+        from xpra.server.source.webcam import WebcamConnection
+        mixins.append(WebcamConnection)
     if features.fileprint:
-        from xpra.server.source.fileprint import FilePrintMixin
-        mixins.append(FilePrintMixin)
+        from xpra.server.source.fileprint import FilePrintConnection
+        mixins.append(FilePrintConnection)
     if features.mmap:
         from xpra.server.source.mmap import MMAP_Connection
         mixins.append(MMAP_Connection)
     if features.keyboard:
-        from xpra.server.source.keyboard import KeyboardMixin
-        mixins.append(KeyboardMixin)
+        from xpra.server.source.keyboard import KeyboardConnection
+        mixins.append(KeyboardConnection)
     if features.pointer:
-        from xpra.server.source.pointer import PointerMixin
-        mixins.append(PointerMixin)
+        from xpra.server.source.pointer import PointerConnection
+        mixins.append(PointerConnection)
     if features.dbus:
-        from xpra.server.source.dbus import DBUS_Mixin
-        mixins.append(DBUS_Mixin)
+        from xpra.server.source.dbus import DBUS_Connection
+        mixins.append(DBUS_Connection)
     if features.network_state:
-        from xpra.server.source.networkstate import NetworkStateMixin
-        mixins.append(NetworkStateMixin)
+        from xpra.server.source.networkstate import NetworkStateConnection
+        mixins.append(NetworkStateConnection)
     if features.shell:
-        from xpra.server.source.shell import ShellMixin
-        mixins.append(ShellMixin)
+        from xpra.server.source.shell import ShellConnection
+        mixins.append(ShellConnection)
     if features.display:
-        from xpra.server.source.display import ClientDisplayMixin
-        mixins.append(ClientDisplayMixin)
+        from xpra.server.source.display import DisplayConnection
+        mixins.append(DisplayConnection)
     if features.cursors:
-        from xpra.server.source.cursors import CursorsMixin
-        mixins.append(CursorsMixin)
+        from xpra.server.source.cursors import CursorsConnection
+        mixins.append(CursorsConnection)
     if features.windows:
-        from xpra.server.source.windows import WindowsMixin
-        mixins.append(WindowsMixin)
+        from xpra.server.source.windows import WindowsConnection
+        mixins.append(WindowsConnection)
     # must be after windows mixin, so that it can assume "self.send_windows" is set
     if features.encoding:
-        from xpra.server.source.encodings import EncodingsMixin
-        mixins.append(EncodingsMixin)
+        from xpra.server.source.encodings import EncodingsConnection
+        mixins.append(EncodingsConnection)
     if features.audio and features.av_sync:
-        from xpra.server.source.avsync import AVSyncMixin
-        mixins.append(AVSyncMixin)
-    from xpra.server.source.idle_mixin import IdleMixin
-    mixins.append(IdleMixin)
+        from xpra.server.source.avsync import AVSyncConnection
+        mixins.append(AVSyncConnection)
+    from xpra.server.source.idle_mixin import IdleConnection
+    mixins.append(IdleConnection)
     return tuple(mixins)
 
 

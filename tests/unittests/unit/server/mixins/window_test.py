@@ -7,13 +7,13 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class WebcamMixinTest(ServerMixinTest):
 
     def test_windowserver(self):
-        from xpra.server.mixins.window import WindowServer
+        from xpra.server.subsystem.window import WindowServer
         opts = AdHocStruct()
         opts.min_size = "10x10"
         opts.max_size = "16384x8192"

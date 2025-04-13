@@ -7,9 +7,9 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from xpra.client.mixins import encodings
+from xpra.client.subsystem import encodings
 from unit.test_util import silence_error
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class EncodingClientTest(ClientMixinTest):

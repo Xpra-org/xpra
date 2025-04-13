@@ -9,7 +9,7 @@ import os
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict
 from xpra.common import SSH_AGENT_DISPATCH
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.net.ssh.agent import set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket
 from xpra.log import Logger
 

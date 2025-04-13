@@ -10,7 +10,7 @@ from xpra.common import noop
 from xpra.os_util import POSIX, OSX
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -46,7 +46,7 @@ def find_csc_spec(src_format: str, dst_format: str):
     raise ValueError("cannot convert %r to %r", src_format, dst_format)
 
 
-class WebcamMixin(StubSourceMixin):
+class WebcamConnection(StubClientConnection):
     """
     Handle webcam forwarding.
     """
@@ -55,7 +55,7 @@ class WebcamMixin(StubSourceMixin):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        if not caps.boolget(WebcamMixin.PREFIX):
+        if not caps.boolget(WebcamConnection.PREFIX):
             return False
         try:
             from xpra.codecs.pillow.decoder import HEADERS  # pylint: disable=import-outside-toplevel
@@ -85,7 +85,7 @@ class WebcamMixin(StubSourceMixin):
 
     def get_info(self) -> dict[str, Any]:
         return {
-            WebcamMixin.PREFIX: {
+            WebcamConnection.PREFIX: {
                 "encodings": self.webcam_encodings,
                 "active-devices": len(self.webcam_forwarding_devices),
             }

@@ -27,7 +27,7 @@ def get_client_base_classes() -> tuple[type, ...]:
     # Warning: MmapClient must come first,
     # so it is initialized by the time HelloRequestClient creates the hello packet
     if features.mmap:
-        from xpra.client.mixins.mmap import MmapClient
+        from xpra.client.subsystem.mmap import MmapClient
         classes.append(MmapClient)
     classes.append(HelloRequestClient)
     return tuple(classes)

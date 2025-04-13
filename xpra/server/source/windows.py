@@ -10,7 +10,7 @@ from typing import Any
 from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.server.window.metadata import make_window_metadata
 from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
@@ -34,7 +34,7 @@ MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5 * 1024 * 1024)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
-class WindowsMixin(StubSourceMixin):
+class WindowsConnection(StubClientConnection):
     """
     Handle window forwarding:
     - damage

@@ -9,8 +9,8 @@ import unittest
 
 from xpra.util.objects import AdHocStruct
 from xpra.os_util import get_hex_uuid
-from xpra.client.mixins.network_state import NetworkState
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from xpra.client.subsystem.network_state import NetworkState
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class MixinsTest(ClientMixinTest):

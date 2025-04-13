@@ -9,14 +9,14 @@ import unittest
 from xpra.util.objects import AdHocStruct
 from unit.test_util import silence_info
 from unit.process_test_util import DisplayContext
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class DisplayClientTest(ClientMixinTest):
 
     def test_display(self):
         with DisplayContext():
-            from xpra.client.mixins import display  # pylint: disable=import-outside-toplevel
+            from xpra.client.subsystem import display  # pylint: disable=import-outside-toplevel
             def _DisplayClient():
                 dc = display.DisplayClient()
                 def get_root_size():

@@ -11,7 +11,7 @@ from xpra.os_util import OSX, POSIX, gi_import
 from xpra.util.str_fn import Ellipsizer
 from xpra.net.common import PacketType
 from xpra.util.thread import start_thread
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("notify")

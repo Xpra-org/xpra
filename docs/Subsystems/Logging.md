@@ -13,9 +13,9 @@ The prefix for all packets and capabilities is `logging`.
 
 | Component         | Link                                                                                                     |
 |-------------------|----------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.mixins.logging](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/logging.py) |
+| client            | [xpra.client.subsystem.logging](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/logging.py) |
 | client connection | none                                                                                                     |
-| server            | [xpra.server.mixins.logging](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/logging.py) |
+| server            | [xpra.server.subsystem.logging](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/logging.py) |
 
 
 ## Capabilities

@@ -6,14 +6,14 @@
 
 from typing import Any
 
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("keyboard")
 
 
-class PointerMixin(StubSourceMixin):
+class PointerConnection(StubClientConnection):
     """
     Manage pointer devices (mouse, etc)
     """

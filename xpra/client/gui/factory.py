@@ -10,52 +10,52 @@ def get_client_base_classes() -> tuple[type, ...]:
 
     CLIENT_BASES: list[type] = [XpraClientBase]
     if features.display:
-        from xpra.client.mixins.display import DisplayClient
+        from xpra.client.subsystem.display import DisplayClient
         CLIENT_BASES.append(DisplayClient)
     if features.windows:
-        from xpra.client.mixins.windows import WindowClient
+        from xpra.client.subsystem.windows import WindowClient
         CLIENT_BASES.append(WindowClient)
         if features.cursors:
-            from xpra.client.mixins.cursors import CursorClient
+            from xpra.client.subsystem.cursors import CursorClient
             CLIENT_BASES.append(CursorClient)
     if features.webcam:
-        from xpra.client.mixins.webcam import WebcamForwarder
+        from xpra.client.subsystem.webcam import WebcamForwarder
         CLIENT_BASES.append(WebcamForwarder)
     if features.audio:
-        from xpra.client.mixins.audio import AudioClient
+        from xpra.client.subsystem.audio import AudioClient
         CLIENT_BASES.append(AudioClient)
     if features.clipboard:
-        from xpra.client.mixins.clipboard import ClipboardClient
+        from xpra.client.subsystem.clipboard import ClipboardClient
         CLIENT_BASES.append(ClipboardClient)
     if features.keyboard:
-        from xpra.client.mixins.keyboard import KeyboardClient
+        from xpra.client.subsystem.keyboard import KeyboardClient
         CLIENT_BASES.append(KeyboardClient)
     if features.pointer:
-        from xpra.client.mixins.pointer import PointerClient
+        from xpra.client.subsystem.pointer import PointerClient
         CLIENT_BASES.append(PointerClient)
     if features.notifications:
-        from xpra.client.mixins.notification import NotificationClient
+        from xpra.client.subsystem.notification import NotificationClient
         CLIENT_BASES.append(NotificationClient)
     if features.mmap:
-        from xpra.client.mixins.mmap import MmapClient
+        from xpra.client.subsystem.mmap import MmapClient
         CLIENT_BASES.append(MmapClient)
     if features.logging:
-        from xpra.client.mixins.logging import RemoteLogging
+        from xpra.client.subsystem.logging import RemoteLogging
         CLIENT_BASES.append(RemoteLogging)
     if features.network_state:
-        from xpra.client.mixins.network_state import NetworkState
+        from xpra.client.subsystem.network_state import NetworkState
         CLIENT_BASES.append(NetworkState)
     if features.network_listener:
-        from xpra.client.mixins.network_listener import NetworkListener
+        from xpra.client.subsystem.network_listener import NetworkListener
         CLIENT_BASES.append(NetworkListener)
     if features.commands:
-        from xpra.client.mixins.child_command import CommandClient
+        from xpra.client.subsystem.child_command import CommandClient
         CLIENT_BASES.append(CommandClient)
     if features.encoding:
-        from xpra.client.mixins.encodings import Encodings
+        from xpra.client.subsystem.encodings import Encodings
         CLIENT_BASES.append(Encodings)
     if features.tray:
-        from xpra.client.mixins.tray import TrayClient
+        from xpra.client.subsystem.tray import TrayClient
         CLIENT_BASES.append(TrayClient)
 
     return tuple(CLIENT_BASES)

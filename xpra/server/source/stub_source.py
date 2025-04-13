@@ -9,9 +9,9 @@ from xpra.util.objects import typedict
 from xpra.net.common import PacketElement
 
 
-class StubSourceMixin:
+class StubClientConnection:
     """
-    Base class for client-connection mixins.
+    Base class for client-connection subsystem.
     Defines the default interface methods that each mixin may override.
     """
 

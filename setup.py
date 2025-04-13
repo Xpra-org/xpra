@@ -2564,7 +2564,7 @@ toggle_packages(server_ENABLED and codecs_ENABLED, "xpra.server.encoder")
 toggle_packages(proxy_ENABLED, "xpra.server.proxy")
 toggle_packages(server_ENABLED, "xpra.server.window")
 toggle_packages(server_ENABLED and rfb_ENABLED, "xpra.server.rfb")
-toggle_packages(server_ENABLED or shadow_ENABLED, "xpra.server.mixins", "xpra.server.source")
+toggle_packages(server_ENABLED or shadow_ENABLED, "xpra.server.subsystem", "xpra.server.source")
 toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
@@ -2628,7 +2628,7 @@ if bundle_tests_ENABLED:
 if client_ENABLED:
     add_modules("xpra.client")
     add_packages("xpra.client.base")
-    add_packages("xpra.client.mixins")
+    add_packages("xpra.client.subsystem")
     add_modules("xpra.scripts.pinentry")
     if qt6_client_ENABLED:
         add_modules("xpra.client.qt6")
@@ -2860,7 +2860,7 @@ if cythonize_more_ENABLED:
             if opengl_ENABLED:
                 ax("xpra.client.gtk3.opengl")
         ax("xpra.client.gui")
-        ax("xpra.client.mixins")
+        ax("xpra.client.subsystem")
         if qt6_client_ENABLED:
             ax("xpra.client.qt6")
         if pyglet_client_ENABLED:
@@ -2927,7 +2927,7 @@ if cythonize_more_ENABLED:
     if server_ENABLED:
         if dbus_ENABLED:
             ax("xpra.server.dbus")
-        ax("xpra.server.mixins")
+        ax("xpra.server.subsystem")
         if proxy_ENABLED:
             ax("xpra.server.proxy")
         if rfb_ENABLED:

@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.net.mmap import init_server_mmap, BaseMmapArea
 
 from xpra.log import Logger
@@ -36,7 +36,7 @@ def clean_mmap_area(area: BaseMmapArea) -> None:
         GLib.timeout_add(100, retry_close)
 
 
-class MMAP_Connection(StubSourceMixin):
+class MMAP_Connection(StubClientConnection):
 
     PREFIX = "mmap"
 

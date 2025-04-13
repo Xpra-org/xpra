@@ -8,8 +8,8 @@ import unittest
 
 from xpra.common import noop
 from xpra.util.objects import AdHocStruct
-from xpra.client.mixins.tray import TrayClient
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from xpra.client.subsystem.tray import TrayClient
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class AudioClientTest(ClientMixinTest):

@@ -7,8 +7,8 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from xpra.client.mixins.webcam import WebcamForwarder
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from xpra.client.subsystem.webcam import WebcamForwarder
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class WebcamTest(ClientMixinTest):

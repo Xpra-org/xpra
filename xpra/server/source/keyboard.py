@@ -7,7 +7,7 @@
 from typing import Any
 
 from xpra.util.str_fn import Ellipsizer
-from xpra.server.source.stub_source_mixin import StubSourceMixin
+from xpra.server.source.stub_source import StubClientConnection
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -16,7 +16,7 @@ log = Logger("keyboard")
 ibuslog = Logger("ibus")
 
 
-class KeyboardMixin(StubSourceMixin):
+class KeyboardConnection(StubClientConnection):
     """
     Manage keyboard input
     """

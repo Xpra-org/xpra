@@ -6,7 +6,7 @@
 
 import unittest
 
-from unit.server.mixins.server_mixins_option_test_util import ServerMixinsOptionTestUtil
+from unit.server.subsystem.server_mixins_option_test_util import ServerMixinsOptionTestUtil
 
 
 class ShadowOptionTest(ServerMixinsOptionTestUtil):

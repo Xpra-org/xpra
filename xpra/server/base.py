@@ -417,8 +417,8 @@ class ServerBase(ServerBaseClass):
     ######################################################################
     # utility method:
     def window_sources(self) -> tuple:
-        from xpra.server.source.windows import WindowsMixin  # pylint: disable=import-outside-toplevel
-        return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsMixin))
+        from xpra.server.source.windows import WindowsConnection  # pylint: disable=import-outside-toplevel
+        return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsConnection))
 
     ######################################################################
     # info:

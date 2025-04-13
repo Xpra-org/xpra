@@ -17,7 +17,7 @@ from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.net.common import PacketType, PacketElement
 from xpra.scripts.config import FALSE_OPTIONS
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

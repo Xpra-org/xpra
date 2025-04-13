@@ -10,9 +10,9 @@ import unittest
 
 from xpra.os_util import WIN32, POSIX, OSX
 from xpra.util.objects import AdHocStruct
-from xpra.client.mixins.audio import AudioClient
+from xpra.client.subsystem.audio import AudioClient
 from xpra.audio.gstreamer_util import CODEC_ORDER
-from unit.client.mixins.clientmixintest_util import ClientMixinTest
+from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 def default_audio_options() -> AdHocStruct:

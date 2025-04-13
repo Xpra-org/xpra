@@ -9,9 +9,9 @@ import unittest
 
 from unit.test_util import silence_error
 from xpra.util.objects import AdHocStruct
-from xpra.server.source.stub_source_mixin import StubSourceMixin
-from xpra.server.mixins import logging
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.subsystem import logging
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class nostr():
@@ -27,7 +27,7 @@ class InputMixinTest(ServerMixinTest):
         log_messages = []
 
         def FakeSource():
-            s = StubSourceMixin()
+            s = StubClientConnection()
             s.counter = 0
             return s
 

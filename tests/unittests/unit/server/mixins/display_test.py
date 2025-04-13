@@ -7,7 +7,7 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 from unit.process_test_util import DisplayContext
 
 
@@ -18,8 +18,8 @@ class DisplayMixinTest(ServerMixinTest):
             self.do_test_display()
 
     def do_test_display(self):
-        from xpra.server.mixins.display import DisplayManager
-        from xpra.server.source.display import ClientDisplayMixin
+        from xpra.server.subsystem.display import DisplayManager
+        from xpra.server.source.display import DisplayConnection
         opts = AdHocStruct()
         opts.bell = True
         opts.cursors = True
@@ -42,7 +42,7 @@ class DisplayMixinTest(ServerMixinTest):
             dm.calculate_workarea = calculate_workarea
             dm.set_desktop_geometry = set_desktop_geometry
             return dm
-        self._test_mixin_class(make_display_manager, opts, {}, ClientDisplayMixin)
+        self._test_mixin_class(make_display_manager, opts, {}, DisplayConnection)
 
 
 def main():

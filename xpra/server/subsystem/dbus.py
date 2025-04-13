@@ -7,7 +7,7 @@ import os.path
 import signal
 from typing import Any
 
-from xpra.server.mixins.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("dbus")

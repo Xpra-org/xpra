@@ -28,7 +28,7 @@ from xpra.scripts.session import rm_session_dir, clean_session_files
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
-from xpra.server.mixins.control import ControlHandler
+from xpra.server.subsystem.control import ControlHandler
 from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
@@ -1488,7 +1488,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         force_close_connection(conn)
 
     def get_http_scripts(self) -> dict[str, Callable[[str], HttpResponse]]:
-        # loose coupling with xpra.server.mixins.http:
+        # loose coupling with xpra.server.subsystem.http:
         return getattr(self, "_http_scripts", {})
 
     def is_timedout(self, protocol: SocketProtocol) -> bool:

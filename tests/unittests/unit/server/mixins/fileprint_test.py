@@ -9,7 +9,7 @@ import unittest
 from xpra.util.objects import AdHocStruct
 from xpra.os_util import POSIX
 from unit.test_util import silence_info
-from unit.server.mixins.servermixintest_util import ServerMixinTest
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
 class FilePrintMixinTest(ServerMixinTest):
@@ -23,7 +23,7 @@ class FilePrintMixinTest(ServerMixinTest):
             ]
 
     def test_fileprint(self):
-        from xpra.server.mixins import fileprint
+        from xpra.server.subsystem import fileprint
         opts = AdHocStruct()
         opts.file_transfer = "yes"
         opts.file_size_limit = 10
