@@ -54,6 +54,7 @@ from xpra.util.parsing import parse_simple_dict, parse_encoded_bin_data
 from xpra.util.env import envbool
 from xpra.client.base.serverinfo import ServerInfoMixin
 from xpra.client.base.fileprint import FilePrintMixin
+from xpra.client.base.control import ControlClient
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 
 GLib = gi_import("GLib")
@@ -76,7 +77,7 @@ ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
                                         "uri,file,env,kerberos,gss,u2f,prompt,prompt,prompt,prompt").split(",")
 
 
-class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
+class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, ControlClient):
     """
     Base class for Xpra clients.
     Provides the glue code for:
@@ -95,6 +96,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             self.defaults_init()
             ServerInfoMixin.__init__(self)
             FilePrintMixin.__init__(self)
+            ControlClient.__init__(self)
         self._init_done = False
         self.exit_code = None
         self.start_time = int(monotonic())
@@ -132,8 +134,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         self._protocol = None
         self._priority_packets = []
         self._ordinary_packets = []
-        # control channel for requests coming from either a client socket, or the server connection:
-        self.control_commands = {}
         # server state and caps:
         self.server_packet_types = ()
         self.connection_established = False
@@ -149,7 +149,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             # from multiple parents, skip initializing twice
             return
         self._init_done = True
-        for c in (ServerInfoMixin, FilePrintMixin):
+        for c in (ServerInfoMixin, FilePrintMixin, ControlClient):
             c.init(self, opts)
         self.compression_level = opts.compression_level
         self.display = opts.display
@@ -417,7 +417,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
                 digests = capabilities.setdefault("digest", ())
                 if digest not in digests:
                     capabilities["digest"] = tuple(list(digests)+[digest])
-        for c in (ServerInfoMixin, FilePrintMixin):
+        for c in (ServerInfoMixin, FilePrintMixin, ControlClient):
             capabilities.update(c.get_caps(self))
         if self.username:
             # set for authentication:
@@ -1047,12 +1047,11 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             return False
         netlog("server_connection_established(..) adding authenticated packet handlers")
         self.init_authenticated_packet_handlers()
-        self.add_control_commands()
         return True
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         netlog("parse_server_capabilities(..)")
-        for bc in (ServerInfoMixin, FilePrintMixin):
+        for bc in (ServerInfoMixin, FilePrintMixin, ControlClient):
             if not bc.parse_server_capabilities(self, c):
                 log.info(f"server capabilities rejected by {bc}")
                 return False
@@ -1151,36 +1150,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         self.quit(exit_code)
 
     ######################################################################
-    # generic control command methods
-    # the actual hooking of "control" requests is done in:
-    # * `NetworkListener` for local sockets
-    # * `UIXpraClient` for server connections
-    def add_control_commands(self) -> None:
-        try:
-            from xpra.net.control.common import HelloCommand, HelpCommand, DisabledCommand
-            from xpra.net.control.debug import DebugControl
-        except ImportError:
-            return
-        self.control_commands |= {
-            "hello": HelloCommand(),
-            "debug": DebugControl(),
-            "help": HelpCommand(self.control_commands),
-            "*": DisabledCommand(),
-        }
-
-    def add_control_command(self, name: str, control) -> None:
-        self.control_commands[name] = control
-
-    def _process_control(self, packet: PacketType) -> None:
-        args = packet[1:]
-        code, msg = self.process_control_command(self._protocol, *args)
-        log.warn(f"{code}, {msg!r}")
-
-    def process_control_command(self, proto, *args) -> tuple[int, str]:
-        from xpra.net.control.common import process_control_command
-        return process_control_command(proto, self.control_commands, *args)
-
-    ######################################################################
     # packets:
     def init_packet_handlers(self) -> None:
         self.add_packets("hello")
@@ -1190,7 +1159,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
 
     def init_authenticated_packet_handlers(self) -> None:
         FilePrintMixin.init_authenticated_packet_handlers(self)
-        self.add_packets("startup-complete", "control", main_thread=True)
 
     def process_packet(self, proto, packet) -> None:
         self.dispatch_packet(proto, packet, True)
