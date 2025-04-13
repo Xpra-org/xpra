@@ -2124,7 +2124,7 @@ def set_client_features(opts) -> None:
     from xpra.client.base import features
     features.commands = opts.commands
     features.control = opts.control
-    features.file_transfer = opts.file_transfer
+    features.file_transfer = opts.file_transfer and impcheck("xpra.net.file_transfer")
     features.display = opts.windows
     features.windows = opts.windows
     features.cursors = opts.windows and opts.cursors
@@ -2152,6 +2152,7 @@ def enforce_client_features() -> None:
     from xpra.client.base import features
     enforce_features(features, {
         "control": "xpra.control,xpra.client.base.control",
+        "file_transfer": "xpra.net.file_transfer",
         "display": "xpra.client.subsystem.display",
         "windows": "xpra.client.subsystem.windows",
         "cursors": "xpra.client.subsystem.cursors",

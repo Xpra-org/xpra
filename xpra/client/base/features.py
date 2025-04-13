@@ -5,6 +5,7 @@
 
 commands = True
 control = True
+file_transfer = True
 display = True
 windows = True
 cursors = True
