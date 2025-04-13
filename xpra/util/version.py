@@ -199,11 +199,13 @@ def get_build_info(full: int = 1) -> dict[str, Any]:
     except ImportError:
         return {}
 
-    def add_attrs(attrs: dict) -> None:
-        for k, bk in attrs.items():
-            v = getattr(build_info, bk, None)
+    build = getattr(build_info, "build", {})
+
+    def add_attrs(attrs: dict[str, str]) -> None:
+        for k, type_info in attrs.items():
+            v = build.get(k, None)
             if v is not None:
-                if bk.endswith("_VERSION"):
+                if type_info.endswith("_VERSION"):
                     v = parse_version(v)
                 info[k] = v
 
