@@ -24,13 +24,6 @@ from xpra.net.common import PacketType, PacketElement
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.net_util import get_network_caps
-from xpra.net.crypto import (
-    crypto_backend_init, get_iterations, get_iv, choose_padding,
-    get_ciphers, get_modes, get_key_hashes,
-    ENCRYPT_FIRST_PACKET, DEFAULT_IV, DEFAULT_SALT, DEFAULT_STREAM,
-    DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_PADDING, ALL_PADDING_OPTIONS, PADDING_OPTIONS,
-    DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_KEY_STRETCH, DEFAULT_ALWAYS_PAD,
-)
 from xpra.util.version import get_version_info, vparts, XPRA_VERSION
 from xpra.net.net_util import get_info as get_net_info
 from xpra.net.digest import get_salt
@@ -39,14 +32,13 @@ from xpra.client.base.factory import get_client_base_classes
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, BITS
 from xpra.util.child_reaper import getChildReaper, reaper_cleanup
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, get_env_info, get_sysconfig_info
-from xpra.util.io import filedata_nocrlf, stderr_print
+from xpra.util.io import stderr_print
 from xpra.util.pysystem import dump_all_frames, detect_leaks, get_frame_info
 from xpra.util.objects import typedict
 from xpra.util.str_fn import (
-    csv, Ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
+    Ellipsizer, repr_ellipsized, print_nested_dict,
     bytestostr, hexstr,
 )
-from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger, get_info as get_log_info
@@ -58,7 +50,6 @@ ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 
 log = Logger("client")
 netlog = Logger("network")
-cryptolog = Logger("crypto")
 
 EXTRA_TIMEOUT = 10
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
@@ -108,9 +99,6 @@ class XpraClientBase(ClientBaseClass):
         self.has_password = False
         self.compression_level = 0
         self.display = None
-        self.encryption = None
-        self.encryption_keyfile = None
-        self.server_padding_options = [DEFAULT_PADDING]
         self.server_client_shutdown = True
         self.server_compressors = []
         # protocol stuff:
@@ -135,8 +123,6 @@ class XpraClientBase(ClientBaseClass):
             bc.init(self, opts)
         self.compression_level = opts.compression_level
         self.display = opts.display
-        self.encryption = opts.encryption or opts.tcp_encryption
-        self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
         self.install_signal_handlers()
 
     def show_progress(self, pct: int, text="") -> None:
@@ -270,12 +256,6 @@ class XpraClientBase(ClientBaseClass):
             protocol.set_compression_level(1)
             protocol.enable_default_encoder()
             protocol.enable_default_compressor()
-            encryption = self.get_encryption()
-            if encryption and ENCRYPT_FIRST_PACKET:
-                key = self.get_encryption_key()
-                protocol.set_cipher_out(encryption, strtobytes(DEFAULT_IV),
-                                        key, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                        DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM)
         self.have_more = protocol.source_has_more
         if conn.timeout > 0:
             GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
@@ -363,53 +343,8 @@ class XpraClientBase(ClientBaseClass):
         mid = get_machine_id()
         if mid:
             capabilities["machine_id"] = mid
-        cipher_caps = self.get_cipher_caps()
-        if cipher_caps:
-            capabilities["encryption"] = cipher_caps
         capabilities.update(self.hello_extra)
         return capabilities
-
-    def get_cipher_caps(self) -> dict[str, Any]:
-        encryption = self.get_encryption()
-        cryptolog(f"encryption={encryption}")
-        if not encryption:
-            return {}
-        crypto_backend_init()
-        enc, mode = (encryption + "-").split("-")[:2]
-        if not mode:
-            mode = DEFAULT_MODE
-        ciphers = get_ciphers()
-        if enc not in ciphers:
-            raise ValueError(f"invalid encryption {enc!r}, options: {csv(ciphers) or 'none'}")
-        modes = get_modes()
-        if mode not in modes:
-            raise ValueError(f"invalid encryption mode {mode!r}, options: {csv(modes) or 'none'}")
-        iv = get_iv()
-        key_salt = get_salt()
-        iterations = get_iterations()
-        padding = choose_padding(self.server_padding_options)
-        always_pad = DEFAULT_ALWAYS_PAD
-        stream = DEFAULT_STREAM
-        cipher_caps: dict[str, Any] = {
-            "cipher": enc,
-            "mode": mode,
-            "iv": iv,
-            "key_salt": key_salt,
-            "key_size": DEFAULT_KEYSIZE,
-            "key_hash": DEFAULT_KEY_HASH,
-            "key_stretch": DEFAULT_KEY_STRETCH,
-            "key_stretch_iterations": iterations,
-            "padding": padding,
-            "padding.options": PADDING_OPTIONS,
-            "always-pad": always_pad,
-            "stream": stream,
-        }
-        cryptolog(f"cipher_caps={cipher_caps}")
-        key = self.get_encryption_key()
-        self._protocol.set_cipher_in(encryption, strtobytes(iv),
-                                     key, key_salt, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                     iterations, padding, always_pad, stream)
-        return cipher_caps
 
     @staticmethod
     def get_version_info() -> dict[str, Any]:
@@ -605,94 +540,6 @@ class XpraClientBase(ClientBaseClass):
             msg = exit_str(exit_code).lower().replace("_", " ").replace("connection", "Connection")
             self.warn_and_quit(exit_code, msg)
 
-    ########################################
-    # Encryption
-    def set_server_encryption(self, caps: typedict, key: bytes) -> bool:
-        caps = typedict(caps.dictget("encryption") or {})
-        cipher = caps.strget("cipher")
-        cipher_mode = caps.strget("mode", DEFAULT_MODE)
-        cipher_iv = caps.strget("iv")
-        key_salt = caps.bytesget("key_salt")
-        key_hash = caps.strget("key_hash", DEFAULT_KEY_HASH)
-        key_size = caps.intget("key_size", DEFAULT_KEYSIZE)
-        key_stretch = caps.strget("key_stretch", DEFAULT_KEY_STRETCH)
-        iterations = caps.intget("key_stretch_iterations")
-        padding = caps.strget("padding", DEFAULT_PADDING)
-        always_pad = caps.boolget("always-pad", DEFAULT_ALWAYS_PAD)
-        stream = caps.boolget("stream", DEFAULT_STREAM)
-        ciphers = get_ciphers()
-        key_hashes = get_key_hashes()
-        # server may tell us what it supports,
-        # either from hello response or from challenge packet:
-        self.server_padding_options = caps.strtupleget("padding.options", (DEFAULT_PADDING,))
-
-        def fail(msg) -> bool:
-            self.warn_and_quit(ExitCode.ENCRYPTION, msg)
-            return False
-
-        if key_stretch != "PBKDF2":
-            return fail(f"unsupported key stretching {key_stretch}")
-        if not cipher or not cipher_iv:
-            return fail("the server does not use or support encryption/password, cannot continue")
-        if cipher not in ciphers:
-            return fail(f"unsupported server cipher: {cipher}, allowed ciphers: {csv(ciphers)}")
-        if padding not in ALL_PADDING_OPTIONS:
-            return fail(f"unsupported server cipher padding: {padding}, allowed paddings: {csv(ALL_PADDING_OPTIONS)}")
-        if key_hash not in key_hashes:
-            return fail(f"unsupported key hashing: {key_hash}, allowed algorithms: {csv(key_hashes)}")
-        p = self._protocol
-        if not p:
-            return False
-        p.set_cipher_out(cipher + "-" + cipher_mode, strtobytes(cipher_iv),
-                         key, key_salt, key_hash, key_size,
-                         iterations, padding, always_pad, stream)
-        return True
-
-    def get_encryption(self) -> str:
-        p = self._protocol
-        if not p:
-            return ""
-        conn = p._conn
-        if not conn:
-            return ""
-        # prefer the socket option, fallback to "--encryption=" option:
-        encryption = conn.options.get("encryption", self.encryption)
-        cryptolog(f"get_encryption() connection options encryption={encryption!r}")
-        # specifying keyfile or keydata is enough:
-        if not encryption and any(conn.options.get(x) for x in ("encryption-keyfile", "keyfile", "keydata")):
-            encryption = f"AES-{DEFAULT_MODE}"
-            cryptolog(f"found keyfile or keydata attribute, enabling {encryption!r} encryption")
-        if not encryption and os.environ.get("XPRA_ENCRYPTION_KEY"):
-            encryption = f"AES-{DEFAULT_MODE}"
-            cryptolog("found encryption key environment variable, enabling {encryption!r} encryption")
-        return encryption
-
-    def get_encryption_key(self) -> bytes:
-        conn = self._protocol._conn
-        keydata = parse_encoded_bin_data(conn.options.get("keydata", ""))
-        cryptolog(f"get_encryption_key() connection options keydata={Ellipsizer(keydata)}")
-        if keydata:
-            return keydata
-        keyfile = conn.options.get("encryption-keyfile") or conn.options.get("keyfile") or self.encryption_keyfile
-        if keyfile:
-            if not os.path.isabs(keyfile):
-                keyfile = os.path.abspath(keyfile)
-            if os.path.exists(keyfile):
-                keydata = filedata_nocrlf(keyfile)
-                if keydata:
-                    cryptolog("get_encryption_key() loaded %i bytes from '%s'", len(keydata or b""), keyfile)
-                    return keydata
-                cryptolog(f"get_encryption_key() keyfile {keyfile!r} is empty")
-            else:
-                cryptolog(f"get_encryption_key() file {keyfile!r} does not exist")
-        XPRA_ENCRYPTION_KEY = "XPRA_ENCRYPTION_KEY"
-        keydata = strtobytes(os.environ.get(XPRA_ENCRYPTION_KEY, ''))
-        cryptolog(f"get_encryption_key() got %i bytes from {XPRA_ENCRYPTION_KEY!r} environment variable",
-                  len(keydata or ""))
-        if keydata:
-            return keydata.strip(b"\n\r")
-        raise InitExit(ExitCode.ENCRYPTION, "no encryption key")
-
     def _process_hello(self, packet: PacketType) -> None:
         if LOG_HELLO:
             netlog.info("received hello:")
@@ -714,9 +561,6 @@ class XpraClientBase(ClientBaseClass):
     def server_connection_established(self, caps: typedict) -> bool:
         assert caps and self._protocol
         netlog("server_connection_established(..)")
-        if not self.parse_encryption_capabilities(caps):
-            netlog("server_connection_established(..) failed encryption capabilities")
-            return False
         if not self.parse_server_capabilities(caps):
             netlog("server_connection_established(..) failed server capabilities")
             return False
@@ -753,19 +597,6 @@ class XpraClientBase(ClientBaseClass):
         p.parse_remote_caps(caps)
         self.server_packet_types = caps.strtupleget("packet-types")
         netlog(f"parse_network_capabilities(..) server_packet_types={self.server_packet_types}")
-        return True
-
-    def parse_encryption_capabilities(self, caps: typedict) -> bool:
-        p = self._protocol
-        if not p:
-            return False
-        encryption = self.get_encryption()
-        if encryption:
-            # server uses a new cipher after second hello:
-            key = self.get_encryption_key()
-            assert key, "encryption key is missing"
-            if not self.set_server_encryption(caps, key):
-                return False
         return True
 
     def _process_startup_complete(self, packet: PacketType) -> None:
