@@ -267,9 +267,7 @@ class NetworkListener(StubClientMixin):
         return False
 
     def get_caps(self) -> dict[str, Any]:
-        return {
-            "control_commands": tuple(self.control_commands.keys()),
-        }
+        return {}
 
     def get_id_info(self) -> dict[str, Any]:
         # minimal information for identifying the session

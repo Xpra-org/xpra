@@ -102,9 +102,14 @@ class StubClientMixin:
         assert level >= 0
         return Compressed("raw %s" % datatype, data)
 
+    def init_packet_handlers(self) -> None:
+        """
+        Register the packet types that this mixin can handle, even before authentication.
+        """
+
     def init_authenticated_packet_handlers(self) -> None:
         """
-        Register the packet types that this mixin can handle.
+        Register the packet types that this mixin can handle after authentication.
         """
 
     def add_packet_handler(self, packet_type: str, handler: PacketHandlerType,

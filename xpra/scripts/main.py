@@ -2123,6 +2123,8 @@ def set_client_features(opts) -> None:
 
     from xpra.client.base import features
     features.commands = opts.commands
+    features.control = opts.control
+    features.file_transfer = opts.file_transfer
     features.display = opts.windows
     features.windows = opts.windows
     features.cursors = opts.windows and opts.cursors
@@ -2149,6 +2151,7 @@ def enforce_client_features() -> None:
     from xpra.util.pysystem import enforce_features
     from xpra.client.base import features
     enforce_features(features, {
+        "control": "xpra.control,xpra.client.base.control",
         "display": "xpra.client.subsystem.display",
         "windows": "xpra.client.subsystem.windows",
         "cursors": "xpra.client.subsystem.cursors",

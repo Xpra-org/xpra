@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 commands = True
+control = True
 display = True
 windows = True
 cursors = True

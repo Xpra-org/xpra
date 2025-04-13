@@ -286,7 +286,6 @@ class UIXpraClient(ClientBaseClass):
             return False
         # process the rest from the UI thread:
         GLib.idle_add(self.process_ui_capabilities, caps)
-        self.add_control_commands()
         return True
 
     def parse_server_capabilities(self, c: typedict) -> bool:
@@ -532,7 +531,7 @@ class UIXpraClient(ClientBaseClass):
         for c in CLIENT_BASES:
             c.init_authenticated_packet_handlers(self)
         # run from the UI thread:
-        self.add_packets("startup-complete", "setting-change", "control", main_thread=True)
+        self.add_packets("startup-complete", "setting-change", main_thread=True)
         # run directly from the network thread:
         self.add_packets("server-event")
 

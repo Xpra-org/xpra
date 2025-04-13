@@ -13,23 +13,17 @@ import string
 from time import monotonic
 from typing import Any, NoReturn
 from types import FrameType
-from importlib import import_module
-from collections.abc import Callable
 
 from xpra.scripts.config import InitExit
 from xpra.common import (
     FULL_INFO, LOG_HELLO,
     ConnectionMessage, disconnect_is_an_error, noerr, NotificationID, noop,
 )
-from xpra.util.child_reaper import getChildReaper, reaper_cleanup
-from xpra.util.thread import start_thread
 from xpra.net import compression
-from xpra.net.common import PacketType, PacketElement, SSL_UPGRADE
-from xpra.net.glib_handler import GLibPacketHandler
+from xpra.net.common import PacketType, PacketElement
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.net_util import get_network_caps
-from xpra.net.digest import get_salt, gendigest
 from xpra.net.crypto import (
     crypto_backend_init, get_iterations, get_iv, choose_padding,
     get_ciphers, get_modes, get_key_hashes,
@@ -39,45 +33,41 @@ from xpra.net.crypto import (
 )
 from xpra.util.version import get_version_info, vparts, XPRA_VERSION
 from xpra.net.net_util import get_info as get_net_info
-from xpra.log import Logger, get_info as get_log_info
+from xpra.net.digest import get_salt
 from xpra.platform.info import get_name, get_username, get_sys_info
+from xpra.client.base.factory import get_client_base_classes
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, BITS
+from xpra.util.child_reaper import getChildReaper, reaper_cleanup
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, get_env_info, get_sysconfig_info
-from xpra.util.io import filedata_nocrlf, stderr_print, use_gui_prompt
+from xpra.util.io import filedata_nocrlf, stderr_print
 from xpra.util.pysystem import dump_all_frames, detect_leaks, get_frame_info
 from xpra.util.objects import typedict
 from xpra.util.str_fn import (
-    std, obsc, csv, Ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
+    csv, Ellipsizer, repr_ellipsized, print_nested_dict, strtobytes,
     bytestostr, hexstr,
 )
-from xpra.util.parsing import parse_simple_dict, parse_encoded_bin_data
+from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.env import envbool
-from xpra.client.base.serverinfo import ServerInfoMixin
-from xpra.client.base.fileprint import FilePrintMixin
-from xpra.client.base.control import ControlClient
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
+from xpra.log import Logger, get_info as get_log_info
 
 GLib = gi_import("GLib")
 
+CLIENT_BASES = get_client_base_classes()
+ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
+
 log = Logger("client")
 netlog = Logger("network")
-authlog = Logger("auth")
 cryptolog = Logger("crypto")
 
 EXTRA_TIMEOUT = 10
-ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
-ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
-SKIP_UI = envbool("XPRA_SKIP_UI", False)
 SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO > 1)
 
-ALL_CHALLENGE_HANDLERS = os.environ.get("XPRA_ALL_CHALLENGE_HANDLERS",
-                                        "uri,file,env,kerberos,gss,u2f,prompt,prompt,prompt,prompt").split(",")
 
-
-class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, ControlClient):
+class XpraClientBase(ClientBaseClass):
     """
     Base class for Xpra clients.
     Provides the glue code for:
@@ -92,11 +82,10 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
         # this may be called more than once,
         # skip doing internal init again:
         if not hasattr(self, "exit_code"):
-            GLibPacketHandler.__init__(self)
             self.defaults_init()
-            ServerInfoMixin.__init__(self)
-            FilePrintMixin.__init__(self)
-            ControlClient.__init__(self)
+            for bc in CLIENT_BASES:
+                bc.__init__(self)
+            self.init_packet_handlers()
         self._init_done = False
         self.exit_code = None
         self.start_time = int(monotonic())
@@ -116,15 +105,9 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
         self.progress_process = None
         # connection attributes:
         self.hello_extra = {}
+        self.has_password = False
         self.compression_level = 0
         self.display = None
-        self.challenge_handlers_option = ()
-        self.challenge_handlers = []
-        self.username = None
-        self.password = None
-        self.password_file: list[str] = []
-        self.password_index = 0
-        self.password_sent = False
         self.encryption = None
         self.encryption_keyfile = None
         self.server_padding_options = [DEFAULT_PADDING]
@@ -140,7 +123,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
         self.completed_startup = False
         self.uuid: str = get_user_uuid()
         self.session_id: str = uuid.uuid4().hex
-        self.init_packet_handlers()
         self.have_more = noop
 
     def init(self, opts) -> None:
@@ -149,16 +131,12 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
             # from multiple parents, skip initializing twice
             return
         self._init_done = True
-        for c in (ServerInfoMixin, FilePrintMixin, ControlClient):
-            c.init(self, opts)
+        for bc in CLIENT_BASES:
+            bc.init(self, opts)
         self.compression_level = opts.compression_level
         self.display = opts.display
-        self.username = opts.username
-        self.password = opts.password
-        self.password_file = opts.password_file
         self.encryption = opts.encryption or opts.tcp_encryption
         self.encryption_keyfile = opts.encryption_keyfile or opts.tcp_encryption_keyfile
-        self.challenge_handlers_option = opts.challenge_handlers
         self.install_signal_handlers()
 
     def show_progress(self, pct: int, text="") -> None:
@@ -168,58 +146,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
             log.info(f"{pct:3} {text}")
         if pp:
             pp.progress(pct, text)
-
-    def init_challenge_handlers(self) -> None:
-        # register the authentication challenge handlers:
-        authlog("init_challenge_handlers() %r", self.challenge_handlers_option)
-        ch = tuple(x.strip() for x in (self.challenge_handlers_option or ()))
-        for ch_name in ch:
-            if ch_name == "none":
-                continue
-            if ch_name == "all":
-                items = ALL_CHALLENGE_HANDLERS
-                ierror = authlog.debug
-            else:
-                items = (ch_name,)
-                ierror = authlog.warn
-            for auth in items:
-                instance = self.get_challenge_handler(auth, ierror)
-                if instance:
-                    self.challenge_handlers.append(instance)
-        authlog("challenge-handlers=%r", self.challenge_handlers)
-
-    def get_challenge_handler(self, auth: str, import_error_logger: Callable):
-        # the module may have attributes,
-        # ie: file:filename=password.txt
-        parts = auth.split(":", 1)
-        mod_name = parts[0]
-        kwargs: dict[str, Any] = {}
-        if len(parts) == 2:
-            kwargs = parse_simple_dict(parts[1])
-        kwargs["protocol"] = self._protocol
-        kwargs["display-desc"] = self.display_desc
-        if "password" not in kwargs and self.password:
-            kwargs["password"] = self.password
-        if self.password_file:
-            kwargs["password-files"] = self.password_file
-        kwargs["challenge_prompt_function"] = self.do_process_challenge_prompt
-
-        auth_mod_name = f"xpra.challenge.{mod_name}"
-        authlog(f"auth module name for {auth!r}: {auth_mod_name!r}")
-        try:
-            auth_module = import_module(auth_mod_name)
-            auth_class = auth_module.Handler
-            authlog(f"{auth_class}({kwargs})")
-            instance = auth_class(**kwargs)
-            return instance
-        except ImportError as e:
-            import_error_logger(f"Error: authentication handler {mod_name!r} is not available")
-            import_error_logger(f" {e}")
-        except Exception as e:
-            authlog("get_challenge_handler(%s)", auth, exc_info=True)
-            authlog.error("Error: cannot instantiate authentication handler")
-            authlog.error(f" {mod_name!r}: {e}")
-        return None
 
     def may_notify(self, nid: int | NotificationID, summary: str, body: str, *args, **kwargs) -> None:
         notifylog = Logger("notify")
@@ -363,10 +289,8 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
         return protocol
 
     def setup_connection(self, conn) -> None:
-        self.init_challenge_handlers()
-
-    def has_password(self) -> bool:
-        return self.password or self.password_file or os.environ.get('XPRA_PASSWORD')
+        for bc in CLIENT_BASES:
+            bc.setup_connection(self, conn)
 
     def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
         if not self._protocol:
@@ -374,7 +298,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
             return
         try:
             hello = self.make_hello_base()
-            if self.has_password() and not challenge_response:
+            if self.has_password and not challenge_response:
                 # avoid sending the full hello: tell the server we want
                 # a packet challenge first
                 hello["challenge"] = True
@@ -410,18 +334,9 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
 
     def make_hello_base(self) -> dict[str, Any]:
         capabilities = get_network_caps(FULL_INFO)
-        # add "kerberos", "gss" and "u2f" digests if enabled:
-        for handler in self.challenge_handlers:
-            digest = handler.get_digest()
-            if digest:
-                digests = capabilities.setdefault("digest", ())
-                if digest not in digests:
-                    capabilities["digest"] = tuple(list(digests)+[digest])
-        for c in (ServerInfoMixin, FilePrintMixin, ControlClient):
-            capabilities.update(c.get_caps(self))
-        if self.username:
-            # set for authentication:
-            capabilities["username"] = self.username
+        for bc in CLIENT_BASES:
+            # FIXME: digests should be added to!
+            capabilities.update(bc.get_caps(self))
         capabilities |= {
             "uuid": self.uuid,
             "compression_level": self.compression_level,
@@ -443,7 +358,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
                 "name": get_name(),
                 "argv": sys.argv,
             }
-        capabilities.update(self.get_file_transfer_features())
         vi = self.get_version_info()
         capabilities["build"] = vi
         mid = get_machine_id()
@@ -574,14 +488,15 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
     def cleanup(self) -> None:
         self.stop_progress_process()
         reaper_cleanup()
-        with log.trap_error("Error cleaning file-print handler"):
-            FilePrintMixin.cleanup(self)
+        for bc in CLIENT_BASES:
+            with log.trap_error(f"Error cleaning {bc!r} handler"):
+                bc.cleanup(self)
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
         if p:
+            self._protocol = None
             log("calling %s", p.close)
             p.close()
-            self._protocol = None
         log("cleanup done")
         dump_all_frames()
 
@@ -690,238 +605,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
             msg = exit_str(exit_code).lower().replace("_", " ").replace("connection", "Connection")
             self.warn_and_quit(exit_code, msg)
 
-    def _process_ssl_upgrade(self, packet: PacketType) -> None:
-        assert SSL_UPGRADE
-        ssl_attrs = typedict(packet[1])
-        start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs,))
-
-    def ssl_upgrade(self, ssl_attrs: typedict) -> None:
-        # send ssl-upgrade request!
-        ssllog = Logger("client", "ssl")
-        ssllog(f"ssl-upgrade({ssl_attrs})")
-        conn = self._protocol._conn
-        socktype = conn.socktype
-        new_socktype = {"tcp": "ssl", "ws": "wss"}.get(socktype)
-        if not new_socktype:
-            raise ValueError(f"cannot upgrade {socktype} to ssl")
-        log.info(f"upgrading {conn} to {new_socktype}")
-        self.send("ssl-upgrade", {})
-        from xpra.net.ssl_util import ssl_handshake, ssl_wrap_socket, get_ssl_attributes
-        overrides = {
-            "verify_mode": "none",
-            "check_hostname": "no",
-        }
-        overrides.update(conn.options.get("ssl-options", {}))
-        ssl_options = get_ssl_attributes(None, False, overrides)
-        kwargs = {k.replace("-", "_"): v for k, v in ssl_options.items()}
-        # wait for the 'ssl-upgrade' packet to be sent...
-        # this should be done by watching the IO and formatting threads instead
-        import time
-        time.sleep(1)
-
-        def read_callback(packet) -> None:
-            if packet:
-                ssllog.error("Error: received another packet during ssl socket upgrade:")
-                ssllog.error(" %s", packet)
-                self.quit(ExitCode.INTERNAL_ERROR)
-
-        conn = self._protocol.steal_connection(read_callback)
-        if not self._protocol.wait_for_io_threads_exit(1):
-            log.error("Error: failed to terminate network threads for ssl upgrade")
-            self.quit(ExitCode.INTERNAL_ERROR)
-            return
-        ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
-        ssl_handshake(ssl_sock)
-        authlog("ssl handshake complete")
-        from xpra.net.bytestreams import SSLSocketConnection
-        ssl_conn = SSLSocketConnection(ssl_sock, conn.local, conn.remote, conn.endpoint, new_socktype)
-        self._protocol = self.make_protocol(ssl_conn)
-        self._protocol.start()
-
-    ########################################
-    # Authentication
-    def _process_challenge(self, packet: PacketType) -> None:
-        authlog(f"processing challenge: {packet[1:]}")
-        if not self.validate_challenge_packet(packet):
-            return
-        start_thread(self.do_process_challenge, "call-challenge-handlers", True, (packet,))
-
-    def do_process_challenge(self, packet: PacketType) -> None:
-        digest = str(packet[3])
-        authlog(f"challenge handlers: {self.challenge_handlers}, digest: {digest}")
-        while self.challenge_handlers:
-            handler = self.pop_challenge_handler(digest)
-            try:
-                challenge = strtobytes(packet[1])
-                prompt = "password"
-                if len(packet) >= 6:
-                    prompt = std(str(packet[5]), extras="-,./: '")
-                authlog(f"calling challenge handler {handler}")
-                value = handler.handle(challenge=challenge, digest=digest, prompt=prompt)
-                authlog(f"{handler.handle}({packet})={obsc(value)}")
-                if value:
-                    self.send_challenge_reply(packet, value)
-                    # stop since we have sent the reply
-                    return
-            except InitExit as e:
-                # the handler is telling us to give up
-                # (ie: pinentry was cancelled by the user)
-                authlog(f"{handler.handle}({packet}) raised {e!r}")
-                log.info(f"exiting: {e}")
-                GLib.idle_add(self.disconnect_and_quit, e.status, str(e))
-                return
-            except Exception as e:
-                authlog(f"{handler.handle}({packet})", exc_info=True)
-                authlog.error(f"Error in {handler} challenge handler:")
-                authlog.estr(e)
-                continue
-        authlog.warn("Warning: failed to connect, authentication required")
-        GLib.idle_add(self.disconnect_and_quit, ExitCode.PASSWORD_REQUIRED, "authentication required")
-
-    def pop_challenge_handler(self, digest: str = ""):
-        # find the challenge handler most suitable for this digest type,
-        # otherwise take the first one
-        digest_type = digest.split(":")[0]  # ie: "kerberos:value" -> "kerberos"
-        index = 0
-        for i, handler in enumerate(self.challenge_handlers):
-            if handler.get_digest() == digest_type:
-                index = i
-                break
-        return self.challenge_handlers.pop(index)
-
-    # utility method used by some authentication handlers,
-    # and overridden in UI client to provide a GUI dialog
-    def do_process_challenge_prompt(self, prompt="password"):
-        authlog(f"do_process_challenge_prompt({prompt}) use_gui_prompt={use_gui_prompt()}")
-        if SKIP_UI:
-            return None
-        # pylint: disable=import-outside-toplevel
-        if not use_gui_prompt():
-            import getpass
-            authlog("stdin isatty, using password prompt")
-            password = getpass.getpass("%s :" % self.get_challenge_prompt(prompt))
-            authlog("password read from tty via getpass: %s", obsc(password))
-            return password
-        self.show_progress(100, "challenge prompt")
-        from xpra.platform.paths import get_nodock_command
-        cmd = get_nodock_command() + ["_pass", prompt]
-        try:
-            from subprocess import Popen, PIPE
-            proc = Popen(cmd, stdout=PIPE)
-            getChildReaper().add_process(proc, "password-prompt", cmd, True, True)
-            out, err = proc.communicate(None, 60)
-            authlog("err(%s)=%s", cmd, err)
-            password = out.decode()
-            return password
-        except OSError:
-            log("Error: failed to show GUI for password prompt", exc_info=True)
-            return None
-
-    def auth_error(self, code: ExitValue,
-                   message: str,
-                   server_message: str | ConnectionMessage = ConnectionMessage.AUTHENTICATION_FAILED) -> None:
-        authlog.error("Error: authentication failed:")
-        authlog.error(f" {message}")
-        self.disconnect_and_quit(code, server_message)
-
-    def validate_challenge_packet(self, packet) -> bool:
-        p = self._protocol
-        if not p:
-            return False
-        digest = str(packet[3]).split(":", 1)[0]
-        # don't send XORed password unencrypted:
-        if digest in ("xor", "des"):
-            # verify that the connection is already encrypted,
-            # or that it will be configured for encryption in `send_challenge_reply`:
-            encrypted = p.is_sending_encrypted() or bool(self.get_encryption())
-            local = self.display_desc.get("local", False)
-            authlog(f"{digest} challenge, encrypted={encrypted}, local={local}")
-            if local and ALLOW_LOCALHOST_PASSWORDS:
-                return True
-            if not encrypted and not ALLOW_UNENCRYPTED_PASSWORDS:
-                self.auth_error(ExitCode.ENCRYPTION,
-                                f"server requested {digest!r} digest, cowardly refusing to use it without encryption",
-                                "invalid digest")
-                return False
-        salt_digest = "xor"
-        if len(packet) >= 5:
-            salt_digest = str(packet[4])
-        if salt_digest in ("xor", "des"):
-            self.auth_error(ExitCode.INCOMPATIBLE_VERSION, f"server uses legacy salt digest {salt_digest!r}")
-            return False
-        return True
-
-    def get_challenge_prompt(self, prompt="password") -> str:
-        text = f"Please enter the {prompt}"
-        try:
-            from xpra.net.bytestreams import pretty_socket  # pylint: disable=import-outside-toplevel
-            conn = self._protocol._conn
-            text += f",\n connecting to {conn.socktype} server {pretty_socket(conn.remote)}"
-        except (AttributeError, TypeError):
-            pass
-        return text
-
-    def send_challenge_reply(self, packet: PacketType, value) -> None:
-        if not value:
-            self.auth_error(ExitCode.PASSWORD_REQUIRED,
-                            "this server requires authentication and no password is available")
-            return
-        encryption = self.get_encryption()
-        if encryption:
-            assert len(packet) >= 3, "challenge does not contain encryption details to use for the response"
-            server_cipher = typedict(packet[2])
-            key = self.get_encryption_key()
-            if not self.set_server_encryption(server_cipher, key):
-                return
-        # some authentication handlers give us the response and salt,
-        # ready to use without needing to use the digest
-        # (ie: u2f handler)
-        if isinstance(value, (tuple, list)) and len(value) == 2:
-            self.do_send_challenge_reply(*value)
-            return
-        password = value
-        # all server versions support a client salt,
-        # they also tell us which digest to use:
-        server_salt = strtobytes(packet[1])
-        digest = str(packet[3])
-        actual_digest = digest.split(":", 1)[0]
-        if actual_digest == "des":
-            salt = client_salt = server_salt
-        else:
-            length = len(server_salt)
-            salt_digest = "xor"
-            if len(packet) >= 5:
-                salt_digest = str(packet[4])
-            if salt_digest == "xor":
-                # with xor, we have to match the size
-                if length < 16:
-                    raise ValueError(f"server salt is too short: only {length} bytes, minimum is 16")
-                if length > 256:
-                    raise ValueError(f"server salt is too long: {length} bytes, maximum is 256")
-            else:
-                # other digest, 32 random bytes is enough:
-                length = 32
-            client_salt = get_salt(length)
-            salt = gendigest(salt_digest, client_salt, server_salt)
-            authlog(f"combined {salt_digest} salt({hexstr(server_salt)}, {hexstr(client_salt)})={hexstr(salt)}")
-
-        challenge_response = gendigest(actual_digest, password, salt)
-        if not challenge_response:
-            log(f"invalid digest module {actual_digest!r}")
-            self.auth_error(ExitCode.UNSUPPORTED,
-                            f"server requested {actual_digest} digest but it is not supported", "invalid digest")
-            return
-        authlog(f"{actual_digest}({obsc(password)!r}, {salt!r})={obsc(challenge_response)!r}")
-        self.do_send_challenge_reply(challenge_response, client_salt)
-
-    def do_send_challenge_reply(self, challenge_response: bytes, client_salt: bytes) -> None:
-        self.password_sent = True
-        if self._protocol.TYPE == "rfb":
-            self._protocol.send_challenge_reply(challenge_response)
-            return
-        # call send_hello from the UI thread:
-        GLib.idle_add(self.send_hello, challenge_response, client_salt)
-
     ########################################
     # Encryption
     def set_server_encryption(self, caps: typedict, key: bytes) -> bool:
@@ -1016,11 +699,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
             print_nested_dict(packet[1], print_fn=netlog.info)
         self.remove_packet_handlers("challenge")
         self.remove_packet_handlers("ssl-upgrade")
-        if not self.password_sent and self.has_password():
-            p = self._protocol
-            if not p or p.TYPE == "xpra":
-                self.warn_and_quit(ExitCode.NO_AUTHENTICATION, "the server did not request our password")
-                return
         try:
             caps = typedict(packet[1])
             netlog("processing hello from server: %s", Ellipsizer(caps))
@@ -1051,7 +729,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         netlog("parse_server_capabilities(..)")
-        for bc in (ServerInfoMixin, FilePrintMixin, ControlClient):
+        for bc in CLIENT_BASES:
             if not bc.parse_server_capabilities(self, c):
                 log.info(f"server capabilities rejected by {bc}")
                 return False
@@ -1153,15 +831,13 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin, Control
     # packets:
     def init_packet_handlers(self) -> None:
         self.add_packets("hello")
-        self.add_packets("challenge", "disconnect", CONNECTION_LOST, GIBBERISH, INVALID, main_thread=True)
-        if SSL_UPGRADE:
-            self.add_packets("ssl-upgrade")
+        self.add_packets("disconnect", CONNECTION_LOST, GIBBERISH, INVALID, main_thread=True)
+        for bc in CLIENT_BASES:
+            bc.init_packet_handlers(self)
 
     def init_authenticated_packet_handlers(self) -> None:
-        FilePrintMixin.init_authenticated_packet_handlers(self)
+        for bc in CLIENT_BASES:
+            bc.init_authenticated_packet_handlers(self)
 
     def process_packet(self, proto, packet) -> None:
         self.dispatch_packet(proto, packet, True)
-
-    def call_packet_handler(self, handler: Callable, proto, packet) -> None:
-        handler(packet)
