@@ -63,7 +63,6 @@ netlog = Logger("network")
 authlog = Logger("auth")
 mouselog = Logger("mouse")
 cryptolog = Logger("crypto")
-bandwidthlog = Logger("bandwidth")
 
 EXTRA_TIMEOUT = 10
 ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
@@ -307,7 +306,7 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             self.quit(exit_code)
             return
 
-        def protocol_closed():
+        def protocol_closed() -> None:
             log("disconnect_and_quit: protocol_closed()")
             GLib.idle_add(self.quit, exit_code)
 
