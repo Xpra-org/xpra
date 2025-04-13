@@ -18,15 +18,15 @@ from xpra.log import Logger
 
 log = Logger("util")
 
+DEFAULT_LIBS = (
+    "glib", "gobject", "gtk", "gdk", "cairo", "pango",
+    "sound.gst", "audio.gst",
+    "python",
+)
 
-def get_remote_lib_versions(c: typedict,
-                            libs=(
-                                "glib", "gobject", "gtk", "gdk", "cairo", "pango",
-                                "sound.gst", "audio.gst",
-                                "python",
-                            )
-                            ) -> dict:
-    versions = {}
+
+def get_remote_lib_versions(c: typedict, libs=DEFAULT_LIBS) -> dict[str, tuple]:
+    versions: dict[str, tuple] = {}
     for x in libs:
         v = c.get("%s.version" % x, None)
         if v is None:
@@ -59,7 +59,6 @@ class ServerInfoMixin(StubClientMixin):
 
     def __init__(self):  # pylint: disable=super-init-not-called
         super().__init__()
-        self._remote_protocol = None
         self._remote_machine_id = ""
         self._remote_uuid = ""
         self._remote_version = ""
