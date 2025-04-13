@@ -51,7 +51,7 @@ from xpra.util.str_fn import (
     bytestostr, hexstr,
 )
 from xpra.util.parsing import parse_simple_dict, parse_encoded_bin_data
-from xpra.util.env import envint, envbool
+from xpra.util.env import envbool
 from xpra.client.base.serverinfo import ServerInfoMixin
 from xpra.client.base.fileprint import FilePrintMixin
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
@@ -61,7 +61,6 @@ GLib = gi_import("GLib")
 log = Logger("client")
 netlog = Logger("network")
 authlog = Logger("auth")
-mouselog = Logger("mouse")
 cryptolog = Logger("crypto")
 bandwidthlog = Logger("bandwidth")
 
@@ -69,7 +68,6 @@ EXTRA_TIMEOUT = 10
 ALLOW_UNENCRYPTED_PASSWORDS = envbool("XPRA_ALLOW_UNENCRYPTED_PASSWORDS", False)
 ALLOW_LOCALHOST_PASSWORDS = envbool("XPRA_ALLOW_LOCALHOST_PASSWORDS", True)
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
-MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 SKIP_UI = envbool("XPRA_SKIP_UI", False)
@@ -135,12 +133,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         self._protocol = None
         self._priority_packets = []
         self._ordinary_packets = []
-        self._pointer_sequence = {}
-        self._mouse_position = None
-        self._mouse_position_pending = None
-        self._mouse_position_send_time = 0
-        self._mouse_position_delay = MOUSE_DELAY
-        self._mouse_position_timer = 0
         # control channel for requests coming from either a client socket, or the server connection:
         self.control_commands = {}
         # server state and caps:
@@ -540,81 +532,24 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
         self._priority_packets.append(packet)
         self.have_more()
 
-    def send_positional(self, packet_type: str, *parts: PacketElement) -> None:
-        # packets that include the mouse position data
-        # we can cancel the pending position packets
-        packet = (packet_type, *parts)
-        self._ordinary_packets.append(packet)
-        self._mouse_position = None
-        self._mouse_position_pending = None
-        self.cancel_send_mouse_position_timer()
-        self.have_more()
-
-    def next_pointer_sequence(self, device_id: int) -> int:
-        if device_id < 0:
-            # unspecified device, don't bother with sequence numbers
-            return 0
-        seq = self._pointer_sequence.get(device_id, 0) + 1
-        self._pointer_sequence[device_id] = seq
-        return seq
-
-    def send_mouse_position(self, device_id: int, wid: int, pos, modifiers=None, buttons=None, props=None) -> None:
-        if "pointer" in self.server_packet_types:
-            # v5 packet type, most attributes are optional:
-            attrs = props or {}
-            if modifiers is not None:
-                attrs["modifiers"] = modifiers
-            if buttons is not None:
-                attrs["buttons"] = buttons
-            seq = self.next_pointer_sequence(device_id)
-            packet = ("pointer", device_id, seq, wid, pos, attrs)
-        else:
-            # pre v5 packet format:
-            packet = ("pointer-position", wid, pos, modifiers or (), buttons or ())
-            if props:
-                packet += props.values()
-        if self._mouse_position_timer:
-            self._mouse_position_pending = packet
-            return
-        self._mouse_position_pending = packet
-        now = monotonic()
-        elapsed = int(1000 * (now - self._mouse_position_send_time))
-        delay = self._mouse_position_delay - elapsed
-        mouselog("send_mouse_position(%s) elapsed=%i, delay left=%i", packet, elapsed, delay)
-        if delay > 0:
-            self._mouse_position_timer = GLib.timeout_add(delay, self.do_send_mouse_position)
-        else:
-            self.do_send_mouse_position()
-
-    def do_send_mouse_position(self) -> None:
-        self._mouse_position_timer = 0
-        self._mouse_position_send_time = monotonic()
-        self._mouse_position = self._mouse_position_pending
-        mouselog("do_send_mouse_position() position=%s", self._mouse_position)
-        self.have_more()
-
-    def cancel_send_mouse_position_timer(self) -> None:
-        mpt = self._mouse_position_timer
-        if mpt:
-            self._mouse_position_timer = 0
-            GLib.source_remove(mpt)
-
     def next_packet(self) -> tuple[PacketType, bool, bool]:
+        # naughty dependency on pointer:
+        mouse_position = getattr(self, "_mouse_position", None)
         netlog("next_packet() packets in queues: priority=%i, ordinary=%i, mouse=%s",
-               len(self._priority_packets), len(self._ordinary_packets), bool(self._mouse_position))
+               len(self._priority_packets), len(self._ordinary_packets), bool(mouse_position))
         synchronous = True
         if self._priority_packets:
             packet = self._priority_packets.pop(0)
         elif self._ordinary_packets:
             packet = self._ordinary_packets.pop(0)
-        elif self._mouse_position is not None:
-            packet = self._mouse_position
+        elif mouse_position is not None:
+            packet = mouse_position
             synchronous = False
-            self._mouse_position = None
+            self._mouse_position = mouse_position = None
         else:
             packet = ("none", )
         has_more = packet is not None and (
-            bool(self._priority_packets) or bool(self._ordinary_packets) or self._mouse_position is not None
+            bool(self._priority_packets) or bool(self._ordinary_packets) or mouse_position is not None
         )
         return packet, synchronous, has_more
 
@@ -649,7 +584,6 @@ class XpraClientBase(GLibPacketHandler, ServerInfoMixin, FilePrintMixin):
             p.close()
             self._protocol = None
         log("cleanup done")
-        self.cancel_send_mouse_position_timer()
         dump_all_frames()
 
     @staticmethod
