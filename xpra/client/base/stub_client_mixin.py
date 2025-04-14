@@ -92,6 +92,12 @@ class StubClientMixin:
         This runs in the UI thread.
         """
 
+    def startup_complete(self):
+        """
+        The client and server have exchanged hello packets,
+        and now the server has announced "startup-complete".
+        """
+
     def compressed_wrapper(self, datatype, data, level=5, **kwargs) -> Compressed:
         """
         Dummy utility method for compressing data.

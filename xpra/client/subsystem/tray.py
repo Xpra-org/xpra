@@ -69,6 +69,10 @@ class TrayClient(StubClientMixin):
 
             GLib.timeout_add(1000, reset_icon)
 
+    def startup_complete(self):
+        if self.tray:
+            self.tray.ready()
+
     def cleanup(self) -> None:
         t = self.tray
         if t:

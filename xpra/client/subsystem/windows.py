@@ -504,6 +504,21 @@ class WindowClient(StubClientMixin):
             self.poll_pointer_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
         return True
 
+    def startup_complete(self):
+        msg = "running"
+        try:
+            windows = tuple(self._id_to_window.values())
+        except AttributeError:
+            pass
+        else:
+            trays = sum(1 for w in windows if w.is_tray())
+            wins = sum(1 for w in windows if not w.is_tray())
+            if wins:
+                msg += f", {wins} windows"
+            if trays:
+                msg += f", {trays} tray"
+        log.info(msg)
+
     ######################################################################
     # pointer:
     def _process_pointer_position(self, packet: PacketType) -> None:

@@ -15,7 +15,8 @@ from xpra.net.device_info import (
     get_NM_adapter_type, get_device_value, guess_adapter_type,
     jitter_for_adapter_type, guess_bandwidth_limit,
 )
-from xpra.os_util import gi_import, POSIX
+from xpra.util.system import is_Wayland
+from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envint, envbool
@@ -111,6 +112,19 @@ class NetworkState(StubClientMixin):
         caps: dict[str, Any] = {
             "network-state": True,
         }
+        # we may be running inside another server!
+        # don't try to find the server uuid if this platform cannot run servers..
+        # (doing so causes lockups on win32 and startup errors on osx)
+        if POSIX and not (OSX or is_Wayland()):
+            try:
+                from xpra.x11.server.server_uuid import get_uuid, get_mode  # pylint: disable=import-outside-toplevel
+                if get_mode() != "shadow":
+                    uuid = get_uuid()
+                    if uuid:
+                        caps["server_uuid"] = uuid
+            except (ImportError, RuntimeError):
+                log("skipped server uuid lookup", exc_info=True)
+
         ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK")
         if SSH_AGENT and ssh_auth_sock and os.path.isabs(ssh_auth_sock):
             # ensure agent forwarding is actually requested?
@@ -177,8 +191,9 @@ class NetworkState(StubClientMixin):
         self.server_packet_encoders = tuple(x for x in VALID_ENCODERS if c.boolget(x, False))
         return True
 
-    def process_ui_capabilities(self, caps: typedict) -> None:
+    def startup_complete(self):
         self.start_sending_pings()
+        self.send_info_request()
 
     def suspend(self) -> None:
         self.cancel_ping_timer()

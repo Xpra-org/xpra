@@ -14,12 +14,11 @@ from xpra.client.base.client import XpraClientBase
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
 from xpra.common import FULL_INFO, NotificationID, ConnectionMessage, noerr, get_run_info
-from xpra.net.common import PacketType
-from xpra.os_util import POSIX, WIN32, OSX, gi_import
+from xpra.net.common import PacketType, print_proxy_caps
+from xpra.os_util import WIN32, OSX, gi_import
 from xpra.util.child_reaper import reaper_cleanup
-from xpra.util.system import is_Wayland, platform_name
 from xpra.util.objects import typedict
-from xpra.util.str_fn import std, Ellipsizer, repr_ellipsized
+from xpra.util.str_fn import Ellipsizer, repr_ellipsized
 from xpra.util.env import envint
 from xpra.scripts.config import str_to_bool
 from xpra.exit_codes import ExitCode, ExitValue
@@ -69,7 +68,6 @@ class UIXpraClient(ClientBaseClass):
         self._ui_events: int = 0
         self.title: str = ""
         self.session_name: str = ""
-
         self.server_session_name: str = ""
 
         # features:
@@ -144,7 +142,7 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.cleanup()")
         for c in CLIENT_BASES:
             c.cleanup(self)
-        for x in (self.tray, self.menu_helper, self.client_extras):
+        for x in (self.menu_helper, self.client_extras):
             if x is None:
                 continue
             log(f"UIXpraClient.cleanup() calling {type(x)}.cleanup()")
@@ -248,18 +246,6 @@ class UIXpraClient(ClientBaseClass):
     # hello:
     def make_hello(self) -> dict[str, Any]:
         caps = XpraClientBase.make_hello(self)
-        # don't try to find the server uuid if this platform cannot run servers..
-        # (doing so causes lockups on win32 and startup errors on osx)
-        if POSIX and not (OSX or is_Wayland()):
-            # we may be running inside another server!
-            try:
-                from xpra.x11.server.server_uuid import get_uuid, get_mode  # pylint: disable=import-outside-toplevel
-                if get_mode() != "shadow":
-                    uuid = get_uuid()
-                    if uuid:
-                        caps["server_uuid"] = uuid
-            except (ImportError, RuntimeError):
-                log("skipped server uuid lookup", exc_info=True)
         caps.setdefault("wants", []).append("events")
         caps |= {
             "setting-change": True,
@@ -309,32 +295,8 @@ class UIXpraClient(ClientBaseClass):
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
             self.readonly = True
-        self.print_proxy_caps(c)
+        print_proxy_caps(c)
         return True
-
-    def print_proxy_caps(self, c: typedict) -> None:
-        proxy = c.get("proxy")
-        if not proxy:
-            return
-        if isinstance(proxy, dict):
-            pcaps = typedict(proxy)
-            prefix = ""
-        else:
-            pcaps = c
-            prefix = "proxy."
-        proxy_hostname = pcaps.strget(f"{prefix}hostname")
-        proxy_platform = pcaps.strget(f"{prefix}platform")
-        proxy_release = pcaps.strget(f"{prefix}platform.release")
-        proxy_version = pcaps.strget(f"{prefix}version")
-        proxy_version = pcaps.strget(f"{prefix}build.version", proxy_version)
-        proxy_distro = pcaps.strget(f"{prefix}linux_distribution")
-        msg = "via: %s proxy version %s" % (
-            platform_name(proxy_platform, proxy_distro or proxy_release),
-            std(proxy_version or "unknown")
-        )
-        if proxy_hostname:
-            msg += " on '%s'" % std(proxy_hostname)
-        log.info(msg)
 
     def process_ui_capabilities(self, caps: typedict) -> None:
         for c in CLIENT_BASES:
@@ -346,22 +308,8 @@ class UIXpraClient(ClientBaseClass):
         log("all the existing windows and system trays have been received")
         super()._process_startup_complete(packet)
         gui_ready()
-        if self.tray:
-            self.tray.ready()
-        self.send_info_request()
-        msg = "running"
-        try:
-            windows = tuple(self._id_to_window.values())
-        except AttributeError:
-            pass
-        else:
-            trays = sum(1 for w in windows if w.is_tray())
-            wins = sum(1 for w in windows if not w.is_tray())
-            if wins:
-                msg += f", {wins} windows"
-            if trays:
-                msg += f", {trays} tray"
-        log.info(msg)
+        for c in CLIENT_BASES:
+            c.startup_complete(self)
 
     def _process_new_window(self, packet: PacketType):
         window = super()._process_new_window(packet)

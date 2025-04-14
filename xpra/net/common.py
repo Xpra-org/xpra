@@ -16,6 +16,9 @@ from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop, SizedBuffer
 from xpra.os_util import LINUX, FREEBSD, WIN32
 from xpra.scripts.config import str_to_bool, InitExit
+from xpra.util.system import platform_name
+from xpra.util.str_fn import std
+from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
 
@@ -335,3 +338,28 @@ def open_html_url(html: str = "open", mode: str = "tcp", bind: str = "127.0.0.1"
         # fall through to webbrowser:
         log.warn(f"Warning: {html!r} is not a valid command")
     webbrowser_open()
+
+
+def print_proxy_caps(caps: typedict) -> None:
+    proxy = caps.get("proxy")
+    if not proxy:
+        return
+    if isinstance(proxy, dict):
+        pcaps = typedict(proxy)
+        prefix = ""
+    else:
+        pcaps = caps
+        prefix = "proxy."
+    proxy_hostname = pcaps.strget(f"{prefix}hostname")
+    proxy_platform = pcaps.strget(f"{prefix}platform")
+    proxy_release = pcaps.strget(f"{prefix}platform.release")
+    proxy_version = pcaps.strget(f"{prefix}version")
+    proxy_version = pcaps.strget(f"{prefix}build.version", proxy_version)
+    proxy_distro = pcaps.strget(f"{prefix}linux_distribution")
+    msg = "via: %s proxy version %s" % (
+        platform_name(proxy_platform, proxy_distro or proxy_release),
+        std(proxy_version or "unknown")
+    )
+    if proxy_hostname:
+        msg += " on '%s'" % std(proxy_hostname)
+    get_logger().info(msg)

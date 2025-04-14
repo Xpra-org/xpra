@@ -433,10 +433,6 @@ class TopSessionClient(InfoTimerClient):
         # skip this as it would interfere with curses
         pass
 
-    def print_proxy_caps(self, c: typedict) -> None:
-        # skip this as it would interfere with curses
-        pass
-
     def setup(self) -> None:
         if self.stdscr is None:
             self.stdscr = curses_init()

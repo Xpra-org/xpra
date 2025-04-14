@@ -603,6 +603,8 @@ class XpraClientBase(ClientBaseClass):
         # can be received if we connect with "xpra stop" or other command line client
         # as the server is starting up
         self.completed_startup = packet
+        for bc in CLIENT_BASES:
+            bc.startup_complete(self)
 
     def _process_gibberish(self, packet: PacketType) -> None:
         log("process_gibberish(%s)", Ellipsizer(packet))
