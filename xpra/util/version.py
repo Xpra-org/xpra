@@ -324,7 +324,7 @@ def get_version_from_url(url: str) -> tuple[int, ...]:
     except HTTPError as e:
         log(f"get_version_from_url({url!r}) {e}", exc_info=e.code != 404)
     except Exception:
-        log.error(f"Error accessing {url!r}", exc_info=True)
+        get_util_logger().error(f"Error accessing {url!r}", exc_info=True)
     return ()
 
 
