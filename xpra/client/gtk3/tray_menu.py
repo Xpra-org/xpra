@@ -1680,9 +1680,9 @@ class GTKTrayMenu(MenuHelper):
             else:
                 messages.append("Shutting down this session may result in data loss,")
             messages.append("are you sure you want to proceed?")
-            dialog = Gtk.MessageDialog(None, 0,
-                                       Gtk.MessageType.QUESTION, Gtk.ButtonsType.NONE,
-                                       "\n".join(messages))
+            dialog = Gtk.MessageDialog(transient_for=None, flags=0,
+                                       message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.NONE,
+                                       text="\n".join(messages))
             dialog.add_button(Gtk.STOCK_CANCEL, 0)
             SHUTDOWN = 1
             dialog.add_button("Shutdown", SHUTDOWN)
