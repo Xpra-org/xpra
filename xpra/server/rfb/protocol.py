@@ -26,7 +26,7 @@ class RFBServerProtocol(RFBProtocol):
         self.session_name = session_name
         super().__init__(conn, process_packet_cb, data=data)
 
-    def handshake_complete(self):
+    def handshake_complete(self) -> None:
         log.info("RFB connection from %s", self._conn.target)
         # reply with Security Handshake:
         self._packet_parser = self._parse_security_handshake
@@ -39,7 +39,7 @@ class RFBServerProtocol(RFBProtocol):
             packet += struct.pack(b"B", x)
         self.send(packet)
 
-    def _parse_security_handshake(self, packet):
+    def _parse_security_handshake(self, packet) -> int:
         authlog("parse_security_handshake(%s)", hexstr(packet))
         try:
             auth = struct.unpack(b"B", packet)[0]
@@ -66,7 +66,7 @@ class RFBServerProtocol(RFBProtocol):
         self.send(struct.pack(b"!I", 0))
         return 1
 
-    def _parse_challenge(self, response):
+    def _parse_challenge(self, response) -> int:
         authlog("parse_challenge(%s)", hexstr(response))
         if len(response) < 16:
             return 0
@@ -92,11 +92,11 @@ class RFBServerProtocol(RFBProtocol):
         GLib.timeout_add(1000, self.send_fail_challenge)
         return len(response)
 
-    def send_fail_challenge(self):
+    def send_fail_challenge(self) -> None:
         self.send(struct.pack(b"!I", 1))
         self.close()
 
-    def _parse_security_result(self, packet):
+    def _parse_security_result(self, packet) -> int:
         self.share = packet != b"\0"
         authlog("parse_security_result: sharing=%s, sending ClientInit with session-name=%s",
                 self.share, self.session_name)

@@ -91,16 +91,16 @@ class RFBProtocol:
         self.handshake_complete()
         return 12
 
-    def handshake_complete(self):
+    def handshake_complete(self) -> None:
         raise NotImplementedError
 
-    def _parse_security_handshake(self, packet):
+    def _parse_security_handshake(self, packet) -> int:
         raise NotImplementedError
 
-    def _parse_challenge(self, response):
+    def _parse_challenge(self, response) -> int:
         raise NotImplementedError
 
-    def _parse_security_result(self, packet):
+    def _parse_security_result(self, packet) -> int:
         raise NotImplementedError
 
     def _parse_rfb(self, packet) -> int:
