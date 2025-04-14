@@ -225,7 +225,7 @@ class NetworkState(StubClientMixin):
     # info:
     def _process_info_response(self, packet: PacketType) -> None:
         self.info_request_pending = False
-        self.server_last_info = packet[1]
+        self.server_last_info = typedict(packet[1])
         log("info-response: %s", Ellipsizer(self.server_last_info))
         if LOG_INFO_RESPONSE:
             items = LOG_INFO_RESPONSE.split(",")

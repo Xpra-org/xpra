@@ -189,7 +189,7 @@ def get_local_platform_name() -> str:
 
 
 def get_server_builddate(client) -> str:
-    build_info = client.server_last_info.get("server", {}).get("build", {})
+    build_info = getattr(client, "server_last_info", {}).get("server", {}).get("build", {})
 
     def cattr(name):
         return build_info.get(name, "") or getattr(client, f"_remote_build_{name}", "")
@@ -216,7 +216,7 @@ def get_server_revision_str(client) -> str:
     def cattr(name):
         return getattr(client, name, "")
 
-    build_info = client.server_last_info.get("server", {}).get("build", {})
+    build_info = getattr(client, "server_last_info", {}).get("server", {}).get("build", {})
     if build_info:
         return caps_to_revision(typedict(build_info))
 
@@ -519,6 +519,9 @@ class SessionInfo(Gtk.Window):
                 self.audio_out_queue_max.append(qlookup("max"))
         return not self.is_closed
 
+    def last_info(self) -> dict:
+        return dict(getattr(self.client, "server_last_info", {}))
+
     def populate(self, *_args) -> None:
         conn = self.connection
         if self.is_closed or not conn:
@@ -571,12 +574,13 @@ class SessionInfo(Gtk.Window):
 
         self.server_latency = get_ping_latency_records(self.client.server_ping_latency)
         self.client_latency = get_ping_latency_records(self.client.client_ping_latency)
-        if self.client.server_last_info:
+        server_last_info = self.last_info()
+        if server_last_info:
             # populate running averages for graphs:
 
             def getavg(*names):
-                return newdictlook(self.client.server_last_info, list(names) + ["avg"]) or \
-                    newdictlook(self.client.server_last_info, ["client"] + list(names) + ["avg"])
+                return newdictlook(server_last_info, list(names) + ["avg"]) or \
+                    newdictlook(server_last_info, ["client"] + list(names) + ["avg"])
 
             def addavg(l, *names) -> None:
                 v = getavg(*names)
@@ -976,12 +980,13 @@ class SessionInfo(Gtk.Window):
         return True
 
     def getval(self, prefix, suffix, alt=""):
-        if self.client.server_last_info is None:
+        server_last_info = self.last_info()
+        if not server_last_info:
             return ""
         altv = ""
         if alt:
-            altv = dictlook(self.client.server_last_info, (alt + "." + suffix).encode(), "")
-        return dictlook(self.client.server_last_info, (prefix + "." + suffix).encode(), altv)
+            altv = dictlook(server_last_info, (alt + "." + suffix).encode(), "")
+        return dictlook(server_last_info, (prefix + "." + suffix).encode(), altv)
 
     def values_from_info(self, prefix, alt=None) -> tuple:
         def getv(suffix):
@@ -990,9 +995,10 @@ class SessionInfo(Gtk.Window):
         return getv("cur"), getv("min"), getv("avg"), getv("90p"), getv("max")
 
     def all_values_from_info(self, *window_props) -> tuple[int, int, int, int, int]:
+        server_last_info = self.last_info()
         for window_prop in window_props:
             prop_path = "client.%s" % window_prop
-            v = dictlook(self.client.server_last_info, prop_path)
+            v = dictlook(server_last_info, prop_path)
             if v is not None:
                 v = typedict(v)
                 iget = v.intget
@@ -1165,7 +1171,8 @@ class SessionInfo(Gtk.Window):
             # remove all the current labels:
             for x in self.encoder_info_box.get_children():
                 self.encoder_info_box.remove(x)
-            if self.client.server_last_info:
+            server_last_info = self.last_info()
+            if server_last_info:
                 window_encoder_stats = self.get_window_encoder_stats()
                 # log("window_encoder_stats=%s", window_encoder_stats)
                 for wid, props in window_encoder_stats.items():
@@ -1179,7 +1186,8 @@ class SessionInfo(Gtk.Window):
     def get_window_encoder_stats(self):
         window_encoder_stats = {}
         # new-style server with namespace (easier):
-        window_dict = self.client.server_last_info.get("window")
+        server_last_info = self.last_info()
+        window_dict = server_last_info.get("window")
         if window_dict and isinstance(window_dict, dict):
             for k, v in window_dict.items():
                 with log.trap_error("Error: cannot lookup window dict"):
@@ -1361,10 +1369,11 @@ class SessionInfoClient(InfoTimerClient):
 
     def update_screen(self) -> None:
         # this is called every time we get the server info back
-        log("update_screen() server_last_info=%s", Ellipsizer(self.server_last_info))
-        if not self.server_last_info:
+        server_last_info = self.last_info()
+        log("update_screen() server_last_info=%s", Ellipsizer(server_last_info))
+        if not server_last_info:
             return
-        td = typedict(self.server_last_info)
+        td = typedict(server_last_info)
 
         def rtdict(*keys):
             d = td

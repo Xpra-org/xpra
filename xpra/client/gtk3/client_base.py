@@ -50,10 +50,8 @@ log = Logger("gtk", "client")
 opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
 framelog = Logger("gtk", "client", "frame")
-screenlog = Logger("gtk", "client", "screen")
 filelog = Logger("gtk", "client", "file")
 clipboardlog = Logger("gtk", "client", "clipboard")
-notifylog = Logger("gtk", "notify")
 grablog = Logger("client", "grab")
 focuslog = Logger("client", "focus")
 
@@ -109,15 +107,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
         self.pinentry_proc = None
-        self.shortcuts_info = None
-        self.session_info = None
-        self.bug_report = None
+        self.sub_dialogs = {}
         self.menu_helper = None
-        self.file_size_dialog = None
-        self.file_ask_dialog = None
-        self.file_dialog = None
-        self.start_new_command = None
-        self.server_commands = None
         self.keyboard_helper_class = GTKKeyboardHelper
         self.data_send_requests = {}
         # clipboard bits:
@@ -219,25 +210,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def cleanup(self) -> None:
         log("GTKXpraClient.cleanup()")
         self.stop_pinentry()
-        if self.shortcuts_info:
-            self.shortcuts_info.close()
-            self.shortcuts_info = None
-        if self.session_info:
-            self.session_info.close()
-            self.session_info = None
-        if self.bug_report:
-            self.bug_report.close()
-            self.bug_report = None
-        self.close_file_size_warning()
-        self.close_file_upload_dialog()
-        self.close_ask_data_dialog()
+        for name, dialog in self.sub_dialogs.items():
+            dialog.close()
         self.cancel_clipboard_notification_timer()
-        if self.start_new_command:
-            self.start_new_command.close()
-            self.start_new_command = None
-        if self.server_commands:
-            self.server_commands.close()
-            self.server_commands = None
         uw = self.UI_watcher
         if uw:
             self.UI_watcher = None
@@ -309,7 +284,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             }.get(p.TYPE, p.TYPE)
         return f"{server_type}Server Authentication:"
 
-    def handle_challenge_with_pinentry(self, prompt="password", cmd="pinentry"):
+    def handle_challenge_with_pinentry(self, prompt="password", cmd="pinentry") -> str | None:
         # pylint: disable=import-outside-toplevel
         authlog = Logger("auth")
         authlog("handle_challenge_with_pinentry%s", (prompt, cmd))
@@ -330,8 +305,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
                 q += f"\n at {endpoint}"
         title = self.get_server_authentication_string()
-        values = []
-        errs = []
+        values: list[str] = []
+        errs: list[str] = []
 
         def rec(value=None) -> None:
             values.append(value)
@@ -348,7 +323,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return None
         return values[0]
 
-    def process_challenge_prompt_dialog(self, prompt="password"):
+    def process_challenge_prompt_dialog(self, prompt="password") -> str | None:
         # challenge handlers run in a separate 'challenge' thread
         # but we need to run in the UI thread to access the GUI with Gtk
         # so we block the current thread using an event:
@@ -424,32 +399,36 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         dialog.show()
 
     def show_server_commands(self, *_args) -> None:
-        if not self.server_commands_info:
+        sci = getattr(self, "server_commands_info", False)
+        if not sci:
             log.warn("Warning: cannot show server commands")
-            log.warn(" the feature is not available on the server")
+            log.warn(" the feature is not available")
             return
-        if self.server_commands is None:
+        dialog = self.sub_dialogs.get("server-commands")
+        if not dialog:
             from xpra.gtk.dialogs.server_commands import getServerCommandsWindow
-            self.server_commands = getServerCommandsWindow(self)
-        self.server_commands.show()
+            dialog = getServerCommandsWindow(self)
+            self.sub_dialogs["server-commands"] = dialog
+        dialog.show()
 
     def show_start_new_command(self, *args) -> None:
-        if not self.server_start_new_commands:
+        ssnc = getattr(self, "server_start_new_commands", False)
+        if not ssnc:
             log.warn("Warning: cannot start new commands")
-            log.warn(" the feature is currently disabled on the server")
+            log.warn(" the feature is not available")
             return
-        log(f"show_start_new_command{args} current {self.start_new_command=}, flag={self.server_start_new_commands}")
-        if self.start_new_command is None:
+        dialog = self.sub_dialogs.get("start-new-command")
+        log(f"show_start_new_command{args} current {dialog=}, flag={self.server_start_new_commands}")
+        if not dialog:
             log("server_xdg_menu=%s", Ellipsizer(self.server_xdg_menu))
             from xpra.gtk.dialogs.start_new_command import getStartNewCommand
 
             def run_command_cb(command, sharing=True):
                 self.send_start_command(command, command, False, sharing)
 
-            self.start_new_command = getStartNewCommand(run_command_cb,
-                                                        self.server_sharing,
-                                                        self.server_xdg_menu)
-        self.start_new_command.show()
+            dialog = getStartNewCommand(run_command_cb, self.server_sharing, self.server_xdg_menu)
+            self.sub_dialogs["start-new-command"] = dialog
+        dialog.show()
 
     ################################
     # monitors
@@ -472,30 +451,26 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         from xpra.gtk.dialogs.open_requests import getOpenRequestsWindow
         timeout = self.remote_file_ask_timeout
 
-        def rec_answer(accept, newopenit=openit):
+        def rec_answer(accept, newopenit: bool=openit) -> None:
             from xpra.net.file_transfer import ACCEPT
             if int(accept) == ACCEPT:
                 # record our response, so we will actually accept the file when the packets arrive:
                 self.data_send_requests[send_id] = (dtype, url, printit, newopenit)
             cb_answer(accept)
 
-        self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
-        self.file_ask_dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
-        self.file_ask_dialog.show()
-
-    def close_ask_data_dialog(self) -> None:
-        fad = self.file_ask_dialog
-        if fad:
-            self.file_ask_dialog = None
-            fad.close()
+        dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
+        dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
+        dialog.show()
+        self.sub_dialogs["ask-data"] = dialog
 
     def show_ask_data_dialog(self, *_args) -> None:
         from xpra.gtk.dialogs.open_requests import getOpenRequestsWindow
-        self.file_ask_dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
-        self.file_ask_dialog.show()
+        dialog = getOpenRequestsWindow(self.show_file_upload, self.cancel_download)
+        dialog.show()
+        self.sub_dialogs["ask-data"] = dialog
 
     def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None) -> None:
-        fad = self.file_ask_dialog
+        fad = self.sub_dialogs.get("ask-data")
         if fad:
             GLib.idle_add(fad.transfer_progress_update, send, transfer_id, elapsed, position, total, error)
 
@@ -524,31 +499,27 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return True, ui_printit, ui_openit
 
     def file_size_warning(self, action: str, location: str, basefilename: str, filesize: int, limit: int) -> None:
-        if self.file_size_dialog:
-            # close previous warning
-            self.file_size_dialog.close()
-            self.file_size_dialog = None
+        def close_file_size_warning() -> None:
+            dialog = self.sub_dialogs.pop("file-size-warning")
+            if dialog:
+                # close previous warning
+                dialog.close()
+
         parent = None
         msgs = (
             f"Warning: cannot {action} the file {basefilename!r}",
             f"this file is too large: {std_unit(filesize)}B",
             f"the {location} file size limit is {std_unit(limit)}B",
         )
-        self.file_size_dialog = Gtk.MessageDialog(parent, Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.INFO,
-                                                  Gtk.ButtonsType.CLOSE, "\n".join(msgs))
+        dialog = Gtk.MessageDialog(parent, Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.INFO,
+                                   Gtk.ButtonsType.CLOSE, "\n".join(msgs))
         try:
             image = Gtk.Image.new_from_stock(Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.BUTTON)
-            self.file_size_dialog.set_image(image)
+            dialog.set_image(image)
         except Exception as e:
             log.warn(f"Warning: failed to set dialog image: {e}")
-        self.file_size_dialog.connect("response", self.close_file_size_warning)
-        self.file_size_dialog.show()
-
-    def close_file_size_warning(self, *_args) -> None:
-        fsd = self.file_size_dialog
-        if fsd:
-            self.file_size_dialog = None
-            fsd.close()
+        dialog.connect("response", close_file_size_warning)
+        dialog.show()
 
     def download_server_log(self, callback: Callable[[str, int], None] = noop) -> None:
         filename = "${XPRA_SERVER_LOG}"
@@ -560,8 +531,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         self.send_start_command("Client-Download-File", command, True)
 
     def show_file_upload(self, *args) -> None:
-        if self.file_dialog:
-            self.file_dialog.present()
+        dialog = self.sub_dialogs.get("file-upload")
+        if dialog:
+            dialog.present()
             return
         filelog(f"show_file_upload{args} can open={self.remote_open_files}")
         buttons = [Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL]
@@ -570,26 +542,24 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         buttons += [Gtk.STOCK_OK, Gtk.ResponseType.OK]
         title = "File to upload"
         if FILE_CHOOSER_NATIVE > 1 or (FILE_CHOOSER_NATIVE and not self.remote_open_files):
-            self.file_dialog = Gtk.FileChooserNative(title=title, action=Gtk.FileChooserAction.OPEN)
-            self.file_dialog.set_accept_label("Upload")
+            dialog = Gtk.FileChooserNative(title=title, action=Gtk.FileChooserAction.OPEN)
+            dialog.set_accept_label("Upload")
         else:
-            self.file_dialog = Gtk.FileChooserDialog(title=title, action=Gtk.FileChooserAction.OPEN)
-            self.file_dialog.add_buttons(*buttons)
-            self.file_dialog.set_default_response(Gtk.ResponseType.OK)
-        self.file_dialog.connect("response", self.file_upload_dialog_response)
-        self.file_dialog.show()
-
-    def close_file_upload_dialog(self) -> None:
-        fd = self.file_dialog
-        # the `FileChooserNative` is already closed automatically
-        if fd and hasattr(fd, "close"):
-            fd.close()
-            self.file_dialog = None
+            dialog = Gtk.FileChooserDialog(title=title, action=Gtk.FileChooserAction.OPEN)
+            dialog.add_buttons(*buttons)
+            dialog.set_default_response(Gtk.ResponseType.OK)
+        dialog.connect("response", self.file_upload_dialog_response)
+        dialog.show()
+        self.sub_dialogs["file-upload"] = dialog
 
     def file_upload_dialog_response(self, dialog, v) -> None:
+        def close_file_upload_dialog() -> None:
+            dialog.close()
+            self.sub_dialogs.pop("file-upload")
+
         if v not in (Gtk.ResponseType.OK, Gtk.ResponseType.ACCEPT):
             filelog(f"dialog response code {v}")
-            self.close_file_upload_dialog()
+            close_file_upload_dialog()
             return
         filename = dialog.get_filename()
         filelog("file_upload_dialog_response: filename={filename!r}")
@@ -599,10 +569,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             pass
         else:
             if not self.check_file_size("upload", filename, filesize):
-                self.close_file_upload_dialog()
+                close_file_upload_dialog()
                 return
         gfile = dialog.get_file()
-        self.close_file_upload_dialog()
+        close_file_upload_dialog()
         filelog(f"load_contents: filename={filename!r}, response={v}")
         cancellable = None
         user_data = (filename, v == Gtk.ResponseType.ACCEPT)
@@ -630,38 +600,46 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         show_docs()
 
     def show_shortcuts(self, *_args) -> None:
-        if self.shortcuts_info and not self.shortcuts_info.is_closed:
+        dialog = self.sub_dialogs.get("shortcuts")
+        if dialog and not dialog.is_closed:
             force_focus()
-            self.shortcuts_info.present()
+            dialog.present()
             return
         from xpra.gtk.dialogs.show_shortcuts import ShortcutInfo
         kh = self.keyboard_helper
         assert kh, "no keyboard helper"
-        self.shortcuts_info = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
-        self.shortcuts_info.show_all()
+        dialog = ShortcutInfo(kh.shortcut_modifiers, kh.key_shortcuts)
+        dialog.show_all()
+        self.sub_dialogs["shortcuts"] = dialog
 
     def show_session_info(self, *args) -> None:
-        if self.session_info and not self.session_info.is_closed:
+        dialog = self.sub_dialogs.get("session-info")
+        if dialog and not dialog.is_closed:
             # exists already: just raise its window:
-            self.session_info.set_args(*args)
+            dialog.set_args(*args)
             force_focus()
-            self.session_info.present()
+            dialog.present()
             return
         conn = getattr(self._protocol, "._conn", None)
         from xpra.gtk.dialogs.session_info import SessionInfo
-        self.session_info = SessionInfo(self, self.session_name, conn)
-        self.session_info.set_args(*args)
+        dialog = SessionInfo(self, self.session_name, conn)
+        dialog.set_args(*args)
         force_focus()
-        self.session_info.show_all()
+        dialog.show_all()
+        self.sub_dialogs["session-info"] = dialog
 
     def show_bug_report(self, *_args) -> None:
-        self.send_info_request()
-        if self.bug_report:
+        send_info_request = getattr(self, "send_info_request", noop)
+        send_info_request()
+
+        dialog = self.sub_dialogs.get("bug-report")
+        if dialog:
             force_focus()
-            self.bug_report.show()
+            dialog.show()
             return
         from xpra.gtk.dialogs.bug_report import BugReport
-        self.bug_report = BugReport()
+        dialog = BugReport()
+        self.sub_dialogs["bug-report"] = dialog
 
         def init_bug_report() -> None:
             # skip things we aren't using:
@@ -671,13 +649,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             }
 
             def get_server_info():
-                return self.server_last_info
+                # the subsystem may not be loaded:
+                return getattr(self, "server_last_info", typedict())
 
-            self.bug_report.init(show_about=False,
-                                 get_server_info=get_server_info,
-                                 opengl_info=self.opengl_props,
-                                 includes=includes)
-            self.bug_report.show()
+            dialog.init(show_about=False, get_server_info=get_server_info,
+                        opengl_info=self.opengl_props,
+                        includes=includes)
+            dialog.show()
 
         # gives the server time to send an info response..
         # (by the time the user clicks on copy, it should have arrived, we hope!)
@@ -685,7 +663,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         def got_server_log(filename: str, filesize: int) -> None:
             log(f"got_server_log({filename!r}, {filesize})")
             filedata = load_binary_file(filename)
-            self.bug_report.set_server_log_data(filedata)
+            dialog.set_server_log_data(filedata)
 
         self.download_server_log(got_server_log)
         GLib.timeout_add(200, init_bug_report)
@@ -1144,7 +1122,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     except OSError:
                         log("failed to create / append to config file '%s'", conf_file, exc_info=True)
 
-        def delayed_notify():
+        def delayed_notify() -> None:
             if self.exit_code is not None:
                 return
             if OSX:
@@ -1194,7 +1172,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if warning:
                 warnings.append(warning)
 
-        def err(msg: str, err):
+        def err(msg: str, err) -> None:
             opengllog("OpenGL initialization error", exc_info=True)
             self.GLClientWindowClass = None
             self.client_supports_opengl = False
@@ -1484,7 +1462,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             GLib.source_remove(cnt)
 
     def clipboard_notify(self, n: int) -> None:
-        tray = self.tray
+        tray = getattr(self, "tray", None)
         if not tray or not CLIPBOARD_NOTIFY:
             return
         clipboardlog(f"clipboard_notify({n}) notification timer={self.clipboard_notification_timer}")
