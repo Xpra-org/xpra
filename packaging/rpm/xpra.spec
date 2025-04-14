@@ -808,7 +808,7 @@ rm -rf $RPM_BUILD_ROOT
 %files -n %{package_prefix}-client-gtk3
 %{python3_sitearch}/xpra/client/gui/
 %{python3_sitearch}/xpra/client/gtk3/
-%{python3_sitearch}/xpra/client/mixins/
+%{python3_sitearch}/xpra/client/subsystem/
 %{_libexecdir}/xpra/xpra_signal_listener
 %{_datadir}/applications/xpra-launcher.desktop
 %{_datadir}/applications/xpra-gui.desktop
