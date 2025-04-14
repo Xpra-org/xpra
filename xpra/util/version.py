@@ -310,13 +310,15 @@ def get_platform_info() -> dict[str, Any]:
 
 def get_version_from_url(url: str) -> tuple[int, ...]:
     try:
+        import ssl
         from urllib.request import urlopen
         from urllib.error import HTTPError
     except ImportError as e:
         log("get_version_from_url(%s) urllib2 not found: %s", url, e)
         return ()
     try:
-        response = urlopen(url, cafile=SSL_CAFILE)
+        context = ssl.create_default_context(cafile=SSL_CAFILE)
+        response = urlopen(url, context=context)
         latest_version = response.read().rstrip(b"\n\r")
         latest_version_no = tuple(int(y) for y in latest_version.split(b"."))
         log("get_version_from_url(%s)=%s", url, latest_version_no)
