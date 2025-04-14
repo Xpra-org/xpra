@@ -104,11 +104,11 @@ def sens_tooltip(menuitem, sensitive: bool, ontext: str, offtext: str) -> None:
 
 class GTKTrayMenu(MenuHelper):
 
-    def setup_menu(self):
+    def setup_menu(self) -> Gtk.Menu:
         log("setup_menu()")
         return self.do_setup_menu(self.get_menu_items())
 
-    def do_setup_menu(self, items: Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]):
+    def do_setup_menu(self, items: Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]) -> Gtk.Menu:
         menu = Gtk.Menu()
         for menu_item in items:
             menu.append(menu_item)
@@ -332,7 +332,7 @@ class GTKTrayMenu(MenuHelper):
         self.cursors_menuitem = self.checkitem("Cursors", cursors_toggled)
         set_sensitive(self.cursors_menuitem, False)
 
-        def set_cursors_menuitem(*args):
+        def set_cursors_menuitem(*args) -> None:
             c = self.client
             can_toggle_cursors = features.cursors and c.server_cursors and c.client_supports_cursors
             log("set_cursors_menuitem%s can_toggle_cursors=%s", args, can_toggle_cursors)
@@ -485,7 +485,7 @@ class GTKTrayMenu(MenuHelper):
         self.after_handshake(set_clipboard_menu)
         return self.clipboard_menuitem
 
-    def make_keyboardsyncmenuitem(self):
+    def make_keyboardsyncmenuitem(self) -> Gtk.CheckMenuItem:
         def set_keyboard_sync_tooltip() -> None:
             kh = self.client.keyboard_helper
             if not kh:
@@ -537,7 +537,7 @@ class GTKTrayMenu(MenuHelper):
         self.keyboard_shortcuts_menuitem.connect("toggled", keyboard_shortcuts_toggled)
         return self.keyboard_shortcuts_menuitem
 
-    def make_viewshortcutsmenuitem(self):
+    def make_viewshortcutsmenuitem(self) -> Gtk.CheckMenuItem:
         return self.menuitem("View Shortcuts", tooltip="Show all active keyboard shortcuts",
                              cb=self.client.show_shortcuts)
 
@@ -803,13 +803,13 @@ class GTKTrayMenu(MenuHelper):
     def get_quality(self) -> int:
         return self.client.quality
 
-    def set_min_quality(self, q) -> None:
+    def set_min_quality(self, q: int) -> None:
         self.client.min_quality = q
         self.client.quality = -1
         self.client.send_min_quality()
         self.client.send_quality()
 
-    def set_quality(self, q) -> None:
+    def set_quality(self, q: int) -> None:
         self.client.min_quality = -1
         self.client.quality = q
         self.client.send_min_quality()
@@ -838,7 +838,7 @@ class GTKTrayMenu(MenuHelper):
         self.speed = self.menuitem("Speed", "speed.png", "Encoding latency vs size")
         set_sensitive(self.speed, False)
 
-        def may_enable_speedmenu(*_args):
+        def may_enable_speedmenu(*_args) -> None:
             self.speed.set_submenu(self.make_speedsubmenu())
             self.set_speedmenu()
 
@@ -855,13 +855,13 @@ class GTKTrayMenu(MenuHelper):
     def get_speed(self) -> int:
         return self.client.speed
 
-    def set_min_speed(self, s) -> None:
+    def set_min_speed(self, s: int) -> None:
         self.client.min_speed = s
         self.client.speed = -1
         self.client.send_min_speed()
         self.client.send_speed()
 
-    def set_speed(self, s) -> None:
+    def set_speed(self, s: int) -> None:
         self.client.min_speed = -1
         self.client.speed = s
         self.client.send_min_speed()
@@ -1073,7 +1073,7 @@ class GTKTrayMenu(MenuHelper):
             c.set_active(get_active_device_no() == device_no)
             c.device_no = device_no
 
-            def activate_cb(item, *_args):
+            def activate_cb(item, *_args) -> None:
                 webcamlog("activate_cb(%s, %s) ignore_events=%s", item, menu, menu.ignore_events)
                 if not menu.ignore_events:
                     try:
@@ -1467,7 +1467,7 @@ class GTKTrayMenu(MenuHelper):
     def _non_OR_windows(self) -> tuple:
         return tuple(win for win in self.client._window_to_id.keys() if not win.is_OR())
 
-    def _call_non_OR_windows(self, functions: dict[str, Any]):
+    def _call_non_OR_windows(self, functions: dict[str, Any]) -> None:
         for win in self._non_OR_windows():
             for function, args in functions.items():
                 fn = getattr(win, function, None)
@@ -1480,7 +1480,7 @@ class GTKTrayMenu(MenuHelper):
                         log.error("Error calling %s%s on %s:", function, args, win)
                         log.estr(e)
 
-    def _raise_all_windows(self, *_args):
+    def _raise_all_windows(self, *_args) -> None:
         self._call_non_OR_windows({"deiconify": (), "present": ()})
 
     def make_raisewindowsmenuitem(self) -> Gtk.ImageMenuItem:
@@ -1711,7 +1711,7 @@ class GTKTrayMenu(MenuHelper):
         def start_menu_init() -> None:
             update_menu_data()
 
-            def on_xdg_menu_changed(setting, value):
+            def on_xdg_menu_changed(setting, value) -> None:
                 log("on_xdg_menu_changed(%s, %s)", setting, repr_ellipsized(str(value)))
                 update_menu_data()
 
