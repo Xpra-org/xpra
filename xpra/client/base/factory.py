@@ -8,7 +8,8 @@ def get_client_base_classes() -> tuple[type, ...]:
     from xpra.client.base import features
     from xpra.client.base.glib_adapter import GLibClient
     from xpra.client.base.serverinfo import ServerInfoMixin
-    CLIENT_BASES: list[type] = [GLibClient, ServerInfoMixin]
+    from xpra.client.base.aes import AESClient
+    CLIENT_BASES: list[type] = [GLibClient, ServerInfoMixin, AESClient]
     if features.file_transfer:
         from xpra.client.base.fileprint import FilePrintMixin
         CLIENT_BASES.append(FilePrintMixin)
