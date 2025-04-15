@@ -189,7 +189,7 @@ class HttpServer(StubServerMixin):
 
     def get_http_info(self) -> dict[str, Any]:
         return {
-            "mode": self.get_server_mode(),
+            "mode": self.session_type,
             "type": "Python",
             "uuid": self.uuid,
         }

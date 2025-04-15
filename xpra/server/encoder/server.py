@@ -104,7 +104,7 @@ class EncoderServer(ServerBase):
             raise ValueError(f"unsupported encoding {self.encoding!r}")
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
-        sstr = self.get_server_mode() + " server"
+        sstr = "encoder server"
         register_os_signals(callback, sstr)
         register_SIGUSR_signals(sstr)
 

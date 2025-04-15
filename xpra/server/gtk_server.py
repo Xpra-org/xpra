@@ -77,7 +77,7 @@ class GTKServerBase(ServerBase):
             GLib.source_remove(kct)
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
-        sstr = self.get_server_mode() + " server"
+        sstr = f"{self.session_type} server"
         register_os_signals(callback, sstr)
         register_SIGUSR_signals(sstr)
 

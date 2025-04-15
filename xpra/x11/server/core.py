@@ -181,7 +181,7 @@ class X11ServerCore(GTKServerBase):
             self.save_mode()
 
     def save_mode(self) -> None:
-        save_mode(self.get_server_mode())
+        save_mode(self.session_type)
 
     def init_randr(self) -> None:
         if self.randr and not RandR.has_randr():

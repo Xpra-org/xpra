@@ -45,7 +45,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
     def __init__(self, attrs: dict[str, str]):
         GObject.GObject.__init__(self)
         ShadowX11Server.__init__(self, attrs)
-        self.session_type = "expand"
+        self.session_type = "X11 evdi expand"
         self.evdi_device = None
         self.evdi_channel = None
         self.fd_source = None
@@ -144,9 +144,6 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
 
     def start_poll_pointer(self) -> None:
         """ not needed """
-
-    def get_server_mode(self) -> str:
-        return "X11 expand"
 
     def set_refresh_delay(self, v: int) -> None:
         assert 0 < v < 10000

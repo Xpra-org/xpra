@@ -218,9 +218,6 @@ class ProxyServer(ProxyServerBaseClass):
         # no screen, we just use a virtual display number
         pass
 
-    def get_server_mode(self) -> str:
-        return "proxy"
-
     def do_run(self) -> None:
         self.main_loop = GLib.MainLoop()
         self.main_loop.run()

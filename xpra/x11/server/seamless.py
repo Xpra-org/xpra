@@ -262,9 +262,6 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     def __repr__(self):
         return "X11-Seamless-Server(%s)" % self.display_name
 
-    def get_server_mode(self) -> str:
-        return "X11 seamless"
-
     def server_event(self, event_type: str, *args: PacketElement) -> None:
         super().server_event(event_type, *args)
         self.emit("server-event", event_type, args)

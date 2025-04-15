@@ -239,9 +239,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         self.init_uuid()
         self._default_packet_handlers: dict[str, Callable] = {}
 
-    def get_server_mode(self) -> str:
-        return self.session_type
-
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)
         self.session_name = str(opts.session_name)
@@ -355,7 +352,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
 
     def log_closing_message(self) -> None:
         exiting = self._exit_mode in (ServerExitMode.EXIT, ServerExitMode.UPGRADE)
-        log.info("%s server is %s", self.get_server_mode(), ["terminating", "exiting"][exiting])
+        log.info("%s server is %s", self.session_type, ["terminating", "exiting"][exiting])
 
     def do_quit(self) -> None:
         raise NotImplementedError()
@@ -642,7 +639,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
 
     def print_run_info(self) -> None:
         from xpra.common import get_run_info
-        for run_info in get_run_info(f"{self.get_server_mode()} server"):
+        for run_info in get_run_info(f"{self.session_type} server"):
             log.info(run_info)
         GLib.idle_add(self.print_screen_info)
 
@@ -2095,7 +2092,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             "current_time": int(now),
             "elapsed_time": int(now - self.start_time),
             "server_type": "core",
-            "server.mode": self.get_server_mode(),
+            "server.mode": self.session_type,
         }
         if FULL_INFO > 0:
             capabilities["hostname"] = socket.gethostname()
@@ -2183,7 +2180,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
 
     def get_minimal_server_info(self) -> dict[str, Any]:
         return {
-            "mode": self.get_server_mode(),
             "session-type": self.session_type,
             "uuid": self.uuid,
             "machine-id": get_machine_id(),

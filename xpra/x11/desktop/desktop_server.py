@@ -32,7 +32,7 @@ class XpraDesktopServer(DesktopServerBase):
 
     def __init__(self):
         super().__init__()
-        self.session_type = "desktop"
+        self.session_type = "X11 desktop"
         self.gsettings_modified = {}
         self.root_prop_watcher = None
         self.resize_value = -1, -1
@@ -87,9 +87,6 @@ class XpraDesktopServer(DesktopServerBase):
             raise RuntimeError(f"found {desktop_models}, expected 1")
         geomlog(f"will resize {desktop_models}")
         desktop_models[0].resize(w, h)
-
-    def get_server_mode(self) -> str:
-        return "X11 desktop"
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)

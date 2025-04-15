@@ -48,7 +48,7 @@ class XpraMonitorServer(DesktopServerBase):
                 display = os.environ.get("DISPLAY", "")
                 raise InitException(f"the vfb display {display!r} cannot virtualize monitors - dummy RandR 1.6 missing")
         super().__init__()
-        self.session_type: str = "monitor"
+        self.session_type: str = "X11 monitor"
         self.reconfigure_timer: int = 0
         self.reconfigure_locked: bool = False
 
@@ -61,9 +61,6 @@ class XpraMonitorServer(DesktopServerBase):
         res = self.initial_resolutions
         with xlog:
             set_initial_resolution(res, self.dpi or self.default_dpi)
-
-    def get_server_mode(self) -> str:
-        return "X11 monitor"
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)

@@ -126,9 +126,6 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         self.session_name = get_wm_name()  # pylint: disable=assignment-from-none
         log("get_wm_name()=%s", self.session_name)
 
-    def get_server_mode(self) -> str:
-        return "shadow"
-
     def print_screen_info(self) -> None:
         if not features.display or not self.root:
             return

@@ -344,12 +344,9 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def __init__(self, attrs: dict[str, str]):
         GTKShadowServerBase.__init__(self, attrs)
         X11ServerCore.__init__(self)
-        self.session_type = "X11"
+        self.session_type = "X11 shadow"
         self.modify_keymap = False
         self.backend = attrs.get("backend", "x11")
-
-    def get_server_mode(self) -> str:
-        return "X11 shadow"
 
     def init(self, opts) -> None:
         GTKShadowServerBase.init(self, opts)

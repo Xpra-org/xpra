@@ -100,6 +100,7 @@ class DesktopServerBase(DesktopServerBaseClass):
                 c.__init__(self)  # pylint: disable=non-parent-init-called
         self.gsettings_modified: dict[str, Any] = {}
         self.root_prop_watcher = None
+        self.session_type = "X11 desktop"
 
     def init(self, opts) -> None:
         for c in DESKTOPSERVER_BASES:
@@ -168,9 +169,6 @@ class DesktopServerBase(DesktopServerBaseClass):
     def set_desktop_geometry_attributes(self, w: int, h: int):
         # geometry is not synced with the client's for desktop servers
         pass
-
-    def get_server_mode(self) -> str:
-        return "X11 desktop"
 
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
