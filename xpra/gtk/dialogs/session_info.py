@@ -1349,6 +1349,10 @@ class SessionInfo(Gtk.Window):
 class SessionInfoClient(InfoTimerClient):
     REFRESH_RATE = envint("XPRA_INFO_REFRESH_RATE", 2)
 
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.client_type = "session-info"
+
     def setup_connection(self, conn) -> None:
         self.session_name = self.server_session_name = "session-info"
         self.windows_enabled = False
@@ -1365,9 +1369,6 @@ class SessionInfoClient(InfoTimerClient):
 
     def exit_loop(self) -> None:
         Gtk.main_quit()
-
-    def client_type(self) -> str:
-        return "session-info"
 
     def update_screen(self) -> None:
         # this is called every time we get the server info back

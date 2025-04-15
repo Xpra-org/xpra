@@ -1462,11 +1462,11 @@ class WindowClient(StubClientMixin):
     ######################################################################
     # grabs:
     def window_grab(self, wid: int, _window) -> None:
-        grablog.warn("Warning: window grab not implemented in %s", self.client_type())
+        grablog.warn(f"Warning: window grab not implemented in {self.client_type}")
         self._window_with_grab = wid
 
     def window_ungrab(self) -> None:
-        grablog.warn("Warning: window ungrab not implemented in %s", self.client_type())
+        grablog.warn(f"Warning: window ungrab not implemented in {self.client_type}")
         self._window_with_grab = None
 
     def do_force_ungrab(self, wid: int) -> None:

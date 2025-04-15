@@ -406,6 +406,7 @@ class TopSessionClient(InfoTimerClient):
 
     def __init__(self, *args):
         super().__init__(*args)
+        self.client_type = "top"
         self.log_file = None
         if CURSES_LOG:
             self.log_file = open(CURSES_LOG, "ab")  # pylint: disable=consider-using-with
@@ -414,9 +415,6 @@ class TopSessionClient(InfoTimerClient):
         self.modified = False
         self.psprocess = {}
         start_thread(self.input_thread, "input-thread", daemon=True)
-
-    def client_type(self) -> str:
-        return "top"
 
     def server_connection_established(self, caps) -> bool:
         self.log(f"server_connection_established({caps!r})")

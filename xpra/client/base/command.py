@@ -577,6 +577,10 @@ class PrintClient(SendCommandConnectClient):
     Allows us to send a file to the server for printing.
     """
 
+    def __init__(self, opts):
+        super().__init__(opts)
+        self.client_type = "Python/GObject/Print"
+
     def set_command_args(self, command: Sequence[str]) -> None:
         log("set_command_args(%s)", command)
         self.filename = command[0]
@@ -607,9 +611,6 @@ class PrintClient(SendCommandConnectClient):
                            "the file is too large: %sB (the file size limit is %sB)" % (
                                std_unit(size), std_unit(self.file_size_limit)))
         return False
-
-    def client_type(self) -> str:
-        return "Python/GObject/Print"
 
     def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")

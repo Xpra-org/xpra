@@ -50,6 +50,7 @@ class EncodeClient(ClientBaseClass):
         for cc in CLIENT_BASES:
             args = (options, ) if cc == HelloRequestClient else ()
             cc.__init__(self, *args)
+        self.client_type = "encoder"
         self.filenames = list(filenames)
         self.add_packets("encode-response", "encodings")
         self.decompress = decompress
@@ -87,9 +88,6 @@ class EncodeClient(ClientBaseClass):
                 return False
         # this will call do_command()
         return super().server_connection_established(c)
-
-    def client_type(self) -> str:
-        return "encoder"
 
     def _process_encodings(self, packet: PacketType) -> None:
         encodings = typedict(packet[1]).dictget("encodings", {}).get("core", ())

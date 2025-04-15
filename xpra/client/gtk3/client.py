@@ -22,9 +22,6 @@ class XpraClient(GTKXpraClient):
     def __repr__(self):  # pylint: disable=arguments-differ
         return "gtk3.client"
 
-    def client_type(self) -> str:
-        return "Python/GTK3"
-
     def client_toolkit(self) -> str:
         if POSIX and not OSX:
             backend = os.environ.get("GDK_BACKEND", "")

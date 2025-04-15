@@ -106,6 +106,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def __init__(self):
         GObjectXpraClient.__init__(self)
         UIXpraClient.__init__(self)
+        self.client_type = "Python/GTK3"
         self.pinentry_proc = None
         self.sub_dialogs = {}
         self.menu_helper = None

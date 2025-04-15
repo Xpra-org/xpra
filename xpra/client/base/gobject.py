@@ -27,6 +27,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         self.glib_mainloop = None
         GObject.GObject.__init__(self)
         XpraClientBase.__init__(self)
+        self.client_type = "pygobject"
 
     def init(self, opts) -> None:
         XpraClientBase.init(self, opts)
@@ -34,17 +35,13 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def install_signal_handlers(self) -> None:
         from xpra.gtk.signals import install_signal_handlers
-        install_signal_handlers("%s Client" % self.client_type(), self.handle_app_signal)
+        install_signal_handlers("%s Client" % self.client_type, self.handle_app_signal)
 
     def make_protocol(self, conn):
         protocol = super().make_protocol(conn)
         protocol._log_stats = False
         GLib.idle_add(self.send_hello)
         return protocol
-
-    def client_type(self) -> str:
-        # overridden in subclasses!
-        return "pygobject"
 
     def run(self) -> ExitValue:
         XpraClientBase.run(self)

@@ -89,6 +89,7 @@ class XpraClientBase(ClientBaseClass):
         log("XpraClientBase.defaults_init() os.environ:")
         for k, v in os.environ.items():
             log(f" {k}={v!r}")
+        self.client_type = "python"
         # client state:
         self.exit_code: int | ExitCode | None = None
         self.exit_on_signal = False
@@ -222,10 +223,6 @@ class XpraClientBase(ClientBaseClass):
         log("XpraClientBase.exit() calling %s", sys.exit)
         sys.exit()
 
-    def client_type(self) -> str:
-        # overridden in subclasses!
-        return "Python"
-
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {}
         if FULL_INFO > 0:
@@ -326,7 +323,7 @@ class XpraClientBase(ClientBaseClass):
             capabilities["display"] = self.display
         if FULL_INFO > 0:
             capabilities |= {
-                "client_type": self.client_type(),
+                "client_type": self.client_type,
                 "session-id": self.session_id,
             }
         if FULL_INFO > 1:
