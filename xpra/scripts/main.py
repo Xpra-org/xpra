@@ -3023,7 +3023,7 @@ def run_glcheck(opts) -> ExitValue:
 
 
 def run_glsaveprobe() -> ExitValue:
-    probe, probe_info = run_opengl_probe()
+    probe_info = run_opengl_probe()[1]
     glinfo = typedict(probe_info)
     safe = glinfo.boolget("safe", False)
     save_opengl_probe(safe)

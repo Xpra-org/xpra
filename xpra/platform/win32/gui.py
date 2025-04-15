@@ -1074,9 +1074,6 @@ def main():
         log.info("Event loop is running")
         loop = GLib.MainLoop()
 
-        def signal_quit(*_args):
-            loop.quit()
-
         from xpra.platform.win32.client import PlatformClient
         PlatformClient()
 

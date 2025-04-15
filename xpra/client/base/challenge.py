@@ -64,9 +64,8 @@ class ChallengeClient(StubClientMixin):
         # add "kerberos", "gss" and "u2f" digests if enabled:
         for handler in self.challenge_handlers:
             digest = handler.get_digest()
-            if digest:
-                if digest not in digests:
-                    digests.append(digest)
+            if digest and digest not in digests:
+                digests.append(digest)
         caps = {}
         if digests:
             caps["digests"] = tuple(digests)

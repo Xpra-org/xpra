@@ -38,13 +38,12 @@ class SysAuthenticatorBase:
     USED_SALT: Deque[bytes] = deque(maxlen=USED_SALT_CACHE_SIZE)
     DEFAULT_PROMPT = "password for user '{username}'"
     CLIENT_USERNAME = False
-    VERIFY_USERNAME = is_admin()
 
     def __init__(self, **kwargs):
         self.username = kwargs.get("username", get_username())
         remote_props = typedict(kwargs.get("remote", {}))
         remote_username = remote_props.strget("username", "")
-        verify_username = str(kwargs.get("verify-username", self.VERIFY_USERNAME)).lower() in TRUE_OPTIONS
+        verify_username = str(kwargs.get("verify-username", is_admin())).lower() in TRUE_OPTIONS
         client_username = str(kwargs.get("client-username", self.CLIENT_USERNAME)).lower() in TRUE_OPTIONS
         log(f"{self!r}: {verify_username=}, {client_username=}")
         if client_username:

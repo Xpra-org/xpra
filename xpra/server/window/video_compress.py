@@ -1861,7 +1861,7 @@ class WindowVideoSource(WindowSource):
                              message: str, scores=()) -> None:
         vh = self.video_helper
         if self.is_cancelled() or not vh:
-            return ()
+            return
         # just for diagnostics:
         supported_csc_modes = dict((encoding, self.full_csc_modes.strtupleget(encoding)) for encoding in encodings)
         all_encs: set[str] = set()
