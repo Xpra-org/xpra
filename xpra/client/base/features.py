@@ -26,3 +26,4 @@ tray = True
 network_state = True
 network_listener = True
 encoding = True
+native = True

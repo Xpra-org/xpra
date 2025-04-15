@@ -756,6 +756,7 @@ class SessionInfo(Gtk.Window):
             bool_icon(self.server_notifications_icon, self.client.server_notifications)
         if features.windows:
             bool_icon(self.server_bell_icon, self.client.server_bell)
+        if features.cursors:
             bool_icon(self.server_cursors_icon, self.client.server_cursors)
 
     def add_codecs_tab(self) -> None:

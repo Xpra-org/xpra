@@ -2145,6 +2145,7 @@ def set_client_features(opts) -> None:
     features.network_state = True
     features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
     features.encoding = opts.windows
+    features.native = envbool("XPRA_CLIENT_NATIVE_BINDINGS", True)
 
 
 def enforce_client_features() -> None:
@@ -2173,6 +2174,7 @@ def enforce_client_features() -> None:
         "network_state": "xpra.client.subsystem.network_state",
         "network_listener": "xpra.client.subsystem.network_listener",
         "encoding": "xpra.client.subsystem.encodings",
+        "native": "xpra.platform.client",
     })
     may_block_numpy()
 

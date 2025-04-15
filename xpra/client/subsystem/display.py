@@ -467,7 +467,7 @@ class DisplayClient(StubClientMixin):
         if self.screen_size_change_timer:
             return
         # update via timer so the data is more likely to be final (up to date) when we query it,
-        # some properties (like _NET_WORKAREA for X11 clients via posix gui "ClientExtras") may
+        # some properties (like _NET_WORKAREA for X11 clients via posix gui "PlatformClient") may
         # trigger multiple calls to screen_size_changed, delayed by some amount
         # (sometimes up to 1s..)
         delay = 1000

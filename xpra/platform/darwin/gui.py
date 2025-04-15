@@ -11,14 +11,11 @@ from typing import Any
 from collections.abc import Callable, Sequence
 
 import Quartz
-from Quartz import kCGDisplaySetModeFlag
 import Quartz.CoreGraphics as CG
-from Quartz.CoreGraphics import CGDisplayRegisterReconfigurationCallback, CGDisplayRemoveReconfigurationCallback
 from AppKit import NSObject, NSAppleEventManager, NSScreen, NSBeep, NSApp
 
 from xpra.os_util import gi_import
 from xpra.common import roundup
-from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
 from xpra.util.io import CaptureStdErr
 from xpra.platform.darwin import get_OSXApplication
@@ -31,9 +28,7 @@ notifylog = Logger("osx", "notify")
 
 GLib = gi_import("GLib")
 
-OSX_FOCUS_WORKAROUND = envint("XPRA_OSX_FOCUS_WORKAROUND", 2000)
 SLEEP_HANDLER = envbool("XPRA_OSX_SLEEP_HANDLER", True)
-EVENT_LISTENER = envbool("XPRA_OSX_EVENT_LISTENER", True)
 OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 100)
 OSX_WHEEL_PRECISE_MULTIPLIER = envint("XPRA_OSX_WHEEL_PRECISE_MULTIPLIER", 1)
 OSX_WHEEL_DIVISOR = envint("XPRA_OSX_WHEEL_DIVISOR", 10)
@@ -568,123 +563,3 @@ def can_access_display() -> bool:
         # screen is locked
         return False
     return True
-
-
-class ClientExtras:
-    def __init__(self, client=None, opts=None):
-        if OSX_FOCUS_WORKAROUND and client:
-            def first_ui_received(*_args):
-                enable_focus_workaround()
-                GLib.timeout_add(OSX_FOCUS_WORKAROUND, disable_focus_workaround)
-
-            client.connect("first-ui-received", first_ui_received)
-        log("ClientExtras.__init__(%s, %s)", client, opts)
-        self.client = client
-        self.event_loop_started = False
-        self.check_display_timer = 0
-        self.display_is_asleep = False
-        if opts and client:
-            swap_keys = opts.swap_keys
-            log("setting swap_keys=%s using %s", swap_keys, client.keyboard_helper)
-            if client.keyboard_helper and client.keyboard_helper.keyboard:
-                log("%s.swap_keys=%s", client.keyboard_helper.keyboard, swap_keys)
-                client.keyboard_helper.keyboard.swap_keys = swap_keys
-        if client:
-            self.check_display_timer = GLib.timeout_add(60 * 1000, self.check_display)
-
-    def cleanup(self) -> None:
-        cdt = self.check_display_timer
-        if cdt:
-            GLib.source_remove(cdt)
-            self.check_display_timer = 0
-        try:
-            r = CGDisplayRemoveReconfigurationCallback(self.display_change, self)
-        except ValueError as e:
-            log("CGDisplayRemoveReconfigurationCallback: %s", e)
-            # if we exit from a signal, this may fail
-            r = 1
-        if r != 0:
-            # don't bother logging this as a warning since we are terminating anyway:
-            log("failed to unregister display reconfiguration callback")
-        self.client = None
-
-    def ready(self) -> None:
-        if EVENT_LISTENER:
-            with log.trap_error("Error setting up OSX event listener"):
-                self.setup_event_listener()
-
-    def setup_event_listener(self) -> None:
-        log(f"setup_event_listener() client={self.client}")
-        if self.client:
-            from xpra.platform.darwin.events import get_app_delegate
-            delegate = get_app_delegate()
-            log(f"setup_event_listener() delegate={delegate}")
-            delegate.add_handler("suspend", self.client.suspend)
-            delegate.add_handler("resume", self.client.resume)
-            delegate.add_handler("deiconify", self.client.deiconify_windows)
-        r = CGDisplayRegisterReconfigurationCallback(self.display_change, self)
-        if r != 0:
-            log.warn("Warning: failed to register display reconfiguration callback")
-
-    def display_change(self, display, flags, userinfo) -> None:
-        log("display_change%s", (display, flags, userinfo))
-        c = self.client
-        # The display mode has changed
-        # opengl windows may need to be re-created since the GPU may have changed:
-        if (flags & kCGDisplaySetModeFlag) and c and c.opengl_enabled:
-            c.reinit_windows()
-
-    def check_display(self) -> bool:
-        log("check_display()")
-        try:
-            c = self.client
-            asleep = None
-            if not can_access_display():
-                asleep = True
-            else:
-                did = CG.CGMainDisplayID()
-                log("check_display() CGMainDisplayID()=%#x", did)
-                if did and c:
-                    asleep = bool(CG.CGDisplayIsAsleep(did))
-                    log("check_display() CGDisplayIsAsleep(%#x)=%s", did, asleep)
-            if c and asleep is not None and self.display_is_asleep != asleep:
-                self.display_is_asleep = asleep
-                if asleep:
-                    c.suspend()
-                else:
-                    c.resume()
-            return True
-        except Exception:
-            log.error("Error checking display sleep status", exc_info=True)
-            self.check_display_timer = 0
-            return False
-
-    def run(self) -> ExitValue:
-        # this is for running standalone
-        log("starting console event loop")
-        self.event_loop_started = True
-        import PyObjCTools.AppHelper as AppHelper
-        AppHelper.runConsoleEventLoop(installInterrupt=True)
-        # when running from the GTK main loop, we rely on another part of the code
-        # to run the event loop for us
-        return 0
-
-    def stop(self) -> None:
-        if self.event_loop_started:
-            self.event_loop_started = False
-            import PyObjCTools.AppHelper as AppHelper
-            AppHelper.stopEventLoop()
-
-
-def main() -> ExitValue:
-    from xpra.platform import program_context
-    with program_context("OSX Extras"):
-        log.enable_debug()
-        ce = ClientExtras(None, None)
-        ce.check_display()
-        ce.ready()
-        return ce.run()
-
-
-if __name__ == "__main__":
-    main()

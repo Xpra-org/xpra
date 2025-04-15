@@ -12,15 +12,14 @@ from collections.abc import Callable, Sequence
 from xpra.client.gui.factory import get_client_base_classes
 from xpra.client.base.client import XpraClientBase
 from xpra.platform import set_name
-from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type, ClientExtras
+from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
 from xpra.common import FULL_INFO, NotificationID, ConnectionMessage, noerr, get_run_info
 from xpra.net.common import PacketType, print_proxy_caps
-from xpra.os_util import WIN32, OSX, gi_import
+from xpra.os_util import gi_import
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized
 from xpra.util.env import envint
-from xpra.scripts.config import str_to_bool
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base import features
 from xpra.log import Logger
@@ -72,7 +71,6 @@ class UIXpraClient(ClientBaseClass):
 
         # features:
         self.readonly: bool = False
-        self.xsettings_enabled: bool = False
         self.headerbar = None
         self.suspended = False
 
@@ -90,7 +88,6 @@ class UIXpraClient(ClientBaseClass):
         self.client_lock: bool = False
 
         # helpers and associated flags:
-        self.client_extras = None
         self.menu_helper = None
 
         # state:
@@ -105,7 +102,6 @@ class UIXpraClient(ClientBaseClass):
 
         self.title = opts.title
         self.session_name = opts.session_name
-        self.xsettings_enabled = not (OSX or WIN32) and str_to_bool(opts.xsettings)
         self.readonly = opts.readonly
         self.client_supports_sharing = opts.sharing is True
         self.client_lock = opts.lock is True
@@ -116,9 +112,6 @@ class UIXpraClient(ClientBaseClass):
 
     def init_ui(self, opts) -> None:
         """ initialize user interface """
-        if ClientExtras is not None:
-            self.client_extras = ClientExtras(self, opts)  # pylint: disable=not-callable
-
         for c in CLIENT_BASES:
             log(f"init: {c}")
             c.init_ui(self, opts)
@@ -129,8 +122,6 @@ class UIXpraClient(ClientBaseClass):
         return get_vrefresh()
 
     def run(self) -> ExitValue:
-        if self.client_extras:
-            GLib.idle_add(self.client_extras.ready)
         for c in CLIENT_BASES:
             c.run(self)
         return self.exit_code or 0
@@ -142,12 +133,10 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.cleanup()")
         for c in CLIENT_BASES:
             c.cleanup(self)
-        for x in (self.menu_helper, self.client_extras):
-            if x is None:
-                continue
-            log(f"UIXpraClient.cleanup() calling {type(x)}.cleanup()")
-            with log.trap_error(f"Error on {type(x)} cleanup"):
-                x.cleanup()
+        mh = self.menu_helper
+        if mh:
+            self.menu_helper = None
+            mh.cleanup()
         # the protocol has been closed, it is now safe to close all the windows:
         # (cleaner and needed when we run embedded in the client launcher)
         reaper_cleanup()

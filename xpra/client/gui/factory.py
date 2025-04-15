@@ -58,4 +58,11 @@ def get_client_base_classes() -> tuple[type, ...]:
         from xpra.client.subsystem.tray import TrayClient
         CLIENT_BASES.append(TrayClient)
 
+    if features.native:
+        try:
+            from xpra.platform.client import PlatformClient
+            CLIENT_BASES.append(PlatformClient)
+        except ImportError:
+            pass
+
     return tuple(CLIENT_BASES)

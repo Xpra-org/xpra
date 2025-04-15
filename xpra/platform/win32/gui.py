@@ -12,38 +12,29 @@ import types
 from typing import Any
 from collections.abc import Callable
 from ctypes import (
-    WinDLL, WinError, get_last_error,  # @UnresolvedImport
+    WinDLL,  # @UnresolvedImport
     CDLL, pythonapi, py_object,
-    CFUNCTYPE, HRESULT, c_int, c_bool, c_char_p,
-    create_string_buffer, POINTER, Structure, byref, addressof, sizeof,  # @UnresolvedImport
+    HRESULT, c_bool, create_string_buffer, byref, addressof, sizeof,  # @UnresolvedImport
 )
-from ctypes.wintypes import HWND, DWORD, WPARAM, LPARAM, MSG, POINT, RECT, HGDIOBJ, LPCWSTR
+from ctypes.wintypes import HWND, DWORD, POINT, RECT, HGDIOBJ, LPCWSTR
 from ctypes.util import find_library
 
-from xpra.client.base import features
-from xpra.exit_codes import ExitCode
 from xpra.common import noop
-from xpra.platform.win32 import constants as win32con, setup_console_event_listener
+from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.window_hooks import Win32Hooks
-from xpra.platform.win32.events import KNOWN_EVENTS, POWER_EVENTS
 from xpra.platform.win32.common import (
     GetSystemMetrics, SetWindowLongA, GetWindowLongW,
     ClipCursor, GetCursorPos,
     GetDC, ReleaseDC,
-    SendMessageA, GetMessageA, TranslateMessage, DispatchMessageA,
-    FindWindowA,
-    GetModuleHandleA,
-    GetKeyState, GetWindowRect,
+    SendMessageA, FindWindowA,
+    GetWindowRect,
     GetDoubleClickTime,
     MonitorFromWindow, EnumDisplayMonitors,
-    UnhookWindowsHookEx, CallNextHookEx, SetWindowsHookExA,
     GetDeviceCaps,
     GetIntSystemParametersInfo,
     GetUserObjectInformationA, OpenInputDesktop, CloseDesktop,
     GetMonitorInfo,
-    GetKeyboardLayoutName,
 )
-from xpra.keyboard.common import KeyEvent
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -59,10 +50,8 @@ mouselog = Logger("win32", "mouse")
 
 GLib = gi_import("GLib")
 
-CONSOLE_EVENT_LISTENER = envbool("XPRA_CONSOLE_EVENT_LISTENER", True)
 USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 REINIT_VISIBLE_WINDOWS = envbool("XPRA_WIN32_REINIT_VISIBLE_WINDOWS", True)
-SCREENSAVER_LISTENER_POLL_DELAY = envint("XPRA_SCREENSAVER_LISTENER_POLL_DELAY", 10)
 APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
 MONITOR_DPI = envbool("XPRA_WIN32_MONITOR_DPI", True)
 
@@ -114,8 +103,8 @@ WHEEL = envbool("XPRA_WHEEL", True)
 WHEEL_DELTA = envint("XPRA_WIN32_WHEEL_DELTA", 120)
 assert WHEEL_DELTA > 0
 
-log("win32 gui settings: CONSOLE_EVENT_LISTENER=%s, USE_NATIVE_TRAY=%s, WINDOW_HOOKS=%s, GROUP_LEADER=%s",
-    CONSOLE_EVENT_LISTENER, USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER)
+log("win32 gui settings: USE_NATIVE_TRAY=%s, WINDOW_HOOKS=%s, GROUP_LEADER=%s",
+    USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER)
 log("win32 gui settings: UNDECORATED_STYLE=%s, CLIP_CURSOR=%s, MAX_SIZE_HINT=%s, LANGCHANGE=%s",
     UNDECORATED_STYLE, CLIP_CURSOR, MAX_SIZE_HINT, LANGCHANGE)
 log("win32 gui settings: FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
@@ -1078,321 +1067,6 @@ WTS_SESSION_EVENTS: dict[int, str] = {
 }
 
 
-class ClientExtras:
-    def __init__(self, client, _opts):
-        self.client = client
-        self._kh_warning = False
-        self._console_handler_added = False
-        self._screensaver_state = False
-        self._screensaver_timer = 0
-        self._exit = False
-        if SCREENSAVER_LISTENER_POLL_DELAY > 0:
-            def log_screensaver():
-                v = bool(GetIntSystemParametersInfo(win32con.SPI_GETSCREENSAVERRUNNING))
-                log("SPI_GETSCREENSAVERRUNNING=%s", v)
-                if self._screensaver_state != v:
-                    self._screensaver_state = v
-                    if v:
-                        self.client.suspend()
-                    else:
-                        self.client.resume()
-                return True
-
-            self._screensaver_timer = GLib.timeout_add(SCREENSAVER_LISTENER_POLL_DELAY * 1000, log_screensaver)
-        if CONSOLE_EVENT_LISTENER:
-            self._console_handler_added = setup_console_event_listener(self.handle_console_event, True)
-        from xpra.platform.win32.events import get_win32_event_listener
-        try:
-            el = get_win32_event_listener(True)
-            self._el = el
-            if el:
-                el.add_event_callback(win32con.WM_ACTIVATEAPP, self.activateapp)
-                el.add_event_callback(win32con.WM_POWERBROADCAST, self.power_broadcast_event)
-                el.add_event_callback(win32con.WM_MOVE, self.wm_move)
-                el.add_event_callback(WM_WTSSESSION_CHANGE, self.session_change_event)
-                el.add_event_callback(win32con.WM_INPUTLANGCHANGE, self.inputlangchange)
-                el.add_event_callback(win32con.WM_WININICHANGE, self.inichange)
-                el.add_event_callback(win32con.WM_ENDSESSION, self.end_session)
-        except Exception as e:
-            log.error("Error: cannot register focus and power callbacks:")
-            log.estr(e)
-        self.keyboard_hook_id = None
-        self.keyboard_poll_timer: int = 0
-        self.keyboard_id: int = self.get_keyboard_layout_id()
-        if FORWARD_WINDOWS_KEY and features.windows:
-            from xpra.util.thread import start_thread
-            start_thread(self.init_keyboard_listener, "keyboard-listener", daemon=True)
-
-    def ready(self) -> None:
-        """ nothing specific to do here """
-
-    def cleanup(self) -> None:
-        log("ClientExtras.cleanup()")
-        self._exit = True
-        cha = self._console_handler_added
-        if cha:
-            self._console_handler_added = False
-            # removing can cause crashes!?
-            # setup_console_event_listener(self.handle_console_event, False)
-        el = self._el
-        if el:
-            self._el = None
-            el.cleanup()
-        khid = self.keyboard_hook_id
-        if khid:
-            self.keyboard_hook_id = None
-            UnhookWindowsHookEx(khid)
-        kpt = self.keyboard_poll_timer
-        if kpt:
-            self.keyboard_poll_timer = 0
-            GLib.source_remove(kpt)
-        sst = self._screensaver_timer
-        if sst:
-            self._screensaver_timer = 0
-            GLib.source_remove(sst)
-        log("ClientExtras.cleanup() ended")
-        # self.client = None
-
-    def get_keyboard_layout_id(self) -> int:
-        name_buf = create_string_buffer(win32con.KL_NAMELENGTH)
-        if not GetKeyboardLayoutName(name_buf):
-            return 0
-        log(f"layout-name={name_buf.value!r}")
-        try:
-            # win32 API returns a hex string
-            return int(name_buf.value, 16)
-        except ValueError:
-            log.warn("Warning: failed to parse keyboard layout code '%s'", name_buf.value)
-        return 0
-
-    def poll_layout(self) -> None:
-        self.keyboard_poll_timer = 0
-        klid = self.get_keyboard_layout_id()
-        if klid and klid != self.keyboard_id:
-            self.keyboard_id = klid
-            self.client.window_keyboard_layout_changed()
-
-    def init_keyboard_listener(self) -> None:
-        class KBDLLHOOKSTRUCT(Structure):
-            _fields_ = [
-                ("vk_code", DWORD),
-                ("scan_code", DWORD),
-                ("flags", DWORD),
-                ("time", c_int),
-            ]
-
-            def toString(self):
-                return f"KBDLLHOOKSTRUCT({self.vk_code}, {self.scan_code}, {self.flags:x}, {self.time})"
-
-        DOWN = [win32con.WM_KEYDOWN, win32con.WM_SYSKEYDOWN]
-        # UP = [win32con.WM_KEYUP, win32con.WM_SYSKEYUP]
-        ALL_KEY_EVENTS = {
-            win32con.WM_KEYDOWN: "KEYDOWN",
-            win32con.WM_SYSKEYDOWN: "SYSKEYDOWN",
-            win32con.WM_KEYUP: "KEYUP",
-            win32con.WM_SYSKEYUP: "SYSKEYUP",
-        }
-
-        def low_level_keyboard_handler(nCode: int, wParam: int, lParam: int):
-            log("WH_KEYBOARD_LL: %s", (nCode, wParam, lParam))
-            kh = getattr(self.client, "keyboard_helper", None)
-            locked = getattr(kh, "locked", False)
-            if POLL_LAYOUT and self.keyboard_poll_timer == 0 and not locked:
-                self.keyboard_poll_timer = GLib.timeout_add(POLL_LAYOUT, self.poll_layout)
-            if nCode < 0:
-                # docs say we should not process this event:
-                return CallNextHookEx(0, nCode, wParam, lParam)
-            try:
-                scan_code = lParam.contents.scan_code
-                vk_code = lParam.contents.vk_code
-                focused = self.client._focused
-                # the keys we intercept before the OS:
-                keyname = {
-                    win32con.VK_LWIN: "Super_L",
-                    win32con.VK_RWIN: "Super_R",
-                    win32con.VK_TAB: "Tab",
-                }.get(vk_code)
-                modifiers: list[str] = []
-                kh = self.client.keyboard_helper
-                key_event_type = ALL_KEY_EVENTS.get(wParam)
-                if self.client.keyboard_grabbed and focused and keyname and kh and kh.keyboard and key_event_type:
-                    modifier_keycodes = kh.keyboard.modifier_keycodes
-                    modifier_keys = kh.keyboard.modifier_keys
-                    if keyname.startswith("Super"):
-                        keycode = 0
-                        # find the modifier keycode: (try the exact key we hit first)
-                        for x in (keyname, "Super_L", "Super_R"):
-                            keycodes = modifier_keycodes.get(x, [])
-                            for k in keycodes:
-                                # only interested in numeric keycodes:
-                                try:
-                                    keycode = int(k)
-                                    break
-                                except ValueError:
-                                    pass
-                            if keycode > 0:
-                                break
-                    else:
-                        keycode = vk_code  # true for non-modifier keys only!
-                    for vk, modkeynames in {
-                        win32con.VK_NUMLOCK: ["Num_Lock"],
-                        win32con.VK_CAPITAL: ["Caps_Lock"],
-                        win32con.VK_CONTROL: ["Control_L", "Control_R"],
-                        win32con.VK_SHIFT: ["Shift_L", "Shift_R"],
-                    }.items():
-                        if GetKeyState(vk):
-                            for modkeyname in modkeynames:
-                                mod = modifier_keys.get(modkeyname)
-                                if mod:
-                                    modifiers.append(mod)
-                                    break
-                    # keylog.info("keyboard helper=%s, modifier keycodes=%s", kh, modifier_keycodes)
-                    grablog("vk_code=%s, scan_code=%s, event=%s, keyname=%s, keycode=%s, modifiers=%s, focused=%s",
-                            vk_code, scan_code, ALL_KEY_EVENTS.get(wParam), keyname, keycode, modifiers, focused)
-                    if keycode > 0:
-                        key_event = KeyEvent()
-                        key_event.keyname = keyname
-                        key_event.pressed = wParam in DOWN
-                        key_event.modifiers = modifiers
-                        key_event.keyval = scan_code
-                        key_event.keycode = keycode
-                        key_event.string = ""
-                        key_event.group = 0
-                        grablog("detected '%s' key, sending %s", keyname, key_event)
-                        self.client.keyboard_helper.send_key_action(focused, key_event)
-                        # swallow this event:
-                        return 1
-            except Exception as e:
-                keylog.error("Error: low level keyboard hook failed")
-                keylog.estr(e)
-            return CallNextHookEx(0, nCode, wParam, lParam)
-
-        # Our low level handler signature.
-        CMPFUNC = CFUNCTYPE(c_int, WPARAM, LPARAM, POINTER(KBDLLHOOKSTRUCT))
-        # Convert the Python handler into C pointer.
-        pointer = CMPFUNC(low_level_keyboard_handler)
-        # Hook both key up and key down events for common keys (non-system).
-        keyboard_hook_id = SetWindowsHookExA(win32con.WH_KEYBOARD_LL, pointer, GetModuleHandleA(None), 0)
-        # Register to remove the hook when the interpreter exits:
-        keylog("init_keyboard_listener() hook_id=%#x", keyboard_hook_id)
-        msg = MSG()
-        lpmsg = byref(msg)  # NOSONAR
-        while not self._exit:
-            ret = GetMessageA(lpmsg, 0, 0, 0)
-            keylog("keyboard listener: GetMessage()=%s", ret)
-            if ret == -1:
-                raise WinError(get_last_error())
-            if ret == 0:
-                keylog("GetMessage()=0, exiting loop")
-                return
-            r = TranslateMessage(lpmsg)
-            keylog("TranslateMessage(%#x)=%s", lpmsg, r)
-            r = DispatchMessageA(lpmsg)
-            keylog("DispatchMessageA(%#x)=%s", lpmsg, r)
-
-    def wm_move(self, wParam: int, lParam: int) -> None:
-        c = self.client
-        log("WM_MOVE: %s/%s client=%s", wParam, lParam, c)
-        if c:
-            # this is not really a screen size change event,
-            # but we do want to process it as such (see window reinit code)
-            c.screen_size_changed()
-
-    def end_session(self, wParam: int, lParam: int) -> None:
-        log(f"WM_ENDSESSION({wParam}, {lParam})")
-        c = self.client
-        if not c:
-            return
-        ENDSESSION_CLOSEAPP = 0x1
-        ENDSESSION_CRITICAL = 0x40000000
-        ENDSESSION_LOGOFF = 0x80000000
-        if (wParam & ENDSESSION_CLOSEAPP) and wParam:
-            reason = "restart manager request"
-        elif wParam & ENDSESSION_CRITICAL:
-            reason = "application forced to shutdown"
-        elif wParam & ENDSESSION_LOGOFF:
-            reason = "logoff"
-        else:
-            return
-        c.disconnect_and_quit(ExitCode.OK, reason)
-
-    def session_change_event(self, event: int, session: int) -> None:
-        event_name = WTS_SESSION_EVENTS.get(event) or str(event)
-        log("WM_WTSSESSION_CHANGE: %s on session %#x", event_name, session)
-        c = self.client
-        if not c:
-            return
-        if event in (WTS_SESSION_LOGOFF, WTS_SESSION_LOCK):
-            log("will freeze all the windows")
-            c.freeze()
-        elif event in (WTS_SESSION_LOGON, WTS_SESSION_UNLOCK):
-            log("will unfreeze all the windows")
-            # don't unfreeze directly from here,
-            # as the system may not be fully usable yet (see #997)
-            GLib.idle_add(c.unfreeze)
-
-    def inputlangchange(self, wParam: int, lParam: int) -> None:
-        keylog("WM_INPUTLANGCHANGE: %i, %i", wParam, lParam)
-        self.poll_layout()
-
-    def inichange(self, wParam: int, lParam: int) -> None:
-        if lParam:
-            log("WM_WININICHANGE: %#x=%s", lParam, c_char_p(lParam).value)
-        else:
-            log("WM_WININICHANGE: %i, %i", wParam, lParam)
-
-    def activateapp(self, wParam: int, lParam: int) -> None:
-        c = self.client
-        log("WM_ACTIVATEAPP: %s/%s client=%s", wParam, lParam, c)
-        if not c:
-            return
-        if not features.windows:
-            return
-        if wParam == 0:
-            # our app has lost focus
-            c.update_focus(0, False)
-        # workaround for windows losing their style:
-        for window in c._id_to_window.values():
-            fixup_window_style = getattr(window, "fixup_window_style", None)
-            if fixup_window_style:
-                fixup_window_style()
-
-    def power_broadcast_event(self, wParam: int, lParam: int) -> None:
-        c = self.client
-        log("WM_POWERBROADCAST: %s/%s client=%s", POWER_EVENTS.get(wParam, wParam), lParam, c)
-        # maybe also "PBT_APMQUERYSUSPEND" and "PBT_APMQUERYSTANDBY"?
-        if wParam == win32con.PBT_APMSUSPEND and c:
-            c.suspend()
-        # According to the documentation:
-        # The system always sends a PBT_APMRESUMEAUTOMATIC message whenever the system resumes.
-        elif wParam == win32con.PBT_APMRESUMEAUTOMATIC and c:
-            c.resume()
-
-    def handle_console_event(self, event: int) -> int:
-        c = self.client
-        event_name = KNOWN_EVENTS.get(event, event)
-        log("handle_console_event(%s) client=%s, event_name=%s", event, c, event_name)
-        info_events = [
-            win32con.CTRL_C_EVENT,
-            win32con.CTRL_LOGOFF_EVENT,
-            win32con.CTRL_BREAK_EVENT,
-            win32con.CTRL_SHUTDOWN_EVENT,
-            win32con.CTRL_CLOSE_EVENT,
-        ]
-        if event in info_events:
-            log.info("received console event %s", str(event_name).replace("_EVENT", ""))
-        else:
-            log.warn("unknown console event: %s", event_name)
-        if c and event == win32con.CTRL_C_EVENT:
-            log("calling=%s", c.signal_disconnect_and_quit)
-            c.signal_disconnect_and_quit(0, "CTRL_C")
-            return 1
-        if c and event == win32con.CTRL_CLOSE_EVENT:
-            c.signal_disconnect_and_quit(0, "CTRL_CLOSE")
-            return 1
-        return 0
-
-
 def main():
     from xpra.platform import program_context
     with program_context("Platform-Events", "Platform Events Test"):
@@ -1400,14 +1074,11 @@ def main():
         log.info("Event loop is running")
         loop = GLib.MainLoop()
 
-        from xpra.client.gui.fake_client import FakeClient
-        fake_client = FakeClient()
-
         def signal_quit(*_args):
             loop.quit()
 
-        fake_client.signal_disconnect_and_quit = signal_quit
-        ClientExtras(fake_client, None)
+        from xpra.platform.win32.client import PlatformClient
+        PlatformClient()
 
         try:
             loop.run()

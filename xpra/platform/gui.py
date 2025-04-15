@@ -334,7 +334,6 @@ def set_window_progress(window, pct: int) -> None:
 
 
 take_screenshot: Callable = noop
-ClientExtras = None
 
 
 def get_info_base() -> dict[str, Any]:
@@ -393,7 +392,6 @@ platform_import(globals(), "gui", False,
                 "get_wm_name",
                 "show_desktop", "set_fullscreen_monitors", "set_shaded",
                 "pointer_grab", "pointer_ungrab",
-                "ClientExtras",
                 "take_screenshot",
                 "get_clipboard_native_class",
                 "get_native_tray_menu_helper_class",
