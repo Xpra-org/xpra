@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.1.1] 2025-04-14
+* Platforms, build and packaging:
+    * [improved](https://github.com/Xpra-org/xpra/commit/8d2b3f670bc9ce73159a085a99bf6f6d085b4939) [MS Windows signtool compatibility](https://github.com/Xpra-org/xpra/commit/b8224c7a8db65900f99dc1fd72e4a11bfdb1bf4d)
+    * [duplicated tag in python3-pycuda spec file](https://github.com/Xpra-org/xpra/commit/9215ee38ab0c6faf1316d6c3ab8ed02b21db56da)
+    * [fix https version check compatibility with newer Python versions](https://github.com/Xpra-org/xpra/commit/24ddaf2069aadf46f3a021ddc3e8c89994f4e862)
+* Cosmetic:
+    * [add `id` subcommand to man page](https://github.com/Xpra-org/xpra/commit/d36d53c6e9baf55631ca186ad5c19f25d4c4be85)
+
 ## [5.1] 2025-04-09
 * Platforms, build and packaging:
     * [prefer CUDA arch specific pkg-config file for `nvdec`](https://github.com/Xpra-org/xpra/commit/87a0e81f9df262b79d348e5c53ea046ac68cb97e)
