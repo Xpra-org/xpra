@@ -87,9 +87,6 @@ class UIXpraClient(ClientBaseClass):
         self.client_supports_sharing: bool = False
         self.client_lock: bool = False
 
-        # helpers and associated flags:
-        self.menu_helper = None
-
         # state:
         self._on_handshake: Sequence[tuple[Callable, Sequence[Any]]] | None = []
         self._on_server_setting_changed: dict[str, Sequence[Callable[[str, Any], None]]] = {}
@@ -133,10 +130,6 @@ class UIXpraClient(ClientBaseClass):
         log("UIXpraClient.cleanup()")
         for c in CLIENT_BASES:
             c.cleanup(self)
-        mh = self.menu_helper
-        if mh:
-            self.menu_helper = None
-            mh.cleanup()
         # the protocol has been closed, it is now safe to close all the windows:
         # (cleaner and needed when we run embedded in the client launcher)
         reaper_cleanup()

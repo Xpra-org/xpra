@@ -213,6 +213,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         for name, dialog in self.sub_dialogs.items():
             dialog.close()
         self.cancel_clipboard_notification_timer()
+        mh = self.menu_helper
+        if mh:
+            self.menu_helper = None
+            mh.cleanup()
         uw = self.UI_watcher
         if uw:
             self.UI_watcher = None
