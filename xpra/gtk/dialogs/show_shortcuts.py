@@ -36,8 +36,10 @@ class ShortcutInfo(Gtk.Window):
 
         def window_deleted(*_args):
             self.is_closed = True
+            self.hide()
 
-        self.connect('delete_event', window_deleted)
+        add_close_accel(self, window_deleted)
+        self.connect("delete_event", window_deleted)
         self.set_title("Xpra Keyboard Shortcuts")
         self.set_size_request(320, 320)
         self.set_position(Gtk.WindowPosition.CENTER)
