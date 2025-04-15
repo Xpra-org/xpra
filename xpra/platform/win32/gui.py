@@ -830,7 +830,7 @@ def _get_device_caps(constant) -> int:
     dc = None
     try:
         dc = GetDC(None)
-        return GetDeviceCaps(dc, constant)
+        return int(GetDeviceCaps(dc, constant))
     finally:
         if dc:
             ReleaseDC(None, dc)

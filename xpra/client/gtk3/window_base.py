@@ -125,6 +125,7 @@ if use_x11_bindings():
                 workspacelog("x11 workspace bindings error", exc_info=True)
                 workspacelog.error("Error: failed to setup workspace hooks:")
                 workspacelog.estr(we)
+                return False
 
         CAN_SET_WORKSPACE = can_set_workspace()
 elif WIN32 and WIN32_WORKSPACE:

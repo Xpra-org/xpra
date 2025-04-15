@@ -78,7 +78,7 @@ class XpraClientBase(ClientBaseClass):
                 bc.__init__(self)
             self.init_packet_handlers()
         self._init_done = False
-        self.exit_code = None
+        self.exit_code: int | ExitCode | None = None
         self.start_time = int(monotonic())
 
     def defaults_init(self) -> None:

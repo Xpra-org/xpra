@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.str_fn import sorted_nicely
@@ -31,7 +32,7 @@ def lal(text: str, font="") -> Gtk.Alignment:
 
 class ShortcutInfo(Gtk.Window):
 
-    def __init__(self, shortcut_modifiers=(), shortcuts=()):
+    def __init__(self, shortcut_modifiers: Sequence[str], shortcuts: dict[str, Sequence]):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
 
         def window_deleted(*_args):

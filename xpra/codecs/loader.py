@@ -106,6 +106,7 @@ def pillow_import_block() -> None:
         "Sgi", "Spider", "Sun", "Tga",
         "Wmf", "Xbm", "XVThumb",
     ):
+        # noinspection PyTypeChecker
         sys.modules[f"PIL.{image_plugin}ImagePlugin"] = None
 
 

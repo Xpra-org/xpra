@@ -170,7 +170,10 @@ def get_owner_info(owner, our_window) -> str:
         CloseHandle(proc_handle)
 
 
-def with_clipboard_lock(window, success_callback: Callable, failure_callback: Callable, retries=RETRY, delay=DELAY):
+def with_clipboard_lock(window,
+                        success_callback: Callable[[], bool],
+                        failure_callback: Callable[[str], []],
+                        retries=RETRY, delay=DELAY):
     log("with_clipboard_lock%s", (window, success_callback, failure_callback, retries, delay))
     r = OpenClipboard(window)
     if r:
@@ -277,10 +280,15 @@ def rgb_to_bitmap(img_data) -> HBITMAP:
     hdc = GetDC(None)
     try:
         CBM_INIT = 4
-        bitmap = CreateDIBitmap(hdc, byref(header), CBM_INIT, pbuf, byref(bitmapinfo), win32con.DIB_RGB_COLORS)
+        return CreateDIBitmap(hdc, byref(header), CBM_INIT, pbuf, byref(bitmapinfo), win32con.DIB_RGB_COLORS)
     finally:
         ReleaseDC(None, hdc)
-    return bitmap
+
+
+def empty_clipboard() -> bool:
+    r = EmptyClipboard()
+    log("EmptyClipboard()=%s", r)
+    return True
 
 
 class Win32ClipboardProxy(ClipboardProxyCore):
@@ -290,16 +298,14 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.send_clipboard_token_handler = send_clipboard_token_handler
         super().__init__(selection)
 
-    def with_clipboard_lock(self, success_callback, failure_callback, retries=RETRY, delay=DELAY):
+    def with_clipboard_lock(self,
+                            success_callback: Callable[[], bool],
+                            failure_callback: Callable[[str], []],
+                            retries=RETRY, delay=DELAY):
         with_clipboard_lock(self.window, success_callback, failure_callback, retries=retries, delay=delay)
 
     def clear(self):
-        self.with_clipboard_lock(self.empty_clipboard, clear_error)
-
-    def empty_clipboard(self):
-        r = EmptyClipboard()
-        log("EmptyClipboard()=%s", r)
-        return True
+        self.with_clipboard_lock(empty_clipboard, clear_error)
 
     def do_emit_token(self):
         if not self._greedy_client:
@@ -572,7 +578,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
         self.with_clipboard_lock(got_clipboard_lock, nolock)
 
-    def get_clipboard_text(self, utf8, callback, errback):
+    def get_clipboard_text(self, utf8, callback: Callable[[str | bytes], []], errback: Callable[[str], []]):
         def get_text() -> bool:
             formats = get_clipboard_formats()
             matching = []
@@ -584,8 +590,9 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 matching += [fmt for fmt in formats if fmt in fmts]
             log("supported formats: %s (prefer utf8: %s)", csv(format_names(matching)), utf8)
             if not matching:
-                log("no supported formats, only: %s", csv(format_names(formats)))
-                errback()
+                message = "no supported formats, only: %s" % csv(format_names(formats))
+                log(message)
+                errback(message)
                 return True
             data_handle = None
             fmt = None

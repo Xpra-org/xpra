@@ -14,6 +14,7 @@ from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop, Self
 from xpra.util.str_fn import csv
+from xpra.exit_codes import ExitCode
 from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
@@ -42,7 +43,7 @@ class InitInfo(Exception):
 
 
 class InitExit(Exception):
-    def __init__(self, status, msg):
+    def __init__(self, status: int | ExitCode, msg):
         self.status = status
         super().__init__(msg)
 
@@ -1651,7 +1652,6 @@ def fixup_encodings(options) -> None:
     encodings = remove_dupes(encodings)
     invalid = [stripneg(e) for e in encodings if stripneg(e) not in PREFERRED_ENCODING_ORDER]
     if invalid:
-        from xpra.exit_codes import ExitCode
         raise InitExit(ExitCode.UNSUPPORTED, "invalid encodings specified: " + csv(invalid))
     # remove the negated encodings:
     for rm in tuple(stripneg(e) for e in encodings if isneg(e)):

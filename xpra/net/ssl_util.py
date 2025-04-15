@@ -498,8 +498,9 @@ def save_ssl_config_file(server_hostname: str, port=443,
             while ssl_dir_index > 0 and folders[ssl_dir_index] != "ssl":
                 ssl_dir_index -= 1
             if ssl_dir_index > 1:
-                parent = os.path.join(*folders[:ssl_dir_index - 1])
-                ssl_dir = os.path.join(*folders[:ssl_dir_index])
+                folder = folders[0]
+                parent = os.path.join(folder, *folders[1:ssl_dir_index - 1])
+                ssl_dir = os.path.join(folder, *folders[1:ssl_dir_index])
                 os.makedirs(parent, exist_ok=True)
                 os.makedirs(ssl_dir, mode=0o700, exist_ok=True)
             os.makedirs(d, mode=0o700)

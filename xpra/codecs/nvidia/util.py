@@ -114,7 +114,7 @@ def wrap_nvml_init(nvmlInit, warn=True) -> bool:
 
 
 def get_nvml_driver_version() -> Sequence[str]:
-    version = ()
+    version: Sequence[str] = ()
     try:
         # pylint: disable=import-outside-toplevel
         from pynvml import nvmlInit, nvmlShutdown, nvmlSystemGetDriverVersion
@@ -194,7 +194,7 @@ def get_nvidia_module_version(probe=True) -> Sequence[int] | None:
     return nvidia_module_version
 
 
-def identify_cards() -> dict:
+def identify_cards() -> dict[int, dict[str, Any]]:
     devices: dict[int, dict[str, Any]] = {}
     try:
         # pylint: disable=import-outside-toplevel

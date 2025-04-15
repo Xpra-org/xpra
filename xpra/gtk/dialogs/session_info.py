@@ -501,7 +501,7 @@ class SessionInfo(Gtk.Window):
         self.graph_box.add(button)
         return graph
 
-    def populate_audio_stats(self, *_args) -> None:
+    def populate_audio_stats(self, *_args) -> bool:
         # runs every 100ms
         if self.is_closed:
             return False
@@ -522,7 +522,7 @@ class SessionInfo(Gtk.Window):
     def last_info(self) -> dict:
         return dict(getattr(self.client, "server_last_info", {}))
 
-    def populate(self, *_args) -> None:
+    def populate(self, *_args) -> bool:
         conn = self.connection
         if self.is_closed or not conn:
             return False
@@ -659,7 +659,7 @@ class SessionInfo(Gtk.Window):
         self.avg_decoding_latency = deque(maxlen=N_SAMPLES + 4)
         self.avg_total = deque(maxlen=N_SAMPLES + 4)
 
-    def populate_tab(self, *_args) -> None:
+    def populate_tab(self, *_args) -> bool:
         if self.is_closed:
             return False
         # now re-populate the tab we are seeing:
@@ -722,7 +722,7 @@ class SessionInfo(Gtk.Window):
             self.server_bell_icon = image_row("Bell")
             self.server_cursors_icon = image_row("Cursors")
 
-    def populate_features(self) -> None:
+    def populate_features(self) -> bool:
         size_info = ""
         if features.windows:
             if self.client.server_actual_desktop_size:
@@ -758,6 +758,7 @@ class SessionInfo(Gtk.Window):
             bool_icon(self.server_bell_icon, self.client.server_bell)
         if features.cursors:
             bool_icon(self.server_cursors_icon, self.client.server_cursors)
+        return True
 
     def add_codecs_tab(self) -> None:
         # Codecs Table:
@@ -784,7 +785,7 @@ class SessionInfo(Gtk.Window):
         self.server_packet_compressors_label = slabel()
         self.clrow("Packet Compressors", self.client_packet_compressors_label, self.server_packet_compressors_label)
 
-    def populate_codecs(self) -> None:
+    def populate_codecs(self) -> bool:
         # clamp the large labels so they will overflow vertically:
         w = self.tab_box.get_preferred_width()[0]
         lw = max(200, int(w // 2.5))
@@ -877,7 +878,7 @@ class SessionInfo(Gtk.Window):
         self.input_encryption_label = self.label_row("Input Encryption")
         self.output_encryption_label = self.label_row("Output Encryption")
 
-        def add_audio_row(text):
+        def add_audio_row(text) -> tuple[Gtk.Label, Gtk.Label]:
             lbl = slabel()
             al = Gtk.Alignment(xalign=0, yalign=0.5, xscale=0.0, yscale=0.0)
             al.add(lbl)
@@ -888,7 +889,7 @@ class SessionInfo(Gtk.Window):
         self.speaker_label, self.speaker_details = add_audio_row("Speaker")
         self.microphone_label, self.microphone_details = add_audio_row("Microphone")
 
-    def populate_connection(self) -> None:
+    def populate_connection(self) -> bool:
         if self.client.server_load:
             self.server_load_label.set_text("  ".join("%.1f" % (x / 1000.0) for x in self.client.server_load))
         if self.client.server_start_time > 0:
@@ -920,14 +921,14 @@ class SessionInfo(Gtk.Window):
 
         if features.audio:
 
-            def get_audio_info(supported, prop):
+            def get_audio_info(supported, prop) -> dict:
                 if not supported:
                     return {"state": "disabled"}
                 if prop is None:
                     return {"state": "inactive"}
                 return prop.get_info()
 
-            def set_audio_info(label, details, supported, prop):
+            def set_audio_info(label, details, supported, prop) -> None:
                 d = typedict(get_audio_info(supported, prop))
                 state = d.strget("state")
                 codec_descr = d.strget("codec") or d.strget("codec_description")
@@ -1080,7 +1081,7 @@ class SessionInfo(Gtk.Window):
         al.add(self.encoder_info_box)
         vbox.add(al)
 
-    def populate_statistics(self) -> None:
+    def populate_statistics(self) -> bool:
         log("populate_statistics()")
         if monotonic() - self.last_populate_statistics < 1.0:
             # don't repopulate more than every second
@@ -1184,7 +1185,7 @@ class SessionInfo(Gtk.Window):
                     self.encoder_info_box.add(lbl)
         return True
 
-    def get_window_encoder_stats(self):
+    def get_window_encoder_stats(self) -> dict:
         window_encoder_stats = {}
         # new-style server with namespace (easier):
         server_last_info = self.last_info()
@@ -1220,7 +1221,7 @@ class SessionInfo(Gtk.Window):
         self.audio_out_queue_max = deque(maxlen=N_SAMPLES * 10 + 4)
         self.audio_out_queue_cur = deque(maxlen=N_SAMPLES * 10 + 4)
 
-    def populate_graphs(self, *_args) -> None:
+    def populate_graphs(self, *_args) -> bool:
         # older servers have 'batch' at top level,
         # newer servers store it under client
         self.client.send_info_request("network", "damage", "state", "batch", "client")

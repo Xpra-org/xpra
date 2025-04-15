@@ -77,6 +77,7 @@ class SSLUpgradeClient(StubClientMixin):
         if not self._protocol.wait_for_io_threads_exit(1):
             log.error("Error: failed to terminate network threads for ssl upgrade")
             self.quit(ExitCode.INTERNAL_ERROR)
+            # noinspection PyUnreachableCode
             return
         ssl_sock = ssl_wrap_socket(conn._socket, **kwargs)
         ssl_handshake(ssl_sock)

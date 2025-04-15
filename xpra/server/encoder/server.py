@@ -32,6 +32,7 @@ compresslog = Logger("compress")
 # ensure we don't create loops!
 codec_key = "xpra.codecs.remote"
 assert codec_key not in sys.modules
+# noinspection PyTypeChecker
 sys.modules[codec_key] = None
 
 

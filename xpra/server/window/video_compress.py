@@ -1858,7 +1858,7 @@ class WindowVideoSource(WindowSource):
             self.pipeline_setup_error(encodings, width, height, src_format,"failed to setup a video pipeline", scores)
 
     def pipeline_setup_error(self, encodings: Sequence[str], width: int, height: int, src_format: str,
-                             message: str, scores=()):
+                             message: str, scores=()) -> None:
         vh = self.video_helper
         if self.is_cancelled() or not vh:
             return ()

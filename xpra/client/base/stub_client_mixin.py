@@ -98,6 +98,7 @@ class StubClientMixin:
         and now the server has announced "startup-complete".
         """
 
+    # noinspection PyMethodMayBeStatic
     def compressed_wrapper(self, datatype, data, level=5, **kwargs) -> Compressed:
         """
         Dummy utility method for compressing data.
