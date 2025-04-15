@@ -215,7 +215,6 @@ class TopClient:
             except Exception:
                 v = -1
             self.last_getch = int(1000 * monotonic())
-            print(f"getch()={v}")
             if v in EXIT_KEYS:
                 self.exit_code = 0
             if v in SIGNAL_KEYS:
