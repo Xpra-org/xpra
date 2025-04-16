@@ -17,11 +17,12 @@ class PingTest(ServerMixinTest):
     def test_pings(self):
         with OSEnvContext():
             os.environ["XPRA_PING_TIMEOUT"] = "1"
+            from xpra.server.subsystem.ping import PingServer
             from xpra.server.source.ping import PingConnection
             assert PingConnection.is_needed(typedict({"network": {"pings": 1}}))
             opts = AdHocStruct()
             opts.pings = 1
-            self._test_mixin_class(PingConnection, opts)
+            self._test_mixin_class(PingServer, opts, source_mixin_class=PingConnection)
             self.handle_packet(("ping", 10))
             self.handle_packet(("ping", -1000))
             self.handle_packet(("ping_echo", 10, 500, 500, 600, 10))

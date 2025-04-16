@@ -18,7 +18,7 @@ class BandwidthTest(ServerMixinTest):
     def test_bandwidth(self):
         with OSEnvContext():
             os.environ["XPRA_PING_TIMEOUT"] = "1"
-            from xpra.server.subsystem.bandwidth import BandwidthServer
+            from xpra.server.subsystem.bandwidth import BandwidthServer, MAX_BANDWIDTH_LIMIT
             from xpra.server.source import bandwidth
             assert bandwidth.BandwidthConnection.is_needed(typedict({"network-state": True}))
             opts = AdHocStruct()
@@ -51,8 +51,8 @@ class BandwidthTest(ServerMixinTest):
                 return self.source.get_info().get("bandwidth-limit", {}).get("setting", 0)
             self.assertEqual(10*1024*1024, get_limit())
             with silence_info(bandwidth):
-                self.handle_packet(("bandwidth-limit", bandwidth.MAX_BANDWIDTH_LIMIT+1))
-            self.assertEqual(min(capped_at, bandwidth.MAX_BANDWIDTH_LIMIT), get_limit())
+                self.handle_packet(("bandwidth-limit", MAX_BANDWIDTH_LIMIT+1))
+            self.assertEqual(min(capped_at, MAX_BANDWIDTH_LIMIT), get_limit())
 
 
 def main():
