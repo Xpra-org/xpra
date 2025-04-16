@@ -12,6 +12,10 @@ from xpra.server import background_worker
 from xpra.server.background_worker import get_worker, add_work_item, stop_worker, Worker_Thread
 
 
+def slow_item():
+    time.sleep(1)
+
+
 class BackgroundWorkerTest(unittest.TestCase):
 
     def test_run(self):
@@ -37,9 +41,6 @@ class BackgroundWorkerTest(unittest.TestCase):
         time.sleep(1)
         with LoggerSilencer(background_worker):
             # trigger the warning with more than 10 items:
-            def slow_item():
-                time.sleep(1)
-
             for _ in range(12):
                 w.add(slow_item)
             stop_worker()
