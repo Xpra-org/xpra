@@ -267,9 +267,9 @@ def show_encoding_help(opts) -> int:
         if x.getEffectiveLevel() == logging.INFO:
             x.setLevel(logging.WARN)
     from xpra.server import features as sf
-    sf.audio = sf.av_sync = sf.clipboard = sf.commands = sf.control = sf.dbus = sf.fileprint = False
+    sf.audio = sf.av_sync = sf.clipboard = sf.commands = sf.control = sf.dbus = sf.fileprint = sf.debug = False
     sf.keyboard = sf.mouse = False
-    sf.mmap = sf.logging = sf.network_state = sf.notifications = sf.rfb = sf.shell = sf.webcam = False
+    sf.mmap = sf.logging = sf.ping = sf.bandwidth = sf.notifications = sf.rfb = sf.shell = sf.webcam = False
     from xpra.server.base import ServerBase
     sb = ServerBase()
     sb.init(opts)
@@ -320,6 +320,7 @@ def set_server_features(opts, mode: str) -> None:
         features.cursors = features.rfb = False
         features.ssh = False
     else:
+        features.debug = features.debug or b(opts.debug)
         features.commands = opts.commands
         features.notifications = opts.notifications and impcheck("notifications")
         features.webcam = b(opts.webcam) and impcheck("codecs")
@@ -337,6 +338,8 @@ def set_server_features(opts, mode: str) -> None:
         features.cursors = features.display and opts.cursors
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
         features.ssh = b(opts.ssh) and impcheck("net.ssh")
+        features.ping = b(opts.pings)
+        features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
 
     features.http = opts.http and impcheck("net.http")
     features.control = opts.control and impcheck("net.control")
@@ -344,7 +347,6 @@ def set_server_features(opts, mode: str) -> None:
     features.ssl = b(opts.ssl)
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
-    # features.network_state   = ??
     features.shell = opts.shell
 
 
@@ -355,6 +357,7 @@ def enforce_server_features() -> None:
     from xpra.util.pysystem import enforce_features
     from xpra.server import features
     enforce_features(features, {
+        "debug": "xpra.server.subsystem.debug",
         "control": "xpra.net.control,xpra.server.subsystem.controlcommands",
         "commands": "xpra.server.subsystem.child_command",
         "notifications": "xpra.notifications,xpra.server.subsystem.notification,xpra.server.source.notification",
@@ -373,7 +376,8 @@ def enforce_server_features() -> None:
         "dbus": "xpra.dbus,xpra.server.dbus,xpra.server.source.dbus",
         "encoding": "xpra.server.subsystem.encoding,xpra.server.source.encodings",
         "logging": "xpra.server.subsystem.logging",
-        "network_state": "xpra.server.subsystem.networkstate,xpra.server.source.networkstate",
+        "ping": "xpra.server.subsystem.ping,xpra.server.source.ping",
+        "bandwidth": "xpra.server.subsystem.bandwidth,xpra.server.source.bandwidth",
         "shell": "xpra.server.subsystem.shell,xpra.server.source.shell",
         "display": "xpra.server.subsystem.display,xpra.server.source.display",
         "windows": "xpra.server.subsystem.window,xpra.server.source.windows",

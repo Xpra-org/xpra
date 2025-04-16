@@ -8,18 +8,20 @@ import logging
 import traceback
 from time import monotonic
 from threading import Lock
+from typing import Any
 
+from xpra.common import FULL_INFO
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.client.base.stub_client_mixin import StubClientMixin
-from xpra.log import Logger, set_global_logging_handler
 from xpra.net.common import PacketType, LOG_PACKET_TYPE
 from xpra.net.compression import Compressed
+from xpra.log import Logger, set_global_logging_handler, get_info
 
 log = Logger("client")
 
 
-class RemoteLogging(StubClientMixin):
+class LoggingClient(StubClientMixin):
     """
     Mixin for remote logging support,
     either sending local logging events to the server,
@@ -46,6 +48,11 @@ class RemoteLogging(StubClientMixin):
         if ll:
             self.local_logging = None
             set_global_logging_handler(ll)
+
+    def get_info(self) -> dict[str, Any]:
+        if FULL_INFO <= 0:
+            return {}
+        return {LoggingClient.PREFIX: get_info()}
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         receive = c.boolget("remote-logging.receive")

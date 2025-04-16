@@ -11,7 +11,8 @@ from importlib import import_module
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitExit
 from xpra.net.digest import get_salt, gendigest
-from xpra.net.common import PacketType, ConnectionMessage
+from xpra.net.common import PacketType
+from xpra.common import ConnectionMessage
 from xpra.util.io import use_gui_prompt
 from xpra.util.env import envbool
 from xpra.util.parsing import parse_simple_dict
@@ -320,5 +321,5 @@ class ChallengeClient(StubClientMixin):
         # call send_hello from the UI thread:
         GLib.idle_add(self.send_hello, challenge_response, client_salt)
 
-    def init_authenticated_packet_handlers(self) -> None:
+    def init_packet_handlers(self) -> None:
         self.add_packets("challenge", main_thread=True)

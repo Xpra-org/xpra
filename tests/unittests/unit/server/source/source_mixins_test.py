@@ -18,12 +18,12 @@ from xpra.util.io import get_util_logger
 class SourceMixinsTest(unittest.TestCase):
 
     AUDIO_SERVER_PROPS = {
-        "audio_properties"      : {},
-        "audio_source_plugin"   : None,
-        "supports_microphone"   : True,
-        "microphone_codecs"     : (),
-        "supports_speaker"      : False,
-        "speaker_codecs"        : (),
+        "audio_properties": {},
+        "audio_source_plugin": None,
+        "supports_microphone": True,
+        "microphone_codecs": (),
+        "supports_speaker": False,
+        "speaker_codecs": (),
     }
 
     def _test_mixin_class(self, mixin_class, server_props=None, client_caps=None, protocol=None, test_fn=None):
@@ -37,8 +37,8 @@ class SourceMixinsTest(unittest.TestCase):
             mixin_class = mixin_classes[0]
         else:
             mixin_class = type(f"Mixin-{mixin_classes}", mixin_classes, {})
-        #test the instance:
-        #fake server object:
+        # test the instance:
+        # fake server object:
         server = AdHocStruct()
         server.session_name = "foo"
         server.unix_socket_paths = ["/some/path"]
@@ -131,16 +131,16 @@ class SourceMixinsTest(unittest.TestCase):
     def test_encodings(self):
         from xpra.server.source.encodings import EncodingsConnection
         self._test_mixin_class(EncodingsConnection, {
-            "core_encodings"    : ("rgb32", "rgb24", "png", ),
-            "encodings"         : ("rgb", "png", ),
-            "default_encoding"  : "auto",
-            "scaling_control"   : 50,
-            "default_quality"   : 50,
-            "default_min_quality"   : 10,
-            "default_speed"     : 50,
-            "default_min_speed"     : 10,
+            "core_encodings": ("rgb32", "rgb24", "png", ),
+            "encodings": ("rgb", "png", ),
+            "default_encoding": "auto",
+            "scaling_control": 50,
+            "default_quality": 50,
+            "default_min_quality": 10,
+            "default_speed": 50,
+            "default_min_speed": 10,
         }, {
-            "encodings.core"     : ("rgb32", "rgb24"),
+            "encodings.core": ("rgb32", "rgb24"),
         })
 
     def test_fileprint(self):
@@ -176,27 +176,32 @@ class SourceMixinsTest(unittest.TestCase):
             for mmap_supported in (False, True):
                 for has_file in (True, False):
                     caps = {
-                        "mmap.namespace"    : True,
-                        "mmap_min_size"     : 128*1024,
+                        "mmap.namespace": True,
+                        "mmap_min_size": 128*1024,
                     }
                     if has_file:
                         caps["mmap.file"] = tmp.name
                         caps["mmap_file"] = tmp.name
                     with LoggerSilencer(mmap):
                         self._test_mixin_class(mmap.MMAP_Connection, {
-                            "mmap_filename" : server_mmap_filename,
-                            "mmap_supported" : mmap_supported,
-                            "mmap_min_size" : 10000,
+                            "mmap_filename": server_mmap_filename,
+                            "mmap_supported": mmap_supported,
+                            "mmap_min_size": 10000,
                         }, caps)
 
-    def test_networkstate(self):
-        from xpra.server.source.networkstate import NetworkStateConnection
+    def test_ping(self):
+        from xpra.server.source.ping import PingConnection
 
-        def test_ping(_c, m):
+        def send_ping(_c, m):
             m.ping()
-            m.check_ping_echo_timeout(0, 0)
-            m.cleanup()
-        self._test_mixin_class(NetworkStateConnection, test_fn=test_ping)
+        self._test_mixin_class(PingConnection, test_fn=send_ping)
+
+    def test_bandwidth(self):
+        from xpra.server.source.bandwidth import BandwidthConnection
+
+        def test_update(_c, m):
+            m.update_bandwidth_limits()
+        self._test_mixin_class(BandwidthConnection, test_fn=test_update)
 
     def _get_window_mixin_server_attributes(self):
         def get_transient_for(_w):
@@ -211,12 +216,12 @@ class SourceMixinsTest(unittest.TestCase):
         def get_window_id(_w):
             return 0
         return {
-            "get_transient_for" : get_transient_for,
-            "get_focus"         : get_focus,
-            "get_cursor_data"   : get_cursor_data,
-            "get_window_id"     : get_window_id,
-            "window_filters"    : (),
-            "readonly"          : False,
+            "get_transient_for": get_transient_for,
+            "get_focus": get_focus,
+            "get_cursor_data": get_cursor_data,
+            "get_window_id": get_window_id,
+            "window_filters": (),
+            "readonly": False,
         }
 
     def test_windows(self):
@@ -229,10 +234,10 @@ class SourceMixinsTest(unittest.TestCase):
         def test_connect_info(_c, m):
             m.get_connect_info()
         self._test_mixin_class(ClientInfoConnection, {}, {
-            "session-type"      : "test",
-            "opengl"            : {"renderer" : "fake"},
-            "proxy"             : True,
-            "proxy.hostname"    : "some-hostname",
+            "session-type": "test",
+            "opengl": {"renderer": "fake"},
+            "proxy": True,
+            "proxy.hostname": "some-hostname",
         }, test_fn=test_connect_info)
 
     def test_display(self):
@@ -288,7 +293,7 @@ class SourceMixinsTest(unittest.TestCase):
 
         def send(*args):
             packets.append(args)
-        #wm.send = send
+        # wm.send = send
         wm.send_async = send
         try:
             assert wm.get_info()
@@ -297,8 +302,8 @@ class SourceMixinsTest(unittest.TestCase):
             with silence_info(webcam):
                 assert wm.start_virtual_webcam(device_id, w, h)
             assert wm.get_info().get("webcam", {}).get("active-devices", 0)==1
-            assert len(packets)==1    #ack sent
-            assert packets[0][0]=="webcam-ack"
+            assert len(packets) == 1    #ack sent
+            assert packets[0][0] == "webcam-ack"
             frame_no = 0
             from PIL import Image  # @UnresolvedImport
             image = Image.new('RGB', size=(w, h), color=(155, 0, 0))
@@ -325,28 +330,28 @@ class SourceMixinsTest(unittest.TestCase):
             wm.cleanup()
 
     def test_avsync(self):
-        #needs both subsystem:
+        # needs some other subsystems:
         from xpra.server.source.windows import WindowsConnection
         from xpra.server.source.audio import AudioConnection
         from xpra.server.source.avsync import AVSyncConnection
         server_props = SourceMixinsTest.AUDIO_SERVER_PROPS.copy()
         server_props.update({
-            "av_sync" : True,
-            "audio_properties"  : {"foo" : "bar"},
-            "sound.pulseaudio_id"   : "fake-one",
-            "sound.pulseaudio.server" : "some-path",
+            "av_sync": True,
+            "audio_properties": {"foo": "bar"},
+            "sound.pulseaudio_id": "fake-one",
+            "sound.pulseaudio.server": "some-path",
         })
         server_props.update(self._get_window_mixin_server_attributes())
         self._test_mixin_classes((WindowsConnection, AudioConnection, AVSyncConnection), server_props, {
-            "audio" : {
-                "send"    : True,
-                "receive" : True,
+            "audio": {
+                "send": True,
+                "receive": True,
             },
         })
         self._test_mixin_classes((WindowsConnection, AudioConnection, AVSyncConnection), server_props, {
-            "audio" : {
-                "send"    : True,
-                "receive" : True,
+            "audio": {
+                "send": True,
+                "receive": True,
             },
         })
         # test disabled:

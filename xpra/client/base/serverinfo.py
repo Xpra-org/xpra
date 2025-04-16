@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import time
 from collections.abc import Sequence
 from typing import Any
 
@@ -11,6 +12,7 @@ from xpra.util.version import version_compat_check, parse_version, get_platform_
 from xpra.util.str_fn import bytestostr, std
 from xpra.util.objects import typedict
 from xpra.util.system import platform_name
+from xpra.net.packet_encoding import VALID_ENCODERS
 from xpra.common import FULL_INFO, skipkeys
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.exit_codes import ExitCode
@@ -59,6 +61,9 @@ class ServerInfoMixin(StubClientMixin):
 
     def __init__(self):  # pylint: disable=super-init-not-called
         super().__init__()
+        self.server_start_time: float = -1
+        self.server_session_name: str = ""
+        self.server_packet_encoders: Sequence[str] = ()
         self._remote_machine_id = ""
         self._remote_uuid = ""
         self._remote_version = ""
@@ -88,6 +93,10 @@ class ServerInfoMixin(StubClientMixin):
         if p.TYPE == "rfb":
             # only the xpra protocol provides the server info
             return True
+        # make sure the server doesn't provide a start time in the future:
+        self.server_start_time = min(time.time(), c.intget("start_time", -1))
+        self.server_packet_encoders = tuple(x for x in VALID_ENCODERS if c.boolget(x, False))
+
         self._remote_machine_id = c.strget("machine_id")
         self._remote_uuid = c.strget("uuid")
         self._remote_version = parse_version(c.strget("build.version", c.strget("version")))

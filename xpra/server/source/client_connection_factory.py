@@ -46,9 +46,12 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.dbus:
         from xpra.server.source.dbus import DBUS_Connection
         mixins.append(DBUS_Connection)
-    if features.network_state:
-        from xpra.server.source.networkstate import NetworkStateConnection
-        mixins.append(NetworkStateConnection)
+    if features.bandwidth:
+        from xpra.server.source.bandwidth import BandwidthConnection
+        mixins.append(BandwidthConnection)
+    if features.ping:
+        from xpra.server.source.ping import PingConnection
+        mixins.append(PingConnection)
     if features.shell:
         from xpra.server.source.shell import ShellConnection
         mixins.append(ShellConnection)

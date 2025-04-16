@@ -9,6 +9,8 @@ def get_client_base_classes() -> tuple[type, ...]:
     from xpra.client.base import features
 
     CLIENT_BASES: list[type] = [XpraClientBase]
+    from xpra.client.subsystem.server_info import ServerInfoClient
+    CLIENT_BASES.append(ServerInfoClient)
     if features.display:
         from xpra.client.subsystem.display import DisplayClient
         CLIENT_BASES.append(DisplayClient)
@@ -40,17 +42,20 @@ def get_client_base_classes() -> tuple[type, ...]:
         from xpra.client.subsystem.mmap import MmapClient
         CLIENT_BASES.append(MmapClient)
     if features.logging:
-        from xpra.client.subsystem.logging import RemoteLogging
-        CLIENT_BASES.append(RemoteLogging)
-    if features.network_state:
-        from xpra.client.subsystem.network_state import NetworkState
-        CLIENT_BASES.append(NetworkState)
+        from xpra.client.subsystem.logging import LoggingClient
+        CLIENT_BASES.append(LoggingClient)
     if features.ssh:
         from xpra.client.subsystem.ssh_agent import SSHAgentClient
         CLIENT_BASES.append(SSHAgentClient)
     if features.network_listener:
         from xpra.client.subsystem.network_listener import NetworkListener
         CLIENT_BASES.append(NetworkListener)
+    if features.ping:
+        from xpra.client.subsystem.ping import PingClient
+        CLIENT_BASES.append(PingClient)
+    if features.bandwidth:
+        from xpra.client.subsystem.bandwidth import BandwidthClient
+        CLIENT_BASES.append(BandwidthClient)
     if features.commands:
         from xpra.client.subsystem.child_command import CommandClient
         CLIENT_BASES.append(CommandClient)

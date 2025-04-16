@@ -3,6 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.util.env import envbool
+
+DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
+
+debug = DETECT_LEAKS
 commands = True
 control = True
 file_transfer = True
@@ -23,7 +28,8 @@ ssl = True
 ssh = True
 logging = True
 tray = True
-network_state = True
+ping = True
+bandwidth = True
 network_listener = True
 ssh_agent = True
 encoding = True

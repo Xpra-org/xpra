@@ -31,7 +31,6 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def init(self, opts) -> None:
         XpraClientBase.init(self, opts)
-        self.glib_init()
 
     def install_signal_handlers(self) -> None:
         from xpra.gtk.signals import install_signal_handlers

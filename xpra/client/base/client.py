@@ -23,17 +23,14 @@ from xpra.net import compression
 from xpra.net.common import PacketType, PacketElement
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
-from xpra.net.net_util import get_network_caps
 from xpra.util.version import get_version_info, vparts, XPRA_VERSION
-from xpra.net.net_util import get_info as get_net_info
 from xpra.net.digest import get_salt
-from xpra.platform.info import get_name, get_username, get_sys_info
+from xpra.platform.info import get_name, get_username
 from xpra.client.base.factory import get_client_base_classes
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, BITS
 from xpra.util.child_reaper import getChildReaper, reaper_cleanup
-from xpra.util.system import SIGNAMES, register_SIGUSR_signals, get_env_info, get_sysconfig_info
+from xpra.util.system import SIGNAMES, register_SIGUSR_signals
 from xpra.util.io import stderr_print
-from xpra.util.pysystem import dump_all_frames, detect_leaks, get_frame_info
 from xpra.util.objects import typedict
 from xpra.util.str_fn import (
     Ellipsizer, repr_ellipsized, print_nested_dict,
@@ -41,7 +38,7 @@ from xpra.util.str_fn import (
 )
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
-from xpra.log import Logger, get_info as get_log_info
+from xpra.log import Logger
 
 GLib = gi_import("GLib")
 
@@ -52,10 +49,8 @@ log = Logger("client")
 netlog = Logger("network")
 
 EXTRA_TIMEOUT = 10
-DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
-SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO > 1)
 
 
 class XpraClientBase(ClientBaseClass):
@@ -94,7 +89,6 @@ class XpraClientBase(ClientBaseClass):
         self.exit_code: int | ExitCode | None = None
         self.exit_on_signal = False
         self.display_desc = {}
-        self.progress_process = None
         # connection attributes:
         self.hello_extra = {}
         self.has_password = False
@@ -126,14 +120,6 @@ class XpraClientBase(ClientBaseClass):
         self.display = opts.display
         self.install_signal_handlers()
 
-    def show_progress(self, pct: int, text="") -> None:
-        pp = self.progress_process
-        log(f"progress({pct}, {text!r}) progress process={pp}")
-        if SPLASH_LOG:
-            log.info(f"{pct:3} {text}")
-        if pp:
-            pp.progress(pct, text)
-
     def may_notify(self, nid: int | NotificationID, summary: str, body: str, *args, **kwargs) -> None:
         notifylog = Logger("notify")
         notifylog("may_notify(%s, %s, %s, %s, %s)", nid, summary, body, args, kwargs)
@@ -163,19 +149,18 @@ class XpraClientBase(ClientBaseClass):
         reason = "exit on signal %s" % SIGNAMES.get(signum, signum)
         GLib.timeout_add(0, self.signal_disconnect_and_quit, 128 + signum, reason)
 
+    def handle_os_signal(self, signum: int | signal.Signals, _frame: FrameType | None = None) -> None:
+        if self.exit_code is None:
+            try:
+                stderr_print()
+                log.info("client got signal %s", SIGNAMES.get(signum, signum))
+            except IOError:
+                pass
+        self.handle_app_signal(int(signum))
+
     def install_signal_handlers(self) -> None:
-
-        def os_signal(signum: int | signal.Signals, _frame: FrameType | None = None) -> None:
-            if self.exit_code is None:
-                try:
-                    stderr_print()
-                    log.info("client got signal %s", SIGNAMES.get(signum, signum))
-                except IOError:
-                    pass
-            self.handle_app_signal(int(signum))
-
-        signal.signal(signal.SIGINT, os_signal)
-        signal.signal(signal.SIGTERM, os_signal)
+        signal.signal(signal.SIGINT, self.handle_os_signal)
+        signal.signal(signal.SIGTERM, self.handle_os_signal)
         register_SIGUSR_signals(GLib.idle_add)
 
     # noinspection PyUnreachableCode
@@ -224,19 +209,9 @@ class XpraClientBase(ClientBaseClass):
         sys.exit()
 
     def get_info(self) -> dict[str, Any]:
-        info: dict[str, Any] = {}
-        if FULL_INFO > 0:
-            info |= {
-                "pid": os.getpid(),
-                "sys": get_sys_info(),
-                "network": get_net_info(),
-                "logging": get_log_info(),
-                "threads": get_frame_info(),
-                "env": get_env_info(),
-                "endpoint": self.get_connection_endpoint(),
-            }
-        if SYSCONFIG:
-            info["sysconfig"] = get_sysconfig_info()
+        info: dict[str, Any] = {"pid": os.getpid()}
+        for bc in CLIENT_BASES:
+            info.update(bc.get_info(self))
         return info
 
     def make_protocol(self, conn):
@@ -310,7 +285,7 @@ class XpraClientBase(ClientBaseClass):
             self.warn_and_quit(ExitCode.TIMEOUT, "connection timed out")
 
     def make_hello_base(self) -> dict[str, Any]:
-        capabilities = get_network_caps(FULL_INFO)
+        capabilities = {}
         for bc in CLIENT_BASES:
             # FIXME: digests should be added to!
             capabilities.update(bc.get_caps(self))
@@ -398,27 +373,7 @@ class XpraClientBase(ClientBaseClass):
         )
         return packet, synchronous, has_more
 
-    def stop_progress_process(self, reason="closing") -> None:
-        pp = self.progress_process
-        if not pp:
-            return
-        self.show_progress(100, reason)
-        self.progress_process = None
-        if pp.poll() is not None:
-            return
-        from subprocess import TimeoutExpired
-        try:
-            if pp.wait(0.1) is not None:
-                return
-        except TimeoutExpired:
-            pass
-        try:
-            pp.terminate()
-        except OSError:
-            pass
-
     def cleanup(self) -> None:
-        self.stop_progress_process()
         reaper_cleanup()
         for bc in CLIENT_BASES:
             with log.trap_error(f"Error cleaning {bc!r} handler"):
@@ -430,16 +385,8 @@ class XpraClientBase(ClientBaseClass):
             log("calling %s", p.close)
             p.close()
         log("cleanup done")
-        dump_all_frames()
-
-    @staticmethod
-    def glib_init() -> None:
-        register_SIGUSR_signals(GLib.idle_add)
 
     def run(self) -> ExitValue:
-        if DETECT_LEAKS:
-            print_leaks = detect_leaks()
-            GLib.timeout_add(10 * 1000, print_leaks)
         self.start_protocol()
         return 0
 
@@ -447,17 +394,6 @@ class XpraClientBase(ClientBaseClass):
         # protocol may be None in "listen" mode
         if self._protocol:
             self._protocol.start()
-
-    def get_connection_endpoint(self) -> str:
-        p = self._protocol
-        if not p:
-            return ""
-        conn = getattr(p, "_conn", None)
-        if not conn:
-            return ""
-        from xpra.net.bytestreams import pretty_socket
-        cinfo = conn.get_info()
-        return pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
 
     def quit(self, exit_code: ExitValue = 0) -> None:
         raise NotImplementedError()

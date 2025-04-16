@@ -8,6 +8,12 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server import features
     from xpra.server.core import ServerCore
     classes: list[type] = [ServerCore]
+    if features.ping:
+        from xpra.server.subsystem.ping import PingServer
+        classes.append(PingServer)
+    if features.bandwidth:
+        from xpra.server.subsystem.bandwidth import BandwidthServer
+        classes.append(BandwidthServer)
     if features.dbus:
         from xpra.server.subsystem.dbus import DbusServer
         classes.append(DbusServer)
@@ -44,9 +50,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.logging:
         from xpra.server.subsystem.logging import LoggingServer
         classes.append(LoggingServer)
-    if features.network_state:
-        from xpra.server.subsystem.networkstate import NetworkStateServer
-        classes.append(NetworkStateServer)
+    if features.debug:
+        from xpra.server.subsystem.debug import DebugServer
+        classes.append(DebugServer)
     if features.ssh:
         from xpra.server.subsystem.ssh_agent import SshAgent
         classes.append(SshAgent)

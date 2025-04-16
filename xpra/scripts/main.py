@@ -2122,6 +2122,7 @@ def set_client_features(opts) -> None:
         return True
 
     from xpra.client.base import features
+    features.debug = features.debug or b(opts.debug)
     features.commands = opts.commands
     features.control = opts.control
     features.file_transfer = b(opts.file_transfer) and impcheck("xpra.net.file_transfer")
@@ -2142,7 +2143,8 @@ def set_client_features(opts) -> None:
     features.ssh = b(opts.ssh)
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
-    features.network_state = True
+    features.ping = b(opts.pings)
+    features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
     features.ssh_agent = envbool("XPRA_SSH_AGENT", True)
     features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
     features.encoding = opts.windows
@@ -2153,6 +2155,7 @@ def enforce_client_features() -> None:
     from xpra.util.pysystem import enforce_features
     from xpra.client.base import features
     enforce_features(features, {
+        "debug": "xpra.client.base.debug",
         "control": "xpra.control,xpra.client.base.control",
         "file_transfer": "xpra.net.file_transfer",
         "display": "xpra.client.subsystem.display",
@@ -2172,7 +2175,8 @@ def enforce_client_features() -> None:
         "ssh": "paramiko,xpra.net.ssh",
         "logging": "xpra.client.subsystem.logging",
         "tray": "xpra.client.subsystem.tray",
-        "network_state": "xpra.client.subsystem.network_state",
+        "ping": "xpra.client.subsystem.ping",
+        "bandwidth": "xpra.client.subsystem.bandwidth",
         "network_listener": "xpra.client.subsystem.network_listener",
         "ssh_agent": "xpra.client.subssytem.ssh_agent",
         "encoding": "xpra.client.subsystem.encodings",
