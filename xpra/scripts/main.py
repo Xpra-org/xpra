@@ -2143,6 +2143,7 @@ def set_client_features(opts) -> None:
     features.logging = b(opts.remote_logging)
     features.tray = b(opts.tray)
     features.network_state = True
+    features.ssh_agent = envbool("XPRA_SSH_AGENT", True)
     features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
     features.encoding = opts.windows
     features.native = envbool("XPRA_CLIENT_NATIVE_BINDINGS", True)
@@ -2173,6 +2174,7 @@ def enforce_client_features() -> None:
         "tray": "xpra.client.subsystem.tray",
         "network_state": "xpra.client.subsystem.network_state",
         "network_listener": "xpra.client.subsystem.network_listener",
+        "ssh_agent": "xpra.client.subssytem.ssh_agent",
         "encoding": "xpra.client.subsystem.encodings",
         "native": "xpra.platform.client",
     })

@@ -25,5 +25,6 @@ logging = True
 tray = True
 network_state = True
 network_listener = True
+ssh_agent = True
 encoding = True
 native = True

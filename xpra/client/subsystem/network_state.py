@@ -33,7 +33,6 @@ log = Logger("network")
 bandwidthlog = Logger("network", "bandwidth")
 pinglog = Logger("network", "ping")
 
-SSH_AGENT: bool = envbool("XPRA_SSH_AGENT", True)
 FAKE_BROKEN_CONNECTION: int = envint("XPRA_FAKE_BROKEN_CONNECTION")
 PING_TIMEOUT: int = envint("XPRA_PING_TIMEOUT", 60)
 MIN_PING_TIMEOUT: int = envint("XPRA_MIN_PING_TIMEOUT", 2)
@@ -125,16 +124,6 @@ class NetworkState(StubClientMixin):
             except (ImportError, RuntimeError):
                 log("skipped server uuid lookup", exc_info=True)
 
-        ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK")
-        if SSH_AGENT and ssh_auth_sock and os.path.isabs(ssh_auth_sock):
-            # ensure agent forwarding is actually requested?
-            # (checking the socket type is not enough:
-            # one could still bind mount the path and connect via tcp! why though?)
-            # meh: if the transport doesn't have agent forwarding enabled,
-            # then it won't create a server-side socket
-            # and nothing will happen,
-            # exposing this client-side path is no big deal
-            caps["ssh-auth-sock"] = ssh_auth_sock
         # get socket speed if we have it:
         pinfo = self._protocol.get_info()
         device_info = pinfo.get("socket", {}).get("device", {})
