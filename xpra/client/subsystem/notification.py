@@ -38,7 +38,7 @@ class NotificationClient(StubClientMixin):
         self.notifications_enabled = False
         self.notifier = None
         self.tray = None
-        self.callbacks: dict[int, Callable] = {}
+        self.notification_callbacks: dict[int, Callable] = {}
         # override the default handler in client base:
         self.may_notify = self.do_notify
 
@@ -88,7 +88,7 @@ class NotificationClient(StubClientMixin):
 
     def notification_closed(self, nid: int, reason=3, text="") -> None:
         log("notification_closed(%i, %i, %s)", nid, reason, text)
-        callback = self.callbacks.pop(nid, None)
+        callback = self.notification_callbacks.pop(nid, None)
         if callback:
             callback("notification-close", nid, reason, text)
         else:
@@ -96,7 +96,7 @@ class NotificationClient(StubClientMixin):
 
     def notification_action(self, nid: int, action_id: int) -> None:
         log("notification_action(%i, %s)", nid, action_id)
-        callback = self.callbacks.get(nid, None)
+        callback = self.notification_callbacks.get(nid, None)
         if callback:
             callback("notification-action", nid, action_id)
         else:
@@ -116,7 +116,7 @@ class NotificationClient(StubClientMixin):
             (nid, summary, body, actions, hints, expire_timeout, icon_name),
             self.client_supports_notifications, self.notifier)
         if callback:
-            self.callbacks[nid] = callback
+            self.notification_callbacks[nid] = callback
         n = self.notifier
         if not self.client_supports_notifications or not n:
             # just log it instead:
