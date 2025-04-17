@@ -90,7 +90,7 @@ def upnp_add(socktype: str, info, options):
             if UPNP_IPV6:
                 INET["INET6"] = netifaces.AF_INET6  # @UndefinedVariable
 
-            def get_device_interface():
+            def get_device_interface() -> str:
                 default_gw = gateways.get("default")  # ie: {2: ('192.168.3.1', 'eth0')}
                 if default_gw:
                     for v in INET.values():  # ie: AF_INET
@@ -105,6 +105,7 @@ def upnp_add(socktype: str, info, options):
                     for inet in gws:
                         if inet and len(inet) >= 2:
                             return inet[1]
+                return ""
 
             interface = get_device_interface()
             if not interface:

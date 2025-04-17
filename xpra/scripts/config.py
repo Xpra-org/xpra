@@ -1335,9 +1335,9 @@ CLONES: dict[str, str] = {}
 NO_FILE_OPTIONS = ("daemon", )
 
 
-TRUE_OPTIONS: Sequence[str, bool] = ("yes", "true", "1", "on", True)
-FALSE_OPTIONS: Sequence[str, bool] = ("no", "false", "0", "off", False)
-ALL_BOOLEAN_OPTIONS: Sequence[str, bool] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
+TRUE_OPTIONS: Sequence[str | bool] = ("yes", "true", "1", "on", True)
+FALSE_OPTIONS: Sequence[str | bool] = ("no", "false", "0", "off", False)
+ALL_BOOLEAN_OPTIONS: Sequence[str | bool] = tuple(list(TRUE_OPTIONS)+list(FALSE_OPTIONS))
 OFF_OPTIONS: Sequence[str] = ("off", )
 
 

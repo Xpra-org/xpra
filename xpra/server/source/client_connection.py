@@ -65,7 +65,7 @@ class ClientConnection(StubClientConnection):
         # these packets are picked off by the "protocol" via 'next_packet()'
         # format: packet, wid, pixels, start_send_cb, end_send_cb
         # (only packet is required - the rest can be 0/None for clipboard packets)
-        self.packet_queue = deque[PacketType, int, int, bool]()
+        self.packet_queue = deque[tuple[PacketType, int, int, bool]]()
         # the encode work queue is used by subsystem that need to encode data before sending it,
         # ie: encodings and clipboard
         # this queue will hold functions to call to compress data (pixels, clipboard)

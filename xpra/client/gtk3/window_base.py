@@ -881,17 +881,17 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not self._override_redirect and type_hint not in FOLLOW_WINDOW_TYPES:
             return
 
-        def follow_configure_event(window, event):
+        def follow_configure_event(window, event) -> bool:
             follow = self._follow
             rp = self._follow_position
             log("follow_configure_event(%s, %s) follow=%s, relative position=%s",
                 window, event, follow, rp)
             if not follow or not rp:
-                return
+                return False
             fpos = getattr(follow, "_pos", None)
             log("follow_configure_event: %s moved to %s", follow, fpos)
             if not fpos:
-                return
+                return False
             fx, fy = fpos
             rx, ry = rp
             x, y = self.get_position()
