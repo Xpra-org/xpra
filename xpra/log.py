@@ -537,10 +537,11 @@ class ErrorTrapper(AbstractContextManager):
         self.message = message
         self.args = args
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         if exc_type:
             self.logger.error(self.message, *self.args, exc_info=(exc_type, exc_val, exc_tb), backtrace=True)
             return True
+        return False
 
     def __repr__(self):
         return "ErrorTrapper"

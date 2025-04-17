@@ -2259,11 +2259,14 @@ class WindowSource(WindowIconSource):
             self.remove_refresh_region(region)
             if not self.refresh_timer:
                 # nothing due for refresh, still nothing to do
-                return rec("lossless - nothing to do")
+                rec("lossless - nothing to do")
+                return
             if not self.refresh_regions:
                 self.cancel_refresh_timer()
-                return rec("covered all regions that needed a refresh, cancelling refresh timer")
-            return rec("removed rectangle from regions, keeping existing refresh timer")
+                rec("covered all regions that needed a refresh, cancelling refresh timer")
+                return
+            rec("removed rectangle from regions, keeping existing refresh timer")
+            return
         # if we're here: the window is still valid and this was a lossy update,
         # of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
         # so we probably need an auto-refresh (re-schedule it if one was due already)
@@ -2271,7 +2274,8 @@ class WindowSource(WindowIconSource):
         ww, wh = self.window_dimensions
         if ww <= 0 or wh <= 0:
             self.cancel_refresh_timer()
-            return rec("cancelling refresh - window cleaned up?")
+            rec("cancelling refresh - window cleaned up?")
+            return
         # we may have modified some pixels that were already due to be refreshed,
         # or added new ones to the list:
         window_pixcount = ww*wh
@@ -2295,7 +2299,8 @@ class WindowSource(WindowIconSource):
         if not self.refresh_timer:
             # timer was not due yet, or we've just updated everything
             if region_pixcount <= 0 or not self.refresh_regions:
-                return rec("nothing to refresh")
+                rec("nothing to refresh")
+                return
             self.refresh_event_time = now
             # slow down refresh when there is congestion:
             mult = sqrt(pct * (1+self.global_statistics.congestion_value))//10
@@ -2306,7 +2311,8 @@ class WindowSource(WindowIconSource):
             )
             self.refresh_target_time = now + sched_delay/1000.0
             self.refresh_timer = GLib.timeout_add(sched_delay, self.refresh_timer_function, options)
-            return rec(f"scheduling refresh in {sched_delay}ms (pct={pct}, batch={self.batch_config.delay})")
+            rec(f"scheduling refresh in {sched_delay}ms (pct={pct}, batch={self.batch_config.delay})")
+            return
         # some of those rectangles may overlap,
         # so the value may be greater than the size of the window:
         due_pixcount = sum(rect.width*rect.height for rect in self.refresh_regions)
@@ -2328,9 +2334,10 @@ class WindowSource(WindowIconSource):
         added_ms = int(1000*(self.refresh_target_time-target_time))
         due_ms = int(1000*(self.refresh_target_time-now))
         if self.refresh_target_time == target_time:
-            return rec(f"unchanged refresh: due in {due_ms}ms, pct={pct}")
-        rec("re-scheduling refresh: due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (
-            due_ms, added_ms, sched_delay, pct, self.batch_config.delay))
+            rec(f"unchanged refresh: due in {due_ms}ms, pct={pct}")
+        else:
+            rec("re-scheduling refresh: due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (
+                due_ms, added_ms, sched_delay, pct, self.batch_config.delay))
 
     def remove_refresh_region(self, region: rectangle) -> None:
         # removes the given region from the refresh list

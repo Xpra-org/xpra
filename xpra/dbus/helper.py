@@ -102,13 +102,12 @@ class DBusHelper:
     def dbus_to_native(self, *args):
         return dbus_to_native(*args)
 
-    def call_function(self, bus_name, path, interface, function, args, ok_cb, err_cb):
+    def call_function(self, bus_name, path, interface, function, args, ok_cb, err_cb) -> None:
         log = Logger("dbus")
 
-        def err(msg):
+        def err(msg) -> None:
             log("DBusHelper: %s", msg)
             err_cb(msg)
-            return None
 
         from dbus import DBusException
         try:
@@ -116,12 +115,14 @@ class DBusHelper:
             obj = self.bus.get_object(bus_name, path)
             log("dbus.get_object(%s, %s)=%s", bus_name, path, obj)
         except DBusException:
-            return err("failed to locate object at: %s:%s" % (bus_name, path))
+            err("failed to locate object at: %s:%s" % (bus_name, path))
+            return
         try:
             fn = obj.get_dbus_method(function, interface)
             log("%s.get_dbus_method(%s, %s)=%s", obj, function, interface, fn)
         except Exception:
-            return err("failed to locate remote function '%s' on %s" % (function, obj))
+            err("failed to locate remote function '%s' on %s" % (function, obj))
+            return
         try:
             log("calling %s(%s)", fn, args)
             keywords = {"dbus_interface": interface,
@@ -129,4 +130,4 @@ class DBusHelper:
                         "error_handler": err_cb}
             fn.call_async(*args, **keywords)
         except Exception as e:
-            return err("error invoking %s on %s: %s" % (function, obj, e))
+            err("error invoking %s on %s: %s" % (function, obj, e))

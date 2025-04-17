@@ -506,7 +506,7 @@ def main():  # pragma: no cover
         from xpra.net import packet_encoding
         packet_encoding.init_all()
         netcaps = get_network_caps()
-        netif = {"": bool(netifaces)}
+        netif: dict[str, bool | Sequence] = {"": bool(netifaces)}
         if netifaces_version:
             netif["version"] = netifaces_version
         netcaps["netifaces"] = netif

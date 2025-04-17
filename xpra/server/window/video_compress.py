@@ -328,7 +328,7 @@ class WindowVideoSource(WindowSource):
             "video"        : self.common_video_encodings,
             "edge"         : self.edge_encoding,
         })
-        einfo = {
+        einfo: dict[str, Any] = {
             "pipeline_param" : self.get_pipeline_info(),
             "scrolling"      : {
                 "enabled"      : self.supports_scrolling,
@@ -692,7 +692,7 @@ class WindowVideoSource(WindowSource):
     def start_gstreamer_pipeline(self) -> bool:
         from xpra.gstreamer.common import plugin_str
         from xpra.codecs.gstreamer.capture import capture_and_encode
-        attrs = {
+        attrs: dict[str, bool | int] = {
             "show-pointer": False,
             "do-timestamp": True,
             "use-damage": False,
@@ -1856,6 +1856,7 @@ class WindowVideoSource(WindowSource):
 
         if not self.is_cancelled() and first_time(f"novideo-{src_format}-{self.wid}"):
             self.pipeline_setup_error(encodings, width, height, src_format,"failed to setup a video pipeline", scores)
+        return False
 
     def pipeline_setup_error(self, encodings: Sequence[str], width: int, height: int, src_format: str,
                              message: str, scores=()) -> None:

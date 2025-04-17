@@ -688,7 +688,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         hfid = self._has_focus
         had_focus = self._id_to_window.get(hfid)
 
-        def reset_focus():
+        def reset_focus() -> None:
             toplevel = None
             if self._wm:
                 toplevel = self._wm.get_property("toplevel")
@@ -704,11 +704,13 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
         if wid == 0:
             # wid==0 means root window
-            return reset_focus()
+            reset_focus()
+            return
         window = self._id_to_window.get(wid)
         if not window:
             # not found! (go back to root)
-            return reset_focus()
+            reset_focus()
+            return
         if window.is_OR():
             focuslog.warn("Warning: cannot focus OR window: %s", window)
             return

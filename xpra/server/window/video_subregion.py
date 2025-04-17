@@ -138,7 +138,7 @@ class VideoSubregion:
 
     def get_info(self) -> dict[str, Any]:
         r = self.rectangle
-        info = {
+        info: dict[str, Any] = {
             "supported": self.supported,
             "enabled": self.enabled,
             "detection": self.detection,

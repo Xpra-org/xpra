@@ -127,7 +127,7 @@ class ClientWindow(GTKClientWindowBase):
         from xpra.client.gtk3.cairo_backing import CairoBacking
         return CairoBacking
 
-    def xget_u32_property(self, target, name: str):
+    def xget_u32_property(self, target, name: str) -> int:
         if HAS_X11_BINDINGS:
             return GTKClientWindowBase.xget_u32_property(self, target, name)
         # pure Gdk lookup:
@@ -136,7 +136,7 @@ class ClientWindow(GTKClientWindowBase):
             type_atom = Gdk.Atom.intern("CARDINAL", False)
             prop = Gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
             if not prop or len(prop) != 3 or len(prop[2]) != 1:
-                return None
+                return 0
             metalog("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
             return prop[2][0]
         except Exception as e:

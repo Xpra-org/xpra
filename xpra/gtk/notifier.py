@@ -111,12 +111,12 @@ class GTKNotifier(NotifierBase):
                     summary: str, body: str, actions, hints, timeout, icon):
         GLib.idle_add(self.new_popup, int(nid), summary, body, actions, icon, timeout, 0 < timeout <= 600)
 
-    def new_popup(self, nid: int, summary: str, body: str, actions: tuple, icon, timeout=10 * 1000, show_timeout=False):
+    def new_popup(self, nid: int, summary: str, body: str, actions: tuple, icon, timeout=10 * 1000, show_timeout=False) -> bool:
         """Create a new Popup instance, or update an existing one """
         existing = [p for p in self._notify_stack if p.nid == nid]
         if existing:
             existing[0].set_content(summary, body, actions, icon)
-            return
+            return False
         if len(self._notify_stack) == self.max_popups:
             oldest = self._notify_stack[0]
             oldest.hide_notification()

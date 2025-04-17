@@ -167,7 +167,7 @@ class XpraMonitorServer(DesktopServerBase):
                     screenlog(f"no monitor found for output id {output_id}")
                     return
                 # get the geometry from the crtc:
-                mdef = {k: v for k, v in crtc_info.items() if k in ("x", "y", "width", "height")}
+                mdef: dict[str, int] = {k: v for k, v in crtc_info.items() if k in ("x", "y", "width", "height")}
                 # add the millimeter dimensions from the output:
                 mdef.update((k, v) for k, v in output_info.items() if k in ("mm-width", "mm-height"))
                 # and some monitor attributes:

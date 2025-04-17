@@ -282,7 +282,7 @@ class ClientWindowBase(ClientWidgetBase):
     def _pointer_modifiers(self, event):
         raise NotImplementedError
 
-    def xget_u32_property(self, target, name):
+    def xget_u32_property(self, target, name) -> int:
         raise NotImplementedError
 
     def is_OR(self) -> bool:

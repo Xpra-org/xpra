@@ -49,9 +49,9 @@ class ColorGradientWindow(Gtk.Window):
     def configure_event(self, *_args):
         self.queue_draw()
 
-    def on_button_press(self, _widget, event):
+    def on_button_press(self, _widget, event) -> bool:
         if event.type != Gdk.EventType.BUTTON_PRESS:
-            return
+            return True
         if event.button == 1:
             self.bpc += 1
         else:

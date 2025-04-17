@@ -142,9 +142,8 @@ class BugReport:
         except ImportError:
             get_audio_info = None
 
-        def get_gl_info():
-            if self.opengl_info:
-                return self.opengl_info
+        def get_gl_info() -> dict:
+            return self.opengl_info
 
         from xpra.net.net_util import get_info as get_net_info
         from xpra.platform.paths import get_info as get_path_info

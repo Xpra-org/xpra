@@ -26,7 +26,7 @@ def check(username: str, password: str, service: str = PAM_AUTH_SERVICE,
     if not session.start(b(password)):
         return False
     try:
-        success = session.authenticate()
+        success: bool = session.authenticate()
         if success and check_account:
             success = session.check_account()
         return success

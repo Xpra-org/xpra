@@ -392,7 +392,7 @@ class SocketProtocol:
 
     def get_info(self, alias_info: bool = ALIAS_INFO) -> dict[str, Any]:
         shm = self._source_has_more
-        info = {
+        info: dict[str, str | int | bool | dict] = {
             "large_packets": self.large_packets,
             "compression_level": self.compression_level,
             "chunks": self.chunks,

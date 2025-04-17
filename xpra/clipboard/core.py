@@ -402,7 +402,7 @@ class ClipboardProtocolHelperCore:
         return "ClipboardProtocolHelperCore"
 
     def get_info(self) -> dict[str, Any]:
-        info = {
+        info: dict[str, str | int | Sequence[str] | bool | dict] = {
             "type": str(self).replace("ClipboardProtocolHelper", ""),
             "max_size": self.max_clipboard_packet_size,
             "max_recv_size": self.max_clipboard_receive_size,

@@ -80,7 +80,7 @@ def can_retry(e) -> bool | str:
     return False
 
 
-def untilConcludes(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[Any], bool], f: Callable, *a, **kw):
+def untilConcludes(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[Any], bool], f: Callable, *a, **kw) -> Any:
     while is_active_cb():
         try:
             return f(*a, **kw)
@@ -91,6 +91,7 @@ def untilConcludes(is_active_cb: Callable[[], bool], can_retry_cb: Callable[[Any
             if LOG_TIMEOUTS > 0:
                 log("untilConcludes(%s, %s, %s, %s, %s) %s, retry=%s",
                     is_active_cb, can_retry_cb, f, a, kw, e, retry, exc_info=LOG_TIMEOUTS >= 2)
+    return None
 
 
 def pretty_socket(s) -> str:

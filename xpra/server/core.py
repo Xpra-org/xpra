@@ -2211,7 +2211,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         return {}
 
     def get_server_exec_info(self) -> dict[str, Any]:
-        info = {
+        info: dict[str, Sequence[str] | str | int | dict] = {
             "argv": sys.argv,
             "path": sys.path,
             "exec_prefix": sys.exec_prefix,

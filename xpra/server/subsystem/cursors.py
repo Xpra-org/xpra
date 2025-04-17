@@ -48,7 +48,7 @@ class CursorManager(StubServerMixin):
             ss.send_cursor()
 
     def get_caps(self, source) -> dict[str, Any]:
-        caps = {
+        caps: dict[str, Any] = {
             "cursors": self.cursors,
         }
         Gdk = sys.modules.get("gi.repository.Gdk", None)

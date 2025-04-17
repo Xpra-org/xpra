@@ -382,7 +382,7 @@ class AudioServer(StubServerMixin):
         audiolog("init_audio_options audio properties=%s", self.audio_properties)
 
     def get_pulseaudio_info(self) -> dict[str, Any]:
-        info = {
+        info: dict[str, str | Sequence[str] | int] = {
             "command": self.pulseaudio_command,
             "configure-commands": self.pulseaudio_configure_commands,
         }

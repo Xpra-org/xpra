@@ -162,7 +162,7 @@ class WindowsConnection(StubClientConnection):
         pqpi = get_list_stats(pqpixels)
         if pqpixels:
             pqpi["current"] = pqpixels[-1]
-        info = {
+        info: dict[str, Any] = {
             "damage": {
                 "compression_queue": {"size": {"current": self.encode_queue_size()}},
                 "packet_queue": {"size": {"current": len(self.packet_queue)}},

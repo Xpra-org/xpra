@@ -424,7 +424,7 @@ class ChildCommandServer(StubServerMixin):
         log(f"process_start_command: proc={proc}")
 
     def _process_command_signal(self, _proto, packet: PacketType) -> None:
-        pid = packet[1]
+        pid = int(packet[1])
         signame = packet[2]
         if signame not in COMMAND_SIGNALS:
             log.warn("Warning: invalid signal received: '%s'", signame)
@@ -439,6 +439,9 @@ class ChildCommandServer(StubServerMixin):
         sigval = getattr(signal, signame, None)
         if not sigval:
             log.error(f"Error: signal {signame!r} not found!")
+            return
+        if pid <= 1:
+            log.error(f"Error: invalid pid {pid}")
             return
         log.info(f"sending signal {signame!r} to pid {pid}")
         try:

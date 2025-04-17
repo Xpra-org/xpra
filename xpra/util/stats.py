@@ -48,7 +48,7 @@ def absolute_to_diff_values(in_data):
     return data
 
 
-def values_to_scaled_values(data: Sequence[float | int],
+def values_to_scaled_values(data: Sequence[float | int | None],
                             scale_unit=10,
                             min_scaled_value=10,
                             num_values=20,

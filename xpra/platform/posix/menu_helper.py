@@ -362,7 +362,7 @@ def load_xdg_menu(submenu) -> dict[str, Any]:
     return submenu_data
 
 
-def remove_icons(menu_data):
+def remove_icons(menu_data: dict) -> dict:
     filt = {}
     for category, cdef in menu_data.items():
         fcdef = dict(cdef)

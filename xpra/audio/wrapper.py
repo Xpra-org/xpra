@@ -5,6 +5,7 @@
 
 import os
 import sys
+from typing import Any
 from time import monotonic
 from typing import NoReturn
 from collections import namedtuple
@@ -171,7 +172,7 @@ def run_audio(mode: str, error_cb: Callable, options, args) -> int:
             sources = [x for x in get_source_plugins() if x in plugins]
             sinks = [x for x in get_sink_plugins() if x in plugins]
             from xpra.audio.gstreamer_util import get_gst_version
-            d = {
+            d: dict[str, Any] = {
                 "encoders": can_encode(),
                 "decoders": can_decode(),
                 "sources": sources,

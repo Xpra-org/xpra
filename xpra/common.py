@@ -321,8 +321,8 @@ def get_refresh_rate_for_value(refresh_rate: str, invalue: int, multiplier=1) ->
     return invalue
 
 
-def adjust_monitor_refresh_rate(refresh_rate: str, mdef) -> dict[int, dict]:
-    adjusted = {}
+def adjust_monitor_refresh_rate(refresh_rate: str, mdef: dict[int, dict]) -> dict[int, dict]:
+    adjusted: dict[int, dict] = {}
     for i, monitor in mdef.items():
         # make a copy, don't modify in place!
         # (as this may be called multiple times on the same input dict)

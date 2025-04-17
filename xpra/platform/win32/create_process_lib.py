@@ -341,6 +341,7 @@ def create_environment(environ):
     if environ is not None:
         items = ['%s=%s' % (k, environ[k]) for k in sorted(environ)]
         return '\x00'.join(items)
+    return None
 
 
 def create_process(commandline=None, creationinfo=None, startupinfo=None):
