@@ -7,11 +7,11 @@ For usage related information, see [clipboard feature](../Features/Clipboard.md)
 
 The prefix for all packets and capabilities is `clipboard`.
 
-| Component         | Link                                                                                                         |
-|-------------------|--------------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.subsystem.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/clipboard.py) |
-| client connection | [xpra.server.source.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/clipboard.py) |
-| server            | [xpra.server.subsystem.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/clipboard.py) |
+| Component         | Link                                                                                                               |
+|-------------------|--------------------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.subsystem.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/clipboard.py) |
+| client connection | [xpra.server.source.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/clipboard.py)       |
+| server            | [xpra.server.subsystem.clipboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/clipboard.py) |
 
 
 ## Platforms

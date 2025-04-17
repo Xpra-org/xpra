@@ -7,11 +7,11 @@ For usage related information, see [webcam feature](../Features/Webcam.md).
 
 The prefix for all packets and capabilities is `webcam`.
 
-| Component         | Link                                                                                                   |
-|-------------------|--------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.subsystem.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/webcam.py) |
-| client connection | [xpra.server.source.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/webcam.py) |
-| server            | [xpra.server.subsystem.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/webcam.py) |
+| Component         | Link                                                                                                         |
+|-------------------|--------------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.subsystem.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/webcam.py) |
+| client connection | [xpra.server.source.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/webcam.py)       |
+| server            | [xpra.server.subsystem.webcam](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/webcam.py) |
 
 
 ## Capabilities

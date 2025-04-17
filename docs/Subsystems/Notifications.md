@@ -7,11 +7,11 @@ For usage related information, see [notitications feature](../Features/Notificat
 
 The prefix for all packets and capabilities is `notification`.
 
-| Component         | Link                                                                                                               |
-|-------------------|--------------------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.subsystem.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/notification.py) |
-| client connection | [xpra.server.source.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/notification.py) |
-| server            | [xpra.server.subsystem.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/notification.py) |
+| Component         | Link                                                                                                                     |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.subsystem.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/notification.py) |
+| client connection | [xpra.server.source.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/notification.py)       |
+| server            | [xpra.server.subsystem.notification](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/notification.py) |
 
 
 ## Capabilities

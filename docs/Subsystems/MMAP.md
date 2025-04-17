@@ -7,11 +7,11 @@ between client and server when both reside on the same host.
 
 The prefix for all packets and capabilities is `mmap`.
 
-| Component         | Link                                                                                               |
-|-------------------|----------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.subsystem.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/mmap.py) |
-| client connection | [xpra.server.source.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/mmap.py) |
-| server            | [xpra.server.subsystem.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/mmap.py) |
+| Component         | Link                                                                                                     |
+|-------------------|----------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.subsystem.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/mmap.py) |
+| client connection | [xpra.server.source.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/mmap.py)       |
+| server            | [xpra.server.subsystem.mmap](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/mmap.py) |
 
 
 ## Capabilities

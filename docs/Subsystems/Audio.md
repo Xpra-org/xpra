@@ -9,9 +9,9 @@ The prefix for all packets and capabilities is `audio`.
 
 | Component         | Link                                                                                                 |
 |-------------------|------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.subsystem.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/audio.py) |
+| client            | [xpra.client.subsystem.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/audio.py) |
 | client connection | [xpra.server.source.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/audio.py) |
-| server            | [xpra.server.subsystem.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/audio.py) |
+| server            | [xpra.server.subsystem.audio](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/audio.py) |
 
 ## Common
 

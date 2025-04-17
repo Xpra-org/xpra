@@ -5,11 +5,11 @@
 
 The prefix for all packets and capabilities should be `pointer`, this work is not complete yet.
 
-| Component         | Link                                                                                                     |
-|-------------------|----------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.subsystem.pointer](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/pointer.py) |
-| client connection | [xpra.server.source.pointer](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/pointer.py) |
-| server            | [xpra.server.subsystem.pointer](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/pointer.py) |
+| Component         | Link                                                                                                           |
+|-------------------|----------------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.subsystem.pointer](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/pointer.py) |
+| client connection | [xpra.server.source.pointer](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/pointer.py)       |
+| server            | [xpra.server.subsystem.pointer](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/pointer.py) |
 
 
 ## Platforms

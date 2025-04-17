@@ -7,11 +7,11 @@ For usage related information, see [keyboard feature](../Features/Keyboard.md).
 
 The prefix for all packets and capabilities should be `keyboard` - unfortunately, this work is not complete yet.
 
-| Component         | Link                                                                                                       |
-|-------------------|------------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.subsystem.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/mixins/keyboard.py) |
-| client connection | [xpra.server.source.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/keyboard.py) |
-| server            | [xpra.server.subsystem.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/mixins/keyboard.py) |
+| Component         | Link                                                                                                             |
+|-------------------|------------------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.subsystem.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/keyboard.py) |
+| client connection | [xpra.server.source.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/keyboard.py)       |
+| server            | [xpra.server.subsystem.keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/keyboard.py) |
 
 
 ## Platforms
