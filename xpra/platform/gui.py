@@ -9,7 +9,7 @@ import os
 import sys
 import binascii
 from typing import Any
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.common import noop
 from xpra.platform import platform_import
@@ -69,36 +69,9 @@ def use_stdin() -> bool:
     return bool(stdin) and stdin.isatty()
 
 
-def get_clipboard_native_class() -> str:
-    return ""
-
-
-# defaults:
-def get_native_tray_menu_helper_class() -> type | None:
-    # classes that generate menus for xpra's system tray
-    # let the toolkit classes use their own
-    return None
-
-
-def get_native_tray_classes(*_args) -> list[type]:
-    # the classes we can use for our system tray:
-    # let the toolkit classes use their own
-    return []
-
-
-def get_native_system_tray_classes(*_args) -> list[type]:
-    # the classes we can use for application system tray forwarding:
-    # let the toolkit classes use their own
-    return []
-
-
 def system_bell(*_args) -> bool:
     # let the toolkit classes use their own
     return False
-
-
-def get_native_notifier_classes() -> list[type]:
-    return []
 
 
 def get_session_type() -> str:
@@ -343,16 +316,8 @@ def get_info_base() -> dict[str, Any]:
         except AttributeError:
             return str(v)
 
-    def fnames(flist: Iterable) -> Sequence:
-        return [fname(x) for x in flist]
-
     return {
-        "native-clipboard": get_clipboard_native_class(),
-        "native_tray_menu_helper": fname(get_native_tray_menu_helper_class()),
-        "native_trays": fnames(get_native_tray_classes()),
-        "native_system_trays": fnames(get_native_system_tray_classes()),
         "system_bell": fname(system_bell),
-        "native_notifiers": fnames(get_native_notifier_classes()),
         "wm_name": get_wm_name() or "",
         "workarea": get_workarea() or "",
         "workareas": get_workareas(),
@@ -393,11 +358,6 @@ platform_import(globals(), "gui", False,
                 "show_desktop", "set_fullscreen_monitors", "set_shaded",
                 "pointer_grab", "pointer_ungrab",
                 "take_screenshot",
-                "get_clipboard_native_class",
-                "get_native_tray_menu_helper_class",
-                "get_native_tray_classes",
-                "get_native_system_tray_classes",
-                "get_native_notifier_classes",
                 "get_session_type",
                 "get_vrefresh", "get_workarea", "get_workareas",
                 "get_number_of_desktops", "get_desktop_names",

@@ -2,10 +2,10 @@
 
 import sys
 
-import gi
-gi.require_version('Gtk', '3.0')  # @UndefinedVariable
-from gi.repository import Gtk     # pylint: disable=wrong-import-position @UnresolvedImport
 from xpra.util.env import envbool
+from xpra.os_util import gi_import
+
+Gtk = gi_import("Gtk")
 
 
 class StatusIcon:
@@ -23,8 +23,8 @@ class StatusIcon:
         try:
             nc = []
             if envbool("XPRA_NATIVE_NOTIFIER", True):
-                from xpra.platform.gui import get_native_notifier_classes
-                nc += get_native_notifier_classes()
+                from xpra.platform.systray import get_backends
+                nc += get_backends()
             from xpra.gtk.notifier import GTKNotifier
             nc.append(GTKNotifier)
             self.notifier = nc[0](self.notification_closed, self.notification_action)
@@ -68,7 +68,7 @@ class StatusIcon:
         actions = ["0", "Hello", "1", "Goodbye"]
         hints = {
             "image-path"    : "/usr/share/xpra/icons/encoding.png",
-            }
+        }
         self.notifier.show_notify("dbus-id", None, self.nid, self.name, 0,
                                   "", "Notification Summary", "Notification Body", actions, hints, 60*1000, "")
         self.nid += 1

@@ -22,7 +22,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.platform.gui import (
     get_window_min_size, get_window_max_size,
-    get_double_click_time, get_double_click_distance, get_native_system_tray_classes,
+    get_double_click_time, get_double_click_distance
 )
 from xpra.net.common import PacketType
 from xpra.exit_codes import ExitCode, ExitValue
@@ -684,7 +684,8 @@ class WindowClient(StubClientMixin):
         # subclasses may add their toolkit specific variants, if any
         # by overriding this method
         # use the native ones first:
-        return get_native_system_tray_classes()
+        from xpra.platform.systray import get_forwarding_backends
+        return get_forwarding_backends()
 
     def setup_system_tray(self, client, app_id, wid, w, h, metadata):
         tray_widget = None

@@ -24,7 +24,6 @@ from xpra.log import Logger
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
 mouselog = Logger("osx", "events", "mouse")
-notifylog = Logger("osx", "notify")
 
 GLib = gi_import("GLib")
 
@@ -33,7 +32,6 @@ OSX_WHEEL_MULTIPLIER = envint("XPRA_OSX_WHEEL_MULTIPLIER", 100)
 OSX_WHEEL_PRECISE_MULTIPLIER = envint("XPRA_OSX_WHEEL_PRECISE_MULTIPLIER", 1)
 OSX_WHEEL_DIVISOR = envint("XPRA_OSX_WHEEL_DIVISOR", 10)
 WHEEL = envbool("XPRA_WHEEL", True)
-NATIVE_NOTIFIER = envbool("XPRA_OSX_NATIVE_NOTIFIER", True)
 SUBPROCESS_NOTIFIER = envbool("XPRA_OSX_SUBPROCESS_NOTIFIER", False)
 
 ALPHA = {
@@ -90,29 +88,14 @@ def do_ready() -> None:
         osxapp.ready()
 
 
-def get_clipboard_native_class() -> str:
-    return "xpra.platform.darwin.clipboard.OSXClipboardProtocolHelper"
-
-
-def get_native_notifier_classes() -> list[type]:
-    v: list[type] = []
-    if NATIVE_NOTIFIER:
-        from Foundation import NSUserNotificationCenter
-        if NSUserNotificationCenter.defaultUserNotificationCenter():
-            from xpra.platform.darwin.notifier import OSX_Notifier
-            v.append(OSX_Notifier)
-    notifylog("get_native_notifier_classes()=%s", v)
-    return v
-
-
-def get_native_tray_menu_helper_class() -> Callable | None:
+def get_menu_helper_class() -> Callable | None:
     if get_OSXApplication():
         from xpra.platform.darwin.menu import getOSXMenuHelper
         return getOSXMenuHelper
     return None
 
 
-def get_native_tray_classes() -> list[type]:
+def get_backends() -> list[type]:
     if get_OSXApplication():
         from xpra.platform.darwin.tray import OSXTray
         return [OSXTray]

@@ -7,7 +7,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.platform import program_context
-from xpra.platform.gui import get_native_tray_menu_helper_class, get_native_tray_classes
+from xpra.platform.systray import get_backends, get_menu_helper_class
 from xpra.platform.paths import get_icon_filename
 from xpra.gtk.widget import scaled_image
 from xpra.common import noop
@@ -93,7 +93,7 @@ class FakeApplication:
         self.remote_open_url_ask = False
         self._remote_server_log = ""
         self.start_new_commands = False
-        classes = [get_native_tray_menu_helper_class()]
+        classes = [get_menu_helper_class()]
         try:
             from xpra.client.gtk3.tray_menu import GTKTrayMenu
             classes.append(GTKTrayMenu)
@@ -107,7 +107,7 @@ class FakeApplication:
                     log.warn("failed to create menu helper %s: %s", hclass, e)
         assert self.menu_helper
         menu = self.menu_helper.build()
-        tray_classes = list(get_native_tray_classes())
+        tray_classes = list(get_backends())
         try:
             from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
             tray_classes.append(GTKStatusIconTray)

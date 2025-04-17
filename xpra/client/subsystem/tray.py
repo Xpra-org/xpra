@@ -4,10 +4,10 @@
 # later version. See the file COPYING for details.
 #  pylint: disable-msg=E1101
 
-from xpra.platform.gui import get_native_tray_classes, get_native_tray_menu_helper_class
+from xpra.platform.systray import get_backends, get_menu_helper_class
 from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.objects import make_instance
-from xpra.util.env import envint
+from xpra.util.env import envint, envbool
 from xpra.common import XPRA_APP_ID, ConnectionMessage
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -16,6 +16,7 @@ GLib = gi_import("GLib")
 
 log = Logger("tray")
 
+USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 TRAY_DELAY = envint("XPRA_TRAY_DELAY", 0)
 
 
@@ -84,7 +85,9 @@ class TrayClient(StubClientMixin):
         # subclasses may add their toolkit specific variants, if any
         # by overriding this method
         # use the native ones first:
-        return get_native_tray_classes()
+        if not USE_NATIVE_TRAY:
+            return []
+        return get_backends()
 
     def get_menu_helper(self):
         """
@@ -92,7 +95,7 @@ class TrayClient(StubClientMixin):
         and for showing the menu on windows via a shortcut,
         this method is overriden in the gtk3.client
         """
-        mhc = (get_native_tray_menu_helper_class(), )
+        mhc = (get_menu_helper_class(), )
         self.menu_helper = make_instance(mhc, self)
         return self.menu_helper
 

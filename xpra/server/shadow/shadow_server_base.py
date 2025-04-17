@@ -11,7 +11,7 @@ from xpra.os_util import gi_import
 from xpra.server.window import batch_config
 from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.scripts.config import InitExit
-from xpra.platform.gui import get_native_notifier_classes, get_wm_name
+from xpra.platform.gui import get_wm_name
 from xpra.platform.paths import get_icon_dir
 from xpra.server import features
 from xpra.exit_codes import ExitCode
@@ -218,13 +218,14 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             except Exception:
                 notifylog("failed to instantiate %s", nclass, exc_info=True)
 
-    def get_notifier_classes(self) -> list[type]:
+    def get_notifier_classes(self) -> list[Callable]:
         # subclasses will generally add their toolkit specific variants
         # by overriding this method
         # use the native ones first:
         if not NATIVE_NOTIFIER:
             return []
-        return get_native_notifier_classes()
+        from xpra.platform.notification import get_backends
+        return get_backends()
 
     def notify_new_user(self, ss) -> None:
         # overridden here so that we can show the notification

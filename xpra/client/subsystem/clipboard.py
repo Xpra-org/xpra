@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from xpra.common import ALL_CLIPBOARDS
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
-from xpra.platform.gui import get_clipboard_native_class
+from xpra.platform.clipboard import get_backend_module
 from xpra.net.common import PacketType, PacketElement
 from xpra.net import compression
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
@@ -32,7 +32,7 @@ def get_clipboard_helper_classes(clipboard_type: str) -> list[type]:
     # first add the platform specific one, (which may be None):
     clipboard_classes = [
         CLIPBOARD_CLASS,
-        get_clipboard_native_class(),
+        get_backend_module(),
     ]
     log("get_clipboard_helper_classes() unfiltered list=%s", clipboard_classes)
     if ct and ct.lower() != "auto" and ct.lower() not in TRUE_OPTIONS:

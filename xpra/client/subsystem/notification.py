@@ -5,12 +5,12 @@
 # pylint: disable-msg=E1101
 
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
 from xpra.common import NotificationID, noop
 from xpra.platform.paths import get_icon_filename
-from xpra.platform.gui import get_native_notifier_classes
+from xpra.platform.notification import get_backends
 from xpra.net.common import PacketType
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
@@ -102,13 +102,13 @@ class NotificationClient(StubClientMixin):
         else:
             self.send("notification-action", nid, action_id)
 
-    def get_notifier_classes(self) -> list[type]:
+    def get_notifier_classes(self) -> Sequence[Callable]:
         # subclasses will generally add their toolkit specific variants
         # by overriding this method
         # use the native ones first:
         if not NATIVE_NOTIFIER:
-            return []
-        return get_native_notifier_classes()
+            return ()
+        return get_backends()
 
     def do_notify(self, nid: int | NotificationID, summary: str, body: str, actions=(),
                   hints=None, expire_timeout=10 * 1000, icon_name: str = "", callback=noop) -> None:

@@ -12,15 +12,13 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.system import is_Wayland, is_X11
 from xpra.util.str_fn import bytestostr
-from xpra.util.env import envbool, first_time, get_saved_env, get_saved_env_var
+from xpra.util.env import envbool, get_saved_env
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
 
 log = Logger("posix")
 screenlog = Logger("posix", "screen")
-dbuslog = Logger("posix", "dbus")
-traylog = Logger("posix", "tray")
 
 
 def x11_bindings():
@@ -57,7 +55,6 @@ def X11RandRBindings():
 device_bell = None
 RANDR_DPI = envbool("XPRA_RANDR_DPI", True)
 XSETTINGS_DPI = envbool("XPRA_XSETTINGS_DPI", True)
-USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 
 
 def gl_check() -> str:
@@ -81,63 +78,6 @@ def do_get_wm_name(env) -> str:
         with xsync:
             wm_name = get_x11_wm_name()
     return wm_name
-
-
-def get_clipboard_native_class() -> str:
-    gtk_clipboard_class = "xpra.gtk.clipboard.GTK_Clipboard"
-    if not x11_bindings():
-        return gtk_clipboard_class
-    try:
-        from xpra import x11
-        assert x11
-    except ImportError:
-        return gtk_clipboard_class
-    return "xpra.x11.gtk.clipboard.X11Clipboard"
-
-
-def get_native_system_tray_classes() -> list[type]:
-    c = _try_load_appindicator()
-    traylog("get_native_system_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
-    return c
-
-
-def get_native_tray_classes() -> list[type]:
-    c = _try_load_appindicator()
-    traylog("get_native_tray_classes()=%s (USE_NATIVE_TRAY=%s)", c, USE_NATIVE_TRAY)
-    return c
-
-
-def _try_load_appindicator() -> list[type]:
-    if not USE_NATIVE_TRAY:
-        return []
-    try:
-        from xpra.platform.posix.appindicator_tray import AppindicatorTray
-        return [AppindicatorTray]
-    except (ImportError, ValueError):
-        if first_time("no-appindicator"):
-            traylog("cannot load appindicator tray", exc_info=True)
-            traylog.warn("Warning: appindicator library not found")
-            traylog.warn(" you may want to install libappindicator")
-            traylog.warn(" to enable the system tray.")
-            if get_saved_env_var("XDG_CURRENT_DESKTOP", "").upper().find("GNOME") >= 0:
-                traylog.warn(" With gnome-shell, you may also need some extensions:")
-                traylog.warn(" 'top icons plus' and / or 'appindicator'")
-    return []
-
-
-def get_native_notifier_classes() -> list[Callable]:
-    ncs: list[Callable] = []
-    try:
-        from xpra.notification.dbus_notifier import DBUS_Notifier_factory
-        ncs.append(DBUS_Notifier_factory)
-    except Exception as e:
-        dbuslog("cannot load dbus notifier: %s", e)
-    try:
-        from xpra.notification.pynotify_notifier import PyNotify_Notifier
-        ncs.append(PyNotify_Notifier)
-    except Exception as e:
-        log("cannot load pynotify notifier: %s", e)
-    return ncs
 
 
 def get_session_type() -> str:

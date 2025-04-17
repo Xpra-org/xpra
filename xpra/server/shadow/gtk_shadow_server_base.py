@@ -420,8 +420,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def make_tray_widget(self):
         # pylint: disable=import-outside-toplevel
-        from xpra.platform.gui import get_native_system_tray_classes
-        classes = get_native_system_tray_classes()
+        from xpra.platform.systray import get_backends
+        classes = get_backends()
         try:
             from xpra.client.gtk3.statusicon_tray import GTKStatusIconTray
             classes.append(GTKStatusIconTray)

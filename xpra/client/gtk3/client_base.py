@@ -162,10 +162,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         and for showing the menu on windows via a shortcut,
         """
         if not self.menu_helper:
-            from xpra.platform.gui import get_native_tray_menu_helper_class
+            from xpra.platform.systray import get_menu_helper_class
             from xpra.client.gtk3.tray_menu import GTKTrayMenu
             from xpra.util.objects import make_instance
-            mhc = (get_native_tray_menu_helper_class(), GTKTrayMenu)
+            mhc = (get_menu_helper_class(), GTKTrayMenu)
             log("make_tray_menu_helper() tray menu helper classes: %s", mhc)
             self.menu_helper = make_instance(mhc, self)
         return self.menu_helper

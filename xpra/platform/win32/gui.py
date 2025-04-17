@@ -50,7 +50,6 @@ mouselog = Logger("win32", "mouse")
 
 GLib = gi_import("GLib")
 
-USE_NATIVE_TRAY = envbool("XPRA_USE_NATIVE_TRAY", True)
 REINIT_VISIBLE_WINDOWS = envbool("XPRA_WIN32_REINIT_VISIBLE_WINDOWS", True)
 APP_ID = os.environ.get("XPRA_WIN32_APP_ID", "Xpra")
 MONITOR_DPI = envbool("XPRA_WIN32_MONITOR_DPI", True)
@@ -103,12 +102,9 @@ WHEEL = envbool("XPRA_WHEEL", True)
 WHEEL_DELTA = envint("XPRA_WIN32_WHEEL_DELTA", 120)
 assert WHEEL_DELTA > 0
 
-log("win32 gui settings: USE_NATIVE_TRAY=%s, WINDOW_HOOKS=%s, GROUP_LEADER=%s",
-    USE_NATIVE_TRAY, WINDOW_HOOKS, GROUP_LEADER)
-log("win32 gui settings: UNDECORATED_STYLE=%s, CLIP_CURSOR=%s, MAX_SIZE_HINT=%s, LANGCHANGE=%s",
-    UNDECORATED_STYLE, CLIP_CURSOR, MAX_SIZE_HINT, LANGCHANGE)
-log("win32 gui settings: FORWARD_WINDOWS_KEY=%s, WHEEL=%s, WHEEL_DELTA=%s",
-    FORWARD_WINDOWS_KEY, WHEEL, WHEEL_DELTA)
+log(f"win32 gui settings: {WINDOW_HOOKS=}, {GROUP_LEADER=}")
+log(f"win32 gui settings: {UNDECORATED_STYLE=}, {CLIP_CURSOR=}, {MAX_SIZE_HINT=}, {LANGCHANGE=}")
+log(f"win32 gui settings: {FORWARD_WINDOWS_KEY=}, {WHEEL=}, {WHEEL_DELTA=}")
 
 
 def do_init() -> None:
@@ -147,41 +143,6 @@ def use_stdin() -> bool:
     except Exception:
         pass
     return True
-
-
-def get_clipboard_native_class() -> str:
-    # "xpra.clipboard.translated_clipboard.TranslatedClipboardProtocolHelper"
-    return "xpra.platform.win32.clipboard.Win32Clipboard"
-
-
-def get_native_notifier_classes() -> list[type]:
-    try:
-        from xpra.platform.win32.notifier import Win32_Notifier
-        return [Win32_Notifier]
-    except ImportError as e:
-        log("no native notifier", exc_info=True)
-        log.warn("Warning: cannot load native win32 notifier")
-        log.warn(" %s", e)
-    return []
-
-
-def get_native_tray_classes() -> list[type]:
-    c: list[type] = []
-    if USE_NATIVE_TRAY:
-        try:
-            from xpra.platform.win32.tray import Win32Tray
-            c.append(Win32Tray)
-        except ImportError as e:
-            log("no native tray", exc_info=True)
-            log.warn("Warning: cannot load native win32 tray")
-            log.warn(" %s", e)
-    return c
-
-
-def get_native_system_tray_classes(*_args):
-    # Win32Tray cannot set the icon from data,
-    # so it cannot be used for application trays
-    return get_native_tray_classes()
 
 
 def gl_check() -> str:

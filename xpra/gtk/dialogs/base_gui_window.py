@@ -304,8 +304,8 @@ class BaseGUIWindow(Gtk.Window):
     def may_notify(self, nid: NotificationID, summary: str, body: str) -> None:
         log.info(summary)
         log.info(body)
-        from xpra.platform.gui import get_native_notifier_classes
-        nc = get_native_notifier_classes()
+        from xpra.platform.notification import get_backends
+        nc = get_backends()
         if not nc:
             return
         from xpra.util.objects import make_instance
