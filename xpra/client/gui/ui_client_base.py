@@ -326,7 +326,7 @@ class UIXpraClient(ClientBaseClass):
                     self.exit_code = ExitCode.CONNECTION_FAILED
             self.may_notify(NotificationID.DISCONNECT, title, body, icon_name="disconnected")
             # show text notification then quit:
-            delay = NOTIFICATION_EXIT_DELAY * features.notifications
+            delay = NOTIFICATION_EXIT_DELAY * int(features.notifications)
             GLib.timeout_add(delay * 1000, XpraClientBase.server_disconnect_warning, self, title, *info)
         self.cleanup()
 
@@ -334,7 +334,7 @@ class UIXpraClient(ClientBaseClass):
         body = "\n".join(info)
         self.may_notify(NotificationID.DISCONNECT,
                         f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
-        delay = NOTIFICATION_EXIT_DELAY * features.notifications
+        delay = NOTIFICATION_EXIT_DELAY * int(features.notifications)
         if self.exit_code is None:
             self.exit_code = self.server_disconnect_exit_code(reason, *info)
         GLib.timeout_add(delay * 1000, XpraClientBase.server_disconnect, self, reason, *info)
