@@ -26,7 +26,7 @@ class EncodingClientTest(ClientMixinTest):
 		opts.video_decoders = []
 		opts.csc_modules = []
 		opts.video_encoders = []
-		m = self._test_mixin_class(encodings.Encodings, opts, {
+		m = self._test_mixin_class(encoding.Encodings, opts, {
 			"encodings" : ["rgb"],
 			"encodings.core" : ["rgb32", "rgb24", "png"],
 			"encodings.problematic" : [],
@@ -44,7 +44,7 @@ class EncodingClientTest(ClientMixinTest):
 			m.set_encoding("invalid")
 		f(set_invalid_encoding, "should not be able to set encoding 'invalid'")
 		#this will trigger a warning:
-		with silence_error(encodings):
+		with silence_error(encoding):
 			m.set_encoding("jpeg")
 		#quality:
 		for q in (-1, 0, 1, 99, 100):

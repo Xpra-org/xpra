@@ -53,7 +53,7 @@ class ChildCommandMixinTest(ServerMixinTest):
             pass
 
         def _ChildCommandServer():
-            ccs = child_command.ChildCommandServer()
+            ccs = command.ChildCommandServer()
             ccs.setup_menu_watcher = noop
             return ccs
 
@@ -64,9 +64,9 @@ class ChildCommandMixinTest(ServerMixinTest):
         import tempfile
         tmpfile = os.path.join(tempfile.gettempdir(), "xpra-test-start-command-%s" % os.getpid())
         assert not os.path.exists(tmpfile)
-        command = ("touch", tmpfile)
-        with silence_info(child_command):
-            self.handle_packet(("start-command", "test", command, True))
+        cmd = ("touch", tmpfile)
+        with silence_info(command):
+            self.handle_packet(("start-command", "test", cmd, True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
         commands = info.get("command")
@@ -78,7 +78,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert os.path.exists(tmpfile)
         os.unlink(tmpfile)
         # test signals:
-        with silence_info(child_command):
+        with silence_info(command):
             self.handle_packet(("start-command", "sleep", "sleep 10", True))
         time.sleep(1)
         info = self.mixin.get_info(self.protocol)
@@ -91,7 +91,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         assert proc_info.get("name") == "sleep"
         assert proc_info.get("dead") is False
         # send it a SIGINT:
-        with silence_info(child_command):
+        with silence_info(command):
             self.handle_packet(("command-signal", pid, "SIGINT"))
         time.sleep(1)
         self.mixin.child_reaper.poll()
