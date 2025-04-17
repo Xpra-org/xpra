@@ -53,7 +53,7 @@ This protocol is identical in both directions.
 Audio being forwarded from the server to the client (aka "_speaker forwarding_")
 uses the same packets as audio coming from the client to the server (aka "_microphone forwarding_").
 
-| Packet Type          | Arguments                                                                                    | Purpose                    | Information                                                                                                                      |
-|----------------------|----------------------------------------------------------------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| `sound-data`         | `codec` : string <br/>`data` : bytes<br/>`attributes` : dictionary                           | Audio stream data          | The initial and final packets may omit the `data` argument and should set the `start-of-stream` / `end-of-stream` attributes     |
-| `sound-control`      | `subcommand` : string<br/>(ie: `start`, `stop`, `sync`, `new-sequence`)<br/>`argument` : Any | Send a request to the peer |
+| Packet Type     | Arguments                                                                                    | Purpose                    | Information                                                                                                                      |
+|-----------------|----------------------------------------------------------------------------------------------|----------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| `audio-data`    | `codec` : string <br/>`data` : bytes<br/>`attributes` : dictionary                           | Audio stream data          | The initial and final packets may omit the `data` argument and should set the `start-of-stream` / `end-of-stream` attributes     |
+| `audio-control` | `subcommand` : string<br/>(ie: `start`, `stop`, `sync`, `new-sequence`)<br/>`argument` : Any | Send a request to the peer |
