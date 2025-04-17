@@ -2176,6 +2176,7 @@ def may_block_numpy() -> None:
             reason = "no nvidia codecs"
         if reason:
             get_logger().debug(f"{reason}, blocking `numpy` import")
+            # noinspection PyTypeChecker
             sys.modules["numpy"] = None
 
 

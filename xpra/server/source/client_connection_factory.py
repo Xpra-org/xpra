@@ -72,7 +72,7 @@ def get_enabled_mixins() -> Sequence[type]:
 
 def get_needed_based_classes(caps: typedict) -> tuple[type, ...]:
     from xpra.server.source.client_connection import ClientConnection
-    classes = [ClientConnection]
+    classes: list[type] = [ClientConnection]
     mixins = get_enabled_mixins()
     for c in mixins:
         r = c.is_needed(caps)

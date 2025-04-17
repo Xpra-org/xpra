@@ -143,7 +143,7 @@ def ssl_handshake(ssl_sock) -> None:
         import ssl
         ssleof_error = getattr(ssl, "SSLEOFError", None)
         if ssleof_error and isinstance(e, ssleof_error):
-            return None
+            return
         status = ExitCode.SSL_FAILURE
         ssl_cert_verification_error = getattr(ssl, "SSLCertVerificationError", None)
         if ssl_cert_verification_error and isinstance(e, ssl_cert_verification_error):
@@ -214,7 +214,7 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
     ca_data = parse_encoded_bin_data(ca_data or "")
     ssllog(" cadata=%s", Ellipsizer(ca_data))
 
-    kwargs = {
+    kwargs: dict[str, bool | str] = {
         "server_side": server_side,
         "do_handshake_on_connect": False,
         "suppress_ragged_eofs": True,
