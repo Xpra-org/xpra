@@ -194,7 +194,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             log.info("the keymap has been changed: %s", Keyboard().get_layout_spec()[0])
 
     ############################################################################
-    # notifications
+    # notification
     def cleanup_notifier(self) -> None:
         n = self.notifier
         if n:
@@ -238,7 +238,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             actions: list = []
             hints: dict[str, Any] = {}
             icon_filename = os.path.join(get_icon_dir(), "user.png")
-            from xpra.notifications.common import parse_image_path
+            from xpra.notification.common import parse_image_path
             icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, nid, "Xpra", 0, "", title, body, actions, hints, 10 * 1000, icon)
 
@@ -257,7 +257,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             actions = []
             hints = {}
             icon_filename = os.path.join(get_icon_dir(), "server-connected.png")
-            from xpra.notifications.common import parse_image_path
+            from xpra.notification.common import parse_image_path
             icon = parse_image_path(icon_filename)
             self.notifier.show_notify("", tray, NotificationID.STARTUP, "Xpra", replaces_nid, "",
                                       title, body, actions, hints, 10 * 1000, icon)

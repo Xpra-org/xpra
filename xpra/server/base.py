@@ -305,7 +305,7 @@ class ServerBase(ServerBaseClass):
     @staticmethod
     def get_client_connection_class(caps: typedict) -> type:
         # pylint: disable=import-outside-toplevel
-        from xpra.server.source.client_connection_factory import get_client_connection_class
+        from xpra.server.source.factory import get_client_connection_class
         return get_client_connection_class(caps)
 
     def process_hello_ui(self, ss, c: typedict, auth_caps: dict, send_ui: bool, share_count: int) -> None:
@@ -400,7 +400,7 @@ class ServerBase(ServerBaseClass):
                 "sharing-toggle": self.sharing is None,
                 "lock": self.lock is not False,
                 "lock-toggle": self.lock is None,
-                "windows": features.windows,
+                "windows": features.window,
                 "keyboard": features.keyboard,
             }
             sf = self.get_server_features(source)
@@ -417,7 +417,7 @@ class ServerBase(ServerBaseClass):
     ######################################################################
     # utility method:
     def window_sources(self) -> tuple:
-        from xpra.server.source.windows import WindowsConnection  # pylint: disable=import-outside-toplevel
+        from xpra.server.source.window import WindowsConnection  # pylint: disable=import-outside-toplevel
         return tuple(x for x in self._server_sources.values() if isinstance(x, WindowsConnection))
 
     ######################################################################

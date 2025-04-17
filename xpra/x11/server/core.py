@@ -137,7 +137,7 @@ class X11ServerCore(GTKServerBase):
 
     def server_init(self) -> None:
         self.x11_init()
-        if features.windows:
+        if features.window:
             from xpra.x11.window_filters import init_x11_window_filters
             init_x11_window_filters()
         super().server_init()

@@ -423,8 +423,8 @@ trace_sets: dict[str, list[str]] = {
         'xpra.*.setup_xprops',
         'xpra.*.setup_x11_bell',
         'xpra.*.supports_clipboard',
-        # notifications:
-        'xpra.client.notifications.*',
+        # notification:
+        'xpra.client.notification.*',
         'xpra.*.setup_dbusnotify',
         'xpra.*.can_notify',
         'xpra.*.gtk_notifier.*',

@@ -124,7 +124,7 @@ class GTKServerBase(ServerBase):
             from xpra.platform.ui_thread_watcher import get_UI_watcher  # pylint: disable=import-outside-toplevel
             self.ui_watcher = get_UI_watcher()
             self.ui_watcher.start()
-        if features.windows:
+        if features.window:
             display = Gdk.Display.get_default()
             if display:
                 # n = display.get_n_screens()
@@ -266,7 +266,7 @@ class GTKServerBase(ServerBase):
 
     def get_notification_icon(self, icon_string: str) -> tuple[str, int, int, bytes] | None:
         try:
-            from xpra.notifications.common import get_notification_icon
+            from xpra.notification.common import get_notification_icon
         except ImportError:
             return None
         return get_notification_icon(icon_string)

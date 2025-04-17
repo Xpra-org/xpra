@@ -8,12 +8,12 @@ from xpra.util.env import envbool
 DETECT_LEAKS = envbool("XPRA_DETECT_LEAKS", False)
 
 debug = DETECT_LEAKS
-commands = True
+command = True
 control = True
 file_transfer = True
 display = True
-windows = True
-cursors = True
+window = True
+cursor = True
 gstreamer = True
 x11 = True
 webcam = True
@@ -21,7 +21,7 @@ audio = True
 clipboard = True
 keyboard = True
 pointer = True
-notifications = True
+notification = True
 dbus = True
 mmap = True
 ssl = True

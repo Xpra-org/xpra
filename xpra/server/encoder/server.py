@@ -137,7 +137,7 @@ class EncoderServer(ServerBase):
 
     def parse_hello(self, ss, c: typedict, send_ui: bool) -> None:
         super().parse_hello(ss, c, send_ui)
-        from xpra.server.source.encodings import EncodingsConnection
+        from xpra.server.source.encoding import EncodingsConnection
         if not isinstance(ss, EncodingsConnection):
             raise ValueError("client did not enable encoding")
 

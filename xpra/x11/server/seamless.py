@@ -212,7 +212,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     raise
                 # retry:
                 sleep(0.010 * count)
-        if features.windows:
+        if features.window:
             self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
@@ -249,7 +249,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         wm = self._wm
         if wm:
             wm.set_size_constraints(minw, minh, maxw, maxh)
-        elif features.windows:
+        elif features.window:
             # update the static default so the Wm instance will use it
             # when we do instantiate it:
             from xpra.x11.gtk import wm as wm_module

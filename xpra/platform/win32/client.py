@@ -154,7 +154,7 @@ class PlatformClient(StubClientMixin):
             self._console_handler_added = setup_console_event_listener(self.handle_console_event, True)
         self.init_event_listener()
         self._keyboard_id: int = get_keyboard_layout_id()
-        if FORWARD_WINDOWS_KEY and features.keyboard and features.windows:
+        if FORWARD_WINDOWS_KEY and features.keyboard and features.window:
             from xpra.util.thread import start_thread
             start_thread(self.run_keyboard_listener, "keyboard-listener", daemon=True)
 
@@ -320,7 +320,7 @@ class PlatformClient(StubClientMixin):
 
     def activateapp(self, wparam: int, lparam: int) -> None:
         log("WM_ACTIVATEAPP: %s/%s", wparam, lparam)
-        if not features.windows:
+        if not features.window:
             return
         if wparam == 0:
             # our app has lost focus

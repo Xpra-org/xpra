@@ -15,7 +15,7 @@ class WindowManagerTest(ClientMixinTest):
 
 	def test_windowmanager(self):
 		with DisplayContext():
-			from xpra.client.subsystem.windows import WindowClient
+			from xpra.client.subsystem.window import WindowClient
 			def _WindowClient():
 				def get_mouse_position():
 					return 0, 0

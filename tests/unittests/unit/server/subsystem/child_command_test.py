@@ -27,7 +27,7 @@ class ChildCommandMixinTest(ServerMixinTest):
             self.do_test_command_server()
 
     def do_test_command_server(self):
-        from xpra.server.subsystem import child_command
+        from xpra.server.subsystem import command
         opts = AdHocStruct()
         opts.exit_with_children = True
         opts.terminate_children = True

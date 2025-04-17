@@ -20,7 +20,7 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.control:
         from xpra.server.subsystem.controlcommands import ServerBaseControlCommands
         classes.append(ServerBaseControlCommands)
-    if features.notifications:
+    if features.notification:
         from xpra.server.subsystem.notification import NotificationForwarder
         classes.append(NotificationForwarder)
     if features.webcam:
@@ -65,13 +65,13 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.display:
         from xpra.server.subsystem.display import DisplayManager
         classes.append(DisplayManager)
-    if features.cursors:
-        from xpra.server.subsystem.cursors import CursorManager
+    if features.cursor:
+        from xpra.server.subsystem.cursor import CursorManager
         classes.append(CursorManager)
-    if features.windows:
+    if features.window:
         from xpra.server.subsystem.window import WindowServer
         classes.append(WindowServer)
-    if features.commands:
-        from xpra.server.subsystem.child_command import ChildCommandServer
+    if features.command:
+        from xpra.server.subsystem.command import ChildCommandServer
         classes.append(ChildCommandServer)
     return tuple(classes)

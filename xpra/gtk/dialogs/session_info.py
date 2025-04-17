@@ -541,7 +541,7 @@ class SessionInfo(Gtk.Window):
                 if self.client.audio_out_bytecount > 0:
                     self.audio_out_bitcount.append(self.client.audio_out_bytecount * 8)
 
-        if self.show_client and features.windows:
+        if self.show_client and features.window:
             # count pixels in the last second:
             since = monotonic() - 1
             decoded = [0] + [pixels for _, t, pixels in self.client.pixel_counter if t > since]
@@ -593,7 +593,7 @@ class SessionInfo(Gtk.Window):
             cpl = tuple(1000.0 * x[1] for x in tuple(self.client.client_ping_latency))
             if spl and cpl:
                 self.avg_ping_latency.append(round(sum(spl + cpl) / len(spl + cpl)))
-            if features.windows and self.show_client:
+            if features.window and self.show_client:
                 pc = tuple(self.client.pixel_counter)
                 if pc:
                     tsize = 0
@@ -682,7 +682,7 @@ class SessionInfo(Gtk.Window):
         self.opengl_buffering.set_text(info)
 
     def show_window_renderers(self) -> None:
-        if not features.windows:
+        if not features.window:
             return
         wr = []
         renderers = {}
@@ -716,15 +716,15 @@ class SessionInfo(Gtk.Window):
             self.server_mmap_icon = image_row("Memory Mapped Transfers")
         if features.clipboard:
             self.server_clipboard_icon = image_row("Clipboard")
-        if features.notifications:
+        if features.notification:
             self.server_notifications_icon = image_row("Notifications")
-        if features.windows:
+        if features.window:
             self.server_bell_icon = image_row("Bell")
             self.server_cursors_icon = image_row("Cursors")
 
     def populate_features(self) -> bool:
         size_info = ""
-        if features.windows:
+        if features.window:
             if self.client.server_actual_desktop_size:
                 w, h = self.client.server_actual_desktop_size
                 size_info = f"{w}x{h}"
@@ -739,7 +739,7 @@ class SessionInfo(Gtk.Window):
         self.server_randr_label.set_text("%s" % size_info)
         if self.show_client:
             root_w, root_h = self.client.get_root_size()
-            if features.windows and (self.client.xscale != 1 or self.client.yscale != 1):
+            if features.window and (self.client.xscale != 1 or self.client.yscale != 1):
                 sw, sh = self.client.cp(root_w, root_h)
                 display_info = "%ix%i (scaled from %ix%i)" % (sw, sh, root_w, root_h)
             else:
@@ -752,11 +752,11 @@ class SessionInfo(Gtk.Window):
             bool_icon(self.server_mmap_icon, bool(self.client.mmap_read_area))
         if features.clipboard:
             bool_icon(self.server_clipboard_icon, self.client.server_clipboard)
-        if features.notifications:
+        if features.notification:
             bool_icon(self.server_notifications_icon, self.client.server_notifications)
-        if features.windows:
+        if features.window:
             bool_icon(self.server_bell_icon, self.client.server_bell)
-        if features.cursors:
+        if features.cursor:
             bool_icon(self.server_cursors_icon, self.client.server_cursors)
         return True
 
@@ -1025,7 +1025,7 @@ class SessionInfo(Gtk.Window):
             "Client Latency (ms)",
             "The time it takes for the client to respond to pings, as measured by the server",
         )
-        if not features.windows or not self.client.windows_enabled:
+        if not features.window or not self.client.windows_enabled:
             return
         self.batch_labels = maths_labels(
             "Batch Delay (MPixels / ms)",
@@ -1118,7 +1118,7 @@ class SessionInfo(Gtk.Window):
         if self.client.client_ping_latency:
             cpl = tuple(int(1000 * x[1]) for x in tuple(self.client.client_ping_latency))
             setlabels(self.client_latency_labels, cpl)
-        if features.windows and self.client.windows_enabled:
+        if features.window and self.client.windows_enabled:
             setall(self.batch_labels, self.values_from_info("batch_delay", "batch.delay"))
             setall(self.damage_labels, self.values_from_info("damage_out_latency", "damage.out_latency"))
             setall(self.quality_labels, self.all_values_from_info("quality", "encoding.quality"))
@@ -1263,7 +1263,7 @@ class SessionInfo(Gtk.Window):
             else:
                 labels += ["recv %sb/s" % unit(net_in_scale)]
                 datasets += [net_in_data]
-        if features.windows and SHOW_PIXEL_STATS and self.client.windows_enabled:
+        if features.window and SHOW_PIXEL_STATS and self.client.windows_enabled:
             pixel_scale, in_pixels = values_to_scaled_values(tuple(
                 self.pixel_in_data)[3:N_SAMPLES + 4], min_scaled_value=100)
             datasets.append(in_pixels)
@@ -1388,7 +1388,7 @@ class SessionInfoClient(InfoTimerClient):
         from xpra.client.base.serverinfo import get_remote_lib_versions
         features = rtdict("features")
         self.server_clipboard = features.boolget("clipboard")
-        self.server_notifications = features.boolget("notifications")
+        self.server_notifications = features.boolget("notification")
         display = rtdict("display")
         self.server_opengl = rtdict("display", "opengl")
         self.server_bell = display.boolget("bell")

@@ -6,7 +6,7 @@
 
 from Foundation import NSUserNotificationCenter, NSUserNotification, NSUserNotificationDefaultSoundName
 
-from xpra.notifications.notifier_base import NotifierBase, NID
+from xpra.notification.notifier_base import NotifierBase, NID
 from xpra.platform.darwin.gui import log, GLib, notifylog
 from xpra.util.env import envbool
 

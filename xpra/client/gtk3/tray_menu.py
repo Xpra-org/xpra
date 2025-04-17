@@ -128,11 +128,11 @@ class GTKTrayMenu(MenuHelper):
             add(self.make_titlemenuitem())
         add(self.make_infomenuitem())
         add(self.make_featuresmenuitem())
-        if features.windows and self.client.keyboard_helper:
+        if features.window and self.client.keyboard_helper:
             add(self.make_keyboardmenuitem())
         if features.clipboard and SHOW_CLIPBOARD_MENU:
             add(self.make_clipboardmenuitem())
-        if features.windows:
+        if features.window:
             add(self.make_picturemenuitem())
         if features.audio and STARTSTOP_SOUND_MENU:
             add(self.make_audiomenuitem())
@@ -140,11 +140,11 @@ class GTKTrayMenu(MenuHelper):
             add(self.make_webcammenuitem())
         if features.display and MONITORS_MENU:
             add(self.make_monitorsmenuitem())
-        if features.windows and WINDOWS_MENU:
+        if features.window and WINDOWS_MENU:
             add(self.make_windowsmenuitem())
         if RUNCOMMAND_MENU or SHOW_SERVER_COMMANDS or SHOW_UPLOAD or SHOW_SHUTDOWN:
             add(self.make_servermenuitem())
-        if features.windows and START_MENU:
+        if features.window and START_MENU:
             add(self.make_startmenuitem())
         add(self.make_disconnectmenuitem())
         if SHOW_CLOSE:
@@ -205,16 +205,16 @@ class GTKTrayMenu(MenuHelper):
     def append_featuresmenuitems(self, menu) -> None:
         menu.append(self.make_sharingmenuitem())
         menu.append(self.make_lockmenuitem())
-        if features.windows:
+        if features.window:
             menu.append(self.make_readonlymenuitem())
             menu.append(self.make_bellmenuitem())
-        if features.notifications:
+        if features.notification:
             menu.append(self.make_notificationsmenuitem())
-        if features.windows:
+        if features.window:
             menu.append(self.make_cursorsmenuitem())
         if self.client.client_supports_opengl:
             menu.append(self.make_openglmenuitem())
-        if features.windows:
+        if features.window:
             menu.append(self.make_modalwindowmenuitem())
 
     def make_sharingmenuitem(self) -> Gtk.ImageMenuItem:
@@ -334,7 +334,7 @@ class GTKTrayMenu(MenuHelper):
 
         def set_cursors_menuitem(*args) -> None:
             c = self.client
-            can_toggle_cursors = features.cursors and c.server_cursors and c.client_supports_cursors
+            can_toggle_cursors = features.cursor and c.server_cursors and c.client_supports_cursors
             log("set_cursors_menuitem%s can_toggle_cursors=%s", args, can_toggle_cursors)
             cursors.set_active(can_toggle_cursors and self.client.cursors_enabled)
             sens_tooltip(cursors, can_toggle_cursors,
@@ -1560,7 +1560,7 @@ class GTKTrayMenu(MenuHelper):
 
         def enable_servercommands(*args) -> None:
             log("enable_servercommands%s server-commands-info=%s", args, self.client.server_commands_info)
-            sens_tooltip(servercommands, features.commands and self.client.server_commands_info,
+            sens_tooltip(servercommands, features.command and self.client.server_commands_info,
                          "Show a list of the commands running on the server",
                          SERVER_NOT_SUPPORTED)
 
@@ -1574,7 +1574,7 @@ class GTKTrayMenu(MenuHelper):
 
         def enable_start_new_command(*args) -> None:
             log("enable_start_new_command%s start_new_command=%s", args, self.client.server_start_new_commands)
-            sens_tooltip(runcommand, features.commands and self.client.server_start_new_commands,
+            sens_tooltip(runcommand, features.command and self.client.server_start_new_commands,
                          "Choose a command to run on the server",
                          "Not supported or enabled on the server")
         self.after_handshake(enable_start_new_command)

@@ -20,7 +20,7 @@ VFB_INITIAL_RESOLUTION = os.environ.get("XPRA_TEST_VFB_INITIAL_RESOLUTION", "192
 
 OPTIONS = [
     "windows",
-    "notifications",
+    "notification",
     "webcam",
     "clipboard",
     "speaker",
@@ -150,7 +150,7 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                 xpra_args = [
                     "attach",
                     "--clipboard=no",  # could create loops
-                    "--notifications=no",  # may get sent to the desktop session running the tests!
+                    "--notification=no",  # may get sent to the desktop session running the tests!
                 ] + connect_args
                 gui_client = self.run_xpra(xpra_args, **client_kwargs)
                 r = pollwait(gui_client, 10)

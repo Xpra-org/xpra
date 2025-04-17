@@ -313,7 +313,7 @@ class BaseGUIWindow(Gtk.Window):
         if not notifier:
             return
         from xpra.platform.paths import get_icon_filename
-        from xpra.notifications.common import parse_image_path
+        from xpra.notification.common import parse_image_path
         icon_filename = get_icon_filename(self.icon_name)
         icon = parse_image_path(icon_filename)
         notifier.show_notify(0, None, nid,

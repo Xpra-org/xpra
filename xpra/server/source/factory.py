@@ -19,7 +19,7 @@ def get_enabled_mixins() -> Sequence[type]:
     # pylint: disable=import-outside-toplevel
     from xpra.server.source.clientinfo import ClientInfoConnection
     mixins: list[type] = [ClientInfoConnection]
-    if features.notifications:
+    if features.notification:
         from xpra.server.source.notification import NotificationConnection
         mixins.append(NotificationConnection)
     if features.clipboard:
@@ -58,15 +58,15 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.display:
         from xpra.server.source.display import DisplayConnection
         mixins.append(DisplayConnection)
-    if features.cursors:
-        from xpra.server.source.cursors import CursorsConnection
+    if features.cursor:
+        from xpra.server.source.cursor import CursorsConnection
         mixins.append(CursorsConnection)
-    if features.windows:
-        from xpra.server.source.windows import WindowsConnection
+    if features.window:
+        from xpra.server.source.window import WindowsConnection
         mixins.append(WindowsConnection)
     # must be after windows mixin, so that it can assume "self.send_windows" is set
     if features.encoding:
-        from xpra.server.source.encodings import EncodingsConnection
+        from xpra.server.source.encoding import EncodingsConnection
         mixins.append(EncodingsConnection)
     if features.audio and features.av_sync:
         from xpra.server.source.avsync import AVSyncConnection

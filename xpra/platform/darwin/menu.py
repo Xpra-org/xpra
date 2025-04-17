@@ -208,7 +208,7 @@ class OSXMenuHelper(GTKTrayMenu):
             features_menu = self.make_menu()
             menus.append(("Features", features_menu))
             self.append_featuresmenuitems(features_menu)
-            if features.windows:
+            if features.window:
                 add(features_menu, self.make_swapkeysmenuitem())
                 add(features_menu, self.make_invertmousewheelmenuitem())
                 add(features_menu, self.make_numlockmenuitem())
@@ -230,7 +230,7 @@ class OSXMenuHelper(GTKTrayMenu):
             if self.client.microphone_allowed and self.client.microphone_codecs:
                 add(audio_menu, self.make_microphonemenuitem())
             menus.append(("Audio", audio_menu))
-        if features.windows and SHOW_ENCODINGS_MENU:
+        if features.window and SHOW_ENCODINGS_MENU:
             encodings_menu = self.make_menu()
 
             def set_encodings_menu(*_args):
@@ -241,7 +241,7 @@ class OSXMenuHelper(GTKTrayMenu):
 
             self.after_handshake(set_encodings_menu)
             menus.append(("Encoding", encodings_menu))
-        if features.windows and SHOW_ACTIONS_MENU:
+        if features.window and SHOW_ACTIONS_MENU:
             actions_menu = self.make_menu()
             add(actions_menu, self.make_raisewindowsmenuitem())
             add(actions_menu, self.make_minimizewindowsmenuitem())

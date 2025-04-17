@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.notifications.notifier_base import NotifierBase, NID
+from xpra.notification.notifier_base import NotifierBase, NID
 
 Notify = gi_import("Notify")
 

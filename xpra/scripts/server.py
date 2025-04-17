@@ -267,9 +267,9 @@ def show_encoding_help(opts) -> int:
         if x.getEffectiveLevel() == logging.INFO:
             x.setLevel(logging.WARN)
     from xpra.server import features as sf
-    sf.audio = sf.av_sync = sf.clipboard = sf.commands = sf.control = sf.dbus = sf.fileprint = sf.debug = False
+    sf.audio = sf.av_sync = sf.clipboard = sf.command = sf.control = sf.dbus = sf.fileprint = sf.debug = False
     sf.keyboard = sf.mouse = False
-    sf.mmap = sf.logging = sf.ping = sf.bandwidth = sf.notifications = sf.rfb = sf.shell = sf.webcam = False
+    sf.mmap = sf.logging = sf.ping = sf.bandwidth = sf.notification = sf.rfb = sf.shell = sf.webcam = False
     from xpra.server.base import ServerBase
     sb = ServerBase()
     sb.init(opts)
@@ -311,18 +311,18 @@ def set_server_features(opts, mode: str) -> None:
     if mode == "encoder":
         # turn off all relevant features:
         opts.start_new_commands = False
-        features.commands = False
-        features.notifications = features.webcam = features.clipboard = False
+        features.command = False
+        features.notification = features.webcam = features.clipboard = False
         features.gstreamer = features.x11 = features.audio = features.av_sync = False
-        features.fileprint = features.commands = False
+        features.fileprint = features.command = False
         features.keyboard = features.pointer = False
-        features.logging = features.display = features.windows = False
-        features.cursors = features.rfb = False
+        features.logging = features.display = features.window = False
+        features.cursor = features.rfb = False
         features.ssh = False
     else:
         features.debug = features.debug or b(opts.debug)
-        features.commands = opts.commands
-        features.notifications = opts.notifications and impcheck("notifications")
+        features.command = opts.commands
+        features.notification = opts.notifications and impcheck("notification")
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
@@ -334,8 +334,8 @@ def set_server_features(opts, mode: str) -> None:
         features.pointer = not opts.readonly
         features.logging = b(opts.remote_logging)
         features.display = opts.windows
-        features.windows = features.display and impcheck("codecs")
-        features.cursors = features.display and opts.cursors
+        features.window = features.display and impcheck("codecs")
+        features.cursor = features.display and opts.cursors
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
         features.ssh = b(opts.ssh) and impcheck("net.ssh")
         features.ping = b(opts.pings)
@@ -359,8 +359,8 @@ def enforce_server_features() -> None:
     enforce_features(features, {
         "debug": "xpra.server.subsystem.debug",
         "control": "xpra.net.control,xpra.server.subsystem.controlcommands",
-        "commands": "xpra.server.subsystem.child_command",
-        "notifications": "xpra.notifications,xpra.server.subsystem.notification,xpra.server.source.notification",
+        "command": "xpra.server.subsystem.child_command",
+        "notification": "xpra.notification,xpra.server.subsystem.notification,xpra.server.source.notification",
         "webcam": "xpra.server.subsystem.webcam,xpra.server.source.webcam",
         "clipboard": "xpra.clipboard,xpra.server.subsystem.clipboard,xpra.server.source.clipboard",
         "audio": "xpra.audio,xpra.server.subsystem.audio,xpra.server.source.audio",
@@ -380,8 +380,8 @@ def enforce_server_features() -> None:
         "bandwidth": "xpra.server.subsystem.bandwidth,xpra.server.source.bandwidth",
         "shell": "xpra.server.subsystem.shell,xpra.server.source.shell",
         "display": "xpra.server.subsystem.display,xpra.server.source.display",
-        "windows": "xpra.server.subsystem.window,xpra.server.source.windows",
-        "cursors": "xpra.server.subsystem.cursors,xpra.server.source.cursors",
+        "window": "xpra.server.subsystem.window,xpra.server.source.window",
+        "cursor": "xpra.server.subsystem.cursor,xpra.server.source.cursor",
         "rfb": "xpra.net.rfb,xpra.server.rfb",
         "http": "xpra.net.http,xpra.server.subsystem.http",
     })

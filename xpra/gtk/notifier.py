@@ -22,7 +22,7 @@ from xpra.os_util import OSX, gi_import
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label, modify_fg, color_parse
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.notifications.notifier_base import NotifierBase, log, NID
+from xpra.notification.notifier_base import NotifierBase, log, NID
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")

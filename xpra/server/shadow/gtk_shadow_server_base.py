@@ -178,7 +178,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def send_updated_screen_size(self) -> None:
         log("send_updated_screen_size")
         super().send_updated_screen_size()
-        if features.windows:
+        if features.window:
             self.recreate_window_models()
 
     def recreate_window_models(self) -> None:
@@ -277,7 +277,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         raise NotImplementedError("dynamic window shadow is not implemented on this platform")
 
     def refresh_window_models(self) -> None:
-        if not self.window_matches or not features.windows:
+        if not self.window_matches or not features.window:
             return
         # update the window models which may have changed,
         # some may have disappeared, new ones created,
@@ -393,7 +393,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
                 about()
 
             self.tray_menu.append(self.traymenuitem("About Xpra", "information.png", cb=show_about))
-            if features.windows:
+            if features.window:
                 def readonly_toggled(menuitem) -> None:
                     log("readonly_toggled(%s)", menuitem)
                     ro = menuitem.get_active()

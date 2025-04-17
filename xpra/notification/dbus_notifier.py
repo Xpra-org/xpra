@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.os_util import gi_import
 from xpra.dbus.helper import native_to_dbus
-from xpra.notifications.notifier_base import NotifierBase, log, NID
+from xpra.notification.notifier_base import NotifierBase, log, NID
 import dbus
 from dbus.mainloop.glib import DBusGMainLoop, threads_init
 from dbus.exceptions import DBusException
@@ -31,7 +31,7 @@ def DBUS_Notifier_factory(*args):
             log.warn(" you may need to start a notification service for 'org.freedesktop.Notifications'")
         else:
             log.warn(" %s", e)
-        log.warn(" disable notifications to avoid this warning")
+        log.warn(" disable notification to avoid this warning")
         return None
 
 

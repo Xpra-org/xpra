@@ -85,7 +85,7 @@ class NotificationForwarder(StubServerMixin):
         try:
             # pylint: disable=import-outside-toplevel
             from xpra.common import NotificationID
-            from xpra.notifications.common import parse_image_path
+            from xpra.notification.common import parse_image_path
             from xpra.platform.paths import get_icon_filename
             icon = parse_image_path(get_icon_filename("user"))
             name = ss.name or ss.username or ss.uuid

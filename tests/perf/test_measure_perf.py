@@ -701,7 +701,7 @@ def get_xpra_start_server_command():
                    +" +extension RENDER"
                    +" -logfile %s" % config.XORG_LOG
                    +" -config %s" % config.XORG_CONFIG)
-        cmd.append("--no-notifications")
+        cmd.append("--no-notification")
     cmd += get_auth_args(True)
     cmd.append("--no-pulseaudio")
     cmd += ["start", ":%s" % config.DISPLAY_NO]
@@ -775,7 +775,7 @@ def test_xpra():
                                                         cmd.append("--no-clipboard")
                                                         cmd.append("--no-bell")
                                                         cmd.append("--no-cursors")
-                                                        cmd.append("--no-notifications")
+                                                        cmd.append("--no-notification")
                                                         if config.XPRA_MDNS:
                                                             cmd.append("--mdns")
                                                         else:

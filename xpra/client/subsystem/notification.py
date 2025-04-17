@@ -45,10 +45,10 @@ class NotificationClient(StubClientMixin):
     def init(self, opts) -> None:
         if opts.notifications:
             try:
-                from xpra import notifications
-                assert notifications
+                from xpra import notification
+                assert notification
             except ImportError:
-                log.warn("Warning: notifications module not found")
+                log.warn("Warning: notification module not found")
             else:
                 self.client_supports_notifications = True
                 self.notifier = self.make_notifier()
@@ -128,7 +128,7 @@ class NotificationClient(StubClientMixin):
 
         def show_notification() -> None:
             try:
-                from xpra.notifications.common import parse_image_path
+                from xpra.notification.common import parse_image_path
                 icon_filename = get_icon_filename(icon_name)
                 icon = parse_image_path(icon_filename)
                 n.show_notify("", self.tray, int(nid), "Xpra", int(nid), "",

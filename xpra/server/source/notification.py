@@ -50,7 +50,7 @@ class NotificationConnection(StubClientConnection):
                    icon_name: str = "", user_callback: Callable | None = None) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
-            from xpra.notifications.common import parse_image_path
+            from xpra.notification.common import parse_image_path
         except ImportError as e:
             log("not sending notification: %s", e)
         else:

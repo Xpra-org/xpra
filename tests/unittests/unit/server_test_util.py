@@ -104,7 +104,7 @@ class ServerTestUtil(ProcessTestUtil):
             "speaker", "microphone", "audio",
             "systemd-run", "start-via-proxy",
             "splash", "printing", "opengl",
-            "webcam", "bell", "system-tray", "notifications",
+            "webcam", "bell", "system-tray", "notification",
             "clipboard", "start-new-commands",
         ))
         defaults.update({

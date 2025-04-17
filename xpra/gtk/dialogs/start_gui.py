@@ -934,7 +934,7 @@ class FeaturesWindow(SessionOptions):
         # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/Notifications.md")
         self.bool_cb("Xpra's System Tray", "tray")
         self.bool_cb("Forward System Trays", "system-tray")
-        self.bool_cb("Notifications", "notifications")
+        self.bool_cb("Notifications", "notification")
         # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/System-Tray.md")
         # self.bool_cb("Cursors", "cursors")
         # self.bool_cb("Bell", "bell")
@@ -1073,7 +1073,7 @@ class EncodingWindow(SessionOptions):
             0.15: "normal",
             0.5: "slow",
         })
-        from xpra.client.subsystem.encodings import get_core_encodings
+        from xpra.client.subsystem.encoding import get_core_encodings
         encodings = ["auto", "rgb"] + list(get_core_encodings())
         encodings.remove("rgb24")
         encodings.remove("rgb32")

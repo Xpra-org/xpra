@@ -128,12 +128,12 @@ def _try_load_appindicator() -> list[type]:
 def get_native_notifier_classes() -> list[Callable]:
     ncs: list[Callable] = []
     try:
-        from xpra.notifications.dbus_notifier import DBUS_Notifier_factory
+        from xpra.notification.dbus_notifier import DBUS_Notifier_factory
         ncs.append(DBUS_Notifier_factory)
     except Exception as e:
         dbuslog("cannot load dbus notifier: %s", e)
     try:
-        from xpra.notifications.pynotify_notifier import PyNotify_Notifier
+        from xpra.notification.pynotify_notifier import PyNotify_Notifier
         ncs.append(PyNotify_Notifier)
     except Exception as e:
         log("cannot load pynotify notifier: %s", e)

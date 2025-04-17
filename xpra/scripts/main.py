@@ -2123,20 +2123,20 @@ def set_client_features(opts) -> None:
 
     from xpra.client.base import features
     features.debug = features.debug or b(opts.debug)
-    features.commands = opts.commands
+    features.command = opts.commands
     features.control = opts.control
     features.file_transfer = b(opts.file_transfer) and impcheck("xpra.net.file_transfer")
     features.display = opts.windows
-    features.windows = opts.windows
-    features.cursors = opts.windows and opts.cursors
+    features.window = opts.windows
+    features.cursor = opts.windows and opts.cursors
     features.gstreamer = opts.gstreamer
     features.x11 = opts.x11 and impcheck("xpra.x11")
     features.audio = features.gstreamer and b(opts.audio) and (bo(opts.speaker) or bo(opts.microphone)) and impcheck("xpra.audio")
     features.webcam = bo(opts.webcam) and impcheck("xpra.codecs")
     features.clipboard = b(opts.clipboard) and impcheck("xpra.clipboard")
     features.keyboard = impcheck("xpra.keyboard")
-    features.pointer = features.windows
-    features.notifications = opts.notifications and impcheck("xpra.notifications")
+    features.pointer = features.window
+    features.notification = opts.notifications and impcheck("xpra.notification")
     features.dbus = b(opts.dbus) and impcheck("dbus", "xpra.dbus")
     features.mmap = b(opts.mmap)
     features.ssl = b(opts.ssl) and impcheck("ssl")
@@ -2159,8 +2159,8 @@ def enforce_client_features() -> None:
         "control": "xpra.control,xpra.client.base.control",
         "file_transfer": "xpra.net.file_transfer",
         "display": "xpra.client.subsystem.display",
-        "windows": "xpra.client.subsystem.windows",
-        "cursors": "xpra.client.subsystem.cursors",
+        "window": "xpra.client.subsystem.window",
+        "cursor": "xpra.client.subsystem.cursor",
         "gstreamer": "gi.repository.Gst,xpra.gstreamer,xpra.codecs.gstreamer",
         "x11": "xpra.x11,gi.repository.GdkX11",
         "webcam": "xpra.client.subsystem.webcam",
@@ -2168,7 +2168,7 @@ def enforce_client_features() -> None:
         "clipboard": "xpra.clipboard,xpra.client.subsystem.clipboard",
         "keyboard": "xpra.keyboard,xpra.client.subsystem.keyboard",
         "pointer": "xpra.client.subsystem.pointer",
-        "notifications": "xpra.notifications,xpra.client.subsystem.notification",
+        "notification": "xpra.notification,xpra.client.subsystem.notification",
         "dbus": "dbus,xpra.dbus",
         "mmap": "mmap,xpra.net.mmap,xpra.client.subsystem.mmap",
         "ssl": "ssl,xpra.net.ssl_util",

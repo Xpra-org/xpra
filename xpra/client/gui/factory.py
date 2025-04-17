@@ -14,11 +14,11 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.display:
         from xpra.client.subsystem.display import DisplayClient
         CLIENT_BASES.append(DisplayClient)
-    if features.windows:
-        from xpra.client.subsystem.windows import WindowClient
+    if features.window:
+        from xpra.client.subsystem.window import WindowClient
         CLIENT_BASES.append(WindowClient)
-        if features.cursors:
-            from xpra.client.subsystem.cursors import CursorClient
+        if features.cursor:
+            from xpra.client.subsystem.cursor import CursorClient
             CLIENT_BASES.append(CursorClient)
     if features.webcam:
         from xpra.client.subsystem.webcam import WebcamForwarder
@@ -35,7 +35,7 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.pointer:
         from xpra.client.subsystem.pointer import PointerClient
         CLIENT_BASES.append(PointerClient)
-    if features.notifications:
+    if features.notification:
         from xpra.client.subsystem.notification import NotificationClient
         CLIENT_BASES.append(NotificationClient)
     if features.mmap:
@@ -56,11 +56,11 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.bandwidth:
         from xpra.client.subsystem.bandwidth import BandwidthClient
         CLIENT_BASES.append(BandwidthClient)
-    if features.commands:
-        from xpra.client.subsystem.child_command import CommandClient
+    if features.command:
+        from xpra.client.subsystem.command import CommandClient
         CLIENT_BASES.append(CommandClient)
     if features.encoding:
-        from xpra.client.subsystem.encodings import Encodings
+        from xpra.client.subsystem.encoding import Encodings
         CLIENT_BASES.append(Encodings)
     if features.tray:
         from xpra.client.subsystem.tray import TrayClient

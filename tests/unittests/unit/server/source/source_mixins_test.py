@@ -129,7 +129,7 @@ class SourceMixinsTest(unittest.TestCase):
             })
 
     def test_encodings(self):
-        from xpra.server.source.encodings import EncodingsConnection
+        from xpra.server.source.encoding import EncodingsConnection
         self._test_mixin_class(EncodingsConnection, {
             "core_encodings": ("rgb32", "rgb24", "png", ),
             "encodings": ("rgb", "png", ),
@@ -225,7 +225,7 @@ class SourceMixinsTest(unittest.TestCase):
         }
 
     def test_windows(self):
-        from xpra.server.source.windows import WindowsConnection
+        from xpra.server.source.window import WindowsConnection
         self._test_mixin_class(WindowsConnection, self._get_window_mixin_server_attributes())
 
     def test_clientinfo(self):
@@ -331,7 +331,7 @@ class SourceMixinsTest(unittest.TestCase):
 
     def test_avsync(self):
         # needs some other subsystems:
-        from xpra.server.source.windows import WindowsConnection
+        from xpra.server.source.window import WindowsConnection
         from xpra.server.source.audio import AudioConnection
         from xpra.server.source.avsync import AVSyncConnection
         server_props = SourceMixinsTest.AUDIO_SERVER_PROPS.copy()

@@ -17,8 +17,8 @@ class NotificationClientTest(ClientMixinTest):
 		opts = AdHocStruct()
 		opts.notifications = True
 		self._test_mixin_class(NotificationClient, opts, {
-			"notifications" : True,
-			"notifications.close" : True,
+			"notification" : True,
+			"notification.close" : True,
 			})
 
 def main():

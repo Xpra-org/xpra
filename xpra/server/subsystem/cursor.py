@@ -43,7 +43,7 @@ class CursorManager(StubServerMixin):
 
     def send_initial_cursors(self, ss, sharing=False) -> None:
         log("send_initial_cursors(%s, %s)", ss, sharing)
-        from xpra.server.source.cursors import CursorsConnection
+        from xpra.server.source.cursor import CursorsConnection
         if isinstance(ss, CursorsConnection):
             ss.send_cursor()
 

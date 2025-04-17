@@ -8,7 +8,7 @@ import os
 import tempfile
 import unittest
 
-from xpra.notifications import common
+from xpra.notification import common
 from unit.test_util import silence_error
 
 

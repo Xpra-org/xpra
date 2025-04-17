@@ -173,7 +173,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
         from xpra.client.base import features
-        if features.windows:
+        if features.window:
             # call this once early:
             ignorewarnings(self.get_mouse_position)
             if HAS_X11_BINDINGS:
@@ -764,7 +764,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         return self._add_statusicon_tray(TrayClient.get_tray_classes(self))
 
     def get_system_tray_classes(self) -> list[type]:
-        from xpra.client.subsystem.windows import WindowClient
+        from xpra.client.subsystem.window import WindowClient
         return self._add_statusicon_tray(WindowClient.get_system_tray_classes(self))
 
     def supports_system_tray(self) -> bool:
@@ -1414,7 +1414,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
 
     def destroy_window(self, wid: int, window) -> None:
         # override so we can cleanup the group-leader if needed,
-        from xpra.client.subsystem.windows import WindowClient
+        from xpra.client.subsystem.window import WindowClient
         WindowClient.destroy_window(self, wid, window)
         group_leader = window.group_leader
         if group_leader is None or not self._group_leader_wids:

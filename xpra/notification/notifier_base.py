@@ -78,6 +78,6 @@ class NotifierBase:
         if dbus_id and self.dbus_id == dbus_id:
             log.warn("remote dbus instance is the same as our local one")
             log.warn(" cannot forward notification to ourself as this would create a loop")
-            log.warn(" disable notifications to avoid this warning")
+            log.warn(" disable notification to avoid this warning")
             return False
         return True

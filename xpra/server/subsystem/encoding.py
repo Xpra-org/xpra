@@ -100,7 +100,7 @@ class EncodingServer(StubServerMixin):
         # may need to re-initialize its list of encodings:
         log("reinit_encodings()")
         try:
-            from xpra.server.source.windows import WindowsConnection
+            from xpra.server.source.window import WindowsConnection
         except ImportError:
             return
         for ss in self._server_sources.values():

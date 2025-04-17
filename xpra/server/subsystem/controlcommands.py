@@ -305,7 +305,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_send_notification(self, nid: int, title: str, message: str, client_uuids) -> str:
         if not self.notifications:
-            msg = "notifications are disabled"
+            msg = "notification are disabled"
             log(msg)
             return msg
         sources = self._control_get_sources(client_uuids)
@@ -321,7 +321,7 @@ class ServerBaseControlCommands(StubServerMixin):
 
     def control_command_close_notification(self, nid: int, client_uuids) -> str:
         if not self.notifications:
-            msg = "notifications are disabled"
+            msg = "notification are disabled"
             log(msg)
             return msg
         sources = self._control_get_sources(client_uuids)
