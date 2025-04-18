@@ -8,6 +8,7 @@
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000041.html
 #  http://lists.partiwm.org/pipermail/parti-discuss/2008-September/000042.html
 # (also do not import anything that imports gtk)
+
 import glob
 import shlex
 import signal
@@ -22,7 +23,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env, get_saved_env_var
 from xpra.os_util import getuid, getgid, POSIX, OSX
 from xpra.server.util import setuidgid
-from xpra.util.io import is_writable, pollwait
+from xpra.util.io import is_writable, pollwait, osclose
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 from xpra.log import Logger
 
@@ -95,13 +96,6 @@ def get_vfb_logger() -> Logger:
     if not vfb_logger:
         vfb_logger = Logger("server", "x11", "screen")
     return vfb_logger
-
-
-def osclose(fd: int) -> None:
-    try:
-        os.close(fd)
-    except OSError:
-        pass
 
 
 def create_xorg_device_configs(xorg_conf_dir: str, device_uuid: str, uid: int, gid: int) -> None:
@@ -365,8 +359,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
                     log("read_displayfd(%s)", r_pipe, exc_info=True)
                     displayfd_err(f"failed to read displayfd pipe {r_pipe}: {e}")
             finally:
-                osclose(r_pipe)
-                osclose(w_pipe)
+                osclose(r_pipe, w_pipe)
             n = parse_displayfd(buf, displayfd_err)
             if n < 0:
                 displayfd_err(f"failed to parse displayfd output {buf!r}")

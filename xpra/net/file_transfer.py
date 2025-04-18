@@ -17,7 +17,7 @@ from collections.abc import Callable
 
 from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import POSIX, WIN32, gi_import
-from xpra.util.io import umask_context
+from xpra.util.io import umask_context, osclose
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
@@ -49,15 +49,6 @@ MIMETYPE_EXTS: dict[str, str] = {
 DENY: Final[int] = 0
 ACCEPT: Final[int] = 1  # the file / URL will be sent
 OPEN: Final[int] = 2  # don't send, open on sender
-
-
-def osclose(fd: int) -> None:
-    try:
-        os.close(fd)
-    except OSError as e:
-        filelog("os.close(%s)", fd, exc_info=True)
-        filelog.error("Error closing file download:")
-        filelog.estr(e)
 
 
 def basename(filename: str) -> str:
@@ -395,8 +386,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.error(f"Error: {message}")
             self.cancel_file(chunk_id, message, chunk)
             if chunk_state:
-                if chunk_state.fd:
-                    osclose(chunk_state.fd)
+                osclose(chunk_state.fd)
                 filename = chunk_state.filename
                 if filename and os.path.exists(filename):
                     try:

@@ -334,3 +334,16 @@ def get_proc_cmdline(pid: int) -> Sequence[str]:
             except UnicodeDecodeError:
                 return tuple(x.decode("latin1") for x in cmdline)
     return ()
+
+
+def osclose(*fds: int) -> None:
+    for fd in fds:
+        if not fd:
+            continue
+        try:
+            os.close(fd)
+        except OSError as e:
+            log = get_util_logger()
+            log("os.close(%s)", fd, exc_info=True)
+            log.error("Error closing file download:")
+            log.estr(e)
