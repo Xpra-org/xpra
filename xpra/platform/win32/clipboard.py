@@ -5,4 +5,4 @@
 
 
 def get_backend_module() -> str:
-    return "xpra.platform.win32.clipboard.Win32Clipboard"
+    return "xpra.platform.win32.ctypes_clipboard.Win32Clipboard"
