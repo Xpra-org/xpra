@@ -19,9 +19,9 @@ log("python-zeroconf version %s", zeroconf_version)
 IPV6 = envbool("XPRA_ZEROCONF_IPV6", True)
 IPV6_LO = envbool("XPRA_ZEROCONF_IPV6_LOOPBACK", False)
 
-LOOPBACK_AFAM = {
-    "0.0.0.0": socket.AF_INET,
-    "::": socket.AF_INET6,
+LOOPBACK_AFAM: dict[str, socket.AddressFamily] = {
+    "0.0.0.0": socket.AddressFamily.AF_INET,
+    "::": socket.AddressFamily.AF_INET6,
 }
 
 
@@ -92,7 +92,7 @@ class ZeroconfPublishers:
             if host.startswith("[") and host.endswith("]"):
                 host = host[1:-1]
             if host in ("0.0.0.0", "::"):
-                af = LOOPBACK_AFAM.get(host)
+                af: socket.AddressFamily = LOOPBACK_AFAM[host]
                 if af == socket.AF_INET6 and not IPV6_LO:
                     if first_time(f"zeroconf-{host}"):
                         log.info(f"python-zeroconf: {host!r} IPv6 loopback address is not supported")

@@ -147,7 +147,8 @@ class MenuProvider:
         if not EXPORT_MENU_DATA:
             return {}
         menu_data = self.menu_data
-        if self.load_lock.acquire(wait):  # pylint: disable=consider-using-with
+        lock = self.load_lock
+        if lock.acquire(wait):  # pylint: disable=consider-using-with
             menu_data = self.menu_data
             try:
                 if menu_data is None or force_reload:
@@ -155,7 +156,7 @@ class MenuProvider:
                     menu_data = self.menu_data = load_menu()
                     add_work_item(self.got_menu_data)
             finally:
-                self.load_lock.release()
+                lock.release()
         if remove_icons and self.menu_data:
             menu_data = noicondata(self.menu_data)
         return menu_data or {}
