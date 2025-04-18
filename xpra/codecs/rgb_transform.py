@@ -51,7 +51,7 @@ PIL_conv_noalpha: dict[str, Sequence[tuple[str, str]]] = {
 }
 
 
-def rgb_reformat(image: ImageWrapper, rgb_formats, supports_transparency: bool) -> bool:
+def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_transparency: bool) -> bool:
     """ convert the RGB pixel data into a format supported by the client """
     # need to convert to a supported format!
     pixel_format = image.get_pixel_format()
