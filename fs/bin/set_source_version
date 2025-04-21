@@ -44,12 +44,15 @@ mv "./packaging/debian/xpra/changelog.new" "./packaging/debian/xpra/changelog"
 sed -i'' "s/%define version .*/%define version $NEWV/" "./packaging/rpm/xpra.spec"
 sed -i'' "/%changelog/a - TODO" "./packaging/rpm/xpra.spec"
 
+sed -i'' "s+../pkgs/xpra-.*tar.xz+../pkgs/xpra-$NEWV.*tar.xz+g" "./packaging/debian/xpra.sh"
+
 CHANGELOGDATE=`date '+%a %b %d %Y'`
 sed -i'' "/%changelog/a \* $CHANGELOGDATE $AUTHOR $NEWV-10" "./packaging/rpm/xpra.spec"
 
 git commit -m "bump version" \
 	xpra/__init__.py \
 	packaging/rpm/xpra.spec \
+	packaging/debian/xpra.sh \
 	packaging/debian/xpra/changelog \
 	packaging/MSWindows/xpra.iss \
         fs/lib/cups/backend/xpraforwarder \
