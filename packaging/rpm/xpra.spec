@@ -118,7 +118,7 @@ BuildRequires:		%{python3}-cython
 BuildRequires:		pkgconfig
 BuildRequires:		%{python3}-setuptools
 BuildRequires:		coreutils
-Requires:			xpra-html5 >= 5
+Recommends:			xpra-html5 >= 5
 Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
