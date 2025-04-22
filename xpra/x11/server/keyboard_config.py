@@ -583,6 +583,18 @@ class KeyboardConfig(KeyboardConfigBase):
         if keycode < 0:
             keycode = self.keycode_translation.get(keyname, -1)
             klog("=%i, %i (keyname translation)", keycode, rgroup)
+            if keycode < 0:
+                # could this be a modifier?
+                modname = {"ctrl": "control"}.get(keyname.lower(), keyname.lower())
+                for modkey in self.keynames_for_mod.get(modname, ()):
+                    keycode = self.keycode_translation.get(modkey, -1)
+                    if keycode >= 0:
+                        break
+            if keycode < 0:
+                lowercase = dict((x.lower(), x) for x in self.keycode_translation.keys() if isinstance(x, str))
+                match = lowercase.get(keyname, "")
+                if match:
+                    keycode = self.keycode_translation.get(match, -1)
         # noinspection PyChainedComparisons
         if keycode < 0 and keyval > 0:
             # last resort, find using the keyval:
