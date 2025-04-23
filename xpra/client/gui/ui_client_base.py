@@ -349,7 +349,7 @@ class UIXpraClient(ClientBaseClass):
                 "sharing", "sharing-toggle", "lock", "lock-toggle",
                 "start-new-commands", "client-shutdown", "webcam",
                 "bandwidth-limit", "clipboard-limits",
-                "xdg-menu", "monitors",
+                "xdg-menu", "menu", "monitors",
                 "ibus-layouts",
         ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)

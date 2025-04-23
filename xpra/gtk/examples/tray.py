@@ -47,7 +47,7 @@ class FakeApplication:
         self.server_encodings_with_quality = []
         self.server_encodings_with_speed = []
         self.server_start_new_commands = True
-        self.server_xdg_menu = False
+        self.server_menu = False
         self.server_commands_info = None
         self.server_multi_monitors = False
         self.server_bandwidth_limit = 0

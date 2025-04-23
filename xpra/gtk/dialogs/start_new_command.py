@@ -35,10 +35,10 @@ def load_config() -> dict:
 _instance = None
 
 
-def getStartNewCommand(run_callback, can_share=False, xdg_menu=None):
+def getStartNewCommand(run_callback, can_share=False, menu=None):
     global _instance
     if _instance is None:
-        _instance = StartNewCommand(run_callback, can_share, xdg_menu)
+        _instance = StartNewCommand(run_callback, can_share, menu)
     return _instance
 
 
@@ -54,9 +54,9 @@ def btn(label, tooltip, callback, icon_name="") -> Gtk.Button:
 
 class StartNewCommand:
 
-    def __init__(self, run_callback=None, can_share=False, xdg_menu=None):
+    def __init__(self, run_callback=None, can_share=False, menu=None):
         self.run_callback = run_callback
-        self.xdg_menu = typedict(xdg_menu or {})
+        self.menu = typedict(menu or {})
         self.window = Gtk.Window()
         self.window.set_border_width(20)
         self.window.connect("delete-event", self.close)
@@ -77,7 +77,7 @@ class StartNewCommand:
         self.entry.set_max_length(255)
         self.entry.set_width_chars(32)
         self.entry.connect('activate', self.run_command)
-        if self.xdg_menu:
+        if self.menu:
             # or use menus if we have xdg data:
             hbox = Gtk.HBox(homogeneous=False, spacing=20)
             vbox.add(hbox)
@@ -85,7 +85,7 @@ class StartNewCommand:
             self.category_combo = Gtk.ComboBoxText()
             hbox.add(self.category_combo)
             index = 0
-            for i, name in enumerate(sorted(self.xdg_menu.keys())):
+            for i, name in enumerate(sorted(self.menu.keys())):
                 self.category_combo.append_text(name)
                 if name == self.prefs.get("category", ""):
                     index = i
@@ -133,7 +133,7 @@ class StartNewCommand:
     def category_changed(self, *args) -> None:
         category = self.category_combo.get_active_text()
         update_config("category", category)
-        entries = typedict(typedict(self.xdg_menu.dictget(category, {})).dictget("Entries", {}))
+        entries = typedict(typedict(self.menu.dictget(category, {})).dictget("Entries", {}))
         log("category_changed(%s) category=%s, entries=%s", args, category, entries)
         self.command_combo.get_model().clear()
         index = -1
@@ -148,7 +148,7 @@ class StartNewCommand:
         if not self.entry:
             return
         category = self.category_combo.get_active_text()
-        entries = typedict(typedict(self.xdg_menu.dictget(category, {})).dictget("Entries", {}))
+        entries = typedict(typedict(self.menu.dictget(category, {})).dictget("Entries", {}))
         command_name = self.command_combo.get_active_text()
         if command_name:
             update_config("command", command_name)

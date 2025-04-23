@@ -9,7 +9,7 @@ from typing import Any
 from collections.abc import Sequence, Callable, Iterable
 
 from xpra.util.objects import typedict, reverse_dict
-from xpra.util.str_fn import Ellipsizer, repr_ellipsized, csv
+from xpra.util.str_fn import Ellipsizer, csv
 from xpra.util.env import envbool, ignorewarnings
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.common import RESOLUTION_ALIASES, ConnectionMessage, uniq
@@ -1691,7 +1691,7 @@ class GTKTrayMenu(MenuHelper):
         start_menu_item = self.handshake_menuitem("Start", "start.png")
         start_menu_item.show()
 
-        def update_menu_data() -> None:
+        def update_menu_data(*_args) -> None:
             if not self.client.start_new_commands:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("Starting new commands is disabled")
@@ -1700,7 +1700,7 @@ class GTKTrayMenu(MenuHelper):
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("This server does not support starting new commands")
                 return
-            if not self.client.server_xdg_menu:
+            if not self.client.server_menu:
                 set_sensitive(start_menu_item, False)
                 start_menu_item.set_tooltip_text("This server does not provide start menu data")
                 return
@@ -1709,23 +1709,18 @@ class GTKTrayMenu(MenuHelper):
             start_menu_item.set_submenu(menu)
             start_menu_item.set_tooltip_text(None)
 
-        def start_menu_init() -> None:
-            update_menu_data()
-
-            def on_xdg_menu_changed(setting, value) -> None:
-                log("on_xdg_menu_changed(%s, %s)", setting, repr_ellipsized(str(value)))
-                update_menu_data()
-
-            self.client.on_server_setting_changed("xdg-menu", on_xdg_menu_changed)
-
-        self.after_handshake(start_menu_init)
+        # legacy pre v6.4 name:
+        self.client.on_server_setting_changed("xdg-menu", update_menu_data)
+        # v6.4 and later:
+        self.client.on_server_setting_changed("menu", update_menu_data)
+        # older servers may have supplied as part of the hello handshake:
+        self.after_handshake(update_menu_data)
         return start_menu_item
 
     def build_start_menu(self) -> Gtk.Menu:
         menu = Gtk.Menu()
-        execlog("build_start_menu() %i menu items", len(self.client.server_xdg_menu))
-        execlog("self.client.server_xdg_menu=%s", Ellipsizer(self.client.server_xdg_menu))
-        for category, category_props in sorted(self.client.server_xdg_menu.items()):
+        execlog("build_start_menu() %i menu items: %s", len(self.client.server_menu), Ellipsizer(self.client.server_menu))
+        for category, category_props in sorted(self.client.server_menu.items()):
             execlog(" * category: %s", category)
             # log("category_props(%s)=%s", category, category_props)
             if not isinstance(category_props, dict):

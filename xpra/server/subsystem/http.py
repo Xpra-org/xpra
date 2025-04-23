@@ -131,8 +131,8 @@ class HttpServer(StubServerMixin):
         }
 
     def http_menu_request(self, _uri: str) -> HttpResponse:
-        xdg_menu = self.menu_provider.get_menu_data(remove_icons=True)
-        return send_json_response(xdg_menu or "not available")
+        menu = self.menu_provider.get_menu_data(remove_icons=True)
+        return send_json_response(menu or "not available")
 
     def http_desktop_menu_request(self, _uri: str) -> HttpResponse:
         xsessions = self.menu_provider.get_desktop_sessions(remove_icons=True)

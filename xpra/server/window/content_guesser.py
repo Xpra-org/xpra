@@ -210,11 +210,11 @@ def load_command_to_type() -> dict[str, str]:
         return command_to_type
     command_to_type = {}
     from xpra.server.menu_provider import get_menu_provider
-    xdg_menu = get_menu_provider().get_menu_data(remove_icons=True)
+    menu_data = get_menu_provider().get_menu_data(remove_icons=True)
     categories_to_type = load_categories_to_type()
-    log("load_command_to_type() xdg_menu=%s, categories_to_type=%s", xdg_menu, categories_to_type)
-    if xdg_menu and categories_to_type:
-        for category, category_props in xdg_menu.items():
+    log("load_command_to_type() menu_data=%s, categories_to_type=%s", menu_data, categories_to_type)
+    if menu_data and categories_to_type:
+        for category, category_props in menu_data.items():
             log("category %s: %s", category, Ellipsizer(category_props))
             entries = category_props.get("Entries", {})
             for name, props in entries.items():

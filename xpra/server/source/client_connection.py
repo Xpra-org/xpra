@@ -95,6 +95,7 @@ class ClientConnection(StubClientConnection):
         self.lock = False
         self.client_control_commands: Sequence[str] = ()
         self.xdg_menu = True
+        self.menu = False
         self.ssh_auth_sock = ""
         # what we send back in hello packet:
         self.ui_client = True
@@ -143,7 +144,9 @@ class ClientConnection(StubClientConnection):
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.client_control_commands = c.strtupleget("control_commands")
+        # `xdg-menu` is the pre v6.4 legacy name:
         self.xdg_menu = c.boolget("xdg-menu", False)
+        self.menu = c.boolget("menu", False)
         self.ssh_auth_sock = c.strget("ssh-auth-sock")
 
     def startup_complete(self) -> None:
@@ -280,7 +283,9 @@ class ClientConnection(StubClientConnection):
         info = {
             "lock": bool(self.lock),
             "share": bool(self.share),
+            # legacy pre v6.4 name:
             "xdg-menu": bool(self.xdg_menu),
+            "menu": bool(self.menu),
         }
         return info
 

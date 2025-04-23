@@ -47,6 +47,8 @@ class GLibPacketHandler:
             self.add_packet_handler(packet_type, handler, main_thread)
 
     def add_packet_handler(self, packet_type: str, handler: ServerPacketHandlerType, main_thread=False) -> None:
+        # replace any previously defined handlers:
+        self.remove_packet_handlers(packet_type)
         log("add_packet_handler%s", (packet_type, handler, main_thread))
         if main_thread:
             handlers = self._authenticated_ui_packet_handlers

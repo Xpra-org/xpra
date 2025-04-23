@@ -8,6 +8,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.common import noop
 from xpra.scripts.config import str_to_bool
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -23,7 +24,7 @@ class CommandClient(StubClientMixin):
 
     def __init__(self):
         self.server_start_new_commands: bool = False
-        self.server_xdg_menu = None
+        self.server_menu = {}
         self.start_new_commands: bool = False
         self.server_commands_info = False
         self.server_commands_signals: Sequence[str] = ()
@@ -44,6 +45,9 @@ class CommandClient(StubClientMixin):
 
     def get_caps(self) -> dict[str, Any]:
         return {
+            # v6.4:
+            "menu": self.start_new_commands,
+            # pre-v6.4:
             "xdg-menu": self.start_new_commands,
             # legacy flag:
             "xdg-menu-update": True,
@@ -52,7 +56,14 @@ class CommandClient(StubClientMixin):
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_start_new_commands = c.boolget("start-new-commands")
         if self.server_start_new_commands:
-            self.server_xdg_menu = c.dictget("xdg-menu", None)
+            self.server_menu = c.dictget("xdg-menu", {})
+            # weak dependency injection on ui client:
+            onchange = getattr(self, "on_server_setting_changed", noop)
+
+            def update_menu_value(_setting, menu) -> None:
+                self.server_menu = menu
+            onchange("xdg-menu", update_menu_value)
+            onchange("menu", update_menu_value)
         if self.request_start or self.request_start_child:
             if self.server_start_new_commands:
                 self.after_handshake(self.send_start_new_commands)

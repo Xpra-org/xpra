@@ -34,6 +34,25 @@ log = Logger("exec")
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000) / 1000.0
 
 
+def do_send_menu_data(ss, menu) -> None:
+    if ss.is_closed():
+        return
+    if not getattr(ss, "send_setting_change", False):
+        return
+    log("do_send_menu_data(%s, %s) %s", ss, Ellipsizer(menu))
+    if getattr(ss, "menu", False):
+        # v6.4 and later:
+        attr = "menu"
+    elif getattr(ss, "xdg_menu", False):
+        # legacy name:
+        attr = "xdg-menu"
+    else:
+        # not supported by this connection
+        return
+    ss.send_setting_change(attr, menu)
+    log(f"{len(menu)} menu data entries sent to {ss}")
+
+
 class ChildCommandServer(StubServerMixin):
     """
     Mixin for servers that start subcommands,
@@ -138,7 +157,7 @@ class ChildCommandServer(StubServerMixin):
             "server-commands-info": not WIN32 and not OSX,
         }
 
-    def _get_xdg_menu_data(self) -> dict[str, Any] | None:
+    def _get_menu_data(self) -> dict[str, Any] | None:
         if not self.start_new_commands:
             return None
         assert self.menu_provider
@@ -159,34 +178,24 @@ class ChildCommandServer(StubServerMixin):
         self.exec_on_connect_commands()
 
     def send_initial_data(self, ss, caps: typedict, send_ui: bool, share_count: int) -> None:
-        xdg_menu = getattr(ss, "xdg_menu", False)
-        log(f"send_initial_data(..) {xdg_menu=}")
-        if not xdg_menu:
+        menu = getattr(ss, "xdg_menu", False) or getattr(ss, "menu", False)
+        log(f"send_initial_data(..) {menu=}")
+        if not menu:
             return
         # this method may block if the menus are still being loaded,
         # so do it in a throw-away thread:
-        start_thread(self.send_xdg_menu_data, "send-xdg-menu-data", True, (ss,))
+        start_thread(self.send_menu_data, "send-xdg-menu-data", True, (ss,))
 
-    def send_xdg_menu_data(self, ss) -> None:
+    def send_menu_data(self, ss) -> None:
         if ss.is_closed():
             return
-        xdg_menu = self._get_xdg_menu_data() or {}
-        self.do_send_xdg_menu_data(ss, xdg_menu)
+        menu = self._get_menu_data() or {}
+        do_send_menu_data(ss, menu)
 
-    def do_send_xdg_menu_data(self, ss, xdg_menu):
-        if ss.is_closed():
-            return
-        if not getattr(ss, "send_setting_change", False):
-            return
-        if not getattr(ss, "xdg_menu", False):
-            return
-        ss.send_setting_change("xdg-menu", xdg_menu)
-        log(f"{len(xdg_menu)} menu data entries sent to {ss}")
-
-    def send_updated_menu(self, xdg_menu) -> None:
-        log("send_updated_menu(%s)", Ellipsizer(xdg_menu))
+    def send_updated_menu(self, menu) -> None:
+        log("send_updated_menu(%s)", Ellipsizer(menu))
         for source in tuple(self._server_sources.values()):
-            self.do_send_xdg_menu_data(source, xdg_menu)
+            do_send_menu_data(source, menu)
 
     def get_info(self, _proto) -> dict[str, Any]:
         info: dict[Any, Any] = {
