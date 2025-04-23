@@ -307,7 +307,7 @@ Depends: xpra-common (= ${binary:Version})
 #jammy:              ,libopenh264-6
 #noble:              ,libopenh264-7
 #oracular:              ,libopenh264-7
-#plucky:              ,libopenh264-7
+#plucky:              ,libopenh264-8
 #bookworm:              ,libopenh264-7
 #trixie:              ,libopenh264-8
 #sid:              ,libopenh264-8
