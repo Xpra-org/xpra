@@ -26,6 +26,7 @@ from xpra.audio.gstreamer_util import (
 from xpra.gtk.gobject import one_arg_signal
 from xpra.net.compression import decompress_by_name
 from xpra.scripts.config import InitExit
+from xpra.common import SizedBuffer
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
@@ -63,7 +64,7 @@ UNDERRUN_MIN_LEVEL = max(0, envint("XPRA_SOUND_UNDERRUN_MIN_LEVEL", 150))
 CLOCK_SYNC = envbool("XPRA_CLOCK_SYNC", False)
 
 
-def uncompress_data(data, metadata: dict):
+def uncompress_data(data: bytes, metadata: dict) -> SizedBuffer:
     if not data or not metadata:
         return data
     compress = metadata.get("compress")

@@ -108,8 +108,9 @@ class AudioPipeline(Pipeline):
         elif self.container_format:
             GLib.timeout_add(1000, self.new_container_description, self.container_format)
         if self.stream_compressor:
-            def logsc():
+            def logsc() -> bool:
                 self.gstloginfo(f"using stream compression {self.stream_compressor}")
+                return False
 
             GLib.timeout_add(1000, logsc)
         log("AudioPipeline.start() done")
