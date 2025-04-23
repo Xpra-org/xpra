@@ -1727,15 +1727,13 @@ class GTKTrayMenu(MenuHelper):
             start_menu_item.set_submenu(menu)
             start_menu_item.set_tooltip_text(None)
 
+        def on_xdg_menu_changed(setting, value):
+            log("on_xdg_menu_changed(%s, %s)", setting, repr_ellipsized(str(value)))
+            update_menu_data()
+        self.client.on_server_setting_changed("xdg-menu", on_xdg_menu_changed)
+
         def start_menu_init() -> None:
             update_menu_data()
-
-            def on_xdg_menu_changed(setting, value):
-                log("on_xdg_menu_changed(%s, %s)", setting, repr_ellipsized(str(value)))
-                update_menu_data()
-
-            self.client.on_server_setting_changed("xdg-menu", on_xdg_menu_changed)
-
         self.after_handshake(start_menu_init)
         return start_menu_item
 
