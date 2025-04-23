@@ -271,6 +271,9 @@ class WindowsMixin(StubSourceMixin):
             self.source_remove(ct)
 
     def do_send_cursor(self, delay, cursor_data, cursor_sizes, encoding_prefix="") -> None:
+        # x11 server core calls this method directly, so check availability again:
+        if not self.send_cursors:
+            return
         #copy to a new list we can modify (ie: compress):
         cursor_data = list(cursor_data)
         #skip first two fields (if present) as those are coordinates:
