@@ -37,7 +37,7 @@ xpra (6.3-1) UNRELEASED; urgency=low
     skip unused slow imports
     avoid loading `numpy` unnecessarily
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 04 Mar 2025 17:31:09 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 23 Apr 2025 11:35:14 +0700
 
 xpra (6.2.0-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

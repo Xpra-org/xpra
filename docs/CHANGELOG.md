@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3] 2025-03-23
+## [6.3] 2025-04-23
 * Platforms, build and packaging:
     * [rewritten MS Windows build script](https://github.com/Xpra-org/xpra/issues/4394)
     * [`RHEL` 10 and clones](https://github.com/Xpra-org/xpra/issues/4282)
