@@ -165,25 +165,29 @@ class MmapClient(StubClientMixin):
             log(f"{prefixes} : {area}")
             if not area:
                 continue
-            found = False
+            area_caps = {}
+            prefix = ""
             for prefix in prefixes:
                 if prefix:
                     area_caps = mmap_caps.dictget(prefix)
                 else:
                     # older versions only have one mmap area:
                     area_caps = mmap_caps
-                log(f"caps({prefix})={area_caps!r}")
                 if area_caps:
-                    try:
-                        if area.enable_from_caps(typedict(area_caps)):
-                            found = True
-                            break   # no need to try the other prefix
-                    except ValueError:
-                        log("mmap.parse_server_capabilities(..)", exc_info=True)
-                        self.quit(ExitCode.MMAP_TOKEN_FAILURE)
-                        return False
-            if not found:
-                area.cleanup()
+                    break
+            log(f"caps({prefix!r})={area_caps!r}")
+            if area_caps:
+                try:
+                    if area.enable_from_caps(typedict(area_caps)):
+                        # enabled!
+                        log.warn("Enabled!")
+                        continue
+                except ValueError:
+                    log("mmap.parse_server_capabilities(..)", exc_info=True)
+                    self.quit(ExitCode.MMAP_TOKEN_FAILURE)
+                    return False
+            # not found, or not enabled:
+            area.cleanup()
         return True
 
     def get_info(self) -> dict[str, Any]:

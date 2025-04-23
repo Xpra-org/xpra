@@ -419,7 +419,7 @@ class BaseMmapArea:
         self.size = size
 
     def __repr__(self):
-        return "MmapArea(%s:%s)" % (self.name, self.filename)
+        return "MmapArea(%s:%s:%i)" % (self.name, self.filename, self.size)
 
     def __bool__(self):
         return bool(self.mmap) and self.enabled and self.size > 0
@@ -458,7 +458,7 @@ class BaseMmapArea:
         self.token = mmap_caps.intget("token")
         self.token_index = mmap_caps.intget("token_index", 0)
         self.token_bytes = mmap_caps.intget("token_bytes", DEFAULT_TOKEN_BYTES)
-        self.size = mmap_caps.intget("size")
+        self.size = self.size or mmap_caps.intget("size")
 
     def verify_token(self) -> bool:
         if not self.mmap:
