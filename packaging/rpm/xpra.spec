@@ -1005,7 +1005,7 @@ fi
 
 
 %changelog
-* Tue Apr 23 2025 Antoine Martin <antoine@xpra.org> 6.3-10
+* Wed Apr 23 2025 Antoine Martin <antoine@xpra.org> 6.3-10
 - Platforms, build and packaging:
    rewritten MS Windows build script
    `RHEL` 10 and clones
