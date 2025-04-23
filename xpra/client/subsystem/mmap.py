@@ -180,7 +180,6 @@ class MmapClient(StubClientMixin):
                 try:
                     if area.enable_from_caps(typedict(area_caps)):
                         # enabled!
-                        log.warn("Enabled!")
                         continue
                 except ValueError:
                     log("mmap.parse_server_capabilities(..)", exc_info=True)
