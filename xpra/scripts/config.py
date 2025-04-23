@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop, Self
 from xpra.util.str_fn import csv
-from xpra.exit_codes import ExitCode
+from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
@@ -43,7 +43,7 @@ class InitInfo(Exception):
 
 
 class InitExit(Exception):
-    def __init__(self, status: int | ExitCode, msg):
+    def __init__(self, status: ExitValue, msg):
         self.status = status
         super().__init__(msg)
 

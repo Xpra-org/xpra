@@ -73,7 +73,7 @@ class XpraClientBase(ClientBaseClass):
                 bc.__init__(self)
             self.init_packet_handlers()
         self._init_done = False
-        self.exit_code: int | ExitCode | None = None
+        self.exit_code: ExitValue | None = None
         self.start_time = int(monotonic())
 
     def defaults_init(self) -> None:
@@ -86,7 +86,7 @@ class XpraClientBase(ClientBaseClass):
             log(f" {k}={v!r}")
         self.client_type = "python"
         # client state:
-        self.exit_code: int | ExitCode | None = None
+        self.exit_code: ExitValue | None = None
         self.exit_on_signal = False
         self.display_desc = {}
         # connection attributes:

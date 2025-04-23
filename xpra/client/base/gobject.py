@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
-from xpra.exit_codes import ExitCode, ExitValue
+from xpra.exit_codes import ExitValue
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -56,7 +56,7 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
         capabilities["keyboard"] = False
         return capabilities
 
-    def quit(self, exit_code: int | ExitCode = 0) -> None:
+    def quit(self, exit_code: ExitValue = 0) -> None:
         log("quit(%s) current exit_code=%s", exit_code, self.exit_code)
         if self.exit_code is None:
             self.exit_code = exit_code

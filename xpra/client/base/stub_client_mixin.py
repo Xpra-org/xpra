@@ -7,7 +7,7 @@ import sys
 from typing import Any, NoReturn
 
 from xpra.util.objects import typedict
-from xpra.exit_codes import ExitCode, ExitValue
+from xpra.exit_codes import ExitValue
 from xpra.net.compression import Compressed
 from xpra.net.common import PacketHandlerType
 
@@ -33,7 +33,7 @@ class StubClientMixin:
         run the main loop.
         """
 
-    def quit(self, exit_code: int | ExitCode) -> NoReturn:  # pragma: no cover
+    def quit(self, exit_code: ExitValue) -> NoReturn:  # pragma: no cover
         """
         Terminate the client with the given exit code.
         (the exit code is ignored if we already have one)

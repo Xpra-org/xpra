@@ -2433,7 +2433,7 @@ def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
     return root_w, root_h
 
 
-def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> int | ExitCode | None:
+def start_server_via_proxy(cmdline, error_cb, options, args, mode: str) -> ExitValue | None:
     start_via_proxy = parse_bool_or("start-via-proxy", options.start_via_proxy)
     if start_via_proxy is False:
         return None
