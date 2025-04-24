@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import cython
 from typing import Any, Optional, Tuple, List, Dict
 from xpra.gtk.error import XError
 
@@ -480,7 +481,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     ###################################
     # XUnmapWindow
     ###################################
-    def Unmap(self, Window xwindow) -> long:
+    def Unmap(self, Window xwindow) -> cython.ulong:
         self.context_check("Unmap")
         cdef unsigned long serial = NextRequest(self.display)
         XUnmapWindow(self.display, xwindow)
@@ -519,7 +520,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             "override-redirect"     : attrs.override_redirect,
         }
 
-    def getEventMask(self, Window xwindow) -> long:
+    def getEventMask(self, Window xwindow) -> cython.ulong:
         self.context_check("getEventMask")
         cdef XWindowAttributes attrs
         cdef Status status = XGetWindowAttributes(self.display, xwindow, &attrs)
@@ -1421,7 +1422,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                                   xwindow, cursor, CurrentTime)
         return r == 0
 
-    def get_server_time(self, Window xwindow) -> long:
+    def get_server_time(self, Window xwindow) -> cython.ulong:
         cdef unsigned char c = b"a"
         cdef Atom timestamp_prop = self.str_to_atom("XPRA_TIMESTAMP_PROP")
         XChangeProperty(self.display, xwindow, timestamp_prop,

@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import cython
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Atom, Bool, Status, Window, CARD32,
     Success,
@@ -100,7 +101,7 @@ cdef class ResBindingsInstance(X11CoreBindingsInstance):
         log("found XRes extension version %i.%i", cmajor, cminor)
         return (cmajor, cminor) >= min_version
 
-    def get_pid(self, Window xid) -> long:
+    def get_pid(self, Window xid) -> cython.uint:
         self.context_check("get_pid")
         return get_pid(self.display, xid)
 

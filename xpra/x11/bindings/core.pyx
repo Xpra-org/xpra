@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import cython
 from collections.abc import Callable, Sequence
 
 from xpra.x11.bindings.xlib cimport (
@@ -74,7 +75,7 @@ cdef class X11CoreBindingsInstance:
     def __repr__(self):
         return "X11CoreBindings(%s)" % self.display_name
 
-    def get_root_xid(self) -> long:
+    def get_root_xid(self) -> cython.ulong:
         assert self.display
         return XDefaultRootWindow(self.display)
 
@@ -136,13 +137,13 @@ cdef class X11CoreBindingsInstance:
         XGetErrorText(self.display, code, buffer, 128)
         return (bytes(buffer[:128]).split(b"\0", 1)[0]).decode("latin1")
 
-    def UngrabKeyboard(self, Time time=CurrentTime) -> long:
+    def UngrabKeyboard(self, Time time=CurrentTime) -> cython.ulong:
         self.context_check("UngrabKeyboard")
         if self.display == NULL:
             raise RuntimeError("display is closed")
         return XUngrabKeyboard(self.display, time)
 
-    def UngrabPointer(self, Time time=CurrentTime) -> long:
+    def UngrabPointer(self, Time time=CurrentTime) -> cython.ulong:
         self.context_check("UngrabPointer")
         if self.display == NULL:
             raise RuntimeError("display is closed")

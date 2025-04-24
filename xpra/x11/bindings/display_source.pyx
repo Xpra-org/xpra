@@ -9,6 +9,7 @@
 # somewhere else, so we need this file to hide that...
 # (we can't just pass pointers around easily with Python/Cython)
 
+import cython
 from libc.stdint cimport uintptr_t   # pylint: disable=syntax-error
 from xpra.x11.bindings.xlib cimport Display
 
@@ -20,7 +21,7 @@ cdef Display* get_display() noexcept:
     return display
 
 
-def get_display_ptr() -> long:
+def get_display_ptr() -> cython.ulong:
     return int(<uintptr_t> display)
 
 
