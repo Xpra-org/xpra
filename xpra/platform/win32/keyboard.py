@@ -265,7 +265,7 @@ class Keyboard(KeyboardBase):
                 kbid = hkl & mask
                 win32_layout = WIN32_LAYOUTS.get(kbid)
                 if not win32_layout:
-                    log(f"unknown win32 layout {kbid}")
+                    log("unknown win32 layout %#x", kbid)
                     continue
                 code, _, _, _, layout0, variants = win32_layout
                 log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%i (%#x)",
