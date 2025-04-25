@@ -6,7 +6,7 @@
 import sys
 from typing import Any
 
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.util.env import SilenceWarningsContext
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
@@ -90,10 +90,10 @@ class CursorManager(StubServerMixin):
             cinfo[f"{prop}_size"] = size
         return {CursorManager.PREFIX: cinfo}
 
-    def _process_set_cursors(self, proto, packet: PacketType) -> None:
+    def _process_set_cursors(self, proto, packet: Packet) -> None:
         self._process_cursor_set(proto, packet)
 
-    def _process_cursor_set(self, proto, packet: PacketType) -> None:
+    def _process_cursor_set(self, proto, packet: Packet) -> None:
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:

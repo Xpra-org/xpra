@@ -17,7 +17,7 @@ from xpra.util.thread import start_thread
 from xpra.common import FULL_INFO, noop
 from xpra.util.objects import AtomicInteger, typedict, notypedict
 from xpra.util.env import envbool
-from xpra.net.common import PacketType, PacketElement
+from xpra.net.common import Packet, PacketElement
 from xpra.net.compression import compressed_wrapper, Compressed, LevelCompressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
 from xpra.server.source.stub_source import StubClientConnection
@@ -65,7 +65,7 @@ class ClientConnection(StubClientConnection):
         # these packets are picked off by the "protocol" via 'next_packet()'
         # format: packet, wid, pixels, start_send_cb, end_send_cb
         # (only packet is required - the rest can be 0/None for clipboard packets)
-        self.packet_queue = deque[tuple[PacketType, int, int, bool]]()
+        self.packet_queue = deque[tuple[Packet, int, int, bool]]()
         # the encode work queue is used by subsystem that need to encode data before sending it,
         # ie: encodings and clipboard
         # this queue will hold functions to call to compress data (pixels, clipboard)
@@ -73,7 +73,7 @@ class ClientConnection(StubClientConnection):
         # the functions should add the packets they generate to the 'packet_queue'
         self.encode_work_queue: SimpleQueue[None | tuple[bool, Callable, Sequence[Any]]] = SimpleQueue()
         self.encode_thread = None
-        self.ordinary_packets: list[tuple[PacketType, bool, bool]] = []
+        self.ordinary_packets: list[tuple[Packet, bool, bool]] = []
 
         self.startup_completed = False
         self.suspended = False
@@ -176,7 +176,7 @@ class ClientConnection(StubClientConnection):
         self.statistics.compression_work_qsizes.append((monotonic(), self.encode_queue_size()))
         self.queue_encode((optional, fn, args))
 
-    def queue_packet(self, packet: PacketType, wid=0, pixels=0,
+    def queue_packet(self, packet: Packet, wid=0, pixels=0,
                      wait_for_more=False) -> None:
         """
             Add a new 'draw' packet to the 'packet_queue'.
@@ -224,10 +224,10 @@ class ClientConnection(StubClientConnection):
 
     ######################################################################
     # network:
-    def next_packet(self) -> tuple[PacketType, bool, bool]:
+    def next_packet(self) -> tuple[Packet, bool, bool]:
         """ Called by protocol.py when it is ready to send the next packet """
         if self.is_closed():
-            return ("closed", ), False, False
+            return Packet("closed"), False, False
         synchronous = True
         more = False
         if self.ordinary_packets:
@@ -235,7 +235,7 @@ class ClientConnection(StubClientConnection):
         elif self.packet_queue:
             packet, _, _, more = self.packet_queue.popleft()
         else:
-            packet = ("none", )
+            packet = Packet("none")
         if not more:
             more = bool(packet) and bool(self.ordinary_packets or self.packet_queue)
         return packet, synchronous, more

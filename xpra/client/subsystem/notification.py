@@ -11,7 +11,7 @@ from xpra.os_util import gi_import
 from xpra.common import NotificationID, noop
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.notification import get_backends
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool
@@ -144,19 +144,19 @@ class NotificationClient(StubClientMixin):
         else:
             GLib.idle_add(show_notification)
 
-    def _process_notification_show(self, packet: PacketType) -> None:
+    def _process_notification_show(self, packet: Packet) -> None:
         if not self.notifications_enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
         self._ui_event()
         dbus_id = packet[1]
-        nid = int(packet[2])
-        app_name = str(packet[3])
-        replaces_nid = int(packet[4])
+        nid = packet.get_u64(2)
+        app_name = packet.get_str(3)
+        replaces_nid = packet.get_u64(4)
         app_icon = packet[5]
-        summary = str(packet[6])
-        body = str(packet[7])
-        expire_timeout = int(packet[8])
+        summary = packet.get_str(6)
+        body = packet.get_str(7)
+        expire_timeout = packet.get_u64(8)
         icon = None
         actions, hints = [], {}
         if len(packet) >= 10:
@@ -176,11 +176,11 @@ class NotificationClient(StubClientMixin):
                                   app_name, replaces_nid, app_icon,
                                   summary, body, actions, hints, expire_timeout, icon)
 
-    def _process_notification_close(self, packet: PacketType) -> None:
+    def _process_notification_close(self, packet: Packet) -> None:
         if not self.notifications_enabled:
             return
         assert self.notifier
-        nid = packet[1]
+        nid = packet.get_u64(1)
         log("_process_notification_close(%s)", nid)
         self.notifier.close_notify(nid)
 

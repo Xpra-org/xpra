@@ -16,7 +16,7 @@ from xpra.util.env import envbool
 from xpra.util.version import dict_version_trim
 from xpra.os_util import gi_import
 from xpra.common import FULL_INFO
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.gtk.keymap import get_default_keymap
 from xpra.server import features
@@ -252,16 +252,16 @@ class GTKServerBase(ServerBase):
     def do_process_button_action(self, *args):
         raise NotImplementedError
 
-    def _process_map_window(self, proto, packet: PacketType) -> None:
+    def _process_map_window(self, proto, packet: Packet) -> None:
         log.info("_process_map_window(%s, %s)", proto, packet)
 
-    def _process_unmap_window(self, proto, packet: PacketType) -> None:
+    def _process_unmap_window(self, proto, packet: Packet) -> None:
         log.info("_process_unmap_window(%s, %s)", proto, packet)
 
-    def _process_close_window(self, proto, packet: PacketType) -> None:
+    def _process_close_window(self, proto, packet: Packet) -> None:
         log.info("_process_close_window(%s, %s)", proto, packet)
 
-    def _process_configure_window(self, proto, packet: PacketType) -> None:
+    def _process_configure_window(self, proto, packet: Packet) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
     def get_notification_icon(self, icon_string: str) -> tuple[str, int, int, bytes] | None:

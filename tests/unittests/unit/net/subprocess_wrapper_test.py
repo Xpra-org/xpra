@@ -13,7 +13,7 @@ from xpra.gtk.gobject import one_arg_signal
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.subprocess_wrapper import SubprocessCaller, SubprocessCallee
 from xpra.net.bytestreams import Connection
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -61,8 +61,8 @@ class LoopbackConnection(Connection):
         assert self.active
 
 
-def loopback_protocol(process_packet_cb: Callable[[Any, PacketType], None],
-                      get_packet_cb: Callable[[], [PacketType, bool, bool]]) -> SocketProtocol:
+def loopback_protocol(process_packet_cb: Callable[[Any, Packet], None],
+                      get_packet_cb: Callable[[], [Packet, bool, bool]]) -> SocketProtocol:
     conn = LoopbackConnection("fake", "fake")
     protocol = SocketProtocol(conn, process_packet_cb, get_packet_cb=get_packet_cb)
     protocol.enable_encoder("rencodeplus")

@@ -22,7 +22,7 @@ from xpra.util.child_reaper import getChildReaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland
 from xpra.util.io import load_binary_file
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, NotificationID, DEFAULT_METADATA_SUPPORTED, noerr
 from xpra.util.stats import std_unit
 from xpra.scripts.config import TRUE_OPTIONS, FALSE_OPTIONS, InitExit
@@ -252,7 +252,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return -1
         return max(MIN_VREFRESH, min(MAX_VREFRESH, rate))
 
-    def _process_startup_complete(self, packet: PacketType) -> None:
+    def _process_startup_complete(self, packet: Packet) -> None:
         super()._process_startup_complete(packet)
         Gdk.notify_startup_complete()
         self.remove_packet_handlers("startup-complete")
@@ -1079,8 +1079,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             # fallback to simple beep:
             Gdk.beep()
 
-    def _process_raise_window(self, packet: PacketType) -> None:
-        wid = packet[1]
+    def _process_raise_window(self, packet: Packet) -> None:
+        wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         focuslog(f"going to raise window {wid} - {window}")
         if window:
@@ -1089,8 +1089,10 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 return
             window.present()
 
-    def _process_restack_window(self, packet: PacketType) -> None:
-        wid, detail, other_wid = packet[1:4]
+    def _process_restack_window(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        detail = packet.get_i8(2)
+        other_wid = packet.get_wid(3)
         above = int(detail == 0)
         window = self._id_to_window.get(wid)
         other_window = self._id_to_window.get(other_wid)

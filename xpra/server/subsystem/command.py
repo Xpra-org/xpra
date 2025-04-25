@@ -19,7 +19,7 @@ from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envint, restore_script_env
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.util import source_env, write_pid
@@ -405,18 +405,18 @@ class ChildCommandServer(StubServerMixin):
                 self.session_name = new_name
                 self.mdns_update()
 
-    def _process_start_command(self, proto, packet: PacketType) -> None:
+    def _process_start_command(self, proto, packet: Packet) -> None:
         self._process_command_start(proto, packet)
 
-    def _process_command_start(self, proto, packet: PacketType) -> None:
+    def _process_command_start(self, proto, packet: Packet) -> None:
         log(f"start new command: {packet}")
         if not self.start_new_commands:
             log.warn("Warning: received start-command request,")
             log.warn(" but the feature is currently disabled")
             return
-        name = str(packet[1])
+        name = packet.get_str(1)
         command = packet[2]
-        ignore = bool(packet[3])
+        ignore = packet.get_bool(3)
         cmd: str | tuple
         if isinstance(command, (list, tuple)):
             cmd = tuple(command)
@@ -432,9 +432,9 @@ class ChildCommandServer(StubServerMixin):
                 ss.add_window_filter("window", "pid", "=", proc.pid)
         log(f"process_start_command: proc={proc}")
 
-    def _process_command_signal(self, _proto, packet: PacketType) -> None:
-        pid = int(packet[1])
-        signame = packet[2]
+    def _process_command_signal(self, _proto, packet: Packet) -> None:
+        pid = packet.get_u32(1)
+        signame = packet.get_str(2)
         if signame not in COMMAND_SIGNALS:
             log.warn("Warning: invalid signal received: '%s'", signame)
             return

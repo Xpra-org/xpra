@@ -9,7 +9,7 @@ from typing import Any
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.util.stats import std_unit
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.env import envint
 from xpra.log import Logger
 
@@ -46,17 +46,17 @@ class BandwidthServer(StubServerMixin):
             }
         }
 
-    def _process_connection_data(self, proto, packet: PacketType) -> None:
+    def _process_connection_data(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.update_connection_data(packet[1])
 
-    def _process_bandwidth_limit(self, proto, packet: PacketType) -> None:
+    def _process_bandwidth_limit(self, proto, packet: Packet) -> None:
         log("_process_bandwidth_limit(%s, %s)", proto, packet)
         ss = self.get_server_source(proto)
         if not ss:
             return
-        bandwidth_limit = packet[1]
+        bandwidth_limit = packet.get_u64(1)
         if not isinstance(bandwidth_limit, int):
             raise TypeError("bandwidth-limit must be an integer, not %s" % type(bandwidth_limit))
         if (self.bandwidth_limit and bandwidth_limit >= self.bandwidth_limit) or bandwidth_limit <= 0:

@@ -3,6 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.net.common import Packet
+
+
 def verify_error(msg, *args) -> None:
     from xpra.log import Logger
     log = Logger("network")
@@ -11,11 +14,16 @@ def verify_error(msg, *args) -> None:
 
 def verify_packet(packet) -> bool:
     """ look for None values which may have caused the packet to fail encoding """
-    if not isinstance(packet, (list, tuple)):
-        return False
     if not packet:
-        raise ValueError(f"invalid packet: {packet} ({type(packet)})")
+        verify_error("invalid packet: %s (%s)", packet, type(packet))
+        return False
+    if not isinstance(packet, Packet):
+        verify_error("invalid type for packet: %s", type(packet))
+        return False
     tree = [f"{packet[0]!r} packet"]
+    if not isinstance(packet[0], str):
+        verify_error("packet type is not a string: %s", packet[0])
+        return False
     return do_verify_packet(tree, packet)
 
 
@@ -32,7 +40,7 @@ def do_verify_packet(tree, packet) -> bool:
         err("None value")
         return False
     r = True
-    if isinstance(packet, (list, tuple)):
+    if isinstance(packet, (list, tuple, Packet)):
         for i, x in enumerate(packet):
             if not do_verify_packet(new_tree(f"[{i}]"), x):
                 r = False

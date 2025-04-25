@@ -10,7 +10,7 @@ from typing import Sequence, Any
 from xpra.client.base.command import HelloRequestClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -89,13 +89,20 @@ class EncodeClient(ClientBaseClass):
         # this will call do_command()
         return super().server_connection_established(c)
 
-    def _process_encodings(self, packet: PacketType) -> None:
-        encodings = typedict(packet[1]).dictget("encodings", {}).get("core", ())
+    def _process_encodings(self, packet: Packet) -> None:
+        encodings = typedict(packet.get_dict(1)).dictget("encodings", {}).get("core", ())
         common = tuple(set(self.encodings) & set(encodings))
         log("server encodings=%s, common=%s", encodings, common)
 
-    def _process_encode_response(self, packet: PacketType) -> None:
-        encoding, data, options, width, height, bpp, stride, metadata = packet[1:9]
+    def _process_encode_response(self, packet: Packet) -> None:
+        encoding = packet.get_str(1)
+        data = packet[2]
+        options = packet.get_dict(3)
+        width = packet.get_u16(4)
+        height = packet.get_u16(5)
+        bpp = packet.get_u8(6)
+        stride = packet.get_u32(7)
+        metadata = packet.get_dict(8)
         log("encode-response: %8s %6i bytes, %5ix%-5i %ibits, stride=%i, options=%s, metadata=%s",
             encoding, len(data), width, height, bpp, stride, options, metadata)
         filename = typedict(metadata).strget("filename")

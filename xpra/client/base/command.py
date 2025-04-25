@@ -16,7 +16,7 @@ from xpra.util.env import envint, first_time
 from xpra.common import ConnectionMessage, disconnect_is_an_error, noop
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.stats import std_unit
 from xpra.client.base.client import EXTRA_TIMEOUT
 from xpra.client.base.gobject import GObjectXpraClient
@@ -69,7 +69,7 @@ class CommandConnectClient(GObjectXpraClient):
             self.command_timeout = None
             GLib.source_remove(ct)
 
-    def _process_connection_lost(self, packet: PacketType) -> None:
+    def _process_connection_lost(self, packet: Packet) -> None:
         log("_process_connection_lost%s", packet)
         # override so we don't log a warning
         # "command clients" are meant to exit quickly by losing the connection
@@ -133,7 +133,7 @@ class HelloRequestClient(SendCommandConnectClient):
     def do_command(self, caps: typedict) -> None:
         self.quit(ExitCode.OK)
 
-    def _process_disconnect(self, packet: PacketType) -> None:
+    def _process_disconnect(self, packet: Packet) -> None:
         # overridden method, so we can avoid printing a warning,
         # we haven't received the hello back from the server
         # but that's fine for a request client
@@ -168,8 +168,11 @@ class ScreenshotXpraClient(HelloRequestClient):
     def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: did not receive the screenshot")
 
-    def _process_screenshot(self, packet: PacketType) -> None:
-        (w, h, encoding, _, img_data) = packet[1:6]
+    def _process_screenshot(self, packet: Packet) -> None:
+        w = packet.get_u16(1)
+        h = packet.get_u16(2)
+        encoding = packet.get_str(3)
+        img_data = packet[5]
         assert encoding == "png", "expected png screenshot data but got %s" % encoding
         if not img_data:
             self.warn_and_quit(ExitCode.OK,
@@ -287,7 +290,7 @@ class ConnectTestXpraClient(CommandConnectClient):
     def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: no server response")
 
-    def _process_connection_lost(self, _packet: PacketType) -> None:
+    def _process_connection_lost(self, _packet: Packet) -> None:
         # we should always receive a hello back and call do_command,
         # which sets the correct exit code, landing here is an error:
         self.quit(ExitCode.FAILURE)
@@ -323,15 +326,15 @@ class MonitorXpraClient(SendCommandConnectClient):
     def do_command(self, caps: typedict) -> None:
         log.info("waiting for server events")
 
-    def _process_server_event(self, packet: PacketType) -> None:
+    def _process_server_event(self, packet: Packet) -> None:
         log.info(": ".join(str(x) for x in packet[1:]))
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_packets("server-event", "ping")
 
-    def _process_ping(self, packet: PacketType) -> None:
-        echotime = packet[1]
+    def _process_ping(self, packet: Packet) -> None:
+        echotime = packet.get_u64(1)
         self.send("ping_echo", echotime, 0, 0, 0, -1)
 
 
@@ -392,16 +395,16 @@ class InfoTimerClient(MonitorXpraClient):
         MonitorXpraClient.init_packet_handlers(self)
         self.add_packets("info-response")
 
-    def _process_server_event(self, packet: PacketType) -> None:
+    def _process_server_event(self, packet: Packet) -> None:
         self.log("server event: %s" % (packet,))
         self.last_server_event = packet[1:]
         self.update_screen()
 
-    def _process_info_response(self, packet: PacketType) -> None:
+    def _process_info_response(self, packet: Packet) -> None:
         self.log("info response: %s" % repr_ellipsized(packet))
         self.cancel_info_timer()
         self.info_request_pending = False
-        self.server_last_info = typedict(packet[1])
+        self.server_last_info = typedict(packet.get_dict(1))
         self.server_last_info_time = monotonic()
         # log.info("server_last_info=%s", self.server_last_info)
         self.update_screen()
@@ -492,14 +495,14 @@ class ShellXpraClient(SendCommandConnectClient):
         super().init_packet_handlers()
         self.add_packets("shell-reply", "ping")
 
-    def _process_ping(self, packet: PacketType) -> None:
+    def _process_ping(self, packet: Packet) -> None:
         echotime = packet[1]
         self.send("ping_echo", echotime, 0, 0, 0, -1)
 
     @staticmethod
-    def _process_shell_reply(packet: PacketType) -> None:
-        fd = int(packet[1])
-        message = packet[2]
+    def _process_shell_reply(packet: Packet) -> None:
+        fd = packet.get_u8(1)
+        message = packet.get_str(2)
         if fd == 1:
             stream = sys.stdout
         elif fd == 2:
@@ -509,7 +512,7 @@ class ShellXpraClient(SendCommandConnectClient):
         s = str(message)
         if s.endswith("\n"):
             s = s[:-1]
-        stream.write("%s" % s)
+        stream.write(s)
         stream.flush()
         if fd == 2:
             stream.write("\n")
@@ -693,7 +696,7 @@ class DetachXpraClient(HelloRequestClient):
 class WaitForDisconnectXpraClient(DetachXpraClient):
     """ we just want the connection to close """
 
-    def _process_disconnect(self, _packet: PacketType) -> None:
+    def _process_disconnect(self, _packet: Packet) -> None:
         self.quit(ExitCode.OK)
 
 
@@ -707,7 +710,7 @@ class RequestStartClient(HelloRequestClient):
         errwrite(".")
         return not self.connection_established
 
-    def _process_connection_lost(self, packet: PacketType) -> None:
+    def _process_connection_lost(self, packet: Packet) -> None:
         errwrite("\n")
         super()._process_connection_lost(packet)
 

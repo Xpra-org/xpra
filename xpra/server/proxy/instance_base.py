@@ -13,7 +13,7 @@ from collections.abc import Callable, Iterable
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.protocol.constants import CONNECTION_LOST
-from xpra.net.common import MAX_PACKET_SIZE, PacketType
+from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.net.digest import get_salt, gendigest
 from xpra.scripts.config import parse_number, str_to_bool
 from xpra.common import FULL_INFO, ConnectionMessage
@@ -85,15 +85,15 @@ def filter_caps(caps: typedict, prefixes: Iterable[str], proto=None) -> dict:
     return pcaps
 
 
-def replace_packet_item(packet: PacketType,
+def replace_packet_item(packet: Packet,
                         index: int,
-                        new_value: Compressed | str | dict | int) -> PacketType:
+                        new_value: Compressed | str | dict | int) -> Packet:
     # make the packet data mutable and replace the contents at `index`:
     assert index > 0
     lpacket = list(packet)
     lpacket[index] = new_value
     # noinspection PyTypeChecker
-    return tuple(lpacket)
+    return Packet(lpacket)
 
 
 # noinspection PyMethodMayBeStatic
@@ -129,8 +129,8 @@ class ProxyInstance:
         self.server_ping_timer = 0
         self.client_challenge_packet: tuple = ()
         self.exit = False
-        self.server_packets: Queue[PacketType] = Queue(PROXY_QUEUE_SIZE)
-        self.client_packets: Queue[PacketType] = Queue(PROXY_QUEUE_SIZE)
+        self.server_packets: Queue[Packet] = Queue(PROXY_QUEUE_SIZE)
+        self.client_packets: Queue[Packet] = Queue(PROXY_QUEUE_SIZE)
 
     def is_alive(self) -> bool:
         return not self.exit
@@ -271,20 +271,20 @@ class ProxyInstance:
 
     ################################################################################
 
-    def queue_client_packet(self, packet: PacketType) -> None:
+    def queue_client_packet(self, packet: Packet) -> None:
         log("queueing client packet: %s (queue size=%s)", packet[0], self.client_packets.qsize())
         self.client_packets.put(packet)
         self.client_protocol.source_has_more()
 
-    def get_client_packet(self) -> tuple[PacketType, bool, bool]:
+    def get_client_packet(self) -> tuple[Packet, bool, bool]:
         # server wants a packet
         p = self.client_packets.get()
         s = self.client_packets.qsize()
         log("sending to client: %s (queue size=%i)", p[0], s)
         return p, True, s > 0 or self.server_has_more
 
-    def process_client_packet(self, proto, packet: PacketType) -> None:
-        packet_type = str(packet[0])
+    def process_client_packet(self, proto, packet: Packet) -> None:
+        packet_type = packet.get_type()
         log("process_client_packet: %s", packet_type)
         if packet_type == CONNECTION_LOST:
             self.stop(proto, "client connection lost")
@@ -323,10 +323,10 @@ class ProxyInstance:
             packet = self.compressed_marker(packet, 3, "file-chunk-data")
         self.queue_server_packet(packet)
 
-    def compressed_marker(self, packet: PacketType, index: int, description: str) -> PacketType:
+    def compressed_marker(self, packet: Packet, index: int, description: str) -> Packet:
         return replace_packet_item(packet, index, Compressed(description, packet[index]))
 
-    def queue_server_packet(self, packet: PacketType) -> None:
+    def queue_server_packet(self, packet: Packet) -> None:
         log("queueing server packet: %s (queue size=%s)", packet[0], self.server_packets.qsize())
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
@@ -338,7 +338,7 @@ class ProxyInstance:
         log("sending to server: %s (queue size=%i)", p[0], s)
         return p, True, s > 0 or self.client_has_more
 
-    def _packet_recompress(self, packet: PacketType, index: int, name: str) -> PacketType:
+    def _packet_recompress(self, packet: Packet, index: int, name: str) -> Packet:
         if len(packet) <= index:
             return packet
         data = packet[index]
@@ -387,7 +387,7 @@ class ProxyInstance:
                 return False
         now = monotonic()
         self.server_last_ping = now
-        packet: PacketType = ("ping", int(now * 1000), int(time() * 1000), self.uuid)
+        packet = Packet("ping", int(now * 1000), int(time() * 1000), self.uuid)
         self.queue_server_packet(packet)
         return True
 
@@ -404,26 +404,26 @@ class ProxyInstance:
                 return False
         now = monotonic()
         self.client_last_ping = now
-        packet: PacketType = ("ping", int(now * 1000), int(time() * 1000), self.uuid)
+        packet = Packet("ping", int(now * 1000), int(time() * 1000), self.uuid)
         self.queue_client_packet(packet)
         return True
 
-    def process_server_packet(self, proto, packet: PacketType) -> None:
-        packet_type = str(packet[0])
+    def process_server_packet(self, proto, packet: Packet) -> None:
+        packet_type = packet.get_type()
         log("process_server_packet: %s", packet_type)
         if packet_type == CONNECTION_LOST:
             self.stop(proto, "server connection lost")
             return
         self.server_has_more = proto.receive_pending
         if packet_type == "disconnect":
-            reason = str(packet[1])
+            reason = packet.get_str(1)
             log("got disconnect from server: %s", reason)
             if self.exit:
                 self.server_protocol.close()
             else:
                 self.stop(None, "disconnect from server", reason)
         elif packet_type == "hello":
-            c = typedict(packet[1])
+            c = typedict(packet.get_dict(1))
             self.schedule_server_ping()
             maxw, maxh = c.intpair("max_desktop_size") or (4096, 4096)
             caps = self.filter_server_caps(c)
@@ -444,7 +444,7 @@ class ProxyInstance:
             packet = ("hello", caps)
         elif packet_type == "ping_echo" and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
-            self.server_last_ping_echo = float(packet[1])
+            self.server_last_ping_echo = float(packet.get_u64(1))
             self.server_last_ping_latency = 1000 * monotonic() - self.server_last_ping_echo
             log("ping-echo: server latency=%.1fms", self.server_last_ping_latency)
             return
@@ -452,7 +452,7 @@ class ProxyInstance:
             # adds proxy info:
             # note: this is only seen by the client application
             # "xpra info" is a new connection, which talks to the proxy server...
-            info = packet[1]
+            info = packet.get_dict(1)
             info.update(self.get_proxy_info(proto))
         elif packet_type == "draw":
             pixel_data = packet[7]

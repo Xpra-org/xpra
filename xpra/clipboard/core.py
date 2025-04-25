@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
 from xpra.net.compression import Compressible
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.os_util import POSIX, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
@@ -492,8 +492,8 @@ class ClipboardProtocolHelperCore:
         # only send the tokens that we're actually handling:
         self.send_tokens(tuple(self._clipboard_proxies.keys()))
 
-    def _process_clipboard_token(self, packet: PacketType) -> None:
-        selection = str(packet[1])
+    def _process_clipboard_token(self, packet: Packet) -> None:
+        selection = packet.get_str(1)
         name = self.remote_to_local(selection)
         proxy = self._clipboard_proxies.get(name)
         if proxy is None:
@@ -632,10 +632,10 @@ class ClipboardProtocolHelperCore:
             return struct.pack(fstr, *data)
         raise ValueError("unhanled encoding: %s" % ((encoding, dtype, dformat),))
 
-    def _process_clipboard_request(self, packet: PacketType) -> None:
-        request_id, selection, target = packet[1:4]
-        selection = bytestostr(selection)
-        target = bytestostr(target)
+    def _process_clipboard_request(self, packet: Packet) -> None:
+        request_id = packet.get_u64(1)
+        selection = packet.get_str(2)
+        target = packet.get_str(3)
 
         def no_contents():
             self.send("clipboard-contents-none", request_id, selection)
@@ -718,11 +718,13 @@ class ClipboardProtocolHelperCore:
             return Compressible(f"clipboard: {dtype} / {dformat}", wire_data)
         return wire_data
 
-    def _process_clipboard_contents(self, packet: PacketType) -> None:
-        request_id, selection, dtype, dformat, wire_encoding, wire_data = packet[1:7]
-        selection = bytestostr(selection)
-        wire_encoding = bytestostr(wire_encoding)
-        dtype = bytestostr(dtype)
+    def _process_clipboard_contents(self, packet: Packet) -> None:
+        request_id = packet.get_u64(1)
+        selection = packet.get_str(2)
+        dtype = packet.get_str(3)
+        dformat = packet.get_u8(4)
+        wire_encoding = packet.get_str(5)
+        wire_data = packet[6]
         log("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
         raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
         if log.is_debug_enabled():
@@ -731,10 +733,9 @@ class ClipboardProtocolHelperCore:
         assert isinstance(request_id, int) and isinstance(dformat, int)
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 
-    def _process_clipboard_contents_none(self, packet: PacketType) -> None:
+    def _process_clipboard_contents_none(self, packet: Packet) -> None:
         log("process clipboard contents none")
-        request_id = packet[1]
-        assert isinstance(request_id, int)
+        request_id = packet.get_u64(1)
         self._clipboard_got_contents(request_id, "", 8, b"")
 
     def _clipboard_got_contents(self, request_id: int, dtype: str, dformat: int, data) -> None:
@@ -743,16 +744,16 @@ class ClipboardProtocolHelperCore:
     def progress(self) -> None:
         self.progress_cb(len(self._clipboard_outstanding_requests), -1)
 
-    def _process_clipboard_pending_requests(self, packet: PacketType) -> None:
-        pending = packet[1]
+    def _process_clipboard_pending_requests(self, packet: Packet) -> None:
+        pending = packet.get_u8(1)
         self.progress_cb(-1, pending)
 
-    def _process_clipboard_enable_selections(self, packet: PacketType) -> None:
+    def _process_clipboard_enable_selections(self, packet: Packet) -> None:
         selections = tuple(packet[1])
         self.enable_selections(selections)
 
-    def process_clipboard_packet(self, packet: PacketType) -> None:
-        packet_type = str(packet[0])
+    def process_clipboard_packet(self, packet: Packet) -> None:
+        packet_type = packet.get_type()
         handler = self._packet_handlers.get(packet_type)
         if handler:
             handler(packet)

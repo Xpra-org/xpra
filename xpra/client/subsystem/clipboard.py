@@ -13,7 +13,7 @@ from xpra.common import ALL_CLIPBOARDS
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
 from xpra.platform.clipboard import get_backend_module
-from xpra.net.common import PacketType, PacketElement
+from xpra.net.common import Packet, PacketElement
 from xpra.net import compression
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.util.parsing import parse_simple_dict
@@ -231,17 +231,18 @@ class ClipboardClient(StubClientMixin):
                 log.error("Error: cannot instantiate %s", helperclass, exc_info=True)
         return None
 
-    def _process_clipboard_packet(self, packet: PacketType) -> None:
+    def _process_clipboard_packet(self, packet: Packet) -> None:
         ch = self.clipboard_helper
-        packet_type = packet[0]
+        packet_type = packet.get_type()
         log("process_clipboard_packet: %s, helper=%s", packet_type, ch)
         if packet_type == "clipboard-status":
             self._process_clipboard_status(packet)
         elif ch:
             ch.process_clipboard_packet(packet)
 
-    def _process_clipboard_status(self, packet: PacketType) -> None:
-        clipboard_enabled, reason = packet[1:3]
+    def _process_clipboard_status(self, packet: Packet) -> None:
+        clipboard_enabled = packet.get_bool(1)
+        reason = packet.get_str(2)
         if self.clipboard_enabled != clipboard_enabled:
             log.info("clipboard toggled to %s by the server", ["off", "on"][int(clipboard_enabled)])
             log.info(" reason given: %r", reason)

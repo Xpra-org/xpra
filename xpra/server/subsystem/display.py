@@ -11,7 +11,7 @@ from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import bytestostr
 from xpra.util.env import OSEnvContext
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.common import get_refresh_rate_for_value, FULL_INFO
@@ -270,11 +270,11 @@ class DisplayManager(StubServerMixin):
             "display": i,
         }
 
-    def _process_set_bell(self, proto, packet: PacketType) -> None:
+    def _process_set_bell(self, proto, packet: Packet) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
-            ss.send_bell = bool(packet[1])
+            ss.send_bell = packet.get_bool(1)
 
     ######################################################################
     # display / screen / root window:
@@ -422,12 +422,13 @@ class DisplayManager(StubServerMixin):
         log("get_client_refresh_rate(%s)=%s (from %s)", ss, rrate, vrefresh)
         return rrate
 
-    def _process_desktop_size(self, proto, packet: PacketType) -> None:
+    def _process_desktop_size(self, proto, packet: Packet) -> None:
         log("new desktop size from %s: %s", proto, packet)
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        width, height = packet[1:3]
+        width = packet.get_u16(1)
+        height = packet.get_u16(2)
         ss.desktop_size = (width, height)
         if len(packet) >= 12:
             ss.set_monitors(packet[11])
@@ -464,11 +465,11 @@ class DisplayManager(StubServerMixin):
         # ensures that DPI and antialias information gets reset:
         self.update_all_server_settings()
 
-    def _process_configure_display(self, proto, packet: PacketType) -> None:
+    def _process_configure_display(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        attrs = typedict(packet[1])
+        attrs = typedict(packet.get_dict(1))
         desktop_size = attrs.intpair("desktop-size")
         if desktop_size:
             ss.desktop_size = desktop_size
@@ -539,7 +540,7 @@ class DisplayManager(StubServerMixin):
 
     ######################################################################
     # screenshots:
-    def _process_screenshot(self, proto, _packet: PacketType) -> None:
+    def _process_screenshot(self, proto, _packet: Packet) -> None:
         packet = self.make_screenshot_packet()
         ss = self.get_server_source(proto)
         if packet and ss:

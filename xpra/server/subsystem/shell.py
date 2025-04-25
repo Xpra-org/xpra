@@ -8,7 +8,7 @@ from collections import deque
 from typing import Any, Deque
 
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 
 
 class ShellServer(StubServerMixin):
@@ -34,8 +34,8 @@ class ShellServer(StubServerMixin):
             "shell": True,
         }
 
-    def _process_shell_exec(self, proto, packet: PacketType) -> None:
-        code = str(packet[1])
+    def _process_shell_exec(self, proto, packet: Packet) -> None:
+        code = packet.get_str(1)
         ss = self.get_server_source(proto)
         if ss:
             self.counter += 1

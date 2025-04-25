@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from xpra.log import Logger
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net import compression
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.os_util import WIN32, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -328,17 +328,17 @@ class WebcamForwarder(StubClientMixin):
 
     ######################################################################
     # packet handlers
-    def _process_webcam_stop(self, packet: PacketType) -> None:
-        device_no = packet[1]
+    def _process_webcam_stop(self, packet: Packet) -> None:
+        device_no = packet.get_u64(1)
         if device_no != self.webcam_device_no:
             return
         self.stop_sending_webcam()
 
-    def _process_webcam_ack(self, packet: PacketType) -> None:
+    def _process_webcam_ack(self, packet: Packet) -> None:
         log("process_webcam_ack: %s", packet)
         with self.webcam_lock:
             if self.webcam_device:
-                frame_no = packet[2]
+                frame_no = packet.get_u64(2)
                 self.webcam_last_ack = frame_no
                 if self.may_send_webcam_frame():
                     self.cancel_webcam_send_timer()

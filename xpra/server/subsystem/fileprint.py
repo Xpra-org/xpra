@@ -18,7 +18,7 @@ from xpra.util.io import load_binary_file
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.common import NotificationID
 from xpra.auth.auth_helper import AuthDef
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -150,7 +150,7 @@ class FilePrintServer(StubServerMixin):
         self.file_transfer.printing = printing
         printlog("init_printing() printing=%s", printing)
 
-    def _process_print(self, _proto, packet: PacketType) -> None:
+    def _process_print(self, _proto, packet: Packet) -> None:
         # ie: from the xpraforwarder we call this command:
         # command = ["xpra", "print", "socket:/path/tosocket",
         #           filename, mimetype, source, title, printer, no_copies, print_options]
@@ -160,21 +160,21 @@ class FilePrintServer(StubServerMixin):
             printlog.error("Error: invalid print packet, only %i arguments", len(packet))
             printlog.error(" %s", [repr_ellipsized(x) for x in packet])
             return
-        filename = str(packet[1])
+        filename = packet.get_str(1)
         file_data = packet[2]
         mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
         if len(packet) >= 4:
-            mimetype = str(packet[3])
+            mimetype = packet.get_str(3)
         if len(packet) >= 5:
-            source_uuid = str(packet[4])
+            source_uuid = packet.get_str(4)
         if len(packet) >= 6:
-            title = str(packet[5])
+            title = packet.get_str(5)
         if len(packet) >= 7:
-            printer = str(packet[6])
+            printer = packet.get_str(6)
         if len(packet) >= 8:
-            no_copies = int(packet[7])
+            no_copies = packet.get_u16(7)
         if len(packet) >= 9:
-            print_options = packet[8]
+            print_options = packet.get_str(8)
         # parse and validate:
         if len(mimetype) >= 128:
             printlog.error("Error: invalid mimetype in print packet:")
@@ -233,7 +233,7 @@ class FilePrintServer(StubServerMixin):
         unit_str, v = to_std_unit(len(file_data), unit=1024)
         log_fn("'%s' (%i%sB) sent to %i clients for printing", title or filename, v, unit_str, sent)
 
-    def _process_printers(self, proto, packet: PacketType) -> None:
+    def _process_printers(self, proto, packet: Packet) -> None:
         if not self.file_transfer.printing or WIN32:
             printlog.error("Error: received printer definitions data")
             printlog.error(" but this server does not support printer forwarding")
@@ -241,57 +241,57 @@ class FilePrintServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        printers = dict(packet[1])
+        printers = packet.get_dict(1)
         auth_class: Sequence[AuthDef] = self.auth_classes.get("socket", ())
         ss.set_printers(printers, self.password_file, auth_class, self.encryption, self.encryption_keyfile)
 
     ######################################################################
     # file transfers:
-    def _process_send_file(self, proto, packet: PacketType) -> None:
+    def _process_send_file(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file packet")
             return
         ss._process_send_file(packet)
 
-    def _process_ack_file_chunk(self, proto, packet: PacketType) -> None:
+    def _process_ack_file_chunk(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for ack-file-chunk packet")
             return
         ss._process_ack_file_chunk(packet)
 
-    def _process_send_file_chunk(self, proto, packet: PacketType) -> None:
+    def _process_send_file_chunk(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file-chunk packet")
             return
         ss._process_send_file_chunk(packet)
 
-    def _process_send_data_request(self, proto, packet: PacketType) -> None:
+    def _process_send_data_request(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-file-request packet")
             return
         ss._process_send_data_request(packet)
 
-    def _process_send_data_response(self, proto, packet: PacketType) -> None:
+    def _process_send_data_response(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             printlog.warn("Warning: invalid client source for send-data-response packet")
             return
         ss._process_send_data_response(packet)
 
-    def _process_request_file(self, proto, packet: PacketType) -> None:
+    def _process_request_file(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             filelog.warn("Warning: invalid client source for send-data-response packet")
             return
-        argf = str(packet[1])
+        argf = packet.get_str(1)
         if argf == "${XPRA_SERVER_LOG}" and not os.environ.get("XPRA_SERVER_LOG"):
             filelog("no server log to send")
             return
-        openit = packet[2]
+        openit = packet.get_bool(2)
         filename = os.path.abspath(osexpand(argf))
         if not os.path.exists(filename):
             filelog.warn("Warning: the file requested does not exist:")

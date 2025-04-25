@@ -11,7 +11,7 @@ from importlib import import_module
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitExit
 from xpra.net.digest import get_salt, gendigest
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.common import ConnectionMessage
 from xpra.util.io import use_gui_prompt
 from xpra.util.env import envbool
@@ -138,14 +138,14 @@ class ChallengeClient(StubClientMixin):
             log.error(f" {mod_name!r}: {e}")
         return None
 
-    def _process_challenge(self, packet: PacketType) -> None:
+    def _process_challenge(self, packet: Packet) -> None:
         log(f"processing challenge: {packet[1:]}")
         if not self.validate_challenge_packet(packet):
             return
         start_thread(self.do_process_challenge, "call-challenge-handlers", True, (packet,))
 
-    def do_process_challenge(self, packet: PacketType) -> None:
-        digest = str(packet[3])
+    def do_process_challenge(self, packet: Packet) -> None:
+        digest = packet.get_str(3)
         log(f"challenge handlers: {self.challenge_handlers}, digest: {digest}")
         while self.challenge_handlers:
             handler = self.pop_challenge_handler(digest)
@@ -153,7 +153,7 @@ class ChallengeClient(StubClientMixin):
                 challenge = strtobytes(packet[1])
                 prompt = "password"
                 if len(packet) >= 6:
-                    prompt = std(str(packet[5]), extras="-,./: '")
+                    prompt = std(packet.get_str(5), extras="-,./: '")
                 log(f"calling challenge handler {handler}")
                 value = handler.handle(challenge=challenge, digest=digest, prompt=prompt)
                 log(f"{handler.handle}({packet})={obsc(value)}")
@@ -260,7 +260,7 @@ class ChallengeClient(StubClientMixin):
             pass
         return text
 
-    def send_challenge_reply(self, packet: PacketType, value) -> None:
+    def send_challenge_reply(self, packet: Packet, value) -> None:
         if not value:
             self.auth_error(ExitCode.PASSWORD_REQUIRED,
                             "this server requires authentication and no password is available")
@@ -282,7 +282,7 @@ class ChallengeClient(StubClientMixin):
         # all server versions support a client salt,
         # they also tell us which digest to use:
         server_salt = strtobytes(packet[1])
-        digest = str(packet[3])
+        digest = packet.get_str(3)
         actual_digest = digest.split(":", 1)[0]
         if actual_digest == "des":
             salt = client_salt = server_salt
@@ -290,7 +290,7 @@ class ChallengeClient(StubClientMixin):
             length = len(server_salt)
             salt_digest = "xor"
             if len(packet) >= 5:
-                salt_digest = str(packet[4])
+                salt_digest = packet.get_str(4)
             if salt_digest == "xor":
                 # with xor, we have to match the size
                 if length < 16:

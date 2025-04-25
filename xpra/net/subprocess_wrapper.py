@@ -14,7 +14,7 @@ from xpra.gtk.signals import register_os_signals
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool, get_exec_env
 from xpra.net.bytestreams import TwoFileConnection
-from xpra.net.common import ConnectionClosedException, PacketType, PacketElement
+from xpra.net.common import ConnectionClosedException, Packet, PacketElement
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH
 from xpra.common import noop
@@ -232,7 +232,7 @@ class SubprocessCallee:
             p.source_has_more()
         INJECT_FAULT(p)
 
-    def get_packet(self) -> tuple[PacketType, bool, bool]:
+    def get_packet(self) -> tuple[Packet, bool, bool]:
         try:
             item = self.send_queue.get(False)
             more = self.send_queue.qsize() > 0
@@ -241,7 +241,7 @@ class SubprocessCallee:
             more = False
         return item, False, more
 
-    def process_packet(self, proto, packet: PacketType) -> None:
+    def process_packet(self, proto, packet: Packet) -> None:
         command = str(packet[0])
         if command == CONNECTION_LOST:
             log("connection-lost: %s, calling stop", packet[1:])
@@ -320,7 +320,7 @@ class SubprocessCaller:
         self.protocol = None
         self.command = None
         self.description = description
-        self.send_queue: SimpleQueue[PacketType] = SimpleQueue()
+        self.send_queue: SimpleQueue[Packet] = SimpleQueue()
         self.signal_callbacks: dict[str, list[tuple[Callable, list[Any]]]] = {}
         self.large_packets = []
         # hook a default packet handlers:
@@ -415,7 +415,7 @@ class SubprocessCaller:
         log.warn(" %s", repr_ellipsized(args[1], limit=80))
         self.stop()
 
-    def get_packet(self) -> tuple[PacketType, bool, bool]:
+    def get_packet(self) -> tuple[Packet, bool, bool]:
         try:
             item = self.send_queue.get(False)
             more = self.send_queue.qsize() > 0
@@ -425,7 +425,7 @@ class SubprocessCaller:
         return item, False, more
 
     def send(self, packet_type: str, *packet_data: PacketElement) -> None:
-        packet = (packet_type, *packet_data)
+        packet = Packet(packet_type, *packet_data)
         self.send_queue.put(packet)
         p = self.protocol
         if p:
@@ -436,7 +436,7 @@ class SubprocessCaller:
                     conn.flush()
         INJECT_FAULT(p)
 
-    def process_packet(self, proto, packet: PacketType) -> None:
+    def process_packet(self, proto, packet: Packet) -> None:
         if DEBUG_WRAPPER:
             log("process_packet(%s, %s)", proto, [str(x)[:32] for x in packet])
         signal_name = str(packet[0])

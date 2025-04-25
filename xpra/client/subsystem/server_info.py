@@ -9,7 +9,7 @@ import re
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -31,9 +31,9 @@ class ServerInfoClient(StubClientMixin):
     def startup_complete(self) -> None:
         self.send_info_request()
 
-    def _process_info_response(self, packet: PacketType) -> None:
+    def _process_info_response(self, packet: Packet) -> None:
         self.info_request_pending = False
-        self.server_last_info = typedict(packet[1])
+        self.server_last_info = typedict(packet.get_dict(1))
         log("info-response: %s", Ellipsizer(self.server_last_info))
         if LOG_INFO_RESPONSE:
             items = LOG_INFO_RESPONSE.split(",")

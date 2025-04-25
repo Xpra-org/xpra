@@ -14,7 +14,7 @@ from xpra.client.base.client import XpraClientBase
 from xpra.platform import set_name
 from xpra.platform.gui import ready as gui_ready, get_wm_name, get_session_type
 from xpra.common import FULL_INFO, NotificationID, ConnectionMessage, noerr, get_run_info
-from xpra.net.common import PacketType, print_proxy_caps
+from xpra.net.common import Packet, print_proxy_caps
 from xpra.os_util import gi_import
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
@@ -286,14 +286,14 @@ class UIXpraClient(ClientBaseClass):
                 c.process_ui_capabilities(self, caps)
         self.handshake_complete()
 
-    def _process_startup_complete(self, packet: PacketType) -> None:
+    def _process_startup_complete(self, packet: Packet) -> None:
         log("all the existing windows and system trays have been received")
         super()._process_startup_complete(packet)
         gui_ready()
         for c in CLIENT_BASES:
             c.startup_complete(self)
 
-    def _process_new_window(self, packet: PacketType):
+    def _process_new_window(self, packet: Packet):
         window = super()._process_new_window(packet)
         screen_mode = any(self._remote_server_mode.find(x) >= 0 for x in ("desktop", "monitor", "shadow"))
         if self.desktop_fullscreen and screen_mode:
@@ -323,7 +323,7 @@ class UIXpraClient(ClientBaseClass):
     ######################################################################
     # server messages:
     # noinspection PyMethodMayBeStatic
-    def _process_server_event(self, packet: PacketType) -> None:
+    def _process_server_event(self, packet: Packet) -> None:
         log(": ".join(str(x) for x in packet[1:]))
 
     def on_server_setting_changed(self, setting: str, cb: Callable[[str, Any], None]) -> None:
@@ -334,8 +334,8 @@ class UIXpraClient(ClientBaseClass):
         if value is not None:
             cb(setting, value)
 
-    def _process_setting_change(self, packet: PacketType) -> None:
-        setting = str(packet[1])
+    def _process_setting_change(self, packet: Packet) -> None:
+        setting = packet.get_str(1)
         value = packet[2]
         # convert "hello" / "setting" variable names to client variables:
         if setting in (

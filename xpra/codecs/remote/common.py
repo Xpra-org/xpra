@@ -23,7 +23,7 @@ from xpra.util.thread import start_thread
 from xpra.scripts.main import connect_to
 from xpra.scripts.parsing import parse_display_name
 from xpra.scripts.config import InitExit, make_defaults_struct
-from xpra.net.common import PacketElement, PacketType
+from xpra.net.common import PacketElement, Packet
 from xpra.codecs.constants import VideoSpec, TransientCodecException
 from xpra.log import Logger
 
@@ -231,8 +231,8 @@ class RemoteConnectionClient(baseclass):
         self._ordinary_packets.append(packet)
         self.protocol.source_has_more()
 
-    def _process_packet(self, proto, packet: PacketType) -> None:
-        packet_type = packet[0]
+    def _process_packet(self, proto, packet: Packet) -> None:
+        packet_type = packet.get_type()
         if packet_type in (
                 "hello", "encodings", "startup-complete",
                 "setting-change",
@@ -267,19 +267,19 @@ class RemoteConnectionClient(baseclass):
         self.protocol.start()
         self.connect_event.wait(self.server_timeout)
 
-    def _process_hello(self, packet: PacketType) -> None:
-        caps = packet[1]
+    def _process_hello(self, packet: Packet) -> None:
+        caps = packet.get_dict(1)
         log("got hello: %s", Ellipsizer(caps))
         if not super().parse_server_capabilities(typedict(caps)):
             raise RuntimeError("failed to parse capabilities")
         version = caps.get("version")
         log.info("connected to encoder server version %s", version)
 
-    def _process_disconnect(self, packet: PacketType) -> None:
+    def _process_disconnect(self, _packet: Packet) -> None:
         log("disconnected from server %s", self.protocol)
         self.server_connection_cleanup()
 
-    def _process_connection_lost(self, packet: PacketType) -> None:
+    def _process_connection_lost(self, _packet: Packet) -> None:
         log("connection-lost for server %s", self.protocol)
         self.server_connection_cleanup()
 
@@ -288,7 +288,7 @@ class RemoteConnectionClient(baseclass):
         super().cleanup()
         self.schedule_connect(self.reconnect_delay)
 
-    def _process_startup_complete(self, packet: PacketType) -> None:
+    def _process_startup_complete(self, packet: Packet) -> None:
         log(f"{packet!r}")
         self.connect_event.set()
 

@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.scripts.config import InitException
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.desktop.monitor_model import MonitorDesktopModel
 from xpra.server.subsystem.window import WindowsConnection
@@ -372,16 +372,15 @@ class XpraMonitorServer(DesktopServerBase):
                 continue
             self.send_new_desktop_model(model, ss)
 
-    def _process_configure_monitor(self, _proto, packet: PacketType) -> None:
-        action = str(packet[1])
+    def _process_configure_monitor(self, _proto, packet: Packet) -> None:
+        action = packet.get_str(1)
         if action == "remove":
-            identifier = str(packet[2])
-            value = packet[3]
+            identifier = packet.get_str(2)
             if identifier == "wid":
-                wid = int(value)
+                wid = packet.get_wid(3)
             elif identifier == "index":
                 # index is zero-based
-                wid = int(value) + 1
+                wid = packet.get_u32() + 1
             else:
                 raise ValueError(f"unsupported monitor identifier {identifier!r}")
             self.remove_monitor(wid)

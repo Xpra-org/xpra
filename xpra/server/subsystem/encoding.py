@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from xpra.util.env import envint
 from xpra.os_util import OSX
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.version import vtrim
 from xpra.scripts.config import parse_bool_or_int
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENCODINGS
@@ -241,8 +241,8 @@ class EncodingServer(StubServerMixin):
             log.warn("ignored invalid default encoding option: %s", self.encoding)
             self.default_encoding = self.encoding
 
-    def _process_encoding_set(self, proto, packet: PacketType) -> None:
-        encoding = str(packet[1])
+    def _process_encoding_set(self, proto, packet: Packet) -> None:
+        encoding = packet.get_str(1)
         ss = self.get_server_source(proto)
         if ss is None:
             return

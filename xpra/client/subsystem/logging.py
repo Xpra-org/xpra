@@ -14,7 +14,7 @@ from xpra.common import FULL_INFO
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.client.base.stub_client_mixin import StubClientMixin
-from xpra.net.common import PacketType, LOG_PACKET_TYPE
+from xpra.net.common import Packet, LOG_PACKET_TYPE
 from xpra.net.compression import Compressed
 from xpra.log import Logger, set_global_logging_handler, get_info
 
@@ -92,13 +92,13 @@ class LoggingClient(StubClientMixin):
         self.add_legacy_alias("logging", "logging-event")
         self.send("logging-control", "start")
 
-    def _process_logging_event(self, packet: PacketType) -> None:
+    def _process_logging_event(self, packet: Packet) -> None:
         assert not self.local_logging, "cannot receive logging packets when forwarding logging!"
-        level = int(packet[1])
-        msg = packet[2]
+        level = packet.get_u8(1)
+        msg = packet.get_str(2)
         prefix = "server: "
         if len(packet) >= 4:
-            dtime = int(packet[3])
+            dtime = packet.get_u64(3)
             prefix += "@%02i.%03i " % ((dtime // 1000) % 60, dtime % 1000)
         try:
             if isinstance(msg, (tuple, list)):

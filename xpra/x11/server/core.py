@@ -27,7 +27,7 @@ from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, first_time
 from xpra.net.compression import Compressed
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.server.gtk_server import GTKServerBase
 from xpra.server import features
 from xpra.x11.xkbhelper import clean_keyboard_state
@@ -784,8 +784,8 @@ class X11ServerCore(GTKServerBase):
     def set_dpi(self, xdpi: int, ydpi: int) -> None:
         """ overridden in the seamless server """
 
-    def _process_server_settings(self, _proto, packet: PacketType) -> None:
-        settings = packet[1]
+    def _process_server_settings(self, _proto, packet: Packet) -> None:
+        settings = packet.get_dict(1)
         log("process_server_settings: %s", settings)
         self.update_server_settings(settings)
 
@@ -794,7 +794,7 @@ class X11ServerCore(GTKServerBase):
         # (does not make sense to update a shadow server)
         log("ignoring server settings update in %s", self)
 
-    def _process_force_ungrab(self, proto, _packet: PacketType) -> None:
+    def _process_force_ungrab(self, proto, _packet: Packet) -> None:
         # ignore the window id: wid = packet[1]
         grablog("force ungrab from %s", proto)
         self.X11_ungrab()
@@ -907,12 +907,17 @@ class X11ServerCore(GTKServerBase):
                 xinputlog("axes: %s", touchpad_axes)
                 self.pointer_device_map[deviceid] = self.touchpad_device
 
-    def _process_wheel_motion(self, proto, packet: PacketType) -> None:
+    def _process_wheel_motion(self, proto, packet: Packet) -> None:
         assert self.pointer_device.has_precise_wheel()
         ss = self.get_server_source(proto)
         if not ss:
             return
-        wid, button, distance, pointer, modifiers, _buttons = packet[1:7]
+        wid = packet.get_wid()
+        button = packet.get_u8(2)
+        distance = packet.get_i64(3)
+        pointer = packet[4]
+        modifiers = packet[5]
+        # _buttons = packet[6]
         device_id = -1
         props = {}
         self.record_wheel_event(wid, button)

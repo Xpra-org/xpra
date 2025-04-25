@@ -7,7 +7,7 @@
 from typing import Any
 
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
@@ -55,16 +55,16 @@ class PingServer(StubServerMixin):
                 ss.ping()
         return True
 
-    def _process_ping_echo(self, proto, packet: PacketType) -> None:
+    def _process_ping_echo(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.process_ping_echo(packet)
 
-    def _process_ping(self, proto, packet: PacketType) -> None:
-        time_to_echo = packet[1]
+    def _process_ping(self, proto, packet: Packet) -> None:
+        time_to_echo = packet.get_u64(1)
         sid = ""
         if len(packet) >= 4:
-            sid = packet[3]
+            sid = packet.get_str(3)
         ss = self.get_server_source(proto)
         if ss:
             ss.process_ping(time_to_echo, sid)

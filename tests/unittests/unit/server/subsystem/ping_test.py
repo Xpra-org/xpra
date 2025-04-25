@@ -24,7 +24,12 @@ class PingTest(ServerMixinTest):
             opts.pings = 1
             self._test_mixin_class(PingServer, opts, source_mixin_class=PingConnection)
             self.handle_packet(("ping", 10))
-            self.handle_packet(("ping", -1000))
+            try:
+                self.handle_packet(("ping", -1000))
+            except ValueError:
+                pass
+            else:
+                raise ValueError("negative values are not allowed for pings")
             self.handle_packet(("ping_echo", 10, 500, 500, 600, 10))
 
             # test source:

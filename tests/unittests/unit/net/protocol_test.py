@@ -7,6 +7,7 @@
 import os
 import time
 import unittest
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
@@ -16,7 +17,7 @@ from xpra.net.protocol import socket_handler, check
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.log import Logger
 
 from unit.test_util import silence_error
@@ -111,35 +112,41 @@ class ProtocolTest(unittest.TestCase):
     def test_verify_packet(self) -> None:
         verify_packet = check.verify_packet
 
-        def nok(packet) -> None:
-            assert verify_packet(packet) is False, f"packet {packet} should fail verification"
+        def nok(*elements) -> None:
+            try:
+                packet = Packet(*elements)
+            except TypeError:
+                pass
+            else:
+                assert verify_packet(packet) is False, f"packet {packet} should fail verification"
 
-        def ok(packet) -> None:
+        def ok(*elements) -> None:
+            packet = Packet(*elements)
             assert verify_packet(packet) is True, f"packet {packet} should not fail verification"
 
         # packets are iterable, so this should fail:
-        for x in (True, 1, "hello", {}, None):
+        for x in (True, 1, b"hello", {}, None):
             nok(x)
-        ok(("foo", 1))
-        ok(("foo", [1,2,3], {1:2}))
+        ok("foo", 1)
+        ok("foo", [1,2,3], {1:2})
         with silence_error(socket_handler):
             try:
                 saved_verify_error_fn = check.verify_error
                 check.verify_error = noop
-                nok(["no-floats test", 1.1])
-                nok(["no-None-values", [None], {1:2}])
-                nok(["no-generic-objects", [1,2,3], {object() : 2}])
-                nok(["no-nested-floats", [1,2,3], {1 : 2.2}])
+                nok("no-floats test", 1.1)
+                nok("no-None-values", [None], {1:2})
+                nok("no-generic-objects", [1,2,3], {object() : 2})
+                nok("no-nested-floats", [1,2,3], {1 : 2.2})
             finally:
                 check.verify_error = saved_verify_error_fn
 
     def test_invalid_data(self) -> None:
-        self.do_test_invalid_data([b"\0"*1])
-        self.do_test_invalid_data([b"P"*8])
+        self.do_test_invalid_data(b"\0"*1)
+        self.do_test_invalid_data(b"P"*8)
 
     def do_test_invalid_data(self, data: SizedBuffer) -> None:
         errs = []
-        proto = self.make_memory_protocol(data)
+        proto = self.make_memory_protocol([data, ])
 
         def check_failed() -> None:
             if not proto.is_closed():
@@ -207,9 +214,9 @@ class ProtocolTest(unittest.TestCase):
         # catch parsed packets:
         parsed_packets = []
 
-        def process_packet_cb(proto, packet: PacketType) -> None:
+        def process_packet_cb(_proto, packet: Packet) -> None:
             # log.info("process_packet_cb%s", packet[0])
-            if packet[0] == CONNECTION_LOST:
+            if packet.get_type() == CONNECTION_LOST:
                 loop.quit()
             else:
                 parsed_packets.append(packet[0])
@@ -227,12 +234,12 @@ class ProtocolTest(unittest.TestCase):
         log("do_test_read_speed(%i) %iMB in %ims", pixel_data_size, total_size, elapsed*1000)
         return N*len(packets), total_size, elapsed
 
-    def make_test_packets(self, pixel_data_size=2**18) -> tuple:
+    def make_test_packets(self, pixel_data_size=2**18) -> Sequence[Packet]:
         pixel_data = os.urandom(pixel_data_size)
         return (
-            ("test", 1, 2, 3),
-            ("ping", 100, 200, 300, 0),
-            ("draw", 100, 100, 640, 480, Compressed("pixel-data", pixel_data), {}),
+            Packet("test", 1, 2, 3),
+            Packet("ping", 100, 200, 300, 0),
+            Packet("draw", 100, 100, 640, 480, Compressed("pixel-data", pixel_data), {}),
         )
 
     def repeat_list(self, items, N=100) -> list:
@@ -249,16 +256,18 @@ class ProtocolTest(unittest.TestCase):
         N = 10 if not SHOW_PERF else 1000
         many = self.repeat_list(packets, N)
 
-        def get_packet_cb() -> tuple[PacketType, bool, bool]:
+        def get_packet_cb() -> tuple[Packet, bool, bool]:
             try:
                 packet = many.pop(0)
                 return packet, False, True
             except IndexError:
                 proto.close()
-                return (), False, False
+                return Packet(), False, False
 
-        def process_packet_cb(proto, packet: PacketType):
-            if packet[0] == CONNECTION_LOST:
+        def process_packet_cb(_proto, packet: Packet):
+            if isinstance(packet, (tuple, list)):
+                packet = Packet(*packet)
+            if packet.get_type() == CONNECTION_LOST:
                 GLib.timeout_add(1000, loop.quit)
 
         proto = self.make_memory_protocol(None, process_packet_cb=process_packet_cb, get_packet_cb=get_packet_cb)

@@ -8,7 +8,7 @@ from collections.abc import Callable, Sequence, Iterable
 
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.net.compression import Compressed
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.common import FULL_INFO, noop, SizedBuffer
@@ -568,10 +568,10 @@ class AudioClient(StubClientMixin):
     ######################################################################
     # packet handlers
 
-    def _process_audio_data(self, packet: PacketType) -> None:
-        codec = str(packet[1])
+    def _process_audio_data(self, packet: Packet) -> None:
+        codec = packet.get_str(1)
         data = memoryview_to_bytes(packet[2])
-        metadata = typedict(packet[3])
+        metadata = typedict(packet.get_dict(3))
         # the server may send packet_metadata, which is pushed before the actual audio data:
         packet_metadata = ()
         if len(packet) > 4:

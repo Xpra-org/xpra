@@ -17,7 +17,7 @@ from xpra.util.io import pollwait
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool, osexpand, first_time
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_icon_filename
@@ -393,10 +393,10 @@ class AudioServer(StubServerMixin):
             info["private-socket"] = self.pulseaudio_private_socket
         return info
 
-    def _process_sound_control(self, proto, packet: PacketType) -> None:
+    def _process_sound_control(self, proto, packet: Packet) -> None:
         self._process_audio_control(proto, packet)
 
-    def _process_audio_control(self, proto, packet: PacketType) -> None:
+    def _process_audio_control(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return
@@ -408,10 +408,10 @@ class AudioServer(StubServerMixin):
             return
         audio_control(*packet[1:])
 
-    def _process_sound_data(self, proto, packet: PacketType) -> None:
+    def _process_sound_data(self, proto, packet: Packet) -> None:
         self._process_sound_data(proto, packet)
 
-    def _process_audio_data(self, proto, packet: PacketType) -> None:
+    def _process_audio_data(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if ss:
             ss.audio_data(*packet[1:])

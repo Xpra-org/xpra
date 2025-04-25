@@ -16,7 +16,7 @@ from xpra.platform.gui import (
 )
 from xpra.scripts.main import check_display
 from xpra.scripts.config import FALSE_OPTIONS
-from xpra.net.common import MAX_PACKET_SIZE, PacketType
+from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.common import (
     adjust_monitor_refresh_rate, get_refresh_rate_for_value,
     FULL_INFO, SYNC_ICC, NotificationID, skipkeys,
@@ -328,13 +328,16 @@ class DisplayClient(StubClientMixin):
     def get_monitors_info(self):
         return {}
 
-    def _process_show_desktop(self, packet: PacketType) -> None:
-        show = packet[1]
+    def _process_show_desktop(self, packet: Packet) -> None:
+        show = packet.get_bool(1)
         log("calling %s(%s)", show_desktop, show)
         show_desktop(show)
 
-    def _process_desktop_size(self, packet: PacketType) -> None:
-        root_w, root_h, max_w, max_h = packet[1:5]
+    def _process_desktop_size(self, packet: Packet) -> None:
+        root_w = packet.get_u16(1)
+        root_h = packet.get_u16(2)
+        max_w = packet.get_u16(3)
+        max_h = packet.get_u16(4)
         log("server has resized the desktop to: %sx%s (max %sx%s)", root_w, root_h, max_w, max_h)
         self.server_max_desktop_size = max_w, max_h
         self.server_actual_desktop_size = root_w, root_h

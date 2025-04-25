@@ -5,7 +5,7 @@
 # pylint: disable-msg=E1101
 
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.log import Logger
 
 log = Logger("events")
@@ -16,13 +16,13 @@ class SuspendServer(StubServerMixin):
     Handle suspend and resume events
     """
 
-    def _process_suspend(self, proto, packet: PacketType) -> None:
+    def _process_suspend(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         log("suspend(%s) source=%s", packet[1:], ss)
         if ss:
             ss.suspend()
 
-    def _process_resume(self, proto, packet: PacketType) -> None:
+    def _process_resume(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         log("resume(%s) source=%s", packet[1:], ss)
         if ss:

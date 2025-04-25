@@ -33,17 +33,17 @@ class MixinsTest(ClientMixinTest):
         logger.info(message)
         assert len(self.packets)==1
         packet = self.packets[0]
-        assert packet[0]=="logging", "expected logging packet but got '%s'" % (packet[0],)
-        assert packet[1]==20, "expected INFO level (20) but got %s" % (packet[1],)
+        assert packet[0] == "logging", "expected logging packet but got '%s'" % (packet[0],)
+        assert packet[1] == 20, "expected INFO level (20) but got %s" % (packet[1],)
         #data might be using a compressed wrapper:
         data = getattr(packet[2], "data", packet[2])
-        assert data==message, "expected message '%s' but got '%s'" % (message, data)
+        assert data == message, "expected message '%s' but got '%s'" % (message, data)
         #after cleanup, log messages should not be intercepted:
         self.packets = []
         self.mixin.cleanup()
         with silence_info(logging):
             logger.info("foo")
-        assert len(self.packets)==0
+        assert len(self.packets) == 0
 
 
 def main():

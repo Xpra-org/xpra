@@ -33,7 +33,7 @@ from xpra.server.util import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     SOCKET_TYPES, MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
-    is_request_allowed, PacketType, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
+    is_request_allowed, Packet, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
 )
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
@@ -1591,8 +1591,8 @@ class ServerCore(ControlHandler, GLibPacketHandler):
     def cleanup_protocol(self, protocol: SocketProtocol) -> None:
         """ some subclasses perform extra cleanup here """
 
-    def _process_disconnect(self, proto: SocketProtocol, packet: PacketType) -> None:
-        info = str(packet[1])
+    def _process_disconnect(self, proto: SocketProtocol, packet: Packet) -> None:
+        info = packet.get_str(1)
         if len(packet) > 2:
             info += " (%s)" % csv(str(x) for x in packet[2:])
         # only log protocol info if there is more than one client:
@@ -1607,7 +1607,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         # overridden in server_base in case there is more than one protocol
         return ""
 
-    def _process_connection_lost(self, proto: SocketProtocol, packet: PacketType) -> None:
+    def _process_connection_lost(self, proto: SocketProtocol, packet: Packet) -> None:
         netlog("process_connection_lost(%s, %s)", proto, packet)
         self.cancel_verify_connection_accepted(proto)
         self.cancel_upgrade_to_rfb_timer(proto)
@@ -1617,13 +1617,14 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             self._potential_protocols.remove(proto)
         self.cleanup_protocol(proto)
 
-    def _process_gibberish(self, proto: SocketProtocol, packet: PacketType) -> None:
-        message, data = packet[1:3]
+    def _process_gibberish(self, proto: SocketProtocol, packet: Packet) -> None:
+        message = packet.get_str(1)
+        data = packet[2]
         netlog("Received uninterpretable nonsense from %s: %s", proto, message)
         netlog(" data: %s", Ellipsizer(data))
         self.disconnect_client(proto, message)
 
-    def _process_invalid(self, protocol: SocketProtocol, packet: PacketType) -> None:
+    def _process_invalid(self, protocol: SocketProtocol, packet: Packet) -> None:
         message, data = packet[1:3]
         netlog(f"Received invalid packet: {message}")
         netlog(" data: %s", Ellipsizer(data))
@@ -1637,8 +1638,8 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         # client is meant to close the connection itself, but just in case:
         GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
-    def _process_hello(self, proto: SocketProtocol, packet: PacketType) -> None:
-        capabilities = packet[1]
+    def _process_hello(self, proto: SocketProtocol, packet: Packet) -> None:
+        capabilities = packet.get_dict(1)
         c = typedict(capabilities)
         if LOG_HELLO:
             netlog.info(f"hello from {proto}:")
@@ -1873,7 +1874,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         # continue processing hello packet in UI thread:
         GLib.idle_add(self.call_hello_oked, proto, caps, auth_caps)
 
-    def _process_ssl_upgrade(self, proto: SocketProtocol, packet: PacketType) -> None:
+    def _process_ssl_upgrade(self, proto: SocketProtocol, packet: Packet) -> None:
         socktype = proto._conn.socktype
         new_socktype = {"tcp": "ssl", "ws": "wss"}.get(socktype)
         if not new_socktype:

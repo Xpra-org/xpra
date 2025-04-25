@@ -23,7 +23,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool, parse_with_unit
 from xpra.common import SizedBuffer
-from xpra.net.common import PacketType, PacketElement
+from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
 from xpra.log import Logger
@@ -365,11 +365,11 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.error(f" {filename!r} : {e}")
         self.send("ack-file-chunk", chunk_id, False, message, chunk)
 
-    def _process_send_file_chunk(self, packet: PacketType) -> None:
-        chunk_id = str(packet[1])
-        chunk = int(packet[2])
+    def _process_send_file_chunk(self, packet: Packet) -> None:
+        chunk_id = packet.get_str(1)
+        chunk = packet.get_u32(2)
         file_data: SizedBuffer = packet[3]
-        has_more = bool(packet[4])
+        has_more = packet.get_bool(4)
         # if len(file_data)<1024:
         #    from xpra.util.str_fn import hexstr
         #    filelog.warn("file_data=%s", hexstr(file_data))
@@ -490,19 +490,19 @@ class FileTransferHandler(FileTransferAttributes):
             openit = False
         return True, printit, openit
 
-    def _process_send_file(self, packet: PacketType) -> None:
+    def _process_send_file(self, packet: Packet) -> None:
         # the remote end is sending us a file
         start = monotonic()
-        basefilename = str(packet[1])
-        mimetype = str(packet[2])
-        printit = bool(packet[3])
-        openit = bool(packet[4])
-        filesize = int(packet[5])
+        basefilename = packet.get_str(1)
+        mimetype = packet.get_str(2)
+        printit = packet.get_bool(3)
+        openit = packet.get_bool(4)
+        filesize = packet.get_u64(5)
         file_data: SizedBuffer = packet[6]
-        options: typedict = typedict(packet[7])
+        options: typedict = typedict(packet.get_dict(7))
         send_id = ""
         if len(packet) >= 9:
-            send_id = str(packet[8])
+            send_id = packet.get_str(8)
         chunk_id = options.strget("file-chunk-id")
 
         def cancel(message: str) -> None:
@@ -763,9 +763,9 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("request-file", filename, openit)
         self.files_requested[filename] = openit
 
-    def _process_open_url(self, packet: PacketType) -> None:
-        send_id = str(packet[2])
-        url = str(packet[1])
+    def _process_open_url(self, packet: Packet) -> None:
+        url = packet.get_str(1)
+        send_id = packet.get_str(2)
         if not self.open_url:
             filelog.warn("Warning: received a request to open URL '%s'", url)
             filelog.warn(" but opening of URLs is disabled")
@@ -850,15 +850,20 @@ class FileTransferHandler(FileTransferAttributes):
         self.send("send-data-request", dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
-    def _process_send_data_request(self, packet: PacketType) -> None:
-        dtype, send_id, url, _, filesize, printit, openit = packet[1:8]
+    def _process_send_data_request(self, packet: Packet) -> None:
+        dtype = packet.get_str(1)
+        send_id = packet.get_str(2)
+        url = packet.get_str(3)
+        filesize = packet.get_u64(5)
+        printit = packet.get_bool(6)
+        openit = packet.get_bool(7)
         options = {}
         if len(packet) >= 9:
-            options = packet[8]
+            options = packet.get_dict(8)
         # filenames and url are always sent encoded as utf8:
-        self.do_process_send_data_request(dtype, send_id, url, _, filesize, printit, openit, typedict(options))
+        self.do_process_send_data_request(dtype, send_id, url, filesize, printit, openit, typedict(options))
 
-    def do_process_send_data_request(self, dtype: str, send_id: str, url: str, _, filesize: int,
+    def do_process_send_data_request(self, dtype: str, send_id: str, url: str, filesize: int,
                                      printit: bool, openit: bool, options: typedict) -> None:
         filelog(f"do_process_send_data_request: {send_id=}, {url=}, {printit=}, {openit=}, {options=}")
 
@@ -913,9 +918,9 @@ class FileTransferHandler(FileTransferAttributes):
         v = self.accept_data(send_id, dtype, url, printit, openit)
         cb_answer(v[0])
 
-    def _process_send_data_response(self, packet: PacketType) -> None:
-        send_id = str(packet[1])
-        accept = int(packet[2])
+    def _process_send_data_response(self, packet: Packet) -> None:
+        send_id = packet.get_str(1)
+        accept = packet.get_i8(2)
         filelog("process send-data-response: send_id=%s, accept=%s", send_id, accept)
         timer = self.pending_send_data_timers.pop(send_id, None)
         if timer:
@@ -1021,14 +1026,14 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state.timer = 0
             GLib.source_remove(timer)
 
-    def _process_ack_file_chunk(self, packet: PacketType) -> None:
+    def _process_ack_file_chunk(self, packet: Packet) -> None:
         # the other end received our send-file or send-file-chunk,
         # send some more file data
         filelog("ack-file-chunk: %s", packet[1:])
-        chunk_id = str(packet[1])
-        state = bool(packet[2])
-        error_message = str(packet[3])
-        chunk = int(packet[4])
+        chunk_id = packet.get_str(1)
+        state = packet.get_bool(2)
+        error_message = packet.get_str(3)
+        chunk = packet.get_u32(4)
         if not state:
             filelog.info("the remote end is cancelling the file transfer:")
             filelog.info(" %s", error_message)

@@ -17,7 +17,7 @@ from xpra.common import noop
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.protocol.factory import get_client_protocol_class
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.log import Logger
 
 log = Logger("client")
@@ -104,11 +104,11 @@ class XpraTkClient:
         self._ordinary_packets.append(packet)
         self.have_more()
 
-    def next_packet(self) -> tuple[PacketType, bool, bool]:
+    def next_packet(self) -> tuple[Packet, bool, bool]:
         packet = self._ordinary_packets.pop(0)
         return packet, True, bool(self._ordinary_packets)
 
-    def process_packet(self, _protocol, packet: PacketType) -> None:
+    def process_packet(self, _protocol, packet: Packet) -> None:
         packet_type_fn_name = str(packet[0]).replace("-", "_")
         meth = getattr(self, f"_process_{packet_type_fn_name}", None)
         if not meth:
@@ -120,51 +120,63 @@ class XpraTkClient:
             meth(packet)
         app.after(0, call_handler)
 
-    def _process_hello(self, packet: PacketType) -> None:
-        self.hello = packet[1]
+    def _process_hello(self, packet: Packet) -> None:
+        self.hello = packet.get_dict(1)
         netlog.info("got hello from %s server" % self.hello.get("version", ""))
 
-    def _process_setting_change(self, packet: PacketType) -> None:
-        setting = packet[1]
+    def _process_setting_change(self, packet: Packet) -> None:
+        setting = packet.get_str(1)
         netlog.info(f"ignoring setting-change for {setting!r}")
 
-    def _process_startup_complete(self, _packet: PacketType) -> None:
+    def _process_startup_complete(self, _packet: Packet) -> None:
         netlog.info("client is connected")
 
-    def _process_encodings(self, packet: PacketType) -> None:
+    def _process_encodings(self, packet: Packet) -> None:
         log(f"server encodings: {packet[1]}")
 
-    def _process_new_window(self, packet: PacketType) -> None:
+    def _process_new_window(self, packet: Packet) -> None:
         self.new_window(packet)
 
-    def _process_new_override_redirect(self, packet: PacketType) -> None:
+    def _process_new_override_redirect(self, packet: Packet) -> None:
         self.new_window(packet, True)
 
-    def new_window(self, packet: PacketType, is_or=False) -> None:
+    def new_window(self, packet: Packet, is_or=False) -> None:
         from xpra.client.tk.window import ClientWindow
-        wid, x, y, w, h = (int(item) for item in packet[1:6])
-        metadata = packet[6]
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_i16(4)
+        h = packet.get_i16(5)
+        metadata = packet.get_dict(6)
         if is_or:
             metadata["override-redirect"] = is_or
         window = ClientWindow(self, wid, x, y, w, h, metadata)
         self.windows[wid] = window
         window.show()
 
-    def _process_lost_window(self, packet: PacketType) -> None:
-        wid = int(packet[1])
+    def _process_lost_window(self, packet: Packet) -> None:
+        wid = packet.get_wid()
         window = self.windows.get(wid)
         if window:
             window.destroy()
             del self.windows[wid]
 
-    def _process_raise_window(self, packet: PacketType) -> None:
-        wid = int(packet[1])
+    def _process_raise_window(self, packet: Packet) -> None:
+        wid = packet.get_wid()
         window = self.windows.get(wid)
         if window:
             window.raise_()
 
-    def _process_draw(self, packet: PacketType) -> None:
-        wid, x, y, width, height, coding, data, packet_sequence, rowstride = packet[1:10]
+    def _process_draw(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        width = packet.get_i16(4)
+        height = packet.get_i16(5)
+        coding = packet.get_str(6)
+        data = packet[7]
+        packet_sequence = packet.get_u64(8)
+        rowstride = packet.get_u32(9)
         window = self.windows.get(wid)
         now = monotonic()
         if window:
@@ -177,9 +189,9 @@ class XpraTkClient:
             decode_time = -1
         self.send("damage-sequence", packet_sequence, wid, width, height, decode_time, message)
 
-    def _process_window_metadata(self, packet: PacketType) -> None:
-        wid = packet[1]
-        metadata = packet[2]
+    def _process_window_metadata(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        metadata = packet.get_dict(2)
         window = self.windows.get(wid)
         if window:
             window.update_metadata(typedict(metadata))

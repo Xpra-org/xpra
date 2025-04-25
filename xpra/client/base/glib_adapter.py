@@ -7,7 +7,7 @@ from collections.abc import Callable
 
 from xpra.net.glib_handler import GLibPacketHandler
 from xpra.client.base.stub_client_mixin import StubClientMixin
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 
 
 class GLibClient(GLibPacketHandler, StubClientMixin):
@@ -19,5 +19,5 @@ class GLibClient(GLibPacketHandler, StubClientMixin):
     so `call_packet_handler` is overriden so we can skip sending it.
     """
 
-    def call_packet_handler(self, handler: Callable[[PacketType], []], proto, packet: PacketType) -> None:
+    def call_packet_handler(self, handler: Callable[[Packet], []], proto, packet: Packet) -> None:
         handler(packet)

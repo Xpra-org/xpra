@@ -19,7 +19,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import strtobytes, memoryview_to_bytes
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
-from xpra.net.common import PacketType, PacketElement
+from xpra.net.common import Packet, PacketElement
 from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
 from xpra.server import features, ServerExitMode
 from xpra.gtk.gobject import one_arg_signal, n_arg_signal
@@ -874,8 +874,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if update_geometry:
             win._update_client_geometry()
 
-    def _process_map_window(self, proto, packet: PacketType) -> None:
-        wid, x, y, w, h = packet[1:6]
+    def _process_map_window(self, proto, packet: Packet) -> None:
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
         window = self._lookup_window(wid)
         if not window:
             windowlog("cannot map window %i: not found, already removed?", wid)
@@ -890,7 +894,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         cp = {}
         if len(packet) >= 7:
-            cp = packet[6]
+            cp = packet.get_dict(6)
         # this ensures that we will initialize the window source completely,
         # even if the client did not provide any client properties:
         cp["event"] = "map"
@@ -904,8 +908,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_unmap_window(self, proto, packet: PacketType) -> None:
-        wid = packet[1]
+    def _process_unmap_window(self, proto, packet: Packet) -> None:
+        wid = packet.get_wid()
         window = self._lookup_window(wid)
         if not window:
             log("cannot unmap window %i: not found, already removed?", wid)
@@ -965,8 +969,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 ss.move_resize_window(wid, window, x, y, w, h, resize_counter)
         return geom
 
-    def _process_configure_window(self, proto, packet: PacketType) -> None:
-        wid, x, y, w, h = packet[1:6]
+    def _process_configure_window(self, proto, packet: Packet) -> None:
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
         window = self._lookup_window(wid)
         if not window:
             geomlog("cannot configure window %i: not found, already removed?", wid)
@@ -979,7 +987,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if not skip_geometry:
             self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet) >= 7:
-            cprops = packet[6]
+            cprops = packet.get_dict(6)
             if cprops:
                 metadatalog("window client properties updates: %s", cprops)
                 self._set_client_properties(proto, wid, window, cprops)
@@ -1118,10 +1126,10 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     window.raise_window()
         super()._move_pointer(device_id, wid, pos, props)
 
-    def _process_close_window(self, proto, packet: PacketType) -> None:
+    def _process_close_window(self, proto, packet: Packet) -> None:
         if proto not in self._server_sources:
             return
-        wid = packet[1]
+        wid = packet.get_wid()
         window = self._lookup_window(wid)
         windowlog("client closed window %s - %s", wid, window)
         if window:
@@ -1130,11 +1138,11 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             windowlog("cannot close window %s: it is already gone!", wid)
         self.repaint_root_overlay()
 
-    def _process_window_signal(self, proto, packet: PacketType) -> None:
+    def _process_window_signal(self, proto, packet: Packet) -> None:
         if proto not in self._server_sources:
             return
-        wid = packet[1]
-        sig = str(packet[2])
+        wid = packet.get_wid()
+        sig = packet.get_str(2)
         if sig not in WINDOW_SIGNALS:
             log.warn(f"Warning: window signal {sig!r} not handled")
             return

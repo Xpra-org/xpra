@@ -4,10 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import time
 import unittest
+from time import monotonic
 
-from unit.test_util import silence_error
+from xpra.net.common import Packet
 from xpra.util.objects import AdHocStruct
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.server.subsystem import logging
@@ -21,7 +21,7 @@ class nostr():
 
 class InputMixinTest(ServerMixinTest):
 
-    def test_logging(self):
+    def test_logging(self) -> None:
         opts = AdHocStruct()
         opts.remote_logging = "yes"
         log_messages = []
@@ -40,17 +40,21 @@ class InputMixinTest(ServerMixinTest):
             return ls
 
         self._test_mixin_class(_LoggingServer, opts, {}, FakeSource)
-        self.handle_packet(("logging", 10, "hello", time.time()))
+        self.handle_packet(Packet("logging", 10, "hello", int(monotonic())))
         message = log_messages[0]
         assert message[0] == 10
         assert message[1].endswith("hello")
-        #multi-part:
-        self.handle_packet(("logging", 20, ["multi", "messages"], time.time()))
-        #invalid:
-        with silence_error(logging):
-            self.handle_packet(("logging", 20, nostr(), time.time()))
+        # multi-part:
+        self.handle_packet(Packet("logging", 20, ["multi", "messages"], int(monotonic())))
+        # invalid:
+        try:
+            self.handle_packet(Packet("logging", 20, nostr(), int(monotonic())))
+        except TypeError:
+            pass
+        else:
+            raise Exception("invalid type was allowed: %s" % (nostr, ))
 
-    def test_invalid(self):
+    def test_invalid(self) -> None:
         l = logging.LoggingServer()
         opts = AdHocStruct()
         opts.remote_logging = "on"

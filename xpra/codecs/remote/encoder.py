@@ -11,7 +11,7 @@ from weakref import WeakValueDictionary
 from xpra.util.str_fn import Ellipsizer, print_nested_dict
 from xpra.util.objects import typedict
 from xpra.scripts.config import InitExit
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.codecs.constants import VideoSpec, CodecStateException
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.remote.common import get_type, get_version, get_info, RemoteConnectionClient, RemoteCodec
@@ -44,9 +44,9 @@ class EncoderClient(RemoteConnectionClient):
         self.specs = {}
         self.encodings = ()
 
-    def _process_encodings(self, packet: PacketType) -> None:
+    def _process_encodings(self, packet: Packet) -> None:
         log(f"{Ellipsizer(packet)!r}")
-        specs = typedict(packet[1]).dictget("video") or {}
+        specs = typedict(packet.get_dict(1)).dictget("video") or {}
         self.specs = dict((k, v) for k, v in specs.items() if k in ENCODINGS)
         log("received specs=%s", Ellipsizer(specs))
         log("filtered specs:")
@@ -67,11 +67,11 @@ class EncoderClient(RemoteConnectionClient):
         sopts = safe_dict(options)
         self.send("context-request", seq, codec_type, encoding, width, height, src_format, sopts)
 
-    def _process_context_response(self, packet: PacketType) -> None:
-        seq = packet[1]
-        ok = packet[2]
-        message = "" if len(packet) < 4 else packet[3]
-        info = {} if len(packet) < 5 else packet[4]
+    def _process_context_response(self, packet: Packet) -> None:
+        seq = packet.get_u64(1)
+        ok = packet.get_bool(2)
+        message = "" if len(packet) < 4 else packet.get_str(3)
+        info = {} if len(packet) < 5 else packet.get_dict(4)
         encoder = self.encoders.get(seq)
         log(f"context-response: {seq}={encoder}, {ok=}, {message=!r}, {info=}")
         if not encoder:
@@ -115,8 +115,10 @@ class EncoderClient(RemoteConnectionClient):
             pixels = b""
         self.send("context-compress", seq, metadata, pixels, sopts)
 
-    def _process_context_data(self, packet: PacketType) -> None:
-        seq, bdata, client_options = packet[1:4]
+    def _process_context_data(self, packet: Packet) -> None:
+        seq = packet.get_u64(1)
+        bdata = packet[2]
+        client_options = packet.get_dict(3)
         encoder = self.encoders.get(seq)
         if not encoder:
             log.error(f"Error: data unused, encoder {seq} not found!")

@@ -13,7 +13,7 @@ from collections.abc import Sequence, Iterable
 from xpra.os_util import POSIX, gi_import
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -161,8 +161,12 @@ class PingClient(StubClientMixin):
         self.ping_echo_timers[now_ms] = t
         return True
 
-    def _process_ping_echo(self, packet: PacketType) -> None:
-        echoedtime, l1, l2, l3, cl = packet[1:6]
+    def _process_ping_echo(self, packet: Packet) -> None:
+        echoedtime = packet.get_u64(1)
+        l1 = packet.get_u64(2)
+        l2 = packet.get_u64(3)
+        l3 = packet.get_u64(4)
+        cl = packet.get_i64(5)
         self.last_ping_echoed_time = echoedtime
         self.check_server_echo(0)
         server_ping_latency = monotonic() - echoedtime / 1000.0
@@ -172,12 +176,12 @@ class PingClient(StubClientMixin):
             self.client_ping_latency.append((monotonic(), cl / 1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
-    def _process_ping(self, packet: PacketType) -> None:
-        echotime = packet[1]
+    def _process_ping(self, packet: Packet) -> None:
+        echotime = packet.get_u64(1)
         l1, l2, l3 = 0, 0, 0
         sid = ""
         if len(packet) >= 4:
-            sid = packet[3]
+            sid = packet.get_str(3)
         if POSIX:
             try:
                 (fl1, fl2, fl3) = os.getloadavg()

@@ -8,6 +8,7 @@ import unittest
 from time import monotonic
 from collections.abc import Callable
 
+from xpra.net.common import Packet
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.log import Logger
 from xpra.os_util import gi_import
@@ -85,7 +86,9 @@ class ClientMixinTest(unittest.TestCase):
             handler = getattr(self.mixin, "_process_" + packet_type.replace("-", "_"))
             self.add_packet_handler(packet_type, handler, main_thread)
 
-    def handle_packet(self, packet) -> None:
+    def handle_packet(self, packet: Packet | tuple) -> None:
+        if isinstance(packet, tuple):
+            packet = Packet(*packet)
         packet_type = packet[0]
         ph = self.packet_handlers.get(packet_type)
         assert ph is not None, "no packet handler for %s" % packet_type

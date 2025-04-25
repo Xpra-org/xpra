@@ -10,7 +10,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.server.source.window import WindowsConnection
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -244,10 +244,14 @@ class WindowServer(StubServerMixin):
                                     y += dy
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
-    def _process_damage_sequence(self, proto, packet: PacketType) -> None:
-        packet_sequence, wid, width, height, decode_time = packet[1:6]
+    def _process_damage_sequence(self, proto, packet: Packet) -> None:
+        packet_sequence = packet.get_u64(1)
+        wid = packet.get_wid(2)
+        width = packet.get_u16(3)
+        height = packet.get_u16(4)
+        decode_time = packet.get_i32(5)
         if len(packet) >= 7:
-            message = packet[6]
+            message = packet.get_str(6)
         else:
             message = ""
         ss = self.get_server_source(proto)
@@ -265,12 +269,13 @@ class WindowServer(StubServerMixin):
             if damage:
                 damage(wid, window, x, y, width, height, options)
 
-    def _process_buffer_refresh(self, proto, packet: PacketType) -> None:
+    def _process_buffer_refresh(self, proto, packet: Packet) -> None:
         """ can be used for requesting a refresh, or tuning batch config, or both """
-        wid, _, qual = packet[1:4]
+        wid = packet.get_wid()
+        qual = packet.get_u8(3)
         if len(packet) >= 6:
-            options = typedict(packet[4])
-            client_properties = packet[5]
+            options = typedict(packet.get_dict(4))
+            client_properties = packet.get_dict(5)
         else:
             options = typedict({})
             client_properties = {}
@@ -341,16 +346,16 @@ class WindowServer(StubServerMixin):
         else:
             ss.unmap_window(wid, window)
 
-    def _process_map_window(self, proto, packet: PacketType) -> None:
+    def _process_map_window(self, proto, packet: Packet) -> None:
         log.info("_process_map_window(%s, %s)", proto, packet)
 
-    def _process_unmap_window(self, proto, packet: PacketType) -> None:
+    def _process_unmap_window(self, proto, packet: Packet) -> None:
         log.info("_process_unmap_window(%s, %s)", proto, packet)
 
-    def _process_close_window(self, proto, packet: PacketType) -> None:
+    def _process_close_window(self, proto, packet: Packet) -> None:
         log.info("_process_close_window(%s, %s)", proto, packet)
 
-    def _process_configure_window(self, proto, packet: PacketType) -> None:
+    def _process_configure_window(self, proto, packet: Packet) -> None:
         log.info("_process_configure_window(%s, %s)", proto, packet)
 
     def send_initial_windows(self, ss, sharing=False) -> None:
@@ -358,10 +363,10 @@ class WindowServer(StubServerMixin):
 
     ######################################################################
     # focus:
-    def _process_focus(self, proto, packet: PacketType) -> None:
+    def _process_focus(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
-        wid = packet[1]
+        wid = packet.get_wid()
         focuslog("process_focus: wid=%s", wid)
         if len(packet) >= 3:
             modifiers = packet[2]

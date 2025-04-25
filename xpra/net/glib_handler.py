@@ -27,7 +27,7 @@ class GLibPacketHandler:
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "packet-handlers" : {
+            "packet-handlers": {
                 "authenticated": sorted(self._authenticated_packet_handlers.keys()),
                 "ui": sorted(self._authenticated_ui_packet_handlers.keys()),
             },
@@ -71,7 +71,10 @@ class GLibPacketHandler:
 
         def call_handler() -> None:
             may_log_packet(False, packet_type, packet)
-            self.call_packet_handler(handler, proto, packet)
+            try:
+                self.call_packet_handler(handler, proto, packet)
+            except (AssertionError, TypeError, ValueError, RuntimeError):
+                log.error(f"Error processing {packet_type!r}", exc_info=True)
 
         try:
 

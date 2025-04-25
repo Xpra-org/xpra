@@ -10,7 +10,7 @@ from xpra.os_util import gi_import
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.server import features
 from xpra.gtk.util import get_root_size
 from xpra.gtk.info import get_screen_sizes
@@ -223,8 +223,12 @@ class DesktopServerBase(DesktopServerBaseClass):
         # we export the whole desktop as a window:
         return 0, 0
 
-    def _process_map_window(self, proto, packet: PacketType) -> None:
-        wid, x, y, w, h = (int(x) for x in packet[1:6])
+    def _process_map_window(self, proto, packet: Packet) -> None:
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
         window = self._id_to_window.get(wid)
         if not window:
             windowlog("cannot map window %s: already removed!", wid)
@@ -237,8 +241,8 @@ class DesktopServerBase(DesktopServerBaseClass):
             self._set_client_properties(proto, wid, window, packet[6])
         self.refresh_window_area(window, 0, 0, w, h)
 
-    def _process_unmap_window(self, proto, packet: PacketType) -> None:
-        wid = int(packet[1])
+    def _process_unmap_window(self, proto, packet: Packet) -> None:
+        wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         if not window:
             log("cannot map window %s: already removed!", wid)
@@ -252,10 +256,14 @@ class DesktopServerBase(DesktopServerBaseClass):
         # TODO: handle inconification?
         # iconified = len(packet)>=3 and bool(packet[2])
 
-    def _process_configure_window(self, proto, packet: PacketType) -> None:
-        wid, x, y, w, h = (int(x) for x in packet[1:6])
+    def _process_configure_window(self, proto, packet: Packet) -> None:
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
         if len(packet) >= 13 and features.pointer and not self.readonly:
-            pwid = int(packet[10])
+            pwid = packet.get_wid(10)
             pointer = packet[11]
             modifiers = packet[12]
             device_id = -1
@@ -311,11 +319,11 @@ class DesktopServerBase(DesktopServerBaseClass):
         with xsync:
             X11ServerBase._move_pointer(self, device_id, wid, pos, props)
 
-    def _process_close_window(self, proto, packet: PacketType) -> None:
+    def _process_close_window(self, proto, packet: Packet) -> None:
         # disconnect?
         pass
 
-    def _process_desktop_size(self, proto, packet: PacketType) -> None:
+    def _process_desktop_size(self, proto, packet: Packet) -> None:
         """
         Usually, desktop servers don't need to do anything when the client's geometry changes.
         """

@@ -13,7 +13,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.common import ConnectionMessage, noop
 from xpra.util.io import load_binary_file
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.stats import std_unit
 from xpra.scripts.config import str_to_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.control.common import ArgsControlCommand, ControlError
@@ -830,7 +830,7 @@ class ServerBaseControlCommands(StubServerMixin):
                 count += 1
         return f"window {wid} moved to {x},{y} and resized to {w}x{h} for {count} clients"
 
-    def _process_control_request(self, protocol, packet: PacketType) -> None:
+    def _process_control_request(self, protocol, packet: Packet) -> None:
         """ client sent a command request through its normal channel """
         assert len(packet) >= 2, "invalid command request packet (too small!)"
         # packet[0] = "control"

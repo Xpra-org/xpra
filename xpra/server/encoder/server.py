@@ -14,7 +14,7 @@ from xpra.common import noop, ConnectionMessage
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
@@ -145,13 +145,20 @@ class EncoderServer(ServerBase):
         super().add_new_client(ss, c, send_ui, share_count)
         ss.protocol.large_packets.append("encode-response")
 
-    def _process_encode(self, proto: SocketProtocol, packet: PacketType) -> None:
+    def _process_encode(self, proto: SocketProtocol, packet: Packet) -> None:
         # this function is only used by the `encode` client,
         # not the `remote` encoder
         ss = self.get_server_source(proto)
         if not ss:
             return
-        input_coding, pixel_format, raw_data, width, height, rowstride, options, metadata = packet[1:9]
+        input_coding = packet.get_str(1)
+        pixel_format = packet.get_str(2)
+        raw_data = packet[3]
+        width = packet.get_u16(4)
+        height = packet.get_u16(5)
+        rowstride = packet.get_u32(6)
+        options = packet.get_dict(7)
+        metadata = packet.get_dict(8)
         depth = 32
         bpp = 4
         full_range = True
@@ -221,11 +228,12 @@ class EncoderServer(ServerBase):
         packet = ["encode-response", coding, bdata, client_options, width, height, stride, bpp, metadata]
         ss.send_async(*packet)
 
-    def _process_context_close(self, proto: SocketProtocol, packet: PacketType) -> None:
+    def _process_context_close(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return
-        seq, message = packet[1:3]
+        seq = packet.get_u64(1)
+        message = packet.get_str(2)
         encoder = self.encoders.get(ss.uuid, {}).pop(seq, None)
         if not encoder:
             log(f"closing: encoder not found for uuid {ss.uuid!r} and sequence {seq}")
@@ -236,11 +244,17 @@ class EncoderServer(ServerBase):
         except RuntimeError:
             log.error(f"Error cleaning encoder {encoder} for sequence {seq} of connection {ss}")
 
-    def _process_context_request(self, proto: SocketProtocol, packet: PacketType) -> None:
+    def _process_context_request(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return
-        seq, codec_type, encoding, width, height, src_format, options = packet[1:8]
+        seq = packet.get_u64(1)
+        codec_type = packet.get_str(2)
+        encoding = packet.get_str(3)
+        width = packet.get_u16(4)
+        height = packet.get_u16(5)
+        src_format = packet.get_str(6)
+        options = packet.get_dict(7)
         try:
             encoder = _make_video_encoder(encoding, src_format, codec_type)
             add_device_context(ss, options)
@@ -252,11 +266,14 @@ class EncoderServer(ServerBase):
             log("context request failed", exc_info=True)
             ss.send("context-response", seq, False, f"initialization error: {e}", {})
 
-    def _process_context_compress(self, proto: SocketProtocol, packet: PacketType) -> None:
+    def _process_context_compress(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return
-        seq, metadata, pixels, options = packet[1:5]
+        seq = packet.get_u64(1)
+        metadata = packet.get_dict(2)
+        pixels = packet[3]
+        options = packet.get_dict(4)
         encoder = self.encoders.get(ss.uuid, {}).get(seq)
         if not encoder:
             log.error(f"Error encoder not found for uuid {ss.uuid!r} and sequence {seq}")

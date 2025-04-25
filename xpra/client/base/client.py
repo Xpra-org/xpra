@@ -20,7 +20,7 @@ from xpra.common import (
     ConnectionMessage, disconnect_is_an_error, noerr, NotificationID, noop,
 )
 from xpra.net import compression
-from xpra.net.common import PacketType, PacketElement
+from xpra.net.common import Packet, PacketElement
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.util.version import get_version_info, vparts, XPRA_VERSION
@@ -98,8 +98,8 @@ class XpraClientBase(ClientBaseClass):
         self.server_compressors = []
         # protocol stuff:
         self._protocol = None
-        self._priority_packets = []
-        self._ordinary_packets = []
+        self._priority_packets: list[Packet] = []
+        self._ordinary_packets: list[Packet] = []
         # server state and caps:
         self.server_packet_types = ()
         self.connection_established = False
@@ -352,7 +352,7 @@ class XpraClientBase(ClientBaseClass):
         self._priority_packets.append(packet)
         self.have_more()
 
-    def next_packet(self) -> tuple[PacketType, bool, bool]:
+    def next_packet(self) -> tuple[Packet, bool, bool]:
         # naughty dependency on pointer:
         mouse_position = getattr(self, "_mouse_position", None)
         netlog("next_packet() packets in queues: priority=%i, ordinary=%i, mouse=%s",
@@ -406,7 +406,7 @@ class XpraClientBase(ClientBaseClass):
         assert self.server_client_shutdown
         self.send("shutdown-server")
 
-    def _process_disconnect(self, packet: PacketType) -> None:
+    def _process_disconnect(self, packet: Packet) -> None:
         # ie: ("disconnect", "version error", "incompatible version")
         netlog("%s", packet)
         info = tuple(str(x) for x in packet[1:])
@@ -453,7 +453,7 @@ class XpraClientBase(ClientBaseClass):
             return ExitCode.AUTHENTICATION_FAILED
         return ExitCode.OK
 
-    def _process_connection_lost(self, _packet: PacketType) -> None:
+    def _process_connection_lost(self, _packet: Packet) -> None:
         p = self._protocol
         if p and p.input_raw_packetcount == 0:
             props = p.get_info()
@@ -473,7 +473,7 @@ class XpraClientBase(ClientBaseClass):
             msg = exit_str(exit_code).lower().replace("_", " ").replace("connection", "Connection")
             self.warn_and_quit(exit_code, msg)
 
-    def _process_hello(self, packet: PacketType) -> None:
+    def _process_hello(self, packet: Packet) -> None:
         if LOG_HELLO:
             netlog.info("received hello:")
             print_nested_dict(packet[1], print_fn=netlog.info)
@@ -532,16 +532,17 @@ class XpraClientBase(ClientBaseClass):
         netlog(f"parse_network_capabilities(..) server_packet_types={self.server_packet_types}")
         return True
 
-    def _process_startup_complete(self, packet: PacketType) -> None:
+    def _process_startup_complete(self, packet: Packet) -> None:
         # can be received if we connect with "xpra stop" or other command line client
         # as the server is starting up
         self.completed_startup = packet
         for bc in CLIENT_BASES:
             bc.startup_complete(self)
 
-    def _process_gibberish(self, packet: PacketType) -> None:
+    def _process_gibberish(self, packet: Packet) -> None:
         log("process_gibberish(%s)", Ellipsizer(packet))
-        message, bdata = packet[1:3]
+        message = packet.get_str(1)
+        bdata = packet[2]
         from xpra.net.socket_util import guess_packet_type  # pylint: disable=import-outside-toplevel
         packet_type = guess_packet_type(bdata)
         p = self._protocol
@@ -583,8 +584,9 @@ class XpraClientBase(ClientBaseClass):
                 netlog.error(f" packet no {pcount} data: {repr_ellipsized(data)}")
         self.quit(exit_code)
 
-    def _process_invalid(self, packet: PacketType) -> None:
-        message, data = packet[1:3]
+    def _process_invalid(self, packet: Packet) -> None:
+        message = packet.get_str(1)
+        data = packet[2]
         netlog.info(f"Received invalid packet: {message}")
         netlog(" data: %s", Ellipsizer(data))
         p = self._protocol

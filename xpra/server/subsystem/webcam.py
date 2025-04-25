@@ -9,7 +9,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -114,7 +114,7 @@ class WebcamServer(StubServerMixin):
         log.info("found %i virtual video devices for webcam forwarding", len(devices))
         return len(devices)
 
-    def _process_webcam_start(self, proto, packet: PacketType) -> None:
+    def _process_webcam_start(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
         assert self.webcam_enabled
@@ -122,30 +122,40 @@ class WebcamServer(StubServerMixin):
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
             return
-        device_id, w, h = packet[1:4]
+        device_id = packet.get_u64(1)
+        w = packet.get_u16(2)
+        h = packet.get_u16(3)
         ss.start_virtual_webcam(device_id, w, h)
 
-    def _process_webcam_stop(self, proto, packet: PacketType) -> None:
+    def _process_webcam_stop(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
             return
-        device_id, message = (list(packet) + [""])[1:3]
+        device_id = packet.get_u64(1)
+        message = ""
+        if len(packet) >= 3:
+            message = packet.get_str(2)
         ss.stop_virtual_webcam(device_id, message)
 
-    def _process_webcam_frame(self, proto, packet: PacketType) -> None:
+    def _process_webcam_frame(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for webcam frame")
             return
-        device_id, frame_no, encoding, w, h, data = packet[1:7]
+        device_id = packet.get_u64(1)
+        frame_no = packet.get_u64(2)
+        encoding = packet.get_str(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
+        data = packet[6]
         options = {}
         if len(packet) >= 8:
-            options = packet[7]
+            options = packet.get_dict(7)
         ss.process_webcam_frame(device_id, frame_no, encoding, w, h, data, options)
 
     def init_packet_handlers(self) -> None:

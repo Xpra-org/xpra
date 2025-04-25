@@ -15,7 +15,7 @@ from xpra.platform.features import (
 )
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
-from xpra.net.common import PacketType, PacketElement
+from xpra.net.common import Packet, PacketElement
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -182,7 +182,7 @@ class ClipboardServer(StubServerMixin):
     def set_session_driver(self, source) -> None:
         self.set_clipboard_source(source)
 
-    def _process_clipboard_packet(self, proto, packet: PacketType) -> None:
+    def _process_clipboard_packet(self, proto, packet: Packet) -> None:
         assert self.clipboard
         if self.readonly:
             return
@@ -190,7 +190,7 @@ class ClipboardServer(StubServerMixin):
         if not ss:
             # protocol has been dropped!
             return
-        packet_type = packet[0]
+        packet_type = packet.get_type()
         if packet_type in ("clipboard-status", "set-clipboard-enabled"):
             self._process_clipboard_status(proto, packet)
             return
@@ -207,11 +207,11 @@ class ClipboardServer(StubServerMixin):
         assert ch, "received a clipboard packet but clipboard sharing is disabled"
         GLib.idle_add(ch.process_clipboard_packet, packet)
 
-    def _process_clipboard_status(self, proto, packet: PacketType) -> None:
+    def _process_clipboard_status(self, proto, packet: Packet) -> None:
         assert self.clipboard
         if self.readonly:
             return
-        clipboard_enabled = packet[1]
+        clipboard_enabled = packet.get_bool(1)
         ss = self.get_server_source(proto)
         if ss:
             self.set_clipboard_enabled_status(ss, clipboard_enabled)

@@ -35,7 +35,7 @@ from xpra.net.protocol.constants import CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet,
     MAX_PACKET_SIZE,
-    PacketType, NetPacketType,
+    Packet, NetPacketType,
 )
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
@@ -90,8 +90,8 @@ def force_flush_queue(q: Queue) -> None:
         log("force_flush_queue(%s)", q, exc_info=True)
 
 
-def no_packet() -> [PacketType, bool, bool]:
-    return ("closed", ), False, False
+def no_packet() -> [Packet, bool, bool]:
+    return Packet("closed"), False, False
 
 
 class SocketProtocol:
@@ -104,8 +104,8 @@ class SocketProtocol:
     TYPE = "xpra"
 
     def __init__(self, conn,
-                 process_packet_cb: Callable[[Any, PacketType], None],
-                 get_packet_cb: Callable[[], tuple[PacketType, bool, bool]] = no_packet,
+                 process_packet_cb: Callable[[Any, Packet], None],
+                 get_packet_cb: Callable[[], tuple[Packet, bool, bool]] = no_packet,
                  scheduler=None):
         """
             You must call this constructor and source_has_more() from the main thread.
@@ -130,7 +130,7 @@ class SocketProtocol:
         self.read_buffer_size: int = READ_BUFFER_SIZE
         self.hangup_delay: int = 1000
         self._conn = conn
-        self._process_packet_cb: Callable[[Any, PacketType], None] = process_packet_cb
+        self._process_packet_cb: Callable[[Any, Packet], None] = process_packet_cb
         self.make_chunk_header: Callable[[str | int, int, int, int, int], bytes] = self.make_xpra_header
         self.make_frame_header: Callable[[str | int, list[SizedBuffer]], SizedBuffer] = self.noframe_header
         self._write_queue: Queue[tuple[Sequence, str, bool, bool] | None] = Queue(1)
@@ -138,7 +138,7 @@ class SocketProtocol:
         self._pre_read = []
         self._process_read: Callable[[SizedBuffer], None] = self.read_queue_put
         self._read_queue_put: Callable[[SizedBuffer], None] = self.read_queue_put
-        self._get_packet_cb: Callable[[], tuple[PacketType, bool, bool]] = get_packet_cb
+        self._get_packet_cb: Callable[[], tuple[Packet, bool, bool]] = get_packet_cb
         # counters:
         self.input_stats: dict[str, int] = {}
         self.input_packetcount = 0
@@ -253,7 +253,7 @@ class SocketProtocol:
                 exited = False
         return exited
 
-    def set_packet_source(self, get_packet_cb: Callable[[], [PacketType, bool, bool]]) -> None:
+    def set_packet_source(self, get_packet_cb: Callable[[], [Packet, bool, bool]]) -> None:
         self._get_packet_cb = get_packet_cb
 
     def set_cipher_in(self, ciphername: str, iv: bytes, key_data: bytes, key_salt: bytes, key_hash: str, key_size: int,
@@ -458,7 +458,7 @@ class SocketProtocol:
         eventlog("send_disconnect(%r, %r)", reasons, done_callback)
         self.flush_then_close(self.encode, packet, done_callback=done_callback)
 
-    def send_now(self, packet: PacketType) -> None:
+    def send_now(self, packet: Packet) -> None:
         if self._closed:
             log("send_now(%s ...) connection is closed already, not sending", packet[0])
             return
@@ -467,7 +467,7 @@ class SocketProtocol:
             raise RuntimeError(f"cannot use send_now when a packet source exists! (set to {self._get_packet_cb})")
         tmp_queue = [packet]
 
-        def packet_cb() -> tuple[PacketType, bool, bool]:
+        def packet_cb() -> tuple[Packet, bool, bool]:
             self._get_packet_cb = no_packet
             if not tmp_queue:
                 raise RuntimeError("packet callback used more than once!")
@@ -506,7 +506,7 @@ class SocketProtocol:
                 return
             self._internal_error("error in network packet write/format", e, exc_info=True)
 
-    def add_packet_to_queue(self, packet: PacketType, synchronous=True, more=False) -> None:
+    def add_packet_to_queue(self, packet: Packet, synchronous=True, more=False) -> None:
         if not more:
             shm = self._source_has_more
             if shm:
@@ -648,7 +648,7 @@ class SocketProtocol:
         self.compressor = compressor
         log(f"enable_compressor({compressor}): {self._compress}")
 
-    def encode(self, packet_in: PacketType) -> list[NetPacketType]:
+    def encode(self, packet_in: Packet) -> list[NetPacketType]:
         """
         Given a packet (tuple or list of items), converts it for the wire.
         This method returns all the binary packets to send, as an array of:
@@ -1204,7 +1204,7 @@ class SocketProtocol:
                 self.input_packetcount += 1
                 self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
                 log("processing packet %s", packet_type)
-                self._process_packet_cb(self, tuple(packet))
+                self._process_packet_cb(self, Packet(*packet))
                 del packet
 
     def do_flush_then_close(self, encoder: Callable | None = None,

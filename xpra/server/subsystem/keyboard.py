@@ -14,7 +14,7 @@ from xpra.util.str_fn import bytestostr, Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.common import noop
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
@@ -159,20 +159,21 @@ class KeyboardServer(StubServerMixin):
         keylog("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
 
-    def _process_layout_changed(self, proto, packet: PacketType) -> None:
+    def _process_layout_changed(self, proto, packet: Packet) -> None:
         keylog(f"layout-changed: {packet}")
         if self.readonly:
             return
         ss = self.get_server_source(proto)
         if not ss:
             return
-        layout, variant = packet[1:3]
+        layout = packet.get_str(1)
+        variant = packet.get_str(2)
         options = backend = name = ""
         if len(packet) >= 4:
-            options = packet[3]
+            options = packet.get_str(3)
         if len(packet) >= 6:
-            backend = packet[4]
-            name = packet[5]
+            backend = packet.get_str(4)
+            name = packet.get_str(5)
         if backend == "ibus" and name:
             from xpra.keyboard.ibus import set_engine, get_engine_layout_spec
             if set_engine(name):
@@ -182,10 +183,10 @@ class KeyboardServer(StubServerMixin):
         if ss.set_layout(layout, variant, options):
             self.set_keymap(ss, force=True)
 
-    def _process_keymap_changed(self, proto, packet: PacketType) -> None:
+    def _process_keymap_changed(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
-        props = typedict(packet[1])
+        props = typedict(packet.get_dict(1))
         ss = self.get_server_source(proto)
         if ss is None:
             return
@@ -205,10 +206,17 @@ class KeyboardServer(StubServerMixin):
         # only actually implemented in X11ServerBase
         pass
 
-    def _process_key_action(self, proto, packet: PacketType) -> None:
+    def _process_key_action(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
-        wid, keyname, pressed, modifiers, keyval, keystr, client_keycode, group = packet[1:9]
+        wid = packet.get_wid()
+        keyname = packet.get_str(2)
+        pressed = packet.get_bool(3)
+        modifiers = packet[4]
+        keyval = packet.get_u32(5)
+        keystr = packet.get_str(6)
+        client_keycode = packet.get_u32(7)
+        group = packet.get_u8(8)
         ss = self.get_server_source(proto)
         if not hasattr(ss, "keyboard_config"):
             return
@@ -314,18 +322,22 @@ class KeyboardServer(StubServerMixin):
         self._handle_key(wid, False, keyname, keyval, keycode, modifiers, is_mod, True)
         self.keys_timedout[keycode] = now
 
-    def _process_key_repeat(self, proto, packet: PacketType) -> None:
+    def _process_key_repeat(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)
         if not hasattr(ss, "keyboard_config"):
             return
-        wid, keyname, keyval, client_keycode, modifiers = packet[1:6]
+        wid = packet.get_wid()
+        keyname = packet.get_str(2)
+        keyval = packet.get_u32(3)
+        client_keycode = packet.get_u32(4)
+        modifiers = packet[5]
         keyname = bytestostr(keyname)
         modifiers = [bytestostr(x) for x in modifiers]
         group = 0
         if len(packet) >= 7:
-            group = packet[6]
+            group = packet.get_u8(6)
         keystr = ""
         keycode, group = ss.get_keycode(client_keycode, keyname, modifiers, keyval, keystr, group)
         if group >= 0:
@@ -351,7 +363,7 @@ class KeyboardServer(StubServerMixin):
         self._key_repeat(wid, True, keyname, keyval, keycode, modifiers, is_mod, self.key_repeat_interval)
         ss.user_event()
 
-    def _process_keyboard_sync_enabled_status(self, proto, packet: PacketType) -> None:
+    def _process_keyboard_sync_enabled_status(self, proto, packet: Packet) -> None:
         if self.readonly:
             return
         ss = self.get_server_source(proto)

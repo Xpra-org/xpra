@@ -6,7 +6,7 @@
 from typing import Any
 
 from xpra.client.base.stub_client_mixin import StubClientMixin
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
@@ -55,7 +55,7 @@ class ControlClient(StubClientMixin):
     def add_control_command(self, name: str, control) -> None:
         self.control_commands[name] = control
 
-    def _process_control(self, packet: PacketType) -> None:
+    def _process_control(self, packet: Packet) -> None:
         args = packet[1:]
         code, msg = self.process_control_command(self._protocol, *args)
         log.warn(f"{code}, {msg!r}")

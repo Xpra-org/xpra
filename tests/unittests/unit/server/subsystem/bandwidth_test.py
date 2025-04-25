@@ -25,7 +25,7 @@ class BandwidthTest(ServerMixinTest):
             opts.bandwidth_limit = "1Gbps"
             opts.bandwidth_detection = False
             # the limit for all clients:
-            capped_at = 1*1000*1000*1000    #=="1Gbps"
+            capped_at = 1*1000*1000*1000    # == "1Gbps"
             with silence_info(bandwidth):
                 self._test_mixin_class(BandwidthServer, opts, {}, bandwidth.BandwidthConnection)
             self.assertEqual(capped_at, self.mixin.get_info().get("bandwidth-limit"))
@@ -40,7 +40,7 @@ class BandwidthTest(ServerMixinTest):
             for v in (None, "foo", 2.0, [], (), set()):
                 try:
                     self.handle_packet(("bandwidth-limit", v))
-                except TypeError:
+                except (TypeError, ValueError):
                     pass
                 else:
                     raise Exception("should not allow %s (%s) as connection-data" % (v, type(v)))

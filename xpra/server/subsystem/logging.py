@@ -13,7 +13,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger, set_global_logging_handler
@@ -179,8 +179,8 @@ class LoggingServer(StubServerMixin):
         finally:
             self.in_remote_logging = False
 
-    def _process_logging_control(self, proto, packet: PacketType) -> None:
-        action = str(packet[1])
+    def _process_logging_control(self, proto, packet: Packet) -> None:
+        action = packet.get_str(1)
         if action == "start":
             self.add_logging_client(proto)
         elif action == "stop":
@@ -188,15 +188,16 @@ class LoggingServer(StubServerMixin):
         else:
             log.warn("Warning: unknown logging-control action '%r'", action)
 
-    def _process_logging(self, proto, packet: PacketType) -> None:
+    def _process_logging(self, proto, packet: Packet) -> None:
         self._process_logging_event(proto, packet)
 
-    def _process_logging_event(self, proto, packet: PacketType) -> None:
+    def _process_logging_event(self, proto, packet: Packet) -> None:
         assert self.remote_logging_receive
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        level, msg = packet[1:3]
+        level = packet.get_u8(1)
+        msg = packet[2]
         prefix = "client "
         counter = getattr(ss, "counter", 0)
         if counter > 0:

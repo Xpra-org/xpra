@@ -47,25 +47,115 @@ DEFAULT_PORTS: dict[str, int] = {
 
 HttpResponse: TypeAlias = tuple[int, dict, bytes]
 
-PacketElement: TypeAlias = Union[
+PacketElementTypes: tuple[type, ...] = (
     tuple, list, dict, int, bool, str, bytes, memoryview,
     Compressible, Compressed, LargeStructure,
-]
+)
+PacketElement: TypeAlias = Union[*PacketElementTypes]
 
-# packet type followed by attributes:
-# in 3.11: tuple[str, *tuple[int, ...]]
-# tuple[str, Unpack[tuple[int, ...]] for older versions
 
-try:
-    from typing import Unpack
-    PacketType: TypeAlias = tuple[str, Unpack[tuple[PacketElement, ...]]]
-except ImportError:  # pragma: no cover
-    PacketType: TypeAlias = tuple[PacketElement, ...]
+class Packet(Sequence):
+    __slots__ = ["data"]
+
+    def __init__(self, packet_type: str, *data: PacketElement):
+        if not isinstance(packet_type, str):
+            raise TypeError("packet type is not a string: %s" % (type(packet_type), ))
+        for i, x in enumerate(data):
+            if not isinstance(x, PacketElementTypes):
+                raise TypeError("invalid packet element %r at index %i of packet %r" % (type(x), i + 1, packet_type))
+        self.data = [packet_type] + list(data)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, i):
+        return self.data[i]
+
+    def __repr__(self):
+        return repr(self.data)
+
+    def get_type(self) -> str:
+        return str(self.data[0])
+
+    def get_wid(self, i=1) -> int:
+        v = int(self.data[i])
+        if v < 0 or v >= 2**32:
+            raise ValueError(f"invalid window id value {v!r}")
+        return v
+
+    def get_bool(self, i) -> bool:
+        return bool(self.data[i])
+
+    def get_i8(self, i) -> int:
+        v = int(self.data[i])
+        if v < -2**7 or v >= 2**7:
+            raise ValueError(f"invalid i8 value {v!r}")
+        return v
+
+    def get_u8(self, i) -> int:
+        v = int(self.data[i])
+        if v < 0 or v >= 2**8:
+            raise ValueError(f"invalid u8 value {v!r}")
+        return v
+
+    def get_i16(self, i) -> int:
+        v = int(self.data[i])
+        if v < -2**15 or v >= 2**15:
+            raise ValueError(f"invalid i16 value {v!r}")
+        return v
+
+    def get_u16(self, i) -> int:
+        v = int(self.data[i])
+        if v < 0 or v >= 2**16:
+            raise ValueError(f"invalid u16 value {v!r}")
+        return v
+
+    def get_i32(self, i) -> int:
+        v = int(self.data[i])
+        if v < -2**31 or v >= 2**31:
+            raise ValueError(f"invalid i32 value {v!r}")
+        return v
+
+    def get_u32(self, i) -> int:
+        v = int(self.data[i])
+        if v < 0 or v >= 2**32:
+            raise ValueError(f"invalid u32 value {v!r}")
+        return v
+
+    def get_i64(self, i) -> int:
+        v = int(self.data[i])
+        if v < -2**63 or v >= 2**63:
+            raise ValueError(f"invalid i64 value {v!r}")
+        return v
+
+    def get_u64(self, i) -> int:
+        v = int(self.data[i])
+        if v < 0 or v >= 2**64:
+            raise ValueError(f"invalid u64 value {v!r}")
+        return v
+
+    def get_str(self, i) -> str:
+        v = self.data[i]
+        if isinstance(v, bytes):
+            return v.decode("utf8")
+        return str(v)
+
+    def get_bytes(self, i) -> bytes:
+        v = self.data[i]
+        if isinstance(v, bytes):
+            return v
+        return bytes(v)
+
+    def get_dict(self, i) -> dict:
+        v = self.data[i]
+        assert isinstance(v, dict)
+        return v
+
 
 # client packet handler:
-PacketHandlerType = Callable[[PacketType], None]
+PacketHandlerType = Callable[[Packet], None]
 # server packet handler:
-ServerPacketHandlerType = Callable[[Any, PacketType], None]
+ServerPacketHandlerType = Callable[[Any, Packet], None]
 
 NetPacketType: TypeAlias = tuple[int, int, int, SizedBuffer]
 

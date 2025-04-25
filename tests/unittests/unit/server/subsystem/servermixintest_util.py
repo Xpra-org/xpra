@@ -7,6 +7,7 @@
 import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
+from xpra.net.common import Packet
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.server.source.stub_source import StubClientConnection
 
@@ -58,8 +59,10 @@ class ServerMixinTest(unittest.TestCase):
     def add_packet_handler(self, packet_type: str, handler=None, main_thread=True) -> None:
         self.packet_handlers[packet_type] = handler
 
-    def handle_packet(self, packet):
-        packet_type = packet[0]
+    def handle_packet(self, packet: Packet | tuple):
+        if isinstance(packet, tuple):
+            packet = Packet(*packet)
+        packet_type = packet.get_type()
         packet_type = self.legacy_alias.get(packet_type, packet_type)
         ph = self.packet_handlers.get(packet_type)
         assert ph is not None, "no packet handler for %s" % packet_type

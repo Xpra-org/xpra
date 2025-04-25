@@ -22,7 +22,7 @@ from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.socket_util import SOCKET_DIR_MODE, create_unix_domain_socket, handle_socket_error
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, get_machine_id
 from xpra.util.env import osexpand
 from xpra.exit_codes import ExitValue, ExitCode
@@ -287,23 +287,23 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
             log.error("connection timedout: %s", protocol)
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
-    def process_control_packet(self, proto, packet: PacketType) -> None:
+    def process_control_packet(self, proto, packet: Packet) -> None:
         try:
             self.do_process_control_packet(proto, packet)
         except Exception as e:
             log.error("error processing control packet", exc_info=True)
             self.send_disconnect(proto, ConnectionMessage.CONTROL_COMMAND_ERROR, str(e))
 
-    def do_process_control_packet(self, proto, packet: PacketType) -> None:
+    def do_process_control_packet(self, proto, packet: Packet) -> None:
         log("process_control_packet(%s, %s)", proto, packet)
-        packet_type = str(packet[0])
+        packet_type = packet.get_type()
         if packet_type == CONNECTION_LOST:
             log.info("Connection lost")
             if proto in self.potential_protocols:
                 self.potential_protocols.remove(proto)
             return
         if packet_type == "hello":
-            caps = typedict(packet[1])
+            caps = typedict(packet.get_dict(1))
             if caps.boolget("challenge"):
                 self.send_disconnect(proto, ConnectionMessage.AUTHENTICATION_ERROR,
                                      "this socket does not use authentication")

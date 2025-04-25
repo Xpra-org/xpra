@@ -24,7 +24,7 @@ from xpra.platform.gui import (
     get_window_min_size, get_window_max_size,
     get_double_click_time, get_double_click_distance
 )
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr
 from xpra.platform.paths import get_icon_filename, get_resources_dir, get_python_execfile_command
@@ -521,10 +521,13 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # pointer:
-    def _process_pointer_position(self, packet: PacketType) -> None:
-        wid, x, y = packet[1:4]
+    def _process_pointer_position(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
         if len(packet) >= 6:
-            rx, ry = packet[4:6]
+            rx = packet.get_i16(4)
+            ry = packet.get_i16(5)
         else:
             rx, ry = -1, -1
         cx, cy = self.get_mouse_position()
@@ -656,15 +659,17 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # system tray
-    def _process_new_tray(self, packet: PacketType) -> None:
+    def _process_new_tray(self, packet: Packet) -> None:
         assert self.client_supports_system_tray
         self._ui_event()
-        wid, w, h = packet[1:4]
+        wid = packet.get_wid()
+        w = packet.get_u16(2)
+        h = packet.get_u16(3)
         w = max(1, self.sx(w))
         h = max(1, self.sy(h))
         metadata = typedict()
         if len(packet) >= 5:
-            metadata = typedict(packet[4])
+            metadata = typedict(packet.get_dict(4))
         traylog("tray %i metadata=%s", wid, metadata)
         assert wid not in self._id_to_window, "we already have a window %s: %s" % (wid, self._id_to_window.get(wid))
         app_id = wid
@@ -880,9 +885,13 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # regular windows:
-    def _process_new_common(self, packet: PacketType, override_redirect):
+    def _process_new_common(self, packet: Packet, override_redirect):
         self._ui_event()
-        wid, x, y, w, h = (int(item) for item in packet[1:6])
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
         assert 0 <= w < 32768 and 0 <= h < 32768
         metadata = self.cook_metadata(True, packet[6])
         metalog("process_new_common: %s, metadata=%s, OR=%s", packet[1:7], metadata, override_redirect)
@@ -1198,10 +1207,10 @@ class WindowClient(StubClientMixin):
     def get_client_window_classes(self, _w, _h, _metadata, _override_redirect) -> Sequence[type]:
         return (self.ClientWindowClass,)
 
-    def _process_new_window(self, packet: PacketType) -> None:
+    def _process_new_window(self, packet: Packet) -> None:
         return self._process_new_common(packet, False)
 
-    def _process_new_override_redirect(self, packet: PacketType) -> None:
+    def _process_new_override_redirect(self, packet: Packet) -> None:
         if self.modal_windows:
             # find any modal windows and remove the flag
             # so that the OR window can get the focus
@@ -1214,22 +1223,23 @@ class WindowClient(StubClientMixin):
                     window.set_modal(False)
         return self._process_new_common(packet, True)
 
-    def _process_initiate_moveresize(self, packet: PacketType) -> None:
-        wid = packet[1]
+    def _process_initiate_moveresize(self, packet: Packet) -> None:
+        wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         if window:
             x_root, y_root, direction, button, source_indication = packet[2:7]
             window.initiate_moveresize(self.sx(x_root), self.sy(y_root), direction, button, source_indication)
 
-    def _process_window_metadata(self, packet: PacketType) -> None:
-        wid, metadata = packet[1:3]
+    def _process_window_metadata(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        metadata = packet.get_dict(2)
         metalog("metadata update for window %i: %s", wid, metadata)
         window = self._id_to_window.get(wid)
         if window:
             metadata = self.cook_metadata(False, metadata)
             window.update_metadata(metadata)
 
-    def _process_window_icon(self, packet: PacketType) -> None:
+    def _process_window_icon(self, packet: Packet) -> None:
         wid, w, h, coding, data = packet[1:6]
         img = self._window_icon_image(wid, w, h, coding, data)
         window = self._id_to_window.get(wid)
@@ -1239,8 +1249,12 @@ class WindowClient(StubClientMixin):
             window.update_icon(img)
             self.set_tray_icon()
 
-    def _process_window_move_resize(self, packet: PacketType) -> None:
-        wid, x, y, w, h = (int(item) for item in packet[1:6])
+    def _process_window_move_resize(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
         ax = self.sx(x)
         ay = self.sy(y)
         aw = max(1, self.sx(w))
@@ -1254,7 +1268,7 @@ class WindowClient(StubClientMixin):
         if window:
             window.move_resize(ax, ay, aw, ah, resize_counter)
 
-    def _process_window_resized(self, packet: PacketType) -> None:
+    def _process_window_resized(self, packet: Packet) -> None:
         wid = int(packet[1])
         w = int(packet[2])
         h = int(packet[3])
@@ -1268,16 +1282,20 @@ class WindowClient(StubClientMixin):
         if window:
             window.resize(aw, ah, resize_counter)
 
-    def _process_raise_window(self, packet: PacketType) -> None:
+    def _process_raise_window(self, packet: Packet) -> None:
         # implemented in gtk subclass
         pass
 
-    def _process_restack_window(self, packet: PacketType) -> None:
+    def _process_restack_window(self, packet: Packet) -> None:
         # implemented in gtk subclass
         pass
 
-    def _process_configure_override_redirect(self, packet: PacketType) -> None:
-        wid, x, y, w, h = packet[1:6]
+    def _process_configure_override_redirect(self, packet: Packet) -> None:
+        wid = packet.get_wid()
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
         window = self._id_to_window.get(wid)
         ax = self.sx(x)
         ay = self.sy(y)
@@ -1333,8 +1351,8 @@ class WindowClient(StubClientMixin):
         else:
             log.warn("unknown close-window action: %s", self.window_close_action)
 
-    def _process_lost_window(self, packet: PacketType) -> None:
-        wid = packet[1]
+    def _process_lost_window(self, packet: Packet) -> None:
+        wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         if window:
             if window.is_OR() and self.modal_windows:
@@ -1397,7 +1415,7 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # bell
-    def _process_bell(self, packet: PacketType) -> None:
+    def _process_bell(self, packet: Packet) -> None:
         if not self.bell_enabled:
             return
         wid, device, percent, pitch, duration, bell_class, bell_id, bell_name = packet[1:9]
@@ -1475,15 +1493,15 @@ class WindowClient(StubClientMixin):
         # ungrab via dedicated server packet:
         self.send_force_ungrab(wid)
 
-    def _process_pointer_grab(self, packet: PacketType) -> None:
-        wid = packet[1]
+    def _process_pointer_grab(self, packet: Packet) -> None:
+        wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         grablog("grabbing %s: %s", wid, window)
         if window:
             self.window_grab(wid, window)
 
-    def _process_pointer_ungrab(self, packet: PacketType) -> None:
-        wid = packet[1]
+    def _process_pointer_ungrab(self, packet: Packet) -> None:
+        wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         grablog("ungrabbing %s: %s", wid, window)
         self.window_ungrab()
@@ -1556,13 +1574,13 @@ class WindowClient(StubClientMixin):
 
     ######################################################################
     # painting windows:
-    def _process_draw(self, packet: PacketType) -> None:
+    def _process_draw(self, packet: Packet) -> None:
         if PAINT_DELAY >= 0:
             GLib.timeout_add(PAINT_DELAY, self._draw_queue.put, packet)
         else:
             self._draw_queue.put(packet)
 
-    def _process_eos(self, packet: PacketType) -> None:
+    def _process_eos(self, packet: Packet) -> None:
         self._draw_queue.put(packet)
 
     def send_damage_sequence(self, wid: int, packet_sequence: int, width: int, height: int,

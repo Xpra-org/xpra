@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from xpra.os_util import gi_import
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.platform.features import CLIPBOARDS
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.log import Logger
@@ -127,7 +127,7 @@ class ClipboardConnection(StubClientConnection):
         # call compress_clibboard via the encode work queue:
         self.queue_encode((True, self.compress_clipboard, (packet,)))
 
-    def compress_clipboard(self, packet: PacketType) -> None:
+    def compress_clipboard(self, packet: Packet) -> None:
         # pylint: disable=import-outside-toplevel
         from xpra.net.compression import Compressible, compressed_wrapper
         # Note: this runs in the 'encode' thread!

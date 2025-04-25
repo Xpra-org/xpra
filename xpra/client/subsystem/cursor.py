@@ -9,7 +9,7 @@
 
 from typing import Any
 
-from xpra.net.common import PacketType
+from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.client.base.stub_client_mixin import StubClientMixin
@@ -51,7 +51,7 @@ class CursorClient(StubClientMixin):
         self.default_cursor_data = c.tupleget("cursor.default", None)
         return True
 
-    def _process_cursor(self, packet: PacketType) -> None:
+    def _process_cursor(self, packet: Packet) -> None:
         if not self.cursors_enabled:
             return
         if len(packet) == 2:

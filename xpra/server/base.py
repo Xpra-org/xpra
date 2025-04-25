@@ -12,7 +12,7 @@ from typing import Any
 from xpra.server.core import ServerCore
 from xpra.server.background_worker import add_work_item
 from xpra.common import FULL_INFO, noop, ConnectionMessage
-from xpra.net.common import PacketType, PacketElement
+from xpra.net.common import Packet, PacketElement
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
 from xpra.util.objects import typedict, merge_dicts
@@ -142,17 +142,17 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # shutdown / exit commands:
-    def _process_exit_server(self, _proto, packet: PacketType = ("exit-server", )) -> None:
+    def _process_exit_server(self, _proto, packet: Packet = Packet("exit-server")) -> None:
         reason: ConnectionMessage | str = ConnectionMessage.SERVER_EXIT
         message = "Exiting in response to client request"
         if len(packet) > 1:
-            reason = str(packet[1])
+            reason = packet.get_str(1)
             message += ": " + reason
         log.info(message)
         self.cleanup_all_protocols(reason=reason)
         GLib.timeout_add(500, self.clean_quit, ServerExitMode.EXIT)
 
-    def _process_shutdown_server(self, _proto, _packet: PacketType = ("shutdown-server", )) -> None:
+    def _process_shutdown_server(self, _proto, _packet: Packet = Packet("shutdown-server")) -> None:
         if not self.client_shutdown:
             log.warn("Warning: ignoring shutdown request")
             return
@@ -422,7 +422,7 @@ class ServerBase(ServerBaseClass):
 
     ######################################################################
     # info:
-    def _process_info_request(self, proto, packet: PacketType) -> None:
+    def _process_info_request(self, proto, packet: Packet) -> None:
         log("process_info_request(%s, %s)", proto, packet)
         # ignoring the list of client uuids supplied in packet[1]
         ss = self.get_server_source(proto)
@@ -550,7 +550,7 @@ class ServerBase(ServerBaseClass):
         log("ServerBase.do_get_info took %ims", (monotonic() - start) * 1000)
         return info
 
-    def _process_server_settings(self, proto, packet: PacketType) -> None:
+    def _process_server_settings(self, proto, packet: Packet) -> None:
         # only used by x11 servers
         pass
 
@@ -587,12 +587,12 @@ class ServerBase(ServerBaseClass):
         for ss in tuple(self._server_sources.values()):
             ss.send_setting_change(setting, value)
 
-    def _process_sharing_toggle(self, proto, packet: PacketType) -> None:
+    def _process_sharing_toggle(self, proto, packet: Packet) -> None:
         assert self.sharing is None
         ss = self.get_server_source(proto)
         if not ss:
             return
-        sharing = bool(packet[1])
+        sharing = packet.get_bool(1)
         ss.share = sharing
         if not sharing:
             # disconnect other users:
@@ -601,11 +601,11 @@ class ServerBase(ServerBaseClass):
                     self.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
                                            f"client {ss.counter} no longer wishes to share the session")
 
-    def _process_lock_toggle(self, proto, packet: PacketType) -> None:
+    def _process_lock_toggle(self, proto, packet: Packet) -> None:
         assert self.lock is None
         ss = self.get_server_source(proto)
         if ss:
-            ss.lock = bool(packet[1])
+            ss.lock = packet.get_bool(1)
             log("lock set to %s for client %i", ss.lock, ss.counter)
 
     ######################################################################
