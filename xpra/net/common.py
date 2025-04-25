@@ -51,7 +51,10 @@ PacketElementTypes: tuple[type, ...] = (
     tuple, list, dict, int, bool, str, bytes, memoryview,
     Compressible, Compressed, LargeStructure,
 )
-PacketElement: TypeAlias = Union[*PacketElementTypes]
+PacketElement: TypeAlias = Union[
+    tuple, list, dict, int, bool, str, bytes, memoryview,
+    Compressible, Compressed, LargeStructure,
+]
 
 
 class Packet(Sequence):
