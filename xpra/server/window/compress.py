@@ -205,9 +205,10 @@ class WindowSource(WindowIconSource):
                  encoding_options:typedict, icons_encoding_options: typedict,
                  rgb_formats: Sequence[str],
                  default_encoding_options,
-                 mmap_write_area: int, bandwidth_limit: int, jitter: int, datagram=0):
+                 mmap_write_area, bandwidth_limit: int, jitter: int, datagram=0):
         super().__init__(window_icon_encodings, icons_encoding_options)
         # mmap:
+        # (this is a `BaseMmapArea` but we can't depend on the mmap module here)
         self._mmap = mmap_write_area
 
         self.init_vars()
