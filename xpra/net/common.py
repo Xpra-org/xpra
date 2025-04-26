@@ -88,7 +88,7 @@ class Packet(Sequence):
 
     def get_wid(self, i=1) -> int:
         v = int(self.data[i])
-        if v < 0 or v >= 2**32:
+        if v < -1 or v >= 2**48:
             raise ValueError(f"invalid window id value {v!r}")
         return v
 
