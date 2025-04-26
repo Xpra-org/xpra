@@ -14,7 +14,7 @@ from collections.abc import Callable
 
 from xpra.platform.features import COMMAND_SIGNALS
 from xpra.util.child_reaper import getChildReaper, ProcInfo
-from xpra.common import noop
+from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
@@ -43,8 +43,8 @@ def do_send_menu_data(ss, menu) -> None:
     if getattr(ss, "menu", False):
         # v6.4 and later:
         attr = "menu"
-    elif getattr(ss, "xdg_menu", False):
-        # legacy name:
+    elif BACKWARDS_COMPATIBLE and getattr(ss, "xdg_menu", False):
+        # older versions:
         attr = "xdg-menu"
     else:
         # not supported by this connection

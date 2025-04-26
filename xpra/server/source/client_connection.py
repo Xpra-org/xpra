@@ -14,7 +14,7 @@ from collections import deque
 from queue import SimpleQueue
 
 from xpra.util.thread import start_thread
-from xpra.common import FULL_INFO, noop
+from xpra.common import FULL_INFO, noop, BACKWARDS_COMPATIBLE
 from xpra.util.objects import AtomicInteger, typedict, notypedict
 from xpra.util.env import envbool
 from xpra.net.common import Packet, PacketElement
@@ -144,8 +144,9 @@ class ClientConnection(StubClientConnection):
         self.share = c.boolget("share")
         self.lock = c.boolget("lock")
         self.client_control_commands = c.strtupleget("control_commands")
-        # `xdg-menu` is the pre v6.4 legacy name:
-        self.xdg_menu = c.boolget("xdg-menu", False)
+        if BACKWARDS_COMPATIBLE:
+            # `xdg-menu` is the pre v6.4 legacy name:
+            self.xdg_menu = c.boolget("xdg-menu", False)
         self.menu = c.boolget("menu", False)
         self.ssh_auth_sock = c.strget("ssh-auth-sock")
 
@@ -283,10 +284,11 @@ class ClientConnection(StubClientConnection):
         info = {
             "lock": bool(self.lock),
             "share": bool(self.share),
-            # legacy pre v6.4 name:
-            "xdg-menu": bool(self.xdg_menu),
             "menu": bool(self.menu),
         }
+        if BACKWARDS_COMPATIBLE:
+            # legacy pre v6.4 name:
+            info["xdg-menu"] = bool(self.xdg_menu)
         return info
 
     def send_info_response(self, info: dict) -> None:

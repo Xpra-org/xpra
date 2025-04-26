@@ -6,7 +6,7 @@
 from typing import Any
 from collections.abc import Callable
 
-from xpra.common import noop
+from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.net.common import may_log_packet, Packet, ServerPacketHandlerType
 from xpra.log import Logger
@@ -61,7 +61,8 @@ class GLibPacketHandler:
             self.add_packet_handler(packet_type, handler, main_thread)
 
     def add_legacy_alias(self, legacy_name: str, new_name: str) -> None:
-        self.packet_alias[legacy_name] = new_name
+        if BACKWARDS_COMPATIBLE:
+            self.packet_alias[legacy_name] = new_name
 
     def dispatch_packet(self, proto, packet: Packet, authenticated=False) -> None:
         packet_type = packet.get_type()

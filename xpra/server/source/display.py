@@ -10,7 +10,7 @@ from xpra.util.env import first_time
 from xpra.util.str_fn import bytestostr
 from xpra.util.objects import typedict
 from xpra.util.screen import get_screen_info
-from xpra.common import MIN_DPI, MAX_DPI
+from xpra.common import MIN_DPI, MAX_DPI, BACKWARDS_COMPATIBLE
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
@@ -180,8 +180,8 @@ class DisplayConnection(StubClientConnection):
             self.send_async("show-desktop", show)
 
     def get_monitor_definitions(self) -> dict[int, Any] | None:
-        if self.monitors:
-            return self.monitors
+        if self.monitors or not BACKWARDS_COMPATIBLE:
+            return self.monitors or {}
         # no? try to extract it from the legacy "screen_sizes" data:
         # (ie: pre v4.4 clients)
         log(f"screen sizes for {self}: {self.screen_sizes}")

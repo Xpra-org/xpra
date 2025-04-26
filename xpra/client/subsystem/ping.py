@@ -14,6 +14,7 @@ from xpra.os_util import POSIX, gi_import
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
 
@@ -65,8 +66,9 @@ class PingClient(StubClientMixin):
     def get_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {
             "network-state": True,
-            "ping-echo-sourceid": True,     # legacy flag
         }
+        if BACKWARDS_COMPATIBLE:
+            caps["ping-echo-sourceid"] = True
         return caps
 
     def startup_complete(self) -> None:

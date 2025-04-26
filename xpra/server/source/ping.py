@@ -11,7 +11,7 @@ from typing import Any
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.common import ConnectionMessage, FULL_INFO
+from xpra.common import ConnectionMessage, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.os_util import POSIX
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
@@ -28,10 +28,11 @@ class PingConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return any((
-            typedict(caps.dictget("network") or {}).intget("pings") > 0,
-            caps.boolget("ping-echo-sourceid"),  # legacy clients
-        ))
+        if typedict(caps.dictget("network") or {}).intget("pings") > 0:
+            return True
+        if BACKWARDS_COMPATIBLE:
+            return caps.boolget("ping-echo-sourceid")  # legacy clients
+        return False
 
     def init_state(self) -> None:
         self.last_ping_echoed_time = 0
@@ -42,8 +43,9 @@ class PingConnection(StubClientConnection):
         self.cancel_ping_echo_timers()
 
     def get_caps(self) -> dict[str, Any]:
-        # legacy flag
-        return {"ping-echo-sourceid": True}
+        if BACKWARDS_COMPATIBLE:
+            return {"ping-echo-sourceid": True}  # legacy flag
+        return {}
 
     def get_info(self) -> dict[str, Any]:
         lpe = self.last_ping_echoed_time

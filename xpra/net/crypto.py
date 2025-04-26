@@ -11,6 +11,7 @@ from struct import pack
 from typing import Any
 from collections.abc import Iterable, Sequence
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv, print_nested_dict, strtobytes, hexstr
 from xpra.util.env import envint, envbool
 from xpra.util.version import parse_version
@@ -250,7 +251,7 @@ def get_cipher(key: bytes, iv: bytes, mode: str = DEFAULT_MODE):
 
 
 def get_block_size(mode: str) -> int:
-    if mode == "CBC":
+    if BACKWARDS_COMPATIBLE and mode == "CBC":
         # older versions require 32
         return 16
     return 0

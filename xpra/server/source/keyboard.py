@@ -6,6 +6,7 @@
 
 from typing import Any
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import Ellipsizer
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
@@ -23,10 +24,11 @@ class KeyboardConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return any((
-            caps.boolget("keyboard"),
-            bool(caps.get("xkbmap_keycodes")),  # legacy clients
-        ))
+        if caps.boolget("keyboard"):
+            return True
+        if BACKWARDS_COMPATIBLE:
+            return bool(caps.get("xkbmap_keycodes"))  # legacy clients
+        return False
 
     def init_state(self) -> None:
         self.keyboard_config = None

@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.client.base.stub_client_mixin import StubClientMixin
-from xpra.common import noop
+from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.scripts.config import str_to_bool
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -44,14 +44,18 @@ class CommandClient(StubClientMixin):
         return {}
 
     def get_caps(self) -> dict[str, Any]:
-        return {
+        caps: dict[str, Any] = {
             # v6.4:
             "menu": self.start_new_commands,
-            # pre-v6.4:
-            "xdg-menu": self.start_new_commands,
-            # legacy flag:
-            "xdg-menu-update": True,
         }
+        if BACKWARDS_COMPATIBLE:
+            caps.update({
+                # pre-v6.4:
+                "xdg-menu": self.start_new_commands,
+                # legacy flag:
+                "xdg-menu-update": True,
+            })
+        return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_start_new_commands = c.boolget("start-new-commands")

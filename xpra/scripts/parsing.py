@@ -19,6 +19,7 @@ from typing import Any
 from collections.abc import Callable, Sequence
 from importlib.util import find_spec
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.util.version import full_version_str
 from xpra.util.parsing import parse_simple_dict
@@ -331,20 +332,21 @@ def normalize_display_name(display_name: str) -> str:
 
     # fixup the legacy format "tcp:host:port"
     pos = display_name.find(":")
-    legacy_ssh = re.search(r"^ssh:(\w([\w-]{0,61}\w)?):(\d{1,5})$", display_name)
-    if legacy_ssh:
-        # ie: "ssh:host:display" -> "ssh://host/display"
-        host = legacy_ssh.group(1)
-        display = legacy_ssh.group(3)
-        display_name = f"ssh://{host}/{display}"
-        warnings.warn("Warning: the syntax `ssh:host` will be removed in a future release,"
-                      " use `ssh://host:port/display` instead", DeprecationWarning)
-    elif pos > 0 and len(display_name) > pos + 2 and display_name[pos + 1] != "/":
-        # replace the first ":" with "://"
-        # so we end up with parsable URL, ie: "tcp://host:port"
-        display_name = display_name[:pos] + "://" + display_name[pos + 1:]
-        warnings.warn("Warning: the syntax `protocol:host` will be removed in a future release,"
-                      " use `protocol://host` instead", DeprecationWarning)
+    if BACKWARDS_COMPATIBLE:
+        legacy_ssh = re.search(r"^ssh:(\w([\w-]{0,61}\w)?):(\d{1,5})$", display_name)
+        if legacy_ssh:
+            # ie: "ssh:host:display" -> "ssh://host/display"
+            host = legacy_ssh.group(1)
+            display = legacy_ssh.group(3)
+            display_name = f"ssh://{host}/{display}"
+            warnings.warn("Warning: the syntax `ssh:host` will be removed in a future release,"
+                          " use `ssh://host:port/display` instead", DeprecationWarning)
+        elif pos > 0 and len(display_name) > pos + 2 and display_name[pos + 1] != "/":
+            # replace the first ":" with "://"
+            # so we end up with parsable URL, ie: "tcp://host:port"
+            display_name = display_name[:pos] + "://" + display_name[pos + 1:]
+            warnings.warn("Warning: the syntax `protocol:host` will be removed in a future release,"
+                          " use `protocol://host` instead", DeprecationWarning)
     # workaround missing [] around IPv6 addresses:
     try:
         netloc = parse.urlparse(display_name).netloc

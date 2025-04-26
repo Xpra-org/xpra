@@ -7,6 +7,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.net.mmap import init_server_mmap, BaseMmapArea
@@ -136,9 +137,14 @@ class MMAP_Connection(StubClientConnection):
             self.mmap_supported = False
             return
         tdcaps = typedict(mmap_caps)
-        self.mmap_read_area = self.parse_area_caps("read", tdcaps.dictget("write") or mmap_caps, 1)
-        # also try legacy unprefixed lookup for 'read' area:
-        self.mmap_write_area = self.parse_area_caps("write", tdcaps.dictget("read"), 0)
+        if BACKWARDS_COMPATIBLE:
+            # also try the legacy unprefixed lookup for 'read' area:
+            read_caps = tdcaps.dictget("write") or mmap_caps
+        else:
+            read_caps = tdcaps.dictget("write")
+        write_caps = tdcaps.dictget("read")
+        self.mmap_read_area = self.parse_area_caps("read", read_caps, 1)
+        self.mmap_write_area = self.parse_area_caps("write", write_caps, 0)
         log("parse_client_caps() mmap-read=%s, mmap-write=%s", self.mmap_read_area, self.mmap_write_area)
 
     def get_caps(self) -> dict[str, Any]:

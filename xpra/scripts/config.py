@@ -12,7 +12,7 @@ import shlex
 from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 
-from xpra.common import noop, Self
+from xpra.common import noop, Self, BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
@@ -835,7 +835,8 @@ OPTION_TYPES: dict[str, Any] = {
 
 # options removed in v6,
 # don't show warnings when running with older config files:
-OLD_OPTIONS: list[str] = ["fake-xinerama", "dbus-proxy"]
+if BACKWARDS_COMPATIBLE:
+    OLD_OPTIONS: list[str] = ["fake-xinerama", "dbus-proxy"]
 
 
 # in the options list, available in session files,
