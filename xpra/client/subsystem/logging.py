@@ -10,12 +10,11 @@ from time import monotonic
 from threading import Lock
 from typing import Any
 
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.net.common import Packet, LOG_PACKET_TYPE
-from xpra.net.compression import Compressed
 from xpra.log import Logger, set_global_logging_handler, get_info
 
 log = Logger("client")
@@ -141,28 +140,33 @@ class LoggingClient(StubClientMixin):
                 return
 
             dtime = int(1000 * (monotonic() - self.monotonic_start_time))
-            data: str | Compressed
             if args:
-                data = msg % args
+                str_msg = msg % args
             else:
-                data = msg
+                str_msg = msg
+            try:
+                data = str_msg.encode("utf8")
+            except UnicodeEncodeError:
+                data = str_msg.encode("latin1")
+
             if len(data) >= 32:
                 try:
-                    data = self.compressed_wrapper("text", data.encode("utf8"), level=1)
+                    data = self.compressed_wrapper("text", data, level=1)
                 except Exception:
                     pass
-            self.send("logging", level, data, dtime)
+            packet_type = "logging" if BACKWARDS_COMPATIBLE else "logging-event"
+            self.send(packet_type, level, data, dtime)
             exc_info = kwargs.get("exc_info")
             if exc_info is True:
                 exc_info = sys.exc_info()
             if exc_info and exc_info[0]:
                 for x in traceback.format_tb(exc_info[2]):
-                    self.send("logging", level, x, dtime)
+                    self.send(packet_type, level, x, dtime)
                 try:
                     etypeinfo = exc_info[0].__name__
                 except AttributeError:
                     etypeinfo = str(exc_info[0])
-                self.send("logging", level, f"{etypeinfo}: {exc_info[1]}", dtime)
+                self.send(packet_type, level, f"{etypeinfo}: {exc_info[1]}", dtime)
             if self.log_both and ll:
                 ll(logger_log, level, msg, *args, **kwargs)
         except Exception as e:

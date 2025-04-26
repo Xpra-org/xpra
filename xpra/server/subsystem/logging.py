@@ -12,6 +12,7 @@ from threading import Lock
 from typing import Any
 from collections.abc import Callable
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes
 from xpra.net.common import Packet
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
@@ -19,6 +20,12 @@ from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger, set_global_logging_handler
 
 log = Logger("server")
+
+
+def decode(v) -> str:
+    if isinstance(v, str):
+        return v
+    return memoryview_to_bytes(v).decode("utf8")
 
 
 class LoggingServer(StubServerMixin):
@@ -197,7 +204,14 @@ class LoggingServer(StubServerMixin):
         if ss is None:
             return
         level = packet.get_u8(1)
-        msg = packet[2]
+        if BACKWARDS_COMPATIBLE:
+            msg = packet[2]
+            if isinstance(msg, (tuple, list)):
+                dmsg = " ".join(decode(x) for x in msg)
+            else:
+                dmsg = decode(msg)
+        else:
+            dmsg = decode(packet.get_buffer(2))
         prefix = "client "
         counter = getattr(ss, "counter", 0)
         if counter > 0:
@@ -205,17 +219,7 @@ class LoggingServer(StubServerMixin):
         if len(packet) >= 4:
             dtime = packet[3]
             prefix += "@%02i.%03i " % ((dtime // 1000) % 60, dtime % 1000)
-
-        def decode(v) -> str:
-            if isinstance(v, str):
-                return v
-            return memoryview_to_bytes(v).decode("utf8")
-
         try:
-            if isinstance(msg, (tuple, list)):
-                dmsg = " ".join(decode(x) for x in msg)
-            else:
-                dmsg = decode(msg)
             for line in dmsg.splitlines():
                 self.do_log(level, prefix + line)
         except Exception as e:
