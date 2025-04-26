@@ -9,7 +9,7 @@ from typing import Any
 from importlib import import_module
 from collections.abc import Sequence
 
-from xpra.common import ALL_CLIPBOARDS
+from xpra.common import ALL_CLIPBOARDS, BACKWARDS_COMPATIBLE
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
 from xpra.platform.clipboard import get_backend_module
@@ -253,8 +253,8 @@ class ClipboardClient(StubClientMixin):
         log("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s",
             args, self.clipboard_enabled, self.server_clipboard)
         if self.server_clipboard:
-            # non-legacy name would be "clipboard-status"
-            self.send_now("set-clipboard-enabled", self.clipboard_enabled)
+            packet_type = "set-clipboard-enabled" if BACKWARDS_COMPATIBLE else "clipboard-status"
+            self.send_now(packet_type, self.clipboard_enabled)
             if self.clipboard_enabled:
                 ch = self.clipboard_helper
                 assert ch is not None

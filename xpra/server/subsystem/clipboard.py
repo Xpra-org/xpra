@@ -9,6 +9,7 @@ from typing import Any
 from collections.abc import Sequence
 from importlib import import_module
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.platform.features import (
     CLIPBOARDS, CLIPBOARD_PREFERRED_TARGETS,
     CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY,
@@ -191,7 +192,7 @@ class ClipboardServer(StubServerMixin):
             # protocol has been dropped!
             return
         packet_type = packet.get_type()
-        if packet_type in ("clipboard-status", "set-clipboard-enabled"):
+        if packet_type == "clipboard-status" or (BACKWARDS_COMPATIBLE and packet_type == "set-clipboard-enabled"):
             self._process_clipboard_status(proto, packet)
             return
         if self._clipboard_client != ss:

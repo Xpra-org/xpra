@@ -12,6 +12,7 @@ from collections.abc import Sequence
 from xpra.os_util import gi_import
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.platform.features import CLIPBOARDS
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.util.env import envint
@@ -78,7 +79,8 @@ class ClipboardConnection(StubClientConnection):
     def send_clipboard_enabled(self, reason: str = "") -> None:
         if not self.hello_sent:
             return
-        self.send_async("set-clipboard-enabled", self.clipboard_enabled, reason)
+        packet_type = "set-clipboard-enabled" if BACKWARDS_COMPATIBLE else "clipboard-status"
+        self.send_async(packet_type, self.clipboard_enabled, reason)
 
     def cancel_clipboard_progress_timer(self) -> None:
         cpt = self.clipboard_progress_timer
