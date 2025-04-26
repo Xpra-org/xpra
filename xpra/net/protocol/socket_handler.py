@@ -1204,7 +1204,12 @@ class SocketProtocol:
                 self.input_packetcount += 1
                 self.receive_pending = bool(protocol_flags & FLAGS_FLUSH)
                 log("processing packet %s", packet_type)
-                self._process_packet_cb(self, Packet(*packet))
+                try:
+                    wrapped = Packet(*packet)
+                except (TypeError, ValueError):
+                    log.error("Error parsing packet", exc_info=True)
+                else:
+                    self._process_packet_cb(self, wrapped)
                 del packet
 
     def do_flush_then_close(self, encoder: Callable | None = None,
