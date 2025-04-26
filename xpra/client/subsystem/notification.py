@@ -149,7 +149,7 @@ class NotificationClient(StubClientMixin):
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
         self._ui_event()
-        dbus_id = packet[1]
+        dbus_id = packet.get_u64(1)
         nid = packet.get_u64(2)
         app_name = packet.get_str(3)
         replaces_nid = packet.get_u64(4)

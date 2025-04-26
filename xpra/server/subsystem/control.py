@@ -5,6 +5,7 @@
 
 from typing import Any
 
+from xpra.net.common import Packet
 from xpra.log import Logger
 
 log = Logger("command")
@@ -40,4 +41,4 @@ class ControlHandler:
         from xpra.net.control.common import process_control_command
         code, response = process_control_command(proto, self.control_commands, *args)
         hello = {"command_response": (code, response)}
-        proto.send_now(("hello", hello))
+        proto.send_now(Packet("hello", hello))

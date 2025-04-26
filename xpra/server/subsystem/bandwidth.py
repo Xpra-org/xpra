@@ -49,7 +49,7 @@ class BandwidthServer(StubServerMixin):
     def _process_connection_data(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if ss:
-            ss.update_connection_data(packet[1])
+            ss.update_connection_data(packet.get_dict(1))
 
     def _process_bandwidth_limit(self, proto, packet: Packet) -> None:
         log("_process_bandwidth_limit(%s, %s)", proto, packet)

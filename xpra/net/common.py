@@ -56,6 +56,12 @@ PacketElement: TypeAlias = Union[
     Compressible, Compressed, LargeStructure,
 ]
 
+try:
+    # Python 3.12 and later:
+    from collections.abc import Buffer
+except ImportError:
+    Buffer = object
+
 
 class Packet(Sequence):
     __slots__ = ["data"]
@@ -149,10 +155,29 @@ class Packet(Sequence):
             return v
         return bytes(v)
 
+    def get_buffer(self, i) -> SizedBuffer:
+        v = self.data[i]
+        if isinstance(v, (memoryview, bytes, bytearray)):
+            return v
+        return bytes(v)
+
     def get_dict(self, i) -> dict:
         v = self.data[i]
-        assert isinstance(v, dict)
-        return v
+        if isinstance(v, dict):
+            return v
+        raise TypeError("expected dictionary at index %i but got a %s" % (i, type(v)))
+
+    def get_strs(self, i) -> Sequence[str]:
+        v = self.data[i]
+        if isinstance(v, Sequence):
+            return tuple(str(x) for x in v)
+        raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
+
+    def get_ints(self, i) -> Sequence[int]:
+        v = self.data[i]
+        if isinstance(v, Sequence):
+            return tuple(int(x) for x in v)
+        raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
 
 # client packet handler:

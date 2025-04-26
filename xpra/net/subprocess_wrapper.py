@@ -242,14 +242,15 @@ class SubprocessCallee:
         return item, False, more
 
     def process_packet(self, proto, packet: Packet) -> None:
-        command = str(packet[0])
+        command = packet.get_str(0)
         if command == CONNECTION_LOST:
             log("connection-lost: %s, calling stop", packet[1:])
             self.net_stop()
             return
         if command == GIBBERISH:
             log.warn("Warning: gibberish received:")
-            log.warn(" %s", repr_ellipsized(packet[1], limit=80))
+            message = packet.get_str(1)
+            log.warn(" %s", repr_ellipsized(message, limit=80))
             log.warn(" stopping")
             self.net_stop()
             return
@@ -439,7 +440,7 @@ class SubprocessCaller:
     def process_packet(self, proto, packet: Packet) -> None:
         if DEBUG_WRAPPER:
             log("process_packet(%s, %s)", proto, [str(x)[:32] for x in packet])
-        signal_name = str(packet[0])
+        signal_name = packet.get_str(0)
         self._fire_callback(signal_name, packet[1:])
         INJECT_FAULT(proto)
 

@@ -89,7 +89,7 @@ class ClientMixinTest(unittest.TestCase):
     def handle_packet(self, packet: Packet | tuple) -> None:
         if isinstance(packet, tuple):
             packet = Packet(*packet)
-        packet_type = packet[0]
+        packet_type = packet.get_type()
         ph = self.packet_handlers.get(packet_type)
         assert ph is not None, "no packet handler for %s" % packet_type
         ph(packet)

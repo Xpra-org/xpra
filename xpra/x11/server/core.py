@@ -915,8 +915,8 @@ class X11ServerCore(GTKServerBase):
         wid = packet.get_wid()
         button = packet.get_u8(2)
         distance = packet.get_i64(3)
-        pointer = packet[4]
-        modifiers = packet[5]
+        pointer = packet.get_ints(4)
+        modifiers = packet.get_strs(5)
         # _buttons = packet[6]
         device_id = -1
         props = {}
@@ -1058,6 +1058,7 @@ class X11ServerCore(GTKServerBase):
         screenshot.save(buf, "png")
         data = buf.getvalue()
         buf.close()
-        packet = ("screenshot", width, height, "png", width * 4, Compressed("png", data))
-        log("screenshot: %sx%s %s", packet[1], packet[2], packet[-1])
+        compressed = Compressed("png", data)
+        packet = ("screenshot", width, height, "png", width * 4, compressed)
+        log("screenshot: %sx%s %s", width, height, compressed)
         return packet

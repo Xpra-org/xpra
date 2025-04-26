@@ -909,13 +909,13 @@ class SocketProtocol:
 
     def invalid(self, msg: str, data: SizedBuffer) -> None:
         eventlog("invalid(%r, %r)", msg, data)
-        self.idle_add(self._process_packet_cb, self, [INVALID, msg, data])
+        self.idle_add(self._process_packet_cb, self, Packet(INVALID, msg, data))
         # Then hang up:
         self.timeout_add(1000, self._connection_lost, msg)
 
     def gibberish(self, msg: str, data: SizedBuffer) -> None:
         eventlog("gibberish(%r, %r)", msg, data)
-        self.idle_add(self._process_packet_cb, self, [GIBBERISH, msg, data])
+        self.idle_add(self._process_packet_cb, self, Packet(GIBBERISH, msg, data))
         # Then hang up:
         self.timeout_add(self.hangup_delay, self._connection_lost, msg)
 
@@ -1318,10 +1318,10 @@ class SocketProtocol:
         if self._closed:
             return
         self._closed = True
-        packet = [CONNECTION_LOST]
+        packet_data = []
         if message:
-            packet.append(message)
-        self.idle_add(self._process_packet_cb, self, packet)
+            packet_data.append(message)
+        self.idle_add(self._process_packet_cb, self, Packet(CONNECTION_LOST, *packet_data))
         self.may_log_stats()
         if c:
             self._conn = None

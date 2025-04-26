@@ -498,7 +498,7 @@ class FileTransferHandler(FileTransferAttributes):
         printit = packet.get_bool(3)
         openit = packet.get_bool(4)
         filesize = packet.get_u64(5)
-        file_data: SizedBuffer = packet[6]
+        file_data: SizedBuffer = packet.get_buffer(6)
         options: typedict = typedict(packet.get_dict(7))
         send_id = ""
         if len(packet) >= 9:

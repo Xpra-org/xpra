@@ -80,7 +80,7 @@ class BandwidthConnection(StubClientConnection):
         }
         return info
 
-    def update_connection_data(self, data) -> None:
+    def update_connection_data(self, data: dict) -> None:
         log("update_connection_data(%s)", data)
         if not isinstance(data, dict):
             raise TypeError("connection-data must be a dictionary")

@@ -341,7 +341,7 @@ class ProxyServer(ProxyServerBaseClass):
         self._requests.add(proto)
         # send a hello back and the client should then send its "shutdown-server" packet
         capabilities = self.make_hello(None)
-        proto.send_now(("hello", capabilities))
+        proto.send_now(Packet("hello", capabilities))
 
         def force_exit_request_client() -> None:
             try:
@@ -482,7 +482,7 @@ class ProxyServer(ProxyServerBaseClass):
             mode = str(sns.get("mode", ""))
             if mode:
                 hello["mode"] = mode
-            client_proto.send_now(("hello", hello))
+            client_proto.send_now(Packet("hello", hello))
             return
 
         def stop_server_subprocess() -> None:

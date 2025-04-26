@@ -126,10 +126,11 @@ class XpraPygletClient:
         return packet, True, bool(self._ordinary_packets)
 
     def process_packet(self, _protocol, packet: Packet) -> None:
-        packet_type_fn_name = packet.get_str(0).replace("-", "_")
+        packet_type = packet.get_type()
+        packet_type_fn_name = packet_type.replace("-", "_")
         meth = getattr(self, f"_process_{packet_type_fn_name}", None)
         if not meth:
-            netlog.warn(f"Warning: missing handler for {packet[0]!r}")
+            netlog.warn(f"Warning: missing handler for {packet_type!r}")
             netlog("packet=%r", packet)
             return
 
@@ -138,7 +139,7 @@ class XpraPygletClient:
         clock.schedule_once(call_handler, 0)
 
     def _process_hello(self, packet: Packet) -> None:
-        self.hello = packet[1]
+        self.hello = packet.get_dict(1)
         netlog.info("got hello from %s server" % self.hello.get("version", ""))
 
     def _process_setting_change(self, packet: Packet) -> None:
@@ -172,7 +173,7 @@ class XpraPygletClient:
         window.show()
 
     def _process_lost_window(self, packet: Packet) -> None:
-        wid = int(packet[1])
+        wid = packet.get_wid()
         window = self.windows.get(wid)
         if window:
             window.close()
@@ -191,7 +192,7 @@ class XpraPygletClient:
         width = packet.get_i16(4)
         height = packet.get_i16(5)
         coding = packet.get_str(6)
-        data = packet[7]
+        data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)
         rowstride = packet.get_u32(9)
         window = self.windows.get(wid)
@@ -208,7 +209,7 @@ class XpraPygletClient:
 
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        metadata = packet[2]
+        metadata = packet.get_dict(2)
         log.info(f"window {wid}: {metadata}")
 
     def update_focus(self, wid=0) -> None:

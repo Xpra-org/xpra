@@ -706,15 +706,15 @@ class ServerBase(ServerBaseClass):
         self.add_packets("shutdown-server", "exit-server")
 
     # override so we can set the 'authenticated' flag:
-    def process_packet(self, proto, packet) -> None:
+    def process_packet(self, proto, packet: Packet) -> None:
         authenticated = bool(self.get_server_source(proto))
         return super().dispatch_packet(proto, packet, authenticated)
 
-    def handle_invalid_packet(self, proto, packet) -> None:
+    def handle_invalid_packet(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
             netlog("invalid packet: %s", packet)
-            packet_type = str(packet[0])
+            packet_type = packet.get_type()
             netlog.error(f"Error: unknown or invalid packet type {packet_type!r}")
             netlog.error(f" received from {proto}")
         if not ss:

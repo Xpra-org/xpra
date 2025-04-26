@@ -474,13 +474,14 @@ class XpraClientBase(ClientBaseClass):
             self.warn_and_quit(exit_code, msg)
 
     def _process_hello(self, packet: Packet) -> None:
+        hello_data = packet.get_dict(1)
         if LOG_HELLO:
             netlog.info("received hello:")
-            print_nested_dict(packet[1], print_fn=netlog.info)
+            print_nested_dict(hello_data, print_fn=netlog.info)
         self.remove_packet_handlers("challenge")
         self.remove_packet_handlers("ssl-upgrade")
         try:
-            caps = typedict(packet[1])
+            caps = typedict(hello_data)
             netlog("processing hello from server: %s", Ellipsizer(caps))
             if not self.server_connection_established(caps):
                 self.warn_and_quit(ExitCode.FAILURE, "failed to establish connection")
@@ -542,7 +543,7 @@ class XpraClientBase(ClientBaseClass):
     def _process_gibberish(self, packet: Packet) -> None:
         log("process_gibberish(%s)", Ellipsizer(packet))
         message = packet.get_str(1)
-        bdata = packet[2]
+        bdata = packet.get_bytes(2)
         from xpra.net.socket_util import guess_packet_type  # pylint: disable=import-outside-toplevel
         packet_type = guess_packet_type(bdata)
         p = self._protocol
@@ -586,7 +587,7 @@ class XpraClientBase(ClientBaseClass):
 
     def _process_invalid(self, packet: Packet) -> None:
         message = packet.get_str(1)
-        data = packet[2]
+        data = packet.get_bytes(2)
         netlog.info(f"Received invalid packet: {message}")
         netlog(" data: %s", Ellipsizer(data))
         p = self._protocol

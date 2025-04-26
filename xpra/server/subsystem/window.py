@@ -369,7 +369,7 @@ class WindowServer(StubServerMixin):
         wid = packet.get_wid()
         focuslog("process_focus: wid=%s", wid)
         if len(packet) >= 3:
-            modifiers = packet[2]
+            modifiers = packet.get_strs(2)
         else:
             modifiers = None
         ss = self.get_server_source(proto)

@@ -424,7 +424,7 @@ class ChildCommandServer(StubServerMixin):
             cmd = str(command)
         proc = self.start_command(name, cmd, ignore)
         if len(packet) >= 5:
-            shared = packet[4]
+            shared = packet.get_bool(4)
             if proc and not shared:
                 ss = self.get_server_source(proto)
                 assert ss

@@ -14,7 +14,7 @@ from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.common import FULL_INFO, noop, SizedBuffer
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, OSX, POSIX
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, bytestostr, memoryview_to_bytes
+from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.log import Logger
@@ -570,7 +570,7 @@ class AudioClient(StubClientMixin):
 
     def _process_audio_data(self, packet: Packet) -> None:
         codec = packet.get_str(1)
-        data = memoryview_to_bytes(packet[2])
+        data = packet.get_buffer(2)
         metadata = typedict(packet.get_dict(3))
         # the server may send packet_metadata, which is pushed before the actual audio data:
         packet_metadata = ()

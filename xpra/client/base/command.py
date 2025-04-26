@@ -16,7 +16,7 @@ from xpra.util.env import envint, first_time
 from xpra.common import ConnectionMessage, disconnect_is_an_error, noop
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
-from xpra.net.common import Packet
+from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit
 from xpra.client.base.client import EXTRA_TIMEOUT
 from xpra.client.base.gobject import GObjectXpraClient
@@ -47,6 +47,7 @@ class CommandConnectClient(GObjectXpraClient):
         self.file_transfer = False
         self.printing = False
         self.command_timeout = None
+        self.last_server_event: Sequence[PacketElement] = ()
         # don't bother with many of these things for one-off commands:
         for x in ("ui_client", "windows", "webcam", "keyboard", "mouse", "network-state"):
             self.hello_extra[x] = False
@@ -172,7 +173,7 @@ class ScreenshotXpraClient(HelloRequestClient):
         w = packet.get_u16(1)
         h = packet.get_u16(2)
         encoding = packet.get_str(3)
-        img_data = packet[5]
+        img_data = packet.get_buffer(5)
         assert encoding == "png", "expected png screenshot data but got %s" % encoding
         if not img_data:
             self.warn_and_quit(ExitCode.OK,
@@ -496,7 +497,7 @@ class ShellXpraClient(SendCommandConnectClient):
         self.add_packets("shell-reply", "ping")
 
     def _process_ping(self, packet: Packet) -> None:
-        echotime = packet[1]
+        echotime = packet.get_u64(1)
         self.send("ping_echo", echotime, 0, 0, 0, -1)
 
     @staticmethod

@@ -334,7 +334,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
                 info.setdefault("connection", {}).update(self.get_connection_info())
             else:
                 info = {"error": "`info` requests are not enabled for this connection"}
-            proto.send_now(("hello", info))
+            proto.send_now(Packet("hello", info))
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "info sent")
             return True
@@ -352,13 +352,13 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
             version = XPRA_VERSION
             if caps.boolget("full-version-request") and FULL_INFO:
                 version = full_version_str()
-            proto.send_now(("hello", {"version": version}))
+            proto.send_now(Packet("hello", {"version": version}))
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "version sent")
             return True
         if request == "id":
             proto._log_stats = False
-            proto.send_now(("hello", self.get_session_id_info()))
+            proto.send_now(Packet("hello", self.get_session_id_info()))
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "id info sent")
             return True

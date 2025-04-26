@@ -50,16 +50,16 @@ class RFBClientProtocol(RFBProtocol):
         try:
             while True:
                 pdata = self.next_packet()
-                packet = pdata[0]
+                rfbdata = pdata[0]
                 start_send_cb = pdata[1]
                 end_send_cb = pdata[2]
                 has_more = pdata[5]
                 if start_send_cb:
                     start_send_cb()
-                log("packet: %s", packet[0])
-                handler = self._rfb_converters.get(packet[0])
+                log("packet: %s", rfbdata[0])
+                handler = self._rfb_converters.get(rfbdata[0])
                 if handler:
-                    handler(packet)
+                    handler(rfbdata)
                 if end_send_cb:
                     end_send_cb()
                 if not has_more:
@@ -72,8 +72,8 @@ class RFBClientProtocol(RFBProtocol):
         # ['pointer-position', 1, (3348, 582), ['mod2'], []]
         if not check_wid(packet[1]):
             return
-        x, y = packet[2]
-        # modifiers = packet[3]
+        x, y = packet[2][:2]
+        # modifiers = packet.get_strs(3)
         buttons = packet[4]
         button_mask = 0
         for i in range(8):

@@ -182,7 +182,7 @@ class NetworkListener(StubClientMixin):
                 pass
 
         if packet_type == "hello":
-            caps = typedict(packet[1])
+            caps = typedict(packet.get_dict(1))
             proto.parse_remote_caps(caps)
             proto.enable_compressor_from_caps(caps)
             proto.enable_encoder_from_caps(caps)
@@ -204,7 +204,7 @@ class NetworkListener(StubClientMixin):
 
     def handle_hello_request(self, proto, request: str, caps: typedict) -> bool:
         def hello_reply(data) -> None:
-            proto.send_now(["hello", data])
+            proto.send_now(Packet("hello", data))
 
         if not is_request_allowed(proto, request):
             log.info("request '%s' is not handled by this client", request)

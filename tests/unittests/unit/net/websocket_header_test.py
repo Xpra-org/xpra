@@ -17,15 +17,14 @@ class WebsocketHeaderTest(unittest.TestCase):
     def test_round_trip(self):
         def rt(opcode, payload, has_mask=False, fin=True):
             h = encode_hybi_header(opcode, len(payload), has_mask, fin)
-            packet = h+payload
-            ropcode, rpayload, rlen, rfin = decode_hybi(packet)
-            assert opcode==ropcode
-            assert rpayload==payload
-            assert rlen>len(payload)
-            assert fin==rfin
+            wsdata = h + payload
+            ropcode, rpayload, rlen, rfin = decode_hybi(wsdata)
+            assert opcode == ropcode
+            assert rpayload == payload
+            assert rlen > len(payload)
+            assert fin == rfin
         for l in (0, 10, 125, 126, 65535, 65536):
             rt(0, b"\0"*l)
-
 
     def test_invalid_decode(self):
         for l in (0, 10, 125, 126, 65535, 65536):
@@ -33,19 +32,20 @@ class WebsocketHeaderTest(unittest.TestCase):
                 payload = b"\0"*l
                 h = encode_hybi_header(0, len(payload), has_mask, True)
                 if has_mask:
-                    packet = h+b"9"*4+payload
+                    wsdata = h + b"9"*4 + payload
                 else:
-                    packet = h+payload
-                v = decode_hybi(packet)
+                    wsdata = h + payload
+                v = decode_hybi(wsdata)
                 assert v
-                v = decode_hybi(packet[:-1])
+                v = decode_hybi(wsdata[:-1])
                 assert v is None
-                v = decode_hybi(packet[:int(has_mask)*4])
+                v = decode_hybi(wsdata[:int(has_mask)*4])
                 assert v is None, "got %s" % (v,)
                 if l>0:
                     for i in range(5):
-                        v = decode_hybi(packet[:int(has_mask)*4+i])
+                        v = decode_hybi(wsdata[:int(has_mask)*4+i])
                         assert v is None, "got %s" % (v,)
+
 
 def main():
     unittest.main()

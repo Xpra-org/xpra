@@ -91,7 +91,7 @@ class PointerServer(StubServerMixin):
         wid = packet.get_wid(3)
         button = packet.get_u8(4)
         pressed = packet.get_bool(5)
-        pointer = packet[6]
+        pointer = packet.get_ints(6)
         props = packet.get_dict(7)
         if device_id >= 0:
             # highest_seq = self.pointer_sequence.get(device_id, 0)
@@ -114,8 +114,8 @@ class PointerServer(StubServerMixin):
         wid = packet.get_wid(1)
         button = packet.get_u8(2)
         pressed = packet.get_bool(3)
-        pointer = packet[4]
-        modifiers = packet[5]
+        pointer = packet.get_ints(4)
+        modifiers = packet.get_strs(5)
         device_id = 0
         props = {
             "modifiers": modifiers,
@@ -173,7 +173,7 @@ class PointerServer(StubServerMixin):
             return
         wid = packet.get_wid()
         pdata = packet[2]
-        modifiers = packet[3]
+        modifiers = packet.get_strs(3)
         pointer = pdata[:2]
         if len(pdata) >= 4:
             ss.mouse_last_relative_position = pdata[2:4]

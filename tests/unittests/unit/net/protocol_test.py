@@ -215,11 +215,11 @@ class ProtocolTest(unittest.TestCase):
         parsed_packets = []
 
         def process_packet_cb(_proto, packet: Packet) -> None:
-            # log.info("process_packet_cb%s", packet[0])
+            # log.info("process_packet_cb%s", packet)
             if packet.get_type() == CONNECTION_LOST:
                 loop.quit()
             else:
-                parsed_packets.append(packet[0])
+                parsed_packets.append(packet.get_type())
 
         # run the protocol on this data:
         loop = GLib.MainLoop()

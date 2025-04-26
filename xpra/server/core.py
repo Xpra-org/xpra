@@ -1619,13 +1619,14 @@ class ServerCore(ControlHandler, GLibPacketHandler):
 
     def _process_gibberish(self, proto: SocketProtocol, packet: Packet) -> None:
         message = packet.get_str(1)
-        data = packet[2]
+        data = packet.get_bytes(2)
         netlog("Received uninterpretable nonsense from %s: %s", proto, message)
         netlog(" data: %s", Ellipsizer(data))
         self.disconnect_client(proto, message)
 
     def _process_invalid(self, protocol: SocketProtocol, packet: Packet) -> None:
-        message, data = packet[1:3]
+        message = packet.get_str(1)
+        data = packet.get_bytes(2)
         netlog(f"Received invalid packet: {message}")
         netlog(" data: %s", Ellipsizer(data))
         self.disconnect_client(protocol, message)
@@ -1634,7 +1635,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
     # hello / authentication:
     def send_version_info(self, proto: SocketProtocol, full: bool = False) -> None:
         version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
-        proto.send_now(("hello", {"version": version}))
+        proto.send_now(Packet("hello", {"version": version}))
         # client is meant to close the connection itself, but just in case:
         GLib.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
@@ -1721,7 +1722,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
 
     def send_challenge(self, proto: SocketProtocol, salt: bytes, auth_caps: dict, digest: str, salt_digest: str,
                        prompt: str = "password") -> None:
-        proto.send_now(("challenge", salt, auth_caps, digest, salt_digest, prompt))
+        proto.send_now(Packet("challenge", salt, auth_caps, digest, salt_digest, prompt))
         self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
     def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage, authenticator=None) -> None:
@@ -1775,7 +1776,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
                     log.info(f"sending ssl upgrade for {conn}")
                     cert_data = load_binary_file(cert)
                     ssl_attrs = {"cert-data": cert_data}
-                    proto.send_now(("ssl-upgrade", ssl_attrs))
+                    proto.send_now(Packet("ssl-upgrade", ssl_attrs))
                     return
 
         def send_fake_challenge() -> None:
@@ -1860,7 +1861,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             send_fake_challenge()
             return
         authlog(f"all {len(proto.authenticators)} authentication modules passed")
-        capabilities = packet[1]
+        capabilities = packet.get_dict(1)
         c = typedict(capabilities)
         self.auth_verified(proto, c, auth_caps)
 
@@ -2042,7 +2043,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         if request == "connect_test":
             ctr = caps.strget("connect_test_request")
             response = {"connect_test_response": ctr}
-            proto.send_now(("hello", response))
+            proto.send_now(Packet("hello", response))
             return True
         if request == "id":
             self.send_id_info(proto)
@@ -2125,7 +2126,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
     def send_id_info(self, proto: SocketProtocol) -> None:
         log("id info request from %s", proto._conn)
         proto._log_stats = False
-        proto.send_now(("hello", self.get_session_id_info()))
+        proto.send_now(Packet("hello", self.get_session_id_info()))
 
     def get_session_id_info(self) -> dict[str, Any]:
         # minimal information for identifying the session
@@ -2156,7 +2157,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         self.get_all_info(cb, proto)
 
     def do_send_info(self, proto: SocketProtocol, info: dict[str, Any]) -> None:
-        proto.send_now(("hello", notypedict(info)))
+        proto.send_now(Packet("hello", notypedict(info)))
 
     def get_all_info(self, callback: Callable, proto: SocketProtocol | None = None, *args):
         start = monotonic()

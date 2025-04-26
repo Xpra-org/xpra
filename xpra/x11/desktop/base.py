@@ -205,7 +205,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         log("contents changed on %s: %s", window, event)
         self.refresh_window_area(window, event.x, event.y, event.width, event.height)
 
-    def _set_window_state(self, proto, wid: int, window, new_window_state) -> list[str]:
+    def _set_window_state(self, proto, wid: int, window, new_window_state: dict) -> list[str]:
         if not new_window_state:
             return []
         metadatalog("set_window_state%s", (proto, wid, window, new_window_state))
@@ -236,9 +236,11 @@ class DesktopServerBase(DesktopServerBaseClass):
         geomlog("client mapped window %s - %s, at: %s", wid, window, (x, y, w, h))
         self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet) >= 8:
-            self._set_window_state(proto, wid, window, packet[7])
+            state = packet.get_dict(7)
+            self._set_window_state(proto, wid, window, state)
         if len(packet) >= 7:
-            self._set_client_properties(proto, wid, window, packet[6])
+            props = packet.get_dict(6)
+            self._set_client_properties(proto, wid, window, props)
         self.refresh_window_area(window, 0, 0, w, h)
 
     def _process_unmap_window(self, proto, packet: Packet) -> None:
@@ -250,7 +252,8 @@ class DesktopServerBase(DesktopServerBaseClass):
         if len(packet) >= 4:
             # optional window_state added in 0.15 to update flags
             # during iconification events:
-            self._set_window_state(proto, wid, window, packet[3])
+            state = packet.get_dict(3)
+            self._set_window_state(proto, wid, window, state)
         assert not window.is_OR()
         self._window_mapped_at(proto, wid, window)
         # TODO: handle inconification?
@@ -264,27 +267,28 @@ class DesktopServerBase(DesktopServerBaseClass):
         h = packet.get_u16(5)
         if len(packet) >= 13 and features.pointer and not self.readonly:
             pwid = packet.get_wid(10)
-            pointer = packet[11]
-            modifiers = packet[12]
+            pointer = packet.get_ints(11)
+            modifiers = packet.get_strs(12)
             device_id = -1
             if self.process_mouse_common(proto, device_id, pwid, pointer):
                 self._update_modifiers(proto, wid, modifiers)
         # some "configure-window" packets are only meant for metadata updates:
-        skip_geometry = len(packet) >= 10 and packet[9]
+        skip_geometry = len(packet) >= 10 and packet.get_bool(9)
         window = self._id_to_window.get(wid)
         if not window:
             geomlog("cannot map window %s: already removed!", wid)
             return
         damage = False
         if len(packet) >= 9:
-            damage = bool(self._set_window_state(proto, wid, window, packet[8]))
+            state = packet.get_dict(8)
+            damage = bool(self._set_window_state(proto, wid, window, state))
         if not skip_geometry and not self.readonly:
             owx, owy, oww, owh = window.get_geometry()
             geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], (owx, owy, oww, owh))
             if oww != w or owh != h:
                 window.resize(w, h)
         if len(packet) >= 7:
-            cprops = packet[6]
+            cprops = packet.get_dict(6)
             if cprops:
                 metadatalog("window client properties updates: %s", cprops)
                 self._set_client_properties(proto, wid, window, cprops)
@@ -372,4 +376,4 @@ class DesktopServerBase(DesktopServerBaseClass):
             # tile them horizontally:
             offset_x += w
             offset_y += 0
-        return self.make_screenshot_packet_from_regions(regions)
+        return Packet(*self.make_screenshot_packet_from_regions(regions))

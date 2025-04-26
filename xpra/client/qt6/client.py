@@ -126,10 +126,11 @@ class Qt6Client:
             self.process_packet(packet)
 
     def process_packet(self, packet: Packet) -> None:
-        packet_type_fn_name = str(packet[0]).replace("-", "_")
+        packet_type = packet.get_type()
+        packet_type_fn_name = packet_type.replace("-", "_")
         meth = getattr(self, f"_process_{packet_type_fn_name}", None)
         if not meth:
-            netlog.warn(f"Warning: missing handler for {packet[0]!r}")
+            netlog.warn(f"Warning: missing handler for {packet_type!r}")
             netlog("packet=%r", packet)
             return
         meth(packet)
@@ -188,7 +189,7 @@ class Qt6Client:
         width = packet.get_i16(4)
         height = packet.get_i16(5)
         coding = packet.get_str(6)
-        data = packet[7]
+        data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)
         rowstride = packet.get_u32(9)
         window = self.windows.get(wid)
@@ -205,7 +206,7 @@ class Qt6Client:
 
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
-        metadata = packet[2]
+        metadata = packet.get_dict(2)
         log.info(f"window {wid}: {metadata}")
 
     def update_focus(self, wid=0) -> None:

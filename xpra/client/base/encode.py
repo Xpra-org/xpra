@@ -96,7 +96,7 @@ class EncodeClient(ClientBaseClass):
 
     def _process_encode_response(self, packet: Packet) -> None:
         encoding = packet.get_str(1)
-        data = packet[2]
+        data = packet.get_buffer(2)
         options = packet.get_dict(3)
         width = packet.get_u16(4)
         height = packet.get_u16(5)

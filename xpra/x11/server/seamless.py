@@ -807,7 +807,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         for ss in self.window_sources():
             ss.restack_window(wid, window, detail, sibling)
 
-    def _set_window_state(self, proto, wid: int, window, new_window_state) -> Sequence[str]:
+    def _set_window_state(self, proto, wid: int, window, new_window_state: dict) -> Sequence[str]:
         if proto not in self._server_sources:
             return ()
         if not new_window_state:
@@ -903,7 +903,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             self.set_ui_driver(ss)
         if self.ui_driver == ss.uuid or not window.get_property("shown"):
             if len(packet) >= 8:
-                self._set_window_state(proto, wid, window, packet[7])
+                state = packet.get_dict(7)
+                self._set_window_state(proto, wid, window, state)
             geometry = self.client_clamp_window(proto, wid, window, x, y, w, h)
             self.client_configure_window(window, geometry)
         self.refresh_window_area(window, 0, 0, w, h)
@@ -924,13 +925,14 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if len(packet) >= 4:
             # optional window_state added in 0.15 to update flags
             # during iconification events:
-            self._set_window_state(proto, wid, window, packet[3])
+            state = packet.get_dict(3)
+            self._set_window_state(proto, wid, window, state)
         if window.get_property("shown"):
             geomlog("client %s unmapped window %s - %s", ss, wid, window)
             for ss in self.window_sources():
                 ss.unmap_window(wid, window)
             window.unmap()
-            iconified = len(packet) >= 3 and bool(packet[2])
+            iconified = len(packet) >= 3 and packet.get_bool(2)
             if iconified and not window.get_property("iconic"):
                 window.set_property("iconic", True)
             window.hide()
@@ -983,7 +985,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if not ss:
             return
         # some "configure-window" packets are only meant for metadata updates:
-        skip_geometry = (len(packet) >= 10 and packet[9]) or window.is_OR()
+        skip_geometry = (len(packet) >= 10 and packet.get_bool(9)) or window.is_OR()
         if not skip_geometry:
             self._window_mapped_at(proto, wid, window, (x, y, w, h))
         if len(packet) >= 7:
@@ -1008,9 +1010,9 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if is_ui_driver or size_changed or not shown:
             damage = False
             if is_ui_driver and len(packet) >= 13 and features.pointer and not self.readonly:
-                pwid = packet[10]
-                pointer = packet[11]
-                modifiers = packet[12]
+                pwid = packet.get_wid(10)
+                pointer = packet.get_ints(11)
+                modifiers = packet.get_strs(12)
                 if pwid == wid and window.is_OR():
                     # some clients may send the OR window wid
                     # this causes focus issues (see #1999)
@@ -1034,14 +1036,15 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     return
                 self.last_client_configure_event = monotonic()
                 if is_ui_driver and len(packet) >= 9:
-                    changes = self._set_window_state(proto, wid, window, packet[8])
+                    state = packet.get_dict(8)
+                    changes = self._set_window_state(proto, wid, window, state)
                     if changes:
                         damage = True
                 if not skip_geometry:
                     cg = window.get_property("client-geometry")
                     resize_counter = 0
                     if len(packet) >= 8:
-                        resize_counter = packet[7]
+                        resize_counter = packet.get_u64(7)
                     geomlog("_process_configure_window(%s) old window geometry: %s", packet[1:], cg)
                     geometry = self.client_clamp_window(proto, wid, window, x, y, w, h, resize_counter)
                     self.client_configure_window(window, geometry, resize_counter)
@@ -1348,7 +1351,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 cr.fill()
         return False
 
-    def do_make_screenshot_packet(self):
+    def do_make_screenshot_packet(self) -> Packet:
         log("grabbing screenshot")
         regions = []
         OR_regions = []
@@ -1385,7 +1388,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             else:
                 regions.append(item)
         log("screenshot: found regions=%s, OR_regions=%s", len(regions), len(OR_regions))
-        return self.make_screenshot_packet_from_regions(OR_regions + regions)
+        return Packet(*self.make_screenshot_packet_from_regions(OR_regions + regions))
 
     def make_dbus_server(self):
         from xpra.x11.dbus.x11_dbus_server import X11_DBUS_Server

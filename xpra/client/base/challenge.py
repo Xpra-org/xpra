@@ -17,7 +17,7 @@ from xpra.util.io import use_gui_prompt
 from xpra.util.env import envbool
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.thread import start_thread
-from xpra.util.str_fn import strtobytes, std, obsc, hexstr
+from xpra.util.str_fn import std, obsc, hexstr
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import gi_import
@@ -150,7 +150,7 @@ class ChallengeClient(StubClientMixin):
         while self.challenge_handlers:
             handler = self.pop_challenge_handler(digest)
             try:
-                challenge = strtobytes(packet[1])
+                challenge = packet.get_bytes(1)
                 prompt = "password"
                 if len(packet) >= 6:
                     prompt = std(packet.get_str(5), extras="-,./: '")
@@ -227,7 +227,7 @@ class ChallengeClient(StubClientMixin):
         p = self._protocol
         if not p:
             return False
-        digest = str(packet[3]).split(":", 1)[0]
+        digest = packet.get_str(3).split(":", 1)[0]
         # don't send XORed password unencrypted:
         if digest in ("xor", "des"):
             # verify that the connection is already encrypted,
@@ -244,7 +244,7 @@ class ChallengeClient(StubClientMixin):
                 return False
         salt_digest = "xor"
         if len(packet) >= 5:
-            salt_digest = str(packet[4])
+            salt_digest = packet.get_str(4)
         if salt_digest in ("xor", "des"):
             self.auth_error(ExitCode.INCOMPATIBLE_VERSION, f"server uses legacy salt digest {salt_digest!r}")
             return False
@@ -268,7 +268,7 @@ class ChallengeClient(StubClientMixin):
         encryption = self.get_encryption()
         if encryption:
             assert len(packet) >= 3, "challenge does not contain encryption details to use for the response"
-            server_cipher = typedict(packet[2])
+            server_cipher = typedict(packet.get_dict(2))
             key = self.get_encryption_key()
             if not self.set_server_encryption(server_cipher, key):
                 return
@@ -281,7 +281,7 @@ class ChallengeClient(StubClientMixin):
         password = value
         # all server versions support a client salt,
         # they also tell us which digest to use:
-        server_salt = strtobytes(packet[1])
+        server_salt = packet.get_bytes(1)
         digest = packet.get_str(3)
         actual_digest = digest.split(":", 1)[0]
         if actual_digest == "des":

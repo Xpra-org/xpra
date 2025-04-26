@@ -8,7 +8,7 @@ from typing import Any
 from time import monotonic
 
 from xpra.client.base.stub_client_mixin import StubClientMixin
-from xpra.net.common import PacketElement
+from xpra.net.common import Packet, PacketElement
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
 from xpra.os_util import gi_import
@@ -31,8 +31,8 @@ class PointerClient(StubClientMixin):
     def __init__(self):
         self._mouse_position_delay = 5
         self._pointer_sequence = {}
-        self._mouse_position = None
-        self._mouse_position_pending = None
+        self._mouse_position: Packet | None = None
+        self._mouse_position_pending: Packet | None = None
         self._mouse_position_send_time = 0
         self._mouse_position_delay = MOUSE_DELAY
         self._mouse_position_timer = 0
@@ -65,7 +65,7 @@ class PointerClient(StubClientMixin):
     def send_positional(self, packet_type: str, *parts: PacketElement) -> None:
         # packets that include the mouse position data
         # we can cancel the pending position packets
-        packet = (packet_type, *parts)
+        packet = Packet(packet_type, *parts)
         self._ordinary_packets.append(packet)
         self._mouse_position = None
         self._mouse_position_pending = None
@@ -89,10 +89,10 @@ class PointerClient(StubClientMixin):
             if buttons is not None:
                 attrs["buttons"] = buttons
             seq = self.next_pointer_sequence(device_id)
-            packet = ("pointer", device_id, seq, wid, pos, attrs)
+            packet = Packet("pointer", device_id, seq, wid, pos, attrs)
         else:
             # pre v5 packet format:
-            packet = ("pointer-position", wid, pos, modifiers or (), buttons or ())
+            packet = Packet("pointer-position", wid, pos, modifiers or (), buttons or ())
             if props:
                 packet += props.values()
         if self._mouse_position_timer:

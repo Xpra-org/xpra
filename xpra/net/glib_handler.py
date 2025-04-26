@@ -8,8 +8,7 @@ from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.os_util import gi_import
-from xpra.net.common import may_log_packet
-from xpra.net.common import ServerPacketHandlerType
+from xpra.net.common import may_log_packet, Packet, ServerPacketHandlerType
 from xpra.log import Logger
 
 log = Logger("server")
@@ -61,11 +60,11 @@ class GLibPacketHandler:
             handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
             self.add_packet_handler(packet_type, handler, main_thread)
 
-    def add_legacy_alias(self, legacy_name, new_name) -> None:
+    def add_legacy_alias(self, legacy_name: str, new_name: str) -> None:
         self.packet_alias[legacy_name] = new_name
 
-    def dispatch_packet(self, proto, packet, authenticated=False) -> None:
-        packet_type = str(packet[0])
+    def dispatch_packet(self, proto, packet: Packet, authenticated=False) -> None:
+        packet_type = packet.get_type()
         packet_type = self.packet_alias.get(packet_type, packet_type)
         handler: Callable = noop
 
@@ -102,14 +101,14 @@ class GLibPacketHandler:
             log.error(f" using {handler}", exc_info=True)
 
     @staticmethod
-    def call_packet_handler(handler: Callable, proto, packet) -> None:
+    def call_packet_handler(handler: Callable, proto, packet: Packet) -> None:
         handler(proto, packet)
 
     @staticmethod
-    def handle_invalid_packet(proto, packet) -> None:
+    def handle_invalid_packet(proto, packet: Packet) -> None:
         if proto.is_closed():
             return
-        packet_type = str(packet[0])
+        packet_type = packet.get_type()
         log("invalid packet: %s", packet)
         log.error(f"Error: unknown or invalid packet type {packet_type!r}")
         log.error(f" received from {proto}")

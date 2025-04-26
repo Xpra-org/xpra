@@ -95,7 +95,11 @@ class PingConnection(StubClientConnection):
         log(f"ping: sending echo for time={time_to_echo} and {sid=}")
 
     def process_ping_echo(self, packet) -> None:
-        echoedtime, l1, l2, l3, server_ping_latency = packet[1:6]
+        echoedtime = packet.get_u64(1)
+        l1 = packet.get_u64(2)
+        l2 = packet.get_u64(3)
+        l3 = packet.get_u64(4)
+        server_ping_latency = packet.get_u64(5)
         timer = self.check_ping_echo_timers.pop(echoedtime, None)
         if timer:
             GLib.source_remove(timer)

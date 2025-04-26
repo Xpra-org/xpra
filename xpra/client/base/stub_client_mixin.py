@@ -9,7 +9,7 @@ from typing import Any, NoReturn
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.compression import Compressed
-from xpra.net.common import PacketHandlerType
+from xpra.net.common import PacketHandlerType, PacketElement
 
 
 class StubClientMixin:
@@ -51,7 +51,7 @@ class StubClientMixin:
         Send a packet to the server, dummy implementation.
         """
 
-    def send_now(self, *parts) -> None:
+    def send_now(self, packet_type: str, *parts: PacketElement) -> None:
         """
         Send a packet to the server,
         this takes precedence over packets sent via send().

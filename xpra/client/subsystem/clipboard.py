@@ -290,7 +290,7 @@ class ClipboardClient(StubClientMixin):
         hc.enable_selections(self.server_clipboard_selections)
         return hc
 
-    def clipboard_send(self, *parts: PacketElement) -> None:
+    def clipboard_send(self, packet_type: str, *parts: PacketElement) -> None:
         log("clipboard_send: %r", parts[0])
         if not self.clipboard_enabled:
             log("clipboard is disabled, not sending clipboard packet")
@@ -302,7 +302,7 @@ class ClipboardClient(StubClientMixin):
         for i, v in enumerate(packet):
             if isinstance(v, compression.Compressible):
                 packet[i] = self.compressible_item(v)
-        self.send_now(*packet)
+        self.send_now(packet_type, *packet)
 
     def clipboard_progress(self, local_requests: int, remote_requests: int) -> None:
         log("clipboard_progress(%s, %s)", local_requests, remote_requests)

@@ -246,7 +246,7 @@ class WindowClient(StubClientMixin):
         self.max_window_size: tuple[int, int] = (0, 0)
 
         # draw thread:
-        self._draw_queue = SimpleQueue()
+        self._draw_queue = SimpleQueue[Packet]()
         self._draw_thread: Thread | None = None
         self._draw_counter: int = 0
 
@@ -1585,9 +1585,9 @@ class WindowClient(StubClientMixin):
 
     def send_damage_sequence(self, wid: int, packet_sequence: int, width: int, height: int,
                              decode_time: int, message="") -> None:
-        packet = "damage-sequence", packet_sequence, wid, width, height, decode_time, message
+        packet = packet_sequence, wid, width, height, decode_time, message
         drawlog("sending ack: %s", packet)
-        self.send_now(*packet)
+        self.send_now("damage-sequence", *packet)
 
     def _draw_thread_loop(self):
         while self.exit_code is None:
@@ -1601,18 +1601,23 @@ class WindowClient(StubClientMixin):
         self._draw_thread = None
         log("draw thread ended")
 
-    def _do_draw(self, packet) -> None:
+    def _do_draw(self, packet: Packet) -> None:
         """ this runs from the draw thread above """
-        wid = packet[1]
+        wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         if packet[0] == "eos":
             if window:
                 window.eos()
             return
-        x, y, width, height, coding, data, packet_sequence, rowstride = packet[2:10]
-        for v in (x, y, width, height, packet_sequence, rowstride):
-            assert isinstance(v, int), "expected int, found {} ({})".format(v, type(v))
-        coding = bytestostr(coding)
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        width = packet.get_u16(4)
+        height = packet.get_u16(5)
+        coding = packet.get_str(6)
+        # mmap can send a tuple, otherwise it's a buffer
+        data = packet[7]
+        packet_sequence = packet.get_u64(8)
+        rowstride = packet.get_u32(9)
         if not window:
             # window is gone
 

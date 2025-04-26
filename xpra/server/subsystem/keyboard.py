@@ -212,7 +212,7 @@ class KeyboardServer(StubServerMixin):
         wid = packet.get_wid()
         keyname = packet.get_str(2)
         pressed = packet.get_bool(3)
-        modifiers = packet[4]
+        modifiers = packet.get_strs(4)
         keyval = packet.get_u32(5)
         keystr = packet.get_str(6)
         client_keycode = packet.get_u32(7)
@@ -332,7 +332,7 @@ class KeyboardServer(StubServerMixin):
         keyname = packet.get_str(2)
         keyval = packet.get_u32(3)
         client_keycode = packet.get_u32(4)
-        modifiers = packet[5]
+        modifiers = packet.get_strs(5)
         keyname = bytestostr(keyname)
         modifiers = [bytestostr(x) for x in modifiers]
         group = 0

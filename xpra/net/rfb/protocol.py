@@ -17,7 +17,7 @@ from xpra.util.thread import make_thread, start_thread
 from xpra.util.stats import std_unit
 from xpra.net.protocol.socket_handler import force_flush_queue, exit_queue
 from xpra.net.protocol.constants import INVALID, CONNECTION_LOST
-from xpra.net.common import ConnectionClosedException  # @UndefinedVariable (pydev false positive)
+from xpra.net.common import Packet, ConnectionClosedException  # @UndefinedVariable (pydev false positive)
 from xpra.net.bytestreams import ABORT
 from xpra.net.rfb.const import RFBClientMessage, CLIENT_PACKET_TYPE_STR, PACKET_STRUCT
 from xpra.log import Logger
@@ -70,23 +70,23 @@ class RFBProtocol:
         self.send(b"RFB 003.008\n")
 
     # noinspection PyMethodMayBeStatic
-    def _parse_invalid(self, packet) -> int:
-        return len(packet)
+    def _parse_invalid(self, rfbdata) -> int:
+        return len(rfbdata)
 
-    def _parse_protocol_handshake(self, packet) -> int:
-        log(f"parse_protocol_handshake({packet})")
-        if len(packet) < 12:
+    def _parse_protocol_handshake(self, rfbdata) -> int:
+        log(f"parse_protocol_handshake({rfbdata})")
+        if len(rfbdata) < 12:
             return 0
-        if not packet.startswith(b'RFB '):
-            self.invalid_header(self, packet, "invalid RFB protocol handshake packet header")
+        if not rfbdata.startswith(b'RFB '):
+            self.invalid_header(self, rfbdata, "invalid RFB protocol handshake rfbdata header")
             return 0
-        # ie: packet==b'RFB 003.008\n'
-        protocol_version = tuple(int(x) for x in packet[4:11].split(b"."))
+        # ie: rfbdata==b'RFB 003.008\n'
+        protocol_version = tuple(int(x) for x in rfbdata[4:11].split(b"."))
         if protocol_version != PROTOCOL_VERSION:
             msg = b"unsupported protocol version"
             log.error(f"Error: {msg!r}")
             self.send(struct.pack(b"!BI", 0, len(msg)) + msg)
-            self.invalid(msg, packet)
+            self.invalid(msg, rfbdata)
             return 0
         self.handshake_complete()
         return 12
@@ -94,48 +94,48 @@ class RFBProtocol:
     def handshake_complete(self) -> None:
         raise NotImplementedError
 
-    def _parse_security_handshake(self, packet) -> int:
+    def _parse_security_handshake(self, rfbdata) -> int:
         raise NotImplementedError
 
     def _parse_challenge(self, response) -> int:
         raise NotImplementedError
 
-    def _parse_security_result(self, packet) -> int:
+    def _parse_security_result(self, rfbdata) -> int:
         raise NotImplementedError
 
-    def _parse_rfb(self, packet) -> int:
+    def _parse_rfb(self, rfbdata) -> int:
         try:
-            ptype = ord(packet[0])
+            ptype = ord(rfbdata[0])
         except TypeError:
-            ptype = packet[0]
+            ptype = rfbdata[0]
         packet_type = CLIENT_PACKET_TYPE_STR.get(ptype)
         if not packet_type:
-            self.invalid(f"unknown RFB packet type: {ptype:x}", packet)
+            self.invalid(f"unknown RFB packet type: {ptype:x}", rfbdata)
             return 0
         s = PACKET_STRUCT.get(ptype)  # ie: Struct("!BBBB")
         if not s:
-            self.invalid(f"RFB packet type {packet_type!r} is not supported", packet)
+            self.invalid(f"RFB rfbdata type {packet_type!r} is not supported", rfbdata)
             return 0
-        if len(packet) < s.size:
+        if len(rfbdata) < s.size:
             return 0
         size = s.size
-        values = list(s.unpack(packet[:size]))
+        values = list(s.unpack(rfbdata[:size]))
         values[0] = packet_type
         # some packets require parsing extra data:
         if ptype == RFBClientMessage.SetEncodings:
             N = values[2]
             estruct = struct.Struct(b"!" + b"i" * N)
             size += estruct.size
-            if len(packet) < size:
+            if len(rfbdata) < size:
                 return 0
-            encodings = estruct.unpack(packet[s.size:size])
+            encodings = estruct.unpack(rfbdata[s.size:size])
             values.append(encodings)
         elif ptype == RFBClientMessage.ClientCutText:
             count = values[4]
             size += count
-            if len(packet) < size:
+            if len(rfbdata) < size:
                 return 0
-            text = packet[s.size:size]
+            text = rfbdata[s.size:size]
             values.append(text)
         self.input_packetcount += 1
         log(f"RFB packet: {packet_type}: {values[1:]}")
@@ -171,19 +171,19 @@ class RFBProtocol:
     def queue_size(self) -> int:
         return self._write_queue.qsize()
 
-    def send(self, packet) -> None:
+    def send(self, rfbdata) -> None:
         if self._closed:
             log("connection is closed already, not sending packet")
             return
         if log.is_debug_enabled():
-            size = len(packet)
+            size = len(rfbdata)
             lstr = str(size) if size <= 16 else std_unit(size)
-            log(f"send({lstr} bytes: %s..)", hexstr(packet[:16]))
+            log(f"send({lstr} bytes: %s..)", hexstr(rfbdata[:16]))
         if self.log:
-            self.log.write(f"send: {hexstr(packet)}\n")
+            self.log.write(f"send: {hexstr(rfbdata)}\n")
         if self._write_thread is None:
             self.start_write_thread()
-        self._write_queue.put(packet)
+        self._write_queue.put(rfbdata)
 
     def start_write_thread(self) -> None:
         log("rfb: starting write thread")
@@ -277,7 +277,7 @@ class RFBProtocol:
     def invalid(self, msg, data) -> None:
         log("invalid(%s, %r)", msg, data)
         self._packet_parser = self._parse_invalid
-        GLib.idle_add(self._process_packet_cb, self, [INVALID, msg, data])
+        GLib.idle_add(self._process_packet_cb, self, Packet(INVALID, msg, data))
         # Then hang up:
         GLib.timeout_add(1000, self._connection_lost, msg)
 
@@ -312,7 +312,7 @@ class RFBProtocol:
                 log.error(f"Error closing {c}", exc_info=True)
             self._conn = None
         self.terminate_queue_threads()
-        self._process_packet_cb(self, [CONNECTION_LOST])
+        self._process_packet_cb(self, Packet(CONNECTION_LOST))
         GLib.idle_add(self.clean)
         log_file = self.log
         if log_file:
