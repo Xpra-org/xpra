@@ -65,10 +65,13 @@ class PingClient(StubClientMixin):
 
     def get_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {
-            "network-state": True,
+            "ping": True,
         }
         if BACKWARDS_COMPATIBLE:
-            caps["ping-echo-sourceid"] = True
+            caps.update({
+                "network-state": True,
+                "ping-echo-sourceid": True,
+            })
         return caps
 
     def startup_complete(self) -> None:
