@@ -14,7 +14,7 @@ from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 class MixinsTest(ClientMixinTest):
 
-    def test_logging(self):
+    def test_logging(self) -> None:
         from xpra.log import Logger, is_debug_enabled
         for x in ("network", "crypto"):
             if is_debug_enabled(x):
@@ -36,7 +36,7 @@ class MixinsTest(ClientMixinTest):
         assert packet[0] == "logging", "expected logging packet but got '%s'" % (packet[0],)
         assert packet[1] == 20, "expected INFO level (20) but got %s" % (packet[1],)
         # data might be using a compressed wrapper:
-        data = getattr(packet[2], "data", packet[2])
+        data = getattr(packet[2], "data", packet[2]).decode("utf8")
         assert data == message, "expected message '%s' but got '%s'" % (message, data)
         # after cleanup, log messages should not be intercepted:
         self.packets = []
