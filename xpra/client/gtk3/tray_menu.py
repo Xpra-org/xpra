@@ -1335,6 +1335,9 @@ class GTKTrayMenu(MenuHelper):
                 self.layout_submenu.append(self.kbitem(f"{layout} - {variant}", layout, variant))
 
         kh = self.client.keyboard_helper
+        if not kh:
+            # this can happen when connection fails?
+            return
         model, layout, layouts, variant, variants, _ = kh.get_layout_spec()
         log(f"make_layoutsmenuitem() {model=}, {layout=}, {layouts=}, {variant=}, {variants=}")
         if len(layouts) > 1:
