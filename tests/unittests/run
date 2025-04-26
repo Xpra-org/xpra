@@ -26,7 +26,7 @@ PYTHON_VERSION=`$PYTHON --version | awk '{print $2}' | awk -F. '{print $1"."$2}'
 INSTALL_ROOT="$SRC_DIR/dist/python${PYTHON_VERSION}"
 rm -fr $INSTALL_ROOT
 pushd $SRC_DIR
-$PYTHON ./setup.py install --without-nvidia --without-printing --without-docs --with-scripts --with-cython_tracing --prefix=/usr --root=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
+$PYTHON ./setup.py install --without-nvidia --without-printing --without-docs --with-scripts --with-cython_tracing --${CYTHONIZE_MORE:-without}-cythonize_more --prefix=/usr --root=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
 popd
 
 # workaround for the prefix not being honoured:
