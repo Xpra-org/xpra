@@ -29,7 +29,7 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder, CSCSpec
 from xpra.codecs.loader import has_codec
-from xpra.common import roundup, MIN_VREFRESH, MAX_VREFRESH
+from xpra.common import roundup, MIN_VREFRESH, MAX_VREFRESH, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import parse_scaling_value
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, print_nested_dict
@@ -2297,8 +2297,8 @@ class WindowVideoSource(WindowSource):
             }
             coding = "scroll"
             end = monotonic()
-            packet = self.make_draw_packet(x, y, w, h,
-                                           coding, LargeStructure(coding, scrolls), 0, client_options, options)
+            bdata = LargeStructure(coding, scrolls) if BACKWARDS_COMPATIBLE else b""
+            packet = self.make_draw_packet(x, y, w, h, coding, bdata, 0, client_options, options)
             self.queue_damage_packet(packet, damage_time, process_damage_time)
             compresslog(COMPRESS_SCROLL_FMT,
                         (end-start) * 1000, w, h, x, y, self.wid, coding,

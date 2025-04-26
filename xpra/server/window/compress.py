@@ -20,7 +20,8 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
 from xpra.net.common import Packet
-from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
+from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND, \
+    BACKWARDS_COMPATIBLE
 from xpra.server.window.windowicon import WindowIconSource
 from xpra.server.window.perfstats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
@@ -2889,7 +2890,8 @@ class WindowSource(WindowIconSource):
         # send the list of chunks as both:
         # * 'chunks' metadata for newer versions
         # * overloaded 'img_data' for older versions
+        bdata = mmap_data if BACKWARDS_COMPATIBLE else b""
         return (
-            "mmap", mmap_data, {"rgb_format": pf, "chunks": mmap_data},
+            "mmap", bdata, {"rgb_format": pf, "chunks": mmap_data},
             image.get_width(), image.get_height(), image.get_rowstride(), len(pf)*8,
         )
