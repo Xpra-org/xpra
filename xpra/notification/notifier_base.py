@@ -34,11 +34,11 @@ class NotifierBase:
                 self.clean_notification(nid)
 
     def show_notify(self, dbus_id, tray, nid: NID,
-                    app_name: str, replaces_nid: NID, app_icon,
+                    app_name: str, replaces_nid: NID, app_icon: str,
                     summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         raise NotImplementedError()
 
-    def get_icon_string(self, nid: NID, app_icon, icon) -> str:
+    def get_icon_string(self, nid: NID, app_icon: str, icon) -> str:
         if app_icon and not os.path.isabs(app_icon):
             # safe to use
             return app_icon

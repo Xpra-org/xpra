@@ -39,12 +39,12 @@ class RFBServerProtocol(RFBProtocol):
             packet += struct.pack(b"B", x)
         self.send(packet)
 
-    def _parse_security_handshake(self, packet) -> int:
-        authlog("parse_security_handshake(%s)", hexstr(packet))
+    def _parse_security_handshake(self, rfbdata) -> int:
+        authlog("parse_security_handshake(%s)", hexstr(rfbdata))
         try:
-            auth = struct.unpack(b"B", packet)[0]
+            auth = struct.unpack(b"B", rfbdata)[0]
         except struct.error:
-            self._internal_error(packet, "cannot parse security handshake response '%s'" % hexstr(packet))
+            self._internal_error(rfbdata, "cannot parse security handshake response '%s'" % hexstr(rfbdata))
             return 0
         auth_str = AUTH_STR.get(auth, auth)
         if auth == RFBAuth.VNC:
@@ -58,7 +58,7 @@ class RFBServerProtocol(RFBProtocol):
             self.send(self._challenge)
             return 1
         if self._authenticator and self._authenticator.requires_challenge():
-            self.invalid_header(self, packet, "invalid security handshake response, authentication is required")
+            self.invalid_header(self, rfbdata, "invalid security handshake response, authentication is required")
             return 0
         authlog("parse_security_handshake: auth=%s, sending SecurityResult", auth_str)
         # Security Handshake, send SecurityResult Handshake
@@ -96,8 +96,8 @@ class RFBServerProtocol(RFBProtocol):
         self.send(struct.pack(b"!I", 1))
         self.close()
 
-    def _parse_security_result(self, packet) -> int:
-        self.share = packet != b"\0"
+    def _parse_security_result(self, rfbdata) -> int:
+        self.share = rfbdata != b"\0"
         authlog("parse_security_result: sharing=%s, sending ClientInit with session-name=%s",
                 self.share, self.session_name)
         # send ServerInit

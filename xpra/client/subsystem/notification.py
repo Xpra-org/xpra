@@ -153,7 +153,7 @@ class NotificationClient(StubClientMixin):
         nid = packet.get_u64(2)
         app_name = packet.get_str(3)
         replaces_nid = packet.get_u64(4)
-        app_icon = packet[5]
+        app_icon = packet.get_str(5)
         summary = packet.get_str(6)
         body = packet.get_str(7)
         expire_timeout = packet.get_u64(8)

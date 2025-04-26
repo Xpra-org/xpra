@@ -107,7 +107,7 @@ class GTKNotifier(NotifierBase):
                 x.hide_notification()
 
     def show_notify(self, dbus_id, tray, nid: NID,
-                    app_name: str, replaces_nid: NID, app_icon,
+                    app_name: str, replaces_nid: NID, app_icon: str,
                     summary: str, body: str, actions, hints, timeout, icon):
         GLib.idle_add(self.new_popup, int(nid), summary, body, actions, icon, timeout, 0 < timeout <= 600)
 

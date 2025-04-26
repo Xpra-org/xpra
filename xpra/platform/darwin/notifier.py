@@ -22,7 +22,7 @@ class OSX_Notifier(NotifierBase):
         assert self.notification_center
 
     def show_notify(self, dbus_id, tray, nid: NID,
-                    app_name: str, replaces_nid: NID, app_icon,
+                    app_name: str, replaces_nid: NID, app_icon: str,
                     summary: str, body: str, actions, hints, expire_timeout: int, icon):
         GTK_NOTIFIER = envbool("XPRA_OSX_GTK_NOTIFIER", True)
         if actions and GTK_NOTIFIER:
@@ -41,7 +41,7 @@ class OSX_Notifier(NotifierBase):
                       hints, expire_timeout, icon)
 
     def do_show_notify(self, dbus_id, tray, nid: NID, app_name: str,
-                       replaces_nid: NID, app_icon,
+                       replaces_nid: NID, app_icon: str,
                        summary: str, body: str, actions, hints, expire_timeout: int, icon):
         notification = NSUserNotification.alloc()
         notification.init()
