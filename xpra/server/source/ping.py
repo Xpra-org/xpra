@@ -101,7 +101,7 @@ class PingConnection(StubClientConnection):
         l1 = packet.get_u64(2)
         l2 = packet.get_u64(3)
         l3 = packet.get_u64(4)
-        server_ping_latency = packet.get_u64(5)
+        server_ping_latency = packet.get_i64(5)
         timer = self.check_ping_echo_timers.pop(echoedtime, None)
         if timer:
             GLib.source_remove(timer)
