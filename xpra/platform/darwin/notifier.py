@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
 from Foundation import NSUserNotificationCenter, NSUserNotification, NSUserNotificationDefaultSoundName
 
 from xpra.notification.notifier_base import NotifierBase, NID
@@ -23,7 +24,8 @@ class OSX_Notifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions, hints, expire_timeout: int, icon):
+                    summary: str, body: str,
+                    actions: Sequence[str], hints: dict, expire_timeout: int, icon):
         GTK_NOTIFIER = envbool("XPRA_OSX_GTK_NOTIFIER", True)
         if actions and GTK_NOTIFIER:
             # try to use GTK notifier if we have actions buttons to handle:

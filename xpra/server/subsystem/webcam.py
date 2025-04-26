@@ -152,7 +152,7 @@ class WebcamServer(StubServerMixin):
         encoding = packet.get_str(3)
         w = packet.get_u16(4)
         h = packet.get_u16(5)
-        data = packet[6]
+        data = packet.get_buffer(6)
         options = {}
         if len(packet) >= 8:
             options = packet.get_dict(7)

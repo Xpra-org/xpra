@@ -3,10 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util.objects import typedict
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Sequence, Callable
 
+from xpra.util.objects import typedict
 from xpra.common import NotificationID
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
@@ -46,7 +46,7 @@ class NotificationConnection(StubClientConnection):
     # notifications:
     # Utility functions for subsystem (makes notifications optional)
     def may_notify(self, nid: int | NotificationID = 0, summary: str = "", body: str = "",
-                   actions=(), hints=None, expire_timeout=10 * 1000,
+                   actions=(), hints: dict | None = None, expire_timeout=10 * 1000,
                    icon_name: str = "", user_callback: Callable | None = None) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
@@ -61,7 +61,8 @@ class NotificationConnection(StubClientConnection):
                         expire_timeout, icon, user_callback)
 
     def notify(self, dbus_id, nid: int, app_name: str, replaces_nid: int, app_icon: str,
-               summary: str, body: str, actions, hints, expire_timeout: int,
+               summary: str, body: str,
+               actions: Sequence[str], hints: dict, expire_timeout: int,
                icon, user_callback: Callable | None = None) -> bool:
         args = (dbus_id, nid, app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout, icon)
         log("notify%s types=%s", args, tuple(type(x) for x in args))

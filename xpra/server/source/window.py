@@ -209,7 +209,7 @@ class WindowsConnection(StubClientConnection):
         if self.pointer_grabs and self.hello_sent:
             self.send("pointer-ungrab", wid)
 
-    def bell(self, wid: int, device, percent: int, pitch: int, duration: int,
+    def bell(self, wid: int, device: int, percent: int, pitch: int, duration: int,
              bell_class, bell_id: int, bell_name: str) -> None:
         if not self.send_bell or self.suspended or not self.hello_sent:
             return

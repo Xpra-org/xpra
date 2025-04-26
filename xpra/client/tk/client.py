@@ -133,7 +133,7 @@ class XpraTkClient:
         netlog.info("client is connected")
 
     def _process_encodings(self, packet: Packet) -> None:
-        log(f"server encodings: {packet[1]}")
+        log(f"server encodings: {packet.get_strs(1)}")
 
     def _process_new_window(self, packet: Packet) -> None:
         self.new_window(packet)
@@ -175,7 +175,7 @@ class XpraTkClient:
         width = packet.get_i16(4)
         height = packet.get_i16(5)
         coding = packet.get_str(6)
-        data = packet[7]
+        data = packet.get_buffer(7)
         packet_sequence = packet.get_u64(8)
         rowstride = packet.get_u32(9)
         window = self.windows.get(wid)

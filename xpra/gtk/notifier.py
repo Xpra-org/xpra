@@ -18,6 +18,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
+
 from xpra.os_util import OSX, gi_import
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label, modify_fg, color_parse
@@ -108,10 +110,10 @@ class GTKNotifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions, hints, timeout, icon):
+                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout, icon):
         GLib.idle_add(self.new_popup, int(nid), summary, body, actions, icon, timeout, 0 < timeout <= 600)
 
-    def new_popup(self, nid: int, summary: str, body: str, actions: tuple, icon, timeout=10 * 1000, show_timeout=False) -> bool:
+    def new_popup(self, nid: int, summary: str, body: str, actions: Sequence[str], icon, timeout=10 * 1000, show_timeout=False) -> bool:
         """Create a new Popup instance, or update an existing one """
         existing = [p for p in self._notify_stack if p.nid == nid]
         if existing:
@@ -153,7 +155,7 @@ class GTKNotifier(NotifierBase):
 
 
 class Popup(Gtk.Window):
-    def __init__(self, stack, nid, title, message, actions, image, timeout=5, show_timeout=False):
+    def __init__(self, stack, nid, title, message, actions: Sequence[str], image, timeout=5, show_timeout=False):
         log("Popup%s", (stack, nid, title, message, actions, image, timeout, show_timeout))
         self.stack = stack
         self.nid = nid
@@ -240,7 +242,7 @@ class Popup(Gtk.Window):
         self.get_window().set_skip_pager_hint(True)
         add_close_accel(self, self.user_closed)
 
-    def set_content(self, title, message, actions=(), image=None):
+    def set_content(self, title, message, actions: Sequence[str] = (), image=None):
         self.header.set_markup("<b>%s</b>" % title)
         self.message.set_text(message)
         # remove any existing actions:

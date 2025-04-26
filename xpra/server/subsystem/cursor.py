@@ -80,7 +80,7 @@ class CursorManager(StubServerMixin):
             return {}
         with SilenceWarningsContext(DeprecationWarning):
             pos = display.get_default_screen().get_root_window().get_pointer()
-        cinfo = {"position": (pos.x, pos.y)}
+        cinfo: dict[str, Any] = {"position": (pos.x, pos.y)}
         for prop, size in {
             "default": display.get_default_cursor_size(),
             "max": tuple(display.get_maximal_cursor_size()),
@@ -97,7 +97,7 @@ class CursorManager(StubServerMixin):
         assert self.cursors, "cannot toggle send_cursors: the feature is disabled"
         ss = self.get_server_source(proto)
         if ss:
-            ss.send_cursors = bool(packet[1])
+            ss.send_cursors = packet.get_bool(1)
 
     def init_packet_handlers(self) -> None:
         self.add_packets(f"{CursorManager.PREFIX}-set")

@@ -439,7 +439,8 @@ class DisplayManager(StubServerMixin):
                 ss.vrefresh = v
         if len(packet) >= 10:
             # added in 0.16 for scaled client displays:
-            xdpi, ydpi = packet[8:10]
+            xdpi = packet.get_u16(8)
+            ydpi = packet.get_u16(9)
             if xdpi != self.xdpi or ydpi != self.ydpi:
                 self.xdpi, self.ydpi = xdpi, ydpi
                 log("new dpi: %ix%i", self.xdpi, self.ydpi)
@@ -447,9 +448,12 @@ class DisplayManager(StubServerMixin):
                 self.dpi_changed()
         if len(packet) >= 8:
             # added in 0.16 for scaled client displays:
-            ss.desktop_size_unscaled = packet[6:8]
+            dsw = packet.get_u16(6)
+            dsh = packet.get_u16(7)
+            ss.desktop_size_unscaled = (dsw, dsh)
         if len(packet) >= 6:
-            desktops, desktop_names = packet[4:6]
+            desktops = packet.get_u8(4)
+            desktop_names = packet.get_strs(5)
             ss.set_desktops(desktops, desktop_names)
             self.calculate_desktops()
         if len(packet) >= 4:

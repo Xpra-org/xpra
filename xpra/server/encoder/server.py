@@ -153,7 +153,7 @@ class EncoderServer(ServerBase):
             return
         input_coding = packet.get_str(1)
         pixel_format = packet.get_str(2)
-        raw_data = packet[3]
+        raw_data = packet.get_buffer(3)
         width = packet.get_u16(4)
         height = packet.get_u16(5)
         rowstride = packet.get_u32(6)
@@ -225,7 +225,7 @@ class EncoderServer(ServerBase):
             return
         finally:
             free()
-        packet = ["encode-response", coding, bdata, client_options, width, height, stride, bpp, metadata]
+        packet = Packet("encode-response", coding, bdata, client_options, width, height, stride, bpp, metadata)
         ss.send_async(*packet)
 
     def _process_context_close(self, proto: SocketProtocol, packet: Packet) -> None:

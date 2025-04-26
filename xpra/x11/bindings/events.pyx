@@ -148,21 +148,21 @@ cdef extern from "X11/XKBlib.h":
 
 cdef extern from "X11/extensions/XKBproto.h":
     ctypedef struct XkbBellNotifyEvent:
-        int         type
-        CARD32      serial
-        Bool        send_event
-        Display*    display
-        Time        time
-        int         xkb_type
-        int         device
-        int         percent
-        int         pitch
-        int         duration
-        int         bell_class
-        int         bell_id
-        Atom        name
-        Window      window
-        Bool        event_only
+        int          type
+        CARD32       serial
+        Bool         send_event
+        Display*     display
+        Time         time
+        int          xkb_type
+        unsigned int device
+        int          percent
+        int          pitch
+        int          duration
+        unsigned int bell_class
+        unsigned int bell_id
+        Atom         name
+        Window       window
+        Bool         event_only
 
 
 cdef int CursorNotify = -1

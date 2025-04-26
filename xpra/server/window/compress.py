@@ -19,6 +19,7 @@ from xpra.os_util import POSIX, OSX, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
+from xpra.net.common import Packet
 from xpra.common import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.server.window.windowicon import WindowIconSource
 from xpra.server.window.perfstats import WindowPerformanceStatistics
@@ -2214,18 +2215,26 @@ class WindowSource(WindowIconSource):
         # queue packet for sending:
         self.queue_damage_packet(packet, damage_time, process_damage_time)
 
-    def schedule_auto_refresh(self, packet: tuple, options: typedict) -> None:
+    def schedule_auto_refresh(self, packet: Packet, options: typedict) -> None:
         if not self.can_refresh():
             self.cancel_refresh_timer()
             return
-        encoding = packet[6]
+        encoding = packet.get_str(6)
         data = packet[7]
-        region = rectangle(*packet[2:6])    # x,y,w,h
-        client_options: dict = packet[10]         # info about this packet from the encoder
-        self.do_schedule_auto_refresh(encoding, data, region, client_options, options)
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
+        region = rectangle(x, y, w, h)
+        client_options = packet.get_dict(10)         # info about this packet from the encoder
+        # don't keep hold of the compressed data when calling `do_schedule_auto_refresh`,
+        # the only thing we need from it is the scroll data:
+        scroll_data = ()
+        if encoding == "scroll" and hasattr(data, "data"):
+            scroll_data = data.data
+        self.do_schedule_auto_refresh(encoding, scroll_data, region, client_options, options)
 
-    def do_schedule_auto_refresh(self, encoding: str, data, region, client_options: dict, options: typedict) -> None:
-        assert data
+    def do_schedule_auto_refresh(self, encoding: str, scroll_data, region, client_options: dict, options: typedict) -> None:
         if self.encoding == "stream":
             # streaming mode doesn't use refresh
             return
@@ -2452,7 +2461,7 @@ class WindowSource(WindowIconSource):
             "speed"         : self.refresh_speed,
         }
 
-    def queue_damage_packet(self, packet, damage_time: float, process_damage_time: float) -> None:
+    def queue_damage_packet(self, packet: Packet, damage_time: float, process_damage_time: float) -> None:
         """
             Adds the given packet to the packet_queue,
             (warning: this runs from the non-UI 'encode' thread)
@@ -2462,9 +2471,12 @@ class WindowSource(WindowIconSource):
             - damage latency (via a callback once the packet is actually sent)
         """
         # packet = ["draw", wid, x, y, w, h, coding, data, self._damage_packet_sequence, rowstride, client_options]
-        width = int(packet[4])
-        height = int(packet[5])
-        coding, data, damage_packet_sequence, _, client_options = packet[6:11]
+        width = packet.get_u16(4)
+        height = packet.get_u16(5)
+        coding = packet.get_str(6)
+        data = packet[7]
+        damage_packet_sequence = packet.get_u64(8)
+        client_options = packet.get_dict(10)
         actual_batch_delay = process_damage_time-damage_time
         now = monotonic()
         pixcount = width * height
@@ -2481,10 +2493,18 @@ class WindowSource(WindowIconSource):
             self.save_update(packet, damage_time)
         self.queue_packet(packet, self.wid, pixcount, client_options.get("flush", 0) > 0)
 
-    def save_update(self, packet: tuple, damage_time: float) -> None:
+    def save_update(self, packet: Packet, damage_time: float) -> None:
         import json
         from xpra.util.str_fn import memoryview_to_bytes
-        x, y, w, h, coding, data, damage_packet_sequence, stride, client_options = packet[2:11]
+        x = packet.get_i16(2)
+        y = packet.get_i16(3)
+        w = packet.get_u16(4)
+        h = packet.get_u16(5)
+        coding = packet.get_str(6)
+        data = packet[7]    # packet.get_buffer(7) bit not for scroll.. see #4496
+        damage_packet_sequence = packet.get_u64(8)
+        stride = packet.get_u32(9)
+        client_options = packet.get_dict(10)
         if damage_time == 0:
             compresslog.warn(f"not saving packet for {damage_time=}: {coding}, {client_options}")
             return
@@ -2713,7 +2733,7 @@ class WindowSource(WindowIconSource):
 
     def make_data_packet(self, damage_time: float, process_damage_time: float,
                          image: ImageWrapper, coding: str, sequence: int,
-                         options: typedict, flush: int = 0) -> tuple | None:
+                         options: typedict, flush: int = 0) -> Packet | None:
         """
             Picture encoding - non-UI thread.
             Converts a damage item picked from the 'compression_work_queue'
@@ -2799,7 +2819,7 @@ class WindowSource(WindowIconSource):
         return self.make_draw_packet(x, y, outw, outh, coding, data, outstride, client_options, options)
 
     def make_draw_packet(self, x: int, y: int, outw: int, outh: int,
-                         coding: str, data, outstride: int, client_options, options) -> tuple:
+                         coding: str, data, outstride: int, client_options, options) -> Packet:
         if not isinstance(coding, str):
             raise RuntimeError(f"invalid type for encoding: {coding} ({type(coding)})")
         for v in (x, y, outw, outh, outstride):
@@ -2809,8 +2829,8 @@ class WindowSource(WindowIconSource):
             ws = options.get("window-size")
             if ws:
                 client_options["window-size"] = ws
-        packet = ("draw", self.wid, x, y, outw, outh, coding, data,
-                  self._damage_packet_sequence, outstride, client_options)
+        packet = Packet("draw", self.wid, x, y, outw, outh, coding, data,
+                        self._damage_packet_sequence, outstride, client_options)
         self.global_statistics.packet_count += 1
         self.statistics.packet_count += 1
         self._damage_packet_sequence += 1

@@ -236,7 +236,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             nid = NotificationID.NEW_USER
             title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
             body = "\n".join(ss.get_connect_info())
-            actions: list = []
+            actions: Sequence[str] = ()
             hints: dict[str, Any] = {}
             icon_filename = os.path.join(get_icon_dir(), "user.png")
             from xpra.notification.common import parse_image_path
@@ -255,7 +255,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         notifylog("do_notify_startup%s", (title, body, replaces_nid))
         if self.notifier:
             tray = self.get_notification_tray()  # pylint: disable=assignment-from-none
-            actions = []
+            actions: Sequence[str] = ()
             hints = {}
             icon_filename = os.path.join(get_icon_dir(), "server-connected.png")
             from xpra.notification.common import parse_image_path

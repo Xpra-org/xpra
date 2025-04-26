@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.notification.notifier_base import NotifierBase, log, NID
@@ -45,7 +46,8 @@ class Win32_Notifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid: NID,
                     app_name: str, replaces_nid: NID,
-                    app_icon: str, summary: str, body: str, actions, hints, expire_timeout: int, icon):
+                    app_icon: str, summary: str, body: str,
+                    actions: Sequence[str], hints: dict, expire_timeout: int, icon):
         if not tray:
             log.warn("Warning: cannot show notifications without a system tray")
             return

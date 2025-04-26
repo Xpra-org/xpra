@@ -71,7 +71,7 @@ class DBUS_Notifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions, hints, timeout: int, icon) -> None:
+                    summary: str, body: str, actions, hints: dict, timeout: int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
         if not self.dbusnotify:

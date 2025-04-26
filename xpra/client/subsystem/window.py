@@ -420,7 +420,7 @@ class WindowClient(StubClientMixin):
             modal = w._metadata.boolget("modal", False)
             w.set_modal(modal)
 
-    def window_bell(self, window, device, percent: int, pitch: int, duration: int, bell_class,
+    def window_bell(self, window, device: int, percent: int, pitch: int, duration: int, bell_class,
                     bell_id: int, bell_name: str) -> None:
         raise NotImplementedError()
 
@@ -919,7 +919,7 @@ class WindowClient(StubClientMixin):
         bw, bh = w, h
         client_properties = {}
         if len(packet) >= 8:
-            client_properties = dict(packet[7])
+            client_properties = packet.get_dict(7)
         geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s",
                 wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (bw, bh))
         return self.make_new_window(wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties)
@@ -1227,7 +1227,11 @@ class WindowClient(StubClientMixin):
         wid = packet.get_wid()
         window = self._id_to_window.get(wid)
         if window:
-            x_root, y_root, direction, button, source_indication = packet[2:7]
+            x_root = packet.get_i16(2)
+            y_root = packet.get_i16(3)
+            direction = packet.get_i8(4)
+            button = packet.get_u8(5)
+            source_indication = packet.get_i8(6)
             window.initiate_moveresize(self.sx(x_root), self.sy(y_root), direction, button, source_indication)
 
     def _process_window_metadata(self, packet: Packet) -> None:
@@ -1240,7 +1244,11 @@ class WindowClient(StubClientMixin):
             window.update_metadata(metadata)
 
     def _process_window_icon(self, packet: Packet) -> None:
-        wid, w, h, coding, data = packet[1:6]
+        wid = packet.get_wid()
+        w = packet.get_u16(2)
+        h = packet.get_u16(3)
+        coding = packet.get_str(4)
+        data = packet.get_bytes(5)
         img = self._window_icon_image(wid, w, h, coding, data)
         window = self._id_to_window.get(wid)
         iconlog("_process_window_icon(%s, %s, %s, %s, %s bytes) image=%s, window=%s",
@@ -1418,7 +1426,14 @@ class WindowClient(StubClientMixin):
     def _process_bell(self, packet: Packet) -> None:
         if not self.bell_enabled:
             return
-        wid, device, percent, pitch, duration, bell_class, bell_id, bell_name = packet[1:9]
+        wid = packet.get_wid()
+        device = packet.get_u16(2)
+        percent = packet.get_i8(3)
+        pitch = packet.get_i32(4)
+        duration = packet.get_i32(5)
+        bell_class = packet.get_u32(6)
+        bell_id = packet.get_u32(7)
+        bell_name = packet.get_str(8)
         window = self._id_to_window.get(wid)
         self.window_bell(window, device, percent, pitch, duration, bell_class, bell_id, bell_name)
 
@@ -1614,7 +1629,7 @@ class WindowClient(StubClientMixin):
         width = packet.get_u16(4)
         height = packet.get_u16(5)
         coding = packet.get_str(6)
-        # mmap can send a tuple, otherwise it's a buffer
+        # mmap can send a tuple, otherwise it's a buffer, see #4496:
         data = packet[7]
         packet_sequence = packet.get_u64(8)
         rowstride = packet.get_u32(9)

@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.os_util import gi_import
 from xpra.notification.notifier_base import NotifierBase, NID
 
@@ -13,7 +15,7 @@ class GINotifier(NotifierBase):
 
     def show_notify(self, dbus_id, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions, hints, timeout: int, icon) -> None:
+                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout: int, icon) -> None:
         if not self.dbus_check(dbus_id):
             return
         icon_string = self.get_icon_string(nid, app_icon, icon)

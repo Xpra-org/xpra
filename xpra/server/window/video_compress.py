@@ -23,6 +23,7 @@ from xpra.server.window.compress import (
     DOWNSCALE_THRESHOLD, DOWNSCALE, TEXT_QUALITY,
     LOG_ENCODERS,
 )
+from xpra.net.common import Packet
 from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
@@ -2103,7 +2104,7 @@ class WindowVideoSource(WindowSource):
         return opts
 
     def make_draw_packet(self, x: int, y: int, w: int, h: int,
-                         coding: str, data, outstride: int, client_options: dict, options: typedict) -> tuple:
+                         coding: str, data, outstride: int, client_options: dict, options: typedict) -> Packet:
         # overridden so we can invalidate the scroll data:
         # log.error("make_draw_packet%s", (x, y, w, h, coding, "..", outstride, client_options)
         packet = super().make_draw_packet(x, y, w, h, coding, data, outstride, client_options, options)
@@ -2363,9 +2364,9 @@ class WindowVideoSource(WindowSource):
         scrolllog("scroll encoding total time: %ims", (self.last_scroll_time-start)*1000)
         free_image_wrapper(image)
 
-    def do_schedule_auto_refresh(self, encoding: str, data, region, client_options: dict, options: typedict) -> None:
+    def do_schedule_auto_refresh(self, encoding: str, scroll_data, region, client_options: dict, options: typedict) -> None:
         # for scroll encoding, data is a LargeStructure wrapper:
-        if encoding == "scroll" and hasattr(data, "data"):
+        if scroll_data:
             if not self.refresh_regions:
                 return
             # check if any pending refreshes intersect the area containing the scroll data:
@@ -2373,7 +2374,7 @@ class WindowVideoSource(WindowSource):
                 # nothing to do!
                 return
             pixels_added = 0
-            for x, y, w, h, dx, dy in data.data:
+            for x, y, w, h, dx, dy in scroll_data:
                 # the region that moved
                 src_rect = rectangle(x, y, w, h)
                 for rect in self.refresh_regions:
@@ -2392,7 +2393,7 @@ class WindowVideoSource(WindowSource):
             # if there are non-scroll packets following this one, they will
             # and if not then we're OK anyway
             return
-        super().do_schedule_auto_refresh(encoding, data, region, client_options, options)
+        super().do_schedule_auto_refresh(encoding, scroll_data, region, client_options, options)
 
     def video_fallback(self, image: ImageWrapper, options, warn=False, info="") -> tuple:
         if warn and first_time(f"non-video-{self.wid}"):

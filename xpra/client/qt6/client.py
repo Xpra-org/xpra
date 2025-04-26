@@ -147,7 +147,7 @@ class Qt6Client:
         netlog.info("client is connected")
 
     def _process_encodings(self, packet: Packet) -> None:
-        log(f"server encodings: {packet[1]}")
+        log(f"server encodings: {packet.get_strs(1)}")
 
     def _process_new_window(self, packet: Packet) -> None:
         self.new_window(packet)

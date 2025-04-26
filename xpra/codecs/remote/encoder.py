@@ -117,7 +117,7 @@ class EncoderClient(RemoteConnectionClient):
 
     def _process_context_data(self, packet: Packet) -> None:
         seq = packet.get_u64(1)
-        bdata = packet[2]
+        bdata = packet.get_buffer(2)
         client_options = packet.get_dict(3)
         encoder = self.encoders.get(seq)
         if not encoder:

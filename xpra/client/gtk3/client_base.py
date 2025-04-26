@@ -1064,7 +1064,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             Gdk.keyboard_ungrab(etime)
         self._window_with_grab = 0
 
-    def window_bell(self, window, device, percent: int, pitch: int, duration: int, bell_class,
+    def window_bell(self, window, device: int, percent: int, pitch: int, duration: int, bell_class,
                     bell_id: int, bell_name: str) -> None:
         gdkwindow = None
         if window:

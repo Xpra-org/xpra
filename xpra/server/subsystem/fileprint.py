@@ -161,7 +161,7 @@ class FilePrintServer(StubServerMixin):
             printlog.error(" %s", [repr_ellipsized(x) for x in packet])
             return
         filename = packet.get_str(1)
-        file_data = packet[2]
+        file_data = packet.get_bytes(2)
         mimetype, source_uuid, title, printer, no_copies, print_options = "", "*", "unnamed document", "", 1, ""
         if len(packet) >= 4:
             mimetype = packet.get_str(3)

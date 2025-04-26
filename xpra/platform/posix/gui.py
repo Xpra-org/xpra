@@ -293,7 +293,7 @@ def system_bell(*args) -> bool:
         return False
     from xpra.gtk.error import XError
 
-    def x11_bell():
+    def x11_bell() -> None:
         from xpra.x11.common import system_bell as x11_system_bell
         if not x11_system_bell(*args):
             global device_bell

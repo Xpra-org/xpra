@@ -142,7 +142,7 @@ class PointerServer(StubServerMixin):
         device_id = packet.get_u64(1)
         seq = packet.get_u64(2)
         wid = packet.get_wid(3)
-        pdata = packet[4]
+        pdata = packet.get_ints(4)
         props = packet.get_dict(5)
         if device_id >= 0:
             highest_seq = self.pointer_sequence.get(device_id, 0)
@@ -172,7 +172,7 @@ class PointerServer(StubServerMixin):
         if not hasattr(ss, "update_mouse"):
             return
         wid = packet.get_wid()
-        pdata = packet[2]
+        pdata = packet.get_ints(2)
         modifiers = packet.get_strs(3)
         pointer = pdata[:2]
         if len(pdata) >= 4:

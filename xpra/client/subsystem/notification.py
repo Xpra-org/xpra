@@ -110,8 +110,8 @@ class NotificationClient(StubClientMixin):
             return ()
         return get_backends()
 
-    def do_notify(self, nid: int | NotificationID, summary: str, body: str, actions=(),
-                  hints=None, expire_timeout=10 * 1000, icon_name: str = "", callback=noop) -> None:
+    def do_notify(self, nid: int | NotificationID, summary: str, body: str, actions: Sequence[str] = (),
+                  hints: dict | None = None, expire_timeout=10 * 1000, icon_name: str = "", callback=noop) -> None:
         log("do_notify%s client_supports_notifications=%s, notifier=%s",
             (nid, summary, body, actions, hints, expire_timeout, icon_name),
             self.client_supports_notifications, self.notifier)
@@ -158,11 +158,13 @@ class NotificationClient(StubClientMixin):
         body = packet.get_str(7)
         expire_timeout = packet.get_u64(8)
         icon = None
-        actions, hints = [], {}
+        actions: Sequence[str] = ()
+        hints = {}
         if len(packet) >= 10:
             icon = packet[9]
         if len(packet) >= 12:
-            actions, hints = packet[10], packet[11]
+            actions = packet.get_strs(10)
+            hints = packet.get_dict(11)
         # note: if the server doesn't support notification forwarding,
         # it can still send us the messages (via xpra control or the dbus interface)
         log("_process_notification_show(%s) notifier=%s, server_notifications=%s",
