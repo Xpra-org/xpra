@@ -8,10 +8,10 @@ from collections.abc import Callable
 
 from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
-from xpra.net.common import may_log_packet, Packet, ServerPacketHandlerType
+from xpra.net.common import may_log_packet, Packet, PacketHandlerType
 from xpra.log import Logger
 
-log = Logger("server")
+log = Logger("network")
 
 GLib = gi_import("GLib")
 
@@ -41,11 +41,11 @@ class GLibPacketHandler:
             ):
                 d.pop(k, None)
 
-    def add_packet_handlers(self, defs: dict[str, ServerPacketHandlerType], main_thread=False) -> None:
+    def add_packet_handlers(self, defs: dict[str, PacketHandlerType], main_thread=False) -> None:
         for packet_type, handler in defs.items():
             self.add_packet_handler(packet_type, handler, main_thread)
 
-    def add_packet_handler(self, packet_type: str, handler: ServerPacketHandlerType, main_thread=False) -> None:
+    def add_packet_handler(self, packet_type: str, handler: PacketHandlerType, main_thread=False) -> None:
         # replace any previously defined handlers:
         self.remove_packet_handlers(packet_type)
         log("add_packet_handler%s", (packet_type, handler, main_thread))
@@ -102,7 +102,7 @@ class GLibPacketHandler:
             log.error(f" using {handler}", exc_info=True)
 
     @staticmethod
-    def call_packet_handler(handler: Callable, proto, packet: Packet) -> None:
+    def call_packet_handler(handler: PacketHandlerType, proto, packet: Packet) -> None:
         handler(proto, packet)
 
     @staticmethod

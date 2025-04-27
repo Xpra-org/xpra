@@ -9,7 +9,7 @@ from typing import Any, NoReturn
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.compression import Compressed
-from xpra.net.common import PacketHandlerType, PacketElement
+from xpra.net.common import ClientPacketHandlerType, PacketElement
 
 
 class StubClientMixin:
@@ -119,11 +119,11 @@ class StubClientMixin:
         Register the packet types that this mixin can handle after authentication.
         """
 
-    def add_packet_handler(self, packet_type: str, handler: PacketHandlerType,
+    def add_packet_handler(self, packet_type: str, handler: ClientPacketHandlerType,
                            main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
 
-    def add_packet_handlers(self, defs: dict[str, PacketHandlerType], main_thread=True) -> None:  # pragma: no cover
+    def add_packet_handlers(self, defs: dict[str, ClientPacketHandlerType], main_thread=True) -> None:  # pragma: no cover
         raise NotImplementedError()
 
     def show_progress(self, pct, text="") -> None:

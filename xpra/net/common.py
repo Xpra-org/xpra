@@ -180,10 +180,9 @@ class Packet(Sequence):
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
 
-# client packet handler:
-PacketHandlerType = Callable[[Packet], None]
-# server packet handler:
-ServerPacketHandlerType = Callable[[Any, Packet], None]
+PacketHandlerType: TypeAlias = Callable[[Any, Packet], None]
+ClientPacketHandlerType: TypeAlias = Callable[[Packet], None]
+ServerPacketHandlerType: TypeAlias = PacketHandlerType
 
 NetPacketType: TypeAlias = tuple[int, int, int, SizedBuffer]
 
