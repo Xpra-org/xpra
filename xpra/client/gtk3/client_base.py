@@ -708,7 +708,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             root_xid = self.get_root_xid()
             send_wm_request_frame_extents(root_xid, xid)
 
-    def get_frame_extents(self, window) -> dict[str, Any]:
+    def get_frame_extents(self, window):
         # try native platform code first:
         x, y = window.get_position()
         w, h = window.get_size()
@@ -719,15 +719,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return v
         if not HAS_X11_BINDINGS:
             # nothing more we can do!
-            return {}
+            return None
         from xpra.x11.gtk.prop import prop_get
         gdkwin = window.get_window()
         assert gdkwin
         v = prop_get(gdkwin.get_xid(), "_NET_FRAME_EXTENTS", ["u32"], ignore_errors=False)
         framelog(f"get_frame_extents({window.get_title()})={v}")
-        if not v:
-            return {}
-        return {"frame": v}
+        return v
 
     def get_window_frame_sizes(self) -> dict[str, Any]:
         wfs = get_window_frame_sizes()

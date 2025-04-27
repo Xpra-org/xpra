@@ -9,7 +9,7 @@ import math
 import os.path
 from time import monotonic
 from urllib.parse import unquote
-from typing import Optional
+from typing import Optional, Any
 from collections.abc import Callable, Sequence
 
 from cairo import (  # pylint: disable=no-name-in-module
@@ -2237,13 +2237,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if htf:
                 self._client.update_focus(self.wid, htf)
 
-    def get_window_frame_size(self) -> tuple:
+    def get_window_frame_size(self) -> dict[str, Any]:
         frame = self._client.get_frame_extents(self)
         if not frame:
             # default to global value we may have:
             wfs = self._client.get_window_frame_sizes()
             if wfs:
-                frame = wfs.get("frame", ())
+                frame = wfs.get("frame")
         return frame
 
     def monitor_changed(self, monitor) -> None:

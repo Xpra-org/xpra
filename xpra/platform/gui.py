@@ -266,8 +266,8 @@ def get_window_max_size() -> tuple[int, int]:
     return 2 ** 15 - 1, 2 ** 15 - 1
 
 
-def get_window_frame_size(_x, _y, _w, _h) -> dict[str, Any]:
-    return {}
+def get_window_frame_size(_x, _y, _w, _h):
+    return None
 
 
 def get_window_frame_sizes() -> dict[str, Any]:
