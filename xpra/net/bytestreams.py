@@ -594,11 +594,12 @@ class SocketPeekWrapper:
 
 class SSLSocketConnection(SocketConnection):
     SSL_TIMEOUT_MESSAGES = ("The read operation timed out", "The write operation timed out")
+    SSL_ERROR_MESSAGES = ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD")
 
     def can_retry(self, e) -> bool | str:
-        if getattr(e, "library", None) == "SSL":
-            reason = getattr(e, "reason", None)
-            if reason in ("WRONG_VERSION_NUMBER", "UNEXPECTED_RECORD"):
+        if getattr(e, "library", "") == "SSL":
+            reason = getattr(e, "reason", "")
+            if reason in SSLSocketConnection.SSL_ERROR_MESSAGES:
                 return False
         message = e.args[0]
         if message in SSLSocketConnection.SSL_TIMEOUT_MESSAGES:
