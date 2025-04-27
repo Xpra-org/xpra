@@ -303,26 +303,19 @@ def do_wrap_socket(tcp_socket, context, **kwargs):
     assert tcp_socket
     ssllog = get_ssl_logger()
     ssllog("do_wrap_socket(%s, %s, %s)", tcp_socket, context, kwargs)
-    import ssl
-    if WIN32:
-        # on win32, setting the tcp socket to blocking doesn't work?
-        # we still hit the following errors that we need to retry:
-        from xpra.net import bytestreams
-        bytestreams.CAN_RETRY_EXCEPTIONS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
-    else:
-        tcp_socket.setblocking(True)
+    tcp_socket.setblocking(True)
+    from ssl import SSLEOFError
     try:
-        ssl_sock = wrap_socket(tcp_socket, **kwargs)
+        return wrap_socket(tcp_socket, **kwargs)
     except (InitExit, InitException):
         ssllog.debug("wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
         raise
+    except SSLEOFError:
+        ssllog.debug("wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
+        return None
     except Exception as e:
         ssllog.debug("wrap_socket(%s, %s)", tcp_socket, kwargs, exc_info=True)
-        ssleof_error = getattr(ssl, "SSLEOFError", None)
-        if ssleof_error and isinstance(e, ssleof_error):
-            return None
         raise InitExit(ExitCode.SSL_FAILURE, f"Cannot wrap socket {tcp_socket}: {e}") from None
-    return ssl_sock
 
 
 def ssl_retry(e, ssl_ca_certs: str) -> dict[str, Any]:

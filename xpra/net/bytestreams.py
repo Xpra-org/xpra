@@ -55,7 +55,6 @@ for x in dir(socket):
         FAMILY_STR[getattr(socket, x)] = x
 del x
 
-CAN_RETRY_EXCEPTIONS = ()
 CLOSED_EXCEPTIONS = ()
 
 
@@ -67,8 +66,6 @@ def can_retry(e) -> bool | str:
     if isinstance(e, BrokenPipeError):
         raise ConnectionClosedException(e) from None
     if isinstance(e, OSError):
-        if isinstance(e, CAN_RETRY_EXCEPTIONS):
-            return str(e)
         code = e.args[0]
         abort = ABORT.get(code, code)
         if abort is not None:
