@@ -246,7 +246,7 @@ class WindowClient(StubClientMixin):
         self.max_window_size: tuple[int, int] = (0, 0)
 
         # draw thread:
-        self._draw_queue = SimpleQueue[Packet]()
+        self._draw_queue = SimpleQueue[Packet | None]()
         self._draw_thread: Thread | None = None
         self._draw_counter: int = 0
 

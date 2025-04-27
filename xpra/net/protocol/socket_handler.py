@@ -90,7 +90,7 @@ def force_flush_queue(q: Queue) -> None:
         log("force_flush_queue(%s)", q, exc_info=True)
 
 
-def no_packet() -> [Packet, bool, bool]:
+def no_packet() -> tuple[Packet, bool, bool]:
     return Packet("closed"), False, False
 
 
