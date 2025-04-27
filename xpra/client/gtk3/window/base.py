@@ -31,6 +31,7 @@ from xpra.common import (
     MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, WORKSPACE_UNSET,
     WORKSPACE_ALL, WORKSPACE_NAMES,
 )
+from xpra.net.common import PacketElement
 from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.window_base import ClientWindowBase
 from xpra.platform.gui import (
@@ -2238,8 +2239,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if htf:
                 self._client.update_focus(self.wid, htf)
 
-    def get_window_frame_size(self) -> tuple:
-        frame = self._client.get_frame_extents(self)
+    def get_window_frame_size(self) -> Sequence[int]:
+        frame = self._client.get_frame_extents(self).get("frame", ())
         if not frame:
             # default to global value we may have:
             wfs = self._client.get_window_frame_sizes()
@@ -2358,7 +2359,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self._window_workspace = workspace
                 props["workspace"] = workspace
         sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
-        packet = ["configure-window", self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
+        packet: Sequence[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
         pwid = self.wid
         if self.is_OR():
             pwid = -1
@@ -2366,7 +2367,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         packet.append(self.get_mouse_position())
         packet.append(self._client.get_current_modifiers())
         geomlog("%s", packet)
-        self.send(*packet)
+        self.send("configure-window", *packet)
 
     def _set_backing_size(self, ww: int, wh: int) -> None:
         b = self._backing

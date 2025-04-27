@@ -5,7 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.gtk3.window_base import GTKClientWindowBase, HAS_X11_BINDINGS
+from xpra.client.gtk3.window.base import HAS_X11_BINDINGS
+from xpra.client.gtk3.window.factory import get_window_base_classes
 from xpra.gtk.widget import scaled_image
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.scripts.config import FALSE_OPTIONS
@@ -30,7 +31,11 @@ WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", True)
 WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
-class ClientWindow(GTKClientWindowBase):
+WINDOW_BASES = get_window_base_classes()
+WindowBaseClass = type("WindowBaseClass", WINDOW_BASES, {})
+
+
+class ClientWindow(WindowBaseClass):
     """
     GTK3 version of the ClientWindow class
     """
@@ -118,7 +123,7 @@ class ClientWindow(GTKClientWindowBase):
 
     def show_window_menu(self, *_args) -> None:
         if not self.menu_helper:
-            from xpra.client.gtk3.window_menu import WindowMenuHelper
+            from xpra.client.gtk3.window.menu import WindowMenuHelper
             self.menu_helper = WindowMenuHelper(self._client, self)
             self.menu_helper.build()
         self.menu_helper.popup(0, 0)
@@ -129,6 +134,7 @@ class ClientWindow(GTKClientWindowBase):
 
     def xget_u32_property(self, target, name: str) -> int:
         if HAS_X11_BINDINGS:
+            from xpra.client.gtk3.window.base import GTKClientWindowBase
             return GTKClientWindowBase.xget_u32_property(self, target, name)
         # pure Gdk lookup:
         try:

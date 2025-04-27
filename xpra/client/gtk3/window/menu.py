@@ -43,7 +43,7 @@ class WindowMenuHelper(MenuHelper):
 
     def make_infomenuitem(self) -> Gtk.ImageMenuItem:
         def show_info(*_args) -> None:
-            from xpra.client.gtk3.window_info import WindowInfo
+            from xpra.client.gtk3.window.window_info import WindowInfo
             wi = WindowInfo(self.client, self.window)
             wi.show()
 

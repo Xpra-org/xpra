@@ -80,7 +80,7 @@ VREFRESH = envint("XPRA_VREFRESH", 0)
 inject_css_overrides()
 init_display_source()
 # must come after init_display_source()
-from xpra.client.gtk3.window_base import HAS_X11_BINDINGS, XSHAPE  # noqa: E402
+from xpra.client.gtk3.window.base import HAS_X11_BINDINGS, XSHAPE  # noqa: E402
 
 
 def get_group_ref(metadata: typedict) -> str:
@@ -717,7 +717,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
     def get_window_frame_sizes(self) -> dict[str, Any]:
         wfs = get_window_frame_sizes()
         if self.frame_request_window:
-            v = self.get_frame_extents(self.frame_request_window)
+            extents = self.get_frame_extents(self.frame_request_window)
+            v = extents.get("frame", ())
             if v:
                 try:
                     wm_name = get_wm_name()  # pylint: disable=assignment-from-none
@@ -727,6 +728,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                     if len(v) == 8:
                         if first_time("invalid-frame-extents"):
                             framelog.warn(f"Warning: invalid frame extents value {v!r}")
+                            framelog.warn(" expected 8 elements but found %s", len(v))
                             if wm_name:
                                 framelog.warn(f" this is probably a bug in {wm_name!r}")
                             framelog.warn(f" using {v[4:]} instead")
@@ -739,7 +741,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                         wfs["frame"] = (l, r, t, b)
                         wfs["offset"] = (l, t)
                 except Exception as e:
-                    framelog.warn(f"Warning: invalid frame extents value {v}")
+                    framelog.warn(f"Warning: invalid frame extents value {v!r}")
                     framelog.warn(f" {e}")
                     if wm_name:
                         framelog.warn(f" this is probably a bug in {wm_name!r}")

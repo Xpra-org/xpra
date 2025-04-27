@@ -102,6 +102,22 @@ def sens_tooltip(menuitem, sensitive: bool, ontext: str, offtext: str) -> None:
     menuitem.set_tooltip_text(ontext if sensitive else offtext)
 
 
+def _hide_window(win) -> None:
+    skip_pager = win.get_skip_pager_hint()
+    skip_taskbar = win.get_skip_taskbar_hint()
+
+    def ondeiconify() -> None:
+        win.set_skip_pager_hint(skip_pager)
+        win.set_skip_taskbar_hint(skip_taskbar)
+
+    win._ondeiconify.append(ondeiconify)
+    if not skip_pager:
+        win.set_skip_pager_hint(True)
+    if not skip_taskbar:
+        win.set_skip_taskbar_hint(True)
+    win.freeze()
+
+
 class GTKTrayMenu(MenuHelper):
 
     def setup_menu(self) -> Gtk.Menu:
@@ -950,7 +966,8 @@ class GTKTrayMenu(MenuHelper):
         self.after_handshake(microphone_state)
         return microphone
 
-    def audio_submenu_activate(self, item, menu, cb: Callable) -> None:
+    @staticmethod
+    def audio_submenu_activate(item, menu, cb: Callable) -> None:
         log("audio_submenu_activate(%s, %s, %s) ignore_events=%s, active=%s",
             item, menu, cb, menu.ignore_events, item.get_active())
         if menu.ignore_events:
@@ -1496,21 +1513,6 @@ class GTKTrayMenu(MenuHelper):
     def make_minimizewindowsmenuitem(self) -> Gtk.ImageMenuItem:
         return self.handshake_menuitem("Minimize Windows", "minimize.png", None, self._minimize_all_windows)
 
-    def _hide_window(self, win) -> None:
-        skip_pager = win.get_skip_pager_hint()
-        skip_taskbar = win.get_skip_taskbar_hint()
-
-        def ondeiconify() -> None:
-            win.set_skip_pager_hint(skip_pager)
-            win.set_skip_taskbar_hint(skip_taskbar)
-
-        win._ondeiconify.append(ondeiconify)
-        if not skip_pager:
-            win.set_skip_pager_hint(True)
-        if not skip_taskbar:
-            win.set_skip_taskbar_hint(True)
-        win.freeze()
-
     def make_showhidewindowsmenuitem(self) -> Gtk.ImageMenuItem:
         def set_icon(icon_name) -> None:
             image = self.get_image(icon_name, self.menu_icon_size)
@@ -1529,7 +1531,7 @@ class GTKTrayMenu(MenuHelper):
                 showhide.set_label("Hide Windows")
             else:
                 for win in self._non_OR_windows():
-                    self._hide_window(win)
+                    _hide_window(win)
                 set_icon("eye-on.png")
                 showhide.set_label("Show Windows")
 

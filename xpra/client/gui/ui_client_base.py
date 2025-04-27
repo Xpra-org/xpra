@@ -358,7 +358,7 @@ class UIXpraClient(ClientBaseClass):
             return
         log("_process_setting_change: %s=%s", setting, Ellipsizer(value))
         # these are too big to log
-        if setting not in ("xdg-menu", "monitors", "ibus-layouts"):
+        if setting not in ("xdg-menu", "menu", "monitors", "ibus-layouts"):
             log.info("server setting changed: %s=%s", setting, repr_ellipsized(value))
         self.server_setting_changed(setting, value)
 
