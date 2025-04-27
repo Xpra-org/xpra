@@ -33,15 +33,21 @@ WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 WINDOW_BASES = get_window_base_classes()
 WindowBaseClass = type("WindowBaseClass", WINDOW_BASES, {})
+ALL_GSIGNALS = {}
+for bc in WINDOW_BASES:
+    gsignals = getattr(bc, "__gsignals__", {})
+    ALL_GSIGNALS.update(gsignals)
 
 
 class ClientWindow(WindowBaseClass):
     """
     GTK3 version of the ClientWindow class
     """
+    __gsignals__ = ALL_GSIGNALS
 
-    def init_window(self, metadata: typedict) -> None:
-        super().init_window(metadata)
+    def init_window(self, client, metadata: typedict) -> None:
+        for bc in WINDOW_BASES:
+            bc.init_window(self, client, metadata)
         self.menu_helper = None
         self.header_bar_image = None
         if self.can_use_header_bar(metadata):

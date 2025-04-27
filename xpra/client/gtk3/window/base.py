@@ -8,7 +8,6 @@
 import math
 import os.path
 from time import monotonic
-from urllib.parse import unquote
 from typing import Optional
 from collections.abc import Callable, Sequence
 
@@ -21,8 +20,8 @@ from xpra.util.system import is_Wayland, is_X11
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, first_time, ignorewarnings, IgnoreWarningsContext
-from xpra.gtk.gobject import no_arg_signal, one_arg_signal
-from xpra.gtk.util import ds_inited, get_default_root_window, GRAB_STATUS_STRING
+from xpra.gtk.gobject import no_arg_signal
+from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.gtk.keymap import KEY_TRANSLATIONS
@@ -37,7 +36,6 @@ from xpra.client.gui.window_base import ClientWindowBase
 from xpra.platform.gui import (
     set_fullscreen_monitors, set_shaded,
     add_window_hooks, remove_window_hooks,
-    pointer_grab, pointer_ungrab,
 )
 from xpra.log import Logger
 
@@ -46,7 +44,7 @@ Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 Gio = gi_import("Gio")
 
-focuslog = Logger("focus", "grab")
+focuslog = Logger("focus")
 workspacelog = Logger("workspace")
 log = Logger("window")
 keylog = Logger("keyboard")
@@ -58,7 +56,6 @@ eventslog = Logger("events")
 shapelog = Logger("shape")
 mouselog = Logger("mouse")
 geomlog = Logger("geometry")
-grablog = Logger("grab")
 draglog = Logger("dragndrop")
 alphalog = Logger("alpha")
 
@@ -257,10 +254,6 @@ WINDOW_EVENT_MASK |= Gdk.EventMask.POINTER_MOTION_MASK
 WINDOW_EVENT_MASK |= Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
 WINDOW_EVENT_MASK |= Gdk.EventMask.PROPERTY_CHANGE_MASK | Gdk.EventMask.SCROLL_MASK
 
-GRAB_EVENT_MASK: Gdk.EventMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
-GRAB_EVENT_MASK |= Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK
-GRAB_EVENT_MASK |= Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK
-
 wth = Gdk.WindowTypeHint
 ALL_WINDOW_TYPES: Sequence[Gdk.WindowTypeHint] = (
     wth.NORMAL,
@@ -355,8 +348,6 @@ def _event_buttons(event) -> list[int]:
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     __gsignals__ = {
         "state-updated": no_arg_signal,
-        "x11-focus-out-event": one_arg_signal,
-        "x11-focus-in-event": one_arg_signal,
     }
 
     # maximum size of the actual window:
@@ -364,7 +355,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     # maximum size of the backing pixel buffer:
     MAX_BACKING_DIMS = 16 * 1024, 16 * 1024
 
-    def init_window(self, metadata):
+    def init_window(self, client, metadata: typedict) -> None:
         self.init_max_window_size()
         if self._is_popup(metadata):
             window_type = Gtk.WindowType.POPUP
@@ -381,13 +372,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._current_frame_extents = None
         self._monitor = None
         self._frozen: bool = False
-        self._focus_latest = None
         self._ondeiconify: list[Callable] = []
         self._follow = None
         self._follow_handler = 0
         self._follow_position = None
         self._follow_configure = None
-        self.recheck_focus_timer: int = 0
         self.window_state_timer: int = 0
         self.send_iconify_timer: int = 0
         self.remove_pointer_overlay_timer: int = 0
@@ -398,16 +387,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # add platform hooks
         self.connect_after("realize", self.on_realize)
         self.connect("unrealize", self.on_unrealize)
-        self.connect("enter-notify-event", self.on_enter_notify_event)
-        self.connect("leave-notify-event", self.on_leave_notify_event)
         self.connect("key-press-event", self.handle_key_press_event)
         self.connect("key-release-event", self.handle_key_release_event)
         self.add_events(self.get_window_event_mask())
-        if DRAGNDROP and not self._client.readonly:
-            self.init_dragndrop()
         self.init_workspace()
-        self.init_focus()
-        ClientWindowBase.init_window(self, metadata)
+        ClientWindowBase.init_window(self, client, metadata)
 
     def init_drawing_area(self) -> None:
         widget = Gtk.DrawingArea()
@@ -471,272 +455,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:
         raise NotImplementedError()
-
-    ######################################################################
-    # drag and drop:
-    def init_dragndrop(self) -> None:
-        targets = [
-            Gtk.TargetEntry.new("text/uri-list", 0, 80),
-        ]
-        flags = Gtk.DestDefaults.MOTION | Gtk.DestDefaults.HIGHLIGHT
-        actions = Gdk.DragAction.COPY  # | Gdk.ACTION_LINK
-        self.drag_dest_set(flags, targets, actions)
-        self.connect('drag_drop', self.drag_drop_cb)
-        self.connect('drag_motion', self.drag_motion_cb)
-        self.connect('drag_data_received', self.drag_got_data_cb)
-
-    def drag_drop_cb(self, widget, context, x: int, y: int, time: int) -> None:
-        targets = list(x.name() for x in context.list_targets())
-        draglog("drag_drop_cb%s targets=%s", (widget, context, x, y, time), targets)
-        if not targets:
-            # this happens on macOS, but we can still get the data...
-            draglog("Warning: no targets provided, continuing anyway")
-        elif "text/uri-list" not in targets:
-            draglog("Warning: cannot handle targets:")
-            draglog(" %s", csv(targets))
-            return
-        atom = Gdk.Atom.intern("text/uri-list", False)
-        widget.drag_get_data(context, atom, time)
-
-    def drag_motion_cb(self, wid: int, context, x: int, y: int, time: int):
-        draglog("drag_motion_cb%s", (wid, context, x, y, time))
-        Gdk.drag_status(context, Gdk.DragAction.COPY, time)
-        return True  # accept this data
-
-    def drag_got_data_cb(self, wid: int, context, x: int, y: int, selection, info, time: int) -> None:
-        draglog("drag_got_data_cb%s", (wid, context, x, y, selection, info, time))
-        targets = list(x.name() for x in context.list_targets())
-        actions = context.get_actions()
-
-        def xid(w) -> int:
-            # TODO: use a generic window handle function
-            # this only used for debugging for now
-            if w and POSIX:
-                return w.get_xid()
-            return 0
-
-        dest_window = xid(context.get_dest_window())
-        source_window = xid(context.get_source_window())
-        suggested_action = context.get_suggested_action()
-        draglog("drag_got_data_cb context: source_window=%#x, dest_window=%#x",
-                source_window, dest_window)
-        draglog("drag_got_data_cb context: suggested_action=%s, actions=%s, targets=%s",
-                suggested_action, actions, targets)
-        dtype = selection.get_data_type()
-        fmt = selection.get_format()
-        length = selection.get_length()
-        target = selection.get_target()
-        text = selection.get_text()
-        uris = selection.get_uris()
-        draglog("drag_got_data_cb selection: data type=%s, format=%s, length=%s, target=%s, text=%s, uris=%s",
-                dtype, fmt, length, target, text, uris)
-        if not uris:
-            return
-        filelist = []
-        for uri in uris:
-            if not uri:
-                continue
-            if not uri.startswith("file://"):
-                draglog.warn("Warning: cannot handle drag-n-drop URI '%s'", uri)
-                continue
-            filename = unquote(uri[len("file://"):].rstrip("\n\r"))
-            if WIN32:
-                filename = filename.lstrip("/")
-            abspath = os.path.abspath(filename)
-            if not os.path.isfile(abspath):
-                draglog.warn("Warning: '%s' is not a file", abspath)
-                continue
-            filelist.append(abspath)
-        draglog("drag_got_data_cb: will try to upload: %s", csv(filelist))
-        pending = set(filelist)
-
-        def file_done(filename: str) -> None:
-            if not pending:
-                return
-            try:
-                pending.remove(filename)
-            except KeyError:
-                pass
-            # when all the files have been loaded / failed,
-            # finish the drag and drop context so the source knows we're done with them:
-            if not pending:
-                context.finish(True, False, time)
-
-        # we may want to only process a limited number of files "at the same time":
-        for filename in filelist:
-            self.drag_process_file(filename, file_done)
-
-    def drag_process_file(self, filename: str, file_done_cb: Callable) -> None:
-        def got_file_info(gfile, result, arg=None):
-            draglog("got_file_info(%s, %s, %s)", gfile, result, arg)
-            file_info = gfile.query_info_finish(result)
-            basename = gfile.get_basename()
-            ctype = file_info.get_content_type()
-            size = file_info.get_size()
-            draglog("file_info(%s)=%s ctype=%s, size=%s", filename, file_info, ctype, size)
-
-            def got_file_data(gfile, result, user_data=None) -> None:
-                _, data, entity = gfile.load_contents_finish(result)
-                filesize = len(data)
-                draglog("got_file_data(%s, %s, %s) entity=%s", gfile, result, user_data, entity)
-                file_done_cb(filename)
-                openit = self._client.remote_open_files
-                draglog.info("sending file %s (%i bytes)", basename, filesize)
-                self._client.send_file(filename, "", data, filesize=filesize, openit=openit)
-
-            cancellable = None
-            user_data = (filename, True)
-            gfile.load_contents_async(cancellable, got_file_data, user_data)
-
-        try:
-            gfile = Gio.File.new_for_path(path=filename)
-            # basename = gf.get_basename()
-            FILE_QUERY_INFO_NONE = 0
-            G_PRIORITY_DEFAULT = 0
-            cancellable = None
-            gfile.query_info_async("standard::*", FILE_QUERY_INFO_NONE, G_PRIORITY_DEFAULT,
-                                   cancellable, got_file_info, None)
-        except Exception as e:
-            draglog("file upload for %s:", filename, exc_info=True)
-            draglog.error("Error: cannot upload '%s':", filename)
-            draglog.estr(e)
-            del e
-            file_done_cb(filename)
-
-    ######################################################################
-    # focus:
-    def init_focus(self) -> None:
-        self.when_realized("init-focus", self.do_init_focus)
-
-    def do_init_focus(self) -> None:
-        # hook up the X11 gdk event notifications,
-        # so we can get focus-out when grabs are active:
-        if is_X11():
-            try:
-                from xpra.x11.gtk.bindings import add_event_receiver
-            except ImportError as e:
-                log("do_init_focus()", exc_info=True)
-                if not ds_inited():
-                    log.warn("Warning: missing Gdk X11 bindings:")
-                    log.warn(" %s", e)
-                    log.warn(" you may experience window focus issues")
-            else:
-                grablog("adding event receiver so we can get FocusIn and FocusOut events whilst grabbing the keyboard")
-                xid = self.get_window().get_xid()
-                add_event_receiver(xid, self)
-
-        # other platforms should bet getting regular focus events instead:
-
-        def focus_in(_window, event) -> None:
-            focuslog("focus-in-event for wid=%s", self.wid)
-            self.do_x11_focus_in_event(event)
-
-        def focus_out(_window, event) -> None:
-            focuslog("focus-out-event for wid=%s", self.wid)
-            self.do_x11_focus_out_event(event)
-
-        self.connect("focus-in-event", focus_in)
-        self.connect("focus-out-event", focus_out)
-        if not self._override_redirect:
-            self.connect("notify::has-toplevel-focus", self._focus_change)
-
-        def grab_broken(win, event) -> None:
-            grablog("grab_broken%s", (win, event))
-            self._client._window_with_grab = None
-
-        self.connect("grab-broken-event", grab_broken)
-
-    def _focus_change(self, *args) -> None:
-        assert not self._override_redirect
-        htf = self.has_toplevel_focus()
-        focuslog("%s focus_change%s has-toplevel-focus=%s, _been_mapped=%s", self, args, htf, self._been_mapped)
-        if self._been_mapped:
-            self._focus_latest = htf
-            self.schedule_recheck_focus()
-
-    def recheck_focus(self) -> None:
-        self.recheck_focus_timer = 0
-        self.send_latest_focus()
-
-    def send_latest_focus(self) -> None:
-        focused = self._client._focused
-        focuslog("send_latest_focus() wid=%i, focused=%s, latest=%s", self.wid, focused, self._focus_latest)
-        if self._focus_latest:
-            self._focus()
-        else:
-            self._unfocus()
-
-    def on_enter_notify_event(self, window, event) -> None:
-        focuslog("on_enter_notify_event(%s, %s)", window, event)
-        if AUTOGRAB_WITH_POINTER:
-            self.may_autograb()
-
-    def on_leave_notify_event(self, window, event) -> None:
-        info = {}
-        for attr in ("detail", "focus", "mode", "subwindow", "type", "window"):
-            info[attr] = getattr(event, attr, None)
-        focuslog("on_leave_notify_event(%s, %s) crossing event fields: %s", window, event, info)
-        if AUTOGRAB_WITH_POINTER and (event.subwindow or event.detail == Gdk.NotifyType.NONLINEAR_VIRTUAL):
-            self.keyboard_ungrab()
-
-    def may_autograb(self) -> bool:
-        server_mode = self._client._remote_server_mode
-        autograb = AUTOGRAB_MODES and any(x == "*" or server_mode.find(x) >= 0 for x in AUTOGRAB_MODES)
-        focuslog("may_autograb() server-mode=%s, autograb(%s)=%s", server_mode, AUTOGRAB_MODES, autograb)
-        if autograb:
-            self.keyboard_grab()
-        return autograb
-
-    def _focus(self) -> bool:
-        change = super()._focus()
-        if change and AUTOGRAB_WITH_FOCUS:
-            self.may_autograb()
-        return change
-
-    def _unfocus(self) -> bool:
-        client = self._client
-        client.window_ungrab()
-        if client.pointer_grabbed and client.pointer_grabbed == self.wid:
-            # we lost focus, assume we also lost the grab:
-            client.pointer_grabbed = None
-        changed = super()._unfocus()
-        if changed and AUTOGRAB_WITH_FOCUS:
-            self.keyboard_ungrab()
-        return changed
-
-    def cancel_focus_timer(self) -> None:
-        rft = self.recheck_focus_timer
-        if rft:
-            self.recheck_focus_timer = 0
-            GLib.source_remove(rft)
-
-    def schedule_recheck_focus(self) -> None:
-        if self._override_redirect:
-            # never send focus events for OR windows
-            return
-        # we receive pairs of FocusOut + FocusIn following a keyboard grab,
-        # so we recheck the focus status via this timer to skip unnecessary churn
-        if FOCUS_RECHECK_DELAY < 0:
-            self.recheck_focus()
-        elif self.recheck_focus_timer == 0:
-            focuslog(f"will recheck focus in {FOCUS_RECHECK_DELAY}ms")
-            self.recheck_focus_timer = GLib.timeout_add(FOCUS_RECHECK_DELAY, self.recheck_focus)
-
-    def do_x11_focus_out_event(self, event) -> None:
-        focuslog("do_x11_focus_out_event(%s)", event)
-        if NotifyInferior is not None:
-            detail = getattr(event, "detail", None)
-            if detail == NotifyInferior:
-                focuslog("dropped NotifyInferior focus event")
-                return
-        self._focus_latest = False
-        self.schedule_recheck_focus()
-
-    def do_x11_focus_in_event(self, event) -> None:
-        focuslog("do_x11_focus_in_event(%s) been_mapped=%s", event, self._been_mapped)
-        if self._been_mapped:
-            self._focus_latest = True
-            self.schedule_recheck_focus()
 
     def init_max_window_size(self) -> None:
         """ used by GL windows to enforce a hard limit on window sizes """
@@ -1740,83 +1458,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         workspacelog("do_get_workspace %s unset on window %i: %#x, returning default value=%s",
                      prop, self.wid, target.get_xid(), wn(default_value))
         return default_value
-
-    def keyboard_ungrab(self, *args) -> None:
-        grablog("keyboard_ungrab%s", args)
-        gdkwin = self.get_window()
-        if gdkwin:
-            d = gdkwin.get_display()
-            if d:
-                seat = d.get_default_seat()
-                if seat:
-                    seat.ungrab()
-                    self._client.keyboard_grabbed = False
-
-    def keyboard_grab(self, *args) -> None:
-        grablog("keyboard_grab%s", args)
-        gdkwin = self.get_window()
-        r = Gdk.GrabStatus.FAILED
-        seat = None
-        if gdkwin:
-            self.add_events(Gdk.EventMask.ALL_EVENTS_MASK)
-            d = gdkwin.get_display()
-            if d:
-                seat = d.get_default_seat()
-                if seat:
-                    capabilities = Gdk.SeatCapabilities.KEYBOARD
-                    owner_events = True
-                    cursor = None
-                    event = None
-                    r = seat.grab(gdkwin, capabilities, owner_events, cursor, event, None, None)
-                    grablog("%s.grab(..)=%s", seat, r)
-        self._client.keyboard_grabbed = r == Gdk.GrabStatus.SUCCESS
-        grablog("keyboard_grab%s %s.grab(..)=%s, keyboard_grabbed=%s",
-                args, seat, GRAB_STATUS_STRING.get(r), self._client.keyboard_grabbed)
-
-    def toggle_keyboard_grab(self) -> None:
-        grabbed = self._client.keyboard_grabbed
-        grablog("toggle_keyboard_grab() grabbed=%s", grabbed)
-        if grabbed:
-            self.keyboard_ungrab()
-        else:
-            self.keyboard_grab()
-
-    def pointer_grab(self, *args) -> None:
-        gdkwin = self.get_window()
-        # try platform specific variant first:
-        if pointer_grab(gdkwin):
-            self._client.pointer_grabbed = self.wid
-            grablog(f"{pointer_grab}({gdkwin}) success")
-            return
-        with IgnoreWarningsContext():
-            r = Gdk.pointer_grab(gdkwin, True, GRAB_EVENT_MASK, gdkwin, None, Gdk.CURRENT_TIME)
-        if r == Gdk.GrabStatus.SUCCESS:
-            self._client.pointer_grabbed = self.wid
-        grablog("pointer_grab%s Gdk.pointer_grab(%s, True)=%s, pointer_grabbed=%s",
-                args, self.get_window(), GRAB_STATUS_STRING.get(r), self._client.pointer_grabbed)
-
-    def pointer_ungrab(self, *args) -> None:
-        gdkwin = self.get_window()
-        if pointer_ungrab(gdkwin):
-            self._client.pointer_grabbed = None
-            grablog(f"{pointer_ungrab}({gdkwin}) success")
-            return
-        grablog("pointer_ungrab%s pointer_grabbed=%s",
-                args, self._client.pointer_grabbed)
-        self._client.pointer_grabbed = None
-        gdkwin = self.get_window()
-        if gdkwin:
-            d = gdkwin.get_display()
-            if d:
-                d.pointer_ungrab(Gdk.CURRENT_TIME)
-
-    def toggle_pointer_grab(self) -> None:
-        pg = self._client.pointer_grabbed
-        grablog("toggle_pointer_grab() pointer_grabbed=%s, our id=%s", pg, self.wid)
-        if pg == self.wid:
-            self.pointer_ungrab()
-        else:
-            self.pointer_grab()
 
     def toggle_fullscreen(self) -> None:
         geomlog("toggle_fullscreen()")
