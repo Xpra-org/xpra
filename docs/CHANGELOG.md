@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.3.1] 2025-04-27
+* TODO
+
 ## [6.3] 2025-04-23
 * Platforms, build and packaging:
     * [rewritten MS Windows build script](https://github.com/Xpra-org/xpra/issues/4394)
