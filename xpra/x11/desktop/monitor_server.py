@@ -380,7 +380,7 @@ class XpraMonitorServer(DesktopServerBase):
                 wid = packet.get_wid(3)
             elif identifier == "index":
                 # index is zero-based
-                wid = packet.get_u32() + 1
+                wid = packet.get_u32(3) + 1
             else:
                 raise ValueError(f"unsupported monitor identifier {identifier!r}")
             self.remove_monitor(wid)
