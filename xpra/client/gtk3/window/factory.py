@@ -4,12 +4,14 @@
 # later version. See the file COPYING for details.
 
 
+from xpra.os_util import WIN32, OSX
 from xpra.util.env import envbool
 
 
 def get_window_base_classes() -> tuple[type, ...]:
     from xpra.client.gtk3.window.base import GTKClientWindowBase
-    WINDOW_BASES: list[type] = [GTKClientWindowBase]
+    from xpra.client.gtk3.window.action import ActionWindow
+    WINDOW_BASES: list[type] = [GTKClientWindowBase, ActionWindow]
     DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
     if DRAGNDROP:
         from xpra.client.gtk3.window.dragndrop import DragNDropWindow
@@ -22,4 +24,19 @@ def get_window_base_classes() -> tuple[type, ...]:
     if GRAB:
         from xpra.client.gtk3.window.grab import GrabWindow
         WINDOW_BASES.append(GrabWindow)
+    WORKSPACE = envbool("XPRA_WORKSPACE", True)
+    if WORKSPACE:
+        from xpra.client.gtk3.window.workspace import WorkspaceWindow
+        WINDOW_BASES.append(WorkspaceWindow)
+    XSHAPE = envbool("XPRA_XSHAPE", not (OSX or WIN32))
+    if XSHAPE:
+        from xpra.client.gtk3.window.shape import ShapeWindow
+        WINDOW_BASES.append(ShapeWindow)
+    from xpra.client.base import features
+    if features.keyboard:
+        from xpra.client.gtk3.window.keyboard import KeyboardWindow
+        WINDOW_BASES.append(KeyboardWindow)
+    if features.pointer:
+        from xpra.client.gtk3.window.pointer import PointerWindow
+        WINDOW_BASES.append(PointerWindow)
     return tuple(WINDOW_BASES)

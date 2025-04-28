@@ -76,9 +76,6 @@ class ClientWidgetBase:
         Subclasses may resume normal operation that were suspended by freeze()
         """
 
-    def workspace_changed(self) -> None:  # pragma: no cover
-        pass
-
     def set_cursor_data(self, cursor_data) -> None:  # pragma: no cover
         pass
 

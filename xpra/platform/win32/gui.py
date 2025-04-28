@@ -388,13 +388,12 @@ def fixup_window_style(self, *_args) -> None:
         if client and been_mapped and not iconified and ws_visible != cur_ws_visible:
             log("window changed visibility to: %s", ws_visible)
             setattr(self, "_ws_visible", ws_visible)
+            send_control_refresh = getattr(self, "send_control_refresh", noop)
             if ws_visible:
                 # with opengl, we need to re-create the window (PITA):
                 if REINIT_VISIBLE_WINDOWS:
                     client.reinit_window(self.wid, self)
-                self.send_control_refresh(False)
-            else:
-                self.send_control_refresh(True)
+            send_control_refresh(not ws_visible)
     except Exception:
         log.warn("failed to fixup window style", exc_info=True)
 

@@ -9,11 +9,13 @@ from xpra.os_util import gi_import
 from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
+from xpra.client.gtk3.window.stub_window import StubWindow
 from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.util import ds_inited
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
+Gdk = gi_import("Gdk")
 
 log = Logger("focus", "grab")
 
@@ -22,7 +24,7 @@ FOCUS_RECHECK_DELAY = envint("XPRA_FOCUS_RECHECK_DELAY", 15)
 AUTOGRAB_WITH_FOCUS = envbool("XPRA_AUTOGRAB_WITH_FOCUS", False)
 
 
-class FocusWindow:
+class FocusWindow(StubWindow):
     __gsignals__ = {
         "x11-focus-out-event": one_arg_signal,
         "x11-focus-in-event": one_arg_signal,
@@ -32,6 +34,14 @@ class FocusWindow:
         self._focus_latest = None
         self.recheck_focus_timer: int = 0
         self.init_focus()
+
+    def cleanup(self):
+        self.cancel_focus_timer()
+        if self._client.has_focus(self.wid):
+            self._unfocus()
+
+    def get_window_event_mask(self) -> Gdk.EventMask:
+        return Gdk.EventMask.FOCUS_CHANGE_MASK
 
     def init_focus(self) -> None:
         self.when_realized("init-focus", self.do_init_focus)

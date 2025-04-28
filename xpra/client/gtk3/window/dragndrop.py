@@ -8,6 +8,7 @@ from urllib.parse import unquote
 from collections.abc import Callable
 
 from xpra.net.file_transfer import FileTransferHandler
+from xpra.client.gtk3.window.stub_window import StubWindow
 from xpra.os_util import gi_import, WIN32, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -40,7 +41,7 @@ def drag_motion_cb(wid: int, context, x: int, y: int, time: int):
     return True  # accept this data
 
 
-class DragNDropWindow:
+class DragNDropWindow(StubWindow):
 
     def init_window(self, client, _metadata: typedict) -> None:
         assert isinstance(client, FileTransferHandler)

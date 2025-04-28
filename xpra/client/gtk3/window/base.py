@@ -8,7 +8,7 @@
 import math
 import os.path
 from time import monotonic
-from typing import Optional
+from typing import Any
 from collections.abc import Callable, Sequence
 
 from cairo import (  # pylint: disable=no-name-in-module
@@ -16,23 +16,23 @@ from cairo import (  # pylint: disable=no-name-in-module
     OPERATOR_OVER, LINE_CAP_ROUND,  # @UnresolvedImport
 )
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
-from xpra.util.system import is_Wayland, is_X11
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, bytestostr
+from xpra.util.str_fn import bytestostr
 from xpra.util.env import envint, envbool, first_time, ignorewarnings, IgnoreWarningsContext
 from xpra.gtk.gobject import no_arg_signal
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
-from xpra.gtk.keymap import KEY_TRANSLATIONS
 from xpra.common import (
-    MoveResize, force_size_constraint,
-    MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, WORKSPACE_UNSET,
-    WORKSPACE_ALL, WORKSPACE_NAMES,
+    MoveResize, force_size_constraint, noop,
+    MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
 )
 from xpra.net.common import PacketElement
-from xpra.keyboard.common import KeyEvent
 from xpra.client.gui.window_base import ClientWindowBase
+from xpra.client.gtk3.window.common import (
+    use_x11_bindings, is_awt, is_popup, event_buttons,
+    WINDOW_NAME_TO_HINT, ALL_WINDOW_TYPES,
+)
 from xpra.platform.gui import (
     set_fullscreen_monitors, set_shaded,
     add_window_hooks, remove_window_hooks,
@@ -45,52 +45,27 @@ Gdk = gi_import("Gdk")
 Gio = gi_import("Gio")
 
 focuslog = Logger("focus")
-workspacelog = Logger("workspace")
 log = Logger("window")
-keylog = Logger("keyboard")
-keyeventlog = Logger("keyboard", "events")
 iconlog = Logger("icon")
 metalog = Logger("metadata")
 statelog = Logger("state")
 eventslog = Logger("events")
-shapelog = Logger("shape")
-mouselog = Logger("mouse")
 geomlog = Logger("geometry")
-draglog = Logger("dragndrop")
 alphalog = Logger("alpha")
 
-CAN_SET_WORKSPACE = False
 HAS_X11_BINDINGS = False
 
-prop_get, prop_set, prop_del = None, None, None
-NotifyInferior = None
+prop_get = None
+prop_set = prop_del = noop
 X11Window = X11Core = None
-
-WIN32_WORKSPACE = WIN32 and envbool("XPRA_WIN32_WORKSPACE", False)
-
-
-def use_x11_bindings() -> bool:
-    if not POSIX or OSX:
-        return False
-    if not is_X11() or is_Wayland():
-        return False
-    if envbool("XPRA_USE_X11_BINDINGS", False):
-        return True
-    try:
-        from xpra.x11.bindings.xwayland_info import isxwayland
-    except ImportError:
-        log("no xwayland bindings", exc_info=True)
-        return False
-    return not isxwayland()
 
 
 if use_x11_bindings():
     try:
         from xpra.gtk.error import xlog, verify_sync
         from xpra.x11.gtk.prop import prop_get, prop_set, prop_del
-        from xpra.x11.bindings.window import constants, X11WindowBindings, SHAPE_KIND
+        from xpra.x11.bindings.window import constants, X11WindowBindings
         from xpra.x11.bindings.core import X11CoreBindings, set_context_check
-        from xpra.x11.bindings.send_wm import send_wm_workspace
 
         X11Window = X11WindowBindings()
         X11Core = X11CoreBindings()
@@ -104,123 +79,25 @@ if use_x11_bindings():
         log.error(f"Error loading X11 bindings: {e}")
     else:
         set_context_check(verify_sync)
-        NotifyInferior = constants["NotifyInferior"]
         HAS_X11_BINDINGS = True
 
         SubstructureNotifyMask = constants["SubstructureNotifyMask"]
         SubstructureRedirectMask = constants["SubstructureRedirectMask"]
 
-        def can_set_workspace() -> bool:
-            SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)
-            if not SET_WORKSPACE:
-                return False
-            try:
-                # in theory this is not a proper check, meh - that will do
-                root_xid = X11Window.get_root_xid()
-                supported = prop_get(root_xid, "_NET_SUPPORTED", ["atom"], ignore_errors=True) or ()
-                return "_NET_WM_DESKTOP" in supported
-            except Exception as we:
-                workspacelog("x11 workspace bindings error", exc_info=True)
-                workspacelog.error("Error: failed to setup workspace hooks:")
-                workspacelog.estr(we)
-                return False
-
-        CAN_SET_WORKSPACE = can_set_workspace()
-elif WIN32 and WIN32_WORKSPACE:
-    from _ctypes import COMError
-    try:
-        from pyvda.pyvda import get_virtual_desktops
-    except (OSError, ImportError, COMError, NotImplementedError) as e:
-        workspacelog(f"no workspace support: {e}")
-        WIN32_WORKSPACE = 0
-    else:
-        CAN_SET_WORKSPACE = len(get_virtual_desktops()) > 0
-
 AWT_DIALOG_WORKAROUND = envbool("XPRA_AWT_DIALOG_WORKAROUND", WIN32)
 BREAK_MOVERESIZE = os.environ.get("XPRA_BREAK_MOVERESIZE", "Escape").split(",")
 MOVERESIZE_X11 = envbool("XPRA_MOVERESIZE_X11", POSIX)
 MOVERESIZE_GDK = envbool("XPRA_MOVERESIZE_GDK", True)
-CURSOR_IDLE_TIMEOUT = envint("XPRA_CURSOR_IDLE_TIMEOUT", 6)
 DISPLAY_HAS_SCREEN_INDEX = POSIX and os.environ.get("DISPLAY", "").split(":")[-1].find(".") >= 0
-DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
 CLAMP_WINDOW_TO_SCREEN = envbool("XPRA_CLAMP_WINDOW_TO_SCREEN", True)
-FOCUS_RECHECK_DELAY = envint("XPRA_FOCUS_RECHECK_DELAY", 15)
 REPAINT_MAXIMIZED = envint("XPRA_REPAINT_MAXIMIZED", 0)
 REFRESH_MAXIMIZED = envbool("XPRA_REFRESH_MAXIMIZED", True)
-UNICODE_KEYNAMES = envbool("XPRA_UNICODE_KEYNAMES", False)
-SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)
-POLL_WORKSPACE = envbool("XPRA_POLL_WORKSPACE", WIN32)
 ICONIFY_LATENCY = envint("XPRA_ICONIFY_LATENCY", 150)
-SMOOTH_SCROLL_NORM = envint("XPRA_SMOOTH_SCROLL_NORM", 50 if OSX else 100)
 
 WINDOW_OVERFLOW_TOP = envbool("XPRA_WINDOW_OVERFLOW_TOP", False)
 AWT_RECENTER = envbool("XPRA_AWT_RECENTER", True)
-UNDECORATED_TRANSIENT_IS_OR = envint("XPRA_UNDECORATED_TRANSIENT_IS_OR", 1)
-XSHAPE = envbool("XPRA_XSHAPE", True)
-bit_to_rectangles: Optional[callable] = None
-try:
-    from xpra.codecs.argb import argb
-
-    bit_to_rectangles = argb.bit_to_rectangles
-except (ImportError, AttributeError):
-    pass
-LAZY_SHAPE = envbool("XPRA_LAZY_SHAPE", not callable(bit_to_rectangles))
-
-AUTOGRAB_MODES = os.environ.get("XPRA_AUTOGRAB_MODES", "shadow,desktop,monitors").split(",")
-AUTOGRAB_WITH_FOCUS = envbool("XPRA_AUTOGRAB_WITH_FOCUS", False)
-AUTOGRAB_WITH_POINTER = envbool("XPRA_AUTOGRAB_WITH_POINTER", True)
 
 
-def parse_padding_colors(colors_str: str) -> tuple[int, int, int]:
-    padding_colors = 0, 0, 0
-    if colors_str:
-        try:
-            padding_colors = tuple(float(x.strip()) for x in colors_str.split(","))
-            assert len(padding_colors) == 3, "you must specify 3 components"
-        except Exception as e:
-            log.warn("Warning: invalid padding colors specified,")
-            log.warn(" %s", e)
-            log.warn(" using black")
-            padding_colors = 0, 0, 0
-    log("parse_padding_colors(%s)=%s", colors_str, padding_colors)
-    return padding_colors
-
-
-PADDING_COLORS = parse_padding_colors(os.environ.get("XPRA_PADDING_COLORS", ""))
-
-# window types we map to POPUP rather than TOPLEVEL
-POPUP_TYPE_HINTS: set[str] = {
-    # "DIALOG",
-    # "MENU",
-    # "TOOLBAR",
-    # "SPLASH",
-    # "UTILITY",
-    # "DOCK",
-    # "DESKTOP",
-    "DROPDOWN_MENU",
-    "POPUP_MENU",
-    # "TOOLTIP",
-    # "NOTIFICATION",
-    # "COMBO",
-    # "DND",
-}
-# window types for which we skip window decorations (title bar)
-UNDECORATED_TYPE_HINTS: set[str] = {
-    # "DIALOG",
-    "MENU",
-    # "TOOLBAR",
-    "SPLASH",
-    "SPLASHSCREEN",
-    "UTILITY",
-    "DOCK",
-    "DESKTOP",
-    "DROPDOWN_MENU",
-    "POPUP_MENU",
-    "TOOLTIP",
-    "NOTIFICATION",
-    "COMBO",
-    "DND",
-}
 GDK_MOVERESIZE_MAP = {int(d): we for d, we in {
     MoveResize.SIZE_TOPLEFT: Gdk.WindowEdge.NORTH_WEST,
     MoveResize.SIZE_TOP: Gdk.WindowEdge.NORTH,
@@ -233,49 +110,6 @@ GDK_MOVERESIZE_MAP = {int(d): we for d, we in {
     # MOVERESIZE_SIZE_KEYBOARD,
 }.items()}
 
-GDK_SCROLL_MAP = {
-    Gdk.ScrollDirection.UP: 4,
-    Gdk.ScrollDirection.DOWN: 5,
-    Gdk.ScrollDirection.LEFT: 6,
-    Gdk.ScrollDirection.RIGHT: 7,
-}
-
-BUTTON_MASK: dict[int, int] = {
-    Gdk.ModifierType.BUTTON1_MASK: 1,
-    Gdk.ModifierType.BUTTON2_MASK: 2,
-    Gdk.ModifierType.BUTTON3_MASK: 3,
-    Gdk.ModifierType.BUTTON4_MASK: 4,
-    Gdk.ModifierType.BUTTON5_MASK: 5,
-}
-
-WINDOW_EVENT_MASK: Gdk.EventMask = Gdk.EventMask.STRUCTURE_MASK
-WINDOW_EVENT_MASK |= Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.KEY_RELEASE_MASK
-WINDOW_EVENT_MASK |= Gdk.EventMask.POINTER_MOTION_MASK
-WINDOW_EVENT_MASK |= Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
-WINDOW_EVENT_MASK |= Gdk.EventMask.PROPERTY_CHANGE_MASK | Gdk.EventMask.SCROLL_MASK
-
-wth = Gdk.WindowTypeHint
-ALL_WINDOW_TYPES: Sequence[Gdk.WindowTypeHint] = (
-    wth.NORMAL,
-    wth.DIALOG,
-    wth.MENU,
-    wth.TOOLBAR,
-    wth.SPLASHSCREEN,
-    wth.UTILITY,
-    wth.DOCK,
-    wth.DESKTOP,
-    wth.DROPDOWN_MENU,
-    wth.POPUP_MENU,
-    wth.TOOLTIP,
-    wth.NOTIFICATION,
-    wth.COMBO,
-    wth.DND,
-)
-del wth
-WINDOW_NAME_TO_HINT: dict[str, Gdk.WindowTypeHint] = {
-    wth.value_name.replace("GDK_WINDOW_TYPE_HINT_", ""): wth for wth in ALL_WINDOW_TYPES
-}
-
 
 def get_follow_window_types() -> Sequence[Gdk.WindowTypeHint]:
     types_strs: list[str] = os.environ.get(
@@ -286,63 +120,20 @@ def get_follow_window_types() -> Sequence[Gdk.WindowTypeHint]:
         return ALL_WINDOW_TYPES
     types: list[Gdk.WindowTypeHint] = []
     for v in types_strs:
-        try:
-            hint = WINDOW_NAME_TO_HINT[v]
+        hint = WINDOW_NAME_TO_HINT.get(v, "")
+        if hint:
             types.append(hint)
-        except KeyError:
+        else:
             log.warn(f"Warning: invalid follow window type specified {v!r}")
-            continue
     return tuple(types)
 
 
 FOLLOW_WINDOW_TYPES = get_follow_window_types()
 
 
-def wn(w) -> str:
-    return WORKSPACE_NAMES.get(w, str(w))
-
-
-def add_border_rectangles(rectangles: Sequence[tuple[int, int, int, int]],
-                          ww: int, wh: int, border_size: int) -> Sequence[tuple[int, int, int, int]]:
-    from xpra.util.rectangle import add_rectangle, rectangle
-    # convert to rectangle objects:
-    rects = list(rectangle(*rect) for rect in rectangles)
-    # add border rectangles:
-    bsize = border_size
-    for x, y, w, h in (
-            (0, 0, ww, bsize),  # top
-            (0, wh - bsize, ww, bsize),  # bottom
-            (ww - bsize, bsize, bsize, wh-bsize*2),  # right
-            (0, bsize, bsize, wh-bsize*2),  # left
-    ):
-        if w > 0 and h > 0:
-            add_rectangle(rects, rectangle(x, y, w, h))
-    # convert rectangles back to tuples:
-    return tuple((rect.x, rect.y, rect.width, rect.height) for rect in rects)
-
-
 # noinspection PyTestUnpassedFixture
-def is_awt(metadata) -> bool:
-    wm_class = metadata.strtupleget("class-instance")
-    return wm_class and len(wm_class) == 2 and wm_class[0].startswith("sun-awt-X11")
-
-
-def _button_resolve(button: int) -> int:
-    if WIN32 and button in (4, 5):
-        # On Windows "X" buttons (the extra buttons sometimes found on the
-        # side of the mouse) are numbered 4 and 5, as there is a different
-        # API for scroll events. Convert them into the X11 convention of 8
-        # and 9.
-        return button + 4
-    return button
-
-
 def noop_destroy() -> None:
     log.warn("Warning: window destroy called twice!")
-
-
-def _event_buttons(event) -> list[int]:
-    return [button for mask, button in BUTTON_MASK.items() if event.state & mask]
 
 
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
@@ -357,7 +148,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def init_window(self, client, metadata: typedict) -> None:
         self.init_max_window_size()
-        if self._is_popup(metadata):
+        if self._override_redirect or is_popup(metadata):
             window_type = Gtk.WindowType.POPUP
         else:
             window_type = Gtk.WindowType.TOPLEVEL
@@ -368,7 +159,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.set_decorated(self._is_decorated(metadata))
         self._window_state = {}
         self._resize_counter = 0
-        self._can_set_workspace = CAN_SET_WORKSPACE
         self._current_frame_extents = None
         self._monitor = None
         self._frozen: bool = False
@@ -383,14 +173,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.show_pointer_overlay_timer: int = 0
         self.moveresize_timer: int = 0
         self.moveresize_event = None
-        self.workspace_timer = 0
         # add platform hooks
         self.connect_after("realize", self.on_realize)
         self.connect("unrealize", self.on_unrealize)
-        self.connect("key-press-event", self.handle_key_press_event)
-        self.connect("key-release-event", self.handle_key_release_event)
+        self.connect("key-press-event", self.key_may_break_moveresize)
         self.add_events(self.get_window_event_mask())
-        self.init_workspace()
         ClientWindowBase.init_window(self, client, metadata)
 
     def init_drawing_area(self) -> None:
@@ -412,42 +199,23 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             widget.queue_draw_area(x, y, w, h)
 
     def get_window_event_mask(self) -> Gdk.EventMask:
-        mask = WINDOW_EVENT_MASK
-        if self._client.wheel_smooth:
-            mask |= Gdk.EventMask.SMOOTH_SCROLL_MASK
-        return mask
+        return Gdk.EventMask.STRUCTURE_MASK | Gdk.EventMask.PROPERTY_CHANGE_MASK
 
     def init_widget_events(self, widget) -> None:
         widget.add_events(self.get_window_event_mask())
 
         def motion(_w, event) -> bool:
-            self._do_motion_notify_event(event)
+            if self.moveresize_event:
+                self.motion_moveresize(event)
             return True
 
         widget.connect("motion-notify-event", motion)
-
-        def press(_w, event) -> bool:
-            self._do_button_press_event(event)
-            return True
-
-        widget.connect("button-press-event", press)
-
-        def release(_w, event) -> bool:
-            self._do_button_release_event(event)
-            return True
-
-        widget.connect("button-release-event", release)
-
-        def scroll(_w, event) -> bool:
-            self._do_scroll_event(event)
-            return True
 
         def configure_event(_w, event) -> bool:
             geomlog("widget configure_event: new size=%ix%i", event.width, event.height)
             return True
 
         widget.connect("configure-event", configure_event)
-        widget.connect("scroll-event", scroll)
         widget.connect("draw", self.draw_widget)
 
     def draw_widget(self, widget, context) -> bool:
@@ -482,29 +250,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 saved_mws, self.max_window_size)
             log(" because of max viewport dims %s and max backing dims %s",
                 self.MAX_VIEWPORT_DIMS, self.MAX_BACKING_DIMS)
-
-    def _is_popup(self, metadata) -> bool:
-        # decide if the window type is POPUP or NORMAL
-        if self._override_redirect:
-            return True
-        if UNDECORATED_TRANSIENT_IS_OR > 0:
-            transient_for = metadata.intget("transient-for", -1)
-            decorations = metadata.intget("decorations", 0)
-            # noinspection PyChainedComparisons
-            if transient_for > 0 and decorations <= 0:
-                if UNDECORATED_TRANSIENT_IS_OR > 1:
-                    metalog("forcing POPUP type for window transient-for=%s", transient_for)
-                    return True
-                if metadata.get("skip-taskbar") and is_awt(metadata):
-                    metalog("forcing POPUP type for Java AWT skip-taskbar window, transient-for=%s", transient_for)
-                    return True
-        window_types = metadata.strtupleget("window-type")
-        popup_types = tuple(POPUP_TYPE_HINTS.intersection(window_types))
-        metalog("popup_types(%s)=%s", window_types, popup_types)
-        if popup_types:
-            metalog("forcing POPUP window type for %s", popup_types)
-            return True
-        return False
 
     def _is_decorated(self, metadata: typedict) -> bool:
         # decide if the window type is POPUP or NORMAL
@@ -803,6 +548,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if not self._has_alpha or not bc.HAS_ALPHA:
             self._client_properties["encoding.transparency"] = False
 
+    def send_control_refresh(self, suspend_resume: bool, client_properties=None, refresh=False) -> None:
+        log("send_control_refresh%s", (suspend_resume, client_properties, refresh))
+        # we can tell the server using a "buffer-refresh" packet instead
+        # and also take care of tweaking the batch config
+        options = {"refresh-now": refresh}  # no need to refresh it
+        self._client.control_refresh(self.wid, suspend_resume,
+                                     refresh=refresh, options=options, client_properties=client_properties)
+
     def freeze(self) -> None:
         # the OpenGL subclasses override this method to also free their GL context
         self._frozen = True
@@ -974,64 +727,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 X11Window.setClassHint(xid, wmclass_class, wmclass_name)
                 log("XSetClassHint(%s, %s) done", wmclass_class, wmclass_name)
 
-    def set_shape(self, shape) -> None:
-        shapelog("set_shape(%s)", shape)
-        if not HAS_X11_BINDINGS or not XSHAPE:
-            return
-
-        def do_set_shape() -> None:
-            xid = self.get_window().get_xid()
-            x_off, y_off = shape.get("x", 0), shape.get("y", 0)
-            for kind, name in SHAPE_KIND.items():
-                rectangles = shape.get("%s.rectangles" % name)  # ie: Bounding.rectangles = [(0, 0, 150, 100)]
-                if rectangles:
-                    # adjust for scaling:
-                    if self._xscale != 1 or self._yscale != 1:
-                        x_off = self.sx(x_off)
-                        y_off = self.sy(y_off)
-                        rectangles = self.scale_shape_rectangles(name, rectangles)
-                    if name == "Bounding" and self.border.shown and self.border.size > 0:
-                        ww, wh = self._size
-                        rectangles = add_border_rectangles(rectangles, ww, wh, self.border.size)
-                    # too expensive to log with actual rectangles:
-                    shapelog("XShapeCombineRectangles(%#x, %s, %i, %i, %i rects)",
-                             xid, name, x_off, y_off, len(rectangles))
-                    with xlog:
-                        X11Window.XShapeCombineRectangles(xid, kind, x_off, y_off, rectangles)
-
-        self.when_realized("shape", do_set_shape)
-
-    def lazy_scale_shape(self, rectangles) -> list:
-        # scale the rectangles without a bitmap...
-        # results aren't so good! (but better than nothing?)
-        return [self.srect(*x) for x in rectangles]
-
-    def scale_shape_rectangles(self, kind_name, rectangles):
-        if LAZY_SHAPE or len(rectangles) < 2:
-            return self.lazy_scale_shape(rectangles)
-        try:
-            from PIL import Image, ImageDraw
-        except ImportError:
-            return self.lazy_scale_shape(rectangles)
-        ww, wh = self._size
-        sw, sh = self.cp(ww, wh)
-        img = Image.new('1', (sw, sh), color=0)
-        shapelog("drawing %s on bitmap(%s,%s)=%s", kind_name, sw, sh, img)
-        d = ImageDraw.Draw(img)
-        for x, y, w, h in rectangles:
-            d.rectangle((x, y, x + w, y + h), fill=1)
-        shapelog("drawing complete")
-        img = img.resize((ww, wh), resample=Image.BICUBIC)
-        shapelog("resized %s bitmap to window size %sx%s: %s", kind_name, ww, wh, img)
-        # now convert back to rectangles...
-        monodata = img.tobytes("raw", "1")
-        shapelog("got %i bytes", len(monodata))
-        # log.warn("monodata: %s (%i bytes) %ix%i", repr_ellipsized(monodata), len(monodata), ww, wh)
-        assert callable(bit_to_rectangles)
-        rectangles = bit_to_rectangles(monodata, ww, wh)
-        shapelog("back to rectangles")
-        return rectangles
-
     def set_bypass_compositor(self, v) -> None:
         if v not in (0, 1, 2):
             v = 0
@@ -1192,10 +887,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def property_changed(self, widget, event) -> None:
         atom = str(event.atom)
         statelog("property_changed(%s, %s) : %s", widget, event, atom)
-        if atom == "_NET_WM_DESKTOP":
-            if self._been_mapped and not self._override_redirect and self._can_set_workspace:
-                self.do_workspace_changed(str(event))
-            return
         # the remaining handlers need `prop_get`:
         if not prop_get:
             return
@@ -1225,7 +916,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if atom == "XKLAVIER_STATE":
             # unused for now, but log it:
             xklavier_state = prop_get(xid, "XKLAVIER_STATE", ["integer"], ignore_errors=False)
-            keylog("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
+            log("XKLAVIER_STATE=%s", [hex(x) for x in (xklavier_state or [])])
             return
         if atom == "_NET_WM_STATE":
             wm_state_atoms = prop_get(xid, "_NET_WM_STATE", ["atom"], ignore_errors=False)
@@ -1255,210 +946,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             if state_updates:
                 self.update_window_state(state_updates)
 
-    ######################################################################
-    # workspace
-    def init_workspace(self) -> None:
-        if not self._can_set_workspace:
-            return
-        if not POLL_WORKSPACE:
-            return
-        self.when_realized("workspace", self.init_workspace_timer)
-
-    def init_workspace_timer(self) -> None:
-        value = [-1]
-
-        def poll_workspace() -> bool:
-            ws = self.get_window_workspace()
-            workspacelog(f"poll_workspace() {ws=}")
-            if value[0] != ws:
-                value[0] = ws
-                self.workspace_changed()
-            return True
-
-        self.workspace_timer = GLib.timeout_add(1000, poll_workspace)
-
-    def cancel_workspace_timer(self) -> None:
-        wt = self.workspace_timer
-        if wt:
-            self.workspace_timer = 0
-            GLib.source_remove(wt)
-
-    def workspace_changed(self) -> None:
-        # on X11 clients, this fires from the root window property watcher
-        ClientWindowBase.workspace_changed(self)
-        if self._can_set_workspace:
-            self.do_workspace_changed("desktop workspace changed")
-
-    def do_workspace_changed(self, info: str) -> None:
-        # call this method whenever something workspace related may have changed
-        window_workspace = self.get_window_workspace()
-        desktop_workspace = self.get_desktop_workspace()
-        workspacelog("do_workspace_changed(%s) for window %i (window, desktop): from %s to %s",
-                     info, self.wid,
-                     (wn(self._window_workspace), wn(self._desktop_workspace)),
-                     (wn(window_workspace), wn(desktop_workspace)))
-        if self._window_workspace == window_workspace and self._desktop_workspace == desktop_workspace:
-            # no change
-            return
-        suspend_resume = None
-        if desktop_workspace < 0 or window_workspace is None:
-            # maybe the property has been cleared? maybe the window is being scrubbed?
-            workspacelog("not sure if the window is shown or not: %s vs %s, resuming to be safe",
-                         wn(desktop_workspace), wn(window_workspace))
-            suspend_resume = False
-        elif window_workspace == WORKSPACE_UNSET:
-            workspacelog("workspace unset: assume current")
-            suspend_resume = False
-        elif window_workspace == WORKSPACE_ALL:
-            workspacelog("window is on all workspaces")
-            suspend_resume = False
-        elif desktop_workspace != window_workspace:
-            workspacelog("window is on a different workspace, increasing its batch delay")
-            workspacelog(" desktop: %s, window: %s", wn(desktop_workspace), wn(window_workspace))
-            suspend_resume = True
-        elif self._window_workspace != self._desktop_workspace:
-            assert desktop_workspace == window_workspace
-            workspacelog("window was on a different workspace, resetting its batch delay")
-            workspacelog(" (was desktop: %s, window: %s, now both on %s)",
-                         wn(self._window_workspace), wn(self._desktop_workspace), wn(desktop_workspace))
-            suspend_resume = False
-        self._window_workspace = window_workspace
-        self._desktop_workspace = desktop_workspace
-        client_properties = {}
-        if window_workspace is not None:
-            client_properties["workspace"] = window_workspace
-        self.send_control_refresh(suspend_resume, client_properties)
-
-    def send_control_refresh(self, suspend_resume, client_properties=None, refresh=False) -> None:
-        statelog("send_control_refresh%s", (suspend_resume, client_properties, refresh))
-        # we can tell the server using a "buffer-refresh" packet instead
-        # and also take care of tweaking the batch config
-        options = {"refresh-now": refresh}  # no need to refresh it
-        self._client.control_refresh(self.wid, suspend_resume,
-                                     refresh=refresh, options=options, client_properties=client_properties)
-
-    def get_workspace_count(self) -> int:
-        if not self._can_set_workspace:
-            return 0
-        if WIN32:
-            if not WIN32_WORKSPACE:
-                return 0
-            from pyvda.pyvda import get_virtual_desktops
-            return len(get_virtual_desktops())
-        root = get_default_root_window()
-        return self.xget_u32_property(root, "_NET_NUMBER_OF_DESKTOPS")
-
-    def set_workspace(self, workspace) -> None:
-        workspacelog("set_workspace(%s)", workspace)
-        if not self._can_set_workspace:
-            return
-        if not self._been_mapped:
-            # will be dealt with in the map event handler
-            # which will look at the window metadata again
-            workspacelog("workspace=%s will be set when the window is mapped", wn(workspace))
-            return
-        if workspace is not None:
-            workspace = workspace & 0xffffffff
-        desktop = self.get_desktop_workspace()
-        ndesktops = self.get_workspace_count()
-        current = self.get_window_workspace()
-        workspacelog("set_workspace(%s) realized=%s", wn(workspace), self.get_realized())
-        workspacelog(" current workspace=%s, detected=%s, desktop workspace=%s, ndesktops=%s",
-                     wn(self._window_workspace), wn(current), wn(desktop), ndesktops)
-        if not self._can_set_workspace or not ndesktops:
-            return
-        if workspace == desktop or workspace == WORKSPACE_ALL or desktop is None:
-            # window is back in view
-            self._client.control_refresh(self.wid, False, False)
-        if (workspace < 0 or workspace >= ndesktops) and workspace not in (WORKSPACE_UNSET, WORKSPACE_ALL):
-            # this should not happen, workspace is unsigned (CARDINAL)
-            # and the server should have the same list of desktops that we have here
-            workspacelog.warn("Warning: invalid workspace number: %s", wn(workspace))
-            workspace = WORKSPACE_UNSET
-        if workspace == WORKSPACE_UNSET:
-            # we cannot unset via send_wm_workspace, so we have to choose one:
-            workspace = self.get_desktop_workspace()
-        if workspace in (None, WORKSPACE_UNSET):
-            workspacelog.warn("workspace=%s (doing nothing)", wn(workspace))
-            return
-        # we will need the gdk window:
-        if current == workspace:
-            workspacelog("window workspace unchanged: %s", wn(workspace))
-            return
-        if WIN32:
-            if not WIN32_WORKSPACE:
-                return
-            from xpra.platform.win32.gui import get_window_handle
-            from pyvda.pyvda import AppView, VirtualDesktop
-            hwnd = get_window_handle(self)
-            if not hwnd:
-                return
-            vd = VirtualDesktop(number=workspace + 1)
-            app_view = AppView(hwnd=hwnd)
-            workspacelog(f"moving {app_view} to {vd}")
-            app_view.move(vd)
-            return
-        if not HAS_X11_BINDINGS:
-            return
-        gdkwin = self.get_window()
-        workspacelog("do_set_workspace: gdkwindow: %#x, mapped=%s, visible=%s",
-                     gdkwin.get_xid(), self.get_mapped(), gdkwin.is_visible())
-        with xlog:
-            root_xid = X11Window.get_root_xid()
-            send_wm_workspace(root_xid, gdkwin.get_xid(), workspace)
-
-    def get_desktop_workspace(self) -> int:
-        if WIN32:
-            if not WIN32_WORKSPACE:
-                return 0
-            from pyvda.pyvda import VirtualDesktop
-            return VirtualDesktop.current().number - 1
-
-        window = self.get_window()
-        if window:
-            root = window.get_screen().get_root_window()
-        else:
-            # if we are called during init...
-            # we don't have a window
-            root = get_default_root_window()
-        return self.do_get_workspace(root, "_NET_CURRENT_DESKTOP")
-
-    def get_window_workspace(self) -> int:
-        if WIN32:
-            if not WIN32_WORKSPACE:
-                return 0
-            try:
-                from xpra.platform.win32.gui import get_window_handle
-                from pyvda.pyvda import AppView
-            except ImportError as e:
-                workspacelog(f"unable to query workspace: {e}")
-                return 0
-            hwnd = get_window_handle(self)
-            if not hwnd:
-                return 0
-            try:
-                return AppView(hwnd).desktop.number - 1
-            except Exception:
-                workspacelog("failed to query pyvda appview", exc_info=True)
-                return 0
-        return self.do_get_workspace(self.get_window(), "_NET_WM_DESKTOP", WORKSPACE_UNSET)
-
-    def do_get_workspace(self, target, prop: str, default_value=0) -> int:
-        if not self._can_set_workspace:
-            workspacelog("do_get_workspace: not supported, returning %s", wn(default_value))
-            return default_value  # OSX does not have workspaces
-        if target is None:
-            workspacelog("do_get_workspace: target is None, returning %s", wn(default_value))
-            return default_value  # window is not realized yet
-        value = self.xget_u32_property(target, prop)
-        if value is not None:
-            workspacelog("do_get_workspace %s=%s on window %i: %#x",
-                         prop, wn(value), self.wid, target.get_xid())
-            return value & 0xffffffff
-        workspacelog("do_get_workspace %s unset on window %i: %#x, returning default value=%s",
-                     prop, self.wid, target.get_xid(), wn(default_value))
-        return default_value
-
     def toggle_fullscreen(self) -> None:
         geomlog("toggle_fullscreen()")
         if self._fullscreen:
@@ -1466,112 +953,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         else:
             self.fullscreen()
 
-    ######################################################################
-    # pointer overlay handling
-    def cancel_remove_pointer_overlay_timer(self) -> None:
-        rpot = self.remove_pointer_overlay_timer
-        mouselog(f"cancel_remove_pointer_overlay_timer() timer={rpot}")
-        if rpot:
-            self.remove_pointer_overlay_timer = 0
-            GLib.source_remove(rpot)
-
-    def cancel_show_pointer_overlay_timer(self) -> None:
-        rsot = self.show_pointer_overlay_timer
-        mouselog(f"cancel_show_pointer_overlay_timer() timer={rsot}")
-        if rsot:
-            self.show_pointer_overlay_timer = 0
-            GLib.source_remove(rsot)
-
-    def show_pointer_overlay(self, pos) -> None:
-        # schedule do_show_pointer_overlay if needed
-        b = self._backing
-        if not b:
-            return
-        prev = b.pointer_overlay
-        if pos is None:
-            if not prev:
-                return
-            value = None
-        else:
-            if prev and prev[:2] == pos[:2]:
-                return
-            # store both scaled and unscaled value:
-            # (the opengl client uses the raw value)
-            value = pos[:2] + self.sp(*pos[:2]) + pos[2:]
-        mouselog("show_pointer_overlay(%s) previous value=%s, new value=%s", pos, prev, value)
-        b.pointer_overlay = value
-        if not self.show_pointer_overlay_timer:
-            self.show_pointer_overlay_timer = GLib.timeout_add(10, self.do_show_pointer_overlay, prev)
-
-    def do_show_pointer_overlay(self, prev) -> None:
-        # queue a draw event at the previous and current position of the pointer
-        # (so the backend will repaint / overlay the cursor image there)
-        self.show_pointer_overlay_timer = 0
-        b = self._backing
-        if not b:
-            return
-        cursor_data = b.cursor_data
-
-        def abs_coords(x, y, size) -> tuple[int, int, int, int]:
-            if self.window_offset:
-                x += self.window_offset[0]
-                y += self.window_offset[1]
-            w, h = size, size
-            if cursor_data:
-                w = cursor_data[3]
-                h = cursor_data[4]
-                xhot = cursor_data[5]
-                yhot = cursor_data[6]
-                x = x - xhot
-                y = y - yhot
-            return x, y, w, h
-
-        value = b.pointer_overlay
-        if value:
-            # repaint the scale value (in window coordinates):
-            x, y, w, h = abs_coords(*value[2:5])
-            self.repaint(x, y, w, h)
-            # clear it shortly after:
-            self.schedule_remove_pointer_overlay()
-        if prev:
-            x, y, w, h = abs_coords(*prev[2:5])
-            self.repaint(x, y, w, h)
-
-    def schedule_remove_pointer_overlay(self, delay: int = CURSOR_IDLE_TIMEOUT * 1000) -> None:
-        mouselog(f"schedule_remove_pointer_overlay({delay})")
-        self.cancel_remove_pointer_overlay_timer()
-        self.remove_pointer_overlay_timer = GLib.timeout_add(delay, self.remove_pointer_overlay)
-
-    def remove_pointer_overlay(self) -> None:
-        mouselog("remove_pointer_overlay()")
-        self.remove_pointer_overlay_timer = 0
-        self.show_pointer_overlay(None)
-
-    def _do_button_press_event(self, event) -> None:
-        # Gtk.Window.do_button_press_event(self, event)
-        button = _button_resolve(event.button)
-        self._button_action(button, event, True)
-
-    def _do_button_release_event(self, event) -> None:
-        # Gtk.Window.do_button_release_event(self, event)
-        button = _button_resolve(event.button)
-        self._button_action(button, event, False)
-
-    ######################################################################
-    # pointer motion
-
-    def _do_motion_notify_event(self, event) -> None:
-        # Gtk.Window.do_motion_notify_event(self, event)
-        if self.moveresize_event:
-            self.motion_moveresize(event)
-        self.cancel_remove_pointer_overlay_timer()
-        self.remove_pointer_overlay()
-        ClientWindowBase._do_motion_notify_event(self, event)
-
     def motion_moveresize(self, event) -> None:
         x_root, y_root, direction, button, start_buttons, wx, wy, ww, wh = self.moveresize_event
         dirstr = MOVERESIZE_DIRECTION_STRING.get(direction, direction)
-        buttons = _event_buttons(event)
+        buttons = event_buttons(event)
         geomlog("motion_moveresize(%s) direction=%s, buttons=%s", event, dirstr, buttons)
         if start_buttons is None:
             # first time around, store the buttons
@@ -1835,30 +1220,16 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         geomlog("do_map_event %s.set_size_request%s", self.drawing_area, (minw, minh))
         self.drawing_area.set_size_request(w, h)
 
+    def get_map_client_properties(self) -> dict[str, Any]:
+        return self._client_properties.copy()
+
     def process_map_event(self) -> None:
         x, y, w, h = self.get_drawing_area_geometry()
         state = self._window_state
-        props = self._client_properties
+        props = self.get_map_client_properties()
         self._client_properties = {}
         self._window_state = {}
         self.cancel_window_state_timer()
-        workspace = self.get_window_workspace()
-        if self._been_mapped:
-            if workspace is None:
-                # not set, so assume it is on the current workspace:
-                workspace = self.get_desktop_workspace()
-        else:
-            self._been_mapped = True
-            workspace = self._metadata.intget("workspace", WORKSPACE_UNSET)
-            if workspace != WORKSPACE_UNSET:
-                log("map event set workspace %s", wn(workspace))
-                self.set_workspace(workspace)
-        if self._window_workspace != workspace and workspace is not None:
-            workspacelog("map event: been_mapped=%s, changed workspace from %s to %s",
-                         self._been_mapped, wn(self._window_workspace), wn(workspace))
-            self._window_workspace = workspace
-        if workspace is not None:
-            props["workspace"] = workspace
         if self._client.server_window_frame_extents and "frame" not in state:
             wfs = self.get_window_frame_size()
             if wfs and len(wfs) == 4:
@@ -1869,6 +1240,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._backing is None:
             # we may have cleared the backing, so we must re-create one:
             self._set_backing_size(w, h)
+        self._been_mapped = True
         packet = ["map-window", self.wid, sx, sy, sw, sh, props, state]
         self.send(*packet)
         self._pos = (x, y)
@@ -1981,24 +1353,19 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             geomlog("configure event: queueing redraw")
             self.repaint(0, 0, w, h)
 
+    def get_configure_client_properties(self) -> dict[str, Any]:
+        return self._client_properties.copy()
+
     def send_configure_event(self, skip_geometry=False) -> None:
         assert skip_geometry or not self.is_OR()
         x, y, w, h = self.get_drawing_area_geometry()
         w = max(1, w)
         h = max(1, h)
         state = self._window_state
-        props = self._client_properties
+        props = self.get_configure_client_properties()
         self._client_properties = {}
         self._window_state = {}
         self.cancel_window_state_timer()
-        if self._been_mapped:
-            # if the window has been mapped already, the workspace should be set:
-            workspace = self.get_window_workspace()
-            if self._window_workspace != workspace and workspace is not None:
-                workspacelog("send_configure_event: changed workspace from %s to %s",
-                             wn(self._window_workspace), wn(workspace))
-                self._window_workspace = workspace
-                props["workspace"] = workspace
         sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
         packet: Sequence[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
         pwid = self.wid
@@ -2065,6 +1432,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         w, h = self.get_size()
         left, top, right, bottom = backing.offsets
         if left != 0 or top != 0 or right != 0 or bottom != 0:
+            from xpra.client.gtk3.window.common import PADDING_COLORS
             context.save()
             context.set_source_rgb(*PADDING_COLORS)
             coords = (
@@ -2147,20 +1515,16 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.repaint(0, 0, w, h)
         self.may_send_client_properties()
 
-    def destroy(self) -> None:  # pylint: disable=method-hidden
+    def cleanup(self):
         self.cancel_window_state_timer()
         self.cancel_send_iconifiy_timer()
-        self.cancel_show_pointer_overlay_timer()
-        self.cancel_remove_pointer_overlay_timer()
-        self.cancel_focus_timer()
         self.cancel_moveresize_timer()
         self.cancel_follow_handler()
-        self.cancel_workspace_timer()
         self.on_realize_cb = {}
+
+    def destroy(self) -> None:  # pylint: disable=method-hidden
         ClientWindowBase.destroy(self)
         Gtk.Window.destroy(self)
-        if self._client.has_focus(self.wid):
-            self._unfocus()
         self.destroy = noop_destroy
 
     def do_unmap_event(self, event) -> None:
@@ -2176,121 +1540,16 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._client.window_close_event(self.wid)
         return True
 
-    def get_mouse_position(self) -> tuple[int, int]:
-        # this method is used on some platforms
-        # to get the pointer position for events that don't include it
-        # (ie: wheel events)
-        x, y = self._client.get_raw_mouse_position()
-        return self._offset_pointer(x, y)
-
-    def _offset_pointer(self, x: int, y: int) -> tuple[int, int]:
-        if self.window_offset:
-            x -= self.window_offset[0]
-            y -= self.window_offset[1]
-        return self.cp(x, y)
-
-    def _get_pointer(self, event) -> tuple[int, int]:
-        return round(event.x_root), round(event.y_root)
-
-    def _get_relative_pointer(self, event) -> tuple[int, int]:
-        return round(event.x), round(event.y)
-
-    def get_pointer_data(self, event) -> tuple[int, int, int, int]:
-        x, y = self._get_pointer(event)
-        rx, ry = self._get_relative_pointer(event)
-        return self.adjusted_pointer_data(x, y, rx, ry)
-
-    def adjusted_pointer_data(self, x: int, y: int, rx: int = 0, ry: int = 0) -> tuple[int, int, int, int]:
-        # regular pointer coordinates are translated and scaled,
-        # relative coordinates are scaled only:
-        ox, oy = self._offset_pointer(x, y)
-        cx, cy = self.cp(rx, ry)
-        return ox, oy, cx, cy
-
-    def _pointer_modifiers(self, event) -> tuple[tuple[int, int, int, int], list[str], list[int]]:
-        pointer_data = self.get_pointer_data(event)
-        # FIXME: state is used for both mods and buttons??
-        modifiers = self._client.mask_to_names(event.state)
-        buttons = _event_buttons(event)
-        v = pointer_data, modifiers, buttons
-        mouselog("pointer_modifiers(%s)=%s (x_root=%s, y_root=%s, window_offset=%s)",
-                 event, v, event.x_root, event.y_root, self.window_offset)
-        return v
-
-    def parse_key_event(self, event, pressed: bool) -> KeyEvent:
+    def key_may_break_moveresize(self, _window, event) -> bool:
         keyval = event.keyval
-        keycode = event.hardware_keycode
         keyname = Gdk.keyval_name(keyval) or ""
-        keyname = KEY_TRANSLATIONS.get((keyname, keyval, keycode), keyname)
-        if keyname.startswith("U+") and not UNICODE_KEYNAMES:
-            # workaround for MS Windows, try harder to find a valid key
-            # see ticket #3417
-            keymap = Gdk.Keymap.get_default()
-            r = keymap.get_entries_for_keycode(event.hardware_keycode)
-            if r[0]:
-                for kc in r[2]:
-                    keyname = Gdk.keyval_name(kc)
-                    if not keyname.startswith("U+"):
-                        break
-        key_event = KeyEvent()
-        key_event.modifiers = self._client.mask_to_names(event.state)
-        key_event.keyname = keyname
-        key_event.keyval = keyval or 0
-        key_event.keycode = keycode
-        key_event.group = event.group
-        key_event.pressed = pressed
-        key_event.string = ""
-        try:
-            codepoint = Gdk.keyval_to_unicode(keyval)
-            key_event.string = chr(codepoint)
-        except ValueError as e:
-            keylog(f"failed to parse unicode string value of {event}", exc_info=True)
-            try:
-                key_event.string = event.string or ""
-            except UnicodeDecodeError as ve:
-                if first_time(f"key-{keycode}-{keyname}"):
-                    keylog("parse_key_event(%s, %s)", event, pressed, exc_info=True)
-                    keylog.warn("Warning: failed to parse string for key")
-                    keylog.warn(f" {keyname=}, {keycode=}")
-                    keylog.warn(f" {keyval=}, group={event.group}")
-                    keylog.warn(" modifiers=%s", csv(key_event.modifiers))
-                    keylog.warn(f" {e}")
-                    keylog.warn(f" {ve}")
-        keyeventlog("parse_key_event(%s, %s)=%s", event, pressed, key_event)
-        return key_event
-
-    def handle_key_press_event(self, _window, event) -> bool:
-        key_event = self.parse_key_event(event, True)
-        if self.moveresize_event and key_event.keyname in BREAK_MOVERESIZE:
+        if self.moveresize_event and keyname in BREAK_MOVERESIZE:
             # cancel move resize if there is one:
             self.moveresize_event = None
             self.cancel_moveresize_timer()
-        self._client.handle_key_action(self, key_event)
-        return True
-
-    def handle_key_release_event(self, _window, event) -> bool:
-        key_event = self.parse_key_event(event, False)
-        self._client.handle_key_action(self, key_event)
-        return True
-
-    def _do_scroll_event(self, event) -> bool:
-        if self._client.readonly:
             return True
-        if event.direction == Gdk.ScrollDirection.SMOOTH:
-            mouselog("smooth scroll event: %s", event)
-            pointer = self.get_pointer_data(event)
-            device_id = -1
-            norm_x = math.pow(event.delta_x, SMOOTH_SCROLL_NORM/100)
-            norm_y = math.pow(event.delta_y, SMOOTH_SCROLL_NORM/100)
-            self._client.wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
-            return True
-        button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
-        mouselog("do_scroll_event device=%s, direction=%s, button_mapping=%s",
-                 self._device_info(event), event.direction, button_mapping)
-        if button_mapping >= 0:
-            self._button_action(button_mapping, event, True)
-            self._button_action(button_mapping, event, False)
-        return True
+        # let the event propagate to the next handler
+        return False
 
     def update_icon(self, img) -> None:
         self._current_icon = img

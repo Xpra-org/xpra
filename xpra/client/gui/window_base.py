@@ -26,9 +26,7 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("window")
-plog = Logger("paint")
-focuslog = Logger("focus")
-mouselog = Logger("mouse")
+paintlog = Logger("paint")
 workspacelog = Logger("workspace")
 keylog = Logger("keyboard")
 metalog = Logger("metadata")
@@ -37,7 +35,6 @@ iconlog = Logger("icon")
 alphalog = Logger("alpha")
 scalinglog = Logger("scaling")
 
-SIMULATE_MOUSE_DOWN = envbool("XPRA_SIMULATE_MOUSE_DOWN", True)
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 SET_SIZE_CONSTRAINTS = envbool("XPRA_SET_SIZE_CONSTRAINTS", True)
 DEFAULT_GRAVITY = envint("XPRA_DEFAULT_GRAVITY", 0)
@@ -277,9 +274,6 @@ class ClientWindowBase(ClientWidgetBase):
         raise NotImplementedError
 
     def paint_spinner(self, context, area) -> None:
-        raise NotImplementedError
-
-    def _pointer_modifiers(self, event):
         raise NotImplementedError
 
     def xget_u32_property(self, target, name) -> int:
@@ -842,7 +836,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def after_draw_refresh(self, success, message="") -> None:
         backing = self._backing
-        plog(f"after_draw_refresh({success}, {message!r}) pending_refresh={self.pending_refresh}, {backing=}")
+        paintlog(f"after_draw_refresh({success}, {message!r}) pending_refresh={self.pending_refresh}, {backing=}")
         if not backing:
             return
         if backing.repaint_all or self._xscale != 1 or self._yscale != 1 or is_Wayland():
@@ -886,101 +880,6 @@ class ClientWindowBase(ClientWidgetBase):
     def _unfocus(self) -> bool:
         return self._client.update_focus(self.wid, False)
 
-    def quit(self) -> None:
-        self._client.quit(0)
-
-    def void(self) -> None:
-        """
-        This method can be used to capture key shortcuts
-        without triggering any specific action.
-        """
-
-    def show_window_info(self, *_args) -> None:
-        from xpra.client.gtk3.window.window_info import WindowInfo
-        wi = WindowInfo(self._client, self)
-        wi.show()
-
-    def show_session_info(self, *args) -> None:
-        self._client.show_session_info(*args)
-
-    def show_menu(self, *args) -> None:
-        self._client.show_menu(*args)
-
-    def show_start_new_command(self, *args) -> None:
-        self._client.show_start_new_command(*args)
-
-    def show_bug_report(self, *args) -> None:
-        self._client.show_bug_report(*args)
-
-    def show_file_upload(self, *args) -> None:
-        self._client.show_file_upload(*args)
-
-    def show_shortcuts(self, *args) -> None:
-        self._client.show_shortcuts(*args)
-
-    def show_docs(self, *args) -> None:
-        self._client.show_docs(*args)
-
     @staticmethod
     def log(message="") -> None:
         log.info(message)
-
-    def next_keyboard_layout(self, update_platform_layout) -> None:
-        self._client.next_keyboard_layout(update_platform_layout)
-
-    def keyboard_layout_changed(self, *args) -> None:
-        # used by win32 hooks to tell us about keyboard layout changes for this window
-        keylog("keyboard_layout_changed%s", args)
-        self._client.window_keyboard_layout_changed(self)
-
-    def get_mouse_event_wid(self, *_args) -> int:
-        # used to be overridden in GTKClientWindowBase
-        return self.wid
-
-    def _do_motion_notify_event(self, event) -> None:
-        if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
-            return
-        pointer_data, modifiers, buttons = self._pointer_modifiers(event)
-        wid = self.get_mouse_event_wid(*pointer_data)
-        mouselog("do_motion_notify_event(%s) wid=%s / focus=%s / window wid=%i",
-                 event, wid, self._client._focused, self.wid)
-        mouselog(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
-                 self._device_info(event), pointer_data, modifiers, buttons)
-        device_id = 0
-        self._client.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons)
-
-    def _device_info(self, event) -> str:
-        try:
-            return event.device.get_name()
-        except AttributeError:
-            return ""
-
-    def _button_action(self, button: int, event, depressed: bool, props=None) -> None:
-        if self._client.readonly or self._client.server_readonly or not self._client.server_pointer:
-            return
-        pointer_data, modifiers, buttons = self._pointer_modifiers(event)
-        wid = self.get_mouse_event_wid(*pointer_data)
-        mouselog("_button_action(%s, %s, %s) wid=%s / focus=%s / window wid=%i",
-                 button, event, depressed, wid, self._client._focused, self.wid)
-        mouselog(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
-                 self._device_info(event), pointer_data, modifiers, buttons)
-        device_id = 0
-
-        def send_button(pressed, **kwargs):
-            sprops = props or {}
-            sprops.update(kwargs)
-            self._client.send_button(device_id, wid, button, pressed, pointer_data, modifiers, buttons, sprops)
-
-        pressed_state = self.button_state.get(button, False)
-        if SIMULATE_MOUSE_DOWN and pressed_state is False and depressed is False:
-            mouselog("button action: simulating missing mouse-down event for window %s before mouse-up", wid)
-            # (needed for some dialogs on win32):
-            send_button(True, synthetic=True)
-        self.button_state[button] = depressed
-        send_button(depressed)
-
-    def do_button_press_event(self, event) -> None:
-        self._button_action(event.button, event, True)
-
-    def do_button_release_event(self, event) -> None:
-        self._button_action(event.button, event, False)

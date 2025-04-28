@@ -80,7 +80,7 @@ VREFRESH = envint("XPRA_VREFRESH", 0)
 inject_css_overrides()
 init_display_source()
 # must come after init_display_source()
-from xpra.client.gtk3.window.base import HAS_X11_BINDINGS, XSHAPE  # noqa: E402
+from xpra.client.gtk3.window.base import HAS_X11_BINDINGS  # noqa: E402
 
 
 def get_group_ref(metadata: typedict) -> str:
@@ -850,6 +850,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors"]
         if HAS_X11_BINDINGS:
             ms += ["x11-property"]
+            XSHAPE = envbool("XPRA_XSHAPE", True)
             if XSHAPE:
                 ms += ["shape"]
         log("metadata.supported: %s", ms)

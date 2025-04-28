@@ -171,13 +171,6 @@ def enable_color(to=sys.stdout, format_string=NOPREFIX_FORMAT) -> None:
         setloghandler(csh)
 
 
-def enable_format(format_string: str) -> None:
-    try:
-        logging.root.handlers[0].formatter = logging.Formatter(format_string)
-    except (AttributeError, IndexError):
-        pass
-
-
 def consume_verbose_argv(argv: list[str], *categories: str) -> bool:
     verbose = False
     for x in list(argv):

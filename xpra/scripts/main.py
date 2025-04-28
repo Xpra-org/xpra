@@ -209,10 +209,10 @@ def configure_logging(options, mode) -> None:
     # a bit naughty here, but it's easier to let xpra.log initialize
     # the logging system every time, and just undo things here..
     from xpra.log import (
-        setloghandler, enable_color, enable_format,
-        LOG_FORMAT, NOPREFIX_FORMAT,
+        setloghandler, enable_color, LOG_FORMAT, NOPREFIX_FORMAT,
         SIGPIPEStreamHandler,
     )
+    from xpra.client.gtk3.window.common import enable_format
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
             "seamless", "desktop", "monitor", "expand",

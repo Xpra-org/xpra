@@ -5,6 +5,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+
 from xpra.client.gtk3.window.base import HAS_X11_BINDINGS
 from xpra.client.gtk3.window.factory import get_window_base_classes
 from xpra.gtk.widget import scaled_image
@@ -16,6 +18,7 @@ from xpra.os_util import gi_import
 from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
+log = Logger("window")
 paintlog = Logger("paint")
 metalog = Logger("metadata")
 geomlog = Logger("geometry")
@@ -37,6 +40,7 @@ ALL_GSIGNALS = {}
 for bc in WINDOW_BASES:
     gsignals = getattr(bc, "__gsignals__", {})
     ALL_GSIGNALS.update(gsignals)
+log.warn(f"WindowBaseClass: {WINDOW_BASES=} - gsignals: {ALL_GSIGNALS.keys()}")
 
 
 class ClientWindow(WindowBaseClass):
@@ -52,6 +56,22 @@ class ClientWindow(WindowBaseClass):
         self.header_bar_image = None
         if self.can_use_header_bar(metadata):
             self.add_header_bar()
+
+    def destroy(self) -> None:  # pylint: disable=method-hidden
+        for bc in WINDOW_BASES:
+            bc.cleanup(self)
+        super().destroy()
+
+    def get_window_event_mask(self) -> Gdk.EventMask:
+        mask = 0
+        for bc in WINDOW_BASES:
+            mask |= bc.get_window_event_mask(self)
+            log("%s.get_window_event_mask()=%s", bc, mask)
+        return mask
+
+    def init_widget_events(self, widget) -> None:
+        for bc in WINDOW_BASES:
+            bc.init_widget_events(self, widget)
 
     def _icon_size(self) -> int:
         tb = self.get_titlebar()
@@ -240,6 +260,18 @@ class ClientWindow(WindowBaseClass):
         if not self._client.server_ok():
             self.paint_spinner(context)
         return True
+
+    def get_map_client_properties(self) -> dict[str, Any]:
+        props = {}
+        for bc in WINDOW_BASES:
+            props.update(bc.get_map_client_properties(self))
+        return props
+
+    def get_configure_client_properties(self) -> dict[str, Any]:
+        props = {}
+        for bc in WINDOW_BASES:
+            props.update(bc.get_configure_client_properties(self))
+        return props
 
 
 GObject.type_register(ClientWindow)

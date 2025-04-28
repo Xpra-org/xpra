@@ -18,7 +18,7 @@ from xpra.scripts.main import check_display
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import MAX_PACKET_SIZE, Packet
 from xpra.common import (
-    adjust_monitor_refresh_rate, get_refresh_rate_for_value,
+    noop, adjust_monitor_refresh_rate, get_refresh_rate_for_value,
     FULL_INFO, SYNC_ICC, NotificationID, skipkeys,
 )
 from xpra.util.parsing import (
@@ -463,7 +463,8 @@ class DisplayClient(StubClientMixin):
     def workspace_changed(self, *args) -> None:
         workspacelog("workspace_changed%s", args)
         for win in self._id_to_window.values():
-            win.workspace_changed()
+            ws_changed = getattr(win, "workspace_changed", noop)
+            ws_changed()
 
     def screen_size_changed(self, *args) -> None:
         log("screen_size_changed(%s) timer=%s", args, self.screen_size_change_timer)

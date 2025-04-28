@@ -9,6 +9,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, IgnoreWarningsContext
 from xpra.gtk.util import GRAB_STATUS_STRING
+from xpra.client.gtk3.window.stub_window import StubWindow
 from xpra.platform.gui import pointer_grab, pointer_ungrab
 from xpra.log import Logger
 
@@ -19,17 +20,20 @@ log = Logger("window", "grab")
 AUTOGRAB_MODES = os.environ.get("XPRA_AUTOGRAB_MODES", "shadow,desktop,monitors").split(",")
 AUTOGRAB_WITH_POINTER = envbool("XPRA_AUTOGRAB_WITH_POINTER", True)
 
-
 GRAB_EVENT_MASK: Gdk.EventMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
 GRAB_EVENT_MASK |= Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK
 GRAB_EVENT_MASK |= Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK
+GRAB_EVENT_MASK |= Gdk.EventMask.FOCUS_CHANGE_MASK
 
 
-class GrabWindow:
+class GrabWindow(StubWindow):
     __gsignals__ = {}
 
     def init_window(self, client, metadata: typedict) -> None:
         self.init_grab()
+
+    def get_window_event_mask(self) -> Gdk.EventMask:
+        return Gdk.EventMask.FOCUS_CHANGE_MASK
 
     def init_grab(self) -> None:
         self.when_realized("init-grab", self.do_init_grab)
