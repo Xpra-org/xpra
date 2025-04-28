@@ -744,7 +744,7 @@ def install_repo(repo_variant="") -> None:
     setup_cmds: list[list[str]] = []
 
     DEB_VARIANTS = (
-        "focal", "jammy", "noble", "oracular",
+        "focal", "jammy", "noble", "oracular", "plucky",
         "bullseye", "bookworm", "trixie", "sid",
     )
 
