@@ -11,7 +11,9 @@ from xpra.util.env import envbool
 def get_window_base_classes() -> tuple[type, ...]:
     from xpra.client.gtk3.window.base import GTKClientWindowBase
     from xpra.client.gtk3.window.action import ActionWindow
-    WINDOW_BASES: list[type] = [GTKClientWindowBase, ActionWindow]
+    from xpra.client.gtk3.window.headerbar import HeaderBarWindow
+    # headerbar could be toggled using a feature:
+    WINDOW_BASES: list[type] = [GTKClientWindowBase, ActionWindow, HeaderBarWindow]
     DRAGNDROP = envbool("XPRA_DRAGNDROP", True)
     if DRAGNDROP:
         from xpra.client.gtk3.window.dragndrop import DragNDropWindow

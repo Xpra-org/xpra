@@ -9,6 +9,7 @@ from xpra.util.objects import typedict
 from xpra.os_util import gi_import
 
 Gdk = gi_import("Gdk")
+GdkPixbuf = gi_import("GdkPixbuf")
 
 
 class StubWindow:
@@ -24,6 +25,9 @@ class StubWindow:
         return 0
 
     def init_widget_events(self, widget) -> None:
+        pass
+
+    def set_icon(self, pixbuf: GdkPixbuf.Pixbuf) -> None:
         pass
 
     def get_map_client_properties(self) -> dict[str, Any]:
