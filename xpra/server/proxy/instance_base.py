@@ -253,7 +253,7 @@ class ProxyInstance:
                 "challenge_client_salt": client_salt,
             })
         hello.setdefault("network", {})["pings"] = self.pings
-        self.queue_server_packet(("hello", hello))
+        self.queue_server_packet(Packet("hello", hello))
 
     def filter_client_caps(self, remove=CLIENT_REMOVE_CAPS) -> dict:
         fc = filter_caps(self.caps, remove, self.server_protocol)

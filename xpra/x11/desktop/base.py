@@ -345,7 +345,7 @@ class DesktopServerBase(DesktopServerBaseClass):
     def show_all_windows(self) -> None:
         log.warn("Warning: show_all_windows not implemented for desktop server")
 
-    def do_make_screenshot_packet(self) -> tuple:
+    def do_make_screenshot_packet(self) -> Packet:
         log("grabbing screenshot")
         regions = []
         offset_x, offset_y = 0, 0
