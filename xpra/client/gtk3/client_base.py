@@ -1291,7 +1291,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                                                     max_window_size=self.max_window_size,
                                                     pixel_depth=self.pixel_depth)
                 if not draw_result.get("success", False):
-                    err("OpenGL test rendering failed:", draw_result.get("message", "unknown error"))
+                    err("OpenGL test rendering failed:", draw_result.get("message", "") or "unknown error")
                     return
                 opengllog(f"OpenGL test rendering succeeded: {draw_result}")
             if self.opengl_enabled:
