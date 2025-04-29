@@ -63,7 +63,7 @@ class ClientWindow(WindowBaseClass):
 
     def set_icon(self, pixbuf: GdkPixbuf.Pixbuf) -> None:
         for bc in WINDOW_BASES:
-            bc.set_icon(pixbuf)
+            bc.set_icon(self, pixbuf)
 
     def show_xpra_menu(self, *_args) -> None:
         mh = self._client.get_menu_helper()
