@@ -167,12 +167,21 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._follow_handler = 0
         self._follow_position = None
         self._follow_configure = None
+        self.cursor_data = None
         self.window_state_timer: int = 0
         self.send_iconify_timer: int = 0
         self.remove_pointer_overlay_timer: int = 0
         self.show_pointer_overlay_timer: int = 0
         self.moveresize_timer: int = 0
         self.moveresize_event = None
+        # only set this initially:
+        # (so the server can't make us kill just any pid!)
+        watcher_pid = metadata.intget("watcher-pid", 0)
+        if watcher_pid:
+            def set_watcher_pid() -> None:
+                log("using watcher pid=%i for wid=%i", watcher_pid, self.wid)
+                self.do_set_x11_property("_NET_WM_PID", "u32", watcher_pid)
+            self.when_realized("watcher", set_watcher_pid)
         # add platform hooks
         self.connect_after("realize", self.on_realize)
         self.connect("unrealize", self.on_unrealize)
@@ -514,9 +523,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if HAS_X11_BINDINGS:
             # request frame extents if the window manager supports it
             self._client.request_frame_extents(self)
-            if self.watcher_pid:
-                log("using watcher pid=%i for wid=%i", self.watcher_pid, self.wid)
-                self.do_set_x11_property("_NET_WM_PID", "u32", self.watcher_pid)
         if self.group_leader:
             self.get_window().set_group(self.group_leader)
 

@@ -18,9 +18,8 @@ USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 
 class ClientWidgetBase:
 
-    def __init__(self, client, watcher_pid: int, wid: int, has_alpha: bool):
+    def __init__(self, client, wid: int, has_alpha: bool):
         self.wid = wid
-        self.watcher_pid = watcher_pid
         # tells us if the server-side window has an alpha channel
         # (whether we are capable of rendering it is down the backing)
         self._has_alpha = has_alpha

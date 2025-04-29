@@ -964,6 +964,8 @@ class WindowClient(StubClientMixin):
         # if possible, choosing the currently focused window (if there is one..)
         pid = metadata.intget("pid", 0)
         watcher_pid = self.assign_signal_watcher_pid(wid, pid, metadata.strget("title"))
+        if watcher_pid:
+            metadata["watcher-pid"] = watcher_pid
         if override_redirect and metadata.strget("role").lower() == "popup" and pid:
             self.patch_OR_popup_transient_for(metadata)
         border = None
@@ -974,7 +976,7 @@ class WindowClient(StubClientMixin):
             client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                window = cwc(self, group_leader_window, watcher_pid, wid,
+                window = cwc(self, group_leader_window, wid,
                              geom, backing_size,
                              metadata, override_redirect, client_properties,
                              border, self.max_window_size, self.pixel_depth,

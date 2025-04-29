@@ -50,19 +50,19 @@ def is_wm_property(name: str) -> bool:
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, watcher_pid: int, wid: int,
+    def __init__(self, client, group_leader, wid: int,
                  geom: tuple[int, int, int, int],
                  backing_size: tuple[int, int],
                  metadata: typedict, override_redirect: bool, client_properties,
                  border: WindowBorder, max_window_size, pixel_depth: int,
                  headerbar="no"):
         log("%s%s", type(self),
-            (client, group_leader, watcher_pid, wid,
+            (client, group_leader, wid,
              geom, backing_size,
              metadata, override_redirect, client_properties,
              border, max_window_size, pixel_depth,
              headerbar))
-        super().__init__(client, watcher_pid, wid, metadata.boolget("has-alpha"))
+        super().__init__(client, wid, metadata.boolget("has-alpha"))
         wx, wy, ww, wh = geom
         bw, bh = backing_size
         self._override_redirect = override_redirect
@@ -90,7 +90,6 @@ class ClientWindowBase(ClientWidgetBase):
         self._opaque_region = ()
         self.window_gravity = OVERRIDE_GRAVITY or DEFAULT_GRAVITY
         self.border = border
-        self.cursor_data = None
         self.max_window_size = max_window_size
         self.button_state: dict[int, bool] = {}
         self.pixel_depth = pixel_depth  # 0 for default
@@ -164,7 +163,6 @@ class ClientWindowBase(ClientWidgetBase):
             "attributes": attributes,
             "gravity": gravity_str(self.window_gravity),
             # "border"                : self.border or "",
-            # cursor_data
             "max-size": self.max_window_size,
             "button-state": self.button_state,
             "offset": self.window_offset or (0, 0),
