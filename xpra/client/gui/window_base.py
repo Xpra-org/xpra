@@ -411,7 +411,7 @@ class ClientWindowBase(ClientWidgetBase):
             self._set_initial_position = metadata.boolget("set-initial-position")
 
         if "transient-for" in metadata:
-            wid = metadata.intget("transient-for", -1)
+            wid = metadata.intget("transient-for", 0)
             self.apply_transient_for(wid)
 
         if "modal" in metadata:

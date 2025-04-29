@@ -6,6 +6,7 @@
 
 from typing import Any
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
@@ -279,7 +280,9 @@ class WindowServer(StubServerMixin):
         else:
             options = typedict({})
             client_properties = {}
-        if wid == -1:
+        if wid == -1 and BACKWARDS_COMPATIBLE:
+            wid_windows = self._id_to_window
+        elif wid == 0:
             wid_windows = self._id_to_window
         elif wid in self._id_to_window:
             wid_windows = {wid: self._id_to_window.get(wid)}

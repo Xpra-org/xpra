@@ -25,7 +25,7 @@ from xpra.gtk.window import set_visual
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.common import (
     MoveResize, force_size_constraint, noop,
-    MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING,
+    MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING, BACKWARDS_COMPATIBLE,
 )
 from xpra.net.common import PacketElement
 from xpra.client.gui.window_base import ClientWindowBase
@@ -1111,7 +1111,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                                         x_root, y_root, direction, button, source_indication)
 
     def apply_transient_for(self, wid: int) -> None:
-        if wid == -1:
+        if wid == 0:
             def set_root_transient() -> None:
                 # root is a gdk window, so we need to ensure we have one
                 # backing our gtk window to be able to call set_transient_for on it
@@ -1372,7 +1372,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         packet: Sequence[PacketElement] = [self.wid, sx, sy, sw, sh, props, self._resize_counter, state, skip_geometry]
         pwid = self.wid
         if self.is_OR():
-            pwid = -1
+            pwid = -1 if BACKWARDS_COMPATIBLE else 0
         packet.append(pwid)
         packet.append(self.get_mouse_position())
         packet.append(self._client.get_current_modifiers())

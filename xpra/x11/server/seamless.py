@@ -18,7 +18,7 @@ from xpra.util.version import XPRA_VERSION
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.str_fn import strtobytes, memoryview_to_bytes
-from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES
+from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
 from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
 from xpra.server import features, ServerExitMode
@@ -1016,7 +1016,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 if pwid == wid and window.is_OR():
                     # some clients may send the OR window wid
                     # this causes focus issues (see #1999)
-                    pwid = -1
+                    pwid = -1 if BACKWARDS_COMPATIBLE else 0
                 device_id = -1
                 mouselog("configure pointer data: %s", (pwid, pointer, modifiers))
                 if self.process_mouse_common(proto, device_id, pwid, pointer):
