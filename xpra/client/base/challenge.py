@@ -154,7 +154,7 @@ class ChallengeClient(StubClientMixin):
                 prompt = "password"
                 if len(packet) >= 6:
                     prompt = std(packet.get_str(5), extras="-,./: '")
-                log(f"calling challenge handler {handler}")
+                log(f"calling challenge handler {handler} with {challenge=} and {prompt=}")
                 value = handler.handle(challenge=challenge, digest=digest, prompt=prompt)
                 log(f"{handler.handle}({packet})={obsc(value)}")
                 if value:
