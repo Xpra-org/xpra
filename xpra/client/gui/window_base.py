@@ -51,17 +51,20 @@ def is_wm_property(name: str) -> bool:
 class ClientWindowBase(ClientWidgetBase):
 
     def __init__(self, client, group_leader, watcher_pid: int, wid: int,
-                 wx: int, wy: int, ww: int, wh: int, bw: int, bh: int,
+                 geom: tuple[int, int, int, int],
+                 backing_size: tuple[int, int],
                  metadata: typedict, override_redirect: bool, client_properties,
-                 border: WindowBorder, max_window_size, default_cursor_data, pixel_depth: int,
+                 border: WindowBorder, max_window_size, pixel_depth: int,
                  headerbar="no"):
         log("%s%s", type(self),
             (client, group_leader, watcher_pid, wid,
-             wx, wy, ww, wh, bw, bh,
+             geom, backing_size,
              metadata, override_redirect, client_properties,
-             border, max_window_size, default_cursor_data, pixel_depth,
+             border, max_window_size, pixel_depth,
              headerbar))
         super().__init__(client, watcher_pid, wid, metadata.boolget("has-alpha"))
+        wx, wy, ww, wh = geom
+        bw, bh = backing_size
         self._override_redirect = override_redirect
         self.group_leader = group_leader
         self._pos = (wx, wy)
@@ -88,7 +91,6 @@ class ClientWindowBase(ClientWidgetBase):
         self.window_gravity = OVERRIDE_GRAVITY or DEFAULT_GRAVITY
         self.border = border
         self.cursor_data = None
-        self.default_cursor_data = default_cursor_data
         self.max_window_size = max_window_size
         self.button_state: dict[int, bool] = {}
         self.pixel_depth = pixel_depth  # 0 for default
@@ -224,7 +226,8 @@ class ClientWindowBase(ClientWidgetBase):
         w, h = self._size
         self._backing = self.make_new_backing(backing_class, w, h, bw, bh)
         self._backing.border = self.border
-        self._backing.default_cursor_data = self.default_cursor_data
+        # soft dependency on `PointerWindow`:
+        self._backing.default_cursor_data = getattr(self, "default_cursor_data", ())
         self._backing.gravity = self.window_gravity
         # this is only used by cairo to request a repaint for the fps counter:
         self._backing.repaint = self.repaint

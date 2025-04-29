@@ -145,7 +145,7 @@ class WindowBackingBase:
         self.paint_box_line_width = PAINT_BOX
         self.pointer_overlay = ()
         self.cursor_data = None
-        self.default_cursor_data = None
+        self.default_cursor_data = ()
         self.jpeg_decoder = None
         self.webp_decoder = None
         self.pil_decoder = get_codec("dec_pillow")

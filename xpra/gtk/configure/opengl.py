@@ -142,16 +142,16 @@ def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[G
     })
     border = WindowBorder(False)
     max_window_size = None  # (1024, 1024)
-    default_cursor_data = None
     windows: list[Gtk.Window] = []
     for i, window_class, title in (
         (0, gl_window_class, "OpenGL Window"),
         (1, ClientWindow, "Non-OpenGL Window"),
     ):
         x, y = 100+ww*i, 100
-        window = window_class(noclient, None, 0, 2 ** 32 - 1, x, y, ww, wh, ww, wh,
+        window = window_class(noclient, None, 0, 2 ** 32 - 1,
+                              (x, y, ww, wh), (ww, wh),
                               metadata, False, typedict({}),
-                              border, max_window_size, default_cursor_data, pixel_depth,
+                              border, max_window_size, pixel_depth,
                               )
         window.set_title(title)
         windows.append(window)

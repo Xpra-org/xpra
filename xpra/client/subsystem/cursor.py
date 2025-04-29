@@ -30,7 +30,7 @@ class CursorClient(StubClientMixin):
         self.server_cursors: bool = False
         self.client_supports_cursors: bool = False
         self.cursors_enabled: bool = False
-        self.default_cursor_data = None
+        self.default_cursor_data = ()
 
     def init(self, opts) -> None:
         self.client_supports_cursors = opts.cursors
@@ -48,7 +48,7 @@ class CursorClient(StubClientMixin):
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_cursors = c.boolget("cursors", True)  # added in 0.5, default to True!
         self.cursors_enabled = self.server_cursors and self.client_supports_cursors
-        self.default_cursor_data = c.tupleget("cursor.default", None)
+        self.default_cursor_data = c.tupleget("cursor.default", ())
         return True
 
     def _process_cursor(self, packet: Packet) -> None:

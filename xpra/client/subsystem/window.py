@@ -920,9 +920,11 @@ class WindowClient(StubClientMixin):
         client_properties = {}
         if len(packet) >= 8:
             client_properties = packet.get_dict(7)
+        geom = (wx, wy, ww, wh)
+        backing_size = (bw, bh)
         geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s",
-                wid, override_redirect, packet[2:6], (wx, wy, ww, wh), (bw, bh))
-        return self.make_new_window(wid, wx, wy, ww, wh, bw, bh, metadata, override_redirect, client_properties)
+                wid, override_redirect, packet[2:6], geom, backing_size)
+        return self.make_new_window(wid, geom, backing_size, metadata, override_redirect, client_properties)
 
     def _find_pid_focused_window(self, pid: int, OR=False) -> int:
         for twid, twin in self._id_to_window.items():
@@ -950,9 +952,11 @@ class WindowClient(StubClientMixin):
         if twid:
             metadata["transient-for"] = twid
 
-    def make_new_window(self, wid: int, wx: int, wy: int, ww: int, wh: int, bw: int, bh: int,
+    def make_new_window(self, wid: int,
+                        geom: tuple[int, int, int, int],
+                        backing_size: tuple[int, int],
                         metadata: typedict, override_redirect: bool, client_properties):
-        client_window_classes = self.get_client_window_classes(ww, wh, metadata, override_redirect)
+        client_window_classes = self.get_client_window_classes(geom, metadata, override_redirect)
         group_leader_window = self.get_group_leader(wid, metadata, override_redirect)
         # workaround for "popup" OR windows without a transient-for (like: google chrome popups):
         # prevents them from being pushed under other windows on OSX
@@ -970,11 +974,10 @@ class WindowClient(StubClientMixin):
             client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                default_cursor_data = getattr(self, "default_cursor_data", None)
                 window = cwc(self, group_leader_window, watcher_pid, wid,
-                             wx, wy, ww, wh, bw, bh,
+                             geom, backing_size,
                              metadata, override_redirect, client_properties,
-                             border, self.max_window_size, default_cursor_data, self.pixel_depth,
+                             border, self.max_window_size, self.pixel_depth,
                              self.headerbar)
                 break
             except (RuntimeError, ValueError):
@@ -1204,7 +1207,7 @@ class WindowClient(StubClientMixin):
         # subclasses that wish to implement the feature may override this method
         return None
 
-    def get_client_window_classes(self, _w, _h, _metadata, _override_redirect) -> Sequence[type]:
+    def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
         return (self.ClientWindowClass,)
 
     def _process_new_window(self, packet: Packet) -> None:

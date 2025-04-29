@@ -139,7 +139,6 @@ def test_gl_client_window(gl_client_window_class: Callable,
         load_codec("dec_pillow")
         from xpra.client.gui.window_border import WindowBorder
         border = WindowBorder()
-        default_cursor_data = None
         noclient = FakeClient()
         # test with alpha, but not on win32
         # because we can't do alpha on win32 with opengl
@@ -153,9 +152,10 @@ def test_gl_client_window(gl_client_window_class: Callable,
             def schedule_recheck_focus(self) -> None:
                 """ pretend to handle focus checks """
 
-        window = NoHeaderGLClientWindow(noclient, None, 0, 2 ** 32 - 1, x, y, ww, wh, ww, wh,
+        window = NoHeaderGLClientWindow(noclient, None, 0, 2 ** 32 - 1,
+                                        (x, y, ww, wh), (ww, wh),
                                         metadata, False, typedict({}),
-                                        border, max_window_size, default_cursor_data, pixel_depth)
+                                        border, max_window_size, pixel_depth)
         window_backing = window._backing
         window.realize()
         window_backing.paint_screen = True

@@ -1312,17 +1312,18 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             opengllog(f"init_opengl({enable_opengl})", exc_info=True)
             err("Error loading OpenGL support:", e)
 
-    def get_client_window_classes(self, w: int, h: int, metadata: typedict,
+    def get_client_window_classes(self, geom: tuple[int, int, int, int], metadata: typedict,
                                   override_redirect: bool) -> Sequence[type]:
-        log("get_client_window_class%s", (w, h, metadata, override_redirect))
+        log("get_client_window_class%s", (geom, metadata, override_redirect))
         log(" ClientWindowClass=%s, GLClientWindowClass=%s, opengl_enabled=%s, encoding=%s",
             self.ClientWindowClass, self.GLClientWindowClass, self.opengl_enabled, self.encoding)
         window_classes: list[type] = []
         if self.GLClientWindowClass:
-            if self.can_use_opengl(w, h, metadata, override_redirect):
+            ww, wh = geom[2], geom[3]
+            if self.can_use_opengl(ww, wh, metadata, override_redirect):
                 window_classes.append(self.GLClientWindowClass)
             else:
-                opengllog(f"OpenGL not available for {w}x{h} {override_redirect=} window {metadata}")
+                opengllog(f"OpenGL not available for {ww}x{wh} {override_redirect=} window {metadata}")
         if self.ClientWindowClass:
             window_classes.append(self.ClientWindowClass)
         return tuple(window_classes)
