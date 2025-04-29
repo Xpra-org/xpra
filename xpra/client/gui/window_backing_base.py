@@ -144,7 +144,7 @@ class WindowBackingBase:
         self.default_paint_box_line_width = PAINT_BOX or 1
         self.paint_box_line_width = PAINT_BOX
         self.pointer_overlay = ()
-        self.cursor_data = None
+        self.cursor_data = ()
         self.default_cursor_data = ()
         self.jpeg_decoder = None
         self.webp_decoder = None
@@ -468,7 +468,7 @@ class WindowBackingBase:
             videolog(" * %s : %s", e, modes)
         return full_csc_modes
 
-    def set_cursor_data(self, cursor_data) -> None:
+    def set_cursor_data(self, cursor_data: Sequence) -> None:
         self.cursor_data = cursor_data
 
     def paint_jpeg(self, img_data, x: int, y: int, width: int, height: int,

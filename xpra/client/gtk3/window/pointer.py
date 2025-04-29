@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import math
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.objects import typedict
@@ -47,6 +48,7 @@ class PointerWindow(StubWindow):
     __gsignals__ = {}
 
     def init_window(self, _client, _metadata: typedict) -> None:
+        self.cursor_data = ()
         self.remove_pointer_overlay_timer = 0
         self.show_pointer_overlay_timer = 0
 
@@ -93,6 +95,12 @@ class PointerWindow(StubWindow):
 
     ######################################################################
     # pointer overlay handling
+    def set_cursor_data(self, cursor_data: Sequence) -> None:
+        self.cursor_data = cursor_data
+        b = self._backing
+        if b:
+            self.when_realized("cursor", b.set_cursor_data, cursor_data)
+
     def cancel_remove_pointer_overlay_timer(self) -> None:
         rpot = self.remove_pointer_overlay_timer
         log(f"cancel_remove_pointer_overlay_timer() timer={rpot}")

@@ -167,7 +167,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._follow_handler = 0
         self._follow_position = None
         self._follow_configure = None
-        self.cursor_data = None
         self.window_state_timer: int = 0
         self.send_iconify_timer: int = 0
         self.remove_pointer_overlay_timer: int = 0
@@ -399,15 +398,12 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def new_backing(self, bw: int, bh: int):
         b = ClientWindowBase.new_backing(self, bw, bh)
-        # call via idle_add so that the backing has time to be realized too:
-        self.when_realized("cursor", GLib.idle_add, self._backing.set_cursor_data, self.cursor_data)
+        # soft dependency on `PointerWindow`:
+        cursor_data = getattr(self, "cursor_data", ())
+        if cursor_data:
+            # call via idle_add so that the backing has time to be realized too:
+            self.when_realized("cursor", GLib.idle_add, self._backing.set_cursor_data, cursor_data)
         return b
-
-    def set_cursor_data(self, cursor_data) -> None:
-        self.cursor_data = cursor_data
-        b = self._backing
-        if b:
-            self.when_realized("cursor", b.set_cursor_data, cursor_data)
 
     def adjusted_position(self, ox, oy) -> tuple[int, int]:
         if AWT_RECENTER and is_awt(self._metadata):
