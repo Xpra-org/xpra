@@ -49,7 +49,6 @@ log = Logger("client")
 netlog = Logger("network")
 
 EXTRA_TIMEOUT = 10
-SPLASH_LOG = envbool("XPRA_SPLASH_LOG", False)
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 
 
