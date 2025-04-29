@@ -3,8 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+
 from xpra.gtk.widget import scaled_image
 from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.client.gtk3.window.stub_window import StubWindow
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -23,7 +25,7 @@ WINDOW_XPRA_MENU = envbool("XPRA_WINDOW_XPRA_MENU", True)
 WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
-class HeaderBarWindow:
+class HeaderBarWindow(StubWindow):
     __gsignals__ = {}
 
     def init_window(self, client, metadata: typedict) -> None:
