@@ -44,9 +44,11 @@ def drag_motion_cb(wid: int, context, x: int, y: int, time: int):
 class DragNDropWindow(StubWindow):
 
     def init_window(self, client, _metadata: typedict) -> None:
-        assert isinstance(client, FileTransferHandler)
-        self._file_handler = client
-        self.init_dragndrop()
+        # opengl probing uses a fake client,
+        # in which case we don't want dragndrop initialized:
+        if isinstance(client, FileTransferHandler):
+            self._file_handler = client
+            self.init_dragndrop()
 
     def is_readonly(self) -> bool:
         # inject dependency on UI client,
