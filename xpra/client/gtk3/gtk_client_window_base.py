@@ -2446,6 +2446,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             #cancel move resize if there is one:
             self.moveresize_event = None
             self.cancel_moveresize_timer()
+            return False
         return self._client.handle_key_action(self, key_event)
 
     def do_key_release_event(self, event):
