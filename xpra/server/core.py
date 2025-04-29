@@ -1809,7 +1809,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
                     fail("authentication failed")
                     return
                 authenticator.passed = True
-                authlog(f"authentication passed for {authenticator} (no challenge provided)")
+                authlog(f"authentication passed for {authenticator} (no challenge needed)")
                 continue
             if not csent:
                 # we'll re-schedule this when we call send_challenge()
