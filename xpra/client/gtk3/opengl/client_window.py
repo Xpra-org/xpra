@@ -4,8 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections import namedtuple
-
 from xpra.client.gtk3.window.window import ClientWindow
 from xpra.gtk.window import set_visual
 from xpra.util.objects import typedict
@@ -13,9 +11,6 @@ from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("opengl", "window")
-
-Rectangle = namedtuple("Rectangle", ("x", "y", "width", "height"))
-DrawEvent = namedtuple("DrawEvent", ("area", ))
 
 MONITOR_REINIT = envbool("XPRA_OPENGL_MONITOR_REINIT", False)
 
