@@ -1316,7 +1316,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             if self.opengl_enabled and enable_opengl!="probe-success" and not self.opengl_force:
                 draw_result = test_gl_client_window(self.GLClientWindowClass, max_window_size=self.max_window_size, pixel_depth=self.pixel_depth)
                 if not draw_result.get("success", False):
-                    err("OpenGL test rendering failed:", draw_result.get("message", "unknown error"))
+                    err("OpenGL test rendering failed:", draw_result.get("message", "") or "unknown error")
                     return
                 log("OpenGL test rendering succeeded")
             if self.opengl_enabled:
