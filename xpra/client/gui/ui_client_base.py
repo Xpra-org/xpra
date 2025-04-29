@@ -30,7 +30,7 @@ ClientBaseClass = type('ClientBaseClass', CLIENT_BASES, {})
 GLib = gi_import("GLib")
 
 log = Logger("client")
-log("UIXpraClient%s: %s", ClientBaseClass, CLIENT_BASES)
+log("UIXpraClient base classes: %s", CLIENT_BASES)
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 

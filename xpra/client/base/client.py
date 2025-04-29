@@ -51,6 +51,8 @@ netlog = Logger("network")
 EXTRA_TIMEOUT = 10
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
 
+log("Client base classes: %s", CLIENT_BASES)
+
 
 class XpraClientBase(ClientBaseClass):
     """

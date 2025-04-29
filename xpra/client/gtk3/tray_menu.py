@@ -1514,7 +1514,7 @@ class GTKTrayMenu(MenuHelper):
         return self.handshake_menuitem("Minimize Windows", "minimize.png", None, self._minimize_all_windows)
 
     def make_showhidewindowsmenuitem(self) -> Gtk.ImageMenuItem:
-        def set_icon(icon_name) -> None:
+        def set_showhide_icon(icon_name: str) -> None:
             image = self.get_image(icon_name, self.menu_icon_size)
             if image:
                 showhide.set_image(image)
@@ -1527,12 +1527,12 @@ class GTKTrayMenu(MenuHelper):
             if showhidewindows_state[0]:
                 # deiconify() will take care of restoring the attributes via "_ondeiconify"
                 self._call_non_OR_windows({"unfreeze": (), "present": ()})
-                set_icon("eye-off.png")
+                set_showhide_icon("eye-off.png")
                 showhide.set_label("Hide Windows")
             else:
                 for win in self._non_OR_windows():
                     _hide_window(win)
-                set_icon("eye-on.png")
+                set_showhide_icon("eye-on.png")
                 showhide.set_label("Show Windows")
 
         showhide = self.handshake_menuitem("Hide Windows", "eye-off.png", None, showhide_windows)

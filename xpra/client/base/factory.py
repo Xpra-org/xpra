@@ -26,5 +26,4 @@ def get_client_base_classes() -> tuple[type, ...]:
     if SSL_UPGRADE:
         from xpra.client.base.ssl_upgrade import SSLUpgradeClient
         CLIENT_BASES.append(SSLUpgradeClient)
-
     return tuple(CLIENT_BASES)
