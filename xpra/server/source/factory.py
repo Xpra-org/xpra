@@ -132,7 +132,12 @@ def get_client_connection_class(caps: typedict):
             for bc in CC_BASES:
                 caps = bc.get_caps(self)
                 log("%s.get_caps()=%s", bc, caps)
-                merge_dicts(capabilities, caps)
+                try:
+                    merge_dicts(capabilities, caps)
+                except ValueError:
+                    log.error("Error merging capabilities from %s", bc)
+                    log.error(" %s", caps)
+                    raise
             if LOG_HELLO:
                 netlog = Logger("network")
                 netlog.info(f"sending hello to {self}:")

@@ -26,6 +26,7 @@ from xpra.x11.gtk.bindings import init_x11_filter, cleanup_x11_filter, cleanup_a
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, first_time
+from xpra.util.str_fn import Ellipsizer
 from xpra.net.compression import Compressed
 from xpra.net.common import Packet
 from xpra.server.gtk_server import GTKServerBase
@@ -220,7 +221,7 @@ class X11ServerCore(GTKServerBase):
 
         def get_default_cursor():
             self.default_cursor_image = X11Keyboard.get_cursor_image()
-            cursorlog("get_default_cursor=%s", self.default_cursor_image)
+            cursorlog("get_default_cursor=%s", Ellipsizer(self.default_cursor_image))
 
         with xlog:
             get_default_cursor()
@@ -365,7 +366,7 @@ class X11ServerCore(GTKServerBase):
         enabled = getattr(self, "cursors", False)
         if not (enabled and ("default" in encodings) and dci):
             return
-        cursorlog(f"default_cursor_image={dci}, {enabled=}, {encodings=}", )
+        cursorlog(f"default_cursor_image=%s, {enabled=}, {encodings=}", Ellipsizer(dci))
         with cursorlog.trap_error("Error sending default cursor"):
             ss.do_send_cursor(0, dci, get_cursor_sizes(), encoding_prefix="default:")
 

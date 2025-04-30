@@ -1,5 +1,4 @@
 # This file is part of Xpra.
-# Copyright (C) 2011 Serviware (Arthur Huillet, <ahuillet@serviware.com>)
 # Copyright (C) 2010 Antoine Martin <antoine@xpra.org>
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
@@ -8,8 +7,11 @@
 # pylint: disable-msg=E1101
 
 from typing import Any
+from importlib.util import find_spec
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
+from xpra.util.str_fn import Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.client.base.stub_client_mixin import StubClientMixin
@@ -38,17 +40,28 @@ class CursorClient(StubClientMixin):
     def get_info(self) -> dict[str, Any]:
         return self.get_caps()
 
-    ######################################################################
-    # hello:
     def get_caps(self) -> dict[str, Any]:
-        return {
-            "cursors": self.client_supports_cursors,
+        encodings = ["raw", "default"]
+        if find_spec("PIL"):
+            encodings.append("png")
+        caps: dict[str, Any] = {
+            CursorClient.PREFIX: {
+                "encodings": encodings,
+            }
         }
+        if BACKWARDS_COMPATIBLE:
+            caps["cursors"] = self.client_supports_cursors
+        return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:
-        self.server_cursors = c.boolget("cursors", True)  # added in 0.5, default to True!
+        cursor = c.get("cursor")
+        self.server_cursors = bool(cursor)
+        if isinstance(cursor, dict):
+            self.default_cursor_data = typedict(cursor).tupleget("default", ())
+        if BACKWARDS_COMPATIBLE:
+            self.server_cursors |= c.boolget("cursors", True)
         self.cursors_enabled = self.server_cursors and self.client_supports_cursors
-        self.default_cursor_data = c.tupleget("cursor.default", ())
+        log("parse_server_capabilities(..) cursor=%s, default=%s", self.cursors_enabled, self.default_cursor_data)
         return True
 
     def _process_cursor(self, packet: Packet) -> None:
@@ -83,7 +96,7 @@ class CursorClient(StubClientMixin):
                 log.warn(f"Warning: invalid cursor encoding: {encoding}")
                 return
         if setdefault:
-            log(f"setting default cursor={new_cursor!r}")
+            log("setting default cursor=%s", Ellipsizer(new_cursor))
             self.default_cursor_data = new_cursor
         else:
             self.set_windows_cursor(self._id_to_window.values(), new_cursor)

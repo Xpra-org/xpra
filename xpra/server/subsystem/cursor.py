@@ -6,6 +6,7 @@
 import sys
 from typing import Any
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.util.env import SilenceWarningsContext
@@ -48,9 +49,9 @@ class CursorManager(StubServerMixin):
             ss.send_cursor()
 
     def get_caps(self, source) -> dict[str, Any]:
-        caps: dict[str, Any] = {
-            "cursors": self.cursors,
-        }
+        caps: dict[str, Any] = {}
+        if BACKWARDS_COMPATIBLE:
+            caps["cursors"] = self.cursors
         Gdk = sys.modules.get("gi.repository.Gdk", None)
         display = Gdk.Display.get_default() if Gdk else None
         if display:

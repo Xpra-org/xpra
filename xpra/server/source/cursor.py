@@ -8,6 +8,7 @@ from io import BytesIO
 from typing import Any
 from collections.abc import Sequence, Callable
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.net.compression import Compressed
@@ -28,7 +29,9 @@ class CursorsConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("cursors")
+        if caps.boolget("cursor"):
+            return True
+        return BACKWARDS_COMPATIBLE and caps.boolget("cursors")
 
     def __init__(self):
         self.get_cursor_data_cb: Callable | None = None
@@ -53,9 +56,15 @@ class CursorsConnection(StubClientConnection):
         self.send_cursor()
 
     def parse_client_caps(self, c: typedict) -> None:
-        self.send_cursors = self.send_windows and c.boolget("cursors")
-        self.cursor_encodings = c.strtupleget("encodings.cursor")
-        log(f"cursors={self.send_cursors}, cursor encodings={self.cursor_encodings}")
+        cursor = c.get("cursor")
+        self.send_cursors = bool(cursor)
+        if isinstance(cursor, dict):
+            self.cursor_encodings = typedict(cursor).strtupleget("encodings")
+        if BACKWARDS_COMPATIBLE:
+            self.send_cursors |= self.send_windows and c.boolget("cursors")
+            if not self.cursor_encodings:
+                self.cursor_encodings = c.strtupleget("encodings.cursor")
+        log(f"parse_client_caps(..) cursors={self.send_cursors}, cursor encodings={self.cursor_encodings}")
 
     def get_caps(self) -> dict[str, Any]:
         return {}

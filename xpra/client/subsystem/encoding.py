@@ -12,7 +12,7 @@ from xpra.codecs.constants import preforder, STREAM_ENCODINGS
 from xpra.codecs.loader import load_codec, codec_versions, has_codec, get_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
 from xpra.scripts.config import parse_bool_or_int
-from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, noop
+from xpra.common import FULL_INFO, VIDEO_MAX_SIZE, noop, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet
 from xpra.net import compression
 from xpra.util.objects import typedict
@@ -167,15 +167,17 @@ class Encodings(StubClientMixin):
         }
 
     def get_caps(self) -> dict[str, Any]:
+        enc_caps = {
+            "": self.get_encodings(),
+            "all": self.get_encodings(),
+            "core": self.get_core_encodings(),
+            "window-icon": self.get_window_icon_encodings(),
+            "packet": True,
+        }
+        if BACKWARDS_COMPATIBLE:
+            enc_caps["cursor"] = self.get_cursor_encodings()
         caps = {
-            "encodings": {
-                "": self.get_encodings(),
-                "all": self.get_encodings(),
-                "core": self.get_core_encodings(),
-                "window-icon": self.get_window_icon_encodings(),
-                "cursor": self.get_cursor_encodings(),
-                "packet": True,
-            },
+            "encodings": enc_caps,
             "batch": get_batch_caps(),
             "encoding": self.get_encodings_caps(),
         }
