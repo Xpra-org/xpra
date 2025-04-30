@@ -19,9 +19,13 @@ The prefix for all packets and capabilities is `mmap`.
 The client and server should expose the following capabilities in their `hello` packet
 using the `clipboard` prefix.
 
-The client creates an `mmap` backing file,
-writes a random token at a random position within this mmap area
-and sends the following capabilities:
+The client creates an `mmap` backing file for each direction it wants to use:
+* `read` for receiving data from the server
+* `write` for sending data to the server
+
+For each capability,
+the client writes a random token at a random position within this mmap area
+and sends the following attributes:
 
 | Capability    | Value                                |
 |---------------|--------------------------------------|
@@ -38,7 +42,7 @@ To use this mmap file, it must write a new token
 and return this information to the client.
 (using the same format, excluding the `file` and `size` that the client has already specified)
 
-The client then verifies that the mmap file can be used bi-directionally.
+The client then verifies that the mmap file can be used.
 
 
 ## Network Packets

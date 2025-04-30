@@ -44,6 +44,8 @@ class MMAP_Connection(StubClientConnection):
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         mmap_caps = typedict(caps.get("mmap") or {})
+        if not BACKWARDS_COMPATIBLE:
+            return bool(mmap_caps)
         for prefix in ("", "read", "write"):
             if prefix:
                 area_caps = typedict(mmap_caps.dictget(prefix) or {})
@@ -142,16 +144,18 @@ class MMAP_Connection(StubClientConnection):
             read_caps = tdcaps.dictget("write") or mmap_caps
         else:
             read_caps = tdcaps.dictget("write", {})
-        write_caps = tdcaps.dictget("read")
+        write_caps = tdcaps.dictget("read", {})
         self.mmap_read_area = self.parse_area_caps("read", read_caps, 1)
         self.mmap_write_area = self.parse_area_caps("write", write_caps, 0)
         log("parse_client_caps() mmap-read=%s, mmap-write=%s", self.mmap_read_area, self.mmap_write_area)
 
     def get_caps(self) -> dict[str, Any]:
         mmap_caps: dict[str, Any] = {}
+        READ_PREFIXES = ("read", "") if BACKWARDS_COMPATIBLE else ("read", )
+        WRITE_PREFIXES = ("write", )
         for prefixes, area in (
-            (("read", ""), self.mmap_read_area),
-            (("write", ), self.mmap_write_area),
+            (READ_PREFIXES, self.mmap_read_area),
+            (WRITE_PREFIXES, self.mmap_write_area),
         ):
             if not area:
                 continue

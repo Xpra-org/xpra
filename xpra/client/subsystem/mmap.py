@@ -6,6 +6,7 @@
 import os
 from typing import Any
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
@@ -156,11 +157,13 @@ class MmapClient(StubClientMixin):
         if not self.mmap_supported or not mmap_caps:
             self.clean_areas()
             return True
+        READ_PREFIXES = ("read", )
+        # older versions didn't use a prefix:
+        WRITE_PREFIXES = ("write", "") if BACKWARDS_COMPATIBLE else ("write", )
         # parse each area
-        # older versions don't use a prefix for "read" which used to be the default:
         for prefixes, area in (
-            (("write", ""), self.mmap_read_area),
-            (("read", ), self.mmap_write_area),
+            (WRITE_PREFIXES, self.mmap_read_area),
+            (READ_PREFIXES, self.mmap_write_area),
         ):
             log(f"{prefixes} : {area}")
             if not area:
@@ -209,7 +212,7 @@ class MmapClient(StubClientMixin):
         }.items():
             if area:
                 caps[prefix] = area.get_caps()
-        if self.mmap_read_area:
+        if BACKWARDS_COMPATIBLE and self.mmap_read_area:
             # duplicate it for legacy unprefixed caps:
             caps.update(self.mmap_read_area.get_caps())
         return {MmapClient.PREFIX: caps}
