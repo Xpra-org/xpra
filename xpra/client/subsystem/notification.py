@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import
-from xpra.common import NotificationID, noop
+from xpra.common import NotificationID, noop, BACKWARDS_COMPATIBLE
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.notification import get_backends
 from xpra.net.common import Packet
@@ -70,11 +70,14 @@ class NotificationClient(StubClientMixin):
 
     def get_caps(self) -> dict[str, Any]:
         enabled = self.client_supports_notifications
-        return {
-            "notifications": {
-                "enabled": enabled,
-            },
+        caps: dict[str, Any] = {
+            NotificationClient.PREFIX : True,
         }
+        if BACKWARDS_COMPATIBLE:
+            caps["notifications"] = {
+                "enabled": enabled,
+            }
+        return caps
 
     def init_authenticated_packet_handlers(self) -> None:
         self.add_packets(f"{NotificationClient.PREFIX}-show", f"{NotificationClient.PREFIX}-close")

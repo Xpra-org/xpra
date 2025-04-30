@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.util.objects import typedict
-from xpra.common import NotificationID
+from xpra.common import NotificationID, BACKWARDS_COMPATIBLE
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
@@ -20,11 +20,14 @@ class NotificationConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        v = caps.get("notifications")
-        if isinstance(v, bool):
-            return v
-        if isinstance(v, dict):
-            return typedict(v).boolget("enabled", False)
+        if caps.boolget("notification"):
+            return True
+        if BACKWARDS_COMPATIBLE:
+            v = caps.get("notifications")
+            if isinstance(v, bool):
+                return v
+            if isinstance(v, dict):
+                return typedict(v).boolget("enabled", False)
         return False
 
     def init_state(self) -> None:
@@ -32,10 +35,13 @@ class NotificationConnection(StubClientConnection):
         self.notification_callbacks: dict[int, Callable] = {}
 
     def parse_client_caps(self, c: typedict) -> None:
-        v = c.get("notifications")
-        if isinstance(v, dict):
-            self.send_notifications = typedict(v).boolget("enabled")
-        log("send notifications=%s", self.send_notifications)
+        if not BACKWARDS_COMPATIBLE:
+            self.send_notifications = c.boolget("notification")
+        else:
+            v = c.get("notifications")
+            if isinstance(v, dict):
+                self.send_notifications = typedict(v).boolget("enabled")
+        log("parse_client_caps(..) notification=%s", self.send_notifications)
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -75,13 +81,15 @@ class NotificationConnection(StubClientConnection):
             return False
         if user_callback:
             self.notification_callbacks[nid] = user_callback
+        packet_type = "notify_show" if BACKWARDS_COMPATIBLE else "notification-show"
         if self.hello_sent:
             # Warning: actions and hints are send last because they were added later (in version 2.3)
-            self.send_async("notify_show", dbus_id, nid, app_name, replaces_nid, app_icon,
-                            summary, body, expire_timeout, icon or b"", actions, hints)
+            self.send_async(packet_type, dbus_id, nid, app_name, replaces_nid, app_icon,
+                            summary, body, expire_timeout, icon or b"", tuple(actions), hints)
         return True
 
     def notify_close(self, nid: int) -> None:
         if not self.send_notifications or self.suspended or not self.hello_sent:
             return
-        self.send_more("notify_close", nid)
+        packet_type = "notify_close" if BACKWARDS_COMPATIBLE else "notification-close"
+        self.send_more(packet_type, nid)
