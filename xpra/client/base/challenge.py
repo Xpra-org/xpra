@@ -23,7 +23,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
-log = Logger("exec")
+log = Logger("auth")
 
 GLib = gi_import("GLib")
 
