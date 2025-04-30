@@ -22,7 +22,7 @@ from xpra.codecs import icon_util
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
 
-log = Logger("exec", "menu")
+log = Logger("menu")
 
 LOAD_FROM_RESOURCES: bool = envbool("XPRA_XDG_LOAD_FROM_RESOURCES", True)
 LOAD_FROM_PIXMAPS: bool = envbool("XPRA_XDG_LOAD_FROM_PIXMAPS", True)
