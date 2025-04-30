@@ -23,7 +23,6 @@ log = Logger("mmap")
 ALWAYS_WRAP = envbool("XPRA_MMAP_ALWAYS_WRAP", False)
 MMAP_GROUP = os.environ.get("XPRA_MMAP_GROUP", "xpra")
 MADVISE = envbool("XPRA_MMAP_MADVISE", True)
-MADVISE_FLAGS = os.environ.get("XPRA_MMAP_MADVISE_FLAGS", "SEQUENTIAL,DONTFORK,UNMERGEABLE,DONTDUMP").split(",")
 
 DEFAULT_TOKEN_BYTES: int = 128
 
@@ -55,9 +54,12 @@ def xpra_group() -> int:
 
 def madvise(mmap_area) -> None:
     import mmap
+    if not hasattr(mmap, "madvise"):
+        log("no mmap.madvise() on this platform")
+        return
+    MADVISE_FLAGS = os.environ.get("XPRA_MMAP_MADVISE_FLAGS", "SEQUENTIAL,DONTFORK,UNMERGEABLE,DONTDUMP").split(",")
     log(f"setting MADVISE_FLAGS={MADVISE_FLAGS}")
     try:
-
         for flag in MADVISE_FLAGS:
             flag_value = getattr(mmap, f"MADV_{flag}", 0)
             log(f"MADV_{flag}={flag_value}")
