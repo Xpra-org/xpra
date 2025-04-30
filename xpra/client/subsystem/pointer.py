@@ -66,17 +66,23 @@ class PointerClient(StubClientMixin):
         return {PointerClient.PREFIX: {}}
 
     def get_caps(self) -> dict[str, Any]:
+        # the gtk client implements `get_mouse_position`
+        def get_mouse_position() -> tuple[int, int]:
+            if hasattr(self, "get_mouse_position"):
+                return self.get_mouse_position()
+            return -1, -1
+
         double_click = get_double_click_caps()
         caps: dict[str, Any] = {
             PointerClient.PREFIX: {
-                "initial-position": self.get_mouse_position(),
+                "initial-position": get_mouse_position(),
                 "double_click": double_click,
             },
         }
         if BACKWARDS_COMPATIBLE:
             caps["mouse"] = {
                 "show": True,  # assumed available in v6
-                "initial-position": self.get_mouse_position(),
+                "initial-position": get_mouse_position(),
             }
             caps["double_click"] = double_click
         return caps
