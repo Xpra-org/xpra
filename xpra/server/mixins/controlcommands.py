@@ -264,7 +264,7 @@ class ServerBaseControlCommands(StubServerMixin):
     def do_control_command_start(self, ignore, *args) -> str:
         if not self.start_new_commands:
             raise ControlError("this feature is currently disabled")
-        proc = self.start_command(" ".join(args), args, ignore, shell=True)
+        proc = self.start_command(" ".join(args), args, ignore)
         if not proc:
             raise ControlError("failed to start new child command " + str(args))
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
