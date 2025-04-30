@@ -368,6 +368,7 @@ Requires(postun):	desktop-file-utils
 Recommends:			%{python3}-cups
 Recommends:		    %{python3}-pysocks
 Recommends:         NetworkManager-libnm
+Recommends:         libnotify
 Suggests:			sshpass
 %description -n %{package_prefix}-client
 This package contains the xpra client.
