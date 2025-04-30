@@ -15,8 +15,7 @@ from importlib import import_module
 
 from xpra.net.bytestreams import get_socket_config
 from xpra.util.version import parse_version
-from xpra.net.common import FLUSH_HEADER
-from xpra.common import FULL_INFO
+from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.log import Logger, enable_color, consume_verbose_argv
 
 log = Logger("network", "util")
@@ -367,22 +366,30 @@ def get_ssl_info(show_constants=False) -> dict[str, Any]:
 
 def get_network_caps(full_info: int = 1) -> dict[str, Any]:
     # pylint: disable=import-outside-toplevel
-    from xpra.net.digest import get_digests
     from xpra.net.compression import get_enabled_compressors, get_compression_caps
     from xpra.net.packet_encoding import get_enabled_encoders, get_packet_encoding_caps
-    digests = get_digests()
-    # "hmac" is the legacy name, "xor" and "des" should not be used for salt:
-    salt_digests = tuple(x for x in digests if x not in ("hmac", "xor", "des"))
     caps: dict[str, Any] = {
-        "digest": digests,
-        "salt-digest": salt_digests,
         "compressors": get_enabled_compressors(),
         "encoders": get_enabled_encoders(),
-        "flush": FLUSH_HEADER,
     }
+    if BACKWARDS_COMPATIBLE:
+        from xpra.util.env import envbool
+        FLUSH_HEADER: bool = envbool("XPRA_FLUSH_HEADER", True)
+        caps["flush"] = FLUSH_HEADER
     caps.update(get_compression_caps(full_info))
     caps.update(get_packet_encoding_caps(full_info))
     return caps
+
+
+def get_auth_caps() -> dict[str, Any]:
+    from xpra.net.digest import get_digests
+    digests = get_digests()
+    # "hmac" is the legacy name, "xor" and "des" should not be used for salt:
+    salt_digests = tuple(x for x in digests if x not in ("hmac", "xor", "des"))
+    return {
+        "digest": digests,
+        "salt-digest": salt_digests,
+    }
 
 
 def get_paramiko_info() -> dict[str, Sequence[int]]:
@@ -420,6 +427,7 @@ def get_info() -> dict[str, Any]:
     i["config"] = get_socket_config()
     i["paramiko"] = get_paramiko_info()
     i["bcrypt"] = get_bcrypt_info()
+    i["authentication"] = get_auth_caps()
     return i
 
 
@@ -511,6 +519,10 @@ def main():  # pragma: no cover
             netif["version"] = netifaces_version
         netcaps["netifaces"] = netif
         print_nested_dict(netcaps, vformat=pver)
+
+        print("")
+        print("Authentication:")
+        print_nested_dict(get_auth_caps())
 
         print("")
         print("Network Config:")
