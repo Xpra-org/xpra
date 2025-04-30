@@ -871,6 +871,8 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         return show_ssl(options, args, cmdline)
     if mode == "auth":
         return run_auth(options, args)
+    if mode == "u2f":
+        return run_u2f()
     if mode == "configure":
         from xpra.gtk.configure.main import main
         return main(args)
@@ -4548,6 +4550,11 @@ def run_auth(_options, args) -> ExitValue:
         raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
     argv = [auth_module.__file__] + args[1:]
     return main_fn(argv)
+
+
+def run_u2f() -> ExitValue:
+    from xpra.gtk.dialogs.u2f_tool import main
+    return main()
 
 
 def run_version_check(args) -> ExitValue:

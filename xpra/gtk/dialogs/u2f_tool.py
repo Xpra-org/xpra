@@ -25,7 +25,7 @@ def printmsgs(*msgs: str) -> None:
         print(x)
 
 
-def main():
+def main() -> int:
     from xpra.platform import program_context
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
         if use_gui_prompt():
