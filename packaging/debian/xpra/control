@@ -197,6 +197,7 @@ Depends: xpra-common (= ${binary:Version})
         ,${python3:Depends}
 Recommends: python3-socks
             ,gir1.2-nm-1.0
+            ,gir1.2-notify-0.7
             ,xpra-client-gtk3 (= ${binary:Version})
 Suggests: python-psutil
 # external ssh transport:
