@@ -10,7 +10,7 @@ from importlib import import_module
 
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitExit
-from xpra.net.digest import get_salt, gendigest
+from xpra.net.digest import get_salt, gendigest, get_salt_digests
 from xpra.net.common import Packet
 from xpra.common import ConnectionMessage
 from xpra.util.io import use_gui_prompt
@@ -67,12 +67,15 @@ class ChallengeClient(StubClientMixin):
             digest = handler.get_digest()
             if digest and digest not in digests:
                 digests.append(digest)
-        caps = {}
+        caps = {
+            "salt-digest": get_salt_digests()
+        }
         if digests:
-            caps["digests"] = tuple(digests)
+            caps["digest"] = tuple(digests)
         if self.username:
             # set for authentication:
             caps["username"] = self.username
+        log(f"challenge caps={caps}")
         return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:

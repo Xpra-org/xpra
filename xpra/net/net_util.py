@@ -14,6 +14,7 @@ from collections.abc import Callable, Sequence
 from importlib import import_module
 
 from xpra.net.bytestreams import get_socket_config
+from xpra.net.digest import get_caps as get_digest_caps
 from xpra.util.version import parse_version
 from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.log import Logger, enable_color, consume_verbose_argv
@@ -381,17 +382,6 @@ def get_network_caps(full_info: int = 1) -> dict[str, Any]:
     return caps
 
 
-def get_auth_caps() -> dict[str, Any]:
-    from xpra.net.digest import get_digests
-    digests = get_digests()
-    # "hmac" is the legacy name, "xor" and "des" should not be used for salt:
-    salt_digests = tuple(x for x in digests if x not in ("hmac", "xor", "des"))
-    return {
-        "digest": digests,
-        "salt-digest": salt_digests,
-    }
-
-
 def get_paramiko_info() -> dict[str, Sequence[int]]:
     paramiko = sys.modules.get("paramiko")
     if paramiko:
@@ -427,7 +417,7 @@ def get_info() -> dict[str, Any]:
     i["config"] = get_socket_config()
     i["paramiko"] = get_paramiko_info()
     i["bcrypt"] = get_bcrypt_info()
-    i["authentication"] = get_auth_caps()
+    i["digests"] = get_digest_caps()
     return i
 
 
@@ -519,10 +509,6 @@ def main():  # pragma: no cover
             netif["version"] = netifaces_version
         netcaps["netifaces"] = netif
         print_nested_dict(netcaps, vformat=pver)
-
-        print("")
-        print("Authentication:")
-        print_nested_dict(get_auth_caps())
 
         print("")
         print("Network Config:")

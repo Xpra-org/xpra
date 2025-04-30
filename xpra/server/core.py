@@ -35,6 +35,7 @@ from xpra.net.common import (
     SOCKET_TYPES, MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
     is_request_allowed, Packet, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
 )
+from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
@@ -44,7 +45,7 @@ from xpra.net.bytestreams import (
     log_new_connection, pretty_socket, SOCKET_TIMEOUT
 )
 from xpra.net.net_util import (
-    get_network_caps, get_info as get_net_info, get_auth_caps,
+    get_network_caps, get_info as get_net_info,
     import_netifaces, get_interfaces_addresses,
 )
 from xpra.net.glib_handler import GLibPacketHandler
@@ -2091,7 +2092,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         now = time()
         capabilities = get_network_caps(FULL_INFO)
         capabilities |= proto_crypto_caps(None if source is None else source.protocol)
-        capabilities |= get_auth_caps()
+        capabilities |= get_digest_caps()
         if source is None or "versions" in source.wants:
             capabilities |= self.get_minimal_server_info()
         capabilities |= {

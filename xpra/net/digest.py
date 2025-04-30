@@ -6,6 +6,7 @@
 import os
 import hmac
 import hashlib
+from typing import Any
 from collections.abc import Callable, Sequence
 
 from xpra.common import SizedBuffer
@@ -19,10 +20,22 @@ BLOCKLISTED_HASHES = ("sha1", "md5")
 DEFAULT_SALT_LENGTH = envint("XPRA_DEFAULT_SALT_LENGTH", 64)
 
 
+def get_caps() -> dict[str, Any]:
+    digests = get_digests()
+    # "hmac" is the legacy name, "xor" and "des" should not be used for salt:
+    salt_digests = tuple(x for x in digests if x not in ("hmac", "xor", "des"))
+    return {
+        "digest": digests,
+        "salt-digest": salt_digests,
+    }
+
+
+def get_salt_digests() -> Sequence[str]:
+    return _get_hmac_digests()
+
+
 def get_digests() -> Sequence[str]:
-    digests = ["xor"]
-    digests += [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
-                if not x.startswith("shake_") and x not in BLOCKLISTED_HASHES and getattr(hashlib, x, None) is not None]
+    digests = ["xor"] + _get_hmac_digests()
     try:
         from xpra.net.rfb import d3des  # pylint: disable=import-outside-toplevel
         assert d3des
@@ -30,6 +43,11 @@ def get_digests() -> Sequence[str]:
     except (ImportError, TypeError):  # pragma: no cover
         pass
     return tuple(digests)
+
+
+def _get_hmac_digests() -> list[str]:
+    return [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
+            if not x.startswith("shake_") and x not in BLOCKLISTED_HASHES and hasattr(hashlib, x)]
 
 
 def get_digest_module(digest: str) -> Callable | None:

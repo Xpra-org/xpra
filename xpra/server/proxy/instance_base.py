@@ -10,11 +10,11 @@ from queue import Queue
 from typing import Any
 from collections.abc import Callable, Iterable
 
-from xpra.net.net_util import get_network_caps, get_auth_caps
+from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.protocol.constants import CONNECTION_LOST
 from xpra.net.common import MAX_PACKET_SIZE, Packet
-from xpra.net.digest import get_salt, gendigest
+from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
 from xpra.scripts.config import parse_number, str_to_bool
 from xpra.common import FULL_INFO, ConnectionMessage
 from xpra.os_util import get_hex_uuid, gi_import
@@ -76,7 +76,7 @@ def filter_caps(caps: typedict, prefixes: Iterable[str], proto=None) -> dict:
             pcaps[k] = caps[k]
     log("filtered out %s matching %s", removed, prefixes)
     # replace the network caps with the proxy's own:
-    pcaps |= get_network_caps() | proto_crypto_caps(proto) | get_auth_caps()
+    pcaps |= get_network_caps() | proto_crypto_caps(proto) | get_digest_caps()
     # then add the proxy info:
     si = get_server_info()
     if FULL_INFO > 0:
