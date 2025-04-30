@@ -79,14 +79,16 @@ class ClipboardServer(StubServerMixin):
             self._clipboard_helper, self._clipboard_client, server_source, clipboard)
         if not clipboard:
             return {}
-        ccaps = {
+        ccaps: dict[str, Any] = {
             "notifications": True,
             "selections": self._clipboards,
-            "want_targets": CLIPBOARD_WANT_TARGETS,
-            "greedy": CLIPBOARD_GREEDY,
             "preferred-targets": CLIPBOARD_PREFERRED_TARGETS,
             "direction": self.clipboard_direction,
         }
+        if CLIPBOARD_WANT_TARGETS:
+            ccaps["want_targets"] = True
+        if CLIPBOARD_GREEDY:
+            ccaps["greedy"] = True
         log("clipboard server caps=%s", ccaps)
         return {ClipboardServer.PREFIX: ccaps}
 

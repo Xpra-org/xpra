@@ -51,6 +51,7 @@ class CursorClient(StubClientMixin):
         }
         if BACKWARDS_COMPATIBLE:
             caps["cursors"] = self.client_supports_cursors
+        log("cursor caps=%s", caps)
         return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:

@@ -34,18 +34,45 @@ It contains common features such as basic configuration, scheduling, filtering, 
 The client and server should expose the following capabilities in their `hello` packet
 using the `clipboard` prefix:
 
-| Capability          | Value                       | Information                                                                          |
-|---------------------|-----------------------------|--------------------------------------------------------------------------------------|
-| `enabled`           | `enabled` : boolean         | Whether clipboard support is enabled                                                 |
-| `notifications`     | `enabled` : boolean         | Request the peer to send `clipboard-pending-requests` packets                        |
-| `want_targets`      | `enabled` : boolean         | Request the peer to send `target`s with `clipboard-token` packets                    |
-| `greedy`            | `enabled` : boolean         | Request the peer to send clipboard data with `clipboard-token` packets               |
+| Capability          | Value                     | Information                                                                          |
+|---------------------|---------------------------|--------------------------------------------------------------------------------------|
+| `enabled`           | `enabled` : boolean       | Whether clipboard support is enabled                                                 |
+| `notification`      | `enabled` : boolean       | Request the peer to send `clipboard-pending-requests` packets                        |
+| `want_targets`      | `enabled` : boolean       | Request the peer to send `target`s with `clipboard-token` packets                    |
+| `greedy`            | `enabled` : boolean       | Request the peer to send clipboard data with `clipboard-token` packets               |
 | `preferred-targets` | `targets` : list of strings | The `target`s that the peer should try to use                                        |
-| `direction`         | `direction`: string         | Optional, which direction is supported, ie: `none`, `to-client`, `to-server`, `both` |
+| `direction`         | `direction`: string       | Optional, which direction is supported, ie: `none`, `to-client`, `to-server`, `both` |
 
 Notes:
+* any unspecified boolean value defaults to `false`
 * `MacOS` clients set the `want_targets` flag
 * both `MacOS` and `MS Windows` clients set the `greedy` flag
+
+### Example capabilities
+
+* X11 Client:
+```json lines
+{
+  'clipboard': {
+    'enabled': true,
+    'notifications': true,
+    'selections': ['CLIPBOARD', 'PRIMARY', 'SECONDARY'],
+    'preferred-targets': ['UTF8_STRING', 'TEXT', 'STRING', 'text/plain', 'image/png'],
+    'direction': "both",
+  },
+}
+```
+* X11 seamless server:
+```json lines
+{
+  'clipboard': {
+    'notifications': true,
+    'selections': ['CLIPBOARD', 'PRIMARY', 'SECONDARY'],
+    'preferred-targets': ['UTF8_STRING', 'TEXT', 'STRING', 'text/plain', 'image/png'],
+    'direction': 'both',
+  }
+}
+```
 
 ## Network Packets
 

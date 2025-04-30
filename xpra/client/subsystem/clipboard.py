@@ -131,16 +131,20 @@ class ClipboardClient(StubClientMixin):
         if not self.client_supports_clipboard:
             return {}
         caps: dict[str, Any] = {
-            "": True,
-            "enabled": True,
             "notifications": True,
             "selections": CLIPBOARDS,
-            # buggy osx clipboards:
-            "want_targets": CLIPBOARD_WANT_TARGETS,
-            # buggy osx and win32 clipboards:
-            "greedy": CLIPBOARD_GREEDY,
             "preferred-targets": CLIPBOARD_PREFERRED_TARGETS,
         }
+        # macos clipboard must provide targets:
+        if CLIPBOARD_WANT_TARGETS:
+            caps["want_targets"] = True
+        # macos and win32 clipboards must provide values:
+        if CLIPBOARD_GREEDY:
+            caps["greedy"] = True
+        if BACKWARDS_COMPATIBLE:
+            caps["enabled"] = True
+            caps[""] = True
+        log("clipboard.get_caps()=%s", caps)
         return {ClipboardClient.PREFIX: caps}
 
     def parse_server_capabilities(self, c: typedict) -> bool:

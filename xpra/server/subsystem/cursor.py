@@ -60,6 +60,7 @@ class CursorManager(StubServerMixin):
                 "default_size": display.get_default_cursor_size(),
                 "max_size": max_size,
             }
+        log("cursor caps=%s", caps)
         return caps
 
     def get_info(self, _proto) -> dict[str, Any]:
