@@ -15,11 +15,15 @@ from typing import Any
 from collections.abc import Callable, Sequence
 
 from xpra.util.env import envint, envbool
+from xpra.util.objects import AtomicInteger
 from xpra.os_util import POSIX, gi_import
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
 log = Logger("server", "util", "exec")
+
+
+sequence = AtomicInteger()
 
 
 class ProcInfo:
@@ -28,7 +32,9 @@ class ProcInfo:
         "name", "command", "ignore",
         "forget", "dead", "returncode",
         "callback", "process",
+        "sequence",
     )
+    sequence: int
     pid: int
     pidfile: str
     pidinode: int
@@ -108,6 +114,7 @@ class ChildReaper:
         if pid <= 0:
             raise RuntimeError(f"process {process} has no pid!")
         procinfo = ProcInfo()
+        procinfo.sequence = sequence.increase()
         procinfo.pid = pid
         procinfo.pidfile = ""
         procinfo.pidinode = 0
@@ -237,16 +244,16 @@ class ChildReaper:
                 "ignored": len(tuple(True for x in iv if x.ignore)),
             }
         }
-        pi = sorted(self._proc_info, key=lambda x: x.pid, reverse=True)
+        pi = sorted(self._proc_info, key=lambda x: x.sequence, reverse=True)
         cinfo: dict[int, Any] = info.setdefault("child", {})
-        for i, procinfo in enumerate(pi):
+        for procinfo in pi:
             d = {}
             for k in ("name", "command", "ignore", "forget", "returncode", "dead", "pid"):
                 v = getattr(procinfo, k)
                 if v is None:
                     continue
                 d[k] = v
-            cinfo[i] = d
+            cinfo[procinfo.sequence] = d
         return info
 
 
