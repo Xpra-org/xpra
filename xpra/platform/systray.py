@@ -26,7 +26,7 @@ def get_forwarding_backends(*_args) -> list[type]:
     return []
 
 
-platform_import(globals(), "gui", False,
+platform_import(globals(), "systray", False,
                 "get_menu_helper_class",
                 "get_backends",
                 "get_forwarding_backends",
