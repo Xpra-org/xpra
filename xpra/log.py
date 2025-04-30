@@ -267,8 +267,8 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "remote"        : "remote server codec",
     },
     "Pointer": {
-        "mouse"         : "Mouse motion",
-        "cursor"        : "Mouse cursor shape",
+        "pointer"       : "Pointer motion",
+        "cursor"        : "Pointer cursor shape",
     },
     "Misc": {
         # libraries

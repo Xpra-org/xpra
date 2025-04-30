@@ -6,11 +6,12 @@
 
 from typing import Any
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
-log = Logger("keyboard")
+log = Logger("pointer")
 
 
 class PointerConnection(StubClientConnection):
@@ -20,7 +21,9 @@ class PointerConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("mouse")
+        if caps.boolget("pointer"):
+            return True
+        return BACKWARDS_COMPATIBLE and caps.boolget("mouse")
 
     def init_state(self) -> None:
         self.double_click_time: int = -1
@@ -30,15 +33,25 @@ class PointerConnection(StubClientConnection):
         self.mouse_last_relative_position: tuple[int, int] | None = None
 
     def parse_client_caps(self, c: typedict) -> None:
-        dc = c.dictget("double_click")
-        if dc:
-            dc = typedict(dc)
-            self.double_click_time = dc.intget("time")
-            self.double_click_distance = dc.intpair("distance")
+        pointer = typedict(c.dictget("pointer", {}))
+        log(f"parse_client_caps(..) {pointer=}")
+        dc = typedict(pointer.dictget("double_click", {}))
+        if not BACKWARDS_COMPATIBLE:
+            self.double_click_time = dc.intget("time", -1)
+            self.double_click_distance = dc.intpair("distance", (-1, -1))
+            self.mouse_last_position = pointer.intpair("initial-position")
         else:
-            self.double_click_time = c.intget("double_click.time")
-            self.double_click_distance = c.intpair("double_click.distance")
-        self.mouse_last_position = c.intpair("mouse.initial-position")
+            # try top-level:
+            dc = typedict(c.dictget("double_click", {}))
+            if dc:
+                self.double_click_time = dc.intget("time", -1)
+                self.double_click_distance = dc.intpair("distance")
+            else:
+                self.double_click_time = c.intget("double_click.time", -1)
+                self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
+            self.mouse_last_position = c.intpair("mouse.initial-position")
+        log("parse_client_caps(..) double-click=%s, position=%s",
+            (self.double_click_time, self.double_click_distance), self.mouse_last_position)
 
     def get_info(self) -> dict[str, Any]:
         dc_info: dict[str, Any] = {}

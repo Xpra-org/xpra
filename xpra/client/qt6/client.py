@@ -15,6 +15,7 @@ from PyQt6.QtNetwork import QTcpSocket
 from PyQt6.QtWidgets import QApplication
 
 from xpra import __version__
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.net.common import Packet
 from xpra.net.rencodeplus.rencodeplus import dumps, loads
@@ -80,10 +81,12 @@ class Qt6Client:
             "session-id": uuid.uuid4().hex,
             "windows": True,
             "keyboard": True,
-            "mouse": True,
+            "pointer": True,
             "encodings": ("rgb32", "rgb24", "png", "jpg", "webp"),
             "network-state": False,  # tell older server that we don't have "ping"
         }
+        if BACKWARDS_COMPATIBLE:
+            hello["mouse"] = True
         self.send("hello", hello)
 
     def send(self, packet_type: str, *args) -> None:

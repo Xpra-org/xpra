@@ -19,7 +19,7 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("rfb")
-mouselog = Logger("rfb", "mouse")
+pointerlog = Logger("rfb", "pointer")
 keylog = Logger("rfb", "keyboard")
 
 
@@ -151,7 +151,7 @@ class RFBServer:
         wid = self._get_rfb_desktop_wid()
 
         def process_pointer_event():
-            mouselog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
+            pointerlog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
             device_id = -1
             self._move_pointer(device_id, wid, (x, y))
             if buttons != self.rfb_buttons:
@@ -160,7 +160,7 @@ class RFBServer:
                     mask = 2 ** button
                     if buttons & mask != self.rfb_buttons & mask:
                         pressed = bool(buttons & mask)
-                        mouselog(" %spressing button %i", ["un", ""][pressed], 1 + button)
+                        pointerlog(" %spressing button %i", ["un", ""][pressed], 1 + button)
                         self.button_action(device_id, 0, (x, y), 1 + button, pressed)
                 self.rfb_buttons = buttons
 

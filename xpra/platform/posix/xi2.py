@@ -12,7 +12,7 @@ from xpra.log import Logger
 
 log = Logger("posix")
 xinputlog = Logger("posix", "xinput")
-mouselog = Logger("posix", "mouse")
+pointerlog = Logger("posix", "pointer")
 
 XINPUT_WHEEL_DIV = envint("XPRA_XINPUT_WHEEL_DIV", 15)
 
@@ -146,7 +146,7 @@ class XI2_Window:
                 if valuator:
                     label = valuator.get("label")
                     if label:
-                        mouselog("%s: %s", label, value)
+                        pointerlog("%s: %s", label, value)
                         if label.lower().find("horiz") >= 0:
                             wheel_x = value
                             last_x = mv.get(number)

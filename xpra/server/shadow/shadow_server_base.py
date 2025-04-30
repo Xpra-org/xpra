@@ -27,7 +27,7 @@ GLib = gi_import("GLib")
 
 log = Logger("shadow")
 notifylog = Logger("notify")
-mouselog = Logger("mouse")
+pointerlog = Logger("pointer")
 cursorlog = Logger("cursor")
 
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
@@ -338,7 +338,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     def poll_pointer_position(self) -> None:
         x, y = self.get_pointer_position()
         if self.pointer_last_position == (x, y):
-            mouselog("poll_pointer_position() unchanged position=%s", (x, y))
+            pointerlog("poll_pointer_position() unchanged position=%s", (x, y))
             return
         self.pointer_last_position = (x, y)
         rwm = None
@@ -353,9 +353,9 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
                 ry = y - wy
                 break
         if not rwm:
-            mouselog("poll_pointer_position() model not found for position=%s", (x, y))
+            pointerlog("poll_pointer_position() model not found for position=%s", (x, y))
             return
-        mouselog("poll_pointer_position() wid=%i, position=%s, relative=%s", wid, (x, y), (rx, ry))
+        pointerlog("poll_pointer_position() wid=%i, position=%s, relative=%s", wid, (x, y), (rx, ry))
         for ss in self._server_sources.values():
             um = getattr(ss, "update_mouse", None)
             if um:

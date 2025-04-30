@@ -31,7 +31,7 @@ X11Keyboard = X11KeyboardBindings()
 
 log = Logger("server")
 windowlog = Logger("server", "window")
-mouselog = Logger("server", "mouse")
+pointerlog = Logger("server", "pointer")
 geomlog = Logger("server", "window", "geometry")
 metadatalog = Logger("x11", "metadata")
 screenlog = Logger("screen")
@@ -297,10 +297,10 @@ class DesktopServerBase(DesktopServerBaseClass):
             self.refresh_window_area(window, 0, 0, w, h)
 
     def _adjust_pointer(self, proto, device_id: int, wid: int, pointer):
-        mouselog("_adjust_pointer%s", (proto, device_id, wid, pointer))
+        pointerlog("_adjust_pointer%s", (proto, device_id, wid, pointer))
         window = self._id_to_window.get(wid)
         if not window:
-            mouselog("adjust pointer: no window, suspending cursor")
+            pointerlog("adjust pointer: no window, suspending cursor")
             self.suspend_cursor(proto)
             return None
         pointer = super()._adjust_pointer(proto, device_id, wid, pointer)
@@ -308,7 +308,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         ww, wh = window.get_dimensions()
         x, y = pointer[:2]
         if x < 0 or x >= ww or y < 0 or y >= wh:
-            mouselog("adjust pointer: pointer outside desktop, suspending cursor")
+            pointerlog("adjust pointer: pointer outside desktop, suspending cursor")
             self.suspend_cursor(proto)
             return None
         self.restore_cursor(proto)
@@ -318,7 +318,7 @@ class DesktopServerBase(DesktopServerBaseClass):
         if wid >= 0:
             window = self._id_to_window.get(wid)
             if not window:
-                mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
+                pointerlog("_move_pointer(%s, %s) invalid window id", wid, pos)
                 return
         with xsync:
             X11ServerBase._move_pointer(self, device_id, wid, pos, props)

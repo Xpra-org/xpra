@@ -44,7 +44,7 @@ X11Window = X11WindowBindings()
 
 log = Logger("x11", "server")
 keylog = Logger("x11", "server", "keyboard")
-mouselog = Logger("x11", "server", "mouse")
+pointerlog = Logger("x11", "server", "pointer")
 grablog = Logger("server", "grab")
 cursorlog = Logger("server", "cursor")
 screenlog = Logger("server", "screen")
@@ -82,13 +82,13 @@ class XTestPointerDevice:
 
     @staticmethod
     def move_pointer(x: int, y: int, props=None) -> None:
-        mouselog("xtest_fake_motion%s", (x, y, props))
+        pointerlog("xtest_fake_motion%s", (x, y, props))
         with xsync:
             X11Keyboard.xtest_fake_motion(x, y)
 
     @staticmethod
     def click(button: int, pressed: bool, props: dict) -> None:
-        mouselog("xtest_fake_button(%i, %s, %s)", button, pressed, props)
+        pointerlog("xtest_fake_button(%i, %s, %s)", button, pressed, props)
         with xsync:
             X11Keyboard.xtest_fake_button(button, pressed)
 
@@ -829,7 +829,7 @@ class X11ServerCore(GTKServerBase):
                 ss.send_cursor()
 
     def _motion_signaled(self, model, event) -> None:
-        mouselog("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
+        pointerlog("motion_signaled(%s, %s) last mouse user=%s", model, event, self.last_mouse_user)
         # find the window model for this gdk window:
         wid = self._window_to_id.get(model)
         if not wid:
@@ -928,11 +928,11 @@ class X11ServerCore(GTKServerBase):
                 self.pointer_device.wheel_motion(button, distance / 1000.0)  # pylint: disable=no-member
 
     def get_pointer_device(self, deviceid: int):
-        # mouselog("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)
+        # pointerlog("get_pointer_device(%i) input_devices_data=%s", deviceid, self.input_devices_data)
         if self.input_devices_data:
             device_data = self.input_devices_data.get(deviceid)
             if device_data:
-                mouselog("get_pointer_device(%i) device=%s", deviceid, device_data.get("name"))
+                pointerlog("get_pointer_device(%i) device=%s", deviceid, device_data.get("name"))
         device = self.pointer_device_map.get(deviceid) or self.pointer_device
         return device
 
@@ -948,7 +948,7 @@ class X11ServerCore(GTKServerBase):
                 geom = model.get_geometry()
                 x = geom[0] + rx
                 y = geom[1] + ry
-                mouselog("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
+                pointerlog("_get_pointer_abs_coordinates(%i, %s)=%s window geometry=%s", wid, pos, (x, y), geom)
         return x, y
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
@@ -959,16 +959,15 @@ class X11ServerCore(GTKServerBase):
     def device_move_pointer(self, device_id: int, wid: int, pos, props):
         device = self.get_pointer_device(device_id)
         x, y = pos
-        mouselog("move_pointer(%s, %s, %s) device=%s, position=%s",
-                 wid, pos, device_id, device, (x, y))
+        pointerlog("move_pointer(%s, %s, %s) device=%s, position=%s", wid, pos, device_id, device, (x, y))
         try:
             device.move_pointer(x, y, props)
         except Exception as e:
-            mouselog.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
-            mouselog.estr(e)
+            pointerlog.error("Error: failed to move the pointer to %sx%s using %s", x, y, device)
+            pointerlog.estr(e)
 
     def do_process_mouse_common(self, proto, device_id: int, wid: int, pointer, props) -> bool:
-        mouselog("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
+        pointerlog("do_process_mouse_common%s", (proto, device_id, wid, pointer, props))
         if self.readonly:
             return False
         with xsync:
@@ -1004,15 +1003,15 @@ class X11ServerCore(GTKServerBase):
         if button in (4, 5) and wid:
             self.record_wheel_event(wid, button)
         try:
-            mouselog("%s%s", device.click, (button, pressed, props))
+            pointerlog("%s%s", device.click, (button, pressed, props))
             with xsync:
                 device.click(button, pressed, props)
         except XError:
-            mouselog("button_action%s", (device_id, wid, pointer, button, pressed, props), exc_info=True)
-            mouselog.error("Error: failed (un)press mouse button %s", button)
+            pointerlog("button_action%s", (device_id, wid, pointer, button, pressed, props), exc_info=True)
+            pointerlog.error("Error: failed (un)press mouse button %s", button)
 
     def record_wheel_event(self, wid: int, button: int) -> None:
-        mouselog("recording scroll event for button %i", button)
+        pointerlog("recording scroll event for button %i", button)
         for ss in self.window_sources():
             ss.record_scroll_event(wid)
 

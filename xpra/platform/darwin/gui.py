@@ -23,7 +23,7 @@ from xpra.log import Logger
 
 log = Logger("osx", "events")
 workspacelog = Logger("osx", "events", "workspace")
-mouselog = Logger("osx", "events", "mouse")
+pointerlog = Logger("osx", "events", "pointer")
 
 GLib = gi_import("GLib")
 

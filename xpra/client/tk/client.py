@@ -13,7 +13,7 @@ from collections.abc import Callable
 from tkinter import Tk
 
 from xpra import __version__
-from xpra.common import noop
+from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.protocol.factory import get_client_protocol_class
@@ -89,10 +89,12 @@ class XpraTkClient:
             "session-id": uuid.uuid4().hex,
             "windows": True,
             "keyboard": True,
-            "mouse": True,
+            "pointer": True,
             "encodings": ("png", "jpg", "webp"),    # "rgb32", "rgb24"
             "network-state": False,  # tell older server that we don't have "ping"
         }
+        if BACKWARDS_COMPATIBLE:
+            hello["mouse"] = True
         self.send("hello", hello)
 
     def send(self, packet_type: str, *args) -> None:

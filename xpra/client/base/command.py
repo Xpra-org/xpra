@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, sorted_nicely, bytestostr, hexstr
 from xpra.util.env import envint, first_time
-from xpra.common import ConnectionMessage, disconnect_is_an_error, noop
+from xpra.common import ConnectionMessage, disconnect_is_an_error, noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
 from xpra.net.common import Packet, PacketElement
@@ -49,7 +49,10 @@ class CommandConnectClient(GObjectXpraClient):
         self.command_timeout = None
         self.last_server_event: Sequence[PacketElement] = ()
         # don't bother with many of these things for one-off commands:
-        for x in ("ui_client", "windows", "webcam", "keyboard", "mouse", "network-state"):
+        SKIP = ["ui_client", "windows", "webcam", "keyboard", "pointer", "network-state"]
+        if BACKWARDS_COMPATIBLE:
+            SKIP.append("mouse")
+        for x in SKIP:
             self.hello_extra[x] = False
         # for newer versions, it is easier:
         self.hello_extra["wants"] = []

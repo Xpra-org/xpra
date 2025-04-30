@@ -27,7 +27,7 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 
 log = Logger("x11", "server")
-mouselog = Logger("x11", "server", "mouse")
+pointerlog = Logger("x11", "server", "pointer")
 screenlog = Logger("server", "screen")
 dbuslog = Logger("dbus")
 
@@ -182,7 +182,7 @@ class X11ServerBase(X11ServerCore):
         # for the time being, we only use the pointer if there is one:
         pointer = devices.get("pointer")
         touchpad = devices.get("touchpad")
-        mouselog("init_virtual_devices(%s) got pointer=%s, touchpad=%s", devices, pointer, touchpad)
+        pointerlog("init_virtual_devices(%s) got pointer=%s, touchpad=%s", devices, pointer, touchpad)
         self.input_devices = "xtest"
         if pointer:
             uinput_device = pointer.get("uinput")
@@ -200,9 +200,9 @@ class X11ServerBase(X11ServerCore):
                 root_w, root_h = self.get_root_window_size()
                 self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path, root_w, root_h)
         try:
-            mouselog.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
+            pointerlog.info("pointer device emulation using %s", str(self.pointer_device).replace("PointerDevice", ""))
         except Exception as e:
-            mouselog("cannot get pointer device class from %s: %s", self.pointer_device, e)
+            pointerlog("cannot get pointer device class from %s: %s", self.pointer_device, e)
 
     def verify_uinput_pointer_device(self) -> None:
         xtest = XTestPointerDevice()
@@ -216,11 +216,11 @@ class X11ServerBase(X11ServerCore):
             pos = (ox, oy)
             with xswallow:
                 pos = X11Keyboard.query_pointer()
-                mouselog("X11Keyboard.query_pointer=%s", pos)
+                pointerlog("X11Keyboard.query_pointer=%s", pos)
             if pos == (ox, oy):
-                mouselog.warn("Warning: %s failed verification", self.pointer_device)
-                mouselog.warn(" expected pointer at %s, now at %s", (nx, ny), pos)
-                mouselog.warn(" using XTest fallback")
+                pointerlog.warn("Warning: %s failed verification", self.pointer_device)
+                pointerlog.warn(" expected pointer at %s, now at %s", (nx, ny), pos)
+                pointerlog.warn(" using XTest fallback")
                 self.pointer_device = xtest
                 self.input_devices = "xtest"
 

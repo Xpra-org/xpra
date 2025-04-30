@@ -17,7 +17,7 @@ Gdk = gi_import("Gdk")
 
 log = Logger("shadow")
 keylog = Logger("shadow", "keyboard")
-mouselog = Logger("shadow", "mouse")
+pointerlog = Logger("shadow", "pointer")
 
 
 class RemoteDesktop(PortalShadow):
@@ -37,7 +37,7 @@ class RemoteDesktop(PortalShadow):
             return False
         win = self._id_to_window.get(wid)
         if not win:
-            mouselog.error(f"Error: window {wid} not found")
+            pointerlog.error(f"Error: window {wid} not found")
             return False
         x, y = pointer[:2]
         node_id = win.pipewire_id
@@ -53,14 +53,14 @@ class RemoteDesktop(PortalShadow):
     def do_process_button_action(self, proto, device_id: int, wid: int, button: int, pressed: bool, pointer,
                                  props) -> None:
         options = native_to_dbus([], "{sv}")
-        mouselog(f"button-action: button={button}, pressed={pressed}")
+        pointerlog(f"button-action: button={button}, pressed={pressed}")
         evdev_button = {
             1: 0x110,  # BTN_LEFT
             2: 0x111,  # BTN_RIGHT
             3: 0x112,  # BTN_MIDDLE
         }.get(button, -1)
         if evdev_button < 0:
-            mouselog.warn(f"Warning: button {button} not recognized")
+            pointerlog.warn(f"Warning: button {button} not recognized")
             return
         self.portal_interface.NotifyPointerButton(
             self.session_handle,

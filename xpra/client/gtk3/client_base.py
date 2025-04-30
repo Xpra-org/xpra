@@ -856,10 +856,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 ms += ["shape"]
         log("metadata.supported: %s", ms)
         capabilities["metadata.supported"] = ms
-        capabilities["pointer"] = {
-            "grabs": True,
-            "relative": True,
-        }
         capabilities.setdefault("window", {})["frame_sizes"] = self.get_window_frame_sizes()
         capabilities.setdefault("encoding", {})["icons"] = {
             "greedy": True,  # we don't set a default window icon anymore

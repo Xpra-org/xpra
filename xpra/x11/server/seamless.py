@@ -51,7 +51,7 @@ workspacelog = Logger("x11", "workspace")
 metadatalog = Logger("x11", "metadata")
 framelog = Logger("x11", "frame")
 eventlog = Logger("x11", "events")
-mouselog = Logger("x11", "mouse")
+pointerlog = Logger("x11", "pointer")
 screenlog = Logger("x11", "screen")
 
 X11Window = X11WindowBindings()
@@ -1018,7 +1018,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     # this causes focus issues (see #1999)
                     pwid = -1 if BACKWARDS_COMPATIBLE else 0
                 device_id = -1
-                mouselog("configure pointer data: %s", (pwid, pointer, modifiers))
+                pointerlog("configure pointer data: %s", (pwid, pointer, modifiers))
                 if self.process_mouse_common(proto, device_id, pwid, pointer):
                     # only update modifiers if the window is in focus:
                     if self._has_focus == wid:
@@ -1121,10 +1121,10 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if wid > 0 and (self.last_raised != wid or ALWAYS_RAISE_WINDOW):
             window = self._lookup_window(wid)
             if not window:
-                mouselog("_move_pointer(%s, %s) invalid window id", wid, pos)
+                pointerlog("_move_pointer(%s, %s) invalid window id", wid, pos)
             else:
                 self.last_raised = wid
-                mouselog("raising %s", window)
+                pointerlog("raising %s", window)
                 with xswallow:
                     window.raise_window()
         super()._move_pointer(device_id, wid, pos, props)

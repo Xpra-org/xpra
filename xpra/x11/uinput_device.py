@@ -14,7 +14,7 @@ from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 
-log = Logger("x11", "server", "mouse")
+log = Logger("x11", "server", "pointer")
 
 X11Keyboard = X11KeyboardBindings()
 

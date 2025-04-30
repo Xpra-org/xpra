@@ -12,7 +12,7 @@ from xpra.net.common import Packet
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
-mouselog = Logger("mouse")
+pointerlog = Logger("pointer")
 
 INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
 
@@ -58,7 +58,7 @@ class PointerServer(StubServerMixin):
                         if dx != 0 or dy != 0:
                             px, py = pointer[:2]
                             ax, ay = px + dx, py + dy
-                            mouselog(
+                            pointerlog(
                                 "client %2i: server window position: %12s, client window position: %24s, pointer=%s, adjusted: %s",
                                 # noqa: E501
                                 ss.counter, pos, mapped_at, pointer, (ax, ay))
@@ -77,7 +77,7 @@ class PointerServer(StubServerMixin):
         return True
 
     def _process_pointer_button(self, proto, packet: Packet) -> None:
-        mouselog("process_pointer_button(%s, %s)", proto, packet)
+        pointerlog("process_pointer_button(%s, %s)", proto, packet)
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -96,13 +96,13 @@ class PointerServer(StubServerMixin):
         if device_id >= 0:
             # highest_seq = self.pointer_sequence.get(device_id, 0)
             # if INPUT_SEQ_NO and 0<=seq<=highest_seq:
-            #    mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
+            #    pointerlog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
             #    return
             self.pointer_sequence[device_id] = seq
         self.do_process_button_action(proto, device_id, wid, button, pressed, pointer, props)
 
     def _process_button_action(self, proto, packet: Packet) -> None:
-        mouselog("process_button_action(%s, %s)", proto, packet)
+        pointerlog("process_button_action(%s, %s)", proto, packet)
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -132,8 +132,8 @@ class PointerServer(StubServerMixin):
 
     def _process_pointer(self, proto, packet: Packet) -> None:
         # v5 packet format
-        mouselog("_process_pointer(%s, %s) readonly=%s, ui_driver=%s",
-                 proto, packet, self.readonly, self.ui_driver)
+        pointerlog("_process_pointer(%s, %s) readonly=%s, ui_driver=%s",
+                   proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -147,7 +147,7 @@ class PointerServer(StubServerMixin):
         if device_id >= 0:
             highest_seq = self.pointer_sequence.get(device_id, 0)
             if INPUT_SEQ_NO and 0 <= seq <= highest_seq:
-                mouselog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
+                pointerlog(f"dropped outdated sequence {seq}, latest is {highest_seq}")
                 return
             self.pointer_sequence[device_id] = seq
         pointer = pdata[:2]
@@ -164,8 +164,8 @@ class PointerServer(StubServerMixin):
                 self._update_modifiers(proto, wid, modifiers)
 
     def _process_pointer_position(self, proto, packet: Packet) -> None:
-        mouselog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
-                 proto, packet, self.readonly, self.ui_driver)
+        pointerlog("_process_pointer_position(%s, %s) readonly=%s, ui_driver=%s",
+                   proto, packet, self.readonly, self.ui_driver)
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -195,8 +195,8 @@ class PointerServer(StubServerMixin):
         self.input_devices_format = packet.get_str(1)
         self.input_devices_data = packet.get_dict(2)
         from xpra.util.str_fn import print_nested_dict
-        mouselog("client %s input devices:", self.input_devices_format)
-        print_nested_dict(self.input_devices_data, print_fn=mouselog)
+        pointerlog("client %s input devices:", self.input_devices_format)
+        print_nested_dict(self.input_devices_data, print_fn=pointerlog)
         self.setup_input_devices()
 
     def setup_input_devices(self) -> None:

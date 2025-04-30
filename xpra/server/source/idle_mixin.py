@@ -10,7 +10,7 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.common import NotificationID, ConnectionMessage
+from xpra.common import NotificationID, ConnectionMessage, BACKWARDS_COMPATIBLE
 from xpra.server.source.stub_source import StubClientConnection
 from xpra.log import Logger
 
@@ -25,7 +25,9 @@ class IdleConnection(StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return caps.boolget("keyboard") or caps.boolget("mouse") or caps.boolget("windows")
+        if caps.boolget("keyboard") or caps.boolget("pointer") or caps.boolget("windows"):
+            return True
+        return BACKWARDS_COMPATIBLE and caps.boolget("mouse")
 
     def __init__(self) -> None:
         self.idle_timeout = 0

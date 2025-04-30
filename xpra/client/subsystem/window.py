@@ -20,10 +20,7 @@ from typing import Any
 from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 from collections.abc import Callable, Sequence
 
-from xpra.platform.gui import (
-    get_window_min_size, get_window_max_size,
-    get_double_click_time, get_double_click_distance
-)
+from xpra.platform.gui import get_window_min_size, get_window_max_size
 from xpra.net.common import Packet
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.common import WINDOW_NOT_FOUND, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, noerr
@@ -47,7 +44,7 @@ drawlog = Logger("draw")
 focuslog = Logger("focus")
 grablog = Logger("grab")
 iconlog = Logger("icon")
-mouselog = Logger("mouse")
+pointerlog = Logger("pointer")
 metalog = Logger("metadata")
 traylog = Logger("client", "tray")
 execlog = Logger("client", "exec")
@@ -354,7 +351,7 @@ class WindowClient(StubClientMixin):
                 else:
                     self.wheel_map[btn + 1] = btn
                     self.wheel_map[btn] = btn + 1
-        mouselog("wheel_map(%s)=%s, wheel_smooth=%s", mw, self.wheel_map, self.wheel_smooth)
+        pointerlog("wheel_map(%s)=%s, wheel_smooth=%s", mw, self.wheel_map, self.wheel_smooth)
 
         if 0 < ICON_OVERLAY <= 100:
             icon_filename = opts.tray_icon
@@ -450,15 +447,6 @@ class WindowClient(StubClientMixin):
     def get_caps(self) -> dict[str, Any]:
         # FIXME: the messy bits without proper namespace:
         caps = {
-            # generic server flags:
-            "mouse": {
-                "show": True,  # assumed available in v6
-                "initial-position": self.get_mouse_position(),
-            },
-            "double_click": {
-                "time": get_double_click_time(),
-                "distance": get_double_click_distance(),
-            },
             # features:
             "bell": self.client_supports_bell,
             "windows": self.windows_enabled,
@@ -532,8 +520,8 @@ class WindowClient(StubClientMixin):
             rx, ry = -1, -1
         cx, cy = self.get_mouse_position()
         start_time = monotonic()
-        mouselog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i",
-                 x, y, rx, ry, wid, cx, cy)
+        pointerlog("process_pointer_position: %i,%i (%i,%i relative to wid %i) - current position is %i,%i",
+                   x, y, rx, ry, wid, cx, cy)
         size = 10
         for i, w in self._id_to_window.items():
             # not all window implementations have this method:
@@ -549,8 +537,8 @@ class WindowClient(StubClientMixin):
     def send_wheel_delta(self, device_id: int, wid: int, button: int, distance, pointer=None, props=None) -> float:
         modifiers = self.get_current_modifiers()
         buttons: Sequence[int] = ()
-        mouselog("send_wheel_deltas%s precise wheel=%s, modifiers=%s, pointer=%s",
-                 (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
+        pointerlog("send_wheel_deltas%s precise wheel=%s, modifiers=%s, pointer=%s",
+                   (device_id, wid, button, distance, pointer, props), self.server_precise_wheel, modifiers, pointer)
         if self.server_precise_wheel:
             # send the exact value multiplied by 1000 (as an int)
             idist = round(distance * 1000)
@@ -558,7 +546,7 @@ class WindowClient(StubClientMixin):
                 packet = ["wheel-motion", wid,
                           button, idist,
                           pointer, modifiers, buttons] + list((props or {}).values())
-                mouselog("send_wheel_delta(..) %s", packet)
+                pointerlog("send_wheel_delta(..) %s", packet)
                 self.send_positional(*packet)
             return 0
         # server cannot handle precise wheel,
@@ -592,14 +580,14 @@ class WindowClient(StubClientMixin):
         button = self.wheel_map.get(5 - int(self.wheel_deltay > 0), 0)  # UP=4, DOWN=5
         if button > 0:
             self.wheel_deltay = self.send_wheel_delta(device_id, wid, button, self.wheel_deltay, pointer, props)
-        mouselog("wheel_event%s new deltas=%s,%s",
-                 (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
+        pointerlog("wheel_event%s new deltas=%s,%s",
+                   (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
 
     def send_button(self, device_id: int, wid: int, button: int, pressed: bool,
                     pointer, modifiers, buttons, props) -> None:
         pressed_state = self._button_state.get(button, False)
         if SKIP_DUPLICATE_BUTTON_EVENTS and pressed_state == pressed:
-            mouselog("button action: unchanged state, ignoring event")
+            pointerlog("button action: unchanged state, ignoring event")
             return
         # map wheel buttons via translation table to support inverted axes:
         server_button = button
@@ -631,7 +619,7 @@ class WindowClient(StubClientMixin):
             packet = ["button-action", wid, server_button, pressed, pointer, modifiers, server_buttons]
             if props:
                 packet += list(props.values())
-        mouselog("button packet: %s", packet)
+        pointerlog("button packet: %s", packet)
         self.send_positional(*packet)
 
     def scale_pointer(self, pointer) -> tuple[int, int]:
@@ -649,7 +637,7 @@ class WindowClient(StubClientMixin):
             self.poll_pointer_position = pos
             device_id = -1
             wid = 0
-            mouselog(f"poll_pointer() updated position: {pos}")
+            pointerlog(f"poll_pointer() updated position: {pos}")
             self.send_mouse_position(device_id, wid, pos)
         return True
 

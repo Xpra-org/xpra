@@ -46,7 +46,7 @@ log = Logger("win32")
 grablog = Logger("win32", "grab")
 screenlog = Logger("win32", "screen")
 keylog = Logger("win32", "keyboard")
-mouselog = Logger("win32", "mouse")
+pointerlog = Logger("win32", "pointer")
 
 GLib = gi_import("GLib")
 
@@ -565,7 +565,7 @@ def add_window_hooks(window) -> None:
                 units = distance / WHEEL_DELTA
                 client = getattr(window, "_client")
                 wid = getattr(window, "_id", 0)
-                mouselog(
+                pointerlog(
                     "win32 mousewheel: orientation=%s, distance=%i, wheel-delta=%s, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%i",
                     orientation, distance, WHEEL_DELTA, units, distance, keys, x, y, client, wid)
                 if client and wid > 0:

@@ -3,7 +3,9 @@
 
 ## Implementations
 
-The prefix for all packets and capabilities should be `pointer`, this work is not complete yet.
+The prefix for all packets and capabilities should be `pointer`.\
+(older versions used the `mouse` prefix)
+
 
 | Component         | Link                                                                                                           |
 |-------------------|----------------------------------------------------------------------------------------------------------------|
@@ -19,18 +21,20 @@ Links pending.
 
 ## Capabilities
 
-The client should expose the following capabilities in its `hello` packet:
+The client should expose the following `pointer` dictionary in its `hello` packet:
 
-| Capability      | Value               | Information                                                                   |
-|-----------------|---------------------|-------------------------------------------------------------------------------|
-| `mouse`         | `enabled` : boolean | Whether pointer support is enabled                                            |
-| `double_click` | dictionary | contains just two integer attributes: `time` (in milliseconds) and `distance` |
+| Capability         | Value                           | Information                                                                   |
+|--------------------|---------------------------------|-------------------------------------------------------------------------------|
+| `initial-position` | `x` and `y` pair of coordinates | Optional                                                                      |
+| `double_click`     | dictionary                      | contains just two integer attributes: `time` (in milliseconds) and `distance` |
+
+Alternatively, the client can just supply the value `True` instead of the dictionary and the server will use default values.
 
 
 ## Network Packets
 
-| Packet Type      | Arguments                       | Information |
-|------------------|---------------------------------|-------------|
-| `pointer-position` | `wid`, position data, modifiers | |
-| `pointer-button`   | `device_id`, `sequence`, `wid`, `button`, `pressed`, position data, properties | |
-| `input-devices` |                                 | |
+| Packet Type        | Arguments                       |
+|--------------------|---------------------------------|
+| `pointer-position` | `wid`, position data, modifiers |
+| `pointer-button`   | `device_id`, `sequence`, `wid`, `button`, `pressed`, position data, properties |
+| `input-devices`    |                                 |

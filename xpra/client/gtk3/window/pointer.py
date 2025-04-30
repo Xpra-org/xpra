@@ -18,7 +18,7 @@ from xpra.log import Logger
 GLib = gi_import("GLib")
 Gdk = gi_import("Gdk")
 
-log = Logger("window", "mouse")
+log = Logger("window", "pointer")
 
 
 SMOOTH_SCROLL = envbool("XPRA_SMOOTH_SCROLL", True)

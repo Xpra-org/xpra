@@ -141,7 +141,7 @@ class MMAP_Connection(StubClientConnection):
             # also try the legacy unprefixed lookup for 'read' area:
             read_caps = tdcaps.dictget("write") or mmap_caps
         else:
-            read_caps = tdcaps.dictget("write")
+            read_caps = tdcaps.dictget("write", {})
         write_caps = tdcaps.dictget("read")
         self.mmap_read_area = self.parse_area_caps("read", read_caps, 1)
         self.mmap_write_area = self.parse_area_caps("write", write_caps, 0)

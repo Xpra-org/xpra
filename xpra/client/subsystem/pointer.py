@@ -8,13 +8,14 @@ from typing import Any
 from time import monotonic
 
 from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
 from xpra.os_util import gi_import
 from xpra.log import Logger
 
-log = Logger("mouse")
+log = Logger("pointer")
 
 GLib = gi_import("GLib")
 
@@ -22,15 +23,23 @@ MOUSE_DELAY = envint("XPRA_MOUSE_DELAY", 0)
 MOUSE_DELAY_AUTO = envbool("XPRA_MOUSE_DELAY_AUTO", True)
 
 
+def get_double_click_caps() -> dict[str, Any]:
+    from xpra.platform.gui import get_double_click_time, get_double_click_distance
+    return {
+        "time": get_double_click_time(),
+        "distance": get_double_click_distance(),
+    }
+
+
 class PointerClient(StubClientMixin):
     """
     Utility mixin for clients that handle pointer input
     """
-    PREFIX = "mouse"
+    PREFIX = "pointer"
 
     def __init__(self):
-        self._mouse_position_delay = 5
         self._pointer_sequence = {}
+        self._mouse_position_delay = 5
         self._mouse_position: Packet | None = None
         self._mouse_position_pending: Packet | None = None
         self._mouse_position_send_time = 0
@@ -57,10 +66,20 @@ class PointerClient(StubClientMixin):
         return {PointerClient.PREFIX: {}}
 
     def get_caps(self) -> dict[str, Any]:
+        double_click = get_double_click_caps()
         caps: dict[str, Any] = {
-            "mouse": True,
+            PointerClient.PREFIX: {
+                "initial-position": self.get_mouse_position(),
+                "double_click": double_click,
+            },
         }
-        return {PointerClient.PREFIX: caps}
+        if BACKWARDS_COMPATIBLE:
+            caps["mouse"] = {
+                "show": True,  # assumed available in v6
+                "initial-position": self.get_mouse_position(),
+            }
+            caps["double_click"] = double_click
+        return caps
 
     def send_positional(self, packet_type: str, *parts: PacketElement) -> None:
         # packets that include the mouse position data
