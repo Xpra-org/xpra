@@ -31,7 +31,7 @@ ALL_GSIGNALS = {}
 for bc in WINDOW_BASES:
     gsignals = getattr(bc, "__gsignals__", {})
     ALL_GSIGNALS.update(gsignals)
-log.warn(f"WindowBaseClass: {WINDOW_BASES=} - gsignals: {ALL_GSIGNALS.keys()}")
+log(f"WindowBaseClass: {WINDOW_BASES=} - gsignals: {ALL_GSIGNALS.keys()}")
 
 
 class ClientWindow(WindowBaseClass):
@@ -40,15 +40,21 @@ class ClientWindow(WindowBaseClass):
     """
     __gsignals__ = ALL_GSIGNALS
 
-    def init_window(self, client, metadata: typedict) -> None:
-        for bc in WINDOW_BASES:
-            bc.init_window(self, client, metadata)
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.menu_helper = None
+        for bc in WINDOW_BASES:
+            bc.init_window(self, client, metadata, client_props)
 
     def destroy(self) -> None:  # pylint: disable=method-hidden
         for bc in WINDOW_BASES:
             bc.cleanup(self)
         super().destroy()
+
+    def get_info(self) -> dict[str, Any]:
+        info: dict[str, Any] = {}
+        for bc in WINDOW_BASES:
+            info.update(bc.get_info(self))
+        return info
 
     def get_window_event_mask(self) -> Gdk.EventMask:
         mask = 0

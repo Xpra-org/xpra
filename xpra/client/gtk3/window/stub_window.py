@@ -15,7 +15,7 @@ GdkPixbuf = gi_import("GdkPixbuf")
 class StubWindow:
     __gsignals__: dict[str, Any] = {}
 
-    def init_window(self, client, metadata: typedict) -> None:
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         pass
 
     def cleanup(self) -> None:
@@ -34,4 +34,7 @@ class StubWindow:
         return {}
 
     def get_configure_client_properties(self) -> dict[str, Any]:
+        return {}
+
+    def get_info(self) -> dict[str, Any]:
         return {}

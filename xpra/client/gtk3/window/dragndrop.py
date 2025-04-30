@@ -21,6 +21,14 @@ Gio = gi_import("Gio")
 log = Logger("window", "events", "dragndrop")
 
 
+def xid(w) -> int:
+    # TODO: use a generic window handle function
+    # this only used for debugging for now
+    if w and POSIX:
+        return w.get_xid()
+    return 0
+
+
 def drag_drop_cb(widget, context, x: int, y: int, time: int) -> None:
     targets = list(x.name() for x in context.list_targets())
     log("drag_drop_cb%s targets=%s", (widget, context, x, y, time), targets)
@@ -35,7 +43,7 @@ def drag_drop_cb(widget, context, x: int, y: int, time: int) -> None:
     widget.drag_get_data(context, atom, time)
 
 
-def drag_motion_cb(wid: int, context, x: int, y: int, time: int):
+def drag_motion_cb(wid: int, context, x: int, y: int, time: int) -> bool:
     log("drag_motion_cb%s", (wid, context, x, y, time))
     Gdk.drag_status(context, Gdk.DragAction.COPY, time)
     return True  # accept this data
@@ -43,7 +51,7 @@ def drag_motion_cb(wid: int, context, x: int, y: int, time: int):
 
 class DragNDropWindow(StubWindow):
 
-    def init_window(self, client, _metadata: typedict) -> None:
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         # opengl probing uses a fake client,
         # in which case we don't want dragndrop initialized:
         if isinstance(client, FileTransferHandler):
@@ -74,13 +82,6 @@ class DragNDropWindow(StubWindow):
             return
         targets = list(x.name() for x in context.list_targets())
         actions = context.get_actions()
-
-        def xid(w) -> int:
-            # TODO: use a generic window handle function
-            # this only used for debugging for now
-            if w and POSIX:
-                return w.get_xid()
-            return 0
 
         dest_window = xid(context.get_dest_window())
         source_window = xid(context.get_source_window())

@@ -15,7 +15,7 @@ from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
-from xpra.common import gravity_str, WORKSPACE_UNSET, WORKSPACE_NAMES, force_size_constraint
+from xpra.common import gravity_str, force_size_constraint
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
@@ -53,7 +53,7 @@ class ClientWindowBase(ClientWidgetBase):
     def __init__(self, client, group_leader, wid: int,
                  geom: tuple[int, int, int, int],
                  backing_size: tuple[int, int],
-                 metadata: typedict, override_redirect: bool, client_properties,
+                 metadata: typedict, override_redirect: bool, client_properties: typedict,
                  border: WindowBorder, max_window_size, pixel_depth: int,
                  headerbar="no"):
         log("%s%s", type(self),
@@ -91,7 +91,6 @@ class ClientWindowBase(ClientWidgetBase):
         self.window_gravity = OVERRIDE_GRAVITY or DEFAULT_GRAVITY
         self.border = border
         self.max_window_size = max_window_size
-        self.button_state: dict[int, bool] = {}
         self.pixel_depth = pixel_depth  # 0 for default
         # window_offset is the delta between the location of the window requested by the server,
         # and where we actually end up mapping it on the client
@@ -100,7 +99,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.pending_refresh: list[tuple[int, int, int, int]] = []
         self.headerbar = headerbar
 
-        self.init_window(client, metadata)
+        self.init_window(client, metadata, client_properties)
         self.setup_window(bw, bh)
         self.update_metadata(metadata)
         self.finalize_window()
@@ -108,27 +107,14 @@ class ClientWindowBase(ClientWidgetBase):
     def __repr__(self):
         return f"ClientWindow({self.wid})"
 
-    def init_window(self, _client, metadata: typedict) -> None:
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self._backing = None
         self._metadata = typedict()
         # used for only sending focus events *after* the window is mapped:
         self._been_mapped = False
 
-        def wn(w):
-            return WORKSPACE_NAMES.get(w, w)
-
-        workspace = typedict(self._client_properties).intget("workspace", -1)
-        workspacelog("init_window(..) workspace from client properties %s: %s", self._client_properties, wn(workspace))
-        if workspace >= 0:
-            # client properties override application specified workspace value on init only:
-            metadata["workspace"] = workspace
-        self._window_workspace = WORKSPACE_UNSET  # will get set in set_metadata if present
-        self._desktop_workspace = self.get_desktop_workspace()  # pylint: disable=assignment-from-none
-        workspacelog("init_window(..) workspace=%s, current workspace=%s",
-                     wn(self._window_workspace), wn(self._desktop_workspace))
         if self.max_window_size and "size-constraints" not in metadata:
             # this ensures that we will set size-constraints and honour max_window_size:
-            metadata.pop("workspace", None)
             metadata["size-constraints"] = {}
         # initialize gravity early:
         sc = typedict(metadata.dictget("size-constraints", {}))
@@ -155,7 +141,7 @@ class ClientWindowBase(ClientWidgetBase):
             # "group-leader"          : self.group_leader,
             "position": self._pos,
             "size": self._size,
-            "client-properties": self._client_properties,
+            "client-properties": dict(self._client_properties),
             "set-initial-position": self._set_initial_position,
             "size-constraints": dict(self.size_constraints),
             "geometry-hints": dict(self.geometry_hints),
@@ -164,16 +150,9 @@ class ClientWindowBase(ClientWidgetBase):
             "gravity": gravity_str(self.window_gravity),
             # "border"                : self.border or "",
             "max-size": self.max_window_size,
-            "button-state": self.button_state,
             "offset": self.window_offset or (0, 0),
         }
         return info
-
-    def get_desktop_workspace(self):
-        return None
-
-    def get_window_workspace(self):
-        return None
 
     ######################################################################
     # screen scaling:

@@ -29,6 +29,10 @@ root_xid: int = 0
 WIN32_WORKSPACE = WIN32 and envbool("XPRA_WIN32_WORKSPACE", False)
 
 
+def wn(w) -> str:
+    return WORKSPACE_NAMES.get(w, str(w))
+
+
 def use_x11_bindings() -> bool:
     if not POSIX or OSX:
         return False
@@ -92,28 +96,38 @@ elif WIN32 and WIN32_WORKSPACE:
 POLL_WORKSPACE = envbool("XPRA_POLL_WORKSPACE", WIN32)
 
 
-def wn(w) -> str:
-    return WORKSPACE_NAMES.get(w, str(w))
-
-
 class WorkspaceWindow(StubWindow):
-    __gsignals__ = {}
 
-    def init_window(self, client, metadata: typedict) -> None:
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self._can_set_workspace = CAN_SET_WORKSPACE
-        self.workspace_timer = 0
         self._window_workspace = WORKSPACE_UNSET
-        self.init_workspace()
+        self._desktop_workspace = WORKSPACE_UNSET
+        self.workspace_timer = 0
+        if self._can_set_workspace:
+            self.init_workspace(metadata, client_props)
 
     def cleanup(self) -> None:  # pylint: disable=method-hidden
         self.cancel_workspace_timer()
 
+    def get_info(self) -> dict[str, Any]:
+        return {
+            "workspace": wn(self._window_workspace),
+            "desktop": wn(self._desktop_workspace),
+        }
+
     def get_window_event_mask(self) -> Gdk.EventMask:
         return Gdk.EventMask.PROPERTY_CHANGE_MASK
 
-    def init_workspace(self) -> None:
-        if not self._can_set_workspace:
-            return
+    def init_workspace(self, metadata: typedict, client_props: typedict) -> None:
+        workspace = typedict(client_props).intget("workspace", WORKSPACE_UNSET)
+        log("init_window(..) workspace from client properties %s: %s", client_props, wn(workspace))
+        if workspace >= 0:
+            # client properties override application specified workspace value on init only:
+            metadata["workspace"] = workspace
+        self._window_workspace = WORKSPACE_UNSET  # will get set in set_metadata if present
+        self._desktop_workspace = self.get_desktop_workspace()
+        log("init_window(..) workspace=%s, current workspace=%s",
+            wn(self._window_workspace), wn(self._desktop_workspace))
 
         def prop_changed(_widget, event) -> None:
             atom = str(event.atom)
@@ -161,7 +175,7 @@ class WorkspaceWindow(StubWindow):
             # no change
             return
         suspend_resume = None
-        if desktop_workspace < 0 or window_workspace is None:
+        if desktop_workspace < 0:
             # maybe the property has been cleared? maybe the window is being scrubbed?
             log("not sure if the window is shown or not: %s vs %s, resuming to be safe",
                 wn(desktop_workspace), wn(window_workspace))
@@ -279,7 +293,7 @@ class WorkspaceWindow(StubWindow):
     def get_window_workspace(self) -> int:
         if WIN32:
             if not WIN32_WORKSPACE:
-                return 0
+                return WORKSPACE_UNSET
             try:
                 from xpra.platform.win32.gui import get_window_handle
                 from pyvda.pyvda import AppView
@@ -288,7 +302,7 @@ class WorkspaceWindow(StubWindow):
                 return 0
             hwnd = get_window_handle(self)
             if not hwnd:
-                return 0
+                return WORKSPACE_UNSET
             try:
                 return AppView(hwnd).desktop.number - 1
             except Exception:

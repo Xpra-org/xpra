@@ -27,9 +27,8 @@ GRAB_EVENT_MASK |= Gdk.EventMask.FOCUS_CHANGE_MASK
 
 
 class GrabWindow(StubWindow):
-    __gsignals__ = {}
 
-    def init_window(self, client, metadata: typedict) -> None:
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.init_grab()
 
     def get_window_event_mask(self) -> Gdk.EventMask:

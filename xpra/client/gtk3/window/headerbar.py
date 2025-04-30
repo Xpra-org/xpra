@@ -26,10 +26,9 @@ WINDOW_MENU = envbool("XPRA_WINDOW_MENU", True)
 
 
 class HeaderBarWindow(StubWindow):
-    __gsignals__ = {}
 
-    def init_window(self, client, metadata: typedict) -> None:
-        self.header_bar_image = None
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+        self.header_bar_image: Gtk.Image | None = None
         if self.can_use_header_bar(metadata):
             self.add_header_bar()
 

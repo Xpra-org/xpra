@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import math
+from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import, OSX, WIN32
@@ -45,16 +46,22 @@ def _button_resolve(button: int) -> int:
 
 
 class PointerWindow(StubWindow):
-    __gsignals__ = {}
 
-    def init_window(self, _client, _metadata: typedict) -> None:
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.cursor_data = ()
         self.remove_pointer_overlay_timer = 0
         self.show_pointer_overlay_timer = 0
+        self.button_state: dict[int, bool] = {}
 
     def cleanup(self) -> None:
         self.cancel_show_pointer_overlay_timer()
         self.cancel_remove_pointer_overlay_timer()
+
+    def get_info(self) -> dict[str, Any]:
+        return {
+            "button-state": self.button_state,
+            "cursor-data": bool(self.cursor_data),
+        }
 
     def get_window_event_mask(self) -> Gdk.EventMask:
         mask: Gdk.EventMask = Gdk.EventMask.POINTER_MOTION_MASK

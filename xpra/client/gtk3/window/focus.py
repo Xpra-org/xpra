@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+
 from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.system import is_X11
@@ -30,7 +32,7 @@ class FocusWindow(StubWindow):
         "x11-focus-in-event": one_arg_signal,
     }
 
-    def init_window(self, _client, _metadata: typedict) -> None:
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self._focus_latest = None
         self.recheck_focus_timer: int = 0
         self.init_focus()
@@ -39,6 +41,11 @@ class FocusWindow(StubWindow):
         self.cancel_focus_timer()
         if self._client.has_focus(self.wid):
             self._unfocus()
+
+    def get_info(self) -> dict[str, Any]:
+        return {
+            "focused": bool(self._focus_latest),
+        }
 
     def get_window_event_mask(self) -> Gdk.EventMask:
         return Gdk.EventMask.FOCUS_CHANGE_MASK

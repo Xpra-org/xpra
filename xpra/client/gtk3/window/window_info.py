@@ -61,7 +61,9 @@ def get_window_state(w) -> str:
 
 def get_window_attributes(w) -> str:
     attr = {}
-    workspace = w.get_desktop_workspace()
+    # optional feature:
+    info: dict = w.get_info()
+    workspace = info.get("workspace")
     if workspace not in (None, WORKSPACE_UNSET):
         attr["workspace"] = workspace
     with IgnoreWarningsContext():

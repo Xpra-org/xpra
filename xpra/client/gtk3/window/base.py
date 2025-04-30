@@ -146,7 +146,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     # maximum size of the backing pixel buffer:
     MAX_BACKING_DIMS = 16 * 1024, 16 * 1024
 
-    def init_window(self, client, metadata: typedict) -> None:
+    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         self.init_max_window_size()
         if self._override_redirect or is_popup(metadata):
             window_type = Gtk.WindowType.POPUP
@@ -186,7 +186,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.connect("unrealize", self.on_unrealize)
         self.connect("key-press-event", self.key_may_break_moveresize)
         self.add_events(self.get_window_event_mask())
-        ClientWindowBase.init_window(self, client, metadata)
+        ClientWindowBase.init_window(self, client, metadata, client_props)
 
     def init_drawing_area(self) -> None:
         widget = Gtk.DrawingArea()

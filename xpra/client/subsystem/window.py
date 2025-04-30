@@ -917,9 +917,10 @@ class WindowClient(StubClientMixin):
         wh = max(1, self.sy(h))
         # backing size, same as original (server-side):
         bw, bh = w, h
-        client_properties = {}
         if len(packet) >= 8:
-            client_properties = packet.get_dict(7)
+            client_properties = typedict(packet.get_dict(7))
+        else:
+            client_properties = typedict()
         geom = (wx, wy, ww, wh)
         backing_size = (bw, bh)
         geomlog("process_new_common: wid=%i, OR=%s, geometry(%s)=%s / %s",
