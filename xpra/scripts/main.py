@@ -906,9 +906,12 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         return run_setting(True, args)
     if mode == "unset":
         return run_setting(False, args)
-    # unknown subcommand:
     if mode != "help":
         print(f"Invalid subcommand {mode!r}")
+    return run_help(script_file)
+
+
+def run_help(script_file: str) -> int:
     print("Usage:")
     if not POSIX or OSX:
         print("(this xpra installation does not support starting local servers)")
