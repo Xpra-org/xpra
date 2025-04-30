@@ -24,8 +24,8 @@ FEATURES = (
     ("File transfer", "Upload and download of files to and from the server", "xpra.net"),
     ("Printing", "Printer forwarding to the client's printer", "xpra.net"),
     ("Clipboard", "Copy & Paste to and from the server", "xpra.clipboard"),
-    ("Notifications", "Notifications forwarding", "xpra.notification"),
-    ("Windows", "Windows forwarding", "xpra.client.gtk3"),
+    ("Notification", "Notification forwarding", "xpra.notification"),
+    ("Window", "Window forwarding", "xpra.client.gtk3"),
     # ("Splash", "Show the splash screen GUI", "xpra.gtk.dialogs.splash")
     # ("Readonly", "Prevent any keyboard or pointer events from being forwarded", "xpra.client.gtk3"),
 )

@@ -23,7 +23,7 @@ Gnome-shell: \
 
 ## Technical
 
-Please refer to [the `notifications` subsystem](../Subsystems/Notifications.md).
+Please refer to [the `notifications` subsystem](../Subsystems/Notification.md).
 <details>
   <summary>Debugging</summary>
 

@@ -1,17 +1,17 @@
 # Cursor
 
 
-This subsystem synchronizes the client and the server's encodings so that each end can use the most appropriate
-codecs for exchanging data.
+This subsystem synchronizes the pointer cursor between the server's (often virtual) screen
+and the client.
 
 
 ## Implementations
 
-| Component         | Link                                                                                                           |
-|-------------------|----------------------------------------------------------------------------------------------------------------|
-| client            | [xpra.client.subsystem.cursors](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/cursors.py) |
-| client connection | [xpra.server.source.cursors](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/cursors.py)       |
-| server            | [xpra.server.subsystem.cursors](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/cursors.py) |
+| Component         | Link                                                                                                         |
+|-------------------|--------------------------------------------------------------------------------------------------------------|
+| client            | [xpra.client.subsystem.cursor](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/cursor.py) |
+| client connection | [xpra.server.source.cursor](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/cursor.py)      |
+| server            | [xpra.server.subsystem.cursor](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/cursor.py) |
 
 
 

@@ -19,20 +19,7 @@ threads_init()
 DBusGMainLoop(set_as_default=True)
 
 NOTIFICATION_APP_NAME = os.environ.get("XPRA_NOTIFICATION_APP_NAME", "%s (via Xpra)")
-FD_NOTIFICATIONS = 'org.freedesktop.Notifications'
-
-
-def DBUS_Notifier_factory(*args):
-    try:
-        return DBUS_Notifier(*args)
-    except Exception as e:
-        log.warn("Warning: failed to instantiate the dbus notification handler")
-        if str(e).startswith("org.freedesktop.DBus.Error.ServiceUnknown:"):
-            log.warn(" you may need to start a notification service for 'org.freedesktop.Notifications'")
-        else:
-            log.warn(" %s", e)
-        log.warn(" disable notification to avoid this warning")
-        return None
+FD_NOTIFICATIONS = "org.freedesktop.Notifications"
 
 
 class DBUS_Notifier(NotifierBase):
@@ -212,6 +199,19 @@ class DBUS_Notifier(NotifierBase):
         self.dbusnotify.CloseNotification(actual_id,
                                           reply_handler=CloseNotificationReply,
                                           error_handler=CloseNotificationError)
+
+
+def DBUS_Notifier_factory(*args) -> DBUS_Notifier | None:
+    try:
+        return DBUS_Notifier(*args)
+    except Exception as e:
+        log.warn("Warning: failed to instantiate the dbus notification handler")
+        if str(e).startswith("org.freedesktop.DBus.Error.ServiceUnknown:"):
+            log.warn(f" you may need to start a notification service for {FD_NOTIFICATIONS!r}")
+        else:
+            log.warn(" %s", e)
+        log.warn(" disable notification to avoid this warning")
+        return None
 
 
 def main():

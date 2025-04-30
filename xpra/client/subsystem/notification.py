@@ -71,7 +71,7 @@ class NotificationClient(StubClientMixin):
     def get_caps(self) -> dict[str, Any]:
         enabled = self.client_supports_notifications
         caps: dict[str, Any] = {
-            NotificationClient.PREFIX : True,
+            NotificationClient.PREFIX: enabled,
         }
         if BACKWARDS_COMPATIBLE:
             caps["notifications"] = {
