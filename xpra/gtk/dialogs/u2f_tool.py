@@ -20,6 +20,11 @@ log = Logger("auth", "util")
 APP_ID = os.environ.get("XPRA_U2F_APP_ID", "Xpra")
 
 
+def printmsgs(*msgs: str) -> None:
+    for x in msgs:
+        print(x)
+
+
 def main():
     from xpra.platform import program_context
     with program_context("U2F-Register", "Xpra U2F Registration Tool"):
@@ -27,8 +32,10 @@ def main():
             Gtk = gi_import("Gtk")
             GLib = gi_import("GLib")
 
-            def show_dialog(mode, *msgs):
-                dialog = Gtk.MessageDialog(None, 0, mode, Gtk.ButtonsType.CLOSE, "\n".join(msgs))
+            def show_dialog(message_type: Gtk.MessageType, *msgs: str):
+                dialog = Gtk.MessageDialog(transient_for=None, flags=0,
+                                           message_type=message_type, buttons=Gtk.ButtonsType.CLOSE,
+                                           text="\n".join(msgs))
                 dialog.set_title("Xpra U2F Registration Tool")
                 v = dialog.run()
                 dialog.destroy()
@@ -44,10 +51,6 @@ def main():
                 return show_dialog(Gtk.MessageType.INFO, *msgs)
         else:
             print("U2F Registration Tool")
-
-            def printmsgs(*msgs):
-                for x in msgs:
-                    print(x)
 
             error = info = printmsgs
 

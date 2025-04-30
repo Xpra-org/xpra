@@ -1128,8 +1128,8 @@ class ApplicationWindow:
 # on some platforms like win32, we don't have stdout
 # and this is a GUI application, so show a dialog with the error instead
 def exception_dialog(title: str) -> None:
-    md = Gtk.MessageDialog(None, Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                           Gtk.MessageType.INFO, Gtk.ButtonsType.CLOSE, title)
+    md = Gtk.MessageDialog(transient_for=None, flags=0,
+                           message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.CLOSE, text=title)
     md.format_secondary_text(traceback.format_exc())
     md.show_all()
 

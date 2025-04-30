@@ -405,8 +405,9 @@ class BugReport:
                     zf.writestr(info, str(s))
         except OSError as e:
             log("do_save(%s) failed to save zip file", filename, exc_info=True)
-            dialog = Gtk.MessageDialog(self.window, 0, Gtk.MessageType.WARNING,
-                                       Gtk.ButtonsType.CLOSE, "Failed to save ZIP file")
+            dialog = Gtk.MessageDialog(transient_for=self.window, flags=Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                       message_type=Gtk.MessageType.WARNING, buttons=Gtk.ButtonsType.CLOSE,
+                                       text=f"Failed to save ZIP file: {e}")
             dialog.format_secondary_text("%s" % e)
 
             def close(*_args) -> None:

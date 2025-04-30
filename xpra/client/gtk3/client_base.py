@@ -516,8 +516,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             f"this file is too large: {std_unit(filesize)}B",
             f"the {location} file size limit is {std_unit(limit)}B",
         )
-        dialog = Gtk.MessageDialog(parent, Gtk.DialogFlags.DESTROY_WITH_PARENT, Gtk.MessageType.INFO,
-                                   Gtk.ButtonsType.CLOSE, "\n".join(msgs))
+        dialog = Gtk.MessageDialog(transient_for=parent, flags=Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                   message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.CLOSE,
+                                   text="\n".join(msgs))
         try:
             image = Gtk.Image.new_from_stock(Gtk.STOCK_DIALOG_WARNING, Gtk.IconSize.BUTTON)
             dialog.set_image(image)
