@@ -10,6 +10,7 @@ import sys
 import logging
 import weakref
 import itertools
+
 from typing import Any, Final
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
@@ -75,11 +76,12 @@ class FullDebugContext:
 def add_debug_category(*cat) -> None:
     remove_disabled_category(*cat)
     for c in cat:
-        debug_enabled_categories.add(c)
+        debug_enabled_categories.add(ALIASES.get(c, c))
 
 
 def remove_debug_category(*cat) -> None:
     for c in cat:
+        c = ALIASES.get(c, c)
         if c in debug_enabled_categories:
             debug_enabled_categories.remove(c)
 
@@ -95,13 +97,13 @@ def is_debug_enabled(category: str) -> bool:
 def add_disabled_category(*cat: str) -> None:
     remove_debug_category(*cat)
     for c in cat:
-        debug_disabled_categories.add(c)
+        debug_disabled_categories.add(ALIASES.get(c, c))
 
 
 def remove_disabled_category(*cat: str) -> None:
     for c in cat:
         if c in debug_disabled_categories:
-            debug_disabled_categories.remove(c)
+            debug_disabled_categories.remove(ALIASES.get(c, c))
 
 
 def add_backtrace(*expressions: str) -> None:
@@ -182,6 +184,15 @@ def consume_verbose_argv(argv: list[str], *categories: str) -> bool:
                 enable_debug_for(category)
     return verbose
 
+
+# makes it easier to rename logging categories
+# without having to modify older versions of the wiki and documentation
+ALIASES: dict[str, str] = {
+    "event": "events",
+    "filter": "filters",
+    "mouse": "pointer",
+    "statistics": "stats",
+}
 
 # noinspection PyPep8
 STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
@@ -352,15 +363,15 @@ def isenvdebug(category: str) -> bool:
 def get_info() -> dict[str, Any]:
     info = {
         "categories": {
-            "enabled"   : tuple(debug_enabled_categories),
-            "disabled"  : tuple(debug_disabled_categories),
+            "enabled": tuple(debug_enabled_categories),
+            "disabled": tuple(debug_disabled_categories),
         },
         "backtrace-level": BACKTRACE_LEVEL,
         "backtrace-expressions": tuple(bt.pattern for bt in backtrace_expressions),
-        "handler"   : getattr(global_logging_handler, "__name__", "<unknown>"),
-        "prefix"    : LOG_PREFIX,
-        "format"    : LOG_FORMAT,
-        "debug-modules" : DEBUG_MODULES,
+        "handler": getattr(global_logging_handler, "__name__", "<unknown>"),
+        "prefix": LOG_PREFIX,
+        "format": LOG_FORMAT,
+        "debug-modules": DEBUG_MODULES,
     }
     from xpra.common import FULL_INFO
     if FULL_INFO > 1:
@@ -565,12 +576,12 @@ def get_all_loggers() -> set[Logger]:
     return a
 
 
-def get_loggers_for_categories(*cat) -> list[Logger]:
-    if not cat:
+def get_loggers_for_categories(*categories) -> list[Logger]:
+    if not categories:
         return []
-    if "all" in cat:
+    if "all" in categories:
         return list(get_all_loggers())
-    cset = set(cat)
+    cset = set(ALIASES.get(cat, cat) for cat in categories)
     matches = set()
     for logger in get_all_loggers():
         if set(logger.categories).issuperset(cset):
