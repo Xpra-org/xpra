@@ -44,4 +44,3 @@ usr/lib/python3*/*/xpra/codecs/image.py
 usr/lib/python3*/*/xpra/codecs/loader.py
 usr/lib/python3*/*/xpra/codecs/rgb_transform.py
 usr/lib/python3*/*/xpra/codecs/video.py
-
