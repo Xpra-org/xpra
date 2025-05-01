@@ -360,6 +360,7 @@ This package contains audio support for xpra servers.
 Summary:			xpra client
 Conflicts:			python3-xpra-client < 6
 Obsoletes:			python3-xpra-client < 6
+Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
 BuildRequires:		desktop-file-utils
 Requires(post):		desktop-file-utils
@@ -493,6 +494,7 @@ This package contains the x11 bindings
 Summary:			xpra server
 Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
+Requires:			xpra-filesystem >= 5
 Requires:			%{package_prefix}-common = %{version}-%{release}
 Requires:			gtk3
 Recommends:			%{package_prefix}-x11 = %{version}-%{release}
