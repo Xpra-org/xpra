@@ -176,7 +176,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # only set this initially:
         # (so the server can't make us kill just any pid!)
         watcher_pid = metadata.intget("watcher-pid", 0)
-        if watcher_pid:
+        if watcher_pid and HAS_X11_BINDINGS:
             def set_watcher_pid() -> None:
                 log("using watcher pid=%i for wid=%i", watcher_pid, self.wid)
                 self.do_set_x11_property("_NET_WM_PID", "u32", watcher_pid)
