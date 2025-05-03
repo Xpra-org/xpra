@@ -66,7 +66,7 @@ class NotificationConnection(StubClientConnection):
                         summary, body, actions, hints or {},
                         expire_timeout, icon, user_callback)
 
-    def notify(self, dbus_id, nid: int, app_name: str, replaces_nid: int, app_icon: str,
+    def notify(self, dbus_id: str, nid: int, app_name: str, replaces_nid: int, app_icon: str,
                summary: str, body: str,
                actions: Sequence[str], hints: dict, expire_timeout: int,
                icon, user_callback: Callable | None = None) -> bool:

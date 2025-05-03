@@ -13,7 +13,7 @@ Notify = gi_import("Notify")
 
 class GINotifier(NotifierBase):
 
-    def show_notify(self, dbus_id, tray, nid: NID,
+    def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
                     summary: str, body: str, actions: Sequence[str], hints: dict, timeout: int, icon) -> None:
         if not self.dbus_check(dbus_id):

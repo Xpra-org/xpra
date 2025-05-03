@@ -100,7 +100,7 @@ class NotificationForwarder(StubServerMixin):
             log.error("Error: failed to show notification of user login:")
             log.estr(e)
 
-    def notify_callback(self, dbus_id, nid: int, app_name: str, replaces_nid: int, app_icon: str,
+    def notify_callback(self, dbus_id: str, nid: int, app_name: str, replaces_nid: int, app_icon: str,
                         summary: str, body: str,
                         actions: Sequence[str], hints: dict, expire_timeout: int) -> None:
         assert self.notifications_forwarder and self.notifications
@@ -110,7 +110,7 @@ class NotificationForwarder(StubServerMixin):
                       summary, body,
                       actions, hints, expire_timeout)
 
-    def do_notify_callback(self, dbus_id, nid: int,
+    def do_notify_callback(self, dbus_id: str, nid: int,
                            app_name: str, replaces_nid: int, app_icon: str,
                            summary: str, body: str,
                            actions, hints, expire_timeout: int) -> None:

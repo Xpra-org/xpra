@@ -33,7 +33,7 @@ class NotifierBase:
             for nid in self.temp_files:
                 self.clean_notification(nid)
 
-    def show_notify(self, dbus_id, tray, nid: NID,
+    def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
                     summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         raise NotImplementedError()
@@ -74,7 +74,7 @@ class NotifierBase:
                 log("failed to remove temporary icon file '%s':", temp_file)
                 log(" %s", e)
 
-    def dbus_check(self, dbus_id) -> bool:
+    def dbus_check(self, dbus_id: str) -> bool:
         if dbus_id and self.dbus_id == dbus_id:
             log.warn("remote dbus instance is the same as our local one")
             log.warn(" cannot forward notification to ourself as this would create a loop")

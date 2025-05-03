@@ -14,7 +14,7 @@ from xpra.notification.notifier_base import NotifierBase, NID
 class PyNotify_Notifier(NotifierBase):
     CACHE: dict[int, Any] = {}
 
-    def show_notify(self, dbus_id, tray, nid: NID,
+    def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
                     summary: str, body: str, actions, hints, timeout: int, icon) -> None:
         if not self.dbus_check(dbus_id):
