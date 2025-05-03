@@ -620,7 +620,7 @@ cdef class NvFBC_SysCapture:
         return info
 
     def get_type(self) -> str:
-        return  "nvfbc-sys"
+        return "nvfbc-sys"
 
     def __repr__(self):
         return "NvFBC_SysCapture(%#x)" % (<uintptr_t> self.context)
@@ -763,7 +763,7 @@ cdef class NvFBC_CUDACapture:
         return info
 
     def get_type(self) -> str:
-        return  "nvfbc-cuda"
+        return "nvfbc-cuda"
 
     def __repr__(self):
         return "NvFBC_CUDACapture(%#x)" % (<uintptr_t> self.context)

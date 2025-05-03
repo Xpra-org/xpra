@@ -381,8 +381,8 @@ DEFS = {
 }
 
 
-def init_vk_names():
-    names = {}
+def init_vk_names() -> dict[int, str]:
+    names: dict[int, str] = {}
     for name in (x for x in dir(win32con) if x.startswith("VK_")):
         names[getattr(win32con, name)] = name
     for name, val in DEFS.items():
@@ -394,9 +394,9 @@ VK_NAMES = init_vk_names()
 log("VK_NAMES=%s", VK_NAMES)
 
 
-def init_keycodes():
+def init_keycodes() -> dict[str, int]:
     # lookup the constants:
-    keycodes = {}
+    keycodes: dict[str, int] = {}
     for vk, name in VIRTUAL_KEYS:
         vk_name = "VK_%s" % vk
         if hasattr(win32con, vk_name):

@@ -11,7 +11,7 @@ from xpra.exit_codes import ExitCode
 from xpra.platform.posix.paths import do_get_resources_dir
 
 
-def get_autostart_file():
+def get_autostart_file() -> str:
     # find the 'xdg autostart' directory:
     if os.getuid() == 0:
         adir = None
@@ -24,7 +24,7 @@ def get_autostart_file():
     else:
         adir = os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "autostart")
     if not adir:
-        return None
+        return ""
     adir = os.path.expanduser(adir)
     if not os.path.exists(adir):
         os.mkdir(adir, mode=0o755)
@@ -33,6 +33,8 @@ def get_autostart_file():
 
 def set_autostart(enabled):
     target = get_autostart_file()
+    if not target:
+        raise RuntimeError("unable to locate autostart directory")
     if enabled:
         # find the file to copy there:
         autostart = os.path.join(do_get_resources_dir(), "autostart.desktop")
@@ -43,5 +45,5 @@ def set_autostart(enabled):
         os.unlink(target)
 
 
-def get_status():
+def get_status() -> str:
     return ["disabled", "enabled"][os.path.exists(get_autostart_file())]

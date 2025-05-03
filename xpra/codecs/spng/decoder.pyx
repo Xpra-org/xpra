@@ -80,7 +80,7 @@ def decompress(data, options: typedict) -> Tuple[memoryview, str, int, int]:
         raise ValueError(f"failed to read compressed data from {type(data)}")
 
     cdef int r
-    def close():
+    def close() -> None:
         PyBuffer_Release(&py_buf)
         spng_ctx_free(ctx)
 

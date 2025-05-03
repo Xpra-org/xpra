@@ -123,7 +123,7 @@ def quit_worker(callback: Callable) -> None:
         callback()
         return
 
-    def quit_timer():
+    def quit_timer() -> None:
         log("quit_timer() worker=%s", w)
         if w and w.is_alive():
             # wait up to 1 second for the worker thread to exit

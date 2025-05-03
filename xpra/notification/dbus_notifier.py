@@ -189,10 +189,10 @@ class DBUS_Notifier(NotifierBase):
         if not self.dbusnotify:
             return
 
-        def CloseNotificationReply():
+        def CloseNotificationReply() -> None:
             self.actual_notification_id.pop(actual_id, None)
 
-        def CloseNotificationError(dbus_error, *_args):
+        def CloseNotificationError(dbus_error, *_args) -> None:
             log.warn("Error: error closing notification:")
             log.warn(" %s", dbus_error)
 

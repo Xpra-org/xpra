@@ -18,7 +18,7 @@ width = 400
 height = 200
 
 
-def main():
+def main() -> int:
     with program_context("cursors", "Cursors"):
         window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         window.set_title("Cursors")
@@ -34,7 +34,7 @@ def main():
             cursor_combo.append_text(cursor_name)
         window.add(cursor_combo)
 
-        def change_cursor(*_args):
+        def change_cursor(*_args) -> None:
             name = cursor_combo.get_active_text()
             print("new cursor: %s" % name)
             if name:
@@ -46,7 +46,7 @@ def main():
 
         cursor_combo.connect("changed", change_cursor)
 
-        def show_with_focus():
+        def show_with_focus() -> None:
             force_focus()
             window.show_all()
             window.present()

@@ -57,7 +57,7 @@ def get_window(filter_object, window):
     return p
 
 
-def init_x11_window_filters():
+def init_x11_window_filters() -> None:
     from xpra.server.window import filters
     original_get_window_filter = filters.get_window_filter
 

@@ -21,7 +21,7 @@ StringFromGUID2.restype = c_int
 StringFromGUID2.argtypes = [LPVOID, LPOLESTR, c_int]
 
 
-def _enum_devices(fn):
+def _enum_devices(fn) -> list:
     devices = []
 
     def cb_enum(lpGUID, lpszDesc, _lpszDrvName, _):
@@ -41,15 +41,15 @@ def _enum_devices(fn):
     return devices
 
 
-def get_devices():
+def get_devices() -> list:
     return _enum_devices(DirectSoundEnumerateW)
 
 
-def get_capture_devices():
+def get_capture_devices() -> list:
     return _enum_devices(DirectSoundCaptureEnumerate)
 
 
-def main():
+def main() -> None:
     import sys
     from xpra.platform import program_context
     from xpra.log import Logger, enable_color, consume_verbose_argv

@@ -15,7 +15,7 @@ import os.path
 import optparse
 import warnings
 from urllib import parse
-from typing import Any
+from typing import Any, NoReturn
 from collections.abc import Callable, Sequence
 from importlib.util import find_spec
 
@@ -1012,7 +1012,7 @@ def do_parse_cmdline(cmdline: list[str], defaults):
 
 
 def parse_window_size(v, attribute="max-size") -> tuple[int, int]:
-    def pws_fail():
+    def pws_fail() -> NoReturn:
         raise InitException(f"invalid {attribute}: {v}")
 
     try:

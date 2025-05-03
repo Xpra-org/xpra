@@ -87,7 +87,7 @@ class CursorsConnection(StubClientConnection):
         if not self.cursor_timer and gbc:
             delay = max(10, int(gbc.delay / 4))
 
-            def do_send_cursor():
+            def do_send_cursor() -> None:
                 self.cursor_timer = 0
                 cd = self.get_cursor_data_cb()
                 if not cd or not cd[0]:

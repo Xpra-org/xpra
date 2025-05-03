@@ -211,7 +211,7 @@ for full in (False, True):
         SOURCE[f"{fmt}_to_RGB{suffix}"] = gen_YUV_to_RGB(fmt, full_range=full)
 
 
-def main():
+def main() -> None:
     for shader, source in SOURCE.items():
         print("#"*80)
         print(f"#{shader}:")

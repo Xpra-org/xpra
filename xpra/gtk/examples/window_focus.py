@@ -23,7 +23,7 @@ GLib = gi_import("GLib")
 N = 8
 
 
-def make_window():
+def make_window() -> Gtk.Window:
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_title("Window Focus")
     window.set_size_request(640, 200)
@@ -35,31 +35,31 @@ def make_window():
     vbox = Gtk.VBox()
     hbox = Gtk.HBox()
 
-    def add_btn(txt: str, cb: Callable):
+    def add_btn(txt: str, cb: Callable) -> None:
         b = Gtk.Button(label=txt)
 
-        def bcb(*_args):
+        def bcb(*_args) -> None:
             cb()
 
         b.connect('clicked', bcb)
         hbox.add(b)
 
-    def restack_above():
+    def restack_above() -> None:
         window.get_window().restack(None, True)
 
     add_btn("Restack Above", restack_above)
 
-    def restack_below():
+    def restack_below() -> None:
         window.get_window().restack(None, False)
 
     add_btn("Restack Below", restack_below)
 
-    def _raise():
+    def _raise() -> None:
         window.get_window().raise_()
 
     add_btn("Raise", _raise)
 
-    def _lower():
+    def _lower() -> None:
         window.get_window().lower()
 
     add_btn("Lower", _lower)
@@ -76,20 +76,20 @@ def make_window():
     window.show_all()
     text: deque[str] = deque(maxlen=N)
 
-    def update(s):
+    def update(s) -> None:
         text.append("%s: %s" % (datetime.now(), s))
         for i, t in enumerate(text):
             labels[i].set_text(t)
 
     # self.selectX11FocusChange(self)
 
-    def focus_in(_window, _event):
+    def focus_in(_window, _event) -> None:
         update("focus-in-event")
 
-    def focus_out(_window, _event):
+    def focus_out(_window, _event) -> None:
         update("focus-out-event")
 
-    def has_toplevel_focus(win, _event):
+    def has_toplevel_focus(win, _event) -> None:
         update("has-toplevel-focus: %s" % win.has_toplevel_focus())
 
     window.connect("focus-in-event", focus_in)
@@ -113,14 +113,14 @@ def make_window():
     return window
 
 
-def main():
+def main() -> int:
     with program_context("window-focus", "Window Focus"):
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("focus test window")
 
-        def show_with_focus():
+        def show_with_focus() -> None:
             force_focus()
             w.show_all()
             w.present()

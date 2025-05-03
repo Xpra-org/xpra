@@ -390,7 +390,7 @@ class WindowVideoSource(WindowSource):
             self._csc_encoder = None
             self._video_encoder = None
 
-            def clean():
+            def clean() -> None:
                 if DEBUG_VIDEO_CLEAN:
                     log.warn("video_context_clean() done")
                 self.csc_clean(csce)

@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 #cython: wraparound=False
+from typing import Tuple
 
 from xpra.log import Logger
 log = Logger("util")
@@ -38,7 +39,7 @@ cdef extern from "qrencode.h":
     char *QRcode_APIVersionString()
 
 
-def get_version():
+def get_version() -> Tuple[int, int, int]:
     cdef int major_version, minor_version, micro_version
     QRcode_APIVersion(&major_version, &minor_version, &micro_version)
     return major_version, minor_version, micro_version

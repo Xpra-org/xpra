@@ -309,7 +309,7 @@ def guess_content_type(window) -> str:
         DEFAULT_CONTENT_TYPE
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     import sys
     args = sys.argv[1:]

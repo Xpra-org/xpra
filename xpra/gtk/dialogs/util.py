@@ -36,7 +36,7 @@ def dialog_run(run_fn: Callable) -> str | int:
     e = Event()
     code = []
 
-    def main_thread_run():
+    def main_thread_run() -> None:
         log("main_thread_run() calling %s", run_fn)
         try:
             code.append(run_fn())

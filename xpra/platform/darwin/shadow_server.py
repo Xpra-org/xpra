@@ -261,7 +261,7 @@ class ShadowServer(GTKShadowServerBase):
         return info
 
 
-def main():
+def main() -> None:
     import sys
     from xpra.platform import program_context
     with program_context("MacOS Shadow Capture"):

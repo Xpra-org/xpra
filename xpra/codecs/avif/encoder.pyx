@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Any
 from collections.abc import Sequence
 
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, uintptr_t    # pylint: disable=syntax-error
@@ -59,8 +59,8 @@ def get_version() -> Tuple[int, int, int]:
     return (AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH)
 
 
-def get_info():
-    return  {
+def get_info() -> Dict[str, Any]:
+    return {
         "version"       : get_version(),
         "encodings"     : get_encodings(),
     }

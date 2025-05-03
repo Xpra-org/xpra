@@ -194,7 +194,7 @@ async def do_listen(sock, xpra_server, cert, key, retry):
         log(f"quic {configuration=}")
         session_ticket_store = SessionTicketStore()
 
-        def create_server():
+        def create_server() -> QuicServer:
             return QuicServer(
                 configuration=configuration,
                 create_protocol=create_protocol,

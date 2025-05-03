@@ -255,7 +255,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             log.warn(" coming from %s", wininfo)
             return
 
-        def nodata():
+        def nodata() -> None:
             self.set_selection_response(requestor, target, prop, "STRING", 8, b"", time=event.time)
 
         if not self._enabled:

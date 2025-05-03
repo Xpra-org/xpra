@@ -228,7 +228,7 @@ def get_info() -> dict[str, Any]:
     return info
 
 
-def main():
+def main() -> None:
     from xpra.util.str_fn import print_nested_dict
     from xpra.util.io import load_binary_file
     if "-v" in sys.argv:

@@ -737,7 +737,7 @@ _EnumDisplayMonitors.argtypes = [HDC, POINTER(RECT), MonitorEnumProc, LPARAM]
 _EnumDisplayMonitors.restype = BOOL
 
 
-def EnumDisplayMonitors():
+def EnumDisplayMonitors() -> list:
     results = []
 
     def _callback(monitor, _dc, _rect, _data):
@@ -749,7 +749,7 @@ def EnumDisplayMonitors():
     return results
 
 
-def GetIntSystemParametersInfo(key):
+def GetIntSystemParametersInfo(key) -> int:
     rv = INT()
     r = SystemParametersInfoA(key, 0, byref(rv), 0)
     if r == 0:

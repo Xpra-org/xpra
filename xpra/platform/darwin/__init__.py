@@ -8,7 +8,7 @@ import sys
 from collections.abc import Callable
 
 
-def do_init():
+def do_init() -> None:
     for x in list(sys.argv):
         if x.startswith("-psn_"):
             sys.argv.remove(x)
@@ -18,7 +18,7 @@ def do_init():
         NSApp.setActivationPolicy_(1)
 
 
-def do_init_env():
+def do_init_env() -> None:
     from xpra.platform import init_env_common
     init_env_common()
     if os.environ.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY") is None:
@@ -33,7 +33,7 @@ def do_init_env():
             os.environ["GST_PLUGIN_SCANNER"] = os.path.join(rsc_dir, "libexec", "gstreamer-1.0", "gst-plugin-scanner")
 
 
-def default_gtk_main_exit():
+def default_gtk_main_exit() -> None:
     from xpra.os_util import gi_import
     gtk = gi_import("Gtk")
     gtk.main_quit()
@@ -68,7 +68,7 @@ def get_OSXApplication():
 
 # workaround for Big Sur dylib cache mess:
 # https://stackoverflow.com/a/65599706/428751
-def patch_find_library():
+def patch_find_library() -> None:
     from ctypes import util  # pylint: disable=import-outside-toplevel
     orig_util_find_library = util.find_library
 

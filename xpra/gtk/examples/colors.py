@@ -99,7 +99,7 @@ class AnimatedColorWindow(Gtk.Window):
         paint_block(w / 2, h / 2, w / 2, h / 2, 1, 1, 1)
 
 
-def main():
+def main() -> int:
     from xpra.platform.gui import init, set_default_icon
     with program_context("colors", "Colors"):
         set_default_icon("encoding.png")

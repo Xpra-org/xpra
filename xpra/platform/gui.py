@@ -54,7 +54,7 @@ def set_default_icon(icon_filename: str) -> None:
     _default_icon = icon_filename
 
 
-def get_default_icon():
+def get_default_icon() -> str:
     global _default_icon
     return _default_icon
 

@@ -219,7 +219,7 @@ class ZeroconfPublisher:
             log.error("Error: failed to update service", exc_info=True)
 
 
-def main():
+def main() -> None:
     import random
     port = int(20000 * random.random()) + 10000
     # host = "127.0.0.1"
@@ -235,7 +235,7 @@ def main():
         GLib.idle_add(publisher.start)
         publishers.append(publisher)
 
-        def update_rec():
+        def update_rec() -> None:
             publisher.update_txt({"somename": "someothervalue"})
 
         GLib.timeout_add(10 * 1000, update_rec)

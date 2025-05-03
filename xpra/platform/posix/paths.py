@@ -11,8 +11,10 @@ import sys
 import site
 import tempfile
 
+from collections.abc import Sequence
 
-def do_get_desktop_background_paths():
+
+def do_get_desktop_background_paths() -> Sequence[str]:
     return [
         "/usr/share/backgrounds/images/default.png",
         "/usr/share/backgrounds/images/*default*.png",
@@ -22,7 +24,7 @@ def do_get_desktop_background_paths():
     ]
 
 
-def do_get_install_prefix():
+def do_get_install_prefix() -> str:
     # special case for "user" installations, ie:
     # $HOME/.local/lib/python3.8/site-packages/xpra/platform/paths.py
     try:
@@ -38,7 +40,7 @@ def do_get_install_prefix():
     return sys.prefix
 
 
-def do_get_resources_dir():
+def do_get_resources_dir() -> str:
     # is there a better/cleaner way?
     from xpra.common import DEFAULT_XDG_DATA_DIRS
     from xpra.platform.paths import get_install_prefix
@@ -60,31 +62,31 @@ def do_get_resources_dir():
     return os.getcwd()
 
 
-def do_get_app_dir():
+def do_get_app_dir() -> str:
     from xpra.platform.paths import get_resources_dir
     return get_resources_dir()
 
 
-def do_get_image_dir():
+def do_get_image_dir() -> str:
     from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "images")
 
 
-def do_get_icon_dir():
+def do_get_icon_dir() -> str:
     from xpra.platform.paths import get_app_dir
     return os.path.join(get_app_dir(), "icons")
 
 
-def do_get_mmap_dir():
+def do_get_mmap_dir() -> str:
     return _get_xpra_runtime_dir() or tempfile.gettempdir()
 
 
-def do_get_xpra_tmp_dir():
+def do_get_xpra_tmp_dir() -> str:
     xrd = os.environ.get("XPRA_SESSION_DIR", _get_xpra_runtime_dir())
     return os.path.join(xrd, "tmp")
 
 
-def do_get_script_bin_dirs():
+def do_get_script_bin_dirs() -> list[str]:
     # versions before 0.17 only had "~/.xpra/run-xpra"
     script_bin_dirs = []
     runtime_dir = _get_xpra_runtime_dir()
@@ -93,7 +95,7 @@ def do_get_script_bin_dirs():
     return script_bin_dirs
 
 
-def do_get_system_conf_dirs():
+def do_get_system_conf_dirs() -> list[str]:
     dirs = ["/etc/xpra", "/usr/local/etc/xpra"]
     for d in os.environ.get("XDG_CONFIG_DIRS", "/etc/xdg").split(":"):
         dirs.append(os.path.join(d, "xpra"))
@@ -121,7 +123,7 @@ def do_get_system_menu_dirs() -> list[str]:
     return menu_dirs
 
 
-def do_get_state_dir():
+def do_get_state_dir() -> str:
     if os.getuid() > 0:
         xdg_state = os.path.expanduser(os.environ.get("XDG_STATE_HOME", "~/.local/state"))
         state_dir = os.path.expanduser(xdg_state)
@@ -133,7 +135,7 @@ def do_get_state_dir():
     return "~/.xpra/state"
 
 
-def do_get_user_conf_dirs(uid):
+def do_get_user_conf_dirs(uid) -> list[str]:
     # per-user configuration location:
     # (but never use /root/.xpra or /root/.config/xpra)
     if uid is None:
@@ -145,7 +147,7 @@ def do_get_user_conf_dirs(uid):
     return dirs
 
 
-def get_runtime_dir():
+def get_runtime_dir() -> str:
     runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
     if runtime_dir:
         return runtime_dir
@@ -159,14 +161,14 @@ def get_runtime_dir():
     return runtime_dir
 
 
-def _get_xpra_runtime_dir():
+def _get_xpra_runtime_dir() -> str:
     runtime_dir = get_runtime_dir()
     if not runtime_dir:
-        return None
+        return ""
     return os.path.join(runtime_dir, "xpra")
 
 
-def do_get_socket_dirs():
+def do_get_socket_dirs() -> list[str]:
     SOCKET_DIRS = []
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
@@ -184,7 +186,7 @@ def do_get_socket_dirs():
     return SOCKET_DIRS
 
 
-def do_get_client_socket_dirs():
+def do_get_client_socket_dirs() -> list[str]:
     DIRS = []
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
@@ -192,7 +194,7 @@ def do_get_client_socket_dirs():
     return DIRS
 
 
-def do_get_default_log_dirs():
+def do_get_default_log_dirs() -> list[str]:
     log_dirs = []
     v = _get_xpra_runtime_dir()
     if v:
@@ -201,12 +203,12 @@ def do_get_default_log_dirs():
     return log_dirs
 
 
-def do_get_audio_command():
+def do_get_audio_command() -> list[str]:
     from xpra.platform.paths import get_xpra_command
     return get_xpra_command()
 
 
-def do_get_xpra_command():
+def do_get_xpra_command() -> list[str]:
     # try to use the same "xpra" executable that launched this server,
     # whilst also preserving the python interpreter version:
     if sys.argv and sys.argv[0].lower().endswith("/xpra"):

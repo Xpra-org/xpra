@@ -63,7 +63,7 @@ class TransparentWindow(Gtk.Window):
         cr.stroke()
 
 
-def main():
+def main() -> int:
     from xpra.platform.gui import init, set_default_icon
     with program_context("transparent-window", "Transparent Window"):
         set_default_icon("windows.png")

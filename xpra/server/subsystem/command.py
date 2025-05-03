@@ -100,7 +100,7 @@ class ChildCommandServer(StubServerMixin):
             GLib.idle_add(self.late_start)
 
     def late_start(self) -> None:
-        def do_late_start():
+        def do_late_start() -> None:
             # wait for all threaded init to complete
             self.wait_for_threaded_init()
             self.exec_start_late_commands()
@@ -135,7 +135,7 @@ class ChildCommandServer(StubServerMixin):
     def threaded_setup(self) -> None:
         self.exec_start_commands()
 
-        def set_reaper_callback():
+        def set_reaper_callback() -> None:
             self.child_reaper.set_quit_callback(self.reaper_exit)
             self.child_reaper.check()
 

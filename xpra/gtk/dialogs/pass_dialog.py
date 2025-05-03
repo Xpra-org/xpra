@@ -67,7 +67,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         log("PasswordInputDialogWindow.show()")
         self.show_all()
 
-        def show():
+        def show() -> None:
             force_focus()
             self.present()
             self.password_input.grab_focus()
@@ -131,7 +131,7 @@ def show_pass_dialog(argv):
     return 1
 
 
-def main():
+def main() -> int:
     from xpra.platform import program_context
     with program_context("Password-Input-Dialog", "Password Input Dialog"):
         if "-v" in sys.argv:

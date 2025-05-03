@@ -167,7 +167,7 @@ def notify(hwnd, app_id: int, title: str, message: str, timeout: int = 5000, ico
     log("notify using %s", Shell_NotifyIconA)
 
 
-def main():
+def main() -> None:
     import sys
     from xpra.platform.win32.NotifyIcon import main as notifyicon_main
     notifyicon_main(sys.argv)

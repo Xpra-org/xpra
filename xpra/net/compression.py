@@ -260,7 +260,7 @@ def decompress_by_name(data: bytes, algo: str) -> SizedBuffer:
     return c.decompress(data)
 
 
-def main():  # pragma: no cover
+def main() -> None:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context

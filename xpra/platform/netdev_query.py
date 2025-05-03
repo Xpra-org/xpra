@@ -62,7 +62,7 @@ def print_iface(iface):
             print(f"  {info}")
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     import sys
     from xpra.net.net_util import get_interfaces

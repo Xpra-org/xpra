@@ -108,7 +108,7 @@ def get_tcp_info(sock) -> dict[str, Any]:
     return info
 
 
-def main():
+def main() -> None:
     r = SCNetworkInterfaceCopyAll()
     print("%i interfaces:" % len(r))
     for scnetworkinterface in r:

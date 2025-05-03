@@ -14,7 +14,7 @@ Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
 
-def make_window():
+def make_window() -> Gtk.Window:
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_title("Window States")
     window.set_size_request(320, 500)
@@ -25,18 +25,18 @@ def make_window():
         window.set_icon(icon)
     vbox = Gtk.VBox(homogeneous=False, spacing=0)
 
-    def add_buttons(t1, cb1, t2, cb2):
+    def add_buttons(t1, cb1, t2, cb2) -> None:
         hbox = Gtk.HBox(homogeneous=True, spacing=10)
         b1 = Gtk.Button(label=t1)
 
-        def vcb1(*_args):
+        def vcb1(*_args) -> None:
             cb1()
 
         b1.connect('clicked', vcb1)
         hbox.pack_start(b1, expand=True, fill=False, padding=5)
         b2 = Gtk.Button(label=t2)
 
-        def vcb2(*_args):
+        def vcb2(*_args) -> None:
             cb2()
 
         b2.connect('clicked', vcb2)
@@ -50,7 +50,7 @@ def make_window():
     fsm_entry.set_text("0,0,0,0")
     hbox.add(fsm_entry)
 
-    def set_fsm(*_args):
+    def set_fsm(*_args) -> None:
         v = fsm_entry.get_text()
         strs = v.split(",")
         assert len(strs) == 4, "the list of monitors must have 4 items!"
@@ -64,67 +64,67 @@ def make_window():
     vbox.pack_start(hbox, expand=False, fill=False, padding=2)
     add_buttons("fullscreen", window.fullscreen, "unfullscreen", window.unfullscreen)
 
-    def decorate():
+    def decorate() -> None:
         window.set_decorated(True)
 
-    def undecorate():
+    def undecorate() -> None:
         window.set_decorated(False)
 
     add_buttons("decorate", decorate, "undecorate", undecorate)
     add_buttons("iconify", window.iconify, "deiconify", window.deiconify)
 
-    def above():
+    def above() -> None:
         window.set_keep_above(True)
 
-    def notabove():
+    def notabove() -> None:
         window.set_keep_above(False)
 
     add_buttons("keep above", above, "not above", notabove)
 
-    def below():
+    def below() -> None:
         window.set_keep_below(True)
 
-    def notbelow():
+    def notbelow() -> None:
         window.set_keep_below(False)
 
     add_buttons("keep below", below, "not below", notbelow)
     add_buttons("stick", window.stick, "unstick", window.unstick)
 
-    def skip_pager():
+    def skip_pager() -> None:
         window.set_skip_pager_hint(True)
 
-    def notskip_pager():
+    def notskip_pager() -> None:
         window.set_skip_pager_hint(False)
 
     add_buttons("skip pager", skip_pager, "not skip pager", notskip_pager)
 
-    def skip_taskbar():
+    def skip_taskbar() -> None:
         window.set_skip_taskbar_hint(True)
 
-    def notskip_taskbar():
+    def notskip_taskbar() -> None:
         window.set_skip_taskbar_hint(False)
 
     add_buttons("skip taskbar", skip_taskbar, "not skip taskbar", notskip_taskbar)
 
-    def shade():
+    def shade() -> None:
         from xpra.platform.gui import set_shaded
         set_shaded(window.get_window(), True)
 
-    def unshade():
+    def unshade() -> None:
         from xpra.platform.gui import set_shaded
         set_shaded(window.get_window(), False)
 
     add_buttons("shade", shade, "unshade", unshade)
 
-    def modal():
+    def modal() -> None:
         window.set_modal(True)
 
-    def notmodal():
+    def notmodal() -> None:
         window.set_modal(False)
 
     add_buttons("modal", modal, "not modal", notmodal)
 
-    def window_state(_widget, event):
+    def window_state(_widget, event) -> None:
         STATES = {
             Gdk.WindowState.WITHDRAWN: "withdrawn",
             Gdk.WindowState.ICONIFIED: "iconified",
@@ -142,14 +142,14 @@ def make_window():
     return window
 
 
-def main():
+def main() -> int:
     with program_context("window-states", "Window States"):
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("window states test")
 
-        def show_with_focus():
+        def show_with_focus() -> None:
             force_focus()
             w.show_all()
             w.present()

@@ -96,7 +96,7 @@ class XpraMonitorServer(DesktopServerBase):
             log("Warning: failed to mirror client monitor layout", exc_info=True)
             self.reconfigure_locked = False
 
-        def unlock():
+        def unlock() -> None:
             self.reconfigure_locked = False
 
         GLib.timeout_add(1000, unlock)

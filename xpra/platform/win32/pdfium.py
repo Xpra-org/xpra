@@ -95,12 +95,12 @@ FPDF_RENDER_NO_SMOOTHPATH = 0x4000
 FPDF_REVERSE_BYTE_ORDER = 0x10
 
 
-def get_error():
+def get_error() -> str:
     v = FPDF_GetLastError()
-    return ERROR_STR.get(v, v)
+    return ERROR_STR.get(v) or str(v)
 
 
-def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None):
+def do_print_pdf(hdc, title=b"PDF Print Test", pdf_data=None) -> int:
     assert pdf_data, "no pdf data"
     from xpra.log import Logger
     log = Logger("printing", "win32")
@@ -165,7 +165,7 @@ EXIT = False
 JOBS_INFO: dict[int, dict[str, Any]] = {}
 
 
-def watch_print_job_status():
+def watch_print_job_status() -> None:
     from xpra.log import Logger
     log = Logger("printing", "win32")
     log("wait_for_print_job_end()")
@@ -184,7 +184,7 @@ def watch_print_job_status():
             JOBS_INFO.setdefault(int(job_id), {})[key] = value
 
 
-def main():
+def main() -> int:
     # pylint: disable=import-outside-toplevel
     if len(sys.argv) == 2:
         from xpra.platform.win32.printing import get_printers

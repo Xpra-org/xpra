@@ -184,7 +184,7 @@ cdef inline str get_fiter_mode_str(FilterMode fm):
     elif fm==kFilterBilinear:
         return "Bilinear"
     elif fm==kFilterBox:
-        return  "Box"
+        return "Box"
     return "invalid"
 
 
@@ -518,7 +518,7 @@ cdef class Converter:
         return self.dst_format
 
     def get_type(self) -> str:
-        return  "libyuv"
+        return "libyuv"
 
     def clean(self) -> None:
         self.src_width = 0

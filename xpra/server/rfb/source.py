@@ -141,7 +141,7 @@ class RFBSource:
         # merge small packets together:
         joined = []
 
-        def send_joined():
+        def send_joined() -> None:
             if joined:
                 self.send(b"".join(memoryview_to_bytes(p) for p in joined))
                 joined[:] = []

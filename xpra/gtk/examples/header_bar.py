@@ -47,13 +47,13 @@ class HeaderBarWindow(Gtk.Window):
 
         self.add(Gtk.TextView())
 
-    def show_with_focus(self):
+    def show_with_focus(self) -> None:
         force_focus()
         self.show_all()
         super().present()
 
 
-def main():
+def main() -> None:
     with program_context("header-bar", "Header Bar"):
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("header bar test window")

@@ -420,7 +420,7 @@ def init_leak_detection(exit_condition: Callable[[], bool] = noop):
         from xpra.util.pysystem import detect_leaks
         print_memleaks = detect_leaks()
         if bool(print_memleaks):
-            def leak_thread():
+            def leak_thread() -> None:
                 while not exit_condition():
                     print_memleaks()
                     sleep(DETECT_MEMLEAKS)

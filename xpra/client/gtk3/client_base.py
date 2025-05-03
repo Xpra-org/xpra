@@ -654,7 +654,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 "opengl": self.opengl_enabled,
             }
 
-            def get_server_info():
+            def get_server_info() -> typedict:
                 # the subsystem may not be loaded:
                 return getattr(self, "server_last_info", typedict())
 

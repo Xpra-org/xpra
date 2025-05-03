@@ -147,7 +147,7 @@ class FontWindow(Gtk.Window):
             cr.stroke()
 
 
-def main():
+def main() -> None:
     with program_context("font-rendering", "Font Rendering"):
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("font test window")

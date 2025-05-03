@@ -158,7 +158,7 @@ class FilePrintConnection(FileTransferHandler, StubClientConnection):
                 # ie: on FOO (via xpra)
                 location = f"on {self.hostname} ({PRINTER_LOCATION_STRING})"
         try:
-            def printer_added():
+            def printer_added() -> None:
                 # once the printer has been added, register it in the list
                 # (so it will be removed on exit)
                 log.info("the remote printer '%s' has been configured", printer)

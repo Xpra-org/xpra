@@ -540,9 +540,9 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
     cdef KeySym _parse_keysym(self, symbol):
         s = b(symbol)
         if s in [b"NoSymbol", b"VoidSymbol"]:
-            return  NoSymbol
+            return NoSymbol
         cdef KeySym keysym = XStringToKeysym(s)
-        if keysym==NoSymbol:
+        if keysym == NoSymbol:
             if s.startswith(b"U+"):
                 s = b"0x"+s[2:]
             if s.lower().startswith(b"0x"):
@@ -727,7 +727,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         codes = []
         cdef KeySym keysym = self._parse_keysym(keyname)
         if not keysym:
-            return  codes
+            return codes
         return self.KeysymToKeycodes(keysym)
 
     def parse_modifier(self, name) -> int:
@@ -1081,7 +1081,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         try:
             image = XFixesGetCursorImage(self.display)
             if image==NULL:
-                return  None
+                return None
             n = image.width*image.height
             # Warning: we need to iterate over the input one *long* at a time
             # (even though only 4 bytes are set - and longs are 8 bytes on 64-bit..)

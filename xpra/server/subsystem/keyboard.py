@@ -267,12 +267,12 @@ class KeyboardServer(StubServerMixin):
         if keycode in self.keys_timedout:
             del self.keys_timedout[keycode]
 
-        def press():
+        def press() -> None:
             keylog("handle keycode pressing   %3i: key '%s'", keycode, name)
             self.keys_pressed[keycode] = name
             self.fake_key(keycode, True)
 
-        def unpress():
+        def unpress() -> None:
             keylog("handle keycode unpressing %3i: key '%s'", keycode, name)
             if keycode in self.keys_pressed:
                 del self.keys_pressed[keycode]

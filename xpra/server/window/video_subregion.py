@@ -335,7 +335,7 @@ class VideoSubregion:
             self.novideoregion("window is too small: %sx%s", MIN_W, MIN_H)
             return
 
-        def update_markers():
+        def update_markers() -> None:
             self.counter = damage_events_count
             self.time = monotonic()
 

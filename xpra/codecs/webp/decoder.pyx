@@ -154,7 +154,7 @@ def get_version() -> Tuple[int, int, int]:
 
 
 def get_info() -> Dict[str, Any]:
-    return  {
+    return {
         "version"      : get_version(),
         "encodings"    : get_encodings(),
     }

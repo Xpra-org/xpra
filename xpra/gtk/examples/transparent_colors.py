@@ -90,7 +90,7 @@ class TransparentColorWindow(Gtk.Window):
         paint_block("BLACK", w // 2, h // 2, 0, 0, 0)
 
 
-def main():
+def main() -> int:
     from xpra.platform.gui import init, set_default_icon
     with program_context("transparent-colors", "Transparent Colors"):
         set_default_icon("encoding.png")

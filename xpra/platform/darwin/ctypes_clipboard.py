@@ -263,7 +263,7 @@ class OSXClipboardProtocolHelper(ClipboardTimeoutHelper):
         return super()._munge_wire_selection_to_raw(encoding, dtype, dformat, data)
 
 
-def main():
+def main() -> None:
     import time
     from xpra.platform import program_context
     with program_context("OSX Clipboard Change Test"):

@@ -15,12 +15,12 @@ Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 
-def change_callback(entry, window):
+def change_callback(entry, window) -> None:
     print("text=%s" % entry.get_text())
     window.set_title(entry.get_text())
 
 
-def make_window():
+def make_window() -> Gtk.Window:
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_size_request(400, 100)
     window.set_position(Gtk.WindowPosition.CENTER)
@@ -41,14 +41,14 @@ def make_window():
     return window
 
 
-def main():
+def main() -> int:
     with program_context("window-title", "Window Title"):
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("title test window")
 
-        def show_with_focus():
+        def show_with_focus() -> None:
             force_focus()
             w.show_all()
             w.present()

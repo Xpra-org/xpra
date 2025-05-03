@@ -477,7 +477,7 @@ def wait_for_open_handlers(show_cb: Callable,
                            delay: int = OPEN_SIGNAL_WAIT) -> None:
     add_open_handlers(open_file_cb, open_url_cb)
 
-    def may_show():
+    def may_show() -> None:
         global __osx_open_signal
         log("may_show() osx open signal=%s", __osx_open_signal)
         if not __osx_open_signal:

@@ -434,7 +434,7 @@ def getVideoHelper() -> VideoHelper:
     return instance
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.log import enable_color, consume_verbose_argv
     from xpra.platform import program_context

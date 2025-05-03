@@ -252,7 +252,7 @@ cdef class Decoder:
         return self.encoding
 
     def get_type(self) -> str:
-        return  "vpx"
+        return "vpx"
 
     def __dealloc__(self):
         self.clean()

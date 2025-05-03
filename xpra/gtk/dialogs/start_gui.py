@@ -69,11 +69,11 @@ def l(text):  # noqa: E743
 
 
 def link_btn(link: str, text="", icon_name="question.png"):
-    def open_link():
+    def open_link() -> None:
         import webbrowser
         webbrowser.open(link)
 
-    def help_clicked(*args):
+    def help_clicked(*args) -> None:
         log("help_clicked%s opening '%s'", args, link)
         start_thread(open_link, "open-link", True)
 

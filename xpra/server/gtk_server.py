@@ -58,11 +58,11 @@ class GTKServerBase(ServerBase):
         # this event can fire many times in succession
         # throttle how many times we call self._keys_changed()
 
-        def keys_changed(*_args):
+        def keys_changed(*_args) -> None:
             if self.keymap_changing_timer:
                 return
 
-            def do_keys_changed():
+            def do_keys_changed() -> None:
                 self.keymap_changing_timer = 0
                 self._keys_changed()
 

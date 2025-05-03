@@ -15,7 +15,7 @@ GLib = gi_import("GLib")
 opacity = 50
 
 
-def make_window():
+def make_window() -> Gtk.Window:
     win = Gtk.Window()
     win.set_position(Gtk.WindowPosition.CENTER)
     win.set_title('Opacity Test')
@@ -26,7 +26,7 @@ def make_window():
 
     btn = Gtk.Button(label="Change Opacity")
 
-    def change_opacity(*_args):
+    def change_opacity(*_args) -> None:
         global opacity
         opacity = (opacity + 5) % 100
         btn.set_label(f"Change Opacity: {opacity}%")
@@ -38,11 +38,11 @@ def make_window():
     return win
 
 
-def main():
+def main() -> int:
     with program_context("window-opacity", "Window Opacity"):
         w = make_window()
 
-        def show_with_focus():
+        def show_with_focus() -> None:
             force_focus()
             w.show_all()
             w.present()

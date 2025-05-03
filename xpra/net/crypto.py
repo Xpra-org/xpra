@@ -279,7 +279,7 @@ def get_key(key_data: bytes, key_salt: bytes, key_hash: str, key_size: int, iter
     return key
 
 
-def main():
+def main() -> None:
     from xpra.platform import program_context
     with program_context("Encryption Properties"):
         consume_verbose_argv(sys.argv, "crypto")

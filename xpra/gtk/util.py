@@ -82,7 +82,7 @@ def ds_inited() -> bool:
     return dsinit
 
 
-def main():
+def main() -> None:
     from xpra.platform import program_context
     from xpra.util.str_fn import print_nested_dict
     from xpra.log import enable_color

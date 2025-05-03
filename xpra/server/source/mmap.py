@@ -29,7 +29,7 @@ def clean_mmap_area(area: BaseMmapArea) -> None:
         from xpra.os_util import gi_import
         GLib = gi_import("GLib")
 
-        def retry_close():
+        def retry_close() -> None:
             try:
                 area.close()
             except RuntimeError as e:

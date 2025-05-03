@@ -8,6 +8,8 @@
 
 import os
 import socket
+from typing import Any
+from collections.abc import Sequence
 
 from xpra.log import Logger
 
@@ -17,6 +19,7 @@ log = Logger("util", "network")
 
 
 DEF SD_LISTEN_FDS_START=3
+
 
 cdef extern from "systemd/sd-daemon.h":
     int sd_listen_fds(int unset_environment);
@@ -34,7 +37,7 @@ cdef extern from "systemd/sd-daemon.h":
     int sd_watchdog_enabled(int unset_environment, uint64_t *usec)
 
 
-def get_sd_listen_sockets():
+def get_sd_listen_sockets() -> Sequence[Tuple[str, Any, Tuple[str, int]]]:
     cdef int fd, i
     cdef int n = sd_listen_fds(0)
     log("sd_listen_fds(0)=%i", n)
@@ -51,7 +54,8 @@ def get_sd_listen_sockets():
     log("get_sd_listen_sockets()=%s", sockets)
     return sockets
 
-def get_sd_socket_type(fd):
+
+def get_sd_socket_type(fd) -> str:
     from xpra.net.common import TCP_SOCKTYPES
     socktype = os.environ.get("XPRA_SD%i_SOCKET_TYPE" % fd)
     if not socktype:
@@ -61,7 +65,8 @@ def get_sd_socket_type(fd):
         socktype = "tcp"
     return socktype
 
-def get_sd_listen_socket(int fd):
+
+def get_sd_listen_socket(int fd) -> Tuple[str, Any, Tuple[str, int]]:
     #re-wrapping the socket gives us a more proper socket object,
     #so we can then wrap it with ssl
     def fromfd(family, stype, proto=0):

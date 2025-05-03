@@ -16,7 +16,7 @@ Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 
-def make_window():
+def make_window() -> Gtk.Window:
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_title("Text Entry")
     window.connect("destroy", Gtk.main_quit)
@@ -44,12 +44,12 @@ def make_window():
     return window
 
 
-def main():
+def main() -> None:
     with program_context("text-entry", "Text Entry"):
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
 
-        def show_with_focus():
+        def show_with_focus() -> None:
             force_focus()
             w.show_all()
             w.present()

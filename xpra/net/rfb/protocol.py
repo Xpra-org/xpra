@@ -158,7 +158,7 @@ class RFBProtocol:
         return info
 
     def start(self) -> None:
-        def start_network_read_thread():
+        def start_network_read_thread() -> None:
             if not self._closed:
                 self._read_thread.start()
 

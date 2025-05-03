@@ -421,7 +421,7 @@ def get_info() -> dict[str, Any]:
     return i
 
 
-def main():  # pragma: no cover
+def main() -> int:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.os_util import POSIX
     from xpra.util.str_fn import print_nested_dict

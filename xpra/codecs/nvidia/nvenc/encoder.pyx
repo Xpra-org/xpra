@@ -1455,7 +1455,7 @@ def get_specs() -> Sequence[VideoSpec]:
 PRETTY_VERSION = (int(NVENCAPI_MAJOR_VERSION), int(NVENCAPI_MINOR_VERSION))
 
 
-def get_version():
+def get_version() -> Tuple[int, int]:
     return PRETTY_VERSION
 
 

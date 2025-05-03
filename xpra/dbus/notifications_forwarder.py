@@ -178,7 +178,7 @@ def register(notify_callback=None, close_callback=None, replace=False):
     return DBUSNotificationsForwarder(bus, notify_callback, close_callback)
 
 
-def main():
+def main() -> None:
     register()
     from xpra.os_util import gi_import
     glib = gi_import("GLib")

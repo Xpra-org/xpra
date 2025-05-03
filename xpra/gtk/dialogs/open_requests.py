@@ -75,7 +75,7 @@ class OpenRequestsWindow:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
 
-        def btn(text, callback, icon_name=None):
+        def btn(text, callback, icon_name=None) -> None:
             b = self.btn(text, callback, icon_name)
             hbox.pack_start(b)
 
@@ -86,7 +86,7 @@ class OpenRequestsWindow:
         if downloads:
             btn("Show Downloads Folder", self.show_downloads, "browse.png")
 
-        def accel_close(*_args):
+        def accel_close(*_args) -> None:
             self.close()
 
         add_close_accel(self.window, accel_close)
@@ -95,7 +95,7 @@ class OpenRequestsWindow:
         self.window.add(vbox)
         self.populate_table()
 
-    def btn(self, text, callback, icon_name=None):
+    def btn(self, text, callback, icon_name=None) -> Gtk.Button:
         btn = Gtk.Button(label=text)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
@@ -107,7 +107,7 @@ class OpenRequestsWindow:
         return btn
 
     def add_request(self, cb_answer, send_id: str, dtype: str, url: str, filesize: int,
-                    printit: bool, openit: bool, timeout: int):
+                    printit: bool, openit: bool, timeout: int) -> None:
         expires = monotonic() + timeout
         self.requests.append((cb_answer, send_id, dtype, url, filesize, printit, openit, expires))
         self.populate_table()
@@ -129,7 +129,7 @@ class OpenRequestsWindow:
         self.populate_timer = 0
         return False
 
-    def populate_table(self):
+    def populate_table(self) -> None:
         if self.contents:
             self.alignment.remove(self.contents)
         # remove expired requests:
@@ -174,7 +174,7 @@ class OpenRequestsWindow:
         grid.show_all()
         self.contents = grid
 
-    def remove_entry(self, send_id, can_close=True):
+    def remove_entry(self, send_id, can_close=True) -> None:
         self.expire_labels.pop(send_id, None)
         self.requests = [x for x in self.requests if x[1] != send_id]
         self.progress_bars.pop(send_id, None)
@@ -187,15 +187,15 @@ class OpenRequestsWindow:
     def action_buttons(self, cb_answer: Callable, send_id: str, dtype: str, printit: bool, openit: bool):
         hbox = Gtk.HBox()
 
-        def remove_entry(can_close=False):
+        def remove_entry(can_close=False) -> None:
             self.remove_entry(send_id, can_close)
 
-        def stop(*args):
+        def stop(*args) -> None:
             log(f"stop{args}")
             remove_entry(True)
             self.cancel_download(send_id, "User cancelled")
 
-        def show_progressbar(position=0, total=1):
+        def show_progressbar(position=0, total=1) -> None:
             expire = self.expire_labels.pop(send_id, None)
             if expire:
                 expire_label = expire[0]
@@ -260,17 +260,17 @@ class OpenRequestsWindow:
                 hbox.pack_start(self.btn("Open on server", remote))
         return hbox
 
-    def schedule_timer(self):
+    def schedule_timer(self) -> None:
         if not self.populate_timer and self.expire_labels:
             self.update_expires_label()
             self.populate_timer = GLib.timeout_add(1000, self.update_expires_label)
 
-    def cancel_timer(self):
+    def cancel_timer(self) -> None:
         if self.populate_timer:
             GLib.source_remove(self.populate_timer)
             self.populate_timer = 0
 
-    def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None):
+    def transfer_progress_update(self, send=True, transfer_id=0, elapsed=0, position=0, total=0, error=None) -> None:
         pbd = self.progress_bars.get(transfer_id)
         if not pbd:
             # we're not tracking this transfer: no progress bar
@@ -302,30 +302,30 @@ class OpenRequestsWindow:
         total = sum(pbd[3] for pbd in self.progress_bars.values())
         set_window_progress(self.window, round(100 * position / total))
 
-    def show(self):
+    def show(self) -> None:
         log("show()")
         self.window.show_all()
         self.window.present()
         self.schedule_timer()
 
-    def hide(self):
+    def hide(self) -> None:
         log("hide()")
         self.window.hide()
         self.cancel_timer()
 
-    def close(self, *args):
+    def close(self, *args) -> bool:
         log("close%s", args)
         self.hide()
         return True
 
-    def destroy(self, *args):
+    def destroy(self, *args) -> None:
         log("destroy%s", args)
         self.cancel_timer()
         if self.window:
             self.window.destroy()
             self.window = None
 
-    def show_downloads(self, _btn):
+    def show_downloads(self, _btn) -> None:
         downloads = os.path.expanduser(get_download_dir())
         if WIN32:
             os.startfile(downloads)  # @UndefinedVariable pylint: disable=no-member
@@ -349,13 +349,13 @@ class OpenRequestsWindow:
         log("run() Gtk.main done")
         return 0
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
         self.close()
         Gtk.main_quit()
 
 
-def main():  # pragma: no cover
+def main() -> int:  # pragma: no cover
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init, ready as gui_ready
     gui_init()

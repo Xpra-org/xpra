@@ -150,7 +150,7 @@ class RFBServer:
         buttons, x, y = packet[1:4]
         wid = self._get_rfb_desktop_wid()
 
-        def process_pointer_event():
+        def process_pointer_event() -> None:
             pointerlog("RFB PointerEvent(%#x, %s, %s) desktop wid=%s", buttons, x, y, wid)
             device_id = -1
             self._move_pointer(device_id, wid, (x, y))

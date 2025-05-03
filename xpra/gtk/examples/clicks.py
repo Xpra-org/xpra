@@ -86,7 +86,7 @@ class TestForm:
             self.event_label.set_text("Unexpected event: %s" % event)
 
 
-def main():
+def main() -> None:
     from xpra.gtk.signals import quit_on_signals
     with program_context("clicks", "Clicks"):
         w = TestForm()

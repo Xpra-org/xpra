@@ -292,7 +292,7 @@ def save_graph(_ebox, btn, graph) -> None:
             b = BytesIO()
             surface.write_to_png(b)
 
-            def save_file():
+            def save_file() -> None:
                 with open(filename, "wb") as f:
                     f.write(b.getvalue())
 

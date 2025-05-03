@@ -629,7 +629,7 @@ class ShadowServer(GTKShadowServerBase):
         return info
 
 
-def main():
+def main() -> None:
     from xpra.platform import program_context
     with program_context("Shadow-Test", "Shadow Server Screen Capture Test"):
         rwm = RootWindowModel(None)

@@ -548,7 +548,7 @@ def do_connect_to(transport, host: str, username: str, password: str,
         keys = safe_lookup(host_keys, host)
         known_host_key = keys.get(host_key.get_name())
 
-        def keyname():
+        def keyname() -> str:
             return host_key.get_name().replace("ssh-", "")
 
         if known_host_key and host_key == known_host_key:
@@ -913,20 +913,20 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
             return name
         return "unknown"
 
-    def getexeinstallpath():
+    def getexeinstallpath() -> str:
         cmd = WIN32_REGISTRY_QUERY
         if osname == "msys":
             # escape for msys shell:
             cmd = cmd.replace("/", "//")
         r = rtc(cmd)
         if r[2] != 0:
-            return None
+            return ""
         out = r[0]
         for line in out:
             qmatch = re.search(r"InstallPath\s*\w*\s*(.*)", line)
             if qmatch:
                 return qmatch.group(1).rstrip("\n\r")
-        return None
+        return ""
 
     osname = detectosname()
     tried = set()

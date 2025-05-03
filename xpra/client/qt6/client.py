@@ -258,7 +258,7 @@ class XpraQt6Client(Qt6Client):
         if not isinstance(conn, SocketConnection) or conn.socktype != "tcp":
             raise ValueError("only tcp socket connections are supported!")
 
-        def connect():
+        def connect() -> None:
             # self.socket.setSocketDescriptor(conn._socket.fileno())
             self.connect(*conn.remote)
 

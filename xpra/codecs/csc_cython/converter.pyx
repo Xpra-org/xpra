@@ -651,7 +651,7 @@ cdef class Converter:
         return self.dst_format
 
     def get_type(self) -> str:
-        return  "cython"
+        return "cython"
 
 
     def convert_image(self, image: ImageWrapper) -> CythonImageWrapper:

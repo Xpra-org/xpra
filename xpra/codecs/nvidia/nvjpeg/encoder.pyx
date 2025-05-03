@@ -368,7 +368,8 @@ cdef class Encoder:
                     else:
                         #all planes are the same size, should get the same stride:
                         assert dst_stride==planar_stride
-            def free_buffers():
+
+            def free_buffers() -> None:
                 for buf in buffers:
                     buf.free()
             args = [

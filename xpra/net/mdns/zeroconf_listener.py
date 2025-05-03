@@ -82,7 +82,7 @@ class Zeroconflistener:
                 pass
 
 
-def main():
+def main() -> None:
     def mdns_found(*args):
         print(f"mdns_found: {args}")
 
@@ -104,7 +104,7 @@ def main():
         listeners: list[Zeroconflistener] = []
         from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
 
-        def add(service_type):
+        def add(service_type: str) -> None:
             listener = Zeroconflistener(service_type + "local.", mdns_found, mdns_add, mdns_remove, mdns_update)
             log(f"{listener=}")
             listener.start()

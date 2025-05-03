@@ -89,7 +89,7 @@ def load_image(name: str) -> tuple[int, int, bytes]:
     return w, h, image_data
 
 
-def add_test_images():
+def add_test_images() -> None:
     encodings = []
     for decoder_name in ("pillow", "jpeg", "webp", "spng", "avif"):
         decoder = load_codec(f"dec_{decoder_name}")

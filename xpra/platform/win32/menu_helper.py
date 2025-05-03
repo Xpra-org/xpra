@@ -129,7 +129,7 @@ def load_menu() -> dict[str, dict[str, Any]]:
     return menu
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("menu-helper", "Menu Helper"):

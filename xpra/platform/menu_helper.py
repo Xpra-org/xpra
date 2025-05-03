@@ -28,7 +28,7 @@ platform_import(globals(), "menu_helper", False,
                 )
 
 
-def main():
+def main() -> int:
     import os
     from xpra.util.str_fn import print_nested_dict
     from xpra.log import consume_verbose_argv

@@ -304,7 +304,7 @@ class NamedPipeListener(Thread):
         return SA
 
 
-def main():
+def main() -> None:
     import sys
     consume_verbose_argv(sys.argv, "win32")
     pipe_name = "Xpra\\Test"

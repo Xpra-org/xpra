@@ -14,6 +14,14 @@ from xpra.util.env import envint
 
 # noinspection PyPep8
 
+COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
+COMPRESS_RATIO      : str = " with ratio %5.1f%%  (%5iKB to %5iKB)"
+COMPRESS_FMT_SUFFIX : str = ", sequence %5i, client_options=%-50s, options=%s"
+COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
+COMPRESS_FMT_DIRECT : str = (
+    "compress:            %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s" + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
+)
+
 
 FAST_DECODE_MIN_SPEED: int = envint("XPRA_FAST_DECODE_MIN_SPEED", 70)
 
@@ -258,7 +266,7 @@ class CSCSpec(CodecSpec):
         return f"{self.codec_type}({self.input_colorspace} to {self.output_colorspaces})"
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Codec-Constants", "Codec Constants Info"):
@@ -273,10 +281,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-COMPRESS_FMT_PREFIX : str = "compress: %5.1fms for %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s"
-COMPRESS_RATIO      : str = " with ratio %5.1f%%  (%5iKB to %5iKB)"
-COMPRESS_FMT_SUFFIX : str = ", sequence %5i, client_options=%-50s, options=%s"
-COMPRESS_FMT        : str = COMPRESS_FMT_PREFIX + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
-COMPRESS_FMT_DIRECT : str = (
-    "compress:            %4ix%-4i pixels at %4i,%-4i for wid=%-5i using %9s" + COMPRESS_RATIO + COMPRESS_FMT_SUFFIX
-)

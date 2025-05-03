@@ -8,7 +8,7 @@ import os
 from xpra.x11.bindings.xwayland import isxwayland
 
 
-def main():
+def main() -> None:
     display = os.environ.get("DISPLAY", "NULL")
     print(f"isxwayland({display})={isxwayland(display)}")
 

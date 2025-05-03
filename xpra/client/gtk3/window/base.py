@@ -640,7 +640,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                  state_updates, actual_updates, server_updates)
         if "maximized" in state_updates:
             if REPAINT_MAXIMIZED > 0:
-                def repaint_maximized():
+                def repaint_maximized() -> None:
                     if not self._backing:
                         return
                     ww, wh = self.get_size()
@@ -803,7 +803,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # platform specific code:
         log("set_fullscreen_monitors(%s)", fsm)
 
-        def do_set_fullscreen_monitors():
+        def do_set_fullscreen_monitors() -> None:
             set_fullscreen_monitors(self.get_window(), fsm)
 
         self.when_realized("fullscreen-monitors", do_set_fullscreen_monitors)
@@ -856,7 +856,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             rectint = RectangleInt(*self.srect(*rvalues))
             r.union(Region(rectint))
 
-        def do_set_region():
+        def do_set_region() -> None:
             log("set_opaque_region(%s)", r)
             try:
                 self.get_window().set_opaque_region(r)

@@ -63,7 +63,7 @@ def force_enabled(codec_name):
     return envbool("XPRA_SOUND_CODEC_ENABLE_%s" % codec_name.upper().replace("+", "_"), False)
 
 
-NAME_TO_SRC_PLUGIN = {
+NAME_TO_SRC_PLUGIN: dict[str, str] = {
     "auto"          : "autoaudiosrc",
     "alsa"          : "alsasrc",
     "oss"           : "osssrc",
@@ -77,12 +77,12 @@ NAME_TO_SRC_PLUGIN = {
 }
 SRC_TO_NAME_PLUGIN = reverse_dict(NAME_TO_SRC_PLUGIN)
 SRC_HAS_DEVICE_NAME = ["alsasrc", "osssrc", "oss4src", "jackaudiosrc", "pulsesrc", "directsoundsrc", "osxaudiosrc"]
-PLUGIN_TO_DESCRIPTION = {
+PLUGIN_TO_DESCRIPTION: dict[str, str] = {
     "pulsesrc"      : "Pulseaudio",
     "jacksrc"       : "JACK Audio Connection Kit",
 }
 
-NAME_TO_INFO_PLUGIN = {
+NAME_TO_INFO_PLUGIN: dict[str, str] = {
     "auto"          : "Automatic audio source selection",
     "alsa"          : "Advanced Linux Sound Architecture",
     "oss"           : "OSS audio cards",
@@ -820,7 +820,7 @@ def loop_warning_messages(mode="speaker") -> list[str]:
     ]
 
 
-def main():
+def main() -> None:
     from xpra.platform import program_context
     from xpra.log import enable_color
     with program_context("GStreamer-Info", "GStreamer Information"):

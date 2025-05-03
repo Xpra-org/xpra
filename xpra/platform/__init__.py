@@ -72,7 +72,7 @@ def init_hashlib() -> None:
             hashlib.sha1 = nosha1                       # type: ignore
 
 
-def threaded_server_init():
+def threaded_server_init() -> None:
     """ platform implementations may override this function """
 
 
@@ -126,7 +126,7 @@ def clean() -> None:
         do_clean()
 
 
-def do_clean():  # pragma: no cover
+def do_clean() -> None:  # pragma: no cover
     """ some platforms override this """
 
 

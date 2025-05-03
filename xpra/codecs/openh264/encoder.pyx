@@ -533,7 +533,7 @@ cdef class Encoder:
         return self.height
 
     def get_type(self) -> str:
-        return  "openh264"
+        return "openh264"
 
     def get_src_format(self) -> str:
         return self.src_format

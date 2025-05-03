@@ -304,7 +304,7 @@ cdef extern from "NvFBC.h":
     ctypedef NVFBCSTATUS (* PNVFBCCREATEINSTANCE)(NVFBC_API_FUNCTION_LIST *pFunctionList)
 
 
-ERRORS = {
+ERRORS: Dict[int, str] = {
     NVFBC_SUCCESS               : "SUCCESS",
     NVFBC_ERR_API_VERSION       : "API_VERSION",
     NVFBC_ERR_INTERNAL          : "INTERNAL",
@@ -312,7 +312,7 @@ ERRORS = {
     NVFBC_ERR_INVALID_PTR       : "INVALID_PTR",
     NVFBC_ERR_INVALID_HANDLE    : "INVALID_HANDLE",
     NVFBC_ERR_MAX_CLIENTS       : "MAX_CLIENTS",
-    }
+}
 
 
 cdef inline cvp(val):
@@ -327,7 +327,8 @@ class NvFBCException(Exception):
         msg = "%s - returned %s" % (fn, ERRORS.get(code, code))
         Exception.__init__(self, msg)
 
-cdef raiseNvFBC(NVFBC_SESSION_HANDLE context, NVFBCSTATUS ret, msg):
+
+cdef void raiseNvFBC(NVFBC_SESSION_HANDLE context, NVFBCSTATUS ret, msg):
     global INIT_DONE
     if ret==0:
         return
@@ -342,7 +343,9 @@ cdef raiseNvFBC(NVFBC_SESSION_HANDLE context, NVFBCSTATUS ret, msg):
 
 cdef NVFBC_API_FUNCTION_LIST function_list
 INIT_DONE = False
-def init_nvfbc_library():
+
+
+def init_nvfbc_library() -> None:
     global INIT_DONE
     cdef NVFBCSTATUS ret
     if not INIT_DONE:
@@ -353,16 +356,19 @@ def init_nvfbc_library():
         raiseNvFBC(0, ret, "NvFBCCreateInstance")
     INIT_DONE = True
 
-def unload_library():
+
+def unload_library() -> None:
     global INIT_DONE
     assert INIT_DONE
     memset(&function_list, 0, sizeof(NVFBC_API_FUNCTION_LIST))
     INIT_DONE = False
 
-def get_status():
+
+def get_status() -> Dict:
     return {}
 
-def get_context_status(NVFBC_SESSION_HANDLE context):
+
+def get_context_status(NVFBC_SESSION_HANDLE context) -> Dict[str, Any]:
     cdef NVFBC_GET_STATUS_PARAMS status
     memset(&status, 0, sizeof(NVFBC_GET_STATUS_PARAMS))
     status.dwVersion = NVFBC_GET_STATUS_PARAMS_VER
@@ -385,9 +391,10 @@ def get_context_status(NVFBC_SESSION_HANDLE context):
         "screen-size"           : (status.screenSize.w, status.screenSize.h),
         "outputs"               : outputs,
         "version"               : status.dwNvFBCVersion,
-        }
+    }
     log("get_context_status()=%s", info)
     return info
+
 
 cdef dict get_frame_grab_info(NVFBC_FRAME_GRAB_INFO *grab_info):
     return {
@@ -396,7 +403,8 @@ cdef dict get_frame_grab_info(NVFBC_FRAME_GRAB_INFO *grab_info):
         "size"              : int(grab_info.dwByteSize),
         "current-frame"     : int(grab_info.dwCurrentFrame),
         "new-frame"         : bool(grab_info.bIsNewFrame),
-        }
+    }
+
 
 cdef NVFBC_SESSION_HANDLE create_context() except 0xffffffff:
     cdef NVFBC_SESSION_HANDLE context = 0
@@ -424,11 +432,13 @@ cdef NVFBC_SESSION_HANDLE create_context() except 0xffffffff:
     log("NvFBCCreateHandle: handle=%#x", context)
     return context
 
+
 cdef close_context(NVFBC_SESSION_HANDLE context):
     cdef NVFBC_DESTROY_HANDLE_PARAMS params
     params.dwVersion = NVFBC_DESTROY_HANDLE_PARAMS_VER
     cdef NVFBCSTATUS ret = function_list.nvFBCDestroyHandle(context, &params)
     raiseNvFBC(context, ret, "NvFBCDestroyHandle")
+
 
 cdef create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE capture_type, w=0, h=0):
     cdef NVFBC_CREATE_CAPTURE_SESSION_PARAMS create
@@ -448,6 +458,7 @@ cdef create_capture_session(NVFBC_SESSION_HANDLE context, NVFBC_CAPTURE_TYPE cap
     raiseNvFBC(context, ret, "NvFBCCreateCaptureSession")
     log("NvFBCCreateCaptureSession() success")
 
+
 cdef destroy_session(NVFBC_SESSION_HANDLE context):
     cdef NVFBC_DESTROY_CAPTURE_SESSION_PARAMS params
     memset(&params, 0, sizeof(NVFBC_DESTROY_CAPTURE_SESSION_PARAMS))
@@ -457,11 +468,13 @@ cdef destroy_session(NVFBC_SESSION_HANDLE context):
     log("NvFBCDestroyCaptureSession() success")
 
 
-def get_version():
+def get_version() -> Tuple[int, int]:
     return int(NVFBC_VERSION_MAJOR), int(NVFBC_VERSION_MINOR)
 
-def get_type():
+
+def get_type() -> str:
     return "nvfbc"
+
 
 def get_info() -> Dict[str,Any]:
     info = {
@@ -478,13 +491,13 @@ def get_info() -> Dict[str,Any]:
     return info
 
 
-PIXEL_FORMAT_CONST = {
+PIXEL_FORMAT_CONST: Dict[str, int] = {
     "XRGB"      : NVFBC_BUFFER_FORMAT_ARGB,
     "BGRX"      : NVFBC_BUFFER_FORMAT_BGRA,
     "RGB"       : NVFBC_BUFFER_FORMAT_RGB,
     "YUV420P"   : NVFBC_BUFFER_FORMAT_YUV420P,
     "YUV444P"   : NVFBC_BUFFER_FORMAT_YUV444P,
-    }
+}
 
 
 cdef class NvFBC_SysCapture:
@@ -532,8 +545,8 @@ cdef class NvFBC_SysCapture:
         info["pixel-format"] = self.pixel_format
         return info
 
-    def get_type(self):
-        return  "NvFBC-sys"
+    def get_type(self) -> str:
+        return "NvFBC-sys"
 
     def __repr__(self):
         return "NvFBC_SysCapture(%#x)" % (<uintptr_t> self.context)
@@ -541,7 +554,7 @@ cdef class NvFBC_SysCapture:
     def __dealloc__(self):
         self.clean()
 
-    def refresh(self):
+    def refresh(self) -> bool:
         cdef double start = monotonic()
         memset(&self.grab_info, 0, sizeof(NVFBC_FRAME_GRAB_INFO))
         memset(&self.grab, 0, sizeof(NVFBC_TOSYS_GRAB_FRAME_PARAMS))
@@ -601,7 +614,7 @@ cdef class NvFBC_SysCapture:
         log("image=%s buffer len=%i, (copy took %ims)", image, len(buf), int((end-start)*1000))
         return image
 
-    def clean(self):
+    def clean(self) -> None:
         log("clean()")
         if self.has_context:
             if self.has_session:
@@ -664,8 +677,8 @@ cdef class NvFBC_CUDACapture:
         info["pixel-format"] = self.pixel_format
         return info
 
-    def get_type(self):
-        return  "NvFBC-CUDA"
+    def get_type(self) -> str:
+        return "NvFBC-CUDA"
 
     def __repr__(self):
         return "NvFBC_CUDACapture(%#x)" % (<uintptr_t> self.context)

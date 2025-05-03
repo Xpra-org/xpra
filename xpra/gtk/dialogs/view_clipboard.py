@@ -239,7 +239,7 @@ class ClipboardStateInfoWindow:
         self.window.present()
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.log import enable_color
     from xpra.platform.gui import init, set_default_icon

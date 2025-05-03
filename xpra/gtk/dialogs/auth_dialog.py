@@ -96,7 +96,7 @@ class AuthDialog(Gtk.Window):
         self.do_quit()
 
     @staticmethod
-    def do_quit():
+    def do_quit() -> None:
         log("do_quit()")
         Gtk.main_quit()
 
@@ -106,7 +106,7 @@ class AuthDialog(Gtk.Window):
         self.do_quit()
 
 
-def main():
+def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.util.io import stderr_print
     from xpra.platform import program_context

@@ -507,7 +507,7 @@ def xauth_add(filename: str, display_name: str, xauth_data: str, uid: int, gid: 
     xauth_args = ["-f", filename, "add", display_name, "MIT-MAGIC-COOKIE-1", xauth_data]
     xauth_cmd = ["xauth"] + xauth_args
     try:
-        def preexec():
+        def preexec() -> None:
             os.setsid()
             if getuid() == 0 and uid:
                 setuidgid(uid, gid)

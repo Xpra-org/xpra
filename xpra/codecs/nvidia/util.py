@@ -403,7 +403,7 @@ def get_license_keys(version=0, basefilename="nvenc") -> Sequence[str]:
     return keys
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Nvidia-Info", "Nvidia Info"):

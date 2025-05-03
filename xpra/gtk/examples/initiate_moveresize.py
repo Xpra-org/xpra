@@ -17,7 +17,7 @@ width = 400
 height = 400
 
 
-def make_window():
+def make_window() -> Gtk.Window:
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_title("Window Move Resize")
     window.set_position(Gtk.WindowPosition.CENTER)
@@ -30,7 +30,7 @@ def make_window():
         with IgnoreWarningsContext():
             return window.get_window().get_screen().get_root_window().get_pointer()
 
-    def initiate(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int):
+    def initiate(x_root: float, y_root: float, direction: MoveResize, button: int, source_indication: int) -> None:
         from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
         from xpra.x11.bindings.core import X11CoreBindings
@@ -44,7 +44,7 @@ def make_window():
         X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",
                                     x_root, y_root, direction, button, source_indication)
 
-    def cancel():
+    def cancel() -> None:
         initiate(0, 0, MoveResize.CANCEL, 0, 1)
 
     def expand(widget):
@@ -59,7 +59,7 @@ def make_window():
     btn = Gtk.Button(label="initiate move")
     grid.attach(expand(btn), 2, 2, 1, 1)
 
-    def initiate_move(*_args):
+    def initiate_move(*_args) -> None:
         cancel()
         pos = get_pointer()
         source_indication = 1  # normal
@@ -69,7 +69,7 @@ def make_window():
 
     btn.connect('button-press-event', initiate_move)
 
-    def btn_callback(_btn, _event, direction: MoveResize):
+    def btn_callback(_btn, _event, direction: MoveResize) -> None:
         cancel()
         pos = get_pointer()
         source_indication = 1  # normal
@@ -77,7 +77,7 @@ def make_window():
         initiate(pos.x, pos.y, direction, button, source_indication)
         GLib.timeout_add(5 * 1000, cancel)
 
-    def add_button(x: int, y: int, direction: MoveResize):
+    def add_button(x: int, y: int, direction: MoveResize) -> None:
         btn = Gtk.Button(label=MOVERESIZE_DIRECTION_STRING[direction])
         btn.connect('button-press-event', btn_callback, direction)
         grid.attach(expand(btn), x, y, 1, 1)
@@ -100,7 +100,7 @@ def make_window():
     return window
 
 
-def main():
+def main() -> int:
     from xpra.gtk.signals import quit_on_signals
     with program_context("initiate-moveresize", "Initiate Move-Resize"):
         w = make_window()

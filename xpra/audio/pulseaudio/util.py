@@ -64,7 +64,7 @@ set_source_mute = _pulseaudio_util.set_source_mute
 set_sink_mute = _pulseaudio_util.set_sink_mute
 
 
-def main():
+def main() -> None:
     from xpra.platform import program_context
     from xpra.log import enable_color
     from xpra.util.str_fn import print_nested_dict

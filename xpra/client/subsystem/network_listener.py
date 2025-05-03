@@ -173,7 +173,7 @@ class NetworkListener(StubClientMixin):
         log("process_network_packet: %s", packet)
         packet_type = packet.get_type()
 
-        def close():
+        def close() -> None:
             t = self._close_timers.pop(proto, 0)
             if t:
                 proto.close()

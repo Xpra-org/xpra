@@ -14,7 +14,7 @@ platform_import(globals(), "keyboard", True,
                 "Keyboard")
 
 
-def main():
+def main() -> int:
     import sys
     from xpra.os_util import OSX, POSIX
     from xpra.util.str_fn import print_nested_dict

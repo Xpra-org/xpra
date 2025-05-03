@@ -176,7 +176,7 @@ def free_image_wrapper(image: ImageWrapper) -> None:
         image.free()
         return
 
-    def do_free_image():
+    def do_free_image() -> None:
         with ui_context:
             image.free()
     GLib.idle_add(do_free_image)

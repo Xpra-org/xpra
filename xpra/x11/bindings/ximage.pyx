@@ -784,7 +784,7 @@ cdef class PixmapWrapper:
     def get_image(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
         if not self.pixmap:
             log.warn("%s.get_image%s", self, (x, y, width, height))
-            return  None
+            return None
         ximagedebug("%s.get_image%s width=%i, height=%i", self, (x, y, width, height), self.width, self.height)
         if x>=self.width or y>=self.height:
             log("%s.get_image%s position outside image dimensions %ix%i", self, (x, y, width, height), self.width, self.height)

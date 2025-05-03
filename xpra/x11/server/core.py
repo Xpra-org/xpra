@@ -219,12 +219,12 @@ class X11ServerCore(GTKServerBase):
         self.last_cursor_image = None
         self.send_cursor_pending = False
 
-        def get_default_cursor():
+        def populate_default_cursor() -> None:
             self.default_cursor_image = X11Keyboard.get_cursor_image()
             cursorlog("get_default_cursor=%s", Ellipsizer(self.default_cursor_image))
 
         with xlog:
-            get_default_cursor()
+            populate_default_cursor()
             X11Keyboard.selectCursorChange(True)
 
     # noinspection PyMethodMayBeStatic

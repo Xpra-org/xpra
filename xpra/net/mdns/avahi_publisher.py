@@ -258,7 +258,7 @@ class AvahiPublisher:
                                     error_handler=error_handler)
 
 
-def main():
+def main() -> None:
     from xpra.os_util import gi_import
     GLib = gi_import("GLib")
     import random
@@ -273,10 +273,10 @@ def main():
         publisher = AvahiPublisher(bus, name, port, stype=service_type, host=host, text=("somename=somevalue",))
         publishers.append(publisher)
 
-        def start():
+        def start() -> None:
             publisher.start()
 
-        def update_rec():
+        def update_rec() -> None:
             publisher.update_txt({b"hello": b"world"})
 
         GLib.idle_add(start)

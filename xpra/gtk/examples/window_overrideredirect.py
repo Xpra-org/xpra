@@ -16,7 +16,7 @@ width = 400
 height = 200
 
 
-def make_win():
+def make_win() -> Gtk.Window:
     window = Gtk.Window(type=Gtk.WindowType.POPUP)
     window.set_title("Main")
     window.set_size_request(width, height)
@@ -24,7 +24,7 @@ def make_win():
     window.connect("delete_event", Gtk.main_quit)
     window.set_events(Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
 
-    def on_press(*_args):
+    def on_press(*_args) -> None:
         Gtk.main_quit()
 
     window.connect("key_press_event", on_press)
@@ -32,14 +32,14 @@ def make_win():
     return window
 
 
-def main():
+def main() -> None:
     with program_context("window-overrideredirect", "Window Override Redirect"):
         w = make_win()
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("override-redirect test window")
         add_close_accel(w, Gtk.main_quit)
 
-        def show_with_focus():
+        def show_with_focus() -> None:
             force_focus()
             w.show_all()
             w.present()

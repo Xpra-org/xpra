@@ -11,7 +11,7 @@ Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 
-def main():
+def main() -> int:
     with program_context("file-chooser", "File Chooser"):
         file_filter = Gtk.FileFilter()
         file_filter.set_name("Xpra")

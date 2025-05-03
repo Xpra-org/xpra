@@ -167,7 +167,7 @@ def decode(data, protocol_flags: int):
     raise InvalidPacketEncodingException(f"{ptype!r} decoder is not available")
 
 
-def main():  # pragma: no cover
+def main() -> None:  # pragma: no cover
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Packet Encoding", "Packet Encoding Info"):

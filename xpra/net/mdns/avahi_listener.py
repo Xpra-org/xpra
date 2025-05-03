@@ -108,14 +108,14 @@ class Avahilistener:
                 log.warn("Warning: failed to remove signal", exc_info=True)
 
 
-def main():
-    def mdns_found(*args):
+def main() -> None:
+    def mdns_found(*args) -> None:
         print(f"mdns_found: {args}")
 
-    def mdns_add(*args):
+    def mdns_add(*args) -> None:
         print(f"mdns_add: {args}")
 
-    def mdns_remove(*args):
+    def mdns_remove(*args) -> None:
         print(f"mdns_remove: {args}")
 
     # we must preserve the order here

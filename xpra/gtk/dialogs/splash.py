@@ -123,7 +123,7 @@ class SplashScreen(Gtk.Window):
         self.pulse_timer = GLib.timeout_add(100, self.pulse)
         scrash = envint("XPRA_SPLASH_CRASH", -1)
         if scrash >= 0:
-            def crash():
+            def crash() -> None:
                 import ctypes  # pylint: disable=import-outside-toplevel
                 ctypes.string_at(0)
 
@@ -232,7 +232,7 @@ class SplashScreen(Gtk.Window):
             self.fade_out_timer = GLib.timeout_add(SPLASH_EXIT_DELAY * 1000 // 100, self.fade_out)
             self.cancel_exit_timer()
 
-            def exit_splash():
+            def exit_splash() -> None:
                 self.exit_timer = 0
                 self.exit()
 

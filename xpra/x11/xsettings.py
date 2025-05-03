@@ -129,7 +129,7 @@ class XSettingsWatcher(XSettingsHelper, GObject.GObject):
 GObject.type_register(XSettingsWatcher)
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.x11.xsettings_prop import XSettingsNames
     from xpra.x11.gtk.display_source import init_gdk_display_source

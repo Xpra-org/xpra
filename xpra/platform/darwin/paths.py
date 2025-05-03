@@ -20,7 +20,7 @@ def debug(*msg):
 _gtkosx_warning_ = False
 
 
-def do_get_resources_dir():
+def do_get_resources_dir() -> str:
     rsc = None
     RESOURCES = "/Resources/"
     # FUGLY warning: importing gtkosx_application causes the dock to appear,

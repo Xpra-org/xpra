@@ -353,7 +353,7 @@ class Popup(Gtk.Window):
         self.destroy_cb(self)
 
 
-def main():
+def main() -> None:
     # example usage
     import random
     color_combos = (("red", "white"), ("white", "blue"), ("green", "black"))
@@ -368,7 +368,7 @@ def main():
 
     # images = ("logo1_64.png", None)
 
-    def notify_factory():
+    def notify_factory() -> None:
         color = random.choice(color_combos)
         nid, title, message, actions = messages.pop(0)
         icon = ()  # random.choice(images)
@@ -378,7 +378,7 @@ def main():
         notifier.new_popup(nid, title, message, actions, icon)
         return len(messages)
 
-    def gtk_main_quit():
+    def gtk_main_quit() -> None:
         print("quitting")
         Gtk.main_quit()
 

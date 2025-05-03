@@ -149,7 +149,7 @@ def get_xatom(str_or_xatom) -> Atom:
     assert isinstance(str_or_xatom, str), "argument is not a string or number: %s" % type(str_or_xatom)
     gdkatom = Gdk.atom_intern(str_or_xatom, False)
     if not gdkatom:
-        return  0
+        return 0
     #atom_intern takes str, but gdk_x11_get_xatom_by_name wants bytes!
     b = strtobytes(str_or_xatom)
     return gdk_x11_get_xatom_by_name(b)

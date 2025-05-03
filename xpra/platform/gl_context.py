@@ -26,7 +26,7 @@ def check_support() -> dict[str, Any]:
 platform_import(globals(), "gl_context", False, "GLContext", "check_support")
 
 
-def main():
+def main() -> int:
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
     from xpra.util.str_fn import print_nested_dict

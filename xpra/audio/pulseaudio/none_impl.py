@@ -55,7 +55,7 @@ def get_info() -> dict[str, Any]:
     }
 
 
-def main():
+def main() -> None:
     if "-v" in sys.argv:
         log.enable_debug()
     i = get_info()

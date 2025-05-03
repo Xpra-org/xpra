@@ -29,7 +29,7 @@ MAIN_AUTHORS = (
 )
 
 
-def load_license():
+def load_license() -> str:
     global GPL2
     if not GPL2:
         from xpra.platform.paths import get_resources_dir  # pylint: disable=import-outside-toplevel
@@ -45,7 +45,7 @@ def load_license():
 about_dialog = None
 
 
-def close_about(*_args):
+def close_about(*_args) -> None:
     if about_dialog:
         about_dialog.hide()
 

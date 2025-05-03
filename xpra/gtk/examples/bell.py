@@ -27,17 +27,17 @@ class BellWindow(Gtk.Window):
         btn.connect('clicked', self.bell)
         self.add(btn)
 
-    def show_with_focus(self):
+    def show_with_focus(self) -> None:
         force_focus()
         self.show_all()
         super().present()
 
-    def bell(self, *_args):
+    def bell(self, *_args) -> None:
         from xpra.platform.gui import system_bell
         system_bell(self.get_window().get_xid(), 0, 100, 2000, 1000, 0, 0, "test")
 
 
-def main():
+def main() -> int:
     from xpra.gtk.signals import quit_on_signals
     from xpra.gtk.util import init_display_source
     with program_context("bell", "Bell"):

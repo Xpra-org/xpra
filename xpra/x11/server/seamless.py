@@ -1078,7 +1078,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if timer:
             return  # we already have one pending
 
-        def damage():
+        def damage() -> None:
             self.configure_damage_timers.pop(wid, None)
             window = self._lookup_window(wid)
             if window and window.is_managed():

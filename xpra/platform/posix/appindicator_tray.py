@@ -140,7 +140,7 @@ class AppindicatorTray(TrayBase):
         super().cleanup()
 
 
-def main():  # pragma: no cover
+def main() -> None:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("AppIndicator-Test", "AppIndicator Test"):

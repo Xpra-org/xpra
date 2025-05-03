@@ -334,13 +334,13 @@ class Win32ClipboardProxy(ClipboardProxyCore):
 
             self.get_contents(target, got_contents)
 
-        def got_clipboard_lock():
+        def got_clipboard_lock() -> bool:
             fmts = get_clipboard_formats()
             log("do_emit_token() formats=%s", format_names(fmts))
             send_token(fmts)
             return True
 
-        def errback(errmsg=None):
+        def errback(errmsg=None) -> None:
             # nothing we can do!
             log("not sending the token since we failed to get the clipboard lock: %s", errmsg)
 
@@ -394,7 +394,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("got_text(%s)", Ellipsizer(text))
             got_contents(target, 8, text)
 
-        def errback(error_text=""):
+        def errback(error_text="") -> None:
             log("errback(%s)", error_text)
             if error_text:
                 log.warn("Warning: failed to get clipboard data as text")
@@ -560,7 +560,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         self.do_set_clipboard_image(image_formats)
 
     def do_set_clipboard_image(self, image_formats):
-        def got_clipboard_lock():
+        def got_clipboard_lock() -> bool:
             EmptyClipboard()
             c = 0
             for fmt, handle in image_formats.items():

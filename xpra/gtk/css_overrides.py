@@ -41,10 +41,10 @@ def inject_css_overrides() -> None:
         )
 
 
-_style_provider = None
+_style_provider: Gtk.CssProvider | None = None
 
 
-def get_style_provider():
+def get_style_provider() -> Gtk.CssProvider:
     global _style_provider
     if _style_provider:
         return _style_provider

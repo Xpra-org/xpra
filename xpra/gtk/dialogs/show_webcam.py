@@ -8,7 +8,7 @@
 import sys
 
 
-def main():
+def main() -> int:
     from xpra.platform import program_context, command_error
     from xpra.platform.gui import init, set_default_icon
     with program_context("Webcam", "Webcam"):

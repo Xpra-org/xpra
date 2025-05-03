@@ -15,7 +15,7 @@ Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
 
 
-def make_window():
+def make_window() -> Gtk.Window:
     window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     window.set_title("Window Transient Test")
     window.set_size_request(400, 300)
@@ -28,7 +28,7 @@ def make_window():
 
     btn = Gtk.Button(label="Create Transient")
 
-    def create_transient(*_args):
+    def create_transient(*_args) -> Gtk.Window:
         tw = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         tw.set_size_request(200, 100)
         if icon:
@@ -43,7 +43,7 @@ def make_window():
 
     btn = Gtk.Button(label="Create Transient (with 5 second delay)")
 
-    def delayed_transient(*_args):
+    def delayed_transient(*_args) -> None:
         GLib.timeout_add(5000, create_transient)
 
     btn.connect('clicked', delayed_transient)
@@ -51,7 +51,7 @@ def make_window():
 
     btn = Gtk.Button(label="Create Root Transient")
 
-    def create_root_transient(*_args):
+    def create_root_transient(*_args) -> None:
         tw = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         tw.set_size_request(200, 100)
         if icon:
@@ -68,14 +68,14 @@ def make_window():
     return window
 
 
-def main():
+def main() -> int:
     with program_context("window-transient", "Window Transient"):
         w = make_window()
         add_close_accel(w, Gtk.main_quit)
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("transient window test")
 
-        def show_with_focus():
+        def show_with_focus() -> None:
             force_focus()
             w.show_all()
             w.present()
@@ -86,4 +86,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    r = main()
+    sys.exit(r)

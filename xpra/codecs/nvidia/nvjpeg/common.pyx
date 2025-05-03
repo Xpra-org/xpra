@@ -3,6 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Tuple
+
+
 cdef extern from "library_types.h":
     cdef enum libraryPropertyType_t:
         MAJOR_VERSION
@@ -52,19 +55,20 @@ from xpra.codecs.nvidia.nvjpeg.nvjpeg cimport (
     NVJPEG_OUTPUT_FORMAT_MAX,
     #get_version:
     nvjpegGetProperty,
-    )
+)
 
 
 class NVJPEG_Exception(Exception):
     pass
 
-def errcheck(int r, fnname="", *args):
+
+def errcheck(int r, fnname="", *args) -> None:
     if r:
         fstr = fnname % (args)
         raise NVJPEG_Exception("%s failed: %s" % (fstr, ERR_STR.get(r, r)))
 
 
-def get_cuda_version():
+def get_cuda_version() -> Tuple[int, int, int]:
     cdef int major_version, minor_version, patch_level
     r = nvjpegGetProperty(MAJOR_VERSION, &major_version)
     errcheck(r, "nvjpegGetProperty MAJOR_VERSION")
@@ -74,11 +78,12 @@ def get_cuda_version():
     errcheck(r, "nvjpegGetProperty PATCH_LEVEL")
     return (major_version, minor_version, patch_level)
 
-def get_version():
+
+def get_version() -> Tuple[int, int, int, int]:
     return (NVJPEG_VER_MAJOR, NVJPEG_VER_MINOR, NVJPEG_VER_PATCH, NVJPEG_VER_BUILD)
 
 
-ERR_STR = {
+ERR_STR: Dict[int, str] = {
     NVJPEG_STATUS_SUCCESS                       : "SUCCESS",
     NVJPEG_STATUS_NOT_INITIALIZED               : "NOT_INITIALIZED",
     NVJPEG_STATUS_INVALID_PARAMETER             : "INVALID_PARAMETER",
@@ -89,9 +94,10 @@ ERR_STR = {
     NVJPEG_STATUS_ARCH_MISMATCH                 : "ARCH_MISMATCH",
     NVJPEG_STATUS_INTERNAL_ERROR                : "INTERNAL_ERROR",
     NVJPEG_STATUS_IMPLEMENTATION_NOT_SUPPORTED  : "IMPLEMENTATION_NOT_SUPPORTED",
-    }
+}
 
-CSS_STR = {
+
+CSS_STR: Dict[int, str] = {
     NVJPEG_CSS_444  : "444",
     NVJPEG_CSS_422  : "422",
     NVJPEG_CSS_420  : "420",
@@ -100,23 +106,25 @@ CSS_STR = {
     NVJPEG_CSS_410  : "410",
     NVJPEG_CSS_GRAY : "gray",
     NVJPEG_CSS_UNKNOWN  : "unknown",
-    }
+}
 
-ENCODING_STR = {
+
+ENCODING_STR: Dict[int, str] = {
     NVJPEG_ENCODING_UNKNOWN                         : "unknown",
     NVJPEG_ENCODING_BASELINE_DCT                    : "baseline-dct",
     NVJPEG_ENCODING_EXTENDED_SEQUENTIAL_DCT_HUFFMAN : "extended-sequential-dct-huffman",
     NVJPEG_ENCODING_PROGRESSIVE_DCT_HUFFMAN         : "progressive-dct-huffman",
-    }
+}
 
-NVJPEG_INPUT_STR = {
+NVJPEG_INPUT_STR: Dict[int, str] = {
     NVJPEG_INPUT_RGB    : "RGB",
     NVJPEG_INPUT_BGR    : "BGR",
     NVJPEG_INPUT_RGBI   : "RGBI",
     NVJPEG_INPUT_BGRI   : "BGRI",
-    }
+}
 
-NVJPEG_OUTPUT_STR = {
+
+NVJPEG_OUTPUT_STR: Dict[int, str] = {
     NVJPEG_OUTPUT_UNCHANGED : "UNCHANGED",
     NVJPEG_OUTPUT_YUV       : "YUV",
     NVJPEG_OUTPUT_Y         : "Y",
@@ -125,4 +133,4 @@ NVJPEG_OUTPUT_STR = {
     NVJPEG_OUTPUT_RGBI      : "RGBI",
     NVJPEG_OUTPUT_BGRI      : "BGRI",
     #NVJPEG_OUTPUT_FORMAT_MAX
-    }
+}

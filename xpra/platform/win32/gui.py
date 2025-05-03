@@ -1027,7 +1027,7 @@ WTS_SESSION_EVENTS: dict[int, str] = {
 }
 
 
-def main():
+def main() -> None:
     from xpra.platform import program_context
     with program_context("Platform-Events", "Platform Events Test"):
         consume_verbose_argv(sys.argv, "win32")

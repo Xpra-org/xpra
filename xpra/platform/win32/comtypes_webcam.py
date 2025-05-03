@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
 from ctypes import POINTER
 
 from xpra.log import Logger  # noqa: E402
@@ -41,7 +42,7 @@ class DeviceEnumerator(comtypes.CoClass):
     _reg_typelib_ = ('{24BC6711-3881-420F-8299-34DA1026D31E}', 1, 0)
 
 
-def get_device_information(moniker):
+def get_device_information(moniker) -> dict[str, Any]:
     log("get_device_information(%s)", moniker)
     storage = moniker.RemoteBindToStorage(None, None, directshow.IPropertyBag._iid_)  # pylint: disable=protected-access
     bag = storage.QueryInterface(interface=IPropertyBag)
@@ -62,7 +63,7 @@ def get_device_information(moniker):
     return info
 
 
-def get_video_devices():
+def get_video_devices() -> dict[int, dict]:
     from comtypes.client import CreateObject  # pylint: disable=import-outside-toplevel
     dev_enum = CreateObject(DeviceEnumerator)
     class_enum = dev_enum.CreateClassEnumerator(CLSID_VideoInputDeviceCategory, 0)

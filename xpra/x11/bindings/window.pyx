@@ -692,7 +692,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     def displayHasXComposite(self) -> bool:
         try:
             self.ensure_XComposite_support()
-            return  True
+            return True
         except Exception as e:
             log.error("%s", e)
         return False

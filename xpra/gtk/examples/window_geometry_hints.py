@@ -102,7 +102,7 @@ class OptionWindow(Gtk.Window):
             for i, widget in enumerate(widgets):
                 attach(widget, i, row)
 
-        def e():
+        def e() -> Gtk.Entry:
             entry = Gtk.Entry()
             entry.set_text("")
             return entry
@@ -169,7 +169,7 @@ class OptionWindow(Gtk.Window):
         w.show_all()
 
 
-def main():
+def main() -> None:
     from xpra.platform import program_context
     with program_context("window-geometry-hints", "Window Geometry Hints"):
         w = OptionWindow(sys.argv[1:])
@@ -177,7 +177,7 @@ def main():
         from xpra.gtk.signals import quit_on_signals
         quit_on_signals("geometry hints test window")
 
-        def show_with_focus():
+        def show_with_focus() -> None:
             from xpra.platform.gui import force_focus
             force_focus()
             w.show_all()

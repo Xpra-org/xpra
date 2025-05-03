@@ -3,8 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.util.str_fn import csv
+from typing import Any
 from collections.abc import Sequence
+
+from xpra.util.str_fn import csv
 
 
 def upnp_add(socktype: str, info, options):
@@ -118,7 +120,7 @@ def upnp_add(socktype: str, info, options):
             #      2: [{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}],
             #     10: [{'addr': 'fe80::1944:64a7:ab7b:9d67%wlan0', 'netmask': 'ffff:ffff:ffff:ffff::/64'}]}
 
-            def get_interface_address():
+            def get_interface_address() -> str:
                 for name, v in INET.items():
                     # ie: inet=[{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}]
                     inet = addrs.get(v)
@@ -130,7 +132,7 @@ def upnp_add(socktype: str, info, options):
                         host = a.get("addr")
                         if host:
                             return host
-                return None
+                return ""
 
             internal_host = get_interface_address()
             if not internal_host:
@@ -209,9 +211,9 @@ def upnp_add(socktype: str, info, options):
             except Exception:
                 log("%s", getip, exc_info=True)
 
-        def cleanup():
+        def cleanup() -> None:
             try:
-                kwargs = {
+                kwargs: dict[str, Any] = {
                     "NewRemoteHost": remote_host,
                     "NewExternalPort": external_port,
                     "NewProtocol": protocol,

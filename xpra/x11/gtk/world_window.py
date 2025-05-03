@@ -96,12 +96,12 @@ def root_set(*args):
 world_window = None
 
 
-def get_world_window():
+def get_world_window() -> None:
     global world_window
     return world_window
 
 
-def destroy_world_window():
+def destroy_world_window() -> None:
     global world_window
     ww = world_window
     if ww:
@@ -207,7 +207,7 @@ class WorldWindow(Gtk.Window):
     def reset_x_focus(self) -> None:
         focuslog("reset_x_focus: widget with focus: %s", self.get_focus())
 
-        def do_reset_x_focus():
+        def do_reset_x_focus() -> None:
             self._take_focus()
             root_set("_NET_ACTIVE_WINDOW", "u32", XNone)
 

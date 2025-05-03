@@ -10,6 +10,7 @@ import shlex
 import inspect
 import os.path
 import tempfile
+from typing import Any
 from collections.abc import Callable
 
 from xpra.platform import platform_import
@@ -429,7 +430,7 @@ platform_import(globals(), "paths", False,
                 )
 
 
-def get_info():
+def get_info() -> dict[str, Any]:
     try:
         import xpra  # pylint: disable=import-outside-toplevel
         XPRA_MODULE_PATH = xpra.__file__
@@ -473,7 +474,7 @@ def get_info():
     }
 
 
-def main():
+def main() -> None:
     from xpra.log import consume_verbose_argv
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context

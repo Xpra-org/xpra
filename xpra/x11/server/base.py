@@ -404,7 +404,7 @@ class X11ServerBase(X11ServerCore):
             have_override = self.double_click_time > 0 or self.double_click_distance != (-1, -1) or antialias or dpi > 0
             if k == "xsettings-blob" and have_override:
                 # start by removing blocklisted options:
-                def filter_blocklisted():
+                def filter_blocklisted() -> tuple[int, list]:
                     serial, values = v
                     new_values = []
                     for _t, _n, _v, _s in values:

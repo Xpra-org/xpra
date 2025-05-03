@@ -85,7 +85,7 @@ class QRCodeClient(InfoXpraClient):
                     uri = "%s://%s:%i/" % (proto, host, port)
                 uris.append(uri)
 
-            def show_addresses():
+            def show_addresses() -> None:
                 w = QRCodeWindow(uris)
                 w.show_all()
 

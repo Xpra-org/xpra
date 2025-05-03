@@ -218,7 +218,7 @@ class ServerCommandsWindow:
         Gtk.main_quit()
 
 
-def main():  # pragma: no cover
+def main() -> int:  # pragma: no cover
     from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready, init as gui_init
     gui_init()

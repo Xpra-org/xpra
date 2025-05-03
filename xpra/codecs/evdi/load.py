@@ -39,7 +39,7 @@ def load_evdi_module(device_count=1):
     return False
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.log import enable_color, consume_verbose_argv
     from xpra.platform import program_context

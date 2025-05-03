@@ -8,7 +8,7 @@ import os
 import sys
 
 
-def get_commonappdata_dir():
+def get_commonappdata_dir() -> str:
     CSIDL_COMMON_APPDATA = 35
     try:
         from ctypes import (
@@ -22,10 +22,10 @@ def get_commonappdata_dir():
         SHGetFolderPath(0, CSIDL_COMMON_APPDATA, None, 0, buf)
         return buf.value
     except Exception:
-        return None
+        return ""
 
 
-def main():
+def main() -> None:
     from multiprocessing import freeze_support
     freeze_support()
 

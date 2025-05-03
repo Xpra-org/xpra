@@ -74,7 +74,7 @@ def get_colorization_color():
     return color.value
 
 
-def match_window_color():
+def match_window_color() -> None:
     color = get_frame_color() or get_colorization_color()
     if not color:
         return

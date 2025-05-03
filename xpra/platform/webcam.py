@@ -17,7 +17,7 @@ def get_virtual_video_devices() -> dict:
     return {}
 
 
-def get_all_video_devices():
+def get_all_video_devices() -> dict | None:
     # None means we can't enumerate,
     # this is different from an empty dict!
     return None

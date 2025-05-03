@@ -17,7 +17,7 @@ from xpra.codecs.amf.amf cimport (
 
 cdef AMFFactory *get_factory()
 cdef void cleanup(self)
-cdef object get_version()
+cdef tuple get_version()
 
 cdef void check(AMF_RESULT res, message)
 cdef object error_str(AMF_RESULT result)

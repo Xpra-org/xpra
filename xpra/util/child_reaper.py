@@ -97,7 +97,7 @@ class ChildReaper:
             # conditions are satisfied before we even enter the main loop.
             # (Programming with unix the signal API sure is annoying.)
 
-            def check_once():
+            def check_once() -> bool:
                 self.check()
                 return False  # Only call once
 

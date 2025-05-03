@@ -149,7 +149,7 @@ class ColorGradientWindow(Gtk.Window):
         paint_block(M // 16, M // 16, M // 16)
 
 
-def main():
+def main() -> None:
     from xpra.platform.gui import init, set_default_icon
     with program_context("colors-gradient", "Colors Gradient"):
         set_default_icon("encoding.png")

@@ -72,7 +72,7 @@ class ColorPlainWindow(Gtk.Window):
         paint_block(w / 2, h / 2, w / 2, h / 2, 128, 128, 128)
 
 
-def main():
+def main() -> None:
     from xpra.gtk.signals import quit_on_signals
     with program_context("colors-plain", "Colors Plain"):
         quit_on_signals("colors test window")

@@ -70,7 +70,7 @@ def get_tcp_info(_sock):  # pylint: disable=unused-argument
     return {}
 
 
-def main():
+def main() -> None:
     import sys
     from xpra.platform import program_context
     with program_context("Network-Speed", "Network Speed Query Tool"):

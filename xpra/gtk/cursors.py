@@ -32,7 +32,7 @@ def get_default_cursor() -> Gdk.Cursor:
     return Gdk.Cursor.new_from_name(display, "default")
 
 
-def main():
+def main() -> None:
     # pylint: disable=import-outside-toplevel
     from xpra.util.str_fn import csv
     from xpra.platform import program_context

@@ -6,7 +6,8 @@
 import os
 import sys
 import subprocess
-from collections.abc import Callable, Iterable
+from typing import Any
+from collections.abc import Callable, Iterable, Sequence
 
 from xpra.platform.win32 import constants as win32con
 from xpra.util.objects import reverse_dict
@@ -52,7 +53,7 @@ log("PRINTER_FLAGS=%s", csv(PRINTER_FLAGS))
 VALID_PRINTER_FLAGS = ("LOCAL", "SHARED", "CONNECTIONS", "NETWORK", "REMOTE")
 
 
-def get_printer_enums():
+def get_printer_enums() -> Sequence[str]:
     printer_enums = []
     for v in PRINTER_FLAGS:  # ie: "SHARED+NETWORK+CONNECTIONS"
         flags = v.replace('|', '+').split("+")  # ie: ["SHARED", "NETWORK", "CONNECTIONS"]
@@ -87,12 +88,12 @@ def init_printing(callback=None):
             log.error("Error: failed to register for print spooler changes", exc_info=True)
 
 
-def init_winspool_listener():
+def init_winspool_listener() -> None:
     from xpra.platform.win32.events import get_win32_event_listener
     get_win32_event_listener().add_event_callback(win32con.WM_DEVMODECHANGE, on_devmodechange)
 
 
-def on_devmodechange(wParam, lParam):
+def on_devmodechange(wParam, lParam) -> None:
     global printers_modified_callback
     log("on_devmodechange(%s, %s) printers_modified_callback=%s", wParam, lParam, printers_modified_callback)
     # from ctypes import c_wchar_p
@@ -153,7 +154,7 @@ def EnumPrinters(flags, name=None, level=PRINTER_LEVEL):
     return printers
 
 
-def get_info():
+def get_info() -> dict[str, Any]:
     from xpra.platform.printing import default_get_info
     i = default_get_info()
     # win32 extras:
@@ -166,7 +167,7 @@ def get_info():
     return i
 
 
-def get_printers():
+def get_printers() -> dict[str, dict[str, Any]]:
     global PRINTER_ENUMS, PRINTER_ENUM_VALUES, SKIPPED_PRINTERS, PRINTER_LEVEL
     printers = {}
     for penum in PRINTER_ENUMS:
@@ -191,8 +192,10 @@ def get_printers():
                 for x in desc.split(","):
                     if x and not desc_els.count(x):
                         desc_els.append(x)
-                info = {"printer-info": bytestostr(",".join(desc_els)),
-                        "type": penum}
+                info = {
+                    "printer-info": bytestostr(",".join(desc_els)),
+                    "type": penum,
+                }
                 if comment:
                     info["printer-make-and-model"] = comment
                 printers[name] = info
@@ -207,7 +210,7 @@ def get_printers():
     return printers
 
 
-def print_files(printer: str, filenames: Iterable[str], title: str, options: dict):
+def print_files(printer: str, filenames: Iterable[str], title: str, options: dict) -> int:
     log("win32.print_files%s", (printer, filenames, title, options))
     global JOB_ID, PROCESSES
     processes = []
@@ -228,7 +231,7 @@ def print_files(printer: str, filenames: Iterable[str], title: str, options: dic
     return JOB_ID
 
 
-def printing_finished(jobid):
+def printing_finished(jobid: int) -> bool:
     global PROCESSES
     processes = PROCESSES.get(jobid)
     if not processes:

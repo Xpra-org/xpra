@@ -54,7 +54,7 @@ def main(args):
     if len(args) > 2:
         body = args[2]
 
-    def show():
+    def show() -> bool:
         nid = 1
         n = PyNotify_Notifier()
         n.show_notify("", None, nid, "Test", 0, "", summary, body, ["0", "Hello", "1", "Bye"], {}, 0, "")

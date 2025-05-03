@@ -71,7 +71,7 @@ def get_pulse_id_x11_property() -> str:
     return get_x11_property("PULSE_ID")
 
 
-def main():
+def main() -> None:
     if "-v" in sys.argv:
         log.enable_debug()
     print("PULSE_SERVER=%r" % get_pulse_server_x11_property())

@@ -241,7 +241,7 @@ def find_session(username: str, with_display=True) -> dict:
     return {}
 
 
-def main():
+def main() -> None:
     import sys
     from xpra.platform.win32.common import WTSGetActiveConsoleSessionId
     csid = WTSGetActiveConsoleSessionId()

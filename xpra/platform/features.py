@@ -84,7 +84,7 @@ platform_import(globals(), "features", False,
                 *_features_list_)
 
 
-def main():
+def main() -> None:
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Features-Info", "Features Info"):

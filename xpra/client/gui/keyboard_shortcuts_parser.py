@@ -45,7 +45,7 @@ def parse_shortcut_modifiers(s: str, modifier_names: dict[str, str]) -> list[str
     # accept "," or "+" as delimiter:
     shortcut_modifiers = s.lower().replace(",", "+").split("+")
 
-    def mod_defaults():
+    def mod_defaults() -> list[str]:
         mods = ["meta", "shift"]
         if POSIX:
             # gnome intercepts too many of the Alt+Shift shortcuts,
