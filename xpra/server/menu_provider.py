@@ -116,7 +116,7 @@ class MenuProvider:
             log.info("watching for applications menu changes in:")
             for wd in self.dir_watchers.keys():
                 log.info(f" {wd!r}")
-            log.info(f"using {watcher!r}")
+            log.info(f" using {watcher!r}")
 
     def cancel_dir_watchers(self) -> None:
         dw = self.dir_watchers
