@@ -445,7 +445,7 @@ def has_uinput() -> bool:
     except ImportError:
         log = get_logger()
         log("has_uinput()", exc_info=True)
-        log.info("no uinput module (not usually needed)")
+        log("no uinput module (not usually needed)")
         return False
     except Exception as e:
         log = get_logger()
