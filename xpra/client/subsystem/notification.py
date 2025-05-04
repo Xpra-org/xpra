@@ -159,7 +159,7 @@ class NotificationClient(StubClientMixin):
         app_icon = packet.get_str(5)
         summary = packet.get_str(6)
         body = packet.get_str(7)
-        expire_timeout = packet.get_u64(8)
+        expire_timeout = packet.get_i64(8)
         icon = None
         actions: Sequence[str] = ()
         hints = {}
