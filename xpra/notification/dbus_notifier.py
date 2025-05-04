@@ -80,7 +80,7 @@ class DBUS_Notifier(NotifierBase):
                 app_icon, summary, body, actions, hints, timeout, icon,
             )
 
-            def NotifyReply(notification_id):
+            def NotifyReply(notification_id) -> None:
                 log("NotifyReply(%s) for nid=%i", notification_id, nid)
                 self.actual_notification_id[int(nid)] = int(notification_id)
 
@@ -219,7 +219,7 @@ def main():
     Gtk = gi_import("Gtk")
     GLib = gi_import("GLib")
 
-    def show():
+    def show() -> bool:
         n = DBUS_Notifier_factory()
         # actions = ["0", "Hello", "1", "Bye"]
         actions = []

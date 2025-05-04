@@ -4,11 +4,13 @@
 # later version. See the file COPYING for details.
 
 import os
-import dbus.service
 from typing import Any
+from collections.abc import Callable
+import dbus.service
 
 from xpra.notification.common import parse_image_data, parse_image_path
 from xpra.dbus.helper import dbus_to_native
+from xpra.common import noop
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
 from xpra.log import Logger
@@ -61,7 +63,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
      close_callback(nid)
     """
 
-    def __init__(self, bus, notify_callback=None, close_callback=None):
+    def __init__(self, bus, notify_callback: Callable = noop, close_callback: Callable = noop):
         self.bus = bus
         self.notify_callback = notify_callback
         self.close_callback = close_callback
@@ -165,7 +167,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         return f"DBUS-NotificationsForwarder({BUS_NAME})"
 
 
-def register(notify_callback=None, close_callback=None, replace=False):
+def register(notify_callback: Callable = noop, close_callback: Callable = noop, replace=False):
     from xpra.dbus.common import init_session_bus
     bus = init_session_bus()
     flags = dbus.bus.NAME_FLAG_DO_NOT_QUEUE
