@@ -22,8 +22,8 @@ DEFAULT_SALT_LENGTH = envint("XPRA_DEFAULT_SALT_LENGTH", 64)
 
 def get_caps() -> dict[str, Any]:
     digests = get_digests()
-    # "hmac" is the legacy name, "xor" and "des" should not be used for salt:
-    salt_digests = tuple(x for x in digests if x not in ("hmac", "xor", "des"))
+    # "xor" and "des" should not be used for salt:
+    salt_digests = tuple(x for x in digests if x not in ("xor", "des"))
     return {
         "digest": digests,
         "salt-digest": salt_digests,
