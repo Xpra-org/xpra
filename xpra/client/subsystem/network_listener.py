@@ -218,7 +218,7 @@ class NetworkListener(StubClientMixin):
                 from xpra.util.system import platform_name
                 info = self.get_info()
                 info["network"] = get_network_caps()
-                info["digests"] = get_digest_caps()
+                info["authentication"] = get_digest_caps()
                 info["session-type"] = (get_session_type() or platform_name()) + " client"
                 display = os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY")
                 if display and POSIX and not OSX:

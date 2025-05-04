@@ -14,7 +14,6 @@ from collections.abc import Callable, Sequence
 from importlib import import_module
 
 from xpra.net.bytestreams import get_socket_config
-from xpra.net.digest import get_caps as get_digest_caps
 from xpra.util.version import parse_version
 from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.log import Logger, enable_color, consume_verbose_argv
@@ -417,7 +416,6 @@ def get_info() -> dict[str, Any]:
     i["config"] = get_socket_config()
     i["paramiko"] = get_paramiko_info()
     i["bcrypt"] = get_bcrypt_info()
-    i["digests"] = get_digest_caps()
     return i
 
 
