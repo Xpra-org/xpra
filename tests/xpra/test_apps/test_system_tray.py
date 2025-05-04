@@ -58,16 +58,16 @@ class StatusIcon:
         menu.show_all()
         menu.popup(None, None, Gtk.StatusIcon.position_menu, self.statusicon, button, time)
 
-    def notification_closed(self, nid, reason, text):
+    def notification_closed(self, nid: int, reason: int, text: str):
         print("notification_closed(%i, %i, %s)" % (nid, reason, text))
 
-    def notification_action(self, nid, action):
+    def notification_action(self, nid: int, action: str):
         print("notification_action(%s, %s)" % (nid, action))
 
-    def notify(self, *_args):
-        actions = ["0", "Hello", "1", "Goodbye"]
+    def notify(self, *_args) -> None:
+        actions = ("0", "Hello", "1", "Goodbye")
         hints = {
-            "image-path"    : "/usr/share/xpra/icons/encoding.png",
+            "image-path": "/usr/share/xpra/icons/encoding.png",
         }
         self.notifier.show_notify("dbus-id", None, self.nid, self.name, 0,
                                   "", "Notification Summary", "Notification Body", actions, hints, 60*1000, "")

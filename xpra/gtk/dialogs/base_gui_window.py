@@ -318,4 +318,4 @@ class BaseGUIWindow(Gtk.Window):
         icon = parse_image_path(icon_filename)
         notifier.show_notify(0, None, nid,
                              "xpra GUI Window", 0, self.icon_name,
-                             summary, body, {}, {}, 10, icon)
+                             summary, body, (), {}, 10, icon)

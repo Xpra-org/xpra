@@ -9,7 +9,7 @@ from typing import TypeAlias
 
 from xpra.util.env import osexpand
 from xpra.log import Logger
-from xpra.common import NotificationID
+from xpra.common import NotificationID, noop
 
 log = Logger("notify")
 
@@ -18,7 +18,7 @@ NID: TypeAlias = int | NotificationID
 
 class NotifierBase:
 
-    def __init__(self, closed_cb=None, action_cb=None):
+    def __init__(self, closed_cb=noop, action_cb=noop):
         # posix only - but degrades ok on non-posix:
         self.dbus_id = os.environ.get("DBUS_SESSION_BUS_ADDRESS", "")
         self.temp_files = {}

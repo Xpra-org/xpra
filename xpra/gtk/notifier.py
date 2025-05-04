@@ -152,7 +152,7 @@ class GTKNotifier(NotifierBase):
 
     def popup_action(self, nid, action_id) -> None:
         if self.action_cb:
-            self.action_cb(nid, action_id)
+            self.action_cb(nid, str(action_id))
 
 
 class Popup(Gtk.Window):
@@ -265,10 +265,10 @@ class Popup(Gtk.Window):
         button = Gtk.Button(label=action_text)
         button.set_relief(Gtk.ReliefStyle.NORMAL)
 
-        def popup_cb_clicked(*args):
+        def popup_cb_clicked(*args) -> None:
             self.hide_notification()
             log("popup_cb_clicked%s for action_id=%s, action_text=%s", args, action_id, action_text)
-            self.action_cb(self.nid, action_id)
+            self.action_cb(self.nid, str(action_id))
 
         button.connect("clicked", popup_cb_clicked)
         return button

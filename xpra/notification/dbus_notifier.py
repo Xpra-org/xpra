@@ -29,24 +29,26 @@ class DBUS_Notifier(NotifierBase):
         self.app_name_format = NOTIFICATION_APP_NAME
         self.last_notification: Sequence[Any] = ()
         self.actual_notification_id: dict[int, int] = {}
-        self.dbusnotify = None
-        self.setup_dbusnotify()
-        self.handles_actions = True
+        self.dbusnotify = self.setup_dbusnotify()
+        self.handles_actions = "actions" in self.get_capabilities()
         self.may_retry = True
+        log("dbus.get_default_main_loop()=%s", dbus.get_default_main_loop())
 
-    def setup_dbusnotify(self) -> None:
+    def setup_dbusnotify(self) -> dbus.Interface:
         self.dbus_session = dbus.SessionBus()
         self.org_fd_notifications = self.dbus_session.get_object(FD_NOTIFICATIONS, '/org/freedesktop/Notifications')
         self.org_fd_notifications.connect_to_signal("NotificationClosed", self.NotificationClosed)
         self.org_fd_notifications.connect_to_signal("ActionInvoked", self.ActionInvoked)
 
         # connect_to_signal("HelloSignal", hello_signal_handler, dbus_interface="com.example.TestService", arg0="Hello")
-        self.dbusnotify = dbus.Interface(self.org_fd_notifications, FD_NOTIFICATIONS)
-        log("using dbusnotify: %s(%s)", type(self.dbusnotify), FD_NOTIFICATIONS)
+        dbusnotify = dbus.Interface(self.org_fd_notifications, FD_NOTIFICATIONS)
+        log("using dbusnotify: %s(%s)", type(dbusnotify), FD_NOTIFICATIONS)
+        return dbusnotify
+
+    def get_capabilities(self) -> Sequence[str]:
         caps = tuple(str(x) for x in self.dbusnotify.GetCapabilities())
         log("capabilities=%s", csv(caps))
-        self.handles_actions = "actions" in caps
-        log("dbus.get_default_main_loop()=%s", dbus.get_default_main_loop())
+        return caps
 
     def cleanup(self) -> None:
         nids = list(self.actual_notification_id.items())
@@ -222,7 +224,7 @@ def main():
     def show() -> bool:
         n = DBUS_Notifier_factory()
         # actions = ["0", "Hello", "1", "Bye"]
-        actions = []
+        actions = ()
         n.show_notify("", None, 0, "Test", 0, "",
                       "Summary", "Body line1\nline2...",
                       actions, {}, 0, "")
