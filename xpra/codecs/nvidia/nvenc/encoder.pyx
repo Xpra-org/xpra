@@ -2302,7 +2302,7 @@ cdef class Encoder:
         self.bytes_out = 0
         log("clean() done")
 
-    cdef cuda_clean(self):
+    cdef void cuda_clean(self):
         log("cuda_clean()")
         cdef NVENCSTATUS r
         if self.context!=NULL and self.frames>0:
@@ -2420,7 +2420,7 @@ cdef class Encoder:
         self.target_bitrate = min(lim, max(1000000, int(((0.5+self.speed/200.0)**8)*lim*MPixels*mult)))
         self.max_bitrate = 2*self.target_bitrate
 
-    cdef flushEncoder(self):
+    cdef void flushEncoder(self):
         cdef NV_ENC_PIC_PARAMS pic
         cdef NVENCSTATUS r
         assert self.context, "context is not initialized"
@@ -2570,7 +2570,7 @@ cdef class Encoder:
         log("copy_image: %9i bytes uploaded in %3.1f ms: %5i MB/s", copy_len, 1000*elapsed, int(copy_len/elapsed)//1024//1024)
         return stride
 
-    cdef exec_kernel(self, cuda_context, unsigned int w, unsigned int h, unsigned int stride):
+    cdef void exec_kernel(self, cuda_context, unsigned int w, unsigned int h, unsigned int stride):
         cdef uint8_t dx, dy
         if self.pixel_format=="NV12":
             #(these values are derived from the kernel code - which we should know nothing about here..)
@@ -2637,13 +2637,13 @@ cdef class Encoder:
             log("compress_image(..) device buffer mapped to %#x", <uintptr_t> mappedResource)
         return mappedResource
 
-    cdef unmap_input_resource(self, NV_ENC_INPUT_PTR mappedResource):
+    cdef void unmap_input_resource(self, NV_ENC_INPUT_PTR mappedResource):
         if DEBUG_API:
             log("nvEncUnmapInputResource(%#x)", <uintptr_t> mappedResource)
         cdef int r = self.functionList.nvEncUnmapInputResource(self.context, mappedResource)
         raiseNVENC(r, "unmapping input resource")
 
-    cdef nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0, full_range=True):
+    cdef Tuple nvenc_compress(self, int input_size, NV_ENC_INPUT_PTR input, timestamp=0, full_range=True):
         cdef NV_ENC_PIC_PARAMS pic
         cdef NV_ENC_LOCK_BITSTREAM lockOutputBuffer
         assert input_size>0, "invalid input size %i" % input_size

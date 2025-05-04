@@ -101,7 +101,7 @@ class RFBServer:
             return
         fn(proto, packet)
 
-    def get_rfb_pixelformat(self):
+    def get_rfb_pixelformat(self) -> tuple[int, int, int, int, bool, bool, int, int, int, int, int, int]:
         model = self._get_rfb_desktop_model()
         w, h = model.get_dimensions()
         # w, h, bpp, depth, bigendian, truecolor, rmax, gmax, bmax, rshift, bshift, gshift

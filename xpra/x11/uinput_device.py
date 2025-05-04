@@ -57,7 +57,7 @@ class UInputDevice:
             if v <= (2, 2):
                 self.wheel_motion(4, 1)
 
-    def click(self, button, pressed, _props):
+    def click(self, button: int, pressed: bool, _props) -> None:
         # this multiplier is based on the values defined in 71-xpra-virtual-pointer.rules as:
         # MOUSE_WHEEL_CLICK_COUNT=360
         # MOUSE_WHEEL_CLICK_ANGLE=1
@@ -93,7 +93,7 @@ class UInputDevice:
             log("UInput.click(%i, %s) uinput button not found - using XTest", button, pressed)
             X11Keyboard.xtest_fake_button(button, pressed)
 
-    def wheel_motion(self, button: int, distance: float):
+    def wheel_motion(self, button: int, distance: float) -> None:
         if button in (4, 5):
             val = distance * MOUSE_WHEEL_CLICK_MULTIPLIER
             ubutton = REL_WHEEL
@@ -123,7 +123,7 @@ class UInputPointerDevice(UInputDevice):
     def __repr__(self):
         return "UInput pointer device %s" % self.device_path
 
-    def move_pointer(self, x: int, y: int, props=None):
+    def move_pointer(self, x: int, y: int, props=None) -> None:
         log("UInputPointerDevice.move_pointer(%i, %s, %s)", x, y, props)
         # calculate delta:
         with xsync:
@@ -152,7 +152,7 @@ class UInputTouchpadDevice(UInputDevice):
     def __repr__(self):
         return "UInput touchpad device %s" % self.device_path
 
-    def move_pointer(self, x: int, y: int, props=None):
+    def move_pointer(self, x: int, y: int, props=None) -> None:
         log("UInputTouchpadDevice.move_pointer(%s, %s, %s)", x, y, props)
         self.device.emit(BTN_TOUCH, 1, syn=False)
         self.device.emit(ABS_X, x * (2 ** 24) // self.root_w, syn=False)

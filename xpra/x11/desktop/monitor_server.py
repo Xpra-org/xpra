@@ -74,7 +74,7 @@ class XpraMonitorServer(DesktopServerBase):
             }
         return capabilities
 
-    def configure_best_screen_size(self):
+    def configure_best_screen_size(self) -> tuple[int, int]:
         sss = tuple(x for x in self._server_sources.values() if x.ui_client)
         log(f"configure_best_screen_size() sources={sss}")
         if len(sss) != 1:

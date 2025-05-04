@@ -871,7 +871,7 @@ cdef class Converter:
                             V[y * Vstride + x] = clamp_studio_UV(VR * R + VG * G + VB * B + VC)
         return self.planar3_image_wrapper(<void *> output_image)
 
-    cdef planar3_image_wrapper(self, void *buf, unsigned char bpp=24):
+    cdef object planar3_image_wrapper(self, void *buf, unsigned char bpp=24):
         #create python buffer from each plane:
         planes = []
         strides = []

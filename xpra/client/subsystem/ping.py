@@ -87,7 +87,7 @@ class PingClient(StubClientMixin):
     def resume(self) -> None:
         self.start_sending_pings()
 
-    def start_sending_pings(self):
+    def start_sending_pings(self) -> None:
         if self.pings > 0 and not self.ping_timer:
             self.send_ping()
             self.ping_timer = GLib.timeout_add(1000 * self.pings, self.send_ping)

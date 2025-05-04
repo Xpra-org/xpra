@@ -39,28 +39,28 @@ class AnimatedColorWindow(Gtk.Window):
         self.connect("button_press_event", self.on_press)
         GLib.timeout_add(50, self.repaint)
 
-    def show_with_focus(self):
+    def show_with_focus(self) -> None:
         force_focus()
         self.show_all()
         super().present()
 
     # noinspection PyTypeChecker
-    def do_expose_event(self, *_args):
+    def do_expose_event(self, *_args) -> None:
         self.area_draw()
 
-    def on_press(self, _window, event):
+    def on_press(self, _window, event) -> None:
         if event == self.last_event:
             return
         self.last_event = event
         self.increase = not self.increase
 
-    def repaint(self):
+    def repaint(self) -> bool:
         if self.increase:
             self.counter += 1
             self.queue_draw()
         return True
 
-    def area_draw(self, *_args):
+    def area_draw(self, *_args) -> None:
         cr = self.get_window().cairo_create()
         cr.set_font_size(32)
         # Clear everything:
@@ -70,7 +70,7 @@ class AnimatedColorWindow(Gtk.Window):
         cr.rectangle(0, 0, w, h)
         cr.fill()
 
-        def paint_block(x, y, w, h, Rm=1.0, Gm=1.0, Bm=1.0, label=""):
+        def paint_block(x, y, w, h, Rm=1.0, Gm=1.0, Bm=1.0, label="") -> None:
             bw = w / 16
             bh = h / 16
             cr.set_operator(OPERATOR_SOURCE)

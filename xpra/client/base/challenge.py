@@ -75,7 +75,7 @@ class ChallengeClient(StubClientMixin):
         if self.username:
             # set for authentication:
             caps["username"] = self.username
-        log(f"challenge caps={caps}")
+        log(f"challenge caps for handlers={self.challenge_handlers} : {caps=}")
         return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:

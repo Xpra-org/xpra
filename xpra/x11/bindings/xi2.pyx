@@ -363,13 +363,13 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         log("get_xi_opcode%s=%i", (major, minor), opcode)
         return opcode
 
-    cdef register_parser(self):
+    cdef void register_parser(self):
         log("register_parser()")
         if self.opcode>0:
             from xpra.x11.bindings.events import add_x_event_parser
             add_x_event_parser(self.opcode, self.parse_xi_event)
 
-    cdef register_gdk_events(self):
+    cdef void register_gdk_events(self):
         log("register_gdk_events()")
         if self.opcode<=0:
             return
@@ -437,7 +437,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         with xlog:
             return self.do_parse_xi_event(cookie)
 
-    cdef do_parse_xi_event(self, uintptr_t _cookie):
+    cdef object do_parse_xi_event(self, uintptr_t _cookie):
         self.context_check("parse_xi_event")
         cdef XGenericEventCookie *cookie = <XGenericEventCookie*> _cookie
         cdef XIHierarchyEvent *hierarchy_e
@@ -594,7 +594,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
                 props[prop_name] = value
         return props
 
-    cdef get_device_property(self, int deviceid, Atom property, req_type=0):
+    cdef object get_device_property(self, int deviceid, Atom property, req_type=0):
         #code mostly duplicated from window bindings XGetWindowProperty:
         cdef int buffer_size = 64 * 1024
         cdef Atom xactual_type = <Atom> 0

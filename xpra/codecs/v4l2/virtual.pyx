@@ -364,7 +364,7 @@ cdef class VirtualWebcam:
     def get_equiv_format(self, fmt:str) -> str:
         return {"YU12" : "YUV420P", "YV12" : "YVU420P", "GREY" : "YUV420P"}.get(fmt, fmt)
 
-    cdef parse_pixel_format(self, v4l2_format *vid_format):
+    cdef str parse_pixel_format(self, v4l2_format *vid_format):
         if vid_format.fmt.pix.pixelformat==0:
             return ""
         return "".join(chr((vid_format.fmt.pix.pixelformat >> (8*x)) % 256) for x in range(4))

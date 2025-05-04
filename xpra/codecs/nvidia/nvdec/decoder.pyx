@@ -560,7 +560,7 @@ cdef class Decoder:
         log(f"cuvidCreateVideoParser()={r}")
         cudacheck(r, "creating parser returned error")
 
-    cdef sequence_callback(self, CUVIDEOFORMAT *vf):
+    cdef int sequence_callback(self, CUVIDEOFORMAT *vf):
         encoding = CODEC_NAMES.get(vf.codec, vf.codec)
         log("sequence_callback codec=%s", encoding)
         #log(" frame_rate=%s", vf.frame_rate)
@@ -713,7 +713,7 @@ cdef class Decoder:
             self.buffer = None
             self.stream = <CUstream> 0
 
-    cdef decode_data(self, CUVIDPICPARAMS *pic):
+    cdef void decode_data(self, CUVIDPICPARAMS *pic):
         log(f"decode_data({len(self.buffer)} bytes)")
         self.frames += 1
         cdef CUresult r = 0
@@ -781,7 +781,7 @@ cdef class Decoder:
             r = cuvidUnmapVideoFrame64(self.context, dev_ptr)
             cudacheck(r, "error unmapping video frame")
 
-    cdef flush(self):
+    cdef void flush(self):
         cdef CUVIDSOURCEDATAPACKET packet
         cdef CUresult r
         if self.parser:

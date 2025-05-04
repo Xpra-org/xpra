@@ -45,12 +45,12 @@ class TestForm:
         vbox.pack_start(self.eventbox, True, True, 0)
         self.window.add(vbox)
 
-    def show_with_focus(self):
+    def show_with_focus(self) -> None:
         force_focus()
         self.window.show_all()
         self.window.present()
 
-    def show_click_settings(self):
+    def show_click_settings(self) -> bool:
         root = Gdk.get_default_root_window()
         screen = root.get_screen()
         # use undocumented constants found in source:
@@ -73,7 +73,7 @@ class TestForm:
         self.info.set_text(f"Time (ms): {t}, Distance: {d}")
         return True
 
-    def button_press_event(self, _obj, event):
+    def button_press_event(self, _obj, event) -> None:
         # nothing we can do about the "_" prefixed names that Gdk uses
         # noinspection PyProtectedMember
         if event.type == Gdk.EventType._3BUTTON_PRESS:  # pylint: disable=protected-access

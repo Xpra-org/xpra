@@ -74,16 +74,16 @@ class ClientTray(ClientWidgetBase):
     def get_window(self):
         return None
 
-    def get_geometry(self):
-        return self._geometry or ClientTray.DEFAULT_GEOMETRY
+    def get_geometry(self) -> tuple[int, int, int, int]:
+        return tuple(self._geometry or ClientTray.DEFAULT_GEOMETRY)
 
-    def get_tray_geometry(self):
+    def get_tray_geometry(self) -> tuple | None:
         tw = self.tray_widget
         if not tw:
             return None
         return tw.get_geometry()
 
-    def get_tray_size(self):
+    def get_tray_size(self) -> tuple[int, int] | None:
         tw = self.tray_widget
         if not tw:
             return None

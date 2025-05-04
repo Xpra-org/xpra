@@ -207,7 +207,7 @@ class TwoFileConnection(Connection):
         self._abort_test = abort_test
         self._close_cb = close_cb
 
-    def may_abort(self, action):
+    def may_abort(self, action) -> None:
         """ if abort_test is defined, run it """
         if self._abort_test:
             self._abort_test(action)
@@ -323,7 +323,7 @@ class SocketConnection(Connection):
         if isinstance(remote, str):
             self.filename = remote
 
-    def enable_peek(self, peeked=b""):
+    def enable_peek(self, peeked=b"") -> None:
         if isinstance(self._socket, SocketPeekWrapper):
             raise RuntimeError("`peek` has already been enabled")
         self._socket = SocketPeekWrapper(self._socket, peeked)

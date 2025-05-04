@@ -815,7 +815,7 @@ class SocketProtocol:
             return False
         return self.write_items(*items)
 
-    def write_items(self, buf_data, packet_type: str = "", synchronous: bool = True, more: bool = False):
+    def write_items(self, buf_data, packet_type: str = "", synchronous: bool = True, more: bool = False) -> bool:
         conn = self._conn
         if not conn:
             return False
@@ -845,7 +845,7 @@ class SocketProtocol:
                 raise
         return True
 
-    def write_buffers(self, buf_data, packet_type: str, _synchronous: bool):
+    def write_buffers(self, buf_data, packet_type: str, _synchronous: bool) -> None:
         con = self._conn
         if not con:
             return
@@ -862,7 +862,7 @@ class SocketProtocol:
         self.output_packetcount += 1
 
     # noinspection PyMethodMayBeStatic
-    def con_write(self, con, buf: SizedBuffer, packet_type: str):
+    def con_write(self, con, buf: SizedBuffer, packet_type: str) -> int:
         return con.write(buf, packet_type)
 
     def _read_thread_loop(self) -> None:

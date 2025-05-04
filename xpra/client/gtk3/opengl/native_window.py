@@ -23,7 +23,7 @@ def check_support(force_enable=False) -> dict[str, Any]:
 
 class GLClientWindow(GLClientWindowBase):
 
-    def get_backing_class(self):
+    def get_backing_class(self) -> type:
         # delay the import so we can trap warnings in gl.check
         # and use the numpy import context:
         from xpra.client.gtk3.opengl.drawing_area import GLDrawingArea

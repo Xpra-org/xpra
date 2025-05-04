@@ -40,7 +40,7 @@ class Zeroconflistener:
             domain = "local"
             self.mdns_remove(0, 0, name, stype, domain, 0)
 
-    def add_service(self, zeroconf, stype: str, name: str):
+    def add_service(self, zeroconf, stype: str, name: str) -> None:
         log("add_service%s", (zeroconf, stype, name))
         info = zeroconf.get_service_info(stype, name)
         log("service info: %s", info)

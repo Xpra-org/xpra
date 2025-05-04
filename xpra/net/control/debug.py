@@ -21,7 +21,7 @@ class DebugControl(ArgsControlCommand):
         ))
         super().__init__("debug", f"usage: {subcommands}", min_args=1)
 
-    def run(self, *args):
+    def run(self, *args) -> str:
         if len(args) == 1 and args[0] == "status":
             return "logging is enabled for: " + csv(str(x) for x in get_all_loggers() if x.is_debug_enabled())
         log_cmd = args[0]

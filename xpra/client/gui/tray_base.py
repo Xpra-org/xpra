@@ -61,10 +61,10 @@ class TrayBase:
     def hide(self) -> None:
         raise NotImplementedError
 
-    def get_orientation(self):
+    def get_orientation(self) -> str:
         return ""  # assume "HORIZONTAL"
 
-    def get_geometry(self):
+    def get_geometry(self) -> tuple[int, int, int, int]:
         raise NotImplementedError
 
     def get_size(self) -> tuple[int, int] | None:

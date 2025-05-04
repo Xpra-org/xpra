@@ -17,7 +17,7 @@ GObject = gi_import("GObject")
 
 class GLClientWindow(GLClientWindowBase):
 
-    def get_backing_class(self):
+    def get_backing_class(self) -> type:
         from xpra.client.gtk3.opengl.glarea_backing import GLAreaBacking
         return GLAreaBacking
 

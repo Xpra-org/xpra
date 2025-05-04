@@ -371,7 +371,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             log("X11 keymap property updated: %s", self.getXkbProperties())
         return True
 
-    def set_layout_group(self, int grp):
+    def set_layout_group(self, int grp) -> int:
         log("setting XKB layout group %s", grp)
         if XkbLockGroup(self.display, XkbUseCoreKbd, grp):
             XFlush(self.display)
@@ -379,7 +379,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             log.warn("Warning: cannot lock on keyboard layout group '%s'", grp)
         return self.get_layout_group()
 
-    def get_layout_group(self):
+    def get_layout_group(self) -> int:
         self.context_check("XkbGetState")
         cdef XkbStateRec xkb_state
         cdef Status r = XkbGetState(self.display, XkbUseCoreKbd, &xkb_state)
@@ -533,7 +533,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
             log("retrieved work keymap: %#x", <unsigned long> self.work_keymap)
         return self.work_keymap
 
-    cdef set_work_keymap(self, XModifierKeymap* new_keymap):
+    cdef void set_work_keymap(self, XModifierKeymap* new_keymap):
         # log("setting new work keymap: %#x", <unsigned long> new_keymap)
         self.work_keymap = new_keymap
 
@@ -597,7 +597,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
     def parse_keycode(self, keycode_str) -> int:
         return self._parse_keycode(keycode_str)
 
-    cdef xmodmap_setkeycodes(self, keycodes, new_keysyms):
+    cdef int xmodmap_setkeycodes(self, keycodes, new_keysyms):
         self.context_check("xmodmap_setkeycodes")
         cdef KeySym keysym
         cdef int keycode, i
@@ -823,14 +823,14 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
     def get_modifier_mappings(self) -> Dict[str, List[str]]:
         return self._get_modifier_mappings()
 
-    cdef xmodmap_clearmodifier(self, int modifier):
+    cdef void xmodmap_clearmodifier(self, int modifier):
         cdef XModifierKeymap* keymap = self.get_keymap(True)
         cdef KeyCode* keycode = <KeyCode*> keymap.modifiermap
         log("clear modifier: clearing all %i for modifier=%s", keymap.max_keypermod, modifier)
         for i in range(0, keymap.max_keypermod):
             keycode[modifier*keymap.max_keypermod+i] = 0
 
-    cdef xmodmap_addmodifier(self, int modifier, keysyms: Iterable[str]):
+    cdef int xmodmap_addmodifier(self, int modifier, keysyms: Iterable[str]):
         self.context_check("xmodmap_addmodifier")
         cdef KeyCode keycode
         cdef KeySym keysym
@@ -902,7 +902,7 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         for keycode in keycodes:
             XTestFakeKeyEvent(self.display, keycode, False, 0)
 
-    cdef native_xmodmap(self, instructions: Iterable):
+    cdef list native_xmodmap(self, instructions: Iterable):
         self.context_check("native_xmodmap")
         cdef XModifierKeymap* keymap
         cdef int modifier

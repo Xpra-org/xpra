@@ -410,7 +410,7 @@ cdef class EvdiDevice:
                      <const uint32_t> pixel_area_limit,
                      <const uint32_t> pixel_per_second_limit)
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         e = self.edid
         if e:
             self.edid = None

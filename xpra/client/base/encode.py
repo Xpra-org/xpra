@@ -136,7 +136,7 @@ class EncodeClient(ClientBaseClass):
         self._protocol.large_packets.append("encode")
         self.send_encode()
 
-    def send_encode(self):
+    def send_encode(self) -> None:
         filename = self.filenames.pop(0)
         log(f"send_encode() {filename=!r}")
         ext = filename.split(".")[-1]

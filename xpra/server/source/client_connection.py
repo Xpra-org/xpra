@@ -133,7 +133,7 @@ class ClientConnection(StubClientConnection):
         kw.update(kwargs)
         return compressed_wrapper(datatype, data, can_inline=False, **kw)
 
-    def may_update_bandwidth_limits(self):
+    def may_update_bandwidth_limits(self) -> None:
         # this method is only available when the NetworkState mixin is enabled:
         update_bandwidth_limits = getattr(self, "update_bandwidth_limits", noop)
         if update_bandwidth_limits != noop:

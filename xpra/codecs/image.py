@@ -5,6 +5,8 @@
 
 from enum import IntEnum
 from time import monotonic
+from collections.abc import Sequence
+
 from xpra.common import roundup
 from xpra.util.str_fn import memoryview_to_bytes
 
@@ -93,7 +95,7 @@ class ImageWrapper:
     def get_height(self) -> int:
         return self.height
 
-    def get_rowstride(self):
+    def get_rowstride(self) -> int | Sequence[int]:
         return self.rowstride
 
     def get_depth(self) -> int:

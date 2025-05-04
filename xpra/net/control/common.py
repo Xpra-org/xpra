@@ -30,7 +30,7 @@ class ControlCommand:
         self.help = help_text
         self.do_run = run
 
-    def run(self, *args):
+    def run(self, *args) -> str:
         log("%s.run: calling %s%s", self, self.do_run, args)
         if self.do_run is None:
             raise NotImplementedError(f"control command {self.name} undefined!")
@@ -54,7 +54,7 @@ class ArgsControlCommand(ControlCommand):
         self.min_args = min_args
         self.max_args = max_args
 
-    def run(self, *args):
+    def run(self, *args) -> str:
         if self.min_args != -1 and len(args) < self.min_args:
             self.raise_error(f"not enough arguments for control command {self.name!r}, minimum is {self.min_args}")
         if self.max_args != -1 and len(args) > self.max_args:
@@ -87,7 +87,7 @@ class FixedMessageCommand(ControlCommand):
         super().__init__(name, help_text)
         self.message = message
 
-    def run(self, *_args):
+    def run(self, *_args) -> str:
         return self.message
 
 
@@ -114,7 +114,7 @@ class HelpCommand(ArgsControlCommand):
         super().__init__("help", max_args=1)
         self.control_commands = control_commands
 
-    def run(self, *args):
+    def run(self, *args) -> str:
         if len(args) == 0:
             return "control supports: " + csv(sorted(self.control_commands))
         name = args[0]

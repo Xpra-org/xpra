@@ -63,10 +63,10 @@ class GTKImageCapture:
     def __repr__(self):
         return "GTKImageCapture(%s)" % self.window
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "GTK"
 
-    def clean(self):
+    def clean(self) -> None:
         """ subclasses may want to perform cleanup here """
 
     def refresh(self) -> bool:

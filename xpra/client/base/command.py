@@ -131,7 +131,7 @@ class HelloRequestClient(SendCommandConnectClient):
     def timeout(self, *_args) -> None:
         self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not disconnect us")
 
-    def hello_request(self):  # pragma: no cover
+    def hello_request(self) -> dict[str, Any]:  # pragma: no cover
         raise NotImplementedError(f"`hello_request` not implemented in {self!r}")
 
     def do_command(self, caps: typedict) -> None:
@@ -424,7 +424,7 @@ class InfoTimerClient(MonitorXpraClient):
         self.update_screen()
         return True
 
-    def update_screen(self):
+    def update_screen(self) -> None:
         raise NotImplementedError()
 
 

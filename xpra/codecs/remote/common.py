@@ -283,7 +283,7 @@ class RemoteConnectionClient(baseclass):
         log("connection-lost for server %s", self.protocol)
         self.server_connection_cleanup()
 
-    def server_connection_cleanup(self):
+    def server_connection_cleanup(self) -> None:
         self.protocol = None
         super().cleanup()
         self.schedule_connect(self.reconnect_delay)

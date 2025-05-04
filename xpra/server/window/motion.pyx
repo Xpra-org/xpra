@@ -258,7 +258,7 @@ cdef class ScrollData:
             free(line_state)
         return scrolls, line_defs
 
-    cdef match_distance(self, uint8_t *line_state, int16_t distance, const uint8_t min_line_count):
+    cdef dict match_distance(self, uint8_t *line_state, int16_t distance, const uint8_t min_line_count):
         """
             find the lines that match the given scroll distance,
             return a dictionary with the starting line as key

@@ -182,7 +182,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             capabilities["screen_sizes"] = get_screen_sizes()
         return capabilities
 
-    def load_existing_windows(self):
+    def load_existing_windows(self) -> None:
         raise NotImplementedError
 
     def send_initial_windows(self, ss, sharing: bool = False) -> None:

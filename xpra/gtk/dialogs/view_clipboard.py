@@ -59,16 +59,16 @@ class ClipboardInstance:
     def __repr__(self):
         return "ClipboardInstance(%s)" % self.selection
 
-    def log(self, msg):
+    def log(self, msg) -> None:
         self._log(self.selection, msg)
 
-    def clear_entry(self, *_args):
+    def clear_entry(self, *_args) -> None:
         self.value_entry.set_text("")
 
-    def clear_label(self, *_args):
+    def clear_label(self, *_args) -> None:
         self.value_label.set_text("")
 
-    def get_targets_callback(self, _c, targets, *_args):
+    def get_targets_callback(self, _c, targets, *_args) -> None:
         self.log("got targets: %s" % csv(str(x) for x in targets))
         if hasattr(targets, "name"):
             self.log("target is atom: %s" % targets.name())
@@ -91,22 +91,22 @@ class ClipboardInstance:
             i += 1
         self.get_targets.show_all()
 
-    def do_get_targets(self, *_args):
+    def do_get_targets(self, *_args) -> None:
         self.clipboard.request_targets(self.get_targets_callback, None)
 
-    def get_target_changed(self, _cb):
+    def get_target_changed(self, _cb) -> None:
         target = self.get_targets.get_active_text()
         self.get_target_btn.set_sensitive(bool(target))
 
-    def set_target_changed(self, cb):
+    def set_target_changed(self, cb) -> None:
         self.log("set_target_changed(%s) target=%s" % (cb, self.set_targets.get_active_text()))
 
-    def ellipsis(self, val):
+    def ellipsis(self, val: str) -> str:
         if len(val) > 24:
             return val[:24] + ".."
         return val
 
-    def selection_value_callback(self, _cb, selection_data, *_args):
+    def selection_value_callback(self, _cb, selection_data, *_args) -> None:
         data = b""
         try:
             data = selection_data.get_data()
@@ -125,43 +125,43 @@ class ClipboardInstance:
         self.log("Got selection data: '%s'" % s)
         self.value_label.set_text(s)
 
-    def do_get_target(self, *_args):
+    def do_get_target(self, *_args) -> None:
         self.clear_label()
         target = self.get_targets.get_active_text()
         self.log("Requesting %s" % target)
         atom = Gdk.Atom.intern(target, False)
         self.clipboard.request_contents(atom, self.selection_value_callback, None)
 
-    def selection_clear_cb(self, _clipboard, _data):
+    def selection_clear_cb(self, _clipboard, _data) -> None:
         self.log("Selection has been cleared")
 
-    def selection_get_callback(self, _clipboard, selectiondata, _info, *_args):
+    def selection_get_callback(self, _clipboard, selectiondata, _info, *_args) -> None:
         # log("selection_get_callback(%s, %s, %s, %s) targets=%s",
         #    clipboard, selectiondata, info, args, selectiondata.get_targets())
         value = self.value_entry.get_text()
         self.log("Answering selection request with value: '%s'" % self.ellipsis(value))
         selectiondata.set("STRING", 8, value)
 
-    def do_set_target(self, *_args):
+    def do_set_target(self, *_args) -> None:
         target = self.set_targets.get_active_text()
         self.log("Target set to %s" % target)
         self.clipboard.set_with_data([(target, 0, 0)], self.selection_get_callback, self.selection_clear_cb)
 
-    def string_value_callback(self, _cb, value, *_args):
+    def string_value_callback(self, _cb, value, *_args) -> None:
         if value is None:
             value = ""
         assert isinstance(value, str), "value is not a string!"
         self.log("Got string selection data: '%s'" % value)
         self.value_label.set_text(self.ellipsis(value))
 
-    def do_get_string(self, *_args):
+    def do_get_string(self, *_args) -> None:
         # self.log("do_get_string%s on %s.%s" % (args, self, self.clipboard))
         self.clipboard.request_text(self.string_value_callback, None)
 
-    def do_set_string(self, *_args):
+    def do_set_string(self, *_args) -> None:
         self.clipboard.set_text(self.ellipsis(self.value_entry.get_text()))
 
-    def owner_changed(self, _cb, event):
+    def owner_changed(self, _cb, event) -> None:
         owner = self.clipboard.get_owner()
         weownit = (owner is not None)
         if weownit:
@@ -223,17 +223,17 @@ class ClipboardStateInfoWindow:
         except Exception:
             self.add_event("ALL", "window=%s" % self.window)
 
-    def add_event(self, selection, message):
+    def add_event(self, selection, message) -> None:
         msg = message
         if self.clipboards:
             msg = f"{selection} : {message}"
         self.log.append(msg)
         self.events.set_text("\n".join(self.log))
 
-    def destroy(self, *_args):
+    def destroy(self, *_args) -> None:
         Gtk.main_quit()
 
-    def show_with_focus(self):
+    def show_with_focus(self) -> None:
         force_focus()
         self.window.show_all()
         self.window.present()

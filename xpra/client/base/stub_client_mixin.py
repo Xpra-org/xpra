@@ -92,7 +92,7 @@ class StubClientMixin:
         This runs in the UI thread.
         """
 
-    def startup_complete(self):
+    def startup_complete(self) -> None:
         """
         The client and server have exchanged hello packets,
         and now the server has announced "startup-complete".

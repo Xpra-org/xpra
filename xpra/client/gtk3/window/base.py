@@ -1517,7 +1517,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.repaint(0, 0, w, h)
         self.may_send_client_properties()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.cancel_window_state_timer()
         self.cancel_send_iconifiy_timer()
         self.cancel_moveresize_timer()

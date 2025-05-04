@@ -63,7 +63,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         self.set_focus(self.confirm_btn)
         self.cancel_btn = self.add_button("Cancel", 1)
 
-    def show(self):
+    def show(self) -> None:
         log("PasswordInputDialogWindow.show()")
         self.show_all()
 

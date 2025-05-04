@@ -328,7 +328,7 @@ class ClipboardClient(StubClientMixin):
         class ProtocolCompressible(compression.Compressible):
             __slots__ = ()
 
-            def compress(self):
+            def compress(self) -> compression.Compressed:
                 return client.compressed_wrapper(self.datatype, self.data,
                                                  level=9, can_inline=False, brotli=True)
         return ProtocolCompressible(compressible.datatype, compressible.data)

@@ -592,16 +592,16 @@ cdef class RecordBindingsInstance(X11CoreBindingsInstance):
     def __repr__(self):
         return f"RecordBindings({self.display_name})"
 
-    def get_version(self):
+    def get_version(self) -> Tuple[int, int]:
         return self.version
 
-    def query_version(self):
+    def query_version(self) -> Tuple[int, int]:
         cdef int event_base = 0, ignored = 0, cmajor = 0, cminor = 0
         cdef int r = XRecordQueryVersion(self.display, &cmajor, &cminor)
         log(f"found XRecord extension version {cmajor}.{cminor}")
         return cmajor, cminor
 
-    def stop(self):
+    def stop(self) -> None:
         self.stop_flag = 1
         self.cleanup()
 
@@ -610,7 +610,7 @@ cdef class RecordBindingsInstance(X11CoreBindingsInstance):
             "version": self.get_version(),
         }
 
-    def record(self):
+    def record(self) -> None:
         cdef XRecordClientSpec rcs
         cdef XRecordRange * rr = XRecordAllocRange()
         if not rr:
@@ -657,7 +657,7 @@ cdef class RecordBindingsInstance(X11CoreBindingsInstance):
         self.cleanup()
         XFree(rr)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         XRecordDisableContext(self.display, self.rc)
         XRecordFreeContext(self.display, self.rc)
         self.rc = 0

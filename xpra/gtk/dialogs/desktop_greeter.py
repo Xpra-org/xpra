@@ -94,7 +94,7 @@ class DesktopGreeter(Gtk.Window):
             self.exit_code = 0
         self.do_quit()
 
-    def do_quit(self):
+    def do_quit(self) -> None:
         log("do_quit()")
         Gtk.main_quit()
 
@@ -141,17 +141,17 @@ class DesktopGreeter(Gtk.Window):
         self.close()
         os.execv(cmd, argv)
 
-    def wait_for_subprocess(self, proc):
+    def wait_for_subprocess(self, proc) -> None:
         proc.wait()
         log("return code: %s", proc.returncode)
         GLib.idle_add(self.show)
 
-    def load_desktop_session(self):
+    def load_desktop_session(self) -> None:
         from xpra.server.menu_provider import get_menu_provider
         self.desktop_sessions = get_menu_provider().get_desktop_sessions()
         GLib.idle_add(self.populate_xsessions)
 
-    def populate_xsessions(self):
+    def populate_xsessions(self) -> None:
         log("populate_xsessions()")
         self.desktop_combo.get_model().clear()
         if self.desktop_sessions:

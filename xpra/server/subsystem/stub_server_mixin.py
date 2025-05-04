@@ -18,7 +18,7 @@ class StubServerMixin:
     Defines the default interface methods that each mixin may override.
     """
 
-    def init(self, _opts):
+    def init(self, _opts) -> None:
         """
         Initialize this instance with the options given.
         Options are usually obtained by parsing the command line,

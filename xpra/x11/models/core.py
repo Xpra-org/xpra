@@ -503,7 +503,7 @@ class CoreX11WindowModel(WindowModelStub):
     # XShape
     #########################################
 
-    def read_xshape(self):
+    def read_xshape(self) -> None:
         shapelog("read_xshape()")
         self._shape_timer = 0
         cur_shape = self.get_property("shape") or {}
@@ -551,11 +551,11 @@ class CoreX11WindowModel(WindowModelStub):
     # Property reading
     ################################
 
-    def get_dimensions(self):
+    def get_dimensions(self) -> tuple[int, int]:
         # just extracts the size from the geometry:
         return self.get_property("geometry")[2:4]
 
-    def get_geometry(self):
+    def get_geometry(self) -> tuple[int, int, int, int]:
         return self.get_property("geometry")[:4]
 
     #########################################

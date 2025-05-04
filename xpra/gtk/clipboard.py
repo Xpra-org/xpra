@@ -97,7 +97,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
     ############################################################################
     # forward local requests to the remote clipboard:
     ############################################################################
-    def schedule_emit_token(self, min_delay=0):
+    def schedule_emit_token(self, min_delay=0) -> None:
         def send_token(*token_data):
             self._have_token = False
             self.emit("send-clipboard-token", token_data)
@@ -124,12 +124,12 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 return
         send_token(text_targets)
 
-    def owner_change(self, clipboard, event):
+    def owner_change(self, clipboard, event) -> None:
         log("owner_change(%s, %s) window=%s, selection=%s",
             clipboard, event, event.window, event.selection)
         self.do_owner_changed()
 
-    def do_owner_changed(self):
+    def do_owner_changed(self) -> None:
         elapsed = monotonic() - self._owner_change_embargo
         log("do_owner_changed() enabled=%s, elapsed=%s",
             self._enabled, elapsed)
@@ -137,7 +137,7 @@ class GTKClipboardProxy(ClipboardProxyCore, GObject.GObject):
             return
         self.schedule_emit_token()
 
-    def get_contents(self, target: str, got_contents: ClipboardCallback, time=0):
+    def get_contents(self, target: str, got_contents: ClipboardCallback, time=0) -> None:
         log("get_contents(%s, %s, %i) have-token=%s",
             target, got_contents, time, self._have_token)
         if target == "TARGETS":

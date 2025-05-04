@@ -759,7 +759,7 @@ class FileTransferHandler(FileTransferAttributes):
             return False
         return True
 
-    def send_request_file(self, filename: str, openit: bool = True):
+    def send_request_file(self, filename: str, openit: bool = True) -> None:
         self.send("request-file", filename, openit)
         self.files_requested[filename] = openit
 

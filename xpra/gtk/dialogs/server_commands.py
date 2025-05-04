@@ -85,7 +85,7 @@ class ServerCommandsWindow:
             btn.set_image(scaled_image(icon, 24))
         return btn
 
-    def populate_table(self):
+    def populate_table(self) -> bool:
         commands_info = typedict(self.client.server_last_info).dictget("commands", {})
         if self.commands_info != commands_info and commands_info:
             log("populate_table() new commands_info=%s", commands_info)
@@ -94,7 +94,7 @@ class ServerCommandsWindow:
                 self.alignment.remove(self.contents)
             grid = Gtk.Grid()
 
-            def l(s=""):  # noqa: E743
+            def l(s="") -> Gtk.Label:  # noqa: E743
                 widget = label(s)
                 widget.set_margin_start(5)
                 widget.set_margin_end(5)
@@ -175,31 +175,31 @@ class ServerCommandsWindow:
         hbox.pack_start(b)
         return hbox
 
-    def schedule_timer(self):
+    def schedule_timer(self) -> None:
         if not self.populate_timer:
             self.populate_table()
             self.populate_timer = GLib.timeout_add(1000, self.populate_table)
 
-    def cancel_timer(self):
+    def cancel_timer(self) -> None:
         pt = self.populate_timer
         if pt:
             self.populate_timer = 0
             GLib.source_remove(pt)
 
-    def show(self):
+    def show(self) -> None:
         log("show()")
         self.window.show_all()
         self.window.present()
         self.schedule_timer()
 
-    def close(self, *args):
+    def close(self, *args) -> bool:
         log("close%s", args)
         if self.window:
             self.window.hide()
         self.cancel_timer()
         return True
 
-    def destroy(self, *args):
+    def destroy(self, *args) -> None:
         log("close%s", args)
         self.cancel_timer()
         if self.window:
@@ -212,7 +212,7 @@ class ServerCommandsWindow:
         log("run() Gtk.main done")
         return 0
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
         self.close()
         Gtk.main_quit()

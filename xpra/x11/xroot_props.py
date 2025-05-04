@@ -55,7 +55,7 @@ class XRootPropWatcher(GObject.GObject):
         if event.atom in self._props:
             self.do_notify(str(event.atom))
 
-    def do_notify(self, prop: str):
+    def do_notify(self, prop: str) -> None:
         log("XRootPropWatcher.do_notify(%s)", prop)
         self.emit("root-prop-changed", prop)
 

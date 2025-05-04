@@ -560,7 +560,7 @@ class X11ServerCore(GTKServerBase):
             screenlog("get_max_screen_size()=%s", (max_w, max_h))
         return max_w, max_h
 
-    def configure_best_screen_size(self):
+    def configure_best_screen_size(self) -> tuple[int, int]:
         # return ServerBase.set_best_screen_size(self)
         """ sets the screen size to use the largest width and height used by any of the clients """
         root_w, root_h = self.root_window.get_geometry()[2:4]

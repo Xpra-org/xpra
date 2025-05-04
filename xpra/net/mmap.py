@@ -426,7 +426,7 @@ class BaseMmapArea:
     def __bool__(self):
         return bool(self.mmap) and self.enabled and self.size > 0
 
-    def close(self):
+    def close(self) -> None:
         mmap = self.mmap
         if mmap:
             try:

@@ -46,15 +46,15 @@ class FontWindow(Gtk.Window):
         self.add(drawing_area)
         self.connect("destroy", Gtk.main_quit)
 
-    def show_with_focus(self):
+    def show_with_focus(self) -> None:
         force_focus()
         self.show_all()
         super().present()
 
-    def do_expose_event(self, *_args):
+    def do_expose_event(self, *_args) -> None:
         self.area_draw()
 
-    def area_draw(self, *_args):
+    def area_draw(self, *_args) -> None:
         cr = self.get_window().cairo_create()
         layout = PangoCairo.create_layout(cr)
         pctx = layout.get_context()
@@ -106,7 +106,7 @@ class FontWindow(Gtk.Window):
                     cr.paint()
                     cr.restore()
 
-    def paint_to_image(self, bw, bh, background, foreground, antialias=Antialias.NONE):
+    def paint_to_image(self, bw: int, bh: int, background, foreground, antialias=Antialias.NONE) -> ImageSurface:
         img = ImageSurface(Format.RGB24, bw, bh)
         icr = Context(img)
         self.paint_pattern(icr, 0, 0, antialias, "", background, foreground)
@@ -118,7 +118,7 @@ class FontWindow(Gtk.Window):
         # desc = pango.font_description_from_string(FONT)
         # layout.set_font_description( desc)
 
-    def paint_pattern(self, cr, x, y, antialias, label="", background=WHITE, foreground=BLACK):
+    def paint_pattern(self, cr, x, y, antialias, label="", background=WHITE, foreground=BLACK) -> None:
         w, h = self.get_size()
         bw = w // 4
         bh = h // 4

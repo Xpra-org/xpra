@@ -39,7 +39,7 @@ class PlatformClient(StubClientMixin):
             log("%s.swap_keys=%s", kh.keyboard, swap_keys)
             kh.keyboard.swap_keys = swap_keys
 
-    def run(self):
+    def run(self) -> None:
         if OSX_FOCUS_WORKAROUND:
             def first_ui_received(*_args):
                 enable_focus_workaround()

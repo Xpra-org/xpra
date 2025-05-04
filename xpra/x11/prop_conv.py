@@ -73,7 +73,7 @@ class NetWMStrut:
                 self.bottom_start_x, self.bottom_stop_x,
             ) = struct.unpack(b"@" + b"L" * 12, data)
 
-    def todict(self):
+    def todict(self) -> dict:
         return self.__dict__
 
     def __str__(self):

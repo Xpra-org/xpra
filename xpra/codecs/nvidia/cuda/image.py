@@ -31,12 +31,12 @@ class CUDAImageWrapper(ImageWrapper):
         self.cuda_context = None
         self.buffer_size = 0
 
-    def wait_for_stream(self):
+    def wait_for_stream(self) -> None:
         s = self.stream
         if s and not s.is_done():
             self.stream.synchronize()
 
-    def may_download(self):
+    def may_download(self) -> None:
         ctx = self.cuda_context
         if self.pixels is not None or not ctx or self.freed:
             return
@@ -95,9 +95,9 @@ class CUDAImageWrapper(ImageWrapper):
         self.cuda_context = None
         self.buffer_size = 0
 
-    def free(self):
+    def free(self) -> None:
         self.free_cuda()
-        return super().free()
+        super().free()
 
     def clean(self) -> None:
         try:

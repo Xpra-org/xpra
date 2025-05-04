@@ -492,7 +492,7 @@ class WindowClient(StubClientMixin):
             self.poll_pointer_timer = GLib.timeout_add(POLL_POINTER, self.poll_pointer)
         return True
 
-    def startup_complete(self):
+    def startup_complete(self) -> None:
         msg = "running"
         try:
             windows = tuple(self._id_to_window.values())

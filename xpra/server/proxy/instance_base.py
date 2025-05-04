@@ -331,7 +331,7 @@ class ProxyInstance:
         self.server_packets.put(packet)
         self.server_protocol.source_has_more()
 
-    def get_server_packet(self):
+    def get_server_packet(self) -> tuple[Packet, bool, bool]:
         # server wants a packet
         p = self.server_packets.get()
         s = self.server_packets.qsize()

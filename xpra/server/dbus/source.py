@@ -64,7 +64,7 @@ class DBUS_Source(dbus.service.Object):
     def __str__(self):
         return f"DBUS_Source({BUS_NAME}:{self.path})"
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         try:
             log("calling %s", self.remove_from_connection)
             self.remove_from_connection()

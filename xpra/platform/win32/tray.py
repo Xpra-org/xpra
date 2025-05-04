@@ -38,23 +38,23 @@ class Win32Tray(TrayBase):
         if el:
             el.add_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
 
-    def show(self):
+    def show(self) -> None:
         """ we can't hide or show the tray on MS Windows """
 
-    def hide(self):
+    def hide(self) -> None:
         """ we can't hide or show the tray on MS Windows """
 
-    def get_size(self):
+    def get_size(self) -> tuple[int, int]:
         w = GetSystemMetrics(win32con.SM_CXSMICON)
         h = GetSystemMetrics(win32con.SM_CYSMICON)
         return w, h
 
-    def getHWND(self):
+    def getHWND(self) -> int:
         if self.tray_widget is None:
-            return None
+            return 0
         return self.tray_widget.hwnd
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         log("Win32Tray.cleanup() tray_widget=%s", self.tray_widget)
         if self.tray_widget:
             self.tray_widget.close()
@@ -64,7 +64,7 @@ class Win32Tray(TrayBase):
             el.remove_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
         log("Win32Tray.cleanup() ended")
 
-    def calculate_offset(self, *_args):
+    def calculate_offset(self, *_args) -> None:
         # GTK returns coordinates as unsigned ints, but win32 can give us negative coordinates!
         self.offset_x = 0
         self.offset_y = 0
@@ -79,25 +79,25 @@ class Win32Tray(TrayBase):
             log.warn("Warning: failed to query monitors: %s", e)
         log("calculate_offset() x=%i, y=%i", self.offset_x, self.offset_y)
 
-    def set_tooltip(self, tooltip=None):
+    def set_tooltip(self, tooltip="") -> None:
         if self.tray_widget:
             self.tray_widget.set_tooltip(tooltip)
 
-    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None):
+    def set_icon_from_data(self, pixels, has_alpha, w, h, rowstride, options=None) -> None:
         if self.tray_widget:
             self.tray_widget.set_icon_from_data(pixels, has_alpha, w, h, rowstride, options)
             self.icon_timestamp = monotonic()
 
-    def do_set_icon_from_file(self, filename):
+    def do_set_icon_from_file(self, filename) -> None:
         if self.tray_widget:
             self.tray_widget.set_icon(filename)
             self.icon_timestamp = monotonic()
 
-    def set_blinking(self, on):
+    def set_blinking(self, on: bool) -> None:
         if self.tray_widget:
             self.tray_widget.set_blinking(on)
 
-    def get_geometry(self):
+    def get_geometry(self) -> tuple[int, int, int, int]:
         tw = self.tray_widget
         if tw:
             geom = tw.get_geometry()
@@ -105,7 +105,7 @@ class Win32Tray(TrayBase):
                 return geom
         return self.geometry_guess
 
-    def move_cb(self, *args):
+    def move_cb(self, *args) -> None:
         pos = wintypes.POINT()
         GetCursorPos(byref(pos))
         x, y = pos.x, pos.y

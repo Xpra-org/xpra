@@ -50,7 +50,7 @@ class SQLDatabaseUtil(DatabaseUtilBase):
             cursor_cb(result)
         return result
 
-    def get_authenticator_class(self):
+    def get_authenticator_class(self) -> type:
         return Authenticator
 
 

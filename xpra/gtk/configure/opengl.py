@@ -176,11 +176,11 @@ class ConfigureGUI(BaseGUIWindow):
             parent=parent,
         )
 
-    def dismiss(self, *args):
+    def dismiss(self, *args) -> None:
         self.close_test_windows()
         super().dismiss()
 
-    def populate(self):
+    def populate(self) -> None:
         self.populate_form(
             (
                 "This tool can cause your system to crash if your GPU drivers are buggy.",
@@ -193,7 +193,7 @@ class ConfigureGUI(BaseGUIWindow):
             ("Exit", self.dismiss),
         )
 
-    def start_test(self, *_args):
+    def start_test(self, *_args) -> None:
         sync()
         self.opengl_props, self.windows = create_twin_test_windows(self)
         if not self.windows:
@@ -225,7 +225,7 @@ class ConfigureGUI(BaseGUIWindow):
             ("Exit", self.dismiss),
         )
 
-    def paint_step(self, *_args):
+    def paint_step(self, *_args) -> None:
         for window in self.windows:
             window.show()
             window.present()
@@ -247,18 +247,18 @@ class ConfigureGUI(BaseGUIWindow):
             ("Not identical", self.test_failed),
         )
 
-    def paint_twin_windows(self, description: str, paint_data: tuple):
+    def paint_twin_windows(self, description: str, paint_data: tuple) -> None:
         log("paint_twin_windows() %r", description)
         callbacks: PaintCallbacks = []
         for x, y, w, h, encoding, img_data, rowstride, options in paint_data:
             for window in self.windows:
                 window.draw_region(x, y, w, h, encoding, img_data, rowstride, typedict(options), callbacks)
 
-    def restart(self, *_args):
+    def restart(self, *_args) -> None:
         self.close_test_windows()
         self.start_test()
 
-    def close_test_windows(self):
+    def close_test_windows(self) -> None:
         for window in self.windows:
             try:
                 window.destroy()
@@ -266,7 +266,7 @@ class ConfigureGUI(BaseGUIWindow):
                 log.warn(f"Warning: error closing window {window}", exc_info=True)
         self.windows = []
 
-    def test_passed(self, *_args):
+    def test_passed(self, *_args) -> None:
         log("test_passed()")
         self.step += 1
         if self.step < len(self.test_steps):
@@ -284,7 +284,7 @@ class ConfigureGUI(BaseGUIWindow):
             ("Exit", self.dismiss),
         )
 
-    def enable_opengl(self, *_args):
+    def enable_opengl(self, *_args) -> None:
         config = parse_user_config_file()
         config["opengl"] = "noprobe"
         save_user_config_file(config)
@@ -297,7 +297,7 @@ class ConfigureGUI(BaseGUIWindow):
             ("Exit", self.dismiss),
         )
 
-    def test_failed(self, *_args):
+    def test_failed(self, *_args) -> None:
         description = self.test_steps[self.step][0]
         self.populate_form(
             (

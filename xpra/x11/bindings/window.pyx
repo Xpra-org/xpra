@@ -856,7 +856,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         if s == 0:
             raise ValueError("failed to serialize XEmbed Message")
 
-    def send_expose(self, Window xwindow, int x, int y, int width, int height, int count=0):
+    def send_expose(self, Window xwindow, int x, int y, int width, int height, int count=0) -> None:
         cdef XEvent e
         e.xany.display = self.display
         e.xany.window = xwindow
@@ -1068,7 +1068,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         self.context_check("MoveWindow")
         return bool(XMoveWindow(self.display, xwindow, x, y))
 
-    def get_event_mask_strs(self, Window xwindow):
+    def get_event_mask_strs(self, Window xwindow) -> Sequence[str]:
         self.context_check("get_event_mask_strs")
         cdef XWindowAttributes curr
         XGetWindowAttributes(self.display, xwindow, &curr)

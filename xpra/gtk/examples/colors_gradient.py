@@ -38,15 +38,15 @@ class ColorGradientWindow(Gtk.Window):
         self.connect("key_press_event", self.on_key_press)
         self.connect("button-press-event", self.on_button_press)
 
-    def update_title(self):
+    def update_title(self) -> None:
         self.set_title("Color Bit Depth: %i" % self.bpc)
 
-    def show_with_focus(self):
+    def show_with_focus(self) -> None:
         force_focus()
         self.show_all()
         super().present()
 
-    def configure_event(self, *_args):
+    def configure_event(self, *_args) -> None:
         self.queue_draw()
 
     def on_button_press(self, _widget, event) -> bool:
@@ -61,7 +61,7 @@ class ColorGradientWindow(Gtk.Window):
         self.queue_draw()
         return True
 
-    def on_key_press(self, _widget, key_event):
+    def on_key_press(self, _widget, key_event) -> bool:
         if key_event.string == "-":
             self.bpc = ((self.bpc - 2) % 16) + 1
         else:
@@ -70,10 +70,10 @@ class ColorGradientWindow(Gtk.Window):
         self.queue_draw()
         return True
 
-    def do_expose_event(self, *_args):
+    def do_expose_event(self, *_args) -> None:
         self.area_draw()
 
-    def area_draw(self, *_args):
+    def area_draw(self, *_args) -> None:
         cr = self.get_window().cairo_create()
         cr.save()
         cr.set_operator(OPERATOR_CLEAR)

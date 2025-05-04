@@ -42,7 +42,7 @@ class ConfigureGUI(BaseGUIWindow):
             parent=parent,
         )
 
-    def populate(self):
+    def populate(self) -> None:
         with_config(self.do_populate)
 
     def do_populate(self, config) -> bool:

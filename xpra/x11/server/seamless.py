@@ -326,7 +326,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     # Manage the virtual screen:
     #
 
-    def set_screen_size(self, desired_w: int, desired_h: int):
+    def set_screen_size(self, desired_w: int, desired_h: int) -> tuple[int, int]:
         # clamp all window models to the new screen size:
         for window in tuple(self._window_to_id.keys()):
             if window.is_tray() or window.is_OR():
@@ -729,7 +729,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 make_keymask_match(modifiers)
         self._has_focus = wid
 
-    def get_focus(self):
+    def get_focus(self) -> int:
         return self._has_focus
 
     def _send_new_window_packet(self, window) -> None:

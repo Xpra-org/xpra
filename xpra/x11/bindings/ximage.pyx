@@ -311,7 +311,7 @@ cdef class XImageWrapper:
     def get_depth(self) -> int:
         return self.depth
 
-    def get_bytesperpixel(self):
+    def get_bytesperpixel(self) -> int:
         return self.bytesperpixel
 
     def get_size(self) -> int:

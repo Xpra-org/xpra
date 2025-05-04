@@ -98,7 +98,7 @@ class DisplayClient(StubClientMixin):
     def get_screen_sizes(self, xscale=1, yscale=1):
         raise NotImplementedError()
 
-    def get_root_size(self):
+    def get_root_size(self) -> tuple[int, int]:
         raise NotImplementedError()
 
     def get_info(self) -> dict[str, Any]:
@@ -325,7 +325,7 @@ class DisplayClient(StubClientMixin):
     def get_display_icc_info(self) -> dict[str, Any]:
         return get_display_icc_info()
 
-    def get_monitors_info(self):
+    def get_monitors_info(self) -> dict:
         return {}
 
     def _process_show_desktop(self, packet: Packet) -> None:

@@ -67,7 +67,7 @@ class FileAuthenticatorBase(SysAuthenticator):
     def parse_filedata(self, data: str):  # pragma: no cover
         raise NotImplementedError()
 
-    def load_password_file(self):
+    def load_password_file(self) -> str:
         if not self.password_filename:
             return ""
         full_path = os.path.abspath(self.password_filename)

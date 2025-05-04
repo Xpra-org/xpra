@@ -74,7 +74,7 @@ class AuthDialog(Gtk.Window):
                 btn.set_image(image)
         return btn
 
-    def update_timeout(self):
+    def update_timeout(self) -> bool:
         if self.timeout <= 0:
             self.exit_code = 2
             self.quit()
@@ -83,15 +83,15 @@ class AuthDialog(Gtk.Window):
         self.timeout -= 1
         return True
 
-    def cancel(self, _btn):
+    def cancel(self, _btn) -> None:
         self.exit_code = 3
         self.quit()
 
-    def accept(self, _btn):
+    def accept(self, _btn) -> None:
         self.exit_code = 0
         self.quit()
 
-    def quit(self, *args):
+    def quit(self, *args) -> None:
         log("quit%s", args)
         self.do_quit()
 
@@ -100,7 +100,7 @@ class AuthDialog(Gtk.Window):
         log("do_quit()")
         Gtk.main_quit()
 
-    def app_signal(self, signum):
+    def app_signal(self, signum: int) -> None:
         self.exit_code = 128 + signum
         log("app_signal(%s) exit_code=%i", signum, self.exit_code)
         self.do_quit()

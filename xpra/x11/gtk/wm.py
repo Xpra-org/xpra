@@ -291,7 +291,7 @@ class Wm(GObject.GObject):
         for model in self._windows.values():
             model.update_size_constraints(minw, minh, maxw, maxh)
 
-    def set_default_frame_extents(self, v):
+    def set_default_frame_extents(self, v) -> None:
         framelog("set_default_frame_extents(%s)", v)
         if not v or len(v) != 4:
             v = (0, 0, 0, 0)

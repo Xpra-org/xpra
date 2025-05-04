@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.common import noop
 from xpra.util.objects import AdHocStruct
@@ -65,35 +66,35 @@ class FakeClient(AdHocStruct):
     def send(self, *args):
         log("send%s", args)
 
-    def get_current_modifiers(self):
+    def get_current_modifiers(self) -> Sequence[str]:
         return ()
 
-    def get_raw_mouse_position(self):
+    def get_raw_mouse_position(self) -> tuple[int, int]:
         return 0, 0
 
-    def get_mouse_position(self):
+    def get_mouse_position(self) -> tuple[int, int]:
         return 0, 0
 
-    def server_ok(self):
+    def server_ok(self) -> bool:
         return True
 
-    def mask_to_names(self, *_args):
+    def mask_to_names(self, *_args) -> Sequence[str]:
         return ()
 
-    def window_close_event(self, *_args):
+    def window_close_event(self, *_args) -> None:
         log("window_close_event ignored")
 
-    def control_refresh(self, *_args, **_kwargs):
+    def control_refresh(self, *_args, **_kwargs) -> None:
         log("send_control_refresh ignored")
 
-    def fsx(self, v):
+    def fsx(self, v) -> int:
         return v
 
-    def fsy(self, v):
+    def fsy(self, v) -> int:
         return v
 
-    def sx(self, v):
+    def sx(self, v) -> int:
         return v
 
-    def sy(self, v):
+    def sy(self, v) -> int:
         return v

@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Sequence
+
 from xpra.platform.win32 import constants as win32con
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.platform.win32.common import MapVirtualKeyW, GetAsyncKeyState, VkKeyScanW, keybd_event
@@ -33,7 +35,7 @@ class KeyboardConfig(KeyboardConfigBase):
     def __repr__(self):
         return "win32.KeyboardConfig"
 
-    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group):
+    def do_get_keycode(self, client_keycode, keyname, pressed, modifiers, keyval, keystr, group) -> tuple[int, int]:
         keycode = KEYCODES.get(keyname, -1)
         if keycode == -1 and keystr and len(keystr) == 1:
             v = VkKeyScanW(keystr)
@@ -43,7 +45,7 @@ class KeyboardConfig(KeyboardConfigBase):
         log("get_keycode%s=%s", (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), keycode)
         return keycode, group
 
-    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None):
+    def make_keymask_match(self, modifier_list, ignored_modifier_keycode=None, ignored_modifier_keynames=None) -> None:
         log("make_keymask_match%s", (modifier_list, ignored_modifier_keycode, ignored_modifier_keynames))
         log("keys pressed=%s", ",".join(str(VK_NAMES.get(i, i)) for i in range(256) if GetAsyncKeyState(i) > 0))
         current = set(self.get_current_mask())
@@ -53,7 +55,7 @@ class KeyboardConfig(KeyboardConfigBase):
         if current == wanted:
             return
 
-        def is_ignored(modifier):
+        def is_ignored(modifier) -> bool:
             if not ignored_modifier_keynames:
                 return False
             for keyname in ignored_modifier_keynames:  # ie: ["Control_R"]
@@ -86,7 +88,7 @@ class KeyboardConfig(KeyboardConfigBase):
         change_mask(current.difference(wanted), False, "remove")
         change_mask(wanted.difference(current), True, "add")
 
-    def get_current_mask(self):
+    def get_current_mask(self) -> Sequence[str]:
         mods = set()
         for vk, mod in MOD_KEYS.items():
             if GetAsyncKeyState(vk) != 0:

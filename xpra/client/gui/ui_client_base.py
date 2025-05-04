@@ -182,10 +182,10 @@ class UIXpraClient(ClientBaseClass):
             self.emit("first-ui-received")
         self._ui_events += 1
 
-    def get_mouse_position(self):
+    def get_mouse_position(self) -> tuple:
         raise NotImplementedError()
 
-    def get_current_modifiers(self):
+    def get_current_modifiers(self) -> Sequence[str]:
         raise NotImplementedError()
 
     ######################################################################

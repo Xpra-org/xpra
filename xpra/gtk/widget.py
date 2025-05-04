@@ -134,7 +134,7 @@ def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_
 orig_pack_start = Gtk.Box.pack_start
 
 
-def pack_start(self, child, expand=True, fill=True, padding=0):
+def pack_start(self, child, expand=True, fill=True, padding=0) -> None:
     orig_pack_start(self, child, expand, fill, padding)
 
 

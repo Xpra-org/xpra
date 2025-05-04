@@ -308,7 +308,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         # for things that can take longer:
         self.init_thread = start_thread(target=self.threaded_init, name="server-init-thread")
 
-    def init_control_commands(self):
+    def init_control_commands(self) -> None:
         self.add_default_control_commands(features.control)
 
     ######################################################################
@@ -434,20 +434,20 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         log("run()")
         return 0
 
-    def register_power_events(self):
+    def register_power_events(self) -> None:
         if not POWER_EVENTS:
             return
         add_handler("suspend", self.suspend_event)
         add_handler("resume", self.resume_event)
 
-    def remove_power_events(self):
+    def remove_power_events(self) -> None:
         remove_handler("suspend", self.suspend_event)
         remove_handler("resume", self.resume_event)
 
-    def suspend_event(self, _args):
+    def suspend_event(self, _args) -> None:
         log.info("suspending")
 
-    def resume_event(self, _args):
+    def resume_event(self, _args) -> None:
         log.info("resuming")
 
     def server_is_ready(self) -> None:
@@ -1503,7 +1503,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         t = GLib.timeout_add(timeout * 1000, self.verify_connection_accepted, protocol)
         self.socket_verify_timer[protocol] = t
 
-    def verify_connection_accepted(self, protocol: SocketProtocol):
+    def verify_connection_accepted(self, protocol: SocketProtocol) -> None:
         self.cancel_verify_connection_accepted(protocol)
         if self.is_timedout(protocol):
             conn = getattr(protocol, "_conn", None)
@@ -1560,12 +1560,12 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         self.cancel_upgrade_to_rfb_timer(proto)
         proto.close()
 
-    def disconnect_client(self, protocol: SocketProtocol, reason: str | ConnectionMessage, *extra):
+    def disconnect_client(self, protocol: SocketProtocol, reason: str | ConnectionMessage, *extra) -> None:
         netlog("disconnect_client(%s, %s, %s)", protocol, reason, extra)
         if protocol and not protocol.is_closed():
             self.disconnect_protocol(protocol, reason, *extra)
 
-    def disconnect_protocol(self, protocol: SocketProtocol, *reasons):
+    def disconnect_protocol(self, protocol: SocketProtocol, *reasons) -> None:
         netlog("disconnect_protocol(%s, %s)", protocol, reasons)
         i = nicestr(reasons[0])
         if len(reasons) > 1:
@@ -2162,7 +2162,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
     def do_send_info(self, proto: SocketProtocol, info: dict[str, Any]) -> None:
         proto.send_now(Packet("hello", notypedict(info)))
 
-    def get_all_info(self, callback: Callable, proto: SocketProtocol | None = None, *args):
+    def get_all_info(self, callback: Callable, proto: SocketProtocol | None = None, *args) -> None:
         start = monotonic()
         ui_info: dict[str, Any] = self.get_ui_info(proto, *args)
         end = monotonic()

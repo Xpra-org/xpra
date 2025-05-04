@@ -73,10 +73,10 @@ class WindowIconSource:
         if LOG_THEME_DEFAULT_ICONS:
             log("theme_default_icons=%s", self.theme_default_icons)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         self.cancel_window_icon_timer()
 
-    def cancel_window_icon_timer(self):
+    def cancel_window_icon_timer(self) -> None:
         swit = self.send_window_icon_timer
         if swit:
             self.send_window_icon_timer = 0
@@ -144,20 +144,20 @@ class WindowIconSource:
                 log("%s.load_icon()", i, exc_info=True)
         return None
 
-    def get_window_wm_class_name(self):
+    def get_window_wm_class_name(self) -> str:
         try:
             c_i = self.window.get_property("class-instance")
         except Exception:
-            return None
+            return ""
         if not c_i or len(c_i) != 2:
-            return None
+            return ""
         return c_i[0]
 
     def client_has_theme_icon(self):
         wm_class = self.get_window_wm_class_name()
         return wm_class and wm_class in self.theme_default_icons
 
-    def send_window_icon(self):
+    def send_window_icon(self) -> None:
         # some of this code could be moved to the work queue half, meh
         assert self.ui_thread == threading.current_thread()
         if self.suspended:
@@ -225,7 +225,7 @@ class WindowIconSource:
             self.send_window_icon_timer = GLib.timeout_add(delay, self.call_in_encode_thread,
                                                            True, self.compress_and_send_window_icon)
 
-    def compress_and_send_window_icon(self):
+    def compress_and_send_window_icon(self) -> None:
         # this runs in the work queue
         self.send_window_icon_timer = 0
         idata = self.window_icon_data

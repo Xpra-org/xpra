@@ -510,7 +510,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             log("requesting local XConvertSelection from %s as '%s' into '%s'", get_wininfo(owner), target, prop)
             X11Window.ConvertSelection(self._selection, target, prop, self.xid, time=CurrentTime)
 
-    def timeout_get_contents(self, target: str, request_id: int):
+    def timeout_get_contents(self, target: str, request_id: int) -> None:
         try:
             target_requests = self.local_requests.get(target)
             if target_requests is None:

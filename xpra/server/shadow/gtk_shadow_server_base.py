@@ -337,7 +337,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         self.restore_cursor(proto)
         return [ax, ay] + list(pointer[2:])
 
-    def get_pointer_position(self):
+    def get_pointer_position(self) -> tuple[int, int]:
         return self.root.get_pointer()[-3:-1]
 
     def get_notification_tray(self):
@@ -499,9 +499,9 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     ############################################################################
     # screenshot
-    def do_make_screenshot_packet(self):
+    def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
         assert len(self._id_to_window) == 1, "multi root window screenshot not implemented yet"
         rwm = self._id_to_window.values()[0]
         w, h, encoding, rowstride, data = rwm.take_screenshot()
         assert encoding == "png"  # use fixed encoding for now
-        return ["screenshot", w, h, encoding, rowstride, Compressed(encoding, data)]
+        return "screenshot", w, h, encoding, rowstride, Compressed(encoding, data)

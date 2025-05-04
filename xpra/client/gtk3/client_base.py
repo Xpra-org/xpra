@@ -784,7 +784,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         from xpra.x11.bindings.window import X11WindowBindings
         return X11WindowBindings().get_root_xid()
 
-    def get_root_size(self):
+    def get_root_size(self) -> tuple[int, int]:
         return get_root_size()
 
     def get_raw_mouse_position(self) -> tuple[int, int]:

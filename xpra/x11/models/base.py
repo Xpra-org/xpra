@@ -345,7 +345,7 @@ class BaseWindowModel(CoreX11WindowModel):
         with xlog:
             self.prop_set("_NET_WM_STATE", ["atom"], state)
 
-    def set_wm_state(self, state: int):
+    def set_wm_state(self, state: int) -> None:
         metalog("set_wm_state(%s)", state)
         with xlog:
             self.prop_set("WM_STATE", "state", state)

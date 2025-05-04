@@ -24,7 +24,7 @@ class HomeGUI(BaseGUIWindow):
         )
         self.dialogs: dict[str, BaseGUIWindow] = {}
 
-    def populate(self):
+    def populate(self) -> None:
         self.vbox.add(label("Configure Xpra", font="sans 20"))
         self.vbox.add(label("Tune your xpra configuration:", font="sans 14"))
         if LINUX:

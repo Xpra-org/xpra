@@ -90,30 +90,31 @@ class GTKNotifier(NotifierBase):
         self.y = self.max_height - 64  # space for a panel
         log("our reduced dimensions: %dx%d", self.x, self.y)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         popups = tuple(self._notify_stack)
         self._notify_stack = []
         for x in popups:
             x.hide_notification()
         super().cleanup()
 
-    def get_origin_x(self):
+    def get_origin_x(self) -> int:
         return self.x
 
-    def get_origin_y(self):
+    def get_origin_y(self) -> int:
         return self.y
 
-    def close_notify(self, nid):
+    def close_notify(self, nid: int) -> None:
         for x in self._notify_stack:
             if x.nid == nid:
                 x.hide_notification()
 
     def show_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
-                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout, icon):
+                    summary: str, body: str, actions: Sequence[str], hints: dict, timeout, icon) -> None:
         GLib.idle_add(self.new_popup, int(nid), summary, body, actions, icon, timeout, 0 < timeout <= 600)
 
-    def new_popup(self, nid: int, summary: str, body: str, actions: Sequence[str], icon, timeout=10 * 1000, show_timeout=False) -> bool:
+    def new_popup(self, nid: int, summary: str, body: str, actions: Sequence[str],
+                  icon, timeout=10 * 1000, show_timeout=False) -> bool:
         """Create a new Popup instance, or update an existing one """
         existing = [p for p in self._notify_stack if p.nid == nid]
         if existing:
@@ -136,7 +137,7 @@ class GTKNotifier(NotifierBase):
         self._offset += self._notify_stack[-1].h
         return False
 
-    def destroy_popup_cb(self, popup):
+    def destroy_popup_cb(self, popup) -> None:
         if popup in self._notify_stack:
             self._notify_stack.remove(popup)
             # move popups down if required
@@ -145,11 +146,11 @@ class GTKNotifier(NotifierBase):
                 offset = note.reposition(offset, self)
             self._offset = offset
 
-    def popup_closed(self, nid, reason, text=""):
+    def popup_closed(self, nid, reason, text="") -> None:
         if self.closed_cb:
             self.closed_cb(nid, reason, text)
 
-    def popup_action(self, nid, action_id):
+    def popup_action(self, nid, action_id) -> None:
         if self.action_cb:
             self.action_cb(nid, action_id)
 
@@ -242,7 +243,7 @@ class Popup(Gtk.Window):
         self.get_window().set_skip_pager_hint(True)
         add_close_accel(self, self.user_closed)
 
-    def set_content(self, title, message, actions: Sequence[str] = (), image=None):
+    def set_content(self, title, message, actions: Sequence[str] = (), image=None) -> None:
         self.header.set_markup("<b>%s</b>" % title)
         self.message.set_text(message)
         # remove any existing actions:
@@ -260,7 +261,7 @@ class Popup(Gtk.Window):
         else:
             self.image.hide()
 
-    def action_button(self, action_id, action_text):
+    def action_button(self, action_id, action_text) -> Gtk.Button:
         button = Gtk.Button(label=action_text)
         button.set_relief(Gtk.ReliefStyle.NORMAL)
 
@@ -272,7 +273,7 @@ class Popup(Gtk.Window):
         button.connect("clicked", popup_cb_clicked)
         return button
 
-    def get_x(self, w):
+    def get_x(self, w: int) -> int:
         x = self.stack.get_origin_x() - w // 2
         if (x + w) >= self.stack.max_width:  # don't overflow on the right
             x = self.stack.max_width - w
@@ -280,7 +281,7 @@ class Popup(Gtk.Window):
         log("get_x(%s)=%s", w, x)
         return x
 
-    def get_y(self, h):
+    def get_y(self, h: int) -> int:
         y = self.stack.get_origin_y()
         if y >= (self.stack.max_height // 2):  # if near bottom, subtract window height
             y = y - h
@@ -290,14 +291,14 @@ class Popup(Gtk.Window):
         log("get_y(%s)=%s", h, y)
         return y
 
-    def reposition(self, offset, stack):
+    def reposition(self, offset: int, stack) -> int:
         """Move the notification window down, when an older notification is removed"""
         log("reposition(%s, %s)", offset, stack)
         new_offset = self.h + offset
         GLib.idle_add(self.move, self.get_x(self.w), self.get_y(new_offset))
         return new_offset
 
-    def fade_in(self):
+    def fade_in(self) -> bool:
         opacity = self.get_opacity()
         opacity += 0.15
         if opacity >= 1:
@@ -307,7 +308,7 @@ class Popup(Gtk.Window):
         self.set_opacity(opacity)
         return True
 
-    def wait(self):
+    def wait(self) -> bool:
         if not self.hover:
             self.timeout -= 1
         if self.show_timeout:
@@ -318,7 +319,7 @@ class Popup(Gtk.Window):
             return False
         return True
 
-    def fade_out(self):
+    def fade_out(self) -> bool:
         opacity = self.get_opacity()
         opacity -= 0.10
         if opacity <= 0:
@@ -330,15 +331,15 @@ class Popup(Gtk.Window):
         self.set_opacity(opacity)
         return True
 
-    def on_hover(self, _window, _event, hover):
+    def on_hover(self, _window, _event, hover) -> None:
         """Starts/Stops the notification timer on a mouse in/out event"""
         self.hover = hover
 
-    def user_closed(self, *_args):
+    def user_closed(self, *_args) -> None:
         self.hide_notification()
         self.popup_closed(self.nid, 2)
 
-    def hide_notification(self):
+    def hide_notification(self) -> None:
         """Destroys the notification and tells the stack to move the
         remaining notification windows"""
         log("hide_notification()")

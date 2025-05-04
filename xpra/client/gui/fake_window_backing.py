@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
+
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.util.env import envint
 from xpra.log import Logger
@@ -24,7 +26,7 @@ class FakeBacking:
         self._video_encoder_speed = []
         self._video_encoder_quality = []
 
-    def close(self):
+    def close(self) -> None:
         self.wid = 0
 
     def draw_region(self, _x, _y, _width, _height, _coding, _img_data, _rowstride, _options, callbacks):
@@ -36,7 +38,7 @@ class FakeBacking:
     def cairo_draw(self, context, x, y):
         log("cairo_draw%s", (context, x, y))
 
-    def get_encoding_properties(self):
+    def get_encoding_properties(self) -> dict[str, Any]:
         return {
             "encodings.rgb_formats": ["RGBA", "RGB"],
         }

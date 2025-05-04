@@ -30,7 +30,7 @@ class AtomicInteger:
     def get(self) -> int:
         return self.counter
 
-    def set(self, value: int):
+    def set(self, value: int) -> None:
         with self.lock:
             self.counter = value
 

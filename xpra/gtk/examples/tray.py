@@ -137,19 +137,19 @@ class FakeApplication:
         from xpra.codecs.constants import PREFERRED_ENCODING_ORDER
         return PREFERRED_ENCODING_ORDER
 
-    def show_start_new_command(self, *_args):
+    def show_start_new_command(self, *_args) -> None:
         """ this method is part of the GUI client "interface" """
 
-    def show_server_commands(self, *_args):
+    def show_server_commands(self, *_args) -> None:
         """ this method is part of the GUI client "interface" """
 
-    def show_ask_data_dialog(self, *_args):
+    def show_ask_data_dialog(self, *_args) -> None:
         """ this method is part of the GUI client "interface" """
 
-    def show_file_upload(self, *_args):
+    def show_file_upload(self, *_args) -> None:
         """ this method is part of the GUI client "interface" """
 
-    def send_sharing_enabled(self, *_args):
+    def send_sharing_enabled(self, *_args) -> None:
         """ this method is part of the GUI client "interface" """
 
     def get_image(self, icon_name: str, size=None):
@@ -164,24 +164,24 @@ class FakeApplication:
                 return None
             return scaled_image(pixbuf, size)
 
-    def xpra_tray_click(self, button: int, pressed: bool, time: int = 0):
+    def xpra_tray_click(self, button: int, pressed: bool, time: int = 0) -> None:
         log("xpra_tray_click(%s, %s, %s)", button, pressed, time)
         if button == 1 and pressed:
             GLib.idle_add(self.menu_helper.activate, button, time)
         elif button == 3 and not pressed:
             GLib.idle_add(self.menu_helper.popup, button, time)
 
-    def xpra_tray_mouseover(self, *args):
+    def xpra_tray_mouseover(self, *args) -> None:
         log("xpra_tray_mouseover(%s)", args)
 
-    def xpra_tray_exit(self, *args):
+    def xpra_tray_exit(self, *args) -> None:
         log("xpra_tray_exit%s", args)
         Gtk.main_quit()
 
-    def xpra_tray_geometry(self, *args):
+    def xpra_tray_geometry(self, *args) -> None:
         log("xpra_tray_geometry%s geometry=%s", args, self.tray.get_geometry())
 
-    def disconnect_and_quit(self, *_args):
+    def disconnect_and_quit(self, *_args) -> None:
         Gtk.main_quit()
 
 

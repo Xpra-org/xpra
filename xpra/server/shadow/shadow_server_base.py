@@ -311,7 +311,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     ############################################################################
     # pointer polling
 
-    def get_pointer_position(self):
+    def get_pointer_position(self) -> tuple[int, int]:
         raise NotImplementedError()
 
     def start_poll_pointer(self) -> None:

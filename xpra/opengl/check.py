@@ -310,7 +310,7 @@ def check_lists(props: dict[str, Any], force_enable=False) -> bool:
     return bool(whitelisted) or not bool(blocklisted)
 
 
-def check_PyOpenGL_support(force_enable) -> dict[str, Any]:
+def check_PyOpenGL_support(force_enable: bool) -> dict[str, Any]:
     redirected_loggers: dict[str, tuple[Logger, list, bool]] = {}
     try:
         if CRASH:

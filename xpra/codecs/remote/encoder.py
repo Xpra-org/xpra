@@ -39,7 +39,7 @@ class EncoderClient(RemoteConnectionClient):
     def __repr__(self):
         return "EncoderClient(%s)" % self.uri
 
-    def server_connection_cleanup(self):
+    def server_connection_cleanup(self) -> None:
         super().server_connection_cleanup()
         self.specs = {}
         self.encodings = ()

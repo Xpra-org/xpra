@@ -93,7 +93,7 @@ class GTKStatusIconTray(TrayBase):
         gtk_orientation = ag[-1]
         return ORIENTATION.get(gtk_orientation, "")
 
-    def get_geometry(self):
+    def get_geometry(self) -> tuple[int, int, int, int]:
         assert self.tray_widget
         # on X11, if we don't have an `xid`, don't bother querying its geometry,
         # as this would trigger some ugly GTK warnings we can do nothing about
@@ -122,9 +122,9 @@ class GTKStatusIconTray(TrayBase):
             h = 48
         return x, y, w, h
 
-    def get_size(self):
+    def get_size(self) -> tuple[int, int]:
         s = max(8, min(256, self.tray_widget.get_size()))
-        return [s, s]
+        return (s, s)
 
     def set_tooltip(self, tooltip: str = "") -> None:
         if self.tray_widget:

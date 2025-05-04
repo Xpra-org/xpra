@@ -263,7 +263,7 @@ class VideoHelper:
         self.csc_modules = init_modules("csc", self.csc)
         self.decoder_modules = init_modules("dec", self.decoders)
 
-    def enable_all_modules(self):
+    def enable_all_modules(self) -> None:
         self.set_modules(ALL_VIDEO_ENCODER_OPTIONS,
                          ALL_CSC_MODULE_OPTIONS,
                          ALL_VIDEO_DECODER_OPTIONS)

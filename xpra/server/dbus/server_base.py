@@ -29,7 +29,7 @@ class DBUS_Server_Base(dbus.service.Object):
         self.log("(%s)", server)
         self._properties = {}
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         try:
             log("calling %s", self.remove_from_connection)
             self.remove_from_connection()

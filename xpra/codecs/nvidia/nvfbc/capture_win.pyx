@@ -697,7 +697,7 @@ cdef class NvFBC_SysCapture:
         log("image=%s buffer size=%i, (copy took %ims)", image, size, int((end-start)*1000))
         return image
 
-    def clean(self):
+    def clean(self) -> None:
         log("clean()")
         if self.setup:
             self.setup = False

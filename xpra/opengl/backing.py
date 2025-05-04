@@ -299,7 +299,7 @@ class GLWindowBackingBase(WindowBackingBase):
     def init_backing(self) -> None:
         raise NotImplementedError()
 
-    def gl_context(self):
+    def gl_context(self) -> Any:
         raise NotImplementedError()
 
     def do_gl_show(self, rect_count: int) -> None:

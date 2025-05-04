@@ -117,11 +117,11 @@ class RootWindowModel:
     def acknowledge_changes(self) -> None:
         """ only window models that use the X11 Damage extension use this method """
 
-    def get_dimensions(self):
+    def get_dimensions(self) -> tuple[int, int]:
         # used by get_window_info only
         return self.geometry[2:4]
 
-    def get_geometry(self):
+    def get_geometry(self) -> tuple[int, int, int, int]:
         return self.geometry
 
     def get_property_names(self) -> list[str]:

@@ -66,7 +66,7 @@ class HintedWindows(Gtk.Window):
         self.set_geometry_hints(da, geom, hints)
         self.show_all()
 
-    def delete_event(self, *_args):
+    def delete_event(self, *_args) -> None:
         self.close()
 
 
@@ -142,7 +142,7 @@ class OptionWindow(Gtk.Window):
             else:
                 entry.set_text(args[i])
 
-    def create(self, *_args):
+    def create(self, *_args) -> None:
         kwargs = {}
         for prop, entry in {
             "width": self.requested_width,

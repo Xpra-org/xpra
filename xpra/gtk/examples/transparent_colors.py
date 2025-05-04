@@ -39,15 +39,15 @@ class TransparentColorWindow(Gtk.Window):
         self.add(drawing_area)
         self.connect("destroy", Gtk.main_quit)
 
-    def show_with_focus(self):
+    def show_with_focus(self) -> None:
         force_focus()
         self.show_all()
         super().present()
 
-    def do_expose_event(self, *_args):
+    def do_expose_event(self, *_args) -> None:
         self.area_draw()
 
-    def area_draw(self, *_args):
+    def area_draw(self, *_args) -> None:
         cr = self.get_window().cairo_create()
         cr.set_font_size(32)
         # Clear everything:
@@ -60,7 +60,7 @@ class TransparentColorWindow(Gtk.Window):
         cr.restore()
         cr.set_operator(OPERATOR_SOURCE)
 
-        def paint_block(label, x, y, r, g, b):
+        def paint_block(label, x: int, y: int, r: int, g: int, b: int) -> None:
             # fill with colour
             cr.set_source_rgba(r, g, b, 1)
             cr.rectangle(x, y, x + w // 2, y + h // 2)
