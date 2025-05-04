@@ -10,7 +10,7 @@ from importlib import import_module
 
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.scripts.config import InitExit
-from xpra.net.digest import get_salt, gendigest, get_salt_digests
+from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
 from xpra.net.common import Packet
 from xpra.common import ConnectionMessage
 from xpra.util.io import use_gui_prompt
@@ -61,7 +61,7 @@ class ChallengeClient(StubClientMixin):
         return {}
 
     def get_caps(self) -> dict[str, Any]:
-        digests = []
+        digests = list(get_digests())
         # add "kerberos", "gss" and "u2f" digests if enabled:
         for handler in self.challenge_handlers:
             digest = handler.get_digest()
