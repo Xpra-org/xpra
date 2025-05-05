@@ -1295,6 +1295,7 @@ def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=no
                 except ConnectionRefusedError as e:
                     elapsed = monotonic() - start
                     get_logger().debug("%s, retrying %i < %i", e, elapsed, timeout)
+                    time.sleep(0.5)
                     continue
                 except Exception as e:
                     get_logger().debug(f"failed to connect using {sock.connect}({sockpath})", exc_info=True)
