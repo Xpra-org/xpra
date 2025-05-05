@@ -1515,7 +1515,7 @@ def get_sockpath(display_desc: dict[str, Any], error_cb, timeout=CONNECT_TIMEOUT
         username = get_username_for_uid(uid)
     dotxpra = DotXpra(
         display_desc.get("socket_dir"),
-        display_desc.get("socket_dirs"),
+        display_desc.get("socket_dirs", ()),
         username,
         uid,
         gid,
@@ -3461,7 +3461,7 @@ def run_stopexit(mode: str, error_cb, opts, extra_args, cmdline) -> ExitValue:
         # this is for local sockets only!
         display = display_desc["display"]
         sockdir = display_desc.get("socket_dir", "")
-        sockdirs = display_desc.get("socket_dirs", [])
+        sockdirs = display_desc.get("socket_dirs", ())
         sockdir = DotXpra(sockdir, sockdirs)
         try:
             sockfile = get_sockpath(display_desc, error_cb, 0)

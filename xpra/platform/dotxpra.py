@@ -8,7 +8,7 @@ import os.path
 import glob
 import socket
 import errno
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 from xpra.common import SocketState
 from xpra.util.env import osexpand
@@ -36,11 +36,11 @@ def debug(msg: str, *args, **kwargs) -> None:
 
 
 class DotXpra:
-    def __init__(self, sockdir="", sockdirs=None, actual_username="", uid=0, gid=0):
+    def __init__(self, sockdir="", sockdirs: Sequence[str] = (), actual_username="", uid=0, gid=0):
         self.uid = uid or os.getuid()
         self.gid = gid or os.getgid()
         self.username = actual_username
-        sockdirs = sockdirs or []
+        sockdirs = list(sockdirs)
         if not sockdir:
             if sockdirs:
                 sockdir = sockdirs[0]
