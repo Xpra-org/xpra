@@ -4,7 +4,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import logging
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
@@ -40,13 +39,6 @@ def use_x11_bindings() -> bool:
     if _use_x11 is None:
         _use_x11 = _use_x11_bindings()
     return bool(_use_x11)
-
-
-def enable_format(format_string: str) -> None:
-    try:
-        logging.root.handlers[0].formatter = logging.Formatter(format_string)
-    except (AttributeError, IndexError):
-        pass
 
 
 def parse_padding_colors(colors_str: str) -> tuple[int, int, int]:

@@ -64,7 +64,7 @@ from xpra.net.common import (
     DEFAULT_PORTS, SOCKET_TYPES, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX,
     verify_hyperv_available,
 )
-from xpra.log import is_debug_enabled, Logger, get_debug_args
+from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format
 
 assert callable(error), "used by modules importing this function from here"
 
@@ -212,7 +212,6 @@ def configure_logging(options, mode) -> None:
         setloghandler, enable_color, LOG_FORMAT, NOPREFIX_FORMAT,
         SIGPIPEStreamHandler,
     )
-    from xpra.client.gtk3.window.common import enable_format
     setloghandler(SIGPIPEStreamHandler(to))
     if mode in (
             "seamless", "desktop", "monitor", "expand",
