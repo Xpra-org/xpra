@@ -6,6 +6,7 @@
 
 import sys
 import signal
+from collections.abc import Callable
 
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
@@ -14,6 +15,7 @@ from xpra.gtk.signals import register_os_signals
 from xpra.util.objects import typedict
 from xpra.util.config import parse_user_config_file, update_config_attribute
 from xpra.exit_codes import ExitValue
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.log import Logger, enable_debug_for
 
@@ -32,16 +34,6 @@ def load_config() -> dict:
     return parse_user_config_file("tools", START_NEW_COMMAND_CONFIG)
 
 
-_instance = None
-
-
-def getStartNewCommand(run_callback, can_share=False, menu=None):
-    global _instance
-    if _instance is None:
-        _instance = StartNewCommand(run_callback, can_share, menu)
-    return _instance
-
-
 def btn(label, tooltip, callback, icon_name="") -> Gtk.Button:
     b = Gtk.Button(label=label)
     b.set_tooltip_text(tooltip)
@@ -54,7 +46,7 @@ def btn(label, tooltip, callback, icon_name="") -> Gtk.Button:
 
 class StartNewCommand:
 
-    def __init__(self, run_callback=None, can_share=False, menu=None):
+    def __init__(self, run_callback: Callable = noop, can_share=False, menu=None):
         self.run_callback = run_callback
         self.menu = typedict(menu or {})
         self.window = Gtk.Window()
@@ -198,6 +190,16 @@ class StartNewCommand:
         log("command=%s", command)
         if self.run_callback and command:
             self.run_callback(command, self.share is None or self.share.get_active())
+
+
+_instance: StartNewCommand | None = None
+
+
+def get_start_new_command_gui(run_callback: Callable = noop, can_share=False, menu=None) -> StartNewCommand:
+    global _instance
+    if _instance is None:
+        _instance = StartNewCommand(run_callback, can_share, menu)
+    return _instance
 
 
 def main() -> int:  # pragma: no cover

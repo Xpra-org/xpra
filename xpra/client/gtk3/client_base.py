@@ -411,8 +411,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             return
         dialog = self.sub_dialogs.get("server-commands")
         if not dialog:
-            from xpra.gtk.dialogs.server_commands import getServerCommandsWindow
-            dialog = getServerCommandsWindow(self)
+            from xpra.gtk.dialogs.server_commands import get_server_commands_window
+            dialog = get_server_commands_window(self)
             self.sub_dialogs["server-commands"] = dialog
         dialog.show()
 
@@ -426,12 +426,12 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         log(f"show_start_new_command{args} current {dialog=}, flag={self.server_start_new_commands}")
         if not dialog:
             log("server_menu=%s", Ellipsizer(self.server_menu))
-            from xpra.gtk.dialogs.start_new_command import getStartNewCommand
+            from xpra.gtk.dialogs.start_new_command import get_start_new_command_gui
 
-            def run_command_cb(command, sharing=True):
+            def run_command_cb(command, sharing=True) -> None:
                 self.send_start_command(command, command, False, sharing)
 
-            dialog = getStartNewCommand(run_command_cb, self.server_sharing, self.server_menu)
+            dialog = get_start_new_command_gui(run_command_cb, self.server_sharing, self.server_menu)
             self.sub_dialogs["start-new-command"] = dialog
         dialog.show()
 

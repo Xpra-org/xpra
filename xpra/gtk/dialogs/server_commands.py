@@ -8,6 +8,7 @@ import sys
 import signal
 from time import monotonic
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.exit_codes import ExitValue
 from xpra.gtk.signals import register_os_signals
@@ -21,15 +22,6 @@ log = Logger("util")
 
 GLib = gi_import("GLib")
 Gtk = gi_import("Gtk")
-
-_instance = None
-
-
-def getServerCommandsWindow(client):
-    global _instance
-    if _instance is None:
-        _instance = ServerCommandsWindow(client)
-    return _instance
 
 
 class ServerCommandsWindow:
@@ -61,7 +53,7 @@ class ServerCommandsWindow:
         hbox = Gtk.HBox(homogeneous=False, spacing=20)
         vbox.pack_start(hbox)
 
-        def btn(label, tooltip, callback, icon_name=None):
+        def btn(label, tooltip, callback, icon_name=None) -> None:
             b = self.btn(label, tooltip, callback, icon_name)
             hbox.pack_start(b)
 
@@ -74,7 +66,7 @@ class ServerCommandsWindow:
         self.window.vbox = vbox
         self.window.add(vbox)
 
-    def btn(self, label, tooltip, callback, icon_name=None):
+    def btn(self, label, tooltip, callback, icon_name=None) -> Gtk.Button:
         btn = Gtk.Button(label=label)
         settings = btn.get_settings()
         settings.set_property('gtk-button-images', True)
@@ -158,13 +150,13 @@ class ServerCommandsWindow:
         self.client.send_info_request()
         return True
 
-    def signal_button(self, pid):
+    def signal_button(self, pid) -> Gtk.HBox:
         hbox = Gtk.HBox()
         combo = Gtk.ComboBoxText()
         for x in self.client.server_commands_signals:
             combo.append_text(x)
 
-        def send(*_args):
+        def send(*_args) -> None:
             a = combo.get_active()
             if a >= 0:
                 signame = self.client.server_commands_signals[a]
@@ -218,6 +210,16 @@ class ServerCommandsWindow:
         Gtk.main_quit()
 
 
+_instance: ServerCommandsWindow | None = None
+
+
+def get_server_commands_window(client) -> ServerCommandsWindow:
+    global _instance
+    if _instance is None:
+        _instance = ServerCommandsWindow(client)
+    return _instance
+
+
 def main() -> int:  # pragma: no cover
     from xpra.platform import program_context
     from xpra.platform.gui import ready as gui_ready, init as gui_init
@@ -247,22 +249,20 @@ def main() -> int:  # pragma: no cover
         client.server_start_new_commands = True
         client.server_commands_signals = ("SIGINT", "SIGTERM", "SIGUSR1")
 
-        def nosend(*_args):
-            """
-            this is for testing only - we are not connected to a server
-            """
-
-        client.send_info_request = nosend
-        client.send = nosend
+        """
+        this is for testing only - we are not connected to a server:
+        """
+        client.send_info_request = noop
+        client.send = noop
         window1 = AdHocStruct()
         window1._metadata = {"pid": 542}  # pylint: disable=protected-access
         client._id_to_window = {  # pylint: disable=protected-access
             1: window1
         }
 
-        def show_start_new_command(*_args):
-            from xpra.gtk.dialogs.start_new_command import getStartNewCommand
-            getStartNewCommand(None).show()
+        def show_start_new_command(*_args) -> None:
+            from xpra.gtk.dialogs.start_new_command import get_start_new_command_gui
+            get_start_new_command_gui().show()
 
         client.show_start_new_command = show_start_new_command
 
