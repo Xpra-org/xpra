@@ -86,7 +86,7 @@ class PointerServer(StubServerMixin):
         ss.user_event()
         self.last_mouse_user = ss.uuid
         self.set_ui_driver(ss)
-        device_id = packet.get_u64(1)
+        device_id = packet.get_i64(1)
         seq = packet.get_u64(2)
         wid = packet.get_wid(3)
         button = packet.get_u8(4)
@@ -139,7 +139,7 @@ class PointerServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if not hasattr(ss, "update_mouse"):
             return
-        device_id = packet.get_u64(1)
+        device_id = packet.get_i64(1)
         seq = packet.get_u64(2)
         wid = packet.get_wid(3)
         pdata = packet.get_ints(4)

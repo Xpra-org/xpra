@@ -122,7 +122,7 @@ class WebcamServer(StubServerMixin):
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
             return
-        device_id = packet.get_u64(1)
+        device_id = packet.get_i64(1)
         w = packet.get_u16(2)
         h = packet.get_u16(3)
         ss.start_virtual_webcam(device_id, w, h)
@@ -134,7 +134,7 @@ class WebcamServer(StubServerMixin):
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
             return
-        device_id = packet.get_u64(1)
+        device_id = packet.get_i64(1)
         message = ""
         if len(packet) >= 3:
             message = packet.get_str(2)
@@ -147,7 +147,7 @@ class WebcamServer(StubServerMixin):
         if not ss:
             log.warn("Warning: invalid client source for webcam frame")
             return
-        device_id = packet.get_u64(1)
+        device_id = packet.get_i64(1)
         frame_no = packet.get_u64(2)
         encoding = packet.get_str(3)
         w = packet.get_u16(4)
