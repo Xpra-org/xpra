@@ -70,8 +70,6 @@ def is_socket(sockpath: str, check_uid: int = -1) -> bool:
 
 
 def is_writable(path: str, uid: int, gid: int) -> bool:
-    if uid == 0:
-        return True
     try:
         s = os.stat(path)
     except OSError as e:
