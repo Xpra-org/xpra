@@ -177,7 +177,7 @@ def get_xauthority_path(display_name: str) -> str:
         else:
             filename = "Xauthority"
     else:
-        if has_home and is_writable(expanded_home):
+        if has_home and is_writable(expanded_home, getuid(), getgid()):
             d = expanded_home
         else:
             d = os.environ.get("TMPDIR", "/tmp")
