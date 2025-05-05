@@ -42,7 +42,13 @@ def save_user_config_file(options: dict,
     conf_dir = os.path.dirname(filename)
     log(f"save_user_config_file({options}, {dirname!r}, {filename!r}) {conf_dir=!r}")
     if not os.path.exists(conf_dir):
-        os.mkdir(conf_dir, mode=0o755)
+        try:
+            os.makedirs(conf_dir, mode=0o755)
+        except OSError as e:
+            log(f"os.makedirs({conf_dir!r}, 0o755)", exc_info=True)
+            log.error(f"Error creating configuration directory {conf_dir!r}:")
+            log.estr(e)
+            return
     with open(filename, "w", encoding="utf8") as f:
         f.write("# generated on " + datetime.now().strftime("%c")+"\n\n")
         for k, v in options.items():
