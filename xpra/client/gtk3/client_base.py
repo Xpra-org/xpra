@@ -6,6 +6,7 @@
 # later version. See the file COPYING for details.
 
 import os
+import shlex
 import weakref
 from time import monotonic
 from importlib import import_module
@@ -429,7 +430,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             from xpra.gtk.dialogs.start_new_command import get_start_new_command_gui
 
             def run_command_cb(command, sharing=True) -> None:
-                self.send_start_command(command, command, False, sharing)
+                self.send_start_command(command, shlex.split(command), False, sharing)
 
             dialog = get_start_new_command_gui(run_command_cb, self.server_sharing, self.server_menu)
             self.sub_dialogs["start-new-command"] = dialog
