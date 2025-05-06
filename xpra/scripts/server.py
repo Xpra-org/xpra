@@ -812,7 +812,7 @@ def _do_run_server(script_file: str, cmdline,
         dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
         sessions = get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN, SocketState.DEAD),
                                      matching_display=display_name, query=True)
-        session = sessions.get(display_name)
+        session = sessions.get(display_name, {})
         if session:
             socket_path = session.get("socket-path")
             uri = f"socket://{socket_path}" if socket_path else display_name
@@ -1553,7 +1553,7 @@ def _do_run_server(script_file: str, cmdline,
 def attach_client(options, defaults) -> None:
     from xpra.platform.paths import get_xpra_command
     cmd = get_xpra_command() + ["attach"]
-    display_name = os.environ.get("DISPLAY")
+    display_name = os.environ.get("DISPLAY", "")
     if display_name:
         cmd += [display_name]
     # options has been "fixed up", make sure this has too:
