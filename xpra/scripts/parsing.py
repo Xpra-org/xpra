@@ -1515,10 +1515,6 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--video-encoders", action="append",
                      dest="video_encoders", default=[],
                      help="Specify which video encoders to enable, to get a list of all the options specify 'help'")
-    group.add_option("--proxy-video-encoders", action="append",
-                     dest="proxy_video_encoders", default=[],
-                     help="Specify which video encoders to enable when running a proxy server,"
-                          " to get a list of all the options specify 'help'")
     group.add_option("--csc-modules", action="append",
                      dest="csc_modules", default=[],
                      help="Specify which colourspace conversion modules to enable,"
@@ -2039,7 +2035,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     for setting in (
             "bind", "challenge_handlers", "key_shortcut",
             "source", "source_start",
-            "video_encoders", "video_decoders", "csc_modules", "proxy_video_encoders",
+            "video_encoders", "video_decoders", "csc_modules",
     ):
         if not getattr(options, setting):
             setattr(options, setting, getattr(defaults, setting, []))
