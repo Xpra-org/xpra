@@ -1,7 +1,28 @@
 # Changelog
 
-## [6.3.1] 2025-04-27
-* TODO
+## [6.3.1] 2025-05-06
+* Platforms, build and packaging:
+    * [modular installations also need filesystem package](https://github.com/Xpra-org/xpra/commit/bc67164fe76b03bb1d0287396c63bcf4fc1e0dd6)
+    * [add plucky for `install-repo` subcommand](https://github.com/Xpra-org/xpra/commit/db5cc7303938d60b9a1619c672b11bcc88268ea3)
+    * [make it easier to run unit tests with extra cythonization](https://github.com/Xpra-org/xpra/commit/0dcb32cde149f0954e38ac86d68bba7c2b6f6d95)
+    * [add explicit weak dependency on notification library](https://github.com/Xpra-org/xpra/commit/60dfb85271865e329c45f1c03a9adf28fc48bb18)
+* Minor:
+    * [only resume audio if it was suspended](https://github.com/Xpra-org/xpra/commit/6a3ae04da0bf871ab69454cb5b2e748cdad5169f)
+    * [wait before retrying socket](https://github.com/Xpra-org/xpra/commit/7e72cfaef85f183cf87ccce4732e2dc95d956781)
+    * [`root` does not have magical powers](https://github.com/Xpra-org/xpra/commit/2dd68225390bbb6b1dc0f590447726cd3080763c) + [fixup](https://github.com/Xpra-org/xpra/commit/a1e552a6215cde855f1d65c285e3633e0651ba34)
+    * [read-only `$HOME` should not be fatal](https://github.com/Xpra-org/xpra/commit/9444322592009aff2a95d9b19c068fe8e31a4984)
+    * [start command failures via control channel when exec-wrapper is used](https://github.com/Xpra-org/xpra/commit/f5f56d9181aa10ba7004d712dbad2f0baf57259d)
+    * [only resume audio if it was suspended](https://github.com/Xpra-org/xpra/commit/111e1c78221db84b0bd7fcde45aa454f2b8b4bd7)
+    * [keys used to break the `moveresize` should not propagate](https://github.com/Xpra-org/xpra/commit/29cfffd8a6aeec2bce8c3fe61ab10aad7f735dbc)
+    * [handle missing configuration directories more gracefully](https://github.com/Xpra-org/xpra/commit/8eb581d7ba6d2ef31600ab87cffb8fe66c8d09e2)
+    * [show display access errors](https://github.com/Xpra-org/xpra/commit/48351f0581efcd74de1bef990ba8060f2f454e46)
+    * [Xephyr startup errors without geometry](https://github.com/Xpra-org/xpra/commit/302a33b07148fdfd03499c3b66a1e9acbdccff25)
+* Cosmetic:
+    * [avoid tray errors when connection fails](https://github.com/Xpra-org/xpra/commit/67cb487de400bea4c312e826a5f3f1309b0aa3df)
+    * [missing OpenGL error message](https://github.com/Xpra-org/xpra/commit/fdd5322f438e96179b61ef7456cd184683078867)
+    * [silence `uinput` missing message](https://github.com/Xpra-org/xpra/commit/3f2c4bcc14f240b0800648b16ec833f045c57e80)
+    * type hint fixes: [`mmap`](https://github.com/Xpra-org/xpra/commit/7fffe148e6f96dc21ea16f361d599e287db64697), [vfb log](https://github.com/Xpra-org/xpra/commit/dde36fa4545970bd78265d90187a4a2016f5dae6)
+    * [`mmap` madvise platform support detection](https://github.com/Xpra-org/xpra/commit/a8bc1eb24a7c64ab77b5380661d03022d6caf4c6)
 
 ## [6.3] 2025-04-23
 * Platforms, build and packaging:

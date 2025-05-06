@@ -1008,8 +1008,29 @@ fi
 
 
 %changelog
-* Sun Apr 27 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
-- TODO
+* Tue May 06 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
+- Platforms, build and packaging:
+   modular installations also need filesystem package
+   add plucky for `install-repo` subcommand
+   make it easier to run unit tests with extra cythonization
+   add explicit weak dependency on notification library
+- Minor:
+   only resume audio if it was suspended
+   wait before retrying socket
+   `root` does not have magical powers
+   read-only `$HOME` should not be fatal
+   start command failures via control channel when exec-wrapper is used
+   only resume audio if it was suspended
+   keys used to break the `moveresize` should not propagate
+   handle missing configuration directories more gracefully
+   show display access errors
+   Xephyr startup errors without geometry
+- Cosmetic:
+   avoid tray errors when connection fails
+   missing OpenGL error message
+   type hint fixes: `mmap`, vfb log
+   `mmap` madvise platform support detection
+
 * Wed Apr 23 2025 Antoine Martin <antoine@xpra.org> 6.3-10
 - Platforms, build and packaging:
    rewritten MS Windows build script
