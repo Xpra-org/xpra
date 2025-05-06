@@ -272,7 +272,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
 
     # try to honour initial geometries if specified:
     xvfb_executable = xvfb_cmd[0]
-    if len(vfb_geom) >= 2 and xvfb_executable.endswith("Xvfb") or xvfb_executable.endswith("Xephyr"):
+    if len(vfb_geom) >= 2 and (xvfb_executable.endswith("Xvfb") or xvfb_executable.endswith("Xephyr")):
         w, h = vfb_geom[:2]
         log("patch_xvfb_command%s", (xvfb_cmd, w, h, pixel_depth or 32))
         patch_xvfb_command(xvfb_cmd, w, h, pixel_depth or 32)
