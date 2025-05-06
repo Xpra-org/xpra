@@ -2021,15 +2021,21 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
 
     # deal with boolean fields by converting them to a boolean value:
     for k, t in OPTION_TYPES.items():
+        fieldname = name_to_field(k)
+        if not hasattr(options, fieldname):
+            # some fields may be missing if they're platform specific
+            continue
+        v = getattr(options, fieldname)
         if t is bool:
-            fieldname = name_to_field(k)
-            if not hasattr(options, fieldname):
-                # some fields may be missing if they're platform specific
-                continue
-            v = getattr(options, fieldname)
             bv = parse_bool_or(k, v)
             if bv != v:
                 setattr(options, fieldname, bv)
+        elif t is int:
+            try:
+                bi = int(v)
+                setattr(options, fieldname, bi)
+            except (TypeError, ValueError):
+                pass
 
     # only use the defaults if no value is specified:
     for setting in (
