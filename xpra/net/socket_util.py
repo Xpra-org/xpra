@@ -17,10 +17,10 @@ from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
 from xpra.net.bytestreams import set_socket_timeout, pretty_socket, SocketConnection, SOCKET_TIMEOUT
 from xpra.os_util import getuid, get_username_for_uid, get_groups, get_group_id, gi_import, WIN32, OSX, POSIX
-from xpra.util.io import path_permission_info, umask_context
+from xpra.util.io import path_permission_info, umask_context, is_writable
 from xpra.util.str_fn import csv, memoryview_to_bytes
 from xpra.util.parsing import parse_simple_dict
-from xpra.util.env import envint, envbool, SilenceWarningsContext
+from xpra.util.env import envint, envbool, osexpand, SilenceWarningsContext
 from xpra.util.thread import start_thread
 
 # pylint: disable=import-outside-toplevel
@@ -677,6 +677,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
+    homedir = osexpand("~", username, uid, gid)
     defs: dict[Any, dict] = {}
     try:
         sockpaths = {}
@@ -692,7 +693,11 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
             if sockpath in ("auto", "noabstract"):
                 assert display_name is not None
                 for path in dotxpra.norm_socket_paths(display_name):
-                    sockpaths[path] = dict(options)
+                    sockdir = os.path.dirname(path)
+                    if not is_writable(sockdir, uid, gid) and sockdir.startswith(homedir):
+                        log.warn(f"Warning: skipped read-only socket path {path!r}")
+                    else:
+                        sockpaths[path] = dict(options)
                 if session_dir and not WIN32:
                     path = os.path.join(session_dir, "socket")
                     sockpaths[path] = dict(options)
