@@ -369,7 +369,7 @@ def main() -> None:
 
     # images = ("logo1_64.png", None)
 
-    def notify_factory() -> None:
+    def notify_factory() -> int:
         color = random.choice(color_combos)
         nid, title, message, actions = messages.pop(0)
         icon = ()  # random.choice(images)

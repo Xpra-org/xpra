@@ -749,7 +749,7 @@ def EnumDisplayMonitors() -> list:
     return results
 
 
-def GetIntSystemParametersInfo(key) -> int:
+def GetIntSystemParametersInfo(key) -> int | None:
     rv = INT()
     r = SystemParametersInfoA(key, 0, byref(rv), 0)
     if r == 0:
