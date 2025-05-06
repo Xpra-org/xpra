@@ -264,7 +264,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
         etc_prefix = etc_prefix[:-4]
     subs |= {
         "DISPLAY": display_name,
-        "XPRA_LOG_DIR": pathexpand(os.environ.get("XPRA_LOG_DIR")),
+        "XPRA_LOG_DIR": pathexpand(os.environ.get("XPRA_LOG_DIR", "")),
         "XORG_CONFIG_PREFIX": os.environ.get("XORG_CONFIG_PREFIX", etc_prefix),
     }
 
