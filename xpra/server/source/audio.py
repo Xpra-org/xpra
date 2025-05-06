@@ -71,6 +71,7 @@ class AudioConnection(StubClientConnection):
         self.supports_microphone = False
         self.microphone_codecs = []
         self.restart_speaker_args = ()
+        self.audio_suspended = False
 
     def init_from(self, _protocol, server) -> None:
         self.audio_properties = typedict(server.audio_properties)
@@ -570,10 +571,12 @@ class AudioConnection(StubClientConnection):
 
     def suspend(self) -> None:
         if self.audio_source:
+            self.audio_suspended = True
             self.stop_sending_audio()
 
     def resume(self) -> None:
+        suspended = self.audio_suspended
         rsa = self.restart_speaker_args
-        if rsa:
-            self.restart_speaker_args = []
+        if rsa and suspended:
+            self.audio_suspended = False
             self.start_sending_audio(*rsa)
