@@ -43,6 +43,7 @@ from xpra.scripts.config import (
 from xpra.common import (
     CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH,
     ConnectionMessage, SocketState, noerr,
+    get_refresh_rate_for_value,
 )
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import (
@@ -1222,8 +1223,11 @@ def _do_run_server(script_file: str, cmdline,
                 # "4k" -> "4k"
                 sizes = opts.resize_display.split(":", 1)[-1]
                 vfb_geom = parse_resolutions(sizes, opts.refresh_rate)[0]
+            fps = 0
+            if opts.refresh_rate:
+                fps = get_refresh_rate_for_value(opts.refresh_rate, 60)
 
-            xvfb, display_name = start_Xvfb(xvfb_cmd, vfb_geom, pixel_depth, display_name, cwd,
+            xvfb, display_name = start_Xvfb(xvfb_cmd, vfb_geom, pixel_depth, fps, display_name, cwd,
                                             uid, gid, username, uinput_uuid)
             assert xauthority
             xauth_add(xauthority, display_name, xauth_data, uid, gid)

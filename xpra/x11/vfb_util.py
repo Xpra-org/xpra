@@ -200,7 +200,16 @@ def get_xvfb_env(xvfb_executable: str) -> dict[str, str]:
     return env
 
 
-def patch_xvfb_command(xvfb_cmd: list[str], w: int, h: int, pixel_depth: int):
+def patch_xvfb_command_fps(xvfb_cmd: list[str], fps: int) -> None:
+    # find the ["-fakescreenfps"] argument:
+    try:
+        fps_arg = xvfb_cmd.index("-fakescreenfps")
+        xvfb_cmd[fps_arg + 1] = str(fps)
+    except ValueError:
+        xvfb_cmd += ["-fakescreenfps", str(fps)]
+
+
+def patch_xvfb_command_geometry(xvfb_cmd: list[str], w: int, h: int, pixel_depth: int) -> None:
     # find the ["-screen"] or ["screen", "0"] arguments:
     try:
         screen_arg = xvfb_cmd.index("-screen")
@@ -227,7 +236,7 @@ def patch_xvfb_command(xvfb_cmd: list[str], w: int, h: int, pixel_depth: int):
         xvfb_cmd += ["-screen", f"{w}x{h}x{pixel_depth}"]
 
 
-def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: str, cwd,
+def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, display_name: str, cwd,
                uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
@@ -240,7 +249,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
 
     log = get_vfb_logger()
     log("start_Xvfb%s XVFB_EXTRA_ARGS=%s",
-        (xvfb_cmd, vfb_geom, pixel_depth, display_name, cwd, uid, gid, username, uinput_uuid),
+        (xvfb_cmd, vfb_geom, pixel_depth, fps, display_name, cwd, uid, gid, username, uinput_uuid),
         XVFB_EXTRA_ARGS)
     use_display_fd = display_name[0] == "S"
     if XVFB_EXTRA_ARGS:
@@ -264,12 +273,16 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
     # make sure all path values are expanded:
     xvfb_cmd = [pathexpand(s) for s in xvfb_cmd]
 
+    # try to honour fps if specified:
+    if fps > 0:
+        patch_xvfb_command_fps(xvfb_cmd, fps)
+
     # try to honour initial geometries if specified:
     xvfb_executable = xvfb_cmd[0]
     if len(vfb_geom) >= 2 and xvfb_executable.endswith("Xvfb") or xvfb_executable.endswith("Xephyr"):
         w, h = vfb_geom[:2]
-        log("patch_xvfb_command%s", (xvfb_cmd, w, h, pixel_depth or 32))
-        patch_xvfb_command(xvfb_cmd, w, h, pixel_depth or 32)
+        log("patch_xvfb_command_geometry%s", (xvfb_cmd, w, h, pixel_depth or 32))
+        patch_xvfb_command_geometry(xvfb_cmd, w, h, pixel_depth or 32)
         log(f"{xvfb_cmd=!r}")
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
@@ -404,7 +417,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, display_name: st
     return xvfb, display_name
 
 
-def start_xvfb_standalone(xvfb_cmd: list[str], sessions_dir: str, pixel_depth=0, display_name="") -> int:
+def start_xvfb_standalone(xvfb_cmd: list[str], sessions_dir: str, pixel_depth=0, fps=0, display_name="") -> int:
     # we may have to tweak the environment to emulate having an xpra session
     # as the default xvfb commands may refer to $XAUTHORITY and $XPRA_SESSION_DIR
     xauthority = os.environ.get("XAUTHORITY", "")
@@ -417,8 +430,13 @@ def start_xvfb_standalone(xvfb_cmd: list[str], sessions_dir: str, pixel_depth=0,
         os.environ["XPRA_SESSION_DIR"] = session_dir
     vfb_geom = ()
     cwd = os.getcwd()
-    xvfb, actual_display_name = start_Xvfb(xvfb_cmd, vfb_geom, pixel_depth, display_name,
-                                           cwd, uid=getuid(), gid=getgid(), username="", uinput_uuid="")
+    try:
+        xvfb, actual_display_name = start_Xvfb(xvfb_cmd, vfb_geom, pixel_depth, fps, display_name,
+                                               cwd, uid=getuid(), gid=getgid(), username="", uinput_uuid="")
+    except Exception:
+        log = get_vfb_logger()
+        log.error("Error starting xvfb", exc_info=True)
+        raise
     if actual_display_name != display_name:
         print(f"display {actual_display_name!r} started")
     print(f"xvfb pid: {xvfb.pid}")

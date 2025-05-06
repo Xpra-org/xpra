@@ -156,7 +156,7 @@ def get_Xdummy_confdir() -> str:
 def get_Xdummy_command(xorg_cmd="Xorg",
                        log_dir="${XPRA_SESSION_DIR}",
                        xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf",
-                       dpi=0) -> list[str]:
+                       dpi=0, fps=0) -> list[str]:
     cmd = [
         # ie: "Xorg" or "xpra_Xdummy" or "./install/bin/xpra_Xdummy"
         xorg_cmd,
@@ -174,12 +174,14 @@ def get_Xdummy_command(xorg_cmd="Xorg",
         "-configdir", f"{get_Xdummy_confdir()}",
         "-config", f"{xorg_conf}",
     ]
+    if fps > 0:
+        cmd += ["-fakescreenfps", str(fps)]
     if dpi > 0:
         cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
 
 
-def get_Xvfb_command(width=8192, height=4096, depth=24, dpi=96) -> list[str]:
+def get_Xvfb_command(width=8192, height=4096, depth=24, dpi=96, fps=0) -> list[str]:
     cmd = [
         "Xvfb",
         "+extension", "GLX",
@@ -193,12 +195,14 @@ def get_Xvfb_command(width=8192, height=4096, depth=24, dpi=96) -> list[str]:
         "-noreset",
         "-auth", "$XAUTHORITY",
     ]
+    if fps > 0:
+        cmd += ["-fakescreenfps", str(fps)]
     if dpi > 0:
         cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
 
 
-def get_Xephyr_command(width=1920, height=1080, depth=24, dpi=96) -> list[str]:
+def get_Xephyr_command(width=1920, height=1080, depth=24, dpi=96, fps=0) -> list[str]:
     cmd = [
         "Xephyr",
         "+extension", "GLX",
@@ -209,12 +213,14 @@ def get_Xephyr_command(width=1920, height=1080, depth=24, dpi=96) -> list[str]:
         "-noreset",
         "-auth", "$XAUTHORITY",
     ]
+    if fps > 0:
+        cmd += ["-fakescreenfps", str(fps)]
     if dpi > 0:
         cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
 
 
-def get_weston_Xwayland_command(dpi=96) -> list[str]:
+def get_weston_Xwayland_command(dpi=96, fps=0) -> list[str]:
     cmd = [
         "/usr/libexec/xpra/xpra_weston_xvfb",
         "+extension", "GLX",
@@ -224,12 +230,14 @@ def get_weston_Xwayland_command(dpi=96) -> list[str]:
         "-noreset",
         "-auth", "$XAUTHORITY",
     ]
+    if fps > 0:
+        cmd += ["-fakescreenfps", str(fps)]
     if dpi > 0:
         cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
 
 
-def xvfb_command(cmd: str, depth=24, dpi=0) -> list[str]:
+def xvfb_command(cmd: str, depth=24, dpi=0, fps=0) -> list[str]:
     parts = shlex.split(cmd)
     if len(parts) > 1:
         return parts
@@ -239,23 +247,23 @@ def xvfb_command(cmd: str, depth=24, dpi=0) -> list[str]:
     if os.path.isabs(exe):
         return parts
     if exe == "Xvfb":
-        return get_Xvfb_command(depth=depth, dpi=dpi)
+        return get_Xvfb_command(depth=depth, dpi=dpi, fps=fps)
     if exe == "Xephyr":
-        return get_Xephyr_command(depth=depth, dpi=dpi)
+        return get_Xephyr_command(depth=depth, dpi=dpi, fps=fps)
     if exe in ("weston", "weston+Xwayland"):
-        return get_weston_Xwayland_command(dpi=dpi)
+        return get_weston_Xwayland_command(dpi=dpi, fps=fps)
     if exe in ("Xorg", "Xdummy"):
         xorg_bin = get_xorg_bin()
-        return get_Xdummy_command(xorg_bin, dpi=dpi)
+        return get_Xdummy_command(xorg_bin, dpi=dpi, fps=fps)
     if exe == "auto":
-        return detect_xvfb_command(dpi=dpi)
+        return detect_xvfb_command(dpi=dpi, fps=fps)
     return parts
 
 
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
                         Xdummy_ENABLED: bool | None = None, Xdummy_wrapper_ENABLED: bool | None = None,
                         warn_fn: Callable = warn,
-                        dpi=0,
+                        dpi=0, fps=0,
                         ) -> list[str]:
     """
     This function returns the xvfb command to use.
@@ -291,13 +299,13 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
                 if relinfo.find("release 10") >= 0:
                     debug(" using `xpra_weston_xvfb` on RHEL 10")
                     return get_weston_Xwayland_command(dpi)
-    return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn, dpi=dpi)
+    return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn, dpi=dpi, fps=fps)
 
 
 def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
                           Xdummy_wrapper_ENABLED: bool | None = None,
                           warn_fn: Callable = warn,
-                          dpi=0) -> list[str]:
+                          dpi=0, fps=0) -> list[str]:
     if not POSIX or OSX:
         return get_Xvfb_command(dpi=dpi)
     xorg_bin = get_xorg_bin()
@@ -328,7 +336,7 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
     if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
         if bin_dir not in os.environ.get("PATH", "/bin:/usr/bin:/usr/local/bin").split(os.pathsep):
             xorg_cmd = os.path.join(bin_dir, xorg_cmd)
-    return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf, dpi=dpi)
+    return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf, dpi=dpi, fps=fps)
 
 
 def wrap_cmd_str(cmd) -> str:

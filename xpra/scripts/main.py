@@ -27,7 +27,7 @@ import traceback
 from typing import Any, NoReturn
 from collections.abc import Callable, Iterable
 
-from xpra.common import SocketState, noerr, noop
+from xpra.common import SocketState, noerr, noop, get_refresh_rate_for_value
 from xpra.util.objects import typedict
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr, sort_human
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, OSEnvContext
@@ -882,7 +882,8 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         from xpra.wayland.wait import main
         return main(args)
     if mode == "xvfb-command":
-        print(shlex.join(xvfb_command(options.xvfb, options.pixel_depth, options.dpi)))
+        fps = get_refresh_rate_for_value(options.refresh_rate, 60) if options.refresh_rate else 0
+        print(shlex.join(xvfb_command(options.xvfb, options.pixel_depth, options.dpi, fps)))
         return ExitCode.OK
     if mode == "xvfb":
         if len(args) > 1:
@@ -892,9 +893,10 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
             display = args[0]
             if not display.startswith(":"):
                 raise ValueError(f"invalid display format {display!r}")
-        xvfb_cmd = xvfb_command(options.xvfb, options.pixel_depth, options.dpi)
+        fps = get_refresh_rate_for_value(options.refresh_rate, 60) if options.refresh_rate else 0
+        xvfb_cmd = xvfb_command(options.xvfb, options.pixel_depth, options.dpi, fps)
         from xpra.x11.vfb_util import start_xvfb_standalone
-        return start_xvfb_standalone(xvfb_cmd, options.sessions_dir, options.pixel_depth, display)
+        return start_xvfb_standalone(xvfb_cmd, options.sessions_dir, options.pixel_depth, fps, display)
     if mode == "sbom":
         return run_sbom(args)
     if mode == "showconfig":
