@@ -6,13 +6,13 @@
 import os
 
 from xpra.os_util import POSIX
-from xpra.server.util import get_logger
+from xpra.log import Logger
 
 
 def write_pid(pidfile: str, pid: int) -> int:
     if pid <= 0:
         raise ValueError(f"invalid pid value {pid}")
-    log = get_logger()
+    log = Logger("util")
     pidstr = str(pid)
     try:
         with open(pidfile, "w", encoding="latin1") as f:
@@ -43,12 +43,12 @@ def write_pidfile(pidfile: str) -> int:
 
 def rm_pidfile(pidfile: str, inode: int) -> bool:
     # verify this is the right file!
-    log = get_logger()
-    log("cleanuppidfile(%s, %s)", pidfile, inode)
+    log = Logger("util")
+    log("rm_pidfile(%s, %s)", pidfile, inode)
     if inode > 0:
         try:
             i = os.stat(pidfile).st_ino
-            log("cleanuppidfile: current inode=%i", i)
+            log("rm_pidfile: current inode=%i", i)
             if i != inode:
                 log.warn(f"Warning: pidfile {pidfile!r} inode has changed")
                 log.warn(f" was {inode}, now {i}")

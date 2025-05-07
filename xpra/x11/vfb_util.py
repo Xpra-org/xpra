@@ -22,7 +22,7 @@ from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env, get_saved_env_var
 from xpra.os_util import getuid, getgid, POSIX, OSX
-from xpra.server.util import setuidgid
+from xpra.util.daemon import setuidgid
 from xpra.util.io import is_writable, pollwait, osclose
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 from xpra.log import Logger

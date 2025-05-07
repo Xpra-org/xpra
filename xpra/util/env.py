@@ -126,6 +126,10 @@ def osexpand(s: str, actual_username="", uid=0, gid=0, subs=None) -> str:
     return os.path.expandvars(expanduser(shellsub(expanduser(s), ssub)))
 
 
+# credit: https://stackoverflow.com/a/47080959/428751
+# returns a dictionary of the environment variables resulting from sourcing a file
+
+
 def source_env(source=()) -> dict[str, str]:
     from xpra.scripts.config import FALSE_OPTIONS
     from xpra.log import Logger

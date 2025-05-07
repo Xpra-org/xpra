@@ -8,9 +8,9 @@ import sys
 
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import OSX, POSIX
-from xpra.server.util import get_logger
 from xpra.util.env import osexpand
 from xpra.util.io import umask_context
+from xpra.log import Logger
 
 
 def sh_quotemeta(s: str) -> str:
@@ -104,7 +104,7 @@ def write_runner_shell_scripts(contents: str, overwrite: bool = True) -> None:
     # is running on the remote host.  Might need to revisit this later if
     # people run into problems or autodiscovery turns out to be less useful
     # than expected.
-    log = get_logger()
+    log = Logger("server")
     MODE = 0o700
     from xpra.platform.paths import get_script_bin_dirs
     for d in get_script_bin_dirs():

@@ -54,7 +54,7 @@ from xpra.os_util import (
     get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, get_groups, get_group_id,
     get_hex_uuid, gi_import,
 )
-from xpra.server.util import setuidgid
+from xpra.util.daemon import setuidgid
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr
 from xpra.util.io import is_writable, stderr_print, which
@@ -835,11 +835,11 @@ def _do_run_server(script_file: str, cmdline,
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.server.util import (
-        create_input_devices,
-        daemonize,
-        select_log_file, open_log_file, redirect_std_to_log,
-    )
+    from xpra.x11.uinput.setup import create_input_devices
+    from xpra.util.daemon import daemonize
+    from xpra.util.daemon import redirect_std_to_log
+    from xpra.util.daemon import select_log_file
+    from xpra.util.daemon import open_log_file
     from xpra.server.runner_script import write_runner_shell_scripts, xpra_runner_shell_script, xpra_env_shell_script
     run_xpra_script = None
     env_script = None
@@ -1204,9 +1204,15 @@ def _do_run_server(script_file: str, cmdline,
     xvfb_pid = 0
     devices = {}
     if POSIX and not OSX:
-        from xpra.server.util import has_uinput, UINPUT_UUID_LEN
+        try:
+            from xpra.x11.uinput.setup import has_uinput, UINPUT_UUID_LEN
+            use_uinput = not (shadowing or proxying or encoder) and opts.input_devices.lower() in (
+                "uinput", "auto",
+            ) and has_uinput()
+        except ImportError:
+            UINPUT_UUID_LEN = 0
+            use_uinput = False
         uinput_uuid = ""
-        use_uinput = not (shadowing or proxying or encoder) and opts.input_devices.lower() in ("uinput", "auto") and has_uinput()
         if start_vfb:
             progress(40, "starting a virtual display")
             from xpra.x11.vfb_util import start_Xvfb, parse_resolutions, xauth_add

@@ -2568,6 +2568,7 @@ toggle_packages(server_ENABLED or shadow_ENABLED, "xpra.server.subsystem", "xpra
 toggle_packages(shadow_ENABLED, "xpra.server.shadow")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED and dbus_ENABLED and server_ENABLED, "xpra.x11.dbus")
+toggle_packages(x11_ENABLED and server_ENABLED, "xpra.x11.uinput")
 toggle_packages(notifications_ENABLED, "xpra.notification")
 
 # cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
