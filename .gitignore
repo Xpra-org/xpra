@@ -108,6 +108,7 @@ tests/unittests/test-file*
 # Cython files:
 /xpra/util/*.c
 /xpra/auth/*.c
+/xpra/challenge/*.c
 /xpra/buffers/new_buffers.c
 /xpra/buffers/membuf.c
 /xpra/buffers/xxh.c
@@ -116,6 +117,7 @@ tests/unittests/test-file*
 /xpra/client/*/*.c
 /xpra/client/*.c
 /xpra/client/gtk3/opengl/*.c
+/xpra/client/gtk3/window/*.c
 /xpra/clipboard/*.c
 /xpra/codecs/nvidia/*/*.c
 /xpra/codecs/nvidia/*/*.cpp
@@ -132,7 +134,7 @@ tests/unittests/test-file*
 /xpra/net/*/*/*.c
 /xpra/net/*/*.c
 /xpra/net/*.c
-/xpra/notifications/*.c
+/xpra/notification/*.c
 /xpra/opengl/*.c
 /xpra/platform/*/*.c
 /xpra/platform/*/*.cpp
@@ -141,6 +143,7 @@ tests/unittests/test-file*
 /xpra/server/*/*.c
 /xpra/server/*.c
 /xpra/x11/gtk/bindings.c
+/xpra/x11/gtk/common.c
 /xpra/x11/gtk/display_source.c
 /xpra/x11/gtk/gdk_display_util.c
 /xpra/x11/gtk/clipboard.c
@@ -161,6 +164,7 @@ tests/unittests/test-file*
 /xpra/x11/server/*.c
 /xpra/x11/*.c
 /xpra/wayland/wait_for_display.c
+/xpra/wayland/wait.c
 /xpra/*.c
 
 /.mypy_cache/
