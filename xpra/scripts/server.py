@@ -351,6 +351,7 @@ def set_server_features(opts, mode: str) -> None:
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
     features.shell = opts.shell
+    features.power = envbool("XPRA_POWER_EVENTS", True)
 
 
 def enforce_server_features() -> None:
@@ -361,6 +362,7 @@ def enforce_server_features() -> None:
     from xpra.server import features
     enforce_features(features, {
         "debug": "xpra.server.subsystem.debug",
+        "power": "xpra.server.subsystem.power",
         "control": "xpra.net.control,xpra.server.subsystem.controlcommands",
         "command": "xpra.server.subsystem.child_command",
         "notification": "xpra.notification,xpra.server.subsystem.notification,xpra.server.source.notification",

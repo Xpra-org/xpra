@@ -8,6 +8,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server import features
     from xpra.server.core import ServerCore
     classes: list[type] = [ServerCore]
+    if features.power:
+        from xpra.server.subsystem.power import PowerEventServer
+        classes.append(PowerEventServer)
     if features.ping:
         from xpra.server.subsystem.ping import PingServer
         classes.append(PingServer)
