@@ -44,7 +44,7 @@ from xpra.scripts.config import (
 )
 from xpra.common import (
     CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH, BACKWARDS_COMPATIBLE,
-    ConnectionMessage, SocketState, noerr,
+    ConnectionMessage, SocketState, noerr, noop,
     get_refresh_rate_for_value,
 )
 from xpra.exit_codes import ExitCode, ExitValue
@@ -835,7 +835,6 @@ def _do_run_server(script_file: str, cmdline,
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.x11.uinput.setup import create_input_devices
     from xpra.util.daemon import daemonize
     from xpra.util.daemon import redirect_std_to_log
     from xpra.util.daemon import select_log_file
@@ -1205,11 +1204,12 @@ def _do_run_server(script_file: str, cmdline,
     devices = {}
     if POSIX and not OSX:
         try:
-            from xpra.x11.uinput.setup import has_uinput, UINPUT_UUID_LEN
+            from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
             use_uinput = not (shadowing or proxying or encoder) and opts.input_devices.lower() in (
                 "uinput", "auto",
             ) and has_uinput()
         except ImportError:
+            create_input_devices = noop
             UINPUT_UUID_LEN = 0
             use_uinput = False
         uinput_uuid = ""
@@ -1283,7 +1283,7 @@ def _do_run_server(script_file: str, cmdline,
             if use_uinput:
                 uinput_uuid = load_session_file("uinput-uuid").decode("latin1")
         if uinput_uuid:
-            devices = create_input_devices(uinput_uuid, uid)
+            devices = create_input_devices(uinput_uuid, uid) or {}
 
     def check_xvfb(timeout=0) -> bool:
         if xvfb is None:
