@@ -4,18 +4,14 @@
 # later version. See the file COPYING for details.
 
 import sys
-import json
-import shlex
 import os.path
-from subprocess import Popen, PIPE
 from typing import Any
 
 from xpra.util.env import envbool, shellsub, osexpand
 from xpra.os_util import OSX, POSIX
-from xpra.util.io import umask_context, which, get_util_logger
+from xpra.util.io import umask_context, get_util_logger
 from xpra.platform.dotxpra import norm_makepath
-from xpra.platform.paths import get_python_exec_command
-from xpra.scripts.config import InitException, FALSE_OPTIONS
+from xpra.scripts.config import InitException
 
 UINPUT_UUID_LEN: int = 12
 
@@ -28,115 +24,8 @@ def get_logger():
     return Logger("server", "util")
 
 
-def source_env(source=()) -> dict[str, str]:
-    log = get_logger()
-    log("source_env(%s)", source)
-    env = {}
-    for f in source:
-        if not f or f.lower() in FALSE_OPTIONS:
-            continue
-        try:
-            es = env_from_sourcing(f)
-            log("source_env %s=%s", f, es)
-            env.update(es)
-        except Exception as e:
-            log(f"env_from_sourcing({f})", exc_info=True)
-            log.error(f"Error sourcing {f!r}: {e}")
-    log("source_env(%s)=%s", source, env)
-    return env
-
-
-def decode_dict(out: str) -> dict[str, str]:
-    env = {}
-    for line in out.splitlines():
-        parts = line.split("=", 1)
-        if len(parts) == 2:
-            env[parts[0]] = parts[1]
-    return env
-
-
-def decode_json(out):
-    return json.loads(out)
-
-
 # credit: https://stackoverflow.com/a/47080959/428751
 # returns a dictionary of the environment variables resulting from sourcing a file
-def env_from_sourcing(file_to_source_path: str, include_unexported_variables: bool = False) -> dict[str, str]:
-    from xpra.log import Logger
-    log = Logger("exec")
-    cmd: list[str] = shlex.split(file_to_source_path)
-
-    def abscmd(s: str) -> str:
-        if os.path.isabs(s):
-            return s
-        c = which(s)
-        if not c:
-            log.error(f"Error: cannot find command {s!r} to execute")
-            log.error(f" for sourcing {file_to_source_path!r}")
-            return s
-        if os.path.isabs(c):
-            return c
-        return os.path.abspath(c)
-
-    filename = abscmd(cmd[0])
-    cmd[0] = filename
-    # figure out if this is a script to source,
-    # or if we're meant to execute it directly
-    try:
-        with open(filename, "rb") as f:
-            first_line = f.readline()
-    except OSError as e:
-        log.error(f"Error: failed to read from {filename!r}")
-        log.estr(e)
-        first_line = b""
-    else:
-        log(f"first line of {filename!r}: {first_line!r}")
-    if first_line.startswith(b"\x7fELF") or b"\x00" in first_line:
-        decode = decode_dict
-    else:
-        source = "set -a && " if include_unexported_variables else ""
-        source += f". {filename}"
-        # ie: this is "python3.9 -c" on Posix
-        # (but our 'Python_exec_cmd.exe' wrapper on MS Windows):
-        python_cmd = " ".join(get_python_exec_command())
-        dump = f'{python_cmd} "import os, json;print(json.dumps(dict(os.environ)))"'
-        sh = which("bash") or "/bin/sh"
-        cmd = [sh, "-c", f"{source} 1>&2 && {dump}"]
-        decode = decode_json
-    out = err = b""
-    proc = None
-    try:
-        log("env_from_sourcing%s cmd=%s", (filename, include_unexported_variables), cmd)
-        proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
-        out, err = proc.communicate()
-        if proc.returncode != 0:
-            log.error(f"Error {proc.returncode} running source script {filename!r}")
-    except OSError as e:
-        log("env_from_sourcing%s", (filename, include_unexported_variables), exc_info=True)
-        log(f" stdout={out!r} ({type(out)})")
-        log(f" stderr={err!r} ({type(err)})")
-        log.error(f"Error running source script {file_to_source_path!r}")
-        if proc and proc.returncode is not None:  # NOSONAR @SuppressWarnings("python:S5727")
-            log.error(f" exit code: {proc.returncode}")
-        log.error(f" {e}")
-        return {}
-    log(f"stdout({filename})={out!r}")
-    log(f"stderr({filename})={err!r}")
-
-    def proc_str(b: bytes, fdname="stdout") -> str:
-        try:
-            return (b or b"").decode()
-        except UnicodeDecodeError:
-            log.error(f"Error decoding {fdname} from {filename!r}", exc_info=True)
-        return ""
-
-    env: dict[str, str] = {}
-    env.update(decode(proc_str(out, "stdout")))
-    env.update(decode_dict(proc_str(err, "stderr")))
-    log("env_from_sourcing%s=%s", (file_to_source_path, include_unexported_variables), env)
-    # ensure we never expose empty keys:
-    # (see ticket #4485)
-    return dict(filter(lambda item: bool(item[0]), env.items()))
 
 
 def sh_quotemeta(s: str) -> str:

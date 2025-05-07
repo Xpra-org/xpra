@@ -18,11 +18,10 @@ from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
-from xpra.util.env import envint, restore_script_env
+from xpra.util.env import envint, restore_script_env, source_env
 from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
-from xpra.server.util import source_env
 from xpra.server.pid import write_pid
 from xpra.server import ServerExitMode
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin

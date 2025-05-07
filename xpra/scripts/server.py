@@ -56,7 +56,7 @@ from xpra.server.util import setuidgid
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr
 from xpra.util.io import is_writable, stderr_print, which
-from xpra.util.env import unsetenv, envbool, osexpand, get_saved_env, get_saved_env_var
+from xpra.util.env import unsetenv, envbool, osexpand, get_saved_env, get_saved_env_var, source_env
 from xpra.common import GROUP
 from xpra.util.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
@@ -838,7 +838,6 @@ def _do_run_server(script_file: str, cmdline,
         xpra_runner_shell_script,
         write_runner_shell_scripts,
         create_input_devices,
-        source_env,
         daemonize,
         select_log_file, open_log_file, redirect_std_to_log,
     )
