@@ -22,7 +22,8 @@ from xpra.util.env import envint, restore_script_env
 from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
-from xpra.server.util import source_env, write_pid
+from xpra.server.util import source_env
+from xpra.server.pid import write_pid
 from xpra.server import ServerExitMode
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger

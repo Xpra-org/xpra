@@ -29,7 +29,7 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
 from xpra.server.subsystem.control import ControlHandler
-from xpra.server.util import write_pidfile, rm_pidfile
+from xpra.server.pid import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     SOCKET_TYPES, MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
@@ -151,7 +151,7 @@ def force_close_connection(conn) -> None:
     try:
         conn.close()
     except OSError:
-        log("close_connection()", exc_info=True)
+        netlog("close_connection()", exc_info=True)
 
 
 # noinspection PyMethodMayBeStatic
