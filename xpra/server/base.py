@@ -15,6 +15,7 @@ from xpra.common import FULL_INFO, noop, ConnectionMessage
 from xpra.net.common import Packet, PacketElement
 from xpra.scripts.config import str_to_bool
 from xpra.os_util import WIN32, gi_import
+from xpra.platform.dotxpra import DotXpra
 from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
@@ -57,6 +58,7 @@ class ServerBase(ServerBaseClass):
         self.lock: bool | None = None
         self.idle_timeout: int = 0
         self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
+        self.dotxpra = None
 
     def suspend_event(self, args) -> None:
         ServerCore.suspend_event(self, args)
@@ -84,6 +86,7 @@ class ServerBase(ServerBaseClass):
         return self._server_sources.get(proto)
 
     def init(self, opts) -> None:
+        self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
         # from now on, use the logger for parsing errors:
         from xpra.scripts import config  # pylint: disable=import-outside-toplevel
         config.warn = log.warn

@@ -57,7 +57,6 @@ from xpra.platform import set_name, threaded_server_init
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
 from xpra.platform.events import add_handler, remove_handler
-from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, gi_import, POSIX
 from xpra.util.system import get_env_info, get_sysconfig_info, register_SIGUSR_signals
 from xpra.util.parsing import parse_encoded_bin_data
@@ -173,7 +172,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
         self.session_type: str = "unknown"
         self.display_name: str = ""
         self.display_options = ""
-        self.dotxpra = None
         self._closing: bool = False
         self._exit_mode = ServerExitMode.UNSET
         # networking bits:
@@ -282,7 +280,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             self.init_html_proxy(opts)
         self.init_auth(opts)
         self.init_ssl(opts)
-        self.dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs + opts.client_socket_dirs)
 
     def init_ssl(self, opts) -> None:
         self.ssl_mode = opts.ssl
