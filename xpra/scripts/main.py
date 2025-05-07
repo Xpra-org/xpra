@@ -27,7 +27,7 @@ import traceback
 from typing import Any, NoReturn
 from collections.abc import Callable, Iterable
 
-from xpra.common import SocketState, noerr, noop, get_refresh_rate_for_value
+from xpra.common import SocketState, noerr, noop, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr, sort_human
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, OSEnvContext
@@ -858,9 +858,11 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
         from xpra.gtk.dialogs import toolbox
         return toolbox.main(args)
     if mode == "initenv":
+        assert BACKWARDS_COMPATIBLE
         if not POSIX:
             raise InitExit(ExitCode.UNSUPPORTED, "initenv is not supported on this OS")
-        from xpra.server.util import xpra_runner_shell_script, write_runner_shell_scripts
+        from xpra.server.runner_script import write_runner_shell_scripts
+        from xpra.server.runner_script import xpra_runner_shell_script
         script = xpra_runner_shell_script(script_file, os.getcwd())
         write_runner_shell_scripts(script, False)
         return ExitCode.OK

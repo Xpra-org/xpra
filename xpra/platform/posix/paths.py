@@ -87,7 +87,6 @@ def do_get_xpra_tmp_dir() -> str:
 
 
 def do_get_script_bin_dirs() -> list[str]:
-    # versions before 0.17 only had "~/.xpra/run-xpra"
     script_bin_dirs = []
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:

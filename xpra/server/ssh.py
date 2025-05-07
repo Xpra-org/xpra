@@ -55,13 +55,10 @@ def detect_ssh_stanza(cmd: list[str]) -> Sequence[str]:
     # try to detect it and extract the actual command the client is trying to run.
     # ie:
     # ['sh', '-c',
-    # ': run-xpra _proxy;xpra initenv;\
-    #  if [ -x $XDG_RUNTIME_DIR/xpra/run-xpra ]; then $XDG_RUNTIME_DIR/xpra/run-xpra _proxy;\
-    #  elif [ -x ~/.xpra/run-xpra ]; then ~/.xpra/run-xpra _proxy;\
     #  elif type "xpra" > /dev/null 2>&1; then xpra _proxy;\
     #  elif [ -x /usr/local/bin/xpra ]; then /usr/local/bin/xpra _proxy;\
-    #  else echo "no run-xpra command found"; exit 1; fi']
-    # if .* ; then .*/run-xpra _proxy;
+    #  else echo "no xpra command found"; exit 1; fi']
+    # if .* ; then .*/xpra _proxy;
     log(f"parse cmd={cmd} (len={len(cmd)})")
     if len(cmd) == 1:  # ie: 'thelongcommand'
         parse_cmd = cmd[0]
@@ -79,7 +76,7 @@ def detect_ssh_stanza(cmd: list[str]) -> Sequence[str]:
                 "type \"xpra\"", "which \"xpra\"", "command -v \"xpra\"", "[ -x ")
                ) and s.find("then ") > 0:
             then_str = s.split("then ", 1)[1]
-            # ie: then_str="$XDG_RUNTIME_DIR/xpra/run-xpra _proxy; el"
+            # ie: then_str="$XDG_RUNTIME_DIR/xpra/xpra _proxy; el"
             if then_str.find(";") > 0:
                 then_str = then_str.split(";")[0]
             parts = shlex.split(then_str)
@@ -354,9 +351,9 @@ class SSHServer(paramiko.ServerInterface):
             from xpra.platform.paths import get_app_dir
             return csend(out=f"InstallPath {get_app_dir()}\r\n")
         if cmd[0] in ("type", "which") and len(cmd) == 2:
-            xpra_cmd = cmd[-1]  # ie: $XDG_RUNTIME_DIR/xpra/run-xpra or "xpra"
+            xpra_cmd = cmd[-1]  # ie: $XDG_RUNTIME_DIR/xpra/xpra or "xpra"
             # only allow '*xpra' commands:
-            if any(xpra_cmd.lower().endswith(x) for x in ("xpra", "run-xpra", "xpra_cmd.exe", "xpra.exe")):
+            if any(xpra_cmd.lower().endswith(x) for x in ("xpra", "xpra_cmd.exe", "xpra.exe")):
                 # we don't really allow the xpra command to be executed anyway,
                 # so just reply that it exists:
                 return csend(out="xpra\r\n")

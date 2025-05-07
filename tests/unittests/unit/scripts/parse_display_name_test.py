@@ -25,7 +25,7 @@ def _test_opts():
     opts.socket_dir = socket_dir
     opts.exit_ssh = False
     opts.ssh = "ssh -v "
-    opts.remote_xpra = "run-xpra"
+    opts.remote_xpra = "xpra"
     opts.username = ""
     opts.password = ""
     opts.password_file = None

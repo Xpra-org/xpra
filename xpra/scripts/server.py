@@ -19,8 +19,10 @@ from subprocess import Popen  # pylint: disable=import-outside-toplevel
 from collections.abc import Sequence
 
 from xpra import __version__
-from xpra.scripts.session import get_session_dir, make_session_dir, session_file_path, load_session_file, \
-    save_session_file
+from xpra.scripts.session import (
+    get_session_dir, make_session_dir, session_file_path,
+    load_session_file, save_session_file
+)
 from xpra.util.io import info, warn
 from xpra.util.parsing import parse_str_dict
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
@@ -41,7 +43,7 @@ from xpra.scripts.config import (
     xvfb_command,
 )
 from xpra.common import (
-    CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH,
+    CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH, BACKWARDS_COMPATIBLE,
     ConnectionMessage, SocketState, noerr,
     get_refresh_rate_for_value,
 )
@@ -834,16 +836,14 @@ def _do_run_server(script_file: str, cmdline,
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
     from xpra.server.util import (
-        xpra_env_shell_script,
-        xpra_runner_shell_script,
-        write_runner_shell_scripts,
         create_input_devices,
         daemonize,
         select_log_file, open_log_file, redirect_std_to_log,
     )
+    from xpra.server.runner_script import write_runner_shell_scripts, xpra_runner_shell_script, xpra_env_shell_script
     run_xpra_script = None
     env_script = None
-    if POSIX and getuid() != 0:
+    if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
         save_env = os.environ.copy()
         save_env.update(parse_env(opts.env))
         env_script = xpra_env_shell_script(opts.socket_dir, save_env)

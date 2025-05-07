@@ -202,7 +202,7 @@ def get_remote_run_xpra_scripts() -> list[str]:
 
 
 def do_get_remote_run_xpra_scripts() -> list[str]:
-    return ["xpra", "$XDG_RUNTIME_DIR/xpra/run-xpra", "/usr/local/bin/xpra", "~/.xpra/run-xpra", "Xpra_cmd.exe"]
+    return ["xpra", "$XDG_RUNTIME_DIR/xpra/run-xpra", "/usr/local/bin/xpra", "Xpra_cmd.exe"]
 
 
 def get_sshpass_command() -> str:
