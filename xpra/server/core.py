@@ -29,17 +29,19 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
 from xpra.server.subsystem.control import ControlHandler
+from xpra.server.auth import AuthenticatedServer
 from xpra.server.pid import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
-    SOCKET_TYPES, MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
+    MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
     is_request_allowed, Packet, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
 )
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     add_listen_socket, accept_connection, guess_packet_type,
-    hosts, peek_connection, )
+    hosts, peek_connection,
+)
 from xpra.net.bytestreams import (
     Connection, SSLSocketConnection, SocketConnection,
     log_new_connection, pretty_socket, SOCKET_TIMEOUT
@@ -52,7 +54,7 @@ from xpra.net.glib_handler import GLibPacketHandler
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
-from xpra.net.digest import get_salt, gendigest, choose_digest
+from xpra.net.digest import get_salt, gendigest
 from xpra.platform import set_name, threaded_server_init
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
@@ -61,7 +63,6 @@ from xpra.util.system import get_env_info, get_sysconfig_info, register_SIGUSR_s
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf
 from xpra.util.background_worker import add_work_item, quit_worker
-from xpra.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.thread import start_thread
 from xpra.common import (
     LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, DEFAULT_XDG_DATA_DIRS,
@@ -93,7 +94,6 @@ main_thread = threading.current_thread()
 MAX_CONCURRENT_CONNECTIONS = envint("XPRA_MAX_CONCURRENT_CONNECTIONS", 100)
 SIMULATE_SERVER_HELLO_ERROR = envbool("XPRA_SIMULATE_SERVER_HELLO_ERROR", False)
 SERVER_SOCKET_TIMEOUT = envfloat("XPRA_SERVER_SOCKET_TIMEOUT", 0.1)
-CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 UNAUTHENTICATED_HELLO_REQUESTS = tuple(
     x.strip() for x in
     os.environ.get("XPRA_UNAUTHENTICATED_HELLO_REQUESTS", "version,connect_test,id").split(",") if x.strip()
@@ -151,7 +151,7 @@ def force_close_connection(conn) -> None:
 
 
 # noinspection PyMethodMayBeStatic
-class ServerCore(ControlHandler, GLibPacketHandler):
+class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
     """
         This is the simplest base class for servers.
         It only handles the connection layer:
@@ -160,11 +160,11 @@ class ServerCore(ControlHandler, GLibPacketHandler):
 
     def __init__(self):
         log("ServerCore.__init__()")
+        AuthenticatedServer.__init__(self)
         ControlHandler.__init__(self)
         GLibPacketHandler.__init__(self)
         self.start_time = time()
         self.uuid = ""
-        self.auth_classes: dict[str, Sequence[AuthDef]] = {}
         self.child_reaper = None
         self.session_type: str = "unknown"
         self.display_name: str = ""
@@ -275,7 +275,7 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             self.menu_provider = get_menu_provider()
         if self.http:
             self.init_html_proxy(opts)
-        self.init_auth(opts)
+        AuthenticatedServer.init(self, opts)
         self.init_ssl(opts)
 
     def init_ssl(self, opts) -> None:
@@ -596,27 +596,6 @@ class ServerCore(ControlHandler, GLibPacketHandler):
                     self._http_headers_dirs.append(os.path.join(d, "http-headers"))
             self._http_headers_dirs.append(os.path.abspath(os.path.join(self._www_dir, "../http-headers")))
             self._html = True
-
-    ######################################################################
-    # authentication:
-    def init_auth(self, opts) -> None:
-        for x in SOCKET_TYPES:
-            if x == "hyperv":
-                # we don't support listening on hyperv sockets yet
-                continue
-            if x in ("socket", "named-pipe"):
-                # use local-auth for these:
-                opts_value = opts.auth
-            else:
-                opts_value = getattr(opts, f"{x}_auth")
-            self.auth_classes[x] = self.get_auth_modules(x, opts_value)
-        authlog(f"init_auth(..) auth={self.auth_classes}")
-
-    def get_auth_modules(self, socket_type: str, auth_strs: Iterable[str]) -> Sequence[AuthDef]:
-        authlog(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
-        if not auth_strs:
-            return ()
-        return tuple(get_auth_module(auth_str) for auth_str in auth_strs)
 
     def print_run_info(self) -> None:
         from xpra.common import get_run_info
@@ -1643,108 +1622,12 @@ class ServerCore(ControlHandler, GLibPacketHandler):
             self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {verr!r}")
             proto.close()
             return
-        # this will call auth_verified if successful
-        # it may also just send challenge packets,
-        # in which case we'll end up here parsing the hello again
-        start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
-
-    def make_authenticators(self, socktype: str, remote: dict[str, Any], conn) -> Sequence[Any]:
-        authlog("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
-        sock_options = conn.options
-        sock_auth = sock_options.get("auth", "")
-        if sock_auth:
-            # per socket authentication option:
-            # ie: --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file:filename=pass.txt:foo=bar
-            # -> sock_auth = ["hosts", "file:filename=pass.txt:foo=bar"]
-            if not isinstance(sock_auth, (list, dict)):
-                sock_auth = sock_auth.split(",")
-            auth_classes = self.get_auth_modules(conn.socktype, sock_auth)
-        else:
-            # use authentication configuration defined for all sockets of this type:
-            if socktype not in self.auth_classes:
-                raise RuntimeError(f"invalid socket type {socktype!r}")
-            auth_classes = self.auth_classes[socktype]
-        i = 0
-        authenticators = []
-        if auth_classes:
-            authlog(f"creating authenticators {csv(auth_classes)} for {socktype}")
-            for auth_name, _, aclass, options in auth_classes:
-                opts = dict(options)
-                opts["remote"] = remote
-                opts.update(sock_options)
-                opts["connection"] = conn
-
-                def parse_socket_dirs(v) -> Sequence[str]:
-                    if isinstance(v, (tuple, list)):
-                        return v
-                    # FIXME: this can never actually match ","
-                    # because we already split connection options with it.
-                    # We need to change the connection options parser to be smarter
-                    return str(v).split(",")
-
-                opts["socket-dirs"] = parse_socket_dirs(opts.get("socket-dirs", self._socket_dirs))
-                try:
-                    for o in ("self",):
-                        if o in opts:
-                            raise ValueError(f"illegal authentication module options {o!r}")
-                    authlog(f"{auth_name} : {aclass}({opts})")
-                    authenticator = aclass(**opts)
-                except Exception:
-                    authlog(f"{aclass}({opts})", exc_info=True)
-                    raise
-                authlog(f"authenticator {i}={authenticator}")
-                authenticators.append(authenticator)
-                i += 1
-        return tuple(authenticators)
-
-    def send_challenge(self, proto: SocketProtocol, salt: bytes, auth_caps: dict, digest: str, salt_digest: str,
-                       prompt: str = "password") -> None:
-        proto.send_now(Packet("challenge", salt, auth_caps, digest, salt_digest, prompt))
-        self.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
-
-    def auth_failed(self, proto: SocketProtocol, msg: str | ConnectionMessage, authenticator=None) -> None:
-        authlog.warn("Warning: authentication failed")
-        wmsg = nicestr(msg)
-        if authenticator:
-            wmsg = f"{authenticator!r}: "+wmsg
-        authlog.warn(f" {wmsg}")
-        GLib.timeout_add(1000, self.disconnect_client, proto, msg)
-
-    def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
-        remote = {}
-        for key in ("hostname", "uuid", "session-id", "username", "name"):
-            v = c.strget(key)
-            if v:
-                remote[key] = v
-        conn = proto._conn
-        if not conn or proto.is_closed():
-            authlog(f"connection {proto} is already closed")
-            return
-        if not proto.authenticators:
-            socktype = conn.socktype_wrapped
-            try:
-                proto.authenticators = self.make_authenticators(socktype, remote, conn)
-            except ValueError as e:
-                authlog(f"instantiating authenticator for {socktype}", exc_info=True)
-                self.auth_failed(proto, str(e))
-                return
-            except Exception as e:
-                authlog(f"instantiating authenticator for {socktype}", exc_info=True)
-                authlog.error(f"Error instantiating authenticators for {proto.socket_type} connection:")
-                authlog.estr(e)
-                self.auth_failed(proto, str(e))
-                return
-
-        digest_modes = c.strtupleget("digest", ("hmac",))
-        salt_digest_modes = c.strtupleget("salt-digest", ("xor",))
-        # client may have requested encryption:
-        auth_caps = self.setup_encryption(proto, c)
-        if auth_caps is None:
-            return
 
         # try to auto upgrade to ssl:
         packet_types = c.strtupleget("packet-types", ())
-        if SSL_UPGRADE and not auth_caps and "ssl-upgrade" in packet_types and conn.socktype in ("tcp",):
+        encryption_caps = c.dictget("encryption")
+        conn = getattr(proto, "_conn", None)
+        if SSL_UPGRADE and not encryption_caps and "ssl-upgrade" in packet_types and conn and conn.socktype in ("tcp",):
             options = conn.options
             if options.get("ssl-upgrade", "yes").lower() in TRUE_OPTIONS:
                 ssl_options = self.get_ssl_socket_options(options)
@@ -1756,101 +1639,10 @@ class ServerCore(ControlHandler, GLibPacketHandler):
                     proto.send_now(Packet("ssl-upgrade", ssl_attrs))
                     return
 
-        def send_fake_challenge() -> None:
-            # fake challenge so the client will send the real hello:
-            salt: bytes = get_salt()
-            digest: str = choose_digest(digest_modes)
-            salt_digest: str = choose_digest(salt_digest_modes)
-            self.send_challenge(proto, salt, auth_caps, digest, salt_digest)
-
-        # skip the authentication module we have "passed" already:
-        remaining_authenticators = tuple(x for x in proto.authenticators if not x.passed)
-        authlog("processing authentication with %s, remaining=%s, digest_modes=%s, salt_digest_modes=%s",
-                proto.authenticators, remaining_authenticators, digest_modes, salt_digest_modes)
-        # verify each remaining authenticator:
-        for index, authenticator in enumerate(proto.authenticators):
-            if authenticator not in remaining_authenticators:
-                authlog(f"authenticator[{index}]={authenticator} (already passed)")
-                continue
-
-            def fail(msg: str | ConnectionMessage) -> None:
-                self.auth_failed(proto, msg, authenticator)
-
-            req = authenticator.requires_challenge()
-            csent = authenticator.challenge_sent
-            authlog(f"authenticator[{index}]={authenticator}, requires-challenge={req}, challenge-sent={csent}")
-            if not req:
-                # this authentication module does not need a challenge
-                # (ie: "peercred", "exec" or "none")
-                if not authenticator.authenticate(c):
-                    fail("authentication failed")
-                    return
-                authenticator.passed = True
-                authlog(f"authentication passed for {authenticator} (no challenge needed)")
-                continue
-            if not csent:
-                # we'll re-schedule this when we call send_challenge()
-                # as the authentication module is free to take its time
-                self.cancel_verify_connection_accepted(proto)
-                # note: we may have received a challenge_response from a previous auth module's challenge
-                try:
-                    salt, digest = authenticator.get_challenge(digest_modes)
-                except ValueError as e:
-                    authlog.warn("Warning: unable to generate an authentication challenge")
-                    authlog.warn(" %s", e)
-                    fail("authentication challenge processing error")
-                    return
-                if not (salt or digest):
-                    if authenticator.requires_challenge():
-                        fail("invalid state, unexpected challenge response")
-                        return
-                    authlog.warn(f"Warning: authentication module {authenticator!r} does not require any credentials")
-                    authlog.warn(f" but the client {proto} supplied them")
-                    # fake challenge so the client will send the real hello:
-                    send_fake_challenge()
-                    return
-                actual_digest = digest.split(":", 1)[0]
-                authlog(f"get_challenge({digest_modes})={hexstr(salt)}, {digest}")
-                countinfo = ""
-                if len(proto.authenticators) > 1:
-                    countinfo += f" ({index + 1} of {len(proto.authenticators)})"
-                authlog.info(f"Authentication required by {authenticator!r} authenticator module{countinfo}")
-                authlog.info(
-                    f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")
-                if actual_digest not in digest_modes:
-                    fail(f"cannot proceed without {actual_digest!r} digest support")
-                    return
-                salt_digest: str = authenticator.choose_salt_digest(salt_digest_modes)
-                authlog(f"{authenticator}.choose_salt_digest({salt_digest_modes})={salt_digest!r}")
-                if salt_digest in ("xor", "des"):
-                    fail(f"insecure salt digest {salt_digest!r} rejected")
-                    return
-                authlog(f"{authenticator!r} sending challenge {authenticator.prompt!r}")
-                self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
-                return
-            if not authenticator.authenticate(c):
-                fail(ConnectionMessage.AUTHENTICATION_FAILED)
-                return
-        client_expects_challenge = c.strget("challenge")
-        if client_expects_challenge:
-            authlog.warn("Warning: client expects an authentication challenge,")
-            authlog.warn(" sending a fake one")
-            send_fake_challenge()
-            return
-        authlog(f"all {len(proto.authenticators)} authentication modules passed")
-        capabilities = packet.get_dict(1)
-        c = typedict(capabilities)
-        self.auth_verified(proto, c, auth_caps)
-
-    def auth_verified(self, proto: SocketProtocol, caps: typedict, auth_caps: dict) -> None:
-        command_req = tuple(str(x) for x in caps.tupleget("command_request"))
-        if command_req:
-            # call from UI thread:
-            authlog(f"auth_verified(..) command request={command_req}")
-            GLib.idle_add(self.handle_command_request, proto, *command_req)
-            return
-        # continue processing hello packet in UI thread:
-        GLib.idle_add(self.call_hello_oked, proto, caps, auth_caps)
+        # this will call auth_verified if successful
+        # it may also just send challenge packets,
+        # in which case we'll end up here parsing the hello again
+        start_thread(AuthenticatedServer.verify_auth, "authenticate connection", daemon=True, args=(self, proto, packet, c))
 
     def _process_ssl_upgrade(self, proto: SocketProtocol, packet: Packet) -> None:
         socktype = proto._conn.socktype
