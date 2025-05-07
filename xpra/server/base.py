@@ -10,7 +10,7 @@ from time import monotonic
 from typing import Any
 
 from xpra.server.core import ServerCore
-from xpra.server.background_worker import add_work_item
+from xpra.util.background_worker import add_work_item
 from xpra.common import FULL_INFO, noop, ConnectionMessage
 from xpra.net.common import Packet, PacketElement
 from xpra.scripts.config import str_to_bool

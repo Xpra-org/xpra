@@ -62,7 +62,7 @@ from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid
 from xpra.util.system import get_env_info, get_sysconfig_info, register_SIGUSR_signals
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf
-from xpra.server.background_worker import add_work_item, quit_worker
+from xpra.util.background_worker import add_work_item, quit_worker
 from xpra.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.thread import start_thread
 from xpra.common import (

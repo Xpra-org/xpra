@@ -8,8 +8,8 @@ import time
 import unittest
 
 from unit.test_util import silence_error, LoggerSilencer
-from xpra.server import background_worker
-from xpra.server.background_worker import get_worker, add_work_item, stop_worker, Worker_Thread
+from xpra.util import background_worker
+from xpra.util.background_worker import get_worker, add_work_item, stop_worker, WorkerThread
 
 
 def slow_item():
@@ -52,7 +52,7 @@ class BackgroundWorkerTest(unittest.TestCase):
         assert len(ndc) == 1, "nodupe item should have been run once only, got %i" % (len(ndc),)
 
     def test_normal_stop(self):
-        w = Worker_Thread()
+        w = WorkerThread()
         w.start()
         # noinspection PyTypeChecker
         w.add(None)

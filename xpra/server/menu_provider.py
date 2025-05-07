@@ -10,7 +10,7 @@ from collections.abc import Callable
 from xpra.os_util import gi_import
 from xpra.util.env import envint, envbool
 from xpra.util.thread import start_thread
-from xpra.server.background_worker import add_work_item
+from xpra.util.background_worker import add_work_item
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

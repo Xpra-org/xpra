@@ -18,7 +18,7 @@ from xpra.server.core import ClientException
 from xpra.codecs.video import getVideoHelper
 from xpra.codecs.constants import VideoSpec
 from xpra.net.compression import use
-from xpra.server.background_worker import add_work_item
+from xpra.util.background_worker import add_work_item
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint
