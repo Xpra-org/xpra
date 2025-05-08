@@ -1356,11 +1356,13 @@ class WindowVideoSource(WindowSource):
         # which video encodings to evaluate:
         if self.encoding in ("auto", "stream", "grayscale"):
             if not self.common_video_encodings:
-                return checknovideo("no common video encodings")
+                checknovideo("no common video encodings")
+                return
             eval_encodings = self.common_video_encodings
         else:
             if self.encoding not in self.common_video_encodings:
-                return checknovideo("non-video / unsupported encoding: %r", self.encoding)
+                checknovideo("non-video / unsupported encoding: %r", self.encoding)
+                return
             eval_encodings = (self.encoding, )
         ww, wh = self.window_dimensions
         w = ww & self.width_mask
