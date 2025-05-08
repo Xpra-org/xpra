@@ -3,8 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any
-
 from xpra.client.base.stub_client_mixin import StubClientMixin
 from xpra.net.common import Packet, SSL_UPGRADE
 from xpra.util.thread import start_thread
@@ -19,24 +17,6 @@ class SSLUpgradeClient(StubClientMixin):
     """
     Adds ability to upgrade connections to ssl
     """
-
-    def __init__(self):
-        pass
-
-    def init(self, opts) -> None:
-        pass
-
-    def get_info(self) -> dict[str, tuple]:
-        return {}
-
-    def get_caps(self) -> dict[str, Any]:
-        return {}
-
-    def parse_server_capabilities(self, c: typedict) -> bool:
-        return True
-
-    def setup_connection(self, _conn) -> None:
-        pass
 
     def _process_ssl_upgrade(self, packet: Packet) -> None:
         assert SSL_UPGRADE
