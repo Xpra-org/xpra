@@ -86,20 +86,6 @@ CurrentTime: Final[int] = constants["CurrentTime"]
 # ('reset_x_focus') that people should call whenever they think that focus may
 # have gone wonky.
 
-def root_set(*args):
-    root = get_default_root_window()
-    assert root
-    xid = root.get_xid()
-    prop_set(xid, *args)
-
-
-world_window = None
-
-
-def get_world_window() -> None:
-    global world_window
-    return world_window
-
 
 def destroy_world_window() -> None:
     global world_window
@@ -209,7 +195,10 @@ class WorldWindow(Gtk.Window):
 
         def do_reset_x_focus() -> None:
             self._take_focus()
-            root_set("_NET_ACTIVE_WINDOW", "u32", XNone)
+            root = get_default_root_window()
+            assert root
+            xid = root.get_xid()
+            prop_set(xid, "_NET_ACTIVE_WINDOW", "u32", XNone)
 
         with xlog:
             do_reset_x_focus()
@@ -222,3 +211,11 @@ class WorldWindow(Gtk.Window):
 
 
 GObject.type_register(WorldWindow)
+
+
+world_window: WorldWindow | None = None
+
+
+def get_world_window() -> WorldWindow | None:
+    global world_window
+    return world_window
