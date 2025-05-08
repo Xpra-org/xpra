@@ -1179,7 +1179,9 @@ class WindowClient(StubClientMixin):
             # create the new window,
             # which should honour the new state of the opengl_enabled flag if that's what we changed,
             # or the new dimensions, etc
-            window = self.make_new_window(wid, x, y, ww, wh, bw, bh, metadata, override_redirect, client_properties)
+            geom = x, y, ww, wh
+            backing_size = bw, bh
+            window = self.make_new_window(wid, geom, backing_size, metadata, override_redirect, client_properties)
             window._resize_counter = resize_counter
             # if we had a backing already,
             # restore the attributes we had saved from it
