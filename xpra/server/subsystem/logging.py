@@ -225,7 +225,7 @@ class LoggingServer(StubServerMixin):
         except Exception as e:
             log("log message decoding error", exc_info=True)
             log.error("Error: failed to parse logging message:")
-            log.error(" %s", repr_ellipsized(msg))
+            log.error(" %s", repr_ellipsized(dmsg))
             log.estr(e)
 
     def do_log(self, level, line) -> None:
