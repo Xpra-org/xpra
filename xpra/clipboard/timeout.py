@@ -7,6 +7,7 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.common import noop
+from xpra.net.common import PacketElement
 from xpra.clipboard.core import ClipboardProtocolHelperCore, ClipboardProxyCore
 from xpra.util.str_fn import Ellipsizer, repr_ellipsized
 from xpra.util.env import envint
@@ -65,7 +66,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
     ############################################################################
     # network methods for communicating with the remote clipboard:
     ############################################################################
-    def _send_clipboard_token_handler(self, proxy: ClipboardProxyCore, packet_data=()):
+    def _send_clipboard_token_handler(self, proxy: ClipboardProxyCore, packet_data: tuple[PacketElement] = ()):
         if log.is_debug_enabled():
             log("_send_clipboard_token_handler(%s, %s)", proxy, repr_ellipsized(packet_data))
         remote = self.local_to_remote(proxy._selection)

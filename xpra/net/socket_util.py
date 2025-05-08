@@ -497,7 +497,7 @@ def setup_tcp_socket(host: str, iport: int, socktype: str = "tcp") \
     return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
 
 
-def create_udp_socket(host: str, iport: int, family=socket.AF_INET) -> socket.socket:
+def create_udp_socket(host: str, iport: int, family: socket.AddressFamily=socket.AF_INET) -> socket.socket:
     if family == socket.AF_INET6:
         if not socket.has_ipv6:
             raise RuntimeError("specified an IPv6 address but this is not supported on this system")

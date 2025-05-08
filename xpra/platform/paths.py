@@ -474,13 +474,14 @@ def get_info() -> dict[str, Any]:
     }
 
 
-def main() -> None:
+def main() -> int:
     from xpra.log import consume_verbose_argv
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Path-Info", "Path Info"):
         consume_verbose_argv(sys.argv, "util")
         print_nested_dict(get_info())
+    return 0
 
 
 if __name__ == "__main__":

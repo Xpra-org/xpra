@@ -117,7 +117,7 @@ class PointerServer(StubServerMixin):
         pointer = packet.get_ints(4)
         modifiers = packet.get_strs(5)
         device_id = 0
-        props = {
+        props: dict[str, Any] = {
             "modifiers": modifiers,
         }
         if len(packet) >= 7:

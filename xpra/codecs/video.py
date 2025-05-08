@@ -434,7 +434,7 @@ def getVideoHelper() -> VideoHelper:
     return instance
 
 
-def main() -> None:
+def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.log import enable_color, consume_verbose_argv
     from xpra.platform import program_context
@@ -447,6 +447,7 @@ def main() -> None:
         info = vh.get_info()
         print_nested_dict(info)
         unload_codecs()
+    return 0
 
 
 if __name__ == "__main__":

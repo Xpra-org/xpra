@@ -403,7 +403,7 @@ def get_license_keys(version=0, basefilename="nvenc") -> Sequence[str]:
     return keys
 
 
-def main() -> None:
+def main() -> int:
     # pylint: disable=import-outside-toplevel
     from xpra.platform import program_context
     with program_context("Nvidia-Info", "Nvidia Info"):
@@ -428,6 +428,7 @@ def main() -> None:
                 log.info("")
                 log.info(f"{len(cards)} cards:")
                 print_nested_dict(cards, print_fn=log.info)
+    return 0
 
 
 if __name__ == "__main__":

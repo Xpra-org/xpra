@@ -69,9 +69,9 @@ class TrayBase:
 
     def get_size(self) -> tuple[int, int] | None:
         g = self.get_geometry()
-        if g is None:
+        if not g:
             return None
-        return g[2:4]
+        return g[2], g[3]
 
     def set_tooltip(self, tooltip: str = "") -> None:
         self.tooltip = tooltip

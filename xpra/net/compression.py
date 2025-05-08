@@ -260,13 +260,14 @@ def decompress_by_name(data: bytes, algo: str) -> SizedBuffer:
     return c.decompress(data)
 
 
-def main() -> None:  # pragma: no cover
+def main() -> int:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
     from xpra.util.str_fn import print_nested_dict
     from xpra.platform import program_context
     with program_context("Compression", "Compression Info"):
         init_all()
         print_nested_dict(get_compression_caps())
+    return 0
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -267,7 +267,7 @@ class ClipboardClient(StubClientMixin):
 
     def send_clipboard_selections(self, selections: Sequence[str]) -> None:
         log("send_clipboard_selections(%s)", selections)
-        self.send_now("clipboard-enable-selections", selections)
+        self.send_now("clipboard-enable-selections", tuple(selections))
 
     def setup_clipboard_helper(self, helper_class, options: dict):
         log("setup_clipboard_helper(%s, %s)", helper_class, options)

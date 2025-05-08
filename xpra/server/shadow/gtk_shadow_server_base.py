@@ -343,8 +343,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def get_notification_tray(self):
         return self.tray_widget
 
-    def get_notifier_classes(self) -> list[type]:
-        ncs = list(ShadowServerBase.get_notifier_classes(self))
+    def get_notifier_classes(self) -> list[Callable]:
+        ncs: list[Callable] = list(ShadowServerBase.get_notifier_classes(self))
         try:
             from xpra.gtk.notifier import GTKNotifier  # pylint: disable=import-outside-toplevel
             ncs.append(GTKNotifier)

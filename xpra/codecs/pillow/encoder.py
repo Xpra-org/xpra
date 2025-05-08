@@ -204,7 +204,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
         if pixel_format.find("A") >= 0 and coding == "jpeg":
             im = im.convert("RGB")
         q = int(min(100, max(1, quality)))
-        kwargs = dict(im.info)
+        kwargs: dict[str, Any] = dict(im.info)
         kwargs["quality"] = q
         if coding == "webp":
             kwargs["method"] = int(speed < 10)

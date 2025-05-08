@@ -4543,6 +4543,7 @@ def run_list_clients(error_cb, opts, extra_args) -> ExitValue:
                 istr += f" connected to {endpoint!r}"
             sys.stdout.write(f"{istr}\n")
             sys.stdout.flush()
+    return 0
 
 
 def run_auth(_options, args) -> ExitValue:

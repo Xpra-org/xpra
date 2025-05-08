@@ -247,7 +247,7 @@ class ClientConnection(StubClientConnection):
         will_have_more = bool(kwargs.get("will_have_more", not synchronous))
         p = self.protocol
         if p:
-            packet = (packet_type, *parts)
+            packet = Packet(packet_type, *parts)
             self.ordinary_packets.append((packet, synchronous, will_have_more))
             p.source_has_more()
 

@@ -31,7 +31,7 @@ class ClientTray(ClientWidgetBase):
     """
     DEFAULT_LOCATION = [0, 0]
     DEFAULT_SIZE = [64, 64]
-    DEFAULT_GEOMETRY = DEFAULT_LOCATION + DEFAULT_SIZE
+    DEFAULT_GEOMETRY: tuple[int, int, int, int] = tuple(DEFAULT_LOCATION + DEFAULT_SIZE)
 
     def __init__(self, client, wid, w, h, metadata, tray_widget, mmap_area):
         log("ClientTray%s", (client, wid, w, h, tray_widget, mmap_area))
@@ -40,7 +40,7 @@ class ClientTray(ClientWidgetBase):
         self._metadata = metadata
         self.title = metadata.strget("title")
         self.tray_widget = tray_widget
-        self._geometry = None
+        self._geometry : tuple[int, int, int, int] | None = None
         self._window_alpha = True
         self.group_leader = None
 
@@ -75,7 +75,7 @@ class ClientTray(ClientWidgetBase):
         return None
 
     def get_geometry(self) -> tuple[int, int, int, int]:
-        return tuple(self._geometry or ClientTray.DEFAULT_GEOMETRY)
+        return tuple(self._geometry) or ClientTray.DEFAULT_GEOMETRY
 
     def get_tray_geometry(self) -> tuple | None:
         tw = self.tray_widget

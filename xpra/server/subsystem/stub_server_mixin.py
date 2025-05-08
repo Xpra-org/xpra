@@ -142,6 +142,7 @@ class StubServerMixin:
             return [cmd]
         return shlex.split(str(cmd))
 
-    def get_server_source(self, _proto):
+    @staticmethod
+    def get_server_source(_proto):
         """ returns the client connection source object for the given protocol """
         return None

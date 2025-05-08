@@ -124,7 +124,7 @@ class GTKStatusIconTray(TrayBase):
 
     def get_size(self) -> tuple[int, int]:
         s = max(8, min(256, self.tray_widget.get_size()))
-        return (s, s)
+        return s, s
 
     def set_tooltip(self, tooltip: str = "") -> None:
         if self.tray_widget:

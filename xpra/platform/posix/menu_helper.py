@@ -365,7 +365,7 @@ def load_xdg_menu(submenu) -> dict[str, Any]:
 def remove_icons(menu_data: dict) -> dict:
     filt = {}
     for category, cdef in menu_data.items():
-        fcdef = dict(cdef)
+        fcdef: dict[str, Any] = dict(cdef)
         entries = dict(fcdef.get("Entries", {}))
         for entry, edef in tuple(entries.items()):
             nd = noicondata(edef)
