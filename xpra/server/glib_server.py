@@ -7,6 +7,7 @@ from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -14,7 +15,7 @@ GLib = gi_import("GLib")
 log = Logger("server", "glib")
 
 
-class GLibServer:
+class GLibServer(StubServerMixin):
 
     def __init__(self):
         self.main_loop = GLib.MainLoop()

@@ -217,6 +217,7 @@ def configure_logging(options, mode) -> None:
             "seamless", "desktop", "monitor", "expand",
             "shadow", "shadow-screen",
             "encoder", "encode",
+            "runner",
             "recover",
             "attach", "listen", "proxy",
             "version", "info", "id",
@@ -454,7 +455,7 @@ def run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: str,
     if mode in (
             "seamless", "desktop", "shadow", "shadow-screen", "expand",
             "upgrade", "upgrade-seamless", "upgrade-desktop",
-            "encoder",
+            "encoder", "runner",
     ) and not display_is_remote and options.daemon and use_systemd_run(options.systemd_run):
         # make sure we run via the same interpreter,
         # inject it into the command line if we have to:
@@ -620,6 +621,7 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
             "upgrade", "upgrade-seamless", "upgrade-desktop",
             "proxy",
             "encoder",
+            "runner",
     ):
         return run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
     if mode in (
@@ -2400,7 +2402,7 @@ def run_server(script_file, cmdline, error_cb, options, args, full_mode: str, de
     if mode == "seamless":
         match_client_display_size(options, display_is_remote)
 
-    if mode != "encoder":
+    if mode not in ("encoder", "runner"):
         r = start_server_via_proxy(cmdline, error_cb, options, args, full_mode)
         if isinstance(r, int):
             return r
@@ -2795,6 +2797,7 @@ def guess_display(current_display, uid: int = getuid(), gid: int = getgid(), ses
             displays = sorted(filter(islive, displays))
             log(f"live: {displays}")
         if len(displays) == 1:
+            log(f"guess_display: {displays[0]}")
             return displays[0]
         if current_display in displays:
             log(f"using {current_display=}")

@@ -353,6 +353,9 @@ def set_server_features(opts, mode: str) -> None:
     features.shell = opts.shell
     features.power = envbool("XPRA_POWER_EVENTS", True)
 
+    if envbool("XPRA_ENFORCE_FEATURES", True):
+        enforce_server_features()
+
 
 def enforce_server_features() -> None:
     """
@@ -426,6 +429,11 @@ def make_expand_server(attrs: dict[str, str]):
 def make_encoder_server():
     from xpra.server.encoder.server import EncoderServer
     return EncoderServer()
+
+
+def make_runner_server():
+    from xpra.server.runner.server import RunnerServer
+    return RunnerServer()
 
 
 def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=True, timeout=None) -> bool:
@@ -612,7 +620,7 @@ def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str) -> bo
         # make sure that the display isn't the one we're running against,
         # unless we're shadowing it
         return xdisplay != display or mode.startswith("shadow")
-    if mode in ("proxy", "encoder"):
+    if mode in ("proxy", "encoder", "runner"):
         return False
     if os.environ.get("XDG_SESSION_DESKTOP"):
         return True
@@ -664,6 +672,7 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mo
         "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
         "proxy",
         "encoder",
+        "runner"
     )
     validate_encryption(opts)
     if opts.encoding == "help" or "help" in opts.encodings:
@@ -730,6 +739,7 @@ def _do_run_server(script_file: str, cmdline,
     shadowing = mode.startswith("shadow")
     proxying = mode == "proxy"
     encoder = mode == "encoder"
+    runner = mode == "runner"
     use_display = parse_bool_or("use-display", opts.use_display)
     if shadowing or expanding:
         use_display = True
@@ -766,7 +776,7 @@ def _do_run_server(script_file: str, cmdline,
 
     display_options = ""
     # get the display name:
-    if (shadowing or expanding) and not extra_args:
+    if (shadowing or expanding or runner) and not extra_args:
         if WIN32 or OSX:
             # just a virtual name for the only display available:
             display_name = "Main"
@@ -787,7 +797,7 @@ def _do_run_server(script_file: str, cmdline,
             if not shadowing and not upgrading and not use_display:
                 display_name_check(display_name)
         else:
-            if proxying or encoder:
+            if proxying or encoder or runner:
                 # find a free display number:
                 dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
                 all_displays = dotxpra.sockets()
@@ -832,7 +842,7 @@ def _do_run_server(script_file: str, cmdline,
             else:
                 warn(f"server for {display_name} is not exiting")
 
-    if not (shadowing or proxying or upgrading or encoder) and opts.exit_with_children and not has_child_arg:
+    if not (shadowing or proxying or upgrading or encoder or runner) and opts.exit_with_children and not has_child_arg:
         error_cb("--exit-with-children specified without any children to spawn; exiting immediately")
 
     # Generate the script text now, because os.getcwd() will
@@ -896,7 +906,7 @@ def _do_run_server(script_file: str, cmdline,
             del e
 
     clobber = int(upgrading) * CLOBBER_UPGRADE | int(use_display or 0) * CLOBBER_USE_DISPLAY
-    start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder)
+    start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder) and opts.xvfb.lower() not in FALSE_OPTIONS
     xauth_data: str = get_hex_uuid() if start_vfb else ""
 
     # if pam is present, try to create a new session:
@@ -1207,7 +1217,7 @@ def _do_run_server(script_file: str, cmdline,
     if POSIX and not OSX:
         try:
             from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
-            use_uinput = not (shadowing or proxying or encoder) and opts.input_devices.lower() in (
+            use_uinput = not (shadowing or proxying or encoder or runner) and opts.input_devices.lower() in (
                 "uinput", "auto",
             ) and has_uinput()
         except ImportError:
@@ -1434,8 +1444,6 @@ def _do_run_server(script_file: str, cmdline,
                 log.warn(" non-embedded ssh connections will not be available")
 
     set_server_features(opts, mode)
-    if envbool("XPRA_ENFORCE_FEATURES", True):
-        enforce_server_features()
 
     if not (proxying or shadowing or encoder) and POSIX and not OSX:
         if not check_xvfb():
@@ -1472,6 +1480,8 @@ def _do_run_server(script_file: str, cmdline,
         app = make_expand_server(mode_attrs)
     elif encoder:
         app = make_encoder_server()
+    elif runner:
+        app = make_runner_server()
     else:
         if starting or upgrading_seamless:
             app = make_seamless_server(clobber)
@@ -1508,9 +1518,9 @@ def _do_run_server(script_file: str, cmdline,
         from xpra.server import features
         if features.dbus:
             app.init_dbus(dbus_pid, dbus_env)
-        if not (shadowing or proxying or expanding or encoder):
+        if features.display and not (shadowing or proxying or expanding or encoder or runner):
             app.init_display_pid(xvfb_pid)
-            app.save_pid()
+            app.save_server_pid()
         app.original_desktop_display = desktop_display
         progress(90, "finalizing")
         app.server_init()
