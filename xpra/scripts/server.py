@@ -43,7 +43,7 @@ from xpra.scripts.config import (
     xvfb_command,
 )
 from xpra.common import (
-    CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, SSH_AGENT_DISPATCH, BACKWARDS_COMPATIBLE,
+    CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, BACKWARDS_COMPATIBLE,
     ConnectionMessage, SocketState, noerr, noop,
     get_refresh_rate_for_value,
 )
@@ -1391,17 +1391,6 @@ def _do_run_server(script_file: str, cmdline,
                     write_session_file("dbus.env", dbus_env_data.encode("utf8"))
         if dbus_env:
             os.environ.update(dbus_env)
-
-    if SSH_AGENT_DISPATCH and not (shadowing or proxying or encoder) and opts.ssh.lower() not in FALSE_OPTIONS:
-        progress(50, "setup ssh agent forwarding")
-        try:
-            from xpra.net.ssh.agent import setup_ssh_auth_sock
-            ssh_auth_sock = setup_ssh_auth_sock(session_dir)
-            os.environ["SSH_AUTH_SOCK"] = ssh_auth_sock
-            protected_env["SSH_AUTH_SOCK"] = ssh_auth_sock
-        except Exception as e:
-            log.error("Error setting up ssh agent forwarding", exc_info=True)
-            progress(50, f"error setting up ssh agent forwarding: {e}")
 
     if not (proxying or encoder):
         if POSIX and not OSX:
