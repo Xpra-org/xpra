@@ -195,6 +195,7 @@ def consume_verbose_argv(argv: list[str], *categories: str) -> bool:
 # makes it easier to rename logging categories
 # without having to modify older versions of the wiki and documentation
 ALIASES: dict[str, str] = {
+    "glib": "gtk",
     "event": "events",
     "filter": "filters",
     "mouse": "pointer",
@@ -410,7 +411,7 @@ class Logger:
     def __init__(self, *categories: str):
         self.debug = self.__call__
         self.min_level = 0
-        self.categories = list(categories)
+        self.categories = list(ALIASES.get(category, category) for category in categories)
         n = 1
         caller = ""
         while n < 10:
@@ -452,7 +453,7 @@ class Logger:
         # ready, keep track of it:
         add_logger(self.categories, self)
         for x in categories:
-            if x not in KNOWN_FILTERS:
+            if ALIASES.get(x, x) not in KNOWN_FILTERS:
                 self.warn("unknown logging category: %s", x)
         if self.debug_enabled:
             self.debug(f"debug enabled for {self.categories}")
