@@ -261,7 +261,7 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_start_child(self, *args) -> str:
         return self.do_control_command_start(False, *args)
 
-    def do_control_command_start(self, ignore, *args) -> str:
+    def do_control_command_start(self, ignore: bool, *args) -> str:
         if not self.start_new_commands:
             raise ControlError("this feature is currently disabled")
         proc = self.start_command(" ".join(args), args, ignore)
@@ -269,7 +269,7 @@ class ServerBaseControlCommands(StubServerMixin):
             raise ControlError("failed to start new child command " + str(args))
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
 
-    def control_command_toggle_feature(self, feature, state=None) -> str:
+    def control_command_toggle_feature(self, feature: str, state: str) -> str:
         log("control_command_toggle_feature(%s, %s)", feature, state)
         if feature not in TOGGLE_FEATURES:
             msg = f"invalid feature {feature!r}"
@@ -281,12 +281,9 @@ class ServerBaseControlCommands(StubServerMixin):
             log.warn(msg)
             return msg
         cur = getattr(self, fn, None)
-        if state is None:
-            # if the new state is not specified, just negate the value
-            state = not cur
         setattr(self, fn, state)
         self.setting_changed(feature, state)
-        return f"{feature} set to {state}"
+        return f"{feature} set to {state} (was {cur!r}"
 
     def _control_get_sources(self, client_uuids_str, _attr=None):
         # find the client uuid specified as a string:

@@ -59,10 +59,9 @@ class AuthenticatedServer:
         log(f"init_auth(..) auth={self.auth_classes}")
 
     def get_auth_modules(self, socket_type: str, auth_strs: Iterable[str]) -> Sequence[AuthDef]:
-        log(f"get_auth_modules({socket_type}, {auth_strs}, ..)")
-        if not auth_strs:
-            return ()
-        return tuple(get_auth_module(auth_str) for auth_str in auth_strs)
+        modules = tuple(get_auth_module(auth_str) for auth_str in auth_strs)
+        log(f"get_auth_modules({socket_type}, {auth_strs})={modules}")
+        return modules
 
     def make_authenticators(self, socktype: str, remote: dict[str, Any], conn) -> Sequence[Any]:
         log("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
