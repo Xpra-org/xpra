@@ -39,7 +39,7 @@ from xpra.net.common import (
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
-    add_listen_socket, accept_connection, guess_packet_type,
+    setup_local_sockets, add_listen_socket, accept_connection, guess_packet_type,
     hosts, peek_connection,
 )
 from xpra.net.bytestreams import (
@@ -58,7 +58,10 @@ from xpra.net.digest import get_salt, gendigest
 from xpra.platform import set_name, threaded_server_init
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
-from xpra.os_util import force_quit, get_machine_id, get_user_uuid, get_hex_uuid, getuid, gi_import, POSIX
+from xpra.os_util import (
+    force_quit, get_machine_id, POSIX,
+    get_username_for_uid, get_user_uuid, get_hex_uuid, getuid, gi_import,
+)
 from xpra.util.system import get_env_info, get_sysconfig_info, register_SIGUSR_signals
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf
@@ -617,7 +620,35 @@ class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
     # #####################################################################
     # sockets / connections / packets:
     def init_sockets(self, sockets) -> None:
-        self._socket_info = sockets
+        self._socket_info.update(sockets)
+
+    def init_local_sockets(self, opts, clobber: bool) -> None:
+        uid = int(opts.uid)
+        gid = int(opts.gid)
+        username = get_username_for_uid(uid)
+        session_dir = os.environ.get("XPRA_SESSION_DIR", "")
+        netlog(f"init_local_sockets(.., {clobber}) {uid=}, {gid=}, {username=!r}, {session_dir=!r}")
+        # setup unix domain socket:
+        local_sockets = setup_local_sockets(
+            opts.bind,  # noqa: F821
+            opts.socket_dir, opts.socket_dirs, session_dir,  # noqa: F821
+            self.display_name, clobber,  # noqa: F821
+            opts.mmap_group, opts.socket_permissions,  # noqa: F821
+            username, uid, gid)
+        netlog(f"done setting up local sockets: {local_sockets}")
+        self._socket_info.update(local_sockets)
+
+        # all unix domain sockets:
+        ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype == "socket"]
+        if ud_paths:
+            os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
+            if opts.forward_xdg_open and os.path.exists("/usr/libexec/xpra/xdg-open"):
+                os.environ["PATH"] = "/usr/libexec/xpra" + os.pathsep + os.environ.get("PATH", "")
+        else:
+            log.warn("Warning: no local server sockets,")
+            if opts.forward_xdg_open:
+                log.warn(" forward-xdg-open cannot be enabled")
+            log.warn(" non-embedded ssh connections will not be available")
 
     def mdns_publish(self) -> None:
         if not self.mdns:

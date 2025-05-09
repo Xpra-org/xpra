@@ -1079,7 +1079,7 @@ def _do_run_server(script_file: str, cmdline,
             opts.bind_rdp = []
 
     progress(30, "creating sockets")
-    from xpra.net.socket_util import get_network_logger, setup_local_sockets, create_sockets
+    from xpra.net.socket_util import create_sockets
     retry = 10 * int(mode.startswith("upgrade"))
     sockets = create_sockets(opts, error_cb, retry=retry, sd_listen=POSIX and not OSX, ssh_upgrades=opts.ssh_upgrade)
 
@@ -1408,34 +1408,6 @@ def _do_run_server(script_file: str, cmdline,
         log("gui_init()")
         gui_init()
 
-    def init_local_sockets() -> None:
-        progress(60, "initializing local sockets")
-        # setup unix domain socket:
-        netlog = get_network_logger()
-        local_sockets = setup_local_sockets(
-            opts.bind,  # noqa: F821
-            opts.socket_dir, opts.socket_dirs, session_dir,  # noqa: F821
-            display_name, clobber,  # noqa: F821
-            opts.mmap_group, opts.socket_permissions,  # noqa: F821
-            username, uid, gid)
-        netlog(f"setting up local sockets: {local_sockets}")
-        sockets.update(local_sockets)
-        if POSIX and (starting or upgrading or starting_desktop):
-            # all unix domain sockets:
-            ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype == "socket"]
-            forward_xdg_open = bool(opts.forward_xdg_open) or (  # noqa: F821
-                opts.forward_xdg_open is None and mode.find("desktop") < 0 and mode.find("monitor") < 0
-            )  # noqa: F821
-            if ud_paths:
-                os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
-                if forward_xdg_open and os.path.exists("/usr/libexec/xpra/xdg-open"):
-                    os.environ["PATH"] = "/usr/libexec/xpra" + os.pathsep + os.environ.get("PATH", "")
-            else:
-                log.warn("Warning: no local server sockets,")
-                if forward_xdg_open:
-                    log.warn(" forward-xdg-open cannot be enabled")
-                log.warn(" non-embedded ssh connections will not be available")
-
     set_server_features(opts, mode)
 
     if not (proxying or shadowing or encoder) and POSIX and not OSX:
@@ -1506,7 +1478,7 @@ def _do_run_server(script_file: str, cmdline,
         if not app.validate():
             progress(100, "server validation failed")
             return 1
-        init_local_sockets()
+        app.init_local_sockets(opts, clobber)
         app.init_sockets(sockets)
         from xpra.server import features
         if features.dbus:
