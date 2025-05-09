@@ -8,7 +8,7 @@ import os.path
 from math import ceil
 from typing import Any
 from time import monotonic
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 
 from xpra.common import noop, ConnectionMessage
 from xpra.os_util import gi_import
@@ -19,7 +19,7 @@ from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.constants import COMPRESS_RATIO, COMPRESS_FMT_SUFFIX
-from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
+from xpra.server.glib_server import GLibServer
 from xpra.server.base import ServerBase, SERVER_BASES
 from xpra.codecs.video import getVideoHelper
 from xpra.log import Logger
@@ -85,13 +85,12 @@ def csc_image(image: ImageWrapper, format_options: Sequence[str]) -> ImageWrappe
     return None
 
 
-class EncoderServer(ServerBase):
+class EncoderServer(ServerBase, GLibServer):
 
     def __init__(self):
         log(f"EncoderServer.__init__() {SERVER_BASES=}")
         super().__init__()
         self.session_type = "encoder"
-        self.main_loop = GLib.MainLoop()
         self.encoders: dict[str, dict[int, Any]] = {}
 
     def __repr__(self):
@@ -103,23 +102,6 @@ class EncoderServer(ServerBase):
         encodings = get_encodings()
         if self.encoding not in ("auto", ) and self.encoding not in encodings:
             raise ValueError(f"unsupported encoding {self.encoding!r}")
-
-    def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
-        sstr = "encoder server"
-        register_os_signals(callback, sstr)
-        register_SIGUSR_signals(sstr)
-
-    def do_run(self) -> None:
-        log("do_run() calling %s", self.main_loop.run)
-        self.main_loop.run()
-        log("do_run() end of %()", self.main_loop.run)
-
-    def do_quit(self) -> None:
-        log("do_quit: calling main_loop.quit()")
-        self.main_loop.quit()
-        # from now on, we can't rely on the main loop:
-        from xpra.util.system import register_SIGUSR_signals
-        register_SIGUSR_signals()
 
     def cleanup_source(self, source) -> None:
         encoders = self.encoders.pop(source.uuid, {})
