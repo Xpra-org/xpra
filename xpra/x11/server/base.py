@@ -15,7 +15,6 @@ from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.gtk.error import xswallow, xsync, xlog
 from xpra.scripts.config import str_to_bool
-from xpra.server import ServerExitMode
 from xpra.common import SYNC_ICC
 from xpra.server import features
 from xpra.x11.server.core import X11ServerCore, XTestPointerDevice
@@ -74,8 +73,6 @@ class X11ServerBase(X11ServerCore):
         self._settings: dict[str, Any] = {}
         self._xsettings_manager = None
         self._xsettings_enabled: bool = False
-        self.display_pid: int = 0
-        self.icc_profile: bytes = b""
         self.input_devices = "xtest"
 
     def do_init(self, opts) -> None:
@@ -92,40 +89,12 @@ class X11ServerBase(X11ServerCore):
             self.init_all_server_settings()
 
     # noinspection PyMethodMayBeStatic
-    def save_pid(self) -> None:
+    def save_server_pid(self) -> None:
         root_prop_set("XPRA_SERVER_PID", "u32", os.getpid())
 
     def clean_x11_properties(self) -> None:
         super().clean_x11_properties()
         self.do_clean_x11_properties("XPRA_SERVER_PID")
-
-    def init_display_pid(self, pid: int) -> None:
-        if not pid:
-            log.info("xvfb pid not found")
-        else:
-            log.info(f"xvfb pid {pid}")
-        self.display_pid = pid
-
-    def kill_display(self) -> None:
-        if self.display_pid:
-            if self._exit_mode in (ServerExitMode.UPGRADE, ServerExitMode.EXIT):
-                action = "exiting" if self._exit_mode == ServerExitMode.EXIT else "upgrading"
-                log.info(f"{action}: not cleaning up Xvfb")
-                return
-            from xpra.x11.vfb_util import kill_xvfb
-            kill_xvfb(self.display_pid)
-            self.do_clean_session_files(
-                "xvfb.pid",
-                "xauthority",
-                "Xorg.log",
-                "Xorg.log.old",
-                "xorg.conf.d/*"
-                "xorg.conf.d"
-            )
-
-    def late_cleanup(self, stop=True) -> None:
-        self.kill_display()
-        super().late_cleanup(stop)
 
     def configure_best_screen_size(self) -> tuple[int, int]:
         root_w, root_h = super().configure_best_screen_size()

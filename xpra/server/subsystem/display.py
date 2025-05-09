@@ -6,7 +6,7 @@
 import os
 from typing import Any
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, POSIX
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import bytestostr
@@ -93,6 +93,7 @@ class DisplayManager(StubServerMixin):
     PREFIX = "display"
 
     def __init__(self):
+        self.display_pid: int = 0
         self.randr = False
         self.bell = False
         self.default_dpi = 96
@@ -114,6 +115,34 @@ class DisplayManager(StubServerMixin):
         self.default_dpi = int(opts.dpi)
         self.bit_depth = self.get_display_bit_depth()
         self.refresh_rate = opts.refresh_rate
+
+    def init_display_pid(self, pid: int) -> None:
+        if not pid:
+            log.info("xvfb pid not found")
+        else:
+            log.info(f"xvfb pid {pid}")
+        self.display_pid = pid
+
+    def late_cleanup(self, stop=True) -> None:
+        if stop and POSIX:
+            self.kill_display()
+        elif self.display_pid:
+            log.info("not cleaning up Xvfb %i", self.display_pid)
+
+    def kill_display(self) -> None:
+        if not self.display_pid:
+            log("unable to kill display: no display pid")
+            return
+        from xpra.x11.vfb_util import kill_xvfb
+        kill_xvfb(self.display_pid)
+        self.do_clean_session_files(
+            "xvfb.pid",
+            "xauthority",
+            "Xorg.log",
+            "Xorg.log.old",
+            "xorg.conf.d/*"
+            "xorg.conf.d"
+        )
 
     def print_screen_info(self) -> None:
         display = os.environ.get("DISPLAY")
