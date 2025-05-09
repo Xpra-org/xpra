@@ -851,14 +851,11 @@ def _do_run_server(script_file: str, cmdline,
 
     # Generate the script text now, because os.getcwd() will
     # change if/when we daemonize:
-    from xpra.util.daemon import daemonize
-    from xpra.util.daemon import redirect_std_to_log
-    from xpra.util.daemon import select_log_file
-    from xpra.util.daemon import open_log_file
-    from xpra.server.runner_script import write_runner_shell_scripts, xpra_runner_shell_script, xpra_env_shell_script
+    from xpra.util.daemon import daemonize, redirect_std_to_log, select_log_file, open_log_file
     run_xpra_script = None
     env_script = None
     if POSIX and getuid() != 0 and BACKWARDS_COMPATIBLE:
+        from xpra.server.runner_script import xpra_runner_shell_script, xpra_env_shell_script
         save_env = os.environ.copy()
         save_env.update(parse_env(opts.env))
         env_script = xpra_env_shell_script(opts.socket_dir, save_env)
@@ -1004,6 +1001,8 @@ def _do_run_server(script_file: str, cmdline,
     if run_xpra_script:
         # Write out a shell-script so that we can start our proxy in a clean
         # environment:
+        assert BACKWARDS_COMPATIBLE
+        from xpra.server.runner_script import write_runner_shell_scripts
         write_runner_shell_scripts(run_xpra_script)
     if env_script:
         write_session_file("server.env", env_script)
