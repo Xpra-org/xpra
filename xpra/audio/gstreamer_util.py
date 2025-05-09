@@ -430,7 +430,7 @@ def get_source_plugins() -> list[str]:
 
 
 def get_default_source() -> str:
-    source = os.environ.get("XPRA_SOUND_SRC")
+    source = os.environ.get("XPRA_SOUND_SRC", "")
     sources = get_source_plugins()
     if source:
         if source not in sources:
@@ -475,7 +475,7 @@ def get_sink_plugins() -> list[str]:
 
 
 def get_default_sink_plugin() -> str:
-    sink = os.environ.get("XPRA_SOUND_SINK")
+    sink = os.environ.get("XPRA_SOUND_SINK", "")
     sinks = get_sink_plugins()
     if sink:
         if sink not in sinks:

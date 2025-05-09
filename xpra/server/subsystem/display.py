@@ -145,8 +145,8 @@ class DisplayManager(StubServerMixin):
         )
 
     def print_screen_info(self) -> None:
-        display = os.environ.get("DISPLAY")
-        if display and display.startswith(":"):
+        display = os.environ.get("DISPLAY", "")
+        if display.startswith(":"):
             extra = ""
             bit_depth = self.get_display_bit_depth()
             if bit_depth:
@@ -262,7 +262,7 @@ class DisplayManager(StubServerMixin):
             max_size = self.get_max_screen_size()
             if max_size:
                 features["max_desktop_size"] = max_size
-            display = os.environ.get("DISPLAY")
+            display = os.environ.get("DISPLAY", "")
             if display:
                 features["display"] = display
         return features

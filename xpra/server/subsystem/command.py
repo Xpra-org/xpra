@@ -305,7 +305,7 @@ class ChildCommandServer(StubServerMixin):
             if not ignore:
                 self.children_count += 1
             self.children_started.append(procinfo)
-            session_dir = os.environ.get("XPRA_SESSION_DIR")
+            session_dir = os.environ.get("XPRA_SESSION_DIR", "")
             if session_dir and not procinfo.dead:
                 pidname = name.split(" ")[0]
                 if pidname.find(os.sep) >= 0:

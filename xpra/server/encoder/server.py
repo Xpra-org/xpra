@@ -36,7 +36,7 @@ assert codec_key not in sys.modules
 sys.modules[codec_key] = None
 
 
-SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
+SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 assert (not SAVE_TO_FILE) or SAVE_TO_FILE in ("jpeg", "png", "webp")
 
 COMPRESS_FMT = (

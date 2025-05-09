@@ -324,7 +324,7 @@ class ProcessTestUtil(unittest.TestCase):
             ):  #DBUS_SESSION_BUS_ADDRESS
                 #keep it
                 env[x] = os.environ.get(x)
-        real_display = os.environ.get("DISPLAY")
+        real_display = os.environ.get("DISPLAY", "")
         cmd = [cls.which(TEST_XVFB_COMMAND)]
         is_xephyr = TEST_XVFB_COMMAND.find("Xephyr") >= 0
         if is_xephyr:

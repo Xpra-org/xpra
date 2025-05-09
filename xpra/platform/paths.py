@@ -238,7 +238,7 @@ def do_get_app_dir() -> str:
 def default_get_app_dir() -> str:
     if os.name == "posix":
         for prefix in (
-                os.environ.get("RPM_BUILD_ROOT"),
+                os.environ.get("RPM_BUILD_ROOT", ""),
                 get_install_prefix(),
                 sys.exec_prefix,
                 "/usr",
@@ -332,7 +332,7 @@ def do_get_desktop_background_paths() -> list[str]:
 
 
 def get_xpra_command() -> list[str]:
-    envvalue = os.environ.get("XPRA_COMMAND")
+    envvalue = os.environ.get("XPRA_COMMAND", "")
     if envvalue:
         return shlex.split(envvalue)
     return do_get_xpra_command()
@@ -350,7 +350,7 @@ def default_do_get_xpra_command() -> list[str]:
 
 
 def get_nodock_command() -> list[str]:
-    envvalue = os.environ.get("XPRA_NODOCK_COMMAND")
+    envvalue = os.environ.get("XPRA_NODOCK_COMMAND", "")
     if envvalue:
         return shlex.split(envvalue)
     return do_get_nodock_command()
@@ -384,7 +384,7 @@ def do_get_python_exec_command() -> list[str]:
 
 
 def get_python_execfile_command() -> list[str]:
-    envvalue = os.environ.get("XPRA_PYTHON_EXECFILE_COMMAND") or os.environ.get("XPRA_PYTHON_COMMAND")
+    envvalue = os.environ.get("XPRA_PYTHON_EXECFILE_COMMAND", "") or os.environ.get("XPRA_PYTHON_COMMAND", "")
     if envvalue:
         return shlex.split(envvalue)
     return do_get_python_execfile_command()

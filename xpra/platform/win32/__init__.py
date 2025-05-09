@@ -161,8 +161,8 @@ _wait_for_input = False
 
 
 def should_wait_for_input() -> bool:
-    wfi = os.environ.get("XPRA_WAIT_FOR_INPUT")
-    if wfi is not None:
+    wfi = os.environ.get("XPRA_WAIT_FOR_INPUT", "")
+    if wfi:
         return wfi != "0"
     if is_wine():
         # don't wait for input when running under wine
@@ -230,7 +230,7 @@ def do_init() -> None:
         return
 
     if envbool("XPRA_LOG_TO_FILE", True):
-        log_filename = os.environ.get("XPRA_LOG_FILENAME")
+        log_filename = os.environ.get("XPRA_LOG_FILENAME", "")
         if not log_filename:
             from xpra.platform import get_prgname
             log_filename = (get_prgname() or "Xpra") + ".log"
@@ -323,7 +323,7 @@ def do_clean() -> None:
 
     # undo the redirect to file:
     if envbool("XPRA_LOG_TO_FILE", True):
-        log_filename = os.environ.get("XPRA_LOG_FILENAME")
+        log_filename = os.environ.get("XPRA_LOG_FILENAME", "")
         if log_filename and os.path.exists(log_filename):
             noerr(sys.stdout.close)
             sys.stdout = sys.stderr = None

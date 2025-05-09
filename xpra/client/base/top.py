@@ -30,7 +30,7 @@ from xpra.log import Logger
 log = Logger("gobject", "client")
 
 REFRESH_RATE = envint("XPRA_REFRESH_RATE", 1)
-CURSES_LOG = os.environ.get("XPRA_CURSES_LOG")
+CURSES_LOG = os.environ.get("XPRA_CURSES_LOG", "")
 
 WHITE = 0
 GREEN = 1

@@ -256,6 +256,7 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
             cert = find_ssl_cert()
             if not cert:
                 raise InitException("failed to automatically locate an SSL certificate to use")
+        # Important: keep key_password=None when no password is available
         key_password = key_password or os.environ.get("XPRA_SSL_KEY_PASSWORD")
         ssllog("context.load_cert_chain%s", (cert or None, key or None, key_password))
         try:

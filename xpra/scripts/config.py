@@ -1089,7 +1089,7 @@ def get_defaults() -> dict[str, Any]:
         get_sessions_dir, get_socket_dirs, get_client_socket_dirs,
     )
     conf_dirs = [os.environ.get("XPRA_CONF_DIR", "")]
-    build_root = os.environ.get("RPM_BUILD_ROOT")
+    build_root = os.environ.get("RPM_BUILD_ROOT", "")
     if build_root:
         conf_dirs.append(os.path.join(build_root, "etc", "xpra"))
     bin_dir = ""

@@ -147,7 +147,7 @@ def do_get_user_conf_dirs(uid) -> list[str]:
 
 
 def get_runtime_dir() -> str:
-    runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", "")
     if runtime_dir:
         return runtime_dir
     if sys.platform.startswith("linux"):

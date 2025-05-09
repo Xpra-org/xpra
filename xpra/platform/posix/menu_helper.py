@@ -413,7 +413,7 @@ def load_xdg_menu_data() -> dict:
     # invalid values for XDG_CONFIG_DIRS can cause problems,
     # so try unsetting it if we can't load the menus with it:
     default_xdg = f"{sys.prefix}/etc/xdg".replace("/usr/etc", "/etc")
-    xdg_home = os.environ.get("XDG_CONFIG_HOME")
+    xdg_home = os.environ.get("XDG_CONFIG_HOME", "")
     for cd in (False, True):
         with OSEnvContext():
             if cd is True and not os.environ.pop("XDG_CONFIG_DIRS", ""):

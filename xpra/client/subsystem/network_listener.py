@@ -220,7 +220,7 @@ class NetworkListener(StubClientMixin):
                 info["network"] = get_network_caps()
                 info["authentication"] = get_digest_caps()
                 info["session-type"] = (get_session_type() or platform_name()) + " client"
-                display = os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY")
+                display = os.environ.get("WAYLAND_DISPLAY", "") or os.environ.get("DISPLAY", "")
                 if display and POSIX and not OSX:
                     info["display"] = display
                 hello_reply(info)

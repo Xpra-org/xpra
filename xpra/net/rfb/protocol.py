@@ -26,7 +26,7 @@ GLib = gi_import("GLib")
 
 log = Logger("network", "protocol", "rfb")
 
-RFB_LOG = os.environ.get("XPRA_RFB_LOG")
+RFB_LOG = os.environ.get("XPRA_RFB_LOG", "")
 READ_BUFFER_SIZE = envint("XPRA_READ_BUFFER_SIZE", 65536)
 
 PROTOCOL_VERSION = (3, 8)

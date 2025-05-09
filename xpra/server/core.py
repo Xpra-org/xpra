@@ -497,7 +497,7 @@ class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
 
     def init_uuid(self) -> None:
         # Define a server UUID if needed:
-        self.uuid = os.environ.get("XPRA_PROXY_START_UUID") or self.get_uuid()
+        self.uuid = os.environ.get("XPRA_PROXY_START_UUID", "") or self.get_uuid()
         if not self.uuid:
             self.uuid = get_hex_uuid()
             self.save_uuid()
@@ -1910,7 +1910,7 @@ class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
             "machine-id": get_machine_id(),
             "version": XPRA_NUMERIC_VERSION[:FULL_INFO+1],
         }
-        display = os.environ.get("DISPLAY")
+        display = os.environ.get("DISPLAY", "")
         if display:
             id_info["display"] = display
         return id_info
@@ -1997,7 +1997,7 @@ class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
                 "path": self.pidfile,
                 "inode": self.pidinode,
             }
-        logfile = os.environ.get("XPRA_SERVER_LOG")
+        logfile = os.environ.get("XPRA_SERVER_LOG", "")
         if logfile:
             info["log-file"] = logfile
         return info

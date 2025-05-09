@@ -176,10 +176,10 @@ def get_platform_name() -> str:
                     "-NoProfile",
                     "-Command",
                     "$OutputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; (Get-CimInstance Win32_OperatingSystem).Caption | Out-String",
-                 ],
-                 capture_output=True,
-                 text=True,
-                 encoding="utf-8",
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
             ).stdout.strip()
             return out
         except OSError:
@@ -200,7 +200,7 @@ def get_platform_name() -> str:
 
 def get_build_props() -> dict[str, Any]:
     props = {}
-    source_epoch = os.environ.get("SOURCE_DATE_EPOCH")
+    source_epoch = os.environ.get("SOURCE_DATE_EPOCH", "")
     if source_epoch:
         # reproducible builds:
         build_time = datetime.datetime.fromtimestamp(int(source_epoch), tz=datetime.timezone.utc)
@@ -214,7 +214,7 @@ def get_build_props() -> dict[str, Any]:
             import getpass
             props["user"] = getpass.getuser()
         except OSError:
-            props["user"] = os.environ.get("USER")
+            props["user"] = os.environ.get("USER", "")
         props["on"] = socket.gethostname()
 
     props.update({

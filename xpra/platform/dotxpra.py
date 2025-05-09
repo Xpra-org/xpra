@@ -81,7 +81,7 @@ class DotXpra:
                 if st_mode != mode:
                     # perhaps this directory lives in $XDG_RUNTIME_DIR
                     # ie: /run/user/$UID/xpra or /run/user/$UID/xpra/100
-                    xrd = os.environ.get("XDG_RUNTIME_DIR")
+                    xrd = os.environ.get("XDG_RUNTIME_DIR", "")
                     if xrd and d.startswith(xrd) and os.stat(xrd).st_mode & 0o777 == 0o700:
                         # $XDG_RUNTIME_DIR has the correct permissions
                         return

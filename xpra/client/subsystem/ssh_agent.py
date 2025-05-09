@@ -16,7 +16,7 @@ class SSHAgentClient(StubClientMixin):
     """
 
     def get_caps(self) -> dict[str, Any]:
-        ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK")
+        ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK", "")
         caps: dict[str, Any] = {}
         if ssh_auth_sock and os.path.isabs(ssh_auth_sock):
             # ensure agent forwarding is actually requested?

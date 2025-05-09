@@ -93,7 +93,7 @@ def main(argv) -> int:
     enable_color()
     import os
     secret = b32(argv[1])
-    username = os.environ.get("USERNAME")
+    username = os.environ.get("USERNAME", "")
     issuer_name = "Xpra"
     if len(argv) >= 3:
         username = argv[2]

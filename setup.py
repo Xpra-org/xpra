@@ -1343,8 +1343,8 @@ def exec_pkgconfig(*pkgs_options, **ekw):
     if rpath and kw.get("libraries"):
         insert_into_keywords(kw, "library_dirs", rpath)
         insert_into_keywords(kw, "extra_link_args", f"-Wl,-rpath={rpath}")
-    CFLAGS = os.environ.get("CFLAGS")
-    LDFLAGS = os.environ.get("LDFLAGS")
+    CFLAGS = os.environ.get("CFLAGS", "")
+    LDFLAGS = os.environ.get("LDFLAGS", "")
     # win32 remove double "-march=x86-64 -mtune=generic -O2 -pipe -O3"?
     if verbose_ENABLED:
         print(f"adding CFLAGS={CFLAGS}")
@@ -1670,14 +1670,14 @@ def glob_recurse(srcdir: str) -> dict[str, list[str]]:
 #*******************************************************************************
 MINGW_PREFIX = ""
 if WIN32:
-    MINGW_PREFIX = os.environ.get("MINGW_PREFIX")
+    MINGW_PREFIX = os.environ.get("MINGW_PREFIX", "")
     assert MINGW_PREFIX, "you must run this build from a MINGW environment"
     if modules_ENABLED:
         add_packages("xpra.platform.win32", "xpra.platform.win32.namedpipes")
     remove_packages("xpra.platform.darwin", "xpra.platform.posix")
 
     # this is where the win32 gi installer will put things:
-    gnome_include_path = os.environ.get("MINGW_PREFIX")
+    gnome_include_path = os.environ.get("MINGW_PREFIX", "")
 
     # cx_freeze doesn't use "data_files"...
     del setup_options["data_files"]

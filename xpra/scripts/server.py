@@ -127,7 +127,7 @@ def display_name_check(display_name: str) -> None:
 
 
 def print_DE_warnings() -> None:
-    de = os.environ.get("XDG_SESSION_DESKTOP") or os.environ.get("SESSION_DESKTOP")
+    de = os.environ.get("XDG_SESSION_DESKTOP", "") or os.environ.get("SESSION_DESKTOP", "")
     if not de:
         return
     log = get_logger()
@@ -615,7 +615,7 @@ def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str) -> bo
     if os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_CLIENT"):
         # don't show the splash screen over SSH forwarding
         return False
-    xdisplay = os.environ.get("DISPLAY")
+    xdisplay = os.environ.get("DISPLAY", "")
     if xdisplay:
         # make sure that the display isn't the one we're running against,
         # unless we're shadowing it
@@ -743,6 +743,10 @@ def _do_run_server(script_file: str, cmdline,
     use_display = parse_bool_or("use-display", opts.use_display)
     if shadowing or expanding:
         use_display = True
+
+    # resolve `forward_xdg_open` to a boolean:
+    if opts.forward_xdg_open is None:
+        opts.forward_xdg_open = mode == "seamless"
 
     if not proxying and not shadowing and POSIX and not OSX:
         if not opts.x11:

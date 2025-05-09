@@ -21,7 +21,7 @@ GLib = gi_import("GLib")
 log = Logger("audio")
 gstlog = Logger("gstreamer")
 
-SAVE_AUDIO = os.environ.get("XPRA_SAVE_AUDIO")
+SAVE_AUDIO = os.environ.get("XPRA_SAVE_AUDIO", "")
 
 KNOWN_TAGS = {"bitrate", "codec", "audio-codec", "mode", "container-format", "encoder", "description", "language-code",
               "minimum-bitrate", "maximum-bitrate", "channel-mode"}
@@ -53,7 +53,7 @@ class AudioPipeline(Pipeline):
     def init_file(self, codec: str) -> None:
         gen = self.generation.increase()
         log("init_file(%s) generation=%s, SAVE_AUDIO=%s", codec, gen, SAVE_AUDIO)
-        if SAVE_AUDIO is not None:
+        if SAVE_AUDIO:
             parts = codec.split("+")
             if len(parts) > 1:
                 filename = SAVE_AUDIO + str(gen) + "-" + parts[0] + ".%s" % parts[1]

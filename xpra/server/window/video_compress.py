@@ -118,11 +118,11 @@ GSTREAMER_X11_TIMEOUT = envint("XPRA_GSTREAMER_X11_TIMEOUT", 500)
 
 SAVE_VIDEO_PATH = os.environ.get("XPRA_SAVE_VIDEO_PATH", "")
 SAVE_VIDEO_STREAMS = envbool("XPRA_SAVE_VIDEO_STREAMS", False)
-SAVE_VIDEO_FRAMES = os.environ.get("XPRA_SAVE_VIDEO_FRAMES")
-if SAVE_VIDEO_FRAMES not in ("png", "jpeg", None):
+SAVE_VIDEO_FRAMES = os.environ.get("XPRA_SAVE_VIDEO_FRAMES", "")
+if SAVE_VIDEO_FRAMES not in ("png", "jpeg", ""):
     log.warn("Warning: invalid value for 'XPRA_SAVE_VIDEO_FRAMES'")
     log.warn(" only 'png' or 'jpeg' are allowed")
-    SAVE_VIDEO_FRAMES = None
+    SAVE_VIDEO_FRAMES = ""
 
 COMPRESS_SCROLL_FMT = COMPRESS_FMT_PREFIX+" as %3i rectangles  (%5iKB to     0KB)"+COMPRESS_FMT_SUFFIX
 

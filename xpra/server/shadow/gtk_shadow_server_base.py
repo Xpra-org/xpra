@@ -376,7 +376,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         try:
             # menu:
             label = "Xpra Shadow Server"
-            display = os.environ.get("DISPLAY")
+            display = os.environ.get("DISPLAY", "")
             if POSIX and display:
                 label = f"Xpra {display} Shadow Server"
             self.tray_menu = Gtk.Menu()

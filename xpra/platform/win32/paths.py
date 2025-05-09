@@ -60,7 +60,7 @@ def get_appdata_dir(roaming=True) -> str:
 def do_get_resources_dir() -> str:
     from xpra.platform.paths import get_app_dir
     app_dir = get_app_dir()
-    prefix = os.environ.get("MINGW_PREFIX")
+    prefix = os.environ.get("MINGW_PREFIX", "")
     for d in (app_dir, prefix):
         if not d or not os.path.isdir(d):
             continue
@@ -269,7 +269,7 @@ def do_get_audio_command() -> list[str]:
 def _get_xpra_exe_command(*cmd_options: str) -> list[str]:
     from xpra.platform.paths import get_app_dir
     exe_dir = get_app_dir()
-    mingw = os.environ.get("MINGW_PREFIX")
+    mingw = os.environ.get("MINGW_PREFIX", "")
     for cmd in cmd_options:
         exe_name = "%s.exe" % cmd
         if sys.executable.lower().endswith(exe_name):

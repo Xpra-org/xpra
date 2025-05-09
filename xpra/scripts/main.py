@@ -1456,7 +1456,7 @@ def run_pass(extra_args) -> ExitValue:
 def run_send_file(extra_args) -> ExitValue:
     sockpath = os.environ.get("XPRA_SERVER_SOCKET")
     if not sockpath:
-        display = os.environ.get("DISPLAY")
+        display = os.environ.get("DISPLAY", "")
         if display:
             uri = display
         else:
@@ -1795,7 +1795,7 @@ def get_client_app(cmdline, error_cb, opts, extra_args, mode: str):
             app.show_progress(60, "connecting to server")
         if mode != "attach" and not extra_args:
             # try to guess the server intended:
-            server_socket = os.environ.get("XPRA_SERVER_SOCKET")
+            server_socket = os.environ.get("XPRA_SERVER_SOCKET", "")
             if server_socket:
                 extra_args = [f"socket://{server_socket}"]
         display_desc = do_pick_display(error_cb, opts, extra_args, cmdline)
@@ -2692,7 +2692,7 @@ def find_wayland_display_sockets(uid: int = getuid(), gid: int = getgid()) -> di
     from xpra.platform.posix.paths import get_runtime_dir
     xrd = osexpand(get_runtime_dir(), uid=uid, gid=gid)
     # try the one from the environment first:
-    wd = os.environ.get("WAYLAND_DISPLAY")
+    wd = os.environ.get("WAYLAND_DISPLAY", "")
     if wd:
         addwaylandsock(wd, wd)
         addwaylandsock(wd, os.path.join(xrd, wd))

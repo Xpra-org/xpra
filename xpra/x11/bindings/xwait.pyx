@@ -81,7 +81,7 @@ def main(args):
     signal.signal(signal.SIGINT, os_signal)
     signal.signal(signal.SIGTERM, os_signal)
 
-    display_name = os.environ.get("DISPLAY") if not args else args[0]
+    display_name = os.environ.get("DISPLAY", "") if not args else args[0]
     args = (display_name, )
     t = threading.Thread(target=xwait, name="xwait", args=args, daemon=True)
     t.start()

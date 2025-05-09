@@ -55,7 +55,7 @@ class ChallengeClient(StubClientMixin):
         self.password = opts.password
         self.password_file = opts.password_file
         self.challenge_handlers_option = opts.challenge_handlers
-        self.has_password = self.password or self.password_file or os.environ.get("XPRA_PASSWORD")
+        self.has_password = bool(self.password or self.password_file or os.environ.get("XPRA_PASSWORD"))
 
     def get_info(self) -> dict[str, tuple]:
         return {}

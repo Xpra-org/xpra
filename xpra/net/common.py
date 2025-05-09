@@ -273,7 +273,7 @@ PACKET_TYPES: list[str] = [
 
 
 def get_log_packets(exclude=False) -> Sequence[str]:
-    lp = os.environ.get("XPRA_LOG_PACKETS")
+    lp = os.environ.get("XPRA_LOG_PACKETS", "")
     if not lp:
         return ()
     pt = []

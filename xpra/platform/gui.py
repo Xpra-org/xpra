@@ -121,7 +121,7 @@ def get_icc_info() -> dict[str, Any]:
 
 
 def default_get_icc_info() -> dict[str, Any]:
-    ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA")
+    ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA", "")
     if ENV_ICC_DATA:
         return {
             "source": "environment-override",

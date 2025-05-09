@@ -113,7 +113,7 @@ class FilePrintConnection(FileTransferHandler, StubClientConnection):
             self.remove_printer(k)
         # expand it here so the xpraforwarder doesn't need to import anything xpra:
         attributes = {
-            "display": os.environ.get("DISPLAY"),
+            "display": os.environ.get("DISPLAY", ""),
             "source": self.uuid,
         }
 

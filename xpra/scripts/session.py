@@ -49,7 +49,7 @@ def make_session_dir(mode: str, sessions_dir: str, display_name: str, uid: int =
 
 
 def session_file_path(filename: str) -> str:
-    session_dir = os.environ.get("XPRA_SESSION_DIR")
+    session_dir = os.environ.get("XPRA_SESSION_DIR", "")
     if session_dir is None:
         raise RuntimeError("'XPRA_SESSION_DIR' must be set to use this function")
     return os.path.join(session_dir, filename)
@@ -83,7 +83,7 @@ def save_session_file(filename: str, contents: str | bytes, uid: int = -1, gid: 
 
 
 def rm_session_dir(warn: bool = True) -> None:
-    session_dir = os.environ.get("XPRA_SESSION_DIR")
+    session_dir = os.environ.get("XPRA_SESSION_DIR", "")
     if not session_dir or not os.path.exists(session_dir):
         return
     from xpra.log import Logger

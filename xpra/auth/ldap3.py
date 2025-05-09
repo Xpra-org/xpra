@@ -17,7 +17,7 @@ from xpra.log import is_debug_enabled
 
 assert log  # tests will disable logging from here
 
-LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
+LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE", "")
 
 
 class Authenticator(SysAuthenticatorBase):

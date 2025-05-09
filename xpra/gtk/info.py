@@ -412,7 +412,7 @@ def get_screen_sizes(xscale: float = 1, yscale: float = 1):
     ydpi = dpi(sh, hmm)
     if xdpi < MIN_DPI or xdpi > MAX_DPI or ydpi < MIN_DPI or ydpi > MAX_DPI:
         screenlog(f"ignoring invalid DPI {xdpi},{ydpi} from screen size {wmm}x{hmm}mm")
-        if os.environ.get("WAYLAND_DISPLAY"):
+        if os.environ.get("WAYLAND_DISPLAY", ""):
             screenlog(" (wayland display?)")
         if n_monitors > 0:
             wmm = 0

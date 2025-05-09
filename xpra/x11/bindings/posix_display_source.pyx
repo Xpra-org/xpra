@@ -14,7 +14,7 @@ from libc.stdint cimport uintptr_t
 
 
 def init_posix_display_source() -> None:
-    display_name = os.environ.get("DISPLAY")
+    display_name = os.environ.get("DISPLAY", "")
     if not display_name:
         raise ValueError("cannot open display, the environment variable DISPLAY is not set!")
     return do_init_posix_display_source(display_name)
@@ -49,7 +49,7 @@ class X11DisplayContext:
         a temporary posix display source will be used.
     """
 
-    def __init__(self, display_name=os.environ.get("DISPLAY")):
+    def __init__(self, display_name=os.environ.get("DISPLAY", "")):
         self.close = False
         self.display_name = display_name
         self.display = 0

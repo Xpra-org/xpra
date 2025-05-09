@@ -155,7 +155,7 @@ def get_user_uuid() -> str:
         Try to generate an uuid string which is unique to this user.
         (relies on get_machine_id to uniquely identify a machine)
     """
-    user_uuid = os.environ.get("XPRA_USER_UUID")
+    user_uuid = os.environ.get("XPRA_USER_UUID", "")
     if user_uuid:
         return user_uuid
     import hashlib

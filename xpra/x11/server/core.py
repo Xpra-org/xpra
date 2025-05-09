@@ -210,7 +210,7 @@ class X11ServerCore(GTKServerBase):
                 self.randr_exact_size = False
         screenlog(f"randr enabled: {self.randr}, exact size={self.randr_exact_size}")
         if not self.randr:
-            screenlog.warn("Warning: no X11 RandR support on %s", os.environ.get("DISPLAY"))
+            screenlog.warn("Warning: no X11 RandR support on %r", os.environ.get("DISPLAY", ""))
 
     def init_cursor(self) -> None:
         # cursor:

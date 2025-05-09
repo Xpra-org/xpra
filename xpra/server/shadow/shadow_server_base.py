@@ -136,7 +136,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             if wdisplay:
                 dinfo = f"Wayland display {wdisplay}"
         else:
-            display = os.environ.get("DISPLAY")
+            display = os.environ.get("DISPLAY", "")
             if display:
                 dinfo = f"X11 display {display}"
         self.do_print_screen_info(dinfo, w, h)

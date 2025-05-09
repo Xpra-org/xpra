@@ -424,7 +424,7 @@ class ProxyServer(ProxyServerBaseClass):
                 if username:
                     break
         # ensure we don't loop back to the proxy:
-        proxy_virtual_display = os.environ.get("DISPLAY")
+        proxy_virtual_display = os.environ.get("DISPLAY", "")
         if proxy_virtual_display in displays:
             displays.remove(proxy_virtual_display)
         # remove proxy instance virtual displays:

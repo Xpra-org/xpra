@@ -20,7 +20,7 @@ from xpra.log import is_debug_enabled, consume_verbose_argv
 LDAP_REFERRALS = envint("XPRA_LDAP_REFERRALS", 0)
 LDAP_PROTOCOL_VERSION = envint("XPRA_LDAP_PROTOCOL_VERSION", 3)
 LDAP_TRACE_LEVEL = envint("XPRA_LDAP_TRACE_LEVEL")
-LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE")
+LDAP_CACERTFILE = os.environ.get("XPRA_LDAP_CACERTFILE", "")
 LDAP_ENCODING = os.environ.get("XPRA_LDAP_ENCODING", "utf-8")
 LDAP_USERNAME_FORMAT = os.environ.get("XPRA_LDAP_USERNAME_FORMAT", "cn=%username, o=%domain")
 

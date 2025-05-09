@@ -58,7 +58,7 @@ def get_info() -> dict[str, Any]:
 
 
 def find_server_uri(sessions_dir: str) -> str:
-    session_dir = os.environ.get("XPRA_SESSION_DIR")
+    session_dir = os.environ.get("XPRA_SESSION_DIR", "")
     log(f"find_server_uri({sessions_dir!r}) {session_dir=!r}")
     encoder_sockets = []
     for sdir in os.listdir(sessions_dir):
