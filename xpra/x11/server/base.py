@@ -60,6 +60,39 @@ def _get_antialias_hintstyle(antialias: typedict) -> str:
     return "hintnone"
 
 
+def save_dbus_x11_properties(dbus_env: dict):
+    # now we can save values on the display
+    # (we cannot access bindings until dbus has started up)
+
+    def _save_int(prop_name, intval) -> None:
+        root_prop_set(prop_name, "u32", intval)
+
+    def _save_str(prop_name, strval) -> None:
+        root_prop_set(prop_name, "latin1", strval)
+
+    # DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
+    # DBUS_SESSION_BUS_PID=11406
+    # DBUS_SESSION_BUS_WINDOWID=50331649
+    attributes: list[tuple[str, type, Callable[[str, int | str], None]]] = [
+        ("ADDRESS", str, _save_str),
+        ("PID", int, _save_int),
+        ("WINDOW_ID", int, _save_int),
+    ]
+    for name, conv, save in attributes:
+        k = f"DBUS_SESSION_BUS_{name}"
+        v = dbus_env.get(k, "")
+        if not v:
+            continue
+        try:
+            tv = conv(v)
+            save(k, tv)
+        except Exception as e:
+            dbuslog("save_dbus_env(%s)", dbus_env, exc_info=True)
+            dbuslog.error(f"Error: failed to save dbus environment variable {k!r}")
+            dbuslog.error(f" with value {v!r}")
+            dbuslog.estr(e)
+
+
 class X11ServerBase(X11ServerCore):
     """
         Base class for X11 servers,
@@ -89,7 +122,7 @@ class X11ServerBase(X11ServerCore):
             self.init_all_server_settings()
 
     # noinspection PyMethodMayBeStatic
-    def save_server_pid(self) -> None:
+    def save_pid(self) -> None:
         root_prop_set("XPRA_SERVER_PID", "u32", os.getpid())
 
     def clean_x11_properties(self) -> None:
@@ -104,42 +137,11 @@ class X11ServerBase(X11ServerCore):
         return root_w, root_h
 
     def init_dbus(self, dbus_pid: int, dbus_env: dict[str, str]) -> None:
+        super().init_dbus(dbus_pid, dbus_env)
         dbuslog("init_dbus(%s, %s)", dbus_pid, dbus_env)
         if dbus_pid and dbus_env:
             os.environ.update(dbus_env)
-            self.dbus_pid = dbus_pid
-            self.dbus_env = dbus_env
-
-            # now we can save values on the display
-            # (we cannot access bindings until dbus has started up)
-
-            def _save_int(prop_name, intval) -> None:
-                root_prop_set(prop_name, "u32", intval)
-
-            def _save_str(prop_name, strval) -> None:
-                root_prop_set(prop_name, "latin1", strval)
-
-            # DBUS_SESSION_BUS_ADDRESS=unix:abstract=/tmp/dbus-B8CDeWmam9,guid=b77f682bd8b57a5cc02f870556cbe9e9
-            # DBUS_SESSION_BUS_PID=11406
-            # DBUS_SESSION_BUS_WINDOWID=50331649
-            attributes: list[tuple[str, type, Callable[[str, int | str], None]]] = [
-                ("ADDRESS", str, _save_str),
-                ("PID", int, _save_int),
-                ("WINDOW_ID", int, _save_int),
-            ]
-            for name, conv, save in attributes:
-                k = f"DBUS_SESSION_BUS_{name}"
-                v = dbus_env.get(k, "")
-                if not v:
-                    continue
-                try:
-                    tv = conv(v)
-                    save(k, tv)
-                except Exception as e:
-                    log("save_dbus_env(%s)", dbus_env, exc_info=True)
-                    log.error(f"Error: failed to save dbus environment variable {k!r}")
-                    log.error(f" with value {v!r}")
-                    log.estr(e)
+            save_dbus_x11_properties(dbus_env)
 
     def last_client_exited(self) -> None:
         self.reset_settings()
