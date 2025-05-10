@@ -6,12 +6,13 @@
 from typing import Any
 
 from xpra.net.common import Packet
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("command")
 
 
-class ControlHandler:
+class ControlHandler(StubServerMixin):
 
     def __init__(self):
         self.control_commands: dict[str, Any] = {}

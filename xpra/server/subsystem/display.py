@@ -98,6 +98,7 @@ class DisplayManager(StubServerMixin):
         self.bell = False
         self.default_dpi = 96
         self.bit_depth = 24
+        self.icc_profile = b""
         self.dpi = 0
         self.xdpi = 0
         self.ydpi = 0

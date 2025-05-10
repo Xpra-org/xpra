@@ -688,12 +688,12 @@ def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mo
         progress = splash_process.progress
     else:
         if PROGRESS_TO_STDERR:
-            def progress_to_stderr(*args):
+            def progress_to_stderr(*args) -> None:
                 stderr_print(" ".join(str(x) for x in args))
 
             progress = progress_to_stderr
         else:
-            def noprogressshown(*_args):
+            def noprogressshown(*_args) -> None:
                 """ messages aren't shown """
 
             progress = noprogressshown
@@ -1369,6 +1369,7 @@ def _do_run_server(script_file: str, cmdline,
         log(f"chdir({opts.chdir})")
         os.chdir(osexpand(opts.chdir))
 
+    # dbus before display!
     dbus_pid = 0
     dbus_env: dict[str, str] = {}
     if opts.dbus and not shadowing and POSIX and not OSX:
@@ -1395,6 +1396,7 @@ def _do_run_server(script_file: str, cmdline,
         if dbus_env:
             os.environ.update(dbus_env)
 
+    # should be in display init
     if not (proxying or encoder):
         if POSIX and not OSX:
             no_gtk()

@@ -6,6 +6,7 @@
 from collections.abc import Callable
 
 from xpra.os_util import gi_import
+from xpra.net.glib_handler import GLibPacketHandler
 from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -15,9 +16,10 @@ GLib = gi_import("GLib")
 log = Logger("server", "glib")
 
 
-class GLibServer(StubServerMixin):
+class GLibServer(StubServerMixin, GLibPacketHandler):
 
     def __init__(self):
+        GLibPacketHandler.__init__(self)
         self.main_loop = GLib.MainLoop()
 
     def __repr__(self):

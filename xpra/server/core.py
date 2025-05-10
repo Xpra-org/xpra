@@ -28,7 +28,6 @@ from xpra.scripts.session import rm_session_dir, clean_session_files
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
-from xpra.server.subsystem.control import ControlHandler
 from xpra.server.auth import AuthenticatedServer
 from xpra.server.pid import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
@@ -50,7 +49,6 @@ from xpra.net.net_util import (
     get_network_caps, get_info as get_net_info,
     import_netifaces, get_interfaces_addresses,
 )
-from xpra.net.glib_handler import GLibPacketHandler
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
@@ -153,8 +151,21 @@ def force_close_connection(conn) -> None:
         netlog("close_connection()", exc_info=True)
 
 
+def get_server_base_classes() -> tuple[type, ...]:
+    from xpra.server.subsystem.control import ControlHandler
+    from xpra.server.glib_server import GLibServer
+    from xpra.server.subsystem.splash import SplashServer
+    classes: list[type] = [GLibServer, AuthenticatedServer, ControlHandler, SplashServer]
+    return tuple(classes)
+
+
+SERVER_BASES = get_server_base_classes()
+ServerBaseClass = type("ServerBaseClass", SERVER_BASES, {})
+log("ServerBaseClass%s", SERVER_BASES)
+
+
 # noinspection PyMethodMayBeStatic
-class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
+class ServerCore(ServerBaseClass):
     """
         This is the simplest base class for servers.
         It only handles the connection layer:
@@ -163,9 +174,8 @@ class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
 
     def __init__(self):
         log("ServerCore.__init__()")
-        AuthenticatedServer.__init__(self)
-        ControlHandler.__init__(self)
-        GLibPacketHandler.__init__(self)
+        for bc in SERVER_BASES:
+            bc.__init__(self)
         self.start_time = time()
         self.uuid = ""
         self.child_reaper = None
@@ -277,7 +287,8 @@ class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
             self.menu_provider = get_menu_provider()
         if self.http:
             self.init_html_proxy(opts)
-        AuthenticatedServer.init(self, opts)
+        for bc in SERVER_BASES:
+            bc.init(self, opts)
         self.init_ssl(opts)
 
     def init_ssl(self, opts) -> None:
@@ -437,7 +448,8 @@ class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
         raise NotImplementedError()
 
     def cleanup(self) -> None:
-        self.stop_splash_process()
+        for bc in SERVER_BASES:
+            bc.cleanup(self)
         self.cancel_touch_timer()
         self.mdns_cleanup()
         self.cleanup_all_protocols()
@@ -2061,7 +2073,7 @@ class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
                 "sockets": self.get_socket_info(),
                 "encryption": self.encryption or "",
                 "tcp-encryption": self.tcp_encryption or "",
-                "packet-handlers": GLibPacketHandler.get_info(self),
+                # "packet-handlers": GLibPacketHandler.get_info(self),
                 "www": {
                     "": self._html,
                     "websocket-upgrade": self.websocket_upgrade,
