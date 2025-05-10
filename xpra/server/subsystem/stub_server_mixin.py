@@ -8,6 +8,7 @@ import shlex
 from typing import Any
 from collections.abc import Callable
 
+from xpra.os_util import getuid, getgid
 from xpra.util.objects import typedict
 from xpra.os_util import WIN32
 
@@ -17,13 +18,18 @@ class StubServerMixin:
     Base class for server subsystem.
     Defines the default interface methods that each mixin may override.
     """
+    def __init__(self):
+        self.uid = getuid()
+        self.gid = getgid()
 
-    def init(self, _opts) -> None:
+    def init(self, opts) -> None:
         """
         Initialize this instance with the options given.
         Options are usually obtained by parsing the command line,
         or using a default configuration object.
         """
+        self.uid = opts.uid
+        self.gid = opts.gid
 
     def init_state(self) -> None:
         """

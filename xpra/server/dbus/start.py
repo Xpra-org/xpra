@@ -15,7 +15,7 @@ from xpra.log import Logger
 log = Logger("dbus")
 
 
-def start_dbus(dbus_launch) -> tuple[int, dict]:
+def start_dbus(dbus_launch: str) -> tuple[int, dict]:
     if not dbus_launch or dbus_launch.lower() in FALSE_OPTIONS:
         log("start_dbus(%s) disabled", dbus_launch)
         return 0, {}

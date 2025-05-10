@@ -562,49 +562,6 @@ def apply_config(opts, mode: str, cmdline: str) -> str:
     return mode
 
 
-def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
-    from xpra.log import Logger
-    dbuslog = Logger("dbus")
-    session_dir = os.environ.get("XPRA_SESSION_DIR", "")
-    dbus_pid = load_pid(session_dir, "dbus.pid")
-    try:
-        dbus_env_data = load_session_file("dbus.env").decode("utf8")
-        dbuslog(f"reload_dbus_attributes({display_name}) dbus_env_data={dbus_env_data}")
-    except UnicodeDecodeError:
-        dbuslog.error("Error decoding dbus.env file", exc_info=True)
-        dbus_env_data = ""
-    dbus_env = {}
-    if dbus_env_data:
-        for line in dbus_env_data.splitlines():
-            if not line or line.startswith("#") or line.find("=") < 0:
-                continue
-            parts = line.split("=", 1)
-            dbus_env[parts[0]] = parts[1]
-    dbuslog(f"reload_dbus_attributes({display_name}) dbus_env={dbus_env}")
-    dbus_address = dbus_env.get("DBUS_SESSION_BUS_ADDRESS")
-    if not (dbus_pid and dbus_address):
-        # less reliable: get it from the wminfo output:
-        from xpra.scripts.main import exec_wminfo
-        wminfo = exec_wminfo(display_name)
-        if not dbus_pid:
-            try:
-                dbus_pid = int(wminfo.get("dbus-pid", 0))
-            except ValueError:
-                pass
-        if not dbus_address:
-            dbus_address = wminfo.get("dbus-address", "")
-    if dbus_pid and os.path.exists("/proc") and not os.path.exists(f"/proc/{dbus_pid}"):
-        dbuslog(f"dbus pid {dbus_pid} is no longer valid")
-        dbus_pid = 0
-    if dbus_pid:
-        dbus_env["DBUS_SESSION_BUS_PID"] = str(dbus_pid)
-    if dbus_address:
-        dbus_env["DBUS_SESSION_BUS_ADDRESS"] = dbus_address
-    if dbus_pid and dbus_address:
-        dbuslog(f"retrieved dbus pid: {dbus_pid}, environment: {dbus_env}")
-    return dbus_pid, dbus_env
-
-
 def is_splash_enabled(mode: str, daemon: bool, splash: bool, display: str) -> bool:
     if daemon:
         # daemon mode would have problems with the pipes
@@ -1369,32 +1326,7 @@ def _do_run_server(script_file: str, cmdline,
         log(f"chdir({opts.chdir})")
         os.chdir(osexpand(opts.chdir))
 
-    # dbus before display!
-    dbus_pid = 0
-    dbus_env: dict[str, str] = {}
-    if opts.dbus and not shadowing and POSIX and not OSX:
-        dbuslog = Logger("dbus")
-        dbus_pid, dbus_env = reload_dbus_attributes(display_name)
-        if not (dbus_pid and dbus_env):
-            no_gtk()
-            if not (starting or starting_desktop or starting_monitor or proxying or encoder):
-                dbuslog.warn("Warning: failed to reload the dbus session attributes")
-                dbuslog.warn(f" for mode {mode}")
-                dbuslog.warn(" a new dbus instance will be started")
-                dbuslog.warn(" which may conflict with the previous one if it exists")
-            try:
-                from xpra.server.dbus.start import start_dbus
-            except ImportError as e:
-                dbuslog("dbus components are not installed: %s", e)
-            else:
-                dbus_pid, dbus_env = start_dbus(opts.dbus_launch)
-                if dbus_env:
-                    dbuslog(f"started new dbus instance: {dbus_env}")
-                    write_session_file("dbus.pid", f"{dbus_pid}")
-                    dbus_env_data = "\n".join("{}={}".format(k, v) for k, v in dbus_env.items()) + "\n"
-                    write_session_file("dbus.env", dbus_env_data.encode("utf8"))
-        if dbus_env:
-            os.environ.update(dbus_env)
+    set_server_features(opts, mode)
 
     # should be in display init
     if not (proxying or encoder):
@@ -1408,8 +1340,6 @@ def _do_run_server(script_file: str, cmdline,
         from xpra.platform.gui import init as gui_init
         log("gui_init()")
         gui_init()
-
-    set_server_features(opts, mode)
 
     if not (proxying or shadowing or encoder) and POSIX and not OSX:
         if not check_xvfb():
@@ -1458,7 +1388,7 @@ def _do_run_server(script_file: str, cmdline,
             app = make_monitor_server()
         app.init_virtual_devices(devices)
 
-    def server_not_started(msg="server not started"):
+    def server_not_started(msg="server not started") -> None:
         progress(100, msg)
         # check the initial 'mode' value instead of "upgrading" or "upgrading_desktop"
         # as we may have switched to "starting=True"
@@ -1481,8 +1411,6 @@ def _do_run_server(script_file: str, cmdline,
         app.init_local_sockets(opts, clobber)
         app.init_sockets(sockets)
         from xpra.server import features
-        if features.dbus:
-            app.init_dbus(dbus_pid, dbus_env)
         if features.display and not (shadowing or proxying or expanding or encoder or runner):
             app.init_display_pid(xvfb_pid)
             app.save_server_pid()

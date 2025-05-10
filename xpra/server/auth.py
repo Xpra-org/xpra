@@ -10,11 +10,12 @@ from xpra.common import ConnectionMessage
 from xpra.net.common import Packet, SOCKET_TYPES
 from xpra.net.digest import get_salt, choose_digest
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.os_util import gi_import
+from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.util.str_fn import csv, nicestr, hexstr
-from xpra.auth.auth_helper import get_auth_module, AuthDef
+from xpra.os_util import gi_import
 from xpra.log import Logger
 
 log = Logger("auth")
@@ -25,7 +26,7 @@ CHALLENGE_TIMEOUT = envint("XPRA_CHALLENGE_TIMEOUT", 120)
 
 
 # noinspection PyMethodMayBeStatic
-class AuthenticatedServer:
+class AuthenticatedServer(StubServerMixin):
     """
         Adds authentication methods to ServerCore.
         Unlike other server subsystems,

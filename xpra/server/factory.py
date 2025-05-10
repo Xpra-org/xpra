@@ -18,6 +18,7 @@ def get_server_base_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.bandwidth import BandwidthServer
         classes.append(BandwidthServer)
     if features.dbus:
+        # must be placed before `DisplayServer`
         from xpra.server.subsystem.dbus import DbusServer
         classes.append(DbusServer)
     if features.control:
