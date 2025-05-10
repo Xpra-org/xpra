@@ -108,6 +108,11 @@ class ChildCommandServer(StubServerMixin):
         start_thread(do_late_start, "command-late-start", daemon=True)
 
     def init(self, opts) -> None:
+        try:
+            self.exec_cwd = opts.chdir or os.getcwd()
+        except OSError:
+            cwd = os.path.expanduser("~")
+            log.warn(f"Warning: current working directory does not exist, using {cwd!r}\n")
         self.exit_with_children = opts.exit_with_children
         self.terminate_children = opts.terminate_children
         self.start_new_commands = opts.start_new_commands

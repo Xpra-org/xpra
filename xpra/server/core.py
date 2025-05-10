@@ -201,7 +201,6 @@ class ServerCore(AuthenticatedServer, ControlHandler, GLibPacketHandler):
         self._socket_dirs: list = []
         self.unix_socket_paths: list[str] = []
         self.touch_timer: int = 0
-        self.exec_cwd = os.getcwd()
         self.pidfile = ""
         self.pidinode: int = 0
         self.session_files: list[str] = [

@@ -1470,7 +1470,6 @@ def _do_run_server(script_file: str, cmdline,
 
     try:
         app.splash_process = splash_process
-        app.exec_cwd = opts.chdir or cwd
         app.display_name = display_name
         app.display_options = display_options
         app.init(opts)
