@@ -408,7 +408,9 @@ class ChildCommandServer(StubServerMixin):
             new_name = csv(cmd_names)
             if self.session_name != new_name:
                 self.session_name = new_name
-                self.mdns_update()
+                # weak dependency:
+                mdns_update = getattr(self, "mdns_update", noop)
+                mdns_update()
 
     def _process_start_command(self, proto, packet: Packet) -> None:
         self._process_command_start(proto, packet)

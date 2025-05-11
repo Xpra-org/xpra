@@ -489,7 +489,8 @@ class ServerBaseControlCommands(StubServerMixin):
         log.info(f"changed session name: {self.session_name!r}")
         # self.all_send_client_command("name", name)    not supported by any clients, don't bother!
         self.setting_changed("session_name", name)
-        self.mdns_update()
+        mdns_update = getattr(self, "mdns_update", noop)
+        mdns_update()
         return f"session name set to {name}"
 
     def _ws_from_args(self, *args):

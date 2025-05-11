@@ -268,7 +268,9 @@ class ServerBase(ServerBaseClass):
             ss.close()
             raise
         self._server_sources[proto] = ss
-        add_work_item(self.mdns_update)
+        # weak dependency on mdns:
+        mdns_update = getattr(self, "mdns_update", noop)
+        add_work_item(mdns_update)
         # process ui half in ui thread:
         GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, ui_client, share_count)
 
@@ -635,7 +637,8 @@ class ServerBase(ServerBaseClass):
         source = self._server_sources.pop(protocol, None)
         if source:
             self.cleanup_source(source)
-            add_work_item(self.mdns_update)
+            mdns_update = getattr(self, "mdns_update", noop)
+            add_work_item(mdns_update)
         for c in SERVER_BASES:
             c.cleanup_protocol(self, protocol)
         return source

@@ -317,7 +317,7 @@ def set_server_features(opts, mode: str) -> None:
         features.command = False
         features.notification = features.webcam = features.clipboard = False
         features.gstreamer = features.x11 = features.audio = features.av_sync = False
-        features.fileprint = features.command = False
+        features.fileprint = features.command = features.mdns = False
         features.keyboard = features.pointer = False
         features.logging = features.display = features.window = False
         features.cursor = features.rfb = False
@@ -325,6 +325,7 @@ def set_server_features(opts, mode: str) -> None:
     else:
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
+        features.mdns = opts.mdns and impcheck("net.mdns")
         features.notification = opts.notifications and impcheck("notification")
         features.webcam = b(opts.webcam) and impcheck("codecs")
         features.clipboard = b(opts.clipboard) and impcheck("clipboard")
@@ -367,6 +368,7 @@ def enforce_server_features() -> None:
         "debug": "xpra.server.subsystem.debug",
         "power": "xpra.server.subsystem.power",
         "control": "xpra.net.control,xpra.server.subsystem.controlcommands",
+        "mdns": "xpra.net.mdns,xpra.xpra.server.subsystem.mdns",
         "command": "xpra.server.subsystem.child_command",
         "notification": "xpra.notification,xpra.server.subsystem.notification,xpra.server.source.notification",
         "webcam": "xpra.server.subsystem.webcam,xpra.server.source.webcam",

@@ -33,13 +33,13 @@ from xpra.server.pid import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
-    is_request_allowed, Packet, get_ssh_port, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
+    is_request_allowed, Packet, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
 )
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     setup_local_sockets, add_listen_socket, accept_connection, guess_packet_type,
-    hosts, peek_connection,
+    peek_connection,
 )
 from xpra.net.bytestreams import (
     Connection, SSLSocketConnection, SocketConnection,
@@ -54,7 +54,6 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.digest import get_salt, gendigest
 from xpra.platform import set_name, threaded_server_init
-from xpra.platform.info import get_username
 from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
 from xpra.os_util import (
     force_quit, get_machine_id, POSIX,
@@ -88,7 +87,6 @@ proxylog = Logger("proxy")
 authlog = Logger("auth")
 cryptolog = Logger("crypto")
 timeoutlog = Logger("timeout")
-mdnslog = Logger("mdns")
 
 main_thread = threading.current_thread()
 
@@ -156,6 +154,10 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.glib_server import GLibServer
     from xpra.server.subsystem.splash import SplashServer
     classes: list[type] = [GLibServer, AuthenticatedServer, ControlHandler, SplashServer]
+    from xpra.server import features
+    if features.mdns:
+        from xpra.server.subsystem.mdns import MdnsServer
+        classes.append(MdnsServer)
     return tuple(classes)
 
 
@@ -228,8 +230,6 @@ class ServerCore(ServerBaseClass):
 
         # Features:
         self.readonly = False
-        self.mdns = False
-        self.mdns_publishers = {}
         self.encryption = ""
         self.encryption_keyfile = ""
         self.tcp_encryption = ""
@@ -277,7 +277,6 @@ class ServerCore(ServerBaseClass):
         self.websocket_upgrade = opts.websocket_upgrade
         self.ssh_upgrade = opts.ssh_upgrade
         self.rdp_upgrade = opts.rdp_upgrade
-        self.mdns = opts.mdns
         if opts.start_new_commands:
             # must be initialized before calling init_html_proxy
             from xpra.server.menu_provider import get_menu_provider
@@ -300,8 +299,6 @@ class ServerCore(ServerBaseClass):
 
     def setup(self) -> None:
         self.start_listen_sockets()
-        if self.mdns:
-            add_work_item(self.mdns_publish)
         self.init_control_commands()
         self.init_packet_handlers()
         # for things that can take longer:
@@ -445,7 +442,6 @@ class ServerCore(ServerBaseClass):
         for bc in SERVER_BASES:
             bc.cleanup(self)
         self.cancel_touch_timer()
-        self.mdns_cleanup()
         self.cleanup_all_protocols()
         self.do_cleanup()
         self.cleanup_sockets()
@@ -651,53 +647,6 @@ class ServerCore(ServerBaseClass):
                 log.warn(" forward-xdg-open cannot be enabled")
             log.warn(" non-embedded ssh connections will not be available")
 
-    def mdns_publish(self) -> None:
-        if not self.mdns:
-            return
-        # find all the records we want to publish:
-        mdns_recs: dict[str, list[tuple[str, int]]] = {}
-        for sock_def, options in self._socket_info.items():
-            socktype, _, info, _ = sock_def
-            socktypes = self.get_mdns_socktypes(socktype, options)
-            mdns_option = options.get("mdns")
-            if mdns_option:
-                v = str_to_bool(mdns_option, False)
-                if not v:
-                    mdnslog("mdns_publish() mdns(%s)=%s, skipped", info, mdns_option)
-                    continue
-            mdnslog("mdns_publish() info=%s, socktypes(%s)=%s", info, socktype, socktypes)
-            for st in socktypes:
-                if st == "socket":
-                    continue
-                recs = mdns_recs.setdefault(st, [])
-                if socktype == "socket":
-                    if st != "ssh":
-                        log.error(f"Error: unexpected {st!r} socket type for {socktype}")
-                        continue
-                    host = "*"
-                    iport = get_ssh_port()
-                    if not iport:
-                        continue
-                else:
-                    host, iport = info
-                for h in hosts(host):
-                    rec = (h, iport)
-                    if rec not in recs:
-                        recs.append(rec)
-                mdnslog("mdns_publish() recs[%s]=%s", st, recs)
-        if not mdns_recs:
-            return
-        mdns_info = self.get_mdns_info()
-        self.mdns_publishers = {}
-        from xpra.net.mdns.util import mdns_publish
-        for mdns_mode, listen_on in mdns_recs.items():
-            info = dict(mdns_info)
-            info["mode"] = mdns_mode
-            aps = mdns_publish(self.display_name, listen_on, info)
-            for ap in aps:
-                ap.start()
-                self.mdns_publishers[ap] = mdns_mode
-
     def can_upgrade(self, socktype: str, tosocktype: str, options: dict[str, str]) -> bool:
         to_option_str = options.get(tosocktype, "")
         to_option = to_option_str.lower() in TRUE_OPTIONS
@@ -735,62 +684,6 @@ class ServerCore(ServerBaseClass):
                 return to_option
             return self.ssh_upgrade
         return False
-
-    def get_mdns_socktypes(self, socktype: str, options: dict[str, str]) -> Sequence[str]:
-        # for a given socket type,
-        # what socket types we should expose via mdns
-        if socktype in ("vsock", "named-pipe"):
-            # cannot be accessed remotely
-            return ()
-        if socktype == "quic":
-            return "quic", "webtransport"
-        socktypes = [socktype]
-        if socktype == "tcp":
-            for tosocktype in ("ssl", "ws", "wss", "ssh", "rfb", "rdp"):
-                if self.can_upgrade(socktype, tosocktype, options):
-                    socktypes.append(tosocktype)
-        elif socktype in ("ws", "ssl") and self.can_upgrade(socktype, "wss", options):
-            socktypes.append("wss")
-        elif socktype == "socket" and self.ssh_upgrade and get_ssh_port() > 0:
-            socktypes = ["ssh"]
-        return tuple(socktypes)
-
-    def get_mdns_info(self) -> dict[str, Any]:
-        mdns_info = {
-            "display": self.display_name,
-            "username": get_username(),
-            "uuid": self.uuid,
-            "platform": sys.platform,
-            "type": self.session_type,
-        }
-        MDNS_EXPOSE_NAME = envbool("XPRA_MDNS_EXPOSE_NAME", True)
-        if MDNS_EXPOSE_NAME and self.session_name:
-            mdns_info["name"] = self.session_name
-        return mdns_info
-
-    def mdns_cleanup(self) -> None:
-        if self.mdns_publishers:
-            add_work_item(self.do_mdns_cleanup)
-
-    def do_mdns_cleanup(self) -> None:
-        mp = dict(self.mdns_publishers)
-        self.mdns_publishers = {}
-        for ap in tuple(mp.keys()):
-            ap.stop()
-
-    def mdns_update(self) -> None:
-        if not self.mdns:
-            return
-        txt = self.get_mdns_info()
-        for mdns_publisher, mode in dict(self.mdns_publishers).items():
-            info = dict(txt)
-            info["mode"] = mode
-            try:
-                mdns_publisher.update_txt(info)
-            except Exception as e:
-                mdnslog("mdns_update: %s(%s)", mdns_publisher.update_txt, info, exc_info=True)
-                mdnslog.warn("Warning: mdns update failed")
-                mdnslog.warn(" %s", e)
 
     def start_listen_sockets(self) -> None:
         # All right, we're ready to accept customers:
@@ -2070,7 +1963,6 @@ class ServerCore(ServerBaseClass):
                     "dir": self._www_dir or "",
                     "http-headers-dirs": self._http_headers_dirs or "",
                 },
-                "mdns": self.mdns,
             }
             up("network", ni)
             up("threads", self.get_thread_info(proto))
