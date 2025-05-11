@@ -7,7 +7,7 @@
 import os.path
 from typing import Any
 
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 
 
 class SSHAgentClient(StubClientMixin):

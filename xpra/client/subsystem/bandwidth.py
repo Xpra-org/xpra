@@ -13,7 +13,7 @@ from xpra.net.device_info import (
 )
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.scripts.config import parse_with_unit
 from xpra.log import Logger
 

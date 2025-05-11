@@ -7,7 +7,7 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.client.gui.keyboard_helper import KeyboardHelper
 from xpra.keyboard.common import KeyEvent
 from xpra.util.env import envbool

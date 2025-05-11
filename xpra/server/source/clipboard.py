@@ -10,7 +10,7 @@ from collections import deque
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.platform.features import CLIPBOARDS
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet

@@ -7,7 +7,7 @@
 import os
 from typing import Any
 
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.os_util import POSIX
 from xpra.common import init_leak_detection, CPUINFO
 from xpra.util.objects import typedict

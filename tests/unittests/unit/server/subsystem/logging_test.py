@@ -9,7 +9,7 @@ from time import monotonic
 
 from xpra.net.common import Packet
 from xpra.util.objects import AdHocStruct
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.server.subsystem import logging
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 

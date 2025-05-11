@@ -24,7 +24,7 @@ from xpra.util.thread import start_thread
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.pid import write_pid
 from xpra.server import ServerExitMode
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

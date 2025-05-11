@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.common import FULL_INFO
 from xpra.net.net_util import get_network_caps, get_info
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 
 
 class NetworkClient(StubClientMixin):

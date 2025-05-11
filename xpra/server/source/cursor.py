@@ -10,7 +10,7 @@ from collections.abc import Sequence, Callable
 
 from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.net.compression import Compressed
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.util.objects import typedict

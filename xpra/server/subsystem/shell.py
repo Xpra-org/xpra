@@ -7,7 +7,7 @@
 from collections import deque
 from typing import Any, Deque
 
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.net.common import Packet
 
 

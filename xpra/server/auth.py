@@ -10,7 +10,7 @@ from xpra.common import ConnectionMessage
 from xpra.net.common import Packet, SOCKET_TYPES
 from xpra.net.digest import get_salt, choose_digest
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.auth.auth_helper import get_auth_module, AuthDef
 from xpra.util.objects import typedict
 from xpra.util.env import envint

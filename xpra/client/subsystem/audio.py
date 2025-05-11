@@ -16,7 +16,7 @@ from xpra.os_util import get_machine_id, get_user_uuid, gi_import, OSX, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
 avsynclog = Logger("av-sync")

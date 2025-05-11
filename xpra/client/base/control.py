@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.log import Logger

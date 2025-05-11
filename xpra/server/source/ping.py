@@ -13,7 +13,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.common import ConnectionMessage, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.os_util import POSIX
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

@@ -20,7 +20,7 @@ from xpra.util.env import envbool
 from xpra.net.common import Packet, PacketElement
 from xpra.net.compression import compressed_wrapper, Compressed, LevelCompressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("server")

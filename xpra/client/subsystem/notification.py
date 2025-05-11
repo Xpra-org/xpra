@@ -15,7 +15,7 @@ from xpra.net.common import Packet
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envbool
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

@@ -10,7 +10,7 @@ from ctypes import (
 from ctypes.wintypes import DWORD, WPARAM, LPARAM, MSG
 
 from xpra.client.base import features
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.exit_codes import ExitCode
 from xpra.keyboard.common import KeyEvent
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener

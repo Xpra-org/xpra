@@ -10,7 +10,7 @@ from xpra.common import noop
 from xpra.os_util import POSIX, OSX
 from xpra.util.objects import typedict
 from xpra.util.env import envint
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("webcam")

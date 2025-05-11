@@ -11,7 +11,7 @@ from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.common import NotificationID, ConnectionMessage, BACKWARDS_COMPATIBLE
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

@@ -7,7 +7,7 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.scripts.config import str_to_bool
 from xpra.util.objects import typedict

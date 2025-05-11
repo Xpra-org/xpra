@@ -41,7 +41,7 @@ try:
     from xpra.client.subsystem.mmap import MmapClient
     baseclass = MmapClient
 except ImportError:
-    from xpra.client.base.stub_client_mixin import StubClientMixin
+    from xpra.client.base.stub import StubClientMixin
     baseclass = StubClientMixin
 
 

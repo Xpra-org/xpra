@@ -16,7 +16,7 @@ from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes
 from xpra.net.common import Packet
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger, set_global_logging_handler
 
 log = Logger("server")

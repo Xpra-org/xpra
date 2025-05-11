@@ -14,7 +14,7 @@ from xpra.net.common import Packet
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
 log = Logger("cursor")

@@ -6,7 +6,7 @@
 from collections.abc import Callable
 
 from xpra.net.glib_handler import GLibPacketHandler
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.net.common import Packet
 
 

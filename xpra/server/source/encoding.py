@@ -12,7 +12,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import
 from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.server.window import batch_config
 from xpra.server.core import ClientException
 from xpra.codecs.video import getVideoHelper

@@ -8,7 +8,7 @@ from Quartz.CoreGraphics import CGDisplayRegisterReconfigurationCallback, CGDisp
 from Quartz import kCGDisplaySetModeFlag
 
 from xpra.exit_codes import ExitValue
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.platform.darwin.gui import (
     enable_focus_workaround, disable_focus_workaround,
     can_access_display,

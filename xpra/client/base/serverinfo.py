@@ -14,7 +14,7 @@ from xpra.util.objects import typedict
 from xpra.util.system import platform_name
 from xpra.net.packet_encoding import VALID_ENCODERS
 from xpra.common import FULL_INFO, skipkeys
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger
 

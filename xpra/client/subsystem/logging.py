@@ -13,7 +13,7 @@ from typing import Any
 from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.net.common import Packet, LOG_PACKET_TYPE
 from xpra.log import Logger, set_global_logging_handler, get_info
 

@@ -9,7 +9,7 @@ from typing import Any
 
 from xpra.util.env import envbool
 from xpra.net.common import Packet
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 pointerlog = Logger("pointer")

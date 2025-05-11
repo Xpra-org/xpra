@@ -16,7 +16,7 @@ from xpra.net.socket_util import hosts
 from xpra.net.common import get_ssh_port
 from xpra.scripts.config import str_to_bool
 from xpra.platform.info import get_username
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.util.background_worker import add_work_item
 from xpra.log import Logger
 

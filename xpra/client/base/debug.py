@@ -9,7 +9,7 @@ from xpra.common import FULL_INFO, init_leak_detection
 from xpra.platform.info import get_sys_info
 from xpra.util.pysystem import get_frame_info, dump_all_frames
 from xpra.util.system import get_env_info, get_sysconfig_info
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envbool
 

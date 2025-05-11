@@ -11,7 +11,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.net.mmap import init_client_mmap, clean_mmap, BaseMmapArea
 from xpra.log import Logger
 

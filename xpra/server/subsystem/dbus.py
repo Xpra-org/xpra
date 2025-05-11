@@ -9,7 +9,7 @@ from typing import Any
 
 from xpra.scripts.main import load_pid
 from xpra.scripts.session import load_session_file, save_session_file
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("dbus")

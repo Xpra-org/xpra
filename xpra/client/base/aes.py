@@ -6,7 +6,7 @@
 import os
 from typing import Any
 
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.util.str_fn import csv, strtobytes, Ellipsizer
 from xpra.util.io import filedata_nocrlf
 from xpra.scripts.config import InitExit

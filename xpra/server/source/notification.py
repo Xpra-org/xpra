@@ -8,7 +8,7 @@ from collections.abc import Sequence, Callable
 
 from xpra.util.objects import typedict
 from xpra.common import NotificationID, BACKWARDS_COMPATIBLE
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("notify")

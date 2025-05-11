@@ -10,7 +10,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.compression import Compressed
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.common import FULL_INFO, NotificationID, SizedBuffer
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import
 from xpra.util.objects import typedict

@@ -9,7 +9,7 @@ from contextlib import redirect_stdout, redirect_stderr
 
 from xpra.util.objects import typedict
 from xpra.scripts.config import TRUE_OPTIONS
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("exec")

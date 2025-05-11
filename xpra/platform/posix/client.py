@@ -3,7 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.platform.posix.events import remove_handler, add_handler
 from xpra.platform.posix.gui import x11_bindings, X11WindowBindings
 from xpra.scripts.config import str_to_bool

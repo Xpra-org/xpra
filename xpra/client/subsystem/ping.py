@@ -15,7 +15,7 @@ from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
 from xpra.common import BACKWARDS_COMPATIBLE
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

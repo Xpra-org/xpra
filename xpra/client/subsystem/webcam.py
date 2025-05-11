@@ -18,7 +18,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, OSEnvContext
 from xpra.common import NotificationID
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 
 GLib = gi_import("GLib")
 

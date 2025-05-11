@@ -17,7 +17,7 @@ from xpra.net.common import Packet
 from xpra.util.stats import std_unit
 from xpra.scripts.config import str_to_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.control.common import ArgsControlCommand, ControlError
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("command")

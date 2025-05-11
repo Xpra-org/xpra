@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.platform import platform_import
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 
 # default:
 PlatformClient: type | None = StubClientMixin

@@ -18,7 +18,7 @@ from xpra.net import compression
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
 log = Logger("client", "encoding")

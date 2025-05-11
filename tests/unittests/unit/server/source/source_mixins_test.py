@@ -92,7 +92,7 @@ class SourceMixinsTest(unittest.TestCase):
         return m
 
     def test_stub(self):
-        from xpra.server.source.stub_source import StubClientConnection
+        from xpra.server.source.stub import StubClientConnection
         self._test_mixin_class(StubClientConnection)
 
     #############################################################################

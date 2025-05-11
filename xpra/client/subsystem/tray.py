@@ -9,7 +9,7 @@ from xpra.os_util import gi_import, WIN32, OSX
 from xpra.util.objects import make_instance
 from xpra.util.env import envint, envbool
 from xpra.common import XPRA_APP_ID, ConnectionMessage
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

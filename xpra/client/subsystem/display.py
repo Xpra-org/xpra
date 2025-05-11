@@ -28,7 +28,7 @@ from xpra.util.parsing import (
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.env import envint
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

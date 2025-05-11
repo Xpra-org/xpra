@@ -34,7 +34,7 @@ from xpra.util.system import is_Ubuntu, is_Wayland
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool, first_time
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.log import Logger
 
 log = Logger("window")

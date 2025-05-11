@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.util.objects import typedict
 
 GLib = gi_import("GLib")

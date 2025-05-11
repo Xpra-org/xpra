@@ -10,7 +10,7 @@ from importlib import import_module
 from collections.abc import Sequence
 
 from xpra.common import ALL_CLIPBOARDS, BACKWARDS_COMPATIBLE
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.platform.features import CLIPBOARD_WANT_TARGETS, CLIPBOARD_GREEDY, CLIPBOARD_PREFERRED_TARGETS, CLIPBOARDS
 from xpra.platform.clipboard import get_backend_module
 from xpra.net.common import Packet, PacketElement

@@ -12,7 +12,7 @@ from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import SilenceWarningsContext
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("cursor")

@@ -10,7 +10,7 @@ from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.net.common import Packet
 from xpra.util.objects import typedict, AdHocStruct
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 
 
 class ServerMixinTest(unittest.TestCase):

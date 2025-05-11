@@ -15,7 +15,7 @@ from xpra.scripts.config import parse_bool_or_int
 from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENCODINGS
 from xpra.codecs.loader import get_codec, codec_versions, load_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 from xpra.common import FULL_INFO
 

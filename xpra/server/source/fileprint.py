@@ -12,7 +12,7 @@ from xpra.util.env import envbool
 from xpra.os_util import get_machine_id
 from xpra.net.file_transfer import FileTransferHandler
 from xpra.auth.auth_helper import AuthDef
-from xpra.server.source.stub_source import StubClientConnection
+from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
 log = Logger("printing")

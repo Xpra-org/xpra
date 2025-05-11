@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Callable
 from importlib import import_module
 
-from xpra.client.base.stub_client_mixin import StubClientMixin
+from xpra.client.base.stub import StubClientMixin
 from xpra.scripts.config import InitExit
 from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
 from xpra.net.common import Packet

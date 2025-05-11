@@ -12,7 +12,7 @@ from xpra.util.io import load_binary_file
 from xpra.scripts.config import FALSE_OPTIONS
 from xpra.net.common import HttpResponse
 from xpra.platform.paths import get_icon_filename
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 log = Logger("http")

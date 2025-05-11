@@ -23,7 +23,7 @@ from xpra.platform.info import get_username
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
 from xpra.scripts.session import save_session_file
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

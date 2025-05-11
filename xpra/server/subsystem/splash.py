@@ -6,7 +6,7 @@
 from subprocess import Popen
 
 from xpra.log import Logger
-from xpra.server.subsystem.stub_server_mixin import StubServerMixin
+from xpra.server.subsystem.stub import StubServerMixin
 
 log = Logger("server")
 
