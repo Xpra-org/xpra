@@ -119,7 +119,6 @@ class X11ServerCore(GTKServerBase):
         self.touchpad_device = None
         self.pointer_device_map: dict = {}
         self.keys_pressed: dict[int, Any] = {}
-        self.initial_resolution = None
         self.x11_filter = False
         self.randr_sizes_added: list[tuple[int, int]] = []
         self.initial_resolutions: Sequence[tuple[int, int, int]] = ()
