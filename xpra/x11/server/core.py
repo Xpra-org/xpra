@@ -4,7 +4,7 @@
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
-
+import os
 import threading
 from time import monotonic_ns
 from typing import Any
@@ -108,6 +108,7 @@ class X11ServerCore(GTKServerBase):
     """
 
     def __init__(self) -> None:
+        self.display = os.environ.get("DISPLAY", "")
         self.root_window = get_default_root_window()
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
