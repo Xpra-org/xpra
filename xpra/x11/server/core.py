@@ -4,11 +4,13 @@
 # Copyright (C) 2008 Nathaniel Smith <njs@pobox.com>
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
+
 import os
 import threading
 from time import monotonic_ns
 from typing import Any
 from collections.abc import Sequence
+
 
 from xpra.os_util import gi_import
 from xpra.x11.bindings.core import set_context_check, X11CoreBindings, get_root_xid
@@ -19,7 +21,6 @@ from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.server import server_uuid
 from xpra.x11.gtk.prop import prop_del
-from xpra.x11.gtk.bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.x11.xkbhelper import clean_keyboard_state
 from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
 from xpra.util.objects import typedict
@@ -128,6 +129,7 @@ class X11ServerCore(GTKServerBase):
             # if some x11 atoms aren't defined, so we define them in advance:
             X11CoreBindings().intern_atoms(window_type_atoms)
         with xlog:
+            from xpra.x11.gtk.bindings import init_x11_filter
             self.x11_filter = init_x11_filter()
             assert self.x11_filter
         with xlog:
@@ -182,6 +184,7 @@ class X11ServerCore(GTKServerBase):
         log("do_cleanup() x11_filter=%s", self.x11_filter)
         if self.x11_filter:
             self.x11_filter = False
+            from xpra.x11.gtk.bindings import cleanup_x11_filter, cleanup_all_event_receivers
             cleanup_x11_filter()
             # try a few times:
             # errors happen because windows are being destroyed

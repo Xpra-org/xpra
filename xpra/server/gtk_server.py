@@ -10,7 +10,6 @@
 from time import monotonic
 from typing import Any
 from collections.abc import Callable
-
 from xpra.util.env import envbool
 from xpra.util.version import dict_version_trim
 from xpra.os_util import gi_import
@@ -24,7 +23,6 @@ from xpra.gtk.util import get_root_size
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.log import Logger
 
-Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
@@ -82,6 +80,7 @@ class GTKServerBase(ServerBase):
 
     def do_quit(self) -> None:
         log("do_quit: calling Gtk.main_quit")
+        Gtk = gi_import("Gtk")
         Gtk.main_quit()
         log("do_quit: Gtk.main_quit done")
         # from now on, we can't rely on the main loop:
@@ -114,6 +113,7 @@ class GTKServerBase(ServerBase):
                 screen = display.get_default_screen()
                 screen.connect("size-changed", self._screen_size_changed)
                 screen.connect("monitors-changed", self._monitors_changed)
+        Gtk = gi_import("Gtk")
         log("do_run() calling %s", Gtk.main)
         Gtk.main()
         log("do_run() end of gtk.main()")
