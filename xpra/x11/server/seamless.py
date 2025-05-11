@@ -17,7 +17,7 @@ from xpra.os_util import gi_import
 from xpra.util.version import XPRA_VERSION
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.util.str_fn import strtobytes, memoryview_to_bytes
+from xpra.util.str_fn import memoryview_to_bytes
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
 from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
@@ -26,12 +26,10 @@ from xpra.gtk.gobject import one_arg_signal, n_arg_signal
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
 from xpra.x11.gtk.prop import prop_set
-from xpra.x11.gtk.tray import get_tray_window, SystemTray
 from xpra.x11.gtk.selection import AlreadyOwned
 from xpra.x11.gtk.bindings import add_event_receiver, get_pywindow
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings, constants
-from xpra.x11.bindings.keyboard import X11KeyboardBindings
-from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.server.base import X11ServerBase
 from xpra.gtk.error import xsync, xswallow, xlog, XError
 from xpra.log import Logger
@@ -53,10 +51,6 @@ framelog = Logger("x11", "frame")
 eventlog = Logger("x11", "events")
 pointerlog = Logger("x11", "pointer")
 screenlog = Logger("x11", "screen")
-
-X11Window = X11WindowBindings()
-X11Keyboard = X11KeyboardBindings()
-X11RandR = RandRBindings()
 
 SubstructureNotifyMask = constants["SubstructureNotifyMask"]
 
@@ -88,6 +82,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.root_overlay = 0
         self.repaint_root_overlay_timer = 0
         self.configure_damage_timers: dict[int, int] = {}
+        self._focus_history: deque[int] = deque(maxlen=100)
         self._tray = None
         self._has_grab = 0
         self._has_focus = 0
@@ -101,6 +96,9 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.session_type = "seamless"
         self._exit_with_windows = False
         self._xsettings_enabled = True
+        # for handling resize synchronization between client and server (this is not xsync!):
+        self.last_client_configure_event = 0.0
+        self.snc_timer = 0
 
     def init(self, opts) -> None:
         self.wm_name = opts.wm_name
@@ -114,20 +112,19 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
         self.connect("server-event", log_server_event)
 
-    def server_init(self) -> None:
-        X11ServerBase.server_init(self)
-        screenlog("server_init() clobber=%s, randr=%s, initial_resolutions=%s",
-                  self.clobber, self.randr, self.initial_resolutions)
-        if features.display and self.randr and (self.initial_resolutions or not self.clobber):
-            from xpra.x11.vfb_util import set_initial_resolution, parse_env_resolutions
-            DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions(default_refresh_rate=self.refresh_rate)
-            dpi = self.dpi or self.default_dpi
-            resolutions = self.initial_resolutions or DEFAULT_VFB_RESOLUTIONS
-            with xlog:
-                set_initial_resolution(resolutions, dpi)
+    def setup(self) -> None:
+        X11ServerBase.setup(self)
+        self.validate_display()
+        if self.system_tray:
+            self.add_system_tray()
+        self.receive_root_events()
+        self.save_server_version()
+        if self.sync_xvfb > 0:
+            self.init_root_overlay()
+        self.init_wm()
 
-    def validate(self) -> bool:
-        if not X11Window.displayHasXComposite():
+    def validate_display(self) -> bool:
+        if not X11WindowBindings().displayHasXComposite():
             log.error("Xpra 'start' subcommand runs as a compositing manager")
             log.error(" it cannot use a display which lacks the XComposite extension!")
             return False
@@ -135,35 +132,27 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         from xpra.x11.gtk.wm_check import wm_check
         return wm_check(self.clobber & CLOBBER_UPGRADE)
 
-    def setup(self) -> None:
-        X11ServerBase.setup(self)
-        if self.system_tray:
-            self.add_system_tray()
-
-    def x11_init(self) -> None:
-        X11ServerBase.x11_init(self)
-        self._focus_history: deque[int] = deque(maxlen=100)
+    def receive_root_events(self):
         # Do this before creating the Wm object, to avoid clobbering its
         # selecting SubstructureRedirect.
         with xsync:
-            xid = X11Window.get_root_xid()
+            xid = get_root_xid()
+            X11Window = X11WindowBindings()
             event_mask = X11Window.getEventMask(xid) | SubstructureNotifyMask
             X11Window.setEventMask(xid, event_mask)
-            prop_set(xid, "XPRA_SERVER", "latin1", strtobytes(XPRA_VERSION).decode())
         add_event_receiver(xid, self)
-        if self.sync_xvfb > 0:
-            self.init_root_overlay()
-        self.init_wm()
-        # for handling resize synchronization between client and server (this is not xsync!):
-        self.last_client_configure_event = 0.0
-        self.snc_timer = 0
+
+    def save_server_version(self):
+        xid = get_root_xid()
+        prop_set(xid, "XPRA_SERVER", "latin1", XPRA_VERSION)
 
     def init_root_overlay(self) -> None:
         try:
             import cairo
             log(f"init_root_overlay() found cairo: {cairo}")
             with xsync:
-                xid = X11Window.get_root_xid()
+                xid = get_root_xid()
+                X11Window = X11WindowBindings()
                 self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                 log("init_root_overlay() root_overlay=%#x", self.root_overlay)
                 if self.root_overlay:
@@ -181,7 +170,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if ro:
             self.root_overlay = 0
             with xswallow:
-                X11Window.XCompositeReleaseOverlayWindow(ro)
+                X11WindowBindings().XCompositeReleaseOverlayWindow(ro)
 
     def init_wm(self) -> None:
         # Create the WM object
@@ -216,6 +205,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
+        # FIXME: we call this again now because it requires the WM object...
+        self.load_existing_windows()
 
     def do_cleanup(self) -> None:
         if self._tray:
@@ -260,7 +251,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         self.add_packets("window-signal", main_thread=True)
 
     def __repr__(self):
-        return "X11-Seamless-Server(%s)" % self.display_name
+        return "X11-Seamless-Server(%s)" % self.display
 
     def server_event(self, event_type: str, *args: PacketElement) -> None:
         super().server_event(event_type, *args)
@@ -340,7 +331,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     geomlog("clamped window %s", window)
                     window.set_property("client-geometry", (x, y, w, h))
         with xlog:
-            d16 = X11RandR.is_dummy16()
+            from xpra.x11.bindings.randr import RandRBindings
+            d16 = RandRBindings().is_dummy16()
         screenlog("set_screen_size%s randr=%s, randr_exact_size=%s, is_dummy16()=%s",
                   (desired_w, desired_h), self.randr, self.randr_exact_size, d16)
         if DUMMY_MONITORS and self.randr and self.randr_exact_size and d16:
@@ -390,13 +382,14 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         # this is used by some newer versions of the dummy driver (xf86-driver-dummy)
         # (and will not be honoured by anything else..)
         if DUMMY_DPI:
-            xid = X11Window.get_root_xid()
+            xid = get_root_xid()
             prop_set(xid, "dummy-constant-xdpi", "u32", xdpi)
             prop_set(xid, "dummy-constant-ydpi", "u32", ydpi)
             screenlog("set_dpi(%i, %i)", xdpi, ydpi)
 
     def add_system_tray(self) -> None:
         # Tray handler:
+        from xpra.x11.gtk.tray import SystemTray
         with xlog:
             self._tray = SystemTray()
 
@@ -405,15 +398,19 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
     #
 
     def load_existing_windows(self) -> None:
+        log(f"load_existing_windows() wm={self._wm}")
         if not self._wm:
             return
 
-        for window in self._wm.get_property("windows"):
+        windows = self._wm.get_property("windows")
+        log(f"found {len(windows)} windows: {windows}")
+        for window in windows:
             self._add_new_window(window)
 
+        X11Window = X11WindowBindings()
         try:
             with xsync:
-                rxid = X11Window.get_root_xid()
+                rxid = get_root_xid()
                 children = X11Window.get_children(rxid)
         except XError:
             log("load_existing_windows()", exc_info=True)
@@ -606,13 +603,14 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             self._lost_window(window)
         try:
             with xsync:
-                geom = X11Window.getGeometry(xid)
+                geom = X11WindowBindings().getGeometry(xid)
                 windowlog("Discovered new override-redirect window: %#x X11 geometry=%s", xid, geom)
         except Exception as e:
             windowlog("Window error (vanished already?): %s", e)
             return
         try:
             # pylint: disable=import-outside-toplevel
+            from xpra.x11.gtk.tray import get_tray_window
             tray_xid: int = get_tray_window(gdk_window)
             if tray_xid:
                 assert self._tray

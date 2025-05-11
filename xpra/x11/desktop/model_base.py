@@ -17,6 +17,7 @@ from xpra.x11.models.model_stub import WindowModelStub
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.gtk.damage import WindowDamageHandler
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.log import Logger
 
@@ -87,7 +88,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
     _dynamic_property_names = ["size-hints", "title", "icons"]
 
     def __init__(self):
-        root_xid = X11Window.get_root_xid()
+        root_xid = get_root_xid()
         WindowDamageHandler.__init__(self, root_xid)
         WindowModelStub.__init__(self)
         self.update_wm_name()

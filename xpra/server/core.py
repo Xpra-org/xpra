@@ -180,8 +180,6 @@ class ServerCore(ServerBaseClass):
         self.uuid = ""
         self.child_reaper = None
         self.session_type: str = "unknown"
-        self.display_name: str = ""
-        self.display_options = ""
         self._closing: bool = False
         self._exit_mode = ServerExitMode.UNSET
         # networking bits:
@@ -247,7 +245,6 @@ class ServerCore(ServerBaseClass):
         self.init_thread_lock = Lock()
         self.menu_provider = None
 
-        self.init_uuid()
         self._default_packet_handlers: dict[str, Callable] = {}
 
     def init(self, opts) -> None:
@@ -301,15 +298,10 @@ class ServerCore(ServerBaseClass):
             self._ssl_attributes = get_ssl_attributes(opts, True)
             netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
 
-    def validate(self) -> bool:
-        return True
-
-    def server_init(self) -> None:
+    def setup(self) -> None:
+        self.start_listen_sockets()
         if self.mdns:
             add_work_item(self.mdns_publish)
-        self.start_listen_sockets()
-
-    def setup(self) -> None:
         self.init_control_commands()
         self.init_packet_handlers()
         # for things that can take longer:
@@ -433,6 +425,8 @@ class ServerCore(ServerBaseClass):
                 log.warn("Warning: initialization thread is still active")
 
     def run(self) -> ExitValue:
+        # uuid needs to be done after setup()
+        self.init_uuid()
         self.install_signal_handlers(self.signal_quit)
         GLib.idle_add(self.server_is_ready)
         self.stop_splash_process()
@@ -514,14 +508,10 @@ class ServerCore(ServerBaseClass):
         self.uuid = os.environ.get("XPRA_PROXY_START_UUID", "") or self.get_uuid()
         if not self.uuid:
             self.uuid = get_hex_uuid()
-            self.save_uuid()
         log(f"server uuid is {self.uuid}")
 
     def get_uuid(self) -> str:
         return ""
-
-    def save_uuid(self) -> None:
-        """ X11 servers use this method to save the uuid as a root window property """
 
     def init_html_proxy(self, opts) -> None:
         httplog(f"init_html_proxy(..) options: html={opts.html!r}")
@@ -633,7 +623,7 @@ class ServerCore(ServerBaseClass):
     def init_sockets(self, sockets) -> None:
         self._socket_info.update(sockets)
 
-    def init_local_sockets(self, opts, clobber: bool) -> None:
+    def init_local_sockets(self, opts, display_name: str, clobber: bool) -> None:
         uid = int(opts.uid)
         gid = int(opts.gid)
         username = get_username_for_uid(uid)
@@ -643,7 +633,7 @@ class ServerCore(ServerBaseClass):
         local_sockets = setup_local_sockets(
             opts.bind,  # noqa: F821
             opts.socket_dir, opts.socket_dirs, session_dir,  # noqa: F821
-            self.display_name, clobber,  # noqa: F821
+            display_name, clobber,  # noqa: F821
             opts.mmap_group, opts.socket_permissions,  # noqa: F821
             username, uid, gid)
         netlog(f"done setting up local sockets: {local_sockets}")

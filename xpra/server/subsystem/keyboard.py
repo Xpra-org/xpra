@@ -9,7 +9,7 @@ import threading
 from time import monotonic
 from typing import Any
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.str_fn import bytestostr, Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -20,7 +20,7 @@ from xpra.log import Logger
 
 GLib = gi_import("GLib")
 
-keylog = Logger("keyboard")
+log = Logger("keyboard")
 ibuslog = Logger("keyboard", "ibus")
 
 EXPOSE_IBUS_LAYOUTS = envbool("XPRA_EXPOSE_IBUS_LAYOUTS", True)
@@ -32,6 +32,7 @@ class KeyboardServer(StubServerMixin):
     """
 
     def __init__(self):
+        self.keymap_options: dict[str, Any] = {}
         self.mod_meanings = {}
         self.keyboard_config = None
         self.keymap_changing_timer = 0  # to ignore events when we know we are changing the configuration
@@ -49,17 +50,28 @@ class KeyboardServer(StubServerMixin):
         self.ibus_layouts: dict[str, Any] = {}
 
     def init(self, opts) -> None:
-        props = typedict()
-        keymap = props.setdefault("keymap", {})
         for option in ("sync", "layout", "layouts", "variant", "variants", "options"):
             v = getattr(opts, f"keyboard_{option}", None)
             if v is not None:
-                keymap[option] = v
-        self.keyboard_config = self.get_keyboard_config(props)
+                self.keymap_options[option] = v
 
     def setup(self) -> None:
+        if POSIX and not OSX:
+            from xpra.gtk.error import xlog
+            from xpra.x11.xkbhelper import clean_keyboard_state
+            with xlog:
+                clean_keyboard_state()
+            with xlog:
+                from xpra.x11.bindings.keyboard import X11KeyboardBindings
+                X11Keyboard = X11KeyboardBindings()
+                if not X11Keyboard.hasXTest():
+                    log.error("Error: keyboard and mouse disabled")
+                elif not X11Keyboard.hasXkb():
+                    log.error("Error: limited keyboard support")
+
         ibuslog(f"input.setup() {EXPOSE_IBUS_LAYOUTS=}")
         self.watch_keymap_changes()
+        self.keyboard_config = self.get_keyboard_config({"keymap": self.keymap_options})
         if EXPOSE_IBUS_LAYOUTS:
             # wait for ibus to be ready to query the layouts:
             from xpra.keyboard.ibus import with_ibus_ready
@@ -156,11 +168,11 @@ class KeyboardServer(StubServerMixin):
             info.update(kc.get_info())
         if EXPOSE_IBUS_LAYOUTS and self.ibus_layouts:
             info["ibus"] = self.ibus_layouts
-        keylog("get_keyboard_info took %ims", (monotonic() - start) * 1000)
+        log("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
 
     def _process_layout_changed(self, proto, packet: Packet) -> None:
-        keylog(f"layout-changed: {packet}")
+        log(f"layout-changed: {packet}")
         if self.readonly:
             return
         ss = self.get_server_source(proto)
@@ -190,10 +202,10 @@ class KeyboardServer(StubServerMixin):
         ss = self.get_server_source(proto)
         if ss is None:
             return
-        keylog("received new keymap from client: %s", Ellipsizer(packet))
+        log("received new keymap from client: %s", Ellipsizer(packet))
         other_ui_clients = [s.uuid for s in self._server_sources.values() if s != ss and s.ui_client]
         if other_ui_clients:
-            keylog.warn("Warning: ignoring keymap change as there are %i other clients", len(other_ui_clients))
+            log.warn("Warning: ignoring keymap change as there are %i other clients", len(other_ui_clients))
             return
         kc = getattr(ss, "keyboard_config", None)
         if kc and kc.enabled:
@@ -225,7 +237,7 @@ class KeyboardServer(StubServerMixin):
         modifiers = list(str(x) for x in modifiers)
         self.set_ui_driver(ss)
         keycode, group = self.get_keycode(ss, client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
-        keylog("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)
+        log("process_key_action(%s) server keycode=%s, group=%i", packet, keycode, group)
         if group >= 0 and keycode >= 0:
             self.set_keyboard_layout_group(group)
         # currently unused: (group, is_modifier) = packet[8:10]
@@ -238,10 +250,10 @@ class KeyboardServer(StubServerMixin):
                 is_mod = ss.is_modifier(keyname, keycode)
                 self._handle_key(wid, pressed, keyname, keyval, keycode, modifiers, is_mod, ss.keyboard_config.sync)
             except Exception as e:
-                keylog("process_key_action%s", (proto, packet), exc_info=True)
-                keylog.error("Error: failed to %s key", ["unpress", "press"][pressed])
-                keylog.estr(e)
-                keylog.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
+                log("process_key_action%s", (proto, packet), exc_info=True)
+                log.error("Error: failed to %s key", ["unpress", "press"][pressed])
+                log.estr(e)
+                log.error(" for keyname=%s, keyval=%i, keycode=%i", keyname, keyval, keycode)
         ss.user_event()
 
     def get_keycode(self, ss, client_keycode: int, keyname: str,
@@ -249,7 +261,7 @@ class KeyboardServer(StubServerMixin):
         return ss.get_keycode(client_keycode, keyname, pressed, modifiers, keyval, keystr, group)
 
     def fake_key(self, keycode, press):
-        keylog("fake_key%s is not implemented", (keycode, press))
+        log("fake_key%s is not implemented", (keycode, press))
 
     def _handle_key(self, wid: int, pressed: bool, name: str, keyval: int, keycode: int,
                     modifiers: list, is_mod: bool = False, sync: bool = True):
@@ -257,23 +269,23 @@ class KeyboardServer(StubServerMixin):
             Does the actual press/unpress for keys
             Either from a packet (_process_key_action) or timeout (_key_repeat_timeout)
         """
-        keylog("handle_key(%s)", (wid, pressed, name, keyval, keycode, modifiers, is_mod, sync))
+        log("handle_key(%s)", (wid, pressed, name, keyval, keycode, modifiers, is_mod, sync))
         if pressed and wid and wid not in self._id_to_window:
-            keylog("window %s is gone, ignoring key press", wid)
+            log("window %s is gone, ignoring key press", wid)
             return
         if keycode < 0:
-            keylog.warn("ignoring invalid keycode=%s", keycode)
+            log.warn("ignoring invalid keycode=%s", keycode)
             return
         if keycode in self.keys_timedout:
             del self.keys_timedout[keycode]
 
         def press() -> None:
-            keylog("handle keycode pressing   %3i: key '%s'", keycode, name)
+            log("handle keycode pressing   %3i: key '%s'", keycode, name)
             self.keys_pressed[keycode] = name
             self.fake_key(keycode, True)
 
         def unpress() -> None:
-            keylog("handle keycode unpressing %3i: key '%s'", keycode, name)
+            log("handle keycode unpressing %3i: key '%s'", keycode, name)
             if keycode in self.keys_pressed:
                 del self.keys_pressed[keycode]
             self.fake_key(keycode, False)
@@ -287,12 +299,12 @@ class KeyboardServer(StubServerMixin):
                     # (as modifiers are synced via many packets: key, focus and mouse events)
                     unpress()
             else:
-                keylog("handle keycode %s: key %s was already pressed, ignoring", keycode, name)
+                log("handle keycode %s: key %s was already pressed, ignoring", keycode, name)
         else:
             if keycode in self.keys_pressed:
                 unpress()
             else:
-                keylog("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
+                log("handle keycode %s: key %s was already unpressed, ignoring", keycode, name)
         if not is_mod and sync and self.key_repeat_delay > 0 and self.key_repeat_interval > 0:
             self._key_repeat(wid, pressed, name, keyval, keycode, modifiers, is_mod, self.key_repeat_delay)
 
@@ -308,7 +320,7 @@ class KeyboardServer(StubServerMixin):
         self.cancel_key_repeat_timer()
         if pressed:
             delay_ms = min(1500, max(250, delay_ms))
-            keylog("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
+            log("scheduling key repeat timer with delay %s for %s / %s", delay_ms, keyname, keycode)
             now = monotonic()
             self.key_repeat_timer = GLib.timeout_add(delay_ms, self._key_repeat_timeout,
                                                      now, delay_ms, wid, keyname, keyval, keycode, modifiers, is_mod)
@@ -317,8 +329,8 @@ class KeyboardServer(StubServerMixin):
                             modifiers: list, is_mod: bool) -> None:
         self.key_repeat_timer = 0
         now = monotonic()
-        keylog("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s",
-               keyname, keycode, now, when, delay_ms)
+        log("key repeat timeout for %s / '%s' - clearing it, now=%s, scheduled at %s with delay=%s",
+            keyname, keycode, now, when, delay_ms)
         self._handle_key(wid, False, keyname, keyval, keycode, modifiers, is_mod, True)
         self.keys_timedout[keycode] = now
 
@@ -356,7 +368,7 @@ class KeyboardServer(StubServerMixin):
             now = monotonic()
             if when_timedout and (now - when_timedout) < 30:
                 # not so long ago, just re-press it now:
-                keylog("key %s/%s, had timed out, re-pressing it", keycode, keyname)
+                log("key %s/%s, had timed out, re-pressing it", keycode, keyname)
                 self.keys_pressed[keycode] = keyname
                 self.fake_key(keycode, True)
         is_mod = ss.is_modifier(keyname, keycode)
@@ -372,27 +384,27 @@ class KeyboardServer(StubServerMixin):
         kc = ss.keyboard_config
         if kc:
             kc.sync = bool(packet[1])
-            keylog("toggled keyboard-sync to %s for %s", kc.sync, ss)
+            log("toggled keyboard-sync to %s for %s", kc.sync, ss)
 
     def _keys_changed(self) -> None:
-        keylog("input server: the keymap has been changed, keymap_changing_timer=%s", self.keymap_changing_timer)
+        log("input server: the keymap has been changed, keymap_changing_timer=%s", self.keymap_changing_timer)
         if not self.keymap_changing_timer:
             for ss in self._server_sources.values():
                 if hasattr(ss, "keys_changed"):
                     ss.keys_changed()
 
     def clear_keys_pressed(self) -> None:
-        keylog("clear_keys_pressed() is not implemented")
+        log("clear_keys_pressed() is not implemented")
 
     def get_keyboard_config(self, props=None) -> Any | None:
-        keylog("get_keyboard_config(%s) is not implemented", props)
+        log("get_keyboard_config(%s) is not implemented", props)
         return None
 
     def set_keyboard_repeat(self, key_repeat) -> None:
-        keylog("set_keyboard_repeat(%s)", key_repeat)
+        log("set_keyboard_repeat(%s)", key_repeat)
 
     def set_keymap(self, ss, force: bool = False) -> None:
-        keylog("set_keymap(%s, %s)", ss, force)
+        log("set_keymap(%s, %s)", ss, force)
 
     def init_packet_handlers(self) -> None:
         self.add_packets(

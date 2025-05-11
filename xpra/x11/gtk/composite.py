@@ -12,6 +12,7 @@ from xpra.gtk.error import xlog, xsync
 from xpra.x11.gtk.damage import WindowDamageHandler
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.x11.gtk.world_window import get_world_window
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.ximage import XImageBindings
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.log import Logger
@@ -90,7 +91,7 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
             if world:
                 wxid = world.get_window().get_xid()
             with xsync:
-                rxid = X11Window.get_root_xid()
+                rxid = get_root_xid()
             xid = X11Window.getParent(self.xid)
             while xid not in (0, rxid, wxid):
                 # We have to use a lowlevel function to manipulate the

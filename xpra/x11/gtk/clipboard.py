@@ -25,6 +25,7 @@ from xpra.x11.gtk.bindings import (
 from xpra.gtk.error import XError
 from xpra.clipboard.core import ClipboardProxyCore, TEXT_TARGETS, must_discard, must_discard_extra, ClipboardCallback
 from xpra.clipboard.timeout import ClipboardTimeoutHelper, CONVERT_TIMEOUT
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, PropertyError, X11WindowBindings
 from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, memoryview_to_bytes
@@ -215,7 +216,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                     return
                 # send announcement:
                 log("claim_selection: sending message to root window")
-                root_xid = X11Window.get_root_xid()
+                root_xid = get_root_xid()
                 event_mask = StructureNotifyMask
                 X11Window.sendClientMessage(root_xid, root_xid, False, event_mask, "MANAGER",
                                             time or CurrentTime, self._selection, self.xid)
@@ -658,7 +659,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         self.cleanup_window()
 
     def make_proxy(self, selection) -> ClipboardProxy:
-        root_xid = X11Window.get_root_xid()
+        root_xid = get_root_xid()
         xid = self.window.get_xid()
         proxy = ClipboardProxy(xid, selection)
         proxy.set_want_targets(self._want_targets)

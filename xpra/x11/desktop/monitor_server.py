@@ -12,7 +12,7 @@ from xpra.net.common import Packet
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.x11.desktop.monitor_model import MonitorDesktopModel
 from xpra.server.subsystem.window import WindowsConnection
-from xpra.x11.vfb_util import parse_resolution
+from xpra.common import parse_resolution
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger

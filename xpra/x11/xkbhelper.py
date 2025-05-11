@@ -7,8 +7,6 @@ import os
 from typing import Any
 from collections.abc import Iterable
 
-# ensure that we use gtk as display source:
-from xpra.x11.gtk.display_source import init_gdk_display_source
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, csv, bytestostr, Ellipsizer
@@ -16,9 +14,6 @@ from xpra.util.env import envbool
 from xpra.gtk.error import xsync, xlog
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
-
-init_gdk_display_source()
-X11Keyboard = X11KeyboardBindings()
 
 log = Logger("x11", "keyboard")
 verboselog = Logger("x11", "keyboard", "verbose")
@@ -59,6 +54,7 @@ OPTIONAL_KEYS = [
 
 
 def clean_keyboard_state() -> None:
+    X11Keyboard = X11KeyboardBindings()
     with xlog:
         X11Keyboard.ungrab_all_keys()
     with xlog:
@@ -122,6 +118,7 @@ def do_set_keymap(layout: str, variant: str, options, query_struct) -> None:
 
 def safe_setxkbmap(rules: str, model: str, layout: str, variant: str, options: str):
     # (we execute the options separately in case that fails..)
+    X11Keyboard = X11KeyboardBindings()
     try:
         if X11Keyboard.setxkbmap(rules, model, layout, variant, options):
             return True
@@ -146,6 +143,7 @@ def safe_setxkbmap(rules: str, model: str, layout: str, variant: str, options: s
 
 def apply_xmodmap(instructions: list[tuple]) -> list[tuple]:
     try:
+        X11Keyboard = X11KeyboardBindings()
         with xsync:
             unset = X11Keyboard.set_xmodmap(instructions)
     except Exception as e:
@@ -159,6 +157,7 @@ def apply_xmodmap(instructions: list[tuple]) -> list[tuple]:
 
 
 def get_keycode_mappings() -> dict[str, list[str]]:
+    X11Keyboard = X11KeyboardBindings()
     if XKB and X11Keyboard.hasXkb():
         return X11Keyboard.get_xkb_keycode_mappings()
     return X11Keyboard.get_keycode_mappings()
@@ -278,6 +277,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     """
     log("set_all_keycodes(%s.., %s.., %s.., %s)",
         str(xkbmap_x11_keycodes)[:60], str(xkbmap_keycodes)[:60], str(preserve_server_keycodes)[:60], modifiers)
+    X11Keyboard = X11KeyboardBindings()
 
     # so we can validate entries:
     keysym_to_modifier = {}
@@ -639,6 +639,7 @@ def keymap_to_xmodmap(trans_keycodes: dict[int, Any]) -> list[tuple]:
         for name, index in sentries:
             assert 0 <= index < keysyms_per_keycode
             try:
+                X11Keyboard = X11KeyboardBindings()
                 keysym = X11Keyboard.parse_keysym(name)
             except Exception:
                 keysym = None
@@ -696,6 +697,7 @@ def set_modifiers(modifiers: dict[str, Iterable[str]]) -> None:
         modifiers is a dict: {modifier : [keynames]}
         Note: the same keysym cannot appear in more than one modifier
     """
+    X11Keyboard = X11KeyboardBindings()
     instructions: list[tuple[str, str, Iterable[str]]] = []
     for modifier, keynames in modifiers.items():
         mod = X11Keyboard.parse_modifier(modifier)
@@ -782,6 +784,7 @@ def get_modifiers_from_keycodes(xkbmap_keycodes: Iterable, add_default_modifiers
 
 
 def map_missing_modifiers(keynames_for_mod: dict[str, Iterable]):
+    X11Keyboard = X11KeyboardBindings()
     x11_keycodes = X11Keyboard.get_keycode_mappings()
     min_keycode, max_keycode = X11Keyboard.get_minmax_keycodes()
     free_keycodes = [x for x in range(min_keycode, max_keycode) if x not in x11_keycodes]

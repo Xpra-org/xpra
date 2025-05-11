@@ -416,7 +416,7 @@ def init_x11_filter() -> bool:
         display = get_xdisplay()
         init_x11_events(display)
         gdk_window_add_filter(<GdkWindow*>0, x_event_filter, NULL)
-    _INIT_X11_FILTER_DONE += 1
+        _INIT_X11_FILTER_DONE += 1
     return _INIT_X11_FILTER_DONE==1
 
 def cleanup_x11_filter() -> bool:

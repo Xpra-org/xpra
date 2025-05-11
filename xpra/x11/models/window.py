@@ -15,6 +15,7 @@ from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.error import XError, xsync, xswallow, xlog
 from xpra.x11.gtk.prop import prop_set
 from xpra.x11.prop_conv import MotifWMHints
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.bindings.send_wm import send_wm_take_focus
 from xpra.x11.common import Unmanageable
@@ -430,7 +431,7 @@ class WindowModel(BaseWindowModel):
             if geom is not None:
                 with xswallow:
                     if self.client_reparented:
-                        X11Window.Reparent(self.xid, X11Window.get_root_xid(), 0, 0)
+                        X11Window.Reparent(self.xid, get_root_xid(), 0, 0)
                     if self.saved_events != -1:
                         with xswallow:
                             X11Window.setEventMask(self.xid, self.saved_events)

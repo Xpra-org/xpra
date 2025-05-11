@@ -18,7 +18,7 @@ import struct
 
 from xpra.x11.prop_conv import prop_encode, prop_decode, PROP_TYPES, PROP_SIZES
 from xpra.x11.bindings.window import X11WindowBindings, PropertyError
-from xpra.gtk.error import xsync, XError, XSyncContext
+from xpra.gtk.error import xsync, XError
 from xpra.util.str_fn import repr_ellipsized
 from xpra.log import Logger
 
@@ -107,7 +107,7 @@ def raw_prop_get(xid: int, key: str, type_atom: str, buffer_size: int = 65536,
     if not isinstance(xid, int):
         raise TypeError(f"xid must be an int, not a {type(xid)}")
     try:
-        with XSyncContext():
+        with xsync:
             data = X11WindowBindings().XGetWindowProperty(xid, key, type_atom, buffer_size)
         if data is None:
             if not ignore_errors:
@@ -138,7 +138,7 @@ def _etypestr(etype) -> str:
 
 def do_prop_decode(key: str, etype, data, ignore_errors=False):
     try:
-        with XSyncContext():
+        with xsync:
             return prop_decode(etype, data)
     except Exception:
         if ignore_errors:

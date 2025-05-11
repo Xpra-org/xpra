@@ -53,6 +53,9 @@ cdef class X11CoreBindingsInstance:
         if not is_X11():
             raise RuntimeError("cannot load X11 bindings with wayland")
         self.display = get_display()
+        #log.warn("X11Core initialized")
+        #import traceback
+        #traceback.print_stack()
         if self.display == NULL:
             raise RuntimeError("X11 display is not set")
         bstr = get_display_name().encode("latin1")
@@ -158,3 +161,7 @@ def X11CoreBindings() -> X11CoreBindingsInstance:
     if singleton is None:
         singleton = X11CoreBindingsInstance()
     return singleton
+
+
+def get_root_xid() -> int:
+    return X11CoreBindings().get_root_xid()

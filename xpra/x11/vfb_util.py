@@ -17,8 +17,7 @@ from typing import NoReturn
 from subprocess import Popen, PIPE, call
 import os.path
 
-from xpra.common import RESOLUTION_ALIASES, DEFAULT_REFRESH_RATE, get_refresh_rate_for_value
-from xpra.scripts.config import InitException, get_Xdummy_confdir, FALSE_OPTIONS
+from xpra.scripts.config import InitException, get_Xdummy_confdir
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env, get_saved_env_var
 from xpra.os_util import getuid, getgid, POSIX, OSX
@@ -30,60 +29,6 @@ from xpra.log import Logger
 
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
 XVFB_EXTRA_ARGS = os.environ.get("XPRA_XVFB_EXTRA_ARGS", "")
-
-
-def parse_resolution(res_str, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple[int, int, int] | None:
-    if not res_str:
-        return None
-    s = res_str.upper()       # ie: 4K60
-    res_part = s
-    hz = get_refresh_rate_for_value(str(default_refresh_rate), DEFAULT_REFRESH_RATE)//1000
-    for sep in ("@", "K", "P"):
-        pos = s.find(sep)
-        if 0 < pos < len(s)-1:
-            res_part, hz = s.split(sep, 1)
-            if sep != "@":
-                res_part += sep
-            break
-    if res_part in RESOLUTION_ALIASES:
-        w, h = RESOLUTION_ALIASES[res_part]
-    else:
-        try:
-            parts = tuple(int(x) for x in res_part.replace(",", "x").split("X", 1))
-        except ValueError:
-            raise ValueError(f"failed to parse resolution {res_str!r}") from None
-        if len(parts) != 2:
-            raise ValueError(f"invalid resolution string {res_str!r}")
-        w = parts[0]
-        h = parts[1]
-    return w, h, int(hz)
-
-
-def parse_resolutions(s, default_refresh_rate=DEFAULT_REFRESH_RATE//1000) -> tuple | None:
-    if not s or s.lower() in FALSE_OPTIONS:
-        return None
-    if s.lower() in ("none", "default"):
-        return ()
-    return tuple(parse_resolution(v, default_refresh_rate) for v in s.split(","))
-
-
-def parse_env_resolutions(envkey="XPRA_DEFAULT_VFB_RESOLUTIONS",
-                          single_envkey="XPRA_DEFAULT_VFB_RESOLUTION",
-                          default_res="8192x4096",
-                          default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
-    s = os.environ.get(envkey)
-    if s:
-        return parse_resolutions(s, default_refresh_rate)
-    return (parse_resolution(os.environ.get(single_envkey, default_res), default_refresh_rate), )
-
-
-def get_desktop_vfb_resolutions(default_refresh_rate=DEFAULT_REFRESH_RATE//1000):
-    return parse_env_resolutions("XPRA_DEFAULT_DESKTOP_VFB_RESOLUTIONS",
-                                 "XPRA_DEFAULT_DESKTOP_VFB_RESOLUTION",
-                                 "1280x1024",
-                                 default_refresh_rate=default_refresh_rate)
-
-
 PRIVATE_XAUTH = envbool("XPRA_PRIVATE_XAUTH", False)
 XAUTH_PER_DISPLAY = envbool("XPRA_XAUTH_PER_DISPLAY", True)
 

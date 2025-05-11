@@ -15,6 +15,7 @@ from struct import unpack, calcsize
 
 from xpra.gtk.error import xsync
 from xpra.gtk.gobject import no_arg_signal, one_arg_signal
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver, get_xatom, get_pywindow
 from xpra.x11.gtk.prop import prop_set
@@ -122,7 +123,7 @@ class ManagerSelection(GObject.GObject):
         with xsync:
             X11Window = X11WindowBindings()
             self.xid = int(X11Window.XGetSelectionOwner(self.atom))
-            root_xid = X11Window.get_root_xid()
+            root_xid = get_root_xid()
             X11Window.sendClientMessage(root_xid, root_xid, False, StructureNotifyMask,
                                         "MANAGER",
                                         ts_num, selection_xatom, self.xid)

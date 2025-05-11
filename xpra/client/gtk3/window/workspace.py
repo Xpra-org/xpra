@@ -52,10 +52,8 @@ if use_x11_bindings():
     try:
         from xpra.gtk.error import xlog
         from xpra.x11.gtk.prop import prop_get
-        from xpra.x11.bindings.core import X11CoreBindings
+        from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.send_wm import send_wm_workspace
-
-        X11Core = X11CoreBindings()
     except ImportError as x11e:
         log("x11 bindings", exc_info=True)
         # gtk util should have already logged a detailed warning
@@ -66,7 +64,7 @@ if use_x11_bindings():
         log.error(f"Error loading X11 bindings: {e}")
     else:
         HAS_X11_BINDINGS = True
-        root_xid = X11Core.get_root_xid()
+        root_xid = get_root_xid()
 
         def can_set_workspace() -> bool:
             SET_WORKSPACE = envbool("XPRA_SET_WORKSPACE", True)

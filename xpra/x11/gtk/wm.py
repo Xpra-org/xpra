@@ -21,6 +21,7 @@ from xpra.x11.gtk.world_window import WorldWindow, destroy_world_window
 from xpra.x11.gtk.bindings import add_event_receiver, add_fallback_receiver, remove_fallback_receiver
 from xpra.x11.models.window import WindowModel, configure_bits
 from xpra.x11.window_info import window_name, window_info
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.log import Logger
@@ -264,11 +265,11 @@ class Wm(GObject.GObject):
 
     @staticmethod
     def root_set(*args) -> None:
-        prop_set(X11Window.get_root_xid(), *args)
+        prop_set(get_root_xid(), *args)
 
     @staticmethod
     def root_get(*args, **kwargs):
-        return prop_get(X11Window.get_root_xid(), *args, **kwargs)
+        return prop_get(get_root_xid(), *args, **kwargs)
 
     def set_workarea(self, x: int, y: int, width: int, height: int) -> None:
         v = [x, y, width, height]
@@ -360,7 +361,7 @@ class Wm(GObject.GObject):
         # _update_window_list again.
         dtype, dformat, window_xids = prop_encode(["u32"], tuple(self._windows_in_order))
         log("prop_encode(%s)=%s", self._windows_in_order, (dtype, dformat, window_xids))
-        xid = X11Window.get_root_xid()
+        xid = get_root_xid()
         with xlog:
             for prop in ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING"):
                 raw_prop_set(xid, prop, "WINDOW", dformat, window_xids)

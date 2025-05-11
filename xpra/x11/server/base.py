@@ -18,7 +18,7 @@ from xpra.scripts.config import str_to_bool
 from xpra.common import SYNC_ICC
 from xpra.server import features
 from xpra.x11.server.core import X11ServerCore, XTestPointerDevice
-from xpra.x11.bindings.keyboard import X11KeyboardBindings
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.gtk.prop import prop_set, prop_del
 from xpra.x11.xsettings_prop import XSettingsType, BLOCKLISTED_XSETTINGS
 from xpra.log import Logger
@@ -30,18 +30,16 @@ pointerlog = Logger("x11", "server", "pointer")
 screenlog = Logger("server", "screen")
 dbuslog = Logger("dbus")
 
-X11Keyboard = X11KeyboardBindings()
-
 SCALED_FONT_ANTIALIAS = envbool("XPRA_SCALED_FONT_ANTIALIAS", False)
 
 
 def root_prop_set(prop_name: str, prop_type: list | tuple | str, value) -> None:
     # pylint: disable=import-outside-toplevel
-    prop_set(X11Keyboard.get_root_xid(), prop_name, prop_type, value)
+    prop_set(get_root_xid(), prop_name, prop_type, value)
 
 
 def root_prop_del(prop_name: str) -> None:
-    prop_del(X11Keyboard.get_root_xid(), prop_name)
+    prop_del(get_root_xid(), prop_name)
 
 
 def _get_antialias_hintstyle(antialias: typedict) -> str:
@@ -108,13 +106,16 @@ class X11ServerBase(X11ServerCore):
         self._xsettings_enabled: bool = False
         self.input_devices = "xtest"
 
-    def do_init(self, opts) -> None:
-        super().do_init(opts)
+    def init(self, opts) -> None:
+        super().init(opts)
         # the server class sets the default value for 'xsettings_enabled'
         # it is overridden in the seamless server (enabled by default),
         # and we let the options have the final say here:
         self._xsettings_enabled = str_to_bool(opts.xsettings, self._xsettings_enabled)
         log("xsettings_enabled(%s)=%s", opts.xsettings, self._xsettings_enabled)
+
+    def setup(self) -> None:
+        super().setup()
         if self._xsettings_enabled:
             from xpra.x11.xsettings import XSettingsHelper
             self._default_xsettings = XSettingsHelper().get_settings()
@@ -186,7 +187,8 @@ class X11ServerBase(X11ServerCore):
         def verify_uinput_moved() -> None:
             pos = (ox, oy)
             with xswallow:
-                pos = X11Keyboard.query_pointer()
+                from xpra.x11.bindings.keyboard import X11KeyboardBindings
+                pos = X11KeyboardBindings().query_pointer()
                 pointerlog("X11Keyboard.query_pointer=%s", pos)
             if pos == (ox, oy):
                 pointerlog.warn("Warning: %s failed verification", self.pointer_device)

@@ -7,7 +7,7 @@
 from typing import Any
 
 from xpra.common import BACKWARDS_COMPATIBLE
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.server.source.window import WindowsConnection
@@ -53,13 +53,20 @@ class WindowServer(StubServerMixin):
 
         self.window_min_size = parse_window_size(opts.min_size, (0, 0))
         self.window_max_size = parse_window_size(opts.max_size, (2 ** 15 - 1, 2 ** 15 - 1))
+
+    def setup(self) -> None:
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
         self.update_size_constraints(minw, minh, maxw, maxh)
-
-    def setup(self) -> None:
-        self.load_existing_windows()
+        if POSIX and not OSX:
+            from xpra.gtk.error import xlog
+            with xlog:
+                from xpra.x11.bindings.window import X11WindowBindings
+                log("XShape=%s", X11WindowBindings().displayHasXShape())
+            from xpra.x11.window_filters import init_x11_window_filters
+            init_x11_window_filters()
         self.add_init_thread_callback(self.reinit_window_encoders)
+        self.load_existing_windows()
 
     def cleanup(self) -> None:
         for window in tuple(self._window_to_id.keys()):

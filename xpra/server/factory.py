@@ -8,6 +8,7 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server import features
     from xpra.server.core import ServerCore
     classes: list[type] = [ServerCore]
+    # `Power`, `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
     if features.power:
         from xpra.server.subsystem.power import PowerEventServer
         classes.append(PowerEventServer)
@@ -17,31 +18,50 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.bandwidth:
         from xpra.server.subsystem.bandwidth import BandwidthServer
         classes.append(BandwidthServer)
-    if features.dbus:
-        # must be placed before `DisplayServer`
-        from xpra.server.subsystem.dbus import DbusServer
-        classes.append(DbusServer)
     if features.control:
         from xpra.server.subsystem.controlcommands import ServerBaseControlCommands
         classes.append(ServerBaseControlCommands)
-    if features.notification:
-        from xpra.server.subsystem.notification import NotificationForwarder
-        classes.append(NotificationForwarder)
-    if features.webcam:
-        from xpra.server.subsystem.webcam import WebcamServer
-        classes.append(WebcamServer)
-    if features.clipboard:
-        from xpra.server.subsystem.clipboard import ClipboardServer
-        classes.append(ClipboardServer)
-    if features.audio:
-        from xpra.server.subsystem.audio import AudioServer
-        classes.append(AudioServer)
+    if features.debug:
+        from xpra.server.subsystem.debug import DebugServer
+        classes.append(DebugServer)
     if features.fileprint:
         from xpra.server.subsystem.fileprint import FilePrintServer
         classes.append(FilePrintServer)
     if features.mmap:
         from xpra.server.subsystem.mmap import MMAP_Server
         classes.append(MMAP_Server)
+    if features.logging:
+        from xpra.server.subsystem.logging import LoggingServer
+        classes.append(LoggingServer)
+    if features.http:
+        from xpra.server.subsystem.http import HttpServer
+        classes.append(HttpServer)
+    if features.shell:
+        from xpra.server.subsystem.shell import ShellServer
+        classes.append(ShellServer)
+    if features.ssh:
+        from xpra.server.subsystem.ssh_agent import SshAgent
+        classes.append(SshAgent)
+    if features.webcam:
+        from xpra.server.subsystem.webcam import WebcamServer
+        classes.append(WebcamServer)
+
+    # `Dbus` must be placed before `DisplayServer` and `NotificationForwarder`
+    if features.dbus:
+        from xpra.server.subsystem.dbus import DbusServer
+        classes.append(DbusServer)
+    if features.display:
+        from xpra.server.subsystem.display import DisplayManager
+        classes.append(DisplayManager)
+    if features.notification:
+        from xpra.server.subsystem.notification import NotificationForwarder
+        classes.append(NotificationForwarder)
+    if features.clipboard:
+        from xpra.server.subsystem.clipboard import ClipboardServer
+        classes.append(ClipboardServer)
+    if features.audio:
+        from xpra.server.subsystem.audio import AudioServer
+        classes.append(AudioServer)
     if features.keyboard:
         from xpra.server.subsystem.keyboard import KeyboardServer
         classes.append(KeyboardServer)
@@ -51,24 +71,6 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.encoding:
         from xpra.server.subsystem.encoding import EncodingServer
         classes.append(EncodingServer)
-    if features.logging:
-        from xpra.server.subsystem.logging import LoggingServer
-        classes.append(LoggingServer)
-    if features.debug:
-        from xpra.server.subsystem.debug import DebugServer
-        classes.append(DebugServer)
-    if features.ssh:
-        from xpra.server.subsystem.ssh_agent import SshAgent
-        classes.append(SshAgent)
-    if features.http:
-        from xpra.server.subsystem.http import HttpServer
-        classes.append(HttpServer)
-    if features.shell:
-        from xpra.server.subsystem.shell import ShellServer
-        classes.append(ShellServer)
-    if features.display:
-        from xpra.server.subsystem.display import DisplayManager
-        classes.append(DisplayManager)
     if features.cursor:
         from xpra.server.subsystem.cursor import CursorManager
         classes.append(CursorManager)

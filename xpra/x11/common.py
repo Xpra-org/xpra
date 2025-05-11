@@ -59,8 +59,8 @@ def get_X11_window_property(xid: int, name: str, req_type: str):
 
 def get_X11_root_property(name: str, req_type: str):
     try:
-        from xpra.x11.bindings.window import X11WindowBindings
-        return get_X11_window_property(X11WindowBindings().get_root_xid(), name, req_type)
+        from xpra.x11.bindings.core import get_root_xid
+        return get_X11_window_property(get_root_xid(), name, req_type)
     except Exception as e:
         log("get_X11_root_property(%s, %s)", name, req_type, exc_info=True)
         log.warn(f"Warning: failed to get X11 root property {name!r}")
@@ -203,9 +203,10 @@ def get_vrefresh() -> int:
 
 def send_client_message(window, message_type: str, *values) -> None:
     try:
+        from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.window import constants, X11WindowBindings  # @UnresolvedImport
         X11Window = X11WindowBindings()
-        root_xid = X11Window.get_root_xid()
+        root_xid = get_root_xid()
         if window:
             xid = window.get_xid()
         else:

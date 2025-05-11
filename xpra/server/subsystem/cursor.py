@@ -7,8 +7,10 @@ import sys
 from typing import Any
 
 from xpra.common import BACKWARDS_COMPATIBLE
+from xpra.os_util import POSIX, OSX
 from xpra.net.common import Packet
 from xpra.util.objects import typedict
+from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import SilenceWarningsContext
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.log import Logger
@@ -25,9 +27,28 @@ class CursorManager(StubServerMixin):
     def __init__(self):
         self.cursors = False
         self.cursor_size = 0
+        # x11:
+        self.default_cursor_image = None
+        self.last_cursor_serial = 0
+        self.last_cursor_image = None
+        self.send_cursor_pending = False
 
     def init(self, opts) -> None:
         self.cursors = opts.cursors
+
+    def setup(self) -> None:
+        if POSIX and not OSX:
+            from xpra.gtk.error import xlog
+            with xlog:
+                from xpra.x11.bindings.keyboard import X11KeyboardBindings
+                X11Keyboard = X11KeyboardBindings()
+                if not X11Keyboard.hasXFixes() and self.cursors:
+                    log.error("Error: cursor forwarding support disabled")
+                    self.cursors = False
+                    return
+                X11KeyboardBindings().selectCursorChange(True)
+                self.default_cursor_image = X11Keyboard.get_cursor_image()
+                log("get_default_cursor=%s", Ellipsizer(self.default_cursor_image))
 
     def add_new_client(self, ss, c: typedict, send_ui: bool, share_count: int) -> None:
         if not send_ui:

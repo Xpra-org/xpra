@@ -38,6 +38,7 @@ def dump_windows() -> None:
     from xpra.log import Logger
     log = Logger("x11", "window")
     try:
+        from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.window import X11WindowBindings
         from xpra.gtk.error import xlog
     except ImportError:
@@ -45,7 +46,7 @@ def dump_windows() -> None:
     else:
         with xlog:
             X11Window = X11WindowBindings()
-            xid = X11Window.get_root_xid()
+            xid = get_root_xid()
             log(f"root window: {xid:x}")
             children = X11Window.get_children(xid)
             log("%s windows" % len(xid))

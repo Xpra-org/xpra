@@ -45,7 +45,7 @@ from xpra.scripts.config import (
 from xpra.common import (
     CLOBBER_USE_DISPLAY, CLOBBER_UPGRADE, BACKWARDS_COMPATIBLE,
     ConnectionMessage, SocketState, noerr, noop,
-    get_refresh_rate_for_value,
+    get_refresh_rate_for_value, parse_resolutions,
 )
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import (
@@ -1187,7 +1187,7 @@ def _do_run_server(script_file: str, cmdline,
         uinput_uuid = ""
         if start_vfb:
             progress(40, "starting a virtual display")
-            from xpra.x11.vfb_util import start_Xvfb, parse_resolutions, xauth_add
+            from xpra.x11.vfb_util import start_Xvfb, xauth_add
             assert not proxying and xauth_data
             pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
             if use_uinput:
@@ -1266,6 +1266,7 @@ def _do_run_server(script_file: str, cmdline,
             return False
         return True
 
+    os.environ["XVFB_PID"] = str(xvfb_pid)
     write_displayfd(display_name, displayfd)
 
     if not check_xvfb(1):
@@ -1328,41 +1329,6 @@ def _do_run_server(script_file: str, cmdline,
 
     set_server_features(opts, mode)
 
-    # should be in display init
-    if not (proxying or encoder):
-        if POSIX and not OSX:
-            no_gtk()
-            if starting or starting_desktop or starting_monitor:
-                if not verify_display(xvfb, display_name, shadowing):
-                    log.error(f"Error: unable to access display {display_name!r}")
-                    return ExitCode.NO_DISPLAY
-        # on win32, this ensures that we get the correct screen size to shadow:
-        from xpra.platform.gui import init as gui_init
-        log("gui_init()")
-        gui_init()
-
-    if not (proxying or shadowing or encoder) and POSIX and not OSX:
-        if not check_xvfb():
-            return 1
-        from xpra.x11.gtk.display_source import init_gdk_display_source
-        if os.environ.get("NO_AT_BRIDGE") is None:
-            os.environ["NO_AT_BRIDGE"] = "1"
-        init_gdk_display_source()
-
-        if not xvfb_pid:
-            # perhaps this is an upgrade from an older version?
-            # try harder to find the pid:
-            def _get_int(prop) -> int:
-                from xpra.x11.bindings.core import X11CoreBindings
-                from xpra.x11.gtk.prop import prop_get
-                try:
-                    xid = X11CoreBindings().get_root_xid()
-                    return prop_get(xid, prop, "u32")
-                except Exception:
-                    return 0
-
-            xvfb_pid = _get_int(b"XPRA_XVFB_PID") or _get_int(b"_XPRA_SERVER_PID")
-
     progress(80, "initializing server")
     if "backend" not in mode_attrs:
         mode_attrs["backend"] = opts.backend
@@ -1401,22 +1367,14 @@ def _do_run_server(script_file: str, cmdline,
         app.cleanup()
 
     try:
+        app.xvfb = xvfb
         app.splash_process = splash_process
-        app.display_name = display_name
         app.display_options = display_options
-        app.init(opts)
-        if not app.validate():
-            progress(100, "server validation failed")
-            return 1
-        app.init_local_sockets(opts, clobber)
-        app.init_sockets(sockets)
-        from xpra.server import features
-        if features.display and not (shadowing or proxying or expanding or encoder or runner):
-            app.init_display_pid(xvfb_pid)
-            app.save_server_pid()
         app.original_desktop_display = desktop_display
+        app.init(opts)
+        app.init_local_sockets(opts, display_name, clobber)
+        app.init_sockets(sockets)
         progress(90, "finalizing")
-        app.server_init()
         app.setup()
     except InitInfo as e:
         for m in str(e).split("\n"):
@@ -1442,7 +1400,7 @@ def _do_run_server(script_file: str, cmdline,
         server_not_started(str(e))
         return ExitCode.FAILURE
 
-    ######################################################################
+    ##############
     if opts.attach is True:
         attach_client(opts, defaults)
 

@@ -18,6 +18,7 @@ from xpra.gtk.gobject import one_arg_signal, n_arg_signal
 from xpra.gtk.error import XError, xsync, xswallow, xlog
 from xpra.codecs.image import ImageWrapper
 from xpra.platform.posix.proc import get_parent_pid
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings, constants, SHAPE_KIND
 from xpra.x11.bindings.res import ResBindings
 from xpra.x11.bindings.send_wm import send_wm_delete_window
@@ -456,7 +457,7 @@ class CoreX11WindowModel(WindowModelStub):
         pid = XRes.get_pid(self.xid) if XRes else -1
         ppid = get_parent_pid(pid) if pid and get_parent_pid else 0
         parent = X11Window.getParent(self.xid)
-        if parent == X11Window.get_root_xid():
+        if parent == get_root_xid():
             parent = 0
         metalog("initial X11 properties: xid=%#x, parent=%#x, depth=%i, pid=%i, ppid=%i",
                 self.xid, parent, depth, pid, ppid)
@@ -612,10 +613,10 @@ class CoreX11WindowModel(WindowModelStub):
         prop_set(self.xid, key, ptype, value)
 
     def root_prop_get(self, key: str, ptype, ignore_errors=True) -> object:
-        return prop_get(X11Window.get_root_xid(), key, ptype, ignore_errors=ignore_errors)
+        return prop_get(get_root_xid(), key, ptype, ignore_errors=ignore_errors)
 
     def root_prop_set(self, key: str, ptype, value) -> None:
-        prop_set(X11Window.get_root_xid(), key, ptype, value)
+        prop_set(get_root_xid(), key, ptype, value)
 
     def do_x11_property_notify_event(self, event) -> None:
         # X11: PropertyNotify

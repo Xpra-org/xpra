@@ -65,7 +65,7 @@ if use_x11_bindings():
         from xpra.gtk.error import xlog, verify_sync
         from xpra.x11.gtk.prop import prop_get, prop_set, prop_del
         from xpra.x11.bindings.window import constants, X11WindowBindings
-        from xpra.x11.bindings.core import X11CoreBindings, set_context_check
+        from xpra.x11.bindings.core import X11CoreBindings, set_context_check, get_root_xid
 
         X11Window = X11WindowBindings()
         X11Core = X11CoreBindings()
@@ -1105,7 +1105,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         assert HAS_X11_BINDINGS
         xwin = self.get_window().get_xid()
         with xlog:
-            root_xid = X11Core.get_root_xid()
+            root_xid = get_root_xid()
             X11Core.UngrabPointer()
             X11Window.sendClientMessage(root_xid, xwin, False, event_mask, "_NET_WM_MOVERESIZE",
                                         x_root, y_root, direction, button, source_indication)

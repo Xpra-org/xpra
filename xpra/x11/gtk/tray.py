@@ -12,6 +12,7 @@ from xpra.os_util import gi_import
 from xpra.gtk.gobject import one_arg_signal
 from xpra.gtk.error import xsync, xlog
 from xpra.x11.gtk.prop import prop_set, prop_get, raw_prop_set
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import constants, X11WindowBindings
 from xpra.x11.gtk.bindings import add_event_receiver, remove_event_receiver
 from xpra.log import Logger
@@ -146,7 +147,7 @@ class SystemTray(GObject.GObject):
                 log(f"setup tray: current selection owner={owner:x}")
                 if owner != XNone:
                     raise RuntimeError(f"{SELECTION} already owned by {owner:x}")
-                root_xid = X11Window.get_root_xid()
+                root_xid = get_root_xid()
                 root_depth = X11Window.get_depth(root_xid)
                 visualid = 0
                 if TRANSPARENCY:
@@ -202,7 +203,7 @@ class SystemTray(GObject.GObject):
 
     def undock(self, xid) -> None:
         log("undock(%#x)", xid)
-        rxid = X11Window.get_root_xid()
+        rxid = get_root_xid()
         X11Window.Unmap(xid)
         X11Window.Reparent(xid, rxid, 0, 0)
 
@@ -235,7 +236,7 @@ class SystemTray(GObject.GObject):
         if not title:
             title = ""
         log(f"adjusted geometry={X11Window.getGeometry(xid)}, title={title!r}")
-        root_xid = X11Window.get_root_xid()
+        root_xid = get_root_xid()
         xtray = X11Window.CreateWindow(root_xid, -200, -200, w, h, OR=True, event_mask=event_mask)
         prop_set(xtray, "WM_TITLE", "latin1", title)
         log(f"tray: recording corral window {xtray:x}, setting tray properties")

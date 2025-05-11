@@ -9,6 +9,7 @@ from typing import Any
 from xpra.util.env import envbool
 from xpra.gtk.error import xsync, xlog
 from xpra.x11.gtk.prop import prop_get
+from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.log import Logger
 
@@ -23,7 +24,7 @@ FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
 def get_ewmh_xid() -> int:
     with xlog:
         X11Window = X11WindowBindings()
-        root_xid = X11Window.get_root_xid()
+        root_xid = get_root_xid()
         ewmh_xid = prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
         if ewmh_xid:
             try:
@@ -38,7 +39,7 @@ def get_ewmh_xid() -> int:
 def get_wm_info() -> dict[str, Any]:
     with xsync:
         X11Window = X11WindowBindings()
-        root_xid = X11Window.get_root_xid()
+        root_xid = get_root_xid()
         info = {
             "root": root_xid,
         }
