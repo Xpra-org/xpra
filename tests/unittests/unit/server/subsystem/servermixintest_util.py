@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import unittest
 from gi.repository import GLib  # @UnresolvedImport
 
@@ -19,6 +20,8 @@ class ServerMixinTest(unittest.TestCase):
         super(ServerMixinTest, cls).setUpClass()
         cls.glib = GLib
         cls.main_loop = cls.glib.MainLoop()
+        # we don't want to spawn an X11 server to test the subsystems
+        os.environ["XPRA_NOX11"] = "1"
 
     def setUp(self):
         self.mixin = None

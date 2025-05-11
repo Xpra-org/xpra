@@ -7,7 +7,8 @@
 from typing import Any
 
 from xpra.common import BACKWARDS_COMPATIBLE
-from xpra.os_util import gi_import, POSIX, OSX
+from xpra.os_util import gi_import
+from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub_server_mixin import StubServerMixin
 from xpra.server.source.window import WindowsConnection
@@ -58,7 +59,7 @@ class WindowServer(StubServerMixin):
         minw, minh = self.window_min_size
         maxw, maxh = self.window_max_size
         self.update_size_constraints(minw, minh, maxw, maxh)
-        if POSIX and not OSX:
+        if is_X11():
             from xpra.gtk.error import xlog
             with xlog:
                 from xpra.x11.bindings.window import X11WindowBindings
