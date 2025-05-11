@@ -19,10 +19,9 @@ from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.gtk.util import get_default_root_window
 from xpra.x11.server import server_uuid
 from xpra.x11.gtk.prop import prop_del
-from xpra.x11.gtk.display_source import close_gdk_display_source
 from xpra.x11.gtk.bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
 from xpra.x11.xkbhelper import clean_keyboard_state
-from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID
+from xpra.common import MAX_WINDOW_SIZE, FULL_INFO, NotificationID, noerr
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, first_time
 from xpra.util.str_fn import Ellipsizer
@@ -198,13 +197,9 @@ class X11ServerCore(GTKServerBase):
                 except Exception as e:
                     log("do_cleanup() cleanup_all_event_receivers()", exc_info=True)
                     log_fn("failed to remove event receivers: %s", e)
-        with xlog:
-            clean_keyboard_state()
         # prop_del does its own xsync:
-        self.clean_x11_properties()
+        noerr(self.clean_x11_properties)
         super().do_cleanup()
-        log("close_gdk_display_source()")
-        close_gdk_display_source()
 
     def clean_x11_properties(self) -> None:
         self.do_clean_x11_properties("XPRA_SERVER_MODE", "_XPRA_RANDR_EXACT_SIZE")

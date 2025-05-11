@@ -126,7 +126,10 @@ class ServerBase(ServerBaseClass):
         for c in reversed(SERVER_BASES):
             if c != ServerCore:
                 log("%s", c.cleanup)
-                c.cleanup(self)
+                try:
+                    c.cleanup(self)
+                except Exception:
+                    log.warn(f"Error: in {c} cleanup", exc_info=True)
 
     def late_cleanup(self, stop=True) -> None:
         for c in reversed(SERVER_BASES):

@@ -14,20 +14,14 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.util.version import XPRA_VERSION
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.util.str_fn import memoryview_to_bytes
 from xpra.common import CLOBBER_UPGRADE, MAX_WINDOW_SIZE, WORKSPACE_NAMES, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
-from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
 from xpra.server import features, ServerExitMode
 from xpra.gtk.gobject import one_arg_signal, n_arg_signal
-from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.x11.common import Unmanageable, get_wm_name
-from xpra.x11.gtk.prop import prop_set
-from xpra.x11.gtk.selection import AlreadyOwned
-from xpra.x11.gtk.bindings import add_event_receiver, get_pywindow
+from xpra.x11.server.base import root_prop_set
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.bindings.window import X11WindowBindings, constants
 from xpra.x11.server.base import X11ServerBase
@@ -140,11 +134,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             X11Window = X11WindowBindings()
             event_mask = X11Window.getEventMask(xid) | SubstructureNotifyMask
             X11Window.setEventMask(xid, event_mask)
+        from xpra.x11.gtk.bindings import add_event_receiver
         add_event_receiver(xid, self)
 
     def save_server_version(self):
-        xid = get_root_xid()
-        prop_set(xid, "XPRA_SERVER", "latin1", XPRA_VERSION)
+        from xpra.util.version import XPRA_VERSION
+        root_prop_set("XPRA_SERVER", "latin1", XPRA_VERSION)
 
     def init_root_overlay(self) -> None:
         try:
@@ -156,6 +151,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 self.root_overlay = X11Window.XCompositeGetOverlayWindow(xid)
                 log("init_root_overlay() root_overlay=%#x", self.root_overlay)
                 if self.root_overlay:
+                    from xpra.x11.gtk.prop import prop_set
                     prop_set(self.root_overlay, "WM_TITLE", "latin1", "RootOverlay")
                     X11Window.AllowInputPassthrough(self.root_overlay)
                     log("init_root_overlay() done AllowInputPassthrough(%#x)", self.root_overlay)
@@ -173,6 +169,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 X11WindowBindings().XCompositeReleaseOverlayWindow(ro)
 
     def init_wm(self) -> None:
+        from xpra.x11.gtk.selection import AlreadyOwned
         # Create the WM object
         from xpra.x11.gtk.wm import Wm
         x11_errors = []
@@ -190,6 +187,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 with xsync:
                     wm_name = f"{get_wm_name()!r}"
                 err = f"{wm_name} is already active on display {display}"
+                from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
                 raise InitException(err) from None
             except XError as e:
                 x11_errors.append(e)
@@ -382,9 +380,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         # this is used by some newer versions of the dummy driver (xf86-driver-dummy)
         # (and will not be honoured by anything else..)
         if DUMMY_DPI:
-            xid = get_root_xid()
-            prop_set(xid, "dummy-constant-xdpi", "u32", xdpi)
-            prop_set(xid, "dummy-constant-ydpi", "u32", ydpi)
+            root_prop_set("dummy-constant-xdpi", "u32", xdpi)
+            root_prop_set("dummy-constant-ydpi", "u32", ydpi)
             screenlog("set_dpi(%i, %i)", xdpi, ydpi)
 
     def add_system_tray(self) -> None:
@@ -582,6 +579,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
         if self.root_overlay and self.root_overlay == xid:
             windowlog("ignoring root overlay window %#x", self.root_overlay)
             return
+        from xpra.x11.gtk.bindings import get_pywindow
         gdk_window = get_pywindow(xid)
         if not gdk_window or gdk_window.get_window_type() == Gdk.WindowType.TEMP:
             # ignoring one of gtk's temporary windows
@@ -1211,8 +1209,10 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             rowstride *= 2
         else:
             raise ValueError(f"xync-xvfb root overlay paint code does not handle {rgb_format} pixel format")
+        from xpra.util.str_fn import memoryview_to_bytes
         img_data = memoryview_to_bytes(img_data)
         log("update_root_overlay%s painting rectangle %s", (window, x, y, image), (wx + x, wy + y, width, height))
+        from xpra.gtk.pixbuf import get_pixbuf_from_data
         pixbuf = get_pixbuf_from_data(img_data, True, width, height, rowstride)
         cr = overlaywin.cairo_create()
         cr.new_path()

@@ -337,8 +337,8 @@ def set_server_features(opts, mode: str) -> None:
         features.keyboard = not opts.readonly and impcheck("keyboard")
         features.pointer = not opts.readonly
         features.logging = b(opts.remote_logging)
-        features.display = opts.windows
-        features.window = features.display and impcheck("codecs")
+        features.window = opts.windows and impcheck("codecs")
+        features.display = features.window or features.keyboard or features.pointer
         features.cursor = features.display and opts.cursors
         features.rfb = b(opts.rfb_upgrade) and impcheck("server.rfb")
         features.ssh = b(opts.ssh) and impcheck("net.ssh")

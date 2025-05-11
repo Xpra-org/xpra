@@ -3,9 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
+
 from xpra.os_util import OSX, gi_import
 from xpra.util.system import is_X11
-from xpra.util.env import first_time, IgnoreWarningsContext
+from xpra.util.env import envbool, first_time, IgnoreWarningsContext
 from xpra.log import Logger
 
 Gdk = gi_import("Gdk")
@@ -80,6 +82,23 @@ def init_display_source() -> None:
 
 def ds_inited() -> bool:
     return dsinit
+
+
+def close_gtk_display() -> None:
+    # Close our display(s) first, so the server dying won't kill us.
+    # (if gtk has been loaded)
+    gdk_mod = sys.modules.get("gi.repository.Gdk")
+    # bug 2328: python3 shadow server segfault on Ubuntu 16.04
+    # also crashes on Ubuntu 20.04
+    close = envbool("XPRA_CLOSE_GTK_DISPLAY", False)
+    if close and gdk_mod:
+        log = Logger("gtk", "screen")
+        displays = Gdk.DisplayManager.get().list_displays()
+        log("close_gtk_display() close=%s, gdk_mod=%s, displays=%s", close, gdk_mod, displays)
+        log("close_gtk_display() displays=%s", displays)
+        for d in displays:
+            log("close_gtk_display() closing %s", d)
+            d.close()
 
 
 def main() -> None:

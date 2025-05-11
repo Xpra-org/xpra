@@ -7,7 +7,6 @@
 
 # pylint: disable=wrong-import-position
 
-import sys
 from time import monotonic
 from typing import Any
 from collections.abc import Callable
@@ -94,7 +93,6 @@ class GTKServerBase(ServerBase):
         self.stop_keymap_timer()
         super().late_cleanup(stop)
         self.stop_ui_watcher()
-        self.close_gtk_display()
 
     def stop_ui_watcher(self) -> None:
         uiw = self.ui_watcher
@@ -102,22 +100,6 @@ class GTKServerBase(ServerBase):
         if uiw:
             self.ui_watcher = None
             uiw.stop()
-
-    def close_gtk_display(self) -> None:
-        # Close our display(s) first, so the server dying won't kill us.
-        # (if gtk has been loaded)
-        gdk_mod = sys.modules.get("gi.repository.Gdk")
-        # bug 2328: python3 shadow server segfault on Ubuntu 16.04
-        # also crashes on Ubuntu 20.04
-        close = envbool("XPRA_CLOSE_GTK_DISPLAY", False)
-        log("close_gtk_display() close=%s, gdk_mod=%s",
-            close, gdk_mod)
-        if close and gdk_mod:
-            displays = Gdk.DisplayManager.get().list_displays()
-            log("close_gtk_display() displays=%s", displays)
-            for d in displays:
-                log("close_gtk_display() closing %s", d)
-                d.close()
 
     def do_run(self) -> None:
         if UI_THREAD_WATCHER:

@@ -14,7 +14,7 @@ from xpra.util.system import is_X11
 from xpra.util.str_fn import bytestostr, Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
-from xpra.common import noop
+from xpra.common import noop, noerr
 from xpra.net.common import Packet
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -89,8 +89,13 @@ class KeyboardServer(StubServerMixin):
                     Ellipsizer(self.ibus_layouts))
 
     def cleanup(self) -> None:
-        self.clear_keys_pressed()
+        noerr(self.clear_keys_pressed)
         self.keyboard_config = None
+        if is_X11():
+            from xpra.gtk.error import xlog
+            from xpra.x11.xkbhelper import clean_keyboard_state
+            with xlog:
+                clean_keyboard_state()
 
     def reset_focus(self) -> None:
         self.clear_keys_pressed()
