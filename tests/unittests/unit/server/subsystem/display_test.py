@@ -26,6 +26,7 @@ class DisplayMixinTest(ServerMixinTest):
         opts.dpi = 144
         opts.opengl = "no"
         opts.refresh_rate = "auto"
+        opts.resize_display = "no"
 
         def get_root_window_size() -> tuple[int, int]:
             return 1024, 768

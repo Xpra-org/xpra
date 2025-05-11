@@ -45,6 +45,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         opts.exec_wrapper = None
         opts.start_env = []
         opts.source_start = []
+        opts.chdir = ""
 
         # pynotify can cause crashes,
         # probably due to threading issues?
