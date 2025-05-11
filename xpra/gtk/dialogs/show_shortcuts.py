@@ -100,14 +100,14 @@ class ShortcutInfo(Gtk.Window):
 
 
 def main(_args):
-    from xpra.os_util import POSIX, OSX
     from xpra.platform import program_context
     from xpra.platform.gui import force_focus
     from xpra.platform.keyboard import Keyboard
+    from xpra.util.system import is_X11
     from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts, get_modifier_names
     from xpra.scripts.config import read_xpra_defaults
     with program_context("Keyboard-Shortcuts", "Keyboard Shortcuts"):
-        if POSIX and not OSX:
+        if is_X11():
             try:
                 from xpra.x11.bindings.posix_display_source import init_posix_display_source
                 init_posix_display_source()

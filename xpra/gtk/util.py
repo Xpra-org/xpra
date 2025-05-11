@@ -3,9 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.os_util import OSX, POSIX, gi_import
-from xpra.util.env import first_time, IgnoreWarningsContext
+from xpra.os_util import OSX, gi_import
 from xpra.util.system import is_X11
+from xpra.util.env import first_time, IgnoreWarningsContext
 from xpra.log import Logger
 
 Gdk = gi_import("Gdk")
@@ -86,11 +86,12 @@ def main() -> None:
     from xpra.platform import program_context
     from xpra.util.str_fn import print_nested_dict
     from xpra.log import enable_color
+
     with program_context("GTK-Version-Info", "GTK Version Info"):
         enable_color()
         from xpra.gtk.versions import get_gtk_version_info
         print("%s" % get_gtk_version_info())
-        if POSIX and not OSX:
+        if is_X11():
             from xpra.x11.bindings.posix_display_source import init_posix_display_source
             init_posix_display_source()
         import warnings

@@ -8,13 +8,14 @@ from typing import Any
 from subprocess import Popen
 from collections.abc import Sequence
 
-from xpra.os_util import gi_import, POSIX, OSX
+from xpra.os_util import gi_import, POSIX
 from xpra.util.objects import typedict
 from xpra.util.screen import log_screen_sizes
 from xpra.util.str_fn import bytestostr
 from xpra.util.env import OSEnvContext, envint, SilenceWarningsContext
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
+from xpra.util.system import is_X11
 from xpra.util.version import parse_version, dict_version_trim
 from xpra.scripts.config import FALSE_OPTIONS, TRUE_OPTIONS, InitExit
 from xpra.common import get_refresh_rate_for_value, FULL_INFO, parse_env_resolutions, parse_resolutions
@@ -200,7 +201,7 @@ class DisplayManager(StubServerMixin):
         if not self.display_pid:
             self.display_pid = get_display_pid()
         self.bit_depth = self.get_display_bit_depth()
-        if self.randr and POSIX and not OSX:
+        if self.randr and is_X11():
             self.init_randr()
             self.set_initial_resolution()
             self.save_server_pid()
@@ -238,7 +239,7 @@ class DisplayManager(StubServerMixin):
 
     def set_initial_resolution(self) -> None:
         log(f"set_initial_resolution() randr={self.randr}, initial_resolutions={self.initial_resolutions}")
-        if POSIX and not OSX and self.randr and self.initial_resolutions:
+        if self.randr and self.initial_resolutions and is_X11():
             from xpra.gtk.error import xlog
             from xpra.x11.vfb_util import set_initial_resolution
             DEFAULT_VFB_RESOLUTIONS = parse_env_resolutions(default_refresh_rate=self.refresh_rate)

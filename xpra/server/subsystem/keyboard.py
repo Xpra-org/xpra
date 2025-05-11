@@ -9,7 +9,8 @@ import threading
 from time import monotonic
 from typing import Any
 
-from xpra.os_util import gi_import, POSIX, OSX
+from xpra.os_util import gi_import
+from xpra.util.system import is_X11
 from xpra.util.str_fn import bytestostr, Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
@@ -56,7 +57,7 @@ class KeyboardServer(StubServerMixin):
                 self.keymap_options[option] = v
 
     def setup(self) -> None:
-        if POSIX and not OSX:
+        if is_X11():
             from xpra.gtk.error import xlog
             from xpra.x11.xkbhelper import clean_keyboard_state
             with xlog:

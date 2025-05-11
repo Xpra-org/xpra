@@ -379,7 +379,7 @@ platform_import(globals(), "gui", False,
 def main() -> int:
     from xpra.platform import program_context
     from xpra.util.str_fn import print_nested_dict
-    from xpra.os_util import OSX, POSIX
+    from xpra.util.system import is_X11
     from xpra.log import enable_color, consume_verbose_argv
     with program_context("GUI-Properties"):
         enable_color()
@@ -387,7 +387,7 @@ def main() -> int:
         init()
 
         # naughty, but how else can I hook this up?
-        if POSIX and not OSX:
+        if is_X11():
             from xpra.x11.bindings.posix_display_source import init_posix_display_source
             init_posix_display_source()
         i = get_info()

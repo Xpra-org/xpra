@@ -6,7 +6,8 @@
 
 from collections.abc import Callable
 
-from xpra.os_util import POSIX, OSX, gi_import
+from xpra.os_util import gi_import
+from xpra.util.system import is_X11
 from xpra.platform import program_context
 from xpra.platform.gui import force_focus
 from xpra.gtk.window import add_close_accel
@@ -16,6 +17,7 @@ from xpra.gtk.pixbuf import get_icon_pixbuf
 import os
 from datetime import datetime
 from collections import deque
+
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
@@ -95,21 +97,19 @@ def make_window() -> Gtk.Window:
     window.connect("focus-in-event", focus_in)
     window.connect("focus-out-event", focus_out)
     window.connect("notify::has-toplevel-focus", has_toplevel_focus)
-    if POSIX and not OSX:
-        from xpra.util.system import is_Wayland
-        if not is_Wayland():
-            from xpra.x11.gtk.display_source import init_gdk_display_source
-            from xpra.x11.gtk.bindings import init_x11_filter
-            from xpra.x11.bindings.window import X11WindowBindings  # pylint: disable=no-name-in-module
-            from xpra.gtk.error import xlog
-            # x11 focus events:
-            gdk_win = window.get_window()
-            xid = gdk_win.get_xid()
-            init_gdk_display_source()
-            os.environ["XPRA_X11_DEBUG_EVENTS"] = "FocusIn,FocusOut"
-            init_x11_filter()
-            with xlog:
-                X11WindowBindings().selectFocusChange(xid)
+    if is_X11():
+        from xpra.x11.gtk.display_source import init_gdk_display_source
+        from xpra.x11.gtk.bindings import init_x11_filter
+        from xpra.x11.bindings.window import X11WindowBindings  # pylint: disable=no-name-in-module
+        from xpra.gtk.error import xlog
+        # x11 focus events:
+        gdk_win = window.get_window()
+        xid = gdk_win.get_xid()
+        init_gdk_display_source()
+        os.environ["XPRA_X11_DEBUG_EVENTS"] = "FocusIn,FocusOut"
+        init_x11_filter()
+        with xlog:
+            X11WindowBindings().selectFocusChange(xid)
     return window
 
 

@@ -15,8 +15,8 @@ from xpra.gtk.widget import imagebutton, label, setfont
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.util.str_fn import repr_ellipsized
 from xpra.common import noop
-from xpra.os_util import POSIX, OSX, WIN32, gi_import
-from xpra.util.system import is_Wayland, platform_name
+from xpra.os_util import OSX, WIN32, gi_import
+from xpra.util.system import platform_name, is_X11
 from xpra.util.stats import std_unit_dec
 from xpra.scripts.config import get_defaults, str_to_bool, OPTION_TYPES, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.client.gtk3.menu_helper import BANDWIDTH_MENU_OPTIONS
@@ -955,7 +955,7 @@ class FeaturesWindow(SessionOptions):
             "to-client": "to client only",
             "disabled": "disabled",
         })
-        if POSIX and not OSX and not is_Wayland():
+        if is_X11():
             self.bool_cb("XSettings", "xsettings")
         self.vbox.show_all()
 

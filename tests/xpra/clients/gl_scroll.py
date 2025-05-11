@@ -12,7 +12,7 @@ from typing import TypeAlias
 from PIL import Image
 
 from xpra.log import Logger
-from xpra.os_util import gi_import, POSIX, OSX
+from xpra.os_util import gi_import
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.gtk.window import add_close_accel
@@ -197,8 +197,9 @@ def main() -> int:
     from xpra.platform import program_context
     from xpra.platform.gui import init as gui_init
     from xpra.log import enable_color, consume_verbose_argv
+    from xpra.util.system import is_X11
     with program_context("OpenGL Native Context Check"):
-        if POSIX and not OSX:
+        if is_X11():
             from xpra.x11.gtk.display_source import init_gdk_display_source
             init_gdk_display_source()
         gui_init()

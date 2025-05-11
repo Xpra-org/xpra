@@ -53,11 +53,11 @@ from OpenGL.GL.ARB.framebuffer_object import (
     glGenFramebuffers, glDeleteFramebuffers, glBindFramebuffer, glFramebufferTexture2D, glBlitFramebuffer,
 )
 
-from xpra.os_util import POSIX, OSX, gi_import
+from xpra.os_util import gi_import
 from xpra.util.str_fn import repr_ellipsized, hexstr
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.objects import typedict
-from xpra.util.system import is_Wayland
+from xpra.util.system import is_X11
 from xpra.common import roundup, PaintCallbacks
 from xpra.codecs.constants import get_subsampling_divs, get_plane_name
 from xpra.client.gui.window_border import WindowBorder
@@ -253,7 +253,7 @@ class GLWindowBackingBase(WindowBackingBase):
         super().__init__(wid, window_alpha and self.HAS_ALPHA)
         self.opengl_init()
         self.paint_context_manager: AbstractContextManager = nullcontext()
-        if POSIX and not OSX and not is_Wayland():
+        if is_X11():
             # pylint: disable=ungrouped-imports
             from xpra.gtk.error import xsync
             self.paint_context_manager = xsync

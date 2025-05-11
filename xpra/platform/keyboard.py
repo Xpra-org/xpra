@@ -16,7 +16,7 @@ platform_import(globals(), "keyboard", True,
 
 def main() -> int:
     import sys
-    from xpra.os_util import OSX, POSIX
+    from xpra.util.system import is_X11
     from xpra.util.str_fn import print_nested_dict
     from xpra.util.str_fn import csv
     from xpra.platform import program_context
@@ -27,7 +27,7 @@ def main() -> int:
         verbose = consume_verbose_argv(sys.argv, "keyboard")
 
         # naughty, but how else can I hook this up?
-        if POSIX and not OSX:
+        if is_X11():
             try:
                 from xpra.x11.bindings.posix_display_source import init_posix_display_source
                 init_posix_display_source()
@@ -56,7 +56,7 @@ def main() -> int:
         print(f"Options:    {options!r}")
         print("")
         print(f"Repeat:     {csv(keyboard.get_keyboard_repeat())}")
-        if verbose and POSIX:
+        if verbose and is_X11():
             keysyms = keyboard.get_x11_keymap()
             if keysyms:
                 print("Keysyms:")

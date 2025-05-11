@@ -7,8 +7,8 @@ import sys
 from typing import Any
 
 from xpra.common import BACKWARDS_COMPATIBLE
-from xpra.os_util import POSIX, OSX
 from xpra.net.common import Packet
+from xpra.util.system import is_X11
 from xpra.util.objects import typedict
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.env import SilenceWarningsContext
@@ -37,7 +37,7 @@ class CursorManager(StubServerMixin):
         self.cursors = opts.cursors
 
     def setup(self) -> None:
-        if POSIX and not OSX:
+        if is_X11():
             from xpra.gtk.error import xlog
             with xlog:
                 from xpra.x11.bindings.keyboard import X11KeyboardBindings
