@@ -17,7 +17,7 @@ from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
 from xpra.gtk.util import get_default_root_window
-from xpra.x11.server.server_uuid import save_uuid, get_uuid, save_mode
+from xpra.x11.server import server_uuid
 from xpra.x11.gtk.prop import prop_del
 from xpra.x11.gtk.display_source import close_gdk_display_source
 from xpra.x11.gtk.bindings import init_x11_filter, cleanup_x11_filter, cleanup_all_event_receivers
@@ -131,11 +131,11 @@ class X11ServerCore(GTKServerBase):
             self.x11_filter = init_x11_filter()
             assert self.x11_filter
         with xlog:
-            self.save_mode()
-            self.save_uuid()
+            self.save_server_mode()
+            self.save_server_uuid()
 
-    def save_mode(self) -> None:
-        save_mode(self.session_type)
+    def save_server_mode(self) -> None:
+        server_uuid.save_mode(self.session_type)
 
     # noinspection PyMethodMayBeStatic
     def get_display_bit_depth(self) -> int:
@@ -218,11 +218,11 @@ class X11ServerCore(GTKServerBase):
                 log.warn(f"Warning: failed to delete property {prop!r} on root window {root_xid}: {e}")
 
     # noinspection PyMethodMayBeStatic
-    def get_uuid(self) -> str:
-        return get_uuid()
+    def get_server_uuid(self) -> str:
+        return server_uuid.get_uuid()
 
-    def save_uuid(self) -> None:
-        save_uuid(str(self.uuid))
+    def save_server_uuid(self) -> None:
+        server_uuid.save_uuid(str(self.uuid))
 
     def set_keyboard_repeat(self, key_repeat) -> None:
         with xlog:

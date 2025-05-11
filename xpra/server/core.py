@@ -510,7 +510,7 @@ class ServerCore(ServerBaseClass):
             self.uuid = get_hex_uuid()
         log(f"server uuid is {self.uuid}")
 
-    def get_uuid(self) -> str:
+    def get_server_uuid(self) -> str:
         return ""
 
     def init_html_proxy(self, opts) -> None:
