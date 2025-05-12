@@ -161,7 +161,6 @@ class ProxyServer(ProxyServerBaseClass):
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False
         self.session_type = "proxy"
-        self.main_loop = None
         # proxy servers may have to connect to remote servers,
         # or even start them, so allow more time before timing out:
         self._accept_timeout += 10
@@ -217,10 +216,6 @@ class ProxyServer(ProxyServerBaseClass):
     def print_screen_info(self) -> None:
         # no screen, we just use a virtual display number
         pass
-
-    def do_run(self) -> None:
-        self.main_loop = GLib.MainLoop()
-        self.main_loop.run()
 
     def handle_stop_command(self, *args) -> str:
         display = args[0]
@@ -283,12 +278,6 @@ class ProxyServer(ProxyServerBaseClass):
         log("cleanup() frames remaining:")
         from xpra.util.pysystem import dump_all_frames
         dump_all_frames(log)
-
-    def do_quit(self) -> None:
-        self.main_loop.quit()
-        # from now on, we can't rely on the main loop:
-        from xpra.util.system import register_SIGUSR_signals
-        register_SIGUSR_signals()
 
     def log_closing_message(self) -> None:
         log.info("Proxy Server process ended")

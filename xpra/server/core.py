@@ -354,9 +354,6 @@ class ServerCore(ServerBaseClass):
         exiting = self._exit_mode in (ServerExitMode.EXIT, ServerExitMode.UPGRADE)
         log.info("%s server is %s", self.session_type, ["terminating", "exiting"][exiting])
 
-    def do_quit(self) -> None:
-        raise NotImplementedError()
-
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
         def os_signal(signum: signal.Signals | int, _frame: FrameType | None = None) -> None:
             callback(signum)
@@ -434,9 +431,6 @@ class ServerCore(ServerBaseClass):
     def server_is_ready(self) -> None:
         log.info("xpra is ready.")
         noerr(sys.stdout.flush)
-
-    def do_run(self) -> None:
-        raise NotImplementedError()
 
     def cleanup(self) -> None:
         for bc in SERVER_BASES:
