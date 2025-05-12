@@ -102,6 +102,8 @@ class EncoderServer(ServerBase, GLibServer):
         encodings = get_encodings()
         if self.encoding not in ("auto", ) and self.encoding not in encodings:
             raise ValueError(f"unsupported encoding {self.encoding!r}")
+        # default to True rather than None (aka "auto"):
+        self.sharing = self.sharing is not False
 
     def cleanup_source(self, source) -> None:
         encoders = self.encoders.pop(source.uuid, {})
