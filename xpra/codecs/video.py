@@ -157,7 +157,7 @@ def filt(prefix: str, name: str,
     notfound = tuple(x for x in lists if (x and noopt(x) not in all_list and x not in unknown and x != "none"))
     if notfound:
         log.warn(f"Warning: {name} not found: "+csv(notfound))
-    allowed = apl(x for x in inclist if x in all_list and x not in exclist and x != "none")
+    allowed = apl(x for x in inclist if noopt(x) in all_list and noopt(x) not in exclist and x != "none")
     # log(f"{inclist=}, {exclist=}, {all_list=} -> {allowed=}")
     # now we can parse individual entries:
     values = {}
