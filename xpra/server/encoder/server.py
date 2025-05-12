@@ -102,6 +102,8 @@ class EncoderServer(ServerBase):
         encodings = get_encodings()
         if self.encoding not in ("auto", ) and self.encoding not in encodings:
             raise ValueError(f"unsupported encoding {self.encoding!r}")
+        # default to True rather than None (aka "auto"):
+        self.sharing = self.sharing is not False
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
         sstr = self.get_server_mode() + " server"
