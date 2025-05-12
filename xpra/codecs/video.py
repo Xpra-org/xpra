@@ -103,7 +103,7 @@ def filt(prefix: str, name: str,
          all_fn: Callable[[], list[str]],
          all_options: Iterable[str]) -> dict[str, dict[str, str]]:
     assert isinstance(inlist, Sequence), f"options for {prefix!r} is not a sequence"
-    # log("filt%s", (prefix, name, inlist, all_fn, all_options))
+    log("filt%s", (prefix, name, inlist, all_fn, all_options))
     if "none" in inlist:
         return {}
 
@@ -158,12 +158,13 @@ def filt(prefix: str, name: str,
     if notfound:
         log.warn(f"Warning: {name} not found: "+csv(notfound))
     allowed = apl(x for x in inclist if noopt(x) in all_list and noopt(x) not in exclist and x != "none")
-    # log(f"{inclist=}, {exclist=}, {all_list=} -> {allowed=}")
+    log(f"{inclist=}, {exclist=}, {all_list=} -> {allowed=}")
     # now we can parse individual entries:
     values = {}
     for entry in allowed:
         codec, options = parse_video_option(entry)
         values[codec] = options
+    log(f"{name}={values}")
     return values
 
 
