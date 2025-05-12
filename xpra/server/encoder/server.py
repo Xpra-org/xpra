@@ -305,22 +305,23 @@ class EncoderServer(ServerBase, GLibServer):
         finally:
             free_all()
 
-        if bdata is None:
+        delayed = client_options.get("delayed", 0)
+        if bdata is None and not delayed:
             log.warn(f"Warning: no data from encoder {encoder}")
             log.warn(" options:%s", client_options)
             ss.send("context-data", seq, b"", {"error": "no data from encoder"}, {})
             return
         reply_opts = {}
-        mmap_write_area = getattr(ss, "mmap_write_area", None)
-        log(f"{len(bdata)} bytes, {client_options=}, {mmap_write_area=}")
-        if mmap_write_area:
-            reply_opts["chunks"] = mmap_write_area.write_data(bdata)
-            data = b""
-        else:
-            data = Compressed(encoding, bdata)
+        data = Compressed(encoding, bdata or b"")
+        if len(data) >= 4096:
+            mmap_write_area = getattr(ss, "mmap_write_area", None)
+            log(f"{len(bdata)} bytes, {client_options=}, {mmap_write_area=}")
+            if mmap_write_area:
+                reply_opts["chunks"] = mmap_write_area.write_data(bdata)
+                data = b""
         ss.send("context-data", seq, data, client_options, reply_opts)
         end = monotonic()
-        csize = len(bdata)
+        csize = len(bdata or b"")
         psize = image.get_bytesperpixel() * image.get_width() * image.get_height()
         x = image.get_x()
         y = image.get_y()
