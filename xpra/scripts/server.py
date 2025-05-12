@@ -1174,9 +1174,10 @@ def _do_run_server(script_file: str, cmdline,
                         else:
                             # now OK!
                             start_vfb = False
+
     xvfb_pid = 0
     devices = {}
-    if POSIX and not OSX:
+    if POSIX and not OSX and not (proxying or encoder or runner):
         try:
             from xpra.x11.uinput.setup import has_uinput, create_input_devices, UINPUT_UUID_LEN
             use_uinput = not (shadowing or proxying or encoder or runner) and opts.input_devices.lower() in (
