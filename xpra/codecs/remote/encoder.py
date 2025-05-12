@@ -133,31 +133,46 @@ class EncoderClient(RemoteConnectionClient):
         encoder.compressed_data(bdata, client_options)
 
 
-server = None
+servers: list[EncoderClient] = []
 
 
-def init_module(options: dict) -> None:
-    log(f"encoder.init_module({options})")
-    global server
+def add_server(options: dict) -> None:
     try:
         server = EncoderClient(options)
         server.connect()
         log("%s: %s, %s", get_type(), get_version(), get_info())
+        servers.append(server)
     except (InitExit, OSError, RuntimeError):
         log("failed to connect to server, no encodings available", exc_info=True)
 
 
+def init_module(options: dict) -> None:
+    log(f"encoder.init_module({options})")
+    # single server syntax uses "uri=protocol://host:port/.."
+    # or one can use multiple servers with "uris=protocol://host1/?attr=value&,protocol://host2/"
+    global servers
+    uris = options.get("uris", "")
+    if uris:
+        for uri in uris.split(";"):
+            uri_override = options.copy()
+            uri_override["uri"] = uri
+            add_server(uri_override)
+    # single uri:
+    uri = options.get("uri", "")
+    if uri:
+        add_server(options)
+
+
 def cleanup_module() -> None:
     log("remote.cleanup_module()")
-    server.disconnect()
-    server.cancel_schedule_connect()
+    global servers
+    for server in servers:
+        server.cancel_schedule_connect()
+        server.disconnect()
+    servers[:] = []
 
 
-def get_runtime_factor() -> float:
-    return float(server.is_connected())
-
-
-def make_spec(espec: dict) -> VideoSpec:
+def make_spec(server: EncoderClient, espec: dict) -> VideoSpec:
     codec_type = espec["codec_type"]
 
     class RemoteEncoder(Encoder):
@@ -172,23 +187,32 @@ def make_spec(espec: dict) -> VideoSpec:
             log.warn(f"Warning: unknown video spec attribute {k!r}")
             continue
         setattr(spec, k, v)
+
+    def get_runtime_factor() -> float:
+        return float(server.is_connected())
+
     spec.get_runtime_factor = get_runtime_factor
     return spec
 
 
 def get_encodings() -> Sequence[str]:
-    return tuple(server.specs.items())
+    encodings: list[str] = []
+    for server in servers:
+        encodings += server.encodings
+    return tuple(encodings)
 
 
 def get_specs() -> Sequence[VideoSpec]:
     # the `server.specs` are dictionaries,
     # which we need to convert to real `VideoSpec` objects:
+    global servers
     specs: Sequence[VideoSpec] = []
-    for encoding, csc_specs in server.specs.items():
-        for csc, especs in csc_specs.items():
-            for espec in especs:
-                log(f"remote: {encoding} + {csc}: {espec}")
-                specs.append(make_spec(espec))
+    for server in servers:
+        for encoding, csc_specs in server.specs.items():
+            for csc, especs in csc_specs.items():
+                for espec in especs:
+                    log(f"remote: {encoding} + {csc}: {espec}")
+                    specs.append(make_spec(server, espec))
     log(f"remote.get_specs()={specs}")
     return tuple(specs)
 
@@ -197,7 +221,7 @@ class Encoder(RemoteCodec):
 
     def init_context(self, encoding: str, width: int, height: int, src_format: str, options: typedict) -> None:
         super().init_context(encoding, width, height, src_format, options)
-        server.request_context(self, encoding, width, height, src_format, dict(options))
+        self.server.request_context(self, encoding, width, height, src_format, dict(options))
 
     def __repr__(self):
         if not self.pixel_format:
@@ -210,18 +234,18 @@ class Encoder(RemoteCodec):
     def clean(self) -> None:
         super().clean()
         self.responses.put((b"", {}))
-        server.request_close(self.generation, "encoder closed")
+        self.server.request_close(self.generation, "encoder closed")
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
-        if not server.is_connected():
+        if not self.server.is_connected():
             raise CodecStateException("not connected to encoder server")
-        server.compress(self.generation, image, options)
+        self.server.compress(self.generation, image, options)
         try:
             return self.responses.get(timeout=1)
         except Empty:
             log.warn("Warning: remote encoder timeout waiting for server response")
             log.warn(f" for {self.encoding!r} compression of {image}")
-            self.closed = not server.is_connected()
+            self.closed = not self.server.is_connected()
             return b"", {}
 
     def compressed_data(self, bdata, client_options: dict) -> None:
