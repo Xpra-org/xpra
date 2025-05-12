@@ -68,8 +68,7 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
             else:
                 gllog.info("No OpenGL information available")
         else:
-            props["error-details"] = bytestostr(err).strip("\n\r")
-            error = "unknown error"
+            error = bytestostr(err).strip("\n\r")
             for x in str(err).splitlines():
                 if x.startswith("RuntimeError: "):
                     error = x[len("RuntimeError: "):]
@@ -87,6 +86,33 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
         props["error"] = str(e)
     gllog("OpenGL: %s", props)
     return props
+
+
+def load_opengl() -> dict[str, Any]:
+    with OSEnvContext(XPRA_VERIFY_MAIN_THREAD="0"):
+        try:
+            # import OpenGL directly
+            import OpenGL
+            assert OpenGL
+            gllog("found pyopengl version %s", OpenGL.__version__)
+            # this may trigger an `AttributeError` if libGLX / libOpenGL are not installed:
+            from OpenGL import GL
+            assert GL
+            gllog("loaded `GL` bindings: %s", GL)
+        except (ImportError, AttributeError) as e:
+            return {
+                'error': f'OpenGL is not available: {e}',
+                'success': False,
+            }
+        try:
+            from xpra.opengl import backing
+            assert backing
+        except ImportError:
+            return {
+                'error': '`xpra.opengl` is not available',
+                'success': False,
+            }
+    return {}
 
 
 def check_xvfb(xvfb: Popen | None, timeout=0) -> bool:
@@ -206,7 +232,7 @@ class DisplayManager(StubServerMixin):
             self.set_initial_resolution()
             self.save_server_pid()
 
-    def init_randr(self):
+    def init_randr(self) -> None:
         from xpra.gtk.error import xlog
         with xlog:
             from xpra.x11.bindings.randr import RandRBindings
@@ -248,7 +274,7 @@ class DisplayManager(StubServerMixin):
             with xlog:
                 set_initial_resolution(resolutions, dpi)
 
-    def save_server_pid(self):
+    def save_server_pid(self) -> None:
         from xpra.gtk.error import xlog
         from xpra.x11.gtk.prop import prop_set
         with xlog:
@@ -357,29 +383,9 @@ class DisplayManager(StubServerMixin):
         if self.opengl.lower() == "noprobe" or self.opengl.lower() in FALSE_OPTIONS:
             gllog("query_opengl() skipped because opengl=%s", self.opengl)
             return props
-        with OSEnvContext(XPRA_VERIFY_MAIN_THREAD="0"):
-            try:
-                # import OpenGL directly
-                import OpenGL
-                assert OpenGL
-                gllog("found pyopengl version %s", OpenGL.__version__)
-                # this may trigger an `AttributeError` if libGLX / libOpenGL are not installed:
-                from OpenGL import GL
-                assert GL
-                gllog("loaded `GL` bindings")
-            except (ImportError, AttributeError) as e:
-                return {
-                    'error': f'OpenGL is not available: {e}',
-                    'success': False,
-                }
-            try:
-                from xpra.opengl import backing
-                assert backing
-            except ImportError:
-                return {
-                    'error': '`xpra.opengl` is not available',
-                    'success': False,
-                }
+        err = load_opengl()
+        if err:
+            return err
         from xpra.platform.paths import get_xpra_command
         cmd = self.get_full_child_command(get_xpra_command() + ["opengl", "--opengl=force"])
         return run_opengl_probe(cmd, self.get_child_env(), self.display)
