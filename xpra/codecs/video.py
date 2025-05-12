@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence, Iterable
 
 from xpra.common import Self
 from xpra.codecs.constants import VideoSpec, CodecSpec, CSCSpec
-from xpra.codecs.loader import load_codec, autoprefix, unload_codecs
+from xpra.codecs.loader import load_codec, autoprefix, unload_codecs, NOWARN
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.log import Logger
@@ -211,7 +211,8 @@ def init_modules(prefix: str, defs: VModuleOptions) -> dict[str, ModuleType]:
             mod = load_codec(mod_name, options)
             log(f" {prefix!r} module for {x!r}: {mod_name!r}={mod}")
             if not mod:
-                log.info(f" {x!r} not found")
+                if mod_name not in NOWARN:
+                    log.info(f" {x!r} not found")
                 continue
             modules[mod_name] = mod
         except Exception as e:
