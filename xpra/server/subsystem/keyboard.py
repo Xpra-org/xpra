@@ -92,9 +92,9 @@ class KeyboardServer(StubServerMixin):
         noerr(self.clear_keys_pressed)
         self.keyboard_config = None
         if is_X11():
-            from xpra.gtk.error import xlog
+            from xpra.gtk.error import xswallow
             from xpra.x11.xkbhelper import clean_keyboard_state
-            with xlog:
+            with xswallow:
                 clean_keyboard_state()
 
     def reset_focus(self) -> None:
