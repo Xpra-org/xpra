@@ -258,10 +258,11 @@ class EncoderServer(ServerBase, GLibServer):
         metadata = packet.get_dict(2)
         pixels = packet[3]
         options = packet.get_dict(4)
+        send_opts = packet.get_dict(5)
         encoder = self.encoders.get(ss.uuid, {}).get(seq)
         if not encoder:
             log.error(f"Error encoder not found for uuid {ss.uuid!r} and sequence {seq}")
-            ss.send("context-data", seq, b"", {"error": "context not found"})
+            ss.send("context-data", seq, b"", {"error": "context not found"}, {})
             return
         encoding = encoder.get_encoding()
         free_cb = []
@@ -271,7 +272,7 @@ class EncoderServer(ServerBase, GLibServer):
                 free_fn()
             free_cb[:] = []
 
-        chunks = options.pop("chunks", ())
+        chunks = send_opts.pop("chunks", ())
         planes = metadata.get("planes", 0)
         log("compress request with %i planes, mmap chunks=%s", planes, chunks)
         start = monotonic()
@@ -287,7 +288,7 @@ class EncoderServer(ServerBase, GLibServer):
                     free_cb.append(free)
                     pixels.append(plane_pixels)
 
-        if options.get("lz4", 0) > 0:
+        if send_opts.get("lz4", 0) > 0:
             from xpra.net.lz4.lz4 import decompress
             if planes == PlanarFormat.PACKED:
                 pixels = decompress(pixels)
@@ -305,16 +306,19 @@ class EncoderServer(ServerBase, GLibServer):
             free_all()
 
         if bdata is None:
-            ss.send("context-data", seq, b"", {"error": "no data from encoder"})
-            raise RuntimeError("no data!")
+            log.warn(f"Warning: no data from encoder {encoder}")
+            log.warn(" options:%s", client_options)
+            ss.send("context-data", seq, b"", {"error": "no data from encoder"}, {})
+            return
+        reply_opts = {}
         mmap_write_area = getattr(ss, "mmap_write_area", None)
         log(f"{len(bdata)} bytes, {client_options=}, {mmap_write_area=}")
         if mmap_write_area:
-            client_options["chunks"] = mmap_write_area.write_data(bdata)
+            reply_opts["chunks"] = mmap_write_area.write_data(bdata)
             data = b""
         else:
             data = Compressed(encoding, bdata)
-        ss.send("context-data", seq, data, client_options)
+        ss.send("context-data", seq, data, client_options, reply_opts)
         end = monotonic()
         csize = len(bdata)
         psize = image.get_bytesperpixel() * image.get_width() * image.get_height()

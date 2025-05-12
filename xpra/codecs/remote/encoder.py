@@ -91,9 +91,9 @@ class EncoderClient(RemoteConnectionClient):
             metadata[attr] = getattr(image, f"get_{attr}")()
         pixels = image.get_pixels()
         nplanes = image.get_planes()
-        sopts = safe_dict(options)
+        send_opts = {}
         if self.lz4:
-            sopts["lz4"] = True
+            send_opts["lz4"] = True
             from xpra.net.lz4.lz4 import compress
             if nplanes == PlanarFormat.PACKED:
                 pixels = compress(pixels)
@@ -111,19 +111,20 @@ class EncoderClient(RemoteConnectionClient):
                     plane_data = mmap_write_area.write_data(pixels[plane])
                     log("sending plane %i via mmap: %s", plane, plane_data)
                     mmap_data.append(plane_data)
-            sopts["chunks"] = tuple(mmap_data)
+            send_opts["chunks"] = tuple(mmap_data)
             pixels = b""
-        self.send("context-compress", seq, metadata, pixels, sopts)
+        self.send("context-compress", seq, metadata, pixels, safe_dict(options), send_opts)
 
     def _process_context_data(self, packet: Packet) -> None:
         seq = packet.get_u64(1)
         bdata = packet.get_buffer(2)
         client_options = packet.get_dict(3)
+        reply_opts = packet.get_dict(4)
         encoder = self.encoders.get(seq)
         if not encoder:
             log.error(f"Error: data unused, encoder {seq} not found!")
             return
-        chunks = client_options.pop("chunks", ())
+        chunks = reply_opts.pop("chunks", ())
         if not bdata and chunks:
             mmap_read_area = getattr(self, "mmap_read_area", None)
             mmap_data, free = mmap_read_area.mmap_read(*chunks)
