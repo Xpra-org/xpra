@@ -209,9 +209,12 @@ class DisplayManager(StubServerMixin):
         from xpra.scripts.main import no_gtk
         no_gtk()
         self.check_xvfb()
-        from xpra.scripts.server import verify_display
-        if not verify_display(xvfb=self.xvfb, display_name=self.display):
-            raise InitExit(ExitCode.NO_DISPLAY, f"unable to access display {self.display!r}")
+        if is_X11():
+            from xpra.scripts.server import verify_display, verify_gdk_display
+            if not verify_display(xvfb=self.xvfb, display_name=self.display):
+                raise InitExit(ExitCode.NO_DISPLAY, f"unable to access display {self.display!r}")
+            if not verify_gdk_display(self.display):
+                raise InitExit(ExitCode.NO_DISPLAY, f"Gdk is unable to access display {self.display!r}")
 
     def check_xvfb(self) -> None:
         if not check_xvfb(self.xvfb):

@@ -449,7 +449,6 @@ def verify_display(xvfb=None, display_name=None, shadowing=False, log_errors=Tru
         if not verify_display_ready(xvfb, display_name, shadowing, log_errors, timeout):
             return False
         log(f"X11 display {display_name!r} is ready")
-    no_gtk()
     # we're going to load gtk:
     bypass_no_gtk()
     display = verify_gdk_display(display_name)
@@ -1146,6 +1145,7 @@ def _do_run_server(script_file: str, cmdline,
                 use_display = False
             else:
                 progress(40, "connecting to the display")
+                no_gtk()
                 if verify_display(None, display_name, log_errors=False, timeout=1):
                     # accessed OK:
                     progress(40, "connected to the display")
