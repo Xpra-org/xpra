@@ -10,6 +10,7 @@ from typing import List, Tuple
 from xpra.common import SizedBuffer
 
 from xpra.util.env import first_time
+from xpra.util.str_fn import csv
 from xpra.buffers.membuf cimport getbuf, MemBuf, buffer_context  # pylint: disable=syntax-error
 
 from libc.stdint cimport uintptr_t, uint32_t, uint16_t, uint8_t
@@ -724,7 +725,7 @@ def argb_swap(image, rgb_formats, supports_transparency=False) -> bool:
     warning_key = "format-not-handled-%s" % pixel_format
     if first_time(warning_key):
         log.warn("Warning: no matching argb function,")
-        log.warn(" cannot convert %s to one of: %s", pixel_format, rgb_formats)
+        log.warn(" cannot convert %s to one of: %s", pixel_format, csv(rgb_formats))
     return False
 
 
