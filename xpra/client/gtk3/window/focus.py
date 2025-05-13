@@ -21,6 +21,7 @@ Gdk = gi_import("Gdk")
 
 log = Logger("focus", "grab")
 
+NotifyInferior = 2
 
 FOCUS_RECHECK_DELAY = envint("XPRA_FOCUS_RECHECK_DELAY", 15)
 AUTOGRAB_WITH_FOCUS = envbool("XPRA_AUTOGRAB_WITH_FOCUS", False)
@@ -146,9 +147,9 @@ class FocusWindow(StubWindow):
 
     def do_x11_focus_out_event(self, event) -> None:
         log("do_x11_focus_out_event(%s)", event)
-        from xpra.x11.bindings.window import constants
-        NotifyInferior = constants["NotifyInferior"]
-        detail = getattr(event, "detail", None)
+        # `detail` is only available with X11 clients,
+        # but this method can be called by other clients (see `focus_out`):
+        detail = getattr(event, "detail", 0)
         if detail == NotifyInferior:
             log("dropped NotifyInferior focus event")
             return
