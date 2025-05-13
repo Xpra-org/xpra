@@ -153,11 +153,26 @@ def get_Xdummy_confdir() -> str:
     return base+"/xorg.conf.d/$PID"
 
 
+def add_dpi_fps(cmd: list[str], dpi=0, fps=0) -> list[str]:
+    if fps > 0:
+        from xpra.util.system import is_distribution_variant, get_distribution_version_id
+        has_fps = is_distribution_variant("Fedora")
+        has_fps |= is_distribution_variant("Debian")
+        has_fps |= get_distribution_version_id() == "10" and any(is_distribution_variant(x) for x in (
+            "RedHat", "AlmaLinux", "RockyLinux", "OracleLinux",
+        ))
+        if has_fps:
+            cmd += ["-fakescreenfps", str(fps)]
+    if dpi > 0:
+        cmd += ["-dpi", f"{dpi}x{dpi}"]
+    return cmd
+
+
 def get_Xdummy_command(xorg_cmd="Xorg",
                        log_dir="${XPRA_SESSION_DIR}",
                        xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf",
                        dpi=0, fps=0) -> list[str]:
-    cmd = [
+    return add_dpi_fps([
         # ie: "Xorg" or "xpra_Xdummy" or "./install/bin/xpra_Xdummy"
         xorg_cmd,
         "+extension", "GLX",
@@ -173,16 +188,11 @@ def get_Xdummy_command(xorg_cmd="Xorg",
         # this directory can store xorg config files, it does not need to be created:
         "-configdir", f"{get_Xdummy_confdir()}",
         "-config", f"{xorg_conf}",
-    ]
-    if fps > 0:
-        cmd += ["-fakescreenfps", str(fps)]
-    if dpi > 0:
-        cmd += ["-dpi", f"{dpi}x{dpi}"]
-    return cmd
+    ], dpi, fps)
 
 
 def get_Xvfb_command(width=8192, height=4096, depth=24, dpi=96, fps=0) -> list[str]:
-    cmd = [
+    return add_dpi_fps([
         "Xvfb",
         "+extension", "GLX",
         "+extension", "Composite",
@@ -194,16 +204,11 @@ def get_Xvfb_command(width=8192, height=4096, depth=24, dpi=96, fps=0) -> list[s
         "-nolisten", "tcp",
         "-noreset",
         "-auth", "$XAUTHORITY",
-    ]
-    if fps > 0:
-        cmd += ["-fakescreenfps", str(fps)]
-    if dpi > 0:
-        cmd += ["-dpi", f"{dpi}x{dpi}"]
-    return cmd
+    ], dpi, fps)
 
 
 def get_Xephyr_command(width=1920, height=1080, depth=24, dpi=96, fps=0) -> list[str]:
-    cmd = [
+    return add_dpi_fps([
         "Xephyr",
         "+extension", "GLX",
         "+extension", "Composite",
@@ -212,16 +217,11 @@ def get_Xephyr_command(width=1920, height=1080, depth=24, dpi=96, fps=0) -> list
         "-nolisten", "tcp",
         "-noreset",
         "-auth", "$XAUTHORITY",
-    ]
-    if fps > 0:
-        cmd += ["-fakescreenfps", str(fps)]
-    if dpi > 0:
-        cmd += ["-dpi", f"{dpi}x{dpi}"]
-    return cmd
+    ], dpi, fps)
 
 
 def get_weston_Xwayland_command(dpi=96, fps=0) -> list[str]:
-    cmd = [
+    return add_dpi_fps([
         "/usr/libexec/xpra/xpra_weston_xvfb",
         "+extension", "GLX",
         "+extension", "Composite",
@@ -229,12 +229,7 @@ def get_weston_Xwayland_command(dpi=96, fps=0) -> list[str]:
         "-nolisten", "tcp",
         "-noreset",
         "-auth", "$XAUTHORITY",
-    ]
-    if fps > 0:
-        cmd += ["-fakescreenfps", str(fps)]
-    if dpi > 0:
-        cmd += ["-dpi", f"{dpi}x{dpi}"]
-    return cmd
+    ], dpi, fps)
 
 
 def xvfb_command(cmd: str, depth=24, dpi=0, fps=0) -> list[str]:
