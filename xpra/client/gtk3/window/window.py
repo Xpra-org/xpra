@@ -9,6 +9,7 @@ from typing import Any
 
 from xpra.client.gtk3.window.base import HAS_X11_BINDINGS
 from xpra.client.gtk3.window.factory import get_window_base_classes
+from xpra.gtk.util import event_mask_strs
 from xpra.util.objects import typedict
 from xpra.os_util import gi_import
 from xpra.util.str_fn import bytestostr
@@ -60,7 +61,8 @@ class ClientWindow(WindowBaseClass):
         mask = 0
         for bc in WINDOW_BASES:
             mask |= bc.get_window_event_mask(self)
-            log("%s.get_window_event_mask()=%s", bc, mask)
+            log("%s.get_window_event_mask()=%s", bc, event_mask_strs(mask))
+        log("get_window_event_mask()=%s", event_mask_strs(mask))
         return mask
 
     def init_widget_events(self, widget) -> None:

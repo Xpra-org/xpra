@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import sys
+from collections.abc import Sequence
 
 from xpra.os_util import OSX, gi_import
 from xpra.util.system import is_X11
@@ -55,6 +56,21 @@ GRAB_STATUS_STRING = {
     Gdk.GrabStatus.NOT_VIEWABLE: "NOT_VIEWABLE",
     Gdk.GrabStatus.FROZEN: "FROZEN",
 }
+
+EVENT_MASK_STRS = {}
+for mask in dir(Gdk.EventMask):
+    if mask.endswith("_MASK"):
+        value = getattr(Gdk.EventMask, mask)
+        EVENT_MASK_STRS[value] = mask
+
+
+def event_mask_strs(mask: int) -> Sequence[str]:
+    masks = []
+    for tmask, name in EVENT_MASK_STRS.items():
+        if mask & tmask == tmask:
+            masks.append(name)
+    return masks
+
 
 dsinit: bool = False
 
