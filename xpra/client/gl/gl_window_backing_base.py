@@ -442,7 +442,7 @@ class GLWindowBackingBase(WindowBackingBase):
             def redraw(context):
                 if not context:
                     return
-                self.pending_fbo_paint = ((0, 0, bw, bh), )
+                self.pending_fbo_paint = [(0, 0, bw, bh), ]
                 self.do_present_fbo()
             GLib.timeout_add(FBO_RESIZE_DELAY, self.with_gl_context, redraw)
 
