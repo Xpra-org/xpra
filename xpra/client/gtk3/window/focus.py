@@ -107,7 +107,7 @@ class FocusWindow(StubWindow):
             self._unfocus()
 
     def _focus(self) -> bool:
-        change = super()._focus()
+        change = self._client.update_focus(self.wid, True)
         if change and AUTOGRAB_WITH_FOCUS:
             # soft dependency on GrabWindow:
             autograb = getattr(self, "may_autograb", noop)

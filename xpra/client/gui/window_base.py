@@ -854,10 +854,8 @@ class ClientWindowBase(ClientWidgetBase):
         window_types = self._metadata.strtupleget("window-type")
         return bool(set(window_types) & SHOW_SPINNER_WINDOW_TYPES)
 
-    def _focus(self) -> bool:
-        return self._client.update_focus(self.wid, True)
-
     def _unfocus(self) -> bool:
+        # overriden in FocusWindow
         return self._client.update_focus(self.wid, False)
 
     @staticmethod
