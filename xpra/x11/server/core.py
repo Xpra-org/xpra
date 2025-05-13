@@ -109,7 +109,7 @@ class X11ServerCore(GTKServerBase):
 
     def __init__(self) -> None:
         self.display = os.environ.get("DISPLAY", "")
-        self.root_window = get_default_root_window()
+        self.root_window = None
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
         self.pointer_device_map: dict = {}
@@ -122,6 +122,7 @@ class X11ServerCore(GTKServerBase):
 
     def setup(self) -> None:
         super().setup()
+        self.root_window = get_default_root_window()
         if FAKE_X11_INIT_ERROR:
             raise RuntimeError("fake x11 init error")
         with xsync:
