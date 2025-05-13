@@ -10,17 +10,13 @@ from xpra.os_util import gi_import
 from xpra.scripts.config import InitException
 from xpra.net.common import Packet
 from xpra.x11.desktop.base import DesktopServerBase
-from xpra.x11.desktop.monitor_model import MonitorDesktopModel
 from xpra.server.subsystem.window import WindowsConnection
-from xpra.common import parse_resolution
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
 GLib = gi_import("GLib")
-
-RandR = RandRBindings()
 
 log = Logger("server")
 metadatalog = Logger("x11", "metadata")
@@ -33,7 +29,7 @@ MAX_SIZE = 8192, 8192
 
 def get_screen_size() -> tuple[int, int]:
     with xsync:
-        return RandR.get_screen_size()
+        return RandRBindings().get_screen_size()
 
 
 class XpraMonitorServer(DesktopServerBase):
@@ -43,20 +39,23 @@ class XpraMonitorServer(DesktopServerBase):
     __gsignals__ = DesktopServerBase.__common_gsignals__
 
     def __init__(self):
-        with xsync:
-            if not RandR.is_dummy16():
-                display = os.environ.get("DISPLAY", "")
-                raise InitException(f"the vfb display {display!r} cannot virtualize monitors - dummy RandR 1.6 missing")
         super().__init__()
         self.session_type: str = "X11 monitor"
         self.reconfigure_timer: int = 0
         self.reconfigure_locked: bool = False
 
+    def setup(self):
+        super().setup()
+        with xsync:
+            if not RandRBindings().is_dummy16():
+                display = os.environ.get("DISPLAY", "")
+                raise InitException(f"the vfb display {display!r} cannot virtualize monitors - dummy RandR 1.6 missing")
+
     def init_randr(self) -> None:
         super().init_randr()
         from xpra.x11.vfb_util import set_initial_resolution
         screenlog(f"init_randr() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
-        if not RandR.has_randr() or not self.initial_resolutions:
+        if not RandRBindings().has_randr() or not self.initial_resolutions:
             return
         res = self.initial_resolutions
         with xlog:
@@ -103,8 +102,8 @@ class XpraMonitorServer(DesktopServerBase):
         return get_screen_size()
 
     def load_existing_windows(self) -> None:
-        with xlog:
-            monitors = RandR.get_monitor_properties()
+        with (xlog):
+            monitors = RandRBindings().get_monitor_properties()
             for i, monitor in monitors.items():
                 self.add_monitor_model(i + 1, monitor)
         # does not fire: (because of GTK?)
@@ -133,7 +132,7 @@ class XpraMonitorServer(DesktopServerBase):
         #  ie: `xrandr --output DUMMY1 --mode 1024x768`
         mdefs = {}
         with xlog:
-            info = RandR.get_all_screen_properties()
+            info = RandRBindings().get_all_screen_properties()
             crtcs = info.get("crtcs")
             outputs = info.get("outputs")
             monitors = info.get("monitors")
@@ -207,7 +206,8 @@ class XpraMonitorServer(DesktopServerBase):
                 model.notify("title")
         return mods
 
-    def add_monitor_model(self, wid: int, monitor) -> MonitorDesktopModel:
+    def add_monitor_model(self, wid: int, monitor):
+        from xpra.x11.desktop.monitor_model import MonitorDesktopModel
         model = MonitorDesktopModel(monitor)
         model.setup()
         screenlog("adding monitor model %s", model)
@@ -289,7 +289,7 @@ class XpraMonitorServer(DesktopServerBase):
 
     def apply_monitor_config(self, monitor_defs: dict) -> None:
         with xsync:
-            RandR.set_crtc_config(monitor_defs)
+            RandRBindings().set_crtc_config(monitor_defs)
 
     def remove_monitor(self, wid: int) -> None:
         model = self._id_to_window.get(wid)
@@ -387,6 +387,7 @@ class XpraMonitorServer(DesktopServerBase):
         elif action == "add":
             resolution = packet[2]
             if isinstance(resolution, str):
+                from xpra.common import parse_resolution
                 resolution = parse_resolution(resolution, self.refresh_rate)
             if not isinstance(resolution, (tuple, list)):
                 raise ValueError(f"invalid resolution: {resolution!r} ({type(resolution)}")
