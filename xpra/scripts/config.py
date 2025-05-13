@@ -153,7 +153,18 @@ def get_Xdummy_confdir() -> str:
     return base+"/xorg.conf.d/$PID"
 
 
-def add_dpi_fps(cmd: list[str], dpi=0, fps=0) -> list[str]:
+def add_ext_net_dpi_fps(cmd: list[str], depth=24, dpi=0, fps=0) -> list[str]:
+    if depth > 8:
+        cmd += ["+extension", "Composite"]
+    cmd += [
+        "+extension", "GLX",
+        "+extension", "RANDR",
+        "+extension", "RENDER",
+        "-extension", "DOUBLE-BUFFER",
+        "-nolisten", "tcp",
+        "-noreset",
+        "-auth", "$XAUTHORITY",
+    ]
     if fps > 0:
         from xpra.util.system import is_distribution_variant, get_distribution_version_id
         has_fps = is_distribution_variant("Fedora")
@@ -171,65 +182,37 @@ def add_dpi_fps(cmd: list[str], dpi=0, fps=0) -> list[str]:
 def get_Xdummy_command(xorg_cmd="Xorg",
                        log_dir="${XPRA_SESSION_DIR}",
                        xorg_conf="${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf",
-                       dpi=0, fps=0) -> list[str]:
-    return add_dpi_fps([
+                       depth=24, dpi=0, fps=0) -> list[str]:
+    return add_ext_net_dpi_fps([
         # ie: "Xorg" or "xpra_Xdummy" or "./install/bin/xpra_Xdummy"
         xorg_cmd,
-        "+extension", "GLX",
-        "+extension", "RANDR",
-        "+extension", "RENDER",
-        "-extension", "DOUBLE-BUFFER",
-        "-nolisten", "tcp",
-        "-noreset",
         "-novtswitch",
-        "-auth", "$XAUTHORITY",
         "-logfile", f"{log_dir}/Xorg.log",
         # must be specified with some Xorg versions (ie: arch linux)
         # this directory can store xorg config files, it does not need to be created:
         "-configdir", f"{get_Xdummy_confdir()}",
         "-config", f"{xorg_conf}",
-    ], dpi, fps)
+    ], depth, dpi, fps)
 
 
 def get_Xvfb_command(width=8192, height=4096, depth=24, dpi=96, fps=0) -> list[str]:
-    return add_dpi_fps([
+    return add_ext_net_dpi_fps([
         "Xvfb",
-        "+extension", "GLX",
-        "+extension", "Composite",
-        "+extension", "RANDR",
-        "+extension", "RENDER",
-        "-extension", "DOUBLE-BUFFER",
         "-screen", "0", f"{width}x{height}x{depth}+32",
-        # better than leaving to vfb after a resize?
-        "-nolisten", "tcp",
-        "-noreset",
-        "-auth", "$XAUTHORITY",
-    ], dpi, fps)
+    ], depth, dpi, fps)
 
 
 def get_Xephyr_command(width=1920, height=1080, depth=24, dpi=96, fps=0) -> list[str]:
-    return add_dpi_fps([
+    return add_ext_net_dpi_fps([
         "Xephyr",
-        "+extension", "GLX",
-        "+extension", "Composite",
-        "-extension", "DOUBLE-BUFFER",
         "-screen", f"{width}x{height}x{depth}+32",
-        "-nolisten", "tcp",
-        "-noreset",
-        "-auth", "$XAUTHORITY",
-    ], dpi, fps)
+    ], depth, dpi, fps)
 
 
-def get_weston_Xwayland_command(dpi=96, fps=0) -> list[str]:
-    return add_dpi_fps([
+def get_weston_Xwayland_command(depth=24, dpi=96, fps=0) -> list[str]:
+    return add_ext_net_dpi_fps([
         "/usr/libexec/xpra/xpra_weston_xvfb",
-        "+extension", "GLX",
-        "+extension", "Composite",
-        "-extension", "DOUBLE-BUFFER",
-        "-nolisten", "tcp",
-        "-noreset",
-        "-auth", "$XAUTHORITY",
-    ], dpi, fps)
+    ], depth, dpi, fps)
 
 
 def xvfb_command(cmd: str, depth=24, dpi=0, fps=0) -> list[str]:
@@ -246,12 +229,12 @@ def xvfb_command(cmd: str, depth=24, dpi=0, fps=0) -> list[str]:
     if exe == "Xephyr":
         return get_Xephyr_command(depth=depth, dpi=dpi, fps=fps)
     if exe in ("weston", "weston+Xwayland"):
-        return get_weston_Xwayland_command(dpi=dpi, fps=fps)
+        return get_weston_Xwayland_command(depth=depth, dpi=dpi, fps=fps)
     if exe in ("Xorg", "Xdummy"):
         xorg_bin = get_xorg_bin()
-        return get_Xdummy_command(xorg_bin, dpi=dpi, fps=fps)
+        return get_Xdummy_command(xorg_bin, depth=depth, dpi=dpi, fps=fps)
     if exe == "auto":
-        return detect_xvfb_command(dpi=dpi, fps=fps)
+        return detect_xvfb_command(depth=depth, dpi=dpi, fps=fps)
     return parts
 
 
