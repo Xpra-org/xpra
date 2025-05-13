@@ -103,7 +103,9 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         self._managed = True
         self._setup_done = True
         # listen for property changes on the root window:
-        add_event_receiver(self.xid, self)
+        # (monitor mode can have up to 16 monitors, so we may have many event listeners
+        #  so raise the limit to 20)
+        add_event_receiver(self.xid, self, 20)
 
     def do_x11_property_notify_event(self, event) -> None:
         eventlog(f"do_x11_property_notify_event: {event.atom}")
