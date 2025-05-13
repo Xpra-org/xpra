@@ -111,7 +111,6 @@ class X11ServerCore(GTKServerBase):
         self.pointer_device_map : dict = {}
         self.keys_pressed : Dict[int,Any] = {}
         self.libfakeXinerama_so : str = ""
-        self.initial_resolution = None
         self.x11_filter = False
         self.randr_sizes_added : List[Tuple[int,int]] = []
 
