@@ -16,7 +16,6 @@ from xpra.gtk.util import get_root_size
 from xpra.gtk.info import get_screen_sizes
 from xpra.gtk.gobject import one_arg_signal
 from xpra.x11.gtk.bindings import add_catchall_receiver, remove_catchall_receiver, add_event_receiver
-from xpra.x11.xroot_props import XRootPropWatcher
 from xpra.x11.bindings.core import get_root_xid
 from xpra.x11.server.base import X11ServerBase
 from xpra.gtk.error import xsync, xlog
@@ -38,11 +37,10 @@ MULTI_MONITORS: bool = envbool("XPRA_DESKTOP_MULTI_MONITORS", True)
 
 
 def get_desktop_server_base_classes() -> tuple[type, ...]:
-    classes: list[type] = [GObject.GObject]
+    classes: list[type] = [GObject.GObject, X11ServerBase]
     if features.rfb:
         from xpra.server.rfb.server import RFBServer
         classes.append(RFBServer)
-    classes.append(X11ServerBase)
     return tuple(classes)
 
 
@@ -104,7 +102,9 @@ class DesktopServerBase(DesktopServerBaseClass):
                 c.init(self, opts)
 
     def setup(self) -> None:
-        super().setup()
+        for c in DESKTOPSERVER_BASES:
+            if c != GObject.GObject:
+                c.setup(self)
         add_event_receiver(get_root_xid(), self)
         add_catchall_receiver("x11-motion-event", self)
         add_catchall_receiver("x11-xkb-event", self)
@@ -113,6 +113,7 @@ class DesktopServerBase(DesktopServerBaseClass):
             X11KeyboardBindings().selectBellNotification(True)
         if MODIFY_GSETTINGS:
             self.modify_gsettings()
+        from xpra.x11.xroot_props import XRootPropWatcher
         self.root_prop_watcher = XRootPropWatcher(["WINDOW_MANAGER", "_NET_SUPPORTING_WM_CHECK"])
         self.root_prop_watcher.connect("root-prop-changed", self.root_prop_changed)
 

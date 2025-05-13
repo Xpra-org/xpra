@@ -35,6 +35,15 @@ class RFBServer:
         self.rfb_buttons = 0
         self.x11_keycodes_for_keysym = {}
         self.X11Keyboard = None
+
+    def init(self, opts):
+        if not str_to_bool(opts.rfb_upgrade):
+            self._rfb_upgrade = 0
+        else:
+            self._rfb_upgrade = parse_number(int, "rfb-upgrade", opts.rfb_upgrade, 0)
+        log("init(..) rfb-upgrade=%i", self._rfb_upgrade)
+
+    def setup(self) -> None:
         if is_X11():
             try:
                 from xpra.x11.bindings.keyboard import X11KeyboardBindings
@@ -43,13 +52,6 @@ class RFBServer:
                 log("RFBServer", exc_info=True)
                 log.warn("Warning: no x11 bindings")
                 log.warn(" some RFB keyboard events may be missing")
-
-    def init(self, opts):
-        if not str_to_bool(opts.rfb_upgrade):
-            self._rfb_upgrade = 0
-        else:
-            self._rfb_upgrade = parse_number(int, "rfb-upgrade", opts.rfb_upgrade, 0)
-        log("init(..) rfb-upgrade=%i", self._rfb_upgrade)
 
     def _get_rfb_desktop_model(self):
         models = tuple(self._window_to_id.keys())

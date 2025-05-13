@@ -310,8 +310,8 @@ class X11ServerCore(GTKServerBase):
         try:
             from xpra.x11.gtk.composite import CompositeHelper
             sinfo["XShm"] = CompositeHelper.XShmEnabled
-        except ImportError:
-            pass
+        except (ImportError, ValueError) as e:
+            log("no composite: %s", e)
         # cursor:
         if self.last_cursor_image:
             info.setdefault("cursor", {}).update({"current": self.get_cursor_info()})

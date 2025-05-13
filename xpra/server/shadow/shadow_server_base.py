@@ -109,6 +109,10 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
             GLib.timeout_add(1000, self.notify_startup_complete)
         return super().run()
 
+    def setup(self) -> None:
+        if SHADOWSERVER_BASE_CLASS is not object:
+            SHADOWSERVER_BASE_CLASS.setup(self)
+
     def cleanup(self) -> None:
         for wid in self.mapped:
             self.stop_refresh(wid)

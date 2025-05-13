@@ -7,13 +7,10 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.x11.desktop.base import DesktopServerBase
-from xpra.x11.desktop.desktop_model import ScreenDesktopModel
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.server import features
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
-
-RandR = RandRBindings()
 
 GLib = gi_import("GLib")
 GObject = gi_import("GObject")
@@ -41,7 +38,7 @@ class XpraDesktopServer(DesktopServerBase):
         super().init_randr()
         from xpra.x11.vfb_util import set_initial_resolution
         screenlog(f"init_randr() randr={self.randr}, initial-resolutions={self.initial_resolutions}")
-        if not RandR.has_randr() or not self.initial_resolutions or not features.display:
+        if not RandRBindings().has_randr() or not self.initial_resolutions or not features.display:
             return
         res = self.initial_resolutions
         if len(res) > 1:
@@ -77,11 +74,12 @@ class XpraDesktopServer(DesktopServerBase):
 
     def resize(self, w: int, h: int) -> None:
         geomlog("resize(%i, %i)", w, h)
-        if not RandR.has_randr():
+        if not RandRBindings().has_randr():
             geomlog.error("Error: cannot honour resize request,")
             geomlog.error(" no RandR support on this display")
             return
         # find the model:
+        from xpra.x11.desktop.desktop_model import ScreenDesktopModel
         desktop_models = [window for window in self._id_to_window.values() if isinstance(window, ScreenDesktopModel)]
         if len(desktop_models) != 1:
             raise RuntimeError(f"found {desktop_models}, expected 1")
@@ -95,6 +93,7 @@ class XpraDesktopServer(DesktopServerBase):
         return capabilities
 
     def load_existing_windows(self) -> None:
+        from xpra.x11.desktop.desktop_model import ScreenDesktopModel
         with xsync:
             model = ScreenDesktopModel(self.randr, self.randr_exact_size)
             model.setup()
