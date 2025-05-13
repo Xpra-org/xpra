@@ -332,23 +332,15 @@ class XpraMonitorServer(DesktopServerBase):
             y = mdef.get("y", 0)  # +monitor.get("height", 0)
             return x, y
 
-        wid = self._max_window_id
+        # find a gap we can use in the window ids before 16:
+        wid = 1
+        for wid in range(1, 16):
+            if wid not in self._id_to_window:
+                break
+        screenlog(f"using {wid=}")
         x = y = 0
-        if wid < 16:
-            # since we're just appending,
-            # just place to the right of the last monitor:
-            last = max(self._id_to_window)
-            x, y = rightof(last)
-        else:
-            # find a gap we can use in the window ids before 16:
-            prev = None
-            for wid in range(16):
-                if wid not in self._id_to_window:
-                    break
-                prev = wid
-            assert wid <= 16
-            if prev:
-                x, y = rightof(prev)
+        if wid > 1:
+            x, y = rightof(wid - 1)
             self._adjust_monitors(wid - 1, width, 0)
         # ensure no monitors end up too far to the right or bottom:
         # (better have them overlap - though we could do something smarter here)
