@@ -96,6 +96,7 @@ CLIP_CURSOR = WINDOW_HOOKS and envbool("XPRA_WIN32_CLIP_CURSOR", True)
 MAX_SIZE_HINT = WINDOW_HOOKS and envbool("XPRA_WIN32_MAX_SIZE_HINT", False)
 LANGCHANGE = WINDOW_HOOKS and envbool("XPRA_WIN32_LANGCHANGE", True)
 POLL_LAYOUT = envint("XPRA_WIN32_POLL_LAYOUT", 10)
+MATCH_WINDOW_COLOR = envbool("MATCH_WINDOW_COLOR", False)
 
 FORWARD_WINDOWS_KEY = envbool("XPRA_FORWARD_WINDOWS_KEY", True)
 WHEEL = envbool("XPRA_WHEEL", True)
@@ -112,11 +113,12 @@ def do_init() -> None:
     init_dpi()
     if APP_ID:
         init_appid()
-    try:
-        from xpra.platform.win32.dwm_color import match_window_color
-        match_window_color()
-    except Exception:
-        log.error("Error: failed to setup dwm window color matching", exc_info=True)
+    if MATCH_WINDOW_COLOR:
+        try:
+            from xpra.platform.win32.dwm_color import match_window_color
+            match_window_color()
+        except Exception:
+            log.error("Error: failed to setup dwm window color matching", exc_info=True)
 
 
 def init_appid() -> None:
