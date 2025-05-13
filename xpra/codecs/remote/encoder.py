@@ -175,7 +175,7 @@ def make_spec(espec: dict) -> VideoSpec:
 
 
 def get_encodings() -> Sequence[str]:
-    return tuple(server.specs.items())
+    return tuple(server.specs.keys())
 
 
 def get_specs() -> Sequence[VideoSpec]:
