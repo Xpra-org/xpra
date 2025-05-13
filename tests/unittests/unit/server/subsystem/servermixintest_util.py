@@ -51,7 +51,7 @@ class ServerMixinTest(unittest.TestCase):
         # so no need to wait
         pass
 
-    def add_packets(self, *packet_types: str, main_thread=True) -> None:
+    def add_packets(self, *packet_types: str, main_thread=False) -> None:
         for packet_type in packet_types:
             handler = getattr(self.mixin, "_process_" + packet_type.replace("-", "_"))
             self.add_packet_handler(packet_type, handler, main_thread)
