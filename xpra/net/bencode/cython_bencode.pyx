@@ -45,7 +45,7 @@ cdef decode_int(const unsigned char *x, unsigned int f, int l):
     try:
         n = int(x[f:unewf])
     except (OverflowError, ValueError):
-        n = long(x[f:unewf])
+        n = int(x[f:unewf])
     if x[f] == b'-':
         if x[f + 1] == b'0':
             raise ValueError("-0 is not a valid number")
@@ -178,7 +178,7 @@ cdef int encode(object v, r) except -1:
     elif t==dict:
         return encode_dict(v, r)
     elif t==bool:
-        return encode_int(long(v), r)
+        return encode_int(int(v), r)
     elif v==None:
         raise ValueError("found None value!")
     else:

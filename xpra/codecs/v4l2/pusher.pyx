@@ -353,7 +353,8 @@ cdef class Pusher:
     cdef parse_pixel_format(self, v4l2_format *vid_format):
         if vid_format.fmt.pix.pixelformat==0:
             return ""
-        return "".join([chr((vid_format.fmt.pix.pixelformat//(2**(8*x))) % 256) for x in range(4)])
+        return "".join(chr((vid_format.fmt.pix.pixelformat >> (8*x)) % 256) for x in range(4))
+
 
     cdef show_vid_format(self, v4l2_format *vid_format):
         log("vid_format.type                 = %i", vid_format.type)

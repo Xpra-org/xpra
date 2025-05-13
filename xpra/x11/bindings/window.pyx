@@ -1330,7 +1330,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return r==0
 
 
-    def get_server_time(self, Window xwindow) -> long:
+    def get_server_time(self, Window xwindow) -> int:
         cdef unsigned char c = b"a"
         cdef Atom timestamp_prop = self.xatom("XPRA_TIMESTAMP_PROP")
         XChangeProperty(self.display, xwindow, timestamp_prop,
