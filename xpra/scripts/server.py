@@ -1192,7 +1192,7 @@ def _do_run_server(script_file: str, cmdline,
             progress(40, "starting a virtual display")
             from xpra.x11.vfb_util import start_Xvfb, xauth_add
             assert not proxying and xauth_data
-            pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop)
+            pixel_depth = validate_pixel_depth(opts.pixel_depth, starting_desktop or starting_monitor)
             if use_uinput:
                 # this only needs to be fairly unique:
                 uinput_uuid = get_rand_chars(UINPUT_UUID_LEN).decode("latin1")
