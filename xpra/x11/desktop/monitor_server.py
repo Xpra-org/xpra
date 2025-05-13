@@ -12,7 +12,7 @@ from xpra.net.common import Packet
 from xpra.x11.desktop.base import DesktopServerBase
 from xpra.server.subsystem.window import WindowsConnection
 from xpra.x11.bindings.randr import RandRBindings
-from xpra.gtk.error import xsync, xlog
+from xpra.gtk.error import xsync, xlog, XError
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -30,6 +30,16 @@ MAX_SIZE = 8192, 8192
 def get_screen_size() -> tuple[int, int]:
     with xsync:
         return RandRBindings().get_screen_size()
+
+
+def apply_monitor_config(monitor_defs: dict) -> None:
+    try:
+        with xsync:
+            RandRBindings().set_crtc_config(monitor_defs)
+    except XError as e:
+        screenlog("apply_monitor_config(%s)", monitor_defs, exc_info=True)
+        screenlog.error("Error applying changes to the monitor configuration")
+        screenlog.estr(e)
 
 
 class XpraMonitorServer(DesktopServerBase):
@@ -238,7 +248,7 @@ class XpraMonitorServer(DesktopServerBase):
         # now we can do the virtual crtcs, outputs and monitors
         defs = self.get_monitor_config()
         screenlog("reconfigure_monitors() definitions=%s", defs)
-        self.apply_monitor_config(defs)
+        apply_monitor_config(defs)
         # and tell the client:
         self.setting_changed("monitors", defs)
 
@@ -286,10 +296,6 @@ class XpraMonitorServer(DesktopServerBase):
             monitor["index"] = i
             monitor_defs[i] = monitor
         return monitor_defs
-
-    def apply_monitor_config(self, monitor_defs: dict) -> None:
-        with xsync:
-            RandRBindings().set_crtc_config(monitor_defs)
 
     def remove_monitor(self, wid: int) -> None:
         model = self._id_to_window.get(wid)
