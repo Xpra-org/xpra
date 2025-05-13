@@ -820,7 +820,7 @@ OPTION_TYPES: dict[str, Any] = {
 
 # options removed in v6,
 # don't show warnings when running with older config files:
-OLD_OPTIONS: Sequence[str] = ("fake-xinerama", "dbus-proxy") if BACKWARDS_COMPATIBLE else ()
+OLD_OPTIONS: Sequence[str] = ("fake-xinerama", "dbus-proxy", "proxy-video-encoders") if BACKWARDS_COMPATIBLE else ()
 
 
 # in the options list, available in session files,
