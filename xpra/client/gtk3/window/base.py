@@ -215,7 +215,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         def motion(_w, event) -> bool:
             if self.moveresize_event:
                 self.motion_moveresize(event)
-            return True
+            # must return False so the other handlers will run
+            # ie: the `PointerWindow` also uses this signal
+            return False
 
         widget.connect("motion-notify-event", motion)
 
