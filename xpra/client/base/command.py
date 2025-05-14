@@ -554,7 +554,7 @@ class ControlXpraClient(CommandConnectClient):
 
     def do_command(self, caps: typedict) -> None:
         cr = caps.tupleget("command_response")
-        if cr is None:
+        if not cr or len(cr) < 2:
             self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support control command")
             return
         code = int(cr[0])
