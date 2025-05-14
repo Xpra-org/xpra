@@ -66,7 +66,7 @@ from xpra.util.background_worker import add_work_item, quit_worker
 from xpra.util.thread import start_thread
 from xpra.common import (
     LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, DEFAULT_XDG_DATA_DIRS,
-    ConnectionMessage, noerr, init_memcheck,
+    ConnectionMessage, noerr, init_memcheck, BACKWARDS_COMPATIBLE,
 )
 from xpra.util.pysystem import dump_all_frames, get_frame_info
 from xpra.util.objects import typedict, notypedict, merge_dicts
@@ -1726,7 +1726,7 @@ class ServerCore(ServerBaseClass):
 
     def do_handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
         if request == "version":
-            self.send_version_info(proto, caps.boolget("full-version-request"))
+            self.send_version_info(proto, caps.boolget("full-version-request", not BACKWARDS_COMPATIBLE))
             return True
         if request == "connect_test":
             ctr = caps.strget("connect_test_request")

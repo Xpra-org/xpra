@@ -28,7 +28,7 @@ log = Logger("gobject", "client")
 GLib = gi_import("GLib")
 
 
-def errwrite(msg) -> None:
+def errwrite(msg: str) -> None:
     stderr_print(msg)
 
 
@@ -529,10 +529,12 @@ class VersionXpraClient(HelloRequestClient):
     """
 
     def hello_request(self) -> dict[str, Any]:
-        return {
+        req: dict[str, Any] = {
             "request": "version",
-            "full-version-request": True,
         }
+        if BACKWARDS_COMPATIBLE:
+            req["full-version-request"] = True
+        return req
 
     def parse_network_capabilities(self, *_args) -> bool:
         # don't bother checking anything - this could generate warnings

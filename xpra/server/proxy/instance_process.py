@@ -33,7 +33,7 @@ from xpra.util.str_fn import Ellipsizer
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
 from xpra.util.version import full_version_str
-from xpra.common import ConnectionMessage, SocketState, noerr, FULL_INFO
+from xpra.common import ConnectionMessage, SocketState, noerr, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.platform.dotxpra import DotXpra
 from xpra.log import Logger
 
@@ -350,7 +350,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, ControlHandler, Proces
             return True
         if request == "version":
             version = XPRA_VERSION
-            if caps.boolget("full-version-request") and FULL_INFO:
+            if caps.boolget("full-version-request", not BACKWARDS_COMPATIBLE) and FULL_INFO:
                 version = full_version_str()
             proto.send_now(Packet("hello", {"version": version}))
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
