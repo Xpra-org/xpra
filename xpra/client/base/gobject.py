@@ -6,6 +6,7 @@
 
 from typing import Any
 
+from xpra.common import BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
 from xpra.client.base.client import XpraClientBase, EXTRA_TIMEOUT
 from xpra.exit_codes import ExitValue
@@ -53,7 +54,8 @@ class GObjectXpraClient(GObject.GObject, XpraClientBase):
 
     def make_hello(self) -> dict[str, Any]:
         capabilities = XpraClientBase.make_hello(self)
-        capabilities["keyboard"] = False
+        if BACKWARDS_COMPATIBLE:
+            capabilities["keyboard"] = False
         return capabilities
 
     def quit(self, exit_code: ExitValue = 0) -> None:
