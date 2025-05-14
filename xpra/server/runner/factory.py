@@ -4,27 +4,21 @@
 # later version. See the file COPYING for details.
 
 
-def get_server_base_classes() -> tuple[type, ...]:
+def get_server_base_class() -> type:
     from xpra.server import features
-    from xpra.server.core import ServerCore
-    from xpra.server.glib_server import GLibServer
-    classes: list[type] = [GLibServer, ServerCore]
-    if features.dbus:
-        from xpra.server.subsystem.dbus import DbusServer
-        classes.append(DbusServer)
-    if features.debug:
-        from xpra.server.subsystem.debug import DebugServer
-        classes.append(DebugServer)
-    if features.http:
-        from xpra.server.subsystem.http import HttpServer
-        classes.append(HttpServer)
-    if features.shell:
-        from xpra.server.subsystem.shell import ShellServer
-        classes.append(ShellServer)
-    if features.display:
-        from xpra.server.subsystem.display import DisplayManager
-        classes.append(DisplayManager)
-    if features.command:
-        from xpra.server.subsystem.command import ChildCommandServer
-        classes.append(ChildCommandServer)
-    return tuple(classes)
+    # disable a bunch of things we're not using:
+    features.power = False
+    # features.ping = auto
+    features.bandwidth = features.control = False
+    # features.debug = auto
+    features.fileprint = False
+    # features.mmap = auto
+    features.logging = features.http = features.shell = features.ssh = features.webcam = False
+    # features.dbus = auto
+    features.display = False
+    features.notification = features.clipboard = features.audio = features.keyboard = features.pointer = False
+    features.encoding = features.cursor = features.window = False
+    features.command = True
+
+    from xpra.server.base import ServerBase
+    return ServerBase
