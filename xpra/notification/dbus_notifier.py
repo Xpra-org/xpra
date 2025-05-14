@@ -7,6 +7,7 @@ import os
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.util.env import first_time
 from xpra.util.str_fn import csv, Ellipsizer, bytestostr
 from xpra.os_util import gi_import
 from xpra.dbus.helper import native_to_dbus
@@ -195,8 +196,9 @@ class DBUS_Notifier(NotifierBase):
             self.actual_notification_id.pop(actual_id, None)
 
         def CloseNotificationError(dbus_error, *_args) -> None:
-            log.warn("Error: error closing notification:")
-            log.warn(" %s", dbus_error)
+            if first_time(f"close-notification-{actual_id}"):
+                log.warn("Error: error closing notification:")
+                log.warn(" %s", dbus_error)
 
         self.dbusnotify.CloseNotification(actual_id,
                                           reply_handler=CloseNotificationReply,
