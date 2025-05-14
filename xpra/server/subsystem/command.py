@@ -175,7 +175,8 @@ class ChildCommandServer(StubServerMixin):
         # don't assume we have a real ClientConnection object:
         wants = getattr(source, "wants", [])
         if "features" in wants and getattr(source, "ui_client", False):
-            caps["xdg-menu"] = {}
+            if BACKWARDS_COMPATIBLE:
+                caps["xdg-menu"] = {}
             caps["subcommands"] = get_subcommands()
         return caps
 

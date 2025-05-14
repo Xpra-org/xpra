@@ -349,7 +349,7 @@ class UIXpraClient(ClientBaseClass):
                 "sharing", "sharing-toggle", "lock", "lock-toggle",
                 "start-new-commands", "client-shutdown", "webcam",
                 "bandwidth-limit", "clipboard-limits",
-                "xdg-menu", "menu", "monitors",
+                "menu", "monitors",
                 "ibus-layouts",
         ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
@@ -358,7 +358,7 @@ class UIXpraClient(ClientBaseClass):
             return
         log("_process_setting_change: %s=%s", setting, Ellipsizer(value))
         # these are too big to log
-        if setting not in ("xdg-menu", "menu", "monitors", "ibus-layouts"):
+        if setting not in ("menu", "monitors", "ibus-layouts") or (BACKWARDS_COMPATIBLE and setting == "xdg-menu"):
             log.info("server setting changed: %s=%s", setting, repr_ellipsized(value))
         self.server_setting_changed(setting, value)
 

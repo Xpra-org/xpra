@@ -60,14 +60,16 @@ class CommandClient(StubClientMixin):
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_start_new_commands = c.boolget("start-new-commands")
         if self.server_start_new_commands:
-            self.server_menu = c.dictget("xdg-menu", {})
             # weak dependency injection on ui client:
             onchange = getattr(self, "on_server_setting_changed", noop)
 
             def update_menu_value(_setting, menu) -> None:
                 self.server_menu = menu
-            onchange("xdg-menu", update_menu_value)
             onchange("menu", update_menu_value)
+
+            if BACKWARDS_COMPATIBLE:
+                self.server_menu = c.dictget("xdg-menu", {})
+                onchange("xdg-menu", update_menu_value)
         if self.request_start or self.request_start_child:
             if self.server_start_new_commands:
                 self.after_handshake(self.send_start_new_commands)
