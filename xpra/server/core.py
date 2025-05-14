@@ -179,6 +179,13 @@ class ServerCore(ServerBaseClass):
         for bc in SERVER_BASES:
             bc.__init__(self)
         self.start_time = time()
+        self.hello_request_handlers.update({
+            "version": self._handle_hello_request_version,
+            "connect-test": self._handle_hello_request_connect_test,
+            "id": self._handle_hello_request_id,
+            "info": self._handle_hello_request_info,
+            "screenshot": self._handle_hello_request_screenshot,
+        })
         self.uuid = ""
         self.child_reaper = None
         self.session_type: str = "unknown"
@@ -1719,31 +1726,42 @@ class ServerCore(ServerBaseClass):
 
     def handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
         if not is_request_allowed(proto, request):
-            msg = f"`{request}` requests are not enabled for this connection"
+            msg = f"{request!r} requests are not enabled for this connection"
+            log.warn(f"Warning: {msg}")
             self.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
             return True
         return self.do_handle_hello_request(request, proto, caps)
 
     def do_handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
-        if request == "version":
-            self.send_version_info(proto, caps.boolget("full-version-request", not BACKWARDS_COMPATIBLE))
-            return True
-        if request == "connect_test":
-            ctr = caps.strget("connect_test_request")
-            response = {"connect_test_response": ctr}
-            proto.send_now(Packet("hello", response))
-            return True
-        if request == "id":
-            self.send_id_info(proto)
-            return True
-        if request == "info":
-            self.send_hello_info(proto)
-            return True
-        if request == "screenshot" and hasattr(self, "make_screenshot_packet"):
-            packet = self.make_screenshot_packet()
-            proto.send_now(packet)
-            return True
-        return False
+        handler = self.hello_request_handlers.get(request)
+        log("do_handle_hello_request(%s, %s, ..) handler=%s", request, proto, handler)
+        if not handler:
+            log.warn(f"Warning: no handler for hello request {request!r}")
+            return False
+        return handler(proto, caps)
+
+    def _handle_hello_request_version(self, proto, caps: typedict) -> bool:
+        self.send_version_info(proto, caps.boolget("full-version-request", not BACKWARDS_COMPATIBLE))
+        return True
+
+    def _handle_hello_request_connect_test(self, proto, caps: typedict) -> bool:
+        ctr = caps.strget("connect_test_request")
+        response = {"connect_test_response": ctr}
+        proto.send_now(Packet("hello", response))
+        return True
+
+    def _handle_hello_request_id(self, proto, _caps: typedict) -> bool:
+        self.send_id_info(proto)
+        return True
+
+    def _handle_hello_request_info(self, proto, _caps: typedict) -> bool:
+        self.send_hello_info(proto)
+        return True
+
+    def _handle_hello_request_screenshot(self, proto, caps: typedict) -> bool:
+        packet = self.make_screenshot_packet()
+        proto.send_now(packet)
+        return True
 
     def accept_client(self, proto: SocketProtocol, c: typedict) -> None:
         # max packet size from client (the biggest we can get are clipboard packets)

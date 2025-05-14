@@ -20,6 +20,7 @@ class StubServerMixin:
     """
     uid = getuid()
     gid = getgid()
+    hello_request_handlers: dict[str, Callable[[Any, typedict], bool]] = {}
 
     def init(self, opts) -> None:
         """

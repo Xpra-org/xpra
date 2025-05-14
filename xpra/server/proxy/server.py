@@ -158,6 +158,7 @@ class ProxyServer(ProxyServerBaseClass):
         log("ProxyServer.__init__()")
         for bc in SERVER_BASES:
             bc.__init__(self)
+        self.hello_request_handlers["stop"] = self._handle_hello_request_stop
         self._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False
         self.session_type = "proxy"
@@ -301,20 +302,17 @@ class ProxyServer(ProxyServerBaseClass):
             return
         self.proxy_auth(proto, c, auth_caps)
 
-    def handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
-        if request == "stop":
-            self.handle_stop_request(proto)
-            return True
-        if request == "id":
-            self.send_id_info(proto)
-            return True
-        if request == "info":
-            info = self.get_session_id_info()
-            log_file = os.environ.get("XPRA_SERVER_LOG", "")
-            info["log-file"] = log_file
-            self.do_send_info(proto, info)
-            return True
-        return False
+    # override the default hello info request handler:
+    def _handle_hello_request_info(self, proto, caps: typedict) -> bool:
+        info = self.get_session_id_info()
+        log_file = os.environ.get("XPRA_SERVER_LOG", "")
+        info["log-file"] = log_file
+        self.do_send_info(proto, info)
+        return True
+
+    def _handle_hello_request_stop(self, proto, caps: typedict) -> bool:
+        self.handle_stop_request(proto)
+        return True
 
     def handle_stop_request(self, proto) -> None:
         socktype = get_socktype(proto)

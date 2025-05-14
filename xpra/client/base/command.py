@@ -20,7 +20,7 @@ from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit
 from xpra.client.base.client import EXTRA_TIMEOUT
 from xpra.client.base.gobject import GObjectXpraClient
-from xpra.exit_codes import ExitCode, ExitValue
+from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger
 
 log = Logger("gobject", "client")
@@ -553,8 +553,8 @@ class VersionXpraClient(HelloRequestClient):
 class ControlXpraClient(CommandConnectClient):
     """ Allows us to send commands to a server.
     """
-
-    def set_command_args(self, command: Sequence[str]) -> None:
+    def __init__(self, opts, command: Sequence[str]) -> None:
+        super().__init__(opts)
         self.command = command
 
     def timeout(self, *_args) -> None:
@@ -562,7 +562,7 @@ class ControlXpraClient(CommandConnectClient):
 
     def do_command(self, caps: typedict) -> None:
         cr = caps.tupleget("command_response")
-        if cr is None:
+        if not cr or len(cr) < 2:
             self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support control command")
             return
         code = int(cr[0])
@@ -581,17 +581,49 @@ class ControlXpraClient(CommandConnectClient):
         return capabilities
 
 
+class RunClient(CommandConnectClient):
+    """
+    Requests the server to start a command
+    """
+
+    def __init__(self, opts, command: Sequence[str]) -> None:
+        super().__init__(opts)
+        self.command = command
+
+    def timeout(self, *_args) -> None:
+        self.warn_and_quit(ExitCode.TIMEOUT, "timeout: server did not respond")
+
+    def do_command(self, caps: typedict) -> None:
+        cr = typedict(caps.dictget("run_response") or {})
+        if not cr:
+            self.warn_and_quit(ExitCode.UNSUPPORTED, "server does not support run command")
+            return
+        code = cr.intget("code")
+        pid = cr.intget("pid")
+        message = cr.strget("message")
+        if code != 0:
+            log.warn("server returned error code %s: %s", code, exit_str(code))
+            self.warn_and_quit(ExitCode.REMOTE_ERROR, " %s" % message)
+            return
+        sys.stdout.write(f"command started with pid {pid}\n")
+        self.quit(ExitCode.OK)
+
+    def make_hello(self) -> dict[str, Any]:
+        capabilities = super().make_hello()
+        log("make_hello() adding run request '%s' to %s", self.command, capabilities)
+        capabilities["run"] = tuple(self.command)
+        capabilities["request"] = "run"
+        return capabilities
+
+
 class PrintClient(SendCommandConnectClient):
     """
     Allows us to send a file to the server for printing.
     """
 
-    def __init__(self, opts):
+    def __init__(self, opts, command: Sequence[str]):
         super().__init__(opts)
         self.client_type = "Python/GObject/Print"
-
-    def set_command_args(self, command: Sequence[str]) -> None:
-        log("set_command_args(%s)", command)
         self.filename = command[0]
         # print command arguments:
         # filename, file_data, mimetype, source_uuid, title, printer, no_copies, print_options_str = packet[1:9]

@@ -21,6 +21,7 @@ from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envint, restore_script_env, source_env
 from xpra.net.common import Packet
 from xpra.util.thread import start_thread
+from xpra.exit_codes import ExitCode
 from xpra.scripts.parsing import parse_env, get_subcommands
 from xpra.server.pid import write_pid
 from xpra.server import ServerExitMode
@@ -95,6 +96,7 @@ class ChildCommandServer(StubServerMixin):
     PREFIX = "command"
 
     def __init__(self):
+        self.hello_request_handlers["run"] = self._handle_hello_request_run
         self.child_display: str = ""
         self.start_commands = []
         self.start_late_commands = []
@@ -416,6 +418,28 @@ class ChildCommandServer(StubServerMixin):
             # weak dependency:
             mdns_update = getattr(self, "mdns_update", noop)
             mdns_update()
+
+    def _handle_hello_request_run(self, proto, caps: typedict) -> bool:
+        command = caps.strtupleget("run")
+        if not command:
+            response = {
+                "code": ExitCode.NO_DATA,
+                "message": "missing command",
+            }
+        else:
+            name = command[0]
+            proc = self.start_command(name, command, True)
+            if not proc:
+                response = {
+                    "code": ExitCode.COMPONENT_MISSING,
+                    "message": "failed to run the command specified",
+                }
+            else:
+                response = {
+                    "pid": proc.pid,
+                }
+        proto.send_now(Packet("hello", {"run_response": response}))
+        return True
 
     def _process_start_command(self, proto, packet: Packet) -> None:
         self._process_command_start(proto, packet)

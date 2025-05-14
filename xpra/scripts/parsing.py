@@ -869,12 +869,12 @@ def get_usage() -> list[str]:
     return command_options
 
 
-def parse_cmdline(cmdline: list[str]):
+def parse_cmdline(cmdline: list[str]) -> tuple[optparse.Values, list[str]]:
     defaults = make_defaults_struct()
     return do_parse_cmdline(cmdline, defaults)
 
 
-def do_parse_cmdline(cmdline: list[str], defaults):
+def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, list[str]]:
     # pylint: disable=consider-using-f-string
     #################################################################
     # NOTE NOTE NOTE
