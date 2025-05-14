@@ -53,6 +53,39 @@ def do_send_menu_data(ss, menu) -> None:
     log(f"{len(menu)} menu data entries sent to {ss}")
 
 
+def guess_session_name(procs=None, exec_wrapper=()) -> str:
+    if not procs:
+        return ""
+    from xpra.scripts.server import IBUS_DAEMON_COMMAND  # pylint: disable=import-outside-toplevel
+    if IBUS_DAEMON_COMMAND:
+        ibus_daemon_cmd = shlex.split(IBUS_DAEMON_COMMAND)[0] or "ibus-daemon"
+    else:
+        ibus_daemon_cmd = ""
+    # use the commands to define the session name:
+    child_reaper = getChildReaper()
+    child_reaper.poll()
+    cmd_names = []
+    for proc in procs:
+        proc_info = child_reaper.get_proc_info(proc.pid)
+        if not proc_info:
+            continue
+        cmd = proc_info.command
+        if exec_wrapper:
+            # strip exec wrapper
+            l = len(exec_wrapper)
+            if len(cmd) > l and cmd[:l] == exec_wrapper:
+                cmd = cmd[l:]
+        elif len(cmd) > 1 and cmd[0] in ("vglrun", "nohup",):
+            cmd.pop(0)
+        if ibus_daemon_cmd and cmd[0] == ibus_daemon_cmd:
+            continue
+        bcmd = os.path.basename(cmd[0])
+        if bcmd not in cmd_names:
+            cmd_names.append(bcmd)
+    log(f"guess_session_name() commands={cmd_names}")
+    return csv(cmd_names)
+
+
 class ChildCommandServer(StubServerMixin):
     """
     Mixin for servers that start subcommands,
@@ -377,41 +410,12 @@ class ChildCommandServer(StubServerMixin):
         log("done waiting for child commands")
 
     def guess_session_name(self, procs=None) -> None:
-        if not procs:
-            return
-        from xpra.scripts.server import IBUS_DAEMON_COMMAND  # pylint: disable=import-outside-toplevel
-        if IBUS_DAEMON_COMMAND:
-            ibus_daemon_cmd = shlex.split(IBUS_DAEMON_COMMAND)[0] or "ibus-daemon"
-        else:
-            ibus_daemon_cmd = ""
-        # use the commands to define the session name:
-        self.child_reaper.poll()
-        cmd_names = []
-        for proc in procs:
-            proc_info = self.child_reaper.get_proc_info(proc.pid)
-            if not proc_info:
-                continue
-            cmd = proc_info.command
-            if self.exec_wrapper:
-                # strip exec wrapper
-                l = len(self.exec_wrapper)
-                if len(cmd) > l and cmd[:l] == self.exec_wrapper:
-                    cmd = cmd[l:]
-            elif len(cmd) > 1 and cmd[0] in ("vglrun", "nohup",):
-                cmd.pop(0)
-            if ibus_daemon_cmd and cmd[0] == ibus_daemon_cmd:
-                continue
-            bcmd = os.path.basename(cmd[0])
-            if bcmd not in cmd_names:
-                cmd_names.append(bcmd)
-        log(f"guess_session_name() commands={cmd_names}")
-        if cmd_names:
-            new_name = csv(cmd_names)
-            if self.session_name != new_name:
-                self.session_name = new_name
-                # weak dependency:
-                mdns_update = getattr(self, "mdns_update", noop)
-                mdns_update()
+        new_name = guess_session_name(procs, self.exec_wrapper)
+        if new_name and self.session_name != new_name:
+            self.session_name = new_name
+            # weak dependency:
+            mdns_update = getattr(self, "mdns_update", noop)
+            mdns_update()
 
     def _process_start_command(self, proto, packet: Packet) -> None:
         self._process_command_start(proto, packet)
