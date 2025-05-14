@@ -19,15 +19,10 @@ from xpra.server.shadow.root_window_model import RootWindowModel
 from xpra.server.gtk_server import GTKServerBase
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.codecs.constants import TransientCodecException, CodecStateException
-from xpra.gtk.util import get_default_root_window
-from xpra.gtk.info import get_screen_sizes
-from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.net.compression import Compressed
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
-Gtk = gi_import("Gtk")
-Gdk = gi_import("Gdk")
 
 traylog = Logger("tray")
 notifylog = Logger("notify")
@@ -63,7 +58,8 @@ def parse_geometries(s) -> list:
     return g
 
 
-def checkitem(title: str, cb: Callable[[Any], None] = noop, active=False) -> Gtk.CheckMenuItem:
+def checkitem(title: str, cb: Callable[[Any], None] = noop, active=False):  # -> Gtk.CheckMenuItem:
+    Gtk = gi_import("Gtk")
     check_item = Gtk.CheckMenuItem(label=title)
     check_item.set_active(active)
     if cb:
@@ -77,6 +73,7 @@ def get_icon_image(icon_name: str):
     size = get_icon_size()
     from xpra.gtk.widget import scaled_image
     with log.trap_error(f"Error loading image from icon {icon_name!r} with size {size}"):
+        from xpra.gtk.pixbuf import get_icon_pixbuf
         pixbuf = get_icon_pixbuf(icon_name)
         traylog("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
         if not pixbuf:
@@ -87,6 +84,7 @@ def get_icon_image(icon_name: str):
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def __init__(self, attrs: dict[str, str]):
+        from xpra.gtk.util import get_default_root_window
         ShadowServerBase.__init__(self, get_default_root_window())
         GTKServerBase.__init__(self)
         self.session_type = "shadow"
@@ -103,6 +101,10 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         ShadowServerBase.init(self, opts)
         self.tray = opts.tray
         self.tray_icon = opts.tray_icon
+
+    def setup(self) -> None:
+        GTKServerBase.setup(self)
+        ShadowServerBase.setup(self)
         if self.tray:
             self.setup_tray()
 
@@ -129,6 +131,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
         caps = ShadowServerBase.make_hello(self, source)
         caps.update(GTKServerBase.make_hello(self, source))
         if "features" in source.wants:
+            from xpra.gtk.info import get_screen_sizes
             caps["screen_sizes"] = get_screen_sizes()
         return caps
 
@@ -368,6 +371,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
     def setup_tray(self) -> None:
         if OSX:
             return
+        Gdk = gi_import("Gdk")
+        Gtk = gi_import("Gtk")
         display = Gdk.Display.get_default()
         if not display:
             # usually this is wayland shadow server:
@@ -459,7 +464,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             traylog.warn("Warning: failed to set tray icon to %s", filename)
             traylog.warn(" %s", e)
 
-    def traymenuitem(self, title: str, icon_name="", tooltip="", cb: Callable = noop) -> Gtk.ImageMenuItem:
+    def traymenuitem(self, title: str, icon_name="", tooltip="", cb: Callable = noop):  # -> Gtk.ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """
         # pylint: disable=import-outside-toplevel
         from xpra.gtk.widget import menuitem

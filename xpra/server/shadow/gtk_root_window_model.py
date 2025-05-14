@@ -8,13 +8,10 @@ from time import monotonic
 from xpra.os_util import gi_import
 from xpra.common import ScreenshotData
 from xpra.codecs.image import ImageWrapper
-from xpra.gtk.util import get_default_root_window
 from xpra.gtk.pixbuf import pixbuf_save_to_memory
 from xpra.log import Logger
 
 log = Logger("shadow")
-
-Gdk = gi_import("Gdk")
 
 
 def get_rgb_rawdata(window, x: int, y: int, width: int, height: int) \
@@ -36,6 +33,7 @@ def get_rgb_rawdata(window, x: int, y: int, width: int, height: int) \
         height = pixmap_h - y
     if width <= 0 or height <= 0:
         return None
+    Gdk = gi_import("Gdk")
     pixbuf = Gdk.pixbuf_get_from_window(window, x, y, width, height)
     log("get_rgb_rawdata(..) pixbuf.get_from_drawable took %s ms", int(1000 * (monotonic() - start)))
     raw_data = pixbuf.get_pixels()
@@ -46,6 +44,7 @@ def get_rgb_rawdata(window, x: int, y: int, width: int, height: int) \
 def take_png_screenshot(window) -> ScreenshotData | None:
     log("grabbing screenshot")
     w, h = window.get_geometry()[2:4]
+    Gdk = gi_import("Gdk")
     pixbuf = Gdk.pixbuf_get_from_window(window, 0, 0, w, h)
     if not pixbuf:
         return None
@@ -83,6 +82,7 @@ class GTKImageCapture:
 
 
 def main(filename) -> int:
+    from xpra.gtk.util import get_default_root_window
     root = get_default_root_window()
     data = take_png_screenshot(root)
     assert data

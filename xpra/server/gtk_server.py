@@ -19,11 +19,9 @@ from xpra.gtk.signals import register_os_signals, register_SIGUSR_signals
 from xpra.gtk.keymap import get_default_keymap
 from xpra.server import features
 from xpra.server.base import ServerBase
-from xpra.gtk.util import get_root_size
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.log import Logger
 
-Gdk = gi_import("Gdk")
 GLib = gi_import("GLib")
 
 UI_THREAD_WATCHER = envbool("XPRA_UI_THREAD_WATCHER")
@@ -31,6 +29,11 @@ UI_THREAD_WATCHER = envbool("XPRA_UI_THREAD_WATCHER")
 log = Logger("server", "gtk")
 screenlog = Logger("server", "screen")
 notifylog = Logger("notify")
+
+
+def get_default_display():
+    Gdk = gi_import("Gdk")
+    return Gdk.Display.get_default()
 
 
 class GTKServerBase(ServerBase):
@@ -106,7 +109,7 @@ class GTKServerBase(ServerBase):
             self.ui_watcher = get_UI_watcher()
             self.ui_watcher.start()
         if features.window:
-            display = Gdk.Display.get_default()
+            display = get_default_display()
             if display:
                 # n = display.get_n_screens()
                 # assert n==1, "unsupported number of screens: %i" % n
@@ -121,7 +124,7 @@ class GTKServerBase(ServerBase):
     def make_hello(self, source) -> dict[str, Any]:
         capabilities = super().make_hello(source)
         if "display" in source.wants:
-            display = Gdk.Display.get_default()
+            display = get_default_display()
             if display:
                 capabilities |= {
                     "display": display.get_name(),
@@ -132,7 +135,7 @@ class GTKServerBase(ServerBase):
 
     def get_ui_info(self, proto, *args) -> dict[str, Any]:
         info = super().get_ui_info(proto, *args)
-        display = Gdk.Display.get_default()
+        display = get_default_display()
         if display:
             info.setdefault("server", {}).update(
                 {
@@ -174,9 +177,11 @@ class GTKServerBase(ServerBase):
         return info
 
     def get_root_window_size(self) -> tuple[int, int]:
+        from xpra.gtk.util import get_root_size
         return get_root_size(None)
 
     def get_max_screen_size(self) -> tuple[int, int]:
+        from xpra.gtk.util import get_root_size
         return get_root_size(None)
 
     def configure_best_screen_size(self) -> tuple[int, int]:
@@ -184,6 +189,7 @@ class GTKServerBase(ServerBase):
 
     def calculate_workarea(self, maxw: int, maxh: int) -> None:
         screenlog("calculate_workarea(%s, %s)", maxw, maxh)
+        Gdk = gi_import("Gdk")
         workarea = Gdk.Rectangle()
         workarea.width = maxw
         workarea.height = maxh
@@ -228,7 +234,7 @@ class GTKServerBase(ServerBase):
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         x, y = pos
-        display = Gdk.Display.get_default()
+        display = get_default_display()
         display.warp_pointer(display.get_default_screen(), x, y)
 
     def do_process_button_action(self, *args):

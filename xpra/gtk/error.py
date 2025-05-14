@@ -35,8 +35,6 @@ from xpra.os_util import gi_import
 from xpra.util.thread import is_main_thread
 from xpra.log import Logger
 
-Gdk = gi_import("Gdk")
-
 __all__ = ["XError", "trap", "xsync", "xswallow", "xlog", "verify_sync"]
 
 # run xpra in synchronized mode to debug X11 errors:
@@ -101,6 +99,7 @@ class _ErrorManager:
     def Xenter(self) -> None:
         assert self.depth >= 0
         verify_main_thread()
+        Gdk = gi_import("Gdk")
         Gdk.error_trap_push()
         if XPRA_LOG_SYNC:
             log("X11trap.enter at level %i", self.depth)
@@ -113,6 +112,7 @@ class _ErrorManager:
         self.depth -= 1
         if XPRA_LOG_SYNC:
             log("X11trap.exit at level %i, need_sync=%s", self.depth, need_sync)
+        Gdk = gi_import("Gdk")
         if self.depth == 0 and need_sync:
             Gdk.flush()
         # This is a Xlib error constant (Success == 0)

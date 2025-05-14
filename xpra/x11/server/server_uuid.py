@@ -4,10 +4,10 @@
 # later version. See the file COPYING for details.
 
 from xpra.x11.gtk.prop import prop_set, prop_get, prop_del
-from xpra.gtk.util import get_default_root_window
 
 
 def root_xid() -> int:
+    from xpra.gtk.util import get_default_root_window
     root = get_default_root_window()
     if not root:
         return 0

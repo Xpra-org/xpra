@@ -18,7 +18,6 @@ from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.bindings.keyboard import X11KeyboardBindings
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.gtk.error import XError, xswallow, xsync, xlog, verify_sync
-from xpra.gtk.util import get_default_root_window
 from xpra.x11.server import server_uuid
 from xpra.x11.gtk.prop import prop_del
 from xpra.x11.xkbhelper import clean_keyboard_state
@@ -122,6 +121,7 @@ class X11ServerCore(GTKServerBase):
 
     def setup(self) -> None:
         super().setup()
+        from xpra.gtk.util import get_default_root_window
         self.root_window = get_default_root_window()
         if FAKE_X11_INIT_ERROR:
             raise RuntimeError("fake x11 init error")
