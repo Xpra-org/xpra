@@ -1370,7 +1370,7 @@ def _do_run_server(script_file: str, cmdline,
         app.cleanup()
 
     try:
-        app.exec_cwd = cwd
+        app.exec_cwd = opts.chdir or cwd
         app.xvfb = xvfb
         app.splash_process = splash_process
         app.display_options = display_options
