@@ -18,9 +18,8 @@ class StubServerMixin:
     Base class for server subsystem.
     Defines the default interface methods that each mixin may override.
     """
-    def __init__(self):
-        self.uid = getuid()
-        self.gid = getgid()
+    uid = getuid()
+    gid = getgid()
 
     def init(self, opts) -> None:
         """
