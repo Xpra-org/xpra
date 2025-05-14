@@ -22,7 +22,6 @@ from xpra.server.shadow.shadow_server_base import ShadowServerBase, try_setup_ca
 from xpra.x11.server.server_uuid import del_mode, del_uuid
 from xpra.x11.gtk.prop import prop_get
 from xpra.x11.bindings.window import X11WindowBindings
-from xpra.gtk.util import get_default_root_window, get_root_size
 from xpra.gtk.error import xsync, xlog
 from xpra.log import Logger
 
@@ -46,6 +45,39 @@ if NVFBC:
         nvfbc = None
 
 
+def matchre(re_str: str, xid_dict: dict) -> list[int]:
+    xids: list[int] = []
+    try:
+        re_c = re.compile(re_str, re.IGNORECASE)
+    except re.error:
+        log.error("Error: invalid window regular expression %r", re_str)
+    else:
+        for wxid, vstr in xid_dict.items():
+            if re_c.match(vstr):
+                xids.append(wxid)
+    return xids
+
+
+def i(v: str) -> int:
+    try:
+        if v.startswith("0x"):
+            return int(v, 16)
+        return int(v)
+    except ValueError:
+        return 0
+
+
+def get_pid(xid: int) -> int:
+    try:
+        from xpra.x11.bindings.res import ResBindings  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        return 0
+    XRes = ResBindings()
+    if not XRes.check_xres():
+        return 0
+    return XRes.get_pid(xid)
+
+
 def window_matches(wspec, model_class):
     wspec = list(wspec)
     try:
@@ -56,11 +88,11 @@ def window_matches(wspec, model_class):
         skip_children = True
     wb = X11WindowBindings()
     with xsync:
-        allw = [wxid for wxid in wb.get_all_x11_windows() if
-                not wb.is_inputonly(wxid) and wb.is_mapped(wxid)]
-        names = {}
-        commands = {}
-        classes = {}
+        allw: list[int] = [wxid for wxid in wb.get_all_x11_windows() if
+                           not wb.is_inputonly(wxid) and wb.is_mapped(wxid)]
+        names: dict[int, str] = {}
+        commands: dict[int, str] = {}
+        classes: dict[int, str] = {}
         for wxid in allw:
             name = prop_get(wxid, "_NET_WM_NAME", "utf8", True) or prop_get(wxid, "WM_NAME", "latin1", True)
             if name:
@@ -72,28 +104,8 @@ def window_matches(wspec, model_class):
             if class_instance:
                 classes[wxid] = class_instance[0].decode("latin1")
 
-        def matchre(re_str, xid_dict):
-            xids = []
-            try:
-                re_c = re.compile(re_str, re.IGNORECASE)
-            except re.error:
-                log.error("Error: invalid window regular expression %r", re_str)
-            else:
-                for wxid, vstr in xid_dict.items():
-                    if re_c.match(vstr):
-                        xids.append(wxid)
-            return xids
-
-        def i(v):
-            try:
-                if v.startswith("0x"):
-                    return int(v, 16)
-                return int(v)
-            except ValueError:
-                return 0
-
-        windows = []
-        skip = []
+        windows: list[int] = []
+        skip: list[int] = []
         for m in wspec:
             xids = []
             if m.startswith("xid="):
@@ -104,16 +116,9 @@ def window_matches(wspec, model_class):
             elif m.startswith("pid="):
                 pid = i(m[4:])
                 if pid:
-                    try:
-                        from xpra.x11.bindings.res import ResBindings  # pylint: disable=import-outside-toplevel
-                    except ImportError:
-                        XRes = None
-                    else:
-                        XRes = ResBindings()
-                    if XRes and XRes.check_xres():
-                        for xid in names:
-                            if XRes.get_pid(xid) == pid:
-                                xids.append(xid)
+                    for xid in names:
+                        if get_pid(xid) == pid:
+                            xids.append(xid)
             elif m.startswith("command="):
                 command = m[len("command="):]
                 xids += matchre(command, commands)
@@ -131,9 +136,6 @@ def window_matches(wspec, model_class):
                 if skip_children:
                     children = wb.get_all_children(xid)
                     skip += children
-                # for cxid in wb.get_all_children(xid):
-                #    if cxid not in windows:
-                #        windows.append(cxid)
         models = {}
         for xid in windows:
             x, y, w, h = wb.getGeometry(xid)[:4]
@@ -143,38 +145,42 @@ def window_matches(wspec, model_class):
                 model = model_class(title, (x, y, w, h))
                 models[xid] = model
         log("window_matches(%s, %s)=%s", wspec, model_class, models)
-        # find relative position and 'transient-for':
-        for xid, model in models.items():
-            model.xid = xid
-            model.override_redirect = wb.is_override_redirect(xid)
-            transient_for_xid = prop_get(xid, "WM_TRANSIENT_FOR", "window", True)
-            model.transient_for = None
-            if transient_for_xid:
-                try:
-                    from xpra.x11.gtk.bindings import get_pywindow
-                    model.transient_for = get_pywindow(transient_for_xid)
-                except ImportError:
-                    pass
-            rel_parent = model.transient_for
-            if not rel_parent:
-                parent = xid
-                rel_parent = None
-                while parent > 0:
-                    parent = wb.getParent(parent)
-                    rel_parent = models.get(parent)
-                    if rel_parent:
-                        log.warn(f"Warning: {rel_parent} is the parent of {model}")
-                        break
-            model.parent = rel_parent
-            # "class-instance", "client-machine", "window-type",
-            if rel_parent:
-                parent_g = rel_parent.get_geometry()
-                dx = model.geometry[0] - parent_g[0]
-                dy = model.geometry[1] - parent_g[1]
-                model.relative_position = dx, dy
-                log("relative_position=%s", model.relative_position)
-        log("window_matches%s models=%s", (wspec, model_class), models)
-        return models.values()
+        position_models(models)
+        models.values()
+
+
+def position_models(models: dict[int, Any]) -> None:
+    wb = X11WindowBindings()
+    # find relative position and 'transient-for':
+    for xid, model in models.items():
+        model.xid = xid
+        model.override_redirect = wb.is_override_redirect(xid)
+        transient_for_xid = prop_get(xid, "WM_TRANSIENT_FOR", "window", True)
+        model.transient_for = None
+        if transient_for_xid:
+            try:
+                from xpra.x11.gtk.bindings import get_pywindow
+                model.transient_for = get_pywindow(transient_for_xid)
+            except ImportError:
+                pass
+        rel_parent = model.transient_for
+        if not rel_parent:
+            parent = xid
+            rel_parent = None
+            while parent > 0:
+                parent = wb.getParent(parent)
+                rel_parent = models.get(parent)
+                if rel_parent:
+                    log.warn(f"Warning: {rel_parent} is the parent of {model}")
+                    break
+        model.parent = rel_parent
+        # "class-instance", "client-machine", "window-type",
+        if rel_parent:
+            parent_g = rel_parent.get_geometry()
+            dx = model.geometry[0] - parent_g[0]
+            dy = model.geometry[1] - parent_g[1]
+            model.relative_position = dx, dy
+            log("relative_position=%s", model.relative_position)
 
 
 class XImageCapture:
@@ -349,10 +355,10 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         self.backend = attrs.get("backend", "x11")
 
     def init(self, opts) -> None:
-        GTKShadowServerBase.init(self, opts)
         # don't call init on X11ServerCore,
         # this would call up to GTKServerBase.init(opts) again:
-        X11ServerCore.do_init(self, opts)
+        X11ServerCore.init(self, opts)
+        GTKShadowServerBase.init(self, opts)
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
 
     def set_keymap(self, server_source, force: bool = False) -> None:
@@ -384,6 +390,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
     def makeDynamicWindowModels(self):
         assert self.window_matches
         rwmc = self.get_root_window_model_class()
+        from xpra.gtk.util import get_default_root_window
         root = get_default_root_window()
 
         def model_class(title, geometry):
@@ -463,6 +470,7 @@ def snapshot(filename) -> int:
     # pylint: disable=import-outside-toplevel
     from io import BytesIO
     from xpra.util.str_fn import memoryview_to_bytes
+    from xpra.gtk.util import get_default_root_window, get_root_size
     root = get_default_root_window()
     capture = try_setup_capture(CAPTURE_BACKENDS, "auto", root)
     capture.refresh()
