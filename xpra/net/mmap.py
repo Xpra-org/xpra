@@ -71,6 +71,17 @@ def madvise(mmap_area) -> None:
         log.estr(e)
 
 
+def rerr() -> tuple[bool, bool, Any, int, Any, str]:
+    return False, False, None, 0, None, ""
+
+
+def validate_size(size: int) -> None:
+    if size < 64 * 1024 * 1024:
+        raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
+    if size > 16 * 1024 * 1024 * 1024:
+        raise ValueError("mmap is too big: %sB (maximum is 4GB)" % std_unit(size))
+
+
 def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128 * 1024 * 1024, filename: str = "") \
         -> tuple[bool, bool, Any, int, Any, str]:
     """
@@ -79,21 +90,10 @@ def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128
         The caller must keep hold of temp_file to ensure it does not get deleted!
         This is used by the client.
     """
-
-    def rerr() -> tuple[bool, bool, Any, int, Any, str]:
-        return False, False, None, 0, None, ""
-
     log("init_client_mmap%s", (mmap_group, socket_filename, size, filename))
     mmap_filename = filename
     mmap_temp_file = None
     delete = True
-
-    def validate_size(size: int) -> None:
-        if size < 64 * 1024 * 1024:
-            raise ValueError("mmap size is too small: %sB (minimum is 64MB)" % std_unit(size))
-        if size > 16 * 1024 * 1024 * 1024:
-            raise ValueError("mmap is too big: %sB (maximum is 4GB)" % std_unit(size))
-
     try:
         import mmap
         unit = max(4096, mmap.PAGESIZE)

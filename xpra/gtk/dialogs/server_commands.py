@@ -24,6 +24,40 @@ GLib = gi_import("GLib")
 Gtk = gi_import("Gtk")
 
 
+def l5(s="") -> Gtk.Label:  # noqa: E743
+    widget = label(s)
+    widget.set_margin_start(5)
+    widget.set_margin_end(5)
+    return widget
+
+
+def icon_widget(windows) -> Gtk.Label | Gtk.Image:
+    if not windows:
+        return label()
+    icons = tuple(getattr(w, "_current_icon", None) for w in windows)
+    icons = tuple(x for x in icons if x is not None)
+    log("icons: %s", icons)
+    if not icons:
+        return label()
+    try:
+        from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
+        try:
+            LANCZOS = Image.Resampling.LANCZOS
+        except AttributeError:
+            LANCZOS = Image.LANCZOS
+        img = icons[0].resize((24, 24), LANCZOS)
+        has_alpha = img.mode == "RGBA"
+        width, height = img.size
+        rowstride = width * (3 + int(has_alpha))
+        pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
+        icon = Gtk.Image()
+        icon.set_from_pixbuf(pixbuf)
+        return icon
+    except Exception:
+        log("failed to get window icon", exc_info=True)
+        return label()
+
+
 class ServerCommandsWindow:
 
     def __init__(self, client):
@@ -85,18 +119,11 @@ class ServerCommandsWindow:
             if self.contents:
                 self.alignment.remove(self.contents)
             grid = Gtk.Grid()
-
-            def l(s="") -> Gtk.Label:  # noqa: E743
-                widget = label(s)
-                widget.set_margin_start(5)
-                widget.set_margin_end(5)
-                return widget
-
             headers = ["", "PID", "Command", "Exit Code"]
             if self.client.server_commands_signals:
                 headers.append("Send Signal")
             for i, text in enumerate(headers):
-                grid.attach(l(text), i, 0, 1, 1)
+                grid.attach(l5(text), i, 0, 1, 1)
             for row, procinfo in enumerate(self.commands_info.values()):
                 if not isinstance(procinfo, dict):
                     continue
@@ -117,28 +144,8 @@ class ServerCommandsWindow:
                         windows = tuple(w for w in self.client._id_to_window.values()
                                         if getattr(w, "_metadata", {}).get("pid") == pid)
                         log(f"windows matching pid={pid}: {windows}")
-                    icon = label()
-                    if windows:
-                        try:
-                            icons = tuple(getattr(w, "_current_icon", None) for w in windows)
-                            icons = tuple(x for x in icons if x is not None)
-                            log("icons: %s", icons)
-                            if icons:
-                                from PIL import Image  # @UnresolvedImport pylint: disable=import-outside-toplevel
-                                try:
-                                    LANCZOS = Image.Resampling.LANCZOS
-                                except AttributeError:
-                                    LANCZOS = Image.LANCZOS
-                                img = icons[0].resize((24, 24), LANCZOS)
-                                has_alpha = img.mode == "RGBA"
-                                width, height = img.size
-                                rowstride = width * (3 + int(has_alpha))
-                                pixbuf = get_pixbuf_from_data(img.tobytes(), has_alpha, width, height, rowstride)
-                                icon = Gtk.Image()
-                                icon.set_from_pixbuf(pixbuf)
-                        except Exception:
-                            log("failed to get window icon", exc_info=True)
-                    widgets = [icon, l(f"{pid}"), l(cmd_str), l(rstr)]
+                    icon = icon_widget(windows)
+                    widgets = [icon, l5(f"{pid}"), l5(cmd_str), l5(rstr)]
                     if self.client.server_commands_signals:
                         if returncode is None:
                             widgets.append(self.signal_button(pid))
