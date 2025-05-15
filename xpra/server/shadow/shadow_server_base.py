@@ -71,7 +71,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
     # 20 fps unless the client specifies more:
     DEFAULT_REFRESH_RATE: int = 20
 
-    def __init__(self, root_window, capture=None):
+    def __init__(self, root_window=None, capture=None):
         # noinspection PyArgumentList
         super().__init__()
         self.capture = capture

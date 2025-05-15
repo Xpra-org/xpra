@@ -84,8 +84,7 @@ def get_icon_image(icon_name: str):
 class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def __init__(self, attrs: dict[str, str]):
-        from xpra.gtk.util import get_default_root_window
-        ShadowServerBase.__init__(self, get_default_root_window())
+        ShadowServerBase.__init__(self)
         GTKServerBase.__init__(self)
         self.session_type = "shadow"
         self.multi_window = str_to_bool(attrs.get("multi-window", True))
@@ -104,6 +103,8 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
 
     def setup(self) -> None:
         GTKServerBase.setup(self)
+        from xpra.gtk.util import get_default_root_window
+        self.root = get_default_root_window()
         ShadowServerBase.setup(self)
         if self.tray:
             self.setup_tray()
