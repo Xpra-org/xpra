@@ -57,11 +57,6 @@ def do_send_menu_data(ss, menu) -> None:
 def guess_session_name(procs=None, exec_wrapper=()) -> str:
     if not procs:
         return ""
-    from xpra.scripts.server import IBUS_DAEMON_COMMAND  # pylint: disable=import-outside-toplevel
-    if IBUS_DAEMON_COMMAND:
-        ibus_daemon_cmd = shlex.split(IBUS_DAEMON_COMMAND)[0] or "ibus-daemon"
-    else:
-        ibus_daemon_cmd = ""
     # use the commands to define the session name:
     child_reaper = getChildReaper()
     child_reaper.poll()
@@ -76,9 +71,9 @@ def guess_session_name(procs=None, exec_wrapper=()) -> str:
             l = len(exec_wrapper)
             if len(cmd) > l and cmd[:l] == exec_wrapper:
                 cmd = cmd[l:]
-        elif len(cmd) > 1 and cmd[0] in ("vglrun", "nohup",):
+        elif len(cmd) > 1 and cmd[0] in ("vglrun", "nohup"):
             cmd.pop(0)
-        if ibus_daemon_cmd and cmd[0] == ibus_daemon_cmd:
+        if cmd[0].find("ibus-daemon") >= 0:
             continue
         bcmd = os.path.basename(cmd[0])
         if bcmd not in cmd_names:
