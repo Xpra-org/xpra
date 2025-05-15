@@ -1120,7 +1120,7 @@ def rec_sbom() -> None:
         package = package_name
         if package.startswith(PACKAGE_PREFIX):
             package = package[len(PACKAGE_PREFIX):]
-        elif os.path.basename(path).startswith(MSYS_DLL_PREFIX):
+        elif os.path.basename(package).startswith(MSYS_DLL_PREFIX):
             # ie: "msys-com_err-1.dll"
             pass  # keep it as it is
         elif package.startswith(MSYS2_PACKAGE_PREFIX):
