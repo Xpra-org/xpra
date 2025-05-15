@@ -408,12 +408,14 @@ def load_xdg_menu_data() -> dict:
             log.warn(" no python-xdg module")
         return {}
     menu = do_load_xdg_menu_data()
-    menu_data = {}
+    if not menu:
+        return {}
     entries = tuple(menu.getEntries())
     log(f"{menu}.getEntries()={entries}")
     if len(entries) == 1 and entries[0].Submenus:
         entries = entries[0].Submenus
         log(f"using submenus {entries}")
+    menu_data = {}
     for i, submenu in enumerate(entries):
         if not isinstance(submenu, Menu):
             log(f"entry {submenu!r} is not a submenu")
