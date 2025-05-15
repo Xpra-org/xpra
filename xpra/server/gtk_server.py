@@ -181,8 +181,7 @@ class GTKServerBase(ServerBase):
         return get_root_size(None)
 
     def get_max_screen_size(self) -> tuple[int, int]:
-        from xpra.gtk.util import get_root_size
-        return get_root_size(None)
+        return self.get_root_window_size()
 
     def configure_best_screen_size(self) -> tuple[int, int]:
         return self.get_root_window_size()
