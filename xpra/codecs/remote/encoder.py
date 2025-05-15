@@ -14,7 +14,7 @@ from xpra.scripts.config import InitExit
 from xpra.net.common import Packet
 from xpra.codecs.constants import VideoSpec, CodecStateException
 from xpra.codecs.image import ImageWrapper, PlanarFormat
-from xpra.codecs.remote.common import get_type, get_version, get_info, RemoteConnectionClient, RemoteCodec
+from xpra.codecs.remote.common import get_type, get_version, get_info, RemoteCodecClient, RemoteCodec
 from xpra.log import Logger
 
 log = Logger("encoder", "remote")
@@ -24,11 +24,11 @@ ENCODINGS = tuple(x for x in os.environ.get("XPRA_REMOTE_ENCODINGS", "h264,vp8,v
 
 def safe_dict(opts: dict | typedict) -> dict:
     # a simple dictionary suitable for sending via rencodeplus
-    # (removes floats and other illegal values)
+    # (removes floats and other illegal values - floats are not strictly illegal, but we don't use them)
     return dict((k, v) for k, v in opts.items() if isinstance(k, str) and isinstance(v, (int, str, bool)))
 
 
-class EncoderClient(RemoteConnectionClient):
+class EncoderClient(RemoteCodecClient):
 
     def __init__(self, options: dict):
         super().__init__(options)
