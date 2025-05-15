@@ -122,20 +122,6 @@ class ChildCommandServer(StubServerMixin):
         if not hasattr(self, "session_name"):
             self.session_name: str = ""
         self.menu_provider = None
-        # wait for main loop to run
-        # and ensure that we don't run `late_start()` more than once,
-        # even if __init__ is called multiple times:
-        if not getattr(self, "late_start_requested", False):
-            self.late_start_requested: bool = True
-            GLib.idle_add(self.late_start)
-
-    def late_start(self) -> None:
-        def do_late_start() -> None:
-            # wait for all threaded init to complete
-            self.wait_for_threaded_init()
-            self.exec_start_late_commands()
-
-        start_thread(do_late_start, "command-late-start", daemon=True)
 
     def init(self, opts) -> None:
         self.exit_with_children = opts.exit_with_children
