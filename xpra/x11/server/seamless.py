@@ -199,12 +199,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                     raise
                 # retry:
                 sleep(0.010 * count)
-        if features.window:
-            self._wm.connect("new-window", self._new_window_signaled)
         self._wm.connect("quit", lambda _: self.clean_quit(True))
         self._wm.connect("show-desktop", self._show_desktop)
-        # FIXME: we call this again now because it requires the WM object...
-        self.load_existing_windows()
 
     def do_cleanup(self) -> None:
         if self._tray:
@@ -420,6 +416,8 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
                 can_add = X11Window.is_override_redirect(xid) and X11Window.is_mapped(xid)
             if can_add:
                 self._add_new_or_window(xid)
+        # from now on, new windows will trigger this callback:
+        self._wm.connect("new-window", self._new_window_signaled)
 
     def _lookup_window(self, wid):
         if not isinstance(wid, int):

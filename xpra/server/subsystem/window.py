@@ -67,7 +67,8 @@ class WindowServer(StubServerMixin):
             from xpra.x11.window_filters import init_x11_window_filters
             init_x11_window_filters()
         self.add_init_thread_callback(self.reinit_window_encoders)
-        self.load_existing_windows()
+        # when the main loop runs, load the windows:
+        GLib.idle_add(self.load_existing_windows)
 
     def cleanup(self) -> None:
         for window in tuple(self._window_to_id.keys()):
