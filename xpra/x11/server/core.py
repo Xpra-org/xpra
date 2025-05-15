@@ -99,6 +99,12 @@ def get_cursor_sizes() -> tuple[int, int]:
     return int(display.get_default_cursor_size()), display.get_maximal_cursor_size()
 
 
+def get_root_size() -> tuple[int, int]:
+    xid = get_root_xid()
+    with xsync:
+        return X11WindowBindings().getGeometry(xid)[2:4]
+
+
 class X11ServerCore(GTKServerBase):
     """
         Base class for X11 servers,
@@ -108,7 +114,6 @@ class X11ServerCore(GTKServerBase):
 
     def __init__(self) -> None:
         self.display = os.environ.get("DISPLAY", "")
-        self.root_window = None
         self.pointer_device = XTestPointerDevice()
         self.touchpad_device = None
         self.pointer_device_map: dict = {}
@@ -121,8 +126,6 @@ class X11ServerCore(GTKServerBase):
 
     def setup(self) -> None:
         super().setup()
-        from xpra.gtk.util import get_default_root_window
-        self.root_window = get_default_root_window()
         if FAKE_X11_INIT_ERROR:
             raise RuntimeError("fake x11 init error")
         with xsync:
@@ -452,7 +455,7 @@ class X11ServerCore(GTKServerBase):
         return tuple(sizes)
 
     def get_max_screen_size(self) -> tuple[int, int]:
-        max_w, max_h = self.root_window.get_geometry()[2:4]
+        max_w, max_h = get_root_size()
         if self.randr:
             sizes = self.get_all_screen_sizes()
             if len(sizes) >= 1:
@@ -468,7 +471,7 @@ class X11ServerCore(GTKServerBase):
     def configure_best_screen_size(self) -> tuple[int, int]:
         # return ServerBase.set_best_screen_size(self)
         """ sets the screen size to use the largest width and height used by any of the clients """
-        root_w, root_h = self.root_window.get_geometry()[2:4]
+        root_w, root_h = get_root_size()
         if not self.randr:
             return root_w, root_h
         sss = tuple(x for x in self._server_sources.values() if x.ui_client)
@@ -536,7 +539,7 @@ class X11ServerCore(GTKServerBase):
             closest[distance] = (w, h)
         if not closest:
             screenlog.warn("Warning: no matching resolution found for %sx%s", desired_w, desired_h)
-            root_w, root_h = self.root_window.get_size()
+            root_w, root_h = get_root_size()
             return root_w, root_h
         min_dist = sorted(closest.keys())[0]
         new_size = closest[min_dist]
@@ -546,7 +549,7 @@ class X11ServerCore(GTKServerBase):
 
     def set_screen_size(self, desired_w: int, desired_h: int):
         screenlog("set_screen_size%s", (desired_w, desired_h))
-        root_w, root_h = self.root_window.get_geometry()[2:4]
+        root_w, root_h = get_root_size()
         if not self.randr:
             return root_w, root_h
         if desired_w == root_w and desired_h == root_h:
@@ -635,7 +638,7 @@ class X11ServerCore(GTKServerBase):
         return root_w, root_h
 
     def show_dpi(self, xdpi: int, ydpi: int):
-        root_w, root_h = self.root_window.get_geometry()[2:4]
+        root_w, root_h = get_root_size()
         wmm, hmm = RandRBindings().get_screen_size_mm()  # ie: (1280, 1024)
         screenlog("RandR.get_screen_size_mm=%s,%s", wmm, hmm)
         actual_xdpi = round(root_w * 25.4 / wmm)
