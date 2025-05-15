@@ -59,34 +59,8 @@ class ZeroconfPublishers:
         self.services: list[ZeroconfPublisher] = []
         self.ports: dict[str, set[int]] = {}
 
-        def add_address(host: str, port: int, af=socket.AF_INET):
-            try:
-                if af == socket.AF_INET6 and host.find("%"):
-                    host = host.split("%")[0]
-                try:
-                    host = socket.gethostbyname(host)
-                except Exception:
-                    pass
-                address = inet_ton(af, host)
-            except Exception as e:
-                log("inet_aton(%s)", host, exc_info=True)
-                log.warn(f"Warning: cannot publish {service_name} records on {host!r}:")
-                log.warn(" %s", e)
-                return
-            sn = service_name
-            ports = set(self.ports.get(service_name, ()))
-            log("add_address(%s, %s, %s) ports=%s", host, port, af, ports)
-            ports.add(port)
-            if len(ports) > 1:
-                sn += f"-{len(ports)}"
-            try:
-                zp = ZeroconfPublisher(address, host, port, sn, service_type, text_dict)
-            except Exception as e:
-                log.warn(f"Warning: zeroconf API error for {service_name} on {host!r}:{port}:")
-                log.warn(" %s", e)
-            else:
-                self.services.append(zp)
-                self.ports[service_name] = ports
+        def add_address(host, port, af):
+            self.add_address(host, port, af, service_name, service_type, text_dict)
 
         for host, port in listen_on:
             if host.startswith("[") and host.endswith("]"):
@@ -121,6 +95,36 @@ class ZeroconfPublishers:
                 else:
                     host = "127.0.0.1"
             add_address(host, port, af)
+
+    def add_address(self, host: str, port: int, af: socket.AddressFamily,
+                    service_name: str, service_type: str, text_dict):
+        try:
+            if af == socket.AF_INET6 and host.find("%"):
+                host = host.split("%")[0]
+            try:
+                host = socket.gethostbyname(host)
+            except Exception:
+                pass
+            address = inet_ton(af, host)
+        except Exception as e:
+            log("inet_aton(%s)", host, exc_info=True)
+            log.warn(f"Warning: cannot publish {service_name} records on {host!r}:")
+            log.warn(" %s", e)
+            return
+        sn = service_name
+        ports = set(self.ports.get(service_name, ()))
+        log("add_address(%s, %s, %s, %s) ports=%s", service_name, host, port, af, ports)
+        ports.add(port)
+        if len(ports) > 1:
+            sn += f"-{len(ports)}"
+        try:
+            zp = ZeroconfPublisher(address, host, port, sn, service_type, text_dict)
+        except Exception as e:
+            log.warn(f"Warning: zeroconf API error for {service_name} on {host!r}:{port}:")
+            log.warn(" %s", e)
+        else:
+            self.services.append(zp)
+            self.ports[service_name] = ports
 
     def start(self) -> None:
         for s in self.services:

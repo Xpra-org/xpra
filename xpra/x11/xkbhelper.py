@@ -260,6 +260,28 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
     return trans
 
 
+def get_keysym_to_modifier_map(modifiers: dict[str, Iterable]) -> dict:
+    keysym_to_modifier = {}
+    for modifier, keysyms in modifiers.items():
+        for keysym in keysyms:
+            existing_mod = keysym_to_modifier.get(keysym)
+            if existing_mod and existing_mod != modifier:
+                log.error("ERROR: keysym %s is mapped to both %s and %s !", keysym, modifier, existing_mod)
+            else:
+                keysym_to_modifier[keysym] = modifier
+                if keysym in DEBUG_KEYSYMS:
+                    log.info("set_all_keycodes() keysym_to_modifier[%s]=%s", keysym, modifier)
+    log("keysym_to_modifier=%s", keysym_to_modifier)
+    return keysym_to_modifier
+
+
+def estr(entries) -> str:
+    try:
+        return csv(tuple(set(x[0] for x in entries)))
+    except Exception:
+        return csv(tuple(entries))
+
+
 def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keycodes, modifiers: dict[str, Iterable]):
     """
         Clients that have access to raw x11 keycodes should provide
@@ -280,17 +302,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     X11Keyboard = X11KeyboardBindings()
 
     # so we can validate entries:
-    keysym_to_modifier = {}
-    for modifier, keysyms in modifiers.items():
-        for keysym in keysyms:
-            existing_mod = keysym_to_modifier.get(keysym)
-            if existing_mod and existing_mod != modifier:
-                log.error("ERROR: keysym %s is mapped to both %s and %s !", keysym, modifier, existing_mod)
-            else:
-                keysym_to_modifier[keysym] = modifier
-                if keysym in DEBUG_KEYSYMS:
-                    log.info("set_all_keycodes() keysym_to_modifier[%s]=%s", keysym, modifier)
-    log("keysym_to_modifier=%s", keysym_to_modifier)
+    keysym_to_modifier = get_keysym_to_modifier_map(modifiers)
 
     def modifiers_for(entries) -> set[str]:
         """ entries can only point to a single modifier - verify """
@@ -308,12 +320,6 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
     def filter_mappings(mappings, drop_extra_keys=False) -> dict[int, set]:
         filtered = {}
         invalid_keysyms = set()
-
-        def estr(entries) -> str:
-            try:
-                return csv(tuple(set(x[0] for x in entries)))
-            except Exception:
-                return csv(tuple(entries))
         for keycode, entries in mappings.items():
             mods = modifiers_for(entries)
             if len(mods) > 1:

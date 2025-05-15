@@ -61,6 +61,31 @@ def bool_icon(image, on_off: bool):
     image.set_from_pixbuf(icon)
 
 
+def setall(labels: Sequence[Gtk.Label], values: Sequence) -> None:
+    assert len(labels) == len(values), "%s labels and %s values (%s vs %s)" % (
+        len(labels), len(values), labels, values)
+    for i, l in enumerate(labels):
+        l.set_text(str(values[i]))
+
+
+def setlabels(labels: Sequence[Gtk.Label], values: Sequence, rounding: Callable = int):
+    if not values:
+        return
+    avg = sum(values) / len(values)
+    svalues = sorted(values)
+    l = len(svalues)
+    assert l > 0
+    if l < 10:
+        index = l - 1
+    else:
+        index = int(l * 90 / 100)
+    index = max(0, min(l - 1, index))
+    pct = svalues[index]
+    disp = values[-1], min(values), avg, pct, max(values)
+    rounded_values = [rounding(v) for v in disp]
+    setall(labels, rounded_values)
+
+
 def pixelstr(v) -> str:
     if v < 0:
         return "n/a"
@@ -1088,29 +1113,6 @@ class SessionInfo(Gtk.Window):
             return True
         self.last_populate_statistics = monotonic()
         self.client.send_info_request()
-
-        def setall(labels, values) -> None:
-            assert len(labels) == len(values), "%s labels and %s values (%s vs %s)" % (
-                len(labels), len(values), labels, values)
-            for i, l in enumerate(labels):
-                l.set_text(str(values[i]))
-
-        def setlabels(labels, values, rounding: Callable = int):
-            if not values:
-                return
-            avg = sum(values) / len(values)
-            svalues = sorted(values)
-            l = len(svalues)
-            assert l > 0
-            if l < 10:
-                index = l - 1
-            else:
-                index = int(l * 90 / 100)
-            index = max(0, min(l - 1, index))
-            pct = svalues[index]
-            disp = values[-1], min(values), avg, pct, max(values)
-            rounded_values = [rounding(v) for v in disp]
-            setall(labels, rounded_values)
 
         if self.client.server_ping_latency:
             spl = tuple(int(1000 * x[1]) for x in tuple(self.client.server_ping_latency))
