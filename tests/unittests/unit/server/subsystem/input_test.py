@@ -18,6 +18,7 @@ class InputMixinTest(ServerMixinTest):
             from xpra.server.subsystem.keyboard import KeyboardServer
             from xpra.server.source.keyboard import KeyboardConnection
             opts = AdHocStruct()
+            opts.input_method = "auto"
             self._test_mixin_class(KeyboardServer, opts, {}, KeyboardConnection)
 
 
