@@ -3479,47 +3479,48 @@ def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], ar
             noerr(os.unlink, delpath)
 
 
+def show_final_state(error_cb, display_desc: dict[str, Any]) -> int:
+    # this is for local sockets only!
+    display = display_desc["display"]
+    sockdir = display_desc.get("socket_dir", "")
+    sockdirs = display_desc.get("socket_dirs", ())
+    sockdir = DotXpra(sockdir, sockdirs)
+    try:
+        sockfile = get_sockpath(display_desc, error_cb, 0)
+    except InitException:
+        # could be a named-pipe:
+        sockfile = display_desc.get("named-pipe", "")
+    if sockfile and os.path.isabs(sockfile):
+        # first 5 seconds: just check if the socket still exists:
+        # without connecting (avoid warnings and log messages on server)
+        for _ in range(25):
+            if not os.path.exists(sockfile):
+                break
+            time.sleep(0.2)
+    final_state = SocketState.UNKNOWN
+    if sockfile:
+        # next 5 seconds: actually try to connect
+        final_state = SocketState.UNKNOWN
+        for _ in range(5):
+            final_state = sockdir.get_server_state(sockfile, 1)
+            if final_state is SocketState.DEAD:
+                break
+            time.sleep(1)
+    if final_state is SocketState.DEAD:
+        print(f"xpra at {display} has exited.")
+        return 0
+    if final_state is SocketState.UNKNOWN:
+        print(f"How odd... I'm not sure what's going on with xpra at {display}")
+        return 1
+    if final_state is SocketState.LIVE:
+        print(f"Failed to shutdown xpra at {display}")
+        return 1
+    raise RuntimeError(f"invalid state: {final_state}")
+
+
 def run_stopexit(mode: str, error_cb: Callable, opts, extra_args: list[str], cmdline: list[str]) -> ExitValue:
     assert mode in ("stop", "exit")
     no_gtk()
-
-    def show_final_state(display_desc: dict[str, Any]) -> int:
-        # this is for local sockets only!
-        display = display_desc["display"]
-        sockdir = display_desc.get("socket_dir", "")
-        sockdirs = display_desc.get("socket_dirs", ())
-        sockdir = DotXpra(sockdir, sockdirs)
-        try:
-            sockfile = get_sockpath(display_desc, error_cb, 0)
-        except InitException:
-            # could be a named-pipe:
-            sockfile = display_desc.get("named-pipe", "")
-        if sockfile and os.path.isabs(sockfile):
-            # first 5 seconds: just check if the socket still exists:
-            # without connecting (avoid warnings and log messages on server)
-            for _ in range(25):
-                if not os.path.exists(sockfile):
-                    break
-                time.sleep(0.2)
-        final_state = SocketState.UNKNOWN
-        if sockfile:
-            # next 5 seconds: actually try to connect
-            final_state = SocketState.UNKNOWN
-            for _ in range(5):
-                final_state = sockdir.get_server_state(sockfile, 1)
-                if final_state is SocketState.DEAD:
-                    break
-                time.sleep(1)
-        if final_state is SocketState.DEAD:
-            print(f"xpra at {display} has exited.")
-            return 0
-        if final_state is SocketState.UNKNOWN:
-            print(f"How odd... I'm not sure what's going on with xpra at {display}")
-            return 1
-        if final_state is SocketState.LIVE:
-            print(f"Failed to shutdown xpra at {display}")
-            return 1
-        raise RuntimeError(f"invalid state: {final_state}")
 
     def multimode(displays: list[str]) -> int:
         sys.stdout.write(f"Trying to {mode} {len(displays)} displays:\n")
@@ -3580,7 +3581,7 @@ def run_stopexit(mode: str, error_cb: Callable, opts, extra_args: list[str], cmd
             app.cleanup()
     if e == 0:
         if display_desc["local"] and display_desc.get("display"):
-            show_final_state(display_desc)
+            show_final_state(error_cb, display_desc)
         else:
             print(f"Sent {mode} command")
     return e

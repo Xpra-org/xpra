@@ -1445,6 +1445,50 @@ def detect_xdummy_setup(install_dir="") -> Sequence:
     return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
 
+def convert_templates(install_dir: str, subs: dict[str, str], subdirs: Sequence[str] = ()) -> None:
+    dirname = os.path.join("fs", "etc", "xpra", *subdirs)
+    # get conf dir for install, without stripping the build root
+    target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
+    print(f"{dirname!r}:")
+    # print(f"convert_templates({install_dir}, {subdirs}) {dirname=}, {target_dir=}")
+    if not os.path.exists(target_dir):
+        try:
+            os.makedirs(target_dir)
+        except Exception as e:
+            print(f"cannot create target dir {target_dir!r}: {e}")
+    template_files = os.listdir(dirname)
+    if not template_files:
+        print(f"Warning: no files found in {dirname!r}")
+    for f in sorted(template_files):
+        if f.endswith("osx.conf.in") and not OSX:
+            continue
+        filename = os.path.join(dirname, f)
+        if os.path.isdir(filename):
+            convert_templates(install_dir, subs, list(subdirs) + [f])
+            continue
+        if not (f.endswith(".in") or f.endswith(".conf") or f.endswith(".txt") or f.endswith(".keys")):
+            print(f"Warning: skipped {f!r}")
+            continue
+        with open(filename, "r", encoding="latin1") as f_in:
+            template = f_in.read()
+        target_file = os.path.join(target_dir, f)
+        if target_file.endswith(".in"):
+            target_file = target_file[:-len(".in")]
+        print(f"  {f!r:<50} -> {target_file!r}")
+        with open(target_file, "w", encoding="latin1") as f_out:
+            if f.endswith(".in"):
+                try:
+                    config_data = template % subs
+                except ValueError:
+                    print(f"error applying substitutions from {filename!r} to {target_file!r}:")
+                    print(f"{config_data!r}")
+                    print(f"{subs!r}")
+                    raise
+            else:
+                config_data = template
+            f_out.write(config_data)
+
+
 def build_xpra_conf(install_dir: str) -> None:
     # pylint: disable=import-outside-toplevel
     # generates an actual config file from the template
@@ -1528,50 +1572,7 @@ def build_xpra_conf(install_dir: str) -> None:
         'opengl'                : "no" if OSX else "probe",
         'headerbar'             : ["auto", "no"][OSX or WIN32],
     }
-
-    def convert_templates(subdirs: Sequence[str] = ()) -> None:
-        dirname = os.path.join("fs", "etc", "xpra", *subdirs)
-        # get conf dir for install, without stripping the build root
-        target_dir = os.path.join(get_conf_dir(install_dir, stripbuildroot=False), *subdirs)
-        print(f"{dirname!r}:")
-        # print(f"convert_templates({subdirs}) {dirname=}, {target_dir=}")
-        if not os.path.exists(target_dir):
-            try:
-                os.makedirs(target_dir)
-            except Exception as e:
-                print(f"cannot create target dir {target_dir!r}: {e}")
-        template_files = os.listdir(dirname)
-        if not template_files:
-            print(f"Warning: no files found in {dirname!r}")
-        for f in sorted(template_files):
-            if f.endswith("osx.conf.in") and not OSX:
-                continue
-            filename = os.path.join(dirname, f)
-            if os.path.isdir(filename):
-                convert_templates(list(subdirs)+[f])
-                continue
-            if not (f.endswith(".in") or f.endswith(".conf") or f.endswith(".txt") or f.endswith(".keys")):
-                print(f"Warning: skipped {f!r}")
-                continue
-            with open(filename, "r", encoding="latin1") as f_in:
-                template = f_in.read()
-            target_file = os.path.join(target_dir, f)
-            if target_file.endswith(".in"):
-                target_file = target_file[:-len(".in")]
-            print(f"  {f!r:<50} -> {target_file!r}")
-            with open(target_file, "w", encoding="latin1") as f_out:
-                if f.endswith(".in"):
-                    try:
-                        config_data = template % SUBS
-                    except ValueError:
-                        print(f"error applying substitutions from {filename!r} to {target_file!r}:")
-                        print(f"{config_data!r}")
-                        print(f"{SUBS!r}")
-                        raise
-                else:
-                    config_data = template
-                f_out.write(config_data)
-    convert_templates(("conf.d", ))
+    convert_templates(install_dir, SUBS, ("conf.d", ))
 
 
 #*******************************************************************************

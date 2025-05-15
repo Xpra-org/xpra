@@ -17,6 +17,21 @@ from xpra.log import Logger
 log = Logger("server")
 
 
+def get_glinfo_message(opengl: typedict) -> str:
+    msg = "OpenGL is "
+    if not opengl.boolget("enabled"):
+        msg += "disabled"
+    else:
+        msg += "enabled"
+        backend = opengl.strget("backend")
+        if backend:
+            msg += f" using {backend} backend"
+        driver_info = opengl.strget("renderer") or opengl.strget("vendor")
+        if driver_info:
+            msg += f" with {std(driver_info)}"
+    return msg
+
+
 class ClientInfoConnection(StubClientConnection):
     """
     Store information about the client.
@@ -104,41 +119,32 @@ class ClientInfoConnection(StubClientConnection):
         pinfo += [f"client version {std(version)}{std(revinfo)}{bitsstr}"]
         cinfo = [" ".join(x for x in pinfo if x)]
         if FULL_INFO > 0:
-            # connection info:
             if self.hostname or self.username:
-                msg = "connected"
-                if self.hostname:
-                    msg += f" from {std(self.hostname)!r}"
-                if self.username:
-                    msg += f" as {std(self.username)!r}"
-                    if self.name and self.name != self.username:
-                        msg += f" - {std(self.name)!r}"
-                if msg:
-                    cinfo.append(msg)
-            # proxy info
+                cinfo.append(self.get_connected_info_message())
             if self.client_proxy:
-                pname = platform_name(self.proxy_platform, self.proxy_release)
-                msg = f"via {pname} proxy"
-                if self.proxy_version:
-                    msg += f" version {std(self.proxy_version)}"
-                if self.proxy_hostname:
-                    msg += f" on {std(self.proxy_hostname)!r}"
-                cinfo.append(msg)
-            # opengl info:
+                cinfo.append(self.get_proxy_info_message())
             if self.client_opengl:
-                msg = "OpenGL is "
-                if not self.client_opengl.boolget("enabled"):
-                    msg += "disabled"
-                else:
-                    msg += "enabled"
-                    backend = self.client_opengl.strget("backend")
-                    if backend:
-                        msg += f" using {backend} backend"
-                    driver_info = self.client_opengl.strget("renderer") or self.client_opengl.strget("vendor")
-                    if driver_info:
-                        msg += f" with {std(driver_info)}"
-                cinfo.append(msg)
+                cinfo.append(get_glinfo_message(self.client_opengl))
         return cinfo
+
+    def get_connected_info_message(self) -> str:
+        msg = "connected"
+        if self.hostname:
+            msg += f" from {std(self.hostname)!r}"
+        if self.username:
+            msg += f" as {std(self.username)!r}"
+            if self.name and self.name != self.username:
+                msg += f" - {std(self.name)!r}"
+        return msg
+
+    def get_proxy_info_message(self) -> str:
+        pname = platform_name(self.proxy_platform, self.proxy_release)
+        msg = f"via {pname} proxy"
+        if self.proxy_version:
+            msg += f" version {std(self.proxy_version)}"
+        if self.proxy_hostname:
+            msg += f" on {std(self.proxy_hostname)!r}"
+        return msg
 
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {

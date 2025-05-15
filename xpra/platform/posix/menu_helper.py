@@ -400,15 +400,56 @@ def load_menu() -> dict:
 
 def load_xdg_menu_data() -> dict:
     try:
-        from xdg.Menu import parse, Menu  # pylint: disable=import-outside-toplevel
+        from xdg.Menu import Menu  # pylint: disable=import-outside-toplevel
     except ImportError:
         log("load_xdg_menu_data()", exc_info=True)
         if first_time("no-python-xdg"):
             log.warn("Warning: cannot use application menu data:")
             log.warn(" no python-xdg module")
         return {}
-    menu: dict | None = None
+    menu = do_load_xdg_menu_data()
+    menu_data = {}
+    entries = tuple(menu.getEntries())
+    log(f"{menu}.getEntries()={entries}")
+    if len(entries) == 1 and entries[0].Submenus:
+        entries = entries[0].Submenus
+        log(f"using submenus {entries}")
+    for i, submenu in enumerate(entries):
+        if not isinstance(submenu, Menu):
+            log(f"entry {submenu!r} is not a submenu")
+            continue
+        name = submenu.getName()
+        log("* %-3i %s", i, name)
+        if not submenu.Visible:
+            log(f" submenu {name!r} is not visible")
+            continue
+        try:
+            md = load_xdg_menu(submenu)
+            if md:
+                menu_data[name] = md
+            else:
+                log(" no menu data for %s", name)
+        except Exception as e:
+            log("load_xdg_menu_data()", exc_info=True)
+            log.error("Error loading submenu '%s':", name)
+            log.estr(e)
+    entries = load_applications(menu_data)
+    if entries:
+        # add an 'Applications' menu if we don't have one:
+        app_menu = menu_data.get("Applications")
+        if app_menu:
+            app_menu.setdefault("Entries", {}).update(entries)
+        else:
+            menu_data["Applications"] = {
+                "Name": "Applications",
+                "Entries": entries,
+            }
+    return menu_data
+
+
+def do_load_xdg_menu_data():
     error = None
+    from xdg.Menu import parse
     # see ticket #2340,
     # invalid values for XDG_CONFIG_DIRS can cause problems,
     # so try unsetting it if we can't load the menus with it:
@@ -453,60 +494,19 @@ def load_xdg_menu_data() -> dict:
                     log("parsing xdg menu data for prefix %r with XDG_CONFIG_DIRS=%s and XDG_MENU_PREFIX=%s",
                         prefix, os.environ.get("XDG_CONFIG_DIRS"), os.environ.get("XDG_MENU_PREFIX"))
                     with IgnoreWarningsContext():
-                        menu = parse()
-                    break
+                        return parse()
                 except Exception as e:
                     log("load_xdg_menu_data()", exc_info=True)
                     error = e
-                    menu = None
-        if menu:
-            break
-    if menu is None:
-        if error and first_time("xdg-menu-error"):
-            log.error("Error parsing xdg menu data:")
-            log.estr(error)
-            log.error(" this is either a bug in python-xdg,")
-            log.error(" or an invalid system menu configuration")
-            log.error(" for more information, please see:")
-            log.error(" https://github.com/Xpra-org/xpra/issues/2174")
-        return {}
-    menu_data = {}
-    entries = tuple(menu.getEntries())
-    log(f"{menu}.getEntries()={entries}")
-    if len(entries) == 1 and entries[0].Submenus:
-        entries = entries[0].Submenus
-        log(f"using submenus {entries}")
-    for i, submenu in enumerate(entries):
-        if not isinstance(submenu, Menu):
-            log(f"entry {submenu!r} is not a submenu")
-            continue
-        name = submenu.getName()
-        log("* %-3i %s", i, name)
-        if not submenu.Visible:
-            log(f" submenu {name!r} is not visible")
-            continue
-        try:
-            md = load_xdg_menu(submenu)
-            if md:
-                menu_data[name] = md
-            else:
-                log(" no menu data for %s", name)
-        except Exception as e:
-            log("load_xdg_menu_data()", exc_info=True)
-            log.error("Error loading submenu '%s':", name)
-            log.estr(e)
-    entries = load_applications(menu_data)
-    if entries:
-        # add an 'Applications' menu if we don't have one:
-        app_menu = menu_data.get("Applications")
-        if app_menu:
-            app_menu.setdefault("Entries", {}).update(entries)
-        else:
-            menu_data["Applications"] = {
-                "Name": "Applications",
-                "Entries": entries,
-            }
-    return menu_data
+    assert error
+    if first_time("xdg-menu-error"):
+        log.error("Error parsing xdg menu data:")
+        log.estr(error)
+        log.error(" this is either a bug in python-xdg,")
+        log.error(" or an invalid system menu configuration")
+        log.error(" for more information, please see:")
+        log.error(" https://github.com/Xpra-org/xpra/issues/2174")
+    return {}
 
 
 def load_applications(menu_data=None):

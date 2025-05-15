@@ -1069,6 +1069,19 @@ def find_glob_paths(dirname: str, glob_str: str) -> list[str]:
     return output.splitlines()
 
 
+def shorten_package_name(package: str) -> str:
+    if package.startswith(PACKAGE_PREFIX):
+        return package[len(PACKAGE_PREFIX):]
+    if os.path.basename(package).startswith(MSYS_DLL_PREFIX):
+        # ie: "msys-com_err-1.dll"
+        return package
+    if package.startswith(MSYS2_PACKAGE_PREFIX):
+        # ie: "msys2-runtime"
+        return package
+    debug(f"unexpected package prefix: {package!r}")
+    return package
+
+
 def rec_sbom() -> None:
     step("Recording SBOM")
     sbom: dict[str, dict[str, Any]] = {}
@@ -1164,20 +1177,9 @@ def rec_sbom() -> None:
     # summary: list of packages
     packages = tuple(sorted(set(rec["package"] for rec in sbom.values())))
     debug(f"adding package info for {packages}")
-    packages_info: dict[str, tuple] = {}
+    packages_info: dict[str, dict] = {}
     for package_name in packages:
-        # shorten the package name:
-        package = package_name
-        if package.startswith(PACKAGE_PREFIX):
-            package = package[len(PACKAGE_PREFIX):]
-        elif os.path.basename(package).startswith(MSYS_DLL_PREFIX):
-            # ie: "msys-com_err-1.dll"
-            pass  # keep it as it is
-        elif package.startswith(MSYS2_PACKAGE_PREFIX):
-            # ie: "msys2-runtime"
-            pass  # keep it as it is
-        else:
-            debug(f"unexpected package prefix: {package!r}")
+        package = shorten_package_name(package_name)
         # keep only the keys relevant to the sbom:
         info = get_pacman_package_info(package_name) or get_pip_package_info(package_name)
         exported_info = {}
