@@ -122,7 +122,7 @@ class RemoteServerAdapter(baseclass):
         self.server_socket_timeout = to.intget("socket-timeout", SERVER_SOCKET_TIMEOUT)
         self.reconnect_delay = to.intget("reconnect-delay", RECONNECT_DELAY)
         self.connect_poll_delay = to.intget("connect-poll-delay", CONNECT_POLL_DELAY)
-        self.system_socket_path = to.strget("system-socket", self.SYSTEM_SOCKET_PATH)
+        self.system_socket_path = to.strget("system-socket", self.SYSTEM_SOCKET_PATH)   # NOSONAR @SuppressWarnings("python:S1845")
         self.sessions_dir = osexpand(to.strget("sessions-dir", opts.sessions_dir))
         self.connect_timer = 0
         self.connecting = False
