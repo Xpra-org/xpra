@@ -31,7 +31,6 @@ from xpra.scripts.main import (
     validate_encryption, parse_env, configure_env,
     stat_display_socket, get_xpra_sessions,
     make_progress_process,
-    load_pid,
     X11_SOCKET_DIR,
     may_block_numpy,
 )
@@ -57,15 +56,13 @@ from xpra.os_util import (
 from xpra.util.daemon import setuidgid
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr
-from xpra.util.io import is_writable, stderr_print, which
+from xpra.util.io import is_writable, stderr_print
 from xpra.util.env import unsetenv, envbool, osexpand, get_saved_env, get_saved_env_var, source_env
 from xpra.common import GROUP
 from xpra.util.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
-IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
-                                     "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
 PROGRESS_TO_STDERR = envbool("XPRA_PROGRESS_TO_STDERR", False)
 
@@ -159,56 +156,6 @@ def sanitize_env() -> None:
              "CKCON_X11_DISPLAY",
              "CKCON_X11_DISPLAY_DEVICE",
              )
-
-
-def configure_imsettings_env(input_method) -> str:
-    im = (input_method or "").lower()
-    if im == "auto":
-        ibus_daemon = which("ibus-daemon")
-        if ibus_daemon:
-            im = "ibus"
-        else:
-            im = "none"
-    if im in ("none", "no"):
-        # the default: set DISABLE_IMSETTINGS=1, fallback to xim
-        # that's because the 'ibus' 'immodule' breaks keyboard handling
-        # unless its daemon is also running - and we don't know if it is..
-        imsettings_env(True, "xim", "xim", "xim", "none", "@im=none")
-    elif im == "keep":
-        # do nothing and keep whatever is already set, hoping for the best
-        pass
-    elif im in ("xim", "ibus", "scim", "uim"):
-        # ie: (False, "ibus", "ibus", "IBus", "@im=ibus")
-        imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=" + im.lower())
-    else:
-        v = imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=" + im.lower())
-        warn(f"using input method settings: {v}")
-        warn(f"unknown input method specified: {input_method}")
-        warn(" if it is correct, you may want to file a bug to get it recognized")
-    return im
-
-
-def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module,
-                   imsettings_module, xmodifiers) -> dict[str, str]:
-    # for more information, see imsettings:
-    # https://code.google.com/p/imsettings/source/browse/trunk/README
-    if disabled is True:
-        os.environ["DISABLE_IMSETTINGS"] = "1"  # this should override any XSETTINGS too
-    elif disabled is False and ("DISABLE_IMSETTINGS" in os.environ):
-        del os.environ["DISABLE_IMSETTINGS"]
-    v = {
-        "GTK_IM_MODULE": gtk_im_module,  # or "gtk-im-context-simple"?
-        "QT_IM_MODULE": qt_im_module,  # or "simple"?
-        "QT4_IM_MODULE": qt_im_module,
-        "CLUTTER_IM_MODULE": clutter_im_module,
-        "IMSETTINGS_MODULE": imsettings_module,  # or "xim"?
-        "XMODIFIERS": xmodifiers,
-        # not really sure what to do with those:
-        # "IMSETTINGS_DISABLE_DESKTOP_CHECK"    : "true",
-        # "IMSETTINGS_INTEGRATE_DESKTOP"        : "no"           #we're not a real desktop
-    }
-    os.environ.update(v)
-    return v
 
 
 def create_runtime_dir(xrd, uid, gid) -> str:
@@ -1057,18 +1004,9 @@ def _do_run_server(script_file: str, cmdline,
             commands += list(getattr(opts, start_prop.replace("-", "_")))
         if not commands:
             opts.start.append("xpra desktop-greeter")
-    if POSIX and not (
-            upgrading or shadowing or proxying or encoder
-    ) and configure_imsettings_env(opts.input_method) == "ibus":
-        # start ibus-daemon unless already specified in 'start':
-        if IBUS_DAEMON_COMMAND and not (any(x.find("ibus-daemon") >= 0 for x in opts.start) or any(
-            x.find("ibus-daemon") >= 0 for x in opts.start_late)
-        ):
-            # maybe we are inheriting one from a dead session?
-            ibus_daemon_pid = load_pid(session_dir, "ibus-daemon.pid")
-            if not ibus_daemon_pid or not os.path.exists("/proc") or not os.path.exists(f"/proc/{ibus_daemon_pid}"):
-                Logger("ibus").debug("adding ibus-daemon to late startup")
-                opts.start_late.insert(0, IBUS_DAEMON_COMMAND)
+    # make sure we don't start ibus in these modes:
+    if POSIX and not OSX and (upgrading or shadowing):
+        opts.input_method = "keep"
 
     # Start the Xvfb server first to get the display_name if needed
     odisplay_name = display_name

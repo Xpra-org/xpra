@@ -7,7 +7,7 @@ import os.path
 import signal
 from typing import Any
 
-from xpra.scripts.main import load_pid
+from xpra.util.pid import load_pid
 from xpra.scripts.session import load_session_file, save_session_file
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
@@ -17,7 +17,7 @@ log = Logger("dbus")
 
 def reload_dbus_attributes(display_name: str) -> tuple[int, dict[str, str]]:
     session_dir = os.environ.get("XPRA_SESSION_DIR", "")
-    dbus_pid = load_pid(session_dir, "dbus.pid")
+    dbus_pid = load_pid(os.path.join(session_dir, "dbus.pid"))
     try:
         dbus_env_data = load_session_file("dbus.env").decode("utf8")
         log(f"reload_dbus_attributes({display_name}) dbus_env_data={dbus_env_data}")

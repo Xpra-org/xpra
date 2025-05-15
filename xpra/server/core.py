@@ -29,7 +29,7 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
 from xpra.server.auth import AuthenticatedServer
-from xpra.server.pid import write_pidfile, rm_pidfile
+from xpra.util.pid import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,

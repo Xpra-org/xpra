@@ -30,6 +30,7 @@ from collections.abc import Callable, Iterable
 
 from xpra.common import SocketState, noerr, noop, get_refresh_rate_for_value, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
+from xpra.util.pid import load_pid
 from xpra.util.str_fn import nonl, csv, print_nested_dict, pver, sorted_nicely, bytestostr, sort_human
 from xpra.util.env import envint, envbool, osexpand, save_env, get_exec_env, OSEnvContext
 from xpra.util.parsing import parse_scaling
@@ -3810,20 +3811,6 @@ def kill_pid(pid: int, procname: str) -> None:
             error("Error sending SIGTERM signal to %r pid %i %s" % (procname, pid, e))
 
 
-def load_pid(session_dir: str, pid_filename: str) -> int:
-    if not session_dir or not pid_filename:
-        return 0
-    pid_file = os.path.join(session_dir, pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
-    if not os.path.exists(pid_file):
-        return 0
-    try:
-        with open(pid_file, "rb") as f:
-            return int(f.read().rstrip(b"\n\r"))
-    except (ValueError, OSError) as e:
-        error(f"failed to read {pid_file!r}: {e}")
-        return 0
-
-
 def run_clean(opts, args: Iterable[str]) -> ExitValue:
     no_gtk()
     try:
@@ -3859,6 +3846,9 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
                 clean[x] = d
         kill_displays = False
 
+    def load_session_pid(pidfile: str) -> int:
+        return load_pid(os.path.join(session_dir, pidfile))
+
     # also clean client sockets?
     dotxpra = DotXpra(opts.socket_dir, opts.socket_dirs)
     for display, session_dir in clean.items():
@@ -3874,7 +3864,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
                 print(f"session {display} is {state}")
                 print(f" the session directory {session_dir} has not been removed")
             continue
-        server_pid = load_pid(session_dir, "server.pid")
+        server_pid = load_session_pid("server.pid")
         if server_pid and POSIX and not OSX and os.path.exists(f"/proc/{server_pid}"):
             print(f"server process for session {display} is still running with pid {server_pid}")
             print(f" the session directory {session_dir!r} has not been removed")
@@ -3888,7 +3878,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
             r = stat_display_socket(x11_socket_path)
             if r:
                 # so the X11 server may still be running
-                xvfb_pid = load_pid(session_dir, "xvfb.pid")
+                xvfb_pid = load_session_pid("xvfb.pid")
                 if xvfb_pid and kill_displays:
                     kill_pid(xvfb_pid, "xvfb")
                 else:
@@ -3900,7 +3890,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
                     continue
         # print("session_dir: %s : %s" % (session_dir, state))
         for pid_filename in ("dbus.pid", "pulseaudio.pid",):
-            pid = load_pid(session_dir, pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
+            pid = load_session_pid(pid_filename)  # ie: "/run/user/1000/xpra/7/dbus.pid"
             kill_pid(pid, pid_filename.split(".")[0])
         try:
             session_files = os.listdir(session_dir)
@@ -4200,7 +4190,7 @@ def get_x11_display_info(display, sessions_dir="") -> dict[str, Any]:
                 with OSEnvContext(XPRA_SESSION_DIR=session_dir):
                     log(f"get_x11_display_info({display}, {sessions_dir}) using session directory {session_dir}")
                     try:
-                        xvfb_pid = load_pid(session_dir, "xvfb.pid")
+                        xvfb_pid = load_pid(session_dir, os.path.join(session_dir, "xvfb.pid"))
                         log(f"xvfb.pid({display})={xvfb_pid}")
                         if xvfb_pid and os.path.exists("/proc") and not os.path.exists(f"/proc/{xvfb_pid}"):
                             state = "UNKNOWN"

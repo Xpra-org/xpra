@@ -23,7 +23,7 @@ from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.scripts.parsing import parse_env, get_subcommands
-from xpra.server.pid import write_pid
+from xpra.util.pid import write_pid
 from xpra.server import ServerExitMode
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger

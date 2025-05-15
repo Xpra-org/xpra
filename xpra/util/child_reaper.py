@@ -203,7 +203,7 @@ class ChildReaper:
             procinfo.callback = None
             GLib.idle_add(cb, process)
         if procinfo.pidfile and procinfo.pidinode:
-            from xpra.server.pid import rm_pidfile
+            from xpra.util.pid import rm_pidfile
             rm_pidfile(procinfo.pidfile, procinfo.pidinode)
         # once it's dead, clear the reference to the process:
         # this should free up some resources

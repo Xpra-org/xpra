@@ -5,17 +5,21 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+import os
 import threading
-from time import monotonic
 from typing import Any
+from time import monotonic
+from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.util.system import is_X11
+from xpra.util.io import which
 from xpra.util.str_fn import bytestostr, Ellipsizer
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.common import noop, noerr
 from xpra.net.common import Packet
+from xpra.scripts.main import load_pid
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -24,7 +28,71 @@ GLib = gi_import("GLib")
 log = Logger("keyboard")
 ibuslog = Logger("keyboard", "ibus")
 
+IBUS_DAEMON_COMMAND = os.environ.get("XPRA_IBUS_DAEMON_COMMAND",
+                                     "ibus-daemon --xim --verbose --replace --panel=disable --desktop=xpra --daemonize")
 EXPOSE_IBUS_LAYOUTS = envbool("XPRA_EXPOSE_IBUS_LAYOUTS", True)
+
+
+def configure_imsettings_env(input_method: str) -> str:
+    im = input_method.lower()
+    if im in ("none", "no"):
+        # the default: set DISABLE_IMSETTINGS=1, fallback to xim
+        # that's because the 'ibus' 'immodule' breaks keyboard handling
+        # unless its daemon is also running - and we don't know if it is..
+        imsettings_env(True, "xim", "xim", "xim", "none", "@im=none")
+    elif im == "keep":
+        # do nothing and keep whatever is already set, hoping for the best
+        pass
+    elif im in ("xim", "ibus", "scim", "uim"):
+        # ie: (False, "ibus", "ibus", "IBus", "@im=ibus")
+        imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=" + im.lower())
+    else:
+        v = imsettings_env(True, im.lower(), im.lower(), im.lower(), im, "@im=" + im.lower())
+        ibuslog.warn(f"using input method settings: {v}")
+        ibuslog.warn(f"unknown input method specified: {input_method}")
+        ibuslog.warn(" if it is correct, you may want to file a bug to get it recognized")
+    return im
+
+
+def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module,
+                   imsettings_module, xmodifiers) -> dict[str, str]:
+    # for more information, see imsettings:
+    # https://code.google.com/p/imsettings/source/browse/trunk/README
+    if disabled is True:
+        os.environ["DISABLE_IMSETTINGS"] = "1"  # this should override any XSETTINGS too
+    elif disabled is False and ("DISABLE_IMSETTINGS" in os.environ):
+        del os.environ["DISABLE_IMSETTINGS"]
+    v = {
+        "GTK_IM_MODULE": gtk_im_module,  # or "gtk-im-context-simple"?
+        "QT_IM_MODULE": qt_im_module,  # or "simple"?
+        "QT4_IM_MODULE": qt_im_module,
+        "CLUTTER_IM_MODULE": clutter_im_module,
+        "IMSETTINGS_MODULE": imsettings_module,  # or "xim"?
+        "XMODIFIERS": xmodifiers,
+        # not really sure what to do with those:
+        # "IMSETTINGS_DISABLE_DESKTOP_CHECK"    : "true",
+        # "IMSETTINGS_INTEGRATE_DESKTOP"        : "no"           #we're not a real desktop
+    }
+    os.environ.update(v)
+    return v
+
+
+def may_start_ibus(start_command: Callable):
+    # maybe we are inheriting one from a dead session?
+    session_dir = os.environ["XPRA_SESSION_DIR"]
+    pidfile = os.path.join(session_dir, "ibus-daemon.pid")
+    ibus_daemon_pid = load_pid(pidfile)
+    # weak dependency on command subsystem:
+    if not ibus_daemon_pid or not os.path.exists("/proc") or not os.path.exists(f"/proc/{ibus_daemon_pid}"):
+        # start it late:
+        def late_start():
+            ibuslog(f"starting ibus: {IBUS_DAEMON_COMMAND!r}")
+            proc = start_command("ibus", IBUS_DAEMON_COMMAND, True)
+            if proc and proc.pid > 0:
+                from xpra.util.pid import write_pid
+                write_pid(pidfile, proc.pid)
+
+        GLib.idle_add(late_start)
 
 
 class KeyboardServer(StubServerMixin):
@@ -48,6 +116,7 @@ class KeyboardServer(StubServerMixin):
         # timers for cancelling key repeat when we get jitter
         self.key_repeat_timer = 0
 
+        self.input_method = "keep"
         self.ibus_layouts: dict[str, Any] = {}
 
     def init(self, opts) -> None:
@@ -55,6 +124,15 @@ class KeyboardServer(StubServerMixin):
             v = getattr(opts, f"keyboard_{option}", None)
             if v is not None:
                 self.keymap_options[option] = v
+
+        im = opts.input_method.lower()
+        if im == "auto":
+            ibus_daemon = which(IBUS_DAEMON_COMMAND.split(" ")[0])      # ie: "ibus-daemon"
+            if ibus_daemon:
+                im = "ibus"
+            else:
+                im = "none"
+        self.input_method = im
 
     def setup(self) -> None:
         if is_X11():
@@ -69,6 +147,10 @@ class KeyboardServer(StubServerMixin):
                     log.error("Error: keyboard and mouse disabled")
                 elif not X11Keyboard.hasXkb():
                     log.error("Error: limited keyboard support")
+            self.input_method = configure_imsettings_env(self.input_method)
+            if self.input_method == "ibus":
+                start_command: Callable = getattr(self, "start_command", noop)
+                may_start_ibus(start_command)
 
         ibuslog(f"input.setup() {EXPOSE_IBUS_LAYOUTS=}")
         self.watch_keymap_changes()

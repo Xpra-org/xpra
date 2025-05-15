@@ -9,6 +9,19 @@ from xpra.os_util import POSIX
 from xpra.log import Logger
 
 
+def load_pid(pid_file: str) -> int:
+    if not pid_file or not os.path.exists(pid_file):
+        return 0
+    try:
+        with open(pid_file, "rb") as f:
+            return int(f.read().rstrip(b"\n\r"))
+    except (ValueError, OSError) as e:
+        log = Logger("util")
+        log(f"load_pid({pid_file!r})", exc_info=True)
+        log.error(f"Error reading pid from {pid_file!r}: {e}")
+        return 0
+
+
 def write_pid(pidfile: str, pid: int) -> int:
     if pid <= 0:
         raise ValueError(f"invalid pid value {pid}")
