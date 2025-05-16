@@ -145,13 +145,28 @@ def get_xvfb_env(xvfb_executable: str) -> dict[str, str]:
     return env
 
 
+def can_use_fakescreenfps() -> bool:
+    from xpra.util.system import is_distribution_variant, get_distribution_version_id
+    if is_distribution_variant("Fedora"):
+        return True
+    if is_distribution_variant("Debian"):
+        return True
+    if any(is_distribution_variant(x) for x in (
+        "RedHat", "AlmaLinux", "RockyLinux", "OracleLinux",
+    )):
+        return get_distribution_version_id() == "10"
+    # not sure:
+    return False
+
+
 def patch_xvfb_command_fps(xvfb_cmd: list[str], fps: int) -> None:
     # find the ["-fakescreenfps"] argument:
     try:
         fps_arg = xvfb_cmd.index("-fakescreenfps")
         xvfb_cmd[fps_arg + 1] = str(fps)
     except ValueError:
-        xvfb_cmd += ["-fakescreenfps", str(fps)]
+        if can_use_fakescreenfps():
+            xvfb_cmd += ["-fakescreenfps", str(fps)]
 
 
 def patch_xvfb_command_geometry(xvfb_cmd: list[str], w: int, h: int, pixel_depth: int) -> None:

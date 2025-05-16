@@ -165,15 +165,9 @@ def add_ext_net_dpi_fps(cmd: list[str], depth=24, dpi=0, fps=0) -> list[str]:
         "-noreset",
         "-auth", "$XAUTHORITY",
     ]
-    if fps > 0:
-        from xpra.util.system import is_distribution_variant, get_distribution_version_id
-        has_fps = is_distribution_variant("Fedora")
-        has_fps |= is_distribution_variant("Debian")
-        has_fps |= get_distribution_version_id() == "10" and any(is_distribution_variant(x) for x in (
-            "RedHat", "AlmaLinux", "RockyLinux", "OracleLinux",
-        ))
-        if has_fps:
-            cmd += ["-fakescreenfps", str(fps)]
+    from xpra.x11.vfb_util import can_use_fakescreenfps
+    if fps > 0 and can_use_fakescreenfps():
+        cmd += ["-fakescreenfps", str(fps)]
     if dpi > 0:
         cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
