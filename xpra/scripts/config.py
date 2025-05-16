@@ -270,13 +270,14 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
     if Xdummy_ENABLED is None:
         debug("Xdummy support unspecified, will try to detect")
         # RHEL 10 needs to use `xpra_weston_xvfb` instead of Xorg:
-        if os.path.exists("/etc/redhat-release"):
-            with open("/etc/redhat-release") as f:
-                relinfo = f.read().rstrip("\n\r")
-                debug(f" found redhat-release: {relinfo!r}")
-                if relinfo.find("release 10") >= 0:
-                    debug(" using `xpra_weston_xvfb` on RHEL 10")
-                    return get_weston_Xwayland_command(dpi)
+
+        from xpra.util.system import is_distribution_variant, get_distribution_version_id
+        rhel10 = get_distribution_version_id() == "10" and any(is_distribution_variant(x) for x in (
+            "RedHat", "AlmaLinux", "RockyLinux", "OracleLinux",
+        ))
+        if rhel10:
+            debug(" using `xpra_weston_xvfb` on RHEL 10")
+            return get_weston_Xwayland_command(dpi)
     return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn, dpi=dpi, fps=fps)
 
 
