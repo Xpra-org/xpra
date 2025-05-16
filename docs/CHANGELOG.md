@@ -1,11 +1,15 @@
 # Changelog
 
-## [6.3.1] 2025-05-06
+## [6.3.1] 2025-05-16
 * Platforms, build and packaging:
     * [modular installations also need filesystem package](https://github.com/Xpra-org/xpra/commit/bc67164fe76b03bb1d0287396c63bcf4fc1e0dd6)
     * [add plucky for `install-repo` subcommand](https://github.com/Xpra-org/xpra/commit/db5cc7303938d60b9a1619c672b11bcc88268ea3)
     * [make it easier to run unit tests with extra cythonization](https://github.com/Xpra-org/xpra/commit/0dcb32cde149f0954e38ac86d68bba7c2b6f6d95)
     * [add explicit weak dependency on notification library](https://github.com/Xpra-org/xpra/commit/60dfb85271865e329c45f1c03a9adf28fc48bb18)
+    * [sbom path should be ignored](https://github.com/Xpra-org/xpra/commit/92fa0dcd1d8b877c04e8351b89c8b5dc46333e20)
+    * [recommend `xpra-x11` package so `xpra` installs working servers on Debian](https://github.com/Xpra-org/xpra/commit/48fa5b829b8514a1c6ae939e5126b6d57802a566)
+* Major:
+    * [`pam` authentication fails](https://github.com/Xpra-org/xpra/commit/6a4eab3a21db27a8d60d66572ee7cecb13c1518d)
 * Minor:
     * [only resume audio if it was suspended](https://github.com/Xpra-org/xpra/commit/6a3ae04da0bf871ab69454cb5b2e748cdad5169f)
     * [wait before retrying socket](https://github.com/Xpra-org/xpra/commit/7e72cfaef85f183cf87ccce4732e2dc95d956781)
@@ -17,12 +21,27 @@
     * [handle missing configuration directories more gracefully](https://github.com/Xpra-org/xpra/commit/8eb581d7ba6d2ef31600ab87cffb8fe66c8d09e2)
     * [show display access errors](https://github.com/Xpra-org/xpra/commit/48351f0581efcd74de1bef990ba8060f2f454e46)
     * [Xephyr startup errors without geometry](https://github.com/Xpra-org/xpra/commit/302a33b07148fdfd03499c3b66a1e9acbdccff25)
+    * [potential errors in OpenGL backend](https://github.com/Xpra-org/xpra/commit/0a8692069c298c48d9a45b6c4a5683678bdc4e78)
+    * [video codec filtering broken when options are specified](https://github.com/Xpra-org/xpra/commit/f82cbe0f85ad42d80f304ee1b2778ff3a27da06b)
+* Monitor server:
+    * [does support 8-bit pixel depth](https://github.com/Xpra-org/xpra/commit/1b826c6e164282c007b7adf335ca26edcf3635de)
+    * [errors when too many event listeners are registered](https://github.com/Xpra-org/xpra/commit/d3a5b99dcbe5bea927ea460d089902e52ae5a544)
+    * [configuring monitors may cause crashes](https://github.com/Xpra-org/xpra/commit/4f9af8b87672fc8e0eaf11c5e8cdebf773d5a974)
+* Encodings:
+    * [encoder server should default to having sharing enabled](https://github.com/Xpra-org/xpra/commit/a5d9de867507debff6f012734f979fa9b4e57556)
+    * [encoder server failures when lz4 is not enabled](https://github.com/Xpra-org/xpra/commit/093fa4e0fc58a40af41bdab42e6fb4d593f8f45d)
+    * [`mmap` cannot be used to send 8-bit data](https://github.com/Xpra-org/xpra/commit/05087f9f1ebd41d17764e09c1a7a9d27884fb564)
 * Cosmetic:
     * [avoid tray errors when connection fails](https://github.com/Xpra-org/xpra/commit/67cb487de400bea4c312e826a5f3f1309b0aa3df)
     * [missing OpenGL error message](https://github.com/Xpra-org/xpra/commit/fdd5322f438e96179b61ef7456cd184683078867)
     * [silence `uinput` missing message](https://github.com/Xpra-org/xpra/commit/3f2c4bcc14f240b0800648b16ec833f045c57e80)
     * type hint fixes: [`mmap`](https://github.com/Xpra-org/xpra/commit/7fffe148e6f96dc21ea16f361d599e287db64697), [vfb log](https://github.com/Xpra-org/xpra/commit/dde36fa4545970bd78265d90187a4a2016f5dae6)
     * [`mmap` madvise platform support detection](https://github.com/Xpra-org/xpra/commit/a8bc1eb24a7c64ab77b5380661d03022d6caf4c6)
+    * [handle missing 'debug' control command arguments more gracefully](https://github.com/Xpra-org/xpra/commit/be3c8591d410cbbbf2746c7986c7f6620f1175fe)
+    * [unused and misnamed attribute](https://github.com/Xpra-org/xpra/commit/3217e690ca443d49e3c9423fe638b914a5d1a004)
+    * [don't log a message when NOWARN encoders are missing](https://github.com/Xpra-org/xpra/commit/bbd0d9d457ede1085d91faf43ebdbbfc2184db69)
+    * [unused function returns invalid data](https://github.com/Xpra-org/xpra/commit/026aa13f4cd19f9cea35c9b5b1ff1f64ac551557)
+    * [control command client validation errors](https://github.com/Xpra-org/xpra/commit/b29eb50f6ea7400f23c6f9b8226a29d2ac96515b)
 
 ## [6.3] 2025-04-23
 * Platforms, build and packaging:

@@ -1008,12 +1008,16 @@ fi
 
 
 %changelog
-* Tue May 06 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
+* Fri May 16 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:
    modular installations also need filesystem package
    add plucky for `install-repo` subcommand
    make it easier to run unit tests with extra cythonization
    add explicit weak dependency on notification library
+   sbom path should be ignored
+   recommend `xpra-x11` package so `xpra` installs working servers on Debian
+- Major:
+   `pam` authentication fails
 - Minor:
    only resume audio if it was suspended
    wait before retrying socket
@@ -1025,11 +1029,26 @@ fi
    handle missing configuration directories more gracefully
    show display access errors
    Xephyr startup errors without geometry
+   potential errors in OpenGL backend
+   video codec filtering broken when options are specified
+- Monitor server:
+   does support 8-bit pixel depth
+   errors when too many event listeners are registered
+   configuring monitors may cause crashes
+- Encodings:
+   encoder server should default to having sharing enabled
+   encoder server failures when lz4 is not enabled
+   `mmap` cannot be used to send 8-bit data
 - Cosmetic:
    avoid tray errors when connection fails
    missing OpenGL error message
    type hint fixes: `mmap`, vfb log
    `mmap` madvise platform support detection
+   handle missing 'debug' control command arguments more gracefully
+   unused and misnamed attribute
+   don't log a message when NOWARN encoders are missing
+   unused function returns invalid data
+   control command client validation errors
 
 * Wed Apr 23 2025 Antoine Martin <antoine@xpra.org> 6.3-10
 - Platforms, build and packaging:

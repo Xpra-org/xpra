@@ -4,6 +4,10 @@ xpra (6.3.1-1) UNRELEASED; urgency=low
     add plucky for `install-repo` subcommand
     make it easier to run unit tests with extra cythonization
     add explicit weak dependency on notification library
+    sbom path should be ignored
+    recommend `xpra-x11` package so `xpra` installs working servers on Debian
+  * Major:
+    `pam` authentication fails
   * Minor:
     only resume audio if it was suspended
     wait before retrying socket
@@ -15,13 +19,28 @@ xpra (6.3.1-1) UNRELEASED; urgency=low
     handle missing configuration directories more gracefully
     show display access errors
     Xephyr startup errors without geometry
+    potential errors in OpenGL backend
+    video codec filtering broken when options are specified
+  * Monitor server:
+    does support 8-bit pixel depth
+    errors when too many event listeners are registered
+    configuring monitors may cause crashes
+  * Encodings:
+    encoder server should default to having sharing enabled
+    encoder server failures when lz4 is not enabled
+    `mmap` cannot be used to send 8-bit data
   * Cosmetic:
     avoid tray errors when connection fails
     missing OpenGL error message
     type hint fixes: `mmap`, vfb log
     `mmap` madvise platform support detection
+    handle missing 'debug' control command arguments more gracefully
+    unused and misnamed attribute
+    don't log a message when NOWARN encoders are missing
+    unused function returns invalid data
+    control command client validation errors
 
- -- Antoine Martin <antoine@xpra.org>  Tue, 06 May 2025 22:41:34 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 16 May 2025 19:09:46 +0700
 
 xpra (6.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
