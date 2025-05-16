@@ -89,6 +89,7 @@ class HttpServer(StubServerMixin):
     PREFIX = "http"
 
     def __init__(self):
+        self.menu_provider = None
         self._http_scripts = {}
 
     def init(self, opts) -> None:
