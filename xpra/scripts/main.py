@@ -1742,12 +1742,17 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
     if opts.quality != -1 and (opts.quality < 0 or opts.quality > 100):
         error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
+    def basic():
+        from xpra.client.base import features
+        features.file_transfer = features.control = features.debug = False
+
     if mode in (
             "info", "id", "connect-test", "control", "version", "detach",
             "show-menu", "show-about", "show-session-info",
     ) and extra_args:
         opts.socket_dirs += opts.client_socket_dirs or []
     if mode == "screenshot":
+        basic()
         from xpra.client.base.command import ScreenshotXpraClient
         if not extra_args:
             error_cb("invalid number of arguments for screenshot mode")
@@ -1755,52 +1760,65 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         extra_args = extra_args[1:]
         app = ScreenshotXpraClient(opts, screenshot_filename)
     elif mode == "info":
+        basic()
         from xpra.client.base.command import InfoXpraClient
         app = InfoXpraClient(opts)
     elif mode == "id":
+        basic()
         from xpra.client.base.command import IDXpraClient
         app = IDXpraClient(opts)
     elif mode in ("show-menu", "show-about", "show-session-info"):
+        basic()
         from xpra.client.base.command import RequestXpraClient
         app = RequestXpraClient(request=mode, opts=opts)
     elif mode == "connect-test":
+        basic()
         from xpra.client.base.command import ConnectTestXpraClient
         app = ConnectTestXpraClient(opts)
     elif mode == "_monitor":
+        basic()
         from xpra.client.base.command import MonitorXpraClient
         app = MonitorXpraClient(opts)
     elif mode == "shell":
+        basic()
         from xpra.client.base.command import ShellXpraClient
         app = ShellXpraClient(opts)
     elif mode == "control":
+        basic()
         from xpra.client.base.command import ControlXpraClient
         if len(extra_args) < 1:
             error_cb("not enough arguments for 'control' mode, try 'help'")
         extra_args, args = split_display_arg(extra_args)
         app = ControlXpraClient(opts, args)
     elif mode == "run":
+        basic()
         from xpra.client.base.command import RunClient
         if len(extra_args) < 1:
             error_cb("not enough arguments for 'run' mode, you must specify the command to execute")
         extra_args, args = split_display_arg(extra_args)
         app = RunClient(opts, args)
     elif mode == "print":
+        basic()
         from xpra.client.base.command import PrintClient
         if len(extra_args) <= 1:
             error_cb("not enough arguments for 'print' mode")
         extra_args, args = split_display_arg(extra_args)
         app = PrintClient(opts, args)
     elif mode == "qrcode":
+        basic()
         check_gtk()
         from xpra.gtk.dialogs.qrcode_client import QRCodeClient
         app = QRCodeClient(opts)
     elif mode == "version":
+        basic()
         from xpra.client.base.command import VersionXpraClient
         app = VersionXpraClient(opts)
     elif mode == "detach":
+        basic()
         from xpra.client.base.command import DetachXpraClient
         app = DetachXpraClient(opts)
     elif request_mode and opts.attach is not True:
+        basic()
         from xpra.client.base.command import RequestStartClient
         sns = get_start_new_session_dict(opts, request_mode, extra_args)
         extra_args = [f"socket:{opts.system_proxy_socket}"]
