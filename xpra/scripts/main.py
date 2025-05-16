@@ -626,6 +626,10 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
             "runner",
     ):
         return run_server(script_file, cmdline, error_cb, options, args, full_mode, defaults)
+    if mode == "run" and args and args[0].startswith(":"):
+        # for local displays, run via "_proxy_run"
+        # which will use plain-X11 connections if needed:
+        return run_proxy_run(error_cb, options, script_file, cmdline, args)
     if mode in (
             "attach", "listen", "detach",
             "screenshot", "version", "info", "id",
@@ -753,6 +757,9 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         return 0
     if mode == "html5":
         return run_html5()
+    if mode == "_proxy_run":
+        nox()
+        return run_proxy_run(error_cb, options, script_file, cmdline, args)
     if mode == "_proxy" or mode.startswith("_proxy_"):
         nox()
         return run_proxy(error_cb, options, script_file, cmdline, args, mode, defaults)
@@ -1718,13 +1725,30 @@ def is_display_arg(arg: str) -> bool:
     for prefix in SOCKET_TYPES:
         if arg.startswith(f"{prefix}://"):
             return True
-    return False
+    # could still be a naked display number without the ":" prefix:
+    try:
+        return int(arg) >= 0
+    except ValueError:
+        return False
 
 
 def split_display_arg(args: list[str]) -> tuple[list[str], list[str]]:
+    if not args:
+        return [], []
     if is_display_arg(args[0]):
         return args[:1], args[1:]
     return [], args
+
+
+# `run` mode may have to return a fake client "App" object with two methods:
+class FakeClientApp:
+    @staticmethod
+    def run():
+        return ExitCode.OK
+
+    @staticmethod
+    def cleanup():
+        pass
 
 
 def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: list[str], mode: str):
@@ -1746,6 +1770,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         from xpra.client.base import features
         features.file_transfer = features.control = features.debug = False
 
+    run_args = []
     if mode in (
             "info", "id", "connect-test", "control", "version", "detach",
             "show-menu", "show-about", "show-session-info",
@@ -1795,8 +1820,8 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
         from xpra.client.base.command import RunClient
         if len(extra_args) < 1:
             error_cb("not enough arguments for 'run' mode, you must specify the command to execute")
-        extra_args, args = split_display_arg(extra_args)
-        app = RunClient(opts, args)
+        extra_args, run_args = split_display_arg(extra_args)
+        app = RunClient(opts, run_args)
     elif mode == "print":
         basic()
         from xpra.client.base.command import PrintClient
@@ -1844,7 +1869,17 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
                 # cmdline[i] = uri.replace(opts.password, "*"*len(opts.password))
                 cmdline[i] = uri.replace(opts.password, "********")
                 set_proc_title(" ".join(cmdline))
-        connect_to_server(app, display_desc, opts)
+        # use a custom proxy command for run mode:
+        if mode == "run" and display_desc.get("type", "") == "ssh":
+            # when using the ssh transport,
+            # don't try to connect to a server using the xpra protocol which may not exist,
+            # the ssh command will do what is needed by calling `_proxy_run`:
+            display_desc["proxy_command"] = ["_proxy_run"]
+            display_desc["display_as_args"] += run_args
+            connect_or_fail(display_desc, opts)
+            return FakeClientApp()
+        else:
+            connect_to_server(app, display_desc, opts)
     except ValueError as e:
         einfo = str(e) or type(e)
         app.show_progress(100, f"error: {einfo}")
@@ -3409,6 +3444,55 @@ def identify_new_socket(proc, dotxpra, existing_sockets, matching_display, new_s
                 warn(f"error during server process detection: {e}")
         time.sleep(0.10)
     raise InitException("failed to identify the new server display!")
+
+
+def run_proxy_run(error_cb: Callable, options, script_file: str, cmdline: list[str], args: list[str]) -> ExitValue:
+    display_args, cmd_args = split_display_arg(args)
+    # print(f"{display_args=} {cmd_args=}")
+
+    def is_live(display: str) -> bool:
+        dotxpra = DotXpra(options.socket_dir, options.socket_dirs)
+        return dotxpra.get_display_state(display) == SocketState.LIVE
+
+    try:
+        display_desc = pick_display(error_cb, options, display_args, cmdline)
+        # print(f"picked display: {display_desc}")
+    except InitException:
+        if display_args:
+            # the display was specified, so we can't continue:
+            raise
+        display_desc = {}
+
+    if not display_desc and not display_args:
+        # try harder, maybe there is a single display that isn't managed by an xpra session:
+        displays = get_displays_info(display_names=display_args if display_args else None,
+                                     sessions_dir=options.sessions_dir)
+        if len(displays) == 1:
+            display_desc = tuple(displays.values())[0]
+
+    display = display_desc.get("display_name", "") or display_desc.get("display", "")
+    if not display:
+        error_cb("unable to locate the display to run on")
+
+    # now let's decide how to run the command on this display:
+    if is_live(display):
+        # found a live xpra socket, use the `xpra run` client:
+        return run_client(script_file, cmdline, error_cb, options, args, "run")
+
+    from xpra.util.daemon import daemonize
+    from queue import SimpleQueue
+    dpid = SimpleQueue()
+
+    def preexec() -> None:
+        daemonize()
+        dpid.put(os.getpid())
+        sys.stdout.write("command started with pid %s\n" % os.getpid())
+
+    env = os.environ.copy()
+    env["DISPLAY"] = display
+    proc = Popen(cmd_args, env=env, preexec_fn=preexec)
+    proc.poll()
+    return 0
 
 
 def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], args: list[str], mode: str, defaults) -> ExitValue:
