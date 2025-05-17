@@ -13,8 +13,10 @@ from typing import Any
 from collections.abc import Callable, Sequence
 from importlib import import_module
 
-from xpra.net.bytestreams import get_socket_config
+from xpra.os_util import POSIX
+from xpra.util.str_fn import print_nested_dict, csv, bytestostr
 from xpra.util.version import parse_version
+from xpra.net.bytestreams import get_socket_config
 from xpra.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.log import Logger, enable_color, consume_verbose_argv
 
@@ -419,73 +421,76 @@ def get_info() -> dict[str, Any]:
     return i
 
 
+def print_interface_info(iface) -> None:
+    try:
+        print("* %s (index=%s)" % (iface.ljust(20), socket.if_nametoindex(iface)))
+    except OSError:
+        print(f"* {iface}")
+    from xpra.platform.netdev_query import get_interface_info
+    from xpra.net.device_info import get_NM_adapter_type
+    netifaces = import_netifaces()
+    addresses = netifaces.ifaddresses(iface)  # @UndefinedVariable pylint: disable=no-member
+    for addr, defs in addresses.items():
+        if addr in (socket.AF_INET, socket.AF_INET6):
+            for d in defs:
+                ip = d.get("addr")
+                if ip:
+                    stype = {
+                        socket.AF_INET: "IPv4",
+                        socket.AF_INET6: "IPv6",
+                    }[addr]
+                    print(f" * {stype}:     {ip}")
+                    if POSIX:
+                        from xpra.net.socket_util import create_tcp_socket
+                        sock = None
+                        try:
+                            sock = create_tcp_socket(ip, 0)
+                            sockfd = sock.fileno()
+                            info = get_interface_info(sockfd, iface)
+                            if info:
+                                print("  %s" % info)
+                        finally:
+                            if sock:
+                                sock.close()
+    info = get_interface_info(0, iface)
+    dtype = get_NM_adapter_type(iface, ignore_inactive=False)
+    if dtype:
+        info["type"] = dtype
+    if info:
+        print(f"  {info}")
+
+
+def pver(v) -> str:
+    if isinstance(v, (tuple, list)):
+        s = ""
+        lastx = None
+        for x in v:
+            if lastx is not None:
+                # dot separated numbers
+                if isinstance(lastx, int):
+                    s += "."
+                else:
+                    s += ", "
+            s += bytestostr(x)
+            lastx = x
+        return s
+    if isinstance(v, bytes):
+        v = bytestostr(v)
+    if isinstance(v, str) and v.startswith("v"):
+        return v[1:]
+    return str(v)
+
+
 def main() -> int:  # pragma: no cover
     # pylint: disable=import-outside-toplevel
-    from xpra.os_util import POSIX
-    from xpra.util.str_fn import print_nested_dict
-    from xpra.util.str_fn import csv
-    from xpra.net.device_info import get_NM_adapter_type
     from xpra.platform import program_context
-    from xpra.platform.netdev_query import get_interface_info
     with program_context("Network-Info", "Network Info"):
         enable_color()
         consume_verbose_argv(sys.argv, "network")
         print("Network interfaces found:")
         netifaces = import_netifaces()
         for iface in get_interfaces():
-            try:
-                print("* %s (index=%s)" % (iface.ljust(20), socket.if_nametoindex(iface)))
-            except OSError:
-                print(f"* {iface}")
-            addresses = netifaces.ifaddresses(iface)  # @UndefinedVariable pylint: disable=no-member
-            for addr, defs in addresses.items():
-                if addr in (socket.AF_INET, socket.AF_INET6):
-                    for d in defs:
-                        ip = d.get("addr")
-                        if ip:
-                            stype = {
-                                socket.AF_INET: "IPv4",
-                                socket.AF_INET6: "IPv6",
-                            }[addr]
-                            print(f" * {stype}:     {ip}")
-                            if POSIX:
-                                from xpra.net.socket_util import create_tcp_socket
-                                try:
-                                    sock = create_tcp_socket(ip, 0)
-                                    sockfd = sock.fileno()
-                                    info = get_interface_info(sockfd, iface)
-                                    if info:
-                                        print("  %s" % info)
-                                finally:
-                                    sock.close()
-            info = get_interface_info(0, iface)
-            dtype = get_NM_adapter_type(iface, ignore_inactive=False)
-            if dtype:
-                info["type"] = dtype
-            if info:
-                print(f"  {info}")
-
-        from xpra.util.str_fn import bytestostr
-
-        def pver(v) -> str:
-            if isinstance(v, (tuple, list)):
-                s = ""
-                lastx = None
-                for x in v:
-                    if lastx is not None:
-                        # dot separated numbers
-                        if isinstance(lastx, int):
-                            s += "."
-                        else:
-                            s += ", "
-                    s += bytestostr(x)
-                    lastx = x
-                return s
-            if isinstance(v, bytes):
-                v = bytestostr(v)
-            if isinstance(v, str) and v.startswith("v"):
-                return v[1:]
-            return str(v)
+            print_interface_info(iface)
 
         print("")
         print("Gateways found:")
