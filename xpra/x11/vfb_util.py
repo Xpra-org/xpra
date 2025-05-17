@@ -377,7 +377,8 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
     return xvfb, display_name
 
 
-def start_xvfb_standalone(xvfb_cmd: list[str], sessions_dir: str, pixel_depth=0, fps=0, display_name="") -> int:
+def start_xvfb_standalone(xvfb_cmd: list[str], sessions_dir: str, pixel_depth=0, fps=0, display_name="",
+                          daemon=False) -> int:
     # we may have to tweak the environment to emulate having an xpra session
     # as the default xvfb commands may refer to $XAUTHORITY and $XPRA_SESSION_DIR
     xauthority = os.environ.get("XAUTHORITY", "")
@@ -400,7 +401,16 @@ def start_xvfb_standalone(xvfb_cmd: list[str], sessions_dir: str, pixel_depth=0,
     if actual_display_name != display_name:
         print(f"display {actual_display_name!r} started")
     print(f"xvfb pid: {xvfb.pid}")
-    return xvfb.wait()
+    if daemon:
+        return 0
+    try:
+        return xvfb.wait()
+    except KeyboardInterrupt:
+        try:
+            xvfb.terminate()
+        except OSError as e:
+            print(f"failed to terminate xvfb process: {e}")
+        return 128-signal.SIGINT
 
 
 def kill_xvfb(xvfb_pid: int) -> None:

@@ -909,7 +909,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         fps = get_refresh_rate_for_value(options.refresh_rate, 60) if options.refresh_rate else 0
         xvfb_cmd = xvfb_command(options.xvfb, options.pixel_depth, options.dpi, fps)
         from xpra.x11.vfb_util import start_xvfb_standalone
-        return start_xvfb_standalone(xvfb_cmd, options.sessions_dir, options.pixel_depth, fps, display)
+        return start_xvfb_standalone(xvfb_cmd, options.sessions_dir, options.pixel_depth, fps, display, options.daemon)
     if mode == "sbom":
         return run_sbom(args)
     if mode == "showconfig":
@@ -3470,17 +3470,22 @@ def run_proxy_run(error_cb: Callable, options, script_file: str, cmdline: list[s
         # found a live xpra socket, use the `xpra run` client:
         return run_client(script_file, cmdline, error_cb, options, args, "run")
 
+    env = os.environ.copy()
+    env["DISPLAY"] = display
+    run_daemon(cmd_args, env=env)
+    return 0
+
+
+def run_daemon(cmd: list[str], **kwargs):
     from xpra.util.daemon import daemonize
 
     def preexec() -> None:
         daemonize()
         sys.stdout.write("command started with pid %s\n" % os.getpid())
 
-    env = os.environ.copy()
-    env["DISPLAY"] = display
-    proc = Popen(cmd_args, env=env, preexec_fn=preexec)
+    proc = Popen(cmd, preexec_fn=preexec, **kwargs)
     proc.poll()
-    return 0
+    return proc
 
 
 def run_proxy(error_cb: Callable, opts, script_file: str, cmdline: list[str], args: list[str], mode: str, defaults) -> ExitValue:
