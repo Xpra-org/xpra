@@ -236,7 +236,7 @@ def load_command_to_type() -> dict[str, str]:
                 log("Entry '%s': command=%s, categories=%s", name, command, categories)
                 cmd = os.path.basename(command.split(" ")[0])
                 if cmd and categories:
-                    ctype = find_category_type()
+                    ctype = find_category_type(categories)
                     if ctype:
                         command_to_type[cmd] = str(ctype)
     log("load_command_to_type()=%s", command_to_type)
