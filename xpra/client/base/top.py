@@ -165,6 +165,22 @@ def get_window_info(wi: typedict) -> Sequence[tuple[str, int]]:
     return tuple((x, WHITE) for x in info if x)
 
 
+def get_proxy_info_str(proxy_info: dict) -> str:
+    if not proxy_info:
+        return ""
+    td = typedict(proxy_info)
+    proxy_platform_info = typedict(td.dictget("platform", {}))
+    proxy_platform = proxy_platform_info.strget("")
+    proxy_release = proxy_platform_info.strget("release")
+    proxy_build_info = typedict(td.dictget("build", {}))
+    proxy_version = proxy_build_info.strget("version")
+    proxy_distro = td.strget("linux_distribution")
+    return " via: %s proxy version %s" % (
+        platform_name(proxy_platform, proxy_distro or proxy_release),
+        std(proxy_version or "unknown")
+    )
+
+
 class TopClient:
 
     def __init__(self, opts):
@@ -552,18 +568,7 @@ class TopSessionClient(InfoTimerClient):
             bits = python_info.intget("bits", 0)
             bitsstr = "" if bits == 0 else f" {bits}-bit"
             server_str = f"Xpra {mode} server version {vstr}{bitsstr}"
-            proxy_info = self.slidictget("proxy")
-            if proxy_info:
-                proxy_platform_info = self.td(proxy_info.dictget("platform", {}))
-                proxy_platform = proxy_platform_info.strget("")
-                proxy_release = proxy_platform_info.strget("release")
-                proxy_build_info = self.td(proxy_info.dictget("build", {}))
-                proxy_version = proxy_build_info.strget("version")
-                proxy_distro = proxy_info.strget("linux_distribution")
-                server_str += " via: %s proxy version %s" % (
-                    platform_name(proxy_platform, proxy_distro or proxy_release),
-                    std(proxy_version or "unknown")
-                )
+            server_str += get_proxy_info_str(self.slidictget("proxy"))
             addstr_main(1, 0, server_str)
             if height <= 2:
                 return

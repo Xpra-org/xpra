@@ -84,6 +84,38 @@ init_display_source()
 from xpra.client.gtk3.window.base import HAS_X11_BINDINGS  # noqa: E402
 
 
+def get_local_cursor(cursor_name: str):
+    display = Gdk.Display.get_default()
+    if not cursor_name or not display:
+        return None
+    try:
+        cursor = Gdk.Cursor.new_from_name(display, cursor_name)
+    except TypeError:
+        cursorlog("Gdk.Cursor.new_from_name%s", (display, cursor_name), exc_info=True)
+        cursor = None
+    if cursor:
+        cursorlog("Gdk.Cursor.new_from_name(%s, %s)=%s", display, cursor_name, cursor)
+    else:
+        gdk_cursor = cursor_types.get(cursor_name.upper())
+        cursorlog("gdk_cursor(%s)=%s", cursor_name, gdk_cursor)
+        if gdk_cursor:
+            try:
+                cursor = Gdk.Cursor.new_for_display(display, gdk_cursor)
+                cursorlog("Cursor.new_for_display(%s, %s)=%s", display, gdk_cursor, cursor)
+            except TypeError as e:
+                log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
+                if first_time("cursor:%s" % cursor_name.upper()):
+                    log.error("Error creating cursor %s: %s", cursor_name.upper(), e)
+    if cursor:
+        pixbuf = cursor.get_image()
+        cursorlog("image=%s", pixbuf)
+        return pixbuf
+    if cursor_name not in missing_cursor_names:
+        cursorlog("cursor name '%s' not found", cursor_name)
+        missing_cursor_names.add(cursor_name)
+    return None
+
+
 def get_group_ref(metadata: typedict) -> str:
     for ref in WINDOW_GROUPING:
         if ref in metadata:
@@ -916,33 +948,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                   Ellipsizer(cursor_data),
                   len(cursor_data) >= 10, bool(cursor_types), self.xscale, self.yscale, USE_LOCAL_CURSORS)
         pixbuf = None
-        if len(cursor_data) >= 10 and cursor_types:
+        if len(cursor_data) >= 10 and cursor_types and USE_LOCAL_CURSORS:
             cursor_name = bytestostr(cursor_data[9])
-            if cursor_name and USE_LOCAL_CURSORS:
-                try:
-                    cursor = Gdk.Cursor.new_from_name(display, cursor_name)
-                except TypeError:
-                    cursorlog("Gdk.Cursor.new_from_name%s", (display, cursor_name), exc_info=True)
-                    cursor = None
-                if cursor:
-                    cursorlog("Gdk.Cursor.new_from_name(%s, %s)=%s", display, cursor_name, cursor)
-                else:
-                    gdk_cursor = cursor_types.get(cursor_name.upper())
-                    cursorlog("gdk_cursor(%s)=%s", cursor_name, gdk_cursor)
-                    if gdk_cursor:
-                        try:
-                            cursor = Gdk.Cursor.new_for_display(display, gdk_cursor)
-                            cursorlog("Cursor.new_for_display(%s, %s)=%s", display, gdk_cursor, cursor)
-                        except TypeError as e:
-                            log("new_Cursor_for_display(%s, %s)", display, gdk_cursor, exc_info=True)
-                            if first_time("cursor:%s" % cursor_name.upper()):
-                                log.error("Error creating cursor %s: %s", cursor_name.upper(), e)
-                if cursor:
-                    pixbuf = cursor.get_image()
-                    cursorlog("image=%s", pixbuf)
-                elif cursor_name not in missing_cursor_names:
-                    cursorlog("cursor name '%s' not found", cursor_name)
-                    missing_cursor_names.add(cursor_name)
+            pixbuf = get_local_cursor(cursor_name)
         # create cursor from the pixel data:
         encoding, _, _, w, h, xhot, yhot, serial, pixels = cursor_data[0:9]
         encoding = bytestostr(encoding)
@@ -1150,6 +1158,34 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         # wait for the main loop to run:
         GLib.timeout_add(2 * 1000, delayed_notify)
 
+    def glinit_error(self, msg: str, err) -> None:
+        opengllog("OpenGL initialization error", exc_info=True)
+        self.GLClientWindowClass = None
+        self.client_supports_opengl = False
+        opengllog.error("%s", msg)
+        for x in str(err).split("\n"):
+            opengllog.error(" %s", x)
+        self.opengl_props["info"] = str(err)
+        self.opengl_props["enabled"] = False
+        self.opengl_setup_failure(body=str(err))
+
+    def glinit_warn(self, warning: str) -> None:
+        if self.opengl_enabled and not self.opengl_force:
+            self.opengl_enabled = False
+            opengllog.warn("Warning: OpenGL is disabled:")
+        opengllog.warn(" %s", warning)
+
+    def validate_texture_size(self) -> bool:
+        mww, mwh = self.max_window_size
+        lim = self.gl_texture_size_limit
+        if lim >= 16 * 1024:
+            return True
+        if mww > 0 and mww > lim:
+            return False
+        if mwh > 0 and mwh > lim:
+            return False
+        return True
+
     # OpenGL bits:
     def init_opengl(self, enable_opengl: str) -> None:
         opengllog(f"init_opengl({enable_opengl})")
@@ -1183,17 +1219,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             opengllog("%s()=%s", platform_gl_check, warning)
             if warning:
                 warnings.append(warning)
-
-        def err(msg: str, err) -> None:
-            opengllog("OpenGL initialization error", exc_info=True)
-            self.GLClientWindowClass = None
-            self.client_supports_opengl = False
-            opengllog.error("%s", msg)
-            for x in str(err).split("\n"):
-                opengllog.error(" %s", x)
-            self.opengl_props["info"] = str(err)
-            self.opengl_props["enabled"] = False
-            self.opengl_setup_failure(body=str(err))
 
         if warnings:
             if enable_option in ("", "auto"):
@@ -1234,36 +1259,19 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 renderer = parts[0].strip()
             driver_info = renderer or self.opengl_props.get("vendor") or "unknown card"
 
-            def glwarn(warning: str) -> None:
-                if self.opengl_enabled and not self.opengl_force:
-                    self.opengl_enabled = False
-                    opengllog.warn("Warning: OpenGL is disabled:")
-                opengllog.warn(" %s", warning)
-
             from xpra.opengl.check import MIN_SIZE
             if min(self.gl_max_viewport_dims) < MIN_SIZE:
-                glwarn("the maximum viewport size is too low: %s" % (self.gl_max_viewport_dims,))
+                self.glinit_warn("the maximum viewport size is too low: %s" % (self.gl_max_viewport_dims,))
             if self.gl_texture_size_limit < MIN_SIZE:
-                glwarn("the texture size limit is too low: %s" % (self.gl_texture_size_limit,))
+                self.glinit_warn("the texture size limit is too low: %s" % (self.gl_texture_size_limit,))
             if driver_info.startswith("SVGA3D") and os.environ.get("WAYLAND_DISPLAY"):
-                glwarn("SVGA3D driver is buggy under Wayland")
+                self.glinit_warn("SVGA3D driver is buggy under Wayland")
             self.GLClientWindowClass.MAX_VIEWPORT_DIMS = self.gl_max_viewport_dims
             self.GLClientWindowClass.MAX_BACKING_DIMS = self.gl_texture_size_limit, self.gl_texture_size_limit
-            mww, mwh = self.max_window_size
             opengllog("OpenGL: enabled=%s, texture-size-limit=%s, max-window-size=%s",
                       self.opengl_enabled, self.gl_texture_size_limit, self.max_window_size)
 
-            def validate_texture_size() -> bool:
-                lim = self.gl_texture_size_limit
-                if lim >= 16 * 1024:
-                    return True
-                if mww > 0 and mww > lim:
-                    return False
-                if mwh > 0 and mwh > lim:
-                    return False
-                return True
-
-            if self.opengl_enabled and not validate_texture_size():
+            if self.opengl_enabled and not self.validate_texture_size():
                 # log at warn level if the limit is low:
                 # (if we're likely to hit it - if the screen is as big or bigger)
                 w, h = self.get_root_size()
@@ -1281,7 +1289,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                                                     max_window_size=self.max_window_size,
                                                     pixel_depth=self.pixel_depth)
                 if not draw_result.get("success", False):
-                    err("OpenGL test rendering failed:", draw_result.get("message", "") or "unknown error")
+                    self.glinit_error("OpenGL test rendering failed:",
+                                      draw_result.get("message", "") or "unknown error")
                     return
                 opengllog(f"OpenGL test rendering succeeded: {draw_result}")
             if self.opengl_enabled:
@@ -1302,13 +1311,13 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
                 self.opengl_force = True
         except ImportError as e:
             opengllog(f"init_opengl({enable_opengl})", exc_info=True)
-            err("OpenGL accelerated rendering is not available:", e)
+            self.glinit_error("OpenGL accelerated rendering is not available:", e)
         except RuntimeError as e:
             opengllog(f"init_opengl({enable_opengl})", exc_info=True)
-            err("OpenGL support could not be enabled on this hardware:", e)
+            self.glinit_error("OpenGL support could not be enabled on this hardware:", e)
         except Exception as e:
             opengllog(f"init_opengl({enable_opengl})", exc_info=True)
-            err("Error loading OpenGL support:", e)
+            self.glinit_error("Error loading OpenGL support:", e)
 
     def get_client_window_classes(self, geom: tuple[int, int, int, int], metadata: typedict,
                                   override_redirect: bool) -> Sequence[type]:

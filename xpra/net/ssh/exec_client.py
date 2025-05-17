@@ -6,6 +6,7 @@
 import sys
 import os
 import shlex
+from typing import Any
 from shutil import which
 from subprocess import PIPE, Popen
 from collections.abc import Callable
@@ -28,6 +29,15 @@ if log.is_debug_enabled():
 
 MAGIC_QUOTES = envbool("XPRA_SSH_MAGIC_QUOTES", True)
 
+SSHPASS_ERRORS: dict[int, str] = {
+    1: "Invalid command line argument",
+    2: "Conflicting arguments given",
+    3: "General runtime error",
+    4: "Unrecognized response from ssh (parse error)",
+    5: "Invalid/incorrect password",
+    6: "Host public key is unknown. sshpass exits without confirming the new key.",
+}
+
 
 def connect_failed(_message) -> None:
     # by the time ssh fails, we may have entered the gtk main loop
@@ -35,6 +45,21 @@ def connect_failed(_message) -> None:
     if "gi.repository.Gtk" in sys.modules:
         gtk = gi_import("Gtk")
         gtk.main_quit()
+
+
+def get_win32_kwargs() -> dict[str, Any]:
+    from subprocess import (
+        CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW,  # @UnresolvedImport
+    )
+    startupinfo = STARTUPINFO()
+    startupinfo.dwFlags |= STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = 0  # aka win32.con.SW_HIDE
+    flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
+    return {
+        "startupinfo": startupinfo,
+        "creationflags": flags,
+        "stderr": PIPE,
+    }
 
 
 def connect_to(display_desc, opts=None, debug_cb: Callable = noop, ssh_fail_cb=connect_failed):
@@ -51,18 +76,7 @@ def connect_to(display_desc, opts=None, debug_cb: Callable = noop, ssh_fail_cb=c
     kwargs["stderr"] = sys.stderr
     try:
         if WIN32:
-            from subprocess import (
-                CREATE_NEW_PROCESS_GROUP, CREATE_NEW_CONSOLE, STARTUPINFO, STARTF_USESHOWWINDOW,  # @UnresolvedImport
-            )
-            startupinfo = STARTUPINFO()
-            startupinfo.dwFlags |= STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = 0     # aka win32.con.SW_HIDE
-            flags = CREATE_NEW_PROCESS_GROUP | CREATE_NEW_CONSOLE
-            kwargs |= {
-                "startupinfo": startupinfo,
-                "creationflags": flags,
-                "stderr": PIPE,
-            }
+            kwargs.update(get_win32_kwargs())
         elif not display_desc.get("exit_ssh", False) and not OSX:
             kwargs["start_new_session"] = True
         remote_xpra: list[str] = display_desc["remote_xpra"]
@@ -141,14 +155,7 @@ def connect_to(display_desc, opts=None, debug_cb: Callable = noop, ssh_fail_cb=c
                 error_message = "SSH connection failure"
             sshpass_error = None
             if sshpass_command:
-                sshpass_error = {
-                    1: "Invalid command line argument",
-                    2: "Conflicting arguments given",
-                    3: "General runtime error",
-                    4: "Unrecognized response from ssh (parse error)",
-                    5: "Invalid/incorrect password",
-                    6: "Host public key is unknown. sshpass exits without confirming the new key.",
-                }.get(exitcode)
+                sshpass_error = SSHPASS_ERRORS.get(exitcode, "")
                 if sshpass_error:
                     error_message += f": {sshpass_error}"
             debug_cb(error_message)

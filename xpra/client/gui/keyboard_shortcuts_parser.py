@@ -75,6 +75,27 @@ def parse_shortcut_modifiers(s: str, modifier_names: dict[str, str]) -> list[str
     return shortcut_modifiers
 
 
+def parse_args(str_args: str) -> list[str | float | bool | int | None]:
+    args = []
+    for x in str_args.split(","):
+        x = x.strip()
+        if not x:
+            continue
+        if (x[0] == '"' and x[-1] == '"') or (x[0] == "'" and x[-1] == "'"):
+            args.append(x[1:-1])
+        elif x == "None":
+            args.append(None)
+        elif x.find(".") != -1:
+            args.append(float(x))
+        elif x.lower() in TRUE_OPTIONS:
+            args.append(True)
+        elif x.lower() in FALSE_OPTIONS:
+            args.append(False)
+        else:
+            args.append(int(x))
+    return args
+
+
 def parse_shortcuts(strs: Sequence[str],
                     shortcut_modifiers: Sequence[str],
                     modifier_names: dict[str, str],
@@ -111,22 +132,7 @@ def parse_shortcuts(strs: Sequence[str],
         if action.find("(") > 0 and action.endswith(")"):
             try:
                 action, all_args = action[:-1].split("(", 1)
-                for x in all_args.split(","):
-                    x = x.strip()
-                    if not x:
-                        continue
-                    if (x[0] == '"' and x[-1] == '"') or (x[0] == "'" and x[-1] == "'"):
-                        args.append(x[1:-1])
-                    elif x == "None":
-                        args.append(None)
-                    elif x.find(".") != -1:
-                        args.append(float(x))
-                    elif x.lower() in TRUE_OPTIONS:
-                        args.append(True)
-                    elif x.lower() in FALSE_OPTIONS:
-                        args.append(False)
-                    else:
-                        args.append(int(x))
+                args = parse_args(all_args)
             except Exception as e:
                 log.warn("Warning: failed to parse arguments of shortcut:")
                 log.warn(" '%s': %s", s, e)

@@ -9,7 +9,7 @@
 from time import monotonic
 from types import ModuleType
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.gstreamer.common import GST_FLOW_OK, import_gst
 
@@ -27,6 +27,22 @@ if not Gst:
     raise ImportError("GStreamer bindings not found")
 GLib = gi_import("GLib")
 GObject = gi_import("GObject")
+
+
+def warning_messages(warnings: Sequence) -> list[str]:
+    messages = ["pipeline warning: %s" % (warnings[0].message,)]
+    for x in warnings[1:]:
+        for l in x.split(":"):
+            if l:
+                if l.startswith("\n"):
+                    l = l.strip("\n") + " "
+                    for lp in l.split(". "):
+                        lp = lp.strip()
+                        if lp:
+                            messages.append(" %s" % lp)
+                else:
+                    messages.append("                  %s" % l.strip("\n\r"))
+    return messages
 
 
 class Pipeline(GObject.GObject):
@@ -271,18 +287,8 @@ class Pipeline(GObject.GObject):
             self.gstloginfo("pipeline message: %s", message)
         elif t == Gst.MessageType.WARNING:
             w = message.parse_warning()
-            self.gstlogwarn("pipeline warning: %s", w[0].message)
-            for x in w[1:]:
-                for l in x.split(":"):
-                    if l:
-                        if l.startswith("\n"):
-                            l = l.strip("\n")+" "
-                            for lp in l.split(". "):
-                                lp = lp.strip()
-                                if lp:
-                                    self.gstlogwarn(" %s", lp)
-                        else:
-                            self.gstlogwarn("                  %s", l.strip("\n\r"))
+            for message in warning_messages(w):
+                self.gstlogwarn(message)
         elif t in (Gst.MessageType.NEED_CONTEXT, Gst.MessageType.HAVE_CONTEXT):
             log("context message: %s", message)
         elif t == Gst.MessageType.QOS:
