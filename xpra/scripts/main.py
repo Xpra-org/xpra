@@ -37,7 +37,7 @@ from xpra.util.parsing import parse_scaling
 from xpra.util.thread import set_main_thread
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import (
-    getuid, getgid, get_username_for_uid, force_quit,
+    getuid, getgid, get_username_for_uid, force_quit, is_admin,
     gi_import,
     WIN32, OSX, POSIX
 )
@@ -2346,7 +2346,7 @@ def make_client(opts):
             probe, probe_info = run_opengl_probe()
             glinfo = typedict(probe_info)
             safe = glinfo.boolget("safe", False)
-            SAVE_OPENGL_PROBE = envbool("XPRA_SAVE_OPENGL_PROBE", True)
+            SAVE_OPENGL_PROBE = envbool("XPRA_SAVE_OPENGL_PROBE", not is_admin())
             if SAVE_OPENGL_PROBE:
                 save_opengl_probe(safe)
             if opts.opengl == "nowarn":
