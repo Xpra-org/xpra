@@ -47,7 +47,7 @@ from xpra.net.bytestreams import (
 )
 from xpra.net.net_util import (
     get_network_caps, get_info as get_net_info,
-    import_netifaces, get_interfaces_addresses,
+    import_netifaces, get_all_ips,
 )
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -2039,24 +2039,9 @@ class ServerCore(ServerBaseClass):
                 if first_time("netifaces-socket-address"):
                     netlog.warn("Warning: netifaces is missing")
                     netlog.warn(" socket addresses cannot be queried")
-                continue
-            ips = []
-            for inet in get_interfaces_addresses().values():
-                # ie: inet = {
-                #    18: [{'addr': ''}],
-                #    2: [{'peer': '127.0.0.1', 'netmask': '255.0.0.0', 'addr': '127.0.0.1'}],
-                #    30: [{'peer': '::1', 'netmask': 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', 'addr': '::1'},
-                #         {'peer': '', 'netmask': 'ffff:ffff:ffff:ffff::', 'addr': 'fe80::1%lo0'}]
-                #    }
-                for v in (socket.AF_INET, socket.AF_INET6):
-                    addresses = inet.get(v, ())
-                    for addr in addresses:
-                        # ie: addr = {'peer': '127.0.0.1', 'netmask': '255.0.0.0', 'addr': '127.0.0.1'}]
-                        ip = addr.get("addr")
-                        if ip and ip not in ips:
-                            ips.append(ip)
-            for ip in ips:
-                add_address(socktype, ip, port)
+            else:
+                for ip in get_all_ips():
+                    add_address(socktype, ip, port)
 
         for socktype, auth_classes in self.auth_classes.items():
             if auth_classes:

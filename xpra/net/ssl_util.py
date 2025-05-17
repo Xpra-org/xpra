@@ -159,14 +159,47 @@ def ssl_handshake(ssl_sock) -> None:
         raise InitExit(status, f"SSL handshake failed: {e}") from None
 
 
-def get_ssl_verify_mode(verify_mode_str: str):
+def parse_ssl_verify_mode(verify_mode_str: str):
     # parse verify-mode:
     import ssl
     ssl_cert_reqs = getattr(ssl, "CERT_" + verify_mode_str.upper(), None)
     if ssl_cert_reqs is None:
         values = [k[len("CERT_"):].lower() for k in dir(ssl) if k.startswith("CERT_")]
         raise InitException(f"invalid ssl-server-verify-mode {verify_mode_str!r}, must be one of: " + csv(values))
+    get_ssl_logger().debug(" verify-mode=%s", ssl_cert_reqs)
     return ssl_cert_reqs
+
+
+def parse_ssl_options_mask(options: str):
+    # parse ssl-options as CSV to an int bitmask:
+    import ssl
+    ssl_options = 0
+    for x in options.split(","):
+        x = x.strip()
+        if not x:
+            continue
+        v = getattr(ssl, "OP_" + x.upper(), None)
+        if v is None:
+            raise InitException(f"invalid ssl option: {x!r}")
+        ssl_options |= v
+    get_ssl_logger().debug(" options=%#x", ssl_options)
+    return ssl_options
+
+
+def parse_ssl_verify_mask(verify_flags: str) -> int:
+    # parse ssl-verify-flags as CSV:
+    import ssl
+    ssl_verify_flags = 0
+    for x in verify_flags.split(","):
+        x = x.strip()
+        if not x:
+            continue
+        v = getattr(ssl, "VERIFY_" + x.upper(), None)
+        if v is None:
+            raise InitException(f"invalid ssl verify-flag: {x!r}")
+        ssl_verify_flags |= v
+    get_ssl_logger().debug(" verify-flags=%#x", ssl_verify_flags)
+    return ssl_verify_flags
 
 
 def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", ca_data="",
@@ -184,71 +217,38 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
     ssllog("get_ssl_wrap_socket_context%s", (
         cert, key, ca_certs, ca_data,
         protocol,
-        client_verify_mode, server_verify_mode,
-        verify_flags,
+        client_verify_mode, server_verify_mode, verify_flags,
         check_hostname, server_hostname,
-        options, ciphers,
-        server_side)
+        options, ciphers, server_side)
     )
     if server_side:
-        ssl_cert_reqs = get_ssl_verify_mode(client_verify_mode)
+        ssl_cert_reqs = parse_ssl_verify_mode(client_verify_mode)
     else:
-        ssl_cert_reqs = get_ssl_verify_mode(server_verify_mode)
+        ssl_cert_reqs = parse_ssl_verify_mode(server_verify_mode)
     ssllog(" verify_mode for server_side=%s : %s", server_side, ssl_cert_reqs)
-    # ca-certs:
-    if ca_certs == "default":
-        ca_certs = ""
-    elif ca_certs == "auto":
-        ca_certs = find_ssl_cert("ca-cert.pem")
-    ssllog(" ca-certs=%s", ca_certs)
     # parse protocol:
     import ssl
     if protocol.upper() == "TLS":
-        protocol = "TLS_SERVER" if server_side else "TLS_CLIENT"
-    proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("TLSV", "TLSv"), None)
-    if proto is None:
-        values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
-        raise InitException(f"invalid ssl-protocol {protocol!r}, must be one of: " + csv(values))
+        proto = ssl.PROTOCOL_TLS_SERVER if server_side else ssl.PROTOCOL_TLS_CLIENT
+    else:
+        proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("TLSV", "TLSv"), None)
+        if proto is None:
+            values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
+            raise InitException(f"invalid ssl-protocol {protocol!r}, must be one of: " + csv(values))
     ssllog(" protocol=%#x", proto)
-    # ca_data may be hex encoded:
-    ca_data = parse_encoded_bin_data(ca_data or "")
-    ssllog(" cadata=%s", Ellipsizer(ca_data))
 
     kwargs: dict[str, bool | str] = {
         "server_side": server_side,
         "do_handshake_on_connect": False,
         "suppress_ragged_eofs": True,
     }
-    # parse ssl-verify-flags as CSV:
-    ssl_verify_flags = 0
-    for x in verify_flags.split(","):
-        x = x.strip()
-        if not x:
-            continue
-        v = getattr(ssl, "VERIFY_" + x.upper(), None)
-        if v is None:
-            raise InitException(f"invalid ssl verify-flag: {x!r}")
-        ssl_verify_flags |= v
-    ssllog(" verify-flags=%#x", ssl_verify_flags)
-    # parse ssl-options as CSV:
-    ssl_options = 0
-    for x in options.split(","):
-        x = x.strip()
-        if not x:
-            continue
-        v = getattr(ssl, "OP_" + x.upper(), None)
-        if v is None:
-            raise InitException(f"invalid ssl option: {x!r}")
-        ssl_options |= v
-    ssllog(" options=%#x", ssl_options)
-
     context = ssl.SSLContext(proto)
     context.set_ciphers(ciphers)
     if not server_side:
         context.check_hostname = check_hostname
     context.verify_mode = ssl_cert_reqs
-    context.verify_flags = ssl_verify_flags
-    context.options = ssl_options
+    context.verify_flags = parse_ssl_verify_mask(verify_flags)
+    context.options = parse_ssl_options_mask(options)
     ssllog(" cert=%s, key=%s", cert, key)
     if cert:
         if cert == "auto":
@@ -279,6 +279,13 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
         ssllog(" load_default_certs(%s)", purpose)
         context.load_default_certs(purpose)
 
+        # ca-certs:
+        if ca_certs == "default":
+            ca_certs = ""
+        elif ca_certs == "auto":
+            ca_certs = find_ssl_cert("ca-cert.pem")
+        ssllog(" ca-certs=%s", ca_certs)
+
         if not ca_certs or ca_certs.lower() == "default":
             ssllog(" using default certs")
             # load_default_certs already calls set_default_verify_paths()
@@ -292,6 +299,9 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
             if not os.path.isfile(ca_certs):
                 raise InitException(f"{ca_certs!r} is not a valid ca file")
             context.load_verify_locations(cafile=ca_certs)
+        # ca_data may be hex encoded:
+        ca_data = parse_encoded_bin_data(ca_data or "")
+        ssllog(" cadata=%s", Ellipsizer(ca_data))
         if ca_data:
             context.load_verify_locations(cadata=ca_data)
     elif check_hostname and not server_side:
