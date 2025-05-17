@@ -109,7 +109,7 @@ def do_replace_option(cmdline: list[str], oldoption: str, newoption: str) -> Non
             cmdline[i] = f"{newoption}=" + x.split("=", 1)[1]
 
 
-def do_legacy_bool_parse(cmdline: list[str], optionname: str, newoptionname: str = "") -> None:
+def legacy_bool_parse(cmdline: list[str], optionname: str, newoptionname: str = "") -> None:
     # find --no-XYZ or --XYZ
     # and replace it with --XYZ=yes|no
     if not newoptionname:
@@ -1029,6 +1029,18 @@ def parse_window_size(v, attribute="max-size") -> tuple[int, int]:
     return w, h
 
 
+def nonedefault(v) -> str:
+    return repr(v) if v else "none"
+
+
+def autodefault(v) -> str:
+    return "auto" if v is None else repr(v)
+
+
+def dcsv(v) -> str:
+    return csv(v or ["none"])
+
+
 def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     usage_strs = ["\t%%prog %s\n" % x for x in get_usage()]
     parser = ModifiedOptionParser(version="xpra v" + full_version_str(), usage="\n" + "".join(usage_strs))
@@ -1045,8 +1057,9 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     def replace_option(oldoption: str, newoption: str) -> None:
         do_replace_option(cmdline, oldoption, newoption)
 
-    def legacy_bool_parse(optionname: str, newoptionname: str = "") -> None:
-        do_legacy_bool_parse(cmdline, optionname, newoptionname)
+    def simple_bools(*names):
+        for name in names:
+            legacy_bool_parse(cmdline, name, name)
 
     def ignore(defaults) -> None:
         ignore_options(cmdline, defaults.keys())
@@ -1060,42 +1073,33 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     parser.add_option_group(group)
 
     # we support remote start, so we need those even if we don't have server support:
-    def nonedefault(v) -> str:
-        return repr(v) if v else "none"
-
-    def autodefault(v) -> str:
-        return "auto" if v is None else repr(v)
-
-    def dcsv(v) -> str:
-        return csv(v or ["none"])
-
-    legacy_bool_parse("commands")
+    simple_bools("commands")
     group.add_option("--commands", action="store", metavar="yes|no",
                      dest="commands", default=defaults.commands,
                      help="Control the ability to run commands")
-    legacy_bool_parse("shell")
+    simple_bools("shell")
     group.add_option("--shell", action="store", metavar="yes|no",
                      dest="shell", default=defaults.shell,
                      help="Enable the shell debugging channel")
-    legacy_bool_parse("control")
+    simple_bools("control")
     group.add_option("--control", action="store", metavar="yes|no",
                      dest="control", default=defaults.control,
                      help="Enable `control` requests")
     group.add_option("--start", action="append",
-                     dest="start", metavar="CMD", default=list(defaults.start or []),
+                     dest="start", metavar="CMD", default=defaults.start,
                      help="program to spawn in server (may be repeated). Default: %s." % dcsv(defaults.start))
     group.add_option("--start-late", action="append",
-                     dest="start_late", metavar="CMD", default=list(defaults.start_late or []),
+                     dest="start_late", metavar="CMD", default=defaults.start_late,
                      help="program to spawn in server once initialization is complete (may be repeated)."
                           " Default: %s." % dcsv(defaults.start_late))
     group.add_option("--start-child", action="append",
-                     dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
+                     dest="start_child", metavar="CMD", default=defaults.start_child,
                      help="program to spawn in server,"
                           " taken into account by the exit-with-children option"
                           " (may be repeated to run multiple commands)."
                           " Default: %s." % dcsv(defaults.start_child))
     group.add_option("--start-child-late", action="append",
-                     dest="start_child_late", metavar="CMD", default=list(defaults.start_child_late or []),
+                     dest="start_child_late", metavar="CMD", default=defaults.start_child_late,
                      help="program to spawn in server once initialization is complete"
                           " taken into account by the exit-with-children option"
                           " (may be repeated to run multiple commands)."
@@ -1133,33 +1137,33 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--exec-wrapper", action="store",
                      dest="exec_wrapper", metavar="CMD", default=defaults.exec_wrapper,
                      help="Wrapper for executing commands. Default: %s." % nonedefault(defaults.exec_wrapper))
-    legacy_bool_parse("terminate-children")
+    simple_bools("terminate-children")
     group.add_option("--terminate-children", action="store", metavar="yes|no",
                      dest="terminate_children", default=defaults.terminate_children,
                      help="Terminate all the child commands on server stop. Default: %default")
-    legacy_bool_parse("exit-with-children")
+    simple_bools("exit-with-children")
     group.add_option("--exit-with-children", action="store", metavar="yes|no",
                      dest="exit_with_children", default=defaults.exit_with_children,
                      help="Terminate the server when the last --start-child command(s) exit")
-    legacy_bool_parse("exit-with-windows")
+    simple_bools("exit-with-windows")
     group.add_option("--exit-with-windows", action="store", metavar="yes|no",
                      dest="exit_with_windows", default=defaults.exit_with_windows,
                      help="Terminate the server when the last window disappears")
-    legacy_bool_parse("start-new-commands")
+    simple_bools("start-new-commands")
     group.add_option("--start-new-commands", action="store", metavar="yes|no",
                      dest="start_new_commands", default=defaults.start_new_commands,
                      help="Allows clients to execute new commands on the server."
                           " Default: %s." % enabled_str(defaults.start_new_commands))
-    legacy_bool_parse("start-via-proxy")
+    simple_bools("start-via-proxy")
     group.add_option("--start-via-proxy", action="store", metavar="yes|no|auto",
                      dest="start_via_proxy", default=defaults.start_via_proxy,
                      help="Start servers via the system proxy server. Default: %default.")
-    legacy_bool_parse("proxy-start-sessions")
+    simple_bools("proxy-start-sessions")
     group.add_option("--proxy-start-sessions", action="store", metavar="yes|no",
                      dest="proxy_start_sessions", default=defaults.proxy_start_sessions,
                      help="Allows proxy servers to start new sessions on demand."
                           " Default: %s." % enabled_str(defaults.proxy_start_sessions))
-    legacy_bool_parse("dbus")
+    simple_bools("dbus")
     group.add_option("--dbus", action="store",
                      dest="dbus", default=defaults.dbus,
                      help="Enable or disable all dbus related functionality,"
@@ -1169,7 +1173,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="dbus_launch", metavar="CMD", default=defaults.dbus_launch,
                      help="Start the session within a dbus-launch context,"
                           " leave empty to turn off. Default: %s." % nonedefault(defaults.dbus_launch))
-    legacy_bool_parse("dbus-control")
+    simple_bools("dbus-control")
     group.add_option("--dbus-control", action="store", metavar="yes|no",
                      dest="dbus_control", default=defaults.dbus_control,
                      help="Allows the server to be controlled via its dbus interface."
@@ -1183,29 +1187,29 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Script to source into the environment used for starting commands. Default: %s." % dcsv(
                          list(x for x in (defaults.source_start or []) if x and not x.startswith("#"))))
     group.add_option("--start-env", action="append",
-                     dest="start_env", default=list(defaults.start_env or []),
+                     dest="start_env", default=defaults.start_env,
                      help="Define environment variables used with 'start-child' and 'start',"
-                          " can be specified multiple times. Default: %s." % csv(
-                         ("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")))
-    legacy_bool_parse("systemd-run")
+                          " can be specified multiple times. Default: %s." % csv(("'%s'" % x)
+                                                                                 for x in (defaults.start_env or [])
+                                                                                 if not x.startswith("#")))
+    simple_bools("systemd-run")
     group.add_option("--systemd-run", action="store", metavar="yes|no|auto",
                      dest="systemd_run", default=defaults.systemd_run,
                      help="Wrap server start commands with systemd-run. Default: %default.")
     group.add_option("--systemd-run-args", action="store", metavar="ARGS",
                      dest="systemd_run_args", default=defaults.systemd_run_args,
                      help="Command line arguments passed to systemd-run. Default: '%default'.")
-    legacy_bool_parse("http-scripts")
+    simple_bools("http-scripts")
     group.add_option("--http-scripts", action="store",
                      dest="http_scripts", default=defaults.http_scripts,
                      metavar="off|all|SCRIPTS",
                      help="Enable the builtin web server scripts. Default: '%default'.")
-    legacy_bool_parse("html")
+    simple_bools("html")
     group.add_option("--html", action="store",
                      dest="html", default=defaults.html,
                      metavar="on|off|[HOST:]PORT",
                      help="Enable the web server and the html5 client. Default: '%default'.")
-    legacy_bool_parse("daemon")
-    legacy_bool_parse("attach")
+    simple_bools("daemon", "attach")
     group.add_option("--uid", action="store",
                      dest="uid", default=defaults.uid,
                      help="The user id to change to when the server is started by root."
@@ -1237,10 +1241,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="attach", default=defaults.attach,
                      help="Attach a client as soon as the server has started"
                           " (default: %s)" % enabled_or_auto(defaults.attach))
-    legacy_bool_parse("printing")
-    legacy_bool_parse("file-transfer")
-    legacy_bool_parse("open-files")
-    legacy_bool_parse("open-url")
+    simple_bools("printing", "file-transfer", "open-files", "open-url")
     group.add_option("--file-transfer", action="store", metavar="yes|no|ask",
                      dest="file_transfer", default=defaults.file_transfer,
                      help="Support file transfers. Default: %s." % enabled_str(defaults.file_transfer))
@@ -1264,12 +1265,12 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="lpinfo", default=defaults.lpinfo,
                      metavar="COMMAND",
                      help="Specify the lpinfo command to use. Default: '%default'.")
-    # options without command line equivallents:
+    # options without command line equivalents:
     hidden_options["pdf-printer"] = defaults.pdf_printer
     hidden_options["postscript-printer"] = defaults.postscript_printer
     hidden_options["add-printer-options"] = defaults.add_printer_options
 
-    legacy_bool_parse("exit-with-client")
+    simple_bools("exit-with-client")
     group.add_option("--exit-with-client", action="store", metavar="yes|no",
                      dest="exit_with_client", default=defaults.exit_with_client,
                      help="Terminate the server when the last client disconnects."
@@ -1282,7 +1283,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="server_idle_timeout", type="int", default=defaults.server_idle_timeout,
                      help="Exits the server when idle (0 to disable)."
                           " Default: %s seconds" % defaults.server_idle_timeout)
-    legacy_bool_parse("use-display")
+    simple_bools("use-display")
     group.add_option("--use-display", action="store", metavar="yes|no|auto",
                      dest="use_display", default=defaults.use_display,
                      help="Use an existing display rather than starting one with the xvfb command."
@@ -1309,59 +1310,59 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                           " You may specify this option multiple times to listen on different locations."
                           " Default: %s" % dcsv(defaults_bind))
     group.add_option("--bind-tcp", action="append",
-                     dest="bind_tcp", default=list(defaults.bind_tcp or []),
+                     dest="bind_tcp", default=defaults.bind_tcp,
                      metavar="[HOST]:[PORT]",
                      help="listen for connections over TCP."
                           " Use --tcp-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ws", action="append",
-                     dest="bind_ws", default=list(defaults.bind_ws or []),
+                     dest="bind_ws", default=defaults.bind_ws,
                      metavar="[HOST]:[PORT]",
                      help="listen for connections over Websocket."
                           " Use --ws-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-wss", action="append",
-                     dest="bind_wss", default=list(defaults.bind_wss or []),
+                     dest="bind_wss", default=defaults.bind_wss,
                      metavar="[HOST]:[PORT]",
                      help="listen for connections over HTTPS / wss (secure Websocket)."
                           " Use --wss-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ssl", action="append",
-                     dest="bind_ssl", default=list(defaults.bind_ssl or []),
+                     dest="bind_ssl", default=defaults.bind_ssl,
                      metavar="[HOST]:PORT",
                      help="listen for connections over SSL."
                           " Use --ssl-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ssh", action="append",
-                     dest="bind_ssh", default=list(defaults.bind_ssh or []),
+                     dest="bind_ssh", default=defaults.bind_ssh,
                      metavar="[HOST]:PORT",
                      help="listen for connections using SSH transport."
                           " Use --ssh-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-rfb", action="append",
-                     dest="bind_rfb", default=list(defaults.bind_rfb or []),
+                     dest="bind_rfb", default=defaults.bind_rfb,
                      metavar="[HOST]:PORT",
                      help="listen for RFB connections."
                           " Use --rfb-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-rdp", action="append",
-                     dest="bind_rdp", default=list(defaults.bind_rdp or []),
+                     dest="bind_rdp", default=defaults.bind_rdp,
                      metavar="[HOST]:PORT",
                      help="listen for RDP connections."
                           " Use --rdp-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-quic", action="append",
-                     dest="bind_quic", default=list(defaults.bind_quic or []),
+                     dest="bind_quic", default=defaults.bind_quic,
                      metavar="[HOST]:PORT",
                      help="listen for QUIC HTTP/3 or WebTransport connections."
                           " Use --quic-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-vsock", action="append",
-                     dest="bind_vsock", default=list(defaults.bind_vsock or []),
+                     dest="bind_vsock", default=defaults.bind_vsock,
                      metavar="[CID]:[PORT]",
                      help="listen for connections over VSOCK."
                           " You may specify this option multiple times with different CID and port combinations")
-    legacy_bool_parse("mdns")
+    simple_bools("mdns")
     group.add_option("--mdns", action="store", metavar="yes|no",
                      dest="mdns", default=defaults.mdns,
                      help="Publish the session information via mDNS. Default: %s." % enabled_str(defaults.mdns))
@@ -1374,7 +1375,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="bandwidth_limit", default=defaults.bandwidth_limit,
                      help="Limit the bandwidth used. The value is specified in bits per second,"
                           " use the value '0' to disable restrictions. Default: '%default'.")
-    legacy_bool_parse("bandwidth-detection")
+    simple_bools("bandwidth-detection")
     group.add_option("--bandwidth-detection", action="store",
                      dest="bandwidth_detection", default=defaults.bandwidth_detection,
                      help="Automatically detect runtime bandwidth limits. Default: '%default'.")
@@ -1384,34 +1385,34 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="readonly", default=defaults.readonly,
                      help="Disable keyboard input and mouse events from the clients. "
                           " Default: %s." % enabled_str(defaults.readonly))
-    legacy_bool_parse("clipboard")
+    simple_bools("clipboard")
     group.add_option("--clipboard", action="store", metavar="yes|no|clipboard-type",
                      dest="clipboard", default=defaults.clipboard,
                      help="Enable clipboard support. Default: %s." % defaults.clipboard)
     group.add_option("--clipboard-direction", action="store", metavar="to-server|to-client|both",
                      dest="clipboard_direction", default=defaults.clipboard_direction,
                      help="Direction of clipboard synchronization. Default: %s." % defaults.clipboard_direction)
-    legacy_bool_parse("notifications")
+    simple_bools("notifications")
     group.add_option("--notifications", action="store", metavar="yes|no",
                      dest="notifications", default=defaults.notifications,
                      help="Forwarding of system notifications. Default: %s." % enabled_str(defaults.notifications))
-    legacy_bool_parse("system-tray")
+    simple_bools("system-tray")
     group.add_option("--system-tray", action="store", metavar="yes|no",
                      dest="system_tray", default=defaults.system_tray,
                      help="Forward of system tray icons. Default: %s." % enabled_str(defaults.system_tray))
-    legacy_bool_parse("cursors")
+    simple_bools("cursors")
     group.add_option("--cursors", action="store", metavar="yes|no",
                      dest="cursors", default=defaults.cursors,
                      help="Forward custom application mouse cursors. Default: %s." % enabled_str(defaults.cursors))
-    legacy_bool_parse("bell")
+    simple_bools("bell")
     group.add_option("--bell", action="store",
                      dest="bell", default=defaults.bell, metavar="yes|no",
                      help="Forward the system bell. Default: %s." % enabled_str(defaults.bell))
-    legacy_bool_parse("webcam")
+    simple_bools("webcam")
     group.add_option("--webcam", action="store",
                      dest="webcam", default=defaults.webcam,
                      help="Webcam forwarding, can be used to specify a device. Default: %s." % defaults.webcam)
-    legacy_bool_parse("mousewheel")
+    simple_bools("mousewheel")
     group.add_option("--mousewheel", action="store",
                      dest="mousewheel", default=defaults.mousewheel,
                      help="Mouse wheel forwarding, can be used to disable the device ('no') or invert some axes "
@@ -1420,26 +1421,26 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--input-devices", action="store", metavar="APINAME",
                      dest="input_devices", default=defaults.input_devices,
                      help="Which API to use for input devices. Default: %s." % defaults.input_devices)
-    legacy_bool_parse("xsettings")
+    simple_bools("xsettings")
     group.add_option("--xsettings", action="store", metavar="auto|yes|no",
                      dest="xsettings", default=defaults.xsettings,
                      help="xsettings synchronization. Default: %s." % enabled_str(defaults.xsettings))
-    legacy_bool_parse("mmap")
+    simple_bools("mmap")
     group.add_option("--mmap", action="store", metavar="yes|no|mmap-filename",
                      dest="mmap", default=defaults.mmap,
                      help="Use memory mapped transfers for local connections. Default: %s." % defaults.mmap)
     replace_option("--enable-sharing", "--sharing=yes")
-    legacy_bool_parse("sharing")
+    simple_bools("sharing")
     group.add_option("--sharing", action="store", metavar="yes|no",
                      dest="sharing", default=defaults.sharing,
                      help="Allow more than one client to connect to the same session. "
                           " Default: %s." % enabled_or_auto(defaults.sharing))
-    legacy_bool_parse("lock")
+    simple_bools("lock")
     group.add_option("--lock", action="store", metavar="yes|no",
                      dest="lock", default=defaults.lock,
                      help="Prevent sessions from being taken over by new clients. "
                           " Default: %s." % enabled_or_auto(defaults.lock))
-    legacy_bool_parse("remote-logging")
+    simple_bools("remote-logging")
     group.add_option("--remote-logging", action="store", metavar="no|send|receive|both",
                      dest="remote_logging", default=defaults.remote_logging,
                      help="Forward all the client's log output to the server. "
@@ -1449,11 +1450,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                                  "These options be specified on the client or on the server, "
                                  "but the server's settings will have precedence over the client's.")
     parser.add_option_group(group)
-    legacy_bool_parse("audio")
-    legacy_bool_parse("pulseaudio")
-    legacy_bool_parse("speaker")
-    legacy_bool_parse("microphone")
-    legacy_bool_parse("av-sync")
+    simple_bools("audio", "pulseaudio", "speaker", "microphone", "av-sync")
     group.add_option("--audio", action="store", metavar="yes|no",
                      dest="audio", default=defaults.audio,
                      help="Enable or disable all audio support."
@@ -1477,13 +1474,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     Use the special value 'help' to get a list of options.
     When unspecified, all the available codecs are allowed and the first one is used."""
     group.add_option("--speaker-codec", action="append",
-                     dest="speaker_codec", default=list(defaults.speaker_codec or []),
+                     dest="speaker_codec", default=defaults.speaker_codec,
                      help=CODEC_HELP % "speaker")
     group.add_option("--microphone", action="store", metavar="on|off|disabled",
                      dest="microphone", default=defaults.microphone,
                      help="Forward audio input to the server. Default: %s." % audio_option(defaults.microphone))
     group.add_option("--microphone-codec", action="append",
-                     dest="microphone_codec", default=list(defaults.microphone_codec or []),
+                     dest="microphone_codec", default=defaults.microphone_codec,
                      help=CODEC_HELP % "microphone")
     replace_option("--sound-source", "--audio-source")
     group.add_option("--audio-source", action="store",
@@ -1507,7 +1504,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Which image compression algorithm to use, specify 'help' to get a list of options."
                           " Default: %default."
                      )
-    legacy_bool_parse("video")
+    simple_bools("video")
     group.add_option("--video", action="store", metavar="yes|no",
                      dest="video", default=defaults.video,
                      help="Enable or disable all video encoding support."
@@ -1580,25 +1577,25 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group = optparse.OptionGroup(parser, "Client Features Options",
                                  "These options control client features that affect the appearance or the keyboard.")
     parser.add_option_group(group)
-    legacy_bool_parse("reconnect")
+    simple_bools("reconnect")
     group.add_option("--reconnect", action="store", metavar="yes|no",
                      dest="reconnect", default=defaults.reconnect,
                      help="Reconnect to the server. Default: %s." % enabled_or_auto(defaults.reconnect))
-    legacy_bool_parse("opengl")
+    simple_bools("opengl")
     group.add_option("--opengl", action="store", metavar="(yes|no|auto)[:backends]",
                      dest="opengl", default=defaults.opengl,
                      help="Use OpenGL accelerated rendering. Default: %s." % defaults.opengl)
-    legacy_bool_parse("splash")
+    simple_bools("splash")
     group.add_option("--splash", action="store", metavar="yes|no|auto",
                      dest="splash", default=defaults.splash,
                      help="Show a splash screen whilst loading the client."
                           " Default: %s." % enabled_or_auto(defaults.splash))
-    legacy_bool_parse("headerbar")
+    simple_bools("headerbar")
     group.add_option("--headerbar", action="store", metavar="auto|no|force",
                      dest="headerbar", default=defaults.headerbar,
                      help="Add a headerbar with menu to decorated windows."
                           " Default: %s." % defaults.headerbar)
-    legacy_bool_parse("windows")
+    simple_bools("windows")
     group.add_option("--windows", action="store", metavar="yes|no",
                      dest="windows", default=defaults.windows,
                      help="Forward windows. Default: %s." % enabled_str(defaults.windows))
@@ -1631,7 +1628,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                           " as a fraction: \"3/2\" or just as a decimal number: \"1.5\"."
                           " You can also specify each dimension individually: \"2x1.5\"."
                           " Default: '%default'.")
-    legacy_bool_parse("desktop-fullscreen")
+    simple_bools("desktop-fullscreen")
     group.add_option("--desktop-fullscreen", action="store",
                      dest="desktop_fullscreen", default=defaults.desktop_fullscreen,
                      help="Make the window fullscreen if it is from a desktop or shadow server,"
@@ -1658,7 +1655,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
         group.add_option("--dock-icon", action="store",
                          dest="dock_icon", default=defaults.dock_icon,
                          help="Path to the icon shown in the dock")
-        do_legacy_bool_parse(cmdline, "swap-keys")
+        legacy_bool_parse(cmdline, "swap-keys")
         group.add_option("--swap-keys", action="store", metavar="yes|no",
                          dest="swap_keys", default=defaults.swap_keys,
                          help="Swap the 'Command' and 'Control' keys. Default: %s" % enabled_str(defaults.swap_keys))
@@ -1667,7 +1664,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     else:
         ignore({"swap-keys": defaults.swap_keys})
         ignore({"dock-icon": defaults.dock_icon})
-        do_legacy_bool_parse(cmdline, "tray")
+        legacy_bool_parse(cmdline, "tray")
         if WIN32:
             extra_text = ", this will also disable notifications"
         else:
@@ -1676,7 +1673,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                           dest="tray", default=defaults.tray,
                           help=f"Enable Xpra's own system tray menu{extra_text}."
                                " Default: %s" % enabled_str(defaults.tray))
-        do_legacy_bool_parse(cmdline, "delay-tray")
+        legacy_bool_parse(cmdline, "delay-tray")
         parser.add_option("--delay-tray", action="store", metavar="yes|no",
                           dest="delay_tray", default=defaults.delay_tray,
                           help="Waits for the first events before showing the system tray{extra_text}."
@@ -1692,7 +1689,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Define key shortcuts that will trigger specific actions."
                           "If no shortcuts are defined, it defaults to: \n%s" % (
                               "\n ".join(defaults.key_shortcut or ())))
-    legacy_bool_parse("keyboard-sync")
+    simple_bools("keyboard-sync")
     group.add_option("--keyboard-sync", action="store", metavar="yes|no",
                      dest="keyboard_sync", default=defaults.keyboard_sync,
                      help="Synchronize keyboard state. Default: %s." % enabled_str(defaults.keyboard_sync))
@@ -1792,7 +1789,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     # minimal is actually handled earlier,
     # so that it can modify the 'defaults' before parsing command line options
     # but we keep it here so that `xpra --help` will show it
-    legacy_bool_parse("minimal")
+    simple_bools("minimal")
     group.add_option("--minimal", action="store",
                      dest="minimal", default=defaults.minimal,
                      help="Disable most non-essential subsystems."
@@ -1801,22 +1798,23 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="backend", default=defaults.backend,
                      help="Which backend to use for accessing the display."
                           " Default: '%default'.")
-    legacy_bool_parse("gstreamer")
+    simple_bools("gstreamer")
     group.add_option("--gstreamer", action="store",
                      dest="gstreamer", default=defaults.gstreamer,
                      help="Enable GStreamer audio and video support."
                           " Default: '%default'.")
-    legacy_bool_parse("x11")
+    simple_bools("x11")
     group.add_option("--x11", action="store",
                      dest="x11", default=defaults.x11,
                      help="Enable X11."
                           " Default: '%default'.")
     group.add_option("--env", action="append",
-                     dest="env", default=list(defaults.env or []),
+                     dest="env", default=defaults.env,
                      help="Define environment variables which will apply to this process and all subprocesses,"
                           " can be specified multiple times."
-                          " Default: %s." % dcsv(
-                         list(("'%s'" % x) for x in (defaults.env or []) if not x.startswith("#"))))
+                          " Default: %s." % dcsv(list(("'%s'" % x)
+                                                      for x in (defaults.env or [])
+                                                      if not x.startswith("#"))))
     group.add_option("--challenge-handlers", action="append",
                      dest="challenge_handlers", default=[],
                      help="Which handlers to use for processing server authentication challenges."
@@ -1834,7 +1832,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="open_command", default=defaults.open_command,
                      help="Command to use to open files and URLs."
                           " Default: '%default'.")
-    legacy_bool_parse("modal-windows")
+    simple_bools("modal-windows")
     group.add_option("--modal-windows", action="store",
                      dest="modal_windows", default=defaults.modal_windows,
                      help="Honour modal windows."
@@ -1876,7 +1874,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--sessions-dir", action="store",
                      dest="sessions_dir", default=defaults.sessions_dir,
                      help="Directory to place/look for the sessions files in. Default: '%s'." % defaults.sessions_dir)
-    legacy_bool_parse("http")
+    simple_bools("http")
     group.add_option("--http", action="store", metavar="yes|no",
                      dest="http", default=defaults.http,
                      help="Respond to http requests")
@@ -1903,7 +1901,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     group.add_option("--ssh", action="store",
                      dest="ssh", default=defaults.ssh, metavar="CMD",
                      help="How to run ssh. Default: '%default'.")
-    legacy_bool_parse("exit-ssh")
+    simple_bools("exit-ssh")
     group.add_option("--exit-ssh", action="store", metavar="yes|no|auto",
                      dest="exit_ssh", default=defaults.exit_ssh,
                      help="Terminate SSH when disconnecting."
@@ -1913,43 +1911,43 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="The username supplied by the client for authentication."
                           " Default: '%default'.")
     group.add_option("--auth", action="append",
-                     dest="auth", default=list(defaults.auth or []),
+                     dest="auth", default=defaults.auth,
                      help="The authentication module to use for unix domain sockets and named pipes - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.auth))
     group.add_option("--tcp-auth", action="append",
-                     dest="tcp_auth", default=list(defaults.tcp_auth or []),
+                     dest="tcp_auth", default=defaults.tcp_auth,
                      help="The authentication module to use for TCP sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.tcp_auth))
     group.add_option("--ws-auth", action="append",
-                     dest="ws_auth", default=list(defaults.ws_auth or []),
+                     dest="ws_auth", default=defaults.ws_auth,
                      help="The authentication module to use for Websockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.ws_auth))
     group.add_option("--wss-auth", action="append",
-                     dest="wss_auth", default=list(defaults.wss_auth or []),
+                     dest="wss_auth", default=defaults.wss_auth,
                      help="The authentication module to use for Secure Websockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.wss_auth))
     group.add_option("--ssl-auth", action="append",
-                     dest="ssl_auth", default=list(defaults.ssl_auth or []),
+                     dest="ssl_auth", default=defaults.ssl_auth,
                      help="The authentication module to use for SSL sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.ssl_auth))
     group.add_option("--ssh-auth", action="append",
-                     dest="ssh_auth", default=list(defaults.ssh_auth or []),
+                     dest="ssh_auth", default=defaults.ssh_auth,
                      help="The authentication module to use for SSH sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.ssh_auth))
     group.add_option("--rfb-auth", action="append",
-                     dest="rfb_auth", default=list(defaults.rfb_auth or []),
+                     dest="rfb_auth", default=defaults.rfb_auth,
                      help="The authentication module to use for RFB sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.rfb_auth))
     group.add_option("--rdp-auth", action="append",
-                     dest="rdp_auth", default=list(defaults.rdp_auth or []),
+                     dest="rdp_auth", default=defaults.rdp_auth,
                      help="The authentication module to use for RDP sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.rdp_auth))
     group.add_option("--quic-auth", action="append",
-                     dest="quic_auth", default=list(defaults.quic_auth or []),
+                     dest="quic_auth", default=defaults.quic_auth,
                      help="The authentication module to use for QUIC sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.quic_auth))
     group.add_option("--vsock-auth", action="append",
-                     dest="vsock_auth", default=list(defaults.vsock_auth or []),
+                     dest="vsock_auth", default=defaults.vsock_auth,
                      help="The authentication module to use for vsock sockets - deprecated, use per socket syntax"
                           " (default: '%s')" % dcsv(defaults.vsock_auth))
     group.add_option("--min-port", action="store",
