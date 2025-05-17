@@ -36,7 +36,7 @@ if log.is_debug_enabled():
 
 from paramiko.ssh_exception import SSHException, ProxyCommandFailure, PasswordRequiredException  # noqa: E402
 from paramiko.transport import Transport  # noqa: E402
-from paramiko import SSHConfig
+from paramiko import SSHConfig  # noqa: E402
 
 WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2 ** 27 - 1)
 TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
