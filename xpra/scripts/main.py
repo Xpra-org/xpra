@@ -3471,12 +3471,9 @@ def run_proxy_run(error_cb: Callable, options, script_file: str, cmdline: list[s
         return run_client(script_file, cmdline, error_cb, options, args, "run")
 
     from xpra.util.daemon import daemonize
-    from queue import SimpleQueue
-    dpid = SimpleQueue()
 
     def preexec() -> None:
         daemonize()
-        dpid.put(os.getpid())
         sys.stdout.write("command started with pid %s\n" % os.getpid())
 
     env = os.environ.copy()
