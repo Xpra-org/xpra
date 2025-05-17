@@ -411,6 +411,48 @@ class SSHServer(paramiko.ServerInterface):
         return False
 
 
+PREFIX = "ssh_host_"
+SUFFIX = "_key"
+
+
+def load_host_key(ff: str):
+    f = os.path.basename(ff)
+    if not (f.startswith(PREFIX) and f.endswith(SUFFIX)):
+        log.warn(f"Warning: unrecognized key file format {ff!r}")
+        log.warn(f" key filenames should start with {PREFIX!r} and end with {SUFFIX!r}")
+        return None
+    keytype = f[len(PREFIX):-len(SUFFIX)]
+    keyclass = get_keyclass(keytype)
+    if not keyclass:
+        log.warn(f"Warning: unknown host key format '{f}'")
+        log(f"key type {f!r} is not supported, cannot load {ff!r}")
+        return None
+    log(f"loading {keytype} key from {ff!r} using {keyclass}")
+    try:
+        return keyclass(filename=ff)
+    except OSError:
+        log(f"cannot add host key {ff!r}", exc_info=True)
+    except paramiko.SSHException as e:
+        log(f"error adding host key {ff!r}", exc_info=True)
+        log.error(f"Error: cannot add {keytype} host key {ff!r}:")
+        log.estr(e)
+    return None
+
+
+def close_all(transport, conn) -> None:
+    if transport:
+        log(f"close() closing {transport}")
+        try:
+            transport.close()
+        except Exception:
+            log(f"{transport}.close()", exc_info=True)
+    log(f"close() closing {conn}")
+    try:
+        conn.close()
+    except Exception:
+        log(f"{conn}.close()")
+
+
 def make_ssh_server_connection(conn, socket_options: dict,
                                none_auth: bool = False,
                                password_auth: Callable | None = None,
@@ -423,17 +465,7 @@ def make_ssh_server_connection(conn, socket_options: dict,
     t = None
 
     def close() -> None:
-        if t:
-            log(f"close() closing {t}")
-            try:
-                t.close()
-            except Exception:
-                log(f"{t}.close()", exc_info=True)
-        log(f"close() closing {conn}")
-        try:
-            conn.close()
-        except Exception:
-            log(f"{conn}.close()")
+        close_all(t, conn)
 
     try:
         t = paramiko.Transport(sock, gss_kex=DoGSSAPIKeyExchange)
@@ -441,40 +473,19 @@ def make_ssh_server_connection(conn, socket_options: dict,
         gss_host = socket_options.get("ssh-gss-host", socket.getfqdn(""))
         t.set_gss_host(gss_host)
         # load host keys:
-        PREFIX = "ssh_host_"
-        SUFFIX = "_key"
         host_keys = {}
 
-        def add_host_key(fd: str, f: str) -> bool:
-            ff = os.path.join(fd, f)
-            keytype = f[len(PREFIX):-len(SUFFIX)]
-            keyclass = get_keyclass(keytype)
-            if not keyclass:
-                log.warn(f"Warning: unknown host key format '{f}'")
-                log(f"key type {f!r} is not supported, cannot load {ff!r}")
-                return False
-            log(f"loading {keytype} key from {ff!r} using {keyclass}")
-            try:
-                host_key = keyclass(filename=ff)
-                if host_key not in host_keys:
-                    host_keys[host_key] = ff
-                    t.add_server_key(host_key)
-                    return True
-            except OSError:
-                log(f"cannot add host key {ff!r}", exc_info=True)
-            except paramiko.SSHException as e:
-                log(f"error adding host key {ff!r}", exc_info=True)
-                log.error(f"Error: cannot add {keytype} host key {ff!r}:")
-                log.estr(e)
-            return False
+        def add_host_key(key_path: str) -> None:
+            host_key = load_host_key(key_path)
+            if host_key and host_key not in host_keys:
+                host_keys[host_key] = key_path
+                t.add_server_key(host_key)
 
-        host_key: str = socket_options.get("ssh-host-key", "")
-        if host_key:
-            d, f = os.path.split(host_key)
-            if f.startswith(PREFIX) and f.endswith(SUFFIX):
-                add_host_key(d, f)
+        host_keyfile: str = socket_options.get("ssh-host-key", "")
+        if host_keyfile:
+            add_host_key(host_keyfile)
             if not host_keys:
-                log.error(f"Error: failed to load host key {host_key!r}")
+                log.error(f"Error: failed to load host key {host_keyfile!r}")
                 close()
                 return None
         else:
@@ -488,7 +499,7 @@ def make_ssh_server_connection(conn, socket_options: dict,
                     continue
                 for f in os.listdir(fd):
                     if f.startswith(PREFIX) and f.endswith(SUFFIX):
-                        add_host_key(fd, f)
+                        add_host_key(os.path.join(fd, f))
             if not host_keys:
                 log.error("Error: cannot start SSH server,")
                 log.error(" no readable SSH host keys found in:")

@@ -14,6 +14,13 @@ log = Logger("x11", "window")
 MAX_ASPECT = 2 ** 15 - 1
 
 
+def fnone(v) -> float | None:
+    try:
+        return float(v)
+    except ValueError:
+        return None
+
+
 def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
     """
         Some applications may set nonsensical values,
@@ -24,38 +31,39 @@ def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
     for attr in ("min-aspect", "max-aspect"):
         v = size_hints.get(attr)
         if v is not None:
-            try:
-                f = float(v)
-            except ValueError:
-                f = None
+            f = fnone(v)
             if f is None or f <= 0 or f >= MAX_ASPECT:
                 log.warn("Warning: clearing invalid aspect hint value for %s: %s", attr, v)
                 del size_hints[attr]
     for attr in ("minimum-aspect-ratio", "maximum-aspect-ratio"):
         v = size_hints.get(attr)
-        if v is not None:
+        if v:
             if v[1] == 0:
                 f = None
             else:
                 try:
                     f = float(v[0]) / float(v[1])
-                except (ValueError, ZeroDivisionError):
+                except (ValueError, ZeroDivisionError, IndexError):
                     f = None
             if f is None or f <= 0 or f >= MAX_ASPECT:
                 log.warn("Warning: clearing invalid aspect hint value for %s: %s", attr, v)
                 del size_hints[attr]
     for attr in ("maximum-size", "minimum-size", "base-size", "increment"):
         v = size_hints.get(attr)
-        if v is not None:
+        if v:
             try:
                 w, h = v
                 int(w)
                 int(h)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError, IndexError):
                 w, h = None, None
             if (w is None or h is None) or w >= MAX_WINDOW_SIZE or h >= MAX_WINDOW_SIZE:
                 log("clearing invalid size hint value for %s: %s", attr, v)
                 del size_hints[attr]
+    sanitize_min_max(size_hints)
+
+
+def sanitize_min_max(size_hints: dict[str, Any]) -> None:
     # if max-size is smaller than min-size (bogus), clamp it..
     clamped = False
     mins = size_hints.get("minimum-size")
