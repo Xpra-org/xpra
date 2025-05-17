@@ -339,7 +339,7 @@ class SessionInfo(Gtk.Window):
         self.show_client = show_client
         self.show_server = show_server
         super().__init__()
-        self.last_populate_time = 0
+        self.last_populate_time = 0.0
         self.last_populate_statistics = 0
         self.is_closed = False
         self.set_title(self.get_window_title())
