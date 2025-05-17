@@ -36,6 +36,7 @@ if log.is_debug_enabled():
 
 from paramiko.ssh_exception import SSHException, ProxyCommandFailure, PasswordRequiredException  # noqa: E402
 from paramiko.transport import Transport  # noqa: E402
+from paramiko import SSHConfig
 
 WINDOW_SIZE = envint("XPRA_SSH_WINDOW_SIZE", 2 ** 27 - 1)
 TIMEOUT = envint("XPRA_SSH_TIMEOUT", 60)
@@ -233,6 +234,28 @@ def safe_lookup(config_obj, hostname: str) -> dict:
     return {}
 
 
+def load_ssh_config(ssh_config: SSHConfig):
+    etc = "etc" if sys.prefix == "/usr" else sys.prefix + "/etc"
+    for config_file in (
+            f"{etc}/ssh/ssh_config",
+            os.path.expanduser("~/.ssh/config"),
+    ):
+        if not os.path.exists(config_file):
+            continue
+        with open(config_file, encoding="utf8") as f:
+            try:
+                ssh_config.parse(f)
+            except Exception as e:
+                log(f"parse({config_file})", exc_info=True)
+                log.error(f"Error parsing {config_file!r}:")
+                log.estr(e)
+        log(f"parsed ssh config {config_file!r}")
+    try:
+        log("%i hosts found", len(ssh_config.get_hostnames()))
+    except KeyError:
+        pass
+
+
 def connect_to(display_desc: dict) -> SSHSocketConnection:
     log(f"connect_to({display_desc})")
     # plain socket attributes:
@@ -260,28 +283,9 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         log("connect_to(%s)", display_desc, exc_info=True)
         raise InitExit(ExitCode.SSH_FAILURE, msg) from None
 
-    from paramiko import SSHConfig, ProxyCommand
+    from paramiko import ProxyCommand
     ssh_config = SSHConfig()
-
-    etc = "etc" if sys.prefix == "/usr" else sys.prefix + "/etc"
-    for config_file in (
-            f"{etc}/ssh/ssh_config",
-            os.path.expanduser("~/.ssh/config"),
-    ):
-        if not os.path.exists(config_file):
-            continue
-        with open(config_file, encoding="utf8") as f:
-            try:
-                ssh_config.parse(f)
-            except Exception as e:
-                log(f"parse({config_file})", exc_info=True)
-                log.error(f"Error parsing {config_file!r}:")
-                log.estr(e)
-        log(f"parsed ssh config {config_file!r}")
-    try:
-        log("%i hosts found", len(ssh_config.get_hostnames()))
-    except KeyError:
-        pass
+    load_ssh_config(ssh_config)
 
     def ssh_lookup(key) -> dict:
         return safe_lookup(ssh_config, key)
