@@ -159,6 +159,9 @@ class Packet(Sequence):
         v = self.data[i]
         if isinstance(v, (memoryview, bytes, bytearray)):
             return v
+        # the html5 client sends strings when we expect a buffer...
+        if isinstance(v, str):
+            return v.encode("utf8")
         return bytes(v)
 
     def get_dict(self, i) -> dict:
