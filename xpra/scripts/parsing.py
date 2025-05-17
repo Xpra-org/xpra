@@ -2044,6 +2044,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
         if not getattr(options, setting):
             setattr(options, setting, getattr(defaults, setting, []))
 
+    # very basic validation of options:
+    if options.compression_level < 0 or options.compression_level > 9:
+        raise ValueError("Compression level must be between 0 and 9 inclusive.")
+    if options.quality != -1 and (options.quality < 0 or options.quality > 100):
+        raise ValueError("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
+    if options.speed != -1 and (options.speed < 0 or options.speed > 100):
+        raise ValueError("Speed must be between 0 and 100 inclusive. (or -1 to disable)")
     return options, args
 
 

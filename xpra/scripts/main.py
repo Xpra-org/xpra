@@ -1753,23 +1753,14 @@ class FakeClientApp:
 
 def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: list[str], mode: str):
     validate_encryption(opts)
-
-    request_mode = None
-    if mode.startswith("request-"):
-        request_mode = mode.replace("request-", "")
-
     if not find_spec("xpra.client"):
         error_cb("`xpra-client` is not installed")
-
-    if opts.compression_level < 0 or opts.compression_level > 9:
-        error_cb("Compression level must be between 0 and 9 inclusive.")
-    if opts.quality != -1 and (opts.quality < 0 or opts.quality > 100):
-        error_cb("Quality must be between 0 and 100 inclusive. (or -1 to disable)")
 
     def basic():
         from xpra.client.base import features
         features.file_transfer = features.control = features.debug = False
 
+    request_mode = mode.replace("request-", "") if mode.startswith("request-") else ""
     run_args = []
     if mode in (
             "info", "id", "connect-test", "control", "version", "detach",
@@ -1893,7 +1884,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
     return app
 
 
-def get_client_gui_app(error_cb, opts, request_mode, extra_args, mode: str):
+def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: Sequence[str], mode: str):
     try:
         app = make_client(opts)
     except RuntimeError as e:
@@ -2389,7 +2380,7 @@ def do_run_client(app) -> ExitValue:
         app.cleanup()
 
 
-def get_start_new_session_dict(opts, mode, extra_args) -> dict[str, Any]:
+def get_start_new_session_dict(opts, mode: str, extra_args) -> dict[str, Any]:
     sns = {
         "mode": mode,  # ie: "start-desktop"
     }
