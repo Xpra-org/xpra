@@ -480,43 +480,48 @@ class ProxyInstance:
             if packet[3]:
                 packet = self.compressed_marker(packet, 3, "file-chunk-data")
         elif packet_type == "challenge":
-            password = self.disp_desc.get("password", self.session_options.get("password"))
-            log("password from %s / %s = %s", self.disp_desc, self.session_options, password)
-            if not password:
-                if not PASSTHROUGH_AUTH:
-                    self.stop(None, "authentication requested by the server,",
-                              "but no password is available for this session")
-                # otherwise, just forward it to the client
-                self.client_challenge_packet = packet
-            else:
-                # client may have already responded to the challenge,
-                # so we have to handle authentication from this end
-                server_salt = strtobytes(packet[1])
-                length = len(server_salt)
-                digest = str(packet[3])
-                salt_digest = "xor"
-                if len(packet) >= 5:
-                    salt_digest = str(packet[4])
-                if salt_digest in ("xor", "des"):
-                    self.stop(None, f"server uses legacy salt digest {salt_digest!r}")
-                    return
-                if salt_digest == "xor":
-                    # with xor, we have to match the size
-                    if length < 16:
-                        raise ValueError(f"server salt is too short: only {length} bytes, minimum is 16")
-                    if length > 256:
-                        raise ValueError(f"server salt is too long: {length} bytes, maximum is 256")
-                else:
-                    # other digest, 32 random bytes is enough:
-                    length = 32
-                client_salt = get_salt(length)
-                salt = gendigest(salt_digest, client_salt, server_salt)
-                challenge_response = gendigest(digest, password, salt)
-                if not challenge_response:
-                    log("invalid digest module '%s': %s", digest)
-                    self.stop(None, f"server requested {digest!r} digest but it is not supported")
-                    return
-                log.info("sending %s challenge response", digest)
-                self.send_hello(challenge_response, client_salt)
-                return
+            self.handle_server_challenge(packet)
+            return
         self.queue_client_packet(packet)
+
+    def handle_server_challenge(self, packet: Packet) -> None:
+        password = self.disp_desc.get("password", self.session_options.get("password", ""))
+        log("password from %s / %s = %s", self.disp_desc, self.session_options, password)
+        if not password:
+            # we don't have a password to send back to the server
+            if not PASSTHROUGH_AUTH:
+                self.stop(None, "authentication requested by the server,",
+                          "but no password is available for this session")
+            # pass-through: just forward the authentication request to the client
+            self.client_challenge_packet = packet
+            self.queue_client_packet(packet)
+            return
+        # client may have already responded to the challenge,
+        # so we have to handle authentication from this end
+        server_salt = strtobytes(packet[1])
+        length = len(server_salt)
+        digest = str(packet[3])
+        salt_digest = "xor"
+        if len(packet) >= 5:
+            salt_digest = str(packet[4])
+        if salt_digest in ("xor", "des"):
+            self.stop(None, f"server uses legacy salt digest {salt_digest!r}")
+            return
+        if salt_digest == "xor":
+            # with xor, we have to match the size
+            if length < 16:
+                raise ValueError(f"server salt is too short: only {length} bytes, minimum is 16")
+            if length > 256:
+                raise ValueError(f"server salt is too long: {length} bytes, maximum is 256")
+        else:
+            # other digest, 32 random bytes is enough:
+            length = 32
+        client_salt = get_salt(length)
+        salt = gendigest(salt_digest, client_salt, server_salt)
+        challenge_response = gendigest(digest, password, salt)
+        if not challenge_response:
+            log("invalid digest module '%s': %s", digest)
+            self.stop(None, f"server requested {digest!r} digest but it is not supported")
+            return
+        log.info("sending %s challenge response", digest)
+        self.send_hello(challenge_response, client_salt)
