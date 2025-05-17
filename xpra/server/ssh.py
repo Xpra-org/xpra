@@ -10,6 +10,7 @@ import socket
 import base64
 import hashlib
 import binascii
+from typing import Any
 from subprocess import Popen, PIPE
 from threading import Event
 from collections.abc import Callable, Sequence
@@ -453,6 +454,34 @@ def close_all(transport, conn) -> None:
         log(f"{conn}.close()")
 
 
+def load_server_host_keys(host_keyfile: str) -> dict[Any, str]:
+    host_keys = {}
+
+    def add_host_key(key_path: str) -> bool:
+        host_key = load_host_key(key_path)
+        if host_key and host_key not in host_keys:
+            host_keys[host_key] = key_path
+        return bool(host_key)
+
+    if host_keyfile:
+        if not add_host_key(host_keyfile):
+            log.error(f"Error: failed to load host key {host_keyfile!r}")
+        return host_keys
+
+    ssh_key_dirs = get_ssh_conf_dirs()
+    log("trying to load ssh host keys from: " + csv(ssh_key_dirs))
+    for d in ssh_key_dirs:
+        fd = osexpand(d)
+        log(f"osexpand({d})={fd}")
+        if not os.path.exists(fd) or not os.path.isdir(fd):
+            log(f"ssh host key directory {fd!r} is invalid")
+            continue
+        for f in os.listdir(fd):
+            if f.startswith(PREFIX) and f.endswith(SUFFIX):
+                add_host_key(os.path.join(fd, f))
+    return host_keys
+
+
 def make_ssh_server_connection(conn, socket_options: dict,
                                none_auth: bool = False,
                                password_auth: Callable | None = None,
@@ -473,40 +502,17 @@ def make_ssh_server_connection(conn, socket_options: dict,
         gss_host = socket_options.get("ssh-gss-host", socket.getfqdn(""))
         t.set_gss_host(gss_host)
         # load host keys:
-        host_keys = {}
-
-        def add_host_key(key_path: str) -> None:
-            host_key = load_host_key(key_path)
-            if host_key and host_key not in host_keys:
-                host_keys[host_key] = key_path
-                t.add_server_key(host_key)
-
         host_keyfile: str = socket_options.get("ssh-host-key", "")
-        if host_keyfile:
-            add_host_key(host_keyfile)
-            if not host_keys:
-                log.error(f"Error: failed to load host key {host_keyfile!r}")
-                close()
-                return None
-        else:
-            ssh_key_dirs = get_ssh_conf_dirs()
-            log("trying to load ssh host keys from: " + csv(ssh_key_dirs))
-            for d in ssh_key_dirs:
-                fd = osexpand(d)
-                log(f"osexpand({d})={fd}")
-                if not os.path.exists(fd) or not os.path.isdir(fd):
-                    log(f"ssh host key directory {fd!r} is invalid")
-                    continue
-                for f in os.listdir(fd):
-                    if f.startswith(PREFIX) and f.endswith(SUFFIX):
-                        add_host_key(os.path.join(fd, f))
-            if not host_keys:
-                log.error("Error: cannot start SSH server,")
-                log.error(" no readable SSH host keys found in:")
-                log.error(" " + csv(ssh_key_dirs))
-                close()
-                return None
+        host_keys = load_server_host_keys(host_keyfile)
+        if not host_keys:
+            log.error("Error: cannot start SSH server,")
+            log.error(" no readable SSH host keys found")
+            close()
+            return None
         log("loaded host keys: %s", tuple(host_keys.values()))
+        # add them to the transport:
+        for host_key in host_keys.keys():
+            t.add_server_key(host_key)
         t.start_server(server=ssh_server)
     except EOFError:
         log("SSH connection closed", exc_info=True)
