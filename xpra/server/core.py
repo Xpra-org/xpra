@@ -1089,7 +1089,7 @@ class ServerCore(ServerBaseClass):
             conn, socket_options,
             none_auth=none_auth,
             password_auth=ssh_password_authenticate,
-            display_name=self.display_name,
+            display_name=self.display,
         )
 
     def try_upgrade_to_rfb(self, proto) -> bool:
