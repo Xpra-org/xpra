@@ -98,41 +98,44 @@ class LoggingServer(StubServerMixin):
             self.local_logging = None
             set_global_logging_handler(ll)
 
+    def local_err(self, message: str, exc, level: int, msg: str, args, kwargs) -> None:
+        ll = self.local_logging
+        if self._closing or not ll:
+            return
+
+        def local_warn(*args) -> None:
+            ll(log, logging.WARNING, *args)
+        local_warn("Warning: %s:", message)
+        if exc:
+            local_warn(" %s", exc)
+        local_warn(" original unformatted message: %s", msg)
+        if args:
+            local_warn(" %i arguments: %s", len(args), args)
+        else:
+            local_warn(" (no arguments)")
+        try:
+            if ll:
+                ll(log, level, msg, *args, **kwargs)
+        except Exception:
+            pass
+        try:
+            exc_info = sys.exc_info()
+            for x in traceback.format_tb(exc_info[2]):
+                for v in x.splitlines():
+                    local_warn(v)
+        except Exception:
+            pass
+
     def remote_logging_handler(self, log, level: int, msg, *args, **kwargs) -> None:
         # prevent loops (if our send call ends up firing another logging call):
         if self.in_remote_logging:
             return
         ll = self.local_logging
-
-        def local_warn(*args) -> None:
-            if ll:
-                ll(log, logging.WARNING, *args)
-
-        def local_err(message, e=None) -> None:
-            if self._closing:
-                return
-            local_warn("Warning: %s:", message)
-            if e:
-                local_warn(" %s", e)
-            local_warn(" original unformatted message: %s", msg)
-            if args:
-                local_warn(" %i arguments: %s", len(args), args)
-            else:
-                local_warn(" (no arguments)")
-            try:
-                if ll:
-                    ll(log, level, msg, *args, **kwargs)
-            except Exception:
-                pass
-            try:
-                exc_info = sys.exc_info()
-                for x in traceback.format_tb(exc_info[2]):
-                    for v in x.splitlines():
-                        local_warn(v)
-            except Exception:
-                pass
-
         self.in_remote_logging = True
+
+        def local_warn(message: str, *args) -> None:
+            ll(log, logging.WARNING, message, *args)
+
         try:
             if not kwargs.pop("remote", True):
                 if ll:
@@ -149,7 +152,7 @@ class LoggingServer(StubServerMixin):
                 else:
                     data = msg
             except Exception as e:
-                local_err("failed to format log message", e)
+                self.local_err("failed to format log message", e, level, msg, args, kwargs)
                 return
             for proto, start_time in self.logging_clients.items():
                 source = self.get_server_source(proto)
@@ -177,7 +180,8 @@ class LoggingServer(StubServerMixin):
                 except Exception as e:
                     if self._closing:
                         return
-                    local_warn("Warning: failed to send log message to %s: %s", source, e)
+                    if ll:
+                        local_warn("Warning: failed to send log message to %s: %s", source, e)
             if self.log_both and ll:
                 try:
                     ll(log, level, msg, *args, **kwargs)
