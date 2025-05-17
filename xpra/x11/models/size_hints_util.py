@@ -50,7 +50,7 @@ def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
                 del size_hints[attr]
     for attr in ("maximum-size", "minimum-size", "base-size", "increment"):
         v = size_hints.get(attr)
-        if v:
+        if v is not None:
             try:
                 w, h = v
                 int(w)
