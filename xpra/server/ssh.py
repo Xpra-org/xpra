@@ -22,8 +22,8 @@ from xpra.util.env import envint, osexpand, first_time
 from xpra.os_util import getuid, WIN32, POSIX
 from xpra.util.thread import start_thread
 from xpra.scripts.config import str_to_bool
-from xpra.common import SSH_AGENT_DISPATCH, SizedBuffer
-from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command
+from xpra.common import SSH_AGENT_DISPATCH, SizedBuffer, BACKWARDS_COMPATIBLE
+from xpra.platform.paths import get_ssh_conf_dirs, get_xpra_command, get_app_dir
 from xpra.log import Logger
 
 log = Logger("network", "ssh")
@@ -198,6 +198,21 @@ def proxy_start(channel, subcommand: str, args: list[str]) -> None:
     channel.proxy_process = proc
 
 
+# emulate a basic echo command,
+def get_echo_value(echo: str) -> str:
+    if WIN32:
+        if echo.startswith("%") and echo.endswith("%"):
+            envname = echo[1:-1]
+            if envname in ("OS", "windir"):
+                return os.environ.get(envname, "")
+    else:
+        if echo.startswith("$"):
+            envname = echo[1:]
+            if envname in ("OSTYPE",):
+                return sys.platform
+    return ""
+
+
 class SSHServer(paramiko.ServerInterface):
     def __init__(self, none_auth=False, pubkey_auth=True, password_auth=None, options=None, display_name=""):
         self.event = Event()
@@ -225,7 +240,8 @@ class SSHServer(paramiko.ServerInterface):
         log("get_allowed_auths(%s)=%s", username, mods)
         return ",".join(mods)
 
-    def check_channel_request(self, kind: str, chanid) -> int:
+    @staticmethod
+    def check_channel_request(kind: str, chanid) -> int:
         log("check_channel_request(%s, %s)", kind, chanid)
         if kind == "session":
             return paramiko.OPEN_SUCCEEDED
@@ -276,17 +292,29 @@ class SSHServer(paramiko.ServerInterface):
             return paramiko.OPEN_SUCCEEDED
         return paramiko.AUTH_FAILED
 
-    def check_auth_gssapi_keyex(self, username: str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None) -> int:
+    @staticmethod
+    def check_auth_gssapi_keyex(username: str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None) -> int:
         log("check_auth_gssapi_keyex%s", (username, gss_authenticated, cc_file))
         return paramiko.AUTH_FAILED
 
-    def check_auth_gssapi_with_mic(self, username: str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None) -> int:
+    @staticmethod
+    def check_auth_gssapi_with_mic(username: str, gss_authenticated=paramiko.AUTH_FAILED, cc_file=None) -> int:
         log("check_auth_gssapi_with_mic%s", (username, gss_authenticated, cc_file))
         return paramiko.AUTH_FAILED
 
-    def check_channel_shell_request(self, channel) -> bool:
+    @staticmethod
+    def check_channel_shell_request(channel) -> bool:
         log(f"check_channel_shell_request({channel})")
         return False
+
+    def setup_agent(self, cmd) -> None:
+        if SSH_AGENT_DISPATCH and self.agent:
+            auth_sock = self.agent.get_env().get("SSH_AUTH_SOCK")
+            log(f"paramiko agent socket={auth_sock!r}")
+            if auth_sock:
+                # pylint: disable=import-outside-toplevel
+                from xpra.net.ssh.agent import setup_proxy_ssh_socket
+                setup_proxy_ssh_socket(cmd, auth_sock=auth_sock)
 
     def check_channel_exec_request(self, channel, command: str) -> bool:
         def fail(*messages) -> bool:
@@ -295,15 +323,6 @@ class SSHServer(paramiko.ServerInterface):
             self.event.set()
             channel.close()
             return False
-
-        def setup_agent(cmd) -> None:
-            if SSH_AGENT_DISPATCH and self.agent:
-                auth_sock = self.agent.get_env().get("SSH_AUTH_SOCK")
-                log(f"paramiko agent socket={auth_sock!r}")
-                if auth_sock:
-                    # pylint: disable=import-outside-toplevel
-                    from xpra.net.ssh.agent import setup_proxy_ssh_socket
-                    setup_proxy_ssh_socket(cmd, auth_sock=auth_sock)
 
         def csend(exit_status=0, out=None, err=None) -> bool:
             channel.exec_response = (exit_status, out, err)
@@ -318,38 +337,21 @@ class SSHServer(paramiko.ServerInterface):
         if cmd == ["command", "-v", "xpra"]:
             return csend(out="xpra\r\n")
         if cmd[0] == "ver" and len(cmd) == 1:
-            # older xpra versions run this command to detect win32:
-            if WIN32:
+            if WIN32 and BACKWARDS_COMPATIBLE:
+                # older xpra versions run this command to detect win32:
                 return csend(out="Microsoft Windows")
             return csend(1, err=f"{cmd[0]}: not found\r\n")
         if cmd[0] == "echo" and len(cmd) == 2:
             # echo can be used to detect the platform,
             # so emulate a basic echo command,
             # just enough for the os detection to work:
-            echo = cmd[1]
-            if WIN32:
-                if echo.startswith("%") and echo.endswith("%"):
-                    envname = echo[1:-1]
-                    if envname in ("OS", "windir"):
-                        echo = os.environ.get(envname, "")
-                    else:
-                        echo = ""
-            else:
-                if echo.startswith("$"):
-                    envname = echo[1:]
-                    if envname in ("OSTYPE",):
-                        echo = sys.platform
-                    else:
-                        echo = ""
-            echo += "\r\n"
+            echo = get_echo_value(cmd[1]) + "\r\n"
             log(f"exec request {cmd} returning: {echo!r}")
             return csend(out=echo)
         if WIN32 and (" ".join(cmd)).find("REG QUERY") >= 0 and str(cmd).find(
                 r"HKEY_LOCAL_MACHINE\\Software\\Xpra") > 0:
             # this batch command is used to detect the xpra.exe installation path
             # (see xpra/net/ssh.py)
-            # pylint: disable=import-outside-toplevel
-            from xpra.platform.paths import get_app_dir
             return csend(out=f"InstallPath {get_app_dir()}\r\n")
         if cmd[0] in ("type", "which") and len(cmd) == 2:
             xpra_cmd = cmd[-1]  # ie: $XDG_RUNTIME_DIR/xpra/xpra or "xpra"
@@ -379,7 +381,7 @@ class SSHServer(paramiko.ServerInterface):
                     return fail(f"Warning: the display requested {display!r}",
                                 f" does not match the current display {display_name!r}")
                 log(f"ssh 'xpra {subcommand}' subcommand: display_name={display_name!r}, agent={self.agent}")
-                setup_agent(cmd)
+                self.setup_agent(cmd)
             else:
                 return fail(f"Warning: unsupported xpra subcommand '{cmd[1]}'")
             # we're ready to use this socket as an xpra channel
@@ -387,7 +389,7 @@ class SSHServer(paramiko.ServerInterface):
             return True
         proxy_cmd = detect_ssh_stanza(cmd)
         if proxy_cmd:
-            setup_agent(proxy_cmd)
+            self.setup_agent(proxy_cmd)
             self._run_proxy(channel)
             return True
         return fail("Warning: unsupported ssh command:", f" {cmd!r}")
@@ -401,12 +403,14 @@ class SSHServer(paramiko.ServerInterface):
         self.proxy_channel = channel
         self.event.set()
 
-    def check_channel_pty_request(self, channel, term, width: int, height: int,
+    @staticmethod
+    def check_channel_pty_request(channel, term, width: int, height: int,
                                   pixelwidth: int, pixelheight: int, modes) -> bool:
         log("check_channel_pty_request%s", (channel, term, width, height, pixelwidth, pixelheight, modes))
         # refusing to open a pty:
         return False
 
+    @staticmethod
     def enable_auth_gssapi(self) -> bool:
         log("enable_auth_gssapi()")
         return False
