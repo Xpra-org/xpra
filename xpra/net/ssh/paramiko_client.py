@@ -234,7 +234,8 @@ def safe_lookup(config_obj, hostname: str) -> dict:
     return {}
 
 
-def load_ssh_config(ssh_config: SSHConfig):
+def load_ssh_config() -> SSHConfig:
+    ssh_config = SSHConfig()
     etc = "etc" if sys.prefix == "/usr" else sys.prefix + "/etc"
     for config_file in (
             f"{etc}/ssh/ssh_config",
@@ -254,6 +255,7 @@ def load_ssh_config(ssh_config: SSHConfig):
         log("%i hosts found", len(ssh_config.get_hostnames()))
     except KeyError:
         pass
+    return ssh_config
 
 
 def connect_to(display_desc: dict) -> SSHSocketConnection:
@@ -283,9 +285,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         log("connect_to(%s)", display_desc, exc_info=True)
         raise InitExit(ExitCode.SSH_FAILURE, msg) from None
 
-    from paramiko import ProxyCommand
-    ssh_config = SSHConfig()
-    load_ssh_config(ssh_config)
+    ssh_config = load_ssh_config()
 
     def ssh_lookup(key) -> dict:
         return safe_lookup(ssh_config, key)
@@ -320,6 +320,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         proxycommand = host_config.get("proxycommand")
         if proxycommand:
             log(f"found proxycommand={proxycommand!r} for host {host!r}")
+            from paramiko import ProxyCommand
             sock = ProxyCommand(proxycommand)
             log(f"ProxyCommand({proxycommand})={sock}")
             from xpra.util.child_reaper import getChildReaper
