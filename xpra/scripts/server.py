@@ -12,6 +12,7 @@
 # (also do not import anything that imports gtk)
 import sys
 import glob
+import shlex
 import os.path
 import datetime
 from typing import Any, NoReturn
@@ -740,7 +741,11 @@ def _do_run_server(script_file: str, cmdline,
         opts.start_late = []
         opts.start_child_late = []
     elif opts.exit_with_children:
-        assert has_child_arg, "exit-with-children was specified but start-child* is missing!"
+        if not has_child_arg:
+            msg = "exit-with-children was specified but start-child* is missing!"
+            warn(msg)
+            warn(" command line is: %r" % shlex.join(cmdline))
+            raise InitException(msg)
     elif opts.start_child:
         warn("Warning: the 'start-child' option is used,")
         warn(" but 'exit-with-children' is not enabled,")
