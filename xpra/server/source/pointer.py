@@ -23,7 +23,7 @@ class PointerConnection(StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         if caps.boolget("pointer"):
             return True
-        return BACKWARDS_COMPATIBLE and caps.boolget("mouse")
+        return BACKWARDS_COMPATIBLE and (caps.boolget("mouse") or caps.boolget("mouse.show"))
 
     def init_state(self) -> None:
         self.double_click_time: int = -1
