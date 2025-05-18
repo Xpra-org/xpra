@@ -425,6 +425,12 @@ class ServerCore(ServerBaseClass):
             if self.init_thread.is_alive():
                 log.warn("Warning: initialization thread is still active")
 
+    def get_subsystems(self) -> list[str]:
+        subsystems: list[str] = []
+        for c in SERVER_BASES:
+            subsystems.append(c.__name__.replace("Server", "").rstrip("_"))
+        return subsystems
+
     def run(self) -> ExitValue:
         # uuid needs to be done after setup()
         self.init_uuid()
@@ -1955,6 +1961,7 @@ class ServerCore(ServerBaseClass):
             si.update(self.get_server_exec_info())
             if SYSCONFIG:
                 si["sysconfig"] = get_sysconfig_info()
+            si["subsystems"] = self.get_subsystems()
         else:
             si = self.get_minimal_server_info()
         si.update(get_host_info(FULL_INFO or authenticated))

@@ -506,6 +506,12 @@ class ServerBase(ServerBaseClass):
         i.update(self.get_server_features())
         return i
 
+    def get_subsystems(self) -> list[str]:
+        subsystems: list[str] = ServerCore.get_subsystems(self)
+        for c in SERVER_BASES:
+            subsystems.append(c.__name__.replace("Server", "").rstrip("_"))
+        return subsystems
+
     def do_get_info(self, proto, server_sources=()) -> dict[str, Any]:
         log("ServerBase.do_get_info%s", (proto, server_sources))
         start = monotonic()
@@ -514,9 +520,7 @@ class ServerBase(ServerBaseClass):
         def up(prefix, d) -> None:
             merge_dicts(info, {prefix: d})
 
-        subsystems = []
         for c in SERVER_BASES:
-            subsystems.append(c.__name__.replace("Server", ""))
             with log.trap_error(f"Error collecting information from {c}"):
                 cstart = monotonic()
                 mixin_info = c.get_info(self, proto)
@@ -524,7 +528,6 @@ class ServerBase(ServerBaseClass):
                 merge_dicts(info, mixin_info)
                 cend = monotonic()
                 log("%s.get_info(%s) took %ims", c, proto, int(1000 * (cend - cstart)))
-        up("subsystems", subsystems)
 
         up("features", self.get_features_info())
         up("network", {
