@@ -2,6 +2,8 @@
 fake-cuda
 xorg-x11-drv-dummy
 gstreamer1-plugin-timestamp
+winbar
+
 
 # default python3.12:
 python3-cython

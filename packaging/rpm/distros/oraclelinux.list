@@ -4,6 +4,7 @@ gstreamer1-plugin-timestamp
 libyuv
 nasm
 openh264
+winbar
 
 
 PYTHON3=python3.11
