@@ -36,12 +36,11 @@ StateHint: Final[int] = constants["StateHint"]
 IconicState: Final[int] = constants["IconicState"]
 InputHint: Final[int] = constants["InputHint"]
 
+sizeof_long: Final[int] = struct.calcsize(b'@L')
+
 
 def unsupported(*_args) -> NoReturn:
     raise RuntimeError("unsupported")
-
-
-sizeof_long = struct.calcsize(b"@L")
 
 
 def _force_length(name: str, data: bytes, length: int, noerror_length: int = -1) -> bytes:
@@ -61,10 +60,11 @@ class NetWMStrut:
         # given a _NET_WM_STRUT instead of a _NET_WM_STRUT_PARTIAL, then it
         # will be only length 4 instead of 12, we just don't define the other values
         # and let the client deal with it appropriately
-        if len(data) == 16:
+        if len(data) == 4 * sizeof_long:
             self.left, self.right, self.top, self.bottom = struct.unpack(b"@LLLL", data)
         else:
-            data = _force_length("_NET_WM_STRUT or _NET_WM_STRUT_PARTIAL", data, 4 * 12)
+
+            data = _force_length("_NET_WM_STRUT or _NET_WM_STRUT_PARTIAL", data, 12 * sizeof_long)
             (
                 self.left, self.right, self.top, self.bottom,
                 self.left_start_y, self.left_end_y,
@@ -223,7 +223,7 @@ def _read_image(stream) -> tuple[int, int, str, bytes] | None:
         data = stream.read(width * height * long_size)
         expected = width * height * long_size
         if len(data) < expected:
-            log.warn("Warning: corrupt _NET_WM_ICON, execpted %i bytes but got %i",
+            log.warn("Warning: corrupt _NET_WM_ICON, expected %i bytes but got %i",
                      expected, len(data))
             return None
         if int_size != long_size:
