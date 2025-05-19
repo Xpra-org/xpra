@@ -18,7 +18,7 @@ autoprov: no
 %endif
 
 Name:		%{python3}-cython
-Version:	3.1.0
+Version:	3.1.1
 Release:	0%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
@@ -42,7 +42,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "7d21ddd333def1144ac8961d38136522906fbdee4140eff720eb98cd7e9a7ad5" ]; then
+if [ "${sha256}" != "d0f7bba6bea6b9eace344b587f38e1a3bbd50d896a8529d4215b5ce6f1461566" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
