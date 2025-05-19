@@ -508,9 +508,7 @@ class ServerCore(ServerBaseClass):
 
     def init_uuid(self) -> None:
         # Define a server UUID if needed:
-        self.uuid = os.environ.get("XPRA_PROXY_START_UUID", "") or self.get_server_uuid()
-        if not self.uuid:
-            self.uuid = get_hex_uuid()
+        self.uuid = os.environ.get("XPRA_PROXY_START_UUID", "") or self.get_server_uuid() or get_hex_uuid()
         log(f"server uuid is {self.uuid}")
 
     def get_server_uuid(self) -> str:

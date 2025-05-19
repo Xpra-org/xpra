@@ -431,7 +431,7 @@ class BaseWindowModel(CoreX11WindowModel):
             if xid:
                 group_leader = get_pywindow(xid)
                 if not group_leader:
-                    log.error(f"Error group leader window {xid:x} not found")
+                    log.error(f"Error group leader window '{xid:x}' not found")
         self._updateprop("group-leader", group_leader)
         self._updateprop("attention-requested", wm_hints.get("urgency", False))
         _input = wm_hints.get("input")
