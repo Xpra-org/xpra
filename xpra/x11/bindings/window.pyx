@@ -1398,6 +1398,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             hints["window_group"] = wm_hints.window_group
         if wm_hints.flags & XUrgencyHint:
             hints["urgency"] = True
+        log("getWMHints(%x)=%s", xwindow, hints)
         XFree(wm_hints)
         return hints
 
