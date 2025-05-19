@@ -455,6 +455,7 @@ class DisplayManager(StubServerMixin):
             ss.set_screen_sizes(packet[3])
         log("client requesting new size: %sx%s", width, height)
         self.set_screen_size(width, height)
+        self.set_desktop_geometry_attributes(width, height)
         if len(packet) >= 4:
             log.info("received updated display dimensions")
             log.info("client display size is %sx%s", width, height)
@@ -490,6 +491,7 @@ class DisplayManager(StubServerMixin):
             log.info(f"client display size is {width}x{height}")
             log_screen_sizes(width, height, ss.screen_sizes)
             self.calculate_workarea(width, height)
+            self.set_desktop_geometry_attributes(width, height)
         # DPI
         dpi = 0
         dpi_caps = attrs.get("dpi")
