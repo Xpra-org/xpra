@@ -136,6 +136,9 @@ class X11ServerCore(GTKServerBase):
             from xpra.x11.gtk.bindings import init_x11_filter
             self.x11_filter = init_x11_filter()
             assert self.x11_filter
+
+    def init_uuid(self) -> None:
+        super().init_uuid()
         with xlog:
             self.save_server_mode()
             self.save_server_uuid()
