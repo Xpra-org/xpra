@@ -52,12 +52,6 @@ def isxwayland(display_name : str=os.environ.get("DISPLAY", "")):
         if get_xstring(d, "VFB_IDENT"):
             log(f"isxwayland({display_name}) VFB_IDENT found")
             return False
-        #we can't trust the monitor names of an xpra server!
-        if get_xstring(d, "XPRA_SERVER_UUID"):
-            #assume that xpra is not using XWayland as vfb
-            #(that's a fair assumption - why would you do that?)
-            log(f"isxwayland({display_name}) XPRA_SERVER_UUID found")
-            return False
         #this can go wrong...
         props = get_monitor_properties(d)
         log(f"isxwayland({display_name}) monitor properties={props}")
