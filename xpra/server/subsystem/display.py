@@ -173,6 +173,7 @@ class DisplayManager(StubServerMixin):
         self.display_pid: int = 0
         self.randr_sizes_added: list[tuple[int, int]] = []
         self.initial_resolutions: Sequence[tuple[int, int, int]] = ()
+        self.screen_size_changed_timer = 0
         self.randr = False
         self.randr_exact_size = False
         self.bell = False
@@ -291,6 +292,15 @@ class DisplayManager(StubServerMixin):
         else:
             log.info(f"xvfb pid {pid}")
         self.display_pid = pid
+
+    def cleanup(self) -> None:
+        self.cancel_screen_size_changed_timer()
+
+    def cancel_screen_size_changed_timer(self):
+        ssct = self.screen_size_changed_timer
+        if ssct:
+            self.screen_size_changed_timer = 0
+            GLib.source_remove(ssct)
 
     def late_cleanup(self, stop=True) -> None:
         from xpra.gtk.util import close_gtk_display
@@ -514,19 +524,27 @@ class DisplayManager(StubServerMixin):
         log("reset_icc_profile() not implemented")
 
     def _monitors_changed(self, screen) -> None:
-        self.do_screen_changed(screen)
+        log(f"_monitors_changed({screen})")
+        self.schedule_screen_changed(screen)
 
     def _screen_size_changed(self, screen) -> None:
-        self.do_screen_changed(screen)
+        log(f"_screen_size_changed({screen})")
+        self.schedule_screen_changed(screen)
 
-    def do_screen_changed(self, screen) -> None:
+    def schedule_screen_changed(self, screen):
+        self.cancel_screen_size_changed_timer()
+        self.screen_size_changed_timer = GLib.timeout_add(10, self.do_screen_changed, screen)
+
+    def do_screen_changed(self, screen) -> bool:
         log("do_screen_changed(%s)", screen)
+        self.screen_size_changed_timer = 0
         # randr has resized the screen, tell the client (if it supports it)
         with SilenceWarningsContext():
             w, h = screen.get_width(), screen.get_height()
         log("new screen dimensions: %ix%i", w, h)
         self.set_screen_geometry_attributes(w, h)
         GLib.idle_add(self.send_updated_screen_size)
+        return False
 
     def get_root_window_size(self) -> tuple[int, int]:
         raise NotImplementedError()

@@ -277,7 +277,7 @@ class Wm(GObject.GObject):
         self.root_set("_NET_WORKAREA", ["u32"], v)
 
     def set_desktop_geometry(self, width: int, height: int) -> None:
-        v = [width, height]
+        v = (width, height)
         screenlog("_NET_DESKTOP_GEOMETRY=%s", v)
         self.root_set("_NET_DESKTOP_GEOMETRY", ["u32"], v)
         # update all the windows:

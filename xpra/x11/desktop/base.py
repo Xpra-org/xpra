@@ -157,12 +157,13 @@ class DesktopServerBase(DesktopServerBaseClass):
     def parse_screen_info(self, ss) -> None:
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)
 
-    def do_screen_changed(self, screen) -> None:
+    def do_screen_changed(self, screen) -> bool:
         """
         Screen changes are normally managed by requests or user actions,
         we do not need to send any messages to the client here,
         the monitor window model(s) will take care of it.
         """
+        return False
 
     def set_desktop_geometry_attributes(self, w: int, h: int):
         # geometry is not synced with the client's for desktop servers
