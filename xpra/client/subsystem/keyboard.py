@@ -46,9 +46,6 @@ class KeyboardClient(StubClientMixin):
         self.server_keyboard: bool = True
         self.kh_warning: bool = False
 
-    def init(self, opts) -> None:
-        pass
-
     def init_ui(self, opts) -> None:
         send_keyboard = noop
         if not self.readonly:
@@ -159,7 +156,3 @@ class KeyboardClient(StubClientMixin):
         if self.keyboard_helper is None:
             return []
         return self.keyboard_helper.mask_to_names(int(mask))
-
-    def init_authenticated_packet_handlers(self) -> None:
-        # we only send keyboard events, nothing in return
-        pass

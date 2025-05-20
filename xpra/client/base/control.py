@@ -24,16 +24,10 @@ class ControlClient(StubClientMixin):
     def __init__(self):
         self.control_commands: dict[str, Any] = {}
 
-    def init(self, opts) -> None:
-        pass
-
     def get_info(self) -> dict[str, tuple]:
         return {
             "control": tuple(self.control_commands.keys())
         }
-
-    def get_caps(self) -> dict[str, Any]:
-        return {}
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.add_control_commands()

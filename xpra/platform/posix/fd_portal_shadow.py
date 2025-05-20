@@ -96,13 +96,13 @@ class PortalShadow(GTKShadowServerBase):
         raise NotImplementedError()
 
     def start_refresh(self, wid: int) -> None:
-        self.start_capture()
-
-    def start_capture(self) -> None:
-        pass
+        log(f"start_refresh({wid})")
 
     def setup_capture(self) -> None:
-        pass
+        """
+        this method is empty because the capture cannot be created without user interaction,
+        this is done in `create_session` instead.
+        """
 
     def stop_capture(self) -> None:
         c = self.capture

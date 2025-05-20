@@ -192,13 +192,13 @@ class ConfigureGUI(BaseGUIWindow):
         start_thread(probe_elements, "probe-elements", daemon=True)
 
     def configure_encoding(self, *_args) -> None:
-        pass
+        log.error("Error: this is not implemented yet!")
 
     def configure_decoding(self, *_args) -> None:
-        pass
+        log.error("Error: this is not implemented yet!")
 
     def configure_shadow(self, *_args) -> None:
-        pass
+        log.error("Error: this is not implemented yet!")
 
 
 def main(_args) -> int:

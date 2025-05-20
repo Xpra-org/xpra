@@ -1748,7 +1748,7 @@ class FakeClientApp:
 
     @staticmethod
     def cleanup():
-        pass
+        """ this fake client does not need to cleanup anything """
 
 
 def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: list[str], mode: str):

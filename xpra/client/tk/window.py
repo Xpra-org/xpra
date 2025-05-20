@@ -79,8 +79,11 @@ class ClientWindow(Toplevel):
         log(f"focus-in: {event!r}")
         self.client.update_focus(self.wid)
 
-    def on_focus_out(self, event) -> None:
-        pass
+    @staticmethod
+    def on_focus_out(event) -> None:
+        log(f"focus_out: {event!r}")
+        # no real need to update anything
+        # (tracking where the focus is actually going to would add the same complexity as the Gtk client)
 
     def on_hide(self) -> None:
         self.client.send("unmap-window", self.wid)
