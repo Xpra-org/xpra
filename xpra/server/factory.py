@@ -10,8 +10,12 @@ def get_server_base_classes() -> tuple[type, ...]:
     classes: list[type] = [ServerCore]
     # `Power`, `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
     if features.power:
+        # this one is for server-side system power events:
         from xpra.server.subsystem.power import PowerEventServer
         classes.append(PowerEventServer)
+        # and this one for processing power event messages from the client:
+        from xpra.server.subsystem.suspend import SuspendServer
+        classes.append(SuspendServer)
     if features.ping:
         from xpra.server.subsystem.ping import PingServer
         classes.append(PingServer)
