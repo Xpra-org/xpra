@@ -165,9 +165,10 @@ def add_ext_net_dpi_fps(cmd: list[str], depth=24, dpi=0, fps=0) -> list[str]:
         "-noreset",
         "-auth", "$XAUTHORITY",
     ]
-    from xpra.x11.vfb_util import can_use_fakescreenfps
-    if fps > 0 and can_use_fakescreenfps():
-        cmd += ["-fakescreenfps", str(fps)]
+    if POSIX and not OSX:
+        from xpra.x11.vfb_util import can_use_fakescreenfps
+        if fps > 0 and can_use_fakescreenfps():
+            cmd += ["-fakescreenfps", str(fps)]
     if dpi > 0:
         cmd += ["-dpi", f"{dpi}x{dpi}"]
     return cmd
@@ -280,7 +281,7 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
                           warn_fn: Callable = warn,
                           dpi=0, fps=0) -> list[str]:
     if not POSIX or OSX:
-        return get_Xvfb_command(dpi=dpi)
+        return get_Xvfb_command(dpi=dpi, fps=fps)
     xorg_bin = get_xorg_bin()
     if Xdummy_wrapper_ENABLED is not None:
         # honour what was specified:
@@ -295,7 +296,7 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
         if (xorg_stat.st_mode & stat.S_ISUID) != 0:
             if (xorg_stat.st_mode & stat.S_IROTH) == 0:
                 warn_fn(f"{xorg_bin} is suid and not readable, Xdummy support unavailable")
-                return get_Xvfb_command(dpi=dpi)
+                return get_Xvfb_command(dpi=dpi, fps=fps)
             debug(f"{xorg_bin} is suid and readable, using the xpra_Xdummy wrapper")
             use_wrapper = True
         else:
