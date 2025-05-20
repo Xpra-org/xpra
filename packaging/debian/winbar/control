@@ -1,0 +1,64 @@
+Source: winbar
+Section: x11
+Priority: optional
+Maintainer: Antoine Martin <antoine@xpra.org>
+Uploaders: Antoine Martin <antoine@xpra.org>
+Build-Depends:
+ debhelper,
+ quilt,
+ g++,
+ make,
+ cmake,
+ checkinstall,
+ pkg-config,
+ libpango1.0-dev,
+ libcairo2-dev,
+ librsvg2-dev,
+ libxcb1-dev,
+ libxcb-util-dev,
+ libpulse-dev,
+ libxkbcommon-dev,
+ libxkbcommon-x11-dev,
+ libconfig++-dev,
+ libxcb-keysyms1-dev,
+ libxcb-image0-dev,
+ papirus-icon-theme,
+ lxappearance,
+ unzip,
+ libxcb-randr0-dev,
+ libxcb-record0-dev,
+ libxcb-ewmh-dev,
+ libxcb-icccm4-dev,
+ libx11-xcb-dev,
+ libxcb-cursor-dev,
+ libdbus-1-dev,
+ libfontconfig1-dev,
+ libasound2-dev,
+ libxcb-xinput-dev,
+ libxcb-xinput0,
+ libglew-dev,
+ libglm-dev
+# libcurl4 and libcurl4-openssl-dev are available for all Debian releases, but not for Ubuntu releases older than Plucky:
+#plucky: libcurl4
+#plucky: libcurl4-openssl-dev
+#bookworm: libcurl4
+#bookworm: libcurl4-openssl-dev
+#trixie: libcurl4
+#trixie: libcurl4-openssl-dev
+#sid: libcurl4
+#sid: libcurl4-openssl-dev
+Standards-Version: 3.9.8
+
+Package: winbar
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ ${xviddriver:Depends},
+Provides:
+ ${xviddriver:Provides}
+Description: A familiar X11 panel/dock to ease new linux users transition
+ This package provides a panel/dock that resembles other operating systems.
+ .
+ More information about X.Org can be found at:
+ <URL:https://github.com/jmanc3/winbar>

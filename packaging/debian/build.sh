@@ -11,3 +11,4 @@ if [ `arch` == "x86_64" ]; then
 fi
 $BASH ./xserver-xorg-video-dummy.sh
 $BASH ./xpra.sh
+$BASH ./winbar.sh

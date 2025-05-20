@@ -1,0 +1,4 @@
+winbar (1:0.1-1) UNRELEASED; urgency=low
+  * initial packaging
+
+ -- Antoine Martin <antoine@xpra.org>  Mon, 19 May 2025 21:56:51 +0700

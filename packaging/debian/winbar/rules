@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+DH_VERBOSE=1
+
+override_dh_auto_configure:
+	sed -i "s+/usr/local/bin+/usr/bin+" CMakeLists.txt
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release
+
+override_dh_auto_install:
+	dh_auto_install
+	unzip -o winbar.zip
+	mkdir -p debian/winbar/usr/share/winbar debian/winbar/etc
+	cp -R winbar/fonts winbar/resources winbar/plugins winbar/tofix.csv winbar/items_custom.ini debian/winbar/usr/share/winbar
+	cp winbar/winbar.cfg debian/winbar/etc
+
+%:
+	dh $@
