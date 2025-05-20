@@ -202,6 +202,17 @@ def parse_ssl_verify_mask(verify_flags: str) -> int:
     return ssl_verify_flags
 
 
+def parse_ssl_protocol(protocol: str, server_side=True):
+    import ssl
+    if protocol.lower() in ("tls", "auto"):
+        return ssl.PROTOCOL_TLS_SERVER if server_side else ssl.PROTOCOL_TLS_CLIENT
+    proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("TLSV", "TLSv"), None)
+    if proto is None:
+        values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
+        raise InitException(f"invalid ssl-protocol {protocol!r}, must be one of: " + csv(values))
+    return proto
+
+
 def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", ca_data="",
                                 protocol: str = "TLS",
                                 client_verify_mode: str = "optional", server_verify_mode: str = "required",
@@ -215,33 +226,21 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
             raise InitException("you must specify an 'ssl-cert' file to use ssl sockets")
     ssllog = get_ssl_logger()
     ssllog("get_ssl_wrap_socket_context%s", (
-        cert, key, ca_certs, ca_data,
-        protocol,
-        client_verify_mode, server_verify_mode, verify_flags,
-        check_hostname, server_hostname,
-        options, ciphers, server_side)
+        cert, key, ca_certs, ca_data, protocol, client_verify_mode, server_verify_mode, verify_flags,
+        check_hostname, server_hostname, options, ciphers, server_side)
     )
-    if server_side:
-        ssl_cert_reqs = parse_ssl_verify_mode(client_verify_mode)
-    else:
-        ssl_cert_reqs = parse_ssl_verify_mode(server_verify_mode)
+    ssl_cert_reqs = parse_ssl_verify_mode(server_verify_mode if server_side else client_verify_mode)
     ssllog(" verify_mode for server_side=%s : %s", server_side, ssl_cert_reqs)
     # parse protocol:
     import ssl
-    if protocol.upper() == "TLS":
-        proto = ssl.PROTOCOL_TLS_SERVER if server_side else ssl.PROTOCOL_TLS_CLIENT
-    else:
-        proto = getattr(ssl, "PROTOCOL_" + protocol.upper().replace("TLSV", "TLSv"), None)
-        if proto is None:
-            values = [k[len("PROTOCOL_"):] for k in dir(ssl) if k.startswith("PROTOCOL_")]
-            raise InitException(f"invalid ssl-protocol {protocol!r}, must be one of: " + csv(values))
-    ssllog(" protocol=%#x", proto)
-
     kwargs: dict[str, bool | str] = {
         "server_side": server_side,
         "do_handshake_on_connect": False,
         "suppress_ragged_eofs": True,
     }
+    if not server_side:
+        kwargs["server_hostname"] = server_hostname
+    proto = parse_ssl_protocol(protocol, server_side)
     context = ssl.SSLContext(proto)
     context.set_ciphers(ciphers)
     if not server_side:
@@ -265,17 +264,11 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
         except ssl.SSLError as e:
             ssllog("load_cert_chain", exc_info=True)
             raise InitException(f"SSL error, failed to load certificate chain: {e}") from e
-    # if not server_side and (check_hostname or (ca_certs and ca_certs.lower()!="default")):
-    if not server_side:
-        kwargs["server_hostname"] = server_hostname
     if ssl_cert_reqs != ssl.CERT_NONE:
-        if server_side:
-            purpose = ssl.Purpose.CLIENT_AUTH
-        else:
-            purpose = ssl.Purpose.SERVER_AUTH
-            ssllog(" check_hostname=%s, server_hostname=%s", check_hostname, server_hostname)
-            if context.check_hostname and not server_hostname:
-                raise InitException("ssl error: check-hostname is set but server-hostname is not")
+        ssllog(" check_hostname=%s, server_hostname=%s", check_hostname, server_hostname)
+        purpose = ssl.Purpose.CLIENT_AUTH if server_side else ssl.Purpose.SERVER_AUTH
+        if not server_side and context.check_hostname and not server_hostname:
+            raise InitException("ssl error: check-hostname is set but server-hostname is not")
         ssllog(" load_default_certs(%s)", purpose)
         context.load_default_certs(purpose)
 
@@ -518,26 +511,7 @@ def save_ssl_config_file(server_hostname: str, port=443,
     return ""
 
 
-def gen_ssl_cert() -> tuple[str, str]:
-    log = get_ssl_logger()
-    keypath = find_ssl_cert(KEY_FILENAME)
-    certpath = find_ssl_cert(CERT_FILENAME)
-    if keypath and certpath:
-        log.info("found an existing SSL certificate:")
-        log.info(f" {keypath!r}")
-        log.info(f" {certpath!r}")
-        return keypath, certpath
-    from shutil import which
-    openssl = which("openssl") or os.environ.get("OPENSSL", "")
-    if not openssl:
-        raise InitExit(ExitCode.SSL_FAILURE, "cannot find openssl executable")
-    openssl_config = ""
-    creationflags = 0
-    if WIN32:
-        from xpra.platform.paths import get_app_dir
-        from subprocess import CREATE_NO_WINDOW
-        creationflags = CREATE_NO_WINDOW
-        openssl_config = os.path.join(get_app_dir(), "etc", "ssl", "openssl.cnf")
+def get_gen_ssl_cert_dir() -> str:
     if is_admin():
         # running as root, use global location:
         if OSX:
@@ -553,47 +527,61 @@ def gen_ssl_cert() -> tuple[str, str]:
             os.mkdir(ssldir, 0o777)
         if not os.path.exists(ssldir):
             os.mkdir(ssldir, 0o777)
-    else:
-        from xpra.platform.paths import get_ssl_cert_dirs
-        dirs = [d for d in get_ssl_cert_dirs() if not d.startswith("/etc") and not d.startswith("/usr") and d != "./"]
-        # use the first writeable one:
-        log(f"testing ssl dirs: {dirs}")
-        ssldir = ""
-        for sdir in dirs:
-            path = osexpand(sdir)
-            if os.path.exists(path) and os.path.isdir(path) and os.access(path, os.W_OK):
-                ssldir = path
-                log(f"found writeable ssl dir {ssldir!r}")
+        return ssldir
+    from xpra.platform.paths import get_ssl_cert_dirs
+    dirs = [d for d in get_ssl_cert_dirs() if not d.startswith("/etc") and not d.startswith("/usr") and d != "./"]
+    # use the first writeable one:
+    log = get_ssl_logger()
+    log(f"testing ssl dirs: {dirs}")
+    for sdir in dirs:
+        ssldir = osexpand(sdir)
+        if os.path.exists(ssldir) and os.path.isdir(ssldir) and os.access(ssldir, os.W_OK):
+            log(f"found writeable ssl dir {ssldir!r}")
+            return ssldir
+    # we may have to create the parent directories:
+    log("no existing ssl dir found, trying to create one")
+    for sdir in dirs:
+        ssldir = osexpand(sdir)
+        head = ssldir
+        create_dirs = []
+        while head:
+            head, tail = os.path.split(head)        #ie: "/home/user/.config/xpra", "ssl"
+            log(f"{head=}, {tail=}")
+            if tail:
+                create_dirs.append(tail)
+            else:
                 break
-        if not ssldir:
-            # we may have to create the parent directories:
-            log("no ssl dir found, trying to create one")
-            for sdir in dirs:
-                path = osexpand(sdir)
-                head = path
-                create_dirs = []
-                while head:
-                    head, tail = os.path.split(head)        #ie: "/home/user/.config/xpra", "ssl"
-                    log(f"{head=}, {tail=}")
-                    if tail:
-                        create_dirs.append(tail)
-                    else:
-                        break
-                    if tail.find("xpra") >= 0:
-                        # don't create directories above our one
-                        break
-                if create_dirs and head:
-                    while create_dirs:
-                        tail = create_dirs.pop()
-                        head = os.path.join(head, tail)
-                        try:
-                            os.mkdir(head, 0o777)
-                        except OSError as e:
-                            log(f"failed to create {head!r} for {path!r}: {e}")
-                            continue
-                    ssldir = path
-                    log(f"created {ssldir!r}")
-                    break
+            if tail.find("xpra") >= 0:
+                # don't create directories above our one
+                break
+        if create_dirs and head:
+            while create_dirs:
+                tail = create_dirs.pop()
+                head = os.path.join(head, tail)
+                try:
+                    os.mkdir(head, 0o777)
+                except OSError as e:
+                    log(f"failed to create {head!r} for {ssldir!r}: {e}")
+                    continue
+            log(f"created {ssldir!r}")
+            return ssldir
+    raise RuntimeError("unable to locate or create an ssl certificate directory")
+
+
+def gen_ssl_cert() -> tuple[str, str]:
+    log = get_ssl_logger()
+    keypath = find_ssl_cert(KEY_FILENAME)
+    certpath = find_ssl_cert(CERT_FILENAME)
+    if keypath and certpath:
+        log.info("found an existing SSL certificate:")
+        log.info(f" {keypath!r}")
+        log.info(f" {certpath!r}")
+        return keypath, certpath
+    from shutil import which
+    openssl = which("openssl") or os.environ.get("OPENSSL", "")
+    if not openssl:
+        raise InitExit(ExitCode.SSL_FAILURE, "cannot find openssl executable")
+    ssldir = get_gen_ssl_cert_dir()
     keypath = f"{ssldir}/{KEY_FILENAME}"
     certpath = f"{ssldir}/{CERT_FILENAME}"
     cmd = [
@@ -606,6 +594,13 @@ def gen_ssl_cert() -> tuple[str, str]:
         "-keyout", keypath,
         "-out", certpath,
     ]
+    openssl_config = ""
+    creationflags = 0
+    if WIN32:
+        from xpra.platform.paths import get_app_dir
+        from subprocess import CREATE_NO_WINDOW
+        creationflags = CREATE_NO_WINDOW
+        openssl_config = os.path.join(get_app_dir(), "etc", "ssl", "openssl.cnf")
     if openssl_config and os.path.exists(openssl_config):
         cmd += ["-config", openssl_config]
     log.info("generating a new SSL certificate:")

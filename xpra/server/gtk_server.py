@@ -225,7 +225,7 @@ class GTKServerBase(ServerBase):
             workarea.height = maxh
         self.set_workarea(workarea)
 
-    def set_workarea(self, workarea):
+    def set_workarea(self, workarea) -> None:
         """ overridden by seamless servers """
 
     def set_desktop_geometry(self, width: int, height: int) -> None:
