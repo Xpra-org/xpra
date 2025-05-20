@@ -15,7 +15,7 @@ pushd "./${dirname}"
 ln -sf ../winbar ./debian
 
 #install build dependencies:
-sudo mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
+mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --yes' debian/control
 rm -f winbar-build-deps*
 
 debuild -us -uc -b
