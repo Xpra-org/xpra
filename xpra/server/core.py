@@ -280,7 +280,6 @@ class ServerCore(ServerBaseClass):
         self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
         self.http = opts.http
-        self.ssl_upgrade = opts.ssl_upgrade
         self.websocket_upgrade = opts.websocket_upgrade
         self.ssh_upgrade = opts.ssh_upgrade
         self.rdp_upgrade = opts.rdp_upgrade
@@ -303,6 +302,8 @@ class ServerCore(ServerBaseClass):
         else:
             self._ssl_attributes = get_ssl_attributes(opts, True)
             netlog("init_ssl(..) ssl attributes=%s", self._ssl_attributes)
+        if opts.ssl.lower() not in FALSE_OPTIONS:
+            self.ssl_upgrade = opts.ssl_upgrade
 
     def setup(self) -> None:
         self.start_listen_sockets()
