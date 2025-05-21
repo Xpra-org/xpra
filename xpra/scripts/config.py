@@ -18,7 +18,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
-from xpra.util.system import is_DEB
+from xpra.util.system import is_DEB, can_use_fakescreenfps
 
 
 def warn(msg: str) -> None:
@@ -166,7 +166,6 @@ def add_ext_net_dpi_fps(cmd: list[str], depth=24, dpi=0, fps=0) -> list[str]:
         "-auth", "$XAUTHORITY",
     ]
     if POSIX and not OSX:
-        from xpra.x11.vfb_util import can_use_fakescreenfps
         if fps > 0 and can_use_fakescreenfps():
             cmd += ["-fakescreenfps", str(fps)]
     if dpi > 0:

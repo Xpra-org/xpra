@@ -396,3 +396,17 @@ def get_processor_name() -> str:
             if "model name" in line:
                 return re.sub(".*model name.*:", "", line, count=1).strip()
     return platform.processor()
+
+
+def can_use_fakescreenfps() -> bool:
+    from xpra.util.system import is_distribution_variant, get_distribution_version_id
+    if is_distribution_variant("Fedora"):
+        return True
+    if is_distribution_variant("Debian"):
+        return True
+    if any(is_distribution_variant(x) for x in (
+        "RedHat", "AlmaLinux", "RockyLinux", "OracleLinux",
+    )):
+        return get_distribution_version_id() == "10"
+    # not sure:
+    return False
