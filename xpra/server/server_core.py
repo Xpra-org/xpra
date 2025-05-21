@@ -1555,7 +1555,8 @@ class ServerCore:
             is_ssl = False
         if http:
             http_protocol = "https" if is_ssl else "http"
-            http_upgrade = socket_options.get(http_protocol, self._html) not in FALSE_OPTIONS
+            default_value = self.ssl_mode if is_ssl else self._html
+            http_upgrade = socket_options.get(http_protocol, default_value) not in FALSE_OPTIONS
             if not http_upgrade:
                 conn_err(f"{http_protocol} upgrades are not enabled")
                 return False, None, None
