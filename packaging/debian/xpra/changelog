@@ -6,8 +6,12 @@ xpra (6.3.1-1) UNRELEASED; urgency=low
     add explicit weak dependency on notification library
     sbom path should be ignored
     recommend `xpra-x11` package so `xpra` installs working servers on Debian
+    `XWayland` is a valid xvfb backend
   * Major:
     `pam` authentication fails
+    parsing of `NET_WM_STRUT` on 64-bit systems
+    don' upgrade when `ssl` is disabled
+    desktop geometry attributes not always updated
   * Minor:
     only resume audio if it was suspended
     wait before retrying socket
@@ -39,8 +43,9 @@ xpra (6.3.1-1) UNRELEASED; urgency=low
     don't log a message when NOWARN encoders are missing
     unused function returns invalid data
     control command client validation errors
+    improve `exit-with-children` error message
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 16 May 2025 19:09:46 +0700
+ -- Antoine Martin <antoine@xpra.org>  Wed, 21 May 2025 19:58:04 +0700
 
 xpra (6.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

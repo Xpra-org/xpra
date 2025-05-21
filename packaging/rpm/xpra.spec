@@ -1008,7 +1008,7 @@ fi
 
 
 %changelog
-* Fri May 16 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
+* Wed May 21 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:
    modular installations also need filesystem package
    add plucky for `install-repo` subcommand
@@ -1016,8 +1016,12 @@ fi
    add explicit weak dependency on notification library
    sbom path should be ignored
    recommend `xpra-x11` package so `xpra` installs working servers on Debian
+   `XWayland` is a valid xvfb backend
 - Major:
    `pam` authentication fails
+   parsing of `NET_WM_STRUT` on 64-bit systems
+   don' upgrade when `ssl` is disabled
+   desktop geometry attributes not always updated
 - Minor:
    only resume audio if it was suspended
    wait before retrying socket
@@ -1049,6 +1053,7 @@ fi
    don't log a message when NOWARN encoders are missing
    unused function returns invalid data
    control command client validation errors
+   improve `exit-with-children` error message
 
 * Wed Apr 23 2025 Antoine Martin <antoine@xpra.org> 6.3-10
 - Platforms, build and packaging:

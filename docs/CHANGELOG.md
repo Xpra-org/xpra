@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.1] 2025-05-16
+## [6.3.1] 2025-05-21
 * Platforms, build and packaging:
     * [modular installations also need filesystem package](https://github.com/Xpra-org/xpra/commit/bc67164fe76b03bb1d0287396c63bcf4fc1e0dd6)
     * [add plucky for `install-repo` subcommand](https://github.com/Xpra-org/xpra/commit/db5cc7303938d60b9a1619c672b11bcc88268ea3)
@@ -8,8 +8,12 @@
     * [add explicit weak dependency on notification library](https://github.com/Xpra-org/xpra/commit/60dfb85271865e329c45f1c03a9adf28fc48bb18)
     * [sbom path should be ignored](https://github.com/Xpra-org/xpra/commit/92fa0dcd1d8b877c04e8351b89c8b5dc46333e20)
     * [recommend `xpra-x11` package so `xpra` installs working servers on Debian](https://github.com/Xpra-org/xpra/commit/48fa5b829b8514a1c6ae939e5126b6d57802a566)
+    * [`XWayland` is a valid xvfb backend](https://github.com/Xpra-org/xpra/commit/4d42efaf66145e031b172ca8526e6489155dcd75)
 * Major:
     * [`pam` authentication fails](https://github.com/Xpra-org/xpra/commit/6a4eab3a21db27a8d60d66572ee7cecb13c1518d)
+    * [parsing of `NET_WM_STRUT` on 64-bit systems](https://github.com/Xpra-org/xpra/commit/66dd7a70082063e4e420ee681f5792de8d62ab91)
+    * [don' upgrade when `ssl` is disabled](https://github.com/Xpra-org/xpra/commit/4d42efaf66145e031b172ca8526e6489155dcd75)
+    * [desktop geometry attributes not always updated](https://github.com/Xpra-org/xpra/commit/08719604fed7072787c7f8cd58bbe6c7cac640cd)
 * Minor:
     * [only resume audio if it was suspended](https://github.com/Xpra-org/xpra/commit/6a3ae04da0bf871ab69454cb5b2e748cdad5169f)
     * [wait before retrying socket](https://github.com/Xpra-org/xpra/commit/7e72cfaef85f183cf87ccce4732e2dc95d956781)
@@ -42,6 +46,7 @@
     * [don't log a message when NOWARN encoders are missing](https://github.com/Xpra-org/xpra/commit/bbd0d9d457ede1085d91faf43ebdbbfc2184db69)
     * [unused function returns invalid data](https://github.com/Xpra-org/xpra/commit/026aa13f4cd19f9cea35c9b5b1ff1f64ac551557)
     * [control command client validation errors](https://github.com/Xpra-org/xpra/commit/b29eb50f6ea7400f23c6f9b8226a29d2ac96515b)
+    * [improve `exit-with-children` error message](https://github.com/Xpra-org/xpra/commit/ed79607a8819f306bb065e970fb06d6fa711a2ff)
 
 ## [6.3] 2025-04-23
 * Platforms, build and packaging:
