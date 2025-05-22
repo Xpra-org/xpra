@@ -9,7 +9,7 @@ RELEASE="${RELEASE:-42}"
 IMAGE_NAME="xpra"
 CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
 REPO="${REPO:-xpra-beta}"
-DISPLAY="${DISPLAY:-:10}"
+XDISPLAY="${XDISPLAY:-:10}"
 PORT="${PORT:-10000}"
 AUDIO="${AUDIO:-1}"
 CODECS="${CODECS:-1}"
@@ -37,5 +37,5 @@ fi
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
-buildah config --entrypoint "/usr/bin/xpra seamless ${DISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-dbus --no-daemon --use-display=auto" $CONTAINER
+buildah config --entrypoint "/usr/bin/xpra seamless ${XDISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-dbus --no-daemon --use-display=auto" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME

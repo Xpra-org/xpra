@@ -9,7 +9,7 @@ RELEASE="${RELEASE:-plucky}"
 IMAGE_NAME="apps"
 CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
 REPO="${REPO:-xpra-beta}"
-DISPLAY="${DISPLAY:-:10}"
+XDISPLAY="${XDISPLAY:-:10}"
 TOOLS="${TOOLS:-0}"
 
 buildah rm $CONTAINER
@@ -37,5 +37,5 @@ if [ "${TOOLS}" == "1" ]; then
   buildah run $CONTAINER apt-get install x11-xserver-utils x11-utils --no-install-recommends -y
 fi
 
-buildah config --entrypoint "DISPLAY=${DISPLAY} winbar" $CONTAINER
+buildah config --entrypoint "XDISPLAY=${XDISPLAY} winbar" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
