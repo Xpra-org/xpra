@@ -38,5 +38,5 @@ if [ "${TOOLS}" == "1" ]; then
   buildah run $CONTAINER apt-get install x11-xserver-utils x11-utils --no-install-recommends -y
 fi
 
-buildah config --entrypoint "XDISPLAY=${XDISPLAY} winbar" $CONTAINER
+buildah config --entrypoint "DISPLAY=${XDISPLAY} winbar" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
