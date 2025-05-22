@@ -64,7 +64,7 @@ class FilePrintServer(StubServerMixin):
     def threaded_setup(self) -> None:
         self.init_printing()
 
-    def init_sockets(self, sockets) -> None:
+    def init_sockets(self, sockets: Sequence) -> None:
         # verify we have a local socket for printing:
         unixsockets = [info for socktype, _, info, _ in sockets if socktype == "socket"]
         printlog("local unix domain sockets we can use for printing: %s", unixsockets)

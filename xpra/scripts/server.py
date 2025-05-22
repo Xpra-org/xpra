@@ -777,6 +777,8 @@ def _do_run_server(script_file: str, cmdline,
     ROOT: bool = POSIX and getuid() == 0
     if POSIX and uid and not gid:
         gid = find_group(uid)
+    stdout = sys.stdout
+    stderr = sys.stderr
 
     if ROOT and SYSTEM_DBUS and opts.dbus and not os.path.exists("/run/dbus/system_bus_socket"):
         if not os.path.exists("/var/lib/dbus/machine-id"):
@@ -784,16 +786,16 @@ def _do_run_server(script_file: str, cmdline,
             machine_id = uuid.uuid4().hex
             with open("/var/lib/dbus/machine-id", "w") as f:
                 f.write(machine_id)
+            stderr.write(f"initialized dbus machine_id {machine_id}\n")
         if not os.path.exists("/run/dbus"):
             os.mkdir("/run/dbus", 0o755)
         Popen(["dbus-daemon", "--system", "--fork"]).wait()
+        stderr.write("started system dbus daemon\n")
 
     def write_session_file(filename: str, contents) -> str:
         return save_session_file(filename, contents, uid, gid)
 
     protected_env = {}
-    stdout = sys.stdout
-    stderr = sys.stderr
     # Daemonize:
     if POSIX and opts.daemon:
         # daemonize will chdir to "/", so try to use an absolute path:
