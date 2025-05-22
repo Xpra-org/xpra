@@ -8,16 +8,21 @@ DISTRO="alpine"
 IMAGE_NAME="xvfb"
 XDISPLAY="${XDISPLAY:-:10}"
 CONTAINER="$DISTRO-$IMAGE_NAME"
-# Xdummy needs xauth, which is a pain
-XDUMMY="${XDUMMY:-0}"
+XDUMMY="${XDUMMY:-1}"
 OPENGL="${OPENGL:-1}"
 TRIM="${TRIM:-1}"
 TOOLS="${TOOLS:-0}"
+TARGET_USER="${TARGET_USER:-xvfb-user}"
+TARGET_UID="${TARGET_UID:-1000}"
 
 buildah rm $CONTAINER
 buildah rmi -f $IMAGE_NAME
 buildah from --name $CONTAINER $DISTRO
 buildah run $CONTAINER apk update
+buildah run $CONTAINER apk add su-exec
+
+buildah run $CONTAINER adduser -D -H -u "${TARGET_UID}" "TARGET_USER"
+
 
 if [ "${XDUMMY}" == "1" ]; then
   buildah run $CONTAINER apk add xf86-video-dummy xorg-server
@@ -54,8 +59,8 @@ if [ "${XDUMMY}" == "1" ]; then
   wget https://raw.githubusercontent.com/Xpra-org/xpra/refs/heads/master/fs/etc/xpra/xorg.conf
   buildah run $CONTAINER mkdir /etc/X11
   buildah copy $CONTAINER xorg.conf /etc/X11
-  buildah config --entrypoint "/usr/bin/Xorg -novtswitch -logfile /tmp/Xorg.log -config /etc/X11/xorg.conf +extension Composite +extension GLX +extension RANDR +extension RENDER -extension DOUBLE-BUFFER -nolisten tcp -noreset -ac $XDISPLAY" $CONTAINER
+  buildah config --entrypoint "su-exec ${TARGET_USER} /usr/bin/Xorg -novtswitch -logfile /tmp/Xorg.log -config /etc/X11/xorg.conf +extension Composite +extension GLX +extension RANDR +extension RENDER -extension DOUBLE-BUFFER -nolisten tcp -noreset -ac $XDISPLAY" $CONTAINER
 else
-  buildah config --entrypoint "/usr/bin/Xvfb -ac -noreset +extension GLX +extension Composite +extension RANDR +extension Render -extension DOUBLE-BUFFER -nolisten tcp -ac $XDISPLAY" $CONTAINER
+  buildah config --entrypoint "su-exec ${TARGET_USER} /usr/bin/Xvfb -ac -noreset +extension GLX +extension Composite +extension RANDR +extension Render -extension DOUBLE-BUFFER -nolisten tcp -ac $XDISPLAY" $CONTAINER
 fi
 buildah commit $CONTAINER $IMAGE_NAME
