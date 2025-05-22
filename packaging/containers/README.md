@@ -69,3 +69,5 @@ but other Debian and Ubuntu releases can also be used.
 
 ## Pod
 
+The [pod](pod.sh) script uses the containers created above to provide an xpra session.
+It will also attempt to open a browser to access it

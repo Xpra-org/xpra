@@ -76,3 +76,5 @@ for NET in "$INTERNAL_NET" "$PUBLIC_NET"; do
   podman network inspect "$NET" | grep -E '"Name":|"Subnet":|"Gateway":'
   echo
 done
+
+xdg-open "http://localhost:${PORT}/"

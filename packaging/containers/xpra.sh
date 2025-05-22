@@ -36,6 +36,6 @@ fi
 # TODO: merge user setup to avoid running as root, once all the permission issues are resolved
 
 # to only use the display from the 'xvfb' container
-# add `--use-display=yes` to this command line:
+# set `--use-display=yes`:
 buildah config --entrypoint "/usr/bin/xpra seamless ${DISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-dbus --no-daemon --use-display=auto" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
