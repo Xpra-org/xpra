@@ -782,15 +782,18 @@ def _do_run_server(script_file: str, cmdline,
 
     if ROOT and SYSTEM_DBUS and opts.dbus and not os.path.exists("/run/dbus/system_bus_socket"):
         if not os.path.exists("/var/lib/dbus/machine-id"):
-            if not os.path.exists("/var/lib"):
-                os.mkdir("/var/lib", 0o755)
-            if not os.path.exists("/var/lib/dbus"):
-                os.mkdir("/var/lib/dbus", 0o755)
-            import uuid
-            machine_id = uuid.uuid4().hex
-            with open("/var/lib/dbus/machine-id", "w") as f:
-                f.write(machine_id)
-            stderr.write(f"initialized dbus machine_id {machine_id}\n")
+            try:
+                if not os.path.exists("/var/lib"):
+                    os.mkdir("/var/lib", 0o755)
+                if not os.path.exists("/var/lib/dbus"):
+                    os.mkdir("/var/lib/dbus", 0o755)
+                import uuid
+                machine_id = uuid.uuid4().hex
+                with open("/var/lib/dbus/machine-id", "w") as f:
+                    f.write(machine_id)
+                stderr.write(f"initialized dbus machine_id {machine_id}\n")
+            except OSError as e:
+                stderr.write(f"unable to create machine_id: {e}\n")
         if not os.path.exists("/run/dbus"):
             os.mkdir("/run/dbus", 0o755)
         Popen(["dbus-daemon", "--system", "--fork"]).wait()
