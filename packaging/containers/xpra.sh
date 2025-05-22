@@ -47,5 +47,5 @@ buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpas
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
-buildah config --entrypoint "/usr/bin/xpra seamless --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-dbus --no-daemon --use-display=auto" $CONTAINER
+buildah config --entrypoint "/usr/bin/xpra seamless --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=auto" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
