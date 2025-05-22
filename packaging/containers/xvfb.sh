@@ -45,6 +45,9 @@ if [ "${TRIM}" == "1" ]; then
 fi
 
 if [ "${XDUMMY}" == "1" ]; then
+  wget https://raw.githubusercontent.com/Xpra-org/xpra/refs/heads/master/fs/etc/xpra/xorg.conf
+  buildah run $CONTAINER mkdir /etc/X11
+  buildah copy $CONTAINER xorg.conf /etc/X11
   buildah config --entrypoint "/usr/bin/Xorg -novtswitch -logfile /tmp/Xorg.log -config /etc/X11/xorg.conf +extension Composite +extension GLX +extension RANDR +extension RENDER -extension DOUBLE-BUFFER -nolisten tcp -noreset -ac $DISPLAY" $CONTAINER
 else
   buildah config --entrypoint "/usr/bin/Xvfb -ac -noreset +extension GLX +extension Composite +extension RANDR +extension Render -extension DOUBLE-BUFFER -nolisten tcp -ac $DISPLAY" $CONTAINER
