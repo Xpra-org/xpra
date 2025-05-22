@@ -13,6 +13,7 @@ DISPLAY="${DISPLAY:-:10}"
 PORT="${PORT:-10000}"
 AUDIO="${AUDIO:-1}"
 CODECS="${CODECS:-1}"
+TOOLS="${TOOLS:-0}"
 
 buildah rm $CONTAINER
 buildah rmi -f $IMAGE_NAME
@@ -28,8 +29,9 @@ if [ "${CODECS}" == "1" ]; then
   buildah run $CONTAINER dnf install -y xpra-codecs
 fi
 
-# for debugging:
-buildah run $CONTAINER dnf install -y xterm net-tools lsof xpra-client socat --setopt=install_weak_deps=False
+if [ "${TOOLS}" == "1" ]; then
+  buildah run $CONTAINER dnf install -y xterm net-tools lsof xpra-client socat glxgears mesa-demos xdpyinfo --setopt=install_weak_deps=False
+fi
 
 # TODO: merge user setup to avoid running as root, once all the permission issues are resolved
 
