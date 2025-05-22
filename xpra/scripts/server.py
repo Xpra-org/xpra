@@ -51,15 +51,13 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import (
     POSIX, WIN32, OSX,
     force_quit,
-    get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, get_groups, get_group_id,
+    get_username_for_uid, get_home_for_uid, get_shell_for_uid, getuid, find_group,
     get_hex_uuid, gi_import,
 )
-from xpra.util.daemon import setuidgid
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr
 from xpra.util.io import is_writable, stderr_print
 from xpra.util.env import unsetenv, envbool, osexpand, get_saved_env, get_saved_env_var, source_env
-from xpra.common import GROUP
 from xpra.util.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
@@ -159,7 +157,7 @@ def sanitize_env() -> None:
              )
 
 
-def create_runtime_dir(xrd, uid, gid) -> str:
+def create_runtime_dir(xrd: str, uid: int, gid: int) -> str:
     if not POSIX or OSX or getuid() != 0 or (uid == 0 and gid == 0):
         return ""
     # workarounds:
@@ -168,7 +166,7 @@ def create_runtime_dir(xrd, uid, gid) -> str:
     # * or pam_open is going to create the directory but needs time to do so..
     if xrd and xrd.endswith("/user/0"):
         # don't keep root's directory, as this would not work:
-        xrd = None
+        xrd = ""
     if not xrd:
         # find the "/run/user" directory:
         run_user = "/run/user"
@@ -777,22 +775,7 @@ def _do_run_server(script_file: str, cmdline,
     home = get_home_for_uid(uid)
     ROOT: bool = POSIX and getuid() == 0
     if POSIX and uid and not gid:
-        # try harder to use a valid group,
-        # since we're going to chown files:
-        username = get_username_for_uid(uid)
-        groups = get_groups(username)
-        if GROUP in groups:
-            gid = get_group_id(GROUP)
-        else:
-            try:
-                import pwd
-                pw = pwd.getpwuid(uid)
-                gid = pw.pw_gid
-            except KeyError:
-                if groups:
-                    gid = get_group_id(groups[0])
-                else:
-                    gid = os.getgid()
+        gid = find_group(uid)
 
     def write_session_file(filename: str, contents) -> str:
         return save_session_file(filename, contents, uid, gid)
@@ -1254,6 +1237,7 @@ def _do_run_server(script_file: str, cmdline,
 
     if ROOT and (uid != 0 or gid != 0):
         log("root: switching to uid=%i, gid=%i", uid, gid)
+        from xpra.util.daemon import setuidgid
         setuidgid(uid, gid)
         os.environ.update({
             "HOME": home,

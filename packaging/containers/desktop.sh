@@ -11,6 +11,7 @@ CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
 REPO="${REPO:-xpra-beta}"
 XDISPLAY="${XDISPLAY:-:10}"
 TOOLS="${TOOLS:-0}"
+# LANG="${LANG:-C}"
 
 buildah rm $CONTAINER
 buildah rmi -f $IMAGE_NAME
