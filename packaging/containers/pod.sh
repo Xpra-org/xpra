@@ -1,4 +1,8 @@
 #!/bin/bash
+# This file is part of Xpra.
+# Copyright (C) 2025 Antoine Martin <antoine@xpra.org>
+# Xpra is released under the terms of the GNU GPL v2, or, at your option, any
+# later version. See the file COPYING for details.
 
 set -e
 
@@ -43,6 +47,7 @@ podman run -dt \
   --network "$PUBLIC_NET" \
   -p ${PORT}:${PORT}/tcp \
   -p ${PORT}:${PORT}/udp \
+  --read-only --read-only-tmpfs=true \
   xvfb
 
 # Start xpra (isolated, but exposes port 10000 on host)
@@ -53,6 +58,7 @@ podman run -dt \
   --ipc container:xvfb \
   --cgroupns container:xvfb \
   --network container:xvfb \
+  --read-only --read-only-tmpfs=true \
   xpra
 
 # Start play with two networks: internal + internet
