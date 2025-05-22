@@ -14,10 +14,16 @@ PORT="${PORT:-10000}"
 AUDIO="${AUDIO:-1}"
 CODECS="${CODECS:-1}"
 TOOLS="${TOOLS:-0}"
+TARGET_USER="${TARGET_USER:-xpra-user}"
+TARGET_PASSWORD="${TARGET_PASSWORD:-thepassword}"
+TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video}"
+TARGET_UID="${TARGET_UID:-1000}"
+TARGET_GID="${TARGET_GID:-1000}"
 
 buildah rm $CONTAINER
 buildah rmi -f $IMAGE_NAME
 buildah from --name $CONTAINER $DISTRO:$RELEASE
+buildah run $CONTAINER dnf install -y https://download1.rpmfusion.org/free/${DISTRO}/rpmfusion-free-release-${RELEASE}.noarch.rpm
 buildah run $CONTAINER dnf update -y
 buildah run $CONTAINER dnf install -y wget --setopt=install_weak_deps=False
 buildah run $CONTAINER wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
@@ -33,9 +39,13 @@ if [ "${TOOLS}" == "1" ]; then
   buildah run $CONTAINER dnf install -y xterm net-tools lsof xpra-client socat glxgears mesa-demos xdpyinfo --setopt=install_weak_deps=False
 fi
 
-# TODO: merge user setup to avoid running as root, once all the permission issues are resolved
+buildah run $CONTAINER groupadd -r -g ${TARGET_GID} ${TARGET_USER}
+buildah run $CONTAINER adduser -u ${TARGET_UID} -g ${TARGET_GID} --shell /bin/bash ${TARGET_USER}
+buildah run $CONTAINER usermod -aG ${TARGET_USER_GROUPS} ${TARGET_USER}
+buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
+
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
-buildah config --entrypoint "/usr/bin/xpra seamless ${XDISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-dbus --no-daemon --use-display=auto" $CONTAINER
+buildah config --entrypoint "/usr/bin/xpra seamless --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-dbus --no-daemon --use-display=auto" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
