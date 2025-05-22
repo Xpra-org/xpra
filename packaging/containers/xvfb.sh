@@ -10,8 +10,9 @@ DISPLAY="${DISPLAY:-:10}"
 CONTAINER="$DISTRO-$IMAGE_NAME"
 # Xdummy needs xauth, which is a pain
 XDUMMY="${XDUMMY:-0}"
-OPENGL="${OPENGL:1}"
-TRIM="${TRIM:1}"
+OPENGL="${OPENGL:-1}"
+TRIM="${TRIM:-1}"
+TOOLS="${TOOLS:-0}"
 
 buildah rm $CONTAINER
 buildah rmi -f $IMAGE_NAME
@@ -28,9 +29,13 @@ if [ "${OPENGL}" == "1" ]; then
   buildah run $CONTAINER apk add mesa-gl mesa-dri-gallium
 fi
 
-# for debugging:
-buildah run $CONTAINER apk add socat
-buildah run $CONTAINER apk add util-linux-misc
+if [ "${TOOLS}" == "1" ]; then
+  # for debugging:
+  buildah run $CONTAINER apk add socat util-linux-misc ghostscript-fonts
+  buildah run $CONTAINER apk add xterm mesa-utils mesa-osmesa
+  # vgl is currently only available in the 'testing' repo:
+  buildah run $CONTAINER apk add virtualgl --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/
+fi
 
 if [ "${TRIM}" == "1" ]; then
   # trim down unused directories:
@@ -45,6 +50,7 @@ if [ "${TRIM}" == "1" ]; then
 fi
 
 if [ "${XDUMMY}" == "1" ]; then
+  rm -f xorg.conf
   wget https://raw.githubusercontent.com/Xpra-org/xpra/refs/heads/master/fs/etc/xpra/xorg.conf
   buildah run $CONTAINER mkdir /etc/X11
   buildah copy $CONTAINER xorg.conf /etc/X11
