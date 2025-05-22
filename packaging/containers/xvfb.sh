@@ -45,8 +45,8 @@ if [ "${TRIM}" == "1" ]; then
 fi
 
 if [ "${XDUMMY}" == "1" ]; then
-  buildah config --entrypoint "/usr/bin/Xorg -novtswitch -logfile /tmp/Xorg.log -config /etc/X11/xorg.conf +extension Composite +extension GLX +extension RANDR +extension RENDER -extension DOUBLE-BUFFER -nolisten tcp -noreset $DISPLAY" $CONTAINER
+  buildah config --entrypoint "/usr/bin/Xorg -novtswitch -logfile /tmp/Xorg.log -config /etc/X11/xorg.conf +extension Composite +extension GLX +extension RANDR +extension RENDER -extension DOUBLE-BUFFER -nolisten tcp -noreset -ac $DISPLAY" $CONTAINER
 else
-  buildah config --entrypoint "/usr/bin/Xvfb -ac -noreset +extension GLX +extension Composite +extension RANDR +extension Render -extension DOUBLE-BUFFER -nolisten tcp $DISPLAY" $CONTAINER
+  buildah config --entrypoint "/usr/bin/Xvfb -ac -noreset +extension GLX +extension Composite +extension RANDR +extension Render -extension DOUBLE-BUFFER -nolisten tcp -ac $DISPLAY" $CONTAINER
 fi
 buildah commit $CONTAINER $IMAGE_NAME
