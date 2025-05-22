@@ -64,6 +64,7 @@ from xpra.platform.dotxpra import DotXpra
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
 PROGRESS_TO_STDERR = envbool("XPRA_PROGRESS_TO_STDERR", False)
+SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", True)
 
 
 def get_logger():
@@ -776,6 +777,11 @@ def _do_run_server(script_file: str, cmdline,
     ROOT: bool = POSIX and getuid() == 0
     if POSIX and uid and not gid:
         gid = find_group(uid)
+
+    if ROOT and SYSTEM_DBUS and opts.dbus and not os.path.exists("/run/dbus/system_bus_socket"):
+        if not os.path.exists("/run/dbus"):
+            os.mkdir("/run/dbus", 0o755)
+        Popen(["dbus-daemon", "--system", "--fork"]).wait()
 
     def write_session_file(filename: str, contents) -> str:
         return save_session_file(filename, contents, uid, gid)
