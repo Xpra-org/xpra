@@ -8,12 +8,6 @@ set -e
 
 PORT=10000
 
-# Create internal-only network (no external access)
-INTERNAL_NET="internalnet"
-if ! podman network exists "$INTERNAL_NET"; then
-  podman network create --internal "$INTERNAL_NET"
-fi
-
 # Create public network (standard podman bridge with internet access)
 PUBLIC_NET="publicnet"
 if ! podman network exists "$PUBLIC_NET"; then
