@@ -902,14 +902,12 @@ class CoreX11WindowModel(WindowModelStub):
         machine = self.get_property("client-machine")
         pid = self.get_property("pid")
         if pid <= 0:
-            # we could fall back to _NET_WM_PID
-            # but that would be unsafe
-            log.warn("Warning: cannot terminate window %#x, no pid found", self.xid)
+            log.warn("Warning: no 'pid' for window %#x", self.xid)
             if machine:
-                log.warn(" WM_CLIENT_MACHINE=%s", machine)
+                log.warn(" WM_CLIENT_MACHINE=%r", machine)
             pid = self.get_property("wm-pid")
             if pid > 0:
-                log.warn(" _NET_WM_PID=%s", pid)
+                log.warn(" using _NET_WM_PID=%s", pid)
         if pid == os.getpid():
             log.warn("Warning: force_quit is refusing to kill ourselves!")
             return
