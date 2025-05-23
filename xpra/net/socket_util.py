@@ -695,7 +695,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                 for path in dotxpra.norm_socket_paths(display_name):
                     sockdir = os.path.dirname(path)
                     if not is_writable(sockdir, uid, gid) and sockdir.startswith(homedir):
-                        log.warn(f"Warning: skipped read-only socket path {path!r}")
+                        log.info(f"skipped read-only socket path {path!r}")
                     else:
                         sockpaths[path] = dict(options)
                 if session_dir and not WIN32:
