@@ -501,7 +501,10 @@ def do_load_xdg_menu_data():
                     log("load_xdg_menu_data()", exc_info=True)
                     error = e
     assert error
-    if first_time("xdg-menu-error"):
+    if not os.path.exists("/etc/xdg/menus"):
+        log.warn("Warning: failed to parse menu data")
+        log.warn(" '/etc/xdg/menus' is missing")
+    elif first_time("xdg-menu-error"):
         log.error("Error parsing xdg menu data:")
         log.estr(error)
         log.error(" this is either a bug in python-xdg,")
