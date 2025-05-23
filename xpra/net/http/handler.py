@@ -7,7 +7,6 @@ import os
 import sys
 import glob
 import posixpath
-import mimetypes
 import socket
 from urllib.parse import unquote
 from http.server import BaseHTTPRequestHandler
@@ -164,8 +163,9 @@ def load_path(accept_encoding: list[str], path: str) -> tuple[int, dict[str, Any
         # transmitted *less* than the content-length!
         fs = os.fstat(f.fileno())
         content_length = fs[6]
-        content_type = EXTENSION_TO_MIMETYPE.get(ext)
+        content_type = EXTENSION_TO_MIMETYPE.get(ext, "")
         if not content_type:
+            import mimetypes
             if not mimetypes.inited:
                 mimetypes.init()
             ctype = mimetypes.guess_type(path, False)
@@ -312,7 +312,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             return True
         authlog = Logger("auth", "http")
 
-        def auth_err(msg):
+        def auth_err(msg: str) -> bool:
             self.do_AUTHHEAD()
             self.wfile.write(msg.encode("latin1"))
             authlog.warn(f"http authentication failed: {msg}")
