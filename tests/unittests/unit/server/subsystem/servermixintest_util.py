@@ -88,6 +88,7 @@ class ServerMixinTest(unittest.TestCase):
 
     def _test_mixin_class(self, mclass, opts, caps=None, source_mixin_class=StubClientConnection):
         x = self.mixin = mclass()
+        x._socket_info = ()
         x._server_sources = {}   # pylint: disable=protected-access
         x.wait_for_threaded_init = self.wait_for_threaded_init
         x.add_packets = self.add_packets
