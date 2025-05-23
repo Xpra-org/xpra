@@ -75,4 +75,5 @@ echo "- $PUBLIC_NET:"
 podman network inspect "$PUBLIC_NET" | grep -iE '"Name":|"Subnet":|"Gateway":'
 echo
 
+sleep 5
 xdg-open "http://localhost:${PORT}/"
