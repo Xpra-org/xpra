@@ -19,6 +19,7 @@ TARGET_PASSWORD="${TARGET_PASSWORD:-thepassword}"
 TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video}"
 TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
+DEBUG="${DEBUG:-none}"
 
 buildah rm $CONTAINER
 buildah rmi -f $IMAGE_NAME
@@ -49,5 +50,5 @@ buildah run $CONTAINER sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
-buildah config --entrypoint "/usr/bin/xpra seamless --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=auto" $CONTAINER
+buildah config --entrypoint "/usr/bin/xpra seamless --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=auto -d ${DEBUG}" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
