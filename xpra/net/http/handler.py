@@ -17,12 +17,9 @@ from collections.abc import Iterable, Callable
 from xpra.common import FULL_INFO, noerr
 from xpra.net.common import HttpResponse
 from xpra.net.http.common import EXTENSION_TO_MIMETYPE
-from xpra.net.http.directory_listing import list_directory
-from xpra.net.bytestreams import pretty_socket
 from xpra.util.objects import AdHocStruct
 from xpra.util.str_fn import std, csv, repr_ellipsized
 from xpra.util.env import envbool
-from xpra.platform.paths import get_desktop_background_paths
 from xpra.log import Logger
 
 log = Logger("http")
@@ -124,6 +121,7 @@ def clean_temp_png() -> None:
 
 
 def find_background_png_path() -> str:
+    from xpra.platform.paths import get_desktop_background_paths
     paths = get_desktop_background_paths()
     path = ""
     for p in paths:
@@ -319,6 +317,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(msg.encode("latin1"))
             authlog.warn(f"http authentication failed: {msg}")
             try:
+                from xpra.net.bytestreams import pretty_socket
                 peername = self.request.getpeername()
                 authlog.warn(" from %s", pretty_socket(peername))
             except (AttributeError, OSError):
@@ -426,6 +425,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 if not self.directory_listing:
                     self.send_error(403, "Directory listing forbidden")
                     return b""
+                from xpra.net.http.directory_listing import list_directory
                 code, headers, body = list_directory(path)
                 self.send_response(code)
                 self.extra_headers.update(headers)
