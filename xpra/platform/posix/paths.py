@@ -21,6 +21,9 @@ def do_get_desktop_background_paths() -> Sequence[str]:
         "/usr/share/backgrounds/*default*png",
         "/usr/share/backgrounds/gnome/adwaita*.jpg",  # Debian Stretch
         "/usr/share/backgrounds/images/*jpg",  # CentOS 7
+        "/usr/share/backgrounds/images/default.jxl",  # Fedora 42
+        "/usr/share/backgrounds/images/*default*.jxl",
+        "/usr/share/backgrounds/images/*.jxl",
     ]
 
 
