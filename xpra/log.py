@@ -200,6 +200,7 @@ ALIASES: dict[str, str] = {
     "filter": "filters",
     "mouse": "pointer",
     "statistics": "stats",
+    "print": "printing",
 }
 
 # noinspection PyPep8
