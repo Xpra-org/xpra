@@ -799,8 +799,8 @@ def _do_run_server(script_file: str, cmdline,
             os.mkdir("/run/dbus", 0o755)
         Popen(["dbus-daemon", "--system", "--fork"]).wait()
         stderr.write("started system dbus daemon\n")
-        os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=/usr/dbus/system_dbus_socket"
-        protected_env["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=/usr/dbus/system_dbus_socket"
+        os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=/run/dbus/system_dbus_socket"
+        protected_env["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=/run/dbus/system_dbus_socket"
 
     def write_session_file(filename: str, contents) -> str:
         return save_session_file(filename, contents, uid, gid)

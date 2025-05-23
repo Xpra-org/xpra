@@ -514,6 +514,10 @@ Recommends:			ibus
 Recommends:			%{python3}-pyxdg
 Recommends:         %{python3}-watchdog
 Recommends:			xdg-menu
+%if 0%{?fedora} >= 42
+# so we can convert desktop backgrounds to a format that can actually be used:
+Recommends:			libjxl-utils
+%endif
 Suggests:			tcp_wrappers-libs
 Suggests:			%{python3}-ldap3
 Suggests:			%{python3}-ldap
