@@ -27,7 +27,7 @@ buildah run $CONTAINER dnf install -y https://download1.rpmfusion.org/free/${DIS
 buildah run $CONTAINER dnf update -y
 buildah run $CONTAINER dnf install -y wget --setopt=install_weak_deps=False
 buildah run $CONTAINER wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
-buildah run $CONTAINER dnf install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-pyxdg --setopt=install_weak_deps=False
+buildah run $CONTAINER dnf install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-pyxdg dbus-daemon dbus-x11 dbus-tools --setopt=install_weak_deps=False
 if [ "${AUDIO}" == "1" ]; then
   buildah run $CONTAINER dnf install -y xpra-audio-server
 fi
@@ -44,6 +44,7 @@ buildah run $CONTAINER adduser -u ${TARGET_UID} -g ${TARGET_GID} --shell /bin/ba
 buildah run $CONTAINER usermod -aG ${TARGET_USER_GROUPS} ${TARGET_USER}
 buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
 
+buildah run $CONTAINER sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/lib/dbus/machine-id"
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
