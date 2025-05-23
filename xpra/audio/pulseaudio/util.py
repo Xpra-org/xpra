@@ -10,12 +10,12 @@ import os.path
 from xpra.os_util import WIN32, OSX
 from xpra.log import Logger, consume_verbose_argv
 
-log = Logger("audio")
+log = Logger("audio", "pulseaudio")
 
-default_icon_path = None
+default_icon_path = ""
 
 
-def set_icon_path(v) -> None:
+def set_icon_path(v: str) -> None:
     global default_icon_path
     default_icon_path = v
 

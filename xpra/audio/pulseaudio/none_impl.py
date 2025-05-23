@@ -7,10 +7,6 @@
 import sys
 from typing import Any
 
-from xpra.log import Logger
-
-log = Logger("audio")
-
 
 def has_pa() -> bool:
     return False
@@ -56,6 +52,8 @@ def get_info() -> dict[str, Any]:
 
 
 def main() -> None:
+    from xpra.log import Logger
+    log = Logger("audio", "pulseaudio")
     if "-v" in sys.argv:
         log.enable_debug()
     i = get_info()

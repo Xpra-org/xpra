@@ -16,10 +16,10 @@ from xpra.util.str_fn import strtobytes, bytestostr
 
 from xpra.log import Logger
 
-log = Logger("audio")
+log = Logger("audio", "pulseaudio")
 
-pactl_bin = None
-has_pulseaudio = None
+pactl_bin: str | None = None
+has_pulseaudio: bool | None = None
 
 
 def get_pactl_bin() -> str:

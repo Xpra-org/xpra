@@ -336,6 +336,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
     "Audio": {
         "audio"         : "All audio",
         "gstreamer"     : "GStreamer internal messages",
+        "pulseaudio"    : "Pulseaudio configuration",
         "av-sync"       : "Audio-video sync",
     },
     "X11": {
