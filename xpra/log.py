@@ -44,7 +44,7 @@ MODULE_FILE = os.path.join(os.sep, "xpra", "log.py")        # ie: "/xpra/log.py"
 
 
 def get_debug_args() -> Sequence[str]:
-    args = []
+    args: list[str] = []
     if debug_enabled_categories:
         args += list(debug_enabled_categories)
     if debug_disabled_categories:
@@ -565,7 +565,7 @@ class ErrorTrapper(AbstractContextManager):
 all_loggers: dict[str, set['weakref.ReferenceType[Logger]']] = {}
 
 
-def add_logger(categories, logger: Logger) -> None:
+def add_logger(categories: Sequence[str], logger: Logger) -> None:
     categories = list(categories)
     categories.append("all")
     ref_logger = weakref.ref(logger)
@@ -584,8 +584,8 @@ def get_all_loggers() -> set[Logger]:
     return a
 
 
-def get_loggers_for_categories(*categories) -> list[Logger]:
-    if not categories:
+def get_loggers_for_categories(*categories: str) -> list[Logger]:
+    if not categories or (len(categories) == 1 and categories[0] in ("none", "")):
         return []
     if "all" in categories:
         return list(get_all_loggers())
@@ -597,7 +597,7 @@ def get_loggers_for_categories(*categories) -> list[Logger]:
     return list(matches)
 
 
-def enable_debug_for(*cat) -> list[Logger]:
+def enable_debug_for(*cat: str) -> list[Logger]:
     loggers: list[Logger] = []
     for logger in get_loggers_for_categories(*cat):
         if not logger.is_debug_enabled():
@@ -606,7 +606,7 @@ def enable_debug_for(*cat) -> list[Logger]:
     return loggers
 
 
-def disable_debug_for(*cat) -> list[Logger]:
+def disable_debug_for(*cat: str) -> list[Logger]:
     loggers: list[Logger] = []
     for logger in get_loggers_for_categories(*cat):
         if logger.is_debug_enabled():
