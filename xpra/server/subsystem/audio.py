@@ -12,7 +12,7 @@ from threading import Event
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.os_util import OSX, POSIX, gi_import
+from xpra.os_util import OSX, POSIX, gi_import, is_container
 from xpra.util.io import pollwait
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -31,7 +31,7 @@ GLib = gi_import("GLib")
 log = Logger("server")
 audiolog = Logger("audio")
 
-PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", True)
+PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", not is_container())
 
 PA_ENV_WHITELIST = (
     "DBUS_SESSION_BUS_ADDRESS", "DBUS_SESSION_BUS_PID", "DBUS_SESSION_BUS_WINDOWID",

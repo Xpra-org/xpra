@@ -58,6 +58,14 @@ def gi_import(mod="Gtk", version="") -> ModuleType:
         return importlib.import_module(f"gi.repository.{mod}")
 
 
+def is_container() -> bool:
+    if not POSIX:
+        return False
+    from xpra.util.io import load_binary_file
+    cg = load_binary_file("/proc/1/cgroup")
+    return any(cg.find(pattern) >= 0 for pattern in (b"docker", b"container", ))
+
+
 def is_admin() -> bool:
     if WIN32:
         from ctypes import windll
