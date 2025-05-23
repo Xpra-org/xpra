@@ -8,14 +8,7 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server import features
     from xpra.server.core import ServerCore
     classes: list[type] = [ServerCore]
-    # `Power`, `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
-    if features.power:
-        # this one is for server-side system power events:
-        from xpra.server.subsystem.power import PowerEventServer
-        classes.append(PowerEventServer)
-        # and this one for processing power event messages from the client:
-        from xpra.server.subsystem.suspend import SuspendServer
-        classes.append(SuspendServer)
+    # `Ping`, `Bandwidth` and `ControlComands` don't have any dependencies:
     if features.ping:
         from xpra.server.subsystem.ping import PingServer
         classes.append(PingServer)
@@ -50,10 +43,17 @@ def get_server_base_classes() -> tuple[type, ...]:
         from xpra.server.subsystem.webcam import WebcamServer
         classes.append(WebcamServer)
 
-    # `Dbus` must be placed before `DisplayServer` and `NotificationForwarder`
+    # `Dbus` must be placed before `Power`, `DisplayServer` and `NotificationForwarder`
     if features.dbus:
         from xpra.server.subsystem.dbus import DbusServer
         classes.append(DbusServer)
+    if features.power:
+        # this one is for server-side system power events:
+        from xpra.server.subsystem.power import PowerEventServer
+        classes.append(PowerEventServer)
+        # and this one for processing power event messages from the client:
+        from xpra.server.subsystem.suspend import SuspendServer
+        classes.append(SuspendServer)
     if features.display:
         from xpra.server.subsystem.display import DisplayManager
         classes.append(DisplayManager)
