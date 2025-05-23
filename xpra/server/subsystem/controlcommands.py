@@ -5,6 +5,7 @@
 
 # pylint: disable-msg=E1101
 
+import shlex
 import os.path
 from time import monotonic
 
@@ -264,9 +265,9 @@ class ServerBaseControlCommands(StubServerMixin):
     def do_control_command_start(self, ignore: bool, *args) -> str:
         if not self.start_new_commands:
             raise ControlError("this feature is currently disabled")
-        proc = self.start_command(" ".join(args), args, ignore)
+        proc = self.start_command(shlex.join(args), args, ignore)
         if not proc:
-            raise ControlError("failed to start new child command " + str(args))
+            raise ControlError("failed to start new child command %r" % shlex.join(args))
         return "new %scommand started with pid=%s" % (["child ", ""][ignore], proc.pid)
 
     def control_command_toggle_feature(self, feature: str, state: str) -> str:
