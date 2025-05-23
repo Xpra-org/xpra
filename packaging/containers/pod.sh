@@ -72,7 +72,7 @@ podman ps --format "table {{.Names}}\t{{.Status}}\t{{.Networks}}\t{{.Ports}}"
 echo
 echo "Network info:"
 echo "- $PUBLIC_NET:"
-podman network inspect "$PUBLIC_NET" | grep -E '"Name":|"Subnet":|"Gateway":'
+podman network inspect "$PUBLIC_NET" | grep -iE '"Name":|"Subnet":|"Gateway":'
 echo
 
 xdg-open "http://localhost:${PORT}/"
