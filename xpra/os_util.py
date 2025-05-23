@@ -59,11 +59,12 @@ def gi_import(mod="Gtk", version="") -> ModuleType:
 
 
 def is_container() -> bool:
-    if not POSIX:
-        return False
     from xpra.util.io import load_binary_file
     cg = load_binary_file("/proc/1/cgroup")
-    return any(cg.find(pattern) >= 0 for pattern in (b"docker", b"container", ))
+    if any(cg.find(pattern) >= 0 for pattern in (b"docker", b"container", )):
+        return True
+    from xpra.util.env import get_saved_env
+    return bool(get_saved_env().get("container"))
 
 
 def is_admin() -> bool:
