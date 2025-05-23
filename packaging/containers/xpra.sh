@@ -37,7 +37,7 @@ if [ "${CODECS}" == "1" ]; then
 fi
 
 if [ "${TOOLS}" == "1" ]; then
-  buildah run $CONTAINER dnf install -y xterm net-tools lsof xpra-client socat glxgears mesa-demos xdpyinfo --setopt=install_weak_deps=False
+  buildah run $CONTAINER dnf install -y strace xterm net-tools lsof xpra-client socat glxgears mesa-demos xdpyinfo --setopt=install_weak_deps=False
 fi
 
 buildah run $CONTAINER groupadd -r -g ${TARGET_GID} ${TARGET_USER}
