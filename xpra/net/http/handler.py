@@ -111,6 +111,7 @@ def translate_path(path: str, web_root: str = "/usr/share/xpra/www") -> str:
                 path = matches[0]
                 break
         if not os.path.exists(path):
+            log(f"no background images found matching {paths!r}")
             # better send something than a 404,
             # use a transparent 1x1 image:
             path = os.path.join(web_root, "icons", "empty.png")
