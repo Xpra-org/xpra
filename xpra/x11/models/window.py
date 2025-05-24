@@ -66,6 +66,8 @@ FORCE_XSETINPUTFOCUS = envbool("XPRA_FORCE_XSETINPUTFOCUS", False)
 VALIDATE_CONFIGURE_REQUEST = envbool("XPRA_VALIDATE_CONFIGURE_REQUEST", False)
 CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
 assert CLAMP_OVERLAP >= 0
+SIZEHINTS_POSITION = envbool("XPRA_SIZEHINTS_POSITION", False)
+SIZEHINTS_SIZE = envbool("XPRA_SIZEHINTS_SIZE", False)
 
 
 def calc_constrained_size(width: int, height: int, hints) -> tuple[int, int]:
@@ -871,11 +873,11 @@ class WindowModel(BaseWindowModel):
 
         # size and position are stored as properties, not as hints:
         pos = hints.pop("position", None)
-        if pos is not None:
+        if pos is not None and SIZEHINTS_POSITION:
             self._internal_set_property("requested-position", pos)
             self._internal_set_property("set-initial-position", True)
         size = hints.pop("size", None)
-        if size is not None:
+        if size is not None and SIZEHINTS_SIZE:
             self._internal_set_property("requested-size", size)
 
         # Don't send out notify and ConfigureNotify events when this property
