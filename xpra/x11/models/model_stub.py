@@ -35,6 +35,8 @@ class AutoPropGObjectMixin:
         self._internal_set_property(pspec.name, value)
 
     def _internal_set_property(self, name: str, value) -> None:
+        if name in PROPERTIES_DEBUG:
+            metalog.info("_internal_set_property(%r, %r)", name, value, backtrace=True)
         self._gproperties[name] = value
         self.notify(name)
 
