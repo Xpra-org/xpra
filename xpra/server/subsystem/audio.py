@@ -170,9 +170,9 @@ class AudioServer(StubServerMixin):
                             os.mkdir(self.pulseaudio_private_dir, 0o700)
                         env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
                         self.pulseaudio_server_socket = os.path.join(self.pulseaudio_private_dir, "pulse", "native")
-        os.environ["XPRA_PULSE_SERVER"] = self.pulseaudio_server_socket
+        env["XPRA_PULSE_SERVER"] = self.pulseaudio_server_socket
         cmd = shlex.split(self.pulseaudio_command)
-        cmd = list(osexpand(x) for x in cmd)
+        cmd = list(osexpand(x, subs=env) for x in cmd)
         # find the absolute path to the command:
         pa_cmd = cmd[0]
         if not os.path.isabs(pa_cmd):
