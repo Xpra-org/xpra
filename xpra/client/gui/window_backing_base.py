@@ -17,6 +17,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, first_time
 from xpra.codecs.loader import get_codec
+from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
 from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.common import Gravity, PaintCallbacks
@@ -479,7 +480,7 @@ class WindowBackingBase:
                     options: typedict, callbacks: PaintCallbacks) -> None:
         self.do_paint_jpeg("jpega", img_data, x, y, width, height, options, callbacks)
 
-    def nv_decode(self, encoding: str, img_data, width: int, height: int, options: typedict):
+    def nv_decode(self, encoding: str, img_data, width: int, height: int, options: typedict) -> ImageWrapper | None:
         if width < 16 or height < 16:
             return None
         nvdec = self.nvdec_decoder
