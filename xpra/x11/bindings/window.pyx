@@ -1311,7 +1311,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         assert size_hints!=NULL
         if not XGetWMNormalHints(self.display, xwindow, size_hints, &supplied_return):
             XFree(size_hints)
-            return None
+            return {}
         hints = {}
         if (size_hints.flags & USPosition) or (size_hints.flags & PPosition):
             hints["position"] = size_hints.x, size_hints.y
