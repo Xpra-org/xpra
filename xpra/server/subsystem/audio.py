@@ -148,7 +148,7 @@ class AudioServer(StubServerMixin):
                 pulselog.warn(" cannot start a private pulseaudio server")
             else:
                 # this default location is shared by all sessions for the same user:
-                self.pulseaudio_server_socket = os.path.join(rd, "pulse", "native")
+                pulse_dir = os.path.join(rd, "pulse")
                 # 3) with a private pulseaudio server, each xpra session can have its own server,
                 #    since we create a pulseaudio directory for each display:
                 if PRIVATE_PULSEAUDIO:
@@ -171,11 +171,12 @@ class AudioServer(StubServerMixin):
                         if not os.path.exists(self.pulseaudio_private_dir):
                             os.mkdir(self.pulseaudio_private_dir, 0o700)
                         pulse_dir = os.path.join(self.pulseaudio_private_dir, "pulse")
-                        if not os.path.exists(pulse_dir):
-                            os.mkdir(pulse_dir, mode=0o700)
                         env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
-                        # ie: /run/user/1000/xpra/10/pulse/native
-                        self.pulseaudio_server_socket = os.path.join(pulse_dir, "native")
+                if not os.path.exists(pulse_dir):
+                    os.mkdir(pulse_dir, mode=0o700)
+                # ie: /run/user/1000/xpra/10/pulse/native
+                # or /run/user/1000/pulse/native
+                self.pulseaudio_server_socket = os.path.join(pulse_dir, "native")
         env["XPRA_PULSE_SERVER"] = self.pulseaudio_server_socket
         cmd = shlex.split(self.pulseaudio_command)
         cmd = list(osexpand(x, subs=env) for x in cmd)
