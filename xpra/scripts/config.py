@@ -235,7 +235,7 @@ def xvfb_command(cmd: str, depth=24, dpi=0, fps=0) -> list[str]:
 def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
                         Xdummy_ENABLED: bool | None = None, Xdummy_wrapper_ENABLED: bool | None = None,
                         warn_fn: Callable = warn,
-                        dpi=0, fps=0,
+                        depth=24, dpi=0, fps=0,
                         ) -> list[str]:
     """
     This function returns the xvfb command to use.
@@ -246,7 +246,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
         return []
 
     def vfb_default() -> list[str]:
-        return get_Xvfb_command(dpi=dpi)
+        return get_Xvfb_command(depth=depth, dpi=dpi, fps=fps)
 
     if OSX:     # pragma: no cover
         return vfb_default()
@@ -272,15 +272,15 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
         if rhel10:
             debug(" using `xpra_weston_xvfb` on RHEL 10")
             return get_weston_Xwayland_command(dpi)
-    return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn, dpi=dpi, fps=fps)
+    return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn, depth=depth, dpi=dpi, fps=fps)
 
 
 def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
                           Xdummy_wrapper_ENABLED: bool | None = None,
                           warn_fn: Callable = warn,
-                          dpi=0, fps=0) -> list[str]:
+                          depth=24, dpi=0, fps=0) -> list[str]:
     if not POSIX or OSX:
-        return get_Xvfb_command(dpi=dpi, fps=fps)
+        return get_Xvfb_command(depth=depth, dpi=dpi, fps=fps)
     xorg_bin = get_xorg_bin()
     if Xdummy_wrapper_ENABLED is not None:
         # honour what was specified:
@@ -309,7 +309,7 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
     if bin_dir and os.path.exists(os.path.join(bin_dir, xorg_cmd)):
         if bin_dir not in os.environ.get("PATH", "/bin:/usr/bin:/usr/local/bin").split(os.pathsep):
             xorg_cmd = os.path.join(bin_dir, xorg_cmd)
-    return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf, dpi=dpi, fps=fps)
+    return get_Xdummy_command(xorg_cmd, xorg_conf=xorg_conf, depth=depth, dpi=dpi, fps=fps)
 
 
 def wrap_cmd_str(cmd) -> str:
