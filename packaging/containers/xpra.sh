@@ -47,6 +47,7 @@ buildah run $CONTAINER usermod -aG ${TARGET_USER_GROUPS} ${TARGET_USER}
 buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
 
 buildah run $CONTAINER sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/lib/dbus/machine-id"
+buildah copy $CONTAINER allow-all.conf /etc/dbus-1/system.d/
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
