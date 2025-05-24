@@ -162,13 +162,15 @@ class AudioServer(StubServerMixin):
                         if xpra_rd.find(f"/{display}/"):
                             # this is already a per-display directory,
                             # no need to include the display name again:
-                            pulse_dirname = "pulse"
+                            # ie: /run/user/1000/xpra/10/
+                            self.pulseaudio_private_dir = osexpand(xpra_rd, subs=env)
                         else:
                             pulse_dirname = f"pulse-{display}"
-                        self.pulseaudio_private_dir = osexpand(os.path.join(xpra_rd, pulse_dirname))
+                            self.pulseaudio_private_dir = osexpand(os.path.join(xpra_rd, pulse_dirname), subs=env)
                         if not os.path.exists(self.pulseaudio_private_dir):
                             os.mkdir(self.pulseaudio_private_dir, 0o700)
                         env["XDG_RUNTIME_DIR"] = self.pulseaudio_private_dir
+                        # ie: /run/user/1000/xpra/10/pulse/native
                         self.pulseaudio_server_socket = os.path.join(self.pulseaudio_private_dir, "pulse", "native")
         env["XPRA_PULSE_SERVER"] = self.pulseaudio_server_socket
         cmd = shlex.split(self.pulseaudio_command)
@@ -300,7 +302,7 @@ class AudioServer(StubServerMixin):
                         services_dir = os.path.join(dbus_dir, "services")
                         dirs.append(services_dir)
                         dirs.append(dbus_dir)
-                dirs += [native, pulse, self.pulseaudio_private_dir]
+                dirs += [native, pulse]
                 path = None
                 try:
                     for d in dirs:
