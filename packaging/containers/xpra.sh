@@ -28,7 +28,7 @@ buildah run $CONTAINER dnf install -y https://download1.rpmfusion.org/free/${DIS
 buildah run $CONTAINER dnf update -y
 buildah run $CONTAINER dnf install -y wget --setopt=install_weak_deps=False
 buildah run $CONTAINER wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
-buildah run $CONTAINER dnf install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-pyxdg dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils --setopt=install_weak_deps=False
+buildah run $CONTAINER dnf install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-pyxdg dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
 # EL10: system-backgrounds system-logos
 if [ "${AUDIO}" == "1" ]; then
   buildah run $CONTAINER dnf install -y xpra-audio-server
