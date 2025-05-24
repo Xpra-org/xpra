@@ -30,6 +30,7 @@ GLib = gi_import("GLib")
 
 log = Logger("server")
 audiolog = Logger("audio")
+pulselog = Logger("audio", "pulseaudio")
 
 PRIVATE_PULSEAUDIO = envbool("XPRA_PRIVATE_PULSEAUDIO", not is_container())
 
@@ -120,11 +121,11 @@ class AudioServer(StubServerMixin):
         return d
 
     def init_pulseaudio(self) -> None:
-        audiolog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
+        pulselog("init_pulseaudio() pulseaudio=%s, pulseaudio_command=%s", self.pulseaudio, self.pulseaudio_command)
         if self.pulseaudio is False:
             return
         if not self.pulseaudio_command:
-            audiolog.warn("Warning: pulseaudio command is not defined")
+            pulselog.warn("Warning: pulseaudio command is not defined")
             return
         # environment initialization:
         # 1) make sure that the audio subprocess will use the devices
@@ -143,8 +144,8 @@ class AudioServer(StubServerMixin):
             from xpra.platform.posix.paths import _get_xpra_runtime_dir, get_runtime_dir
             rd = osexpand(get_runtime_dir())
             if not rd or not os.path.exists(rd) or not os.path.isdir(rd):
-                log.warn("Warning: the runtime directory '%s' does not exist,", rd)
-                log.warn(" cannot start a private pulseaudio server")
+                pulselog.warn("Warning: the runtime directory '%s' does not exist,", rd)
+                pulselog.warn(" cannot start a private pulseaudio server")
             else:
                 # this default location is shared by all sessions for the same user:
                 self.pulseaudio_server_socket = os.path.join(rd, "pulse", "native")
@@ -153,8 +154,8 @@ class AudioServer(StubServerMixin):
                 if PRIVATE_PULSEAUDIO:
                     # pylint: disable=import-outside-toplevel
                     if not rd or not os.path.exists(rd) or not os.path.isdir(rd):
-                        log.warn("Warning: the runtime directory '%s' does not exist,", rd)
-                        log.warn(" cannot start a private pulseaudio server")
+                        pulselog.warn("Warning: the runtime directory '%s' does not exist,", rd)
+                        pulselog.warn(" cannot start a private pulseaudio server")
                     else:
                         xpra_rd = os.environ.get("XPRA_SESSION_DIR", _get_xpra_runtime_dir())
                         assert xpra_rd, "bug: no xpra runtime dir"
@@ -190,23 +191,23 @@ class AudioServer(StubServerMixin):
             if not pa_path:
                 msg = f"pulseaudio not started: {pa_cmd!r} command not found"
                 if self.pulseaudio is None:
-                    audiolog.info(msg)
+                    pulselog.info(msg)
                 else:
-                    audiolog.warn(msg)
+                    pulselog.warn(msg)
                 self.clean_pulseaudio_private_dir()
                 return
             cmd[0] = pa_cmd
         started_at = monotonic()
 
         def pulseaudio_warning() -> None:
-            audiolog.warn("Warning: pulseaudio has terminated shortly after startup.")
-            audiolog.warn(" pulseaudio is limited to a single instance per user account,")
-            audiolog.warn(" and one may be running already for user '%s'.", get_username())
-            audiolog.warn(" To avoid this warning, either fix the pulseaudio command line")
-            audiolog.warn(" or use the 'pulseaudio=no' option.")
+            pulselog.warn("Warning: pulseaudio has terminated shortly after startup.")
+            pulselog.warn(" pulseaudio is limited to a single instance per user account,")
+            pulselog.warn(" and one may be running already for user '%s'.", get_username())
+            pulselog.warn(" To avoid this warning, either fix the pulseaudio command line")
+            pulselog.warn(" or use the 'pulseaudio=no' option.")
 
         def pulseaudio_ended(proc) -> None:
-            audiolog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
+            pulselog("pulseaudio_ended(%s) pulseaudio_proc=%s, returncode=%s, closing=%s",
                      proc, self.pulseaudio_proc, proc.returncode, self._closing)
             if self.pulseaudio_proc is None or self._closing:
                 # cleared by cleanup already, ignore
@@ -215,26 +216,26 @@ class AudioServer(StubServerMixin):
             if elapsed < 2:
                 GLib.timeout_add(1000, pulseaudio_warning)
             else:
-                audiolog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
+                pulselog.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
             self.pulseaudio_proc = None
 
         try:
-            audiolog("pulseaudio cmd=%s", " ".join(cmd))
-            audiolog("pulseaudio env=%s", env)
+            pulselog("pulseaudio cmd=%s", " ".join(cmd))
+            pulselog("pulseaudio env=%s", env)
             self.pulseaudio_proc = Popen(cmd, env=env)
         except Exception as e:
-            audiolog("Popen(%s)", cmd, exc_info=True)
-            audiolog.error("Error: failed to start pulseaudio:")
-            audiolog.estr(e)
+            pulselog("Popen(%s)", cmd, exc_info=True)
+            pulselog.error("Error: failed to start pulseaudio:")
+            pulselog.estr(e)
             self.clean_pulseaudio_private_dir()
             return
         self.add_process(self.pulseaudio_proc, "pulseaudio", cmd, ignore=True, callback=pulseaudio_ended)
         if self.pulseaudio_proc:
             save_session_file("pulseaudio.pid", "%s" % self.pulseaudio_proc.pid)
-            audiolog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
+            pulselog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
             if self.pulseaudio_server_socket:
-                audiolog.info(" private server socket path:")
-                audiolog.info(" %r", self.pulseaudio_server_socket)
+                pulselog.info(" private server socket path:")
+                pulselog.info(" %r", self.pulseaudio_server_socket)
                 os.environ["PULSE_SERVER"] = "unix:%s" % self.pulseaudio_server_socket
 
             def configure_pulse() -> None:
@@ -252,10 +253,10 @@ class AudioServer(StubServerMixin):
         proc = self.pulseaudio_proc
         if not proc:
             return
-        audiolog("cleanup_pa() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
+        pulselog("cleanup_pa() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
         if self.is_child_alive(proc):
             self.pulseaudio_proc = None
-            audiolog.info("stopping pulseaudio with pid %s", proc.pid)
+            pulselog.info("stopping pulseaudio with pid %s", proc.pid)
             try:
                 # first we try pactl (required on Ubuntu):
                 cmd = ["pactl", "exit"]
@@ -268,14 +269,14 @@ class AudioServer(StubServerMixin):
                     # fallback to using SIGINT:
                     proc.terminate()
             except Exception as e:
-                audiolog.warn("cleanup_pulseaudio() error stopping %s", proc, exc_info=True)
+                pulselog.warn("cleanup_pulseaudio() error stopping %s", proc, exc_info=True)
                 # only log the full stacktrace if the process failed to terminate:
                 if self.is_child_alive(proc):
-                    audiolog.error("Error: stopping pulseaudio: %s", e, exc_info=True)
+                    pulselog.error("Error: stopping pulseaudio: %s", e, exc_info=True)
             if self.pulseaudio_server_socket and self.is_child_alive(proc):
                 # wait for the pulseaudio process to exit,
                 # it will delete the socket:
-                audiolog("pollwait()=%s", pollwait(proc))
+                pulselog("pollwait()=%s", pollwait(proc))
         if self.pulseaudio_server_socket and not self.is_child_alive(proc):
             # wait for the socket to get cleaned up
             # (it should be removed by the pulseaudio server as it exits)
@@ -310,23 +311,23 @@ class AudioServer(StubServerMixin):
                 try:
                     for d in dirs:
                         path = os.path.abspath(d)
-                        audiolog("removing private directory '%s'", path)
+                        pulselog("removing private directory '%s'", path)
                         if os.path.exists(path) and os.path.isdir(path):
                             os.rmdir(path)
                     log.info("removing private directory '%s'", self.pulseaudio_private_dir)
                 except OSError as e:
-                    audiolog("cleanup_pulseaudio() error removing '%s'", path, exc_info=True)
-                    audiolog.error("Error: failed to cleanup the pulseaudio private directory")
-                    audiolog.error(" '%s'", self.pulseaudio_private_dir)
-                    audiolog.estr(e)
+                    pulselog("cleanup_pulseaudio() error removing '%s'", path, exc_info=True)
+                    pulselog.error("Error: failed to cleanup the pulseaudio private directory")
+                    pulselog.error(" '%s'", self.pulseaudio_private_dir)
+                    pulselog.estr(e)
                     try:
                         files = os.listdir(path)
                         if files:
-                            audiolog.error(f" found %i files in {path!r}:", len(files))
+                            pulselog.error(f" found %i files in {path!r}:", len(files))
                             for f in files:
-                                audiolog.error(f" - {f!r}")
+                                pulselog.error(f" - {f!r}")
                     except OSError:
-                        audiolog.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
+                        pulselog.error("cleanup_pulseaudio() error accessing '%s'", path, exc_info=True)
 
     def init_audio_options(self) -> None:
         def audio_missing(*_args) -> Sequence[str]:
@@ -377,7 +378,7 @@ class AudioServer(StubServerMixin):
         try:
             from xpra.audio.pulseaudio.util import set_icon_path, get_info as get_pa_info
             pa_info = get_pa_info()
-            audiolog("pulseaudio info=%s", pa_info)
+            pulselog("pulseaudio info=%s", pa_info)
             self.audio_properties.update(pa_info)
             set_icon_path(get_icon_filename("xpra.png"))
         except ImportError as e:
