@@ -25,6 +25,7 @@ buildah run $CONTAINER wget -O "/etc/apt/sources.list.d/${REPO}.sources" "https:
 buildah run $CONTAINER apt-get update
 # install winbar as desktop environment:
 buildah run $CONTAINER apt-get install winbar --no-install-recommends -y
+buildah run $CONTAINER winbar --create-cache
 # to install xpra in this container:
 # buildah run $CONTAINER apt-get install xpra-server xserver-xorg-video-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5 --no-install-recommends
 
