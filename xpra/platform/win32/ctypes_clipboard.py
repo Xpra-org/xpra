@@ -544,11 +544,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                 data_handle = GlobalAlloc(GMEM_MOVEABLE, l)
                 if not data_handle:
                     log.error("Error: failed to allocate %i bytes of global memory", l)
-                    return True
+                    return
                 data = GlobalLock(data_handle)
                 if not data:
                     log("failed to lock data handle %#x (may try again)", data_handle)
-                    return False
+                    return
                 log("got data handle lock %#x for %i bytes of '%s' data", data, l, img_format)
                 try:
                     memmove(data, pbuf, l)
