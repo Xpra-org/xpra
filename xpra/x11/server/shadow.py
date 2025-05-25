@@ -146,7 +146,7 @@ def window_matches(wspec, model_class):
                 models[xid] = model
         log("window_matches(%s, %s)=%s", wspec, model_class, models)
         position_models(models)
-        models.values()
+        return models.values()
 
 
 def position_models(models: dict[int, Any]) -> None:
