@@ -235,7 +235,6 @@ class AudioServer(StubServerMixin):
             save_session_file("pulseaudio.pid", "%s" % self.pulseaudio_proc.pid)
             pulselog.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
             if self.pulseaudio_server_socket:
-                pulselog.info(" private server socket path:")
                 pulselog.info(" %r", self.pulseaudio_server_socket)
                 os.environ["PULSE_SERVER"] = "unix:%s" % self.pulseaudio_server_socket
 
