@@ -30,7 +30,7 @@ class Authenticator(SQLAuthenticator):
     def __repr__(self):
         return "sqlite"
 
-    def db_cursor(self, *sqlargs):
+    def db_cursor(self, sql: str, *sqlargs):
         if not os.path.exists(self.filename):
             log.error("Error: sqlauth cannot find the database file '%s'", self.filename)
             return None
@@ -38,7 +38,7 @@ class Authenticator(SQLAuthenticator):
         db = sqlite3.connect(self.filename)
         db.row_factory = sqlite3.Row
         cursor = db.cursor()
-        cursor.execute(*sqlargs)
+        cursor.execute(sql, sqlargs)
         log("db_cursor(%s)=%s", sqlargs, cursor)
         return cursor
 

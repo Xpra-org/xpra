@@ -18,11 +18,11 @@ class Authenticator(SQLAuthenticator):
         self.uri = kwargs.get("uri")
         assert self.uri, "missing database uri"
 
-    def db_cursor(self, *sqlargs):
+    def db_cursor(self, sql: str, *sqlargs):
         from sqlalchemy import create_engine  # pylint: disable=import-outside-toplevel
         db = create_engine(self.uri)
         cursor = db.cursor()
-        cursor.execute(*sqlargs)
+        cursor.execute(sql, sqlargs)
         # keep reference to db so that it doesn't get garbage collected just yet:
         cursor.db = db
         log("db_cursor(%s)=%s", sqlargs, cursor)

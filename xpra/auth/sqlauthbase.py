@@ -23,11 +23,11 @@ class SQLAuthenticator(SysAuthenticator):
         super().__init__(**kwargs)
         self.authenticate_check = self.authenticate_hmac
 
-    def db_cursor(self, *sqlargs):
+    def db_cursor(self, sql: str, *sqlargs):
         raise NotImplementedError()
 
     def get_passwords(self) -> Sequence[str]:
-        cursor = self.db_cursor(self.password_query, (self.username,))
+        cursor = self.db_cursor(self.password_query, self.username)
         data = cursor.fetchall()
         if not data:
             log.info("username {self.username!r} was not found in SQL authentication database")
@@ -35,7 +35,7 @@ class SQLAuthenticator(SysAuthenticator):
         return tuple(str(x[0]) for x in data)
 
     def get_sessions(self) -> SessionData | None:
-        cursor = self.db_cursor(self.sessions_query, (self.username, self.password_used or ""))
+        cursor = self.db_cursor(self.sessions_query, self.username, self.password_used or "")
         data = cursor.fetchone()
         if not data:
             return None

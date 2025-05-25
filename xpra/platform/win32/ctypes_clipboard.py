@@ -527,7 +527,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
             log("no handling: target=%s, dtype=%s, dformat=%s, data=%s",
                 target, dtype, dformat, Ellipsizer(data))
 
-    def set_clipboard_image(self, img_format, img_data):
+    def set_clipboard_image(self, img_format: str, img_data) -> None:
         image_formats = {}
         if COMPRESSED_IMAGES:
             # first save it as binary compressed data:
@@ -559,7 +559,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         image_formats[win32con.CF_BITMAP] = bitmap
         self.do_set_clipboard_image(image_formats)
 
-    def do_set_clipboard_image(self, image_formats):
+    def do_set_clipboard_image(self, image_formats: dict) -> None:
         def got_clipboard_lock() -> bool:
             EmptyClipboard()
             c = 0
@@ -573,7 +573,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     c += 1
             return bool(c)
 
-        def nolock(*_args):
+        def nolock(*_args) -> None:
             log.warn("Warning: failed to copy image data to the clipboard")
 
         self.with_clipboard_lock(got_clipboard_lock, nolock)
