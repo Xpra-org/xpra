@@ -621,11 +621,11 @@ class WindowBackingBase:
         in_options = CSC_OPTIONS.get(src_format, {})
         videolog("make_csc%s",
                  (src_width, src_height, src_format, dst_width, dst_height, dst_format_options, speed))
-        need_scaling = src_width != dst_width or src_height != dst_height
+        need_scaling = (src_width, src_height) != (dst_width, dst_height)
         # note: the best scores are the lowest!
         csc_scores = {}
         for dst_format in dst_format_options:
-            specs = in_options.get(dst_format)
+            specs = in_options.get(dst_format, ())
             videolog("make_csc specs(%s)=%s", dst_format, specs)
             if not specs:
                 continue
