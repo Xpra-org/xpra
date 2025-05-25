@@ -63,6 +63,9 @@ podman run -dt \
   --ipc container:xvfb \
   --cgroupns container:xvfb \
   --network container:xvfb \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  --security-opt label=type:container_runtime_t \
+  -v /dev/dri:/dev/dri \
   apps
 
 # Output status
