@@ -4286,7 +4286,7 @@ def get_x11_display_info(display, sessions_dir="") -> dict[str, Any]:
                 with OSEnvContext(XPRA_SESSION_DIR=session_dir):
                     log(f"get_x11_display_info({display}, {sessions_dir}) using session directory {session_dir}")
                     try:
-                        xvfb_pid = load_pid(session_dir, os.path.join(session_dir, "xvfb.pid"))
+                        xvfb_pid = load_pid(os.path.join(session_dir, "xvfb.pid"))
                         log(f"xvfb.pid({display})={xvfb_pid}")
                         if xvfb_pid and os.path.exists("/proc") and not os.path.exists(f"/proc/{xvfb_pid}"):
                             state = "UNKNOWN"
