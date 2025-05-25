@@ -1012,6 +1012,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
         if agent_option.lower() in TRUE_OPTIONS:
             if not WIN_OPENSSH_AGENT and WIN_OPENSSH_AGENT_MODULE not in sys.modules:
                 log(f"preventing {WIN_OPENSSH_AGENT_MODULE!r} from loading")
+                # noinspection PyTypeChecker
                 sys.modules[WIN_OPENSSH_AGENT_MODULE] = None
             log.info("paramiko SSH agent forwarding enabled")
             from paramiko.agent import AgentRequestHandler

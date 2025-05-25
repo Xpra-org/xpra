@@ -9,6 +9,7 @@ from collections import deque
 from collections.abc import Sequence
 
 from xpra.codecs.image import ImageWrapper
+from xpra.net.common import PacketElement
 from xpra.util.objects import typedict
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.log import Logger
@@ -121,7 +122,7 @@ class Encoder:
         if not pixels:
             raise RuntimeError(f"failed to get pixels from {image}")
         # info used by proxy encoder:
-        client_options = {
+        client_options: dict[str, PacketElement] = {
             "proxy": True,
             "frame": self.frames,
             "pts": image.get_timestamp() - self.first_frame_timestamp,

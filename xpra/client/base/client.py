@@ -344,12 +344,12 @@ class XpraClientBase(ClientBaseClass):
         return compression.Compressed(f"raw {datatype}", data)
 
     def send(self, packet_type: str, *parts: PacketElement) -> None:
-        packet = (packet_type, *parts)
+        packet = Packet(packet_type, *parts)
         self._ordinary_packets.append(packet)
         self.have_more()
 
     def send_now(self, packet_type: str, *parts: PacketElement) -> None:
-        packet = (packet_type, *parts)
+        packet = Packet(packet_type, *parts)
         self._priority_packets.append(packet)
         self.have_more()
 

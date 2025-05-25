@@ -206,14 +206,14 @@ def do_get_download_dir() -> str:
         sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
         downloads_guid = '{374DE290-123F-4565-9164-39C4925E467B}'
         with OpenKey(HKEY_CURRENT_USER, sub_key) as key:
-            DOWNLOAD_PATH = QueryValueEx(key, downloads_guid)[0]
-    except Exception:
+            return QueryValueEx(key, downloads_guid)[0]
+    except OSError:
         get_util_logger()("do_get_download_dir()", exc_info=True)
         # fallback to what the documentation says is the default:
-        DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "My Documents", "Downloads")
-        if not os.path.exists(DOWNLOAD_PATH):
-            DOWNLOAD_PATH = os.path.join(os.environ.get("USERPROFILE", "~"), "Downloads")
-    return DOWNLOAD_PATH
+        download_path = os.path.join(os.environ.get("USERPROFILE", "~"), "My Documents", "Downloads")
+        if not os.path.exists(download_path):
+            download_path = os.path.join(os.environ.get("USERPROFILE", "~"), "Downloads")
+        return download_path
 
 
 def do_get_script_bin_dirs() -> list[str]:

@@ -32,7 +32,8 @@ class TkScheduler:
     def idle_add(self, fn: Callable, *args, **kwargs):
         return self.timeout_add(0, fn, *args, **kwargs)
 
-    def timeout_add(self, delay: int, fn: Callable, *args, **kwargs):
+    @staticmethod
+    def timeout_add(delay: int, fn: Callable, *args, **kwargs):
 
         def call() -> None:
             log(f"calling {fn}")
