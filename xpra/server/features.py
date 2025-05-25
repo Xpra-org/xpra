@@ -8,6 +8,7 @@ from xpra.common import DETECT_MEMLEAKS, DETECT_FDLEAKS, CPUINFO
 
 debug = DETECT_MEMLEAKS or DETECT_FDLEAKS or CPUINFO
 power = True
+suspend = True
 control = True
 mdns = True
 notification = True

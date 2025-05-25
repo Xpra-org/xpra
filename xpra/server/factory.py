@@ -51,6 +51,7 @@ def get_server_base_classes() -> tuple[type, ...]:
         # this one is for server-side system power events:
         from xpra.server.subsystem.power import PowerEventServer
         classes.append(PowerEventServer)
+    if features.suspend:
         # and this one for processing power event messages from the client:
         from xpra.server.subsystem.suspend import SuspendServer
         classes.append(SuspendServer)

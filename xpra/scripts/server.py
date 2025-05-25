@@ -268,6 +268,7 @@ def set_server_features(opts, mode: str) -> None:
         features.keyboard = features.pointer = False
         features.logging = features.display = features.window = False
         features.cursor = features.rfb = False
+        features.power = features.suspend = False
         features.ssh = False
     else:
         features.debug = features.debug or b(opts.debug)
@@ -291,6 +292,8 @@ def set_server_features(opts, mode: str) -> None:
         features.ssh = b(opts.ssh) and impcheck("net.ssh")
         features.ping = b(opts.pings)
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
+        features.power = envbool("XPRA_POWER_EVENTS", True)
+        features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
 
     features.http = opts.http and impcheck("net.http")
     features.control = opts.control and impcheck("net.control")
@@ -299,7 +302,6 @@ def set_server_features(opts, mode: str) -> None:
     features.dbus = b(opts.dbus) and impcheck("dbus", "server.dbus")
     features.encoding = impcheck("codecs")
     features.shell = opts.shell
-    features.power = envbool("XPRA_POWER_EVENTS", True)
 
     if envbool("XPRA_ENFORCE_FEATURES", True):
         enforce_server_features()
@@ -314,6 +316,7 @@ def enforce_server_features() -> None:
     enforce_features(features, {
         "debug": "xpra.server.subsystem.debug",
         "power": "xpra.server.subsystem.power",
+        "suspend": "xpra.server.subsystem.suspend",
         "control": "xpra.net.control,xpra.server.subsystem.controlcommands",
         "mdns": "xpra.net.mdns,xpra.xpra.server.subsystem.mdns",
         "command": "xpra.server.subsystem.child_command",
