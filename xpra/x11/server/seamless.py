@@ -382,9 +382,12 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
 
     def add_system_tray(self) -> None:
         # Tray handler:
-        from xpra.x11.gtk.tray import SystemTray
-        with xlog:
-            self._tray = SystemTray()
+        try:
+            with xsync:
+                from xpra.x11.gtk.tray import SystemTray
+                self._tray = SystemTray()
+        except RuntimeError:
+            log.warn(" system tray forwarding is disabled")
 
     ##########################################################################
     # Manage windows:

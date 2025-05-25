@@ -146,6 +146,9 @@ class SystemTray(GObject.GObject):
                 owner = X11Window.XGetSelectionOwner(SELECTION)
                 log(f"setup tray: current selection owner={owner:x}")
                 if owner != XNone:
+                    from xpra.x11.window_info import window_info
+                    log.warn(f"Warning: the system tray selection {SELECTION!r} is already owned by:")
+                    log.warn(" %s", window_info(owner))
                     raise RuntimeError(f"{SELECTION} already owned by {owner:x}")
                 root_xid = get_root_xid()
                 root_depth = X11Window.get_depth(root_xid)
