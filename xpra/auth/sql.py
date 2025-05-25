@@ -40,11 +40,11 @@ class SQLDatabaseUtil(DatabaseUtilBase):
         # db = create_engine(self.uri)
         self.param = os.environ.get("PARAMSTYLE", "%s")
 
-    def exec_database_sql_script(self, cursor_cb, *sqlargs):
+    def exec_database_sql_script(self, cursor_cb, sql: str, *sqlargs):
         from sqlalchemy import create_engine  # pylint: disable=import-outside-toplevel
         db = create_engine(self.uri)
-        log("%s.execute%s", db, sqlargs)
-        result = db.execute(*sqlargs)
+        log("%s.execute%s", db, (sql, sqlargs))
+        result = db.execute(sql, *sqlargs)
         log("result=%s", result)
         if cursor_cb:
             cursor_cb(result)

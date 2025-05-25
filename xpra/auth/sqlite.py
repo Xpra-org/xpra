@@ -71,12 +71,12 @@ class SqliteDatabaseUtil(DatabaseUtilBase):
         assert sqlite3.paramstyle == "qmark"
         self.param = "?"
 
-    def exec_database_sql_script(self, cursor_cb, *sqlargs):
+    def exec_database_sql_script(self, cursor_cb, sql, *sqlargs):
         import sqlite3  # pylint: disable=import-outside-toplevel
         db = sqlite3.connect(self.uri)
         cursor = db.cursor()
-        log("%s.execute%s", cursor, sqlargs)
-        cursor.execute(*sqlargs)
+        log("%s.execute%s", cursor, (sql, sqlargs))
+        cursor.execute(sql, sqlargs)
         if cursor_cb:
             cursor_cb(cursor)
         db.commit()

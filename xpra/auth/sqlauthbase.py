@@ -69,7 +69,7 @@ class DatabaseUtilBase:
         self.uri = uri
         self.param = "?"
 
-    def exec_database_sql_script(self, cursor_cb, *sqlargs):
+    def exec_database_sql_script(self, cursor_cb, sql: str, *sqlargs):
         raise NotImplementedError()
 
     def create(self) -> None:
