@@ -141,6 +141,7 @@ class ClientWindow(GTKClientWindowBase):
             return prop[2][0]
         except Exception as e:
             metalog.error("xget_u32_property error on %s / %s: %s", target, name, e)
+            return 0
 
     def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:
         gdkwindow = self.drawing_area.get_window()
