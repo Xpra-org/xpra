@@ -11,6 +11,7 @@ CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
 REPO="${REPO:-xpra-beta}"
 XDISPLAY="${XDISPLAY:-:10}"
 TOOLS="${TOOLS:-0}"
+APPS="${APPS:-libreoffice lxterminal vlc gimp}"
 # LANG="${LANG:-C}"
 
 buildah rm $CONTAINER
@@ -25,13 +26,15 @@ buildah run $CONTAINER wget -O "/etc/apt/sources.list.d/${REPO}.sources" "https:
 buildah run $CONTAINER apt-get update
 # install winbar as desktop environment:
 buildah run $CONTAINER apt-get install winbar --no-install-recommends -y
+buildah run $CONTAINER apt-get install $APPS
 buildah run $CONTAINER winbar --create-cache
 # to install xpra in this container:
 # buildah run $CONTAINER apt-get install xpra-server xserver-xorg-video-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5 --no-install-recommends
 
+
 if [ "${TOOLS}" == "1" ]; then
   # add some applications:
-  buildah run $CONTAINER apt-get install xterm --no-install-recommends -y
+  buildah run $CONTAINER apt-get install xterm strace --no-install-recommends -y
   # toys useful for testing video encoders, costs ~30MB:
   buildah run $CONTAINER apt-get install mesa-utils --no-install-recommends -y
   buildah run $CONTAINER sh -c "wget https://github.com/VirtualGL/virtualgl/releases/download/3.1.3/virtualgl_3.1.3_amd64.deb;apt-get install ./virtualgl_3.1.3_amd64.deb -y"
