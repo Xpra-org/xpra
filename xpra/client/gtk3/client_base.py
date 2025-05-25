@@ -1175,7 +1175,24 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             opengllog.warn("Warning: OpenGL is disabled:")
         opengllog.warn(" %s", warning)
 
-    def validate_texture_size(self) -> bool:
+    def validate_texture_size(self) -> None:
+        if self.do_validate_texture_size():
+            return
+        # log at warn level if the limit is low:
+        # (if we're likely to hit it - if the screen is as big or bigger)
+        w, h = self.get_root_size()
+        log_fn = opengllog.info
+        if w * 2 <= self.gl_texture_size_limit and h * 2 <= self.gl_texture_size_limit:
+            log_fn = opengllog.debug
+        if w >= self.gl_texture_size_limit or h >= self.gl_texture_size_limit:
+            log_fn = opengllog.warn
+        log_fn("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i",
+               self.gl_texture_size_limit, self.gl_texture_size_limit)
+        glver = pver(self.opengl_props.get("opengl", ""))
+        renderer = self.opengl_props.get("renderer", "unknown")
+        log_fn(f" for OpenGL {glver} renderer {renderer!r}")
+
+    def do_validate_texture_size(self) -> bool:
         mww, mwh = self.max_window_size
         lim = self.gl_texture_size_limit
         if lim >= 16 * 1024:
@@ -1193,7 +1210,6 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         # ie: "on:native,gtk", "auto", "no"
         # ie: "probe-failed:SIGSEGV"
         # ie: "probe-success"
-        enable_opengl = (enable_opengl or "")
         parts = enable_opengl.split(":", 1)
         enable_option = parts[0].lower()  # ie: "on"
         opengllog(f"init_opengl: enable_option={enable_option}")
@@ -1271,19 +1287,8 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             opengllog("OpenGL: enabled=%s, texture-size-limit=%s, max-window-size=%s",
                       self.opengl_enabled, self.gl_texture_size_limit, self.max_window_size)
 
-            if self.opengl_enabled and not self.validate_texture_size():
-                # log at warn level if the limit is low:
-                # (if we're likely to hit it - if the screen is as big or bigger)
-                w, h = self.get_root_size()
-                log_fn = opengllog.info
-                if w * 2 <= self.gl_texture_size_limit and h * 2 <= self.gl_texture_size_limit:
-                    log_fn = opengllog.debug
-                if w >= self.gl_texture_size_limit or h >= self.gl_texture_size_limit:
-                    log_fn = opengllog.warn
-                log_fn("Warning: OpenGL windows will be clamped to the maximum texture size %ix%i",
-                       self.gl_texture_size_limit, self.gl_texture_size_limit)
-                glver = pver(self.opengl_props.get("opengl", ""))
-                log_fn(f" for OpenGL {glver} renderer {renderer!r}")
+            if self.opengl_enabled:
+                self.validate_texture_size()
             if self.opengl_enabled and enable_opengl != "probe-success" and not self.opengl_force:
                 draw_result = test_gl_client_window(self.GLClientWindowClass,
                                                     max_window_size=self.max_window_size,
