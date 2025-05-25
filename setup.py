@@ -219,6 +219,7 @@ pyglet_client_ENABLED = False
 tk_client_ENABLED = False
 scripts_ENABLED = not WIN32
 cython_ENABLED = DEFAULT
+cython_shared_ENABLED = True
 cythonize_more_ENABLED = False
 cython_tracing_ENABLED = False
 modules_ENABLED = DEFAULT
@@ -403,7 +404,7 @@ for sw in CODEC_SWITCHES:
         SWITCHES.append(sw)
 
 SWITCHES += [
-    "cython_tracing", "cythonize_more",
+    "cython_tracing", "cythonize_more", "cython_shared",
     "modules", "data",
     "brotli", "cityhash", "qrencode",
     "vsock", "netdev", "proc", "mdns", "lz4",
@@ -906,20 +907,29 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
     check_sane_defaults()
 
 
+cythonize_kwargs = {}
+CYSHARED = "./xpra/cyshared.c"
+CYSHARED_EXT = "xpra.cyshared"
+
+
 def check_cython3() -> None:
     try:
         import cython
         print(f"found Cython version {cython.__version__}")
-        version = int(cython.__version__.split('.')[0])
+        version = tuple(int(vpart) for vpart in cython.__version__.split('.')[:2])
     except (ValueError, ImportError):
         print("WARNING: unable to detect Cython version")
     else:
-        if version < 3:
+        global cython_shared_ENABLED
+        if version < (3, ):
             print("*******************************************")
-            print("please switch to Cython 3.x")
+            print("please switch to Cython 3.1.x")
             print(f" version {version} is not supported")
             print("*******************************************")
             sys.exit(1)
+        if version < (3, 1):
+            print("please consider upgrading to Cython 3.1.x")
+            cython_shared_ENABLED = False
 
 
 check_cython3()
@@ -2558,6 +2568,13 @@ if cython_ENABLED:
             language="c++",
             extra_link_args="-lcityhash")
 
+    if cython_shared_ENABLED:
+        # re-generate shared utility
+        subprocess.run(["cython", "--generate-shared", CYSHARED])
+        if os.path.exists(CYSHARED):
+            cythonize_kwargs["shared_utility_qualified_name"] = CYSHARED_EXT
+            add_cython_ext(CYSHARED_EXT, sources=[CYSHARED])
+
 toggle_packages(dbus_ENABLED, "xpra.dbus")
 toggle_packages(server_ENABLED or client_ENABLED, "xpra.auth")
 toggle_packages(server_ENABLED or proxy_ENABLED, "xpra.server")
@@ -2999,6 +3016,7 @@ if ext_modules:
                                              nthreads=nthreads,
                                              gdb_debug=debug_ENABLED,
                                              compiler_directives=compiler_directives,
+                                             **cythonize_kwargs
                                              )
 if cmdclass:
     setup_options["cmdclass"] = cmdclass
