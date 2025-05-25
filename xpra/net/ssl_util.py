@@ -246,6 +246,8 @@ def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", c
     if not server_side:
         context.check_hostname = check_hostname
     context.verify_mode = ssl_cert_reqs
+    # we can't specify the type hint without depending on the `ssl` module:
+    # noinspection PyTypeChecker
     context.verify_flags = parse_ssl_verify_mask(verify_flags)
     context.options = parse_ssl_options_mask(options)
     ssllog(" cert=%s, key=%s", cert, key)
