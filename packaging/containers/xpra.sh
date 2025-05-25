@@ -28,7 +28,7 @@ buildah run $CONTAINER dnf install -y https://download1.rpmfusion.org/free/${DIS
 buildah run $CONTAINER dnf update -y
 buildah run $CONTAINER dnf install -y wget --setopt=install_weak_deps=False
 buildah run $CONTAINER wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
-buildah run $CONTAINER dnf install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-pyxdg dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
+buildah run $CONTAINER dnf install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-aioquic python3-pyxdg dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
 # EL10: system-backgrounds system-logos
 if [ "${AUDIO}" == "1" ]; then
   buildah run $CONTAINER dnf install -y xpra-audio-server
@@ -51,5 +51,5 @@ buildah copy $CONTAINER allow-all.conf /etc/dbus-1/system.d/
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
-buildah config --entrypoint "/usr/bin/xpra seamless --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=auto --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
+buildah config --entrypoint "/usr/bin/xpra seamless --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=auto --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
