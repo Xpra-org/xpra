@@ -41,9 +41,9 @@ if [ "${TOOLS}" == "1" ]; then
   buildah run $CONTAINER dnf install -y strace xterm net-tools lsof xpra-client socat glxgears mesa-demos xdpyinfo VirtualGL pavucontrol --setopt=install_weak_deps=False
 fi
 
-buildah run $CONTAINER groupadd -r -g ${TARGET_GID} ${TARGET_USER}
-buildah run $CONTAINER adduser -u ${TARGET_UID} -g ${TARGET_GID} --shell /bin/bash ${TARGET_USER}
-buildah run $CONTAINER usermod -aG ${TARGET_USER_GROUPS} ${TARGET_USER}
+buildah run $CONTAINER groupadd -r -g "${TARGET_GID}" "${TARGET_USER}"
+buildah run $CONTAINER adduser -u "${TARGET_UID}" -g "${TARGET_GID}" --shell /bin/bash "${TARGET_USER}"
+buildah run $CONTAINER usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
 buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
 
 buildah run $CONTAINER sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/lib/dbus/machine-id"
