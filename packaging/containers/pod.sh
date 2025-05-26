@@ -33,6 +33,7 @@ fi
 # Start xvfb (isolated from host network)
 podman run -dt \
   --pod ${POD_NAME} \
+  --replace \
   --name xvfb \
   --hostname xpra \
   --uts private \
@@ -47,6 +48,7 @@ podman run -dt \
 # Start xpra (isolated, but exposes port 10000 on host)
 podman run -dt \
   --pod ${POD_NAME} \
+  --replace \
   --name xpra \
   --uts container:xvfb \
   --ipc container:xvfb \
@@ -58,6 +60,7 @@ podman run -dt \
 # Start play with two networks: internal + internet
 podman run -dt \
   --pod ${POD_NAME} \
+  --replace \
   --name apps \
   --uts container:xvfb \
   --ipc container:xvfb \
