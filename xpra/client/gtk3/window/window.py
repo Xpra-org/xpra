@@ -90,22 +90,22 @@ class ClientWindow(WindowBaseClass):
         from xpra.client.gtk3.cairo_backing import CairoBacking
         return CairoBacking
 
-    def xget_u32_property(self, target, name: str) -> int:
+    def xget_u32_property(self, target, name: str, default_value=0) -> int:
         if HAS_X11_BINDINGS:
             from xpra.client.gtk3.window.base import GTKClientWindowBase
-            return GTKClientWindowBase.xget_u32_property(self, target, name)
+            return GTKClientWindowBase.xget_u32_property(self, target, name, default_value)
         # pure Gdk lookup:
         try:
             name_atom = Gdk.Atom.intern(name, False)
             type_atom = Gdk.Atom.intern("CARDINAL", False)
             prop = Gdk.property_get(target, name_atom, type_atom, 0, 9999, False)
             if not prop or len(prop) != 3 or len(prop[2]) != 1:
-                return 0
-            metalog("xget_u32_property(%s, %s)=%s", target, name, prop[2][0])
+                return default_value
+            metalog("xget_u32_property(%s, %s, %s)=%s", target, name, default_value, prop[2][0])
             return prop[2][0]
         except Exception as e:
             metalog.error("xget_u32_property error on %s / %s: %s", target, name, e)
-            return 0
+            return default_value
 
     def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:
         gdkwindow = self.drawing_area.get_window()

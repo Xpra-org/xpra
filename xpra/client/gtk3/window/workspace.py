@@ -315,14 +315,10 @@ class WorkspaceWindow(StubWindow):
         if target is None:
             log("do_get_workspace: target is None, returning %s", wn(default_value))
             return default_value  # window is not realized yet
-        value = self.xget_u32_property(target, prop)
-        if value is not None:
-            log("do_get_workspace %s=%s on window %i: %#x",
-                prop, wn(value), self.wid, target.get_xid())
-            return value & 0xffffffff
-        log("do_get_workspace %s unset on window %i: %#x, returning default value=%s",
-            prop, self.wid, target.get_xid(), wn(default_value))
-        return default_value
+        value = self.xget_u32_property(target, prop, default_value)
+        log("do_get_workspace %s=%s on window %i: %#x",
+            prop, wn(value), self.wid, target.get_xid())
+        return value & 0xffffffff
 
     def get_map_client_properties(self) -> dict[str, Any]:
         workspace = self.get_window_workspace()

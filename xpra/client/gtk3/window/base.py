@@ -880,13 +880,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return
         self.set_x11_property("XID", "u32", iid)
 
-    def xget_u32_property(self, target, name: str) -> int:
+    def xget_u32_property(self, target, name: str, default_value=0) -> int:
         if prop_get:
             v = prop_get(target.get_xid(), name, "u32", ignore_errors=True)
-            log("%s.xget_u32_property(%s, %s)=%s", self, target, name, v)
+            log("%s.xget_u32_property(%s, %s, %s)=%s", self, target, name, default_value, v)
             if isinstance(v, int):
                 return v
-        return 0
+        return default_value
 
     def property_changed(self, widget, event) -> None:
         atom = str(event.atom)

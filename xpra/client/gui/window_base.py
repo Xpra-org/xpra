@@ -267,8 +267,8 @@ class ClientWindowBase(ClientWidgetBase):
     def paint_spinner(self, context, area) -> None:
         raise NotImplementedError
 
-    def xget_u32_property(self, target, name) -> int:
-        raise NotImplementedError
+    def xget_u32_property(self, target, name: str, default_value=0) -> int:
+        return default_value
 
     def is_OR(self) -> bool:
         return self._override_redirect
