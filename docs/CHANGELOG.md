@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.1] 2025-05-21
+## [6.3.1] 2025-05-26
 * Platforms, build and packaging:
     * [modular installations also need filesystem package](https://github.com/Xpra-org/xpra/commit/bc67164fe76b03bb1d0287396c63bcf4fc1e0dd6)
     * [add plucky for `install-repo` subcommand](https://github.com/Xpra-org/xpra/commit/db5cc7303938d60b9a1619c672b11bcc88268ea3)
@@ -14,6 +14,7 @@
     * [parsing of `NET_WM_STRUT` on 64-bit systems](https://github.com/Xpra-org/xpra/commit/66dd7a70082063e4e420ee681f5792de8d62ab91)
     * [don' upgrade when `ssl` is disabled](https://github.com/Xpra-org/xpra/commit/4d42efaf66145e031b172ca8526e6489155dcd75)
     * [desktop geometry attributes not always updated](https://github.com/Xpra-org/xpra/commit/08719604fed7072787c7f8cd58bbe6c7cac640cd)
+    * [ignore obsolete X11 size hints](https://github.com/Xpra-org/xpra/commit/ca86d79f23e3da589ecfc896c5e334d76ee91524)
 * Minor:
     * [only resume audio if it was suspended](https://github.com/Xpra-org/xpra/commit/6a3ae04da0bf871ab69454cb5b2e748cdad5169f)
     * [wait before retrying socket](https://github.com/Xpra-org/xpra/commit/7e72cfaef85f183cf87ccce4732e2dc95d956781)
@@ -27,6 +28,7 @@
     * [Xephyr startup errors without geometry](https://github.com/Xpra-org/xpra/commit/302a33b07148fdfd03499c3b66a1e9acbdccff25)
     * [potential errors in OpenGL backend](https://github.com/Xpra-org/xpra/commit/0a8692069c298c48d9a45b6c4a5683678bdc4e78)
     * [video codec filtering broken when options are specified](https://github.com/Xpra-org/xpra/commit/f82cbe0f85ad42d80f304ee1b2778ff3a27da06b)
+    * [size hints return type](https://github.com/Xpra-org/xpra/commit/f391a9ba86969e21d79b0f45900065b6fbcb4400)
 * Monitor server:
     * [does support 8-bit pixel depth](https://github.com/Xpra-org/xpra/commit/1b826c6e164282c007b7adf335ca26edcf3635de)
     * [errors when too many event listeners are registered](https://github.com/Xpra-org/xpra/commit/d3a5b99dcbe5bea927ea460d089902e52ae5a544)
@@ -47,6 +49,7 @@
     * [unused function returns invalid data](https://github.com/Xpra-org/xpra/commit/026aa13f4cd19f9cea35c9b5b1ff1f64ac551557)
     * [control command client validation errors](https://github.com/Xpra-org/xpra/commit/b29eb50f6ea7400f23c6f9b8226a29d2ac96515b)
     * [improve `exit-with-children` error message](https://github.com/Xpra-org/xpra/commit/ed79607a8819f306bb065e970fb06d6fa711a2ff)
+    * [also debug internal properties](https://github.com/Xpra-org/xpra/commit/e437401af2576b01e10c9af632f3881260766270)
 
 ## [6.3] 2025-04-23
 * Platforms, build and packaging:

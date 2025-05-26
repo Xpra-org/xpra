@@ -1008,7 +1008,7 @@ fi
 
 
 %changelog
-* Wed May 21 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
+* Mon May 26 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:
    modular installations also need filesystem package
    add plucky for `install-repo` subcommand
@@ -1022,6 +1022,7 @@ fi
    parsing of `NET_WM_STRUT` on 64-bit systems
    don' upgrade when `ssl` is disabled
    desktop geometry attributes not always updated
+   ignore obsolete X11 size hints
 - Minor:
    only resume audio if it was suspended
    wait before retrying socket
@@ -1035,6 +1036,7 @@ fi
    Xephyr startup errors without geometry
    potential errors in OpenGL backend
    video codec filtering broken when options are specified
+   size hints return type
 - Monitor server:
    does support 8-bit pixel depth
    errors when too many event listeners are registered
@@ -1054,6 +1056,7 @@ fi
    unused function returns invalid data
    control command client validation errors
    improve `exit-with-children` error message
+   also debug internal properties
 
 * Wed Apr 23 2025 Antoine Martin <antoine@xpra.org> 6.3-10
 - Platforms, build and packaging:

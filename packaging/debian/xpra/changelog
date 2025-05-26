@@ -12,6 +12,7 @@ xpra (6.3.1-1) UNRELEASED; urgency=low
     parsing of `NET_WM_STRUT` on 64-bit systems
     don' upgrade when `ssl` is disabled
     desktop geometry attributes not always updated
+    ignore obsolete X11 size hints
   * Minor:
     only resume audio if it was suspended
     wait before retrying socket
@@ -25,6 +26,7 @@ xpra (6.3.1-1) UNRELEASED; urgency=low
     Xephyr startup errors without geometry
     potential errors in OpenGL backend
     video codec filtering broken when options are specified
+    size hints return type
   * Monitor server:
     does support 8-bit pixel depth
     errors when too many event listeners are registered
@@ -44,8 +46,9 @@ xpra (6.3.1-1) UNRELEASED; urgency=low
     unused function returns invalid data
     control command client validation errors
     improve `exit-with-children` error message
+    also debug internal properties
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 21 May 2025 19:58:04 +0700
+ -- Antoine Martin <antoine@xpra.org>  Mon, 26 May 2025 23:22:46 +0700
 
 xpra (6.3-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
