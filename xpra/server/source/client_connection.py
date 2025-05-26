@@ -273,6 +273,7 @@ class ClientConnection(StubClientConnection):
             "hello-sent": self.hello_sent,
             "ssh-auth-sock": self.ssh_auth_sock,
             "packet-types": self.client_packet_types,
+            "control-commands": self.client_control_commands,
         }
         p = self.protocol
         if p:

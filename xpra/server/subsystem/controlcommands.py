@@ -14,7 +14,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.common import ConnectionMessage, noop
 from xpra.util.io import load_binary_file
-from xpra.net.common import Packet
+from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit
 from xpra.scripts.config import str_to_bool, FALSE_OPTIONS, TRUE_OPTIONS
 from xpra.net.control.common import ArgsControlCommand, ControlError
@@ -459,17 +459,17 @@ class ServerBaseControlCommands(StubServerMixin):
         self.all_send_client_command(f"enable_{e}")
         return f"encoders set to {encoder}"
 
-    def all_send_client_command(self, *client_command) -> None:
+    def all_send_client_command(self, command: str, *args: PacketElement) -> None:
         """ forwards the command to all clients """
         for source in tuple(self._server_sources.values()):
             # forwards to *the* client, if there is *one*
-            if client_command[0] not in source.client_control_commands:
-                log.info(f"client command {client_command!r} not forwarded to client {source} (not supported)")
+            if command not in source.client_control_commands:
+                log.info(f"client command {command!r} not forwarded to client {source} (not supported)")
             else:
-                source.send_client_command(*client_command)
+                source.send_client_command(command, *args)
 
-    def control_command_client(self, *args) -> str:
-        self.all_send_client_command(*args)
+    def control_command_client(self, command: str, *args: PacketElement) -> str:
+        self.all_send_client_command(command, *args)
         return f"client control command {args} forwarded to clients"
 
     def control_command_client_property(self, wid: int, uuid, prop: str, value, conv=None) -> str:
@@ -488,7 +488,6 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_name(self, name: str) -> str:
         self.session_name = name
         log.info(f"changed session name: {self.session_name!r}")
-        # self.all_send_client_command("name", name)    not supported by any clients, don't bother!
         self.setting_changed("session_name", name)
         mdns_update = getattr(self, "mdns_update", noop)
         mdns_update()
