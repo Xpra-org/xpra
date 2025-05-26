@@ -469,8 +469,14 @@ class ServerBaseControlCommands(StubServerMixin):
                 source.send_client_command(command, *args)
 
     def control_command_client(self, command: str, *args: PacketElement) -> str:
+        if command == "help":
+            all_control_commands = []
+            for source in tuple(self._server_sources.values()):
+                all_control_commands += list(source.client_control_commands)
+            return "clients support the following control commands: %s" % csv(all_control_commands)
+
         self.all_send_client_command(command, *args)
-        return f"client control command {args} forwarded to clients"
+        return f"client control command {command!r} forwarded to clients"
 
     def control_command_client_property(self, wid: int, uuid, prop: str, value, conv=None) -> str:
         wid = int(wid)
