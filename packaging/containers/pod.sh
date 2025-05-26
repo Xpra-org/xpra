@@ -30,7 +30,7 @@ if ! podman pod exists "$POD_NAME"; then
 #    --share=ipc,net,uts,cgroup
 fi
 
-# Start xvfb (isolated from host network)
+# Start xvfb, exposes ipc to other containers for XShm
 podman run -dt \
   --pod ${POD_NAME} \
   --replace \
@@ -45,7 +45,7 @@ podman run -dt \
   --read-only --read-only-tmpfs=true \
   xvfb
 
-# Start xpra (isolated, but exposes port 10000 on host)
+# Start xpra
 podman run -dt \
   --pod ${POD_NAME} \
   --replace \
@@ -57,7 +57,7 @@ podman run -dt \
   --read-only --read-only-tmpfs=true \
   xpra
 
-# Start play with two networks: internal + internet
+# Start app container running the desktop environment applications:
 podman run -dt \
   --pod ${POD_NAME} \
   --replace \
