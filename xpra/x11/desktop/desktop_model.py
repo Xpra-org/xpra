@@ -69,7 +69,7 @@ class ScreenDesktopModel(DesktopModelBase):
     """
     __gsignals__ = dict(DesktopModelBase.__common_gsignals__)
     _property_names = DesktopModelBase._property_names + ["xid"]
-    _dynamic_property_names = ["size-hints", "title", "icons"]
+    _dynamic_property_names = ["size-constraints", "title", "icons"]
 
     def __init__(self, resize=True, resize_exact=False):
         super().__init__()
@@ -166,7 +166,7 @@ class ScreenDesktopModel(DesktopModelBase):
         else:
             use_fixed_size()
         screenlog("size-hints=%s", size_hints)
-        self._updateprop("size-hints", size_hints)
+        self._updateprop("size-constraints", size_hints)
 
 
 GObject.type_register(ScreenDesktopModel)

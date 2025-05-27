@@ -341,7 +341,7 @@ def adjust_monitor_refresh_rate(refresh_rate: str, mdef: dict[int, dict]) -> dic
 # later clients should provide the `metadata.supported` capability instead
 DEFAULT_METADATA_SUPPORTED = (
     "title", "icon-title", "pid", "iconic",
-    "size-hints", "class-instance", "client-machine",
+    "size-constraints", "class-instance", "client-machine",
     "transient-for", "window-type",
     "fullscreen", "maximized", "decorations", "skip-taskbar", "skip-pager",
     "has-alpha", "override-redirect", "tray", "modal",
@@ -350,8 +350,7 @@ DEFAULT_METADATA_SUPPORTED = (
     "command", "workspace", "above", "below", "sticky",
     "set-initial-position", "requested-position",
     "content-type",
-    # 4.4:
-    # "parent", "relative-position",
+    "parent", "relative-position",
 )
 
 

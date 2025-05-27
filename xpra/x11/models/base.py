@@ -106,7 +106,7 @@ class BaseWindowModel(CoreX11WindowModel):
         # from _NET_WM_FULLSCREEN_MONITORS
         "fullscreen-monitors": (
             GObject.TYPE_PYOBJECT,
-            "list of 4 monitor indices indicating the top, bottom, left, and right edges"
+            "tuple of 4 monitor indices indicating the top, bottom, left, and right edges"
             " of the window when the fullscreen state is enabled", "",
             GObject.ParamFlags.READABLE,
         ),
@@ -294,7 +294,7 @@ class BaseWindowModel(CoreX11WindowModel):
 
     def _read_initial_X11_properties(self) -> None:
         metalog("%s.read_initial_X11_properties()", self._MODELTYPE)
-        self._updateprop("state", frozenset(self._read_wm_state()))
+        self._updateprop("state", tuple(self._read_wm_state()))
         super()._read_initial_X11_properties()
         self._update_content_type()
 
@@ -340,7 +340,7 @@ class BaseWindowModel(CoreX11WindowModel):
             # a window should not be focused and hidden at the same time:
             state = set(state)
             state.remove("_NET_WM_STATE_HIDDEN")
-            state = frozenset(state)
+            state = tuple(state)
         metalog("sync_state: setting _NET_WM_STATE=%s on %#x", state, self.xid)
         with xlog:
             self.prop_set("_NET_WM_STATE", ["atom"], state)
@@ -397,7 +397,7 @@ class BaseWindowModel(CoreX11WindowModel):
     def _handle_fullscreen_monitors_change(self) -> None:
         fsm = self.prop_get("_NET_WM_FULLSCREEN_MONITORS", ["u32"], True)
         metalog("_NET_WM_FULLSCREEN_MONITORS=%s", fsm)
-        self._updateprop("fullscreen-monitors", fsm)
+        self._updateprop("fullscreen-monitors", tuple(fsm or ()))
 
     def _handle_bypass_compositor_change(self) -> None:
         bypass = self.prop_get("_NET_WM_BYPASS_COMPOSITOR", "u32", True) or 0
@@ -410,8 +410,8 @@ class BaseWindowModel(CoreX11WindowModel):
         if strut is None:
             strut = self.prop_get("_NET_WM_STRUT", "strut")
             metalog("_NET_WM_STRUT=%s", strut)
-        # Might be None:
-        self._updateprop("strut", strut)
+        value = {} if not strut else strut.todict()
+        self._updateprop("strut", value)
 
     def _handle_opacity_change(self) -> None:
         opacity = self.prop_get("_NET_WM_WINDOW_OPACITY", "u32", True) or -1
@@ -553,7 +553,7 @@ class BaseWindowModel(CoreX11WindowModel):
                 add, remove, was, added, removed, curr)
         if added or removed:
             # note: _sync_state will update _NET_WM_STATE here:
-            self._internal_set_property("state", frozenset(curr))
+            self._internal_set_property("state", tuple(curr))
             self._state_notify(added | removed)
 
     def _state_notify(self, state_names: set[str]) -> None:

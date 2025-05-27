@@ -395,7 +395,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
 
         def model_class(title, geometry):
             model = rwmc(root, self.capture, title, geometry)
-            model.dynamic_property_names.append("size-hints")
+            model.dynamic_property_names.append("size-constraints")
             return model
 
         return window_matches(self.window_matches, model_class)

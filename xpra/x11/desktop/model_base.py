@@ -56,7 +56,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
             False,
             GObject.ParamFlags.READWRITE,
         ),
-        "size-hints": (
+        "size-constraints": (
             GObject.TYPE_PYOBJECT,
             "Client hints on constraining its size", "",
             GObject.ParamFlags.READABLE,
@@ -80,12 +80,12 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
 
     _property_names = [
         "client-machine", "window-type",
-        "shadow", "size-hints", "class-instance",
+        "shadow", "size-constraints", "class-instance",
         "focused", "title", "depth", "icons",
         "content-type",
         "set-initial-position",
     ]
-    _dynamic_property_names = ["size-hints", "title", "icons"]
+    _dynamic_property_names = ["size-constraints", "title", "icons"]
 
     def __init__(self):
         root_xid = get_root_xid()

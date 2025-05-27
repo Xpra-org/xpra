@@ -57,7 +57,7 @@ class RootWindowModel:
         self.property_names: list[str] = [
             "title", "class-instance",
             "client-machine", "window-type",
-            "size-hints", "icons", "shadow",
+            "size-constraints", "icons", "shadow",
             "depth",
         ]
         self.dynamic_property_names: list[str] = []
@@ -155,7 +155,7 @@ class RootWindowModel:
             return None
         if prop == "opacity":
             return None
-        if prop == "size-hints":
+        if prop == "size-constraints":
             size = self.get_dimensions()
             return {
                 "maximum-size": size,

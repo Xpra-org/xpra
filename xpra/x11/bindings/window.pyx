@@ -1402,7 +1402,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         XFree(wm_hints)
         return hints
 
-    def XGetWMProtocols(self, Window xwindow) -> List[str]:
+    def XGetWMProtocols(self, Window xwindow) -> Tuple[str]:
         self.context_check("XGetWMProtocols")
         cdef Atom *protocols_return
         cdef int count_return
@@ -1412,7 +1412,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
             while i<count_return:
                 protocols.append(self.get_atom_name(protocols_return[i]))
                 i += 1
-        return protocols
+        return tuple(protocols)
 
     def pointer_grab(self, Window xwindow) -> bool:
         self.context_check("pointer_grab")

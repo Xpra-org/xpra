@@ -309,7 +309,7 @@ class GTKShadowServerBase(ShadowServerBase, GTKServerBase):
             if resized:
                 # it has been resized:
                 window.geometry = new_model.geometry
-                window.notify("size-hints")
+                window.notify("size-constraints")
                 for ss in sources:
                     ss.resize_window(wid, window, window.geometry[2], window.geometry[3])
         # any models left are new windows:

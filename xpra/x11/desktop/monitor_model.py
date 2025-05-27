@@ -48,7 +48,7 @@ class MonitorDesktopModel(DesktopModelBase):
         width = monitor.get("width", 0)
         height = monitor.get("height", 0)
         self.monitor_geometry = (x, y, width, height)
-        self._updateprop("size-hints",
+        self._updateprop("size-constraints",
                          {
                              "minimum-size": MIN_SIZE,
                              "maximum-size": MAX_SIZE,

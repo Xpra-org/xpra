@@ -199,7 +199,7 @@ class WindowModel(BaseWindowModel):
             GObject.ParamFlags.READWRITE,
         ),
         # from WM_NORMAL_HINTS
-        "size-hints": (
+        "size-constraints": (
             GObject.TYPE_PYOBJECT,
             "Client hints on constraining its size", "",
             GObject.ParamFlags.READABLE,
@@ -237,12 +237,12 @@ class WindowModel(BaseWindowModel):
     }
 
     _property_names = BaseWindowModel._property_names + [
-        "size-hints", "icon-title", "icons", "decorations",
+        "size-constraints", "icon-title", "icons", "decorations",
         "modal", "set-initial-position", "requested-position",
         "iconic",
     ]
     _dynamic_property_names = BaseWindowModel._dynamic_property_names + [
-        "size-hints", "icon-title", "icons", "decorations", "modal", "iconic",
+        "size-constraints", "icon-title", "icons", "decorations", "modal", "iconic",
     ]
     _initial_x11_properties = BaseWindowModel._initial_x11_properties + [
         "WM_HINTS", "WM_NORMAL_HINTS", "_MOTIF_WM_HINTS",
@@ -316,7 +316,7 @@ class WindowModel(BaseWindowModel):
         # use the coordinates of the corral window:
         if nx == ny == 0:
             nx, ny = x, y
-        hints = self.get_property("size-hints")
+        hints = self.get_property("size-constraints")
         geomlog("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = self.calc_constrained_size(w, h, hints)
         self._updateprop("geometry", (nx, ny, nw, nh))
@@ -578,7 +578,7 @@ class WindowModel(BaseWindowModel):
 
     def _do_update_client_geometry(self, x, y, allocated_w, allocated_h) -> None:
         geomlog("_do_update_client_geometry(%s)", (x, y, allocated_w, allocated_h))
-        hints = self.get_property("size-hints")
+        hints = self.get_property("size-constraints")
         w, h = self.calc_constrained_size(allocated_w, allocated_h, hints)
         geomlog("_do_update_client_geometry: size(%s)=%ix%i", hints, w, h)
         with xlog:
@@ -646,7 +646,7 @@ class WindowModel(BaseWindowModel):
                 continue
             # record xid and geometry:
             children.append([xid] + list(geom))
-        self._internal_set_property("children", children)
+        self._internal_set_property("children", tuple(children))
 
     def configure_geometry(self, x: int, y: int, w: int, h: int) -> bool:
         # the client window may have been resized or moved (generally programmatically)
@@ -654,7 +654,7 @@ class WindowModel(BaseWindowModel):
         geomlog("configure_geometry%s", (x, y, w, h))
         cow, coh = X11Window.getGeometry(self.corral_xid)[2:4]
         # size changes (and position if any):
-        hints = self.get_property("size-hints")
+        hints = self.get_property("size-constraints")
         w, h = self.calc_constrained_size(w, h, hints)
         cx, cy, cw, ch = self.get_property("geometry")
         resized = cow != w or coh != h
@@ -683,7 +683,7 @@ class WindowModel(BaseWindowModel):
         return self._updateprop("geometry", (x, y, w, h))
 
     def do_x11_child_configure_request_event(self, event) -> None:
-        hints = self.get_property("size-hints")
+        hints = self.get_property("size-constraints")
         geomlog("do_x11_child_configure_request_event(%s) client=%#x, corral=%#x, value_mask=%s, size-hints=%s",
                 event, self.xid, self.corral_xid, configure_bits(event.value_mask), hints)
         if event.value_mask & CWStackMode:
@@ -763,7 +763,7 @@ class WindowModel(BaseWindowModel):
                     self._internal_set_property("set-initial-position", True)
                     self._internal_set_property("requested-position", (x, y))
                 # honour hints:
-                hints = self.get_property("size-hints")
+                hints = self.get_property("size-constraints")
                 w, h = self.calc_constrained_size(w, h, hints)
                 geomlog("_NET_MOVERESIZE_WINDOW on %s (data=%s, current geometry=%s, new geometry=%s)",
                         self, event.data, geom, (x, y, w, h))
@@ -884,7 +884,7 @@ class WindowModel(BaseWindowModel):
         # gets no-op updated -- some apps like FSF Emacs 21 like to update
         # their properties every time they see a ConfigureNotify, and this
         # reduces the chance for us to get caught in loops:
-        if self._updateprop("size-hints", hints):
+        if self._updateprop("size-constraints", hints):
             metalog("updated: size-hints=%s", hints)
             self._update_client_geometry()
 

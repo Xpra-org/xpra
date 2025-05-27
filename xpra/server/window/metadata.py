@@ -5,7 +5,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import socket
 from typing import Any
 from collections.abc import Callable
 
@@ -33,6 +32,58 @@ def make_window_metadata(window,
         return {}
 
 
+DEFAULT_VALUES: dict[str: int | str | bool | tuple | dict] = {
+    "title": "",
+    "icon-title": "",
+    "command": "",
+    "content-type": "",
+    "pid": 0,
+    "ppid": 0,
+    "wm-pid": 0,
+    "workspace": WORKSPACE_UNSET,
+    "bypass-compositor": 0,
+    "depth": 24,
+    "opacity": 100,
+    "quality": -1,
+    "speed": -1,
+    "decorations": -1,
+    "role": "",
+    "client-machine": "",
+    "window-type": "",
+    "hwnd": 0,
+    "xid": 0,
+    "iconic": False,
+    "fullscreen": False,
+    "maximized": False,
+    "above": False,
+    "below": False,
+    "shaded": False,
+    "sticky": False,
+    "skip-taskbar": False,
+    "skip-pager": False,
+    "modal": False,
+    "focused": False,
+    "has-alpha": False,
+    "override-redirect": False,
+    "tray": False,
+    "shadow": False,
+    "set-initial-position": False,
+    "allowed-actions": (),
+    "protocols": (),
+    "state": (),
+    "fullscreen-monitors": (),
+    "opaque-region": (),
+    "class-instance": (),
+    "requested-position": (),
+    "relative-position": (),
+    "children": (),
+    "frame": (),
+    "shape": {},
+    "size-constraints": {},
+    "strut": {},
+}
+
+
 def _make_window_metadata(window,
                           propname: str,
                           get_window_id: Callable[[Any], int] | None = None,
@@ -47,40 +98,11 @@ def _make_window_metadata(window,
     def raw():
         return window.get_property(propname)
 
-    if propname in ("title", "icon-title", "command", "content-type"):
+    if propname in DEFAULT_VALUES:
         v = raw()
-        if v is None:
-            if skip_defaults:
-                return {}
-            return {propname: ""}
-        return {propname: v}
-    if propname in (
-        "pid", "ppid", "wm-pid",
-        "workspace",
-        "bypass-compositor", "depth", "opacity",
-        "quality", "speed",
-    ):
-        v = raw()
-        assert v is not None, "%s is None!" % propname
-        default_value = {
-            "pid": 0,
-            "ppid": 0,
-            "wm-pid": 0,
-            "workspace": WORKSPACE_UNSET,
-            "bypass-compositor": 0,
-            "depth": 24,
-            "opacity": 100,
-        }.get(propname, -1)
-        if (v < 0 or v == default_value) and skip_defaults:
-            # unset or default value,
-            # so don't bother sending anything:
+        if skip_defaults and v in (DEFAULT_VALUES[propname], None):
             return {}
         return {propname: v}
-    if propname == "size-hints":
-        # just to confuse things, this attribute is renamed,
-        # and we have to filter out ratios as floats (already exported as pairs anyway)
-        v = dict(raw())
-        return {"size-constraints": v}
     if propname == "strut":
         strut = raw()
         if not strut:
@@ -90,57 +112,6 @@ def _make_window_metadata(window,
         if not strut and skip_defaults:
             return {}
         return {propname: strut}
-    if propname == "class-instance":
-        c_i = raw()
-        if c_i is None:
-            return {}
-        return {propname: c_i}
-    if propname == "client-machine":
-        client_machine = raw()
-        if client_machine is None:
-            client_machine = socket.gethostname()
-            if not client_machine:
-                return {}
-        return {propname: client_machine}
-    if propname in ("window-type", "shape", "children", "hwnd", "relative-position", "requested-position"):
-        v = raw()
-        if not v and skip_defaults:
-            return {}
-        # always send unchanged:
-        return {propname: raw()}
-    if propname == "decorations":
-        # -1 means unset, don't send it
-        v = raw()
-        if v < 0:
-            return {}
-        return {propname: v}
-    if propname in (
-            "iconic", "fullscreen", "maximized",
-            "above", "below",
-            "shaded", "sticky",
-            "skip-taskbar", "skip-pager",
-            "modal", "focused",
-    ):
-        v = raw()
-        if v is False and skip_defaults:
-            # we can skip those when the window is first created,
-            # but not afterwards when those attributes are toggled
-            return {}
-        # always send these when requested
-        return {propname: bool(raw())}
-    if propname in ("has-alpha", "override-redirect", "tray", "shadow", "set-initial-position"):
-        v = raw()
-        if not v and skip_defaults:
-            # save space: all these properties are assumed false if unspecified
-            return {}
-        return {propname: v}
-    if propname in ("role", "fullscreen-monitors"):
-        v = raw()
-        if v is None or v == "":
-            return {}
-        return {propname: v}
-    if propname == "xid":
-        return {propname: raw() or 0}
     if propname in ("group-leader", "transient-for", "parent"):
         ref_window = raw()
         if not ref_window:
@@ -157,15 +128,4 @@ def _make_window_metadata(window,
                 else:
                     p[propname] = wid
         return p
-    # the properties below are not all actually exported to the client
-    # but `opaque-region` is, and the others are exported via `xpra info`:
-    if propname in ("state", "protocols", "opaque-region"):
-        return {propname: tuple(raw() or ())}
-    if propname == "allowed-actions":
-        return {propname: tuple(raw())}
-    if propname == "frame":
-        frame = raw()
-        if not frame:
-            return {}
-        return {propname: tuple(frame)}
     raise ValueError(f"unhandled property name: {propname}")

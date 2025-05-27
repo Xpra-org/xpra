@@ -333,7 +333,7 @@ class Win32ShadowModel(RootWindowModel):
         self.hwnd = 0
         self.iconic = geometry[2] == -32000 and geometry[3] == -32000
         self.property_names.append("hwnd")
-        self.dynamic_property_names.append("size-hints")
+        self.dynamic_property_names.append("size-constraints")
 
     def get_id(self) -> int:
         return self.hwnd

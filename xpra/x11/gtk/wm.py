@@ -307,7 +307,7 @@ class Wm(GObject.GObject):
 
     def do_get_property(self, pspec):
         if pspec.name == "windows":
-            return frozenset(self._windows.values())
+            return tuple(self._windows.values())
         if pspec.name == "toplevel":
             return self._world_window
         assert False
