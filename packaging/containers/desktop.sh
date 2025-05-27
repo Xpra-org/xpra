@@ -12,6 +12,7 @@ REPO="${REPO:-xpra-beta}"
 XDISPLAY="${XDISPLAY:-:10}"
 TOOLS="${TOOLS:-0}"
 APPS="${APPS:-libreoffice lxterminal vlc gimp}"
+FIREFOX="${FIREFOX:-1}"
 TARGET_USER="${TARGET_USER:-desktop-user}"
 TARGET_PASSWORD="${TARGET_PASSWORD:-thepassword}"
 TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video}"
@@ -43,16 +44,23 @@ buildah run $CONTAINER usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
 buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
 buildah run $CONTAINER setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
 
+if [ "${FIREFOX}" == "1" ]; then
+  buildah copy $CONTAINER "mozilla-firefox" /etc/apt/preferences.d/
+  buildah run $CONTAINER apt install software-properties-common --no-install-recommends
+  buildah run $CONTAINER add-apt-repository -y ppa:mozillateam/ppa
+  buildah run $CONTAINER apt install firefox --no-install-recommends
+fi
+
 # to install xpra in this container:
 # buildah run $CONTAINER apt-get install xpra-server xserver-xorg-video-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5 --no-install-recommends
 if [ "${TOOLS}" == "1" ]; then
   # add some applications:
-  buildah run $CONTAINER apt-get install xterm strace libegl1-mesa --no-install-recommends -y
+  buildah run $CONTAINER apt-get install xterm strace net-tools --no-install-recommends -y
   # toys useful for testing video encoders, costs ~30MB:
   buildah run $CONTAINER apt-get install mesa-utils --no-install-recommends -y
   buildah run $CONTAINER sh -c "wget https://github.com/VirtualGL/virtualgl/releases/download/3.1.3/virtualgl_3.1.3_amd64.deb;apt-get install ./virtualgl_3.1.3_amd64.deb -y"
   # xrandr, xdpyinfo etc, costs ~15MB:
-  buildah run $CONTAINER apt-get install x11-xserver-utils x11-utils --no-install-recommends -y
+  buildah run $CONTAINER apt-get install x11-xserver-utils x11-utils libegl1-mesa --no-install-recommends -y
 fi
 
 buildah config --entrypoint "setpriv --no-new-privs --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env /bin/bash -c \"DISPLAY=${XDISPLAY} winbar\"" $CONTAINER
