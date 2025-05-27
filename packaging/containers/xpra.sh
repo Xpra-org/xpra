@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+set -e
+
 DISTRO="${DISTRO:-fedora}"
 RELEASE="${RELEASE:-42}"
 IMAGE_NAME="xpra"
@@ -21,8 +23,8 @@ TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
 DEBUG="${DEBUG:-none}"
 
-buildah rm $CONTAINER
-buildah rmi -f $IMAGE_NAME
+buildah rm $CONTAINER || true
+buildah rmi -f $IMAGE_NAME || true
 buildah from --name $CONTAINER $DISTRO:$RELEASE
 buildah run $CONTAINER dnf install -y https://download1.rpmfusion.org/free/${DISTRO}/rpmfusion-free-release-${RELEASE}.noarch.rpm
 buildah run $CONTAINER dnf update -y

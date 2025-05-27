@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+set -e
+
 DISTRO="${DISTRO:-ubuntu}"
 RELEASE="${RELEASE:-plucky}"
 IMAGE_NAME="apps"
@@ -20,25 +22,22 @@ TARGET_PASSWORD="${TARGET_PASSWORD:-thepassword}"
 TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video}"
 TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
+TIMEZONE="${TIMEZONE:-Europe/London}"
 # LANG="${LANG:-C}"
 
-buildah rm $CONTAINER
-buildah rmi -f $IMAGE_NAME
+buildah rm $CONTAINER || true
+buildah rmi -f $IMAGE_NAME || true
 buildah from --name $CONTAINER $DISTRO:$RELEASE
 buildah run $CONTAINER apt-get update
 
+buildah copy $CONTAINER "keyboard" "locale" /etc/default/
+buildah run $CONTAINER sh -c "echo $TIMEZONE > /etc/timezone;ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
+
 # add xpra repo:
-buildah run $CONTAINER apt-get install wget ca-certificates --no-install-recommends -y
+buildah run $CONTAINER apt-get install adduser wget ca-certificates --no-install-recommends -y
 buildah run $CONTAINER wget -O "/usr/share/keyrings/xpra.asc" "https://xpra.org/xpra.asc"
 buildah run $CONTAINER wget -O "/etc/apt/sources.list.d/${REPO}.sources" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/${RELEASE}/${REPO}.sources"
 buildah run $CONTAINER apt-get update
-
-# remove the default "ubuntu" user, and add our one:
-buildah run $CONTAINER deluser --remove-home --remove-all-files --quiet "ubuntu"
-buildah run $CONTAINER groupadd -r -g "${TARGET_GID}" "${TARGET_USER}"
-buildah run $CONTAINER adduser -uid "${TARGET_UID}" -gid "${TARGET_GID}" --disabled-password --comment "no-comment" --shell /bin/bash "${TARGET_USER}"
-buildah run $CONTAINER usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
-buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
 
 if [ "${FIREFOX}" == "1" ]; then
   buildah copy $CONTAINER "mozilla-firefox" /etc/apt/preferences.d/
@@ -64,13 +63,24 @@ fi
 # install winbar as desktop environment last,
 # so we can find the applications installed when creating the cache
 buildah run $CONTAINER apt-get install pulseaudio pavucontrol --no-install-recommends -y
-buildah run $CONTAINER apt-get install "${FILE_MANAGER}"
+buildah run $CONTAINER apt-get install -y "${FILE_MANAGER}"
 buildah run $CONTAINER apt-get install winbar --no-install-recommends -y
 buildah run $CONTAINER winbar --create-cache
-buildah run $CONTAINER setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
+buildah run $CONTAINER apt-get install -y $APPS
+
+# remove the default "ubuntu" user, and add our one:
+buildah run $CONTAINER deluser --quiet "ubuntu"
+buildah run $CONTAINER rm -fr /home/ubuntu
+buildah run $CONTAINER groupadd -r -g "${TARGET_GID}" "${TARGET_USER}"
+buildah run $CONTAINER adduser -uid "${TARGET_UID}" -gid "${TARGET_GID}" --disabled-password --comment "no-comment" --shell /bin/bash "${TARGET_USER}"
+buildah run $CONTAINER usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
+buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
+buildah run $CONTAINER chown -R "${TARGET_UID}:${TARGET_GID}" "/home/${TARGET_USER}"
 buildah run $CONTAINER sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env mkdir -p .config/winbar Documents Downloads Music Pictures Videos Network"
-buildah copy $CONTAINER winbar/settings.conf winbar/items.ini /home/${TARGET_USER}/.config/winbar/
-buildah run $CONTAINER apt-get install $APPS
+
+# configure winbar:
+buildah run $CONTAINER setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
+buildah copy $CONTAINER "winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
 
 buildah config --entrypoint "setpriv --no-new-privs --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env /bin/bash -c \"DISPLAY=${XDISPLAY} winbar\"" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME

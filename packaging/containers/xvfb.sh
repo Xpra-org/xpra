@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+set -e
+
 DISTRO="alpine"
 IMAGE_NAME="xvfb"
 XDISPLAY="${XDISPLAY:-:10}"
@@ -15,8 +17,8 @@ TOOLS="${TOOLS:-0}"
 TARGET_USER="${TARGET_USER:-xvfb-user}"
 TARGET_UID="${TARGET_UID:-1000}"
 
-buildah rm $CONTAINER
-buildah rmi -f $IMAGE_NAME
+buildah rm $CONTAINER || true
+buildah rmi -f $IMAGE_NAME || true
 buildah from --name $CONTAINER $DISTRO
 buildah run $CONTAINER apk update
 buildah run $CONTAINER apk add su-exec
