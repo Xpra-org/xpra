@@ -47,7 +47,7 @@ if [ "${FIREFOX}" == "1" ]; then
 fi
 
 if [ "${XPRA}" == "1" ]; then
-  buildah run $CONTAINER apt-get install -y xpra-server xserver-xorg-video-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5 --no-install-recommends
+  buildah run $CONTAINER apt-get install -y xpra-server xpra-client-gtk3 xserver-xorg-video-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5 --no-install-recommends
 fi
 
 if [ "${TOOLS}" == "1" ]; then
