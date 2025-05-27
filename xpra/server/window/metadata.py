@@ -103,15 +103,6 @@ def _make_window_metadata(window,
         if skip_defaults and v in (DEFAULT_VALUES[propname], None):
             return {}
         return {propname: v}
-    if propname == "strut":
-        strut = raw()
-        if not strut:
-            strut = {}
-        else:
-            strut = strut.todict()
-        if not strut and skip_defaults:
-            return {}
-        return {propname: strut}
     if propname in ("group-leader", "transient-for", "parent"):
         ref_window = raw()
         if not ref_window:
