@@ -55,7 +55,7 @@ fi
 # buildah run $CONTAINER apt-get install xpra-server xserver-xorg-video-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5 --no-install-recommends
 if [ "${TOOLS}" == "1" ]; then
   # add some applications:
-  buildah run $CONTAINER apt-get install xterm strace net-tools --no-install-recommends -y
+  buildah run $CONTAINER apt-get install xterm strace net-tools iputils-ping --no-install-recommends -y
   # toys useful for testing video encoders, costs ~30MB:
   buildah run $CONTAINER apt-get install mesa-utils --no-install-recommends -y
   buildah run $CONTAINER sh -c "wget https://github.com/VirtualGL/virtualgl/releases/download/3.1.3/virtualgl_3.1.3_amd64.deb;apt-get install ./virtualgl_3.1.3_amd64.deb -y"
