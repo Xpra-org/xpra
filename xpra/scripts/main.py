@@ -358,7 +358,10 @@ def check_gtk_client() -> None:
 
     check_gtk()
 
-    if not (find_spec("xpra.client.gui") and find_spec("xpra.client.gtk3")):
+    try:
+        find_spec("xpra.client.gui")
+        find_spec("xpra.client.gtk3")
+    except ImportError:
         raise InitExit(ExitCode.FILE_NOT_FOUND, "`xpra-client-gtk3` is not installed") from None
 
 
