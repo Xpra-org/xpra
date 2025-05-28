@@ -480,6 +480,7 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
             "list-sessions", "sessions", "displays",
             "clean-displays", "clean-sockets", "clean",
             "xwait", "wminfo", "wmname",
+            "xshm",
             "desktop-greeter", "gui", "start-gui",
             "docs", "documentation", "about", "html5",
             "pinentry", "input_pass", "_dialog", "_pass",
@@ -690,6 +691,9 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
     if mode == "xwait":
         no_gtk()
         return run_xwait(args)
+    if mode == "xshm":
+        no_gtk()
+        return run_xshm(args)
     if mode == "wminfo":
         no_gtk()
         return run_wminfo(args)
@@ -4403,6 +4407,40 @@ def display_wm_info(args) -> dict[str, Any]:
         display = gdk.Display.get_default()
         info["display"] = display.get_name()
         return info
+
+
+def run_xshm(args) -> ExitValue:
+    assert POSIX and not OSX, "xshm subcommand is not supported on this platform"
+    no_gtk()
+    if len(args) == 1:
+        os.environ["DISPLAY"] = args[0]
+    elif not args and os.environ.get("DISPLAY"):
+        # just use the current one
+        pass
+    else:
+        raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
+    with OSEnvContext(GDK_BACKEND="x11"):
+        from xpra.x11.bindings.posix_display_source import init_posix_display_source
+        init_posix_display_source()
+        from xpra.x11.bindings.core import get_root_xid
+        from xpra.x11.bindings.ximage import XImageBindings
+        ximage = XImageBindings()
+        xshm = ximage.has_XShm()
+        if xshm:
+            # try to use it:
+            rxid = get_root_xid()
+            w = ximage.get_XShmWrapper(rxid)
+            if w:
+                res = w.setup()
+                if not res[0]:
+                    warn("XShm access failed")
+                    xshm = False
+            else:
+                warn(f"failed to create XShm wrapper for root window {rxid:x}")
+                xshm = False
+        else:
+            warn("XShm extension is not available")
+        return ExitCode.OK if xshm else ExitCode.UNSUPPORTED
 
 
 def run_xwait(args) -> ExitValue:
