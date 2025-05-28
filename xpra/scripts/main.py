@@ -707,8 +707,12 @@ def do_run_mode(script_file: str, cmdline, error_cb, options, args, full_mode: s
                 stderr_print(" from a terminal session you can try `xpra list`, `xpra showconfig`, etc")
                 return 1
             raise
-        from xpra.gtk.dialogs import gui
-        return gui.main(cmdline)
+        try:
+            from xpra.gtk.dialogs import gui
+            return gui.main(cmdline)
+        except ImportError as e:
+            warn(f"Warning: the xpra client gui component is not installed: {e}")
+            return ExitCode.COMPONENT_MISSING
     if mode == "start-gui":
         check_gtk_client()
         from xpra.gtk.dialogs import start_gui
