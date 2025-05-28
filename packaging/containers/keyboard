@@ -1,0 +1,8 @@
+# keyboard config
+
+XKBMODEL="pc105"
+XKBLAYOUT="us"
+XKBVARIANT=""
+XKBOPTIONS=""
+
+BACKSPACE="guess"
