@@ -530,7 +530,7 @@ cdef class XShmWrapper:
     def __repr__(self):
         return "XShmWrapper(%#x - %ix%i)" % (self.window, self.width, self.height)
 
-    def setup(self) -> None:
+    def setup(self) -> Tuple[bool, bool, bool]:
         #returns:
         # (init_ok, may_retry_this_window, XShm_global_failure)
         self.ref_count = 0
