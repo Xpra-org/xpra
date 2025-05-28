@@ -82,5 +82,5 @@ buildah run $CONTAINER sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_U
 buildah run $CONTAINER setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
 buildah copy $CONTAINER "winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
 
-buildah config --entrypoint "setpriv --no-new-privs --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env /bin/bash -c \"DISPLAY=${XDISPLAY} winbar\"" $CONTAINER
+buildah config --entrypoint "setpriv --no-new-privs --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env /bin/bash -c \"XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} winbar\"" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
