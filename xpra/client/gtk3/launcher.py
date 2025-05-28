@@ -745,7 +745,7 @@ class ApplicationWindow:
                 params["socket_dir"] = self.config.socket_dir
             params["remote_xpra"] = self.config.remote_xpra
             params["proxy_command"] = ["_proxy"]
-            if self.config.port and self.config.port > 0:
+            if self.config.port >= 0:
                 params["display"] = f":{self.config.port}"
                 params["display_as_args"] = [params["display"]]
             else:
@@ -974,15 +974,15 @@ class ApplicationWindow:
         self.password_entry.grab_focus()
 
     def update_options_from_gui(self) -> None:
-        def pint(vstr) -> int:
+        def pint(vstr, default=0) -> int:
             try:
                 return int(vstr)
             except ValueError:
-                return 0
+                return default
 
         self.config.host = self.host_entry.get_text()
         self.config.ssh_port = pint(self.ssh_port_entry.get_text())
-        self.config.port = pint(self.port_entry.get_text())
+        self.config.port = pint(self.port_entry.get_text(), -1)
         self.config.username = self.username_entry.get_text()
         self.config.password = self.password_entry.get_text()
         self.config.path = self.path_entry.get_text()
@@ -1019,7 +1019,7 @@ class ApplicationWindow:
         def get_port(vstr, default_port="") -> str:
             try:
                 iport = int(vstr)
-                if 0 < iport < 2 ** 16:
+                if 0 <= iport < 2 ** 16:
                     return str(iport)
             except ValueError:
                 pass
