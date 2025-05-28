@@ -492,6 +492,7 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
             "printing-info", "version-info", "version-check", "toolbox",
             "initenv", "setup-ssl", "show-ssl",
             "auth",
+            "notify",
             "applications-menu", "sessions-menu",
             "_proxy",
             "configure", "showconfig", "showsetting", "setting", "set", "unset",
@@ -886,6 +887,8 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         return show_ssl(options, args, cmdline)
     if mode == "auth":
         return run_auth(options, args)
+    if mode == "notify":
+        return run_notify(options, args)
     if mode == "u2f":
         return run_u2f()
     if mode == "configure":
@@ -4653,6 +4656,33 @@ def run_list_clients(error_cb, opts, extra_args) -> ExitValue:
                 istr += f" connected to {endpoint!r}"
             sys.stdout.write(f"{istr}\n")
             sys.stdout.flush()
+    return 0
+
+
+def run_notify(_options, args) -> ExitValue:
+    if not args:
+        raise InitException("specify notification text")
+    title = args[0]
+    body = args[1] if len(args) >= 2 else ""
+    from xpra.notification.dbus_notifier import DBUS_Notifier, log
+    log.enable_debug()
+    notifier = DBUS_Notifier()
+    notifier.app_name_format = "%s"
+    # ensure we can send the image-path hint:
+    notifier.parse_hints = notifier.noparse_hints
+    actions = ()  # ("0", "Hello", "1", "Goodbye")
+    hints = {
+        "image-path": "/usr/share/xpra/icons/encoding.png",
+    }
+    nid = int(monotonic()) % 2**16
+    notifier.show_notify("dbus-id", None, nid, "xpra test app", 0, "",
+                         title, body,
+                         actions, hints, 60*1000, "")
+    nid += 1
+    from gi.repository import GLib  # @UnresolvedImport
+    loop = GLib.MainLoop()
+    GLib.timeout_add(5 * 1000, loop.quit)
+    loop.run()
     return 0
 
 
