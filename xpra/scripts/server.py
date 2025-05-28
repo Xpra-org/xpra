@@ -217,7 +217,8 @@ def show_encoding_help(opts) -> int:
         if x.getEffectiveLevel() == logging.INFO:
             x.setLevel(logging.WARN)
     from xpra.server import features as sf
-    sf.audio = sf.av_sync = sf.clipboard = sf.command = sf.control = sf.dbus = sf.fileprint = sf.debug = False
+    sf.pulseaudio = sf.audio = sf.av_sync = False
+    sf.clipboard = sf.command = sf.control = sf.dbus = sf.fileprint = sf.debug = False
     sf.keyboard = sf.mouse = False
     sf.mmap = sf.logging = sf.ping = sf.bandwidth = sf.notification = sf.rfb = sf.shell = sf.webcam = False
     from xpra.server.base import ServerBase
@@ -263,7 +264,7 @@ def set_server_features(opts, mode: str) -> None:
         opts.start_new_commands = False
         features.command = False
         features.notification = features.webcam = features.clipboard = False
-        features.gstreamer = features.x11 = features.audio = features.av_sync = False
+        features.gstreamer = features.x11 = features.pulseaudio = features.audio = features.av_sync = False
         features.fileprint = features.command = features.mdns = False
         features.keyboard = features.pointer = False
         features.logging = features.display = features.window = False
@@ -280,6 +281,7 @@ def set_server_features(opts, mode: str) -> None:
         features.gstreamer = b(opts.gstreamer) and impcheck("gstreamer")
         features.x11 = b(opts.x11) and impcheck("x11")
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
+        features.pulseaudio = features.audio and b(opts.pulseaudio)
         features.av_sync = features.audio and b(opts.av_sync)
         features.fileprint = b(opts.printing) or b(opts.file_transfer)
         features.keyboard = not opts.readonly and impcheck("keyboard")
@@ -324,6 +326,7 @@ def enforce_server_features() -> None:
         "webcam": "xpra.server.subsystem.webcam,xpra.server.source.webcam",
         "clipboard": "xpra.clipboard,xpra.server.subsystem.clipboard,xpra.server.source.clipboard",
         "audio": "xpra.audio,xpra.server.subsystem.audio,xpra.server.source.audio",
+        "pulseaudio": "xpra.server.subsystem.pulseaudio",
         # "av_sync": "??",
         "fileprint": "xpra.server.subsystem.fileprint,xpra.server.source.fileprint",
         "mmap": "xpra.net.mmap,xpra.server.subsystem.mmap,xpra.server.source.mmap",
