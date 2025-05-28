@@ -15,6 +15,7 @@ notification = True
 webcam = True
 clipboard = True
 audio = True
+pulseaudio = True
 av_sync = True
 fileprint = True
 mmap = True

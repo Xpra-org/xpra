@@ -64,6 +64,9 @@ def get_server_base_classes() -> tuple[type, ...]:
     if features.clipboard:
         from xpra.server.subsystem.clipboard import ClipboardServer
         classes.append(ClipboardServer)
+    if features.pulseaudio:
+        from xpra.server.subsystem.pulseaudio import PulseaudioServer
+        classes.append(PulseaudioServer)
     if features.audio:
         from xpra.server.subsystem.audio import AudioServer
         classes.append(AudioServer)
