@@ -271,7 +271,7 @@ class ShadowServerBase(SHADOWSERVER_BASE_CLASS):
         log("stop_refresh(%i) mapped=%s", wid, self.mapped)
         try:
             self.mapped.remove(wid)
-        except KeyError:
+        except ValueError:
             pass
         if not self.mapped:
             self.no_windows()
