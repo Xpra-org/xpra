@@ -501,58 +501,65 @@ class ApplicationWindow:
         errs = []
         host = self.host_entry.get_text()
         errs.append((self.host_entry, not bool(host), "specify the host"))
-        if ssh or sshtossh:
-            # validate ssh port:
-            ssh_port = self.ssh_port_entry.get_text()
-            try:
-                ssh_port = int(ssh_port)
-            except ValueError:
-                ssh_port = -1
-            errs.append((self.ssh_port_entry,
-                         ssh_port < 0 or ssh_port >= 2 ** 16,
-                         "invalid SSH port number"))
-        if sshtossh:
-            # validate ssh port:
-            proxy_port = self.proxy_port_entry.get_text()
-            try:
-                proxy_port = int(proxy_port)
-            except ValueError:
-                proxy_port = -1
-            errs.append((self.proxy_port_entry,
-                         proxy_port < 0 or proxy_port >= 2 ** 16,
-                         "invalid SSH port number"))
-        port = self.port_entry.get_text()
-        if sshtossh:
-            if self.password_scb.get_active():
-                self.password_entry.set_sensitive(False)
-                self.password_entry.set_text(self.proxy_password_entry.get_text())
-            else:
-                self.password_entry.set_sensitive(True)
-            if self.username_scb.get_active():
-                self.username_entry.set_sensitive(False)
-                self.username_entry.set_text(self.proxy_username_entry.get_text())
-            else:
-                self.username_entry.set_sensitive(True)
-            errs.append((self.proxy_host_entry,
-                         not bool(self.proxy_host_entry.get_text()),
-                         "specify the proxy host"))
-        # check username *after* the checkbox action
-        if ssh or sshtossh:
-            errs.append((self.username_entry,
-                         not bool(self.username_entry.get_text()),
-                         "specify username"))
-        if sshtossh:
-            errs.append((self.proxy_username_entry,
-                         not bool(self.proxy_username_entry.get_text()),
-                         "specify proxy username"))
-        if ssh or sshtossh and not port:
-            port = 0  # port optional with ssh
+        ssh_port_str = self.ssh_port_entry.get_text()
+        try:
+            ssh_port = int(ssh_port_str)
+        except ValueError:
+            ssh_port = -1
+        # `ssh_port` is only validated if specified, and if using `ssh` or `sshtossh`:
+        errs.append((self.ssh_port_entry,
+                     (ssh or sshtossh) and bool(ssh_port_str) and (ssh_port <= 0 or ssh_port >= 2 ** 16),
+                     "invalid SSH port number"))
+        proxy_port_str = self.proxy_port_entry.get_text()
+        try:
+            proxy_port = int(proxy_port_str)
+        except ValueError:
+            proxy_port = -1
+        # `ssh_proxy_port` is only validated if specified, and if using `ssh` or `sshtossh`:
+        errs.append((self.proxy_port_entry,
+                     (ssh or sshtossh) and bool(proxy_port_str) and (proxy_port <= 0 or proxy_port >= 2 ** 16),
+                     "invalid SSH port number"))
+
+        if sshtossh and self.password_scb.get_active():
+            self.password_entry.set_sensitive(False)
+            self.password_entry.set_text(self.proxy_password_entry.get_text())
         else:
-            try:
-                port = int(port)
-            except (ValueError, TypeError):
-                port = -1
-        errs.append((self.port_entry, port < 0 or port >= 2 ** 16, "invalid port number"))
+            self.password_entry.set_sensitive(True)
+        if sshtossh and self.username_scb.get_active():
+            self.username_entry.set_sensitive(False)
+            self.username_entry.set_text(self.proxy_username_entry.get_text())
+        else:
+            self.username_entry.set_sensitive(True)
+
+        proxy_host_str = self.proxy_host_entry.get_text()
+        # `proxy_host` is only validated with `sshtossh`:
+        errs.append((self.proxy_host_entry,
+                     sshtossh and not bool(proxy_host_str),
+                     "specify the proxy host"))
+        # check username *after* the checkbox action
+        username_str = self.username_entry.get_text()
+        errs.append((self.username_entry,
+                     (ssh or sshtossh) and not bool(username_str),
+                     "specify username"))
+        proxy_username_str = self.proxy_username_entry.get_text()
+        errs.append((self.proxy_username_entry,
+                     (ssh or sshtossh) and not bool(proxy_username_str),
+                     "specify proxy username"))
+        port_str = self.port_entry.get_text()
+        try:
+            port = int(port_str)
+        except (ValueError, TypeError):
+            port = -1
+        if ssh or sshtossh:
+            # "port" is optional with ssh, because it's actually a display in this case:
+            errs.append((self.port_entry,
+                         bool(port_str) and port < 0 or port >= 2 ** 16,
+                         "invalid display number"))
+        else:
+            # always validate it strictly when it is a real port number (zero is not a valid port number):
+            errs.append((self.port_entry,
+                         port <= 0 or port >= 2 ** 16,
+                         "invalid port number"))
         err_text = []
         for w, e, text in errs:
             set_widget_bg_color(w, e)
@@ -745,10 +752,12 @@ class ApplicationWindow:
                 params["socket_dir"] = self.config.socket_dir
             params["remote_xpra"] = self.config.remote_xpra
             params["proxy_command"] = ["_proxy"]
-            if self.config.port and self.config.port > 0:
-                params["display"] = f":{self.config.port}"
-                params["display_as_args"] = [params["display"]]
+            if self.config.port >= 0:
+                display = f":{self.config.port}"
+                params["display"] = display
+                params["display_as_args"] = [display]
             else:
+                display = ""
                 params["display"] = "auto"
                 params["display_as_args"] = []
             params["ssh"] = self.config.ssh
@@ -790,16 +799,22 @@ class ApplicationWindow:
             params["local"] = is_local(self.config.host)
             params["full_ssh"] = full_ssh
             params["password"] = password
-            params["display_name"] = f"ssh://{self.config.host}:{self.config.port}"
+            params["display_name"] = f"ssh://{self.config.host}:{self.config.ssh_port}/{display}"
         elif self.config.mode == "display":
+            if self.config.port < 0 or self.config.port >= 2**32:
+                raise ValueError(f"invalid display number: {self.config.port}")
             params["display"] = f":{self.config.port}"
             params["display_name"] = f":{self.config.port}"
         elif self.config.mode in ("socket", "unix-domain"):
+            if self.config.port < 0 or self.config.port >= 2**32:
+                raise ValueError(f"invalid display number: {self.config.port}")
             params["display"] = f":{self.config.port}"
             params["display_name"] = f"unix-domain:{self.config.port}"
         else:
             if self.config.mode not in (MODE_TCP, MODE_SSL, MODE_QUIC, MODE_WS, MODE_WSS):
                 raise ValueError(f"invalid / unsupported mode {self.config.mode}")
+            if self.config.port < 0 or self.config.port >= 2**32:
+                raise ValueError(f"invalid port number: {self.config.port}")
             params["host"] = self.config.host
             params["local"] = is_local(self.config.host)
             params["port"] = int(self.config.port)
@@ -974,15 +989,15 @@ class ApplicationWindow:
         self.password_entry.grab_focus()
 
     def update_options_from_gui(self) -> None:
-        def pint(vstr) -> int:
+        def pint(vstr, default=0) -> int:
             try:
                 return int(vstr)
             except ValueError:
-                return 0
+                return default
 
         self.config.host = self.host_entry.get_text()
         self.config.ssh_port = pint(self.ssh_port_entry.get_text())
-        self.config.port = pint(self.port_entry.get_text())
+        self.config.port = pint(self.port_entry.get_text(), -1)
         self.config.username = self.username_entry.get_text()
         self.config.password = self.password_entry.get_text()
         self.config.path = self.path_entry.get_text()
@@ -1019,7 +1034,7 @@ class ApplicationWindow:
         def get_port(vstr, default_port="") -> str:
             try:
                 iport = int(vstr)
-                if 0 < iport < 2 ** 16:
+                if 0 <= iport < 2 ** 16:
                     return str(iport)
             except ValueError:
                 pass
