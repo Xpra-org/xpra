@@ -8,6 +8,17 @@ set -e
 
 PORT=10000
 
+# ensure that the containers we need exist:
+if ! podman container exists xvfb; then
+  sh ./xvfb.sh
+fi
+if ! podman container exists xvfb; then
+  sh ./xvfb.sh
+fi
+if ! podman container exists apps; then
+  sh ./desktop.sh
+fi
+
 # Create public network (standard podman bridge with internet access)
 PUBLIC_NET="publicnet"
 if ! podman network exists "$PUBLIC_NET"; then
