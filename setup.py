@@ -1051,7 +1051,8 @@ def toggle_packages(enabled: bool, *module_names: str) -> None:
 
 # always included:
 if modules_ENABLED:
-    add_modules("xpra", "xpra.platform", "xpra.net", "xpra.scripts.main", "xpra.util")
+    add_packages("xpra.util", "xpra.net")
+    add_modules("xpra", "xpra.platform", "xpra.scripts.main")
 
 
 #*******************************************************************************
@@ -2645,8 +2646,8 @@ if client_ENABLED and WIN32 and MINGW_PREFIX:
         extra_link_args=("-luuid", "-lshlwapi", "-lole32", "-static-libgcc"))
 
 if client_ENABLED or server_ENABLED:
-    add_modules("xpra.codecs")
-    add_modules("xpra.challenge")
+    add_packages("xpra.codecs")
+    add_packages("xpra.challenge")
 toggle_packages(keyboard_ENABLED, "xpra.keyboard")
 if client_ENABLED or server_ENABLED:
     add_modules(
