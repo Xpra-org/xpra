@@ -355,7 +355,7 @@ cdef void encode(char **buf, unsigned int *pos, data):
         encode_dict(buf, pos, data)
 
     else:
-        raise ValueError(f"type {t} not handled")
+        raise TypeError(f"type {t} not handled")
 
 
 def dumps(data) -> SizedBuffer:
