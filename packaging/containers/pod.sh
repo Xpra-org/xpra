@@ -9,13 +9,13 @@ set -e
 PORT=10000
 
 # ensure that the containers we need exist:
-if ! podman container exists xvfb; then
+if ! buildah inspect -t image xvfb &> /dev/null; then
   sh ./xvfb.sh
 fi
-if ! podman container exists xvfb; then
-  sh ./xvfb.sh
+if ! buildah inspect -t image xpra &> /dev/null; then
+  sh ./xpra.sh
 fi
-if ! podman container exists apps; then
+if ! buildah inspect -t image apps &> /dev/null; then
   sh ./desktop.sh
 fi
 
