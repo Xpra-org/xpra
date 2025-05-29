@@ -159,13 +159,13 @@ def sanitize_env() -> None:
 
 
 def create_runtime_dir(xrd: str, uid: int, gid: int) -> str:
-    if not POSIX or OSX or getuid() != 0 or (uid == 0 and gid == 0):
+    if not POSIX or OSX or getuid() != 0:
         return ""
     # workarounds:
     # * some distros don't set a correct value,
     # * or they don't create the directory for us,
     # * or pam_open is going to create the directory but needs time to do so..
-    if xrd and xrd.endswith("/user/0"):
+    if xrd and xrd.endswith("/user/0") and uid > 0:
         # don't keep root's directory, as this would not work:
         xrd = ""
     if not xrd:
@@ -874,7 +874,7 @@ def _do_run_server(script_file: str, cmdline,
     if OSX and not xrd:
         xrd = osexpand("~/.xpra", uid=uid, gid=gid)
         os.environ["XDG_RUNTIME_DIR"] = xrd
-    xrd = os.path.abspath(xrd)
+    xrd = os.path.abspath(xrd) if xrd else ""
     if ROOT and (uid > 0 or gid > 0):
         # we're going to chown the directory if we create it,
         # ensure this cannot be abused, only use "safe" paths:
