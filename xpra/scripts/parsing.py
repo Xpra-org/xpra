@@ -1069,6 +1069,9 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     def dcsv(v) -> str:
         return csv(v or ["none"])
 
+    def mlist(v) -> list:
+        return list(v or [])
+
     legacy_bool_parse("commands")
     group.add_option("--commands", action="store", metavar="yes|no",
                      dest="commands", default=defaults.commands,
@@ -1082,20 +1085,20 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="control", default=defaults.control,
                      help="Enable `control` requests")
     group.add_option("--start", action="append",
-                     dest="start", metavar="CMD", default=list(defaults.start or []),
+                     dest="start", metavar="CMD", default=mlist(defaults.start),
                      help="program to spawn in server (may be repeated). Default: %s." % dcsv(defaults.start))
     group.add_option("--start-late", action="append",
-                     dest="start_late", metavar="CMD", default=list(defaults.start_late or []),
+                     dest="start_late", metavar="CMD", default=mlist(defaults.start_late),
                      help="program to spawn in server once initialization is complete (may be repeated)."
                           " Default: %s." % dcsv(defaults.start_late))
     group.add_option("--start-child", action="append",
-                     dest="start_child", metavar="CMD", default=list(defaults.start_child or []),
+                     dest="start_child", metavar="CMD", default=mlist(defaults.start_child),
                      help="program to spawn in server,"
                           " taken into account by the exit-with-children option"
                           " (may be repeated to run multiple commands)."
                           " Default: %s." % dcsv(defaults.start_child))
     group.add_option("--start-child-late", action="append",
-                     dest="start_child_late", metavar="CMD", default=list(defaults.start_child_late or []),
+                     dest="start_child_late", metavar="CMD", default=mlist(defaults.start_child_late),
                      help="program to spawn in server once initialization is complete"
                           " taken into account by the exit-with-children option"
                           " (may be repeated to run multiple commands)."
@@ -1183,7 +1186,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Script to source into the environment used for starting commands. Default: %s." % dcsv(
                          list(x for x in (defaults.source_start or []) if x and not x.startswith("#"))))
     group.add_option("--start-env", action="append",
-                     dest="start_env", default=list(defaults.start_env or []),
+                     dest="start_env", default=mlist(defaults.start_env),
                      help="Define environment variables used with 'start-child' and 'start',"
                           " can be specified multiple times. Default: %s." % csv(
                          ("'%s'" % x) for x in (defaults.start_env or []) if not x.startswith("#")))
@@ -1309,55 +1312,55 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                           " You may specify this option multiple times to listen on different locations."
                           " Default: %s" % dcsv(defaults_bind))
     group.add_option("--bind-tcp", action="append",
-                     dest="bind_tcp", default=list(defaults.bind_tcp or []),
+                     dest="bind_tcp", default=mlist(defaults.bind_tcp),
                      metavar="[HOST]:[PORT]",
                      help="listen for connections over TCP."
                           " Use --tcp-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ws", action="append",
-                     dest="bind_ws", default=list(defaults.bind_ws or []),
+                     dest="bind_ws", default=mlist(defaults.bind_ws),
                      metavar="[HOST]:[PORT]",
                      help="listen for connections over Websocket."
                           " Use --ws-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-wss", action="append",
-                     dest="bind_wss", default=list(defaults.bind_wss or []),
+                     dest="bind_wss", default=mlist(defaults.bind_wss),
                      metavar="[HOST]:[PORT]",
                      help="listen for connections over HTTPS / wss (secure Websocket)."
                           " Use --wss-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ssl", action="append",
-                     dest="bind_ssl", default=list(defaults.bind_ssl or []),
+                     dest="bind_ssl", default=mlist(defaults.bind_ssl),
                      metavar="[HOST]:PORT",
                      help="listen for connections over SSL."
                           " Use --ssl-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-ssh", action="append",
-                     dest="bind_ssh", default=list(defaults.bind_ssh or []),
+                     dest="bind_ssh", default=mlist(defaults.bind_ssh),
                      metavar="[HOST]:PORT",
                      help="listen for connections using SSH transport."
                           " Use --ssh-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-rfb", action="append",
-                     dest="bind_rfb", default=list(defaults.bind_rfb or []),
+                     dest="bind_rfb", default=mlist(defaults.bind_rfb),
                      metavar="[HOST]:PORT",
                      help="listen for RFB connections."
                           " Use --rfb-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-rdp", action="append",
-                     dest="bind_rdp", default=list(defaults.bind_rdp or []),
+                     dest="bind_rdp", default=mlist(defaults.bind_rdp),
                      metavar="[HOST]:PORT",
                      help="listen for RDP connections."
                           " Use --rdp-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-quic", action="append",
-                     dest="bind_quic", default=list(defaults.bind_quic or []),
+                     dest="bind_quic", default=mlist(defaults.bind_quic),
                      metavar="[HOST]:PORT",
                      help="listen for QUIC HTTP/3 or WebTransport connections."
                           " Use --quic-auth to secure it."
                           " You may specify this option multiple times with different host and port combinations")
     group.add_option("--bind-vsock", action="append",
-                     dest="bind_vsock", default=list(defaults.bind_vsock or []),
+                     dest="bind_vsock", default=mlist(defaults.bind_vsock),
                      metavar="[CID]:[PORT]",
                      help="listen for connections over VSOCK."
                           " You may specify this option multiple times with different CID and port combinations")
@@ -1477,13 +1480,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     Use the special value 'help' to get a list of options.
     When unspecified, all the available codecs are allowed and the first one is used."""
     group.add_option("--speaker-codec", action="append",
-                     dest="speaker_codec", default=list(defaults.speaker_codec or []),
+                     dest="speaker_codec", default=mlist(defaults.speaker_codec),
                      help=CODEC_HELP % "speaker")
     group.add_option("--microphone", action="store", metavar="on|off|disabled",
                      dest="microphone", default=defaults.microphone,
                      help="Forward audio input to the server. Default: %s." % audio_option(defaults.microphone))
     group.add_option("--microphone-codec", action="append",
-                     dest="microphone_codec", default=list(defaults.microphone_codec or []),
+                     dest="microphone_codec", default=mlist(defaults.microphone_codec),
                      help=CODEC_HELP % "microphone")
     replace_option("--sound-source", "--audio-source")
     group.add_option("--audio-source", action="store",
@@ -1812,7 +1815,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Enable X11."
                           " Default: '%default'.")
     group.add_option("--env", action="append",
-                     dest="env", default=list(defaults.env or []),
+                     dest="env", default=mlist(defaults.env),
                      help="Define environment variables which will apply to this process and all subprocesses,"
                           " can be specified multiple times."
                           " Default: %s." % dcsv(
@@ -1913,43 +1916,43 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="The username supplied by the client for authentication."
                           " Default: '%default'.")
     group.add_option("--auth", action="append",
-                     dest="auth", default=list(defaults.auth or []),
+                     dest="auth", default=mlist(defaults.auth),
                      help="The authentication module to use for unix domain sockets and named pipes - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.auth))
     group.add_option("--tcp-auth", action="append",
-                     dest="tcp_auth", default=list(defaults.tcp_auth or []),
+                     dest="tcp_auth", default=mlist(defaults.tcp_auth),
                      help="The authentication module to use for TCP sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.tcp_auth))
     group.add_option("--ws-auth", action="append",
-                     dest="ws_auth", default=list(defaults.ws_auth or []),
+                     dest="ws_auth", default=mlist(defaults.ws_auth),
                      help="The authentication module to use for Websockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.ws_auth))
     group.add_option("--wss-auth", action="append",
-                     dest="wss_auth", default=list(defaults.wss_auth or []),
+                     dest="wss_auth", default=mlist(defaults.wss_auth),
                      help="The authentication module to use for Secure Websockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.wss_auth))
     group.add_option("--ssl-auth", action="append",
-                     dest="ssl_auth", default=list(defaults.ssl_auth or []),
+                     dest="ssl_auth", default=mlist(defaults.ssl_auth),
                      help="The authentication module to use for SSL sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.ssl_auth))
     group.add_option("--ssh-auth", action="append",
-                     dest="ssh_auth", default=list(defaults.ssh_auth or []),
+                     dest="ssh_auth", default=mlist(defaults.ssh_auth),
                      help="The authentication module to use for SSH sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.ssh_auth))
     group.add_option("--rfb-auth", action="append",
-                     dest="rfb_auth", default=list(defaults.rfb_auth or []),
+                     dest="rfb_auth", default=mlist(defaults.rfb_auth),
                      help="The authentication module to use for RFB sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.rfb_auth))
     group.add_option("--rdp-auth", action="append",
-                     dest="rdp_auth", default=list(defaults.rdp_auth or []),
+                     dest="rdp_auth", default=mlist(defaults.rdp_auth),
                      help="The authentication module to use for RDP sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.rdp_auth))
     group.add_option("--quic-auth", action="append",
-                     dest="quic_auth", default=list(defaults.quic_auth or []),
+                     dest="quic_auth", default=mlist(defaults.quic_auth),
                      help="The authentication module to use for QUIC sockets - deprecated, use per socket syntax"
                           " (default: %s)" % dcsv(defaults.quic_auth))
     group.add_option("--vsock-auth", action="append",
-                     dest="vsock_auth", default=list(defaults.vsock_auth or []),
+                     dest="vsock_auth", default=mlist(defaults.vsock_auth),
                      help="The authentication module to use for vsock sockets - deprecated, use per socket syntax"
                           " (default: '%s')" % dcsv(defaults.vsock_auth))
     group.add_option("--min-port", action="store",
