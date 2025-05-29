@@ -105,6 +105,9 @@ tests/unittests/test-file*
 /packaging/MSWindows/service/MSG00409.bin
 /packaging/MSWindows/service/Xpra-Service.exe
 
+# the container scripts use temporary files:
+/packaging/containers/xorg.conf
+
 # Cython files:
 /xpra/util/*.c
 /xpra/auth/*.c
