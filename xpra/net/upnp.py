@@ -3,15 +3,79 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import socket
 from typing import Any
 from collections.abc import Sequence
 
 from xpra.util.str_fn import csv
 
+from xpra.log import Logger
+log = Logger("network", "upnp")
+
+UPNP_IPV6 = False
+INET = {
+    "INET": socket.AF_INET,  # @UndefinedVariable
+}
+if UPNP_IPV6:
+    INET["INET6"] = socket.AF_INET6  # @UndefinedVariable
+
+
+def get_interface_address(addrs) -> str:
+    for name, v in INET.items():
+        # ie: inet=[{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}]
+        inet = addrs.get(v)
+        log("addresses[%s]=%s", name, inet)
+        if not inet:
+            continue
+        for a in inet:
+            # ie: host = {'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}
+            host = a.get("addr")
+            if host:
+                return host
+    return ""
+
+
+def get_device_interface(gateways: dict) -> str:
+    default_gw = gateways.get("default")  # ie: {2: ('192.168.3.1', 'eth0')}
+    if default_gw:
+        for v in INET.values():  # ie: AF_INET
+            inet = default_gw.get(v)  # ie: ('192.168.3.1', 'eth0')
+            if inet and len(inet) >= 2:
+                return inet[1]
+    for v in INET.values():
+        # ie: gws = [('192.168.3.1', 'eth0', True), ('192.168.0.1', 'wlan0', False)]}
+        gws = gateways.get(v)
+        if not gws:
+            continue
+        for inet in gws:
+            if inet and len(inet) >= 2:
+                return inet[1]
+    return ""
+
+
+def resolve_internal_host() -> str:
+    # we need to figure out the specific IP
+    # which is connected to this device
+    import netifaces
+    gateways = netifaces.gateways()  # @UndefinedVariable
+    if not gateways:
+        raise ValueError("internal host IP not found: no gateways")
+    interface = get_device_interface(gateways)
+    if not interface:
+        raise ValueError("cannot identify the network interface")
+    log("identified interface '%s'", interface)
+    addrs = netifaces.ifaddresses(interface)  # @UndefinedVariable
+    log("ifaddresses(%s)=%s", interface, addrs)
+    # ie: {17: [{'addr': '30:52:cb:85:54:03', 'broadcast': 'ff:ff:ff:ff:ff:ff'}],
+    #      2: [{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}],
+    #     10: [{'addr': 'fe80::1944:64a7:ab7b:9d67%wlan0', 'netmask': 'ffff:ffff:ffff:ffff::/64'}]}
+    internal_host = get_interface_address(addrs)
+    if not internal_host:
+        raise ValueError("no address found for interface '%s'", interface)
+    return internal_host
+
 
 def upnp_add(socktype: str, info, options):
-    from xpra.log import Logger
-    log = Logger("network", "upnp")
     log("upnp_add%s", (socktype, info, options))
 
     def err(*msgs):
@@ -81,62 +145,10 @@ def upnp_add(socktype: str, info, options):
         if internal_host in ("0.0.0.0", "::/0", "::"):
             # we need to figure out the specific IP
             # which is connected to this device
-            import netifaces
-            gateways = netifaces.gateways()  # @UndefinedVariable
-            if not gateways:
-                return err("internal host IP not found: no gateways")
-            UPNP_IPV6 = False
-            INET = {
-                "INET": netifaces.AF_INET,  # @UndefinedVariable
-            }
-            if UPNP_IPV6:
-                INET["INET6"] = netifaces.AF_INET6  # @UndefinedVariable
-
-            def get_device_interface() -> str:
-                default_gw = gateways.get("default")  # ie: {2: ('192.168.3.1', 'eth0')}
-                if default_gw:
-                    for v in INET.values():  # ie: AF_INET
-                        inet = default_gw.get(v)  # ie: ('192.168.3.1', 'eth0')
-                        if inet and len(inet) >= 2:
-                            return inet[1]
-                for v in INET.values():
-                    # ie: gws = [('192.168.3.1', 'eth0', True), ('192.168.0.1', 'wlan0', False)]}
-                    gws = gateways.get(v)
-                    if not gws:
-                        continue
-                    for inet in gws:
-                        if inet and len(inet) >= 2:
-                            return inet[1]
-                return ""
-
-            interface = get_device_interface()
-            if not interface:
-                return err(f"cannot identify the network interface for {device.address!r}")
-            log("identified interface '%s' for device address %s", interface, device.address)
-            addrs = netifaces.ifaddresses(interface)  # @UndefinedVariable
-            log("ifaddresses(%s)=%s", interface, addrs)
-
-            # ie: {17: [{'addr': '30:52:cb:85:54:03', 'broadcast': 'ff:ff:ff:ff:ff:ff'}],
-            #      2: [{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}],
-            #     10: [{'addr': 'fe80::1944:64a7:ab7b:9d67%wlan0', 'netmask': 'ffff:ffff:ffff:ffff::/64'}]}
-
-            def get_interface_address() -> str:
-                for name, v in INET.items():
-                    # ie: inet=[{'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}]
-                    inet = addrs.get(v)
-                    log("addresses[%s]=%s", name, inet)
-                    if not inet:
-                        continue
-                    for a in inet:
-                        # ie: host = {'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}
-                        host = a.get("addr")
-                        if host:
-                            return host
-                return ""
-
-            internal_host = get_interface_address()
-            if not internal_host:
-                return err("no address found for interface '%s'", interface)
+            try:
+                internal_host = resolve_internal_host()
+            except ValueError as e:
+                return err(str(e))
 
         # find the service:
         services = device.get_services()
