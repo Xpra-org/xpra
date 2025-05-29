@@ -509,6 +509,144 @@ def do_connect(chan, host: str, username: str, password: str,
                          host_config, keyfiles, paramiko_config, auth_modes)
 
 
+def load_host_keys() -> tuple[str, Any]:   # returns a HostKeys object
+    from paramiko.hostkeys import HostKeys
+    host_keys = HostKeys()
+    host_keys_filename = ""
+    known_hosts_files = get_ssh_known_hosts_files()
+    for known_hosts in known_hosts_files:
+        host_keys.clear()
+        try:
+            path = os.path.expanduser(known_hosts)
+            if os.path.exists(path):
+                host_keys.load(path)
+                log("HostKeys.load(%s) successful", path)
+                host_keys_filename = path
+                break
+        except OSError:
+            log("HostKeys.load(%s)", known_hosts, exc_info=True)
+    log("host keys=%s", host_keys)
+    return host_keys_filename, host_keys
+
+
+def verify_hostkey(host: str, host_key, verifyhostkeydns: bool, stricthostkeychecking: bool, addkey: bool) -> str:
+    host_keys_filename, host_keys = load_host_keys()
+    keys = safe_lookup(host_keys, host)
+    known_host_key = keys.get(host_key.get_name())
+
+    def keyname() -> str:
+        return host_key.get_name().replace("ssh-", "")
+
+    if known_host_key and host_key == known_host_key:
+        assert host_key
+        log("%s host key '%s' OK for host '%s'", keyname(), keymd5(host_key), host)
+        return ""
+
+    dnscheck = ""
+    if verifyhostkeydns:
+        try:
+            from xpra.net.ssh.sshfp import check_host_key
+            dnscheck = check_host_key(host, host_key)
+        except ImportError as e:
+            log("verifyhostkeydns failed", exc_info=True)
+            log.info("cannot check SSHFP DNS records")
+            log.info(" %s", e)
+    log("dnscheck=%s", dnscheck)
+
+    def adddnscheckinfo(q: list[str]):
+        if dnscheck is not True:
+            if dnscheck:
+                q.append("SSHFP validation failed:")
+                q.append(str(dnscheck))
+            else:
+                q.append("SSHFP validation failed")
+
+    if dnscheck is True:
+        # DNSSEC provided a matching record
+        log.info("found a valid SSHFP record for host %s", host)
+    elif known_host_key:
+        log.warn("Warning: SSH server key mismatch")
+        qinfo: list[str] = [
+            "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
+            "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!",
+            "Someone could be eavesdropping on you right now (man-in-the-middle attack)!",
+            "It is also possible that a host key has just been changed.",
+            f"The fingerprint for the {keyname()} key sent by the remote host is",
+            keymd5(host_key),
+        ]
+        adddnscheckinfo(qinfo)
+        if stricthostkeychecking:
+            log.warn("Host key verification failed.")
+            # TODO: show alert with no option to accept key
+            qinfo += [
+                "Please contact your system administrator.",
+                "Add correct host key in %s to get rid of this message.",
+                f"Offending {keyname()} key in {host_keys_filename}",
+                f"ECDSA host key for {keyname()} has changed and you have requested strict checking.",
+            ]
+            stderr_print(os.linesep.join(qinfo))
+            return "SSH Host key has changed"
+        if not confirm(qinfo):
+            return "SSH Host key has changed"
+        log.info("host key confirmed")
+    else:
+        assert (not keys) or (host_key.get_name() not in keys)
+        if not keys:
+            log.warn("Warning: unknown SSH host '%s'", host)
+        else:
+            log.warn("Warning: unknown %s SSH host key", keyname())
+        qinfo = [
+            f"The authenticity of host {host!r} can't be established.",
+            f"{keyname()} key fingerprint is",
+            keymd5(host_key),
+        ]
+        adddnscheckinfo(qinfo)
+        if not confirm(qinfo):
+            return f"Unknown SSH host {host!r}"
+        log.info("host key confirmed")
+    if not addkey:
+        # we're done!
+        return ""
+    known_hosts_files = get_ssh_known_hosts_files()
+    if not known_hosts_files:
+        # we can't save it
+        return ""
+    if addkey:
+        host_keys.add(host, host_key.get_name(), host_key)
+        save_host_key(host_keys, host_keys_filename)
+    return ""
+
+
+def save_host_key(host_keys, host_keys_filename: str) -> None:
+    filenames = [host_keys_filename]
+    for filename in get_ssh_known_hosts_files():
+        if filename not in filenames:
+            filenames.append(filename)
+    for filename in filenames:
+        try:
+            log(f"adding key to {filename!r}")
+            if not os.path.exists(filename):
+                keys_dir = os.path.dirname(filename)
+                if not os.path.exists(keys_dir):
+                    log(f"creating keys directory {keys_dir!r}")
+                    os.mkdir(keys_dir, 0o700)
+                elif not os.path.isdir(keys_dir):
+                    log.warn(f"Warning: {keys_dir!r} is not a directory")
+                    log.warn(f" key not saved to {filename!r}")
+                    continue
+                if os.path.exists(keys_dir) and os.path.isdir(keys_dir):
+                    log(f"creating known host file {host_keys_filename!r}")
+                    with umask_context(0o133):
+                        with open(host_keys_filename, "ab+"):
+                            "file has been created"
+            host_keys.save(host_keys_filename)
+            return
+        except OSError as e:
+            log(f"failed to add key to {host_keys_filename!r}")
+            log.error(f"Error adding key to {host_keys_filename!r}")
+            log.error(f" {e}")
+
+
 def do_connect_to(transport, host: str, username: str, password: str,
                   host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
     log("do_connect_to%s", (transport, host, username, password, host_config, keyfiles, paramiko_config))
@@ -533,126 +671,13 @@ def do_connect_to(transport, host: str, username: str, password: str,
     assert host_key, "no remote server key"
     log("remote_server_key=%s", keymd5(host_key))
     if configbool("verify-hostkey", VERIFY_HOSTKEY):
-        from paramiko.hostkeys import HostKeys
-        host_keys = HostKeys()
-        host_keys_filename = None
-        known_hosts_files = get_ssh_known_hosts_files()
-        for known_hosts in known_hosts_files:
-            host_keys.clear()
-            try:
-                path = os.path.expanduser(known_hosts)
-                if os.path.exists(path):
-                    host_keys.load(path)
-                    log("HostKeys.load(%s) successful", path)
-                    host_keys_filename = path
-                    break
-            except OSError:
-                log("HostKeys.load(%s)", known_hosts, exc_info=True)
-
-        log("host keys=%s", host_keys)
-        keys = safe_lookup(host_keys, host)
-        known_host_key = keys.get(host_key.get_name())
-
-        def keyname() -> str:
-            return host_key.get_name().replace("ssh-", "")
-
-        if known_host_key and host_key == known_host_key:
-            assert host_key
-            log("%s host key '%s' OK for host '%s'", keyname(), keymd5(host_key), host)
-        else:
-            dnscheck = ""
-            if configbool("verifyhostkeydns"):
-                try:
-                    from xpra.net.ssh.sshfp import check_host_key
-                    dnscheck = check_host_key(host, host_key)
-                except ImportError as e:
-                    log("verifyhostkeydns failed", exc_info=True)
-                    log.info("cannot check SSHFP DNS records")
-                    log.info(" %s", e)
-            log("dnscheck=%s", dnscheck)
-
-            def adddnscheckinfo(q: list[str]):
-                if dnscheck is not True:
-                    if dnscheck:
-                        q.append("SSHFP validation failed:")
-                        q.append(str(dnscheck))
-                    else:
-                        q.append("SSHFP validation failed")
-
-            if dnscheck is True:
-                # DNSSEC provided a matching record
-                log.info("found a valid SSHFP record for host %s", host)
-            elif known_host_key:
-                log.warn("Warning: SSH server key mismatch")
-                qinfo: list[str] = [
-                    "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!",
-                    "IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!",
-                    "Someone could be eavesdropping on you right now (man-in-the-middle attack)!",
-                    "It is also possible that a host key has just been changed.",
-                    f"The fingerprint for the {keyname()} key sent by the remote host is",
-                    keymd5(host_key),
-                ]
-                adddnscheckinfo(qinfo)
-                if configbool("stricthostkeychecking", VERIFY_STRICT):
-                    log.warn("Host key verification failed.")
-                    # TODO: show alert with no option to accept key
-                    qinfo += [
-                        "Please contact your system administrator.",
-                        "Add correct host key in %s to get rid of this message.",
-                        f"Offending {keyname()} key in {host_keys_filename}",
-                        f"ECDSA host key for {keyname()} has changed and you have requested strict checking.",
-                    ]
-                    stderr_print(os.linesep.join(qinfo))
-                    transport.close()
-                    raise InitExit(ExitCode.SSH_KEY_FAILURE, "SSH Host key has changed")
-                if not confirm(qinfo):
-                    transport.close()
-                    raise InitExit(ExitCode.SSH_KEY_FAILURE, "SSH Host key has changed")
-                log.info("host key confirmed")
-            else:
-                assert (not keys) or (host_key.get_name() not in keys)
-                if not keys:
-                    log.warn("Warning: unknown SSH host '%s'", host)
-                else:
-                    log.warn("Warning: unknown %s SSH host key", keyname())
-                qinfo = [
-                    f"The authenticity of host {host!r} can't be established.",
-                    f"{keyname()} key fingerprint is",
-                    keymd5(host_key),
-                ]
-                adddnscheckinfo(qinfo)
-                if not confirm(qinfo):
-                    transport.close()
-                    raise InitExit(ExitCode.SSH_KEY_FAILURE, f"Unknown SSH host {host!r}")
-                log.info("host key confirmed")
-            if configbool("addkey", ADD_KEY) and known_hosts_files:
-                try:
-                    if not host_keys_filename:
-                        # the first one is the default,
-                        # ie: ~/.ssh/known_hosts on posix
-                        host_keys_filename = os.path.expanduser(known_hosts_files[0])
-                    log(f"adding {keyname()} key for host {host!r} to {host_keys_filename!r}")
-                    if not os.path.exists(host_keys_filename):
-                        keys_dir = os.path.dirname(host_keys_filename)
-                        if not os.path.exists(keys_dir):
-                            log(f"creating keys directory {keys_dir!r}")
-                            os.mkdir(keys_dir, 0o700)
-                        elif not os.path.isdir(keys_dir):
-                            log.warn(f"Warning: {keys_dir!r} is not a directory")
-                            log.warn(" key not saved")
-                        if os.path.exists(keys_dir) and os.path.isdir(keys_dir):
-                            log(f"creating known host file {host_keys_filename!r}")
-                            with umask_context(0o133):
-                                with open(host_keys_filename, "ab+"):
-                                    "file has been created"
-                    host_keys.add(host, host_key.get_name(), host_key)
-                    host_keys.save(host_keys_filename)
-                except OSError as e:
-                    log(f"failed to add key to {host_keys_filename!r}")
-                    log.error(f"Error adding key to {host_keys_filename!r}")
-                    log.error(f" {e}")
-                except Exception:
-                    log.error("cannot add key", exc_info=True)
+        verifyhostkeydns = configbool("verifyhostkeydns")
+        stricthostkeychecking = configbool("stricthostkeychecking", VERIFY_STRICT)
+        addkey = configbool("addkey", ADD_KEY)
+        err = verify_hostkey(host, host_key, verifyhostkeydns, stricthostkeychecking, addkey)
+        if err:
+            transport.close()
+            raise InitExit(ExitCode.SSH_KEY_FAILURE, err)
     else:
         log("ssh host key verification skipped")
 
