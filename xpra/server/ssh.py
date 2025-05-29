@@ -533,6 +533,7 @@ def make_ssh_server_connection(conn, socket_options: dict,
             chan = t.accept(SERVER_WAIT)
             if chan is None:
                 log.warn("Warning: SSH channel setup failed")
+                log.warn(" closing connection %s", conn)
                 # prevent errors trying to access this connection, now likely dead:
                 conn.set_active(False)
                 close()
