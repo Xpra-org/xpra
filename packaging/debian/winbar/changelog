@@ -1,3 +1,8 @@
+winbar (1:0.2-1) UNRELEASED; urgency=low
+  * new snapshot
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 29 May 2025 14:04:03 +0700
+
 winbar (1:0.1-1) UNRELEASED; urgency=low
   * initial packaging
 

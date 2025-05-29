@@ -6,7 +6,7 @@ if [ -z "${REPO_ARCH_PATH}" ]; then
 	REPO_ARCH_PATH="`pwd`/../repo"
 fi
 
-commit="892e8d01701a8931ec7f3b5597e555c640fa34c5"
+commit="3490cca97d3e5305b58f13aef42bd3b2b64f4be6"
 ZIP=`ls ../pkgs/${commit}.zip`
 dirname="winbar-${commit}"
 rm -fr "${dirname}"
