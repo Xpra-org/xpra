@@ -411,7 +411,7 @@ class SSHServer(paramiko.ServerInterface):
         return False
 
     @staticmethod
-    def enable_auth_gssapi(self) -> bool:
+    def enable_auth_gssapi() -> bool:
         log("enable_auth_gssapi()")
         return False
 
