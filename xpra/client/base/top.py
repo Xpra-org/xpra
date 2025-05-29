@@ -542,7 +542,6 @@ class TopSessionClient(InfoTimerClient):
         # if c==curses.KEY_RESIZE:
         height, width = self.stdscr.getmaxyx()
         title = get_title()
-        sli = self.server_last_info
 
         def _addstr(pad: int, py: int, px: int, s: str, *args) -> None:
             if len(s) + px >= width - pad:
@@ -560,127 +559,34 @@ class TopSessionClient(InfoTimerClient):
             addstr_main(0, x, title, curses.A_BOLD)
             if height <= 1:
                 return
-            server_info = self.slidictget("server")
-            build = self.slidictget("server", "build")
-            vstr = caps_to_version(build)
-            mode = server_info.strget("mode", "server")
-            python_info = self.td(server_info.dictget("python", {}))
-            bits = python_info.intget("bits", 0)
-            bitsstr = "" if bits == 0 else f" {bits}-bit"
-            server_str = f"Xpra {mode} server version {vstr}{bitsstr}"
-            server_str += get_proxy_info_str(self.slidictget("proxy"))
-            addstr_main(1, 0, server_str)
+            addstr_main(1, 0, self.get_server_str())
             if height <= 2:
                 return
-            # load and uptime:
-            now = datetime.now()
-            uptime = ""
-            elapsed_time = server_info.intget("elapsed_time")
-            if elapsed_time:
-                td = timedelta(seconds=elapsed_time)
-                uptime = " up " + str(td).lstrip("0:")
-            clients_info = self.slidictget("clients")
-            nclients = clients_info.intget("")
-            load_average = ""
-            load = sli.inttupleget("load")
-            if load and len(load) == 3:
-                float_load = tuple(v / 1000.0 for v in load)
-                load_average = ", load average: %1.2f, %1.2f, %1.2f" % float_load
-            addstr_main(2, 0, "xpra top - %s%s, %2i users%s" % (
-                now.strftime("%H:%M:%S"), uptime, nclients, load_average))
+            addstr_main(2, 0, self.get_summary_str())
             if height <= 3:
                 return
-            thread_info = self.slidictget("threads")
-            thread_count = thread_info.intget("count")
-            rinfo = f"{thread_count} threads"
-            server_pid = server_info.intget("pid", 0)
-            if server_pid:
-                rinfo += f", pid {server_pid}"
-                machine_id = server_info.get("machine-id")
-                if machine_id is None or machine_id == get_machine_id():
-                    try:
-                        process = self.psprocess.get(server_pid)
-                        if not process:
-                            import psutil
-                            process = psutil.Process(server_pid)
-                            self.psprocess[server_pid] = process
-                        else:
-                            cpu = process.cpu_percent()
-                            rinfo += f", {cpu:3}% CPU"
-                    except Exception:
-                        pass
-            cpuinfo = self.slidictget("cpuinfo")
-            if cpuinfo:
-                rinfo += ", " + cpuinfo.strget("hz_actual")
             elapsed = monotonic() - self.server_last_info_time
-            color = WHITE
-            if self.server_last_info_time == 0:
-                rinfo += " - no server data"
-            elif elapsed > 2:
-                rinfo += f" - last updated {elapsed} seconds ago"
-                color = RED
-            addstr_main(3, 0, rinfo, curses.color_pair(color))
+            color = WHITE if (self.server_last_info_time or elapsed <= 2) else RED
+            addstr_main(3, 0, self.get_machine_str(), curses.color_pair(color))
             if height <= 4:
                 return
-            # display:
-            dinfo = []
-            server = self.slidictget("server")
-            rws = server.intpair("root_window_size", None)
-            display_info = self.slidictget("display")
-            if rws:
-                rww, rwh = rws
-                sinfo = f"{rww}x{rwh}"
-                depth = display_info.intget("depth")
-                if depth > 0:
-                    sinfo += f" {depth}-bit"
-                sinfo += " display"
-                mds = server.intpair("max_desktop_size")
-                if mds:
-                    mdw, mdh = mds
-                    sinfo += f" (max {mdw}x{mdh})"
-                dinfo.append(sinfo)
-            cursor_info = self.slidictget("cursor")
-            if cursor_info:
-                cx, cy = cursor_info.inttupleget("position", (0, 0))
-                dinfo.append(f"cursor at {cx}x{cy}")
-            pid = display_info.intget("pid")
-            if pid:
-                dinfo.append(f"pid {pid}")
-            addstr_main(4, 0, csv(dinfo))
+            addstr_main(4, 0, self.get_display_str())
             if height <= 5:
                 return
             hpos = 5
-            gl_info = self.get_gl_info(display_info.dictget("opengl"))
+            gl_info = self.get_gl_info()
             if gl_info:
                 addstr_main(5, 0, gl_info)
                 hpos += 1
 
             # filter clients, only show GUI clients:
             client_info = self.slidictget("client")
-            gui_clients = []
-            nclients = 0
-            while True:
-                if nclients not in client_info:
-                    break
-                ci = self.td(client_info.dictget(nclients))
-                session_id = ci.strget("session-id")
-                if session_id != self.session_id and ci.boolget("windows", True) and ci.strget("type") != "top":
-                    gui_clients.append(nclients)
-                nclients += 1
+            nclients, gui_clients = self.get_gui_clients()
 
             ngui = 0
             if hpos < height - 3:
                 hpos += 1
-                if nclients == 0:
-                    clients_str = "no clients connected"
-                else:
-                    ngui = len(gui_clients)
-                    clients_str = f"{nclients} clients connected, "
-                    if ngui == 0:
-                        clients_str += "no gui clients"
-                    else:
-                        clients_str += f"{ngui} gui clients:"
-                addstr_main(hpos, 0, clients_str)
+                addstr_main(hpos, 0, self.get_clients_str(nclients, gui_clients))
                 hpos += 1
             for client_index, client_no in enumerate(gui_clients):
                 ci = client_info.dictget(client_no)
@@ -724,6 +630,119 @@ class TopSessionClient(InfoTimerClient):
                 hpos += 2 + nlines
         except Exception as e:
             self.err(e)
+
+    def get_server_str(self) -> str:
+        server_info = self.slidictget("server")
+        build = self.slidictget("server", "build")
+        vstr = caps_to_version(build)
+        mode = server_info.strget("mode", "server")
+        python_info = self.td(server_info.dictget("python", {}))
+        bits = python_info.intget("bits", 0)
+        bitsstr = "" if bits == 0 else f" {bits}-bit"
+        server_str = f"Xpra {mode} server version {vstr}{bitsstr}"
+        server_str += get_proxy_info_str(self.slidictget("proxy"))
+        return server_str
+
+    def get_summary_str(self) -> str:
+        # load and uptime:
+        now = datetime.now()
+        uptime = ""
+        server_info = self.slidictget("server")
+        elapsed_time = server_info.intget("elapsed_time")
+        if elapsed_time:
+            td = timedelta(seconds=elapsed_time)
+            uptime = " up " + str(td).lstrip("0:")
+        clients_info = self.slidictget("clients")
+        nclients = clients_info.intget("")
+        load_average = ""
+        load = self.server_last_info.inttupleget("load")
+        if load and len(load) == 3:
+            float_load = tuple(v / 1000.0 for v in load)
+            load_average = ", load average: %1.2f, %1.2f, %1.2f" % float_load
+        return "xpra top - %s%s, %2i users%s" % (now.strftime("%H:%M:%S"), uptime, nclients, load_average)
+
+    def get_machine_str(self) -> str:
+        thread_info = self.slidictget("threads")
+        thread_count = thread_info.intget("count")
+        rinfo = f"{thread_count} threads"
+        server_info = self.slidictget("server")
+        server_pid = server_info.intget("pid", 0)
+        if server_pid:
+            rinfo += f", pid {server_pid}"
+            machine_id = server_info.get("machine-id")
+            if machine_id is None or machine_id == get_machine_id():
+                try:
+                    process = self.psprocess.get(server_pid)
+                    if not process:
+                        import psutil
+                        process = psutil.Process(server_pid)
+                        self.psprocess[server_pid] = process
+                    else:
+                        cpu = process.cpu_percent()
+                        rinfo += f", {cpu:3}% CPU"
+                except Exception:
+                    pass
+        cpuinfo = self.slidictget("cpuinfo")
+        if cpuinfo:
+            rinfo += ", " + cpuinfo.strget("hz_actual")
+        elapsed = monotonic() - self.server_last_info_time
+        if self.server_last_info_time == 0:
+            rinfo += " - no server data"
+        elif elapsed > 2:
+            rinfo += f" - last updated {elapsed} seconds ago"
+        return rinfo
+
+    def get_display_str(self) -> str:
+        # display:
+        dinfo = []
+        server = self.slidictget("server")
+        rws = server.intpair("root_window_size", None)
+        display_info = self.slidictget("display")
+        if rws:
+            rww, rwh = rws
+            sinfo = f"{rww}x{rwh}"
+            depth = display_info.intget("depth")
+            if depth > 0:
+                sinfo += f" {depth}-bit"
+            sinfo += " display"
+            mds = server.intpair("max_desktop_size")
+            if mds:
+                mdw, mdh = mds
+                sinfo += f" (max {mdw}x{mdh})"
+            dinfo.append(sinfo)
+        cursor_info = self.slidictget("cursor")
+        if cursor_info:
+            cx, cy = cursor_info.inttupleget("position", (0, 0))
+            dinfo.append(f"cursor at {cx}x{cy}")
+        pid = display_info.intget("pid")
+        if pid:
+            dinfo.append(f"pid {pid}")
+        return csv(dinfo)
+
+    def get_gui_clients(self) -> tuple[int, Sequence]:
+        client_info = self.slidictget("client")
+        gui_clients = []
+        nclients = 0
+        while True:
+            if nclients not in client_info:
+                break
+            ci = self.td(client_info.dictget(nclients))
+            session_id = ci.strget("session-id")
+            if session_id != self.session_id and ci.boolget("windows", True) and ci.strget("type") != "top":
+                gui_clients.append(nclients)
+            nclients += 1
+        return gui_clients
+
+    def get_clients_str(self, nclients: int, gui_clients: Sequence) -> str:
+        if nclients == 0:
+            return "no clients connected"
+        ngui = len(gui_clients)
+        clients_str = f"{nclients} clients connected, "
+        if ngui == 0:
+            clients_str += "no gui clients"
+        else:
+            clients_str += f"{ngui} gui clients:"
+        return clients_str
 
     def slidictget(self, *parts) -> typedict:
         return self.dictget(self.server_last_info, *parts)
@@ -825,7 +844,9 @@ class TopSessionClient(InfoTimerClient):
             return "av-sync: disabled by client"
         return "av-sync: enabled - video delay: %ims" % (avsi.intget("total", 0))
 
-    def get_gl_info(self, gli) -> str:
+    def get_gl_info(self) -> str:
+        display_info = self.slidictget("display")
+        gli = display_info.dictget("opengl")
         if not gli:
             return ""
         gli = self.td(gli)

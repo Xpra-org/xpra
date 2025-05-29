@@ -510,7 +510,7 @@ def get_test_defaults(*_args) -> dict[str, Any]:
 WARNED_MULTIPLE_DEVICES = False
 
 
-def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
+def get_pulse_defaults(device_name_match="", want_monitor_device=True,
                        input_or_output=None, remote=None, env_device_name=None) -> dict[str, Any]:
     try:
         device = get_pulse_device(device_name_match, want_monitor_device, input_or_output, remote, env_device_name)
@@ -536,10 +536,63 @@ def get_pulse_defaults(device_name_match=None, want_monitor_device=True,
     return {"device": device}
 
 
-def get_pulse_device(device_name_match=None, want_monitor_device=True,
-                     input_or_output=None, remote=None, env_device_name=None) -> str:
+def filter_ignored(devices: dict, input_or_output: bool | None) -> dict:
+    if input_or_output is True:
+        ignore = IGNORED_INPUT_DEVICES
+    elif input_or_output is False:
+        ignore = IGNORED_OUTPUT_DEVICES
+    else:
+        ignore = IGNORED_INPUT_DEVICES+IGNORED_OUTPUT_DEVICES
+    if ignore and devices:
+        # filter out the ignore list:
+        filtered = {}
+        for k, v in devices.items():
+            kl = bytestostr(k).strip().lower()
+            vl = bytestostr(v).strip().lower()
+            if kl not in ignore and vl not in ignore:
+                filtered[k] = v
+        return filtered
+    return devices
+
+
+def filter_name(devices: dict, device_type_str: str, device_name_match: str, env_device: str) -> dict:
+    filters = []
+    matches = {}
+    for match in (device_name_match, env_device):
+        if not match:
+            continue
+        if match != env_device:
+            filters.append(match)
+        match = match.lower()
+        log("trying to match '%s' in devices=%s", match, devices)
+        matches = {
+            k: v for k, v in devices.items()
+            if (bytestostr(k).strip().lower().find(match) >= 0 or bytestostr(v).strip().lower().find(match) >= 0)
+        }
+        # log("matches(%s, %s)=%s", devices, match, matches)
+        if len(matches) == 1:
+            log("found name match for '%s': %s", match, tuple(matches.items())[0])
+            break
+        elif len(matches) > 1:
+            log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, match)
+            log.warn(" matched %i devices", len(matches))
+    if filters or matches:
+        if not matches:
+            log.warn("Warning: Pulseaudio %s device name filters:", device_type_str)
+            log.warn(" %s", csv("'%s'" % x for x in filters))
+            log.warn(" did not match any of the devices found:")
+            for k, v in devices.items():
+                log.warn(" * '%s'", k)
+                log.warn("   '%s'", v)
+            return {}
+        return matches
+    return devices
+
+
+def get_pulse_device(device_name_match="", want_monitor_device=True,
+                     input_or_output=None, remote=None, env_device_name="") -> str:
     """
-        choose the device to use
+    choose the device to use
     """
     log("get_pulse_device%s", (device_name_match, want_monitor_device, input_or_output, remote, env_device_name))
     try:
@@ -579,62 +632,16 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
         device_type_str += " monitor"
     devices = get_pa_device_options(want_monitor_device, input_or_output)
     log("found %i pulseaudio %s devices: %s", len(devices), device_type_str, devices)
-    if input_or_output is True:
-        ignore = IGNORED_INPUT_DEVICES
-    elif input_or_output is False:
-        ignore = IGNORED_OUTPUT_DEVICES
-    else:
-        ignore = IGNORED_INPUT_DEVICES+IGNORED_OUTPUT_DEVICES
-    if ignore and devices:
-        # filter out the ignore list:
-        filtered = {}
-        for k, v in devices.items():
-            kl = bytestostr(k).strip().lower()
-            vl = bytestostr(v).strip().lower()
-            if kl not in ignore and vl not in ignore:
-                filtered[k] = v
-        devices = filtered
-
+    devices = filter_ignored(devices, input_or_output)
     if not devices:
         log.error("Error: audio forwarding is disabled")
         log.error(" could not detect any Pulseaudio %s devices", device_type_str)
         return ""
 
-    env_device = None
-    if env_device_name:
-        env_device = os.environ.get(env_device_name)
+    env_device = os.environ.get(env_device_name, "") if env_device_name else ""
     # try to match one of the devices using the device name filters:
     if len(devices) > 1:
-        filters = []
-        matches = {}
-        for match in (device_name_match, env_device):
-            if not match:
-                continue
-            if match != env_device:
-                filters.append(match)
-            match = match.lower()
-            log("trying to match '%s' in devices=%s", match, devices)
-            matches = {
-                k: v for k, v in devices.items()
-                if (bytestostr(k).strip().lower().find(match) >= 0 or bytestostr(v).strip().lower().find(match) >= 0)
-            }
-            # log("matches(%s, %s)=%s", devices, match, matches)
-            if len(matches) == 1:
-                log("found name match for '%s': %s", match, tuple(matches.items())[0])
-                break
-            elif len(matches) > 1:
-                log.warn("Warning: Pulseaudio %s device name filter '%s'", device_type_str, match)
-                log.warn(" matched %i devices", len(matches))
-        if filters or matches:
-            if not matches:
-                log.warn("Warning: Pulseaudio %s device name filters:", device_type_str)
-                log.warn(" %s", csv("'%s'" % x for x in filters))
-                log.warn(" did not match any of the devices found:")
-                for k, v in devices.items():
-                    log.warn(" * '%s'", k)
-                    log.warn("   '%s'", v)
-                return ""
-            devices = matches
+        devices = filter_name(devices, device_type_str, device_name_match, env_device)
 
     # still have too many devices to choose from?
     if len(devices) > 1:
@@ -650,15 +657,8 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
         global WARNED_MULTIPLE_DEVICES
         if not WARNED_MULTIPLE_DEVICES:
             WARNED_MULTIPLE_DEVICES = True
-            dtype = "audio"
-            if want_monitor_device:
-                dtype = "output monitor"
-            elif input_or_output is False:
-                dtype = "audio output"
-            elif input_or_output is True:
-                dtype = "audio input"
-            log.info("found %i %s devices:", len(devices), dtype)
-            for k,v in devices.items():
+            log.info("found %i audio %s devices:", len(devices), device_type_str)
+            for k, v in devices.items():
                 log.info(" * %s", bytestostr(v))
                 log.info("   %s", bytestostr(k))
             if not env_device:  # used already!
@@ -675,7 +675,7 @@ def get_pulse_device(device_name_match=None, want_monitor_device=True,
     return device
 
 
-def get_pulse_source_defaults(device_name_match=None, want_monitor_device=True, remote=None) -> dict[str, Any]:
+def get_pulse_source_defaults(device_name_match="", want_monitor_device=True, remote=None) -> dict[str, Any]:
     return get_pulse_defaults(device_name_match, want_monitor_device,
                               input_or_output=not want_monitor_device, remote=remote,
                               env_device_name=XPRA_PULSE_SOURCE_DEVICE_NAME)
