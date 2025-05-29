@@ -71,6 +71,30 @@ def madvise(mmap_area) -> None:
         log.estr(e)
 
 
+def set_mmap_group(fd: int, mmap_group: str, socket_filename: str) -> None:
+    # set the group permissions and gid if the mmap-group option is specified
+    if not mmap_group or mmap_group in FALSE_OPTIONS:
+        return
+    if mmap_group == "SOCKET":
+        group_id = get_socket_group(socket_filename)
+    elif mmap_group.lower() == "auto":
+        group_id = xpra_group()
+        if not group_id and socket_filename:
+            group_id = get_socket_group(socket_filename)
+    else:
+        group_id = get_group_id(mmap_group)
+    if group_id > 0:
+        log("setting mmap file fd %i to group id=%i", fd, group_id)
+        try:
+            os.fchown(fd, -1, group_id)
+        except OSError as e:
+            log("fchown(%i, %i, %i)", fd, -1, group_id, exc_info=True)
+            log.error("Error: failed to change group ownership of mmap file to '%s':", mmap_group)
+            log.estr(e)
+        from stat import S_IRUSR, S_IWUSR, S_IRGRP, S_IWGRP
+        os.fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
+
+
 def rerr() -> tuple[bool, bool, Any, int, Any, str]:
     return False, False, None, 0, None, ""
 
@@ -82,13 +106,30 @@ def validate_size(size: int) -> None:
         raise ValueError("mmap is too big: %sB (maximum is 4GB)" % std_unit(size))
 
 
-def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128 * 1024 * 1024, filename: str = "") \
+def get_mmap_dir() -> str:
+    from xpra.platform.paths import get_mmap_dir as get_platform_mmap_dir
+    mmap_dir = get_platform_mmap_dir()
+    subs = os.environ.copy()
+    subs |= {
+        "UID": str(os.getuid()),
+        "GID": str(os.getgid()),
+        "PID": str(os.getpid()),
+    }
+    mmap_dir = shellsub(mmap_dir, subs)
+    if mmap_dir and not os.path.exists(mmap_dir):
+        os.mkdir(mmap_dir, 0o700)
+    if not mmap_dir or not os.path.exists(mmap_dir):
+        raise RuntimeError("mmap directory %s does not exist!" % mmap_dir)
+    return mmap_dir
+
+
+def init_client_mmap(mmap_group="", socket_filename: str = "", size: int = 128 * 1024 * 1024, filename: str = "") \
         -> tuple[bool, bool, Any, int, Any, str]:
     """
         Initializes a mmap area, writes the token in it and returns:
             (success flag, mmap_area, mmap_size, temp_file, mmap_filename)
         The caller must keep hold of temp_file to ensure it does not get deleted!
-        This is used by the client.
+        This is used by the "client" which initiates the mmap area used by the "server".
     """
     log("init_client_mmap%s", (mmap_group, socket_filename, size, filename))
     mmap_filename = filename
@@ -103,8 +144,7 @@ def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128
             validate_size(mmap_size)
             if not filename:
                 from xpra.os_util import get_hex_uuid
-                filename = "xpra-%s" % get_hex_uuid()
-            mmap_filename = filename
+                mmap_filename = filename = "xpra-%s" % get_hex_uuid()
             mmap_area = mmap.mmap(0, mmap_size, filename)
             # not a real file:
             delete = False
@@ -131,22 +171,10 @@ def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128
                         return rerr()
             else:
                 validate_size(mmap_size)
-                import tempfile
-                from xpra.platform.paths import get_mmap_dir
                 mmap_dir = get_mmap_dir()
-                subs = os.environ.copy()
-                subs |= {
-                    "UID": str(os.getuid()),
-                    "GID": str(os.getgid()),
-                    "PID": str(os.getpid()),
-                }
-                mmap_dir = shellsub(mmap_dir, subs)
-                if mmap_dir and not os.path.exists(mmap_dir):
-                    os.mkdir(mmap_dir, 0o700)
-                if not mmap_dir or not os.path.exists(mmap_dir):
-                    raise RuntimeError("mmap directory %s does not exist!" % mmap_dir)
                 # create the mmap file, the mkstemp that is called via NamedTemporaryFile ensures
                 # that the file is readable and writable only by the creating user ID
+                import tempfile
                 try:
                     temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".mmap", dir=mmap_dir)
                 except OSError as e:
@@ -157,27 +185,7 @@ def init_client_mmap(mmap_group=None, socket_filename: str = "", size: int = 128
                 mmap_temp_file = temp
                 mmap_filename = temp.name
                 fd = temp.file.fileno()
-            # set the group permissions and gid if the mmap-group option is specified
-            mmap_group = (mmap_group or "")
-            if POSIX and mmap_group and mmap_group not in FALSE_OPTIONS:
-                if mmap_group == "SOCKET":
-                    group_id = get_socket_group(socket_filename)
-                elif mmap_group.lower() == "auto":
-                    group_id = xpra_group()
-                    if not group_id and socket_filename:
-                        group_id = get_socket_group(socket_filename)
-                else:
-                    group_id = get_group_id(mmap_group)
-                if group_id > 0:
-                    log("setting mmap file %s to group id=%i", mmap_filename, group_id)
-                    try:
-                        os.fchown(fd, -1, group_id)
-                    except OSError as e:
-                        log("fchown(%i, %i, %i) on %s", fd, -1, group_id, mmap_filename, exc_info=True)
-                        log.error("Error: failed to change group ownership of mmap file to '%s':", mmap_group)
-                        log.estr(e)
-                    from stat import S_IRUSR, S_IWUSR, S_IRGRP, S_IWGRP
-                    os.fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
+            set_mmap_group(fd, mmap_group, socket_filename)
             log("using mmap file %s, fd=%s, size=%s", mmap_filename, fd, mmap_size)
             os.lseek(fd, mmap_size - 1, os.SEEK_SET)
             assert os.write(fd, b'\x00')
