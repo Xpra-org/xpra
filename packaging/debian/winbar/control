@@ -37,7 +37,8 @@ Build-Depends:
  libxcb-xinput-dev,
  libxcb-xinput0,
  libglew-dev,
- libglm-dev
+ libglm-dev,
+ libxi-dev
 # libcurl4 and libcurl4-openssl-dev are available for all Debian releases, but not for Ubuntu releases older than Plucky:
 #plucky: libcurl4
 #plucky: libcurl4-openssl-dev
