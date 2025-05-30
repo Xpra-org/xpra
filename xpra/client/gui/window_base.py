@@ -280,22 +280,29 @@ class ClientWindowBase(ClientWidgetBase):
         self._metadata.update(metadata)
         try:
             self.set_metadata(metadata)
-        except Exception:
+        except RuntimeError:
             metalog.warn("failed to set window metadata to '%s'", metadata, exc_info=True)
 
-    def _get_window_title(self, metadata) -> str:
+    def _get_window_title(self, metadata: typedict) -> str:
+        try:
+            return self.do_get_window_title(metadata)
+        except Exception as e:
+            log.error("Error parsing window title:")
+            log.estr(e)
+            return self._client.title.replace("\0", "")
+
+    def do_get_window_title(self, metadata: typedict) -> str:
         title = self._client.title.replace("\0", "")
         if title.find("@") < 0:
             return title
         # perform metadata variable substitutions:
-        # full of Python 3 unicode headaches that don't need to be
         UNKNOWN_MACHINE = "<unknown machine>"
         remote_hostname = getattr(self._client, "_remote_hostname", None)
         remote_display = getattr(self._client, "_remote_display", None)
         if remote_display:
             # ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
             remote_display = remote_display.replace("\\", "-")
-        default_values = {
+        default_values: dict[str, str] = {
             "title": "<untitled window>",
             "client-machine": UNKNOWN_MACHINE,
             "windowid": str(self.wid),
@@ -304,7 +311,7 @@ class ClientWindowBase(ClientWidgetBase):
         }
         metalog(f"default values: {default_values}")
 
-        def getvar(var):
+        def getvar(var) -> str:
             # "hostname" is magic:
             # we try harder to find a useful value to show:
             if var in ("hostname", "hostinfo"):
@@ -340,7 +347,7 @@ class ClientWindowBase(ClientWidgetBase):
                 return default_values.get(var, "<unknown %s>" % var)
             return str(value)
 
-        def metadata_replace(match):
+        def metadata_replace(match) -> str:
             atvar = match.group(0)  # ie: '@title@'
             var = atvar[1:len(atvar) - 1]  # ie: 'title'
             if not var:
@@ -355,7 +362,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def set_metadata(self, metadata: typedict):
         metalog("set_metadata(%s)", metadata)
-        debug_props = [x for x in PROPERTIES_DEBUG if x in metadata.keys()]
+        debug_props = tuple(x for x in PROPERTIES_DEBUG if x in metadata.keys())
         for x in debug_props:
             metalog.info("set_metadata: %s=%s", x, metadata.get(x))
         # WARNING: "class-instance" needs to go first because others may realize the window
@@ -365,12 +372,8 @@ class ClientWindowBase(ClientWidgetBase):
             self.reset_icon()
 
         if "title" in metadata:
-            try:
-                title = self._get_window_title(metadata)
-                self.set_title(title)
-            except Exception as e:
-                log.error("Error parsing window title:")
-                log.estr(e)
+            title = self._get_window_title(metadata)
+            self.set_title(title)
 
         if "icon-title" in metadata:
             icon_title = metadata.strget("icon-title")
@@ -412,10 +415,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "opacity" in metadata:
             opacity = metadata.intget("opacity", -1)
-            if opacity < 0:
-                opacity = 1
-            else:
-                opacity = min(1, opacity // 0xffffffff)
+            opacity = 1 if opacity < 0 else min(1, opacity // 0xffffffff)
             ignorewarnings(self.set_opacity, opacity)
 
         if "has-alpha" in metadata:
@@ -430,27 +430,15 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "maximized" in metadata:
             maximized = metadata.boolget("maximized")
-            if maximized != self._maximized:
-                self._maximized = maximized
-                if maximized:
-                    self.maximize()
-                else:
-                    self.unmaximize()
+            self.set_maximized(maximized)
 
         if "fullscreen" in metadata:
             fullscreen = metadata.boolget("fullscreen")
-            if self._fullscreen is None or self._fullscreen != fullscreen:
-                self._fullscreen = fullscreen
-                self.set_fullscreen(fullscreen)
+            self.set_fullscreen(fullscreen)
 
         if "iconic" in metadata:
-            iconified = metadata.boolget("iconic")
-            if self._iconified != iconified:
-                self._iconified = iconified
-                if iconified:
-                    self.iconify()
-                else:
-                    self.deiconify()
+            iconic = metadata.boolget("iconic")
+            self.set_iconic(iconic)
 
         if "decorations" in metadata:
             decorated = metadata.boolget("decorations", True)
@@ -482,12 +470,7 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "sticky" in metadata:
             sticky = metadata.boolget("sticky")
-            if self._sticky != sticky:
-                self._sticky = sticky
-                if sticky:
-                    self.stick()
-                else:
-                    self.unstick()
+            self.set_sticky(sticky)
 
         if "skip-taskbar" in metadata:
             skip_taskbar = metadata.boolget("skip-taskbar")
@@ -537,6 +520,33 @@ class ClientWindowBase(ClientWidgetBase):
 
     def set_x11_property(self, *x11_property) -> None:
         pass  # see gtk client window base
+
+    def set_sticky(self, sticky: bool) -> None:
+        if self._sticky != sticky:
+            self._sticky = sticky
+            if sticky:
+                self.stick()
+            else:
+                self.unstick()
+
+    def set_iconic(self, iconified: bool) -> None:
+        if self._iconified != iconified:
+            self._iconified = iconified
+            if iconified:
+                self.iconify()
+            else:
+                self.deiconify()
+
+    def set_fullscreen(self, fullscreen: bool) -> None:
+        pass
+
+    def set_maximized(self, maximized: bool) -> None:
+        if maximized != self._maximized:
+            self._maximized = maximized
+            if maximized:
+                self.maximize()
+            else:
+                self.unmaximize()
 
     def set_command(self, command) -> None:
         pass  # see gtk client window base
@@ -672,9 +682,6 @@ class ClientWindowBase(ClientWidgetBase):
         pass  # see gtk client window base
 
     def set_workspace(self, workspace) -> None:
-        pass  # see gtk client window base
-
-    def set_fullscreen(self, fullscreen) -> None:
         pass  # see gtk client window base
 
     def set_xid(self, xid) -> None:
