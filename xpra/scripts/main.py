@@ -494,6 +494,7 @@ def run_mode(script_file: str, cmdline: list[str], error_cb: Callable, options, 
             "initenv", "setup-ssl", "show-ssl",
             "auth",
             "notify",
+            "dbus-system-list", "dbus-session-list",
             "applications-menu", "sessions-menu",
             "_proxy",
             "configure", "showconfig", "showsetting", "setting", "set", "unset",
@@ -898,6 +899,10 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         return run_auth(options, args)
     if mode == "notify":
         return run_notify(options, args)
+    if mode == "dbus-system-list":
+        return run_dbus_system_list()
+    if mode == "dbus-session-list":
+        return run_dbus_session_list()
     if mode == "u2f":
         return run_u2f()
     if mode == "configure":
@@ -4699,6 +4704,20 @@ def run_list_clients(error_cb, opts, extra_args) -> ExitValue:
                 istr += f" connected to {endpoint!r}"
             sys.stdout.write(f"{istr}\n")
             sys.stdout.flush()
+    return 0
+
+
+def run_dbus_system_list() -> ExitValue:
+    import dbus
+    for service in dbus.SystemBus().list_names():
+        print(service)
+    return 0
+
+
+def run_dbus_session_list() -> ExitValue:
+    import dbus
+    for service in dbus.SessionBus().list_names():
+        print(service)
     return 0
 
 
