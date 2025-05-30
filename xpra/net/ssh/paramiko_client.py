@@ -509,6 +509,12 @@ def do_connect(chan, host: str, username: str, password: str,
                          host_config, keyfiles, paramiko_config, auth_modes)
 
 
+def do_connect_to(transport, host: str, username: str, password: str,
+                  host_config, keyfiles: Sequence[str], paramiko_config: dict, auth_modes=AUTH_MODES):
+    AuthenticationManager(transport, host, username, password, host_config, keyfiles, paramiko_config, auth_modes).run()
+    return transport
+
+
 def load_host_keys() -> tuple[str, Any]:   # returns a HostKeys object
     from paramiko.hostkeys import HostKeys
     host_keys = HostKeys()
@@ -647,74 +653,133 @@ def save_host_key(host_keys, host_keys_filename: str) -> None:
             log.error(f" {e}")
 
 
-def do_connect_to(transport, host: str, username: str, password: str,
-                  host_config=None, keyfiles=None, paramiko_config=None, auth_modes=AUTH_MODES):
-    log("do_connect_to%s", (transport, host, username, password, host_config, keyfiles, paramiko_config))
+class AuthenticationManager:
+    def __init__(self, transport, host: str, username: str, password: str,
+                 host_config, keyfiles: Sequence[str], paramiko_config: dict, auth_modes=AUTH_MODES):
+        log("AuthenticationManager%s", (transport, host, username, "..", host_config, keyfiles, paramiko_config))
+        self.transport = transport
+        self.host = host
+        self.username = username
+        self.password = password
+        self.host_config = host_config
+        self.keyfiles = keyfiles
+        self.paramiko_config = paramiko_config
+        self.auth_modes = auth_modes
+        self.auth_errors: dict[str, list[str]] = {}
 
-    def configvalue(key: str) -> Any:
+    def configvalue(self, key: str) -> Any:
         # if the paramiko config has a setting, honour it:
-        if paramiko_config and key in paramiko_config:
-            return paramiko_config.get(key)
+        if key in self.paramiko_config:
+            return self.paramiko_config.get(key)
         # fallback to the value from the host config:
-        return (host_config or {}).get(key)
+        return (self.host_config or {}).get(key)
 
-    def configbool(key: str, default_value=True) -> bool:
-        return str_to_bool(configvalue(key), default_value)
+    def configbool(self, key: str, default_value=True) -> bool:
+        return str_to_bool(self.configvalue(key), default_value)
 
-    def configint(key: str, default_value=0) -> int:
-        v = configvalue(key)
+    def configint(self, key: str, default_value=0) -> int:
+        v = self.configvalue(key)
         if v is None:
             return default_value
         return int(v)
 
-    host_key = transport.get_remote_server_key()
-    assert host_key, "no remote server key"
-    log("remote_server_key=%s", keymd5(host_key))
-    if configbool("verify-hostkey", VERIFY_HOSTKEY):
-        verifyhostkeydns = configbool("verifyhostkeydns")
-        stricthostkeychecking = configbool("stricthostkeychecking", VERIFY_STRICT)
-        addkey = configbool("addkey", ADD_KEY)
-        err = verify_hostkey(host, host_key, verifyhostkeydns, stricthostkeychecking, addkey)
+    def verify_hostkey(self, host_key):
+        verifyhostkeydns = self.configbool("verifyhostkeydns")
+        stricthostkeychecking = self.configbool("stricthostkeychecking", VERIFY_STRICT)
+        addkey = self.configbool("addkey", ADD_KEY)
+        err = verify_hostkey(self.host, host_key, verifyhostkeydns, stricthostkeychecking, addkey)
         if err:
-            transport.close()
+            self.transport.close()
             raise InitExit(ExitCode.SSH_KEY_FAILURE, err)
-    else:
-        log("ssh host key verification skipped")
 
-    auth_errors: dict[str, list[str]] = {}
+    def run(self):
+        host_key = self.transport.get_remote_server_key()
+        assert host_key, "no remote server key"
+        log("remote_server_key=%s", keymd5(host_key))
+        if self.configbool("verify-hostkey", VERIFY_HOSTKEY):
+            self.verify_hostkey(host_key)
+        else:
+            log("ssh host key verification skipped")
 
-    def auth_agent() -> None:
+        banner = self.transport.get_banner()
+        if banner:
+            log.info("SSH server banner:")
+            for x in banner.splitlines():
+                log.info(f" {x}")
+
+        log(f"starting authentication, authentication methods: {self.auth_modes}")
+        auth = list(self.auth_modes)
+        # per the RFC we probably should do none first always and read off the supported
+        # methods, however, the current code seems to work fine with OpenSSH
+        while not self.transport.is_authenticated() and auth:
+            a = auth.pop(0)
+            log("auth=%s", a)
+            if a == "none":
+                self.auth_none()
+            elif a == "agent":
+                self.auth_agent()
+            elif a == "key":
+                self.auth_publickey()
+            elif a == "password":
+                self.auth_password()
+            else:
+                log.warn(f"Warning: invalid authentication mechanism {a}")
+            # detect session-lost problems:
+            # (no point in continuing without a session)
+            if self.auth_errors and not self.transport.is_authenticated():
+                for err_strs in self.auth_errors.values():
+                    if PARAMIKO_SESSION_LOST in err_strs:
+                        raise SSHAuthenticationError(self.host, self.auth_errors)
+        if not self.transport.is_authenticated():
+            self.transport.close()
+            log(f"authentication errors: {self.auth_errors}")
+            raise SSHAuthenticationError(self.host, self.auth_errors)
+        return transport
+
+    def auth_none(self) -> None:
+        log("trying none authentication")
+        try:
+            self.transport.auth_none(self.username)
+        except SSHException as e:
+            self.auth_errors.setdefault("none", []).append(str(e))
+            log("auth_none()", exc_info=True)
+
+    def auth_agent(self) -> None:
         from paramiko.agent import Agent
         agent = Agent()
         agent_keys = agent.get_keys()
         log("agent keys: %s", agent_keys)
-        if agent_keys:
-            for agent_key in agent_keys:
-                log("trying ssh-agent key '%s'", keymd5(agent_key))
-                try:
-                    transport.auth_publickey(username, agent_key)
-                    log("tried ssh-agent key '%s'", keymd5(agent_key))
-                    if transport.is_authenticated():
-                        log("authenticated using agent and key '%s'", keymd5(agent_key))
-                        return
-                except AttributeError as e:
-                    log(f"auth_publickey({username}, {agent_key})")
-                    log.warn("Warning: paramiko bug during public key agent authentication")
-                    log.warn(f" {type(e)}: {e}")
-                    log.warn(f" using key {type(agent_key)}: {agent_key}")
-                except SSHException as e:
-                    auth_errors.setdefault("agent", []).append(str(e))
-                    log.info("SSH agent key '%s' rejected for user '%s'", keymd5(agent_key), username)
-                    log("%s%s", transport.auth_publickey, (username, agent_key), exc_info=True)
-                    if str(e) == PARAMIKO_SESSION_LOST:
-                        # no point in trying more keys
-                        break
-            if not transport.is_authenticated():
-                log.info("agent authentication failed, tried %i keys", len(agent_keys))
+        if not agent_keys:
+            log.info("no ssh agent keys")
+            return
+        tried = 0
+        for agent_key in agent_keys:
+            tried += 1
+            log("trying ssh-agent key '%s'", keymd5(agent_key))
+            try:
+                self.transport.auth_publickey(self.username, agent_key)
+                log("tried ssh-agent key '%s'", keymd5(agent_key))
+                if self.transport.is_authenticated():
+                    log("authenticated using agent and key '%s'", keymd5(agent_key))
+                    return
+            except AttributeError as e:
+                log(f"auth_publickey({self.username}, {agent_key})")
+                log.warn("Warning: paramiko bug during public key agent authentication")
+                log.warn(f" {type(e)}: {e}")
+                log.warn(f" using key {type(agent_key)}: {agent_key}")
+            except SSHException as e:
+                self.auth_errors.setdefault("agent", []).append(str(e))
+                log.info("SSH agent key '%s' rejected for user '%s'", keymd5(agent_key), self.username)
+                log("%s%s", self.transport.auth_publickey, (self.username, agent_key), exc_info=True)
+                if str(e) == PARAMIKO_SESSION_LOST:
+                    # no point in trying more keys
+                    break
+        if not transport.is_authenticated():
+            log.info("agent authentication failed, tried %i keys", tried)
 
-    def auth_publickey() -> None:
-        log(f"trying public key authentication using {keyfiles}")
-        for keyfile_path in keyfiles:
+    def auth_publickey(self) -> None:
+        log(f"trying public key authentication using {self.keyfiles}")
+        for keyfile_path in self.keyfiles:
             if not os.path.exists(keyfile_path):
                 log(f"no keyfile at {keyfile_path!r}")
                 continue
@@ -766,9 +831,9 @@ def do_connect_to(transport, host: str, username: str, password: str,
             if key:
                 log(f"auth_publickey using {keyfile_path!r} as {pkey_classname}: {keymd5(key)}")
                 try:
-                    transport.auth_publickey(username, key)
+                    self.transport.auth_publickey(self.username, key)
                 except SSHException as e:
-                    auth_errors.setdefault("key", []).append(str(e))
+                    self.auth_errors.setdefault("key", []).append(str(e))
                     log(f"key {keyfile_path!r} rejected", exc_info=True)
                     log.info(f"SSH authentication using key {keyfile_path!r} failed:")
                     log.info(f" {e}")
@@ -781,91 +846,51 @@ def do_connect_to(transport, host: str, username: str, password: str,
             else:
                 log.error(f"Error: cannot load private key {keyfile_path!r}")
 
-    def auth_none() -> None:
-        log("trying none authentication")
-        try:
-            transport.auth_none(username)
-        except SSHException as e:
-            auth_errors.setdefault("none", []).append(str(e))
-            log("auth_none()", exc_info=True)
+    def auth_password(self) -> None:
+        self.auth_interactive()
+        if not transport.is_authenticated():
+            if self.password:
+                self.do_auth_password(self.password)
+            else:
+                tries = self.configint("numberofpasswordprompts", PASSWORD_RETRY)
+                for _ in range(tries):
+                    password = input_pass(f"please enter the SSH password for {self.username}@{self.host}")
+                    if not password:
+                        break
+                    self.do_auth_password(password)
+                    if self.transport.is_authenticated():
+                        break
 
-    def auth_password() -> None:
+    def do_auth_password(self, password: str) -> None:
         log("trying password authentication")
         try:
-            transport.auth_password(username, password)
+            self.transport.auth_password(self.username, password)
         except SSHException as authe:
             estr = getattr(authe, "message", str(authe))
-            auth_errors.setdefault("password", []).append(estr)
-            log("auth_password(..)", exc_info=True)
+            self.auth_errors.setdefault("password", []).append(estr)
+            log("do_auth_password(..)", exc_info=True)
             emsgs = estr.split(";")
         else:
             emsgs = []
-        if not transport.is_authenticated():
+        if not self.transport.is_authenticated():
             log.info("SSH password authentication failed:")
             for emsg in emsgs:
                 log.info(f" {emsg}")
             if log.is_debug_enabled() and LOG_FAILED_CREDENTIALS:
-                log.info(f" invalid username {username!r} or password {password!r}")
+                log.info(f" invalid username {self.username!r} or password {password!r}")
 
-    def auth_interactive() -> None:
+    def auth_interactive(self) -> None:
         log("trying interactive authentication")
         try:
-            iauthhandler = IAuthHandler(password)
-            transport.auth_interactive(username, iauthhandler.handle_request, "")
+            iauthhandler = IAuthHandler(self.password)
+            self.transport.auth_interactive(self.username, iauthhandler.handle_request, "")
         except SSHException as authe:
             estr = getattr(authe, "message", str(authe))
-            auth_errors.setdefault("interactive", []).append(estr)
+            self.auth_errors.setdefault("interactive", []).append(estr)
             log("auth_interactive(..)", exc_info=True)
             log.info("SSH password authentication failed:")
             for emsg in getattr(authe, "message", estr).split(";"):
                 log.info(f" {emsg}")
-
-    banner = transport.get_banner()
-    if banner:
-        log.info("SSH server banner:")
-        for x in banner.splitlines():
-            log.info(f" {x}")
-
-    log(f"starting authentication, authentication methods: {auth_modes}")
-    auth = list(auth_modes)
-    # per the RFC we probably should do none first always and read off the supported
-    # methods, however, the current code seems to work fine with OpenSSH
-    while not transport.is_authenticated() and auth:
-        a = auth.pop(0)
-        log("auth=%s", a)
-        if a == "none":
-            auth_none()
-        elif a == "agent":
-            auth_agent()
-        elif a == "key":
-            auth_publickey()
-        elif a == "password":
-            auth_interactive()
-            if not transport.is_authenticated():
-                if password:
-                    auth_password()
-                else:
-                    tries = configint("numberofpasswordprompts", PASSWORD_RETRY)
-                    for _ in range(tries):
-                        password = input_pass(f"please enter the SSH password for {username}@{host}")
-                        if not password:
-                            break
-                        auth_password()
-                        if transport.is_authenticated():
-                            break
-        else:
-            log.warn(f"Warning: invalid authentication mechanism {a}")
-        # detect session-lost problems:
-        # (no point in continuing without a session)
-        if auth_errors and not transport.is_authenticated():
-            for err_strs in auth_errors.values():
-                if PARAMIKO_SESSION_LOST in err_strs:
-                    raise SSHAuthenticationError(host, auth_errors)
-    if not transport.is_authenticated():
-        transport.close()
-        log(f"authentication errors: {auth_errors}")
-        raise SSHAuthenticationError(host, auth_errors)
-    return transport
 
 
 class SSHAuthenticationError(InitExit):
