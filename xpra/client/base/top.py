@@ -731,7 +731,7 @@ class TopSessionClient(InfoTimerClient):
             if session_id != self.session_id and ci.boolget("windows", True) and ci.strget("type") != "top":
                 gui_clients.append(nclients)
             nclients += 1
-        return gui_clients
+        return nclients, gui_clients
 
     def get_clients_str(self, nclients: int, gui_clients: Sequence) -> str:
         if nclients == 0:
