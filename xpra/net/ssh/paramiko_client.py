@@ -270,7 +270,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         display_desc.setdefault("proxy_username", get_username())
     password: str = display_desc.get("password", "")
     remote_xpra = display_desc["remote_xpra"]
-    proxy_command = display_desc["proxy_command"]  # ie: "_proxy_start"
+    proxy_command: Sequence[str] = display_desc["proxy_command"]  # ie: ["_proxy_start"]
     socket_dir: str = display_desc.get("socket_dir", "")
     display: str = display_desc.get("display", "")
     display_as_args: list[str] = display_desc["display_as_args"]  # ie: "--start=xterm :10"
@@ -344,7 +344,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
                           host_config,
                           proxy_keys,
                           paramiko_config)
-            chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
+            chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
             peername = (host, port)
             conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
             conn.target = host_target_string("ssh", username, host, port, display)
@@ -378,7 +378,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
                                host_config,
                                keys,
                                paramiko_config)
-        chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args)
+        chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
         conn = SSHProxyCommandConnection(chan, peername, peername, socket_info)
         to_str = host_target_string("ssh", username, host, port, display)
         proxy_str = host_target_string("ssh", proxy_username, proxy_host, proxy_port)
@@ -939,8 +939,8 @@ def run_test_command(transport, cmd: str) -> tuple[list[str], list[str], int]:
     return out, err, code
 
 
-def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
-                    socket_dir=None, display_as_args=None, paramiko_config=None):
+def run_remote_xpra(transport, xpra_proxy_command: Sequence[str], remote_xpra: Sequence[str],
+                    socket_dir: str, display_as_args: Sequence[str], paramiko_config: dict):
     log("run_remote_xpra%s", (transport, xpra_proxy_command, remote_xpra,
                               socket_dir, display_as_args, paramiko_config))
     assert remote_xpra
@@ -1057,7 +1057,7 @@ def run_remote_xpra(transport, xpra_proxy_command=None, remote_xpra=None,
         except SSHException as e:
             log("open_session", exc_info=True)
             raise InitExit(ExitCode.SSH_FAILURE, f"failed to open SSH session: {e}") from None
-        agent_option = str((paramiko_config or {}).get("agent", SSH_AGENT)) or "no"
+        agent_option = str(paramiko_config.get("agent", SSH_AGENT)) or "no"
         log(f"paramiko {agent_option=}")
         if agent_option.lower() in TRUE_OPTIONS:
             if not WIN_OPENSSH_AGENT and WIN_OPENSSH_AGENT_MODULE not in sys.modules:
