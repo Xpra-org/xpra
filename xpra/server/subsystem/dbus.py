@@ -79,7 +79,7 @@ class DbusServer(StubServerMixin):
         if self.dbus:
             self.init_dbus_env()
             if self.dbus_control:
-                self.init_dbus_control()
+                self.init_dbus_server()
 
     def init_dbus_env(self) -> None:
         log("init_dbus_env()")
@@ -101,8 +101,7 @@ class DbusServer(StubServerMixin):
         if self.dbus_env:
             os.environ.update(self.dbus_env)
 
-    def init_dbus_control(self) -> None:
-        log("init_dbus_server() dbus_control=%s", self.dbus_control)
+    def init_dbus_server(self) -> None:
         log("init_dbus_server() env: %s", {k: v for k, v in os.environ.items() if k.startswith("DBUS_")})
         try:
             from xpra.server.dbus.common import dbus_exception_wrap
