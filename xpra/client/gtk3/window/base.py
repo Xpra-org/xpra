@@ -771,6 +771,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.set_x11_property("_NET_WM_STRUT", "u32", values[:4])
 
     def set_window_type(self, window_types) -> None:
+        if self.get_mapped():
+            # should only be set before mapping the window, as per the Gtk docs:
+            # "This function should be called before the window becomes visible."
+            return
         hints = 0
         for window_type in window_types:
             # win32 workaround:
@@ -811,10 +815,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.when_realized("fullscreen-monitors", do_set_fullscreen_monitors)
 
     def set_shaded(self, shaded: bool) -> None:
+        if self._shaded == shaded:
+            return
         # platform specific code:
         log("set_shaded(%s)", shaded)
 
         def do_set_shaded() -> None:
+            self._shaded = shaded
             set_shaded(self.get_window(), shaded)
 
         self.when_realized("shaded", do_set_shaded)
@@ -850,6 +857,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.when_realized("fullscreen", do_set_fullscreen)
 
     def set_opaque_region(self, rectangles=()):
+        if self._opaque_region == rectangles:
+            return
+        self._opaque_region = rectangles
         # gtk can only set a single region!
         # noinspection PyArgumentList
         r = Region()

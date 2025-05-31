@@ -393,25 +393,20 @@ class ClientWindowBase(ClientWidgetBase):
             self._set_initial_position = metadata.boolget("set-initial-position")
 
         if "transient-for" in metadata:
-            wid = metadata.intget("transient-for", 0)
-            self.apply_transient_for(wid)
+            self.apply_transient_for(metadata.intget("transient-for"))
 
         if "modal" in metadata:
-            modal = metadata.boolget("modal")
-            self.set_modal(modal)
+            self.set_modal(metadata.boolget("modal"))
 
         # apply window-type hint if window has not been mapped yet:
-        if "window-type" in metadata and not self.get_mapped():
-            window_types = metadata.strtupleget("window-type")
-            self.set_window_type(window_types)
+        if "window-type" in metadata:
+            self.set_window_type(metadata.strtupleget("window-type"))
 
         if "role" in metadata:
-            role = metadata.strget("role")
-            self.set_role(role)
+            self.set_role(metadata.strget("role"))
 
         if "xid" in metadata:
-            xid = metadata.strget("xid")
-            self.set_xid(xid)
+            self.set_xid(metadata.strget("xid"))
 
         if "opacity" in metadata:
             opacity = metadata.intget("opacity", -1)
@@ -429,16 +424,13 @@ class ClientWindowBase(ClientWidgetBase):
                 self._has_alpha = new_alpha
 
         if "maximized" in metadata:
-            maximized = metadata.boolget("maximized")
-            self.set_maximized(maximized)
+            self.set_maximized(metadata.boolget("maximized"))
 
         if "fullscreen" in metadata:
-            fullscreen = metadata.boolget("fullscreen")
-            self.set_fullscreen(fullscreen)
+            self.set_fullscreen(metadata.boolget("fullscreen"))
 
         if "iconic" in metadata:
-            iconic = metadata.boolget("iconic")
-            self.set_iconic(iconic)
+            self.set_iconic(metadata.boolget("iconic"))
 
         if "decorations" in metadata:
             decorated = metadata.boolget("decorations", True)
@@ -451,44 +443,25 @@ class ClientWindowBase(ClientWidgetBase):
                 self.apply_geometry_hints(self.geometry_hints)
 
         if "above" in metadata:
-            above = metadata.boolget("above")
-            if self._above != above:
-                self._above = above
-                self.set_keep_above(above)
+            self.set_above(metadata.boolget("above"))
 
         if "below" in metadata:
-            below = metadata.boolget("below")
-            if self._below != below:
-                self._below = below
-                self.set_keep_below(below)
+            self.set_below(metadata.boolget("below"))
 
         if "shaded" in metadata:
-            shaded = metadata.boolget("shaded")
-            if self._shaded != shaded:
-                self._shaded = shaded
-                self.set_shaded(shaded)
+            self.set_shaded(metadata.boolget("shaded"))
 
         if "sticky" in metadata:
-            sticky = metadata.boolget("sticky")
-            self.set_sticky(sticky)
+            self.set_sticky(metadata.boolget("sticky"))
 
         if "skip-taskbar" in metadata:
-            skip_taskbar = metadata.boolget("skip-taskbar")
-            if self._skip_taskbar != skip_taskbar:
-                self._skip_taskbar = skip_taskbar
-                self.set_skip_taskbar_hint(skip_taskbar)
+            self.set_skip_taskbar(metadata.boolget("skip-taskbar"))
 
         if "skip-pager" in metadata:
-            skip_pager = metadata.boolget("skip-pager")
-            if self._skip_pager != skip_pager:
-                self._skip_pager = skip_pager
-                self.set_skip_pager_hint(skip_pager)
+            self.set_skip_pager(metadata.boolget("skip-pager"))
 
         if "opaque-region" in metadata:
-            opaque_region = metadata.tupleget("opaque-region", None, 0)
-            if self._opaque_region != opaque_region:
-                self._opaque_region = opaque_region
-                self.set_opaque_region(opaque_region)
+            self.set_opaque_region(metadata.tupleget("opaque-region"))
 
         if "workspace" in metadata:
             self.set_workspace(metadata.intget("workspace"))
@@ -521,6 +494,16 @@ class ClientWindowBase(ClientWidgetBase):
     def set_x11_property(self, *x11_property) -> None:
         pass  # see gtk client window base
 
+    def set_above(self, above: bool) -> None:
+        if self._above != above:
+            self._above = above
+            self.set_keep_above(above)
+
+    def set_below(self, below: bool) -> None:
+        if self._below != below:
+            self._below = below
+            self.set_keep_below(below)
+
     def set_sticky(self, sticky: bool) -> None:
         if self._sticky != sticky:
             self._sticky = sticky
@@ -528,6 +511,19 @@ class ClientWindowBase(ClientWidgetBase):
                 self.stick()
             else:
                 self.unstick()
+
+    def set_skip_taskbar(self, skip_taskbar: bool) -> None:
+        if self._skip_taskbar != skip_taskbar:
+            self._skip_taskbar = skip_taskbar
+            self.set_skip_taskbar_hint(skip_taskbar)
+
+    def set_skip_pager(self, skip_pager: bool) -> None:
+        if self._skip_pager != skip_pager:
+            self._skip_pager = skip_pager
+            self.set_skip_pager_hint(skip_pager)
+
+    def set_opaque_region(self, rectangles: tuple | None) -> None:
+        pass
 
     def set_iconic(self, iconified: bool) -> None:
         if self._iconified != iconified:
