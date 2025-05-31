@@ -24,6 +24,7 @@ BuildRequires:  xcb-util-cursor-devel
 BuildRequires:  dbus-devel
 BuildRequires:  fontconfig-devel
 BuildRequires:  xcb-util-keysyms-devel
+BuildRequires:  libXi-devel
 BuildRequires:  alsa-lib-devel
 BuildRequires:  glm-devel
 BuildRequires:  glew-devel
