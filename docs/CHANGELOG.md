@@ -1,6 +1,6 @@
 # Changelog
 
-## [6.3.1] 2025-05-26
+## [6.3.1] 2025-05-31
 * Platforms, build and packaging:
     * [modular installations also need filesystem package](https://github.com/Xpra-org/xpra/commit/bc67164fe76b03bb1d0287396c63bcf4fc1e0dd6)
     * [add plucky for `install-repo` subcommand](https://github.com/Xpra-org/xpra/commit/db5cc7303938d60b9a1619c672b11bcc88268ea3)
@@ -10,12 +10,16 @@
     * [recommend `xpra-x11` package so `xpra` installs working servers on Debian](https://github.com/Xpra-org/xpra/commit/48fa5b829b8514a1c6ae939e5126b6d57802a566)
     * [`XWayland` is a valid xvfb backend](https://github.com/Xpra-org/xpra/commit/4d42efaf66145e031b172ca8526e6489155dcd75)
 * Major:
+    * [missing some authentication handlers in MS Windows binaries](https://github.com/Xpra-org/xpra/commit/5bf528d69cbdc735f3883d64016e0d823418e136)
+    * [error connecting to display `:0` in ssh mode](https://github.com/Xpra-org/xpra/commit/9d6cc9bfab645968fc19801ef0e51e8e3cd28700)
     * [`pam` authentication fails](https://github.com/Xpra-org/xpra/commit/6a4eab3a21db27a8d60d66572ee7cecb13c1518d)
     * [parsing of `NET_WM_STRUT` on 64-bit systems](https://github.com/Xpra-org/xpra/commit/66dd7a70082063e4e420ee681f5792de8d62ab91)
     * [don' upgrade when `ssl` is disabled](https://github.com/Xpra-org/xpra/commit/4d42efaf66145e031b172ca8526e6489155dcd75)
     * [desktop geometry attributes not always updated](https://github.com/Xpra-org/xpra/commit/08719604fed7072787c7f8cd58bbe6c7cac640cd)
     * [ignore obsolete X11 size hints](https://github.com/Xpra-org/xpra/commit/ca86d79f23e3da589ecfc896c5e334d76ee91524)
 * Minor:
+    * [shadow servers don't stop the refresh loop](https://github.com/Xpra-org/xpra/commit/f81d1b49e78ffdd2f8c9f36c5c0faaae5df5b940)
+    * [opaque-region parsing errors](https://github.com/Xpra-org/xpra/commit/f416a0dbfd870f411ad522956038c6b32c1f2216)
     * [only resume audio if it was suspended](https://github.com/Xpra-org/xpra/commit/6a3ae04da0bf871ab69454cb5b2e748cdad5169f)
     * [wait before retrying socket](https://github.com/Xpra-org/xpra/commit/7e72cfaef85f183cf87ccce4732e2dc95d956781)
     * [`root` does not have magical powers](https://github.com/Xpra-org/xpra/commit/2dd68225390bbb6b1dc0f590447726cd3080763c) + [fixup](https://github.com/Xpra-org/xpra/commit/a1e552a6215cde855f1d65c285e3633e0651ba34)
@@ -37,7 +41,15 @@
     * [encoder server should default to having sharing enabled](https://github.com/Xpra-org/xpra/commit/a5d9de867507debff6f012734f979fa9b4e57556)
     * [encoder server failures when lz4 is not enabled](https://github.com/Xpra-org/xpra/commit/093fa4e0fc58a40af41bdab42e6fb4d593f8f45d)
     * [`mmap` cannot be used to send 8-bit data](https://github.com/Xpra-org/xpra/commit/05087f9f1ebd41d17764e09c1a7a9d27884fb564)
+    * [disable `scroll` encoding due to visual corruption](https://github.com/Xpra-org/xpra/commit/88bd11c7cc9f1553499c5b9de12f3d47aa6be00c)
+    * [`openh264` encoder not using default settings](https://github.com/Xpra-org/xpra/commit/10d19df26fb3f5d0b0c26e91e0cc6cdc1f693b92)
+    * [`openh264` encoder should set `full-range` metadata for native stream decoders](https://github.com/Xpra-org/xpra/commit/5a5d698f6e398d6a45c4659d2baa6fcdc21c4ffc)
+    * [`openh264` codecs not preserving full-range metadata](https://github.com/Xpra-org/xpra/commit/8047030228ff2492e1ab6f38f9821037f2929c21)
+    * [`libyuv` losing `full-range` metadata attribute during scaling](https://github.com/Xpra-org/xpra/commit/fe366c5a43ce1de933083c5a86853a4815431f79)
+    * [`vp9` encoder should expose `full-range` attribute](https://github.com/Xpra-org/xpra/commit/5e864ad4fd247768c9cc0b4a4424f1ac22f04351)
 * Cosmetic:
+    * [handle missing module more gracefully](https://github.com/Xpra-org/xpra/commit/5ed2829561ad7a0991d5aa2a016a00f33901d42b)
+    * [handle missing gui component more gracefully](https://github.com/Xpra-org/xpra/commit/566522f0f019c9a18a15aa709ea9736a5292b38a)
     * [avoid tray errors when connection fails](https://github.com/Xpra-org/xpra/commit/67cb487de400bea4c312e826a5f3f1309b0aa3df)
     * [missing OpenGL error message](https://github.com/Xpra-org/xpra/commit/fdd5322f438e96179b61ef7456cd184683078867)
     * [silence `uinput` missing message](https://github.com/Xpra-org/xpra/commit/3f2c4bcc14f240b0800648b16ec833f045c57e80)
@@ -50,6 +62,8 @@
     * [control command client validation errors](https://github.com/Xpra-org/xpra/commit/b29eb50f6ea7400f23c6f9b8226a29d2ac96515b)
     * [improve `exit-with-children` error message](https://github.com/Xpra-org/xpra/commit/ed79607a8819f306bb065e970fb06d6fa711a2ff)
     * [also debug internal properties](https://github.com/Xpra-org/xpra/commit/e437401af2576b01e10c9af632f3881260766270)
+    * [incorrect type hint](https://github.com/Xpra-org/xpra/commit/376ed64f9958c2cf67e68800a54f85b667b3629c)
+    * [log connection details with the channel warning](https://github.com/Xpra-org/xpra/commit/c193a59b55fa33dd391abc612d0b7648bbac1474)
 
 ## [6.3] 2025-04-23
 * Platforms, build and packaging:

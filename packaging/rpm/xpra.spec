@@ -1008,7 +1008,7 @@ fi
 
 
 %changelog
-* Mon May 26 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
+* Sat May 31 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:
    modular installations also need filesystem package
    add plucky for `install-repo` subcommand
@@ -1018,12 +1018,16 @@ fi
    recommend `xpra-x11` package so `xpra` installs working servers on Debian
    `XWayland` is a valid xvfb backend
 - Major:
+   missing some authentication handlers in MS Windows binaries
+   error connecting to display `:0` in ssh mode
    `pam` authentication fails
    parsing of `NET_WM_STRUT` on 64-bit systems
    don' upgrade when `ssl` is disabled
    desktop geometry attributes not always updated
    ignore obsolete X11 size hints
 - Minor:
+   shadow servers don't stop the refresh loop
+   opaque-region parsing errors
    only resume audio if it was suspended
    wait before retrying socket
    `root` does not have magical powers
@@ -1045,7 +1049,15 @@ fi
    encoder server should default to having sharing enabled
    encoder server failures when lz4 is not enabled
    `mmap` cannot be used to send 8-bit data
+   disable `scroll` encoding due to visual corruption
+   `openh264` encoder not using default settings
+   `openh264` encoder should set `full-range` metadata for native stream decoders
+   `openh264` codecs not preserving full-range metadata
+   `libyuv` losing `full-range` metadata attribute during scaling
+   `vp9` encoder should expose `full-range` attribute
 - Cosmetic:
+   handle missing module more gracefully
+   handle missing gui component more gracefully
    avoid tray errors when connection fails
    missing OpenGL error message
    type hint fixes: `mmap`, vfb log
@@ -1057,6 +1069,8 @@ fi
    control command client validation errors
    improve `exit-with-children` error message
    also debug internal properties
+   incorrect type hint
+   log connection details with the channel warning
 
 * Wed Apr 23 2025 Antoine Martin <antoine@xpra.org> 6.3-10
 - Platforms, build and packaging:
