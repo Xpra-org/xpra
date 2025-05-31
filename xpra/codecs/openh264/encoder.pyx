@@ -465,6 +465,10 @@ cdef class Encoder:
 
         cdef SEncParamExt param
         memset(&param, 0, sizeof(SEncParamExt))
+        with nogil:
+            r = self.context.GetDefaultParams(&param)
+        if r:
+            raise RuntimeError("failed to get default openh264 encoder parameters")
         param.iUsageType    = SCREEN_CONTENT_REAL_TIME
         param.fMaxFrameRate = 30
         param.iPicWidth     = self.width
@@ -475,10 +479,6 @@ cdef class Encoder:
             r = self.context.InitializeExt(&param)
         if r:
             raise RuntimeError("failed to initialize openh264 encoder context")
-        with nogil:
-            r = self.context.GetDefaultParams(&param)
-        if r:
-            raise RuntimeError("failed to get default openh264 encoder parameters")
         #cdef int profile = PRO_MAIN
         #self.context.SetOption(ENCODER_OPTION_PROFILE, &profile)
         #a void (*)(void* context, int level, const char* message) function which receives log messages
