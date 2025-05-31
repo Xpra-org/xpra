@@ -78,7 +78,7 @@ def resolve_internal_host() -> str:
 def upnp_add(socktype: str, info, options):
     log("upnp_add%s", (socktype, info, options))
 
-    def err(*msgs):
+    def err(*msgs) -> None:
         log("pnp_add%s", (info, options), exc_info=True)
         log.error("Error: cannot add UPnP port mapping")
         for msg in msgs:
