@@ -585,6 +585,7 @@ cdef class Encoder:
             raise RuntimeError(f"openh264 failed to encode frame, error {r}")
         client_options = {
             "frame": self.frames,
+            "full-range": image.get_full_range(),
         }
         self.frames += 1
         if frame_info.eFrameType==videoFrameTypeSkip:
