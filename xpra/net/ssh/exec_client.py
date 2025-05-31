@@ -62,57 +62,71 @@ def get_win32_kwargs() -> dict[str, Any]:
     }
 
 
-def connect_to(display_desc, opts=None, debug_cb: Callable = noop, ssh_fail_cb=connect_failed):
-    sshpass_command = None
+def get_ssh_command(display_desc: dict) -> list[str]:
+    remote_xpra: list[str] = display_desc["remote_xpra"]
+    assert remote_xpra
+    socket_dir = display_desc.get("socket_dir", "")
+    proxy_command: list[str] = display_desc["proxy_command"]  # ie: ["_proxy_start"]
+    # display_as_args ie: ["--start=xterm", "--env=SSH_AGENT_UUID={uuid}", ":10"]
+    display_as_args: list[str] = display_desc["display_as_args"]
+    remote_cmd = ""
+    for x in remote_xpra:
+        check = "if" if not remote_cmd else "elif"
+        if x == "xpra":
+            # no absolute path, so use "command -v" to check that the command exists:
+            pc = [f'{check} command -v "{x}" > /dev/null 2>&1; then']
+        else:
+            pc = [f'{check} [ -x {x} ]; then']
+        pc += [x] + proxy_command + [shellquote(x) for x in display_as_args]
+        if socket_dir:
+            pc.append(f"--socket-dir={socket_dir}")
+        remote_cmd += " ".join(pc) + ";"
+    remote_cmd += "else echo \"no xpra command found\"; exit 1; fi"
+    # how many times we need to escape the remote command string
+    # depends on how many times the ssh command is parsed
     cmd = list(display_desc["full_ssh"])
-    kwargs = {}
-    env = display_desc.get("env")
-    if env is None:
-        env = get_saved_env()
+    nssh = sum(int(x == "ssh") for x in cmd)
+    if nssh >= 2 and MAGIC_QUOTES:
+        for _ in range(nssh):
+            remote_cmd = shlex.quote(remote_cmd)
+    else:
+        remote_cmd = f"'{remote_cmd}'"
+    cmd.append(f"sh -c {remote_cmd}")
+    # non-string arguments can make Popen choke,
+    # instead of lazily converting everything to a string, we validate the command:
+    for x in cmd:
+        if not isinstance(x, str):
+            raise InitException(f"argument is not a string: {x} ({type(x)}), found in command: {cmd}")
+    executable = which(cmd[0])
+    if not executable or not os.path.exists(executable):
+        log.warn(f"Warning: ssh command {cmd[0]!r} not found!")
+        log.warn(" trying to continue anyway..")
+    return cmd
+
+
+def get_ssh_kwargs(exit_ssh=False) -> dict:
+    kwargs = {
+        "stderr": sys.stderr,
+    }
+    if WIN32:
+        kwargs.update(get_win32_kwargs())
+    elif not exit_ssh and not OSX:
+        kwargs["start_new_session"] = True
+    return kwargs
+
+
+def connect_to(display_desc: dict, opts=None, debug_cb: Callable = noop, ssh_fail_cb=connect_failed):
     if display_desc.get("is_putty"):
         # special env used by plink:
         env = os.environ.copy()
         env["PLINK_PROTOCOL"] = "ssh"
-    kwargs["stderr"] = sys.stderr
+    else:
+        env = display_desc.get("env", get_saved_env())
+    kwargs = get_ssh_kwargs()
+    cmd = get_ssh_command(display_desc)
     try:
-        if WIN32:
-            kwargs.update(get_win32_kwargs())
-        elif not display_desc.get("exit_ssh", False) and not OSX:
-            kwargs["start_new_session"] = True
-        remote_xpra: list[str] = display_desc["remote_xpra"]
-        assert remote_xpra
-        socket_dir = display_desc.get("socket_dir")
-        proxy_command: list[str] = display_desc["proxy_command"]      # ie: ["_proxy_start"]
-        # display_as_args ie: ["--start=xterm", "--env=SSH_AGENT_UUID={uuid}", ":10"]
-        display_as_args: list[str] = display_desc["display_as_args"]
-        remote_cmd = ""
-        for x in remote_xpra:
-            check = "if" if not remote_cmd else "elif"
-            if x == "xpra":
-                # no absolute path, so use "command -v" to check that the command exists:
-                pc = [f'{check} command -v "{x}" > /dev/null 2>&1; then']
-            else:
-                pc = [f'{check} [ -x {x} ]; then']
-            pc += [x] + proxy_command + [shellquote(x) for x in display_as_args]
-            if socket_dir:
-                pc.append(f"--socket-dir={socket_dir}")
-            remote_cmd += " ".join(pc)+";"
-        remote_cmd += "else echo \"no xpra command found\"; exit 1; fi"
-        # how many times we need to escape the remote command string
-        # depends on how many times the ssh command is parsed
-        nssh = sum(int(x == "ssh") for x in cmd)
-        if nssh >= 2 and MAGIC_QUOTES:
-            for _ in range(nssh):
-                remote_cmd = shlex.quote(remote_cmd)
-        else:
-            remote_cmd = f"'{remote_cmd}'"
-        cmd.append(f"sh -c {remote_cmd}")
         debug_cb(f"starting {cmd[0]} tunnel")
-        # non-string arguments can make Popen choke,
-        # instead of lazily converting everything to a string, we validate the command:
-        for x in cmd:
-            if not isinstance(x, str):
-                raise InitException(f"argument is not a string: {x} ({type(x)}), found in command: {cmd}")
+        sshpass_command = ""
         password = display_desc.get("password")
         if password and not display_desc.get("is_putty", False):
             from xpra.platform.paths import get_sshpass_command
@@ -134,10 +148,6 @@ def connect_to(display_desc, opts=None, debug_cb: Callable = noop, ssh_fail_cb=c
         log_fn = log.info if is_debug_enabled("ssh") else log.debug
         log_fn("executing ssh command: " + shlex.join(cmd))
         log_fn(f"{kwargs=}")
-        executable = which(cmd[0])
-        if not executable or not os.path.exists(executable):
-            log.warn(f"Warning: ssh command {cmd[0]!r} not found!")
-            log.warn(" trying to continue anyway..")
         child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
     except OSError as e:
         cmd_info = shlex.join(cmd)
@@ -153,7 +163,7 @@ def connect_to(display_desc, opts=None, debug_cb: Callable = noop, ssh_fail_cb=c
                 error_message = f"cannot {action} using SSH"
             else:
                 error_message = "SSH connection failure"
-            sshpass_error = None
+            sshpass_error = ""
             if sshpass_command:
                 sshpass_error = SSHPASS_ERRORS.get(exitcode, "")
                 if sshpass_error:
@@ -204,7 +214,6 @@ def connect_to(display_desc, opts=None, debug_cb: Callable = noop, ssh_fail_cb=c
     conn.timeout = 0            # taken care of by abort_test
     conn.process = (child, "ssh", cmd)
     if kwargs.get("stderr") == PIPE:
-
         start_thread(stderr_reader, "ssh-stderr-reader", args=(child,), daemon=True)
     return conn
 
