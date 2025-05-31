@@ -156,6 +156,7 @@ class ExpandServer(GObject.GObject, ShadowX11Server):
         return EVDIModel
 
     def verify_capture(self, ss) -> None:
+        # should be implemented, somehow!
         pass
 
     def makeRootWindowModels(self) -> list[EVDIModel]:

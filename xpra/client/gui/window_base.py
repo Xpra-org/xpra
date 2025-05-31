@@ -538,7 +538,7 @@ class ClientWindowBase(ClientWidgetBase):
                 self.deiconify()
 
     def set_fullscreen(self, fullscreen: bool) -> None:
-        pass
+        """ see gtk3 window for implementation """
 
     def set_maximized(self, maximized: bool) -> None:
         if maximized != self._maximized:
@@ -549,25 +549,25 @@ class ClientWindowBase(ClientWidgetBase):
                 self.unmaximize()
 
     def set_command(self, command) -> None:
-        pass  # see gtk client window base
+        """ see gtk3 window for implementation """
 
     def set_class_instance(self, wmclass_name, wmclass_class) -> None:
-        pass  # see gtk client window base
+        """ see gtk3 window for implementation """
 
     def set_shape(self, shape) -> None:
-        log("set_shape(%s) not implemented by %s", shape, type(self))
+        """ see gtk3 window for implementation """
 
     def set_bypass_compositor(self, v) -> None:
-        pass  # see gtk client window base
+        """ see gtk3 window for implementation """
 
     def set_strut(self, strut) -> None:
-        pass  # see gtk client window base
+        """ see gtk3 window for implementation """
 
     def set_fullscreen_monitors(self, fsm) -> None:
-        pass  # see gtk client window base
+        """ see gtk3 window for implementation """
 
     def set_shaded(self, shaded) -> None:
-        pass  # see gtk client window base
+        """ see gtk3 window for implementation """
 
     def reset_size_constraints(self) -> None:
         self.set_size_constraints(self.size_constraints, self.max_window_size)

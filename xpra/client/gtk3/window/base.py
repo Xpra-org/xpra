@@ -831,6 +831,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         statelog("%s.set_fullscreen(%s)", self, fullscreen)
 
         def do_set_fullscreen() -> None:
+            if self._fullscreen is None or self._fullscreen != fullscreen:
+                self._fullscreen = fullscreen
             if fullscreen:
                 # we may need to temporarily remove the max-window-size restrictions
                 # to be able to honour the fullscreen request:

@@ -90,11 +90,11 @@ EVENT_CALLBACK_TYPE = Callable[[int, int], None]
 
 
 def add_handler(event: str, handler: Callable) -> None:
-    pass
+    """ not implemented on win32 """
 
 
 def remove_handler(event: str, handler: Callable) -> None:
-    pass
+    """ not implemented on win32 """
 
 
 class Win32Eventlistener:
