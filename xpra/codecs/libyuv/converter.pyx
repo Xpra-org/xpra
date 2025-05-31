@@ -692,6 +692,7 @@ cdef class Converter:
             strides.append(self.scaled_stride[i])
             planes.append(PyMemoryView_FromMemory(<char *> scaled_planes[i], self.scaled_size[i], PyBUF_WRITE))
         out_image = YUVImageWrapper(0, 0, self.dst_width, self.dst_height, planes, self.dst_format, 24, strides, 1, nplanes)
+        out_image.set_full_range(image.get_full_range())
         out_image.cython_buffer = <uintptr_t> scaled_buffer
         return out_image
 
