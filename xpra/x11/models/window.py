@@ -64,6 +64,8 @@ FORCE_XSETINPUTFOCUS = envbool("XPRA_FORCE_XSETINPUTFOCUS", False)
 VALIDATE_CONFIGURE_REQUEST = envbool("XPRA_VALIDATE_CONFIGURE_REQUEST", False)
 CLAMP_OVERLAP = envint("XPRA_WINDOW_CLAMP_OVERLAP", 20)
 assert CLAMP_OVERLAP>=0
+SIZEHINTS_POSITION = envbool("XPRA_SIZEHINTS_POSITION", False)
+SIZEHINTS_SIZE = envbool("XPRA_SIZEHINTS_SIZE", False)
 
 
 class WindowModel(BaseWindowModel):
@@ -224,7 +226,7 @@ class WindowModel(BaseWindowModel):
         geomlog("setup() hints=%s size=%ix%i", hints, w, h)
         nw, nh = self.calc_constrained_size(w, h, hints)
         pos = hints.get("position")
-        if pos==(0, 0) and (nx!=0 or ny!=0):
+        if (pos==(0, 0) and (nx!=0 or ny!=0)) or not SIZEHINTS_POSITION:
             #never override with 0,0
             hints.pop("position")
             pos = None
@@ -312,11 +314,13 @@ class WindowModel(BaseWindowModel):
         x, y, w, h = geom[:4]
         size_hints = self.get_property("size-hints")
         ax, ay = size_hints.get("position", (0, 0))
-        if ax==ay==0 and (x!=0 or y!=0):
+        if (ax==ay==0 and (x!=0 or y!=0)) or not SIZEHINTS_POSITION:
             #don't override with 0,0
             size_hints.pop("position", None)
             ax, ay = x, y
-        aw, ah = size_hints.get("size", (w, h))
+        aw, ah = w, h
+        if SIZEHINTS_SIZE:
+            aw, ah = size_hints.get("size", (w, h))
         geomlog("initial X11 position and size: requested(%s, %s, %s)=%s",
                 (x, y, w, h), size_hints, geom, (ax, ay, aw, ah))
         set_if_unset("modal", "_NET_WM_STATE_MODAL" in net_wm_state)
