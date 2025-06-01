@@ -346,6 +346,8 @@ cdef class Encoder:
         param.iPicWidth     = self.width
         param.iPicHeight    = self.height
         param.iRCMode       = RC_OFF_MODE
+        # assume that the images we will be encoding are in YUV420P full-range:
+        param.sSpatialLayers[0].bFullRange = True
         #param.iTargetBitrate = 5000000
         with nogil:
             self.context.Initialize(&param)
