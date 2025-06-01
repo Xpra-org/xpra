@@ -1,12 +1,44 @@
 # Changelog
 
-## [5.1.1] 2025-04-14
+## [5.1.1] 2025-06-01
 * Platforms, build and packaging:
     * [improved](https://github.com/Xpra-org/xpra/commit/8d2b3f670bc9ce73159a085a99bf6f6d085b4939) [MS Windows signtool compatibility](https://github.com/Xpra-org/xpra/commit/b8224c7a8db65900f99dc1fd72e4a11bfdb1bf4d)
     * [duplicated tag in python3-pycuda spec file](https://github.com/Xpra-org/xpra/commit/9215ee38ab0c6faf1316d6c3ab8ed02b21db56da)
     * [fix https version check compatibility with newer Python versions](https://github.com/Xpra-org/xpra/commit/24ddaf2069aadf46f3a021ddc3e8c89994f4e862)
+    * [automatically bump version in DEB build script](https://github.com/Xpra-org/xpra/commit/6d511b756c4d84599f1452af279dd9b93ea96169)
+    * [Ubuntu Plucky openh264 dependency renamed](https://github.com/Xpra-org/xpra/commit/25c01025f059575f7003ded7e41f38082e5b7065), [also for Debian Trixie + Sid](https://github.com/Xpra-org/xpra/commit/3ff0de694fe03debbaf771481e24d037310641d0)
+    * [add explicit weak dependency on notification library to DEBs](https://github.com/Xpra-org/xpra/commit/2a9115587af9120528c65bdafda8edbcafc06c97)
+    * [compatibility with Cython 3.1](https://github.com/Xpra-org/xpra/commit/d1523ba82517bbb0a4fc39064fd5f62a72f48ff5)
+    * [MS Windows SBOM path not matched](https://github.com/Xpra-org/xpra/commit/afe087bc397c3622fc6980436f179d51005d257a)
+* Encodings:
+    * [`openh264` encoder should set `full-range` metadata for native stream decoders](https://github.com/Xpra-org/xpra/commit/315b6374e650608fcd47b981009a20b7cda35cfe)
+    * [`openh264` codecs not preserving full-range metadata](https://github.com/Xpra-org/xpra/commit/c04cf8606f6d70d754b122b47a7405c1fb70b1bf)
+    * [`vp9` encoder should expose `full-range` attribute](https://github.com/Xpra-org/xpra/commit/3a1eb01953ecd3d245b9b1782296ca954e84ddc0)
+    * [disable `scroll` encoding](https://github.com/Xpra-org/xpra/commit/86192aa5c33216f31e5acd7c435e2a86ae308d6a)
+* Major:
+    * [error connecting to display `:0` in ssh mode](https://github.com/Xpra-org/xpra/commit/9c409b19c0c2cd32b9c6bf4e8193c866943ad70c)
+    * [ignore obsolete X11 size hints](https://github.com/Xpra-org/xpra/commit/a5d572750d554ab38a112202be672c38369f6e07)
+    * [parsing of `NET_WM_STRUT[_PARTIAL]` on 64-bit systems](https://github.com/Xpra-org/xpra/commit/46ec5c074db495e56a40d76c7524bd215cbb4a67)
+    * [don't allow ssl upgrades when 'ssl' flag is disabled](https://github.com/Xpra-org/xpra/commit/5854034b6bc1a3d2b777253db56ac160e0b70cee)
+    * [desktop geometry attributes not always updated](https://github.com/Xpra-org/xpra/commit/780656124a1cac5730425f3a8752eba865cd62ec)
+    * [opaque region parsing errors](https://github.com/Xpra-org/xpra/commit/3667a4868ffe5aee9d2b9fd4b8facbb5fba2cf0d)
+* Monitor mode:
+    * [event receiver setup errors](https://github.com/Xpra-org/xpra/commit/80f871bc3c2ee482643ebd873a2c7784475497e8)
+    * [monitor mode does work in 8-bit palette mode](https://github.com/Xpra-org/xpra/commit/8fa9dcb91cf9395563a0881a2a9951fe79e0e87e)
+* Minor:
+    * [keys used to break the moveresize should not propagate](https://github.com/Xpra-org/xpra/commit/68e1c649623e1f93787f2c0d132eee1333a28e33)
+    * [servers should always honour `cursors` flag](https://github.com/Xpra-org/xpra/commit/c841e08203727fe72d7f6c663677f3fc98630f60)
+    * [potential OpenGL future bug](https://github.com/Xpra-org/xpra/commit/05b362bf0811dc1d71b744d9ed99e85ffbac5720)
+    * [potential path substitution type errors](https://github.com/Xpra-org/xpra/commit/94fc2164b7676f237ab4c28cca13081b49eaf7cd)
+    * [potential unexpected type returned](https://github.com/Xpra-org/xpra/commit/ffec28b5b83992680d2c80918a3b40f1b621b8b4)
+    * [correct detection of invalid `command_response` data](https://github.com/Xpra-org/xpra/commit/ff2c1093975cccc304913007976284d9ef802894)
+    * [don't discard Xwayland displays as xvfb options](https://github.com/Xpra-org/xpra/commit/18fddeef91e736947b264b86d86c83219ec3e315)
+    * [shadow servers don't stop the refresh loop](https://github.com/Xpra-org/xpra/commit/8ecbcddd50a6a01fc3d539e14c6143a778bba7c6)
 * Cosmetic:
+    * [avoid empty OpenGL validation error message](https://github.com/Xpra-org/xpra/commit/3847f50ef5c40f722571a8586d0cda46d96da57e)
     * [add `id` subcommand to man page](https://github.com/Xpra-org/xpra/commit/d36d53c6e9baf55631ca186ad5c19f25d4c4be85)
+    * [avoid scary uinput message](https://github.com/Xpra-org/xpra/commit/c3b25a0d38b4b368d33189937137ade1390646d7)
+    * [remove unused and misnamed attribute](https://github.com/Xpra-org/xpra/commit/dd4ee1bb100654f1e9ee71f67603cda4d210373e)
 
 ## [5.1] 2025-04-09
 * Platforms, build and packaging:

@@ -1,5 +1,42 @@
 xpra (5.1.1-1) UNRELEASED; urgency=low
-  * TODO
+  * Platforms, build and packaging:
+   - improved MS Windows signtool compatibility
+   - duplicated tag in python3-pycuda spec file
+   - fix https version check compatibility with newer Python versions
+   - automatically bump version in DEB build script
+   - Ubuntu Plucky openh264 dependency renamed, also for Debian Trixie + Sid
+   - add explicit weak dependency on notification library to DEBs
+   - compatibility with Cython 3.1
+   - MS Windows SBOM path not matched
+  * Encodings:
+   - `openh264` encoder should set `full-range` metadata for native stream decoders
+   - `openh264` codecs not preserving full-range metadata
+   - `vp9` encoder should expose `full-range` attribute
+   - disable `scroll` encoding
+  * Major:
+   - error connecting to display `:0` in ssh mode
+   - ignore obsolete X11 size hints
+   - parsing of `NET_WM_STRUT[_PARTIAL]` on 64-bit systems
+   - don't allow ssl upgrades when 'ssl' flag is disabled
+   - desktop geometry attributes not always updated
+   - opaque region parsing errors
+  * Monitor mode:
+   - event receiver setup errors
+   - monitor mode does work in 8-bit palette mode
+  * Minor:
+   - keys used to break the moveresize should not propagate
+   - servers should always honour `cursors` flag
+   - potential OpenGL future bug
+   - potential path substitution type errors
+   - potential unexpected type returned
+   - correct detection of invalid `command_response` data
+   - don't discard Xwayland displays as xvfb options
+   - shadow servers don't stop the refresh loop
+  * Cosmetic:
+   - avoid empty OpenGL validation error message
+   - add `id` subcommand to man page
+   - avoid scary uinput message
+   - remove unused and misnamed attribute
 
  -- Antoine Martin <antoine@xpra.org>  Mon, 14 Apr 2025 21:56:11 +0700
 
