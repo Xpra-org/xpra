@@ -7,6 +7,7 @@
 from typing import Any
 from collections.abc import Callable, Sequence
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.objects import typedict
 from xpra.util.env import first_time
@@ -109,9 +110,10 @@ class AudioServer(StubServerMixin):
         if not self.microphone_codecs:
             self.supports_microphone = False
         # query_pulseaudio_properties may access X11,
-        # do this from the main thread:
-        if bool(self.audio_properties):
-            GLib.idle_add(self.query_pulseaudio_properties)
+        # so call it from the main thread:
+        query_pulseaudio = getattr(self, "query_pulseaudio_properties", noop)
+        if bool(self.audio_properties) and query_pulseaudio != noop:
+            GLib.idle_add(query_pulseaudio)
         GLib.idle_add(self.log_audio_properties)
 
     def log_audio_properties(self) -> None:
