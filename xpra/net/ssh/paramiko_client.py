@@ -294,21 +294,36 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     host_config.update(ssh_lookup(host))
     log(f"host_config({host})={host_config}")
 
+    # paramiko does not strip comments from configs:
+    # https://github.com/Xpra-org/xpra/issues/4503
+    def safeget(key: str, default_value: str | int | list) -> Any:
+        value = host_config.get(key, default_value)
+        if isinstance(value, str):
+            value = value.split("#", 1)[0]
+        elif isinstance(value, list):
+            value = [str(v).split("#", 1)[0] for v in value]
+        return value
+
+    def configvalue(key: str, default_value):
+        # if the paramiko config has a setting, honour it:
+        if paramiko_config and key in paramiko_config:
+            return paramiko_config.get(key)
+        # fallback to the value from the host config:
+        return safeget(key, default_value)
+
+    def configbool(key: str, default_value=True) -> bool:
+        return str_to_bool(configvalue(key, default_value), default_value)
+
     def get_keyfiles(config_name="key") -> list[str]:
-        keyfiles = host_config.get("identityfile") or get_default_keyfiles()
-        keyfile = paramiko_config.get(config_name)
+        keyfiles: list[str] = safeget("identityfile", [])
+        keyfile = paramiko_config.get(config_name, "")
         if keyfile:
             keyfiles.insert(0, keyfile)
+        if not configbool("identitiesonly"):
+            keyfiles += get_default_keyfiles()
         return keyfiles
 
     if host_config:
-        # paramiko does not strip comments from configs:
-        # https://github.com/Xpra-org/xpra/issues/4503
-        def safeget(key: str, default_value: str | int) -> Any:
-            value = host_config.get(key, default_value)
-            if isinstance(value, str):
-                value = value.split("#", 1)[0]
-            return value
         log(f"got host config for {host!r}: {host_config}")
         host = safeget("hostname", host)
         username = safeget("user", username)
