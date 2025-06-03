@@ -218,7 +218,7 @@ def show_encoding_help(opts) -> int:
             x.setLevel(logging.WARN)
     from xpra.server import features as sf
     sf.pulseaudio = sf.audio = sf.av_sync = False
-    sf.clipboard = sf.command = sf.control = sf.dbus = sf.fileprint = sf.debug = False
+    sf.clipboard = sf.command = sf.control = sf.dbus = sf.file = sf.printer = sf.debug = False
     sf.keyboard = sf.mouse = False
     sf.mmap = sf.logging = sf.ping = sf.bandwidth = sf.notification = sf.rfb = sf.shell = sf.webcam = False
     from xpra.server.base import ServerBase
@@ -265,7 +265,7 @@ def set_server_features(opts, mode: str) -> None:
         features.command = False
         features.notification = features.webcam = features.clipboard = False
         features.gstreamer = features.x11 = features.pulseaudio = features.audio = features.av_sync = False
-        features.fileprint = features.command = features.mdns = False
+        features.file = features.printer = features.command = features.mdns = False
         features.keyboard = features.pointer = False
         features.logging = features.display = features.window = False
         features.cursor = features.rfb = False
@@ -283,7 +283,8 @@ def set_server_features(opts, mode: str) -> None:
         features.audio = features.gstreamer and b(opts.audio) and impcheck("audio")
         features.pulseaudio = features.audio and b(opts.pulseaudio)
         features.av_sync = features.audio and b(opts.av_sync)
-        features.fileprint = b(opts.printing) or b(opts.file_transfer)
+        features.file = b(opts.file_transfer) or b(opts.printing)
+        features.printer = b(opts.printing)
         features.keyboard = not opts.readonly and impcheck("keyboard")
         features.pointer = not opts.readonly
         features.logging = b(opts.remote_logging)
@@ -328,7 +329,8 @@ def enforce_server_features() -> None:
         "audio": "xpra.audio,xpra.server.subsystem.audio,xpra.server.source.audio",
         "pulseaudio": "xpra.server.subsystem.pulseaudio",
         # "av_sync": "??",
-        "fileprint": "xpra.server.subsystem.fileprint,xpra.server.source.fileprint",
+        "file": "xpra.server.subsystem.file,xpra.server.source.file",
+        "printer": "xpra.server.subsystem.printer,xpra.server.source.printer",
         "mmap": "xpra.net.mmap,xpra.server.subsystem.mmap,xpra.server.source.mmap",
         "ssl": "ssl,xpra.net.ssl_util",
         "ssh": "paramiko,xpra.net.ssh,xpra.server.subsystem.ssh_agent",

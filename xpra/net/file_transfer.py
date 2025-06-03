@@ -22,7 +22,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.scripts.config import str_to_bool, parse_with_unit
-from xpra.common import SizedBuffer
+from xpra.common import SizedBuffer, BACKWARDS_COMPATIBLE
 from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
@@ -179,31 +179,12 @@ class FileTransferAttributes:
         filelog("file transfer attributes=%s", self.get_file_transfer_features())
 
     def get_file_transfer_features(self) -> dict[str, Any]:
-        # used in hello packets,
-        # duplicated with namespace (old caps to be removed in v6)
-        return {
-            "file-transfer": self.file_transfer,
-            "file-transfer-ask": self.file_transfer_ask,
-            "max-file-size": self.file_size_limit,
-            "file-chunks": self.file_chunks,
-            "open-files": self.open_files,
-            "open-files-ask": self.open_files_ask,
-            "printing": self.printing,
-            "printing-ask": self.printing_ask,
-            "open-url": self.open_url,
-            "open-url-ask": self.open_url_ask,
-            "file-ask-timeout": self.file_ask_timeout,
-            # v5 onwards can use a proper namespace:
-            "file": self.get_file_transfer_info(),
-        }
-
-    def get_info(self) -> dict[str, Any]:
         return self.get_file_transfer_info()
 
     def get_file_transfer_info(self) -> dict[str, Any]:
         # slightly different from above... for legacy reasons
         # this one is used for get_info() in a proper "file." namespace from base.py
-        return {
+        info = {
             "enabled": self.file_transfer,
             "ask": self.file_transfer_ask,
             "size-limit": self.file_size_limit,
@@ -212,9 +193,25 @@ class FileTransferAttributes:
             "open-ask": self.open_files_ask,
             "open-url": self.open_url,
             "open-url-ask": self.open_url_ask,
+            "ask-timeout": self.file_ask_timeout,
+        }
+        if BACKWARDS_COMPATIBLE:
+            info.update({
+                "printing": self.printing,
+                "printing-ask": self.printing_ask,
+            })
+        return info
+
+    def get_printer_features(self) -> dict[str, Any]:
+        return {
             "printing": self.printing,
             "printing-ask": self.printing_ask,
-            "ask-timeout": self.file_ask_timeout,
+        }
+
+    def get_info(self) -> dict[str, Any]:
+        return {
+            "file": self.get_file_transfer_info(),
+            "printer": self.get_printer_features(),
         }
 
 
@@ -272,14 +269,12 @@ class FileTransferHandler(FileTransferAttributes):
         self.file_descriptors = set()
         self.init_attributes()
 
-    def parse_file_transfer_caps(self, c) -> None:
+    def parse_file_transfer_caps(self, c: typedict) -> None:
         fc = typedict(c.dictget("file") or {})
         filelog("parse_file_transfer_caps: %s", fc)
         # v5 with "file" namespace:
         self.remote_file_transfer = fc.boolget("enabled")
         self.remote_file_transfer_ask = fc.boolget("ask")
-        self.remote_printing = fc.boolget("printing")
-        self.remote_printing_ask = fc.boolget("printing-ask")
         self.remote_open_files = fc.boolget("open")
         self.remote_open_files_ask = fc.boolget("open-ask")
         self.remote_open_url = fc.boolget("open-url")
@@ -288,6 +283,11 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_file_size_limit = fc.intget("max-file-size") or fc.intget("size-limit")
         self.remote_file_chunks = max(0, fc.intget("chunks"))
         self.dump_remote_caps()
+
+    def parse_printer_caps(self, c: typedict) -> None:
+        fc = typedict(c.dictget("file" if BACKWARDS_COMPATIBLE else "printer") or {})
+        self.remote_printing = fc.boolget("printing")
+        self.remote_printing_ask = fc.boolget("printing-ask")
 
     def dump_remote_caps(self) -> None:
         filelog("file transfer remote caps:")

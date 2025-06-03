@@ -705,7 +705,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
             dialog.set_server_log_data(filedata)
 
         from xpra.client.base import features
-        if features.file_transfer:
+        if features.file:
             self.download_server_log(got_server_log)
         GLib.timeout_add(200, init_bug_report)
 

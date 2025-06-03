@@ -11,7 +11,7 @@ def get_server_base_class() -> type:
     # features.ping = auto
     features.bandwidth = features.control = False
     # features.debug = auto
-    features.fileprint = False
+    features.file = features.printer = False
     # features.mmap = auto
     features.logging = features.http = features.shell = features.ssh = features.webcam = False
     # features.dbus = auto

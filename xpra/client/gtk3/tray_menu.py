@@ -1594,7 +1594,7 @@ class GTKTrayMenu(MenuHelper):
 
         def enable_transfers(*args) -> None:
             log("enable_transfers%s ask=%s", args, ())
-            has_ask = features.file_transfer and any((
+            has_ask = features.file and any((
                 self.client.remote_file_transfer_ask,
                 self.client.remote_printing_ask,
                 self.client.remote_open_files_ask,
@@ -1610,7 +1610,7 @@ class GTKTrayMenu(MenuHelper):
         upload = self.menuitem("Upload File", "upload.png", cb=self.client.show_file_upload)
 
         def enable_upload(*args) -> None:
-            can_upload = features.file_transfer and self.client.remote_file_transfer
+            can_upload = features.file and self.client.remote_file_transfer
             log("enable_upload%s can_upload=%s", args, can_upload)
             sens_tooltip(upload, can_upload,
                          "Send a file to the server",
@@ -1635,7 +1635,7 @@ class GTKTrayMenu(MenuHelper):
             else:
                 download.set_tooltip_text("Send a file to the server")
 
-        if features.file_transfer:
+        if features.file:
             self.after_handshake(enable_download)
         else:
             set_sensitive(download, False)
@@ -1648,7 +1648,7 @@ class GTKTrayMenu(MenuHelper):
         c = self.client
 
         def enable_download(*args) -> None:
-            can_download = features.file_transfer and c.remote_file_transfer and bool(c._remote_server_log)
+            can_download = features.file and c.remote_file_transfer and bool(c._remote_server_log)
             log("enable_download%s can_download=%s", args, can_download)
             sens_tooltip(download_log, can_download,
                          "Download the server log",

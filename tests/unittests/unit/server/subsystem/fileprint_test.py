@@ -12,18 +12,18 @@ from unit.test_util import silence_info
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 
-class FilePrintMixinTest(ServerMixinTest):
+class FileMixinTest(ServerMixinTest):
 
     def create_test_sockets(self):
         if not POSIX:
             return ()
+        # socktype, socket, sockpath, cleanup_socket
         return [
-            #socktype, socket, sockpath, cleanup_socket
             ("socket", None, "/fake/path", None)
-            ]
+        ]
 
     def test_fileprint(self):
-        from xpra.server.subsystem import fileprint
+        from xpra.server.subsystem import file as filesubsystem
         opts = AdHocStruct()
         opts.file_transfer = "yes"
         opts.file_size_limit = 10
@@ -36,8 +36,9 @@ class FilePrintMixinTest(ServerMixinTest):
         opts.add_printer_options = ""
         opts.postscript_printer = ""
         opts.pdf_printer = ""
-        with silence_info(fileprint, "printlog"):
-            self._test_mixin_class(fileprint.FilePrintServer, opts)
+        with silence_info(filesubsystem):
+            self._test_mixin_class(filesubsystem.FileServer, opts)
+
 
 def main():
     unittest.main()

@@ -24,7 +24,7 @@ SKIP_STOPPED_PRINTERS = envbool("XPRA_SKIP_STOPPED_PRINTERS", True)
 INIT_PRINTING_DELAY = envint("XPRA_INIT_PRINTING_DELAY", 2)
 
 
-class FilePrintMixin(StubClientMixin, FileTransferHandler):
+class PrinterMixin(StubClientMixin, FileTransferHandler):
 
     def __init__(self):
         StubClientMixin.__init__(self)
@@ -46,7 +46,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
         )
 
     def get_caps(self) -> dict[str, Any]:
-        return self.get_file_transfer_features()
+        return {"printer": self.get_printer_features()}
 
     def cleanup(self) -> None:
         # we must clean printing before FileTransferHandler, which turns the printing flag off!
@@ -55,7 +55,7 @@ class FilePrintMixin(StubClientMixin, FileTransferHandler):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.parse_printing_capabilities(c)
-        self.parse_file_transfer_caps(c)
+        self.parse_printer_caps(c)
         self.remote_request_file = c.boolget("request-file", False)
         return True
 

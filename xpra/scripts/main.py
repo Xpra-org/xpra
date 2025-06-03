@@ -1778,7 +1778,7 @@ def get_client_app(cmdline: list[str], error_cb: Callable, opts, extra_args: lis
 
     def basic():
         from xpra.client.base import features
-        features.file_transfer = features.control = features.debug = False
+        features.file = features.printer = features.control = features.debug = False
 
     request_mode = mode.replace("request-", "") if mode.startswith("request-") else ""
     run_args = []
@@ -2219,7 +2219,7 @@ def set_client_features(opts) -> None:
     features.debug = features.debug or b(opts.debug)
     features.command = opts.commands
     features.control = opts.control
-    features.file_transfer = b(opts.file_transfer) and impcheck("xpra.net.file_transfer")
+    features.file = b(opts.file_transfer) and impcheck("xpra.net.file_transfer")
     features.display = opts.windows
     features.window = opts.windows
     features.cursor = opts.windows and opts.cursors
@@ -2251,7 +2251,8 @@ def enforce_client_features() -> None:
     enforce_features(features, {
         "debug": "xpra.client.base.debug",
         "control": "xpra.control,xpra.client.base.control",
-        "file_transfer": "xpra.net.file_transfer",
+        "file": "xpra.net.file_transfer,xpra.client.base.file",
+        "printer": "xpra.client.base.printer",
         "display": "xpra.client.subsystem.display",
         "window": "xpra.client.subsystem.window",
         "cursor": "xpra.client.subsystem.cursor",

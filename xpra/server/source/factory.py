@@ -31,9 +31,12 @@ def get_enabled_mixins() -> Sequence[type]:
     if features.webcam:
         from xpra.server.source.webcam import WebcamConnection
         mixins.append(WebcamConnection)
-    if features.fileprint:
-        from xpra.server.source.fileprint import FilePrintConnection
-        mixins.append(FilePrintConnection)
+    if features.file:
+        from xpra.server.source.file import FileConnection
+        mixins.append(FileConnection)
+    if features.printer:
+        from xpra.server.source.printer import PrinterConnection
+        mixins.append(PrinterConnection)
     if features.mmap:
         from xpra.server.source.mmap import MMAP_Connection
         mixins.append(MMAP_Connection)

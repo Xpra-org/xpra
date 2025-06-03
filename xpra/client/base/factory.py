@@ -16,9 +16,12 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.debug:
         from xpra.client.base.debug import DebugClient
         CLIENT_BASES.append(DebugClient)
-    if features.file_transfer:
-        from xpra.client.base.fileprint import FilePrintMixin
-        CLIENT_BASES.append(FilePrintMixin)
+    if features.file:
+        from xpra.client.base.file import FileMixin
+        CLIENT_BASES.append(FileMixin)
+    if features.printer:
+        from xpra.client.base.printer import PrinterMixin
+        CLIENT_BASES.append(PrinterMixin)
     if features.control:
         from xpra.client.base.control import ControlClient
         CLIENT_BASES.append(ControlClient)

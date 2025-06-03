@@ -41,11 +41,11 @@ def find_auth_password_file(auth_defs: Sequence[AuthDef]) -> str:
     return ""
 
 
-class FilePrintConnection(FileTransferHandler, StubClientConnection):
+class PrinterConnection(FileTransferHandler, StubClientConnection):
 
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
-        return bool("file" in caps or caps.boolget("file-transfer") or caps.boolget("printing"))
+        return caps.boolget("printing")
 
     def init_state(self) -> None:
         self.printers: dict[str, dict] = {}
@@ -57,13 +57,15 @@ class FilePrintConnection(FileTransferHandler, StubClientConnection):
         self.remove_printers()
 
     def parse_client_caps(self, c: typedict) -> None:
-        FileTransferHandler.parse_file_transfer_caps(self, c)
+        FileTransferHandler.parse_printer_caps(self, c)
         self.machine_id = c.strget("machine_id")
 
     def get_info(self) -> dict[str, Any]:
         return {
-            "printers": self.printers,
-            "file-transfers": FileTransferHandler.get_info(self),
+            "printer": {
+                "printers": self.printers,
+                "file-transfers": FileTransferHandler.get_info(self),
+            },
         }
 
     def init_from(self, _protocol, server) -> None:
@@ -71,10 +73,7 @@ class FilePrintConnection(FileTransferHandler, StubClientConnection):
         self.unix_socket_paths: list[str] = server.unix_socket_paths
         # copy attributes
         for x in (
-                "file_transfer", "file_transfer_ask", "file_size_limit", "file_chunks",
-                "printing", "printing_ask", "open_files", "open_files_ask",
-                "open_url", "open_url_ask",
-                "file_ask_timeout", "open_command",
+                "printing", "printing_ask",
         ):
             setattr(self, x, getattr(server.file_transfer, x))
 

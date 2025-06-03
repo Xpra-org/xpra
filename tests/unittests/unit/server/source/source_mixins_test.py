@@ -143,12 +143,12 @@ class SourceMixinsTest(unittest.TestCase):
             "encodings.core": ("rgb32", "rgb24"),
         })
 
-    def test_fileprint(self):
-        from xpra.server.source.fileprint import FilePrintConnection
+    def test_file(self):
+        from xpra.server.source.file import FileConnection
         from xpra.net.file_transfer import FileTransferAttributes
-        self._test_mixin_class(FilePrintConnection, {
-            "file_transfer" : FileTransferAttributes(),
-            "machine_id"    : "123",
+        self._test_mixin_class(FileConnection, {
+            "file_transfer": FileTransferAttributes(),
+            "machine_id": "123",
         })
 
     def test_idle(self):
