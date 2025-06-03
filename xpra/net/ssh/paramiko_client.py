@@ -738,7 +738,6 @@ class AuthenticationManager:
             self.transport.close()
             log(f"authentication errors: {self.auth_errors}")
             raise SSHAuthenticationError(self.host, self.auth_errors)
-        return transport
 
     def auth_none(self) -> None:
         log("trying none authentication")
@@ -778,7 +777,7 @@ class AuthenticationManager:
                 if str(e) == PARAMIKO_SESSION_LOST:
                     # no point in trying more keys
                     break
-        if not transport.is_authenticated():
+        if not self.transport.is_authenticated():
             log.info("agent authentication failed, tried %i keys", tried)
 
     def auth_publickey(self) -> None:
@@ -845,14 +844,14 @@ class AuthenticationManager:
                         # no point in trying more keys
                         break
                 else:
-                    if transport.is_authenticated():
+                    if self.transport.is_authenticated():
                         break
             else:
                 log.error(f"Error: cannot load private key {keyfile_path!r}")
 
     def auth_password(self) -> None:
         self.auth_interactive()
-        if not transport.is_authenticated():
+        if not self.transport.is_authenticated():
             if self.password:
                 self.do_auth_password(self.password)
             else:
