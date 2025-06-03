@@ -68,7 +68,7 @@ PARAMIKO_SESSION_LOST = "No existing session"
 
 WIN32_REGISTRY_QUERY = "REG QUERY \"HKEY_LOCAL_MACHINE\\Software\\Xpra\" /v InstallPath"
 
-AUTH_MODES: Sequence[str] = ("none", "agent", "key", "password")
+AUTH_MODES: Sequence[str] = os.environ.get("XPRA_PARAMIKO_AUTH_MODES", "none,agent,key,password").split(",")
 
 
 def keymd5(k) -> str:
