@@ -462,20 +462,18 @@ def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[st
     if auth_str:
         return auth_str.split("+")
     auth = []
-    if configvalue("identityfile"):
-        auth.append("key")
-    if configbool("identitiesonly"):
-        return auth
-    if configbool("noneauthentication", NONE_AUTH):
-        auth.append("none")
-    if password and configbool("passwordauthentication", PASSWORD_AUTH):
-        auth.append("password")
+    identitiesonly = configbool("identitiesonly")
+    if not identitiesonly:
+        if configbool("noneauthentication", NONE_AUTH):
+            auth.append("none")
+        if password and configbool("passwordauthentication", PASSWORD_AUTH):
+            auth.append("password")
     if configbool("agentauthentication", AGENT_AUTH):
         auth.append("agent")
     # Some people do two-factor using KEY_AUTH to kick things off, so this happens first
     if configbool("keyauthentication", KEY_AUTH):
         auth.append("key")
-    if not password and configbool("passwordauthentication", PASSWORD_AUTH):
+    if not identitiesonly and not password and configbool("passwordauthentication", PASSWORD_AUTH):
         auth.append("password")
     return auth
 
@@ -696,7 +694,7 @@ class AuthenticationManager:
             self.transport.close()
             raise InitExit(ExitCode.SSH_KEY_FAILURE, err)
 
-    def run(self):
+    def run(self) -> None:
         host_key = self.transport.get_remote_server_key()
         assert host_key, "no remote server key"
         log("remote_server_key=%s", keymd5(host_key))
