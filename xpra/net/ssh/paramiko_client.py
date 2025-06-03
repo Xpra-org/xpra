@@ -761,10 +761,24 @@ class AuthenticationManager:
             log("auth_none()", exc_info=True)
 
     def auth_agent(self) -> None:
-        from paramiko.agent import Agent
+        from paramiko.agent import Agent, AgentKey
+        allowed_key_fingerprints = []
+        for keyfile in self.keyfiles:
+            try:
+                allowed_key_fingerprints.append(AgentKey.from_path(keyfile).fingerprint)
+            except ValueError:
+                log.warn(f"Warning: failed to load agent key fingerprint from {keyfile!r}")
         agent = Agent()
-        agent_keys = agent.get_keys()
-        log("agent keys: %s", agent_keys)
+        all_agent_keys = agent.get_keys()
+        log("agent keys: %s", all_agent_keys)
+        log("allowed key fingerprints: %s", allowed_key_fingerprints)
+        agent_keys = [x for x in all_agent_keys if x.fingerprint in allowed_key_fingerprints]
+        log("agent keys matching fingerprints: %s", agent_keys)
+        if not self.configbool("identitiesonly"):
+            for agent_key in all_agent_keys:
+                if agent_key not in agent_keys:
+                    agent_keys.append(agent_key)
+            log("usable agent keys: %s", agent_keys)
         if not agent_keys:
             log.info("no ssh agent keys")
             return
