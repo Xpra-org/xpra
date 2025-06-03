@@ -462,6 +462,10 @@ def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[st
     if auth_str:
         return auth_str.split("+")
     auth = []
+    if configvalue("identityfile"):
+        auth.append("key")
+    if configbool("identitiesonly"):
+        return auth
     if configbool("noneauthentication", NONE_AUTH):
         auth.append("none")
     if password and configbool("passwordauthentication", PASSWORD_AUTH):
