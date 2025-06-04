@@ -735,10 +735,10 @@ class AuthenticationManager:
         verifyhostkeydns = self.configbool("verifyhostkeydns")
         stricthostkeychecking = self.configbool("stricthostkeychecking", VERIFY_STRICT)
         addkey = self.configbool("addkey", ADD_KEY)
-        port = self.configint('port', 22)
+        port = self.configint("port", 22)
         host = self.host
         if port != 22:
-            host = f'[{host}]:{port}' # this is how the host is stored in known_hosts for non-standard ports
+            host = f"[{host}]:{port}" # this is how the host is stored in known_hosts for non-standard ports
         err = verify_hostkey(host, host_key, verifyhostkeydns, stricthostkeychecking, addkey)
         if err:
             self.transport.close()
