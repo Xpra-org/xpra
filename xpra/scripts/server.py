@@ -38,7 +38,7 @@ from xpra.scripts.main import (
 from xpra.scripts.config import (
     InitException, InitInfo, InitExit,
     FALSE_OPTIONS, ALL_BOOLEAN_OPTIONS, OPTION_TYPES, CLIENT_ONLY_OPTIONS, CLIENT_OPTIONS,
-    parse_bool_or,
+    parse_bool_or, str_to_bool,
     fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
     xvfb_command,
 )
@@ -839,7 +839,7 @@ def _do_run_server(script_file: str, cmdline,
         os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
         protected_env["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
 
-    if opts.printing:
+    if str_to_bool(opts.printing):
         start_cupsd()
 
     def write_session_file(filename: str, contents) -> str:
