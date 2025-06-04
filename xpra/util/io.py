@@ -69,6 +69,23 @@ def is_socket(sockpath: str, check_uid: int = -1) -> bool:
     return True
 
 
+def wait_for_socket(sockpath: str, timeout=1) -> bool:
+    assert POSIX, f"wait_for_socket cannot be used on {sys.platform!r}"
+    import socket
+    sock: socket.socket | None = None
+    try:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect(sockpath)
+        return True
+    except OSError:
+        get_util_logger().debug(f"wait_for_socket({sockpath!r}, timeout)", exc_info=True)
+        return False
+    finally:
+        if sock:
+            sock.close()
+
+
 def is_writable(path: str, uid: int, gid: int) -> bool:
     try:
         s = os.stat(path)

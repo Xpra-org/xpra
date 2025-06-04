@@ -41,7 +41,7 @@ from xpra.os_util import (
     gi_import,
     WIN32, OSX, POSIX
 )
-from xpra.util.io import is_socket, stderr_print, use_tty, info, warn, error
+from xpra.util.io import is_socket, wait_for_socket, stderr_print, use_tty, info, warn, error
 from xpra.util.system import is_Wayland, SIGNAMES, set_proc_title, is_systemd_pid1
 from xpra.scripts.parsing import (
     get_usage,
@@ -2823,17 +2823,9 @@ def stat_display_socket(socket_path: str, timeout=VERIFY_SOCKET_TIMEOUT) -> dict
             warn(f"display path {socket_path!r} is not a socket!")
             return {}
         if timeout > 0:
-            sock: socket.socket | None = None
-            try:
-                sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                sock.settimeout(timeout)
-                sock.connect(socket_path)
-            except OSError:
+            if not wait_for_socket(socket_path, timeout):
                 # warn(f"Error trying to connect to {socket_path!r}: {e}")
                 return {}
-            finally:
-                if sock:
-                    sock.close()
         return {
             "uid": sstat.st_uid,
             "gid": sstat.st_gid,

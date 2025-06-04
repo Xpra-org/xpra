@@ -24,7 +24,7 @@ from xpra.scripts.session import (
     get_session_dir, make_session_dir, session_file_path,
     load_session_file, save_session_file
 )
-from xpra.util.io import info, warn
+from xpra.util.io import info, warn, wait_for_socket
 from xpra.util.parsing import parse_str_dict
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.main import (
@@ -789,7 +789,8 @@ def _do_run_server(script_file: str, cmdline,
     stderr = sys.stderr
     protected_env = {}
 
-    if ROOT and SYSTEM_DBUS and opts.dbus and not os.path.exists("/run/dbus/system_bus_socket"):
+    SYSTEM_DBUS_SOCKET = "/run/dbus/system_bus_socket"
+    if ROOT and SYSTEM_DBUS and opts.dbus and not os.path.exists(SYSTEM_DBUS_SOCKET):
         if not os.path.exists("/var/lib/dbus/machine-id"):
             try:
                 if not os.path.exists("/var/lib"):
@@ -807,8 +808,11 @@ def _do_run_server(script_file: str, cmdline,
             os.mkdir("/run/dbus", 0o755)
         Popen(["dbus-daemon", "--system", "--fork"]).wait()
         stderr.write("started system dbus daemon\n")
-        os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=/run/dbus/system_dbus_socket"
-        protected_env["DBUS_SYSTEM_BUS_ADDRESS"] = "unix:path=/run/dbus/system_dbus_socket"
+        if not wait_for_socket(SYSTEM_DBUS_SOCKET, 5):
+            warn("dbus-daemon failed to start")
+        # wait for socket!
+        os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
+        protected_env["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
 
     def write_session_file(filename: str, contents) -> str:
         return save_session_file(filename, contents, uid, gid)
