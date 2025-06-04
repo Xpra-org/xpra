@@ -111,6 +111,57 @@ def get_key_fingerprints(keyfiles: Sequence[str]) -> list[str]:
     return allowed_key_fingerprints
 
 
+def load_private_key(keyfile_path: str):
+    if not os.path.exists(keyfile_path):
+        log(f"no keyfile at {keyfile_path!r}")
+        return None
+    log(f"trying {keyfile_path!r}")
+    import paramiko
+    try_key_formats: Sequence[str] = ()
+    for kf in ("RSA", "DSS", "ECDSA", "Ed25519"):
+        if keyfile_path.lower().endswith(kf.lower()):
+            try_key_formats = (kf,)
+            break
+    if not try_key_formats:
+        try_key_formats = ("RSA", "DSS", "ECDSA", "Ed25519")
+    for pkey_classname in try_key_formats:
+        pkey_class = getattr(paramiko, f"{pkey_classname}Key", None)
+        if pkey_class is None:
+            log(f"no {pkey_classname} key type")
+            continue
+        log(f"trying to load as {pkey_classname}")
+        try:
+            key = pkey_class.from_private_key_file(keyfile_path)
+            log(f"{keyfile_path!r} as {pkey_classname}: {keymd5(key)}")
+            log.info(f"loaded {pkey_classname} private key from {keyfile_path!r}")
+            return key
+        except PasswordRequiredException as e:
+            log(f"{keyfile_path!r} keyfile requires a passphrase: {e}")
+            passphrase = input_pass(f"please enter the passphrase for {keyfile_path!r}")
+            if not passphrase:
+                continue
+            try:
+                key = pkey_class.from_private_key_file(keyfile_path, passphrase)
+                log.info(f"loaded {pkey_classname} private key from {keyfile_path!r}")
+                return key
+            except SSHException as ke:
+                log("from_private_key_file", exc_info=True)
+                log.info(f"cannot load key from file {keyfile_path}:")
+                for emsg in str(ke).split(". "):
+                    if emsg.startswith("('"):
+                        emsg = emsg[2:]
+                    if emsg.endswith(")."):
+                        emsg = emsg[:-2]
+                    if emsg:
+                        log.info(" %s.", emsg)
+        except Exception:
+            log(f"auth_publickey() loading as {pkey_classname}", exc_info=True)
+            key_data = load_binary_file(keyfile_path)
+            if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY") >= 0:
+                log(" (OpenSSH private key file)")
+    return None
+
+
 if BANNER:
     from paramiko import auth_handler
 
@@ -840,71 +891,23 @@ class AuthenticationManager:
     def auth_publickey(self) -> None:
         log(f"trying public key authentication using {self.keyfiles}")
         for keyfile_path in self.keyfiles:
-            if not os.path.exists(keyfile_path):
-                log(f"no keyfile at {keyfile_path!r}")
-                continue
-            log(f"trying {keyfile_path!r}")
-            key = None
-            import paramiko
-            try_key_formats: Sequence[str] = ()
-            for kf in ("RSA", "DSS", "ECDSA", "Ed25519"):
-                if keyfile_path.lower().endswith(kf.lower()):
-                    try_key_formats = (kf,)
-                    break
-            if not try_key_formats:
-                try_key_formats = ("RSA", "DSS", "ECDSA", "Ed25519")
-            pkey_classname = None
-            for pkey_classname in try_key_formats:
-                pkey_class = getattr(paramiko, f"{pkey_classname}Key", None)
-                if pkey_class is None:
-                    log(f"no {pkey_classname} key type")
-                    continue
-                log(f"trying to load as {pkey_classname}")
-                key = None
-                try:
-                    key = pkey_class.from_private_key_file(keyfile_path)
-                    log.info(f"loaded {pkey_classname} private key from {keyfile_path!r}")
-                    break
-                except PasswordRequiredException as e:
-                    log(f"{keyfile_path!r} keyfile requires a passphrase: {e}")
-                    passphrase = input_pass(f"please enter the passphrase for {keyfile_path!r}")
-                    if passphrase:
-                        try:
-                            key = pkey_class.from_private_key_file(keyfile_path, passphrase)
-                            log.info(f"loaded {pkey_classname} private key from {keyfile_path!r}")
-                        except SSHException as ke:
-                            log("from_private_key_file", exc_info=True)
-                            log.info(f"cannot load key from file {keyfile_path}:")
-                            for emsg in str(ke).split(". "):
-                                if emsg.startswith("('"):
-                                    emsg = emsg[2:]
-                                if emsg.endswith(")."):
-                                    emsg = emsg[:-2]
-                                if emsg:
-                                    log.info(" %s.", emsg)
-                    break
-                except Exception:
-                    log(f"auth_publickey() loading as {pkey_classname}", exc_info=True)
-                    key_data = load_binary_file(keyfile_path)
-                    if key_data and key_data.find(b"BEGIN OPENSSH PRIVATE KEY") >= 0:
-                        log(" (OpenSSH private key file)")
-            if key:
-                log(f"auth_publickey using {keyfile_path!r} as {pkey_classname}: {keymd5(key)}")
-                try:
-                    self.transport.auth_publickey(self.username, key)
-                except SSHException as e:
-                    self.auth_errors.setdefault("key", []).append(str(e))
-                    log(f"key {keyfile_path!r} rejected", exc_info=True)
-                    log.info(f"SSH authentication using key {keyfile_path!r} failed:")
-                    log.info(f" {e}")
-                    if str(e) == PARAMIKO_SESSION_LOST:
-                        # no point in trying more keys
-                        break
-                else:
-                    if self.transport.is_authenticated():
-                        break
-            else:
+            key = load_private_key(keyfile_path)
+            if not key:
                 log.error(f"Error: cannot load private key {keyfile_path!r}")
+                continue
+            log(f"auth_publickey using {keyfile_path!r}: {keymd5(key)}")
+            try:
+                self.transport.auth_publickey(self.username, key)
+                if self.transport.is_authenticated():
+                    return
+            except SSHException as e:
+                self.auth_errors.setdefault("key", []).append(str(e))
+                log(f"key {keyfile_path!r} rejected", exc_info=True)
+                log.info(f"SSH authentication using key {keyfile_path!r} failed:")
+                log.info(f" {e}")
+                if str(e) == PARAMIKO_SESSION_LOST:
+                    # no point in trying more keys
+                    return
 
     def auth_password(self) -> None:
         self.auth_interactive()
