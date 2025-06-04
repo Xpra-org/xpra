@@ -409,7 +409,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         host = safeget("hostname", host)
         username = safeget("user", username)
         port = safeget("port", port)
-        paramiko_config["port"] = port # ensure paramiko_config has the same port
+        paramiko_config["port"] = port  # ensure paramiko_config has the same port
         try:
             port = int(port)
         except (TypeError, ValueError):
@@ -789,7 +789,7 @@ class AuthenticationManager:
         port = self.configint("port", 22)
         host = self.host
         if port != 22:
-            host = f"[{host}]:{port}" # this is how the host is stored in known_hosts for non-standard ports
+            host = f"[{host}]:{port}"  # this is how the host is stored in known_hosts for non-standard ports
         err = verify_hostkey(host, host_key, verifyhostkeydns, stricthostkeychecking, addkey)
         if err:
             self.transport.close()
