@@ -64,7 +64,7 @@ def is_container() -> bool:
     if any(cg.find(pattern) >= 0 for pattern in (b"docker", b"container", )):
         return True
     from xpra.util.env import get_saved_env
-    return bool(get_saved_env().get("container"))
+    return bool(get_saved_env().get("container")) or os.getpid() == 1
 
 
 def is_admin() -> bool:
