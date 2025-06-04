@@ -13,6 +13,8 @@ import tempfile
 
 from collections.abc import Sequence
 
+from xpra.common import BACKWARDS_COMPATIBLE
+
 
 def do_get_desktop_background_paths() -> Sequence[str]:
     return [
@@ -172,19 +174,21 @@ def _get_xpra_runtime_dir() -> str:
 
 def do_get_socket_dirs() -> list[str]:
     SOCKET_DIRS = []
-    runtime_dir = _get_xpra_runtime_dir()
-    if runtime_dir:
-        # private, per user: XDG_RUNTIME_DIR/xpra
-        # (ie: "/run/user/1000/xpra")
-        SOCKET_DIRS.append(runtime_dir)
+    if BACKWARDS_COMPATIBLE:
+        runtime_dir = _get_xpra_runtime_dir()
+        if runtime_dir:
+            # private, per user: XDG_RUNTIME_DIR/xpra
+            # (ie: "/run/user/1000/xpra")
+            SOCKET_DIRS.append(runtime_dir)
     # for shared sockets (the 'xpra' group should own this directory):
     if os.path.exists("/run"):
         SOCKET_DIRS.append("/run/xpra")
     elif os.path.exists("/var/run"):
         SOCKET_DIRS.append("/var/run/xpra")
-    # Debian and Ubuntu often don't create a reliable XDG_RUNTIME_DIR
-    # other distros may not create one when using "su"
-    SOCKET_DIRS.append("~/.xpra")
+    if BACKWARDS_COMPATIBLE:
+        # Debian and Ubuntu often don't create a reliable XDG_RUNTIME_DIR
+        # other distros may not create one when using "su"
+        SOCKET_DIRS.append("~/.xpra")
     return SOCKET_DIRS
 
 
