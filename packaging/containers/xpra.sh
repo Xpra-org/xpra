@@ -48,8 +48,11 @@ buildah run $CONTAINER adduser -u "${TARGET_UID}" -g "${TARGET_GID}" --shell /bi
 buildah run $CONTAINER usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
 buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
 
+# dbus setup
 buildah run $CONTAINER sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/lib/dbus/machine-id"
 buildah copy $CONTAINER allow-all.conf /etc/dbus-1/system.d/
+# just use the system-wide ssl certificate:
+buildah run $CONTAINER sh -c "chmod 644 /etc/xpra/ssl/*.pem"
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
