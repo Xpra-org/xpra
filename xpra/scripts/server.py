@@ -578,10 +578,10 @@ def request_exit(uri: str) -> bool:
 
 def start_dbus():
     ROOT: bool = POSIX and getuid() == 0
-    SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", True)
+    SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", ROOT)
     SYSTEM_DBUS_TIMEOUT = envint("XPRA_SYSTEM_DBUS_TIMEOUT", 5)
     MACHINE_ID = "/var/lib/dbus/machine-id"
-    if ROOT and SYSTEM_DBUS and not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
+    if SYSTEM_DBUS and not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
         if not os.path.exists(MACHINE_ID):
             try:
                 if not os.path.exists("/var/lib"):
@@ -605,10 +605,11 @@ def start_dbus():
 
 
 def start_cupsd():
-    SYSTEM_CUPS = envbool("XPRA_SYSTEM_CUPS", True)
-    SYSTEM_CUPS_SOCKET = "/run/cups/cups.sock"
     ROOT: bool = POSIX and getuid() == 0
-    if ROOT and SYSTEM_CUPS and not os.path.exists(SYSTEM_CUPS_SOCKET):
+    SYSTEM_CUPS = envbool("XPRA_SYSTEM_CUPS", ROOT)
+    SYSTEM_CUPS_TIMEOUT = envint("XPRA_SYSTEM_CUPS_TIMEOUT", 5)
+    SYSTEM_CUPS_SOCKET = "/run/cups/cups.sock"
+    if SYSTEM_CUPS and not wait_for_socket(SYSTEM_CUPS_SOCKET, SYSTEM_CUPS_TIMEOUT):
         if not os.path.exists("/run/cups"):
             os.mkdir("/run/cups", 0o755)
         cupsd = which("cupsd")
@@ -616,7 +617,7 @@ def start_cupsd():
             warn("Warning: unable to launch `cupsd`, command not found")
         else:
             Popen([cupsd]).wait()
-            if not wait_for_socket(SYSTEM_CUPS_SOCKET, 5):
+            if not wait_for_socket(SYSTEM_CUPS_SOCKET, SYSTEM_CUPS_TIMEOUT):
                 warn("cupsd failed to start\n")
             else:
                 warn("started system cupsd daemon\n")
