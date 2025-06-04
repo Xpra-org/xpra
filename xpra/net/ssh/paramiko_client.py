@@ -87,7 +87,8 @@ def get_sha256_fingerprint_for_keyfile(keyfile: str) -> str:
     import hashlib
     if os.path.exists(f"{keyfile}.pub"):
         keyfile = f"{keyfile}.pub"
-    data = open(keyfile).read()
+    with open(keyfile) as f:
+        data = f.read()
     if not data:
         return ""
     if data.startswith("ssh-"):
