@@ -81,6 +81,35 @@ def keymd5(k) -> str:
     return s
 
 
+def get_sha256_fingerprint_for_keyfile(keyfile: str) -> str:
+    import base64
+    import binascii
+    import hashlib
+    if os.path.exists(f"{keyfile}.pub"):
+        keyfile = f"{keyfile}.pub"
+    data = open(keyfile).read()
+    if not data:
+        return ""
+    if data.startswith("ssh-"):
+        data = data.split(" ")[1]
+    digest = hashlib.sha256(binascii.a2b_base64(data)).digest()
+    # the fingerprint skips the padding at the end of the base64 encoded value:
+    encoded = base64.b64encode(digest).rstrip(b'=')
+    return "SHA256:" + encoded.decode("ascii")
+
+
+def get_key_fingerprints(keyfiles: Sequence[str]) -> list[str]:
+    allowed_key_fingerprints: list[str] = []
+    for keyfile in keyfiles:
+        try:
+            fingerprint = get_sha256_fingerprint_for_keyfile(keyfile)
+            if fingerprint:
+                allowed_key_fingerprints.append(fingerprint)
+        except (ValueError, OSError):
+            log.warn(f"Warning: failed to load agent key fingerprint from {keyfile!r}")
+    return allowed_key_fingerprints
+
+
 if BANNER:
     from paramiko import auth_handler
 
@@ -761,13 +790,8 @@ class AuthenticationManager:
             log("auth_none()", exc_info=True)
 
     def auth_agent(self) -> None:
-        from paramiko.agent import Agent, AgentKey
-        allowed_key_fingerprints = []
-        for keyfile in self.keyfiles:
-            try:
-                allowed_key_fingerprints.append(AgentKey.from_path(keyfile).fingerprint)
-            except ValueError:
-                log.warn(f"Warning: failed to load agent key fingerprint from {keyfile!r}")
+        from paramiko.agent import Agent
+        allowed_key_fingerprints = get_key_fingerprints(self.keyfiles)
         agent = Agent()
         all_agent_keys = agent.get_keys()
         log("agent keys: %s", all_agent_keys)
