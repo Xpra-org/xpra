@@ -24,7 +24,7 @@ from xpra.scripts.session import (
     get_session_dir, make_session_dir, session_file_path,
     load_session_file, save_session_file
 )
-from xpra.util.io import info, warn, wait_for_socket
+from xpra.util.io import info, warn, wait_for_socket, which
 from xpra.util.parsing import parse_str_dict
 from xpra.scripts.parsing import fixup_defaults, MODE_ALIAS
 from xpra.scripts.main import (
@@ -57,14 +57,14 @@ from xpra.os_util import (
 from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr
 from xpra.util.io import is_writable, stderr_print
-from xpra.util.env import unsetenv, envbool, osexpand, get_saved_env, get_saved_env_var, source_env
+from xpra.util.env import unsetenv, envbool, envint, osexpand, get_saved_env, get_saved_env_var, source_env
 from xpra.util.child_reaper import getChildReaper
 from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
 SHARED_XAUTHORITY = envbool("XPRA_SHARED_XAUTHORITY", True)
 PROGRESS_TO_STDERR = envbool("XPRA_PROGRESS_TO_STDERR", False)
-SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", True)
+SYSTEM_DBUS_SOCKET = "/run/dbus/system_bus_socket"
 
 
 def get_logger():
@@ -576,6 +576,52 @@ def request_exit(uri: str) -> bool:
     return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
 
+def start_dbus():
+    ROOT: bool = POSIX and getuid() == 0
+    SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", True)
+    SYSTEM_DBUS_TIMEOUT = envint("XPRA_SYSTEM_DBUS_TIMEOUT", 5)
+    MACHINE_ID = "/var/lib/dbus/machine-id"
+    if ROOT and SYSTEM_DBUS and not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
+        if not os.path.exists(MACHINE_ID):
+            try:
+                if not os.path.exists("/var/lib"):
+                    os.mkdir("/var/lib", 0o755)
+                if not os.path.exists("/var/lib/dbus"):
+                    os.mkdir("/var/lib/dbus", 0o755)
+                import uuid
+                machine_id = uuid.uuid4().hex
+                with open(MACHINE_ID, "w") as f:
+                    f.write(machine_id)
+                warn(f"initialized dbus machine_id {machine_id}\n")
+            except OSError as e:
+                warn(f"unable to create machine_id: {e}\n")
+        if not os.path.exists("/run/dbus"):
+            os.mkdir("/run/dbus", 0o755)
+        Popen(["dbus-daemon", "--system", "--fork"]).wait()
+        if not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
+            warn("dbus-daemon failed to start\n")
+        else:
+            warn("started system dbus daemon\n")
+
+
+def start_cupsd():
+    SYSTEM_CUPS = envbool("XPRA_SYSTEM_CUPS", True)
+    SYSTEM_CUPS_SOCKET = "/run/cups/cups.sock"
+    ROOT: bool = POSIX and getuid() == 0
+    if ROOT and SYSTEM_CUPS and not os.path.exists(SYSTEM_CUPS_SOCKET):
+        if not os.path.exists("/run/cups"):
+            os.mkdir("/run/cups", 0o755)
+        cupsd = which("cupsd")
+        if not cupsd:
+            warn("Warning: unable to launch `cupsd`, command not found")
+        else:
+            Popen([cupsd]).wait()
+            if not wait_for_socket(SYSTEM_CUPS_SOCKET, 5):
+                warn("cupsd failed to start\n")
+            else:
+                warn("started system cupsd daemon\n")
+
+
 def do_run_server(script_file: str, cmdline, error_cb, opts, extra_args, full_mode: str,
                   display_name: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
@@ -785,34 +831,15 @@ def _do_run_server(script_file: str, cmdline,
     ROOT: bool = POSIX and getuid() == 0
     if POSIX and uid and not gid:
         gid = find_group(uid)
-    stdout = sys.stdout
-    stderr = sys.stderr
     protected_env = {}
 
-    SYSTEM_DBUS_SOCKET = "/run/dbus/system_bus_socket"
-    if ROOT and SYSTEM_DBUS and opts.dbus and not os.path.exists(SYSTEM_DBUS_SOCKET):
-        if not os.path.exists("/var/lib/dbus/machine-id"):
-            try:
-                if not os.path.exists("/var/lib"):
-                    os.mkdir("/var/lib", 0o755)
-                if not os.path.exists("/var/lib/dbus"):
-                    os.mkdir("/var/lib/dbus", 0o755)
-                import uuid
-                machine_id = uuid.uuid4().hex
-                with open("/var/lib/dbus/machine-id", "w") as f:
-                    f.write(machine_id)
-                stderr.write(f"initialized dbus machine_id {machine_id}\n")
-            except OSError as e:
-                stderr.write(f"unable to create machine_id: {e}\n")
-        if not os.path.exists("/run/dbus"):
-            os.mkdir("/run/dbus", 0o755)
-        Popen(["dbus-daemon", "--system", "--fork"]).wait()
-        stderr.write("started system dbus daemon\n")
-        if not wait_for_socket(SYSTEM_DBUS_SOCKET, 5):
-            warn("dbus-daemon failed to start")
-        # wait for socket!
+    if opts.dbus:
+        start_dbus()
         os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
         protected_env["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
+
+    if opts.printing:
+        start_cupsd()
 
     def write_session_file(filename: str, contents) -> str:
         return save_session_file(filename, contents, uid, gid)
@@ -824,6 +851,8 @@ def _do_run_server(script_file: str, cmdline,
             opts.password_file = tuple(os.path.abspath(x) for x in opts.password_file)
         daemonize()
 
+    stdout = sys.stdout
+    stderr = sys.stderr
     displayfd = 0
     if POSIX and opts.displayfd:
         try:
