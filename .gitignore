@@ -84,6 +84,10 @@ packaging/debian/xpra/xpra-client-gtk3
 packaging/debian/xpra/xpra-codecs
 packaging/debian/xpra/xpra-codecs-nvidia
 packaging/debian/xpra/xpra-server
+packaging/debian/winbar/debhelper-build-stamp
+packaging/debian/winbar/files
+packaging/debian/winbar/winbar.substvars
+packaging/debian/winbar/winbar
 
 # generated during the tests:
 tests/unittests/test-file*
