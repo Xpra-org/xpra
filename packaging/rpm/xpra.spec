@@ -895,7 +895,11 @@ restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
 
 %post -n %{package_prefix}-server
 %{python3} /usr/bin/xpra setup-ssl > /dev/null
+# if the firewall config does not exist,
+# don't bother trying to update the firewall
+# this happens in container setups
 %if 0%{update_firewall}
+if [ -e "/etc/sysconfig/system-config-firewall" ]; then
 ZONE=`firewall-offline-cmd --get-default-zone 2> /dev/null`
 if [ ! -z "${ZONE}" ]; then
 	set +e
@@ -919,7 +923,10 @@ if [ ! -z "${ZONE}" ]; then
 	fi
 	set -e
 fi
+fi
 %endif
+# if systemd is not running, skip socket / udev / dbus:
+if [ -e "/run/systemd/system"]; then
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -eq 1 ]; then
 	/bin/systemctl enable xpra.socket >/dev/null 2>&1 || :
@@ -933,6 +940,7 @@ if [ -e "/bin/udevadm" ]; then
 fi
 #reload dbus to get our new policy:
 systemctl reload dbus
+fi
 
 %preun -n %{package_prefix}-server
 if [ $1 -eq 0 ] ; then
