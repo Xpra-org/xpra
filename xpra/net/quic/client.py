@@ -31,7 +31,7 @@ from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net.bytestreams import pretty_socket
 from xpra.net.socket_util import create_udp_socket
-from xpra.net.ssl_util import get_ssl_verify_mode
+from xpra.net.ssl_util import parse_ssl_verify_mode
 from xpra.net.quic.connection import XpraQuicConnection, aioquic_version_info
 from xpra.net.quic.asyncio_thread import get_threaded_loop
 from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers
@@ -222,7 +222,7 @@ def quic_connect(host: str, port: int, path: str,
         is_client=True,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
     )
-    configuration.verify_mode = get_ssl_verify_mode(ssl_server_verify_mode)
+    configuration.verify_mode = parse_ssl_verify_mode(ssl_server_verify_mode)
     if ssl_ca_certs:
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:
