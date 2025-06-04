@@ -523,7 +523,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_skip_pager_hint(skip_pager)
 
     def set_opaque_region(self, rectangles: tuple | None) -> None:
-        pass
+        pass  # see gtk client window base
 
     def set_iconic(self, iconified: bool) -> None:
         if self._iconified != iconified:

@@ -2822,10 +2822,9 @@ def stat_display_socket(socket_path: str, timeout=VERIFY_SOCKET_TIMEOUT) -> dict
         if not stat.S_ISSOCK(sstat.st_mode):
             warn(f"display path {socket_path!r} is not a socket!")
             return {}
-        if timeout > 0:
-            if not wait_for_socket(socket_path, timeout):
-                # warn(f"Error trying to connect to {socket_path!r}: {e}")
-                return {}
+        if timeout > 0 and not wait_for_socket(socket_path, timeout):
+            # warn(f"Error trying to connect to {socket_path!r}: {e}")
+            return {}
         return {
             "uid": sstat.st_uid,
             "gid": sstat.st_gid,
