@@ -202,26 +202,11 @@ def upnp_add(socktype: str, info, options):
         }
         log("%s%s", add, kwargs)
         add(**kwargs)
-        # UPNP_INFO = ("GetConnectionTypeInfo", "GetStatusInfo", "GetNATRSIPStatus")
-        UPNP_INFO = ("GetConnectionTypeInfo", "GetStatusInfo")
-        for action_name in UPNP_INFO:
-            action = get_action(service, action_name)
-            if action:
-                try:
-                    r = action()
-                    log("%s=%s", action_name, r)
-                except Exception:
-                    log("%s", action, exc_info=True)
-        getip = get_action(service, "GetExternalIPAddress")
-        if getip:
-            try:
-                reply = getip()
-                ip = (reply or {}).get("NewExternalIPAddress")
-                if ip:
-                    log.info("UPnP port mapping added for %s:%s", ip, external_port)
-                    options["upnp-address"] = (ip, external_port)
-            except Exception:
-                log("%s", getip, exc_info=True)
+        log_upnp_info(service)
+        external_ip = get_new_service_ip(service)
+        if external_ip:
+            log.info("UPnP port mapping added for %s:%s", external_ip, external_port)
+            options["upnp-address"] = (external_ip, external_port)
 
         def cleanup() -> None:
             try:
@@ -232,7 +217,7 @@ def upnp_add(socktype: str, info, options):
                 }
                 log("%s%s", delete, kwargs)
                 delete(**kwargs)
-                log.info("UPnP port mapping removed for %s:%s", ip, external_port)
+                log.info("UPnP port mapping removed for %s:%s", external_ip, external_port)
             except Exception as e:
                 log("%s", delete, exc_info=True)
                 log.error("Error removing port UPnP port mapping")
@@ -251,3 +236,30 @@ def get_action(service, action_name: str):
         if action.name == action_name:
             return action
     return None
+
+
+def log_upnp_info(service) -> None:
+    # UPNP_INFO = ("GetConnectionTypeInfo", "GetStatusInfo", "GetNATRSIPStatus")
+    UPNP_INFO = ("GetConnectionTypeInfo", "GetStatusInfo")
+    for action_name in UPNP_INFO:
+        action = get_action(service, action_name)
+        if action:
+            try:
+                r = action()
+                log("%s=%s", action_name, r)
+            except Exception:
+                log("%s", action, exc_info=True)
+
+
+def get_new_service_ip(service) -> str:
+    getip = get_action(service, "GetExternalIPAddress")
+    if not getip:
+        return ""
+    try:
+        reply = getip()
+        ip = (reply or {}).get("NewExternalIPAddress")
+        if ip:
+            return ip
+    except Exception:
+        log("%s", getip, exc_info=True)
+    return ""
