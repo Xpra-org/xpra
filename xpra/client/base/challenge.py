@@ -12,7 +12,7 @@ from xpra.client.base.stub import StubClientMixin
 from xpra.scripts.config import InitExit
 from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
 from xpra.net.common import Packet
-from xpra.common import ConnectionMessage
+from xpra.common import ConnectionMessage, noop
 from xpra.util.io import use_gui_prompt
 from xpra.util.env import envbool
 from xpra.util.parsing import parse_simple_dict
@@ -145,6 +145,9 @@ class ChallengeClient(StubClientMixin):
         log(f"processing challenge: {packet[1:]}")
         if not self.validate_challenge_packet(packet):
             return
+        # soft dependency on base client:
+        cancel_vct = getattr(self, "cancel_verify_connected_timer", noop)
+        cancel_vct()
         start_thread(self.do_process_challenge, "call-challenge-handlers", True, (packet,))
 
     def do_process_challenge(self, packet: Packet) -> None:

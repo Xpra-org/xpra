@@ -97,6 +97,7 @@ class XpraClientBase(ClientBaseClass):
         self.display = None
         self.server_client_shutdown = True
         self.server_compressors = []
+        self.verify_connected_timer = 0
         # protocol stuff:
         self._protocol = None
         self._priority_packets: list[Packet] = []
@@ -230,8 +231,6 @@ class XpraClientBase(ClientBaseClass):
             protocol.enable_default_encoder()
             protocol.enable_default_compressor()
         self.have_more = protocol.source_has_more
-        if conn.timeout > 0:
-            GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
         process = getattr(conn, "process", None)  # ie: ssh is handled by another process
         if process:
             proc, name, command = process
@@ -240,6 +239,18 @@ class XpraClientBase(ClientBaseClass):
         netlog("setup_connection(%s) protocol=%s", conn, protocol)
         self.setup_connection(conn)
         return protocol
+
+    def cancel_verify_connected_timer(self):
+        vct = self.verify_connected_timer
+        if vct:
+            self.verify_connected_timer = 0
+            GLib.source_remove(vct)
+
+    def schedule_verify_connected(self):
+        conn = getattr(self._protocol, "_conn", None)
+        if not conn:
+            return
+        self.verify_connected_timer = GLib.timeout_add((conn.timeout + EXTRA_TIMEOUT) * 1000, self.verify_connected)
 
     def setup_connection(self, conn) -> None:
         for bc in CLIENT_BASES:
@@ -279,6 +290,8 @@ class XpraClientBase(ClientBaseClass):
             netlog.info("sending hello:")
             print_nested_dict(hello, print_fn=netlog.info)
         self.send("hello", hello)
+        self.cancel_verify_connected_timer()
+        self.schedule_verify_connected()
 
     def verify_connected(self) -> None:
         if not self.connection_established:
@@ -379,6 +392,7 @@ class XpraClientBase(ClientBaseClass):
         for bc in CLIENT_BASES:
             with log.trap_error(f"Error cleaning {bc!r} handler"):
                 bc.cleanup(self)
+        self.cancel_verify_connected_timer()
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
         if p:
@@ -487,6 +501,7 @@ class XpraClientBase(ClientBaseClass):
             if not self.server_connection_established(caps):
                 self.warn_and_quit(ExitCode.FAILURE, "failed to establish connection")
             else:
+                self.cancel_verify_connected_timer()
                 self.connection_established = True
         except Exception as e:
             netlog.error("Error processing hello packet from server", exc_info=True)
