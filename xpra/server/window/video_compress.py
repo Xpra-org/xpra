@@ -2332,7 +2332,7 @@ class WindowVideoSource(WindowSource):
                 if not ret:
                     scrolllog("no result for %s encoding of %s with options %s", encoding, sub, options)
                     # cancelled?
-                    return None
+                    return
                 coding, data, client_options, outw, outh, outstride, _ = ret
                 if not data:
                     raise RuntimeError(f"no data from {encoding} function {encode_fn}")
