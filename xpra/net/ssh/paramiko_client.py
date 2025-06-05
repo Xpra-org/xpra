@@ -400,7 +400,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
         keyfile = paramiko_config.get(config_name, "")
         if keyfile:
             keyfiles.insert(0, keyfile)
-        if not configbool("identitiesonly"):
+        if not configbool("identitiesonly", False):
             keyfiles += get_default_keyfiles()
         return keyfiles
 
@@ -559,7 +559,7 @@ def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[st
     if auth_str:
         return auth_str.split("+")
     auth = []
-    identitiesonly = configbool("identitiesonly")
+    identitiesonly = configbool("identitiesonly", False)
     if not identitiesonly:
         if configbool("noneauthentication", NONE_AUTH):
             auth.append("none")
@@ -783,7 +783,7 @@ class AuthenticationManager:
         return int(v)
 
     def verify_hostkey(self, host_key):
-        verifyhostkeydns = self.configbool("verifyhostkeydns")
+        verifyhostkeydns = self.configbool("verifyhostkeydns", True)
         stricthostkeychecking = self.configbool("stricthostkeychecking", VERIFY_STRICT)
         addkey = self.configbool("addkey", ADD_KEY)
         port = self.configint("port", 22)
@@ -855,7 +855,7 @@ class AuthenticationManager:
         log("allowed key fingerprints: %s", allowed_key_fingerprints)
         agent_keys = [x for x in all_agent_keys if x.fingerprint in allowed_key_fingerprints]
         log("agent keys matching fingerprints: %s", agent_keys)
-        if not self.configbool("identitiesonly"):
+        if not self.configbool("identitiesonly", False):
             for agent_key in all_agent_keys:
                 if agent_key not in agent_keys:
                     agent_keys.append(agent_key)
