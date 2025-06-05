@@ -5,7 +5,6 @@
 
 import socket
 from typing import Any
-from collections.abc import Sequence
 
 from xpra.util.str_fn import csv
 
@@ -75,6 +74,78 @@ def resolve_internal_host() -> str:
     return internal_host
 
 
+def find_device(upnp, value: str):
+    try:
+        devices = upnp.discover()
+    except Exception as e:
+        log("discover()", exc_info=True)
+        raise ValueError(f"error discovering devices: {e}")
+    if devices:
+        log("find_device found %i devices:", len(devices))
+        for device in devices:
+            log(f" * {device!r}")
+    if value == "igd":
+        try:
+            device = upnp.get_igd()
+            if not device:
+                raise ValueError("no igd device found")
+            log("using IGD device %s", device)
+        except Exception as e:
+            raise ValueError(f"upnp failed to query igd device: {e}")
+    else:
+        try:
+            # the device could be given as an index:
+            no = int(value)
+            try:
+                device = devices[no]
+                log("using device %i: %s", no, device)
+            except IndexError:
+                return ValueError(f"no device number {no}, only {len(devices)} devices found")
+        except ValueError:
+            # try using the value as a device name:
+            device = getattr(upnp, value, None)
+            if device is None:
+                return ValueError(f"device name {value!r} not found")
+            log("using device %s", device)
+    log("device: %s", device.get_friendly_name())
+    log("device address: %s", device.address)
+    return device
+
+
+def find_service(device, value: str):
+    services = device.get_services()
+    if not services:
+        return ValueError("device %r does not have any services" % device)
+    log("services=%s", csv(services))
+    if value:
+        try:
+            # the service could be given as an index:
+            no = int(value)
+            try:
+                service = services[no]
+                log("using service %i: %s", no, service)
+                return service
+            except IndexError:
+                raise ValueError("no service number %i on device %s" % (no, device),
+                                 "%i services found" % len(services))
+        except ValueError:
+            # find the service by id
+            matches = [v for v in services if v.id.split(":")[-1] == value]
+            if len(matches) > 1:
+                return ValueError(f"more than one service matches {value!r}")
+            if len(matches) != 1:
+                return ValueError(f"service {value!r} not found on {device}")
+            service = matches[0]
+            log("using service %s", service)
+            return service
+    # find the service with a "AddPortMapping" action:
+    for service in services:
+        if get_action(service, "AddPortMapping"):
+            log("found a service with `AddPortMapping` function: %s", service)
+            return service
+    raise ValueError("device %r does not have a service with a port mapping action" % device)
+
+
 def upnp_add(socktype: str, info, options: dict):
     log("upnp_add%s", (socktype, info, options))
 
@@ -106,43 +177,12 @@ def upnp_add(socktype: str, info, options: dict):
     try:
         upnp = upnpy.UPnP()
         log("upnp=%s", upnp)
-        # find the device to use:
         try:
-            devices = upnp.discover()
-        except Exception as e:
-            log("discover()", exc_info=True)
-            return err("error discovering devices", e)
-        d = options.get("upnp-device", "igd")
-        if d == "igd":
-            try:
-                device = upnp.get_igd()
-                log("using IGD device %s", device)
-            except Exception as e:
-                dstr: Sequence[str] = ()
-                if devices:
-                    dstr = (
-                        "%i devices:" % len(devices),
-                        ": %s" % devices,
-                    )
-                return err(e, *dstr)
-        else:
-            try:
-                # the device could be given as an index:
-                no = int(d)
-                try:
-                    device = devices[no]
-                except IndexError:
-                    return err("no device number %i" % no,
-                               "%i devices found" % len(devices))
-                log("using device %i: %s", no, device)
-            except ValueError:
-                # try using the value as a device name:
-                device = getattr(upnp, d, None)
-                if device is None:
-                    return err("device name '%s' not found" % d)
-                log("using device %s", device)
-        log("device: %s", device.get_friendly_name())
-        log("device address: %s", device.address)
+            value = options.get("upnp-device", "igd")
+            device = find_device(upnp, value)
+        except ValueError as e:
+            return err(str(e))
+
         if internal_host in ("0.0.0.0", "::/0", "::"):
             # we need to figure out the specific IP
             # which is connected to this device
@@ -151,40 +191,11 @@ def upnp_add(socktype: str, info, options: dict):
             except ValueError as e:
                 return err(str(e))
 
-        # find the service:
-        services = device.get_services()
-        if not services:
-            return err("device %s does not have any services" % device)
-        log("services=%s", csv(services))
-        s = options.get("upnp-service", "")
-        if s:
-            try:
-                # the service could be given as an index:
-                no = int(s)
-                try:
-                    service = services[no]
-                except IndexError:
-                    return err("no service number %i on device %s" % (no, device),
-                               "%i services found" % len(services))
-                log("using service %i: %s", no, service)
-            except ValueError:
-                # find the service by id
-                matches = [v for v in services if v.id.split(":")[-1] == s]
-                if len(matches) > 1:
-                    return err(f"more than one service matches {s!r}")
-                if len(matches) != 1:
-                    return err(f"service {s!r} not found on {device}")
-                service = matches[0]
-                log("using service %s", service)
-        else:
-            # find the service with a "AddPortMapping" action:
-            service = None
-            for v in services:
-                if get_action(v, "AddPortMapping"):
-                    service = v
-                    break
-            if not service:
-                return err("device %s does not have a service with a port mapping action" % device)
+        try:
+            value = options.get("upnp-service", "")
+            service = find_service(device, value)
+        except ValueError as e:
+            return err(str(e))
         add = get_action(service, "AddPortMapping")
         delete = get_action(service, "DeletePortMapping")
         if not add:
