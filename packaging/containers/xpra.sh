@@ -54,6 +54,9 @@ buildah copy $CONTAINER allow-all.conf /etc/dbus-1/system.d/
 # just use the system-wide ssl certificate:
 buildah run $CONTAINER sh -c "chmod 644 /etc/xpra/ssl/*.pem"
 
+# save space:
+buildah run $CONTAINER rm -fr /var/cache/*dnf*
+
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
 buildah config --entrypoint "/usr/bin/xpra seamless --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=auto --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
