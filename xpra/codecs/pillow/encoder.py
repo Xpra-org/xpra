@@ -82,6 +82,24 @@ def get_info() -> dict[str, Any]:
     }
 
 
+def get_resample_filter(speed: int):
+    if speed >= 95:
+        return NEAREST
+    if speed > 80:
+        return BILINEAR
+    if speed >= 30:
+        return BICUBIC
+    return LANCZOS
+
+
+# convert to simple on or off mask:
+# set all pixel values below 128 to 255, and the rest to 0
+def alpha_mask_value(a: int) -> int:
+    # without branch, same as:
+    # return 255 if a <= 128 else 0
+    return int(a <= 128) * 255
+
+
 def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
     if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
         raise ValueError(f"unsupported encoding: {coding!r}")
@@ -188,15 +206,8 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
     scaled_width = options.intget("scaled-width", w)
     scaled_height = options.intget("scaled-height", h)
     client_options: dict[str, Any] = {}
-    if scaled_width != w or scaled_height != h:
-        if speed >= 95:
-            resample = NEAREST
-        elif speed > 80:
-            resample = BILINEAR
-        elif speed >= 30:
-            resample = BICUBIC
-        else:
-            resample = LANCZOS
+    if (scaled_width, scaled_height) != (w, h):
+        resample = get_resample_filter(speed)
         im = im.resize((scaled_width, scaled_height), resample=resample)
         client_options["resample"] = getattr(resample, "name", str(resample))
     if coding in ("jpeg", "webp"):
@@ -225,16 +236,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
             # we use the last channel because we know it is RGBA,
             # otherwise we should do: alpha_index= image.getbands().index('A')
             alpha = im.split()[-1]
-
-            # convert to simple on or off mask:
-            # set all pixel values below 128 to 255, and the rest to 0
-
-            def mask_value(a) -> int:
-                # without branch, same as:
-                # return 255 if a <= 128 else 0
-                return int(a <= 128) * 255
-
-            mask = Image.eval(alpha, mask_value)
+            mask = Image.eval(alpha, alpha_mask_value)
         else:
             # no transparency
             mask = None
