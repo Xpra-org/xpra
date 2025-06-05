@@ -75,7 +75,7 @@ def resolve_internal_host() -> str:
     return internal_host
 
 
-def upnp_add(socktype: str, info, options):
+def upnp_add(socktype: str, info, options: dict):
     log("upnp_add%s", (socktype, info, options))
 
     def err(*msgs) -> None:
@@ -95,14 +95,15 @@ def upnp_add(socktype: str, info, options):
         import upnpy
     except ImportError as e:
         return err(e)
-    try:
-        # prepare the port mapping attributes early:
-        # (in case this causes errors)
-        remote_host = options.get("upnp-remote-host", "")
-        external_port = int(options.get("upnp-external-port", internal_port))
-        protocol = "TCP"
-        duration = int(options.get("upnp-duration", 600))
 
+    # prepare the port mapping attributes early:
+    # (in case this causes errors)
+    remote_host = options.get("upnp-remote-host", "")
+    external_port = int(options.get("upnp-external-port", internal_port))
+    protocol = "TCP"
+    duration = int(options.get("upnp-duration", 600))
+
+    try:
         upnp = upnpy.UPnP()
         log("upnp=%s", upnp)
         # find the device to use:
@@ -209,25 +210,34 @@ def upnp_add(socktype: str, info, options):
             options["upnp-address"] = (external_ip, external_port)
 
         def cleanup() -> None:
-            try:
-                kwargs: dict[str, Any] = {
-                    "NewRemoteHost": remote_host,
-                    "NewExternalPort": external_port,
-                    "NewProtocol": protocol,
-                }
-                log("%s%s", delete, kwargs)
-                delete(**kwargs)
-                log.info("UPnP port mapping removed for %s:%s", external_ip, external_port)
-            except Exception as e:
-                log("%s", delete, exc_info=True)
-                log.error("Error removing port UPnP port mapping")
-                log.error(" for external port %i,", external_port)
-                log.error(" internal port %i (%s):", internal_port, socktype)
-                log.estr(e)
-
+            delete_service(service, protocol, socktype,
+                           internal_port,
+                           external_ip, external_port, remote_host)
         return cleanup
     except Exception as e:
         return err(e)
+
+
+def delete_service(service, protocol: str, socktype: str,
+                   internal_port: int,
+                   external_ip: str, external_port: int, remote_host: str) -> None:
+    delete = get_action(service, "DeletePortMapping")
+    assert delete, "cannot find delete action"
+    try:
+        kwargs: dict[str, Any] = {
+            "NewRemoteHost": remote_host,
+            "NewExternalPort": external_port,
+            "NewProtocol": protocol,
+        }
+        log("%s%s", delete, kwargs)
+        delete(**kwargs)
+        log.info("UPnP port mapping removed for %s:%s", external_ip, external_port)
+    except Exception as e:
+        log("%s", delete, exc_info=True)
+        log.error("Error removing port UPnP port mapping")
+        log.error(" for external port %i,", external_port)
+        log.error(" internal port %i (%s):", internal_port, socktype)
+        log.estr(e)
 
 
 def get_action(service, action_name: str):
