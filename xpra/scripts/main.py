@@ -1423,12 +1423,13 @@ def connect_to(display_desc: dict[str, Any], opts, debug_cb=noop, ssh_fail_cb=no
         ssl_key_password = ssl_options.get("key-password", opts.ssl_key_password)
         ssl_server_name = ssl_options.get("server-hostname")
         try:
-            from xpra.net.quic.client import quic_connect
+            from xpra.net.quic.client import quic_connect, FAST_OPEN
             import aioquic
             assert aioquic
         except ImportError as e:
             raise InitExit(ExitCode.SOCKET_CREATION_ERROR, f"cannot use quic sockets: {e}") from None
-        conn = quic_connect(host, port, path,
+        fast_open = display_desc.get("fast-open", FAST_OPEN)
+        conn = quic_connect(host, port, path, fast_open,
                             ssl_cert, ssl_key, ssl_key_password,
                             ssl_ca_certs, ssl_server_verify_mode, ssl_server_name)
         return conn

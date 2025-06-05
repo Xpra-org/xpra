@@ -46,7 +46,7 @@ HttpConnection = Union[H0Connection, H3Connection]
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 HOSTS_PREFER_IPV4 = os.environ.get("XPRA_HOSTS_PREFER_IPV4", "localhost,127.0.0.1").split(",")
-FAST_OPEN = envbool("XPRA_QUIC_FAST_OPEN", aioquic_version_info>=(1, 2))
+FAST_OPEN = envbool("XPRA_QUIC_FAST_OPEN", aioquic_version_info >= (1, 2))
 
 WS_HEADERS: dict[str, str] = {
     ":method": "CONNECT",
@@ -214,7 +214,7 @@ async def get_address_options(host: str, port: int) -> tuple:
     return tuple(infos)
 
 
-def quic_connect(host: str, port: int, path: str,
+def quic_connect(host: str, port: int, path: str, fast_open: bool,
                  ssl_cert: str, ssl_key: str, ssl_key_password: str,
                  ssl_ca_certs, ssl_server_verify_mode: str, ssl_server_name: str):
     configuration = QuicConfiguration(
@@ -262,14 +262,14 @@ def quic_connect(host: str, port: int, path: str,
         log(f"{transport=}, {protocol=}")
         protocol = cast(QuicConnectionProtocol, protocol)
         addr = addr_info[4]  # ie: ('192.168.0.10', 10000)
-        log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)} with {FAST_OPEN=}")
-        if FAST_OPEN:
+        log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)} with {fast_open=}")
+        if fast_open:
             protocol.connect(addr, transmit=False)
         else:
             protocol.connect(addr)
         log("awaiting connected state")
         try:
-            if not FAST_OPEN:
+            if not fast_open:
                 await protocol.wait_connected()
             log(f"{protocol}.open({host!r}, {port}, {path!r})")
             conn = protocol.open(host, port, path)
