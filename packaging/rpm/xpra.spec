@@ -926,7 +926,7 @@ fi
 fi
 %endif
 # if systemd is not running, skip socket / udev / dbus:
-if [ -e "/run/systemd/system"]; then
+if [ -e "/run/systemd/system" ]; then
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -eq 1 ]; then
 	/bin/systemctl enable xpra.socket >/dev/null 2>&1 || :
