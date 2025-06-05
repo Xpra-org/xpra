@@ -214,7 +214,9 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         UIXpraClient.run(self)
         self.gtk_main()
         log(f"GTKXpraClient.run_main_loop() main loop ended, returning exit_code={self.exit_code}", )
-        return self.exit_code or ExitCode.OK
+        if self.exit_code is not None:
+            return self.exit_code
+        return ExitCode.OK
 
     def gtk_main(self) -> None:
         log(f"GTKXpraClient.gtk_main() calling {Gtk.main}", )
