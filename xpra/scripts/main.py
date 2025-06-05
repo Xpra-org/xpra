@@ -942,6 +942,11 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         return run_setting(False, args)
     if mode != "help":
         print(f"Invalid subcommand {mode!r}")
+        from difflib import get_close_matches
+        modes = tuple(usage.split(" ")[0] for usage in get_usage())
+        matches = get_close_matches(mode, modes)
+        if matches and len(matches) < 3:
+            print(" did you mean %s?" % " or ".join(f"`xpra {match}`" for match in matches))
     return run_help(script_file)
 
 
