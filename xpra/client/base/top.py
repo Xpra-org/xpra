@@ -574,7 +574,7 @@ class TopSessionClient(InfoTimerClient):
             if height <= 5:
                 return
             hpos = 5
-            gl_info = self.get_gl_info()
+            gl_info = self.get_gl_info(self.slidictget("display").dictget("opengl"))
             if gl_info:
                 addstr_main(5, 0, gl_info)
                 hpos += 1
@@ -844,9 +844,7 @@ class TopSessionClient(InfoTimerClient):
             return "av-sync: disabled by client"
         return "av-sync: enabled - video delay: %ims" % (avsi.intget("total", 0))
 
-    def get_gl_info(self) -> str:
-        display_info = self.slidictget("display")
-        gli = display_info.dictget("opengl")
+    def get_gl_info(self, gli: dict) -> str:
         if not gli:
             return ""
         gli = self.td(gli)
