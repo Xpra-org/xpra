@@ -777,7 +777,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             ss.pointer_ungrab(grab_id)
 
     def _initiate_moveresize(self, window, event) -> None:
-        log("initiate_moveresize(%s, %s)", window, event)
+        windowlog("initiate_moveresize(%s, %s)", window, event)
         assert len(event.data) == 5
         # x_root, y_root, direction, button, source_indication = event.data
         wid = self._window_to_id[window]
