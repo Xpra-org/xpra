@@ -271,6 +271,9 @@ def quic_connect(host: str, port: int, path: str, fast_open: bool,
         try:
             if not fast_open:
                 await protocol.wait_connected()
+            else:
+                from xpra.scripts.main import CONNECT_TIMEOUT
+                tl.call_later(CONNECT_TIMEOUT, verify_connected, protocol)
             log(f"{protocol}.open({host!r}, {port}, {path!r})")
             conn = protocol.open(host, port, path)
             log(f"websocket connection {conn}")
@@ -310,3 +313,10 @@ def quic_connect(host: str, port: int, path: str, fast_open: bool,
             if estr not in errors:
                 errors.append(estr)
     raise InitExit(ExitCode.CONNECTION_FAILED, "failed to connect: " + csv(errors))
+
+
+def verify_connected(protocol) -> None:
+    # this is only useful for debugging,
+    # as we have no way to send a message to the main thread,
+    # I guess it may still show up in some debug log?
+    log("verify_connect(%s) connected=%s", protocol, protocol._connected)

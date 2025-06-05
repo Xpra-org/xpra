@@ -67,6 +67,12 @@ class ThreadedAsyncioLoop:
         if self.loop is None:
             raise RuntimeError("no asyncio main loop")
 
+    def call_later(self, timeout: int, f: Callable, *args):
+        log(f"call_later({f})")
+        if not self.loop:
+            raise RuntimeError("no main loop")
+        return self.loop.call_later(timeout, f, *args)
+
     def call(self, f: Callable | Coroutine | Generator) -> None:
         log(f"call({f})")
         if not self.loop:
