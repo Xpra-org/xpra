@@ -101,13 +101,17 @@ def get_sha256_fingerprint_for_keyfile(keyfile: str) -> str:
 
 def get_key_fingerprints(keyfiles: Sequence[str]) -> list[str]:
     allowed_key_fingerprints: list[str] = []
+    failed: dict[str, str] = {}
     for keyfile in keyfiles:
         try:
             fingerprint = get_sha256_fingerprint_for_keyfile(keyfile)
             if fingerprint:
                 allowed_key_fingerprints.append(fingerprint)
-        except (ValueError, OSError):
-            log.warn(f"Warning: failed to load agent key fingerprint from {keyfile!r}")
+        except (ValueError, OSError) as e:
+            log(f"failed to load agent key fingerprint from {keyfile!r}: {e}")
+            failed[keyfile] = str(e)
+    if failed:
+        log.info("unable to load key fingerprints for %s", csv(failed.keys()))
     return allowed_key_fingerprints
 
 
