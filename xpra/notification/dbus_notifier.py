@@ -87,12 +87,16 @@ class DBUS_Notifier(NotifierBase):
                 log("NotifyReply(%s) for nid=%i", notification_id, nid)
                 self.actual_notification_id[int(nid)] = int(notification_id)
 
+            def NotifyError(dbus_error, *args) -> bool:
+                log("NotifyError(%s, %s) for nid=%i", dbus_error, args, nid)
+                return self.NotifyError(nid, dbus_error)
+
             dbus_hints = self.parse_hints(hints)
             log("calling %s%s", self.dbusnotify.Notify,
                 (app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout))
             self.dbusnotify.Notify(app_str, 0, icon_string, summary, body, actions, dbus_hints, timeout,
                                    reply_handler=NotifyReply,
-                                   error_handler=self.NotifyError)
+                                   error_handler=NotifyError)
 
     def _find_nid(self, actual_id) -> int:
         aid = int(actual_id)
@@ -150,8 +154,9 @@ class DBUS_Notifier(NotifierBase):
         log("ActionInvoked(%s, %s) nid=%s", actual_id, action, nid)
         if nid and self.action_cb:
             self.action_cb(nid, str(action))
+        self.clean_notification(nid)
 
-    def NotifyError(self, dbus_error, *_args) -> bool:
+    def NotifyError(self, nid: NID, dbus_error) -> bool:
         if not self.dbusnotify:
             return False
         try:
@@ -160,11 +165,13 @@ class DBUS_Notifier(NotifierBase):
                 dbus_error_name = dbus_error.get_dbus_name()
                 if dbus_error_name != "org.freedesktop.DBus.Error.ServiceUnknown":
                     log.error("unhandled dbus exception: %s, %s", message, dbus_error_name)
+                    self.clean_notification(nid)
                     return False
 
                 if not self.may_retry:
                     log.error("Error: cannot send notification via dbus,")
                     log.error(" check that you notification service is operating properly")
+                    self.clean_notification(nid)
                     return False
                 self.may_retry = False
 
@@ -177,6 +184,7 @@ class DBUS_Notifier(NotifierBase):
             log("cannot filter error", exc_info=True)
         log.error("Error processing notification:")
         log.estr(dbus_error)
+        self.clean_notification(nid)
         return False
 
     def close_notify(self, nid: NID) -> None:
@@ -187,18 +195,20 @@ class DBUS_Notifier(NotifierBase):
         log("close_notify(%i) actual id=%s", nid, actual_id)
         self.do_close(nid, actual_id)
 
-    def do_close(self, _nid: NID, actual_id: int) -> None:
+    def do_close(self, nid: NID, actual_id: int) -> None:
         log("do_close_notify(%i)", actual_id)
         if not self.dbusnotify:
             return
 
         def CloseNotificationReply() -> None:
             self.actual_notification_id.pop(actual_id, None)
+            self.clean_notification(nid)
 
         def CloseNotificationError(dbus_error, *_args) -> None:
             if first_time(f"close-notification-{actual_id}"):
                 log.warn("Error: error closing notification:")
                 log.warn(" %s", dbus_error)
+            self.clean_notification(nid)
 
         self.dbusnotify.CloseNotification(actual_id,
                                           reply_handler=CloseNotificationReply,
