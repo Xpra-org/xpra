@@ -182,6 +182,41 @@ def patch_xvfb_command_geometry(xvfb_cmd: list[str], w: int, h: int, pixel_depth
         xvfb_cmd += ["-screen", f"{w}x{h}x{pixel_depth}"]
 
 
+def patch_uinput(xvfb_cmd: list[str]) -> bool:
+    # use uinput:
+    # identify -config xorg.conf argument and replace it with the uinput one:
+    try:
+        config_argindex = xvfb_cmd.index("-config")
+    except ValueError:
+        log = get_vfb_logger()
+        log.warn("Warning: cannot use uinput")
+        log.warn(" '-config' argument not found in the xvfb command")
+        return False
+    if config_argindex + 1 >= len(xvfb_cmd):
+        raise InitException("invalid xvfb command string: -config should not be last")
+    xorg_conf = xvfb_cmd[config_argindex + 1]
+    if xorg_conf.endswith("xorg.conf"):
+        xorg_conf = xorg_conf.replace("xorg.conf", "xorg-uinput.conf")
+        if os.path.exists(xorg_conf):
+            xvfb_cmd[config_argindex + 1] = xorg_conf
+    return True
+
+
+def patch_pixel_depth(xvfb_cmd: list[str], depth: int) -> None:
+    try:
+        config_argindex = xvfb_cmd.index("-depth")
+    except ValueError:
+        # maybe add it?
+        xvfb_executable = xvfb_cmd[0]
+        if xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy"):
+            xvfb_cmd.append("-depth")
+            xvfb_cmd.append(str(depth))
+        return
+    if config_argindex + 1 >= len(xvfb_cmd):
+        raise InitException("invalid xvfb command string: -depth should not be last")
+    xvfb_cmd[config_argindex + 1] = str(depth)
+
+
 def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, display_name: str, cwd,
                uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
     if not POSIX:
@@ -222,6 +257,8 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
     # try to honour fps if specified:
     if fps > 0:
         patch_xvfb_command_fps(xvfb_cmd, fps)
+    if pixel_depth > 0:
+        patch_pixel_depth(xvfb_cmd, pixel_depth)
 
     # try to honour initial geometries if specified:
     xvfb_executable = xvfb_cmd[0]
@@ -230,6 +267,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
         log("patch_xvfb_command_geometry%s", (xvfb_cmd, w, h, pixel_depth or 32))
         patch_xvfb_command_geometry(xvfb_cmd, w, h, pixel_depth or 32)
         log(f"{xvfb_cmd=!r}")
+
     try:
         logfile_argindex = xvfb_cmd.index('-logfile')
         if logfile_argindex+1 >= len(xvfb_cmd):
@@ -257,29 +295,12 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
                 raise InitException(f"failed to create the Xorg log directory {xorg_log_dir!r}: {e}") from None
 
     if uinput_uuid:
-        # use uinput:
-        # identify -config xorg.conf argument and replace it with the uinput one:
-        try:
-            config_argindex = xvfb_cmd.index("-config")
-        except ValueError:
-            log.warn("Warning: cannot use uinput")
-            log.warn(" '-config' argument not found in the xvfb command")
-        else:
-            if config_argindex+1 >= len(xvfb_cmd):
-                raise InitException("invalid xvfb command string: -config should not be last")
-            xorg_conf = xvfb_cmd[config_argindex+1]
-            if xorg_conf.endswith("xorg.conf"):
-                xorg_conf = xorg_conf.replace("xorg.conf", "xorg-uinput.conf")
-                if os.path.exists(xorg_conf):
-                    xvfb_cmd[config_argindex+1] = xorg_conf
+        if patch_uinput(xvfb_cmd):
             # create uinput device definition files:
             # (we have to assume that Xorg is configured to use this path..)
             xorg_conf_dir = pathexpand(get_Xdummy_confdir())
             create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
 
-    if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth > 0:
-        xvfb_cmd.append("-depth")
-        xvfb_cmd.append(str(pixel_depth))
     env = get_xvfb_env(xvfb_executable)
     log(f"xvfb env={env}")
     xvfb = None
