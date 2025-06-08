@@ -533,18 +533,25 @@ class DisplayManager(StubServerMixin):
 
     def schedule_screen_changed(self, screen):
         self.cancel_screen_size_changed_timer()
-        self.screen_size_changed_timer = GLib.timeout_add(10, self.do_screen_changed, screen)
+        self.screen_size_changed_timer = GLib.timeout_add(10, self.screen_size_changed, screen)
 
-    def do_screen_changed(self, screen) -> bool:
+    def screen_size_changed(self, screen) -> bool:
+        self.screen_size_changed_timer = 0
+        self.do_screen_changed(screen)
+        self.notify_screen_changed(screen)
+        return False
+
+    def do_screen_changed(self, screen) -> None:
         log("do_screen_changed(%s)", screen)
         self.screen_size_changed_timer = 0
-        # randr has resized the screen, tell the client (if it supports it)
         with SilenceWarningsContext():
             w, h = screen.get_width(), screen.get_height()
         log("new screen dimensions: %ix%i", w, h)
         self.set_screen_geometry_attributes(w, h)
+
+    def notify_screen_changed(self, screen) -> None:
+        log("notify_screen_changed(%s)", screen)
         GLib.idle_add(self.send_updated_screen_size)
-        return False
 
     def get_root_window_size(self) -> tuple[int, int]:
         raise NotImplementedError()
