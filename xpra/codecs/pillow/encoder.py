@@ -101,8 +101,6 @@ def alpha_mask_value(a: int) -> int:
 
 
 def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
-    if coding not in ("jpeg", "webp", "png", "png/P", "png/L"):
-        raise ValueError(f"unsupported encoding: {coding!r}")
     log("pillow.encode%s", (coding, image, options))
     quality = options.intget("quality", 50)
     speed = options.intget("speed", 50)
@@ -153,9 +151,8 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
             palette.append((g >> 8) & 0xFF)
             palette.append((b >> 8) & 0xFF)
         bpp = 8
-    else:
-        if pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"):
-            raise ValueError(f"invalid pixel format {pixel_format!r}")
+    elif pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"):
+        raise ValueError(f"invalid pixel format {pixel_format!r}")
     rgb: str = {
         "XRGB": "RGB",
         "BGRX": "RGB",
@@ -219,27 +216,26 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
         kwargs["quality"] = q
         if coding == "webp":
             kwargs["method"] = int(speed < 10)
+            if q >= 100:
+                kwargs["lossless"] = True
+                kwargs["quality"] = 0
             client_options["quality"] = min(100, max(0, 10 + round(sqrt(sqrt(q * 100) * 100))))
         else:
+            # jpeg:
+            if speed < 50:
+                # (optimizing jpeg is pretty cheap and worth doing)
+                kwargs["optimize"] = True
             client_options["quality"] = min(99, q)
-        if coding == "jpeg" and speed < 50:
-            # (optimizing jpeg is pretty cheap and worth doing)
-            kwargs["optimize"] = True
-        elif coding == "webp" and q >= 100:
-            kwargs["lossless"] = True
-            kwargs["quality"] = 0
         pil_fmt = coding.upper()
-    else:
-        assert coding in ("png", "png/P", "png/L"), "unsupported encoding: %r" % coding
+    elif coding in ("png", "png/P", "png/L"):
+        # default to no transparency:
+        mask = None
         if coding in ("png/L", "png/P") and supports_transparency and rgb == "RGBA":
             # grab alpha channel (the last one):
             # we use the last channel because we know it is RGBA,
             # otherwise we should do: alpha_index= image.getbands().index('A')
             alpha = im.split()[-1]
             mask = Image.eval(alpha, alpha_mask_value)
-        else:
-            # no transparency
-            mask = None
         if coding == "png/L":
             im = im.convert("L", palette=ADAPTIVE, colors=255)
             bpp = 8
@@ -274,6 +270,8 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
         # DEFAULT_STRATEGY, FILTERED, HUFFMAN_ONLY, RLE, FIXED
         # kwargs["compress_type"] = Image.DEFAULT_STRATEGY
         pil_fmt = "PNG"
+    else:
+        raise ValueError(f"unsupported encoding: {coding!r}")
     buf = BytesIO()
     im.save(buf, pil_fmt, **kwargs)
     data = buf.getvalue()
