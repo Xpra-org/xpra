@@ -151,7 +151,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
             palette.append((g >> 8) & 0xFF)
             palette.append((b >> 8) & 0xFF)
         bpp = 8
-    elif pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB"):
+    elif pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB", "XRGB"):
         raise ValueError(f"invalid pixel format {pixel_format!r}")
     rgb: str = {
         "XRGB": "RGB",
