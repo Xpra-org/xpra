@@ -179,6 +179,13 @@ def do_get_bind_ifacemask(iface) -> Sequence[tuple[str, str]]:
     return ipmasks
 
 
+def _parse_ip_part(s: str) -> int:
+    try:
+        return int(s)
+    except ValueError:
+        return int(s, 16)
+
+
 def get_iface(ip) -> str:
     log("get_iface(%s)", ip)
     if not ip:
@@ -244,14 +251,8 @@ def get_iface(ip) -> str:
                     if i >= len(mask_parts):
                         # end of the mask
                         break
-                    try:
-                        mask_part = int(mask_parts[i] or 0)
-                    except ValueError:
-                        mask_part = int(mask_parts[i], 16)
-                    try:
-                        ip_part = int(ip_part_str or 0)
-                    except ValueError:
-                        ip_part = int(ip_part_str, 16)
+                    mask_part = _parse_ip_part(mask_parts[i])
+                    ip_part = _parse_ip_part(ip_part_str)
                     test_ip_part = ip_part & mask_part
                     if ip_part != test_ip_part:
                         match = False
