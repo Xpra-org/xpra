@@ -156,7 +156,7 @@ class DesktopServerBase(DesktopServerBaseClass):
     def parse_screen_info(self, ss) -> None:
         return self.do_parse_screen_info(ss, ss.desktop_mode_size)
 
-    def do_screen_changed(self, screen) -> None:
+    def notify_screen_changed(self, screen) -> None:
         pass
 
 
