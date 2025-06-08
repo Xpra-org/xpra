@@ -10,7 +10,7 @@ from typing import Dict, Any
 
 from xpra.version_util import version_str
 from xpra.util import envint, envfloat, envbool, csv, typedict, ConnectionMessage
-from xpra.os_util import bytestostr, get_machine_id, WIN32
+from xpra.os_util import bytestostr, get_machine_id, getuid, getgid, WIN32
 from xpra.net.bytestreams import log_new_connection
 from xpra.net.socket_util import create_sockets, add_listen_socket, accept_connection, setup_local_sockets
 from xpra.net.net_util import get_network_caps
@@ -56,8 +56,9 @@ class NetworkListener(StubClientMixin):
                 local_sockets = setup_local_sockets(opts.bind,
                                                 "", opts.client_socket_dirs, "",
                                                 str(os.getpid()), True,
-                                                opts.mmap_group, opts.socket_permissions)
-            except (OSError, InitExit, ImportError) as e:
+                                                opts.mmap_group, opts.socket_permissions,
+                                                uid=getuid(), gid=getgid())
+            except (OSError, InitExit, ImportError, ValueError) as e:
                 log("setup_local_sockets bind=%s, client_socket_dirs=%s",
                     opts.bind, opts.client_socket_dirs, exc_info=True)
                 log.warn("Warning: failed to create the client sockets:")
