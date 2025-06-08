@@ -1967,78 +1967,8 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
         if mode == "listen":
             if extra_args:
                 raise InitException("cannot specify extra arguments with 'listen' mode")
-            app.show_progress(80, "listening for incoming connections")
-            from xpra.platform.info import get_username
-            from xpra.net.socket_util import (
-                setup_local_sockets, peek_connection,
-                create_sockets, add_listen_socket, accept_connection,
-            )
-            from xpra.log import Logger
-            sockets = create_sockets(opts, error_cb, sd_listen=False, ssh_upgrades=False)
-            # we don't have a display,
-            # so we can't automatically create sockets:
-            if "auto" in opts.bind:
-                opts.bind.remove("auto")
-            local_sockets = setup_local_sockets(opts.bind,
-                                                opts.socket_dir, opts.socket_dirs, "",
-                                                "", False,
-                                                opts.mmap_group, opts.socket_permissions,
-                                                get_username(), getuid(), getgid())
-            sockets.update(local_sockets)
-            listen_cleanup: list[Callable] = []
-            socket_cleanup: list[Callable] = []
+            enable_listen_mode(app)
 
-            def new_connection(socktype, sock, handle=0) -> bool:
-                from xpra.util.thread import start_thread
-                netlog = Logger("network")
-                netlog("new_connection%s", (socktype, sock, handle))
-                conn = accept_connection(socktype, sock)
-                # start a new thread so that we can sleep doing IO in `peek_connection`:
-                start_thread(handle_new_connection, f"handle new connection: {conn}", daemon=True, args=(conn,))
-                return True
-
-            def handle_new_connection(conn) -> None:
-                # see if this is a redirection:
-                netlog = Logger("network")
-                line1 = peek_connection(conn)[1]
-                netlog.debug(f"handle_new_connection({conn}) line1={line1!r}")
-                if line1:
-                    uri = bytestostr(line1)
-                    for socktype in SOCKET_TYPES:
-                        if uri.startswith(f"{socktype}://"):
-                            run_socket_cleanups()
-                            netlog.info(f"connecting to {uri}")
-                            extra_args[:] = [uri, ]
-                            display_desc = pick_display(error_cb, opts, [uri, ])
-                            connect_to_server(app, display_desc, opts)
-                            # app._protocol.start()
-                            return
-                app.idle_add(do_handle_connection, conn)
-
-            def do_handle_connection(conn) -> None:
-                protocol = app.make_protocol(conn)
-                protocol.start()
-                # stop listening for new connections:
-                run_socket_cleanups()
-
-            def run_socket_cleanups() -> None:
-                for cleanup in listen_cleanup:
-                    cleanup()
-                listen_cleanup[:] = []
-                # close the sockets:
-                for cleanup in socket_cleanup:
-                    cleanup()
-                socket_cleanup[:] = []
-
-            for socktype, sock, sinfo, cleanup_socket in sockets:
-                socket_cleanup.append(cleanup_socket)
-                cleanup = add_listen_socket(socktype, sock, sinfo, None, new_connection, {})
-                if cleanup is not None:
-                    listen_cleanup.append(cleanup)
-            # listen mode is special,
-            # don't fall through to connect_to_server!
-            app.show_progress(90, "ready")
-            return app
     except Exception as e:
         app.show_progress(100, f"failure: {e}")
         may_notify = getattr(app, "may_notify", None)
@@ -2055,6 +1985,79 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
         app.cleanup()
         raise
     return app
+
+
+def enable_listen_mode(app, error_cb: Callable, opts):
+    app.show_progress(80, "listening for incoming connections")
+    from xpra.net.socket_util import (
+        setup_local_sockets, peek_connection,
+        create_sockets, add_listen_socket, accept_connection,
+    )
+    from xpra.log import Logger
+    sockets = create_sockets(opts, error_cb, sd_listen=False, ssh_upgrades=False)
+    # we don't have a display,
+    # so we can't automatically create sockets:
+    if "auto" in opts.bind:
+        opts.bind.remove("auto")
+    if opts.bind:
+        from xpra.platform.info import get_username
+        local_sockets = setup_local_sockets(opts.bind,
+                                            opts.socket_dir, opts.socket_dirs, "",
+                                            "", False,
+                                            opts.mmap_group, opts.socket_permissions,
+                                            get_username(), getuid(), getgid())
+        sockets.update(local_sockets)
+    listen_cleanup: list[Callable] = []
+    socket_cleanup: list[Callable] = []
+
+    def new_connection(socktype, sock, handle=0) -> bool:
+        from xpra.util.thread import start_thread
+        netlog = Logger("network")
+        netlog("new_connection%s", (socktype, sock, handle))
+        conn = accept_connection(socktype, sock)
+        # start a new thread so that we can sleep doing IO in `peek_connection`:
+        start_thread(handle_new_connection, f"handle new connection: {conn}", daemon=True, args=(conn,))
+        return True
+
+    def handle_new_connection(conn) -> None:
+        # see if this is a redirection:
+        netlog = Logger("network")
+        line1 = peek_connection(conn)[1]
+        netlog.debug(f"handle_new_connection({conn}) line1={line1!r}")
+        if line1:
+            uri = bytestostr(line1)
+            for socktype in SOCKET_TYPES:
+                if uri.startswith(f"{socktype}://"):
+                    run_socket_cleanups()
+                    netlog.info(f"connecting to {uri}")
+                    display_desc = pick_display(error_cb, opts, [uri, ])
+                    connect_to_server(app, display_desc, opts)
+                    return
+        app.idle_add(do_handle_connection, conn)
+
+    def do_handle_connection(conn) -> None:
+        protocol = app.make_protocol(conn)
+        protocol.start()
+        # stop listening for new connections:
+        run_socket_cleanups()
+
+    def run_socket_cleanups() -> None:
+        for cleanup in listen_cleanup:
+            cleanup()
+        listen_cleanup[:] = []
+        # close the sockets:
+        for cleanup in socket_cleanup:
+            cleanup()
+        socket_cleanup[:] = []
+
+    for socktype, sock, sinfo, cleanup_socket in sockets:
+        socket_cleanup.append(cleanup_socket)
+        cleanup = add_listen_socket(socktype, sock, sinfo, None, new_connection, {})
+        if cleanup is not None:
+            listen_cleanup.append(cleanup)
+    # listen mode is special,
+    # don't fall through to connect_to_server!
+    app.show_progress(90, "ready")
 
 
 def make_progress_process(title="Xpra") -> Popen | None:
