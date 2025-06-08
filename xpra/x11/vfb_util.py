@@ -294,12 +294,11 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
             except OSError as e:
                 raise InitException(f"failed to create the Xorg log directory {xorg_log_dir!r}: {e}") from None
 
-    if uinput_uuid:
-        if patch_uinput(xvfb_cmd):
-            # create uinput device definition files:
-            # (we have to assume that Xorg is configured to use this path..)
-            xorg_conf_dir = pathexpand(get_Xdummy_confdir())
-            create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
+    if uinput_uuid and patch_uinput(xvfb_cmd):
+        # create uinput device definition files:
+        # (we have to assume that Xorg is configured to use this path..)
+        xorg_conf_dir = pathexpand(get_Xdummy_confdir())
+        create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
 
     env = get_xvfb_env(xvfb_executable)
     log(f"xvfb env={env}")
