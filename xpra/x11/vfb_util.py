@@ -155,7 +155,16 @@ def patch_xvfb_command_fps(xvfb_cmd: list[str], fps: int) -> None:
             xvfb_cmd += ["-fakescreenfps", str(fps)]
 
 
-def patch_xvfb_command_geometry(xvfb_cmd: list[str], w: int, h: int, pixel_depth: int) -> None:
+def patch_xvfb_command_geometry(xvfb_cmd: list[str], vfb_geom, pixel_depth: int) -> None:
+    if len(vfb_geom) < 2:
+        return
+    xvfb_executable = xvfb_cmd[0]
+    if not (xvfb_executable.endswith("Xvfb") or xvfb_executable.endswith("Xephyr")):
+        return
+    w, h = vfb_geom[:2]
+    pixel_depth = pixel_depth or 32
+    if pixel_depth not in (8, 16, 24, 30, 32):
+        raise ValueError(f"unsupported pixel depth {pixel_depth}")
     # find the ["-screen"] or ["screen", "0"] arguments:
     try:
         screen_arg = xvfb_cmd.index("-screen")
@@ -261,40 +270,34 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
         (xvfb_cmd, vfb_geom, pixel_depth, fps, display_name, cwd, uid, gid, username, uinput_uuid),
         XVFB_EXTRA_ARGS)
     use_display_fd = display_name[0] == "S"
-    if XVFB_EXTRA_ARGS:
-        xvfb_cmd += shlex.split(XVFB_EXTRA_ARGS)
 
-    subs: dict[str, str] = {}
-
-    def pathexpand(s: str) -> str:
-        return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
     etc_prefix = os.environ.get("XPRA_INSTALL_PREFIX", "")
     if etc_prefix.endswith("/usr"):
         etc_prefix = etc_prefix[:-4]
-    subs |= {
+
+    subs: dict[str, str] = {
         "DISPLAY": display_name,
-        "XPRA_LOG_DIR": pathexpand(os.environ.get("XPRA_LOG_DIR", "")),
         "XORG_CONFIG_PREFIX": os.environ.get("XORG_CONFIG_PREFIX", etc_prefix),
+    }
+
+    def pathexpand(s: str) -> str:
+        return osexpand(s, actual_username=username, uid=uid, gid=gid, subs=subs)
+    subs |= {
+        "XPRA_LOG_DIR": pathexpand(os.environ.get("XPRA_LOG_DIR", "")),
     }
 
     # identify logfile argument if it exists,
     # as we may have to rename it, or create the directory for it:
     # make sure all path values are expanded:
     xvfb_cmd = [pathexpand(s) for s in xvfb_cmd]
-
-    # try to honour fps if specified:
+    if XVFB_EXTRA_ARGS:
+        xvfb_cmd += shlex.split(XVFB_EXTRA_ARGS)
     if fps > 0:
         patch_xvfb_command_fps(xvfb_cmd, fps)
     if pixel_depth > 0:
         patch_pixel_depth(xvfb_cmd, pixel_depth)
-
-    # try to honour initial geometries if specified:
-    xvfb_executable = xvfb_cmd[0]
-    if len(vfb_geom) >= 2 and (xvfb_executable.endswith("Xvfb") or xvfb_executable.endswith("Xephyr")):
-        w, h = vfb_geom[:2]
-        log("patch_xvfb_command_geometry%s", (xvfb_cmd, w, h, pixel_depth or 32))
-        patch_xvfb_command_geometry(xvfb_cmd, w, h, pixel_depth or 32)
-        log(f"{xvfb_cmd=!r}")
+    if vfb_geom:
+        patch_xvfb_command_geometry(xvfb_cmd, vfb_geom, pixel_depth)
 
     xorg_log_file = get_logfile_arg(xvfb_cmd)
     tmp_xorg_log_file = ""
@@ -310,6 +313,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
         xorg_conf_dir = pathexpand(get_Xdummy_confdir())
         create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
 
+    xvfb_executable = xvfb_cmd[0]
     env = get_xvfb_env(xvfb_executable)
     log(f"xvfb env={env}")
     xvfb = None
@@ -330,14 +334,10 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
                     os.setpgrp()
                     if getuid() == 0 and uid:
                         setuidgid(uid, gid)
-                try:
-                    # pylint: disable=consider-using-with
-                    # pylint: disable=subprocess-popen-preexec-fn
-                    xvfb = Popen(xvfb_cmd, executable=xvfb_executable,
-                                 preexec_fn=preexec, cwd=cwd, env=env, pass_fds=(w_pipe,))
-                except OSError as e:
-                    log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
-                    raise InitException(f"failed to execute xvfb command {xvfb_cmd}: {e}") from None
+                # pylint: disable=consider-using-with
+                # pylint: disable=subprocess-popen-preexec-fn
+                xvfb = Popen(xvfb_cmd, executable=xvfb_executable,
+                             preexec_fn=preexec, cwd=cwd, env=env, pass_fds=(w_pipe,))
                 if xvfb.poll() is not None:
                     raise InitException(f"xvfb command has terminated: {xvfb_cmd}")
                 # Read the display number from the pipe we gave to Xvfb
@@ -383,6 +383,9 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
             # pylint: disable=subprocess-popen-preexec-fn
             xvfb = Popen(xvfb_cmd, executable=xvfb_executable,
                          stdin=PIPE, preexec_fn=preexec, env=env)
+    except OSError as e:
+        log("Popen%s", (xvfb_cmd, xvfb_executable, cwd), exc_info=True)
+        raise InitException(f"failed to execute xvfb command {xvfb_cmd}: {e}") from None
     except Exception:
         if xvfb and xvfb.poll() is None:
             log.error(" stopping vfb process with pid %i", xvfb.pid)
