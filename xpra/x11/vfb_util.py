@@ -217,6 +217,34 @@ def patch_pixel_depth(xvfb_cmd: list[str], depth: int) -> None:
     xvfb_cmd[config_argindex + 1] = str(depth)
 
 
+def get_logfile_arg(xvfb_cmd: list[str]) -> str:
+    try:
+        logfile_argindex = xvfb_cmd.index('-logfile')
+        if logfile_argindex + 1 >= len(xvfb_cmd):
+            raise InitException("invalid xvfb command string: -logfile should not be last")
+        return xvfb_cmd[logfile_argindex+1]
+    except ValueError:
+        return ""
+
+
+def mklogdir(xorg_log_file: str, uid: int, gid: int) -> None:
+    # make sure the Xorg log directory exists:
+    xorg_log_dir = os.path.dirname(xorg_log_file)
+    if os.path.exists(xorg_log_dir):
+        return
+    log = get_vfb_logger()
+    try:
+        log("creating Xorg log dir '%s'", xorg_log_dir)
+        os.mkdir(xorg_log_dir, 0o700)
+        if POSIX and uid != getuid() or gid != getgid():
+            try:
+                os.lchown(xorg_log_dir, uid, gid)
+            except OSError:
+                log("lchown(%s, %i, %i)", xorg_log_dir, uid, gid, exc_info=True)
+    except OSError as e:
+        raise InitException(f"failed to create the Xorg log directory {xorg_log_dir!r}: {e}") from None
+
+
 def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, display_name: str, cwd,
                uid: int, gid: int, username: str, uinput_uuid="") -> tuple[Popen, str]:
     if not POSIX:
@@ -268,31 +296,13 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
         patch_xvfb_command_geometry(xvfb_cmd, w, h, pixel_depth or 32)
         log(f"{xvfb_cmd=!r}")
 
-    try:
-        logfile_argindex = xvfb_cmd.index('-logfile')
-        if logfile_argindex+1 >= len(xvfb_cmd):
-            raise InitException("invalid xvfb command string: -logfile should not be last")
-        xorg_log_file = xvfb_cmd[logfile_argindex+1]
-    except ValueError:
-        xorg_log_file = None
-    tmp_xorg_log_file = None
+    xorg_log_file = get_logfile_arg(xvfb_cmd)
+    tmp_xorg_log_file = ""
     if xorg_log_file:
         if use_display_fd:
             # keep track of it, so that we can rename it later:
             tmp_xorg_log_file = xorg_log_file
-        # make sure the Xorg log directory exists:
-        xorg_log_dir = os.path.dirname(xorg_log_file)
-        if not os.path.exists(xorg_log_dir):
-            try:
-                log("creating Xorg log dir '%s'", xorg_log_dir)
-                os.mkdir(xorg_log_dir, 0o700)
-                if POSIX and uid != getuid() or gid != getgid():
-                    try:
-                        os.lchown(xorg_log_dir, uid, gid)
-                    except OSError:
-                        log("lchown(%s, %i, %i)", xorg_log_dir, uid, gid, exc_info=True)
-            except OSError as e:
-                raise InitException(f"failed to create the Xorg log directory {xorg_log_dir!r}: {e}") from None
+        mklogdir(xorg_log_file, uid, gid)
 
     if uinput_uuid and patch_uinput(xvfb_cmd):
         # create uinput device definition files:
@@ -333,7 +343,7 @@ def start_Xvfb(xvfb_cmd: list[str], vfb_geom, pixel_depth: int, fps: int, displa
                 # Read the display number from the pipe we gave to Xvfb
                 try:
                     buf = read_displayfd(r_pipe, proc=xvfb)
-                except Exception as e:
+                except OSError as e:
                     buf = b""
                     log("read_displayfd(%s)", r_pipe, exc_info=True)
                     displayfd_err(f"failed to read displayfd pipe {r_pipe}: {e}")
