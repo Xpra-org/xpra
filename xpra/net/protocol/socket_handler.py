@@ -672,17 +672,16 @@ class SocketProtocol:
         packet_type = str(packet[0])
         log(f"encode({packet_type}, ...)")
         payload_size = 0
-        for i in range(1, len(packet)):
-            item = packet[i]
+        for i, item in enumerate(packet):
             if item is None:
                 raise TypeError(f"invalid None value in {packet_type!r} packet at index {i}")
+            if isinstance(item, (int, bool, Mapping, Sequence)):
+                continue
             if isinstance(item, IntEnum):
                 packet[i] = int(item)
                 continue
             if isinstance(item, Enum):
                 packet[i] = str(item)
-                continue
-            if isinstance(item, (int, bool, Mapping, Iterable)):
                 continue
             try:
                 size = len(item)
