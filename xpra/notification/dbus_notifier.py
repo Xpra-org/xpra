@@ -30,13 +30,13 @@ class DBUS_Notifier(NotifierBase):
         self.app_name_format = NOTIFICATION_APP_NAME
         self.last_notification: Sequence[Any] = ()
         self.actual_notification_id: dict[int, int] = {}
+        self.dbus_session = dbus.SessionBus()
         self.dbusnotify = self.setup_dbusnotify()
         self.handles_actions = "actions" in self.get_capabilities()
         self.may_retry = True
         log("dbus.get_default_main_loop()=%s", dbus.get_default_main_loop())
 
     def setup_dbusnotify(self) -> dbus.Interface:
-        self.dbus_session = dbus.SessionBus()
         self.org_fd_notifications = self.dbus_session.get_object(FD_NOTIFICATIONS, '/org/freedesktop/Notifications')
         self.org_fd_notifications.connect_to_signal("NotificationClosed", self.NotificationClosed)
         self.org_fd_notifications.connect_to_signal("ActionInvoked", self.ActionInvoked)
