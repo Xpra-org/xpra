@@ -341,6 +341,9 @@ class DisplayManager(StubServerMixin):
         w, h = screen.get_width(), screen.get_height()
         log("new screen dimensions: %ix%i", w, h)
         self.set_screen_geometry_attributes(w, h)
+        self.notify_screen_changed(screen)
+
+    def notify_screen_changed(self, screen) -> None:
         GLib.idle_add(self.send_updated_screen_size)
 
     def get_root_window_size(self) -> tuple[int, int]:
