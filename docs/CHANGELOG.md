@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.3.2] 2025-06-08
+* TODO
+
 ## [6.3.1] 2025-05-31
 * Platforms, build and packaging:
     * [modular installations also need filesystem package](https://github.com/Xpra-org/xpra/commit/bc67164fe76b03bb1d0287396c63bcf4fc1e0dd6)

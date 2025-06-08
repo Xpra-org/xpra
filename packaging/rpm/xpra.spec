@@ -74,7 +74,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.3.1
+Version:			6.3.2
 Summary:			Xpra gives you "persistent remote applications" for X.
 Group:				Networking
 License:			GPLv2+ and BSD and LGPLv3+ and MIT
@@ -1008,6 +1008,8 @@ fi
 
 
 %changelog
+* Sun Jun 08 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
+- TODO
 * Sat May 31 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:
    modular installations also need filesystem package
