@@ -1967,7 +1967,7 @@ def get_client_gui_app(error_cb: Callable, opts, request_mode: str, extra_args: 
         if mode == "listen":
             if extra_args:
                 raise InitException("cannot specify extra arguments with 'listen' mode")
-            enable_listen_mode(app)
+            enable_listen_mode(app, error_cb, opts)
 
     except Exception as e:
         app.show_progress(100, f"failure: {e}")
