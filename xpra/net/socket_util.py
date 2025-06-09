@@ -775,7 +775,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                         unknown.append(sockpath)
                 if sockpath.startswith("@"):
                     continue
-                d = os.path.dirname(sockpath)
+                d: str = os.path.dirname(sockpath)
                 try:
                     kwargs = {}
                     if d in ("/var/run/xpra", "/run/xpra"):
