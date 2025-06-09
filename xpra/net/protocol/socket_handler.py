@@ -35,7 +35,7 @@ from xpra.net.protocol.constants import CONNECTION_LOST, INVALID, GIBBERISH
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet,
     MAX_PACKET_SIZE,
-    Packet, NetPacketType,
+    Packet, NetPacketType, PacketElement,
 )
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
@@ -666,12 +666,9 @@ class SocketProtocol:
         """
         packets: list[NetPacketType] = []
         packet = list(packet_in)
-        level = self.compression_level
-        size_check = LARGE_PACKET_SIZE
-        min_comp_size = MIN_COMPRESS_SIZE
         packet_type = str(packet[0])
         log(f"encode({packet_type}, ...)")
-        payload_size = 0
+        inlined_size = 0
         for i, item in enumerate(packet):
             if item is None:
                 raise TypeError(f"invalid None value in {packet_type!r} packet at index {i}")
@@ -711,22 +708,19 @@ class SocketProtocol:
                         il = item.level
                     packets.append((0, i, il, item.data))
                     packet[i] = b''
-                    payload_size += len(item.data)
                 else:
                     # data is small enough, inline it:
                     packet[i] = item.data
                     if isinstance(item.data, memoryview) and self.encoder != "rencodeplus":
                         packet[i] = item.data.tobytes()
-                    min_comp_size += size
-                    size_check += size
+                    inlined_size += size
                 continue
-            if self.chunks and isinstance(item, bytes) and level > 0 and size > LARGE_PACKET_SIZE:
+            if self.chunks and isinstance(item, bytes) and self.compression_level > 0 and size > LARGE_PACKET_SIZE:
                 log.warn("Warning: found a large uncompressed item")
                 log.warn(f" in packet {packet_type!r} at position {i}: {len(item)} bytes")
                 # add new binary packet with large item:
-                cl, cdata = self._compress(item, level)
+                cl, cdata = self._compress(item, self.compression_level)
                 packets.append((0, i, cl, cdata))
-                payload_size += len(cdata)
                 # replace this item with an empty string placeholder:
                 packet[i] = ''
                 continue
@@ -735,6 +729,9 @@ class SocketProtocol:
                 log.warn(f" in {packet_type!r} packet at position {i}: {repr_ellipsized(item)}")
         # now the main packet (or what is left of it):
         self.output_stats[packet_type] = self.output_stats.get(packet_type, 0) + 1
+        return self.do_encode(packet, packets, inlined_size)
+
+    def do_encode(self, packet: list[PacketElement], packets: list[NetPacketType], inlined_size: int):
         try:
             main_packet, proto_flags = self._encoder(packet)
         except Exception:
@@ -744,31 +741,31 @@ class SocketProtocol:
             from xpra.net.protocol.check import verify_packet
             verify_packet(packet)
             raise
+        packet_type = str(packet[0])
         size = len(main_packet)
-        if self.chunks and size > size_check and packet_in[0] not in self.large_packets:
+        if self.chunks and size > (LARGE_PACKET_SIZE + inlined_size) and packet_type not in self.large_packets:
             log.warn("Warning: found large packet")
-            log.warn(f" {packet_type!r} packet is {len(main_packet)} bytes: ")
+            log.warn(f" {packet_type!r} packet is {size} bytes: ")
             log.warn(" argument types: %s", csv(type(x) for x in packet[1:]))
             log.warn(" sizes: %s", csv(len(strtobytes(x)) for x in packet[1:]))
             log.warn(f" packet: {repr_ellipsized(packet, limit=4096)}")
         # compress, but don't bother for small packets:
-        if level > 0 and size > min_comp_size:
+        level = 0
+        if self.compression_level > 0 and size > MIN_COMPRESS_SIZE + inlined_size:
             try:
-                cl, cdata = self._compress(main_packet, level)
+                level, main_packet = self._compress(main_packet, self.compression_level)
                 if LOG_RAW_PACKET_SIZE and packet_type != "logging":
-                    log.info(f"         {packet_type!r:<32}: %i bytes compressed, from %i", len(cdata), size)
+                    log.info(f"         {packet_type!r:<32}: %i bytes compressed, from %i", len(main_packet), size)
             except Exception as e:
                 log.error(f"Error compressing {packet_type!r} packet")
                 log.estr(e)
                 raise
-            payload_size += len(cdata)
-            packets.append((proto_flags, 0, cl, cdata))
-        else:
-            payload_size += size
-            packets.append((proto_flags, 0, 0, main_packet))
+        packets.append((proto_flags, 0, level, main_packet))
         may_log_packet(True, packet_type, packet)
         if LOG_RAW_PACKET_SIZE and packet_type != "logging":
-            log.info(f"sending  {packet_type!r:<32}: %i bytes", HEADER_SIZE + payload_size)
+            raw_payloads_sizes = tuple((HEADER_SIZE + netpacket[3]) for netpacket in packets)
+            payload_size = HEADER_SIZE + len(main_packet)
+            log.info(f"sending  {packet_type!r:<32}: %i bytes, raw: %s", payload_size, raw_payloads_sizes)
         return packets
 
     def set_compression_level(self, level: int) -> None:
