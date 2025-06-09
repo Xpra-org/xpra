@@ -186,7 +186,7 @@ def _parse_ip_part(s: str) -> int:
         return int(s, 16)
 
 
-def get_iface(ip) -> str:
+def get_iface(ip: str) -> str:
     log("get_iface(%s)", ip)
     if not ip:
         return ""
@@ -194,10 +194,9 @@ def get_iface(ip) -> str:
         iface = ip.split("%", 1)[1]
         try:
             socket.if_nametoindex(iface)
+            return iface
         except OSError:
             return ""
-        else:
-            return iface
     ipv6 = ip.find(":") >= 0
     af = socket.AF_INET6 if ipv6 else socket.AF_INET
     ipchars = ".:0123456789"
@@ -236,34 +235,54 @@ def get_iface(ip) -> str:
                 # exact match
                 log("get_iface(%s)=%s", iface, ip)
                 return iface
-            if len(test_ip.split(":")) > 2:
-                # test_ip is ipv6
-                test_ip_parts = test_ip.split("/")[0].split(":")
-                mask_parts = mask.split("/")[0].split(":")
-            else:
-                test_ip_parts = test_ip.split(".")
-                mask_parts = mask.split(".")
-                if len(test_ip_parts) != 4 or len(mask_parts) != 4:
-                    log.error(f"Error: incorrect IP {test_ip} or mask {mask}")
-            match = True
-            try:
-                for i, ip_part_str in enumerate(test_ip_parts):
-                    if i >= len(mask_parts):
-                        # end of the mask
-                        break
-                    mask_part = _parse_ip_part(mask_parts[i])
-                    ip_part = _parse_ip_part(ip_part_str)
-                    test_ip_part = ip_part & mask_part
-                    if ip_part != test_ip_part:
-                        match = False
-                        break
-                if match:
-                    best_match = iface
-            except Exception as e:
-                log("ip parsing error", exc_info=True)
-                log.error(f"Error parsing IP {test_ip!r} or its mask {mask!r}: {e}")
+            if ip_match(ip, test_ip, mask):
+                best_match = iface
     log("get_iface(%s)=%s", ip, best_match)
     return best_match
+
+
+def ip_match(ip: str, test_ip: str, mask: str) -> bool:
+    ipv6 = ip.find(":") >= 0
+    if ipv6:
+        ip_parts = ip.split("/")[0].split(":")
+    else:
+        ip_parts = ip.split(".")
+        if len(ip_parts) != 4:
+            return False
+
+    if len(test_ip.split(":")) > 2:
+        # test_ip is ipv6
+        test_ip_parts = test_ip.split("/")[0].split(":")
+        mask_parts = mask.split("/")[0].split(":")
+    else:
+        test_ip_parts = test_ip.split(".")
+        mask_parts = mask.split(".")
+        if len(test_ip_parts) != 4 or len(mask_parts) != 4:
+            log.error(f"Error: incorrect IP {test_ip} or mask {mask}")
+            return False
+
+    try:
+        for i, test_ip_part in enumerate(test_ip_parts):
+            if i >= len(mask_parts):
+                # end of the mask
+                break
+            if i >= len(ip_parts):
+                # end of the ip
+                ip_val = 0
+            else:
+                ip_val = _parse_ip_part(ip_parts[i])
+
+            test_ip_val = _parse_ip_part(test_ip_part)
+            mask_val = _parse_ip_part(mask_parts[i])
+            test_ip_val = test_ip_val & mask_val
+            ip_val = ip_val & mask_val
+            if test_ip_val != ip_val:
+                return False
+        return True
+    except Exception as e:
+        log("ip parsing error", exc_info=True)
+        log.error(f"Error parsing IP {test_ip!r} or its mask {mask!r}: {e}")
+        return False
 
 
 net_sys_config: dict[str, Any] = {}
