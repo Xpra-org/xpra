@@ -7,6 +7,7 @@
 import sys
 import os.path
 from time import monotonic
+from collections.abc import Sequence
 from typing import Any, NoReturn
 
 from xpra.os_util import gi_import
@@ -52,7 +53,7 @@ class AudioSource(AudioPipeline):
         "new-buffer": n_arg_signal(3),
     }
 
-    def __init__(self, src_type="", src_options=None, codecs=(), codec_options=None, volume=1.0):
+    def __init__(self, src_type: str, src_options: dict, codecs: Sequence[str], codec_options: dict, volume=1.0):
         if not src_type:
             try:
                 from xpra.audio.pulseaudio.util import get_pa_device_options
@@ -369,10 +370,11 @@ def main() -> int:
             output = sys.stdout
         else:
             output = open(filename, "wb")
-        ss = AudioSource(codecs=[codec])
+
+        ss = AudioSource("", src_options={}, codecs=[codec], codec_options={})
         lock = Lock()
 
-        def new_buffer(_audiosource, data, metadata, packet_metadata):
+        def new_buffer(_audiosource, data, metadata, packet_metadata) -> None:
             log.info("new buffer: %s bytes (%s), metadata=%s", len(data), type(data), metadata)
             with lock:
                 for x in packet_metadata:

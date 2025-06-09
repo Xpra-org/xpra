@@ -7,6 +7,7 @@
 import sys
 from time import monotonic
 from collections import deque
+from collections.abc import Sequence
 from threading import Lock
 from typing import Any, Literal, NoReturn
 
@@ -48,7 +49,7 @@ NON_AUTO_SINK_ATTRIBUTES: dict[str, Any] = {
     "qos": True,
 }
 
-SINK_DEFAULT_ATTRIBUTES = {
+SINK_DEFAULT_ATTRIBUTES: dict[str, dict[str, str]] = {
     "pulsesink": {"client-name": "Xpra"},
 }
 
@@ -83,7 +84,7 @@ class AudioSink(AudioPipeline):
         "eos": one_arg_signal,
     }
 
-    def __init__(self, sink_type=None, sink_options=None, codecs=(), codec_options=None, volume=1.0):
+    def __init__(self, sink_type: str, sink_options: dict, codecs: Sequence[str], codec_options: dict, volume=1.0):
         if not sink_type:
             sink_type = get_default_sink_plugin()
         if sink_type not in get_sink_plugins():
@@ -509,10 +510,11 @@ def main() -> int:
         from xpra.audio import gstreamer_util
         gstreamer_util.QUEUE_LEAK = GST_QUEUE_NO_LEAK
         gstreamer_util.QUEUE_SILENT = True
-        ss = AudioSink(codecs=codecs)
 
-        def eos(*args):
-            print("eos%s" % (args,))
+        ss = AudioSink("", sink_options={}, codecs=codecs, codec_options={})
+
+        def eos(*eos_args) -> None:
+            print("eos%s" % (eos_args,))
             GLib.idle_add(glib_mainloop.quit)
 
         ss.connect("eos", eos)
@@ -535,7 +537,7 @@ def main() -> int:
         signal.signal(signal.SIGINT, deadly_signal)
         signal.signal(signal.SIGTERM, deadly_signal)
 
-        def check_for_end(*_args):
+        def check_for_end(*_args) -> bool:
             qtime = ss.queue.get_property("current-level-time") // MS_TO_NS
             if qtime <= 0:
                 log.info("underrun (end of stream)")

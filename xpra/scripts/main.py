@@ -781,7 +781,7 @@ def do_run_mode(script_file: str, cmdline: list[str], error_cb: Callable, option
         if not has_audio_support():
             error_cb("no audio support!")
         from xpra.audio.wrapper import run_audio
-        return run_audio(mode, error_cb, options, args)
+        return run_audio(mode, error_cb, args)
     if mode == "pinentry":
         check_gtk_client()
         from xpra.scripts.pinentry import run_pinentry

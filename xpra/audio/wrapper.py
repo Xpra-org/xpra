@@ -152,7 +152,7 @@ class AudioPlay(AudioSubprocess):
         super().__init__(audio_pipeline, ["add_data"], [])
 
 
-def run_audio(mode: str, error_cb: Callable, options, args) -> int:
+def run_audio(mode: str, error_cb: Callable, args: list[str]) -> int:
     """ this function just parses command line arguments to feed into the audio subprocess class,
         which in turn just feeds them into the audio pipeline class (sink.py or src.py)
     """
@@ -162,7 +162,7 @@ def run_audio(mode: str, error_cb: Callable, options, args) -> int:
     info = mode.replace("_audio_", "")  # ie: "_audio_record" -> "record"
     from xpra.platform import program_context
     with program_context(f"Xpra-Audio-{info}", f"Xpra Audio {info}"):
-        log("run_audio(%s, %s, %s, %s) gst=%s", mode, error_cb, options, args, gst)
+        log("run_audio%s gst=%s", (mode, error_cb, args), gst)
         if info == "record":
             subproc = AudioRecord
         elif info == "play":
@@ -226,7 +226,7 @@ def run_audio(mode: str, error_cb: Callable, options, args) -> int:
             log.error(f"{info}: {e}")
             return 1
         except OSError:
-            log.error("run_audio%s error", (mode, error_cb, options, args), exc_info=True)
+            log.error("run_audio%s error", (mode, error_cb, args), exc_info=True)
             return 1
         finally:
             if ss:
