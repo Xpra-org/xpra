@@ -191,7 +191,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
                 im = im.convert("L")
             rgb = "L"
             bpp = 8
-        elif coding.startswith("png") and not supports_transparency and rgb == "RGBA":
+        elif rgb == "RGBA" and (coding == "jpeg" or not supports_transparency):
             im = im.convert("RGB")
             rgb = "RGB"
             bpp = 24
@@ -208,9 +208,6 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
         im = im.resize((scaled_width, scaled_height), resample=resample)
         client_options["resample"] = getattr(resample, "name", str(resample))
     if coding in ("jpeg", "webp"):
-        # newer versions of pillow require explicit conversion to non-alpha:
-        if pixel_format.find("A") >= 0 and coding == "jpeg":
-            im = im.convert("RGB")
         q = int(min(100, max(1, quality)))
         kwargs: dict[str, Any] = dict(im.info)
         kwargs["quality"] = q
@@ -222,9 +219,8 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
             client_options["quality"] = min(100, max(0, 10 + round(sqrt(sqrt(q * 100) * 100))))
         else:
             # jpeg:
-            if speed < 50:
-                # (optimizing jpeg is pretty cheap and worth doing)
-                kwargs["optimize"] = True
+            # (optimizing jpeg is pretty cheap and worth doing)
+            kwargs["optimize"] = speed < 50
             client_options["quality"] = min(99, q)
         pil_fmt = coding.upper()
     elif coding in ("png", "png/P", "png/L"):
@@ -255,9 +251,8 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
             im.paste(255, mask)
             client_options["transparency"] = 255
             kwargs["transparency"] = 255
-        if speed == 0:
-            # optimizing png is very rarely worth doing
-            kwargs["optimize"] = True
+        # optimizing png is very rarely worth doing
+        kwargs["optimize"] = speed == 0
         # level can range from 0 to 9, but anything above 5 is way too slow for small gains:
         # 76-100   -> 1
         # 51-76    -> 2
