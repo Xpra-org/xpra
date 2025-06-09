@@ -100,6 +100,17 @@ def alpha_mask_value(a: int) -> int:
     return int(a <= 128) * 255
 
 
+def pillow_palette(image: ImageWrapper) -> list[tuple[int, int, int]]:
+    palette: list[tuple[int, int, int]] = []
+    # pillow requires 8 bit palette values,
+    # but we get 16-bit values from the image wrapper (X11 palettes are 16-bit):
+    for r, g, b in image.get_palette():
+        palette.append((r >> 8) & 0xFF)
+        palette.append((g >> 8) & 0xFF)
+        palette.append((b >> 8) & 0xFF)
+    return palette
+
+
 def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Compressed, dict[str, Any], int, int, int, int]:
     log("pillow.encode%s", (coding, image, options))
     quality = options.intget("quality", 50)
@@ -107,7 +118,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
     supports_transparency = options.boolget("alpha", True)
     grayscale = options.boolget("grayscale", False)
     pixel_format: str = image.get_pixel_format()
-    palette: list[int] = []
+    palette: list[tuple[int, int, int]] = []
     w: int = image.get_width()
     h: int = image.get_height()
     bpp = 32
@@ -143,13 +154,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
             bpp = 24
     elif pixel_format == "RLE8":
         pixel_format = "P"
-        palette = []
-        # pillow requires 8 bit palette values,
-        # but we get 16-bit values from the image wrapper (X11 palettes are 16-bit):
-        for r, g, b in image.get_palette():
-            palette.append((r >> 8) & 0xFF)
-            palette.append((g >> 8) & 0xFF)
-            palette.append((b >> 8) & 0xFF)
+        palette = pillow_palette(image)
         bpp = 8
     elif pixel_format not in ("RGBA", "RGBX", "BGRA", "BGRX", "BGR", "RGB", "XRGB"):
         raise ValueError(f"invalid pixel format {pixel_format!r}")
