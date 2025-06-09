@@ -576,7 +576,7 @@ def request_exit(uri: str) -> bool:
     return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
 
-def start_dbus():
+def start_dbus() -> None:
     ROOT: bool = POSIX and getuid() == 0
     SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", ROOT)
     SYSTEM_DBUS_TIMEOUT = envint("XPRA_SYSTEM_DBUS_TIMEOUT", 5)
@@ -596,7 +596,10 @@ def start_dbus():
             except OSError as e:
                 warn(f"unable to create machine_id: {e}\n")
         if not os.path.exists("/run/dbus"):
-            os.mkdir("/run/dbus", 0o755)
+            try:
+                os.mkdir("/run/dbus", 0o755)
+            except OSError as e:
+                warn(f"unable to create `/run/dbus`: {e}")
         Popen(["dbus-daemon", "--system", "--fork"]).wait()
         if not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
             warn("dbus-daemon failed to start\n")
@@ -604,7 +607,7 @@ def start_dbus():
             warn("started system dbus daemon\n")
 
 
-def start_cupsd():
+def start_cupsd() -> None:
     ROOT: bool = POSIX and getuid() == 0
     SYSTEM_CUPS = envbool("XPRA_SYSTEM_CUPS", ROOT)
     SYSTEM_CUPS_TIMEOUT = envint("XPRA_SYSTEM_CUPS_TIMEOUT", 5)
