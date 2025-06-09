@@ -180,6 +180,8 @@ def do_get_bind_ifacemask(iface) -> Sequence[tuple[str, str]]:
 
 
 def _parse_ip_part(s: str) -> int:
+    if not s:
+        return 0
     try:
         return int(s)
     except ValueError:
