@@ -314,6 +314,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
                 modifiers.add(modifier)
             if keysym in DEBUG_KEYSYMS:
                 log_fn = log.info
+                break
         log_fn("modifiers_for(%s)=%s", entries, modifiers)
         return modifiers
 
@@ -484,6 +485,7 @@ def translate_keycodes(kcmin: int, kcmax: int, keycodes, preserve_keycode_entrie
         for name, _ in entries:
             if name in DEBUG_KEYSYMS:
                 log_fn = log.info
+                break
         if (server_keycode in server_keycodes) and not override_server_keycode:
             log_fn("assign: server keycode %s already in use: %s", server_keycode, server_keycodes.get(server_keycode))
             server_keycode = -1
@@ -529,7 +531,7 @@ def translate_keycodes(kcmin: int, kcmax: int, keycodes, preserve_keycode_entrie
             log("skipped invalid keysym: %s / %s", client_keycode, entries)
             return 0
         log_fn = log.debug
-        if [k for k in keysyms if k in DEBUG_KEYSYMS]:
+        if any(bool(k) for k in keysyms if k in DEBUG_KEYSYMS):
             log_fn = log.info
         log_fn("assign(%s, %s)", client_keycode, entries)
 
@@ -679,7 +681,7 @@ def keymap_to_xmodmap(trans_keycodes: dict[int, Any]) -> list[tuple]:
         while keysyms and keysyms[0] is None:
             keysyms = keysyms[1:]
         log_fn = log.debug
-        if [k for k in keysyms if k in DEBUG_KEYSYMS]:
+        if any(bool(k) for k in keysyms if k in DEBUG_KEYSYMS):
             log_fn = log.info
         log_fn("%s: %s -> %s", server_keycode, names, keysyms)
         instructions.append(("keycode", server_keycode, keysyms))
