@@ -7,6 +7,7 @@ import os
 from typing import Any
 from collections.abc import Iterable
 
+from xpra.common import noop
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, csv, bytestostr, Ellipsizer
@@ -202,18 +203,22 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
 
     def find_keycode(kc: int, keysym, i: int) -> tuple | None:
         keycodes = tuple(x11_keycodes_for_keysym.get(keysym, set()))
-        if keysym in DEBUG_KEYSYMS:
-            log.info("set_keycode_translation: find_keycode%s x11 keycodes=%s", (kc, keysym, i), keycodes)
-
-        def rlog(keycode, msg) -> None:
-            if keysym in DEBUG_KEYSYMS:
-                log.info("set_keycode_translation: find_keycode%s=%s (%s)", (kc, keysym, i), keycode, msg)
         if not keycodes:
             return None
+
+        debug_keysym = keysym in DEBUG_KEYSYMS
+        if debug_keysym:
+            log.info("set_keycode_translation: find_keycode%s x11 keycodes=%s", (kc, keysym, i), keycodes)
+
+            def rlog(keycode, msg) -> None:
+                log.info("set_keycode_translation: find_keycode%s=%s (%s)", (kc, keysym, i), keycode, msg)
+        else:
+            rlog = noop
+
         # no other option, use it:
         for keycode in keycodes:
             defs = x11_keycodes.get(keycode)
-            if keysym in DEBUG_KEYSYMS:
+            if debug_keysym:
                 log.info("server x11 keycode %i: %s", keycode, defs)
             if not defs:
                 raise RuntimeError(f"bug: keycode {keycode} not found in {x11_keycodes}")
@@ -246,15 +251,12 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
         # (present in x11_keycodes but not keycodes)
         for keycode, keysyms in x11_keycodes.items():
             for i, keysym in enumerate(keysyms):
-                if keysym not in trans:
-                    if keysym in DEBUG_KEYSYMS:
-                        log.info("x11 keycode %s: %s", keycode, keysym)
-                    trans[keysym] = keycode
-                key = (keysym, i)
-                if key not in trans:
-                    if keysym in DEBUG_KEYSYMS:
-                        log.info("x11 keycode %s: %s", keycode, key)
-                    trans[key] = keycode
+                if keysym in DEBUG_KEYSYMS:
+                    log.info("x11 keycode %s: %s", keycode, keysym)
+                # record under `keysym` and also `(keysym, index)`:
+                for trans_key in (keysym, (keysym, i)):
+                    if trans_key not in trans:
+                        trans[trans_key] = keycode
     log("set_keycode_translation(..)=%s", Ellipsizer(trans))
     verboselog("set_keycode_translation(..)=%s", trans)
     return trans
