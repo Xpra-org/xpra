@@ -142,16 +142,11 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
             pixel_format = "RGB"
             bpp = 24
     elif pixel_format == "BGR565":
-        from xpra.codecs.argb.argb import bgr565_to_rgbx, bgr565_to_rgb  # pylint: disable=import-outside-toplevel
-        if supports_transparency:
-            rowstride = in_stride * 2
-            pixels = bgr565_to_rgbx(pixels)
-            pixel_format = "RGBA"
-        else:
-            rowstride = in_stride * 3 // 2
-            pixels = bgr565_to_rgb(pixels)
-            pixel_format = "RGB"
-            bpp = 24
+        from xpra.codecs.argb.argb import bgr565_to_rgb  # pylint: disable=import-outside-toplevel
+        rowstride = in_stride * 3 // 2
+        pixels = bgr565_to_rgb(pixels)
+        pixel_format = "RGB"
+        bpp = 24
     elif pixel_format == "RLE8":
         pixel_format = "P"
         palette = pillow_palette(image)
