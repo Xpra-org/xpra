@@ -75,8 +75,9 @@ class SqliteDatabaseUtil(DatabaseUtilBase):
         import sqlite3  # pylint: disable=import-outside-toplevel
         db = sqlite3.connect(self.uri)
         cursor = db.cursor()
-        log("%s.execute%s", cursor, (sql, sqlargs))
-        cursor.execute(sql, *sqlargs)
+        args = [sql] + list(sqlargs)
+        log("%s.execute%s", cursor, args)
+        cursor.execute(args)
         if cursor_cb:
             cursor_cb(cursor)
         db.commit()
