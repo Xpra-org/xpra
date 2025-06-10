@@ -459,6 +459,8 @@ class ServerCore(ServerBaseClass):
         sleep(0.1)
 
     def late_cleanup(self, stop=True) -> None:
+        for bc in SERVER_BASES:
+            bc.late_cleanup(self, stop)
         self.cleanup_all_protocols(force=True)
         self._potential_protocols = []
         if self.pidfile:
