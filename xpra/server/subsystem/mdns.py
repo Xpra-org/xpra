@@ -34,9 +34,6 @@ class MdnsServer(StubServerMixin):
         # relies on these attributes duplicated from ServerCore:
         self._socket_info: dict = {}
         self.display = os.environ.get("DISPLAY", "")
-        # self.socket_info: dict[Any, dict] = {}
-        # self.socket_options: dict[Any, dict] = {}
-        # self.socket_cleanup: list[Callable] = []
 
     def init(self, opts) -> None:
         log("ServerCore.init(%s)", opts)

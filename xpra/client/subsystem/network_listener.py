@@ -48,8 +48,6 @@ class NetworkListener(StubClientMixin):
 
     def __init__(self):
         self.sockets: dict[Any, dict] = {}
-        self.socket_info: dict[Any, dict] = {}
-        self.socket_options: dict[Any, dict] = {}
         self.socket_cleanup: list[Callable] = []
         self._potential_protocols = []
         self._close_timers: dict[Any, int] = {}
@@ -106,36 +104,36 @@ class NetworkListener(StubClientMixin):
 
     def start_listen_sockets(self) -> None:
         for sock_def, options in self.sockets.items():
-            socktype, sock, info, _ = sock_def
-            log("start_listen_sockets() will add %s socket %s (%s)", socktype, sock, info)
-            self.socket_info[sock] = info
-            self.socket_options[sock] = options
-            GLib.idle_add(self.add_listen_socket, socktype, sock, options)
+            socktype, sock, address, _ = sock_def
+            log("start_listen_sockets() will add %s socket %s (%s)", socktype, sock, address)
+            GLib.idle_add(self.add_listen_socket, socktype, sock, address, options)
 
-    def add_listen_socket(self, socktype: str, sock, options: dict) -> None:
-        info = self.socket_info.get(sock)
-        log("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
-        cleanup = add_listen_socket(socktype, sock, info, None, self._new_connection, options)
+    def add_listen_socket(self, socktype: str, sock, address, options: dict) -> None:
+        log("add_listen_socket(%s, %s, %s) address=%s", socktype, sock, options, address)
+
+        def new_connection(socktype: str, listener, handle: int = 0):
+            return self._new_connection(socktype, listener, address, options, handle)
+
+        cleanup = add_listen_socket(socktype, sock, address, None, new_connection, options)
         if cleanup:
             self.socket_cleanup.append(cleanup)
 
-    def _new_connection(self, socktype: str, listener, handle: int = 0) -> bool:
+    def _new_connection(self, socktype: str, listener, address, socket_options: dict, handle: int):
         """
             Accept the new connection,
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
-        log("_new_connection%s", (listener, socktype, handle))
+        log("_new_connection%s", (socktype, listener, address, socket_options, handle))
         if self.exit_code is not None:
             log("ignoring new connection during shutdown")
             return False
         with log.trap_error(f"Error handling new {socktype} connection"):
-            self.handle_new_connection(socktype, listener, handle)
+            self.handle_new_connection(socktype, listener, address, socket_options, handle)
         return self.exit_code is None
 
-    def handle_new_connection(self, socktype: str, listener, handle) -> None:
+    def handle_new_connection(self, socktype: str, listener, address, socket_options: dict, handle: int) -> None:
         assert socktype, "cannot find socket type for %s" % listener
-        socket_options = self.socket_options.get(listener, {})
         if socktype == "named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
             conn = NamedPipeConnection(listener.pipe_name, handle, socket_options)
@@ -156,8 +154,7 @@ class NetworkListener(StubClientMixin):
         except (AttributeError, OSError):
             sockname = ""
         log("handle_new_connection%s sockname=%s", (socktype, listener, handle), sockname)
-        socket_info = self.socket_info.get(listener)
-        log_new_connection(conn, socket_info)
+        log_new_connection(conn, address)
         self.accept_protocol(socktype, conn, listener)
 
     def accept_protocol(self, socktype: str, conn, listener) -> None:

@@ -206,8 +206,6 @@ class ServerCore(ServerBaseClass):
         self._html: bool = False
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
-        self.socket_info: dict[Any, dict] = {}
-        self.socket_options: dict[Any, dict] = {}
         self.socket_cleanup: list[Callable] = []
         self.socket_verify_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
         self.socket_rfb_upgrade_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
@@ -500,8 +498,8 @@ class ServerCore(ServerBaseClass):
         # actually close the socket:
         si = self._socket_info
         self._socket_info = {}
-        for socktype, _, info, cleanup in si:
-            log("cleanup_sockets() calling %s for %s %s", cleanup, socktype, info)
+        for socktype, _, address, cleanup in si:
+            log("cleanup_sockets() calling %s for %s %s", cleanup, socktype, address)
             try:
                 cleanup()
             except OSError:
@@ -622,7 +620,7 @@ class ServerCore(ServerBaseClass):
 
     # #####################################################################
     # sockets / connections / packets:
-    def init_sockets(self, sockets) -> None:
+    def init_sockets(self, sockets: dict) -> None:
         self._socket_info.update(sockets)
 
     def init_local_sockets(self, opts, display_name: str, clobber: bool) -> None:
@@ -694,22 +692,16 @@ class ServerCore(ServerBaseClass):
     def start_listen_sockets(self) -> None:
         # All right, we're ready to accept customers:
         for sock_def, options in self._socket_info.items():
-            socktype, sock, info, _ = sock_def
-            netlog("init_sockets(%s) will add %s socket %s (%s)", self._socket_info, socktype, sock, info)
-            self.socket_info[sock] = info
-            self.socket_options[sock] = options
-            GLib.idle_add(self.add_listen_socket, socktype, sock, options)
-            if socktype == "socket" and info:
-                if info.startswith("@"):
+            socktype, sock, address, _ = sock_def
+            netlog("init_sockets(%s) will add %s socket %s (%s)", self._socket_info, socktype, sock, address)
+            GLib.idle_add(self.add_listen_socket, socktype, sock, address, options)
+            if socktype == "socket" and address:
+                if address.startswith("@"):
                     # abstract sockets can't be 'touch'ed
                     continue
-                try:
-                    p = os.path.abspath(info)
-                    self.unix_socket_paths.append(p)
-                    netlog("added unix socket path: %s", p)
-                except Exception as e:
-                    log.error("failed to set socket path to %s: %s", info, e)
-                    del e
+                path = os.path.abspath(address)
+                self.unix_socket_paths.append(path)
+                netlog("added unix socket path: %s", path)
         if self.unix_socket_paths:
             self.touch_sockets()
             self.touch_timer = GLib.timeout_add(60 * 1000, self.touch_sockets)
@@ -770,28 +762,29 @@ class ServerCore(ServerBaseClass):
             else:
                 self.disconnect_protocol(protocol, reason)
 
-    def add_listen_socket(self, socktype: str, sock, options: dict) -> None:
-        info = self.socket_info.get(sock)
-        netlog("add_listen_socket(%s, %s, %s) info=%s", socktype, sock, options, info)
-        cleanup = add_listen_socket(socktype, sock, info, self, self._new_connection, options)
+    def add_listen_socket(self, socktype: str, sock, address, options: dict) -> None:
+        netlog("add_listen_socket(%s, %s, %s) address=%s", socktype, sock, options, address)
+
+        def new_connection(socktype: str, listener, handle: int = 0):
+            return self._new_connection(socktype, listener, address, options, handle)
+
+        cleanup = add_listen_socket(socktype, sock, address, self, new_connection, options)
         if cleanup:
             self.socket_cleanup.append(cleanup)
 
-    def _new_connection(self, socktype: str, listener, handle: int = 0):
+    def _new_connection(self, socktype: str, listener, address, socket_options: dict, handle: int):
         """
             Accept the new connection,
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
-        log("_new_connection%s", (listener, socktype, handle))
+        log("_new_connection%s", (socktype, listener, address, socket_options, handle))
         if self._closing:
             netlog("ignoring new connection during shutdown")
             return False
         if not socktype:
             netlog.error(f"Error: cannot find socket type for {listener!r}")
             return True
-        # TODO: just like add_listen_socket above, this needs refactoring
-        socket_options = self.socket_options.get(listener, {})
         if socktype == "named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
             conn: Connection = NamedPipeConnection(listener.pipe_name, handle, socket_options)
@@ -809,20 +802,19 @@ class ServerCore(ServerBaseClass):
             force_close_connection(conn)
             return True
         # from here on, we run in a thread, so we can poll (peek does)
-        socket_info = self.socket_info.get(listener)
         start_thread(self.handle_new_connection, f"new-{socktype}-connection", True,
-                     args=(conn, socket_info, socket_options))
+                     args=(conn, address, socket_options))
         return True
 
-    def new_conn_err(self, conn, sock, socktype: str, socket_info, packet_type: str, msg=None) -> None:
+    def new_conn_err(self, conn, sock, socktype: str, address, packet_type: str, msg=None) -> None:
         # not an xpra client
         netlog("new_conn_err", exc_info=True)
         log_fn = netlog.debug if packet_type == "http" else netlog.error
         log_fn("Error: %s connection failed:", socktype)
         if conn.remote:
             log_fn(" packet from %s", pretty_socket(conn.remote))
-        if socket_info:
-            log_fn(" received on %s", pretty_socket(socket_info))
+        if address:
+            log_fn(" received on %s", pretty_socket(address))
         if packet_type:
             log_fn(" this packet looks like a '%s' packet", packet_type)
         else:
@@ -850,7 +842,7 @@ class ServerCore(ServerBaseClass):
             netlog("error sending %r: %s", packet_data, e)
         GLib.timeout_add(500, force_close_connection, conn)
 
-    def handle_new_connection(self, conn, socket_info, socket_options: dict) -> None:
+    def handle_new_connection(self, conn, address, socket_options: dict) -> None:
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
@@ -865,7 +857,7 @@ class ServerCore(ServerBaseClass):
         sock.settimeout(self._socket_timeout)
 
         netlog("handle_new_connection%s sockname=%s, target=%s",
-               (conn, socket_info, socket_options), sockname, target)
+               (conn, address, socket_options), sockname, target)
         # peek so we can detect invalid clients early,
         # or handle non-xpra / wrapped traffic:
         timeout = PEEK_TIMEOUT_MS
@@ -901,7 +893,7 @@ class ServerCore(ServerBaseClass):
         if socktype in ("ssl", "wss"):
             # verify that this isn't plain HTTP / xpra:
             if packet_type not in ("ssl", ""):
-                self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
+                self.new_conn_err(conn, sock, socktype, address, packet_type)
                 return
             # always start by wrapping with SSL:
             ssl_conn = ssl_wrap()
@@ -924,13 +916,13 @@ class ServerCore(ServerBaseClass):
                         netlog("looking for 'HTTP' in %r: %s", line1, http)
             if http:
                 if not self.http:
-                    self.new_conn_err(conn, sock, socktype, socket_info, packet_type,
+                    self.new_conn_err(conn, sock, socktype, address, packet_type,
                                       "the builtin http server is not enabled")
                     return
                 self.start_http_socket(socktype, ssl_conn, socket_options, True, peek_data)
             else:
                 ssl_conn._socket.settimeout(self._socket_timeout)
-                log_new_connection(ssl_conn, socket_info)
+                log_new_connection(ssl_conn, address)
                 self.make_protocol(socktype, ssl_conn, socket_options)
             return
 
@@ -942,21 +934,21 @@ class ServerCore(ServerBaseClass):
                     if conn is None:
                         return
                 elif packet_type not in (None, "http"):
-                    self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
+                    self.new_conn_err(conn, sock, socktype, address, packet_type)
                     return
             self.start_http_socket(socktype, conn, socket_options, False, peek_data)
             return
 
         if socktype == "rfb":
             if peek_data and peek_data[:4] != b"RFB " and can_upgrade_to("rfb"):
-                self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
+                self.new_conn_err(conn, sock, socktype, address, packet_type)
                 return
             self.handle_rfb_connection(conn)
             return
 
         if socktype == "rdp":
             if peek_data and peek_data[:2] != b"\x03\x00":
-                self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
+                self.new_conn_err(conn, sock, socktype, address, packet_type)
                 return
             self.handle_rdp_connection(conn)
             return
@@ -971,18 +963,18 @@ class ServerCore(ServerBaseClass):
             # see if the packet data is actually xpra or something else
             # that we need to handle via a SSL wrapper or the websocket adapter:
             try:
-                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, socket_info, socket_options, peek_data)
+                cont, conn, peek_data = self.may_wrap_socket(conn, socktype, address, socket_options, peek_data)
                 netlog("may_wrap_socket(..)=(%s, %s, %r)", cont, conn, Ellipsizer(peek_data))
                 if not cont:
                     return
                 packet_type = guess_packet_type(peek_data)
             except OSError as e:
                 netlog("socket wrapping failed", exc_info=True)
-                self.new_conn_err(conn, sock, socktype, socket_info, packet_type, str(e))
+                self.new_conn_err(conn, sock, socktype, address, packet_type, str(e))
                 return
 
         if packet_type not in ("xpra", ""):
-            self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
+            self.new_conn_err(conn, sock, socktype, address, packet_type)
             return
 
         # get the new socket object as we may have wrapped it with ssl:
@@ -1004,7 +996,7 @@ class ServerCore(ServerBaseClass):
                 netlog.error("Error reading from %s", conn, exc_info=True)
                 return
         sock.settimeout(self._socket_timeout)
-        log_new_connection(conn, socket_info)
+        log_new_connection(conn, address)
         proto = self.make_protocol(socktype, conn, socket_options, pre_read=pre_read)
         if socktype == "tcp" and not peek_data and self._rfb_upgrade > 0:
             t = GLib.timeout_add(self._rfb_upgrade * 1000, self.try_upgrade_to_rfb, proto)
@@ -1182,7 +1174,7 @@ class ServerCore(ServerBaseClass):
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
 
-    def may_wrap_socket(self, conn, socktype: str, socket_info, socket_options: dict, peek_data=b"") \
+    def may_wrap_socket(self, conn, socktype: str, address, socket_options: dict, peek_data=b"") \
             -> tuple[bool, Any, bytes]:
         """
             Returns:
@@ -1209,7 +1201,7 @@ class ServerCore(ServerBaseClass):
             return self.can_upgrade(socktype, to_socktype, socket_options)
 
         def conn_err(msg) -> tuple[bool, Any, bytes]:
-            self.new_conn_err(conn, conn._socket, socktype, socket_info, packet_type, msg)
+            self.new_conn_err(conn, conn._socket, socktype, address, packet_type, msg)
             return False, None, b""
 
         if packet_type == "ssh":
@@ -2021,10 +2013,10 @@ class ServerCore(ServerBaseClass):
 
         netifaces = import_netifaces()
         for sock_details, options in self._socket_info.items():
-            socktype, _, info, _ = sock_details
-            if not info:
+            socktype, _, address, _ = sock_details
+            if not address:
                 continue
-            add_listener(socktype, info)
+            add_listener(socktype, address)
             if not SHOW_NETWORK_ADDRESSES:
                 continue
             if socktype not in ("tcp", "ssl", "ws", "wss", "ssh"):
@@ -2033,13 +2025,13 @@ class ServerCore(ServerBaseClass):
             upnp_address = options.get("upnp-address")
             if upnp_address:
                 add_address(socktype, *upnp_address)
-            if len(info) != 2 or not isinstance(info[0], str) or not isinstance(info[1], int):
+            if len(address) != 2 or not isinstance(address[0], str) or not isinstance(address[1], int):
                 # unsupported listener info format
                 continue
-            address, port = info
-            if address not in ("0.0.0.0", "::/0", "::"):
+            host, port = address
+            if host not in ("0.0.0.0", "::/0", "::"):
                 # not a wildcard address, use it as-is:
-                add_address(socktype, address, port)
+                add_address(socktype, host, port)
                 continue
             if not netifaces:
                 if first_time("netifaces-socket-address"):
