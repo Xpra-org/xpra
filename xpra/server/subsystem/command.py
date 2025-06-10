@@ -143,7 +143,7 @@ class ChildCommandServer(StubServerMixin):
         if self.start_new_commands:
             # may already have been initialized by servercore:
             from xpra.server.menu_provider import get_menu_provider
-            self.menu_provider = self.menu_provider or get_menu_provider()
+            self.menu_provider = get_menu_provider()
             self.menu_provider.on_reload.append(self.send_updated_menu)
 
     def threaded_setup(self) -> None:
@@ -156,13 +156,18 @@ class ChildCommandServer(StubServerMixin):
 
         GLib.idle_add(set_reaper_callback)
 
+        if self.menu_provider:
+            self.menu_provider.setup()
+
     def cleanup(self) -> None:
         if self.terminate_children and self._exit_mode not in (ServerExitMode.UPGRADE, ServerExitMode.EXIT):
             self.terminate_children_processes()
         # during cleanup, just ignore the reaper exit callback:
         self.reaper_exit = noop
-        if self.menu_provider:
-            self.menu_provider.cleanup()
+        mp = self.menu_provider
+        if mp:
+            self.menu_provider = None
+            mp.cleanup()
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {

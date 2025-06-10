@@ -244,7 +244,6 @@ class ServerCore(ServerBaseClass):
         self.init_thread = None
         self.init_thread_callbacks: list[tuple[Callable, tuple]] = []
         self.init_thread_lock = Lock()
-        self.menu_provider = None
 
         self._default_packet_handlers: dict[str, Callable] = {}
 
@@ -273,10 +272,6 @@ class ServerCore(ServerBaseClass):
         self.websocket_upgrade = opts.websocket_upgrade
         self.ssh_upgrade = opts.ssh_upgrade
         self.rdp_upgrade = opts.rdp_upgrade
-        if opts.start_new_commands:
-            # must be initialized before calling init_html_proxy
-            from xpra.server.menu_provider import get_menu_provider
-            self.menu_provider = get_menu_provider()
         if self.http:
             self.init_html_proxy(opts)
         for bc in SERVER_BASES:
@@ -372,8 +367,6 @@ class ServerCore(ServerBaseClass):
         # populate the platform info cache:
         get_platform_info()
         init_memcheck()
-        if self.menu_provider:
-            self.menu_provider.setup()
         add_work_item(self.print_run_info)
         GLib.idle_add(self.reset_server_timeout)
         log("threaded_setup() servercore end")
@@ -443,7 +436,6 @@ class ServerCore(ServerBaseClass):
         self.cleanup_all_protocols()
         self.do_cleanup()
         self.cleanup_sockets()
-        self.cleanup_menu_provider()
         netlog("cleanup() done for server core")
 
     def do_cleanup(self) -> None:
@@ -473,12 +465,6 @@ class ServerCore(ServerBaseClass):
                 sp.terminate()
             except OSError:
                 log("stop_splash_process()", exc_info=True)
-
-    def cleanup_menu_provider(self) -> None:
-        mp = self.menu_provider
-        if mp:
-            self.menu_provider = None
-            mp.cleanup()
 
     def cleanup_sockets(self) -> None:
         sockets = self.sockets
