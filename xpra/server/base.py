@@ -50,7 +50,11 @@ class ServerBase(ServerBaseClass):
         for c in SERVER_BASES:
             c.__init__(self)
         log("ServerBase.__init__()")
-
+        self.hello_request_handlers.update({
+            "detach": self._handle_hello_request_detach,
+            "exit": self._handle_hello_request_exit,
+            "stop": self._handle_hello_request_stop,
+        })
         self._server_sources: dict = {}
         self.client_properties: dict[int, dict] = {}
         self.ui_driver = None
@@ -149,22 +153,39 @@ class ServerBase(ServerBaseClass):
     ######################################################################
     # shutdown / exit commands:
     def _process_exit_server(self, _proto, packet: Packet = Packet("exit-server")) -> None:
-        reason: ConnectionMessage | str = ConnectionMessage.SERVER_EXIT
-        message = "Exiting in response to client request"
+        # packet from a client
+        reason = ""
         if len(packet) > 1:
             reason = packet.get_str(1)
+        self._request_exit(reason)
+
+    def _handle_hello_request_exit(self, _proto, _caps: typedict) -> bool:
+        # handle "xpra exit" hello request
+        self._request_exit()
+        return True
+
+    def _request_exit(self, reason: ConnectionMessage | str = "") -> None:
+        message = "Exiting in response to client request"
+        if reason:
             message += ": " + reason
         log.info(message)
         self.cleanup_all_protocols(reason=reason)
         GLib.timeout_add(500, self.clean_quit, ServerExitMode.EXIT)
 
     def _process_shutdown_server(self, _proto, _packet: Packet = Packet("shutdown-server")) -> None:
+        self._request_stop()
+
+    def _handle_hello_request_stop(self, _proto, _caps: typedict) -> bool:
+        return self._request_stop()
+
+    def _request_stop(self) -> bool:
         if not self.client_shutdown:
             log.warn("Warning: ignoring shutdown request")
-            return
+            return False
         log.info("Shutting down in response to client request")
         self.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
         GLib.timeout_add(500, self.clean_quit)
+        return True
 
     def get_mdns_info(self) -> dict[str, Any]:
         mdns_info = ServerCore.get_mdns_info(self)
@@ -277,25 +298,11 @@ class ServerBase(ServerBaseClass):
         # process ui half in ui thread:
         GLib.idle_add(self.process_hello_ui, ss, c, auth_caps, ui_client, share_count)
 
-    def do_handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
-        if super().do_handle_hello_request(request, proto, caps):
-            return True
-        if request == "detach":
-            self.detach_server(proto)
-            return True
-        if request == "exit":
-            self._process_exit_server(proto)
-            return True
-        if request == "stop":
-            self._process_shutdown_server(proto)
-            return True
-        return False
-
-    def detach_server(self, proto) -> None:
+    def _handle_hello_request_detach(self, proto, caps: typedict) -> bool:
         if self.lock is True:
             authlog("cannot detach: session is locked")
             self.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
-            return
+            return False
         count = locked = 0
         for p, ss in tuple(self._server_sources.items()):
             if p != proto:
@@ -309,6 +316,7 @@ class ServerBase(ServerBaseClass):
         if locked:
             message += f", {locked} still have it locked"
         self.disconnect_client(proto, ConnectionMessage.DONE, message)
+        return True
 
     @staticmethod
     def get_client_connection_class(caps: typedict) -> type:
