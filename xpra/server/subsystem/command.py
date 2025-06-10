@@ -13,7 +13,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.platform.features import COMMAND_SIGNALS
-from xpra.util.child_reaper import getChildReaper, ProcInfo
+from xpra.util.child_reaper import get_child_reaper, ProcInfo
 from xpra.common import noop, BACKWARDS_COMPATIBLE
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.objects import typedict
@@ -58,7 +58,7 @@ def guess_session_name(procs=None, exec_wrapper=()) -> str:
     if not procs:
         return ""
     # use the commands to define the session name:
-    child_reaper = getChildReaper()
+    child_reaper = get_child_reaper()
     child_reaper.poll()
     cmd_names = []
     for proc in procs:
@@ -114,7 +114,6 @@ class ChildCommandServer(StubServerMixin):
         self.exec_wrapper: list[str] = []
         self.terminate_children: bool = False
         self.children_started: list[ProcInfo] = []
-        self.child_reaper = None
         self.reaper_exit: Callable = self.reaper_exit_check
         # does not belong here...
         if not hasattr(self, "_exit_mode"):
@@ -139,7 +138,6 @@ class ChildCommandServer(StubServerMixin):
         self.start_child_on_last_client_exit = opts.start_child_on_last_client_exit
         if opts.exec_wrapper:
             self.exec_wrapper = shlex.split(opts.exec_wrapper)
-        self.child_reaper = getChildReaper()
         self.source_env = source_env(opts.source_start)
         self.start_env = parse_env(opts.start_env)
         if self.start_new_commands:
@@ -152,8 +150,9 @@ class ChildCommandServer(StubServerMixin):
         self.exec_start_commands()
 
         def set_reaper_callback() -> None:
-            self.child_reaper.set_quit_callback(self.reaper_exit)
-            self.child_reaper.check()
+            child_reaper = get_child_reaper()
+            child_reaper.set_quit_callback(self.reaper_exit)
+            child_reaper.check()
 
         GLib.idle_add(set_reaper_callback)
 
@@ -344,7 +343,7 @@ class ChildCommandServer(StubServerMixin):
 
     def add_process(self, process, name: str, command, ignore: bool = False,
                     callback: Callable | None = None) -> ProcInfo:
-        return self.child_reaper.add_process(process, name, command, ignore, callback=callback)
+        return get_child_reaper().add_process(process, name, command, ignore, callback=callback)
 
     @staticmethod
     def is_child_alive(proc) -> bool:
@@ -363,7 +362,8 @@ class ChildCommandServer(StubServerMixin):
         if not cl:
             return
         wait_for = []
-        self.child_reaper.poll()
+        child_reaper = get_child_reaper()
+        child_reaper.poll()
         for procinfo in cl:
             proc = procinfo.process
             name = procinfo.name
@@ -380,7 +380,7 @@ class ChildCommandServer(StubServerMixin):
         log(f"waiting for child commands to exit: {wait_for}")
         start = monotonic()
         while monotonic() - start < TERMINATE_DELAY and wait_for:
-            self.child_reaper.poll()
+            child_reaper.poll()
             # this is called from the UI thread, we cannot sleep
             # sleep(1)
             wait_for = [procinfo for procinfo in wait_for if self.is_child_alive(procinfo.process)]
@@ -450,7 +450,7 @@ class ChildCommandServer(StubServerMixin):
         if signame not in COMMAND_SIGNALS:
             log.warn("Warning: invalid signal received: '%s'", signame)
             return
-        procinfo = self.child_reaper.get_proc_info(pid)
+        procinfo = get_child_reaper().get_proc_info(pid)
         if not procinfo:
             log.warn("Warning: command not found for pid %i", pid)
             return

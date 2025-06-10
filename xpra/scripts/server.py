@@ -58,7 +58,7 @@ from xpra.util.system import SIGNAMES
 from xpra.util.str_fn import nicestr
 from xpra.util.io import is_writable, stderr_print
 from xpra.util.env import unsetenv, envbool, envint, osexpand, get_saved_env, get_saved_env_var, source_env
-from xpra.util.child_reaper import getChildReaper
+from xpra.util.child_reaper import get_child_reaper
 from xpra.platform.dotxpra import DotXpra
 
 DESKTOP_GREETER = envbool("XPRA_DESKTOP_GREETER", True)
@@ -1213,7 +1213,7 @@ def _do_run_server(script_file: str, cmdline,
                 if xvfb_pidfile:
                     os.unlink(xvfb_pidfile)
 
-            vfb_procinfo = getChildReaper().add_process(xvfb, "xvfb", xvfb_cmd, ignore=True, callback=xvfb_terminated)
+            vfb_procinfo = get_child_reaper().add_process(xvfb, "xvfb", xvfb_cmd, ignore=True, callback=xvfb_terminated)
             log("xvfb process info=%s", vfb_procinfo.get_info())
             # always update as we may now have the "real" display name:
             os.environ["DISPLAY"] = display_name
@@ -1447,7 +1447,7 @@ def attach_client(options, defaults) -> None:
             cmd.append(f"--{x}={v}")
     env = get_saved_env()
     proc = Popen(cmd, env=env, start_new_session=POSIX and not OSX)
-    getChildReaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
+    get_child_reaper().add_process(proc, "client-attach", cmd, ignore=True, forget=False)
 
 
 def verify_gdk_display(display_name: str):

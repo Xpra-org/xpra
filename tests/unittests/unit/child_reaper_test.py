@@ -12,7 +12,7 @@ import subprocess
 
 from xpra.util.env import OSEnvContext
 from xpra.util import child_reaper
-from xpra.util.child_reaper import getChildReaper, reaper_cleanup, log
+from xpra.util.child_reaper import get_child_reaper, reaper_cleanup, log
 
 
 class TestChildReaper(unittest.TestCase):
@@ -23,16 +23,15 @@ class TestChildReaper(unittest.TestCase):
                 os.environ["XPRA_USE_PROCESS_POLLING"] = str(int(polling))
                 self.do_test_child_reaper()
 
-
     def do_test_child_reaper(self):
-        #force reset singleton:
+        # force reset singleton:
         child_reaper.singleton = None
-        #no-op:
+        # no-op:
         reaper_cleanup()
 
         log.setLevel(logging.ERROR)
-        cr = getChildReaper()
-        #one that exits before we add the process, one that takes longer:
+        cr = get_child_reaper()
+        # one that exits before we add the process, one that takes longer:
         TEST_CHILDREN = (["echo"], ["sleep", "0.5"])
         count = 0
         for cmd in TEST_CHILDREN:
@@ -44,14 +43,14 @@ class TestChildReaper(unittest.TestCase):
                 if not cr.check():
                     break
                 time.sleep(0.1)
-            #we can't check the returncode because it may not be set yet!
-            #assert proc.poll() is not None, "%s process did not terminate?" % cmd_info
+            # we can't check the returncode because it may not be set yet!
+            # assert proc.poll() is not None, "%s process did not terminate?" % cmd_info
             assert cr.check() is False, "reaper did not notice that the '%s' process has terminated" % cmd_info
             i = cr.get_info()
             children = i.get("children").get("total")
-            assert children==count, "expected %s children recorded, but got %s" % (count, children)
+            assert children == count, "expected %s children recorded, but got %s" % (count, children)
 
-        #now check for the forget option:
+        # now check for the forget option:
         proc = subprocess.Popen(["sleep", "60"])
         procinfo = cr.add_process(proc, "sleep 60", "sleep 60", False, True, None)
         assert repr(procinfo)
@@ -59,12 +58,12 @@ class TestChildReaper(unittest.TestCase):
         assert cr.check() is True, "sleep process terminated too quickly"
         i = cr.get_info()
         children = i.get("children").get("total")
-        assert children==count, "expected %s children recorded, but got %s" % (count, children)
-        #trying to claim it is dead when it is not:
-        #(this will print some warnings)
+        assert children == count, "expected %s children recorded, but got %s" % (count, children)
+        # trying to claim it is dead when it is not:
+        # (this will print some warnings)
         cr.add_dead_pid(proc.pid)
         proc.terminate()
-        #now wait for the sleep process to exit:
+        # now wait for the sleep process to exit:
         for _ in range(10):
             if proc.poll() is not None:
                 break
@@ -74,13 +73,13 @@ class TestChildReaper(unittest.TestCase):
         count -= 1
         i = cr.get_info()
         children = i.get("children").get("total")
-        if children!=count:
-            raise Exception("expected the sleep process to have been forgotten (%s children)" % count +
-            "but got %s children instead in the reaper records" % children)
+        if children != count:
+            raise Exception(f"expected the sleep process to have been forgotten ({count} children)"
+                            f"but got {children} children instead in the reaper records")
         reaper_cleanup()
-        #can run again:
+        # can run again:
         reaper_cleanup()
-        #nothing for an invalid pid:
+        # nothing for an invalid pid:
         assert cr.get_proc_info(-1) is None
 
 
@@ -88,6 +87,7 @@ def main():
     from xpra.os_util import WIN32
     if not WIN32:
         unittest.main()
+
 
 if __name__ == '__main__':
     main()

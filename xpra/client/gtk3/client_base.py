@@ -19,7 +19,7 @@ from xpra.common import noop, MIN_VREFRESH, MAX_VREFRESH
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, pver, bytestostr, hexstr, memoryview_to_bytes
 from xpra.util.env import envint, envbool, osexpand, first_time, IgnoreWarningsContext, ignorewarnings
-from xpra.util.child_reaper import getChildReaper
+from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import gi_import, WIN32, OSX, POSIX
 from xpra.util.system import is_Wayland
 from xpra.util.io import load_binary_file
@@ -333,7 +333,7 @@ class GTKXpraClient(GObjectXpraClient, UIXpraClient):
         except OSError:
             authlog("pinentry failed", exc_info=True)
             return self.process_challenge_prompt_dialog(prompt)
-        getChildReaper().add_process(proc, "pinentry", cmd, True, True)
+        get_child_reaper().add_process(proc, "pinentry", cmd, True, True)
         self.pinentry_proc = proc
         q = f"Enter {prompt}"
         p = self._protocol

@@ -255,9 +255,9 @@ class BaseGUIWindow(Gtk.Window):
         proc = exec_command(cmd)
         if proc.poll() is None:
             self.busy_cursor(btn)
-            from xpra.util.child_reaper import getChildReaper
-            getChildReaper().add_process(proc, "subcommand", cmd, ignore=True, forget=True,
-                                         callback=self.command_ended)
+            from xpra.util.child_reaper import get_child_reaper
+            get_child_reaper().add_process(proc, "subcommand", cmd, ignore=True, forget=True,
+                                           callback=self.command_ended)
 
     def command_ended(self, proc) -> None:
         self.reset_cursors()

@@ -423,8 +423,8 @@ def open_html_url(html: str = "open", mode: str = "tcp", bind: str = "127.0.0.1"
     def exec_open(*cmd) -> None:
         log(f"exec_open{cmd}")
         proc = Popen(args=cmd, env=get_saved_env())
-        from xpra.util.child_reaper import getChildReaper
-        getChildReaper().add_process(proc, "open-html5-client", " ".join(cmd), True, True)
+        from xpra.util.child_reaper import get_child_reaper
+        get_child_reaper().add_process(proc, "open-html5-client", " ".join(cmd), True, True)
 
     def webbrowser_open() -> None:
         log.info(f"opening html5 client using URL {url!r}")

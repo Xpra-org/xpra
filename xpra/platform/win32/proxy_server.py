@@ -155,5 +155,6 @@ class ProxyServer(_ProxyServer):
                     # TODO: test the named pipe
                     sleep(2)
                     break
-        self.child_reaper.add_process(proc, f"server-{username}", "xpra shadow", True, True)
+        from xpra.util.child_reaper import get_child_reaper
+        get_child_reaper().add_process(proc, f"server-{username}", "xpra shadow", True, True)
         return proc, f"named-pipe://{named_pipe}", named_pipe

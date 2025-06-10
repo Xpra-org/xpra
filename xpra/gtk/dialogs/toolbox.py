@@ -10,7 +10,7 @@ import os.path
 import subprocess
 from collections.abc import Iterable, Sequence
 
-from xpra.util.child_reaper import getChildReaper
+from xpra.util.child_reaper import get_child_reaper
 from xpra.gtk.signals import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import imagebutton, label
@@ -141,7 +141,7 @@ class ToolboxGUI(Gtk.Window):
         def cb(_btn) -> None:
             cmd = get_xpra_command() + ["example", example]
             proc = exec_command(cmd)
-            getChildReaper().add_process(proc, label_str, cmd, ignore=True, forget=True)
+            get_child_reaper().add_process(proc, label_str, cmd, ignore=True, forget=True)
 
         ib = imagebutton(label_str, None,
                          tooltip, clicked_callback=cb,

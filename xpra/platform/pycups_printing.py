@@ -128,8 +128,8 @@ def get_lpinfo_drv(make_and_model: str) -> str:
         log.error(" command used: '%s'", " ".join(command))
         return ""
     # use the global child reaper to make sure this doesn't end up as a zombie
-    from xpra.util.child_reaper import getChildReaper
-    cr = getChildReaper()
+    from xpra.util.child_reaper import get_child_reaper
+    cr = get_child_reaper()
     cr.add_process(proc, "lpinfo", command, ignore=True, forget=True)
     from xpra.util.thread import start_thread
 
@@ -246,8 +246,8 @@ def exec_lpadmin(args: Iterable[str], success_cb: Callable = noop) -> None:
     log("exec_lpadmin(%s) command=%s", args, command)
     proc = Popen(command, start_new_session=True)
     # use the global child reaper to make sure this doesn't end up as a zombie
-    from xpra.util.child_reaper import getChildReaper
-    cr = getChildReaper()
+    from xpra.util.child_reaper import get_child_reaper
+    cr = get_child_reaper()
 
     def check_returncode(_proc_cb) -> None:
         returncode = proc.poll()

@@ -21,7 +21,7 @@ from xpra.common import noop
 from xpra.os_util import gi_import, WIN32
 from xpra.util.io import setbinarymode
 from xpra.util.system import SIGNAMES
-from xpra.util.child_reaper import getChildReaper
+from xpra.util.child_reaper import get_child_reaper
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -365,7 +365,7 @@ class SubprocessCaller:
         log("exec_subprocess() command=%s, env=%s, kwargs=%s", self.command, env, kwargs)
         proc = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 env=env, start_new_session=True, **kwargs)
-        getChildReaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
+        get_child_reaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
         return proc
 
     def get_env(self) -> dict[str, str]:

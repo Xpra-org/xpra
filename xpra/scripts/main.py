@@ -104,8 +104,8 @@ def error_handler(*args) -> NoReturn:
 
 
 def add_process(*args, **kwargs):
-    from xpra.util.child_reaper import getChildReaper
-    return getChildReaper().add_process(*args, **kwargs)
+    from xpra.util.child_reaper import get_child_reaper
+    return get_child_reaper().add_process(*args, **kwargs)
 
 
 def get_logger() -> Logger:

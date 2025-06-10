@@ -12,7 +12,7 @@ from xpra.common import SocketState
 from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
-from xpra.util.child_reaper import getChildReaper
+from xpra.util.child_reaper import get_child_reaper
 from xpra.exit_codes import exit_str
 from xpra.scripts.config import OPTION_TYPES
 from xpra.scripts.main import get_command_args
@@ -148,7 +148,6 @@ class SessionsGUI(Gtk.Window):
 
         self.clients = {}
         self.clients_disconnecting = set()
-        self.child_reaper = getChildReaper()
 
         self.vbox = Gtk.VBox(homogeneous=False, spacing=20)
         self.add(self.vbox)
@@ -421,7 +420,7 @@ class SessionsGUI(Gtk.Window):
 
                 GLib.idle_add(update)
 
-        self.child_reaper.add_process(proc, "client-%s" % uri, cmd, True, True, proc_exit)
+        get_child_reaper().add_process(proc, "client-%s" % uri, cmd, True, True, proc_exit)
         self.clients[key] = proc
         self.populate()
 

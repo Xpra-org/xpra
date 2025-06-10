@@ -13,7 +13,7 @@ from collections.abc import Callable
 from xpra.util.env import envint
 from xpra.os_util import gi_import, WIN32, OSX
 from xpra.gtk.signals import register_os_signals
-from xpra.util.child_reaper import getChildReaper
+from xpra.util.child_reaper import get_child_reaper
 from xpra.exit_codes import ExitValue
 from xpra.net.file_transfer import ACCEPT, OPEN, DENY
 from xpra.util.stats import std_unit, std_unit_dec
@@ -341,7 +341,7 @@ class OpenRequestsWindow:
             log.error("Error: failed to open 'Downloads' folder:")
             log.estr(e)
         else:
-            getChildReaper().add_process(proc, "show-downloads", cmd, ignore=True, forget=True)
+            get_child_reaper().add_process(proc, "show-downloads", cmd, ignore=True, forget=True)
 
     def run(self) -> ExitValue:
         log("run()")

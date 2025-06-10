@@ -10,6 +10,7 @@ import unittest
 from contextlib import nullcontext
 
 from xpra.os_util import POSIX
+from xpra.util.child_reaper import get_child_reaper
 from xpra.util.objects import AdHocStruct
 from unit.test_util import silence_info
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
@@ -95,7 +96,7 @@ class ChildCommandMixinTest(ServerMixinTest):
         with silence_info(command):
             self.handle_packet(("command-signal", pid, "SIGINT"))
         time.sleep(1)
-        self.mixin.child_reaper.poll()
+        get_child_reaper().poll()
         info = self.mixin.get_info(self.protocol)
         commands = info.get("command")
         assert commands

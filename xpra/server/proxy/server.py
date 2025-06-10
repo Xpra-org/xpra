@@ -27,7 +27,7 @@ from xpra.server import features
 from xpra.server.core import ServerCore
 from xpra.net.control.common import ArgsControlCommand, ControlError
 from xpra.auth.common import SessionData
-from xpra.util.child_reaper import getChildReaper
+from xpra.util.child_reaper import get_child_reaper
 from xpra.scripts.parsing import str_to_bool, MODE_ALIAS
 from xpra.scripts.config import make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
 from xpra.scripts.main import parse_display_name, connect_to, start_server_subprocess
@@ -186,7 +186,6 @@ class ProxyServer(ProxyServerBaseClass):
         # as this will cause a fork and SIGCHLD to be emitted:
         from xpra.util.version import get_platform_info
         get_platform_info()
-        self.child_reaper = getChildReaper()
         create_system_dir(opts.system_proxy_socket)
 
     def init_control_commands(self) -> None:
@@ -576,8 +575,8 @@ class ProxyServer(ProxyServerBaseClass):
                 popen = process._popen
                 assert popen
                 # when this process dies, run reap to update our list of proxy instances:
-                self.child_reaper.add_process(popen, f"xpra-proxy-{display}",
-                                              "xpra-proxy-instance", True, True, self.reap)
+                get_child_reaper().add_process(popen, f"xpra-proxy-{display}",
+                                               "xpra-proxy-instance", True, True, self.reap)
             except Exception as pie:
                 log("start_proxy_process() failed", exc_info=True)
                 log.error("Error starting proxy instance process:")
@@ -660,7 +659,7 @@ class ProxyServer(ProxyServerBaseClass):
         proc, socket_path, display = start_server_subprocess(sys.argv[0], args,
                                                              mode, opts, username, uid, gid, env, cwd)
         if proc:
-            self.child_reaper.add_process(proc, "server-%s" % (display or socket_path), f"xpra {mode}", True, True)
+            get_child_reaper().add_process(proc, "server-%s" % (display or socket_path), f"xpra {mode}", True, True)
         log("start_new_session(..) pid=%s, socket_path=%s, display=%s, ", proc.pid, socket_path, display)
         return proc, socket_path, display
 

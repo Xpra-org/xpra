@@ -1015,7 +1015,7 @@ class WindowClient(StubClientMixin):
             return 0
         proc = self._pid_to_signalwatcher.get(pid)
         if proc is None or proc.poll():
-            from xpra.util.child_reaper import getChildReaper
+            from xpra.util.child_reaper import get_child_reaper
             if not title:
                 title = str(pid)
             cmd = get_python_execfile_command() + [SIGNAL_WATCHER_COMMAND] + [f"signal watcher for {std(title)}"]
@@ -1038,9 +1038,9 @@ class WindowClient(StubClientMixin):
                     execlog("watcher_terminated%s", args)
                     clean_signalwatcher(proc)
 
-                getChildReaper().add_process(proc, "signal listener for remote process %s" % pid,
-                                             command="xpra_signal_listener", ignore=True, forget=True,
-                                             callback=watcher_terminated)
+                get_child_reaper().add_process(proc, "signal listener for remote process %s" % pid,
+                                               command="xpra_signal_listener", ignore=True, forget=True,
+                                               callback=watcher_terminated)
                 execlog("using watcher pid=%i for server pid=%i", proc.pid, pid)
                 self._pid_to_signalwatcher[pid] = proc
                 ioc = GLib.IOCondition

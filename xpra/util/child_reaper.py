@@ -260,7 +260,7 @@ class ChildReaper:
 singleton: ChildReaper | None = None
 
 
-def getChildReaper() -> ChildReaper:
+def get_child_reaper() -> ChildReaper:
     global singleton
     if singleton is None:
         singleton = ChildReaper()

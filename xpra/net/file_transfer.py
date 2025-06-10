@@ -15,7 +15,7 @@ from time import monotonic
 from dataclasses import dataclass
 from collections.abc import Callable
 
-from xpra.util.child_reaper import getChildReaper
+from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import POSIX, WIN32, gi_import
 from xpra.util.io import umask_context, osclose
 from xpra.util.objects import typedict
@@ -741,7 +741,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.warn("Warning: failed to open the downloaded content")
                 filelog.warn(" '%s' returned %s", " ".join(command), returncode)
 
-        cr = getChildReaper()
+        cr = get_child_reaper()
         cr.add_process(proc, f"Open file {url}", command, True, True, open_done)
 
     def file_size_warning(self, action: str, location: str, basefilename: str, filesize: int, limit: int) -> None:

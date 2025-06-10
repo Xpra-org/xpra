@@ -424,14 +424,14 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             from paramiko import ProxyCommand
             sock = ProxyCommand(proxycommand)
             log(f"ProxyCommand({proxycommand})={sock}")
-            from xpra.util.child_reaper import getChildReaper
+            from xpra.util.child_reaper import get_child_reaper
             cmd = getattr(sock, "cmd", [])
 
             def proxycommand_ended(proc):
                 log(f"proxycommand_ended({proc}) exit code={proc.poll()}")
 
-            getChildReaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
-                                         callback=proxycommand_ended)
+            get_child_reaper().add_process(sock.process, "paramiko-ssh-client", cmd, True, True,
+                                           callback=proxycommand_ended)
             proxy_keys = get_keyfiles("proxy_key")
             log(f"{proxy_keys=}")
             from paramiko.client import SSHClient

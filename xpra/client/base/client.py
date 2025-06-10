@@ -28,7 +28,7 @@ from xpra.net.digest import get_salt
 from xpra.platform.info import get_name, get_username
 from xpra.client.base.factory import get_client_base_classes
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import, BITS
-from xpra.util.child_reaper import getChildReaper, reaper_cleanup
+from xpra.util.child_reaper import get_child_reaper, reaper_cleanup
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals
 from xpra.util.io import stderr_print
 from xpra.util.objects import typedict
@@ -81,7 +81,7 @@ class XpraClientBase(ClientBaseClass):
         # skip warning when running the client
         from xpra.util import child_reaper
         child_reaper.POLL_WARNING = False
-        getChildReaper()
+        get_child_reaper()
         log("XpraClientBase.defaults_init() os.environ:")
         for k, v in os.environ.items():
             log(f" {k}={v!r}")
@@ -235,7 +235,7 @@ class XpraClientBase(ClientBaseClass):
         if process:
             proc, name, command = process
             if proc:
-                getChildReaper().add_process(proc, name, command, ignore=True, forget=False)
+                get_child_reaper().add_process(proc, name, command, ignore=True, forget=False)
         netlog("setup_connection(%s) protocol=%s", conn, protocol)
         self.setup_connection(conn)
         return protocol

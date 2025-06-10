@@ -142,7 +142,7 @@ def proxy_start(channel, subcommand: str, args: list[str]) -> None:
         log.error(f" with args={args}")
         return
     # pylint: disable=import-outside-toplevel
-    from xpra.util.child_reaper import getChildReaper
+    from xpra.util.child_reaper import get_child_reaper
 
     def proxy_ended(*args) -> None:
         log("proxy_ended(%s)", args)
@@ -151,7 +151,7 @@ def proxy_start(channel, subcommand: str, args: list[str]) -> None:
         if proc.poll() is None:
             proc.terminate()
 
-    getChildReaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
+    get_child_reaper().add_process(proc, f"proxy-start-{subcommand}", cmd, True, True, proxy_ended)
 
     def proc_to_channel(read: Callable[[int], SizedBuffer], send: Callable[[SizedBuffer], int]) -> None:
         while proc.poll() is None:

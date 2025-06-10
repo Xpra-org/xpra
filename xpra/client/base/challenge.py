@@ -212,8 +212,8 @@ class ChallengeClient(StubClientMixin):
         try:
             from subprocess import Popen, PIPE
             proc = Popen(cmd, stdout=PIPE)
-            from xpra.util.child_reaper import getChildReaper
-            getChildReaper().add_process(proc, "password-prompt", cmd, True, True)
+            from xpra.util.child_reaper import get_child_reaper
+            get_child_reaper().add_process(proc, "password-prompt", cmd, True, True)
             out, err = proc.communicate(None, 60)
             log("err(%s)=%s", cmd, err)
             password = out.decode()

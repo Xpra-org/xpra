@@ -46,11 +46,11 @@ def pactl_output(log_errors=True, *pactl_args) -> tuple[int, Any, Any]:
         import subprocess
         log(f"running {cmd!r} with env={env}")
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-        from xpra.util.child_reaper import getChildReaper
-        procinfo = getChildReaper().add_process(process, "pactl", cmd, True, True)
+        from xpra.util.child_reaper import get_child_reaper
+        procinfo = get_child_reaper().add_process(process, "pactl", cmd, True, True)
         log(f"waiting for {cmd!r} output")
         out, err = process.communicate()
-        getChildReaper().add_dead_process(procinfo)
+        get_child_reaper().add_dead_process(procinfo)
         code = process.wait()
         log(f"pactl_output{pactl_args} returned {code}")
         return code, out, err

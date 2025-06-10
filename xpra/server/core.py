@@ -58,6 +58,7 @@ from xpra.os_util import (
     force_quit, get_machine_id, POSIX,
     get_username_for_uid, get_user_uuid, get_hex_uuid, getuid, gi_import,
 )
+from xpra.util.child_reaper import get_child_reaper
 from xpra.util.system import get_env_info, get_sysconfig_info, register_SIGUSR_signals
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.io import load_binary_file, filedata_nocrlf
@@ -185,7 +186,6 @@ class ServerCore(ServerBaseClass):
             "screenshot": self._handle_hello_request_screenshot,
         })
         self.uuid = ""
-        self.child_reaper = None
         self.session_type: str = "unknown"
         self._closing: bool = False
         self._exit_mode = ServerExitMode.UNSET
@@ -1948,8 +1948,7 @@ class ServerCore(ServerBaseClass):
             from xpra.platform.info import get_sys_info
             up("sys", get_sys_info())
             up("env", get_env_info())
-            if self.child_reaper:
-                info.update(self.child_reaper.get_info())
+            info.update(get_child_reaper().get_info())
         end = monotonic()
         log("ServerCore.get_info took %ims", (end - start) * 1000)
         return info
