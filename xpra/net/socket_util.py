@@ -7,7 +7,7 @@ import os.path
 import socket
 from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
-from typing import Any
+from typing import Any, Iterable
 from importlib.util import find_spec
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -84,6 +84,12 @@ def close_sockets(sockets: Sequence[SocketListener]) -> None:
 
 def validate_abstract_socketpath(sockpath: str) -> bool:
     return all((str.isalnum(c) or c in ("-", "_")) for c in sockpath)
+
+
+def create_socket(sockpath: str, sperms: int) -> tuple[Any, Callable]:
+    if sockpath.startswith("@"):
+        return create_abstract_socket(sockpath)
+    return create_unix_domain_socket(sockpath, sperms)
 
 
 def create_abstract_socket(sockpath: str) -> tuple[socket.socket, Callable]:
@@ -683,6 +689,82 @@ def normalize_local_display_name(local_display_name: str) -> str:
     return local_display_name
 
 
+def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotxpra,
+                       username: str, uid: int, gid: int) -> dict[str, dict[str, Any]]:
+    from xpra.platform.dotxpra import norm_makepath, strip_display_prefix
+    log = get_network_logger()
+    sockpaths = {}
+    homedir = osexpand("~", username, uid, gid)
+    log(f"get_bind_sockpaths: bind={bind}, dotxpra={dotxpra}")
+    for b in bind:
+        if b in ("none", ""):
+            continue
+        parts = b.split(",", 1)
+        sockpath = parts[0]
+        options = {}
+        if len(parts) == 2:
+            options = parse_simple_dict(parts[1])
+        if sockpath in ("auto", "noabstract"):
+            assert display_name is not None
+            for path in dotxpra.norm_socket_paths(display_name):
+                sockdir = os.path.dirname(path)
+                if not is_writable(sockdir, uid, gid) and sockdir.startswith(homedir):
+                    log.info(f"skipped read-only socket path {path!r}")
+                else:
+                    sockpaths[path] = dict(options)
+            if session_dir and not WIN32:
+                path = os.path.join(session_dir, "socket")
+                sockpaths[path] = dict(options)
+            if sockpath != "noabstract" and AUTO_ABSTRACT_SOCKET:
+                path = "@" + ABSTRACT_SOCKET_PREFIX + strip_display_prefix(display_name)
+                abs_options = dict(options)
+                if "auth" not in options:
+                    abs_options["auth"] = ABSTRACT_SOCKET_AUTH
+                sockpaths[path] = abs_options
+            log(f"sockpaths({display_name})={sockpaths} (uid={uid}, gid={gid})")
+        elif sockpath.startswith("@"):
+            # abstract socket
+            if WIN32:
+                raise ValueError("abstract sockets are not supported on MS Windows")
+            sockpath = dotxpra.osexpand(sockpath)
+            if not validate_abstract_socketpath(sockpath[1:]):
+                raise ValueError(f"invalid characters in abstract socket name {sockpath!r}")
+            sockpaths[sockpath] = options
+        else:
+            sockpath = dotxpra.osexpand(sockpath)
+            if sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
+                assert display_name is not None
+                sockpath = os.path.abspath(sockpath)
+                if not os.path.exists(sockpath):
+                    os.makedirs(sockpath)
+                sockpath = norm_makepath(sockpath, display_name)
+            elif not os.path.isabs(sockpath):
+                sockpath = dotxpra.socket_path(sockpath)
+            sockpaths[sockpath] = options
+        if not sockpaths:
+            raise ValueError(f"no socket paths to try for {b}")
+    # expand and remove duplicate paths:
+    tmp = {}
+    for tsp, options in sockpaths.items():
+        sockpath = dotxpra.osexpand(tsp)
+        if sockpath in tmp:
+            log.warn(f"Warning: skipping duplicate bind path {sockpath!r}")
+            continue
+        tmp[sockpath] = options
+    sockpaths = tmp
+    log(f"{sockpaths=}")
+    return sockpaths
+
+
+def checkstate(sockpath: str, state: SocketState | str) -> None:
+    if state not in (SocketState.DEAD, SocketState.UNKNOWN):
+        if state == SocketState.INACCESSIBLE:
+            raise InitException(f"An xpra server is already running at {sockpath!r}\n")
+        raise InitExit(ExitCode.SERVER_ALREADY_EXISTS,
+                       f"You already have an xpra server running at {sockpath!r}\n"
+                       "  (did you want 'xpra upgrade'?)")
+
+
 def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                         display_name: str, clobber,
                         mmap_group: str = "auto", socket_permissions: str = "600", username: str = "",
@@ -702,74 +784,28 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
         elif not session_dir:
             raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                            "at least one socket directory must be set to use unix domain sockets")
-    from xpra.platform.dotxpra import DotXpra, norm_makepath, strip_display_prefix
+    from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(socket_dir or socket_dirs[0], socket_dirs, username, uid, gid)
     if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
-    homedir = osexpand("~", username, uid, gid)
+    sockpaths = get_bind_sockpaths(bind, session_dir, display_name, dotxpra, username, uid, gid)
+    log(f"{sockpaths=}")
     defs: list[SocketListener] = []
-    try:
-        sockpaths = {}
-        log(f"setup_local_sockets: bind={bind}, dotxpra={dotxpra}")
-        for b in bind:
-            if b in ("none", ""):
-                continue
-            parts = b.split(",", 1)
-            sockpath = parts[0]
-            options = {}
-            if len(parts) == 2:
-                options = parse_simple_dict(parts[1])
-            if sockpath in ("auto", "noabstract"):
-                assert display_name is not None
-                for path in dotxpra.norm_socket_paths(display_name):
-                    sockdir = os.path.dirname(path)
-                    if not is_writable(sockdir, uid, gid) and sockdir.startswith(homedir):
-                        log.info(f"skipped read-only socket path {path!r}")
-                    else:
-                        sockpaths[path] = dict(options)
-                if session_dir and not WIN32:
-                    path = os.path.join(session_dir, "socket")
-                    sockpaths[path] = dict(options)
-                if sockpath != "noabstract" and AUTO_ABSTRACT_SOCKET:
-                    path = "@" + ABSTRACT_SOCKET_PREFIX + strip_display_prefix(display_name)
-                    abs_options = dict(options)
-                    if "auth" not in options:
-                        abs_options["auth"] = ABSTRACT_SOCKET_AUTH
-                    sockpaths[path] = abs_options
-                log(f"sockpaths({display_name})={sockpaths} (uid={uid}, gid={gid})")
-            elif sockpath.startswith("@"):
-                # abstract socket
-                if WIN32:
-                    raise ValueError("abstract sockets are not supported on MS Windows")
-                sockpath = dotxpra.osexpand(sockpath)
-                if not validate_abstract_socketpath(sockpath[1:]):
-                    raise ValueError(f"invalid characters in abstract socket name {sockpath!r}")
-                sockpaths[sockpath] = options
-            else:
-                sockpath = dotxpra.osexpand(sockpath)
-                if sockpath.endswith("/") or (os.path.exists(sockpath) and os.path.isdir(sockpath)):
-                    assert display_name is not None
-                    sockpath = os.path.abspath(sockpath)
-                    if not os.path.exists(sockpath):
-                        os.makedirs(sockpath)
-                    sockpath = norm_makepath(sockpath, display_name)
-                elif not os.path.isabs(sockpath):
-                    sockpath = dotxpra.socket_path(sockpath)
-                sockpaths[sockpath] = options
-            if not sockpaths:
-                raise ValueError(f"no socket paths to try for {b}")
-        # expand and remove duplicate paths:
-        tmp = {}
-        for tsp, options in sockpaths.items():
-            sockpath = dotxpra.osexpand(tsp)
-            if sockpath in tmp:
-                log.warn(f"Warning: skipping duplicate bind path {sockpath!r}")
-                continue
-            tmp[sockpath] = options
-        sockpaths = tmp
-        log(f"{sockpaths=}")
-        # create listeners:
-        if WIN32:
+    if not sockpaths:
+        return defs
+
+    def abort() -> None:
+        # undo what we can
+        for sock_def in defs:
+            sock_str = f"{sock_def.socktype} {sock_def.address!r}"
+            try:
+                sock_def.cleanup()
+            except (IndexError, ValueError, OSError):
+                log(f"error cleaning up socket {sock_str}", exc_info=True)
+                log.error(f"Error cleaning up socket {sock_str}:", exc_info=True)
+
+    if WIN32:
+        try:
             from xpra.platform.win32.namedpipes.listener import NamedPipeListener
             from xpra.platform.win32.dotxpra import PIPE_PATH
             for sockpath, options in sockpaths.items():
@@ -779,139 +815,148 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     ppath = ppath[len(PIPE_PATH):]
                 log.info(f"created named pipe '{ppath}'")
                 defs.append(SocketListener("named-pipe", npl, sockpath, options, npl.stop, noop))
-        else:
+            return defs
+        except Exception:
+            log("unable to create named pipe listeners", exc_info=True)
+            abort()
+            raise
 
-            def checkstate(sockpath: str, state: SocketState | str) -> None:
-                if state not in (SocketState.DEAD, SocketState.UNKNOWN):
-                    if state == SocketState.INACCESSIBLE:
-                        raise InitException(f"An xpra server is already running at {sockpath!r}\n")
-                    raise InitExit(ExitCode.SERVER_ALREADY_EXISTS,
-                                   f"You already have an xpra server running at {sockpath!r}\n"
-                                   "  (did you want 'xpra upgrade'?)")
+    sperms = parse_sock_perms(mmap_group, socket_permissions)
+    try:
+        # remove existing sockets if clobber is set,
+        # otherwise verify there isn't a server already running
+        # and create the directories for the sockets:
+        unknown: list[str] = []
+        for sockpath in sockpaths:
+            if clobber and not sockpath.startswith("@") and os.path.exists(sockpath):
+                os.unlink(sockpath)
+            else:
+                state = dotxpra.get_server_state(sockpath, 1)
+                log(f"state({sockpath})={state}")
+                checkstate(sockpath, state)
+                if state == SocketState.UNKNOWN:
+                    unknown.append(sockpath)
+            if not sockpath.startswith("@"):
+                mksockdir(dotxpra, sockpath)
 
-            # remove existing sockets if clobber is set,
-            # otherwise verify there isn't a server already running
-            # and create the directories for the sockets:
-            unknown = []
-            for sockpath in sockpaths:
-                if clobber and not sockpath.startswith("@") and os.path.exists(sockpath):
-                    os.unlink(sockpath)
-                else:
-                    state = dotxpra.get_server_state(sockpath, 1)
-                    log(f"state({sockpath})={state}")
-                    checkstate(sockpath, state)
-                    if state == SocketState.UNKNOWN:
-                        unknown.append(sockpath)
-                if sockpath.startswith("@"):
-                    continue
-                d: str = os.path.dirname(sockpath)
-                try:
-                    kwargs = {}
-                    if d in ("/var/run/xpra", "/run/xpra"):
-                        # this is normally done by tmpfiles.d,
-                        # but we may need to do it ourselves in some cases:
-                        kwargs["mode"] = SOCKET_DIR_MODE
-                        xpra_gid = get_group_id(SOCKET_DIR_GROUP)
-                        if xpra_gid > 0:
-                            kwargs["gid"] = xpra_gid
-                    log(f"creating sockdir={d!r}, kwargs={kwargs}")
-                    dotxpra.mksockdir(d, **kwargs)
-                    log(f"{d!r} permission mask: " + oct(os.stat(d).st_mode))
-                except Exception as e:
-                    log.warn(f"Warning: failed to create socket directory {d!r}")
-                    log.warn(f" {e}")
-                    del e
-            # wait for all the unknown ones:
-            log(f"sockets in unknown state: {csv(unknown)}")
-            if unknown:
-                # re-probe them using threads,
-                # so we can do them in parallel:
-                threads = []
-
-                def timeout_probe(sockpath: str) -> None:
-                    # we need a loop because "DEAD" sockets may return immediately
-                    # (ie: when the server is starting up)
-                    start = monotonic()
-                    while monotonic() - start < WAIT_PROBE_TIMEOUT:
-                        state = dotxpra.get_server_state(sockpath, WAIT_PROBE_TIMEOUT)
-                        log(f"timeout_probe() get_server_state({sockpath!r})={state}")
-                        if state not in (SocketState.UNKNOWN, SocketState.DEAD):
-                            break
-                        sleep(1)
-
-                log.warn("Warning: some of the sockets are in an unknown state:")
-                for sockpath in unknown:
-                    log.warn(f" {sockpath!r}")
-                    t = start_thread(timeout_probe, f"probe-{sockpath}", daemon=True, args=(sockpath,))
-                    threads.append(t)
-                log.warn(" please wait as we allow the socket probing to timeout")
-                # wait for all the threads to do their job:
-                for t in threads:
-                    t.join(WAIT_PROBE_TIMEOUT + 1)
-            if sockpaths:
-                # now we can re-check quickly:
-                # (they should all be DEAD or UNKNOWN):
-                for sockpath in sockpaths:
-                    state = dotxpra.get_server_state(sockpath, 1)
-                    log(f"state({sockpath})={state}")
-                    checkstate(sockpath, state)
-                    try:
-                        if os.path.exists(sockpath):
-                            os.unlink(sockpath)
-                    except OSError:
-                        pass
-                # socket permissions:
-                if mmap_group.lower() in TRUE_OPTIONS:
-                    # when using the mmap group option, use '660'
-                    sperms = 0o660
-                else:
-                    # parse octal mode given as config option:
-                    try:
-                        if isinstance(socket_permissions, int):
-                            sperms = socket_permissions
-                        else:
-                            # assume octal string:
-                            sperms = int(socket_permissions, 8)
-                    except ValueError:
-                        raise ValueError("invalid socket permissions "
-                                         f"(must be an octal number): {socket_permissions!r}") from None
-                    if sperms < 0 or sperms > 0o777:
-                        raise ValueError(f"invalid socket permission value {sperms:o}")
-                # now try to create all the sockets:
-                created = []
-                for sockpath, options in sockpaths.items():
-                    try:
-                        if sockpath.startswith("@"):
-                            sock, cleanup_socket = create_abstract_socket(sockpath)
-                        else:
-                            sock, cleanup_socket = create_unix_domain_socket(sockpath, sperms)
-                    except Exception as e:
-                        handle_socket_error(sockpath, sperms, e)
-                        del e
-                    else:
-                        created.append(sockpath)
-                        defs.append(SocketListener("socket", sock, sockpath, options, cleanup_socket, noop))
-                unix = [x for x in created if not x.startswith("@")]
-                if unix:
-                    log.info("created unix domain sockets:")
-                    for cpath in unix:
-                        log.info(f" {cpath!r}")
-                abstract = [x for x in created if x.startswith("@")]
-                if abstract:
-                    log.info("created abstract sockets:")
-                    for cpath in abstract:
-                        log.info(f" {cpath!r}")
-    except Exception:
-        for sock_def in defs:
-            sock_str = f"{sock_def.socktype} {sock_def.address!r}"
+        # wait for all the unknown ones:
+        log(f"sockets in unknown state: {csv(unknown)}")
+        if unknown:
+            reprobe(dotxpra, unknown)
+        # now we can re-check quickly:
+        # (they should all be DEAD or UNKNOWN):
+        remove_dead_sockets(dotxpra, sockpaths.keys())
+        # create all the sockets:
+        for sockpath, options in sockpaths.items():
             try:
-                cleanup_socket = sock_def[-1]
-                sock_def.cleanup()
-            except (IndexError, ValueError, OSError):
-                log(f"error cleaning up socket {sock_str}", exc_info=True)
-                log.error(f"Error cleaning up socket {sock_str}:", exc_info=True)
+                sock, cleanup_socket = create_socket(sockpath, sperms)
+            except Exception as e:
+                handle_socket_error(sockpath, sperms, e)
+                del e
+            else:
+                defs.append(SocketListener("socket", sock, sockpath, options, cleanup_socket, noop))
+        show_sockets(defs)
+    except Exception:
+        log("unable to create sockets", exc_info=True)
+        abort()
         raise
     return defs
+
+
+def show_sockets(created: list[SocketListener]) -> None:
+    addresses = tuple(x.address for x in created)
+    unix = [address for address in addresses if not address.startswith("@")]
+    log = get_network_logger()
+    if unix:
+        log.info("created unix domain sockets:")
+        for cpath in unix:
+            log.info(f" {cpath!r}")
+    abstract = [address for address in addresses if address.startswith("@")]
+    if abstract:
+        log.info("created abstract sockets:")
+        for cpath in abstract:
+            log.info(f" {cpath!r}")
+
+
+def mksockdir(dotxpra, sockpath: str):
+    d: str = os.path.dirname(sockpath)
+    log = get_network_logger()
+    try:
+        kwargs = {}
+        if d in ("/var/run/xpra", "/run/xpra"):
+            # this is normally done by tmpfiles.d,
+            # but we may need to do it ourselves in some cases:
+            kwargs["mode"] = SOCKET_DIR_MODE
+            xpra_gid = get_group_id(SOCKET_DIR_GROUP)
+            if xpra_gid > 0:
+                kwargs["gid"] = xpra_gid
+        log(f"creating sockdir={d!r}, kwargs={kwargs}")
+        dotxpra.mksockdir(d, **kwargs)
+        log(f"{d!r} permission mask: " + oct(os.stat(d).st_mode))
+    except Exception as e:
+        log.warn(f"Warning: failed to create socket directory {d!r}")
+        log.warn(f" {e}")
+
+
+def parse_sock_perms(mmap_group: str, socket_permissions: str | int) -> int:
+    # socket permissions:
+    if mmap_group.lower() in TRUE_OPTIONS:
+        # when using the mmap group option, use '660'
+        return 0o660
+    # parse octal mode given as config option:
+    try:
+        if isinstance(socket_permissions, int):
+            value = int(socket_permissions)
+        else:
+            # assume octal string:
+            value = int(socket_permissions, 8)
+    except ValueError:
+        raise ValueError("invalid socket permissions "
+                         f"(must be an octal number): {socket_permissions!r}") from None
+    if value < 0 or value > 0o777:
+        raise ValueError(f"invalid socket permission value {value:o}")
+    return value
+
+
+def reprobe(dotxpra, unknown: Sequence[str]) -> None:
+    # re-probe them using threads,
+    # so we can do them in parallel:
+    threads = []
+    log = get_network_logger()
+
+    def timeout_probe(sockpath: str) -> None:
+        # we need a loop because "DEAD" sockets may return immediately
+        # (ie: when the server is starting up)
+        start = monotonic()
+        while monotonic() - start < WAIT_PROBE_TIMEOUT:
+            state = dotxpra.get_server_state(sockpath, WAIT_PROBE_TIMEOUT)
+            log(f"timeout_probe() get_server_state({sockpath!r})={state}")
+            if state not in (SocketState.UNKNOWN, SocketState.DEAD):
+                break
+            sleep(1)
+
+    log.warn("Warning: some of the sockets are in an unknown state:")
+    for sockpath in unknown:
+        log.warn(f" {sockpath!r}")
+        t = start_thread(timeout_probe, f"probe-{sockpath}", daemon=True, args=(sockpath,))
+        threads.append(t)
+    log.warn(" please wait as we allow the socket probing to timeout")
+    # wait for all the threads to do their job:
+    for t in threads:
+        t.join(WAIT_PROBE_TIMEOUT + 1)
+
+
+def remove_dead_sockets(dotxpra, sockpaths: Iterable[str]) -> None:
+    log = get_network_logger()
+    for sockpath in sockpaths:
+        state = dotxpra.get_server_state(sockpath, 1)
+        log(f"state({sockpath})={state}")
+        checkstate(sockpath, state)
+        try:
+            if os.path.exists(sockpath):
+                os.unlink(sockpath)
+        except OSError:
+            log(f"error removing {sockpath!r}", exc_info=True)
 
 
 def handle_socket_error(sockpath: str, sperms: int, e) -> None:
