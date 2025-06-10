@@ -69,6 +69,7 @@ class DbusServer(StubServerMixin):
         self.dbus_env: dict[str, str] = {}
         self.dbus_control: bool = False
         self.dbus_server = None
+        self.session_files: list[str] = []
 
     def init(self, opts) -> None:
         self.dbus = opts.dbus
@@ -98,6 +99,7 @@ class DbusServer(StubServerMixin):
             save_session_file("dbus.pid", f"{self.dbus_pid}", self.uid, self.gid)
             dbus_env_data = "\n".join(f"{k}={v}" for k, v in self.dbus_env.items()) + "\n"
             save_session_file("dbus.env", dbus_env_data.encode("utf8"), self.uid, self.gid)
+            self.session_files += ["dbus.pid", "dbus.env"]
         if self.dbus_env:
             os.environ.update(self.dbus_env)
 
@@ -129,7 +131,6 @@ class DbusServer(StubServerMixin):
             return
         try:
             os.kill(self.dbus_pid, signal.SIGINT)
-            self.do_clean_session_files("dbus.pid", "dbus.env")
         except ProcessLookupError:
             log("os.kill(%i, SIGINT)", self.dbus_pid, exc_info=True)
             log.warn(f"Warning: dbus process not found (pid={self.dbus_pid})")

@@ -216,6 +216,14 @@ class DisplayManager(StubServerMixin):
                 raise InitExit(ExitCode.NO_DISPLAY, f"unable to access display {self.display!r}")
             if not verify_gdk_display(self.display):
                 raise InitExit(ExitCode.NO_DISPLAY, f"Gdk is unable to access display {self.display!r}")
+            self.session_files += [
+                "xvfb.pid",
+                "xauthority",
+                "Xorg.log",
+                "Xorg.log.old",
+                "xorg.conf.d/*",
+                "xorg.conf.d",
+            ]
 
     def check_xvfb(self) -> None:
         if not check_xvfb(self.xvfb):
@@ -318,14 +326,6 @@ class DisplayManager(StubServerMixin):
             return
         from xpra.x11.vfb_util import kill_xvfb
         kill_xvfb(self.display_pid)
-        self.do_clean_session_files(
-            "xvfb.pid",
-            "xauthority",
-            "Xorg.log",
-            "Xorg.log.old",
-            "xorg.conf.d/*"
-            "xorg.conf.d"
-        )
 
     def print_screen_info(self) -> None:
         display = os.environ.get("DISPLAY", "")

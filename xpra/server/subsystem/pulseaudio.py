@@ -16,6 +16,7 @@ from xpra.os_util import OSX, POSIX, gi_import, is_container
 from xpra.util.io import pollwait
 from xpra.util.env import envbool, osexpand
 from xpra.util.thread import start_thread
+from xpra.scripts.session import clean_session_files
 from xpra.server.subsystem.stub import StubServerMixin
 from xpra.log import Logger
 
@@ -190,6 +191,7 @@ class PulseaudioServer(StubServerMixin):
         if self.pulseaudio_proc:
             from xpra.scripts.session import save_session_file
             save_session_file("pulseaudio.pid", "%s" % self.pulseaudio_proc.pid)
+            self.session_files.append("pulseaudio.pid")
             log.info("pulseaudio server started with pid %s", self.pulseaudio_proc.pid)
             if self.pulseaudio_server_socket:
                 log.info(" %r", self.pulseaudio_server_socket)
@@ -216,6 +218,7 @@ class PulseaudioServer(StubServerMixin):
         else:
             log.warn("Warning: the pulseaudio server process has terminated after %i seconds", int(elapsed))
         self.pulseaudio_proc = None
+        clean_session_files("pulseaudio.pid")
 
     def cleanup_pulseaudio(self) -> None:
         self.pulseaudio_init_done.wait(5)
@@ -254,8 +257,6 @@ class PulseaudioServer(StubServerMixin):
             while (monotonic() - now) < 1 and os.path.exists(self.pulseaudio_server_socket):
                 time.sleep(0.1)
         self.clean_pulseaudio_private_dir()
-        if not self.is_child_alive(proc):
-            self.do_clean_session_files("pulseaudio.pid")
 
     def clean_pulseaudio_private_dir(self) -> None:
         if self.pulseaudio_private_dir:

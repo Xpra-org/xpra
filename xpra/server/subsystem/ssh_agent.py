@@ -36,6 +36,7 @@ class SshAgent(StubServerMixin):
 
     def __init__(self):
         self.ssh_agent = False
+        self.session_files: list[str] = []
 
     def init(self, opts) -> None:
         self.ssh_agent = SSH_AGENT_DISPATCH and opts.ssh.lower() not in FALSE_OPTIONS
@@ -44,6 +45,11 @@ class SshAgent(StubServerMixin):
             log.warn("Warning: unable to configure {SSH_AUTH_SOCK} without a valid session directory")
             return
         if self.ssh_agent:
+            self.session_files.append("ssh/agent")
+            self.session_files.append("ssh/agent.default")
+            # glob that matches agent uuid symlinks:
+            self.session_files.append("ssh/????????????????????????????????????????????????????????????????")
+            self.session_files.append("ssh")
             try:
                 ssh_auth_sock = setup_ssh_auth_sock(session_dir)
             except OSError:

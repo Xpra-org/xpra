@@ -24,7 +24,6 @@ from xpra.util.version import (
     get_build_info, get_platform_info, get_host_info, parse_version,
 )
 from xpra.scripts.server import deadly_signal
-from xpra.scripts.session import rm_session_dir, clean_session_files
 from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
@@ -65,7 +64,7 @@ from xpra.util.io import load_binary_file, filedata_nocrlf
 from xpra.util.background_worker import add_work_item, quit_worker
 from xpra.util.thread import start_thread
 from xpra.common import (
-    LOG_HELLO, FULL_INFO, SSH_AGENT_DISPATCH, DEFAULT_XDG_DATA_DIRS,
+    LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS,
     ConnectionMessage, noerr, init_memcheck, BACKWARDS_COMPATIBLE,
 )
 from xpra.util.pysystem import dump_all_frames, get_frame_info
@@ -151,8 +150,12 @@ def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.control import ControlHandler
     from xpra.server.glib_server import GLibServer
     from xpra.server.subsystem.daemon import DaemonServer
+    from xpra.server.subsystem.sessionfiles import SessionFilesServer
     from xpra.server.subsystem.splash import SplashServer
-    classes: list[type] = [GLibServer, DaemonServer, AuthenticatedServer, ControlHandler, SplashServer]
+    classes: list[type] = [
+        GLibServer, DaemonServer, SessionFilesServer,
+        AuthenticatedServer, ControlHandler, SplashServer,
+    ]
     from xpra.server import features
     if features.mdns:
         from xpra.server.subsystem.mdns import MdnsServer
@@ -219,12 +222,6 @@ class ServerCore(ServerBaseClass):
             # notifications may use a TMP dir:
             "tmp/*", "tmp",
         ]
-        if SSH_AGENT_DISPATCH:
-            self.session_files.append("ssh/agent")
-            self.session_files.append("ssh/agent.default")
-            # glob that matches agent uuid symlinks:
-            self.session_files.append("ssh/????????????????????????????????????????????????????????????????")
-            self.session_files.append("ssh")
         self.splash_process = None
 
         self.session_name = ""
@@ -330,10 +327,8 @@ class ServerCore(ServerBaseClass):
             self._exit_mode = exit_mode
         self.closing()
         noerr(sys.stdout.flush)
-        self.late_cleanup(stop=self._exit_mode not in (ServerExitMode.EXIT, ServerExitMode.UPGRADE))
-        if self._exit_mode not in (ServerExitMode.EXIT, ServerExitMode.UPGRADE):
-            self.clean_session_files()
-            rm_session_dir()
+        stop = self._exit_mode not in (ServerExitMode.EXIT, ServerExitMode.UPGRADE)
+        self.late_cleanup(stop=stop)
         self.do_quit()
         log("quit(%s) do_quit done!", exit_mode)
         dump_all_frames()
@@ -449,13 +444,6 @@ class ServerCore(ServerBaseClass):
         self._potential_protocols = []
         from xpra.util.child_reaper import reaper_cleanup
         reaper_cleanup()
-
-    def clean_session_files(self) -> None:
-        self.do_clean_session_files(*self.session_files)
-
-    def do_clean_session_files(self, *filenames) -> None:
-        log("do_clean_session_files%s", filenames)
-        clean_session_files(*filenames)
 
     def stop_splash_process(self) -> None:
         sp = self.splash_process

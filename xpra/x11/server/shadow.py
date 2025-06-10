@@ -353,6 +353,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         self.session_type = "X11 shadow"
         self.modify_keymap = False
         self.backend = attrs.get("backend", "x11")
+        self.session_files: list[str] = []
 
     def init(self, opts) -> None:
         # don't call init on X11ServerCore,
@@ -360,6 +361,7 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
         X11ServerCore.init(self, opts)
         GTKShadowServerBase.init(self, opts)
         self.modify_keymap = opts.keyboard_layout.lower() in ("client", "auto")
+        self.session_files.append("xauthority")
 
     def set_keymap(self, server_source, force: bool = False) -> None:
         if self.readonly:
@@ -377,7 +379,6 @@ class ShadowX11Server(GTKShadowServerBase, X11ServerCore):
                 fn()
             except Exception:
                 log("cleanup() failed to remove X11 attribute", exc_info=True)
-        self.do_clean_session_files("xauthority")
 
     def setup_capture(self):
         capture = try_setup_capture(CAPTURE_BACKENDS, self.backend, self.root)
