@@ -28,7 +28,7 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
 from xpra.server.auth import AuthenticatedServer
-from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
+from xpra.scripts.config import parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
     is_request_allowed, Packet, has_websocket_handler, HttpResponse, HTTP_UNSUPORTED,
@@ -59,17 +59,16 @@ from xpra.os_util import (
 )
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.system import get_env_info, get_sysconfig_info, register_SIGUSR_signals
-from xpra.util.parsing import parse_encoded_bin_data
-from xpra.util.io import load_binary_file, filedata_nocrlf
+from xpra.util.io import load_binary_file
 from xpra.util.background_worker import add_work_item, quit_worker
 from xpra.util.thread import start_thread
 from xpra.common import (
     LOG_HELLO, FULL_INFO, DEFAULT_XDG_DATA_DIRS,
-    ConnectionMessage, noerr, init_memcheck, BACKWARDS_COMPATIBLE,
+    noop, ConnectionMessage, noerr, init_memcheck, BACKWARDS_COMPATIBLE,
 )
 from xpra.util.pysystem import dump_all_frames, get_frame_info
 from xpra.util.objects import typedict, notypedict, merge_dicts
-from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, hexstr
+from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, nicestr, strtobytes, hexstr
 from xpra.util.env import envint, envbool, envfloat, first_time
 from xpra.log import Logger, get_info as get_log_info
 
@@ -82,7 +81,6 @@ netlog = Logger("network")
 ssllog = Logger("ssl")
 httplog = Logger("http")
 wslog = Logger("websocket")
-cryptolog = Logger("crypto")
 timeoutlog = Logger("timeout")
 
 main_thread = threading.current_thread()
@@ -99,8 +97,6 @@ SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO > 1)
 SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
-
-ENCRYPTED_SOCKET_TYPES = os.environ.get("XPRA_ENCRYPTED_SOCKET_TYPES", "tcp,ws")
 
 
 # class used to distinguish internal errors
@@ -128,15 +124,6 @@ def get_thread_info(proto=None) -> dict[Any, Any]:
     else:
         info_threads = ()
     return get_frame_info(info_threads)
-
-
-def proto_crypto_caps(proto) -> dict[str, Any]:
-    if not proto:
-        return {}
-    if FULL_INFO > 1 or proto.encryption:
-        from xpra.net.crypto import get_crypto_caps
-        return get_crypto_caps(FULL_INFO)
-    return {}
 
 
 def force_close_connection(conn) -> None:
@@ -228,10 +215,6 @@ class ServerCore(ServerBaseClass):
 
         # Features:
         self.readonly = False
-        self.encryption = ""
-        self.encryption_keyfile = ""
-        self.tcp_encryption = ""
-        self.tcp_encryption_keyfile = ""
         self.password_file: Iterable[str] = ()
         self.compression_level = 1
         self.exit_with_client = False
@@ -253,13 +236,6 @@ class ServerCore(ServerBaseClass):
         if not self._socket_dir and opts.socket_dirs:
             self._socket_dir = opts.socket_dirs[0]
         self._socket_dirs = opts.socket_dirs
-        self.encryption = opts.encryption
-        self.encryption_keyfile = opts.encryption_keyfile
-        self.tcp_encryption = opts.tcp_encryption
-        self.tcp_encryption_keyfile = opts.tcp_encryption_keyfile
-        if self.encryption or self.tcp_encryption:
-            from xpra.net.crypto import crypto_backend_init  # pylint: disable=import-outside-toplevel
-            crypto_backend_init()
         self.password_file = opts.password_file
         self.compression_level = opts.compression_level
         self.exit_with_client = opts.exit_with_client
@@ -1082,41 +1058,11 @@ class ServerCore(ServerBaseClass):
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
         protocol.authenticators = ()
-        protocol.encryption = socket_options.get("encryption", "")
-        protocol.keyfile = socket_options.get("encryption-keyfile", "") or socket_options.get("keyfile", "")
-        raw_keydata = socket_options.get("encryption-keydata", "") or socket_options.get("keydata", "")
-        protocol.keydata = parse_encoded_bin_data(raw_keydata)
-        if socktype in ENCRYPTED_SOCKET_TYPES:
-            # special case for legacy encryption code:
-            protocol.encryption = protocol.encryption or self.tcp_encryption
-            protocol.keyfile = protocol.keyfile or self.tcp_encryption_keyfile
-        enc = (protocol.encryption or "").lower()
-        if enc and not enc.startswith("aes") and not str_to_bool(enc, False):
-            protocol.encryption = None
-        netlog("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
-        if protocol.encryption:
-            from xpra.net.crypto import crypto_backend_init
-            crypto_backend_init()
-            from xpra.net.crypto import (
-                ENCRYPT_FIRST_PACKET,
-                DEFAULT_IV,
-                DEFAULT_SALT,
-                DEFAULT_KEY_HASH,
-                DEFAULT_KEYSIZE,
-                DEFAULT_ITERATIONS,
-                DEFAULT_ALWAYS_PAD,
-                DEFAULT_STREAM,
-                INITIAL_PADDING,
-            )
-            if ENCRYPT_FIRST_PACKET:
-                cryptolog(f"encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
-                password = protocol.keydata or self.get_encryption_key((), protocol.keyfile)
-                iv = strtobytes(DEFAULT_IV)
-                protocol.set_cipher_in(protocol.encryption, iv,
-                                       password, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-                                       DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM)
         protocol.invalid_header = self.invalid_header
-        netlog(f"socktype={socktype}, encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
+        # weak dependency on EncryptionServer:
+        parse_encryption = getattr(self, "parse_encryption", noop)
+        parse_encryption(protocol, socket_options)
+        netlog(f"starting {socktype} protocol")
         protocol.start()
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
@@ -1545,104 +1491,6 @@ class ServerCore(ServerBaseClass):
         self.make_protocol(new_socktype, ssl_conn, options, protocol_class)
         ssllog.info("upgraded %s to %s", conn, new_socktype)
 
-    def setup_encryption(self, proto: SocketProtocol, c: typedict) -> dict[str, Any] | None:
-        def auth_failed(msg: str) -> None:
-            self.auth_failed(proto, msg)
-            return None
-
-        c = typedict(c.dictget("encryption") or {})
-        cipher = c.strget("cipher").upper()
-        cryptolog(f"setup_encryption(..) for cipher={cipher!r} : {c}")
-        if not cipher:
-            if proto.encryption:
-                cryptolog(f"client does not provide encryption tokens: encryption={c}")
-                return auth_failed("missing encryption tokens from client")
-            # no encryption requested
-            return {}
-
-        # check that the server supports encryption:
-        if not proto.encryption:
-            return auth_failed("the server does not support encryption on this connection")
-        server_cipher = proto.encryption.split("-")[0].upper()
-        if server_cipher != cipher:
-            return auth_failed(
-                f"the server is configured for {server_cipher!r} not {cipher!r} as requested by the client")
-        from xpra.net.crypto import (
-            DEFAULT_PADDING, ALL_PADDING_OPTIONS,
-            DEFAULT_MODE, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
-            DEFAULT_KEY_STRETCH, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM,
-            new_cipher_caps, get_ciphers, get_key_hashes,
-        )
-        cipher_mode = c.strget("mode", "").upper()
-        if not cipher_mode:
-            cipher_mode = DEFAULT_MODE
-        if proto.encryption.find("-") > 0:
-            # server specifies the mode to use
-            server_cipher_mode = proto.encryption.split("-")[1].upper()
-            if server_cipher_mode != cipher_mode:
-                return auth_failed(f"the server is configured for {server_cipher}-{server_cipher_mode}"
-                                   f"not {cipher}-{cipher_mode} as requested by the client")
-        cipher_iv = c.strget("iv")
-        iterations = c.intget("key_stretch_iterations")
-        key_salt = c.bytesget("key_salt")
-        key_hash = c.strget("key_hash", DEFAULT_KEY_HASH)
-        key_stretch = c.strget("key_stretch", DEFAULT_KEY_STRETCH)
-        padding = c.strget("padding", DEFAULT_PADDING)
-        always_pad = c.boolget("always-pad", DEFAULT_ALWAYS_PAD)
-        stream = c.boolget("stream", DEFAULT_STREAM)
-        padding_options = c.strtupleget("padding.options", (DEFAULT_PADDING,))
-        ciphers = get_ciphers()
-        if cipher not in ciphers:
-            cryptolog.warn(f"Warning: unsupported cipher: {cipher!r}")
-            if ciphers:
-                cryptolog.warn(" should be: " + csv(ciphers))
-            return auth_failed("unsupported cipher")
-        if key_stretch != "PBKDF2":
-            return auth_failed(f"unsupported key stretching {key_stretch!r}")
-        encryption_key = proto.keydata or self.get_encryption_key(proto.authenticators, proto.keyfile)
-        if not encryption_key:
-            return auth_failed("encryption key is missing")
-        if padding not in ALL_PADDING_OPTIONS:
-            return auth_failed(f"unsupported padding {padding!r}")
-        key_hashes = get_key_hashes()
-        if key_hash not in key_hashes:
-            return auth_failed(f"unsupported key hash algorithm {key_hash!r}")
-        cryptolog("setting output cipher using %s-%s encryption key '%s'",
-                  cipher, cipher_mode, repr_ellipsized(encryption_key))
-        key_size = c.intget("key_size", DEFAULT_KEYSIZE)
-        try:
-            proto.set_cipher_out(cipher + "-" + cipher_mode, strtobytes(cipher_iv),
-                                 encryption_key, key_salt, key_hash, key_size,
-                                 iterations, padding, always_pad, stream)
-        except ValueError as e:
-            return auth_failed(f"{e}")
-        # use the same cipher as used by the client:
-        encryption_caps = new_cipher_caps(proto, cipher, cipher_mode or DEFAULT_MODE, encryption_key,
-                                          padding_options, always_pad, stream)
-        cryptolog("server encryption=%s", encryption_caps)
-        return {"encryption": encryption_caps}
-
-    def get_encryption_key(self, authenticators: tuple = (), keyfile: str = "") -> bytes:
-        # if we have a keyfile specified, use that:
-        cryptolog(f"get_encryption_key({authenticators}, {keyfile})")
-        if keyfile:
-            cryptolog(f"loading encryption key from keyfile {keyfile!r}")
-            v = filedata_nocrlf(keyfile)
-            if v:
-                return v
-        KVAR = "XPRA_ENCRYPTION_KEY"
-        v = os.environ.get(KVAR, "")
-        if v:
-            cryptolog(f"using encryption key from {KVAR!r} environment variable")
-            return strtobytes(v)
-        if authenticators:
-            for authenticator in authenticators:
-                v = authenticator.get_password()
-                if v:
-                    cryptolog(f"using password from authenticator {authenticator}")
-                    return v
-        return b""
-
     def call_hello_oked(self, proto: SocketProtocol, c: typedict, auth_caps: dict) -> None:
         try:
             if SIMULATE_SERVER_HELLO_ERROR:
@@ -1740,7 +1588,8 @@ class ServerCore(ServerBaseClass):
     def make_hello(self, source) -> dict[str, Any]:
         now = time()
         capabilities = get_network_caps(FULL_INFO)
-        capabilities |= proto_crypto_caps(None if source is None else source.protocol)
+        for bc in SERVER_BASES:
+            capabilities |= bc.get_caps(self)
         capabilities |= get_digest_caps()
         if source is None or "versions" in source.wants:
             capabilities |= self.get_minimal_server_info()
@@ -1906,8 +1755,6 @@ class ServerCore(ServerBaseClass):
             ni = get_net_info()
             ni |= {
                 "sockets": self.get_socket_info(),
-                "encryption": self.encryption or "",
-                "tcp-encryption": self.tcp_encryption or "",
                 # "packet-handlers": GLibPacketHandler.get_info(self),
                 "www": {
                     "": self._html,
