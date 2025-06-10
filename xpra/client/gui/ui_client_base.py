@@ -338,6 +338,8 @@ class UIXpraClient(ClientBaseClass):
         setting = packet.get_str(1)
         value = packet[2]
         # convert "hello" / "setting" variable names to client variables:
+        if BACKWARDS_COMPATIBLE:
+            setting = {"xdg-menu": "menu"}.get(setting, setting)
         if setting in (
             "clipboard-limits",
         ):
@@ -358,7 +360,7 @@ class UIXpraClient(ClientBaseClass):
             return
         log("_process_setting_change: %s=%s", setting, Ellipsizer(value))
         # these are too big to log
-        if setting not in ("menu", "monitors", "ibus-layouts") or (BACKWARDS_COMPATIBLE and setting == "xdg-menu"):
+        if setting not in ("menu", "monitors", "ibus-layouts"):
             log.info("server setting changed: %s=%s", setting, repr_ellipsized(value))
         self.server_setting_changed(setting, value)
 

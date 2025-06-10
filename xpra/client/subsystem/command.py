@@ -67,9 +67,6 @@ class CommandClient(StubClientMixin):
                 self.server_menu = menu
             onchange("menu", update_menu_value)
 
-            if BACKWARDS_COMPATIBLE:
-                self.server_menu = c.dictget("xdg-menu", {})
-                onchange("xdg-menu", update_menu_value)
         if self.request_start or self.request_start_child:
             if self.server_start_new_commands:
                 self.after_handshake(self.send_start_new_commands)
