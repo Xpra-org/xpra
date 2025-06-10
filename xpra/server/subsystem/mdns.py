@@ -32,7 +32,7 @@ class MdnsServer(StubServerMixin):
         self.mdns = False
         self.mdns_publishers = {}
         # relies on these attributes duplicated from ServerCore:
-        self._socket_info: dict = {}
+        self.sockets: dict = {}
         self.display = os.environ.get("DISPLAY", "")
 
     def init(self, opts) -> None:
@@ -55,16 +55,18 @@ class MdnsServer(StubServerMixin):
             return
         # find all the records we want to publish:
         mdns_recs: dict[str, list[tuple[str, int]]] = {}
-        for sock_def, options in self._socket_info.items():
-            socktype, _, info, _ = sock_def
+        for sock in self.sockets:
+            socktype = sock.socktype
+            address = sock.address
+            options = sock.options
             socktypes = self.get_mdns_socktypes(socktype, options)
             mdns_option = options.get("mdns")
             if mdns_option:
                 v = str_to_bool(mdns_option, False)
                 if not v:
-                    log("mdns_publish() mdns(%s)=%s, skipped", info, mdns_option)
+                    log("mdns_publish() mdns(%s)=%s, skipped", address, mdns_option)
                     continue
-            log("mdns_publish() info=%s, socktypes(%s)=%s", info, socktype, socktypes)
+            log("mdns_publish() address=%s, socktypes(%s)=%s", address, socktype, socktypes)
             for st in socktypes:
                 if st == "socket":
                     continue
@@ -78,7 +80,7 @@ class MdnsServer(StubServerMixin):
                     if not iport:
                         continue
                 else:
-                    host, iport = info
+                    host, iport = address
                 for h in hosts(host):
                     rec = (h, iport)
                     if rec not in recs:

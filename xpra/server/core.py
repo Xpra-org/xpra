@@ -39,7 +39,7 @@ from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     setup_local_sockets, add_listen_socket, accept_connection, guess_packet_type,
-    peek_connection,
+    peek_connection, close_sockets, SocketListener,
 )
 from xpra.net.bytestreams import (
     Connection, SSLSocketConnection, SocketConnection,
@@ -192,7 +192,7 @@ class ServerCore(ServerBaseClass):
         self._closing: bool = False
         self._exit_mode = ServerExitMode.UNSET
         # networking bits:
-        self._socket_info: dict = {}
+        self.sockets: list[SocketListener] = []
         self._potential_protocols: list[SocketProtocol] = []
         self._rfb_upgrade: int = 0
         self._ssl_attributes: dict = {}
@@ -491,19 +491,9 @@ class ServerCore(ServerBaseClass):
             mp.cleanup()
 
     def cleanup_sockets(self) -> None:
-        netlog("cleanup_sockets() %s", self.socket_cleanup)
-        # stop listening for IO events:
-        for sc in self.socket_cleanup:
-            sc()
-        # actually close the socket:
-        si = self._socket_info
-        self._socket_info = {}
-        for socktype, _, address, cleanup in si:
-            log("cleanup_sockets() calling %s for %s %s", cleanup, socktype, address)
-            try:
-                cleanup()
-            except OSError:
-                log("cleanup error on %s", cleanup, exc_info=True)
+        sockets = self.sockets
+        self.sockets = []
+        close_sockets(sockets)
 
     def init_uuid(self) -> None:
         # Define a server UUID if needed:
@@ -620,8 +610,8 @@ class ServerCore(ServerBaseClass):
 
     # #####################################################################
     # sockets / connections / packets:
-    def init_sockets(self, sockets: dict) -> None:
-        self._socket_info.update(sockets)
+    def init_sockets(self, sockets: list[SocketListener]) -> None:
+        sockets += sockets
 
     def init_local_sockets(self, opts, display_name: str, clobber: bool) -> None:
         uid = int(opts.uid)
@@ -637,10 +627,10 @@ class ServerCore(ServerBaseClass):
             opts.mmap_group, opts.socket_permissions,  # noqa: F821
             username, uid, gid)
         netlog(f"done setting up local sockets: {local_sockets}")
-        self._socket_info.update(local_sockets)
+        self.sockets += local_sockets
 
         # all unix domain sockets:
-        ud_paths = [sockpath for stype, _, sockpath, _ in local_sockets if stype == "socket"]
+        ud_paths = [sock.address for sock in local_sockets if sock.socktype == "socket"]
         if ud_paths:
             os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
             if opts.forward_xdg_open and os.path.exists("/usr/libexec/xpra/xdg-open"):
@@ -691,15 +681,15 @@ class ServerCore(ServerBaseClass):
 
     def start_listen_sockets(self) -> None:
         # All right, we're ready to accept customers:
-        for sock_def, options in self._socket_info.items():
-            socktype, sock, address, _ = sock_def
-            netlog("init_sockets(%s) will add %s socket %s (%s)", self._socket_info, socktype, sock, address)
-            GLib.idle_add(self.add_listen_socket, socktype, sock, address, options)
-            if socktype == "socket" and address:
-                if address.startswith("@"):
+        netlog("start_listen_sockets() sockets=%s", self.sockets)
+        for sock in self.sockets:
+            netlog(" add_listen_socket: %s", sock)
+            GLib.idle_add(self.add_listen_socket, sock)
+            if sock.socktype == "socket" and sock.address:
+                if sock.address.startswith("@"):
                     # abstract sockets can't be 'touch'ed
                     continue
-                path = os.path.abspath(address)
+                path = os.path.abspath(sock.address)
                 self.unix_socket_paths.append(path)
                 netlog("added unix socket path: %s", path)
         if self.unix_socket_paths:
@@ -762,37 +752,30 @@ class ServerCore(ServerBaseClass):
             else:
                 self.disconnect_protocol(protocol, reason)
 
-    def add_listen_socket(self, socktype: str, sock, address, options: dict) -> None:
-        netlog("add_listen_socket(%s, %s, %s) address=%s", socktype, sock, options, address)
+    def add_listen_socket(self, sock: SocketListener) -> None:
+        netlog("add_listen_socket(%s)", sock)
+        add_listen_socket(sock, self, self._new_connection)
 
-        def new_connection(socktype: str, listener, handle: int = 0):
-            return self._new_connection(socktype, listener, address, options, handle)
-
-        cleanup = add_listen_socket(socktype, sock, address, self, new_connection, options)
-        if cleanup:
-            self.socket_cleanup.append(cleanup)
-
-    def _new_connection(self, socktype: str, listener, address, socket_options: dict, handle: int):
+    def _new_connection(self, sock: SocketListener, handle=0) -> bool:
         """
             Accept the new connection,
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
-        log("_new_connection%s", (socktype, listener, address, socket_options, handle))
+        log("_new_connection%s", (sock, handle))
         if self._closing:
             netlog("ignoring new connection during shutdown")
             return False
-        if not socktype:
-            netlog.error(f"Error: cannot find socket type for {listener!r}")
-            return True
+        socktype = sock.socktype
+        options = sock.options
         if socktype == "named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-            conn: Connection = NamedPipeConnection(listener.pipe_name, handle, socket_options)
+            conn: Connection = NamedPipeConnection(sock.listener.pipe_name, handle, options)
             netlog.info("New %s connection received on %s", socktype, conn.target)
-            self.make_protocol(socktype, conn, socket_options)
+            self.make_protocol(socktype, conn, options)
             return True
 
-        conn = accept_connection(socktype, listener, self._socket_timeout, socket_options)
+        conn = accept_connection(socktype, sock.listener, self._socket_timeout, options)
         if conn is None:
             return True
         # limit number of concurrent network connections:
@@ -803,7 +786,7 @@ class ServerCore(ServerBaseClass):
             return True
         # from here on, we run in a thread, so we can poll (peek does)
         start_thread(self.handle_new_connection, f"new-{socktype}-connection", True,
-                     args=(conn, address, socket_options))
+                     args=(conn, options))
         return True
 
     def new_conn_err(self, conn, sock, socktype: str, address, packet_type: str, msg=None) -> None:
@@ -842,7 +825,7 @@ class ServerCore(ServerBaseClass):
             netlog("error sending %r: %s", packet_data, e)
         GLib.timeout_add(500, force_close_connection, conn)
 
-    def handle_new_connection(self, conn, address, socket_options: dict) -> None:
+    def handle_new_connection(self, conn, socket_options: dict[str, Any]) -> None:
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
@@ -1040,7 +1023,7 @@ class ServerCore(ServerBaseClass):
             noerr(sock.close)
             return None
 
-    def handle_ssh_connection(self, conn, socket_options):
+    def handle_ssh_connection(self, conn, socket_options: dict[str, Any]):
         from xpra.server.ssh import make_ssh_server_connection, log as sshlog
         socktype = conn.socktype_wrapped
         none_auth = not self.auth_classes[socktype]
@@ -1125,7 +1108,7 @@ class ServerCore(ServerBaseClass):
 
         return self.do_make_protocol(socktype, conn, socket_options, xpra_protocol_class, pre_read)
 
-    def do_make_protocol(self, socktype: str, conn, socket_options, protocol_class,
+    def do_make_protocol(self, socktype: str, conn, socket_options: dict[str, Any], protocol_class,
                          pre_read: Iterable[bytes] = ()) -> SocketProtocol:
         """ create a new Protocol instance and start it """
         netlog("make_protocol%s", (socktype, conn, socket_options, protocol_class, pre_read))
@@ -1200,7 +1183,7 @@ class ServerCore(ServerBaseClass):
         def can_upgrade_to(to_socktype: str) -> bool:
             return self.can_upgrade(socktype, to_socktype, socket_options)
 
-        def conn_err(msg) -> tuple[bool, Any, bytes]:
+        def conn_err(msg: str) -> tuple[bool, Any, bytes]:
             self.new_conn_err(conn, conn._socket, socktype, address, packet_type, msg)
             return False, None, b""
 
@@ -1292,7 +1275,7 @@ class ServerCore(ServerBaseClass):
 
     # #####################################################################
     # http / websockets:
-    def start_http_socket(self, socktype: str, conn, socket_options: dict, is_ssl: bool = False,
+    def start_http_socket(self, socktype: str, conn, socket_options: dict[str, Any], is_ssl: bool = False,
                           peek_data: bytes = b""):
         frominfo = pretty_socket(conn.remote)
         line1 = peek_data.split(b"\n")[0]
@@ -1313,7 +1296,7 @@ class ServerCore(ServerBaseClass):
         start_thread(self.start_http, f"{tname}-for-{frominfo}",
                      daemon=True, args=(socktype, conn, socket_options, is_ssl, req_info, line1, conn.remote))
 
-    def start_http(self, socktype: str, conn, socket_options: dict, is_ssl: bool, req_info: str,
+    def start_http(self, socktype: str, conn, socket_options: dict[str, Any], is_ssl: bool, req_info: str,
                    line1: bytes, frominfo) -> None:
         httplog("start_http(%s, %s, %s, %s, %s, %r, %s) www dir=%s, headers dir=%s",
                 socktype, conn, socket_options, is_ssl, req_info, line1, frominfo,
@@ -2012,8 +1995,9 @@ class ServerCore(ServerBaseClass):
                 add_address("wss", address, port)
 
         netifaces = import_netifaces()
-        for sock_details, options in self._socket_info.items():
-            socktype, _, address, _ = sock_details
+        for sock in self.sockets:
+            socktype = sock.socktype
+            address = sock.address
             if not address:
                 continue
             add_listener(socktype, address)
@@ -2022,7 +2006,7 @@ class ServerCore(ServerBaseClass):
             if socktype not in ("tcp", "ssl", "ws", "wss", "ssh"):
                 # we expose addresses only for TCP sockets
                 continue
-            upnp_address = options.get("upnp-address")
+            upnp_address = sock.options.get("upnp-address")
             if upnp_address:
                 add_address(socktype, *upnp_address)
             if len(address) != 2 or not isinstance(address[0], str) or not isinstance(address[1], int):

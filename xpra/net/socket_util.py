@@ -9,9 +9,10 @@ from time import sleep, monotonic
 from ctypes import Structure, c_uint8, sizeof
 from typing import Any
 from importlib.util import find_spec
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
-from xpra.common import GROUP, SocketState, noerr, SizedBuffer
+from xpra.common import GROUP, SocketState, noerr, SizedBuffer, noop
 from xpra.scripts.config import InitException, InitExit, TRUE_OPTIONS
 from xpra.exit_codes import ExitCode
 from xpra.net.common import DEFAULT_PORT, AUTO_ABSTRACT_SOCKET, ABSTRACT_SOCKET_PREFIX
@@ -47,6 +48,38 @@ def get_network_logger():
         from xpra.log import Logger
         network_logger = Logger("network")
     return network_logger
+
+
+@dataclass
+class SocketListener:
+    socktype: str
+    listener: object            # ie: socket.socket instance
+    address: tuple | str        # ie: (127.0.0.1, 10000) or "/run/xpra/socket"
+    options: dict[str, Any]
+    cleanup: Callable
+    close: Callable
+
+    def __str__(self):
+        return f"{self.socktype}:{self.address}"
+
+
+def close_sockets(sockets: Sequence[SocketListener]) -> None:
+    log = get_network_logger()
+    log("close_sockets() sockets=%s", sockets)
+    # stop listening for IO events (ie: GLib io_add_watch):
+    for sl in sockets:
+        try:
+            sl.close()
+        except OSError:
+            log("close error on %s", sl, exc_info=True)
+
+    # actually close the underlying socket:
+    for sl in sockets:
+        log("cleanup_sockets() calling %s for %s %s", sl.cleanup, sl.socktype, sl.address)
+        try:
+            sl.cleanup()
+        except OSError:
+            log("cleanup error on %s", sl, exc_info=True)
 
 
 def validate_abstract_socketpath(sockpath: str) -> bool:
@@ -149,40 +182,41 @@ def hosts(host_str: str) -> list[str]:
     return [host_str]
 
 
-def add_listen_socket(socktype: str, sock, info: dict, server, new_connection_cb: Callable, options: dict) -> Callable | None:
+def add_listen_socket(sock: SocketListener, server, new_connection_cb: Callable[[SocketListener], bool]) -> None:
     log = get_network_logger()
-    log("add_listen_socket%s", (socktype, sock, info, server, new_connection_cb, options))
+    log("add_listen_socket%s", sock)
+    socktype = sock.socktype
     try:
         # ugly that we have different ways of starting sockets,
         # TODO: abstract this into the socket class
         if socktype == "named-pipe":
             # named pipe listener uses a thread:
-            sock.new_connection_cb = new_connection_cb
-            sock.start()
+            sock.listener.new_connection_cb = new_connection_cb
+            sock.listener.start()
             return None
         if socktype == "quic":
             from xpra.net.quic.listener import listen_quic
             assert server, "cannot use quic sockets without a server"
-            listen_quic(sock, server, options)
+            listen_quic(sock.listener, server, sock.options)
             return None
         sources = []
-        sock.listen(5)
+        sock.listener.listen(5)
 
-        def io_in_cb(sock, flags):
-            log("io_in_cb(%s, %s)", sock, flags)
-            return new_connection_cb(socktype, sock)
+        def io_in_cb(iosock, flags) -> bool:
+            log("io_in_cb(%s, %s)", iosock, flags)
+            return new_connection_cb(sock)
 
         GLib = gi_import("GLib")
-        source = GLib.io_add_watch(sock, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
+        source = GLib.io_add_watch(sock.listener, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
         sources.append(source)
         upnp_cleanup = []
         if socktype in ("tcp", "ws", "wss", "ssh", "ssl"):
-            upnp = (options or {}).get("upnp", "no")
+            upnp = (sock.options or {}).get("upnp", "no")
             if upnp.lower() in TRUE_OPTIONS:
                 from xpra.net.upnp import upnp_add
-                upnp_cleanup.append(upnp_add(socktype, info, options))
+                upnp_cleanup.append(upnp_add(socktype, sock.address, sock.options))
 
-        def cleanup() -> None:
+        def close() -> None:
             for source in tuple(sources):
                 GLib.source_remove(source)
                 sources.remove(source)
@@ -190,12 +224,11 @@ def add_listen_socket(socktype: str, sock, info: dict, server, new_connection_cb
                 if c:
                     start_thread(c, f"pnp-cleanup-{c}", daemon=True)
 
-        return cleanup
+        sock.close = close
     except Exception as e:
-        log("add_listen_socket%s", (socktype, sock, info, new_connection_cb, options), exc_info=True)
-        log.error("Error: failed to listen on %s socket %s:", socktype, pretty_socket(info or sock))
+        log("add_listen_socket%s", (sock, server, new_connection_cb), exc_info=True)
+        log.error("Error: failed to listen on %s socket %s:", socktype, pretty_socket(sock.address))
         log.estr(e)
-        return None
 
 
 def accept_connection(socktype: str, listener, timeout=None, socket_options=None) -> SocketConnection | None:
@@ -353,7 +386,7 @@ def guess_packet_type(buf: SizedBuffer) -> str:
 
 
 def create_sockets(opts, error_cb: Callable, retry: int = 0,
-                   sd_listen=POSIX and not OSX, ssh_upgrades=True) -> dict[Any, dict]:
+                   sd_listen=POSIX and not OSX, ssh_upgrades=True) -> list[SocketListener]:
     bind_tcp = parse_bind_ip(opts.bind_tcp)
     bind_ssl = parse_bind_ip(opts.bind_ssl, 443)
     bind_ssh = parse_bind_ip(opts.bind_ssh, 22)
@@ -402,7 +435,8 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0,
             for h in hosts(host):
                 tcp_defs.append((socktype, h, iport, options, ""))
 
-    sockets = {}
+    sockets: list[SocketListener] = []
+
     for attempt in range(retry + 1):
         if not tcp_defs:
             break
@@ -410,14 +444,13 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0,
         tcp_defs = []
         for socktype, host, iport, options, _ in try_list:
             try:
-                sock = setup_tcp_socket(host, iport, socktype)
+                sockets.append(setup_tcp_socket(host, iport, socktype, options))
             except Exception as e:
                 log("setup_tcp_socket%s attempt=%s", (host, iport, options), attempt)
                 tcp_defs.append((socktype, host, iport, options, str(e)))
-            else:
-                sockets[sock] = options
         if tcp_defs:
             sleep(1)
+
     if tcp_defs:
         # failed to create some sockets:
         for socktype, host, iport, options, exception in tcp_defs:
@@ -428,13 +461,11 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0,
 
     log("setting up vsock sockets: %s", csv(bind_vsock.items()))
     for (cid, iport), options in bind_vsock.items():
-        sock = setup_vsock_socket(cid, iport)
-        sockets[sock] = options
+        sockets.append(setup_vsock_socket(cid, iport, options))
 
     log("setting up quic sockets: %s", csv(bind_quic.items()))
     for (host, iport), options in bind_quic.items():
-        sock = setup_quic_socket(host, iport)
-        sockets[sock] = options
+        sockets.append(setup_quic_socket(host, iport, options))
 
     # systemd socket activation:
     if sd_listen:
@@ -446,8 +477,7 @@ def create_sockets(opts, error_cb: Callable, retry: int = 0,
             sd_sockets = get_sd_listen_sockets()
             log("systemd sockets: %s", sd_sockets)
             for stype, sock, addr in sd_sockets:
-                sock = setup_sd_listen_socket(stype, sock, addr)
-                sockets[sock] = {}
+                sockets.append(setup_sd_listen_socket(stype, sock, addr))
                 log("%s : %s", (stype, [addr]), sock)
     return sockets
 
@@ -472,8 +502,7 @@ def create_tcp_socket(host: str, iport: int) -> socket.socket:
     return listener
 
 
-def setup_tcp_socket(host: str, iport: int, socktype: str = "tcp") \
-        -> tuple[str, socket.socket, tuple[str, int], Callable]:
+def setup_tcp_socket(host: str, iport: int, socktype: str, options: dict[str, Any]) -> SocketListener:
     log = get_network_logger()
     try:
         tcp_socket = create_tcp_socket(host, iport)
@@ -494,7 +523,7 @@ def setup_tcp_socket(host: str, iport: int, socktype: str = "tcp") \
         log.info(f"allocated {socktype} port {iport} on {host}")
     log(f"{socktype}: {host}:{iport} : {socket}")
     log.info(f"created {socktype} socket '{host}:{iport}'")
-    return socktype, tcp_socket, (host, iport), cleanup_tcp_socket
+    return SocketListener(socktype, tcp_socket, (host, iport), options, cleanup_tcp_socket, noop)
 
 
 def create_udp_socket(host: str, iport: int, family: socket.AddressFamily=socket.AF_INET) -> socket.socket:
@@ -517,7 +546,7 @@ def create_udp_socket(host: str, iport: int, family: socket.AddressFamily=socket
     return listener
 
 
-def setup_quic_socket(host: str, port: int) -> tuple[str, socket.socket, tuple[str, int], Callable]:
+def setup_quic_socket(host: str, port: int, options: dict[str, Any]) -> SocketListener:
     try:
         from xpra.net.quic import common
         import aioquic
@@ -528,7 +557,7 @@ def setup_quic_socket(host: str, port: int) -> tuple[str, socket.socket, tuple[s
     return setup_udp_socket(host, port, "quic")
 
 
-def setup_udp_socket(host: str, iport: int, socktype: str) -> tuple[str, socket.socket, tuple[str, int], Callable]:
+def setup_udp_socket(host: str, iport: int, socktype: str, options: dict[str, Any]) -> SocketListener:
     log = get_network_logger()
     try:
         udp_socket = create_udp_socket(host, iport, family=socket.AF_INET6 if host.find(":") >= 0 else socket.AF_INET)
@@ -549,7 +578,7 @@ def setup_udp_socket(host: str, iport: int, socktype: str) -> tuple[str, socket.
         log.info(f"allocated {socktype} port {iport} on {host}")
     log(f"{socktype}: {host}:{iport} : {socket}")
     log.info(f"created {socktype} socket '{host}:{iport}'")
-    return socktype, udp_socket, (host, iport), cleanup_udp_socket
+    return SocketListener(socktype, udp_socket, (host, iport), options, cleanup_udp_socket, noop)
 
 
 def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[tuple[str, int], dict[str, Any]]:
@@ -580,7 +609,7 @@ def parse_bind_ip(bind_ip: list[str], default_port: int = DEFAULT_PORT) -> dict[
     return ip_sockets
 
 
-def setup_vsock_socket(cid: int, iport: int) -> tuple[str, Any, tuple[int, int], Callable]:
+def setup_vsock_socket(cid: int, iport: int, options: dict[str, Any]) -> SocketListener:
     log = get_network_logger()
     try:
         from xpra.net.vsock.vsock import bind_vsocket
@@ -596,7 +625,7 @@ def setup_vsock_socket(cid: int, iport: int) -> tuple[str, Any, tuple[int, int],
         except OSError:
             pass
 
-    return "vsock", vsock_socket, (cid, iport), cleanup_vsock_socket
+    return SocketListener("vsock", vsock_socket, (cid, iport), options, cleanup_vsock_socket, noop)
 
 
 def parse_bind_vsock(bind_vsock: list[str]) -> dict[tuple[int, int], dict]:
@@ -620,7 +649,7 @@ def parse_bind_vsock(bind_vsock: list[str]) -> dict[tuple[int, int], dict]:
     return vsock_sockets
 
 
-def setup_sd_listen_socket(stype: str, sock, addr) -> tuple[str, socket.socket, Any, Callable]:
+def setup_sd_listen_socket(stype: str, sock, addr) -> SocketListener:
     log = get_network_logger()
 
     def cleanup_sd_listen_socket() -> None:
@@ -630,7 +659,7 @@ def setup_sd_listen_socket(stype: str, sock, addr) -> tuple[str, socket.socket, 
         except OSError:
             pass
 
-    return stype, sock, addr, cleanup_sd_listen_socket
+    return SocketListener(stype, sock, addr, {}, cleanup_sd_listen_socket, noop)
 
 
 def normalize_local_display_name(local_display_name: str) -> str:
@@ -657,16 +686,16 @@ def normalize_local_display_name(local_display_name: str) -> str:
 def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                         display_name: str, clobber,
                         mmap_group: str = "auto", socket_permissions: str = "600", username: str = "",
-                        uid: int = 0, gid: int = 0) -> dict[Any, dict]:
+                        uid: int = 0, gid: int = 0) -> list[SocketListener]:
     log = get_network_logger()
     log("setup_local_sockets%s",
         (bind, socket_dir, socket_dirs, session_dir, display_name, clobber, mmap_group,
          socket_permissions, username, uid, gid)
         )
     if WIN32 and not WIN32_LOCAL_SOCKETS and csv(bind) in ("auto", "noabstract"):
-        return {}
+        return []
     if not bind or csv(bind) == "none":
-        return {}
+        return []
     if not socket_dir and (not socket_dirs or (len(socket_dirs) == 1 and not socket_dirs[0])):
         if WIN32:
             socket_dirs = [""]
@@ -678,7 +707,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
     if display_name is not None and not WIN32:
         display_name = normalize_local_display_name(display_name)
     homedir = osexpand("~", username, uid, gid)
-    defs: dict[Any, dict] = {}
+    defs: list[SocketListener] = []
     try:
         sockpaths = {}
         log(f"setup_local_sockets: bind={bind}, dotxpra={dotxpra}")
@@ -749,7 +778,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                 if ppath.startswith(PIPE_PATH):
                     ppath = ppath[len(PIPE_PATH):]
                 log.info(f"created named pipe '{ppath}'")
-                defs[("named-pipe", npl, sockpath, npl.stop)] = options
+                defs.append(SocketListener("named-pipe", npl, sockpath, options, npl.stop, noop))
         else:
 
             def checkstate(sockpath: str, state: SocketState | str) -> None:
@@ -861,7 +890,7 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                         del e
                     else:
                         created.append(sockpath)
-                        defs[("socket", sock, sockpath, cleanup_socket)] = options
+                        defs.append(SocketListener("socket", sock, sockpath, options, cleanup_socket, noop))
                 unix = [x for x in created if not x.startswith("@")]
                 if unix:
                     log.info("created unix domain sockets:")
@@ -873,16 +902,14 @@ def setup_local_sockets(bind, socket_dir: str, socket_dirs, session_dir: str,
                     for cpath in abstract:
                         log.info(f" {cpath!r}")
     except Exception:
-        for sock_def in defs.keys():
-            sock_str = str(sock_def)
+        for sock_def in defs:
+            sock_str = f"{sock_def.socktype} {sock_def.address!r}"
             try:
-                sock_str = f"{sock_def[0]} {sock_def[2]!r}"
                 cleanup_socket = sock_def[-1]
-                cleanup_socket()
+                sock_def.cleanup()
             except (IndexError, ValueError, OSError):
                 log(f"error cleaning up socket {sock_str}", exc_info=True)
                 log.error(f"Error cleaning up socket {sock_str}:", exc_info=True)
-                log.error(f" using {sock_def}")
         raise
     return defs
 
