@@ -1,13 +1,13 @@
 %define _disable_source_fetch 0
-%define commit 04a26da713617f324311fb2d65783ee317f233a5
+%define commit 331a92d3221bc2e62d423d38fdc29d55680c81c2
 
 Name:           winbar
-Version:        0.2.1
+Version:        0.2.2
 Release:        1
 Summary:        A familiar X11 panel/dock to ease new linux users transition
 License:        GPL-3
 URL:            https://github.com/jmanc3/winbar
-Source0:        https://github.com/totaam/winbar/archive/%{commit}.zip
+Source0:        https://github.com/jmanc3/winbar/archive/%{commit}.zip
 
 BuildRequires:  git
 BuildRequires:  cmake
@@ -35,7 +35,7 @@ A familiar X11 panel/dock to ease new linux users transition
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "1bd516e7d7ce5167abaa1010e4259586f6c8a4e8741082268cde494d702ad875" ]; then
+if [ "${sha256}" != "11ed918c0fb90e6c6fae7ecae0897d3ddc5e62e24b561b3e41971a8f1b0d2bb3" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -68,6 +68,9 @@ cp ./winbar/winbar.cfg %{buildroot}%{_sysconfdir}
 %{_sysconfdir}/winbar.cfg
 
 %changelog
+* Tue Jun 10 2025 Antoine Martin <antoine@xpra.org> - 0.2.2-1
+- switch back to upstream
+
 * Mon Jun 09 2025 Antoine Martin <antoine@xpra.org> - 0.2.1-1
 - use fork to get randr patch
 
