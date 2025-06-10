@@ -29,7 +29,6 @@ from xpra.exit_codes import ExitValue, ExitCode
 from xpra.server import ServerExitMode
 from xpra.server import features
 from xpra.server.auth import AuthenticatedServer
-from xpra.util.pid import write_pidfile, rm_pidfile
 from xpra.scripts.config import str_to_bool, parse_bool_or, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     MAX_PACKET_SIZE, SSL_UPGRADE, PACKET_TYPES,
@@ -71,7 +70,7 @@ from xpra.common import (
 from xpra.util.pysystem import dump_all_frames, get_frame_info
 from xpra.util.objects import typedict, notypedict, merge_dicts
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, print_nested_dict, nicestr, strtobytes, hexstr
-from xpra.util.env import envint, envbool, envfloat, osexpand, first_time
+from xpra.util.env import envint, envbool, envfloat, first_time
 from xpra.log import Logger, get_info as get_log_info
 
 # pylint: disable=import-outside-toplevel
@@ -83,8 +82,6 @@ netlog = Logger("network")
 ssllog = Logger("ssl")
 httplog = Logger("http")
 wslog = Logger("websocket")
-proxylog = Logger("proxy")
-authlog = Logger("auth")
 cryptolog = Logger("crypto")
 timeoutlog = Logger("timeout")
 
@@ -152,8 +149,9 @@ def force_close_connection(conn) -> None:
 def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.control import ControlHandler
     from xpra.server.glib_server import GLibServer
+    from xpra.server.subsystem.daemon import DaemonServer
     from xpra.server.subsystem.splash import SplashServer
-    classes: list[type] = [GLibServer, AuthenticatedServer, ControlHandler, SplashServer]
+    classes: list[type] = [GLibServer, DaemonServer, AuthenticatedServer, ControlHandler, SplashServer]
     from xpra.server import features
     if features.mdns:
         from xpra.server.subsystem.mdns import MdnsServer
@@ -216,8 +214,6 @@ class ServerCore(ServerBaseClass):
         self._socket_dirs: list = []
         self.unix_socket_paths: list[str] = []
         self.touch_timer: int = 0
-        self.pidfile = ""
-        self.pidinode: int = 0
         self.session_files: list[str] = [
             "cmdline", "server.env", "config", "server.log*",
             # notifications may use a TMP dir:
@@ -256,10 +252,6 @@ class ServerCore(ServerBaseClass):
         log("ServerCore.init(%s)", opts)
         self.session_name = str(opts.session_name)
         set_name("Xpra", self.session_name or "Xpra")
-        self.pidfile = osexpand(opts.pidfile)
-        if self.pidfile:
-            self.pidinode = write_pidfile(os.path.normpath(self.pidfile))
-
         self.unix_socket_paths = []
         self._socket_dir = opts.socket_dir or ""
         if not self._socket_dir and opts.socket_dirs:
@@ -463,10 +455,6 @@ class ServerCore(ServerBaseClass):
             bc.late_cleanup(self, stop)
         self.cleanup_all_protocols(force=True)
         self._potential_protocols = []
-        if self.pidfile:
-            netlog("cleanup removing pidfile %s", self.pidfile)
-            rm_pidfile(self.pidfile, self.pidinode)
-            self.pidinode = 0
         from xpra.util.child_reaper import reaper_cleanup
         reaper_cleanup()
 
@@ -1147,14 +1135,14 @@ class ServerCore(ServerBaseClass):
                 INITIAL_PADDING,
             )
             if ENCRYPT_FIRST_PACKET:
-                authlog(f"encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
+                cryptolog(f"encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
                 password = protocol.keydata or self.get_encryption_key((), protocol.keyfile)
                 iv = strtobytes(DEFAULT_IV)
                 protocol.set_cipher_in(protocol.encryption, iv,
                                        password, DEFAULT_SALT, DEFAULT_KEY_HASH, DEFAULT_KEYSIZE,
                                        DEFAULT_ITERATIONS, INITIAL_PADDING, DEFAULT_ALWAYS_PAD, DEFAULT_STREAM)
         protocol.invalid_header = self.invalid_header
-        authlog(f"socktype={socktype}, encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
+        netlog(f"socktype={socktype}, encryption={protocol.encryption}, keyfile={protocol.keyfile!r}")
         protocol.start()
         self.schedule_verify_connection_accepted(protocol, self._accept_timeout)
         return protocol
@@ -1631,9 +1619,9 @@ class ServerCore(ServerBaseClass):
         padding_options = c.strtupleget("padding.options", (DEFAULT_PADDING,))
         ciphers = get_ciphers()
         if cipher not in ciphers:
-            authlog.warn(f"Warning: unsupported cipher: {cipher!r}")
+            cryptolog.warn(f"Warning: unsupported cipher: {cipher!r}")
             if ciphers:
-                authlog.warn(" should be: " + csv(ciphers))
+                cryptolog.warn(" should be: " + csv(ciphers))
             return auth_failed("unsupported cipher")
         if key_stretch != "PBKDF2":
             return auth_failed(f"unsupported key stretching {key_stretch!r}")
@@ -1662,22 +1650,22 @@ class ServerCore(ServerBaseClass):
 
     def get_encryption_key(self, authenticators: tuple = (), keyfile: str = "") -> bytes:
         # if we have a keyfile specified, use that:
-        authlog(f"get_encryption_key({authenticators}, {keyfile})")
+        cryptolog(f"get_encryption_key({authenticators}, {keyfile})")
         if keyfile:
-            authlog(f"loading encryption key from keyfile {keyfile!r}")
+            cryptolog(f"loading encryption key from keyfile {keyfile!r}")
             v = filedata_nocrlf(keyfile)
             if v:
                 return v
         KVAR = "XPRA_ENCRYPTION_KEY"
         v = os.environ.get(KVAR, "")
         if v:
-            authlog(f"using encryption key from {KVAR!r} environment variable")
+            cryptolog(f"using encryption key from {KVAR!r} environment variable")
             return strtobytes(v)
         if authenticators:
             for authenticator in authenticators:
                 v = authenticator.get_password()
                 if v:
-                    authlog(f"using password from authenticator {authenticator}")
+                    cryptolog(f"using password from authenticator {authenticator}")
                     return v
         return b""
 
@@ -1911,11 +1899,6 @@ class ServerCore(ServerBaseClass):
             "idle-timeout": int(self.server_idle_timeout),
             "pid": os.getpid(),
         }
-        if self.pidfile:
-            info["pidfile"] = {
-                "path": self.pidfile,
-                "inode": self.pidinode,
-            }
         logfile = os.environ.get("XPRA_SERVER_LOG", "")
         if logfile:
             info["log-file"] = logfile
