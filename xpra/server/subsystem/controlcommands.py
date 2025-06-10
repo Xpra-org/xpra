@@ -240,7 +240,10 @@ class ServerBaseControlCommands(StubServerMixin):
     def control_command_server_idle_timeout(self, t: int) -> str:
         self.server_idle_timeout = t
         reschedule = len(self._server_sources) == 0
-        self.reset_server_timeout(reschedule)
+        # weak dependency on IdleTimeoutServer:
+        if reschedule:
+            schedule_server_timeout = getattr(self, "schedule_server_timeout", noop)
+            schedule_server_timeout()
         return f"server-idle-timeout set to {t}"
 
     def control_command_start_env(self, action: str = "set", var_name: str = "", value=None) -> str:

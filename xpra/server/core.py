@@ -81,7 +81,6 @@ netlog = Logger("network")
 ssllog = Logger("ssl")
 httplog = Logger("http")
 wslog = Logger("websocket")
-timeoutlog = Logger("timeout")
 
 main_thread = threading.current_thread()
 
@@ -215,8 +214,6 @@ class ServerCore(ServerBaseClass):
         self.readonly = False
         self.compression_level = 1
         self.exit_with_client = False
-        self.server_idle_timeout = 0
-        self.server_idle_timer = 0
 
         self.init_thread = None
         self.init_thread_callbacks: list[tuple[Callable, tuple]] = []
@@ -235,7 +232,6 @@ class ServerCore(ServerBaseClass):
         self._socket_dirs = opts.socket_dirs
         self.compression_level = opts.compression_level
         self.exit_with_client = opts.exit_with_client
-        self.server_idle_timeout = opts.server_idle_timeout
         self.readonly = opts.readonly
         self.http = opts.http
         self.websocket_upgrade = opts.websocket_upgrade
@@ -335,7 +331,6 @@ class ServerCore(ServerBaseClass):
         get_platform_info()
         init_memcheck()
         add_work_item(self.print_run_info)
-        GLib.idle_add(self.reset_server_timeout)
         log("threaded_setup() servercore end")
 
     def call_init_thread_callbacks(self) -> None:
@@ -1552,30 +1547,14 @@ class ServerCore(ServerBaseClass):
     def accept_protocol(self, proto: SocketProtocol) -> None:
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
-        self.reset_server_timeout(False)
         self.cancel_verify_connection_accepted(proto)
         self.cancel_upgrade_to_rfb_timer(proto)
-
-    def reset_server_timeout(self, reschedule: bool = True) -> None:
-        timeoutlog("reset_server_timeout(%s) server_idle_timeout=%s, server_idle_timer=%s",
-                   reschedule, self.server_idle_timeout, self.server_idle_timer)
-        if self.server_idle_timeout <= 0:
-            return
-        if self.server_idle_timer:
-            GLib.source_remove(self.server_idle_timer)
-            self.server_idle_timer = 0
-        if reschedule:
-            self.server_idle_timer = GLib.timeout_add(self.server_idle_timeout * 1000, self.server_idle_timedout)
-
-    def server_idle_timedout(self) -> None:
-        timeoutlog.info("No valid client connections for %s seconds, exiting the server", self.server_idle_timeout)
-        self.clean_quit(ServerExitMode.NORMAL)
 
     def make_hello(self, source) -> dict[str, Any]:
         now = time()
         capabilities = get_network_caps(FULL_INFO)
         for bc in SERVER_BASES:
-            capabilities |= bc.get_caps(self)
+            capabilities |= bc.get_caps(self, source)
         capabilities |= get_digest_caps()
         if source is None or "versions" in source.wants:
             capabilities |= self.get_minimal_server_info()
@@ -1705,7 +1684,6 @@ class ServerCore(ServerBaseClass):
             "path": sys.path,
             "exec_prefix": sys.exec_prefix,
             "executable": sys.executable,
-            "idle-timeout": int(self.server_idle_timeout),
             "pid": os.getpid(),
         }
         logfile = os.environ.get("XPRA_SERVER_LOG", "")

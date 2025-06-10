@@ -55,6 +55,9 @@ def get_server_base_classes() -> tuple[type, ...]:
         # and this one for processing power event messages from the client:
         from xpra.server.subsystem.suspend import SuspendServer
         classes.append(SuspendServer)
+    if features.idle:
+        from xpra.server.subsystem.idle import IdleTimeoutServer
+        classes.append(IdleTimeoutServer)
     if features.display:
         from xpra.server.subsystem.display import DisplayManager
         classes.append(DisplayManager)

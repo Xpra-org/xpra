@@ -678,7 +678,6 @@ class ServerBase(ServerBaseClass):
     def last_client_exited(self) -> None:
         # must run from the UI thread (modifies focus and keys)
         netlog("last_client_exited() exit_with_client=%s", self.exit_with_client)
-        self.reset_server_timeout(True)
         for c in SERVER_BASES:
             if c != ServerCore:
                 try:

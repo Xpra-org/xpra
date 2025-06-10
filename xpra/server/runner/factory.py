@@ -7,7 +7,7 @@
 def get_server_base_class() -> type:
     from xpra.server import features
     # disable a bunch of things we're not using:
-    features.power = False
+    features.power = features.suspend = features.idle = False
     # features.ping = auto
     features.bandwidth = features.control = False
     # features.debug = auto
