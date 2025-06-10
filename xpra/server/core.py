@@ -215,7 +215,6 @@ class ServerCore(ServerBaseClass):
 
         # Features:
         self.readonly = False
-        self.password_file: Iterable[str] = ()
         self.compression_level = 1
         self.exit_with_client = False
         self.server_idle_timeout = 0
@@ -236,7 +235,6 @@ class ServerCore(ServerBaseClass):
         if not self._socket_dir and opts.socket_dirs:
             self._socket_dir = opts.socket_dirs[0]
         self._socket_dirs = opts.socket_dirs
-        self.password_file = opts.password_file
         self.compression_level = opts.compression_level
         self.exit_with_client = opts.exit_with_client
         self.server_idle_timeout = opts.server_idle_timeout
