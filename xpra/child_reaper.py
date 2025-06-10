@@ -74,7 +74,7 @@ class ChildReaper:
         if USE_PROCESS_POLLING:
             POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
             log("using process polling every %s seconds", POLL_DELAY)
-            GLib.timeout_add(POLL_DELAY*1000, self.poll)
+            GLib.timeout_add(POLL_DELAY*1000, self.check)
         else:
             signal.signal(signal.SIGCHLD, self.sigchld)
             # Check once after the mainloop is running, just in case the exit
