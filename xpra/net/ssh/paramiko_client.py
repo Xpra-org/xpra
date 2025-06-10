@@ -1010,15 +1010,27 @@ def run_remote_xpra(transport, xpra_proxy_command: Sequence[str], remote_xpra: S
                     socket_dir: str, display_as_args: Sequence[str], paramiko_config: dict):
     log("run_remote_xpra%s", (transport, xpra_proxy_command, remote_xpra,
                               socket_dir, display_as_args, paramiko_config))
-    assert remote_xpra
-    log(f"will try to run xpra from: {remote_xpra}")
+    crf = ChannelRunFactory(transport, xpra_proxy_command, remote_xpra, socket_dir, display_as_args, paramiko_config)
+    return crf.open()
 
-    def rtc(cmd: str) -> tuple[list[str], list[str], int]:
-        return run_test_command(transport, cmd)
 
-    def detectosname() -> str:
+class ChannelRunFactory:
+
+    def __init__(self, transport, xpra_proxy_command: Sequence[str], remote_xpra: Sequence[str],
+                 socket_dir: str, display_as_args: Sequence[str], paramiko_config: dict):
+        self.transport = transport
+        self.xpra_proxy_command = xpra_proxy_command
+        self.remote_xpra = remote_xpra
+        self.socket_dir = socket_dir
+        self.display_as_args = display_as_args
+        self.paramiko_config = paramiko_config
+
+    def rtc(self, cmd: str) -> tuple[list[str], list[str], int]:
+        return run_test_command(self.transport, cmd)
+
+    def detectosname(self) -> str:
         # first, try a syntax that should work with any ssh server:
-        r = rtc("echo %OS%")
+        r = self.rtc("echo %OS%")
         if r[2] == 0 and r[0]:
             name = r[0][-1].rstrip("\n\r")
             log(f"echo %OS%={name!r}")
@@ -1027,7 +1039,7 @@ def run_remote_xpra(transport, xpra_proxy_command: Sequence[str], remote_xpra: S
                 log.info(f"ssh server OS is {name!r}")
                 return name
         # this should work on all other OSes:
-        r = rtc("echo $OSTYPE")
+        r = self.rtc("echo $OSTYPE")
         if r[2] == 0 and r[0]:
             name = r[0][-1].rstrip("\n\r")
             log(f"OSTYPE={name!r}")
@@ -1035,96 +1047,112 @@ def run_remote_xpra(transport, xpra_proxy_command: Sequence[str], remote_xpra: S
             return name
         return "unknown"
 
-    def getexeinstallpath() -> str:
+    def getexeinstallpath(self, osname: str) -> str:
         cmd = WIN32_REGISTRY_QUERY
         if osname == "msys":
             # escape for msys shell:
             cmd = cmd.replace("/", "//")
-        r = rtc(cmd)
+        r = self.rtc(cmd)
         if r[2] != 0:
             return ""
-        out = r[0]
-        for line in out:
+        lines = r[0]
+        for line in lines:
             qmatch = re.search(r"InstallPath\s*\w*\s*(.*)", line)
             if qmatch:
                 return qmatch.group(1).rstrip("\n\r")
         return ""
 
-    osname = detectosname()
-    tried = set()
-    find_command = None
-    for xpra_cmd in remote_xpra:
-        found = False
-        if osname.startswith("Windows") or osname in ("msys", "cygwin"):
-            # on MS Windows,
-            # always prefer the application path found in the registry:
-            def winpath(p) -> str:
-                if osname == "msys":
-                    return p.replace("\\", "\\\\")
-                if osname == "cygwin":
-                    return "/cygdrive/" + p.replace(":\\", "/").replace("\\", "/")
-                return p
+    def get_which(self, find_command="which", command="xpra") -> str:
+        r = self.rtc(f"{find_command} {command}")
+        if r[2] != 0:
+            return ""
+        lines = r[0]
+        if not lines:
+            return ""
+        # can be multiple lines when the command output is polluted
+        for line in lines:
+            line = line.rstrip("\n\r ").lstrip("\t ")
+            if not line or line == "OK":
+                continue
+            # use the actual path returned by 'command -v' or 'which':
+            if line.startswith(f"alias {command}="):
+                # ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
+                return line.split("=", 1)[1].strip("'")
+            return line
+        return ""
 
-            installpath = getexeinstallpath()
-            if installpath:
-                xpra_cmd = winpath(f"{installpath}\\Xpra_cmd.exe")
-                found = True
-            elif xpra_cmd.find("/") < 0 and xpra_cmd.find("\\") < 0:
-                test_path = winpath(f"{DEFAULT_WIN32_INSTALL_PATH}\\{xpra_cmd}")
-                cmd = f'dir "{test_path}"'
-                r = rtc(cmd)
-                if r[2] == 0:
-                    xpra_cmd = test_path
-                    found = True
-        if not found and not find_command and not osname.startswith("Windows"):
-            if rtc("command")[2] == 0:
-                find_command = "command -v"
-            else:
-                find_command = "which"
-        if not found and find_command:
-            r = rtc(f"{find_command} {xpra_cmd}")
-            out = r[0]
-            if r[2] == 0 and out:
-                # use the actual path returned by 'command -v' or 'which':
-                try:
-                    xpra_cmd = out[-1].rstrip("\n\r ").lstrip("\t ")
-                except Exception as e:
-                    log(f"cannot get command from {xpra_cmd}: {e}")
+    def find_remote_xpra(self) -> str:
+        log(f"find_remote_xpra() {self.remote_xpra=}")
+        osname = self.detectosname()
+
+        def winpath(p) -> str:
+            if osname == "msys":
+                return p.replace("\\", "\\\\")
+            if osname == "cygwin":
+                return "/cygdrive/" + p.replace(":\\", "/").replace("\\", "/")
+            return p
+
+        find_command = ""
+        for xpra_cmd in self.remote_xpra:
+            if osname.startswith("Windows") or osname in ("msys", "cygwin"):
+                # on MS Windows,
+                # always prefer the application path found in the registry:
+                installpath = self.getexeinstallpath(osname)
+                if installpath:
+                    return winpath(f"{installpath}\\Xpra_cmd.exe")
+                elif xpra_cmd.find("/") < 0 and xpra_cmd.find("\\") < 0:
+                    test_path = winpath(f"{DEFAULT_WIN32_INSTALL_PATH}\\{xpra_cmd}")
+                    cmd = f'dir "{test_path}"'
+                    r = self.rtc(cmd)
+                    if r[2] == 0:
+                        return test_path
+
+            if not find_command and not osname.startswith("Windows"):
+                if self.rtc("command")[2] == 0:
+                    find_command = "command -v"
                 else:
-                    if xpra_cmd.startswith(f"alias {xpra_cmd}="):
-                        # ie: "alias xpra='xpra -d proxy'" -> "xpra -d proxy"
-                        xpra_cmd = xpra_cmd.split("=", 1)[1].strip("'")
-                    found = bool(xpra_cmd)
-            elif xpra_cmd == "xpra" and osname in ("msys", "cygwin"):
+                    find_command = "which"
+
+            if find_command:
+                found = self.get_which(find_command, xpra_cmd)
+                if found:
+                    return found
+
+            if xpra_cmd == "xpra" and osname in ("msys", "cygwin"):
                 default_path = CYGWIN_DEFAULT_PATH if osname == "cygwin" else MSYS_DEFAULT_PATH
                 if default_path:
                     # try the default system installation path
-                    r = rtc(f"command -v '{default_path}'")
+                    r = self.rtc(f"command -v '{default_path}'")
                     if r[2] == 0:
-                        xpra_cmd = default_path  # ie: "/mingw64/bin/xpra"
-                        found = True
-        if not found or xpra_cmd in tried:
-            continue
+                        return default_path  # ie: "/mingw64/bin/xpra"
+        return ""
+
+    def get_xpra_command(self) -> str:
+        log(f"will try to run xpra from: {self.remote_xpra}")
+        xpra_cmd = self.find_remote_xpra() or "xpra"
         log(f"adding {xpra_cmd=!r}")
-        tried.add(xpra_cmd)
-        cmd = '"' + xpra_cmd + '" ' + ' '.join(shellquote(x) for x in xpra_proxy_command)
-        if socket_dir:
-            cmd += f" \"--socket-dir={socket_dir}\""
-        if display_as_args:
+        cmd = '"' + xpra_cmd + '" ' + ' '.join(shellquote(x) for x in self.xpra_proxy_command)
+        if self.socket_dir:
+            cmd += f" \"--socket-dir={self.socket_dir}\""
+        if self.display_as_args:
             cmd += " "
-            cmd += " ".join(shellquote(x) for x in display_as_args)
-        log(f"cmd({xpra_proxy_command}, {display_as_args})={cmd}")
+            cmd += " ".join(shellquote(x) for x in self.display_as_args)
+        log(f"cmd({self.xpra_proxy_command}, {self.socket_dir}, {self.display_as_args})={cmd}")
+        return cmd
+
+    def open(self):
+        cmd = self.get_xpra_command()
 
         # see https://github.com/paramiko/paramiko/issues/175
         # WINDOW_SIZE = 2097152
         log(f"trying to open SSH session, window-size={WINDOW_SIZE}, timeout={TIMEOUT}")
         try:
-            chan = transport.open_session(window_size=WINDOW_SIZE, max_packet_size=0, timeout=TIMEOUT)
+            chan = self.transport.open_session(window_size=WINDOW_SIZE, max_packet_size=0, timeout=TIMEOUT)
             chan.set_name("run-xpra")
         except SSHException as e:
             log("open_session", exc_info=True)
             raise InitExit(ExitCode.SSH_FAILURE, f"failed to open SSH session: {e}") from None
-        agent_option = str(paramiko_config.get("agent", SSH_AGENT)) or "no"
+        agent_option = str(self.paramiko_config.get("agent", SSH_AGENT)) or "no"
         log(f"paramiko {agent_option=}")
         if agent_option.lower() in TRUE_OPTIONS:
             if not WIN_OPENSSH_AGENT and WIN_OPENSSH_AGENT_MODULE not in sys.modules:
@@ -1138,4 +1166,3 @@ def run_remote_xpra(transport, xpra_proxy_command: Sequence[str], remote_xpra: S
         chan.exec_command(cmd)
         log("exec_command sent, returning channel for service")
         return chan
-    raise RuntimeError("all SSH remote proxy commands have failed - is xpra installed on the remote host?")
