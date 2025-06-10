@@ -19,12 +19,9 @@ class SessionFilesServer(StubServerMixin):
 
     def late_cleanup(self, stop=True) -> None:
         if stop:
-            self.clean_session_files()
+            log("clean_session_files(%s)", self.session_files)
+            clean_session_files(*self.session_files)
             rm_session_dir()
-
-    def clean_session_files(self) -> None:
-        log("clean_session_files() %s", *self.session_files)
-        clean_session_files(*self.session_files)
 
     def get_info(self, _proto) -> dict[str, Any]:
         return {
