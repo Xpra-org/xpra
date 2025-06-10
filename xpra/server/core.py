@@ -209,8 +209,6 @@ class ServerCore(ServerBaseClass):
             # notifications may use a TMP dir:
             "tmp/*", "tmp",
         ]
-        self.splash_process = None
-
         self.session_name = ""
 
         # Features:
@@ -389,7 +387,6 @@ class ServerCore(ServerBaseClass):
         self.init_uuid()
         self.install_signal_handlers(self.signal_quit)
         GLib.idle_add(self.server_is_ready)
-        self.stop_splash_process()
         self.do_run()
         log("run()")
         return 0
@@ -418,15 +415,6 @@ class ServerCore(ServerBaseClass):
         self._potential_protocols = []
         from xpra.util.child_reaper import reaper_cleanup
         reaper_cleanup()
-
-    def stop_splash_process(self) -> None:
-        sp = self.splash_process
-        if sp:
-            self.splash_process = None
-            try:
-                sp.terminate()
-            except OSError:
-                log("stop_splash_process()", exc_info=True)
 
     def cleanup_sockets(self) -> None:
         sockets = self.sockets
