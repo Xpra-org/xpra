@@ -560,7 +560,7 @@ def setup_quic_socket(host: str, port: int, options: dict[str, Any]) -> SocketLi
     except ImportError as e:
         raise InitExit(ExitCode.SOCKET_CREATION_ERROR,
                        f"cannot use quic sockets: {e}") from None
-    return setup_udp_socket(host, port, "quic")
+    return setup_udp_socket(host, port, "quic", options)
 
 
 def setup_udp_socket(host: str, iport: int, socktype: str, options: dict[str, Any]) -> SocketListener:
