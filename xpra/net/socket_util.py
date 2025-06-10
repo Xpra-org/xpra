@@ -743,7 +743,12 @@ def get_bind_sockpaths(bind: Sequence[str], session_dir: str, display_name, dotx
             sockpaths[sockpath] = options
         if not sockpaths:
             raise ValueError(f"no socket paths to try for {b}")
+    return noduplicatepaths(dotxpra, sockpaths)
+
+
+def noduplicatepaths(dotxpra, sockpaths: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     # expand and remove duplicate paths:
+    log = get_network_logger()
     tmp = {}
     for tsp, options in sockpaths.items():
         sockpath = dotxpra.osexpand(tsp)
