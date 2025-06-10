@@ -269,7 +269,7 @@ def set_server_features(opts, mode: str) -> None:
         features.keyboard = features.pointer = False
         features.logging = features.display = features.window = False
         features.cursor = features.rfb = False
-        features.power = features.suspend = False
+        features.power = features.suspend = features.idle = False
         features.ssh = False
     else:
         features.debug = features.debug or b(opts.debug)
@@ -297,6 +297,7 @@ def set_server_features(opts, mode: str) -> None:
         features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
         features.power = envbool("XPRA_POWER_EVENTS", True)
         features.suspend = envbool("XPRA_SUSPEND_RESUME", True)
+        features.idle = opts.server_idle_timeout > 0
 
     features.http = opts.http and impcheck("net.http")
     features.control = opts.control and impcheck("net.control")
@@ -320,6 +321,7 @@ def enforce_server_features() -> None:
         "debug": "xpra.server.subsystem.debug",
         "power": "xpra.server.subsystem.power",
         "suspend": "xpra.server.subsystem.suspend",
+        "idle": "xpra.server.subsystem.idle",
         "control": "xpra.net.control,xpra.server.subsystem.controlcommands",
         "mdns": "xpra.net.mdns,xpra.xpra.server.subsystem.mdns",
         "command": "xpra.server.subsystem.child_command",
