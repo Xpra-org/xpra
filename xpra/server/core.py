@@ -532,7 +532,7 @@ class ServerCore(ServerBaseClass):
     # #####################################################################
     # sockets / connections / packets:
     def init_sockets(self, sockets: list[SocketListener]) -> None:
-        sockets += sockets
+        self.sockets += sockets
 
     def init_local_sockets(self, opts, display_name: str, clobber: bool) -> None:
         uid = int(opts.uid)
