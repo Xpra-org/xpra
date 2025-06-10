@@ -91,13 +91,13 @@ class ChildReaper:
             log("using process polling every %s seconds", POLL_DELAY)
             GLib.timeout_add(POLL_DELAY * 1000, self.poll)
         else:
-            signal.signal(signal.SIGCHLD, self.sigchld)
-
             # Check once after the mainloop is running, just in case the exit
             # conditions are satisfied before we even enter the main loop.
             # (Programming with unix the signal API sure is annoying.)
 
             def check_once() -> bool:
+                # we're running in the main thread, so we can register the signal here:
+                signal.signal(signal.SIGCHLD, self.sigchld)
                 self.check()
                 return False  # Only call once
 
