@@ -1197,7 +1197,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef Window * children = <Window *> 0
         cdef unsigned int i, nchildren = 0
         if not XQueryTree(self.display, xwindow, &root, &parent, &children, &nchildren):
-            return (None, [])
+            return []
         cdef object pychildren = []
         for i in range(nchildren):
             if children[i]>0:
