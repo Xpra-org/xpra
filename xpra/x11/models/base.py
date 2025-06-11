@@ -700,7 +700,9 @@ class BaseWindowModel(CoreX11WindowModel):
             ndesktops = int(self.root_prop_get("_NET_NUMBER_OF_DESKTOPS", "u32") or 0)
             workspacelog("received _NET_WM_DESKTOP: workspace=%s, number of desktops=%s",
                          workspacestr(workspace), ndesktops)
-            if ndesktops > 0 and (workspace in (WORKSPACE_UNSET, WORKSPACE_ALL) or 0 <= workspace < ndesktops):
+            if ndesktops == 0:
+                self.move_to_workspace(0)
+            elif ndesktops > 0 and (workspace in (WORKSPACE_UNSET, WORKSPACE_ALL) or 0 <= workspace < ndesktops):
                 self.move_to_workspace(workspace)
             else:
                 workspacelog.warn("invalid _NET_WM_DESKTOP request: workspace=%s, number of desktops=%s",
