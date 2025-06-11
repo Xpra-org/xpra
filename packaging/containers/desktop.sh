@@ -10,7 +10,9 @@ DISTRO="${DISTRO:-ubuntu}"
 RELEASE="${RELEASE:-plucky}"
 IMAGE_NAME="apps"
 CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
+CLEAN="${CLEAN:-1}"
 REPO="${REPO:-xpra-beta}"
+TRIM="${TRIM:-1}"
 XDISPLAY="${XDISPLAY:-:10}"
 TOOLS="${TOOLS:-0}"
 FILE_MANAGER="${FILE_MANAGER:-nemo}"
@@ -18,75 +20,140 @@ XPRA="${XPRA:-0}"
 APPS="${APPS:-libreoffice lxterminal vlc gimp}"
 FIREFOX="${FIREFOX:-1}"
 TARGET_USER="${TARGET_USER:-desktop-user}"
+TARGET_GROUP="${TARGET_GROUP:-desktop-user}"
 TARGET_PASSWORD="${TARGET_PASSWORD:-thepassword}"
 TARGET_USER_GROUPS="${TARGET_USER_GROUPS:-audio,pulse,video}"
 TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
 TIMEZONE="${TIMEZONE:-Europe/London}"
+DESKTOP="${DESKTOP:-winbar}"
 # LANG="${LANG:-C}"
 
-if [ "$1" == "update" ]; then
-  buildah run $CONTAINER apt-get update
-  buildah run $CONTAINER apt-get dist-upgrade -y
-else
-  buildah rm $CONTAINER || true
-  buildah rmi -f $IMAGE_NAME || true
-  buildah from --name $CONTAINER $DISTRO:$RELEASE
-  buildah run $CONTAINER apt-get update
+run () {
+  buildah run $CONTAINER "$@"
+}
 
-  buildah copy $CONTAINER "keyboard" "locale" /etc/default/
-  buildah run $CONTAINER sh -c "echo $TIMEZONE > /etc/timezone;ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
+copy () {
+  buildah copy $CONTAINER "$@"
+}
+
+install () {
+  if [ "${TRIM}" == "1" ]; then
+    run apt-get install -y --no-install-recommends "$@"
+  else
+    run apt-get install -y "$@"
+  fi
+}
+
+if [ "$1" == "update" ]; then
+  run apt-get update
+  run apt-get dist-upgrade -y
+else
+  if [ "${CLEAN}" == "1" ]; then
+    buildah rm $CONTAINER || true
+    buildah rmi -f $IMAGE_NAME || true
+    buildah from --name $CONTAINER $DISTRO:$RELEASE
+  fi
+  run apt-get update
+
+  copy "keyboard" "locale" /etc/default/
+  run sh -c "echo $TIMEZONE > /etc/timezone;ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
 
   # add xpra repo:
-  buildah run $CONTAINER apt-get install adduser wget ca-certificates --no-install-recommends -y
-  buildah run $CONTAINER wget -O "/usr/share/keyrings/xpra.asc" "https://xpra.org/xpra.asc"
-  buildah run $CONTAINER wget -O "/etc/apt/sources.list.d/${REPO}.sources" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/${RELEASE}/${REPO}.sources"
-  buildah run $CONTAINER apt-get update
+  install adduser wget ca-certificates
+  run wget -O "/usr/share/keyrings/xpra.asc" "https://xpra.org/xpra.asc"
+  run wget -O "/etc/apt/sources.list.d/${REPO}.sources" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/${RELEASE}/${REPO}.sources"
+  run apt-get update
 
   if [ "${FIREFOX}" == "1" ]; then
-    buildah copy $CONTAINER "mozilla-firefox" /etc/apt/preferences.d/
-    buildah run $CONTAINER apt install -y software-properties-common --no-install-recommends
-    buildah run $CONTAINER add-apt-repository -y ppa:mozillateam/ppa
-    buildah run $CONTAINER apt install -y firefox --no-install-recommends
+    copy "mozilla-firefox" /etc/apt/preferences.d/
+    install software-properties-common
+    run add-apt-repository -y ppa:mozillateam/ppa
+    install firefox
   fi
 
   if [ "${XPRA}" == "1" ]; then
-    buildah run $CONTAINER apt-get install -y xpra-server xpra-client-gtk3 xserver-xorg-video-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5 --no-install-recommends
+    install xpra-server xpra-client-gtk3 xserver-xorg-video-dummy xpra-codecs xpra-audio-server xpra-codecs-extras xpra-x11 xpra-html5
   fi
 
   if [ "${TOOLS}" == "1" ]; then
     # add some applications:
-    buildah run $CONTAINER apt-get install xterm strace net-tools iputils-ping --no-install-recommends -y
+    install xterm strace net-tools iputils-ping
     # toys useful for testing video encoders, costs ~30MB:
-    buildah run $CONTAINER apt-get install mesa-utils --no-install-recommends -y
-    buildah run $CONTAINER sh -c "wget https://github.com/VirtualGL/virtualgl/releases/download/3.1.3/virtualgl_3.1.3_amd64.deb;apt-get install ./virtualgl_3.1.3_amd64.deb -y;rm virtualgl*.deb"
+    install mesa-utils
+    run sh -c "wget https://github.com/VirtualGL/virtualgl/releases/download/3.1.3/virtualgl_3.1.3_amd64.deb;apt-get install ./virtualgl_3.1.3_amd64.deb -y;rm virtualgl*.deb"
     # xrandr, xdpyinfo etc, costs ~15MB:
-    buildah run $CONTAINER apt-get install x11-xserver-utils x11-utils vulkan-tools --no-install-recommends -y
+    install x11-xserver-utils x11-utils vulkan-tools
   fi
 
-  # install winbar as desktop environment last,
-  # so we can find the applications installed when creating the cache
-  buildah run $CONTAINER apt-get install pulseaudio pavucontrol --no-install-recommends -y
-  buildah run $CONTAINER apt-get install -y "${FILE_MANAGER}"
-  buildah run $CONTAINER apt-get install winbar --no-install-recommends -y
-  buildah run $CONTAINER winbar --create-cache
-  buildah run $CONTAINER apt-get install -y $APPS
+  install pulseaudio pavucontrol
+  install "${FILE_MANAGER}"
+  install $APPS
+
+  # install desktop environment last,
+  # so we can find the applications installed when creating the cache (winbar does)
+  if [ "${DESKTOP}" == "winbar" ] || [ "${DESKTOP}" == "all" ]; then
+    install winbar
+    # configure winbar:
+    run setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
+    copy "winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
+    run winbar --create-cache
+  elif [ "${DESKTOP}" == "xfce" ] || [ "${DESKTOP}" == "all" ]; then
+    install xfce4
+  elif [ "${DESKTOP}" == "lxde" ] || [ "${DESKTOP}" == "all" ]; then
+    install lxde lxpanel
+  elif [ "${DESKTOP}" == "lxqt" ] || [ "${DESKTOP}" == "all" ]; then
+    install lxqt-session lxqt-panel lxqt
+  elif [ "${DESKTOP}" == "mate" ] || [ "${DESKTOP}" == "all" ]; then
+    install mate-desktop mate-desktop-environment mate-control-center mate-hud mate-media
+  elif [ "${DESKTOP}" == "deepin" ] || [ "${DESKTOP}" == "all" ]; then
+    install deepin-calculator deepin-image-viewer deepin-menu deepin-music deepin-notifications deepin-terminal
+  elif [ "${DESKTOP}" == "budgie" ] || [ "${DESKTOP}" == "all" ]; then
+    install budgie-desktop budgie-desktop-environment budgie-desktop-view budgie-previews budgie-session budgie-control-center
+  elif [ "${DESKTOP}" == "cinnamon" ] || [ "${DESKTOP}" == "all" ]; then
+    install cinnamon-desktop-environment nemo cinnamon-session
+  elif [ "${DESKTOP}" == "enlightenment" ] || [ "${DESKTOP}" == "all" ]; then
+    install enlightenment eterm terminology
+  elif [ "${DESKTOP}" == "xterm" ] || [ "${DESKTOP}" == "all" ]; then
+    install xterm
+  fi
 
   # remove the default "ubuntu" user, and add our one:
-  buildah run $CONTAINER deluser --quiet "ubuntu"
-  buildah run $CONTAINER rm -fr /home/ubuntu
-  buildah run $CONTAINER groupadd -r -g "${TARGET_GID}" "${TARGET_USER}"
-  buildah run $CONTAINER adduser -uid "${TARGET_UID}" -gid "${TARGET_GID}" --disabled-password --comment "no-comment" --shell /bin/bash "${TARGET_USER}"
-  buildah run $CONTAINER usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
-  buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
-  buildah run $CONTAINER chown -R "${TARGET_UID}:${TARGET_GID}" "/home/${TARGET_USER}"
-  buildah run $CONTAINER sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env mkdir -p .config/winbar Documents Downloads Music Pictures Videos Network"
+  run deluser --quiet "ubuntu" || true
+  run groupdel "ubuntu" || true
+  run deluser --quiet "${TARGET_USER}" || true
+  run groupdel "${TARGET_GROUP}" || true
+  run rm -fr /home/ubuntu "/home/${TARGET_USER}"
+  run groupadd -r -g "${TARGET_GID}" "${TARGET_GROUP}"
+  run adduser -uid "${TARGET_UID}" -gid "${TARGET_GID}" --disabled-password --comment "no-comment" --shell /bin/bash "${TARGET_USER}"
+  run usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
+  run sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
+  run chown -R "${TARGET_UID}:${TARGET_GID}" "/home/${TARGET_USER}"
+  run sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env mkdir -p .config/winbar Documents Downloads Music Pictures Videos Network"
 fi
 
-# configure winbar:
-buildah run $CONTAINER setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
-buildah copy $CONTAINER "winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
+if [ "${DESKTOP}" == "winbar" ] || [ "${DESKTOP}" == "all" ]; then
+  DE_COMMAND="winbar"
+elif [ "${DESKTOP}" == "xfce" ]; then
+  DE_COMMAND="xfce4-session"
+elif [ "${DESKTOP}" == "lxde" ]; then
+  DE_COMMAND="lxsession"
+elif [ "${DESKTOP}" == "lxqt" ]; then
+  DE_COMMAND="lxqt-session"
+elif [ "${DESKTOP}" == "mate" ]; then
+  DE_COMMAND="mate-session"
+elif [ "${DESKTOP}" == "deepin" ]; then
+  DE_COMMAND="deepin-menu"    # no session manager in Ubuntu?
+elif [ "${DESKTOP}" == "budgie" ]; then
+  DE_COMMAND="budgie-session"
+elif [ "${DESKTOP}" == "cinnamon" ]; then
+  DE_COMMAND="cinnamon-session"
+elif [ "${DESKTOP}" == "enlightenment" ]; then
+  DE_COMMAND="enlightenment"
+else
+  DE_COMMAND="xterm"
+fi
 
 # ugly syntax for arrays of strings with shell variables:
-buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} winbar\" ]" $CONTAINER
+buildah config --entrypoint "[ \"/usr/bin/setpriv\", \"--no-new-privs\", \"--reuid\", \"${TARGET_UID}\", \"--regid\", \"${TARGET_GID}\", \"--init-groups\", \"--reset-env\", \"/bin/bash\", \"-c\", \"XDG_RUNTIME_DIR=/run/user/${TARGET_UID} DISPLAY=${XDISPLAY} ${DE_COMMAND}\" ]" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME
