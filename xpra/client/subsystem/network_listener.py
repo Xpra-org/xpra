@@ -122,7 +122,7 @@ class NetworkListener(StubClientMixin):
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
             conn = NamedPipeConnection(sock.listener.pipe_name, handle, sock.options)
             log.info("New %s connection received on %s", socktype, conn.target)
-            self.make_protocol(socktype, conn, sock.listener)
+            self.make_protocol(conn)
             return
         conn = accept_connection(socktype, sock.listener, SOCKET_TIMEOUT, sock.options)
         if conn is None:
