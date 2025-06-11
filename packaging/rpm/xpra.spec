@@ -1008,8 +1008,17 @@ fi
 
 
 %changelog
-* Sun Jun 08 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
-- TODO
+* Wed Jun 11 2025 Antoine Martin <antoine@xpra.org> 6.3.2-10
+- Platforms, build and packaging:
+   Cython compilation warnings in macOS bindings and procps library
+   exit-with-children not honoured in polling mode (ie: MS Windows)
+- Major:
+   desktop and monitor modes fail to resize after a while
+   always update desktop geometry attributes on resize
+   client should run even if local sockets cannot be created
+- Minor:
+   strict type in `webp` encoder
+
 * Sat May 31 2025 Antoine Martin <antoine@xpra.org> 6.3.1-10
 - Platforms, build and packaging:
    modular installations also need filesystem package

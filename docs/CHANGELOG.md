@@ -1,7 +1,15 @@
 # Changelog
 
-## [6.3.2] 2025-06-08
-* TODO
+## [6.3.2] 2025-06-11
+* Platforms, build and packaging:
+    * Cython compilation warnings: [in macOS bindings](https://github.com/Xpra-org/xpra/commit/db8e44ee7b5267b2abc829d020c4ac6f3e9ebed7) and [procps library](https://github.com/Xpra-org/xpra/commit/38e598fed94f74a3d727043086aafd152b2d7144)
+    * [exit-with-children not honoured in polling mode (ie: MS Windows)](https://github.com/Xpra-org/xpra/commit/c83d08e97c63a78f5e71217d5fdc3ed8605f0280)
+* Major:
+    * [desktop and monitor modes fail to resize after a while](https://github.com/Xpra-org/xpra/commit/73fd712bb9fffc033b705c61b4ca408f42e4c8c6)
+    * [always update desktop geometry attributes on resize](https://github.com/Xpra-org/xpra/commit/95902db90bc9f742f19c33c210f4d3d2c9fde905)
+    * [client should run even if local sockets cannot be created](https://github.com/Xpra-org/xpra/commit/a34447d5f7e9ad9f7cf9f81ed8ab84b23a0fd521)
+* Minor:
+    * [strict type in `webp` encoder](https://github.com/Xpra-org/xpra/commit/c278cf0965889acfbc3ad4c477202ee34d977832)
 
 ## [6.3.1] 2025-05-31
 * Platforms, build and packaging:
