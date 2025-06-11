@@ -6,6 +6,7 @@
 
 import os
 from typing import Any, Final
+from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.os_util import gi_import
@@ -471,7 +472,7 @@ class Wm(GObject.GObject):
     def do_x11_focus_out_event(self, event) -> None:
         focuslog("wm.do_x11_focus_out_event(%s) XGetInputFocus=%s", event, X11Window.XGetInputFocus())
 
-    def set_desktop_list(self, desktops) -> None:
+    def set_desktop_list(self, desktops: Sequence[str]) -> None:
         log("set_desktop_list(%s)", desktops)
         self.root_set("_NET_NUMBER_OF_DESKTOPS", "u32", len(desktops))
         self.root_set("_NET_DESKTOP_NAMES", ["utf8"], desktops)

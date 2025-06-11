@@ -351,7 +351,7 @@ class SeamlessServer(GObject.GObject, X11ServerBase):
             if ss.desktops:
                 count = max(count, ss.desktops)
         count = max(1, min(20, count))
-        names = []
+        names: list[str] = []
         for i in range(count):
             name = "Main" if i == 0 else f"Desktop {i + 1}"
             for ss in sources:
