@@ -1,8 +1,8 @@
 %define _disable_source_fetch 0
-%define commit 331a92d3221bc2e62d423d38fdc29d55680c81c2
+%define commit d69731f7482e5604cc7592e1241e12c69367e2cb
 
 Name:           winbar
-Version:        0.2.2
+Version:        0.2.3
 Release:        1
 Summary:        A familiar X11 panel/dock to ease new linux users transition
 License:        GPL-3
@@ -35,7 +35,7 @@ A familiar X11 panel/dock to ease new linux users transition
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "11ed918c0fb90e6c6fae7ecae0897d3ddc5e62e24b561b3e41971a8f1b0d2bb3" ]; then
+if [ "${sha256}" != "8c043cafa8cf7e28e9e96ed125f758d0d3a0f0fd6e4bcb8bd9280334a8bd6003" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -68,6 +68,9 @@ cp ./winbar/winbar.cfg %{buildroot}%{_sysconfdir}
 %{_sysconfdir}/winbar.cfg
 
 %changelog
+* Wed Jun 11 2025 Antoine Martin <antoine@xpra.org> - 0.2.3-1
+- new snapshot
+
 * Tue Jun 10 2025 Antoine Martin <antoine@xpra.org> - 0.2.2-1
 - switch back to upstream
 
