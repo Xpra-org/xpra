@@ -1013,7 +1013,7 @@ fi
    Cython compilation warnings in macOS bindings and procps library
    exit-with-children not honoured in polling mode (ie: MS Windows)
 - Major:
-   desktop and monitor modes fail to resize after a while
+   xvfb fails to resize after a while
    always update desktop geometry attributes on resize
    client should run even if local sockets cannot be created
 - Minor:
