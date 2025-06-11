@@ -804,7 +804,7 @@ fi
 
 
 %changelog
-* Sun Jun 01 2025 Antoine Martin <antoine@xpra.org> 5.1.1-10
+* Wed Jun 11 2025 Antoine Martin <antoine@xpra.org> 5.1.1-10
 - Platforms, build and packaging:
    improved MS Windows signtool compatibility
    duplicated tag in python3-pycuda spec file
@@ -812,23 +812,29 @@ fi
    automatically bump version in DEB build script
    Ubuntu Plucky openh264 dependency renamed, also for Debian Trixie + Sid
    add explicit weak dependency on notification library to DEBs
+   PyCUDA 2025.1.1
    compatibility with Cython 3.1
    MS Windows SBOM path not matched
+   `exit-with-children` not honoured in polling mode (ie: MS Windows)
+   Cython warnings in macOS bindings and procps library
 - Encodings:
    `openh264` encoder should set `full-range` metadata for native stream decoders
    `openh264` codecs not preserving full-range metadata
    `vp9` encoder should expose `full-range` attribute
    disable `scroll` encoding
 - Major:
+   xvfb fails to resize after a while
    error connecting to display `:0` in ssh mode
    ignore obsolete X11 size hints
    parsing of `NET_WM_STRUT[_PARTIAL]` on 64-bit systems
    don't allow ssl upgrades when 'ssl' flag is disabled
    desktop geometry attributes not always updated
    opaque region parsing errors
-- Monitor mode:
+   client should run even if local sockets cannot be created
+- Monitor and Desktop modes:
    event receiver setup errors
    monitor mode does work in 8-bit palette mode
+   always update desktop geometry attributes on resize
 - Minor:
    keys used to break the moveresize should not propagate
    servers should always honour `cursors` flag
@@ -838,6 +844,7 @@ fi
    correct detection of invalid `command_response` data
    don't discard Xwayland displays as xvfb options
    shadow servers don't stop the refresh loop
+   strict type in `webp` encoder
 - Cosmetic:
    avoid empty OpenGL validation error message
    add `id` subcommand to man page
