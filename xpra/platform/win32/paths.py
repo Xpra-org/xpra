@@ -187,16 +187,32 @@ def do_get_user_conf_dirs(_uid) -> list[str]:
 
 
 def do_get_desktop_background_paths() -> list[str]:
+    log = get_util_logger()
+    wallpapers: list[str] = []
+    try:
+        import wmi
+        import win32api
+        import win32con
+
+        c = wmi.WMI()
+        full_username = win32api.GetUserNameEx(win32con.NameSamCompatible)
+        for desktop in c.Win32_Desktop():
+            if desktop.Name == full_username and desktop.Wallpaper:
+                wallpapers.append(desktop.Wallpaper)
+    except ImportError:
+        log("unable to query wallpaper via wmi", exc_info=True)
     try:
         from winreg import OpenKey, HKEY_CURRENT_USER, KEY_READ, QueryValueEx  # @Reimport
         key_path = "Control Panel\\Desktop"
         key = OpenKey(HKEY_CURRENT_USER, key_path, 0, KEY_READ)
         wallpaper = QueryValueEx(key, 'WallPaper')[0]
-        return [wallpaper, ]
+        if wallpaper and wallpaper not in wallpapers:
+            wallpapers.append(wallpaper)
     except Exception:
         log = get_util_logger()
         log("do_get_desktop_background_paths()", exc_info=True)
-    return []
+    log("do_get_desktop_background_paths()=%s", wallpapers)
+    return wallpapers
 
 
 def do_get_download_dir() -> str:
