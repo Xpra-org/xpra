@@ -12,6 +12,7 @@ IMAGE_NAME="xpra"
 CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
 REPO="${REPO:-xpra-beta}"
 XDISPLAY="${XDISPLAY:-:10}"
+SEAMLESS="${SEAMLESS:-1}"
 PORT="${PORT:-10000}"
 AUDIO="${AUDIO:-1}"
 CODECS="${CODECS:-1}"
@@ -64,5 +65,10 @@ buildah run $CONTAINER rm -fr /var/cache/*dnf*
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
-buildah config --entrypoint "/usr/bin/xpra seamless --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=auto --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
+if [ "${SEAMLESS}" == "1" ]; then
+  MODE="seamless"
+else
+  MODE="desktop"
+fi
+buildah config --entrypoint "/usr/bin/xpra ${MODE} --uid ${TARGET_UID} --gid ${TARGET_GID} ${XDISPLAY} --bind-quic=0.0.0.0:${PORT} --bind-tcp=0.0.0.0:${PORT} --no-daemon --use-display=auto --system-tray=no --ssh-upgrade=no --env=XPRA_POWER_EVENTS=0 -d ${DEBUG}" $CONTAINER
 buildah commit $CONTAINER $IMAGE_NAME

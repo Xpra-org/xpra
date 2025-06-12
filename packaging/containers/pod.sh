@@ -8,6 +8,10 @@ set -e
 
 PORT=10000
 
+# when building and configuring the containers,
+# SEAMLESS switches between seamless mode (preferred) and desktop mode (slower):
+export SEAMLESS=1
+
 # ensure that the containers we need exist:
 if ! buildah inspect -t image xvfb &> /dev/null; then
   sh ./xvfb.sh
@@ -23,6 +27,13 @@ fi
 PUBLIC_NET="publicnet"
 if ! podman network exists "$PUBLIC_NET"; then
   podman network create "$PUBLIC_NET"
+fi
+
+RUN_VOLUME="run"
+if ! podman volume exists "$RUN_VOLUME"; then
+  # rootless containers can't use ro,nodev,noexec
+  # or "--opt device=tmpfs"
+  podman volume create "$RUN_VOLUME"
 fi
 
 POD_NAME="xpra"
@@ -65,8 +76,10 @@ podman run -dt \
   --ipc container:xvfb \
   --cgroupns container:xvfb \
   --network container:xvfb \
-  --read-only --read-only-tmpfs=true \
+  --volume ${RUN_VOLUME}:/run:rw \
+  --security-opt label=type:container_runtime_t \
   xpra
+#  --read-only --read-only-tmpfs=true \
 
 # Start app container running the desktop environment applications:
 podman run -dt \
@@ -80,6 +93,7 @@ podman run -dt \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   --security-opt label=type:container_runtime_t \
   -v /dev/dri:/dev/dri \
+  --volumes-from xpra:rw \
   apps
 
 # Output status
