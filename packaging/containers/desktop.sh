@@ -8,12 +8,13 @@ set -e
 
 DISTRO="${DISTRO:-ubuntu}"
 RELEASE="${RELEASE:-plucky}"
-IMAGE_NAME="apps"
+IMAGE_NAME="${IMAGE_NAME:-apps}"
 CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
 CLEAN="${CLEAN:-1}"
 REPO="${REPO:-xpra-beta}"
 TRIM="${TRIM:-1}"
 XDISPLAY="${XDISPLAY:-:10}"
+SEAMLESS="${SEAMLESS:-1}"
 TOOLS="${TOOLS:-0}"
 FILE_MANAGER="${FILE_MANAGER:-nemo}"
 XPRA="${XPRA:-0}"
@@ -98,7 +99,7 @@ else
     run setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
     copy "winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
     run winbar --create-cache
-  elif [ "${DESKTOP}" == "xfce" ] || [ "${DESKTOP}" == "all" ]; then
+  elif [ "${DESKTOP}" == "xfce4" ] || [ "${DESKTOP}" == "all" ]; then
     install xfce4
   elif [ "${DESKTOP}" == "lxde" ] || [ "${DESKTOP}" == "all" ]; then
     install lxde lxpanel
@@ -132,25 +133,34 @@ else
   run sh -c "cd /home/${TARGET_USER};setpriv --reuid ${TARGET_UID} --regid ${TARGET_GID} --init-groups --reset-env mkdir -p .config/winbar Documents Downloads Music Pictures Videos Network"
 fi
 
+
+# default DE commands:
+# ie: "mate" -> "mate-"
+# overriden for "lxde" -> "lx" for "lxsession" and "lxpanel"
+DE_COMMAND_PREFIX="${DESKTOP}-"
+if [ "${DESKTOP}" == "lxde" ]; then
+  DE_COMMAND_PREFIX="lx"
+fi
+
+if [ "${SEAMLESS}" == "1" ]; then
+  DE_COMMAND="${DE_COMMAND_PREFIX}-panel"
+else
+  DE_COMMAND="${DE_COMMAND_PREFIX}-session"
+fi
+
+# known issues:
+# * xfce4-panel keeps moving!
+
 if [ "${DESKTOP}" == "winbar" ] || [ "${DESKTOP}" == "all" ]; then
   DE_COMMAND="winbar"
-elif [ "${DESKTOP}" == "xfce" ]; then
-  DE_COMMAND="xfce4-session"
-elif [ "${DESKTOP}" == "lxde" ]; then
-  DE_COMMAND="lxsession"
-elif [ "${DESKTOP}" == "lxqt" ]; then
-  DE_COMMAND="lxqt-session"
-elif [ "${DESKTOP}" == "mate" ]; then
-  DE_COMMAND="mate-session"
+elif [ "${DESKTOP}" == "xfce4" ]; then
+  echo "${DESKTOP} known issue: panel keeps moving"
 elif [ "${DESKTOP}" == "deepin" ]; then
   DE_COMMAND="deepin-menu"    # no session manager in Ubuntu?
-elif [ "${DESKTOP}" == "budgie" ]; then
-  DE_COMMAND="budgie-session"
-elif [ "${DESKTOP}" == "cinnamon" ]; then
-  DE_COMMAND="cinnamon-session"
 elif [ "${DESKTOP}" == "enlightenment" ]; then
+  echo "no seamless mode with ${DESKTOP}"
   DE_COMMAND="enlightenment"
-else
+elif [ "${DESKTOP}" == "xterm" ]; then
   DE_COMMAND="xterm"
 fi
 
