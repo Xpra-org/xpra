@@ -281,6 +281,17 @@ def peek_connection(conn, timeout: int = PEEK_TIMEOUT_MS, size: int = PEEK_SIZE)
     return peek_data
 
 
+def socket_fast_read(conn) -> bytes:
+    try:
+        conn._socket.settimeout(0.001)
+        data = conn.read(1)
+        return data or b""
+    except OSError:
+        log = get_network_logger()
+        log.error("Error reading from %s", conn, exc_info=True)
+        return b""
+
+
 POSIX_TCP_INFO = (
     ("state", c_uint8),
 )

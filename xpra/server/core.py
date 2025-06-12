@@ -37,7 +37,7 @@ from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
     PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     setup_local_sockets, add_listen_socket, accept_connection, guess_packet_type,
-    peek_connection, close_sockets, SocketListener,
+    peek_connection, close_sockets, SocketListener, socket_fast_read,
 )
 from xpra.net.bytestreams import (
     Connection, SSLSocketConnection, SocketConnection,
@@ -891,23 +891,16 @@ class ServerCore(ServerBaseClass):
             return
 
         # get the new socket object as we may have wrapped it with ssl:
-        sock = getattr(conn, "_socket", sock)
         pre_read = []
         if socktype == "socket" and not peek_data:
             # try to read from this socket,
             # so short-lived probes don't go through the whole protocol instantiation
-            try:
-                sock.settimeout(0.001)
-                data = conn.read(1)
-                if not data:
-                    netlog("%s connection already closed", socktype)
-                    force_close_connection(conn)
-                    return
-                netlog("pre_read data=%r", data)
-                pre_read.append(data)
-            except OSError:
-                netlog.error("Error reading from %s", conn, exc_info=True)
+            pre_read = socket_fast_read(conn)
+            if not pre_read:
+                netlog("%s connection already closed", socktype)
+                force_close_connection(conn)
                 return
+        sock = getattr(conn, "_socket", sock)
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, address)
         proto = self.make_protocol(socktype, conn, socket_options, pre_read=pre_read)
