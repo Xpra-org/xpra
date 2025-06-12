@@ -99,23 +99,32 @@ else
     run setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
     copy "winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
     run winbar --create-cache
-  elif [ "${DESKTOP}" == "xfce4" ] || [ "${DESKTOP}" == "all" ]; then
+  fi
+  if [ "${DESKTOP}" == "xfce4" ] || [ "${DESKTOP}" == "all" ]; then
     install xfce4
-  elif [ "${DESKTOP}" == "lxde" ] || [ "${DESKTOP}" == "all" ]; then
+  fi
+  if [ "${DESKTOP}" == "lxde" ] || [ "${DESKTOP}" == "all" ]; then
     install lxde lxpanel
-  elif [ "${DESKTOP}" == "lxqt" ] || [ "${DESKTOP}" == "all" ]; then
+  fi
+  if [ "${DESKTOP}" == "lxqt" ] || [ "${DESKTOP}" == "all" ]; then
     install lxqt-session lxqt-panel lxqt
-  elif [ "${DESKTOP}" == "mate" ] || [ "${DESKTOP}" == "all" ]; then
+  fi
+  if [ "${DESKTOP}" == "mate" ] || [ "${DESKTOP}" == "all" ]; then
     install mate-desktop mate-desktop-environment mate-control-center mate-hud mate-media
-  elif [ "${DESKTOP}" == "deepin" ] || [ "${DESKTOP}" == "all" ]; then
+  fi
+  if [ "${DESKTOP}" == "deepin" ] || [ "${DESKTOP}" == "all" ]; then
     install deepin-calculator deepin-image-viewer deepin-menu deepin-music deepin-notifications deepin-terminal
-  elif [ "${DESKTOP}" == "budgie" ] || [ "${DESKTOP}" == "all" ]; then
+  fi
+  if [ "${DESKTOP}" == "budgie" ] || [ "${DESKTOP}" == "all" ]; then
     install budgie-desktop budgie-desktop-environment budgie-desktop-view budgie-previews budgie-session budgie-control-center
-  elif [ "${DESKTOP}" == "cinnamon" ] || [ "${DESKTOP}" == "all" ]; then
+  fi
+  if [ "${DESKTOP}" == "cinnamon" ] || [ "${DESKTOP}" == "all" ]; then
     install cinnamon-desktop-environment nemo cinnamon-session
-  elif [ "${DESKTOP}" == "enlightenment" ] || [ "${DESKTOP}" == "all" ]; then
+  fi
+  if [ "${DESKTOP}" == "enlightenment" ] || [ "${DESKTOP}" == "all" ]; then
     install enlightenment eterm terminology
-  elif [ "${DESKTOP}" == "xterm" ] || [ "${DESKTOP}" == "all" ]; then
+  fi
+  if [ "${DESKTOP}" == "xterm" ] || [ "${DESKTOP}" == "all" ]; then
     install xterm
   fi
 
