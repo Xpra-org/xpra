@@ -895,11 +895,12 @@ class ServerCore(ServerBaseClass):
         if socktype == "socket" and not peek_data:
             # try to read from this socket,
             # so short-lived probes don't go through the whole protocol instantiation
-            pre_read = socket_fast_read(conn)
-            if not pre_read:
+            pre = socket_fast_read(conn)
+            if not pre:
                 netlog("%s connection already closed", socktype)
                 force_close_connection(conn)
                 return
+            pre_read.append(pre)
         sock = getattr(conn, "_socket", sock)
         sock.settimeout(self._socket_timeout)
         log_new_connection(conn, address)
