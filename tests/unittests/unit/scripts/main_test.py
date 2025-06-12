@@ -29,8 +29,10 @@ from xpra.scripts.main import (
     find_mode_pos,
 )
 
+
 def _get_test_socket_dir():
     return tempfile.gettempdir()
+
 
 class TestMain(unittest.TestCase):
 
@@ -45,7 +47,7 @@ class TestMain(unittest.TestCase):
             if not use_systemd_run(s):
                 continue
             for user in (True, False):
-                for systemd_run_args in (None, "-d"):
+                for systemd_run_args in ("", "-d"):
                     assert systemd_run_command("mode", systemd_run_args, user=user)[0]=="systemd-run"
         if not use_systemd_run("auto"):
             return
@@ -66,7 +68,6 @@ class TestMain(unittest.TestCase):
         #only implemented properly on MacOS
         check_display()
 
-
     def test_find_mode_pos(self):
         for args in ([], [100], ["hello", "world"]):
             for v in (0, "a", ""):
@@ -76,9 +77,11 @@ class TestMain(unittest.TestCase):
                     pass
                 else:
                     raise RuntimeError(f"find_mode_pos should have failed for {args} and {v}")
-        args = ['xpra_cmd', 'start', 'ssl://[user]@[host]:[port]', '--ssl-server-verify-mode=none',
-                 '--no-microphone', '--no-speaker', '--no-webcam', '--no-printing', '--pulseaudio=no',
-                 '--start-child=rstudio']
+        args = [
+            'xpra_cmd', 'start', 'ssl://[user]@[host]:[port]', '--ssl-server-verify-mode=none',
+            '--no-microphone', '--no-speaker', '--no-webcam', '--no-printing', '--pulseaudio=no',
+            '--start-child=rstudio',
+        ]
         assert find_mode_pos(args, "seamless")==1
 
     def test_host_parsing(self):
@@ -88,13 +91,13 @@ class TestMain(unittest.TestCase):
             pass
         else:
             raise Exception("got host string '%s' without specifying any display attributes!" % target)
+
         def t(d, e):
             s = get_host_target_string(d)
             assert s==e, "expected '%s' for %s but got '%s'" % (e, d, s)
         t({"type" : "ssh", "username" : "foo", "host" : "bar"}, "ssh://foo@bar/")
         t({"type" : "ssh", "username" : "foo", "host" : "bar", "port" : -1}, "ssh://foo@bar/")
         t({"type" : "ssh", "username" : "foo", "host" : "bar", "port" : 2222}, "ssh://foo@bar:2222/")
-
 
     def test_find_session_by_name(self):
         socket_dir = _get_test_socket_dir()
@@ -103,10 +106,10 @@ class TestMain(unittest.TestCase):
         opts.socket_dir = socket_dir
         assert not find_session_by_name(opts, "not-a-valid-session")
 
-
     def test_connect_to(self):
         def f(**kwargs):
             fd(kwargs)
+
         def fd(d):
             opts = AdHocStruct()
             try:
@@ -147,8 +150,7 @@ class TestMain(unittest.TestCase):
             "host"              : "localhost",
             "port"              : 100000,
             "strict-host-check" : False,
-            })
-
+        })
 
     def _test_subcommand(self, args, timeout=60, **kwargs):
         proc = self._run_subcommand(args, timeout, **kwargs)
@@ -195,7 +197,7 @@ class TestMain(unittest.TestCase):
             "attach --microphone-codec=help",
             "_audio_query",
             "invalid-command",
-            ):
+        ):
             self._test_subcommand(args)
 
     def test_terminate_subcommands(self):
@@ -218,7 +220,7 @@ class TestMain(unittest.TestCase):
             "colors-test",
             "colors-gradient-test",
             "transparent-colors",
-            ]
+        ]
         for args in subcommands:
             proc = self._run_subcommand(args, 10, stdout=PIPE, stderr=PIPE)
             r = proc.poll()
@@ -243,6 +245,7 @@ class TestMain(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
