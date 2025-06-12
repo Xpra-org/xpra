@@ -54,9 +54,10 @@ else
   # dbus setup
   buildah run $CONTAINER sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/lib/dbus/machine-id"
   buildah copy $CONTAINER allow-all.conf /etc/dbus-1/system.d/
-  # just use the system-wide ssl certificate:
-  buildah run $CONTAINER sh -c "chmod 644 /etc/xpra/ssl/*.pem"
 fi
+
+# just use the system-wide ssl certificate:
+buildah run $CONTAINER sh -c "chmod 644 /etc/xpra/ssl/*.pem"
 
 # save space:
 buildah run $CONTAINER rm -fr /var/cache/*dnf*
