@@ -73,17 +73,23 @@ def wait_for_socket(sockpath: str, timeout=1) -> bool:
     assert POSIX, f"wait_for_socket cannot be used on {sys.platform!r}"
     import socket
     sock: socket.socket | None = None
-    try:
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
-        sock.connect(sockpath)
-        return True
-    except OSError:
-        get_util_logger().debug(f"wait_for_socket({sockpath!r}, timeout)", exc_info=True)
-        return False
-    finally:
-        if sock:
-            sock.close()
+    from time import monotonic, sleep
+    now = monotonic()
+    while monotonic() - now < timeout:
+        if not os.path.exists(sockpath):
+            sleep(timeout / 10)
+            continue
+        try:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(timeout / 10)
+            sock.connect(sockpath)
+            return True
+        except OSError:
+            get_util_logger().debug(f"wait_for_socket({sockpath!r}, timeout)", exc_info=True)
+        finally:
+            if sock:
+                sock.close()
+    return False
 
 
 def is_writable(path: str, uid: int, gid: int) -> bool:
