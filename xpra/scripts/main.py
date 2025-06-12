@@ -191,7 +191,7 @@ def clean_std_pipes() -> None:
     closestd(sys.stderr)
 
 
-def configure_logging(options, mode) -> None:
+def configure_logging(options, mode: str) -> None:
     if mode in (
             "attach", "listen", "launcher",
             "sessions", "mdns-gui",
@@ -288,7 +288,7 @@ def configure_env(env_str) -> None:
         os.environ.update(env)
 
 
-def systemd_run_command(mode, systemd_run_args=None, user: bool = True) -> list[str]:
+def systemd_run_command(mode: str, systemd_run_args="", user: bool = True) -> list[str]:
     cmd = ["systemd-run", "--description", "xpra-%s" % mode, "--scope"]
     if user:
         cmd.append("--user")
@@ -300,7 +300,7 @@ def systemd_run_command(mode, systemd_run_args=None, user: bool = True) -> list[
     return cmd
 
 
-def systemd_run_wrap(mode: str, args, systemd_run_args=None, user: bool = True, **kwargs) -> int:
+def systemd_run_wrap(mode: str, args, systemd_run_args="", user: bool = True, **kwargs) -> int:
     cmd = systemd_run_command(mode, systemd_run_args, user)
     cmd += args
     cmd.append("--systemd-run=no")
@@ -3236,7 +3236,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name) -> 
     raise RuntimeError(f"timeout: failed to identify the new shadow server {display_name!r}")
 
 
-def start_server_subprocess(script_file, args, mode, opts,
+def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
                             username="", uid=getuid(), gid=getgid(), env=None, cwd=None):
     log = Logger("server", "exec")
     if env is None:
