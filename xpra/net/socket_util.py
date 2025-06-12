@@ -53,7 +53,7 @@ def get_network_logger():
 @dataclass
 class SocketListener:
     socktype: str
-    listener: object            # ie: socket.socket instance
+    socket: object            # ie: socket.socket instance
     address: tuple | str        # ie: (127.0.0.1, 10000) or "/run/xpra/socket"
     options: dict[str, Any]
     cleanup: Callable
@@ -105,31 +105,31 @@ def create_abstract_socket(sockpath: str) -> tuple[socket.socket, Callable]:
     if not validate_abstract_socketpath(validate):
         raise ValueError(f"illegal characters found in abstract socket path {validate!r} of {sockpath!r}")
     asockpath = "\0" + sockpath[1:]
-    listener = socket.socket(socket.AF_UNIX)
-    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    listener.bind(asockpath)
+    sock = socket.socket(socket.AF_UNIX)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(asockpath)
 
     def cleanup_socket() -> None:
         log.info("removing abstract socket '%s'", sockpath)
-        close_socket_listener(listener)
+        close_socket_listener(sock)
 
-    return listener, cleanup_socket
+    return sock, cleanup_socket
 
 
 def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) -> tuple[socket.socket, Callable]:
     log = get_network_logger()
     log(f"create_unix_domain_socket({sockpath!r}, {socket_permissions:o})")
     assert POSIX
-    listener = socket.socket(socket.AF_UNIX)
-    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock = socket.socket(socket.AF_UNIX)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     # bind the socket, using umask to set the correct permissions
     # convert this to a `umask`!
     umask = (0o777 - socket_permissions) & 0o777
     try:
         with umask_context(umask):
-            listener.bind(sockpath)
+            sock.bind(sockpath)
     except OSError:
-        listener.close()
+        sock.close()
         raise
     try:
         inode = os.stat(sockpath).st_ino
@@ -152,7 +152,7 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
             # os.fchown(listener.fileno(), -1, group_id)
 
     def cleanup_socket() -> None:
-        close_socket_listener(listener)
+        close_socket_listener(sock)
         try:
             cur_inode = os.stat(sockpath).st_ino
         except OSError:
@@ -167,15 +167,15 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
             except OSError:
                 pass
 
-    return listener, cleanup_socket
+    return sock, cleanup_socket
 
 
-def close_socket_listener(listener) -> None:
+def close_socket_listener(sock) -> None:
     try:
-        listener.close()
+        sock.close()
     except OSError:
         log = get_network_logger()
-        log(f"cleanup_socket() {listener.close}()", exc_info=True)
+        log(f"close_socket_listener({sock}) {sock.close}()", exc_info=True)
 
 
 def hosts(host_str: str) -> list[str]:
@@ -188,39 +188,38 @@ def hosts(host_str: str) -> list[str]:
     return [host_str]
 
 
-def add_listen_socket(sock: SocketListener, server, new_connection_cb: Callable[[SocketListener], bool]) -> None:
+def add_listen_socket(listener: SocketListener, server, new_connection_cb: Callable[[SocketListener], bool]) -> None:
     log = get_network_logger()
-    log("add_listen_socket%s", sock)
-    socktype = sock.socktype
+    log("add_listen_socket%s", (listener, server, new_connection_cb))
+    socktype = listener.socktype
     try:
         # ugly that we have different ways of starting sockets,
         # TODO: abstract this into the socket class
         if socktype == "named-pipe":
             # named pipe listener uses a thread:
-            sock.listener.new_connection_cb = new_connection_cb
-            sock.listener.start()
+            listener.socket.new_connection_cb = new_connection_cb
+            listener.socket.listener.start()
             return None
         if socktype == "quic":
             from xpra.net.quic.listener import listen_quic
             assert server, "cannot use quic sockets without a server"
-            listen_quic(sock.listener, server, sock.options)
+            listen_quic(listener.socket, server, listener.options)
             return None
-        sources = []
-        sock.listener.listen(5)
+        listener.socket.listen(5)
 
         def io_in_cb(iosock, flags) -> bool:
             log("io_in_cb(%s, %s)", iosock, flags)
-            return new_connection_cb(sock)
+            return new_connection_cb(listener)
 
         GLib = gi_import("GLib")
-        source = GLib.io_add_watch(sock.listener, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
-        sources.append(source)
+        source = GLib.io_add_watch(listener.socket, GLib.PRIORITY_DEFAULT, GLib.IO_IN, io_in_cb)
+        sources = [source]
         upnp_cleanup = []
         if socktype in ("tcp", "ws", "wss", "ssh", "ssl"):
-            upnp = (sock.options or {}).get("upnp", "no")
+            upnp = (listener.options or {}).get("upnp", "no")
             if upnp.lower() in TRUE_OPTIONS:
                 from xpra.net.upnp import upnp_add
-                upnp_cleanup.append(upnp_add(socktype, sock.address, sock.options))
+                upnp_cleanup.append(upnp_add(socktype, listener.address, listener.options))
 
         def close() -> None:
             for source in tuple(sources):
@@ -230,17 +229,17 @@ def add_listen_socket(sock: SocketListener, server, new_connection_cb: Callable[
                 if c:
                     start_thread(c, f"pnp-cleanup-{c}", daemon=True)
 
-        sock.close = close
+        listener.close = close
     except Exception as e:
-        log("add_listen_socket%s", (sock, server, new_connection_cb), exc_info=True)
-        log.error("Error: failed to listen on %s socket %s:", socktype, pretty_socket(sock.address))
+        log("add_listen_socket%s", (listener, server, new_connection_cb), exc_info=True)
+        log.error("Error: failed to listen on %s socket %s:", socktype, pretty_socket(listener.address))
         log.estr(e)
 
 
-def accept_connection(socktype: str, listener, timeout=None, socket_options=None) -> SocketConnection | None:
+def accept_connection(listener: SocketListener, timeout: float | int | None = None) -> SocketConnection | None:
     log = get_network_logger()
     try:
-        sock, address = listener.accept()
+        sock, address = listener.socket.accept()
     except OSError as e:
         log("rejecting new connection on %s", listener, exc_info=True)
         log.error("Error: cannot accept new connection:")
@@ -253,8 +252,8 @@ def accept_connection(socktype: str, listener, timeout=None, socket_options=None
         peername = address
     sock.settimeout(timeout)
     sockname = sock.getsockname()
-    conn = SocketConnection(sock, sockname, address, peername, socktype, None, socket_options)
-    log("accept_connection%s=%s", (listener, socktype, timeout, socket_options), conn)
+    conn = SocketConnection(sock, sockname, address, peername, listener.socktype, None, listener.options)
+    log("accept_connection%s=%s", (listener, timeout), conn)
     return conn
 
 
@@ -492,7 +491,7 @@ def create_tcp_socket(host: str, iport: int) -> socket.socket:
     log = get_network_logger()
     sockaddr: tuple[str, int] | tuple[str, int, int, int] = (host, iport)
     if host.find(":") < 0:
-        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     else:
         if host.startswith("[") and host.endswith("]"):
             host = host[1:-1]
@@ -500,12 +499,12 @@ def create_tcp_socket(host: str, iport: int) -> socket.socket:
             raise RuntimeError("specified an IPv6 address but this is not supported on this system")
         res = socket.getaddrinfo(host, iport, socket.AF_INET6, socket.SOCK_STREAM, 0, socket.SOL_TCP)
         log("socket.getaddrinfo(%s, %s, AF_INET6, SOCK_STREAM, 0, SOL_TCP)=%s", host, iport, res)
-        listener = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
         sockaddr = res[0][-1]
-    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    log("%s.bind(%s)", listener, sockaddr)
-    listener.bind(sockaddr)
-    return listener
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    log("%s.bind(%s)", sock, sockaddr)
+    sock.bind(sockaddr)
+    return sock
 
 
 def setup_tcp_socket(host: str, iport: int, socktype: str, options: dict[str, Any]) -> SocketListener:
@@ -543,13 +542,13 @@ def create_udp_socket(host: str, iport: int, family: socket.AddressFamily=socket
         sockaddr = res[0][4]
     else:
         sockaddr = (host, iport)
-    listener = socket.socket(family, socket.SOCK_DGRAM)
+    sock = socket.socket(family, socket.SOCK_DGRAM)
     try:
-        listener.bind(sockaddr)
+        sock.bind(sockaddr)
     except Exception:
-        listener.close()
+        sock.close()
         raise
-    return listener
+    return sock
 
 
 def setup_quic_socket(host: str, port: int, options: dict[str, Any]) -> SocketListener:

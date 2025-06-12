@@ -603,14 +603,15 @@ class ServerCore(ServerBaseClass):
     def start_listen_sockets(self) -> None:
         # All right, we're ready to accept customers:
         netlog("start_listen_sockets() sockets=%s", self.sockets)
-        for sock in self.sockets:
-            netlog(" add_listen_socket: %s", sock)
-            GLib.idle_add(self.add_listen_socket, sock)
-            if sock.socktype == "socket" and sock.address:
-                if sock.address.startswith("@"):
+        for listener in self.sockets:
+            netlog(" add_listen_socket: %s", listener)
+            GLib.idle_add(self.add_listen_socket, listener)
+            address = listener.address
+            if listener.socktype == "socket" and address:
+                if address.startswith("@"):
                     # abstract sockets can't be 'touch'ed
                     continue
-                path = os.path.abspath(sock.address)
+                path = os.path.abspath(address)
                 self.unix_socket_paths.append(path)
                 netlog("added unix socket path: %s", path)
         if self.unix_socket_paths:
@@ -673,30 +674,29 @@ class ServerCore(ServerBaseClass):
             else:
                 self.disconnect_protocol(protocol, reason)
 
-    def add_listen_socket(self, sock: SocketListener) -> None:
-        netlog("add_listen_socket(%s)", sock)
-        add_listen_socket(sock, self, self._new_connection)
+    def add_listen_socket(self, listener: SocketListener) -> None:
+        netlog("add_listen_socket(%s)", listener)
+        add_listen_socket(listener, self, self._new_connection)
 
-    def _new_connection(self, sock: SocketListener, handle=0) -> bool:
+    def _new_connection(self, listener: SocketListener, handle=0) -> bool:
         """
             Accept the new connection,
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
-        log("_new_connection%s", (sock, handle))
+        log("_new_connection%s", (listener, handle))
         if self._closing:
             netlog("ignoring new connection during shutdown")
             return False
-        socktype = sock.socktype
-        options = sock.options
+        socktype = listener.socktype
         if socktype == "named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-            conn: Connection = NamedPipeConnection(sock.listener.pipe_name, handle, options)
+            conn: Connection = NamedPipeConnection(listener.socket.pipe_name, handle, listener.options)
             netlog.info("New %s connection received on %s", socktype, conn.target)
-            self.make_protocol(socktype, conn, options)
+            self.make_protocol(socktype, conn, listener.options)
             return True
 
-        conn = accept_connection(socktype, sock.listener, self._socket_timeout, options)
+        conn = accept_connection(listener, self._socket_timeout)
         if conn is None:
             return True
         # limit number of concurrent network connections:
@@ -707,7 +707,7 @@ class ServerCore(ServerBaseClass):
             return True
         # from here on, we run in a thread, so we can poll (peek does)
         start_thread(self.handle_new_connection, f"new-{socktype}-connection", True,
-                     args=(conn, options))
+                     args=(listener, conn))
         return True
 
     def new_conn_err(self, conn, sock, socktype: str, address, packet_type: str, msg=None) -> None:
@@ -746,11 +746,21 @@ class ServerCore(ServerBaseClass):
             netlog("error sending %r: %s", packet_data, e)
         GLib.timeout_add(500, force_close_connection, conn)
 
-    def handle_new_connection(self, conn, socket_options: dict[str, Any]) -> None:
+    def guess_packet_type(self, peek_data: bytes):
+        if peek_data:
+            line1 = peek_data.split(b"\n")[0]
+            netlog("socket peek hex=%s", hexstr(peek_data[:128]))
+            netlog("socket peek line1=%s", Ellipsizer(line1))
+        packet_type = guess_packet_type(peek_data)
+        netlog("guess_packet_type(..)=%s", packet_type)
+        return packet_type
+
+    def handle_new_connection(self, listener: SocketListener, conn) -> None:
         """
             Use peek to decide what sort of connection this is,
             and start the appropriate handler for it.
         """
+        socket_options = listener.options
         sock = conn._socket
         address = conn.remote
         socktype = conn.socktype
@@ -760,8 +770,7 @@ class ServerCore(ServerBaseClass):
         target = peername or sockname
         sock.settimeout(self._socket_timeout)
 
-        netlog("handle_new_connection%s sockname=%s, target=%s",
-               (conn, address, socket_options), sockname, target)
+        netlog("handle_new_connection%s sockname=%s, target=%s", (listener, conn), sockname, target)
         # peek so we can detect invalid clients early,
         # or handle non-xpra / wrapped traffic:
         timeout = PEEK_TIMEOUT_MS
@@ -776,11 +785,7 @@ class ServerCore(ServerBaseClass):
             peek_data = peek_connection(conn, timeout)
         line1 = peek_data.split(b"\n")[0]
         netlog("socket peek=%s", Ellipsizer(peek_data, limit=512))
-        packet_type = guess_packet_type(peek_data)
-        if peek_data:
-            netlog("socket peek hex=%s", hexstr(peek_data[:128]))
-            netlog("socket peek line1=%s", Ellipsizer(line1))
-            netlog("guess_packet_type(..)=%s", packet_type)
+        packet_type = self.guess_packet_type(peek_data)
 
         def ssl_wrap() -> SSLSocketConnection | None:
             ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
@@ -1061,7 +1066,7 @@ class ServerCore(ServerBaseClass):
             netlog("may_wrap_socket: no data, not wrapping")
             return True, conn, peek_data
         line1 = peek_data.split(b"\n")[0]
-        packet_type = guess_packet_type(peek_data)
+        packet_type = self.guess_packet_type(peek_data)
         if packet_type == "xpra":
             netlog("may_wrap_socket: xpra protocol header '%s', not wrapping", peek_data[0])
             # xpra packet header, no need to wrap this connection
@@ -1136,7 +1141,7 @@ class ServerCore(ServerBaseClass):
             self.cancel_upgrade_to_rfb_timer(proto)
             self.upgrade_protocol_to_rfb(proto, data)
             return
-        packet_type = guess_packet_type(data)
+        packet_type = self.guess_packet_type(data)
         # RFBServerProtocol doesn't support `steal_connection`:
         if packet_type == "http" and hasattr(proto, "steal_connection"):
             # try again to wrap this socket:
@@ -1277,7 +1282,7 @@ class ServerCore(ServerBaseClass):
                         data = b""
                     if data:
                         messages.append(f" read buffer={data!r}")
-                        packet_type = guess_packet_type(data)
+                        packet_type = self.guess_packet_type(data)
                         if packet_type:
                             messages.append(f" looks like {packet_type!r}")
                     else:

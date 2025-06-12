@@ -94,37 +94,37 @@ class NetworkListener(StubClientMixin):
         self.sockets = []
 
     def start_listen_sockets(self) -> None:
-        for socket in self.sockets:
-            log("start_listen_sockets() will add %s socket %s (%s)", socket.socktype, socket.listener, socket.address)
-            GLib.idle_add(self.add_listen_socket, socket)
+        for listener in self.sockets:
+            log("start_listen_sockets() will add %s socket %s (%s)", listener.socktype, listener.socket, listener.address)
+            GLib.idle_add(self.add_listen_socket, listener)
 
     def add_listen_socket(self, sock: SocketListener) -> None:
         log("add_listen_socket address=%s", sock.address)
         add_listen_socket(sock, None, self._new_connection)
 
-    def _new_connection(self, sock: SocketListener , handle=0) -> bool:
+    def _new_connection(self, listener: SocketListener, handle=0) -> bool:
         """
             Accept the new connection,
             verify that there aren't too many,
             start a thread to dispatch it to the correct handler.
         """
-        log("_new_connection%s", (sock, handle))
+        log("_new_connection%s", (listener, handle))
         if self.exit_code is not None:
             log("ignoring new connection during shutdown")
             return False
-        with log.trap_error(f"Error handling new {sock.socktype} connection"):
-            self.handle_new_connection(sock, handle)
+        with log.trap_error(f"Error handling new {listener.socktype} connection"):
+            self.handle_new_connection(listener, handle)
         return self.exit_code is None
 
-    def handle_new_connection(self, sock: SocketListener, handle: int) -> None:
-        socktype = sock.socktype
+    def handle_new_connection(self, listener: SocketListener, handle: int) -> None:
+        socktype = listener.socktype
         if socktype == "named-pipe":
             from xpra.platform.win32.namedpipes.connection import NamedPipeConnection
-            conn = NamedPipeConnection(sock.listener.pipe_name, handle, sock.options)
+            conn = NamedPipeConnection(listener.socket.pipe_name, handle, listener.options)
             log.info("New %s connection received on %s", socktype, conn.target)
             self.make_protocol(conn)
             return
-        conn = accept_connection(socktype, sock.listener, SOCKET_TIMEOUT, sock.options)
+        conn = accept_connection(listener, SOCKET_TIMEOUT)
         if conn is None:
             return
         # limit number of concurrent network connections:
@@ -137,8 +137,8 @@ class NetworkListener(StubClientMixin):
             sockname = conn._socket.getsockname()
         except (AttributeError, OSError):
             sockname = ""
-        log("handle_new_connection%s sockname=%s", (sock, handle), sockname)
-        log_new_connection(conn, sock.address)
+        log("handle_new_connection%s sockname=%s", (listener, handle), sockname)
+        log_new_connection(conn, listener.address)
         self.accept_protocol(socktype, conn)
 
     def accept_protocol(self, socktype: str, conn) -> None:

@@ -606,7 +606,7 @@ class ProxyServer(ProxyServerBaseClass):
         if display in displays:
             raise ValueError(f"display {display} is already active!")
         log("starting new server subprocess: mode=%s, display=%s", mode, display)
-        args = []
+        args: list[str] = []
         if display:
             args = [display]
         # allow the client to override some options:

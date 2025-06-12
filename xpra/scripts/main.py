@@ -1994,7 +1994,8 @@ def enable_listen_mode(app, error_cb: Callable, opts):
         create_sockets, add_listen_socket, accept_connection,
     )
     from xpra.log import Logger
-    sockets = create_sockets(opts, error_cb, sd_listen=False, ssh_upgrades=False)
+    from xpra.net.socket_util import SocketListener, close_sockets
+    sockets: list[SocketListener] = create_sockets(opts, error_cb, sd_listen=False, ssh_upgrades=False)
     # we don't have a display,
     # so we can't automatically create sockets:
     if "auto" in opts.bind:
@@ -2007,14 +2008,12 @@ def enable_listen_mode(app, error_cb: Callable, opts):
                                             opts.mmap_group, opts.socket_permissions,
                                             get_username(), getuid(), getgid())
         sockets.update(local_sockets)
-    listen_cleanup: list[Callable] = []
-    socket_cleanup: list[Callable] = []
 
-    def new_connection(socktype, sock, handle=0) -> bool:
+    def new_connection(listener: SocketListener, handle=0) -> bool:
         from xpra.util.thread import start_thread
         netlog = Logger("network")
-        netlog("new_connection%s", (socktype, sock, handle))
-        conn = accept_connection(socktype, sock)
+        netlog("new_connection%s", (listener, handle))
+        conn = accept_connection(listener)
         # start a new thread so that we can sleep doing IO in `peek_connection`:
         start_thread(handle_new_connection, f"handle new connection: {conn}", daemon=True, args=(conn,))
         return True
@@ -2042,19 +2041,10 @@ def enable_listen_mode(app, error_cb: Callable, opts):
         run_socket_cleanups()
 
     def run_socket_cleanups() -> None:
-        for cleanup in listen_cleanup:
-            cleanup()
-        listen_cleanup[:] = []
-        # close the sockets:
-        for cleanup in socket_cleanup:
-            cleanup()
-        socket_cleanup[:] = []
+        close_sockets(sockets)
 
-    for socktype, sock, sinfo, cleanup_socket in sockets:
-        socket_cleanup.append(cleanup_socket)
-        cleanup = add_listen_socket(socktype, sock, sinfo, None, new_connection, {})
-        if cleanup is not None:
-            listen_cleanup.append(cleanup)
+    for listener in sockets:
+        add_listen_socket(listener, None, new_connection)
     # listen mode is special,
     # don't fall through to connect_to_server!
     app.show_progress(90, "ready")
