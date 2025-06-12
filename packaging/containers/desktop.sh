@@ -158,8 +158,12 @@ elif [ "${DESKTOP}" == "xfce4" ]; then
 elif [ "${DESKTOP}" == "deepin" ]; then
   DE_COMMAND="deepin-menu"    # no session manager in Ubuntu?
 elif [ "${DESKTOP}" == "enlightenment" ]; then
-  echo "no seamless mode with ${DESKTOP}"
-  DE_COMMAND="enlightenment"
+  if [ "${SEAMLESS}" == "1" ]; then
+    echo "no seamless mode with ${DESKTOP}"
+    DE_COMMAND="xterm"
+  else
+    DE_COMMAND="enlightenment"
+  fi
 elif [ "${DESKTOP}" == "xterm" ]; then
   DE_COMMAND="xterm"
 fi
