@@ -47,8 +47,8 @@ def get_client_base_classes() -> tuple[type, ...]:
     if features.ssh:
         from xpra.client.subsystem.ssh_agent import SSHAgentClient
         CLIENT_BASES.append(SSHAgentClient)
-    if features.network_listener:
-        from xpra.client.subsystem.network_listener import NetworkListener
+    if features.socket:
+        from xpra.client.subsystem.socket import NetworkListener
         CLIENT_BASES.append(NetworkListener)
     if features.ping:
         from xpra.client.subsystem.ping import PingClient

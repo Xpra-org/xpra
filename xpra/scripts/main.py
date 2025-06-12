@@ -2239,7 +2239,7 @@ def set_client_features(opts) -> None:
     features.ping = b(opts.pings)
     features.bandwidth = b(opts.bandwidth_detection) or b(opts.bandwidth_limit)
     features.ssh_agent = envbool("XPRA_SSH_AGENT", True)
-    features.network_listener = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
+    features.socket = envbool("XPRA_CLIENT_BIND_SOCKETS", True) and opts.bind != "none"
     features.encoding = opts.windows
     features.native = envbool("XPRA_CLIENT_NATIVE_BINDINGS", True)
 
@@ -2271,7 +2271,7 @@ def enforce_client_features() -> None:
         "tray": "xpra.client.subsystem.tray",
         "ping": "xpra.client.subsystem.ping",
         "bandwidth": "xpra.client.subsystem.bandwidth",
-        "network_listener": "xpra.client.subsystem.network_listener",
+        "socket": "xpra.client.subsystem.socket",
         "ssh_agent": "xpra.client.subssytem.ssh_agent",
         "encoding": "xpra.client.subsystem.encodings",
         "native": "xpra.platform.client",
