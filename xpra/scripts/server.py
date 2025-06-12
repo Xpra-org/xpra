@@ -578,6 +578,14 @@ def request_exit(uri: str) -> bool:
     return p.poll() in (ExitCode.OK, ExitCode.UPGRADE)
 
 
+def trymkdir(path: str, mode=0o755) -> None:
+    if not os.path.exists(path):
+        try:
+            os.mkdir(path, mode)
+        except OSError as e:
+            warn(f"Warning: failed to create {path!r} {e}")
+
+
 def start_dbus() -> None:
     ROOT: bool = POSIX and getuid() == 0
     SYSTEM_DBUS = envbool("XPRA_SYSTEM_DBUS", ROOT)
@@ -586,10 +594,8 @@ def start_dbus() -> None:
     if SYSTEM_DBUS and not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
         if not os.path.exists(MACHINE_ID):
             try:
-                if not os.path.exists("/var/lib"):
-                    os.mkdir("/var/lib", 0o755)
-                if not os.path.exists("/var/lib/dbus"):
-                    os.mkdir("/var/lib/dbus", 0o755)
+                trymkdir("/var/lib")
+                trymkdir("/var/lib/dbus")
                 import uuid
                 machine_id = uuid.uuid4().hex
                 with open(MACHINE_ID, "w") as f:
@@ -597,11 +603,7 @@ def start_dbus() -> None:
                 warn(f"initialized dbus machine_id {machine_id}\n")
             except OSError as e:
                 warn(f"unable to create machine_id: {e}\n")
-        if not os.path.exists("/run/dbus"):
-            try:
-                os.mkdir("/run/dbus", 0o755)
-            except OSError as e:
-                warn(f"unable to create `/run/dbus`: {e}")
+        trymkdir("/run/dbus")
         Popen(["dbus-daemon", "--system", "--fork"]).wait()
         if not wait_for_socket(SYSTEM_DBUS_SOCKET, SYSTEM_DBUS_TIMEOUT):
             warn("dbus-daemon failed to start\n")
@@ -615,8 +617,7 @@ def start_cupsd() -> None:
     SYSTEM_CUPS_TIMEOUT = envint("XPRA_SYSTEM_CUPS_TIMEOUT", 5)
     SYSTEM_CUPS_SOCKET = "/run/cups/cups.sock"
     if SYSTEM_CUPS and not wait_for_socket(SYSTEM_CUPS_SOCKET, SYSTEM_CUPS_TIMEOUT):
-        if not os.path.exists("/run/cups"):
-            os.mkdir("/run/cups", 0o755)
+        trymkdir("/run/cups")
         cupsd = which("cupsd")
         if not cupsd:
             warn("Warning: unable to launch `cupsd`, command not found")
