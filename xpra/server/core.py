@@ -746,6 +746,19 @@ class ServerCore(ServerBaseClass):
             netlog("error sending %r: %s", packet_data, e)
         GLib.timeout_add(500, force_close_connection, conn)
 
+    def peek_connection(self, conn) -> bytes:
+        timeout = PEEK_TIMEOUT_MS
+        if conn.socktype == "rfb":
+            # rfb does not send any data, waits for a server packet
+            # so don't bother waiting for something that should never come:
+            timeout = 0
+        elif conn.socktype == "socket":
+            timeout = SOCKET_PEEK_TIMEOUT_MS
+        peek_data = b""
+        if timeout > 0:
+            peek_data = peek_connection(conn, timeout)
+        return peek_data
+
     def guess_packet_type(self, peek_data: bytes):
         if peek_data:
             line1 = peek_data.split(b"\n")[0]
@@ -773,17 +786,7 @@ class ServerCore(ServerBaseClass):
         netlog("handle_new_connection%s sockname=%s, target=%s", (listener, conn), sockname, target)
         # peek so we can detect invalid clients early,
         # or handle non-xpra / wrapped traffic:
-        timeout = PEEK_TIMEOUT_MS
-        if socktype == "rfb":
-            # rfb does not send any data, waits for a server packet
-            # so don't bother waiting for something that should never come:
-            timeout = 0
-        elif socktype == "socket":
-            timeout = SOCKET_PEEK_TIMEOUT_MS
-        peek_data = b""
-        if timeout > 0:
-            peek_data = peek_connection(conn, timeout)
-        line1 = peek_data.split(b"\n")[0]
+        peek_data = self.peek_connection(conn)
         netlog("socket peek=%s", Ellipsizer(peek_data, limit=512))
         packet_type = self.guess_packet_type(peek_data)
 
@@ -815,6 +818,7 @@ class ServerCore(ServerBaseClass):
                 assert socktype == "ssl"
                 if can_upgrade_to("wss") and self.ssl_mode.lower() in TRUE_OPTIONS or self.ssl_mode == "auto":
                     # look for HTTPS request to handle:
+                    line1 = peek_data.split(b"\n")[0]
                     if line1.find(b"HTTP/") > 0 or peek_data.find(b"\x08http/") > 0:
                         http = True
                     else:
@@ -866,7 +870,7 @@ class ServerCore(ServerBaseClass):
             conn = self.handle_ssh_connection(conn, socket_options)
             if not conn:
                 return
-            peek_data, line1, packet_type = b"", b"", ""
+            peek_data, packet_type = b"", ""
 
         if socktype in ("tcp", "socket", "named-pipe") and peek_data:
             # see if the packet data is actually xpra or something else
