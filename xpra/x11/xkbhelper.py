@@ -206,14 +206,14 @@ def set_keycode_translation(xkbmap_x11_keycodes, xkbmap_keycodes) -> dict:
         if not keycodes:
             return None
 
+        rlog = noop
         debug_keysym = keysym in DEBUG_KEYSYMS
         if debug_keysym:
             log.info("set_keycode_translation: find_keycode%s x11 keycodes=%s", (kc, keysym, i), keycodes)
 
-            def rlog(keycode, msg) -> None:
+            def ilog(keycode, msg) -> None:
                 log.info("set_keycode_translation: find_keycode%s=%s (%s)", (kc, keysym, i), keycode, msg)
-        else:
-            rlog = noop
+            rlog = ilog
 
         # no other option, use it:
         for keycode in keycodes:
