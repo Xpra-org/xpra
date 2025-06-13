@@ -179,7 +179,8 @@ For example:
 * OpenGL hardware acceleration via [WSL - Windows Subsystem for Linux](WSL.md)
 
 ### Containers - VM
-Using containers or virtual machines is a very popular way of deploying xpra, both offer a strong extra security layer which can also be used to restrict access to system resources - though this limited access to the underlying hardware also restricts hardware acceleration options.
+Using containers or virtual machines is a very popular way of deploying xpra, both offer a strong extra security layer which can also be used to restrict access to system resources - though this limited access to the underlying hardware also restricts hardware acceleration options.\
+As a good starting point, the xpra repository includes some [container scripts](https://github.com/Xpra-org/xpra/tree/master/packaging/containers).
 
 </details>
 
