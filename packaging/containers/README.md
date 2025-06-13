@@ -6,7 +6,7 @@
 * a shell
 
 
-## [xvfb](./xvfb.sh) image
+## [xvfb](./podman/xvfb.sh) image
 
 This container is typically used as part of a pod as it only provides an X11 virtual framebuffer. \
 It is based on [alpinelinux](https://alpinelinux.org/) to keep things "_small, simple and secure_".
@@ -18,7 +18,7 @@ This container does not need any kind of network access,
 though it usually needs to share `ipc` and `network` with the xpra server and the X11 applications
 so that they can enable `XShm` for performance.
 
-[xvfb.sh](./xvfb.sh) will create a container named `xvfb`,
+[xvfb.sh](./podman/xvfb.sh) will create a container named `xvfb`,
 ready to start the virtual framebuffer on the display number specified.
 </details>
 
@@ -41,7 +41,7 @@ OPENGL=0 ./xvfb.sh
 </details>
 
 
-## [xpra](./xpra.sh)
+## [xpra](./podman/xpra.sh)
 
 This container runs the xpra server and may use an existing `xvfb` if one is already started. \
 This default image configuration is based on [fedora](https://fedoraproject.org/),
@@ -61,7 +61,7 @@ AUDIO=0 CODECS=0 ./xvfb.sh
 ```
 </details>
 
-## [desktop](desktop.sh)
+## [desktop](./podman/desktop.sh)
 
 This container runs a lightweight desktop environment based on [`winbar`](https://github.com/jmanc3/winbar).  \
 The default image configuration is based on [Ubuntu Plucky](https://releases.ubuntu.com/plucky/),
@@ -69,5 +69,5 @@ but other Debian and Ubuntu releases can also be used.
 
 ## Pod
 
-The [pod](pod.sh) script uses the containers created above to provide an xpra session.
+The [pod](./podman/pod.sh) script uses the containers created above to provide an xpra session.
 It will also attempt to open a browser to access it

@@ -75,7 +75,7 @@ else
 
   # dbus setup
   run sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/lib/dbus/machine-id"
-  copy fs/etc/dbus-1/system.d/allow-all.conf /etc/dbus-1/system.d/
+  copy "../fs/etc/dbus-1/system.d/allow-all.conf" /etc/dbus-1/system.d/
 fi
 
 # just use the system-wide ssl certificate:

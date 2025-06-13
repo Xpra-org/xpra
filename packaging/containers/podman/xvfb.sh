@@ -69,11 +69,11 @@ if [ "${TRIM}" == "1" ]; then
 fi
 
 if [ "${XDUMMY}" == "1" ]; then
-  rm -f xorg.conf
-  wget https://raw.githubusercontent.com/Xpra-org/xpra/refs/heads/master/fs/etc/xpra/xorg.conf
-  run mkdir /etc/X11
-  copy xorg.conf /etc/X11
-  rm -f xorg.conf
+  rm -f "./xorg.conf"
+  wget "https://raw.githubusercontent.com/Xpra-org/xpra/refs/heads/master/fs/etc/xpra/xorg.conf"
+  run mkdir "/etc/X11"
+  copy xorg.conf "/etc/X11"
+  rm -f "./xorg.conf"
   XVFB_COMMAND="/usr/bin/Xorg -novtswitch -logfile /tmp/Xorg.log -config /etc/X11/xorg.conf +extension Composite +extension GLX +extension RANDR +extension RENDER -extension DOUBLE-BUFFER -nolisten tcp -noreset -ac $XDISPLAY"
 else
   XVFB_COMMAND="/usr/bin/Xvfb -ac -noreset +extension GLX +extension Composite +extension RANDR +extension Render -extension DOUBLE-BUFFER -nolisten tcp -ac $XDISPLAY"
