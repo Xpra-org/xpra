@@ -21,7 +21,7 @@ from collections.abc import Callable, Sequence, Iterable
 
 from xpra.util.version import (
     XPRA_VERSION, XPRA_NUMERIC_VERSION, vparts, version_str, version_compat_check, get_version_info,
-    get_build_info, get_platform_info, get_host_info, parse_version,
+    get_build_info, get_host_info, parse_version,
 )
 from xpra.scripts.server import deadly_signal
 from xpra.exit_codes import ExitValue, ExitCode
@@ -105,17 +105,6 @@ class ClientException(Exception):
     pass
 
 
-def get_server_info() -> dict[str, Any]:
-    # this function is for non UI thread info
-    build = {} if FULL_INFO < 1 else get_build_info()
-    build.update(get_version_info())
-    info = {
-        "platform": get_platform_info(),
-        "build": build,
-    }
-    return info
-
-
 def get_thread_info(proto=None) -> dict[Any, Any]:
     # threads:
     if proto:
@@ -135,11 +124,12 @@ def force_close_connection(conn) -> None:
 def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.subsystem.control import ControlHandler
     from xpra.server.glib_server import GLibServer
+    from xpra.server.subsystem.platform import PlatformServer
     from xpra.server.subsystem.daemon import DaemonServer
     from xpra.server.subsystem.sessionfiles import SessionFilesServer
     from xpra.server.subsystem.splash import SplashServer
     classes: list[type] = [
-        GLibServer, DaemonServer, SessionFilesServer,
+        GLibServer, PlatformServer, DaemonServer, SessionFilesServer,
         AuthenticatedServer, ControlHandler, SplashServer,
     ]
     from xpra.server import features
@@ -327,8 +317,6 @@ class ServerCore(ServerBaseClass):
         log("threaded_setup() servercore start")
         # platform specific init:
         threaded_server_init()
-        # populate the platform info cache:
-        get_platform_info()
         init_memcheck()
         add_work_item(self.print_run_info)
         for c in SERVER_BASES:
@@ -1665,15 +1653,22 @@ class ServerCore(ServerBaseClass):
 
     def get_server_info(self) -> dict[str, Any]:
         # this function is for non UI thread info
-        info = get_server_info()
         now = time()
-        info |= {
+        info = {
             "type": "Python",
             "python": {"version": parse_version(platform.python_version())[:FULL_INFO + 1]},
             "start_time": int(self.start_time),
             "current_time": int(now),
             "elapsed_time": int(now - self.start_time),
+            "build": self.get_build_info(),
         }
+        return info
+
+    def get_build_info(self) -> dict[str, Any]:
+        # this function is for non UI thread info
+        info = get_version_info()
+        if FULL_INFO >= 1:
+            info.update(get_build_info())
         return info
 
     def get_server_load_info(self) -> dict[str, Any]:
