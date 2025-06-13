@@ -147,10 +147,11 @@ cdef class pam_session:
     cdef object username
     cdef object password
 
-    def __init__(self, username, password="", service_name="xpra"):
-        self.service_name = service_name
-        self.username = username
-        self.password = password
+    def __init__(self, username: str, password="", service_name="xpra"):
+        # convert to bytes for cython calls:
+        self.service_name = b(service_name)
+        self.username = b(username)
+        self.password = b(password)
         self.pam_handle = NULL
 
     def __repr__(self):
@@ -168,13 +169,14 @@ cdef class pam_session:
         cdef Py_buffer view
         memset(&view, 0, sizeof(Py_buffer))
 
-        if self.pam_handle!=NULL:
+        if self.pam_handle != NULL:
             log.error("Error: cannot open the pam session more than once!")
             return False
 
         if password:
             conv.conv = <void *> &password_conv
-            assert self.password, "no password to use for pam_start"
+            if not self.password:
+                raise RuntimeError("no password to use for pam_start")
             if PyObject_GetBuffer(self.password, &view, PyBUF_ANY_CONTIGUOUS):
                 raise RuntimeError("failed to read password data")
             conv.appdata_ptr = view.buf
@@ -183,9 +185,9 @@ cdef class pam_session:
             conv.appdata_ptr = NULL
         cdef int r = 0
         try:
-            r = pam_start(b(self.service_name), b(self.username), &conv, &self.pam_handle)
+            r = pam_start(self.service_name, self.username, &conv, &self.pam_handle)
         finally:
-            if view.buf!=NULL:
+            if password and view.buf != NULL:
                 PyBuffer_Release(&view)
         log("pam_start: %s", PAM_ERR_STR.get(r, r))
         if r != PAM_SUCCESS:

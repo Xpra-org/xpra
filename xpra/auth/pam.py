@@ -9,7 +9,6 @@ from collections.abc import Sequence
 
 from xpra.util.env import envbool
 from xpra.os_util import getuid
-from xpra.util.str_fn import strtobytes
 from xpra.scripts.config import str_to_bool
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 
@@ -19,11 +18,10 @@ PAM_CHECK_ACCOUNT = envbool("XPRA_PAM_CHECK_ACCOUNT", False)
 
 def check(username: str, password: str, service: str = PAM_AUTH_SERVICE,
           check_account: bool = PAM_CHECK_ACCOUNT) -> bool:
-    log("pam check(%s, [..])", username)
+    log("pam check(%r, ..)", username)
     from xpra.platform.pam import pam_session  # pylint: disable=import-outside-toplevel
-    b = strtobytes
-    session = pam_session(b(username), b(password), service)
-    if not session.start(b(password)):
+    session = pam_session(username, password, service)
+    if not session.start(password):
         return False
     try:
         success: bool = session.authenticate()
