@@ -331,6 +331,9 @@ class ServerCore(ServerBaseClass):
         get_platform_info()
         init_memcheck()
         add_work_item(self.print_run_info)
+        for c in SERVER_BASES:
+            with log.trap_error("Error during threaded setup of %s", c):
+                c.threaded_setup(self)
         log("threaded_setup() servercore end")
 
     def call_init_thread_callbacks(self) -> None:
