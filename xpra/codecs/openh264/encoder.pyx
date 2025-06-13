@@ -23,6 +23,7 @@ from libc.stdint cimport uint8_t, uintptr_t
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE")
 
+DEF MAX_SPATIAL_LAYER_NUM = 4
 DEF MAX_LAYER_NUM_OF_FRAME = 128
 
 cdef extern from "Python.h":
@@ -137,8 +138,27 @@ cdef extern from "wels/codec_app_def.h":
         RC_MODES  iRCMode           #rate control mode
         float     fMaxFrameRate     #maximal input frame rate
 
+    ctypedef struct SSpatialLayerConfig:
+        int   iVideoWidth           # width of picture in luminance samples of a layer
+        int   iVideoHeight          # height of picture in luminance samples of a layer
+        float fFrameRate            # frame rate specified for a layer
+        int   iSpatialBitrate       # target bitrate for a spatial layer, in unit of bps
+        int   iMaxSpatialBitrate    # maximum  bitrate for a spatial layer, in unit of bps
+        EProfileIdc  uiProfileIdc   # value of profile IDC (PRO_UNKNOWN for auto-detection)
+        ELevelIdc    uiLevelIdc     # value of profile IDC (0 for auto-detection)
+        int          iDLayerQp      # value of level IDC (0 for auto-detection)
+
     ctypedef struct SEncParamExt:
-        pass
+        EUsageType iUsageType               # same as in TagEncParamBase
+        int       iPicWidth                 # same as in TagEncParamBase
+        int       iPicHeight                # same as in TagEncParamBase
+        int       iTargetBitrate            # same as in TagEncParamBase
+        RC_MODES  iRCMode                   # same as in TagEncParamBase
+        float     fMaxFrameRate             # same as in TagEncParamBase
+
+        int       iTemporalLayerNum         # temporal layer number, max temporal layer = 4
+        int       iSpatialLayerNum          # spatial layer number,1<= iSpatialLayerNum <= MAX_SPATIAL_LAYER_NUM, MAX_SPATIAL_LAYER_NUM = 4
+        SSpatialLayerConfig sSpatialLayers[MAX_SPATIAL_LAYER_NUM]
 
     ctypedef struct SLayerBSInfo:
         unsigned char uiTemporalId
