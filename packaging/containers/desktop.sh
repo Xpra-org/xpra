@@ -57,7 +57,7 @@ else
   fi
   run apt-get update
 
-  copy "keyboard" "locale" /etc/default/
+  copy "fs/etc/default/keyboard" "fs/etc/default/locale" "/etc/default/"
   run sh -c "echo $TIMEZONE > /etc/timezone;ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime"
 
   # add xpra repo:
@@ -67,7 +67,7 @@ else
   run apt-get update
 
   if [ "${FIREFOX}" == "1" ]; then
-    copy "mozilla-firefox" /etc/apt/preferences.d/
+    copy "fs/etc/apt/preferences.d/mozilla-firefox" "/etc/apt/preferences.d/"
     install software-properties-common
     run add-apt-repository -y ppa:mozillateam/ppa
     install firefox
@@ -97,7 +97,7 @@ else
     install winbar
     # configure winbar:
     run setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
-    copy "winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
+    copy "fs/winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
     run winbar --create-cache
   fi
   if [ "${DESKTOP}" == "xfce4" ] || [ "${DESKTOP}" == "all" ]; then

@@ -85,7 +85,7 @@ else
     install winbar
     # configure winbar:
     buildah run $CONTAINER setpriv --reuid "${TARGET_UID}" --regid "${TARGET_GID}" --init-groups --reset-env winbar --create-cache
-    buildah copy $CONTAINER "winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
+    buildah copy $CONTAINER "fs/winbar/settings.conf" "winbar/items.ini" "/home/${TARGET_USER}/.config/winbar/"
     buildah run $CONTAINER winbar --create-cache
   elif [ "${DESKTOP}" == "xfce" ] || [ "${DESKTOP}" == "all" ]; then
     install @xfce-desktop-environment
