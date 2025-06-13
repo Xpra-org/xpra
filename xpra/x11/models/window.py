@@ -228,7 +228,7 @@ class WindowModel(BaseWindowModel):
         pos = hints.get("position")
         if (pos==(0, 0) and (nx!=0 or ny!=0)) or not SIZEHINTS_POSITION:
             #never override with 0,0
-            hints.pop("position")
+            hints.pop("position", None)
             pos = None
         if ox==0 and oy==0 and pos:
             nx, ny = pos
