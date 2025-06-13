@@ -10,6 +10,7 @@ DISTRO="${DISTRO:-fedora}"
 RELEASE="${RELEASE:-42}"
 IMAGE_NAME="xpra"
 CONTAINER="$DISTRO-$RELEASE-$IMAGE_NAME"
+CLEAN="${CLEAN:-1}"
 REPO="${REPO:-xpra-beta}"
 XDISPLAY="${XDISPLAY:-:10}"
 SEAMLESS="${SEAMLESS:-1}"
@@ -24,44 +25,64 @@ TARGET_UID="${TARGET_UID:-1000}"
 TARGET_GID="${TARGET_GID:-1000}"
 DEBUG="${DEBUG:-none}"
 
+run () {
+  buildah run $CONTAINER "$@"
+}
+
+copy () {
+  buildah copy $CONTAINER "$@"
+}
+
+install () {
+  if [ "${TRIM}" == "1" ]; then
+    run dnf install -y --setopt=install_weak_deps=False "$@"
+  else
+    run dnf install -y "$@"
+  fi
+}
+
 if [ "$1" == "update" ]; then
-  buildah run $CONTAINER dnf update --refresh -y
+  run dnf update --refresh -y
 else
-  buildah rm $CONTAINER || true
-  buildah rmi -f $IMAGE_NAME || true
-  buildah from --name $CONTAINER $DISTRO:$RELEASE
-  buildah run $CONTAINER dnf install -y https://download1.rpmfusion.org/free/${DISTRO}/rpmfusion-free-release-${RELEASE}.noarch.rpm
-  buildah run $CONTAINER dnf update -y
-  buildah run $CONTAINER dnf install -y wget --setopt=install_weak_deps=False
-  buildah run $CONTAINER wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
-  buildah run $CONTAINER dnf install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-aioquic python3-pyxdg dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
+  if [ "${CLEAN}" == "1" ]; then
+    buildah rm $CONTAINER || true
+    buildah rmi -f $IMAGE_NAME || true
+    buildah from --name $CONTAINER $DISTRO:$RELEASE
+  fi
+  install -y https://download1.rpmfusion.org/free/${DISTRO}/rpmfusion-free-release-${RELEASE}.noarch.rpm
+  run dnf update -y
+  install -y wget --setopt=install_weak_deps=False
+  run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/${REPO}.repo"
+  install -y xpra-filesystem xpra-server xpra-x11 xpra-html5 python3-aioquic python3-pyxdg dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
   # EL10: system-backgrounds system-logos
   if [ "${AUDIO}" == "1" ]; then
-    buildah run $CONTAINER dnf install -y xpra-audio-server
+    install -y xpra-audio-server
   fi
   if [ "${CODECS}" == "1" ]; then
-    buildah run $CONTAINER dnf install -y xpra-codecs
+    install -y xpra-codecs
   fi
 
   if [ "${TOOLS}" == "1" ]; then
-    buildah run $CONTAINER dnf install -y strace xterm net-tools lsof xpra-client socat glxgears mesa-demos xdpyinfo VirtualGL pavucontrol --setopt=install_weak_deps=False
+    install -y strace xterm net-tools lsof xpra-client socat glxgears mesa-demos xdpyinfo VirtualGL pavucontrol --setopt=install_weak_deps=False
   fi
 
-  buildah run $CONTAINER groupadd -r -g "${TARGET_GID}" "${TARGET_USER}"
-  buildah run $CONTAINER adduser -u "${TARGET_UID}" -g "${TARGET_GID}" --shell /bin/bash "${TARGET_USER}"
-  buildah run $CONTAINER usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
-  buildah run $CONTAINER sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
+  run groupdel "${TARGET_GROUP}" || true
+  run userdel -r "${TARGET_USER}" || true
+  run groupadd -r -g "${TARGET_GID}" "${TARGET_USER}"
+  run adduser -u "${TARGET_UID}" -g "${TARGET_GID}" --shell /bin/bash "${TARGET_USER}"
+  run usermod -aG "${TARGET_USER_GROUPS}" "${TARGET_USER}"
+  run sh -c "echo \"${TARGET_USER}:${TARGET_PASSWORD}\" | chpasswd"
 
   # dbus setup
-  buildah run $CONTAINER sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/lib/dbus/machine-id"
-  buildah copy $CONTAINER allow-all.conf /etc/dbus-1/system.d/
+  run sh -c "mkdir -m 755 -p /var/lib/dbus;dbus-uuidgen > /var/lib/dbus/machine-id"
+  copy allow-all.conf /etc/dbus-1/system.d/
 fi
 
 # just use the system-wide ssl certificate:
-buildah run $CONTAINER sh -c "chmod 644 /etc/xpra/ssl/*.pem"
+run sh -c "chmod 644 /etc/xpra/ssl/*.pem"
 
 # save space:
-buildah run $CONTAINER rm -fr /var/cache/*dnf*
+run rm -fr /var/cache/*dnf*
 
 # to only use the display from the 'xvfb' container
 # set `--use-display=yes`:
