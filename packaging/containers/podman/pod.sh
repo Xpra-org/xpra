@@ -35,6 +35,12 @@ if ! podman volume exists "$RUN_VOLUME"; then
   # or "--opt device=tmpfs"
   podman volume create "$RUN_VOLUME"
 fi
+TMP_VOLUME="tmp"
+if ! podman volume exists "$RUN_VOLUME"; then
+  # rootless containers can't use ro,nodev,noexec
+  # or "--opt device=tmpfs"
+  podman volume create --opt device=tmpfs --opt type=tmpfs --opt o=size=128M,nodev,noexec "$TMP_VOLUME"
+fi
 
 POD_NAME="xpra"
 if ! podman pod exists "$POD_NAME"; then
@@ -64,7 +70,9 @@ podman run -dt \
   --network "$PUBLIC_NET" \
   -p ${PORT}:${PORT}/tcp \
   -p ${PORT}:${PORT}/udp \
-  --read-only --read-only-tmpfs=true \
+  --read-only \
+  --volume ${TMP_VOLUME}:/tmp:rw \
+  --security-opt label=type:container_runtime_t \
   xvfb
 
 # Start xpra
@@ -78,8 +86,9 @@ podman run -dt \
   --network container:xvfb \
   --volume ${RUN_VOLUME}:/run:rw \
   --security-opt label=type:container_runtime_t \
+  --volumes-from xvfb:rw \
+  --read-only --read-only-tmpfs=true \
   xpra
-#  --read-only --read-only-tmpfs=true \
 
 # Start app container running the desktop environment applications:
 podman run -dt \
@@ -90,11 +99,13 @@ podman run -dt \
   --ipc container:xvfb \
   --cgroupns container:xvfb \
   --network container:xvfb \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
   --security-opt label=type:container_runtime_t \
-  -v /dev/dri:/dev/dri \
+  --volumes-from xvfb:rw \
   --volumes-from xpra:rw \
   apps
+# this can be used to expose the host GPU / displays:
+#  -v /tmp/.X11-unix:/tmp/.X11-unix \
+#  -v /dev/dri:/dev/dri \
 
 # Output status
 echo "Containers running:"
