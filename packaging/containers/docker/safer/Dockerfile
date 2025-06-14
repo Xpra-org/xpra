@@ -31,6 +31,6 @@ EXPOSE ${PORT}
 CMD exec xpra $MODE --uid $UID --gid $GID --bind-tcp=0.0.0.0:$PORT --bind-quic=0.0.0.0:$PORT --start=xterm --no-daemon
 
 # run this container using:
-#podman run -publish 10000:10000/tcp --publish 10000:10000/udp xpra-safer
+#podman run --publish 10000:10000/tcp --publish 10000:10000/udp xpra-safer
 # access it using your browser:
 #xdg-open http://127.0.0.1:10000/

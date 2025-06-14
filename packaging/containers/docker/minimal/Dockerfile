@@ -15,6 +15,6 @@ EXPOSE 10000
 CMD ["xpra", "seamless", "--bind-tcp=0.0.0.0:10000", "--start=xterm", "--no-daemon"]
 
 # run this container using:
-#podman run -publish 10000:10000/tcp --publish 10000:10000/udp xpra-base
+#podman run --publish 10000:10000/tcp --publish 10000:10000/udp xpra-base
 # access it using your browser:
 #xdg-open http://127.0.0.1:10000/
