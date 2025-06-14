@@ -169,9 +169,10 @@ class WindowDamageHandler:
 
         # try XShm:
         try:
+            shm = None  # XShmWrapper instance
             with xsync:
                 shm = self.get_xshm_handle()
-                if shm is not None:
+                if shm:
                     shm_image = shm.get_image(handle.get_pixmap(), x, y, width, height)
                     if shm_image:
                         return shm_image
@@ -180,7 +181,9 @@ class WindowDamageHandler:
                 log("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
             else:
                 log.warn("get_image(%s, %s, %s, %s) '%s'", x, y, width, height, e.msg, exc_info=True)
-
+            # better try using another shm handle next time:
+            if shm:
+                shm.discard()
         try:
             w = min(handle.get_width(), width)
             h = min(handle.get_height(), height)
