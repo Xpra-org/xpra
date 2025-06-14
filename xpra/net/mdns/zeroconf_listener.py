@@ -7,6 +7,7 @@
 import socket
 from zeroconf import ServiceBrowser, Zeroconf
 
+from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("network", "mdns")
@@ -14,7 +15,7 @@ log = Logger("network", "mdns")
 
 class Zeroconflistener:
 
-    def __init__(self, service_type, mdns_found=None, mdns_add=None, mdns_remove=None, mdns_update=None):
+    def __init__(self, service_type, mdns_found=noop, mdns_add=noop, mdns_remove=noop, mdns_update=noop):
         log("Zeroconflistener%s", (service_type, mdns_found, mdns_add, mdns_remove, mdns_update))
         self.zeroconf = Zeroconf()
         self.browser: ServiceBrowser | None = None
@@ -31,20 +32,18 @@ class Zeroconflistener:
 
     def update_service(self, zeroconf, stype: str, name: str) -> None:
         log("update_service%s", (zeroconf, stype, name))
-        if self.mdns_update:
-            self.mdns_update(name, stype)
+        self.mdns_update(name, stype)
 
     def remove_service(self, zeroconf, stype: str, name: str) -> None:
         log("remove_service%s", (zeroconf, stype, name))
-        if self.mdns_remove:
-            domain = "local"
-            self.mdns_remove(0, 0, name, stype, domain, 0)
+        domain = "local"
+        self.mdns_remove(0, 0, name, stype, domain, 0)
 
     def add_service(self, zeroconf, stype: str, name: str) -> None:
         log("add_service%s", (zeroconf, stype, name))
         info = zeroconf.get_service_info(stype, name)
         log("service info: %s", info)
-        if self.mdns_add and info:
+        if info:
             interface = None
             protocol = 0
             name = info.name
