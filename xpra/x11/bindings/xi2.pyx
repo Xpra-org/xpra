@@ -297,10 +297,7 @@ cdef class X11XI2BindingsInstance(X11CoreBindingsInstance):
         self.event_handlers.setdefault(window, {})[event] = handler
 
     def disconnect(self, window) -> None:
-        try:
-            del self.event_handlers[window]
-        except:
-            pass
+        self.event_handlers.pop(window, None)
 
     def reset_events(self) -> None:
         self.events = deque(maxlen=100)
