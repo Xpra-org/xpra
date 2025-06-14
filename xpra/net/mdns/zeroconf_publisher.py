@@ -103,7 +103,7 @@ class ZeroconfPublishers:
                 host = host.split("%")[0]
             try:
                 host = socket.gethostbyname(host)
-            except Exception:
+            except OSError:
                 pass
             address = inet_ton(af, host)
         except Exception as e:
