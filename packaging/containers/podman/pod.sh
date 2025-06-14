@@ -106,5 +106,15 @@ echo "- $PUBLIC_NET:"
 podman network inspect "$PUBLIC_NET" | grep -iE '"Name":|"Subnet":|"Gateway":'
 echo
 
-sleep 5
-xdg-open "http://localhost:${PORT}/"
+echo "Waiting for port ${PORT}"
+curl --version >& /dev/null
+if [ $? -eq 0 ]; then
+  while ! curl --output /dev/null --silent --head --fail http://127.0.0.1:$PORT; do
+    sleep 1 && echo -n .
+  done
+else
+  sleep 10
+fi
+
+timeout 10 bash -c 'until printf "" 2>>/dev/null >>/dev/tcp/$0/$1; do sleep 1; done' 127.0.0.1 $PORT
+xdg-open "http://127.0.0.1:${PORT}/"
