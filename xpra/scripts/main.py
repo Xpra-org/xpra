@@ -3829,8 +3829,8 @@ def run_list_mdns(error_cb, extra_args) -> ExitValue:
         listener_class: type = Avahilistener
     except ImportError:
         try:
-            from xpra.net.mdns.zeroconf_listener import Zeroconflistener
-            listener_class = Zeroconflistener
+            from xpra.net.mdns.zeroconf_listener import ZeroconfListener
+            listener_class = ZeroconfListener
         except ImportError:
             error_cb("sorry, 'list-mdns' requires an mdns module")
     from xpra.dbus.common import loop_init
