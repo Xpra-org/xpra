@@ -3,7 +3,7 @@
 FROM fedora:latest
 
 RUN dnf install -y --setopt=install_weak_deps=False wget
-RUN wget -O /etc/yum.repos.d/xpra.repo https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/xpra-beta.repo
+ADD https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/xpra-beta.repo /etc/yum.repos.d/
 RUN dnf install -y xpra xpra-audio-server
 
 EXPOSE 10000

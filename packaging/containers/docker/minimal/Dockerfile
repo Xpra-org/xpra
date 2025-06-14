@@ -2,9 +2,9 @@
 
 FROM alpine:latest
 
-RUN apk update && apk add --no-cache xpra xterm
-# install xpra-html5 from source:
-RUN mkdir /usr/share/xpra/www && \
+RUN apk update && \
+    apk add --no-cache xpra xterm && \
+    mkdir /usr/share/xpra/www && \
     cd /usr/share/xpra/www && \
     wget https://xpra.org/src/xpra-html5-17.1.tar.xz && \
     tar -Jxf xpra-html5-17.1.tar.xz xpra-html5-17.1/html5 --strip-components=2 && \

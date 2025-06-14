@@ -12,15 +12,14 @@ ARG PORT=10000
 ARG MODE=seamless
 
 RUN dnf install -y --setopt=install_weak_deps=False wget
-RUN wget -O /etc/yum.repos.d/xpra.repo https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/xpra-beta.repo
-RUN dnf install -y xpra xpra-audio-server
-
-RUN echo command: groupadd -r -g ${GID} $USERNAME
-RUN groupadd -r -g ${GID} ${USERNAME}
-RUN adduser -u ${UID} -g ${GID} --shell /bin/bash ${USERNAME}
-RUN usermod -aG ${USER_GROUPS} ${USERNAME}
-RUN echo "${USERNAME}:${PASSWORD}" | chpasswd
-RUN mkdir -m 755 -p /var/lib/dbus && dbus-uuidgen > /var/lib/dbus/machine-id
+ADD https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/xpra-beta.repo /etc/yum.repos.d/
+RUN dnf install -y xpra xpra-audio-server && \
+    groupadd -r -g ${GID} ${USERNAME} && \
+    adduser -u ${UID} -g ${GID} --shell /bin/bash ${USERNAME} && \
+    usermod -aG ${USER_GROUPS} ${USERNAME} && \
+    echo "${USERNAME}:${PASSWORD}" | chpasswd && \
+    mkdir -m 755 -p /var/lib/dbus && \
+    dbus-uuidgen > /var/lib/dbus/machine-id
 
 ENV UID=$UID
 ENV GID=$GID
