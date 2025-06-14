@@ -177,10 +177,15 @@ class WindowDamageHandler:
                     if shm_image:
                         return shm_image
         except XError as e:
+            log("get_image%s", (x, y, width, height), exc_info=True)
             if e.msg.startswith("BadMatch") or e.msg.startswith("BadWindow"):
-                log("get_image(%s, %s, %s, %s) get_image BadMatch ignored (window already gone?)", x, y, width, height)
+                log("BadMatch / BadWindow ignored - window %#x already gone?", self.xid)
+            elif e.msg.startswith("BadShmSeg"):
+                log.error("Error accessing XShm image of window %#x", self.xid)
+                log.estr(e)
             else:
-                log.warn("get_image(%s, %s, %s, %s) '%s'", x, y, width, height, e.msg, exc_info=True)
+                log.warn("Warning: failed to get image for window %#x", self.xid)
+                log.warn(" %s", e)
             # better try using another shm handle next time:
             if shm:
                 shm.discard()
