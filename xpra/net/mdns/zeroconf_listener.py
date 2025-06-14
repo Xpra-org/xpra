@@ -7,7 +7,7 @@
 import socket
 from zeroconf import ServiceBrowser, Zeroconf
 
-from xpra.common import noop
+from xpra.common import noop, noerr
 from xpra.log import Logger
 
 log = Logger("network", "mdns")
@@ -68,17 +68,11 @@ class ZeroconfListener:
         b = self.browser
         if b:
             self.browser = None
-            try:
-                b.cancel()
-            except Exception:
-                pass
+            noerr(b.cancel)
         zc = self.zeroconf
         if zc:
             self.zeroconf = None
-            try:
-                zc.close()
-            except Exception:
-                pass
+            noerr(zc.close)
 
 
 def main() -> None:
